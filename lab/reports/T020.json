@@ -1,0 +1,465 @@
+{
+ "changed_files": [
+  "src/ciw/lab/flat_torus_topology.py",
+  "src/ciw/lab/flat_torus_topology_lattice.py",
+  "src/ciw/lab/flat_torus_topology_provider.py",
+  "docs/lab/FLAT_TORUS_TOPOLOGY.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 2,
+   "not_established": 0,
+   "numerically_verified": 4,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Measured first return 1/gcd with the primitive displacement, gcd returns by t = 1, (|m| + |n|)/gcd crossings before the first return, and intersection count |det| for every tested class.",
+ "experiment": "Exact segment-by-segment flow per winding, detecting returns by an exact solve on each segment; exact intersection counting for primitive pairs; lattice-point count by row scan against a brute-force box; binary64 and 50-digit golden return gaps with a rounding bound.",
+ "failure_modes_checked": [
+  "non-primitive windings (multiple covers)",
+  "zero winding refused",
+  "start on a cell wall refused",
+  "corner passes counted on both axes",
+  "binary64 cancellation in ||q phi||",
+  "binary64 slopes are rational (never truly irrational)"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "measured first-return time, displacement, return count and crossings against prediction (mismatching classes)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "derivation": "Q(g m', g n') = g^2 Q(m', n'), so the (m, n) curve has gcd times the primitive length"
+   },
+   "claim": "Every winding with |m|, |n| <= 6 first returns to its start at t = 1/gcd, displaced by its primitive vector after (|m| + |n|)/gcd edge crossings, and returns gcd times by t = 1 (a gcd-fold cover of the primitive loop)",
+   "domain": "mathematical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "integer, Fraction or Q(sqrt d) arithmetic; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "classes": 168,
+    "failures": 0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "intersection count mismatches (exact rational solve)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "pairs enumerated minus C(classes, 2)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "For all 120 pairs of the 16 primitive classes with 0 <= m <= 3, |n| <= 3 the transverse intersections number |det(v, w)|",
+   "domain": "mathematical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "integer, Fraction or Q(sqrt d) arithmetic; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "failures": 0,
+    "pairs": 120
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "row-scan minus box count (all points)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "row-scan minus box count (primitive points)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "derivation": "Q = ((c n + b m)^2 + det m^2) / c >= det m^2 / c bounds |m| (and |n| symmetrically); the count is pi R^2 / A up to the cell-covering bound pi (2 R D + D^2) / A"
+   },
+   "claim": "The lattice-point count within radius R (including the origin, and its primitive part) equals a brute-force count over a box proven to contain the disk",
+   "domain": "mathematical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 1e-09
+   },
+   "uncertainty": {
+    "basis": "integer, Fraction or Q(sqrt d) arithmetic; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "lattice_points_with_origin": 229,
+    "primitive": 142,
+    "radius": 20
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 6.771828388018552e-08,
+      "passed": true,
+      "reference": "binary64 gap relative to phi^-k",
+      "reference_kind": "analytic",
+      "tolerance": 1e-06
+     },
+     {
+      "comparison": "ge",
+      "observed": 0.9999999322817161,
+      "passed": true,
+      "reference": "smallest gap / phi^-k (a closure would give 0)",
+      "reference_kind": "analytic",
+      "tolerance": 0.5
+     },
+     {
+      "comparison": "signed_le",
+      "observed": -3.885780586188048e-16,
+      "passed": true,
+      "reference": "|q gap - 1/sqrt 5| minus (phi^-2k / sqrt 5 + binary64 rounding bound)",
+      "reference_kind": "analytic",
+      "tolerance": 0.0
+     }
+    ],
+    "derivation": "Binet: F_{k+1} - phi F_k = (-1/phi)^k, so ||F_k phi|| = phi^-k for k >= 2 and |F_k phi^-k - 1/sqrt 5| = phi^-2k / sqrt 5",
+    "independent_check": {
+     "checker": {
+      "implementation": "mpmath",
+      "revision": "1.3.0"
+     },
+     "comparison": "abs_le",
+     "observed": 6.77182845510864e-08,
+     "passed": true,
+     "producer": {
+      "implementation": "ciw.lab.flat_torus_topology",
+      "revision": "ciw 0.1.0"
+     },
+     "reference": "mpmath 50-digit ||q phi||",
+     "reference_kind": "high_precision",
+     "tolerance": 1e-06
+    }
+   },
+   "claim": "The golden-slope geodesic has positive return gaps phi^-k at Fibonacci returns, with q * gap -> 1/sqrt 5",
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "regression_tolerance": {
+    "abs": 1e-15,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "binary64 cancellation in q phi - round(q phi), relative to phi^-k (q <= 17711)",
+    "kind": "roundoff",
+    "value": 6.771828388018552e-08
+   },
+   "unit": null,
+   "value": {
+    "gap": [
+     0.3819660112501051,
+     0.2360679774997898,
+     0.1458980337503153,
+     0.09016994374947451,
+     0.05572809000084078,
+     0.034441853748631956,
+     0.021286236252208823,
+     0.013155617496423133,
+     0.00813061875578569,
+     0.005024998740651654,
+     0.0031056200151340363,
+     0.0019193787255176176,
+     0.001186241289587997,
+     0.0007331374358727771,
+     0.0004531038537152199,
+     0.0002800335823849309,
+     0.00017307027155766264,
+     0.00010696331082726829,
+     6.610696073039435e-05,
+     4.085635009687394e-05,
+     2.525061063352041e-05
+    ],
+    "q": [
+     1,
+     2,
+     3,
+     5,
+     8,
+     13,
+     21,
+     34,
+     55,
+     89,
+     144,
+     233,
+     377,
+     610,
+     987,
+     1597,
+     2584,
+     4181,
+     6765,
+     10946,
+     17711
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "denominator of Fraction(float(phi)) is a power of two at most 2^52 (0 = yes)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "A binary64 heading slope is rational, so a float simulation cannot represent a non-closing direction",
+   "counterexample": {
+    "statement": "A floating-point geodesic direction can be irrational (non-closing)",
+    "witness": {
+     "closes_after_alpha_turns": 562949953421312,
+     "exact_fraction": "910872158600853/2^49",
+     "float_phi": 1.618033988749895
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "integer, Fraction or Q(sqrt d) arithmetic; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "log2_denominator": 49,
+    "slope_denominator": 562949953421312
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "crossing-count mismatches or unclosed traces",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 2.220446049250313e-16,
+      "passed": true,
+      "reference": "FTR area-one normalization",
+      "reference_kind": "invariant",
+      "tolerance": 1e-12
+     }
+    ],
+    "independent_check": {
+     "checker": {
+      "implementation": "Flat-Torus-Geodesic-Reference@dc918562cd9e",
+      "revision": "dc918562cd9e351a65475d29f46963c9f2fd7db8"
+     },
+     "comparison": "abs_le",
+     "observed": 2.1329254204086564e-16,
+     "passed": true,
+     "producer": {
+      "implementation": "ciw.lab.flat_torus_topology",
+      "revision": "ciw 0.1.0"
+     },
+     "reference": "FTR loop_length",
+     "reference_kind": "high_precision",
+     "tolerance": 1e-12
+    },
+    "provider": {
+     "executed": true,
+     "repository": "giasonpooni/Flat-Torus-Geodesic-Reference",
+     "revision": "dc918562cd9e351a65475d29f46963c9f2fd7db8",
+     "source_tree": "1f082c6b443f2e301ac5889122912f26968ae756"
+    }
+   },
+   "claim": "Closed-geodesic lengths |m w1 + n w2|, edge-crossing counts and unit area agree with the pinned FTR loop_length, trace_closed_geodesic and normalized_lattice",
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "relative difference of two binary64 length evaluations",
+    "kind": "roundoff",
+    "value": 2.1329254204086564e-16
+   },
+   "unit": null,
+   "value": {
+    "crossing_mismatches": 0,
+    "lengths": 160,
+    "max_relative_difference": 2.1329254204086564e-16
+   }
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 44194,
+   "path": "artifacts/T020/windings.json",
+   "sha256": "d57684b94af77ecd544648af121452f9cdeb43d616e4bf99ed07e7bde55e4dd4"
+  },
+  {
+   "bytes": 4508,
+   "path": "artifacts/T020/golden-returns.json",
+   "sha256": "5e1a7f9ab651880d8d468c2c0cf7c59224dd67f3733b6fee220778e1780575dc"
+  },
+  {
+   "bytes": 4985,
+   "path": "artifacts/T020/golden-return-gaps.svg",
+   "sha256": "5f083a37c48b87dcd12f036ce36d3919b2c7580a7c519f184f3dd27283d9eddd"
+  },
+  {
+   "bytes": 22417,
+   "path": "artifacts/T020/ftr-lengths.json",
+   "sha256": "f2018fc528c07e83194360a8d7c9e5062f9977d880e7c41230733e3b15f4bf6d"
+  }
+ ],
+ "hypothesis": "Closed geodesics of a flat torus are exactly the straight lines in nonzero lattice directions: primitive (m, n) gives a closed geodesic traversed once with length |m w1 + n w2|, (k m', k n') its k-fold cover, and irrational directions never close although their return gaps shrink.",
+ "input_data": [
+  "Gram form (5, 2, 7) (area sqrt 31)",
+  "start (alpha0, beta0) = ('1/7', '2/11')",
+  "all windings with |m|, |n| <= 6",
+  "golden slope phi in lattice coordinates, Fibonacci returns k <= 22"
+ ],
+ "mathematical_model": "Lattice-coordinate flow alpha = alpha0 + m t, beta = beta0 + n t on R^2 / Z^2 with metric Q(m, n) = a m^2 + 2 b m n + c n^2; predicted first return at t = 1/gcd(m, n) with displacement the primitive vector; Q(g m', g n') = g^2 Q(m', n'); intersection number |det(v, w)|; Binet: ||F_k phi|| = phi^-k and |F_k phi^-k - 1/sqrt 5| = phi^-2k / sqrt 5.",
+ "number": 20,
+ "numerical_result": "0 winding failures over 168 classes; 0 intersection failures over 120 pairs; 229 lattice points within R = 20 (box count 229, Gauss estimate 225.70); primitive fraction 0.6228 (asymptotic 6/pi^2 = 0.6079); golden gaps / phi^-k >= 1.000000; at k = 22 the exact residual |q gap - 1/sqrt 5| is 2.85e-10, while the binary64 value deviates by 3.06e-08 (float cancellation, within its rounding bound).",
+ "observation_model": "No physical observation: exact or floating-point computation on declared mathematical objects.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "producer": "ciw.lab.flat_torus_topology",
+  "provider": {
+   "dirty": false,
+   "entry_points": [
+    "flat_torus.fold.fold_to_fundamental_domain",
+    "flat_torus.lengths.loop_length",
+    "flat_torus.trajectories.trace_closed_geodesic",
+    "flat_torus.lattice.normalized_lattice"
+   ],
+   "executed": true,
+   "interpreter": "<ftr-python>",
+   "numpy": "2.4.3",
+   "python": "3.12.3",
+   "repository": "giasonpooni/Flat-Torus-Geodesic-Reference",
+   "revision": "dc918562cd9e351a65475d29f46963c9f2fd7db8",
+   "source_tree": "1f082c6b443f2e301ac5889122912f26968ae756"
+  },
+  "python": "3.12.3",
+  "requirement_probes": {
+   "module:mpmath": true
+  },
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/flat_torus_topology.py": "4d8cf2437759501a1b9fa5ee0d8abfac43345ebee378c6ad08233e9155d4b184",
+   "src/ciw/lab/flat_torus_topology_lattice.py": "15a33fcd29591e43dec16fa3b9ad26d6b6b86846872e9e6bf815508fb0dade63",
+   "src/ciw/lab/flat_torus_topology_provider.py": "30fa38e51a20bc8d01beea0e5c44da69f22d7059c04c92c1fea520e5cf6f8806"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T023: compute heading sensitivity of closure across all starting headings",
+ "report_id": "sha256:2c73387fb8724f1e595d5e7cb26b52d9a97246ff223ab442b9bb332a98cd1f86",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "flat-torus-topology",
+ "state": "completed",
+ "task_id": "T020",
+ "tests_passed": [
+  "check: Every winding with |m|, |n| <= 6 first returns to its start at t = 1/gcd, displaced by its primitive vector after (|m| + |n|)/gcd edge crossings, and returns gcd times by t = 1 (a gcd-fold cover of the primitive loop) vs measured first-return time, displacement, return count and crossings against prediction (mismatching classes)",
+  "check: For all 120 pairs of the 16 primitive classes with 0 <= m <= 3, |n| <= 3 the transverse intersections number |det(v, w)| vs intersection count mismatches (exact rational solve)",
+  "check: For all 120 pairs of the 16 primitive classes with 0 <= m <= 3, |n| <= 3 the transverse intersections number |det(v, w)| vs pairs enumerated minus C(classes, 2)",
+  "check: The lattice-point count within radius R (including the origin, and its primitive part) equals a brute-force count over a box proven to contain the disk vs row-scan minus box count (all points)",
+  "check: The lattice-point count within radius R (including the origin, and its primitive part) equals a brute-force count over a box proven to contain the disk vs row-scan minus box count (primitive points)",
+  "check: The golden-slope geodesic has positive return gaps phi^-k at Fibonacci returns, with q * gap -> 1/sqrt 5 vs binary64 gap relative to phi^-k",
+  "check: The golden-slope geodesic has positive return gaps phi^-k at Fibonacci returns, with q * gap -> 1/sqrt 5 vs smallest gap / phi^-k (a closure would give 0)",
+  "check: The golden-slope geodesic has positive return gaps phi^-k at Fibonacci returns, with q * gap -> 1/sqrt 5 vs |q gap - 1/sqrt 5| minus (phi^-2k / sqrt 5 + binary64 rounding bound)",
+  "independent: The golden-slope geodesic has positive return gaps phi^-k at Fibonacci returns, with q * gap -> 1/sqrt 5 vs mpmath",
+  "check: A binary64 heading slope is rational, so a float simulation cannot represent a non-closing direction vs denominator of Fraction(float(phi)) is a power of two at most 2^52 (0 = yes)",
+  "check: Closed-geodesic lengths |m w1 + n w2|, edge-crossing counts and unit area agree with the pinned FTR loop_length, trace_closed_geodesic and normalized_lattice vs crossing-count mismatches or unclosed traces",
+  "check: Closed-geodesic lengths |m w1 + n w2|, edge-crossing counts and unit area agree with the pinned FTR loop_length, trace_closed_geodesic and normalized_lattice vs FTR area-one normalization",
+  "independent: Closed-geodesic lengths |m w1 + n w2|, edge-crossing counts and unit area agree with the pinned FTR loop_length, trace_closed_geodesic and normalized_lattice vs Flat-Torus-Geodesic-Reference@dc918562cd9e",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_t020_winding_classification",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_winding_flow_and_intersections",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_provider_output_is_refused_when_unreadable_or_incomplete",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_ftr_provider_agreement",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+ ],
+ "tests_skipped": [],
+ "title": "Classify geodesics by winding vector.",
+ "uncertainty": "Winding results exact. Golden gaps: binary64 relative error <= 1e-6 for q <= 17711 (cancellation grows like q * eps / phi^-k); the deviation of binary64 q * gap from 1/sqrt 5 is float error, not a measurement of the convergence rate, which is exact (Binet).",
+ "unresolved_assumptions": [
+  "Non-closure of irrational directions is a theorem (irrationality), not something a finite computation establishes; the numerical gaps only illustrate it.",
+  "Primitive fraction approaches 6/pi^2 only asymptotically; no rate is claimed.",
+  "The pinned FTR comparison is optional (bind --provider ftr=<checkout> --provider ftr-python=<Python 3.12 interpreter>); its finding records whether it ran."
+ ]
+}

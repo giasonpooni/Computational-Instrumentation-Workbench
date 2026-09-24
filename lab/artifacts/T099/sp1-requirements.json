@@ -1,0 +1,44 @@
+{
+ "attempted": false,
+ "probes": {
+  "protoc": false,
+  "sp1_bound": false,
+  "zk_manifest": true
+ },
+ "requirements": {
+  "command": "cargo +1.94.0 build --release --locked --manifest-path <scr>/zk/Cargo.toml --target-dir <proof-target> -p sp1-adapter --bin sp1-host",
+  "gate": "scripts/check_proved_heat.py via .github/workflows/proved-heat.yml",
+  "guest_recipe": {
+   "identity": "6e5d1687bcc55243d712553a2b7768b6c587a76418bb48a7a2c44224470d423d",
+   "path": "zk/recipes/sp1-heat.recipe",
+   "verify": "execution.build.verify_build(recipe, <guest sha256>, repo_root=<scr>)"
+  },
+  "guest_sha256": "a14e3750da7e221d31842bd6cf983fcc8c0f530b2811537e2a9a9fe803dacf82",
+  "network": "crates.io and git dependencies (the zk workspace is not --offline), github.com clones of SCR and SP1, and the github.com release download of the Succinct compiler archive",
+  "resources": {
+   "available_memory_bytes_at_least": 7516192768,
+   "free_disk_bytes_at_least": 21474836480
+  },
+  "source": ".github/workflows/proved-heat.yml",
+  "sp1_checkout": {
+   "path": "<scr>/../notationsystems/SP1-zero-knowledge-virtual-machine",
+   "repository": "https://github.com/succinctlabs/sp1.git",
+   "revision": "b38b61209e45e969289e70d5cf79dc763460bc41",
+   "tree": "7deca3aced8d8eb84dfcede98285a192c862ea4c"
+  },
+  "succinct_compiler_archive": {
+   "install": "tar -xzf <archive> -C <dir>; rustup toolchain link succinct <dir>; rustc +succinct -vV",
+   "sha256": "12c94435d41bfe4e20131bbcce40b35abd32270ad792befc653af4e3fabc192f",
+   "url": "https://github.com/succinctlabs/rust/releases/download/succinct-1.94.0-64bit/rust-toolchain-x86_64-unknown-linux-gnu.tar.gz"
+  },
+  "system_packages": [
+   "build-essential",
+   "clang",
+   "libclang-dev",
+   "libssl-dev",
+   "pkg-config",
+   "protobuf-compiler"
+  ],
+  "toolchain": "rustup toolchain 1.94.0 (minimal profile) plus the linked succinct toolchain"
+ }
+}

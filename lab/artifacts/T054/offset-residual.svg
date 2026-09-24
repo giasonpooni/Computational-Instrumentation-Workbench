@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420" font-family="sans-serif" font-size="11">
+<rect width="640" height="420" fill="#ffffff"/>
+<text x="78" y="22" font-size="13" font-weight="bold">Clock offset: first-order residual</text>
+<rect x="78" y="40" width="392" height="322" fill="none" stroke="#333"/>
+<line x1="78.00" y1="40" x2="78.00" y2="362" stroke="#e5e7eb"/>
+<text x="78.00" y="378" text-anchor="middle">1e-4</text>
+<line x1="274.00" y1="40" x2="274.00" y2="362" stroke="#e5e7eb"/>
+<text x="274.00" y="378" text-anchor="middle">1e-3</text>
+<line x1="470.00" y1="40" x2="470.00" y2="362" stroke="#e5e7eb"/>
+<text x="470.00" y="378" text-anchor="middle">1e-2</text>
+<line x1="78" y1="296.30" x2="470" y2="296.30" stroke="#e5e7eb"/>
+<text x="72" y="300.30" text-anchor="end">1e-7</text>
+<line x1="78" y1="221.81" x2="470" y2="221.81" stroke="#e5e7eb"/>
+<text x="72" y="225.81" text-anchor="end">1e-6</text>
+<line x1="78" y1="147.32" x2="470" y2="147.32" stroke="#e5e7eb"/>
+<text x="72" y="151.32" text-anchor="end">1e-5</text>
+<line x1="78" y1="72.84" x2="470" y2="72.84" stroke="#e5e7eb"/>
+<text x="72" y="76.84" text-anchor="end">1e-4</text>
+<text x="274.00" y="406" text-anchor="middle">offset delta (s)</text>
+<text x="16" y="201.00" text-anchor="middle" transform="rotate(-90 16 201.00)">position residual (m)</text>
+<path d="M78.00,350.07 L143.33,300.42 L208.67,250.76 L274.00,201.09 L339.33,151.42 L404.67,101.74 L470.00,52.05" fill="none" stroke="#1f5fa8" stroke-width="1.8"/>
+<circle cx="78.00" cy="350.07" r="2.6" fill="#1f5fa8"/>
+<circle cx="143.33" cy="300.42" r="2.6" fill="#1f5fa8"/>
+<circle cx="208.67" cy="250.76" r="2.6" fill="#1f5fa8"/>
+<circle cx="274.00" cy="201.09" r="2.6" fill="#1f5fa8"/>
+<circle cx="339.33" cy="151.42" r="2.6" fill="#1f5fa8"/>
+<circle cx="404.67" cy="101.74" r="2.6" fill="#1f5fa8"/>
+<circle cx="470.00" cy="52.05" r="2.6" fill="#1f5fa8"/>
+<line x1="482" y1="52" x2="502" y2="52" stroke="#1f5fa8" stroke-width="2"/>
+<text x="508" y="56">max |e + v delta|</text>
+<path d="M78.00,349.87 L143.33,300.21 L208.67,250.56 L274.00,200.90 L339.33,151.24 L404.67,101.58 L470.00,51.93" fill="none" stroke="#c2410c" stroke-width="1.8"/>
+<circle cx="78.00" cy="349.87" r="2.6" fill="#c2410c"/>
+<circle cx="143.33" cy="300.21" r="2.6" fill="#c2410c"/>
+<circle cx="208.67" cy="250.56" r="2.6" fill="#c2410c"/>
+<circle cx="274.00" cy="200.90" r="2.6" fill="#c2410c"/>
+<circle cx="339.33" cy="151.24" r="2.6" fill="#c2410c"/>
+<circle cx="404.67" cy="101.58" r="2.6" fill="#c2410c"/>
+<circle cx="470.00" cy="51.93" r="2.6" fill="#c2410c"/>
+<line x1="482" y1="70" x2="502" y2="70" stroke="#c2410c" stroke-width="2"/>
+<text x="508" y="74">a_max delta^2 / 2</text>
+</svg>

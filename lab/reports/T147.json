@@ -1,0 +1,363 @@
+{
+ "changed_files": [
+  "src/ciw/lab/implementation_targets.py",
+  "src/ciw/lab/implementation_targets_kernels.py",
+  "docs/lab/IMPLEMENTATION_TARGETS.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 2,
+   "numerically_verified": 5,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Bitwise policy flags reordering; bound policy accepts it; float32 fails the float64 policy and passes its own; faults larger than the policy bound plus the candidate's own deviation are detected; faults up to about the bound can escape.",
+ "experiment": "Compute the dot products in four orders/precisions, compare with the harness under each policy, and drop each partial product in turn from the float64 and float32 candidates.",
+ "failure_modes_checked": [
+  "reduction reordering",
+  "precision reduction (float32)",
+  "every single dropped partial product",
+  "shape mismatch and nonfinite outputs (refused by the harness)"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "CPU and GPU outputs agree under the tolerance policy on GPU hardware",
+   "domain": "numerical",
+   "evidence_status": "not_established",
+   "expected_not_established": true,
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 123.0,
+      "passed": true,
+      "reference": "rows differing bitwise (sequential vs 32-lane blocked)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     }
+    ],
+    "generator": {
+     "name": "PCG64 128x1024 uniform batched dot products",
+     "seed": 147
+    }
+   },
+   "claim": "Bitwise policy detects reduction-order differences between float64 CPU orders",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": "rows of 128",
+   "value": 123
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 0.0017336060475265365,
+      "passed": true,
+      "reference": "max |difference|/bound, sequential vs blocked and pairwise",
+      "reference_kind": "analytic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "le",
+      "observed": 0.012959321146328157,
+      "passed": true,
+      "reference": "max |output - exact|/bound over all orders",
+      "reference_kind": "analytic",
+      "tolerance": 1.0
+     }
+    ]
+   },
+   "claim": "Float64 reduction-order differences lie within the analytic error-bound policy",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "worst-case bound gamma_k sum|a_j x_j| per output; the ratio is at most 1 by construction of the bound",
+    "kind": "truncation_bound",
+    "value": 1.0
+   },
+   "unit": "fraction of the policy bound",
+   "value": 0.0017336060475265365
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 128.0,
+      "passed": true,
+      "reference": "rows violating the float64 policy",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "le",
+      "observed": 0.008739922233413161,
+      "passed": true,
+      "reference": "max |difference|/bound under the float32 policy",
+      "reference_kind": "analytic",
+      "tolerance": 1.0
+     }
+    ]
+   },
+   "claim": "Float32 results violate the float64 policy and satisfy the float32 policy",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "float32 bound with inputs rounded to float32 (depth + 2 roundings)",
+    "kind": "truncation_bound",
+    "value": 1.0
+   },
+   "unit": null,
+   "value": {
+    "max_ratio_under_f32_policy": 0.008739922233413161,
+    "violations_under_f64_policy": 128
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "float64 policy: faults above bound + |candidate - reference| left undetected",
+      "reference_kind": "analytic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "float32 policy: faults above bound + |candidate - reference| left undetected",
+      "reference_kind": "analytic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "float64 policy: undetected single dropped products (all 131072)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Dropped partial products larger than the policy bound plus the candidate's deviation from the reference are detected under both policies",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": "faults",
+   "value": {
+    "float32": {
+     "faults": 131072,
+     "guarantee_violations": 0,
+     "undetected": 708,
+     "undetected_above_bound": 1
+    },
+    "float64": {
+     "faults": 131072,
+     "guarantee_violations": 0,
+     "undetected": 0,
+     "undetected_above_bound": 0
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 708.0,
+      "passed": true,
+      "reference": "float32 policy: undetected single dropped products",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "le",
+      "observed": 1.0001610045362923,
+      "passed": true,
+      "reference": "float32 policy: max undetected |p| / row bound <= 1 + max (|candidate - reference| + rounding) / row bound",
+      "reference_kind": "analytic",
+      "tolerance": 1.008739922269325
+     }
+    ]
+   },
+   "claim": "The float32 policy misses dropped partial products up to about its bound",
+   "counterexample": {
+    "statement": "The float32 tolerance policy detects every dropped partial product larger than its row bound",
+    "witness": {
+     "above_bound": {
+      "column": 538,
+      "magnitude": 0.0005776939797215164,
+      "ratio": 1.0001610045362923,
+      "row": 14,
+      "row_tolerance": 0.0005776009833430312
+     },
+     "largest_undetected": {
+      "column": 117,
+      "magnitude": 0.000589098664931953,
+      "ratio": 0.992232575276228,
+      "row": 109,
+      "row_tolerance": 0.0005937102647209033
+     }
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 1e-09
+   },
+   "uncertainty": {
+    "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "above_bound_witness": {
+     "column": 538,
+     "magnitude": 0.0005776939797215164,
+     "ratio": 1.0001610045362923,
+     "row": 14,
+     "row_tolerance": 0.0005776009833430312
+    },
+    "faults": 131072,
+    "largest_undetected": {
+     "column": 117,
+     "magnitude": 0.000589098664931953,
+     "ratio": 0.992232575276228,
+     "row": 109,
+     "row_tolerance": 0.0005937102647209033
+    },
+    "max_undetected_ratio": 1.0001610045362923,
+    "undetected": 708,
+    "undetected_above_bound": 1
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "GPU/CPU agreement establishes industrial readiness",
+   "domain": "industrial_readiness",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 2539,
+   "path": "artifacts/T147/comparison-summary.json",
+   "sha256": "567f088f6700750f7eef382e7c28c1609ed43aa277579b6063e9f9204cd89b03"
+  },
+  {
+   "bytes": 8083,
+   "path": "artifacts/T147/difference-over-bound.svg",
+   "sha256": "47199e1409b8e3a3993c9b1bc7b66c25f58027d10ee2c5e38a903e831d8b3764"
+  }
+ ],
+ "hypothesis": "A comparison harness with an analytic tolerance policy separates legitimate reduction-order and precision differences from faults larger than the policy bound plus the candidate's own deviation; faults up to about the bound can escape. Exercised CPU-against-CPU because no GPU is present.",
+ "input_data": [
+  "128x1024 uniform[-1,1) matrix and vector, PCG64(147)",
+  "orders: sequential, pairwise tree, 32-lane blocked (sequential lanes then tree); precisions float64 and float32",
+  "exact dot products by TwoProduct + math.fsum",
+  "all 131072 single dropped products per policy"
+ ],
+ "mathematical_model": "For a sum of terms each passing through k roundings, |computed - exact| <= gamma_k * sum|a_j x_j| with gamma_k = k u/(1 - k u), u = 2^-53 (float64) or 2^-24 (float32, inputs rounded). The policy tolerance for two outputs is the sum of their bounds; bitwise mode compares bit patterns. A dropped term p is detected when |p| > tolerance + |candidate - reference| (triangle inequality); smaller faults may escape.",
+ "number": 147,
+ "numerical_result": "123/128 rows differ bitwise between float64 orders; max difference/bound 0.00173; float32 violates the float64 policy on 128 rows and stays at 0.00874 of its own bound; single dropped products undetected: 0/131072 (float64 policy), 708/131072 (float32 policy, largest missed |a_j x_j| 0.000589 against row tolerance 0.000594; undetected above the row bound: 0 (float64), 1 (float32, ratio 1.00016)). GPU present: False (no GPU kernel was run).",
+ "observation_model": "Elementwise absolute differences, bitwise equality and ratios to the policy bound.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "requirement_probes": {
+   "hardware:nvidia-gpu": false
+  },
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/implementation_targets.py": "4e27c12d31365590b7fb82d98b8d02e1668c7b8e73b03f71ef270eca9fcf6eea",
+   "src/ciw/lab/implementation_targets_kernels.py": "7da2c27fa79171f72aa553b7bfcb62041c5a13dd146735979820f410a3a7c3cd"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "Run T147 on a CUDA host (hardware:nvidia-gpu) with the same data and policy",
+ "report_id": "sha256:a8039b2a05c81aeab5182e9fb20c2cdc79f57ff7a1bfa8413951ed9d65ac649e",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "implementation-targets",
+ "state": "partial",
+ "task_id": "T147",
+ "tests_passed": [
+  "check: Bitwise policy detects reduction-order differences between float64 CPU orders vs rows differing bitwise (sequential vs 32-lane blocked)",
+  "check: Float64 reduction-order differences lie within the analytic error-bound policy vs max |difference|/bound, sequential vs blocked and pairwise",
+  "check: Float64 reduction-order differences lie within the analytic error-bound policy vs max |output - exact|/bound over all orders",
+  "check: Float32 results violate the float64 policy and satisfy the float32 policy vs rows violating the float64 policy",
+  "check: Float32 results violate the float64 policy and satisfy the float32 policy vs max |difference|/bound under the float32 policy",
+  "check: Dropped partial products larger than the policy bound plus the candidate's deviation from the reference are detected under both policies vs float64 policy: faults above bound + |candidate - reference| left undetected",
+  "check: Dropped partial products larger than the policy bound plus the candidate's deviation from the reference are detected under both policies vs float32 policy: faults above bound + |candidate - reference| left undetected",
+  "check: Dropped partial products larger than the policy bound plus the candidate's deviation from the reference are detected under both policies vs float64 policy: undetected single dropped products (all 131072)",
+  "check: The float32 policy misses dropped partial products up to about its bound vs float32 policy: undetected single dropped products",
+  "check: The float32 policy misses dropped partial products up to about its bound vs float32 policy: max undetected |p| / row bound <= 1 + max (|candidate - reference| + rounding) / row bound",
+  "pytest: tests/test_lab_implementation_targets.py::test_t147_harness_detects_differences"
+ ],
+ "tests_skipped": [],
+ "title": "Compare CPU and GPU outputs.",
+ "uncertainty": "Bounds are worst-case (not probabilistic), so typical ratios are far below one; a worst-case policy can miss faults up to about its bound (the bound plus the candidate's own deviation); the harness has not seen GPU fused multiply-add or atomics ordering.",
+ "unresolved_assumptions": [
+  "GPU reductions may use FMA and tree shapes not modelled by the 32-lane order",
+  "Only single dropped products were injected; other fault classes (duplicated terms, wrong operands) have their own detection limits",
+  "No GPU hardware or driver was exercised"
+ ]
+}

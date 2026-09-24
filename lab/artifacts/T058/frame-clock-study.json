@@ -1,0 +1,221 @@
+{
+ "chord_records_carried_unchanged": true,
+ "combined": {
+  "clock_basis": "acquisition",
+  "clock_id": "clock:tracker",
+  "difference": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "dt_s": 0.015625,
+  "epoch": "epoch:run-0",
+  "frame_id": "tracker:room",
+  "inputs": [
+   "sha256:9664e80022a7394760a046e39a94386194b7d40574187a818ebdd42cb9762baa",
+   "sha256:ea30d6830b9d5b2435e871d69ba8c13feb5810c167c3f1296f13b37804dfdc4d"
+  ],
+  "mode": "tracker_measurement"
+ },
+ "distance_change": 8.881784197001252e-16,
+ "dt_gap": 0.0,
+ "exact_gap": 0.0,
+ "final_record": {
+  "calibration_ref": "calibration:declared-synthetic",
+  "clock_basis": "acquisition",
+  "clock_id": "clock:tracker",
+  "derived_from": [],
+  "epoch": "epoch:run-0",
+  "frame_id": "tracker:room",
+  "latency_s": 0.0078125,
+  "mappings": [
+   "clock:sha256:7db6a99e5cc35e99570feba8a347f535b7ad510611f6b5a05b6d8d3cdbac3807",
+   "clock:sha256:a65c278c3ae7f757a563ec806782c4aba432682bce3c0e3ac8bc82bfaf6caa0a"
+  ],
+  "mode": "tracker_measurement",
+  "raw_ref": "raw:tracker_measurement:0",
+  "sequence": 1,
+  "surface_model": null,
+  "time_s": 0.5078125,
+  "unit": "m",
+  "value": [
+   0.125,
+   -0.25,
+   0.625
+  ]
+ },
+ "identity_recorded": true,
+ "mapped_records": [
+  {
+   "calibration_ref": "calibration:declared-synthetic",
+   "clock_basis": "arrival",
+   "clock_id": "clock:daq",
+   "derived_from": [],
+   "epoch": "epoch:run-0",
+   "frame_id": "tracker:cell",
+   "latency_s": 0.0078125,
+   "mappings": [
+    "frame:sha256:0d71c6d9e7e138fc6eb5b49dc81ecd09a261c4da9a12e554b35153da363b3c5b"
+   ],
+   "mode": "tracker_measurement",
+   "raw_ref": "raw:tracker_measurement:0",
+   "sequence": 0,
+   "surface_model": null,
+   "time_s": 1.0,
+   "unit": "m",
+   "value": [
+    0.5,
+    -0.375,
+    1.625
+   ]
+  },
+  {
+   "calibration_ref": "calibration:declared-synthetic",
+   "clock_basis": "arrival",
+   "clock_id": "clock:daq",
+   "derived_from": [],
+   "epoch": "epoch:run-0",
+   "frame_id": "tracker:cell",
+   "latency_s": 0.0078125,
+   "mappings": [
+    "frame:sha256:0d71c6d9e7e138fc6eb5b49dc81ecd09a261c4da9a12e554b35153da363b3c5b"
+   ],
+   "mode": "tracker_measurement",
+   "raw_ref": "raw:tracker_measurement:0",
+   "sequence": 1,
+   "surface_model": null,
+   "time_s": 1.0,
+   "unit": "m",
+   "value": [
+    -2.0,
+    1.0,
+    0.25
+   ]
+  },
+  {
+   "calibration_ref": "calibration:declared-synthetic",
+   "clock_basis": "arrival",
+   "clock_id": "clock:daq",
+   "derived_from": [],
+   "epoch": "epoch:run-0",
+   "frame_id": "tracker:cell",
+   "latency_s": 0.0078125,
+   "mappings": [
+    "frame:sha256:0d71c6d9e7e138fc6eb5b49dc81ecd09a261c4da9a12e554b35153da363b3c5b"
+   ],
+   "mode": "tracker_measurement",
+   "raw_ref": "raw:tracker_measurement:0",
+   "sequence": 2,
+   "surface_model": null,
+   "time_s": 1.0,
+   "unit": "m",
+   "value": [
+    -0.25,
+    -3.5,
+    1.0
+   ]
+  }
+ ],
+ "mappings": {
+  "arrival_to_acquisition": {
+   "kind": "clock",
+   "offset_s": -0.0078125,
+   "rate": 1.0,
+   "reference": "declared latency",
+   "source": [
+    "clock:daq",
+    "epoch:boot-7",
+    "arrival"
+   ],
+   "target": [
+    "clock:daq",
+    "epoch:boot-7",
+    "acquisition"
+   ]
+  },
+  "daq_to_tracker": {
+   "kind": "clock",
+   "offset_s": -1.5,
+   "rate": 1.0,
+   "reference": "declared synchronization",
+   "source": [
+    "clock:daq",
+    "epoch:boot-7",
+    "acquisition"
+   ],
+   "target": [
+    "clock:tracker",
+    "epoch:run-0",
+    "acquisition"
+   ]
+  },
+  "exact_frame": {
+   "calibration_ref": "calibration:declared-synthetic",
+   "kind": "frame",
+   "rotation": [
+    [
+     0.0,
+     -1.0,
+     0.0
+    ],
+    [
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "source": "tracker:room",
+   "target": "tracker:cell",
+   "translation": [
+    0.25,
+    -0.5,
+    1.0
+   ]
+  },
+  "general_frame": {
+   "calibration_ref": "calibration:declared-synthetic",
+   "kind": "frame",
+   "rotation": [
+    [
+     0.7909708331417675,
+     -0.3772211664439025,
+     0.48173574987301876
+    ],
+    [
+     0.48173574987301876,
+     0.8693567707136047,
+     -0.1102246456501141
+    ],
+    [
+     -0.3772211664439025,
+     0.31925381250834656,
+     0.8693567707136047
+    ]
+   ],
+   "source": "tracker:room",
+   "target": "tracker:cell",
+   "translation": [
+    0.1,
+    -0.2,
+    0.3
+   ]
+  }
+ },
+ "refusals": {
+  "clock_basis_mismatch": "clock_basis_mismatch",
+  "clock_mismatch": "clock_mismatch",
+  "epoch_mismatch": "epoch_mismatch",
+  "epoch_mismatch_mapping": "epoch_mismatch",
+  "frame_kind_mismatch": "frame_kind_mismatch",
+  "frame_mismatch": "frame_mismatch",
+  "mapping_not_applicable": "mapping_not_applicable"
+ },
+ "round_trip_error": 4.440892098500626e-16,
+ "rounding_bound": 1.0658141036401503e-14,
+ "time_gap": 0.0
+}

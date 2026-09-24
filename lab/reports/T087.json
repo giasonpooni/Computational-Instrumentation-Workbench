@@ -1,0 +1,237 @@
+{
+ "changed_files": [
+  "src/ciw/lab/exchange_provenance.py",
+  "src/ciw/lab/exchange_provenance_common.py",
+  "tests/test_lab_exchange_provenance.py",
+  "docs/lab/EXCHANGE_PROVENANCE.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 2,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Every predicted refusal is observed; the injected verification_method is returned by result.get after reopen; the harness controls hold.",
+ "experiment": "Edit the saved workspace (verification method), recompute none, local or all unkeyed digests, write it and reopen with Session.from_workspace. Rows retained as verification-method-mutations.json/.md.",
+ "failure_modes_checked": [
+  "receipt-method.naive: method set to independent_reimplementation",
+  "receipt-method.resealed: forged method; verification_id and replay_id recomputed",
+  "bundle-method.resealed: replay bundle's own verification method forged; verification_id recomputed",
+  "oscillator-method.injected: verification_method field injected into a sealed result; resealed"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "Invalid retained energy replay receipt",
+      "observed_refusal": "Invalid retained energy replay receipt",
+      "passed": true,
+      "reference": "receipt-method.naive (none recompute): refusal on reopen",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "Retained energy analysis binding differs",
+      "observed_refusal": "Retained energy analysis binding differs",
+      "passed": true,
+      "reference": "receipt-method.resealed (local recompute): refusal on reopen",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "Retained energy analysis binding differs",
+      "observed_refusal": "Retained energy analysis binding differs",
+      "passed": true,
+      "reference": "bundle-method.resealed (local recompute): refusal on reopen",
+      "reference_kind": "refusal"
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "harness control: the forger's recomputation of the unedited workspace reproduces every CIW digest",
+      "reference_kind": "cross_implementation",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "harness control: the unedited saved workspace reopens",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Verification method forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": [
+    {
+     "kind": "workspace",
+     "mutant": "receipt-method.naive",
+     "observed": "Invalid retained energy replay receipt",
+     "recompute": "none"
+    },
+    {
+     "kind": "workspace",
+     "mutant": "receipt-method.resealed",
+     "observed": "Retained energy analysis binding differs",
+     "recompute": "local"
+    },
+    {
+     "kind": "workspace",
+     "mutant": "bundle-method.resealed",
+     "observed": "Retained energy analysis binding differs",
+     "recompute": "local"
+    }
+   ]
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "oscillator-method.injected: accepted (1 = accepted)",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     }
+    ]
+   },
+   "claim": "Surviving mutant oscillator-method.injected: a sealed result carrying an injected verification_method reopens",
+   "counterexample": {
+    "statement": "Sealed operation records refuse verification-method claims outside their schema",
+    "witness": {
+     "description": "verification_method field injected into a sealed result; resealed",
+     "name": "oscillator-method.injected",
+     "observed": "accepted",
+     "post_reopen": {
+      "result.get": {
+       "verification_method": "independent_reimplementation",
+       "verification_status": "not_verified"
+      }
+     },
+     "recompute": "local",
+     "target": "oscillator result"
+    }
+   },
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "mutant": "oscillator-method.injected",
+    "observed": "accepted"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": "Every CIW seal and identity on these paths (record_digest, log_digest, bundle_digest, verification_id, replay_id, result_id, source_id) is an unkeyed SHA-256 over public canonical JSON or raw bytes, and no keyed signature or MAC is retained. Authentication is therefore not established; the listed surviving mutants are concrete forgeries accepted on reopen."
+   },
+   "claim": "Retained workspace records are authenticated: a holder without a secret cannot produce a forged record that reopens",
+   "domain": "provenance",
+   "evidence_status": "not_established",
+   "expected_not_established": true,
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": null,
+   "unit": null,
+   "value": {
+    "surviving_mutants_in_this_task": [
+     "oscillator-method.injected"
+    ]
+   }
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 2327,
+   "path": "artifacts/T087/verification-method-mutations.json",
+   "sha256": "039b48baafef15370bba16e6720580d07f254fd8483b20dba56e26ee610cbb92"
+  },
+  {
+   "bytes": 845,
+   "path": "artifacts/T087/verification-method-mutations.md",
+   "sha256": "814626637513d363d014eb0a04f2bd7c704bc24cbb3fea66c3276a2b1a822552"
+  }
+ ],
+ "hypothesis": "Predicted kills: the three energy verification method edits, because reopen rebuilds the expected verification with the fixed method fresh_analysis_of_same_retained_measurement. Predicted survivor: oscillator-method.injected, because sealed oscillator records do not refuse extra keys and their seal is unkeyed.",
+ "input_data": [
+  "make_demo_run() damped-oscillator recording; statistics.v1 on channel v over [1, 2] s, twice, plus one legacy analysis.stats result",
+  "examples/energy-accuracy/{baseline,reset}.json (origin synthetic_fixture): two original executions of baseline, one of reset, replays, and a separate session in the same process",
+  "Workspaces saved by Session.save_workspace and reopened by Session.from_workspace in temporary directories"
+ ],
+ "mathematical_model": "Each record seal or identity d = sha256(canon(record \\ d)) is unkeyed, so any holder can recompute d after an edit. Reopen kills a mutant only if some check compares the edited field with an independently recomputed, fixed or cross-referenced value; otherwise a consistent recomputation survives.",
+ "number": 87,
+ "numerical_result": "4 rows (4 workspace mutants, 0 pure-validator rows): 3 refused; 1 surviving forgery (oscillator-method.injected); kill/survive predictions matched 4/4; refusal messages matched their regression pins 3/3",
+ "observation_model": "No physical observation. The observed objects are CIW records (sessions, executions, results, bundles, receipts, saved workspace JSON) produced offline by the unmodified CIW code; the energy logs are synthetic fixtures and no hardware was sampled.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/exchange_provenance.py": "5cc267c7777c9b434b8747b0cc841ac85313e1cfb6ff4c429ee93aa5ddbb645b",
+   "src/ciw/lab/exchange_provenance_common.py": "22028c4008079fba23c5e807de0104ba1a0014027e1d40a9209881cdf232f486"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T088 (mutate independence flag)",
+ "report_id": "sha256:9c56709a369d5571ef41115d1295196a0916ed4f832a380e83863338aff083f0",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "exchange-provenance",
+ "state": "completed",
+ "task_id": "T087",
+ "tests_passed": [
+  "check: Verification method forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs receipt-method.naive (none recompute): refusal on reopen",
+  "check: Verification method forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs receipt-method.resealed (local recompute): refusal on reopen",
+  "check: Verification method forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs bundle-method.resealed (local recompute): refusal on reopen",
+  "check: Verification method forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs harness control: the forger's recomputation of the unedited workspace reproduces every CIW digest",
+  "check: Verification method forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs harness control: the unedited saved workspace reopens",
+  "check: Surviving mutant oscillator-method.injected: a sealed result carrying an injected verification_method reopens vs oscillator-method.injected: accepted (1 = accepted)",
+  "pytest: tests/test_lab_exchange_provenance.py::test_verification_mutations"
+ ],
+ "tests_skipped": [],
+ "title": "Mutate verification method.",
+ "uncertainty": "Outcomes are exact (accepted or a refusal message). Only kill/survive is a prediction; refusal messages are regression pins recorded from observed runs. Survivors are demonstrated forgeries; kills show only that these particular edits are detected, not that every edit of this field is.",
+ "unresolved_assumptions": [
+  "The forger model recomputes only unkeyed SHA-256 digests with CIW's public canonicalization; no key exists to steal.",
+  "Whether a reader of a forged workspace would be misled depends on how the record is displayed; not assessed."
+ ]
+}

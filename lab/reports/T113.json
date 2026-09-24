@@ -1,0 +1,527 @@
+{
+ "changed_files": [
+  "src/ciw/lab/lyapunov.py",
+  "src/ciw/lab/lyapunov_reference.py",
+  "src/ciw/lab/lyapunov_provider.py",
+  "src/ciw/lab/lyapunov_research.py",
+  "docs/lab/LYAPUNOV.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 3,
+   "numerically_verified": 8,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Payloads carry only plant, certificate and numeric sample fields; host statuses are host-owned codes; forwarded codes equal the CIW transcription of the documented order; no window whose guard interval leaves the box is accepted; theta estimates lie within 3 standard errors of the synthetic truth.",
+ "experiment": "Run the adapter on every window, serialise the kernel payloads and search them for envelope metadata, evaluate every forwarded sample with PLSR, apply the host's window rule, and compare with the documented decision order.",
+ "failure_modes_checked": [
+  "metadata in the kernel payload",
+  "non-numeric or extra sample field",
+  "host status forwarded to the kernel",
+  "kernel accepts a host-owned code",
+  "near-bound point estimate accepted although its interval leaves the box",
+  "theta estimate inconsistent with its standard error"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "forwarded samples whose code differs from the CIW transcription of the documented order (same specification)",
+      "reference_kind": "analytic",
+      "tolerance": 0.0
+     }
+    ],
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "Forwarded samples receive the runtime codes predicted from the declared model",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact rational, integer or bitwise comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "estimate near bound theta 0.48": {
+     "estimate": "CERTIFIED_WITH_MARGIN",
+     "lower": "CERTIFIED_WITH_MARGIN",
+     "upper": "OUTSIDE_PARAMETER_BOX"
+    },
+    "estimate outside box theta 0.9": {
+     "estimate": "OUTSIDE_PARAMETER_BOX",
+     "lower": "OUTSIDE_PARAMETER_BOX",
+     "upper": "OUTSIDE_PARAMETER_BOX"
+    },
+    "nominal theta -0.3": {
+     "estimate": "CERTIFIED_WITH_MARGIN",
+     "lower": "CERTIFIED_WITH_MARGIN",
+     "upper": "CERTIFIED_WITH_MARGIN"
+    },
+    "nominal theta 0.1": {
+     "estimate": "CERTIFIED_WITH_MARGIN",
+     "lower": "CERTIFIED_WITH_MARGIN",
+     "upper": "CERTIFIED_WITH_MARGIN"
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "accepted windows whose three-standard-error interval leaves the box",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "near-bound windows (theta_hat inside, an interval end outside) accepted",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     }
+    ],
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "The host accepts a window only when the kernel certifies theta_hat and both interval ends, so the near-bound estimate is rejected",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact rational, integer or bitwise comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "accepted": {
+     "estimate near bound theta 0.48": false,
+     "estimate outside box theta 0.9": false,
+     "nominal theta -0.3": true,
+     "nominal theta 0.1": true
+    },
+    "near_bound_accepted": 0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "raises ValueError",
+      "observed_refusal": "raises ValueError",
+      "passed": true,
+      "reference": "require_status(CERTIFICATE_EXPIRED)",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "raises ValueError",
+      "observed_refusal": "raises ValueError",
+      "passed": true,
+      "reference": "require_status(INVALID_SENSOR_DATA)",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "raises ValueError",
+      "observed_refusal": "raises ValueError",
+      "passed": true,
+      "reference": "require_status(MODEL_MISMATCH)",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "raises ValueError",
+      "observed_refusal": "raises ValueError",
+      "passed": true,
+      "reference": "require_status(STALE_STATE)",
+      "reference_kind": "refusal"
+     }
+    ],
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "The kernel refuses every host-owned code the adapter emitted",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact rational, integer or bitwise comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "CERTIFICATE_EXPIRED": "raises ValueError",
+    "INVALID_SENSOR_DATA": "raises ValueError",
+    "MODEL_MISMATCH": "raises ValueError",
+    "STALE_STATE": "raises ValueError"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "envelope keys or strings found in serialised payloads",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "positive control: leaks flagged in a payload with a planted sensor id",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "samples with extra, missing or non-finite fields",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Kernel payloads built by the adapter carry only the declared model and numeric sample fields, and no envelope metadata",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact rational, integer or bitwise comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "malformed_samples": 0,
+    "metadata_leaks": [],
+    "payloads": 12
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "forwarded samples whose theta differs from theta_hat, theta_hat - 3 se or theta_hat + 3 se",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "positive control: forwarded windows with theta_hat inside the box and an interval end outside",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     }
+    ]
+   },
+   "claim": "The adapter forwards theta_hat with both ends of its three-standard-error interval, and a near-bound estimate yields an interval end outside the box",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact rational, integer or bitwise comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "forwarded_windows": 4,
+    "guard_errors": 0,
+    "near_bound_windows": [
+     "estimate near bound theta 0.48"
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "adapter statuses outside the host-owned list",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "windows both forwarded and given a host status",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Host statuses are decided in the adapter, are host-owned codes and are never forwarded",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact rational, integer or bitwise comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "certificate expired": "CERTIFICATE_EXPIRED",
+    "sensor dropout": "INVALID_SENSOR_DATA",
+    "stale window": "STALE_STATE",
+    "structural mismatch damping 3": "MODEL_MISMATCH"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "forwarded windows with |theta_hat - theta| > 3 se",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "name": "adapter_windows",
+     "seed": 1131
+    }
+   },
+   "claim": "EKF theta estimates of forwarded windows lie within three standard errors of the synthetic truth",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "largest EKF standard error of theta among forwarded windows",
+    "kind": "reference_error",
+    "value": 0.012095900651661289
+   },
+   "unit": null,
+   "value": {
+    "forwarded": 4,
+    "misses": 0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "vertices without an exactly negative definite decrease",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "The adapter's common P is exactly valid at both box vertices of the declared discrete map",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact rational, integer or bitwise comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "vertex_classes": [
+     "negative_definite",
+     "negative_definite"
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "The synthetic residual statistics describe a real encoder's performance",
+   "domain": "sensor_performance",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "The EKF standard error of theta covers the true parameter of a real axis at the stated rate",
+   "domain": "sensor_performance",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "The calibration referenced in the host envelope is valid",
+   "domain": "calibration",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 2887,
+   "path": "artifacts/T113/adapter-windows.json",
+   "sha256": "2bb9a168280d06aa96e9cb3dfc89bb24ebd0503e4ea69b4b3c1fa1d9846ba76e"
+  }
+ ],
+ "hypothesis": "A host-side adapter can turn filtered residual statistics into plsr-sample-v1 samples (a schema tag and numbers only) while sensor identity, units, calibration and timing stay in a host envelope; host-owned statuses are decided before the kernel and never reach it; forwarding theta_hat together with both ends of its three-standard-error interval keeps a near-bound point estimate from being accepted alone; and the kernel's codes on forwarded samples follow the declared model.",
+ "input_data": [
+  "Eight synthetic 4 s windows (PCG64 seeds 1131-1138): theta 0.1 and -0.3 (nominal), 0.48 (estimate near the bound), 0.9 (outside the box), damping 3 instead of 0.4 (structural mismatch), a stale window, a dropout (NaN), an expired certificate",
+  "Envelope metadata: sensor id, units, calibration reference and validity, filter, site"
+ ],
+ "mathematical_model": "Declared discrete map A(theta) = I + h [[0, 1], [-(4 + theta), -0.4]], h = 0.01 s, theta in [-0.5, 0.5], common P from the nominal discrete Lyapunov equation (exactly valid at both vertices, hence on the box by convexity). An EKF on (x, v, theta) yields x_hat, theta_hat, its standard error se and the innovation NIS; mean NIS above 1 + 6 sqrt(2/N) is MODEL_MISMATCH. The adapter forwards theta_hat and theta_hat +- 3 se; the host accepts a window only if the kernel certifies all three.",
+ "number": 113,
+ "numerical_result": "Windows: 8; forwarded ['nominal theta 0.1', 'nominal theta -0.3', 'estimate near bound theta 0.48', 'estimate outside box theta 0.9'] as 12 samples with kernel codes {'nominal theta 0.1': {'estimate': 'CERTIFIED_WITH_MARGIN', 'lower': 'CERTIFIED_WITH_MARGIN', 'upper': 'CERTIFIED_WITH_MARGIN'}, 'nominal theta -0.3': {'estimate': 'CERTIFIED_WITH_MARGIN', 'lower': 'CERTIFIED_WITH_MARGIN', 'upper': 'CERTIFIED_WITH_MARGIN'}, 'estimate near bound theta 0.48': {'estimate': 'CERTIFIED_WITH_MARGIN', 'lower': 'CERTIFIED_WITH_MARGIN', 'upper': 'OUTSIDE_PARAMETER_BOX'}, 'estimate outside box theta 0.9': {'estimate': 'OUTSIDE_PARAMETER_BOX', 'lower': 'OUTSIDE_PARAMETER_BOX', 'upper': 'OUTSIDE_PARAMETER_BOX'}}; host decisions {'nominal theta 0.1': True, 'nominal theta -0.3': True, 'estimate near bound theta 0.48': False, 'estimate outside box theta 0.9': False}; host statuses {'structural mismatch damping 3': 'MODEL_MISMATCH', 'stale window': 'STALE_STATE', 'sensor dropout': 'INVALID_SENSOR_DATA', 'certificate expired': 'CERTIFICATE_EXPIRED'}; metadata leaks 0; malformed samples 0; guard errors 0; theta estimate misses 0 (largest forwarded se 0.0121); kernel refusal of host codes {'CERTIFICATE_EXPIRED': 'raises ValueError', 'INVALID_SENSOR_DATA': 'raises ValueError', 'MODEL_MISMATCH': 'raises ValueError', 'STALE_STATE': 'raises ValueError'}.",
+ "observation_model": "Adapter outputs (samples or host status), serialised kernel payloads, PLSR codes for forwarded samples, the host's window decision, and PLSR's treatment of host-owned codes.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "provider": {
+   "commit": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+   "entry": "lyapunov.verdict / lyapunov.solve_lyapunov / lyapunov.decrease_resolution",
+   "files_pinned": 20,
+   "files_verified": 20,
+   "implementation": "Parameterized-Lyapunov-Stability-Runtime",
+   "numpy_version": "2.4.3",
+   "package_version": "0.1.0rc1",
+   "python_version": "3.12.3",
+   "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+   "role": "plsr-python",
+   "source_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7",
+   "verification": "package version and per-file sha256 checked in the subprocess before use"
+  },
+  "python": "3.12.3",
+  "requirement_probes": {
+   "provider:plsr-python": true
+  },
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/lyapunov.py": "58d6c7473f0a42002b57888de0ccfbbf73b571bbbabbf9ee81e0a05c734f2320",
+   "src/ciw/lab/lyapunov_provider.py": "da3465b48b5f5efc47bfe6ab8379cf2cf2bc23e4835dc7ff047252e77fa6ef17",
+   "src/ciw/lab/lyapunov_reference.py": "fa37ef453c23ad2bed2eab41132e72670e166b93eebd5fc9d67a4a89a7c92cca",
+   "src/ciw/lab/lyapunov_research.py": "528422e4137222e00fd93c63ac22a4bb326fe469030d347418427bac34907d0f"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T114: servo-axis pilot specification; then bind the adapter to acquired encoder data (hardware-gated) and check the coverage of the three-standard-error interval there.",
+ "report_id": "sha256:de5a6ddfe1ca34e8c642d7c271e328d39581a271eed77fa034ef47ef11ad5c5a",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "lyapunov",
+ "state": "completed",
+ "task_id": "T113",
+ "tests_passed": [
+  "check: Forwarded samples receive the runtime codes predicted from the declared model vs forwarded samples whose code differs from the CIW transcription of the documented order (same specification)",
+  "check: The host accepts a window only when the kernel certifies theta_hat and both interval ends, so the near-bound estimate is rejected vs accepted windows whose three-standard-error interval leaves the box",
+  "check: The host accepts a window only when the kernel certifies theta_hat and both interval ends, so the near-bound estimate is rejected vs near-bound windows (theta_hat inside, an interval end outside) accepted",
+  "check: The kernel refuses every host-owned code the adapter emitted vs require_status(CERTIFICATE_EXPIRED)",
+  "check: The kernel refuses every host-owned code the adapter emitted vs require_status(INVALID_SENSOR_DATA)",
+  "check: The kernel refuses every host-owned code the adapter emitted vs require_status(MODEL_MISMATCH)",
+  "check: The kernel refuses every host-owned code the adapter emitted vs require_status(STALE_STATE)",
+  "check: Kernel payloads built by the adapter carry only the declared model and numeric sample fields, and no envelope metadata vs envelope keys or strings found in serialised payloads",
+  "check: Kernel payloads built by the adapter carry only the declared model and numeric sample fields, and no envelope metadata vs positive control: leaks flagged in a payload with a planted sensor id",
+  "check: Kernel payloads built by the adapter carry only the declared model and numeric sample fields, and no envelope metadata vs samples with extra, missing or non-finite fields",
+  "check: The adapter forwards theta_hat with both ends of its three-standard-error interval, and a near-bound estimate yields an interval end outside the box vs forwarded samples whose theta differs from theta_hat, theta_hat - 3 se or theta_hat + 3 se",
+  "check: The adapter forwards theta_hat with both ends of its three-standard-error interval, and a near-bound estimate yields an interval end outside the box vs positive control: forwarded windows with theta_hat inside the box and an interval end outside",
+  "check: Host statuses are decided in the adapter, are host-owned codes and are never forwarded vs adapter statuses outside the host-owned list",
+  "check: Host statuses are decided in the adapter, are host-owned codes and are never forwarded vs windows both forwarded and given a host status",
+  "check: EKF theta estimates of forwarded windows lie within three standard errors of the synthetic truth vs forwarded windows with |theta_hat - theta| > 3 se",
+  "check: The adapter's common P is exactly valid at both box vertices of the declared discrete map vs vertices without an exactly negative definite decrease",
+  "pytest: tests/test_lab_lyapunov.py::test_t113_residual_adapter",
+  "pytest: tests/test_lab_lyapunov.py::test_adapter_keeps_metadata_outside",
+  "pytest: tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider"
+ ],
+ "tests_skipped": [],
+ "title": "Connect filtered residuals without putting sensors inside the kernel.",
+ "uncertainty": "Synthetic data with fixed seeds; the NIS band (6 standard deviations), the 3-se guard and the 3-se estimate test are illustrative thresholds, not validated detection or coverage rates.",
+ "unresolved_assumptions": [
+  "All data are synthetic; the EKF, noise levels and thresholds are illustrative, not tuned to a sensor.",
+  "The guard assumes the EKF standard error of theta is calibrated; its coverage for a real sensor is not established (sensor_performance finding).",
+  "Staleness and certificate validity use declared window times, not a real clock."
+ ]
+}

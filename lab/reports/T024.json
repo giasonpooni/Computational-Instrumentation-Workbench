@@ -1,0 +1,550 @@
+{
+ "changed_files": [
+  "src/ciw/lab/flat_torus_topology.py",
+  "src/ciw/lab/flat_torus_topology_routes.py",
+  "docs/lab/FLAT_TORUS_TOPOLOGY.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 1,
+   "not_established": 1,
+   "numerically_verified": 3,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Endpoint lies on a lift of q; Wronskian det Phi = 1; Clairaut rho^2 phi' conserved; batch and ciw.lab.jacobi amplifications agree; the route set does not change when the fan density doubles.",
+ "experiment": "Fan search for near-passes of every chart lift of q, one Newton seed per miss-distance minimum along each run of adjacent rays, batch Newton refinement, deduplication, re-integration of each route with ciw.lab.jacobi.transfer to L + horizon, conjugate points by Hermite zeros; the search is repeated at twice the fan density; optional scipy DOP853 integration of a field derived by sympy from the embedding.",
+ "failure_modes_checked": [
+  "duplicate routes merged (counted)",
+  "routes beyond the length budget discarded (counted)",
+  "censored margins (no conjugate point within the horizon) tied as one group",
+  "Newton divergence or singular Jacobian (counted)",
+  "fan density (route set unchanged at double density)"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 3.1479409772753954e-07,
+      "passed": true,
+      "reference": "endpoint residual to the lift of q",
+      "reference_kind": "invariant",
+      "tolerance": 1e-06
+     },
+     {
+      "comparison": "le",
+      "observed": 5.175479600438848e-09,
+      "passed": true,
+      "reference": "Wronskian drift",
+      "reference_kind": "invariant",
+      "tolerance": 1e-08
+     },
+     {
+      "comparison": "le",
+      "observed": 2.437871771121536e-08,
+      "passed": true,
+      "reference": "Clairaut integral drift",
+      "reference_kind": "invariant",
+      "tolerance": 1e-06
+     },
+     {
+      "comparison": "le",
+      "observed": 2.3565474506699406e-07,
+      "passed": true,
+      "reference": "batch RK4 vs ciw.lab.jacobi amplification",
+      "reference_kind": "cross_implementation",
+      "tolerance": 0.0001
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "routes where exactly one of ciw.lab.jacobi and scipy/sympy finds a conjugate point within the horizon",
+      "reference_kind": "high_precision",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "scipy solve_ivp runs that stopped before L + horizon",
+      "reference_kind": "high_precision",
+      "tolerance": 0.0
+     }
+    ],
+    "independent_check": {
+     "checker": {
+      "implementation": "scipy.integrate.solve_ivp (sympy-derived field)",
+      "revision": "scipy 1.16.2, sympy 1.14.0"
+     },
+     "comparison": "abs_le",
+     "observed": 5.5723424274845e-07,
+     "passed": true,
+     "producer": {
+      "implementation": "ciw.lab.flat_torus_topology",
+      "revision": "ciw 0.1.0"
+     },
+     "reference": "scipy DOP853 on a sympy-derived field (metric, Christoffel symbols, K and heading frame from the embedding): max of relative j_head(L) difference, conjugate-point difference and endpoint distance to the lift of q",
+     "reference_kind": "high_precision",
+     "tolerance": 1e-05
+    }
+   },
+   "claim": "Every fan-search route p -> q on Torus(2, 1) ends on a lift of q with the Wronskian and the Clairaut integral conserved to tolerance",
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "regression_tolerance": {
+    "abs": 1e-06,
+    "rel": 1e-05
+   },
+   "uncertainty": {
+    "basis": "max relative amplification difference against the batch RK4 search (and the scipy/sympy integration when available); RK4 step about 0.04 in ciw.lab.jacobi",
+    "kind": "reference_error",
+    "value": 2.4204352242225e-07
+   },
+   "unit": null,
+   "value": [
+    {
+     "amplification": 1.8341504196036555,
+     "focus_margin": 1.2453092693335792,
+     "heading": 0.7663176018658682,
+     "length": 5.846451377518235,
+     "lift": [
+      0,
+      0
+     ],
+     "margin_lower_bound": 8.03389917182778,
+     "passes_conjugate_point": false,
+     "targeting_condition": 0.5452115537045711
+    },
+    {
+     "amplification": 0.7874800587071611,
+     "focus_margin": 0.8596303653606387,
+     "heading": -0.6454341111971411,
+     "length": 5.978587028513689,
+     "lift": [
+      0,
+      0
+     ],
+     "margin_lower_bound": 8.011306618208344,
+     "passes_conjugate_point": false,
+     "targeting_condition": 1.2698734259274347
+    },
+    {
+     "amplification": 0.43742318141707476,
+     "focus_margin": -0.4571252038359548,
+     "heading": -0.17109411247473272,
+     "length": 5.9986429397023775,
+     "lift": [
+      0,
+      0
+     ],
+     "margin_lower_bound": 8.038181539201187,
+     "passes_conjugate_point": true,
+     "targeting_condition": 2.2861156940983403
+    },
+    {
+     "amplification": 35.84781929262236,
+     "focus_margin": null,
+     "heading": 1.328869465787598,
+     "length": 6.354490781532511,
+     "lift": [
+      0,
+      1
+     ],
+     "margin_lower_bound": 8.033035516276946,
+     "passes_conjugate_point": false,
+     "targeting_condition": 0.027895699647364724
+    },
+    {
+     "amplification": 35.211046168245595,
+     "focus_margin": null,
+     "heading": -1.3378920559001015,
+     "length": 7.716734395481508,
+     "lift": [
+      0,
+      -1
+     ],
+     "margin_lower_bound": 8.036599033636183,
+     "passes_conjugate_point": false,
+     "targeting_condition": 0.02840017860366304
+    },
+    {
+     "amplification": 197.17050094523458,
+     "focus_margin": null,
+     "heading": 1.9051503319669738,
+     "length": 8.328856292010393,
+     "lift": [
+      -1,
+      1
+     ],
+     "margin_lower_bound": 8.010048395665496,
+     "passes_conjugate_point": false,
+     "targeting_condition": 0.005071752595880236
+    },
+    {
+     "amplification": 134.4565701924939,
+     "focus_margin": 3.7491901176414206,
+     "heading": 1.939193626225253,
+     "length": 8.801556073972552,
+     "lift": [
+      -1,
+      0
+     ],
+     "margin_lower_bound": 8.005035162300828,
+     "passes_conjugate_point": false,
+     "targeting_condition": 0.007437345743449772
+    },
+    {
+     "amplification": 130.2187687552813,
+     "focus_margin": 4.3738486499286005,
+     "heading": 4.343446817194708,
+     "length": 8.988286391536853,
+     "lift": [
+      -1,
+      0
+     ],
+     "margin_lower_bound": 8.029535843106252,
+     "passes_conjugate_point": false,
+     "targeting_condition": 0.007679384543093699
+    },
+    {
+     "amplification": 172.8216754683515,
+     "focus_margin": null,
+     "heading": 4.380449694384374,
+     "length": 9.654880144749919,
+     "lift": [
+      -1,
+      -1
+     ],
+     "margin_lower_bound": 8.019135987994767,
+     "passes_conjugate_point": false,
+     "targeting_condition": 0.005786311221031578
+    }
+   ]
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "routes found at only one of the two densities",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "The torus route set is unchanged when the fan density doubles (1440 to 2880 headings)",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "route sets compared by length and heading to 1e-6",
+    "kind": "truncation_bound",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "differences": 0,
+    "headings": [
+     1440,
+     2880
+    ],
+    "routes": [
+     9,
+     9
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 2.0,
+      "passed": true,
+      "reference": "rank of the shortest route by amplification (0 = least amplifying)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 3.0,
+      "passed": true,
+      "reference": "focus-margin group of the shortest route (0 = best group)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     }
+    ]
+   },
+   "claim": "Rankings by length, amplification and focus margin disagree: the shortest route is neither the least amplifying nor in the best focus-margin group",
+   "counterexample": {
+    "statement": "The shortest route also minimizes amplification and maximizes focus margin",
+    "witness": {
+     "best_margin_group": [
+      {
+       "amplification": 35.84781929262236,
+       "focus_margin": null,
+       "heading": 1.328869465787598,
+       "length": 6.354490781532511,
+       "lift": [
+        0,
+        1
+       ],
+       "margin_lower_bound": 8.033035516276946,
+       "passes_conjugate_point": false,
+       "targeting_condition": 0.027895699647364724
+      },
+      {
+       "amplification": 35.211046168245595,
+       "focus_margin": null,
+       "heading": -1.3378920559001015,
+       "length": 7.716734395481508,
+       "lift": [
+        0,
+        -1
+       ],
+       "margin_lower_bound": 8.036599033636183,
+       "passes_conjugate_point": false,
+       "targeting_condition": 0.02840017860366304
+      },
+      {
+       "amplification": 197.17050094523458,
+       "focus_margin": null,
+       "heading": 1.9051503319669738,
+       "length": 8.328856292010393,
+       "lift": [
+        -1,
+        1
+       ],
+       "margin_lower_bound": 8.010048395665496,
+       "passes_conjugate_point": false,
+       "targeting_condition": 0.005071752595880236
+      },
+      {
+       "amplification": 172.8216754683515,
+       "focus_margin": null,
+       "heading": 4.380449694384374,
+       "length": 9.654880144749919,
+       "lift": [
+        -1,
+        -1
+       ],
+       "margin_lower_bound": 8.019135987994767,
+       "passes_conjugate_point": false,
+       "targeting_condition": 0.005786311221031578
+      }
+     ],
+     "least_amplification": {
+      "amplification": 0.43742318141707476,
+      "focus_margin": -0.4571252038359548,
+      "heading": -0.17109411247473272,
+      "length": 5.9986429397023775,
+      "lift": [
+       0,
+       0
+      ],
+      "margin_lower_bound": 8.038181539201187,
+      "passes_conjugate_point": true,
+      "targeting_condition": 2.2861156940983403
+     },
+     "shortest": {
+      "amplification": 1.8341504196036555,
+      "focus_margin": 1.2453092693335792,
+      "heading": 0.7663176018658682,
+      "length": 5.846451377518235,
+      "lift": [
+       0,
+       0
+      ],
+      "margin_lower_bound": 8.03389917182778,
+      "passes_conjugate_point": false,
+      "targeting_condition": 0.5452115537045711
+     }
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "orderings of the route values; adjacent values differ far more than their uncertainty",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "by_amplification": [
+     2,
+     1,
+     0,
+     4,
+     3,
+     7,
+     6,
+     8,
+     5
+    ],
+    "by_focus_margin": [
+     [
+      3,
+      4,
+      5,
+      8
+     ],
+     [
+      7
+     ],
+     [
+      6
+     ],
+     [
+      0
+     ],
+     [
+      1
+     ],
+     [
+      2
+     ]
+    ],
+    "by_length": [
+     0,
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "min j_head(s)/s - 1 on (0, 20] (ciw.lab.jacobi, plane)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     }
+    ],
+    "derivation": "K = 0 gives j_head(s) = s"
+   },
+   "claim": "A flat torus has no conjugate points: j_head(s) = s > 0 (infinite focus margin)",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 1e-09
+   },
+   "uncertainty": {
+    "basis": "RK4 on the linear flat Jacobi system",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": 1.0
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "Ranking routes by focus margin selects a route that is safe to execute on a physical part",
+   "domain": "machine_safety",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 10234,
+   "path": "artifacts/T024/torus-routes.json",
+   "sha256": "769f24fb08795232f34f40e7b635d2d88af7e29aa116da82d23423ace012ee72"
+  }
+ ],
+ "hypothesis": "Between two points of the torus of revolution the ranking of geodesic routes by length, by heading amplification |j_head(L)| and by focus margin (distance to the first conjugate point) disagree; on a flat torus there are no conjugate points (infinite margin).",
+ "input_data": [
+  "p = (0.0, 0.4), q = (2.0, -0.3) (chart), routes up to length 11.0, extension horizon 8.0",
+  "1440-heading fan (convergence rerun at 2880), RK4 batch step 0.025, Newton on (heading, length) with Jacobian [j_head N, v]"
+ ],
+ "mathematical_model": "Geodesic + heading Jacobi system on Torus(R=2, r=1), chart (phi, theta); K = cos theta / (r (R + r cos theta)); focus margin = s_c - L for the first zero s_c > 0 of j_head along the extended geodesic (negative: the route passes a conjugate point and is not locally minimizing); targeting condition 1/|j_head(L)|.",
+ "number": 24,
+ "numerical_result": "9 routes from 417 fan near-passes and 9 Newton seeds (drops: 0 singular, 0 diverged, 0 residual, 0 over length; 0 duplicates merged); at 2880 headings 9 routes, 0 differences; order by length [0, 1, 2, 3, 4, 5, 6, 7, 8], by amplification [2, 1, 0, 4, 3, 7, 6, 8, 5], focus-margin groups (best first; censored routes tied) [[3, 4, 5, 8], [7], [6], [0], [1], [2]]. Routes [3, 4, 5, 8] have no conjugate point within the horizon (margins only known to exceed about 8), so their margins are tied.",
+ "observation_model": "No physical observation: exact or floating-point computation on declared mathematical objects.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "requirement_probes": {
+   "module:scipy": true,
+   "module:sympy": true
+  },
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/flat_torus_topology.py": "4d8cf2437759501a1b9fa5ee0d8abfac43345ebee378c6ad08233e9155d4b184",
+   "src/ciw/lab/flat_torus_topology_routes.py": "cc2f3a7ce7a919c0aa83509104816ba8f4fedb15e14f5004c5982f8fff4de17a"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T025: generate Pareto fronts over these routes",
+ "report_id": "sha256:6e59e3fa4595e554f710ad3424664c2e6cbd24bd5da63fc45d62c0e37ba48ab9",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "flat-torus-topology",
+ "state": "completed",
+ "task_id": "T024",
+ "tests_passed": [
+  "check: Every fan-search route p -> q on Torus(2, 1) ends on a lift of q with the Wronskian and the Clairaut integral conserved to tolerance vs endpoint residual to the lift of q",
+  "check: Every fan-search route p -> q on Torus(2, 1) ends on a lift of q with the Wronskian and the Clairaut integral conserved to tolerance vs Wronskian drift",
+  "check: Every fan-search route p -> q on Torus(2, 1) ends on a lift of q with the Wronskian and the Clairaut integral conserved to tolerance vs Clairaut integral drift",
+  "check: Every fan-search route p -> q on Torus(2, 1) ends on a lift of q with the Wronskian and the Clairaut integral conserved to tolerance vs batch RK4 vs ciw.lab.jacobi amplification",
+  "check: Every fan-search route p -> q on Torus(2, 1) ends on a lift of q with the Wronskian and the Clairaut integral conserved to tolerance vs routes where exactly one of ciw.lab.jacobi and scipy/sympy finds a conjugate point within the horizon",
+  "check: Every fan-search route p -> q on Torus(2, 1) ends on a lift of q with the Wronskian and the Clairaut integral conserved to tolerance vs scipy solve_ivp runs that stopped before L + horizon",
+  "independent: Every fan-search route p -> q on Torus(2, 1) ends on a lift of q with the Wronskian and the Clairaut integral conserved to tolerance vs scipy.integrate.solve_ivp (sympy-derived field)",
+  "check: The torus route set is unchanged when the fan density doubles (1440 to 2880 headings) vs routes found at only one of the two densities",
+  "check: Rankings by length, amplification and focus margin disagree: the shortest route is neither the least amplifying nor in the best focus-margin group vs rank of the shortest route by amplification (0 = least amplifying)",
+  "check: Rankings by length, amplification and focus margin disagree: the shortest route is neither the least amplifying nor in the best focus-margin group vs focus-margin group of the shortest route (0 = best group)",
+  "check: A flat torus has no conjugate points: j_head(s) = s > 0 (infinite focus margin) vs min j_head(s)/s - 1 on (0, 20] (ciw.lab.jacobi, plane)",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_t024_t025_route_ranking_and_front",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_route_helpers",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_independent_disagreement_makes_t024_partial_not_blocked",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_sympy_field_matches_the_closed_form_batch_field",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+ ],
+ "tests_skipped": [],
+ "title": "Add focus-margin-aware route ranking.",
+ "uncertainty": "Endpoint residual <= 3.1e-07; Wronskian drift <= 5.2e-09; Clairaut drift <= 2.4e-08; batch-vs-transfer amplification difference <= 2.4e-07 (relative); scipy/sympy re-integration: j_head 2.4e-07 (relative), conjugate points 5.6e-07, endpoint 7.4e-09.",
+ "unresolved_assumptions": [
+  "The candidate set is what the fan found up to length 11 and is stable under doubling the density; completeness is not proven.",
+  "Focus margin uses conjugate points of p only; conjugate points of q along the reversed route are not separately reported.",
+  "Small |j_head(L)| is not robustness: the targeting condition number 1/|j_head(L)| grows as q approaches a conjugate point, and a route with negative focus margin is not locally minimizing."
+ ]
+}

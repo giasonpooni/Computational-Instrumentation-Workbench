@@ -1,0 +1,345 @@
+{
+ "changed_files": [
+  "src/ciw/lab/manufacturing.py",
+  "src/ciw/lab/manufacturing_geometry.py",
+  "src/ciw/lab/manufacturing_metrology.py",
+  "src/ciw/lab/manufacturing_records.py",
+  "docs/lab/MANUFACTURING.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 4,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Valid records validate; each mutation is refused with its code; a record of kind schema_fixture, or one carrying the fixture's bytes, serial or zero calibration digest, is refused as hardware evidence.",
+ "experiment": "Validate the fixture, mutate it 11 ways, check a rank-deficient covariance at lever-arm scale, check identity invariance and the fixture/measurement boundary.",
+ "failure_modes_checked": [
+  "digest mismatch",
+  "calibration digest and validity window",
+  "broken frame chain",
+  "invalid rotation or covariance",
+  "scale of covariance tolerances",
+  "clock without timezone",
+  "fixture promoted or relabelled as a measurement",
+  "measurement without raw bytes"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "missing_field",
+      "observed_refusal": "missing_field",
+      "passed": true,
+      "reference": "retention mutation: missing raw list",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "raw_digest_mismatch",
+      "observed_refusal": "raw_digest_mismatch",
+      "passed": true,
+      "reference": "retention mutation: raw digest mismatch",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "missing_field",
+      "observed_refusal": "missing_field",
+      "passed": true,
+      "reference": "retention mutation: calibration without reference",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "calibration_digest_invalid",
+      "observed_refusal": "calibration_digest_invalid",
+      "passed": true,
+      "reference": "retention mutation: calibration digest not SHA-256 hex",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "calibration_expired",
+      "observed_refusal": "calibration_expired",
+      "passed": true,
+      "reference": "retention mutation: acquired after the calibration expired",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "frame_chain_broken",
+      "observed_refusal": "frame_chain_broken",
+      "passed": true,
+      "reference": "retention mutation: frame chain broken",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "frame_rotation_invalid",
+      "observed_refusal": "frame_rotation_invalid",
+      "passed": true,
+      "reference": "retention mutation: non-orthonormal rotation",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "frame_covariance_invalid",
+      "observed_refusal": "frame_covariance_invalid",
+      "passed": true,
+      "reference": "retention mutation: covariance not PSD",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "clock_without_timezone",
+      "observed_refusal": "clock_without_timezone",
+      "passed": true,
+      "reference": "retention mutation: clock without timezone",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "missing_field",
+      "observed_refusal": "missing_field",
+      "passed": true,
+      "reference": "retention mutation: missing clock",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "missing_field",
+      "observed_refusal": "missing_field",
+      "passed": true,
+      "reference": "retention mutation: missing instrument serial",
+      "reference_kind": "refusal"
+     }
+    ]
+   },
+   "claim": "The retention schema refuses records missing raw digests, calibration, frame-chain or clock metadata",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact logic or integer count",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": "refused mutations",
+   "value": 11
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "none",
+      "observed_refusal": "none",
+      "passed": true,
+      "reference": "rank-3 PSD covariance with rounding-level negative eigenvalues",
+      "reference_kind": "refusal"
+     },
+     {
+      "comparison": "le",
+      "observed": 2.0528336872047052e-17,
+      "passed": true,
+      "reference": "rounding-level negative eigenvalue relative to the largest",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     }
+    ]
+   },
+   "claim": "The retention schema keeps a valid rank-deficient frame covariance at 1e2 mm^2 scale",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "rounding of the rank-deficient product (mm^2)",
+    "kind": "roundoff",
+    "value": 2.1721893570630545e-14
+   },
+   "unit": "mm^2",
+   "value": {
+    "max_entry_mm2": 701.1088329904487,
+    "min_eigenvalue_mm2": -2.1721893570630545e-14
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "identity changes under key reordering",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "identity unchanged after altering a raw digest",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "raw manifest (acquisition digest) unchanged after altering the second raw file's digest",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Retention record identity is independent of key order and bound to every raw digest",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact logic or integer count",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": "sha256:eae8d469902139370a09e287fdde5378b44f6a371bc8e08dcf21a91e5b1c7d52"
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "fixture_is_not_measurement",
+      "observed_refusal": "fixture_is_not_measurement",
+      "passed": true,
+      "reference": "fixture promoted to acquisition",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "fixture_is_not_measurement",
+      "observed_refusal": "fixture_is_not_measurement",
+      "passed": true,
+      "reference": "fixture relabelled as a measurement, with its bytes",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "raw_bytes_not_presented",
+      "observed_refusal": "raw_bytes_not_presented",
+      "passed": true,
+      "reference": "measurement record without raw bytes",
+      "reference_kind": "refusal"
+     }
+    ]
+   },
+   "claim": "A schema fixture (as is or relabelled as a measurement), or a record without its raw bytes, is refused as hardware evidence",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact logic or integer count",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": "refusals",
+   "value": 3
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "A real measurement with raw bytes, calibration and frame metadata has been retained",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": "records",
+   "value": 0
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 1309,
+   "path": "artifacts/T139/retention-schema.json",
+   "sha256": "140430b1c1e8958895cb3bd1f431b382fc91bdccdc210b1ab7781175ddaf0c82"
+  },
+  {
+   "bytes": 3952,
+   "path": "artifacts/T139/retention-schema-fixture.json",
+   "sha256": "bf6ab4493e3fe9e29990d5da20570730244b7df5e2fddce89e5b2c03110b69ae"
+  }
+ ],
+ "hypothesis": "A retention record that binds raw-byte digests, calibration reference and validity window, frame chain with covariances and an explicit clock is sufficient to supply the acquisition fields of a hardware_measured finding, and every omission is refused.",
+ "input_data": [
+  "Schema fixture with explicit 'SCHEMA FIXTURE - NOT A MEASUREMENT' raw bytes (not retained)",
+  "11 refused mutations and one valid rank-deficient covariance"
+ ],
+ "mathematical_model": "Record = {raw digests, instrument identity, calibration (applied/not_applied), frame chain links (R, t, C), clock}; identity = SHA-256 of canonical JSON; to_acquisition maps a valid measurement record to device / raw_sha256 (SHA-256 of the raw manifest) / acquired_at / calibration.",
+ "number": 139,
+ "numerical_result": "11/11 mutations refused with the expected code; rank-deficient covariance kept (min eigenvalue -2.2e-14 mm^2 against a largest of 1.1e+03 mm^2); retained real measurements: 0.",
+ "observation_model": "No observation: no instrument produced data. The validators read only the declared schema fixture and its mutations.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/manufacturing.py": "088763a0bcc42bf085c1e228797a5dc0d702b994f2a49e053cbe2b0a5622e25d",
+   "src/ciw/lab/manufacturing_geometry.py": "1db6df2ddf778668da2ffd53a66bcddbff4fc933d6f299e8f283cedc60a9332f",
+   "src/ciw/lab/manufacturing_metrology.py": "afbb6fccf146ca4f47850805c118d2f1bf6186872f381b298ab924a9214257ec",
+   "src/ciw/lab/manufacturing_records.py": "66970104ea454e836c5cbafc3013c90e721c3e96ad7f16780c32250112cac921"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "Retain the first MFG-FLAT-PLATE-01 acquisition with this schema, then rerun T138.",
+ "report_id": "sha256:a4d5b796a670d9135fd5a4ce554db058040fe2635dd52c92bc3e3f44456b02c7",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "manufacturing",
+ "state": "completed",
+ "task_id": "T139",
+ "tests_passed": [
+  "check: The retention schema refuses records missing raw digests, calibration, frame-chain or clock metadata vs retention mutation: missing raw list",
+  "check: The retention schema refuses records missing raw digests, calibration, frame-chain or clock metadata vs retention mutation: raw digest mismatch",
+  "check: The retention schema refuses records missing raw digests, calibration, frame-chain or clock metadata vs retention mutation: calibration without reference",
+  "check: The retention schema refuses records missing raw digests, calibration, frame-chain or clock metadata vs retention mutation: calibration digest not SHA-256 hex",
+  "check: The retention schema refuses records missing raw digests, calibration, frame-chain or clock metadata vs retention mutation: acquired after the calibration expired",
+  "check: The retention schema refuses records missing raw digests, calibration, frame-chain or clock metadata vs retention mutation: frame chain broken",
+  "check: The retention schema refuses records missing raw digests, calibration, frame-chain or clock metadata vs retention mutation: non-orthonormal rotation",
+  "check: The retention schema refuses records missing raw digests, calibration, frame-chain or clock metadata vs retention mutation: covariance not PSD",
+  "check: The retention schema refuses records missing raw digests, calibration, frame-chain or clock metadata vs retention mutation: clock without timezone",
+  "check: The retention schema refuses records missing raw digests, calibration, frame-chain or clock metadata vs retention mutation: missing clock",
+  "check: The retention schema refuses records missing raw digests, calibration, frame-chain or clock metadata vs retention mutation: missing instrument serial",
+  "check: The retention schema keeps a valid rank-deficient frame covariance at 1e2 mm^2 scale vs rank-3 PSD covariance with rounding-level negative eigenvalues",
+  "check: The retention schema keeps a valid rank-deficient frame covariance at 1e2 mm^2 scale vs rounding-level negative eigenvalue relative to the largest",
+  "check: Retention record identity is independent of key order and bound to every raw digest vs identity changes under key reordering",
+  "check: Retention record identity is independent of key order and bound to every raw digest vs identity unchanged after altering a raw digest",
+  "check: Retention record identity is independent of key order and bound to every raw digest vs raw manifest (acquisition digest) unchanged after altering the second raw file's digest",
+  "check: A schema fixture (as is or relabelled as a measurement), or a record without its raw bytes, is refused as hardware evidence vs fixture promoted to acquisition",
+  "check: A schema fixture (as is or relabelled as a measurement), or a record without its raw bytes, is refused as hardware evidence vs fixture relabelled as a measurement, with its bytes",
+  "check: A schema fixture (as is or relabelled as a measurement), or a record without its raw bytes, is refused as hardware evidence vs measurement record without raw bytes",
+  "pytest: tests/test_lab_manufacturing.py::test_retention_schema_refusals_and_fixture_boundary",
+  "pytest: tests/test_lab_manufacturing.py::test_every_task_is_registered_and_reports_honestly"
+ ],
+ "tests_skipped": [],
+ "title": "Retain raw measurements, calibration, and frame metadata.",
+ "uncertainty": "Exact: the outcomes are booleans and refusal codes of deterministic validators; the only floating-point quantity is the rounding-level eigenvalue of the rank-deficient covariance.",
+ "unresolved_assumptions": [
+  "Media-type-specific readers (images, point clouds) are not defined; digests cover bytes, not content semantics.",
+  "The validators cannot tell whether raw bytes came from an instrument; the runner also requires a hardware probe in the task that cites them."
+ ]
+}

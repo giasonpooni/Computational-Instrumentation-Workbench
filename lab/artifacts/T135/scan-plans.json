@@ -1,0 +1,112 @@
+{
+ "min_boundary_margin_mm": 0.000359541117511,
+ "mirror_error_mm": 0.0,
+ "plans": {
+  "chart-parallel x0.6": {
+   "coverage": 1.0,
+   "coverage_refined": 1.0,
+   "kind": "chart-parallel",
+   "length_mm": 3598.46129545,
+   "max_j_lat": null,
+   "rows": 17,
+   "spacing_mm": 12.0
+  },
+  "chart-parallel x0.7": {
+   "coverage": 1.0,
+   "coverage_refined": 1.0,
+   "kind": "chart-parallel",
+   "length_mm": 3201.5382681,
+   "max_j_lat": null,
+   "rows": 15,
+   "spacing_mm": 14.0
+  },
+  "chart-parallel x0.8": {
+   "coverage": 1.0,
+   "coverage_refined": 1.0,
+   "kind": "chart-parallel",
+   "length_mm": 2796.84596811,
+   "max_j_lat": null,
+   "rows": 13,
+   "spacing_mm": 16.0
+  },
+  "chart-parallel x0.9": {
+   "coverage": 1.0,
+   "coverage_refined": 1.0,
+   "kind": "chart-parallel",
+   "length_mm": 2602.30765208,
+   "max_j_lat": null,
+   "rows": 12,
+   "spacing_mm": 18.0
+  },
+  "chart-parallel x1": {
+   "coverage": 0.998390797261,
+   "kind": "chart-parallel",
+   "length_mm": 2183.87705038,
+   "max_j_lat": null,
+   "rows": 10,
+   "spacing_mm": 20.0
+  },
+  "geodesic Jacobi-tightened": {
+   "coverage": 0.999844351862,
+   "coverage_refined": 0.999766527981,
+   "kind": "geodesic",
+   "length_mm": 3398.41558957,
+   "rows": 16,
+   "spacing_mm": 12.8569081131
+  },
+  "geodesic x0.6": {
+   "coverage": 1.0,
+   "coverage_refined": 1.0,
+   "kind": "geodesic",
+   "length_mm": 3599.48203542,
+   "max_j_lat": 1.66211745681,
+   "rows": 17,
+   "spacing_mm": 12.0
+  },
+  "geodesic x0.7": {
+   "coverage": 0.999377407449,
+   "kind": "geodesic",
+   "length_mm": 3198.99639398,
+   "max_j_lat": 1.6164464046,
+   "rows": 15,
+   "spacing_mm": 14.0
+  },
+  "geodesic x0.8": {
+   "coverage": 0.990816759836,
+   "kind": "geodesic",
+   "length_mm": 2794.38054576,
+   "max_j_lat": 1.48202222972,
+   "rows": 13,
+   "spacing_mm": 16.0
+  },
+  "geodesic x0.9": {
+   "coverage": 0.987703761465,
+   "kind": "geodesic",
+   "length_mm": 2612.02268845,
+   "max_j_lat": 1.63921187398,
+   "rows": 12,
+   "spacing_mm": 18.0
+  },
+  "geodesic x1": {
+   "coverage": 0.96035465381,
+   "kind": "geodesic",
+   "length_mm": 2177.0592662,
+   "max_j_lat": 1.5555839572,
+   "rows": 10,
+   "spacing_mm": 20.0
+  }
+ },
+ "plate_control": {
+  "coverage": 1.0,
+  "row_length_error_mm": 0.0
+ },
+ "sampling_refinement_delta": -0.000881534265785,
+ "shorter_incomplete": [
+  "chart-parallel x1",
+  "geodesic x1"
+ ],
+ "shortest_complete": {
+  "length_mm": 2602.30765208,
+  "plan": "chart-parallel x0.9"
+ }
+}

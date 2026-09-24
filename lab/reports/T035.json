@@ -1,0 +1,388 @@
+{
+ "changed_files": [
+  "src/ciw/lab/surfaces_discrete.py",
+  "src/ciw/lab/surfaces_discrete_geometry.py",
+  "src/ciw/lab/surfaces_discrete_ad.py",
+  "docs/lab/SURFACE_INTERFACE.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 7,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Slope 2 on the truncation branch, slope -1 on the rounding branch, V-bottom near eps^(1/3).",
+ "experiment": "Scan h, fit both branches, locate the minimum, compare with the prediction and with controls.",
+ "failure_modes_checked": [
+  "rounding-dominated steps (h <= 1e-10)",
+  "quadratic metrics with no truncation branch",
+  "constant metric (exact zero difference)",
+  "local length scale on the hyperbolic plane"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 3.4484701665782325e-05,
+      "passed": true,
+      "reference": "max |slope - 2| over h in [10^-3.5, 1e-2]",
+      "reference_kind": "analytic",
+      "tolerance": 0.02
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 2.241611877514059e-05,
+      "passed": true,
+      "reference": "max |FD - dg - h^2/6 d^3 g| / max|h^2/6 d^3 g| at h = 1e-3 over points where the term exceeds 1e4 eps|g|/h (dual-number third derivatives)",
+      "reference_kind": "analytic",
+      "tolerance": 0.001
+     },
+     {
+      "comparison": "ge",
+      "observed": 47.0,
+      "passed": true,
+      "reference": "points entering the leading-term comparison",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 40.0
+     }
+    ]
+   },
+   "claim": "Central-difference error of the analytic metric derivatives falls as h^2 on the truncation branch",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.01,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "O(h^4) remainder plus rounding below 1e-4 of the term at h = 1e-3",
+    "kind": "truncation_bound",
+    "value": 0.001
+   },
+   "unit": null,
+   "value": {
+    "gaussian-bump": 1.99998,
+    "hyperbolic-plane": 2.00003,
+    "sphere": 2.0,
+    "torus": 1.99999
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.030140631944489238,
+      "passed": true,
+      "reference": "max |slope + 1| over h in [1e-13, 1e-10]",
+      "reference_kind": "analytic",
+      "tolerance": 0.2
+     }
+    ]
+   },
+   "claim": "Rounding error of central differences grows as 1/h for small steps",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.2,
+    "rel": 0.0
+   },
+   "uncertainty": null,
+   "unit": null,
+   "value": {
+    "gaussian-bump": -1.026,
+    "hyperbolic-plane": -1.03,
+    "sphere": -1.013,
+    "torus": -0.9783
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.24999999999999992,
+      "passed": true,
+      "reference": "max |log10(h_opt / h_pred)|",
+      "reference_kind": "analytic",
+      "tolerance": 0.6020599913279624
+     },
+     {
+      "comparison": "ge",
+      "observed": 1.778279410038923e-06,
+      "passed": true,
+      "reference": "smallest observed h_opt",
+      "reference_kind": "analytic",
+      "tolerance": 1e-07
+     },
+     {
+      "comparison": "le",
+      "observed": 1.778279410038923e-05,
+      "passed": true,
+      "reference": "largest observed h_opt",
+      "reference_kind": "analytic",
+      "tolerance": 0.0001
+     }
+    ],
+    "derivation": "minimize h^2/6 |d^3 g| + eps |g| / h"
+   },
+   "claim": "The optimal step lies within a factor 4 of the predicted h* = (3 eps |g| / |d^3 g|)^(1/3)",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.75,
+    "rel": 0.0
+   },
+   "uncertainty": null,
+   "unit": "log10(relative step)",
+   "value": {
+    "gaussian-bump": -4.75,
+    "hyperbolic-plane": -5.75,
+    "sphere": -5.25,
+    "torus": -5.0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 0.4948269740108642,
+      "passed": true,
+      "reference": "max over surfaces of median E(h_opt) / median E_pred(h_pred)",
+      "reference_kind": "analytic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "le",
+      "observed": 4.0315727819588954e-11,
+      "passed": true,
+      "reference": "max over surfaces of median E(h_opt)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-10
+     }
+    ]
+   },
+   "claim": "The median central-difference error curve bottoms out at or below the predicted minimum error",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-10,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "rounding floor eps^(2/3) of the V-bottom",
+    "kind": "roundoff",
+    "value": 1e-10
+   },
+   "unit": "normalized error",
+   "value": 4e-11
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 0.7083606254218539,
+      "passed": true,
+      "reference": "max over points of min_h E / min_h E_pred",
+      "reference_kind": "analytic",
+      "tolerance": 2.0
+     },
+     {
+      "comparison": "le",
+      "observed": 7.374441180232571e-11,
+      "passed": true,
+      "reference": "max over points of min_h E (normalized)",
+      "reference_kind": "analytic",
+      "tolerance": 2e-10
+     }
+    ]
+   },
+   "claim": "At every sampled point the best central difference agrees with the analytic metric derivatives to within twice that point's predicted minimum error",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 2e-10,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "rounding of the difference quotient at its best step",
+    "kind": "roundoff",
+    "value": 2e-10
+   },
+   "unit": "normalized error",
+   "value": 7.4e-11
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 5150719.355760142,
+      "passed": true,
+      "reference": "sphere E(1e-12) / E(h_opt)",
+      "reference_kind": "analytic",
+      "tolerance": 1000.0
+     }
+    ]
+   },
+   "claim": "Smaller finite-difference steps can be far less accurate",
+   "counterexample": {
+    "statement": "Decreasing the finite-difference step always improves agreement with the analytic derivative",
+    "witness": {
+     "error_at_1e-12": 0.000102,
+     "error_at_h_opt": 1.97e-11,
+     "h_opt": 5.623413251903491e-06,
+     "surface": "sphere"
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1.0,
+    "rel": 0.0
+   },
+   "uncertainty": null,
+   "unit": "log10 error ratio",
+   "value": 6.71
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 6.4795847704574275e-15,
+      "passed": true,
+      "reference": "saddle and plane-polar E(1e-2)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-13
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "plane E(h) for every h",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Quadratic metrics have no truncation branch and a constant metric differences to exactly zero",
+   "counterexample": {
+    "statement": "Every smooth metric shows an O(h^2) truncation branch in central-difference error",
+    "witness": {
+     "error_at_1e-2": 3.4e-15,
+     "surface": "saddle, E = 1 + c^2 x^2 (degree-2 metric)"
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-13,
+    "rel": 0.0
+   },
+   "uncertainty": null,
+   "unit": null,
+   "value": {
+    "plane_max_error": 0.0,
+    "quadratic_error_at_1e-2": 6.5e-15
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "The optimal-step law derived here applies to derivatives of measured surface samples",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 23042,
+   "path": "artifacts/T035/fd-scan.json",
+   "sha256": "a5822b62b78a9764fc23e7c79babb330c22713f3e0fb4ad358ce90c0f19573a8"
+  },
+  {
+   "bytes": 24410,
+   "path": "artifacts/T035/fd-v-shape.svg",
+   "sha256": "c47dd94587bdc700163d07999d07f0b78bf1d7c8b6e3bc53f7890a29f4da13cd"
+  }
+ ],
+ "hypothesis": "Central differences of the metric approach the analytic dg as h^2 until rounding, which grows as eps/h, takes over; the optimum lies near h* = (3 eps |g| / |d^3 g|)^(1/3) ~ eps^(1/3).",
+ "input_data": [
+  "4 curved surfaces and 3 controls, 12 points each (seed 3336)",
+  "49 relative steps from 1e-1 to 1e-13 (4 per decade)"
+ ],
+ "mathematical_model": "D_h g = (g(u + h e_k) - g(u - h e_k)) / 2h = d_k g + h^2/6 d_k^3 g + O(h^4); rounding error ~ eps |g| / h; total minimized at h* with error ~ eps^(2/3).",
+ "number": 35,
+ "numerical_result": "truncation slopes within 3.45e-05 of 2, leading term within 2.24e-05 relative at h = 1e-3 (47 points where truncation exceeds rounding by 1e4); rounding slopes within 0.0301 of -1; observed h* in [1.78e-06, 1.78e-05] (eps^(1/3) = 6.06e-06), within 10^0.25 of prediction; median minimum error <= 4.03e-11, pointwise best error <= 7.37e-11 (0.708 of each point's predicted minimum); sphere error at h = 1e-12 is 5.15e+06 times the minimum; quadratic-metric controls 6.48e-15 at h = 1e-2.",
+ "observation_model": "Median over points of max_kij |D_h g_ij - d_k g_ij| / (max|g| / l); prediction uses dual-number third derivatives.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/surfaces_discrete.py": "65515cd7d7440c047bb6cba986dbcd2b496978ebb32ed15939e371828e755eef",
+   "src/ciw/lab/surfaces_discrete_ad.py": "a76cc131eeadc83d5c64a788dd8c0a1453a0c0ffc89a5f49e79cbb1bf35559c0",
+   "src/ciw/lab/surfaces_discrete_geometry.py": "d4445a253778e1dff32b68a903a9caf560affa08ca5a7110207e54c8e1baa60e"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T043: propagate vertex and normal uncertainty through difference-based metric derivatives, where noise replaces eps in the step-size law.",
+ "report_id": "sha256:1a9b800121df28a6f38b4dcb41274336c8a191b920c044f5bd2ee0c60db64af6",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "surfaces-discrete",
+ "state": "completed",
+ "task_id": "T035",
+ "tests_passed": [
+  "check: Central-difference error of the analytic metric derivatives falls as h^2 on the truncation branch vs max |slope - 2| over h in [10^-3.5, 1e-2]",
+  "check: Central-difference error of the analytic metric derivatives falls as h^2 on the truncation branch vs max |FD - dg - h^2/6 d^3 g| / max|h^2/6 d^3 g| at h = 1e-3 over points where the term exceeds 1e4 eps|g|/h (dual-number third derivatives)",
+  "check: Central-difference error of the analytic metric derivatives falls as h^2 on the truncation branch vs points entering the leading-term comparison",
+  "check: Rounding error of central differences grows as 1/h for small steps vs max |slope + 1| over h in [1e-13, 1e-10]",
+  "check: The optimal step lies within a factor 4 of the predicted h* = (3 eps |g| / |d^3 g|)^(1/3) vs max |log10(h_opt / h_pred)|",
+  "check: The optimal step lies within a factor 4 of the predicted h* = (3 eps |g| / |d^3 g|)^(1/3) vs smallest observed h_opt",
+  "check: The optimal step lies within a factor 4 of the predicted h* = (3 eps |g| / |d^3 g|)^(1/3) vs largest observed h_opt",
+  "check: The median central-difference error curve bottoms out at or below the predicted minimum error vs max over surfaces of median E(h_opt) / median E_pred(h_pred)",
+  "check: The median central-difference error curve bottoms out at or below the predicted minimum error vs max over surfaces of median E(h_opt)",
+  "check: At every sampled point the best central difference agrees with the analytic metric derivatives to within twice that point's predicted minimum error vs max over points of min_h E / min_h E_pred",
+  "check: At every sampled point the best central difference agrees with the analytic metric derivatives to within twice that point's predicted minimum error vs max over points of min_h E (normalized)",
+  "check: Smaller finite-difference steps can be far less accurate vs sphere E(1e-12) / E(h_opt)",
+  "check: Quadratic metrics have no truncation branch and a constant metric differences to exactly zero vs saddle and plane-polar E(1e-2)",
+  "check: Quadratic metrics have no truncation branch and a constant metric differences to exactly zero vs plane E(h) for every h",
+  "pytest: tests/test_lab_surfaces_discrete.py::test_finite_difference_error_is_v_shaped",
+  "pytest: tests/test_lab_surfaces_discrete.py::test_t035_report"
+ ],
+ "tests_skipped": [],
+ "title": "Compare analytic and finite-difference metric derivatives.",
+ "uncertainty": "Rounding-branch values depend on libm and summation details and scatter by tens of percent; h* is resolved only on a grid of 4 points per decade (factor 1.78).",
+ "unresolved_assumptions": [
+  "Complex-step differentiation was not run: the core surfaces evaluate with math.* and do not accept complex coordinates.",
+  "Measured surface samples would add noise sigma >> eps, moving the optimum to ~(sigma / |d^3 g|)^(1/3); nothing here measures that."
+ ]
+}

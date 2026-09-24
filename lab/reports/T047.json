@@ -1,0 +1,365 @@
+{
+ "changed_files": [
+  "src/ciw/lab/observation.py",
+  "src/ciw/lab/observation_chord.py",
+  "docs/lab/OBSERVATION.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 1,
+   "not_established": 1,
+   "numerically_verified": 4,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Fitted coefficient = cos^4(alpha)/(24 R^2) independent of the data source (exact formula or integrated geodesic).",
+ "experiment": "Series expansion (hand and sympy), least-squares fit of (s - c)/s^3 = a + b s^2 + d s^4 across angles and radii, integration on Cylinder with ciw.lab.jacobi, counterexample search over direction and Gaussian curvature.",
+ "failure_modes_checked": [
+  "alpha = 90 deg (degenerate cos(alpha) = 0)",
+  "small radius R = 0.1",
+  "rounding amplification of (s - c)/s^3 at small s",
+  "sympy unavailable"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "derivation": "docs/lab/OBSERVATION.md#cylinder-chord-coefficient",
+    "independent_check": {
+     "checker": {
+      "implementation": "sympy",
+      "revision": "1.14.0"
+     },
+     "comparison": "abs_le",
+     "observed": 1.3877787807814457e-17,
+     "passed": true,
+     "producer": {
+      "implementation": "ciw.lab.observation",
+      "revision": "0.1.0"
+     },
+     "reference": "sympy series of sqrt((2R sin(s cos(a)/2R))^2 + (s sin(a))^2) against the closed-form c3 and c5 (symbolic residual zero; 30-digit evaluation at 7 angles)",
+     "reference_kind": "high_precision",
+     "tolerance": 1e-14
+    }
+   },
+   "claim": "The exact helix chord expands as s - cos^4(alpha) s^3/(24 R^2) + (kappa^4/1920 + kappa^2 tau^2/720) s^5 with kappa = cos^2(alpha)/R, tau = sin(alpha)cos(alpha)/R",
+   "domain": "mathematical",
+   "evidence_status": "independently_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "closed-form coefficients; the symbolic residuals are exactly zero",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "c3": "-cos(alpha)^4/(24 R^2)",
+    "c5": "cos(alpha)^6 (3 + 5 sin(alpha)^2)/(5760 R^4)"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 6.670184404811154e-12,
+      "passed": true,
+      "reference": "|fitted - cos^4(alpha)/(24R^2)| * 24 R^2",
+      "reference_kind": "analytic",
+      "tolerance": 1e-09
+     }
+    ],
+    "generator": {
+     "angles_deg": [
+      0,
+      15,
+      30,
+      45,
+      60,
+      75,
+      90
+     ],
+     "name": "exact helix chord sampled at s in R*[0.02, 0.3]",
+     "radii": [
+      1.0,
+      0.1
+     ],
+     "seed": null
+    }
+   },
+   "claim": "Small-s fits of exact helix chords recover cos^4(alpha)/(24 R^2) at every angle and radius",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "change of the normalized intercept when an s^6 term is added to the fit",
+    "kind": "truncation_bound",
+    "value": {
+     "max_normalized_error": 5.349720666458779e-12
+    }
+   },
+   "unit": null,
+   "value": {
+    "fitted_R1": [
+     0.04166666666657247,
+     0.036271362578582295,
+     0.02343749999992194,
+     0.010416666666722014,
+     0.002604166666685569,
+     0.0001869707544736252,
+     0.0
+    ],
+    "max_normalized_error": 6.670184404811154e-12
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 6.0021432268797525e-15,
+      "passed": true,
+      "reference": "|c_integrated - c_exact| / R",
+      "reference_kind": "analytic",
+      "tolerance": 1e-13
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 1.878239856978326e-09,
+      "passed": true,
+      "reference": "fitted coefficient from integrated chords, normalized",
+      "reference_kind": "analytic",
+      "tolerance": 1e-08
+     }
+    ],
+    "generator": {
+     "name": "ciw.lab.jacobi.transfer RK4 on Cylinder(R)",
+     "radii": [
+      1.0,
+      0.1
+     ],
+     "seed": null,
+     "steps": 60
+    }
+   },
+   "claim": "Geodesics integrated on ciw.lab.surfaces.Cylinder reproduce the exact helix chord and coefficient",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-08,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "fit: change of the normalized intercept when an s^6 term is added; chord: rounding of embedded points (the constant chart metric makes RK4 exact up to rounding)",
+    "kind": "truncation_bound",
+    "value": {
+     "max_normalized_fit_error": 6.663206519874621e-10,
+     "max_relative_chord_error": 1e-15
+    }
+   },
+   "unit": null,
+   "value": {
+    "max_normalized_fit_error": 1.878239856978326e-09,
+    "max_relative_chord_error": 6.0021432268797525e-15
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "max (s - c)/R along integrated rulings",
+      "reference_kind": "invariant",
+      "tolerance": 1e-15
+     },
+     {
+      "comparison": "le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "largest coefficient over angles minus circumferential coefficient",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 2.2607471450442063e-12,
+      "passed": true,
+      "reference": "circumferential coefficient relative to 1/24",
+      "reference_kind": "analytic",
+      "tolerance": 1e-09
+     }
+    ]
+   },
+   "claim": "Axial rulings (alpha = 90 deg) have zero chord correction; circumferential paths have the largest coefficient 1/(24 R^2)",
+   "counterexample": {
+    "statement": "The chord-versus-geodesic correction is a property of the surface alone, independent of path direction",
+    "witness": {
+     "alpha_deg_max_correction": 0,
+     "alpha_deg_zero_correction": 90,
+     "coefficient_at_0_deg_R1": 0.04166666666657247,
+     "surface": "cylinder"
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 1e-09
+   },
+   "uncertainty": {
+    "basis": "ruling deficit: rounding of |z(s) - z(0)|; coefficient: fit truncation",
+    "kind": "truncation_bound",
+    "value": {
+     "circumferential_coefficient_R1": 2.229050277691158e-13,
+     "ruling_max_deficit_over_R": 1e-15
+    }
+   },
+   "unit": null,
+   "value": {
+    "circumferential_coefficient_R1": 0.04166666666657247,
+    "ruling_max_deficit_over_R": 0.0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 4.166145864334392e-05,
+      "passed": true,
+      "reference": "s - c on the circumferential geodesic of Cylinder(1) at s = 0.1",
+      "reference_kind": "analytic",
+      "tolerance": 1e-05
+     }
+    ]
+   },
+   "claim": "Zero Gaussian curvature does not make chord and geodesic distance equal",
+   "counterexample": {
+    "statement": "On an intrinsically flat surface (K = 0) a chord equals the geodesic distance",
+    "witness": {
+     "alpha_deg": 0,
+     "chord": 0.09995833854135666,
+     "s": 0.1,
+     "surface": "cylinder R = 1"
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-15,
+    "rel": 1e-09
+   },
+   "uncertainty": {
+    "basis": "closed-form chord 2 sin(s/2) evaluated in double precision",
+    "kind": "roundoff",
+    "value": 1e-16
+   },
+   "unit": null,
+   "value": {
+    "gaussian_curvature": 0.0,
+    "s": 0.1,
+    "s_minus_c": 4.166145864334392e-05
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": "No part or marker was measured; radius tolerance, marker height and path deviation are unknown."
+   },
+   "claim": "Chords measured between physical markers on a cylindrical part follow the cos^4(alpha)/(24 R^2) coefficient",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 1763,
+   "path": "artifacts/T047/sympy-cylinder-series.json",
+   "sha256": "cc06f0beb510abc4e115b277266e8000b218d286d5cc0c8de6a412c8c23a2180"
+  },
+  {
+   "bytes": 7866,
+   "path": "artifacts/T047/coefficient-fits.json",
+   "sha256": "6ca8b61473ad549528929c26a931f5ee67c5cc11ef9983859d6dfb5a6bae76f9"
+  },
+  {
+   "bytes": 3109,
+   "path": "artifacts/T047/coefficient-vs-angle.svg",
+   "sha256": "f11824432603b2a1488bb34ef228173fafb7b1e46cdfc99792bd3741357e9fb2"
+  }
+ ],
+ "hypothesis": "On a cylinder of radius R, the geodesic at angle alpha from the circumferential direction has chord deficit s - c = cos^4(alpha) s^3/(24 R^2) + O(s^5): largest circumferentially, zero on rulings, although the Gaussian curvature is zero everywhere.",
+ "input_data": [
+  "alpha in [0, 15, 30, 45, 60, 75, 90] deg",
+  "R = 1 and R = 0.1 (the camera cylinder)",
+  "40 geometric samples s in R*[0.02, 0.3]; 60-step RK4 geodesics over s in [0, 0.3R]"
+ ],
+ "mathematical_model": "Helix X(s) = (R cos(s cos(a)/R), R sin(s cos(a)/R), s sin(a)); kappa = cos^2(a)/R, tau = sin(a) cos(a)/R; c^2 = (2R sin(s cos(a)/2R))^2 + (s sin(a))^2 = s^2 - cos^4(a) s^4/(12R^2) + cos^6(a) s^6/(360 R^4) + O(s^8).",
+ "number": 47,
+ "numerical_result": "max normalized fit error 6.7e-12; integrated chord error 6.0e-15 R; circumferential coefficient 0.041666666667 (1/24 = 0.041666666667); ruling deficit 0.0e+00 R; the sympy series comparison, when sympy is available, is recorded on the derivation finding (independent_check).",
+ "observation_model": "Noise-free chords of embedded points; no instrument.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "requirement_probes": {
+   "module:sympy": true
+  },
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/observation.py": "9ebedc1a1693aaa28965ba0c97837ad2d2c45bf0fd360857cf7b32c0993ed5fc",
+   "src/ciw/lab/observation_chord.py": "9b6fe24560daf8b06617824d20854f695e1f73774215a03acc41a28855ba164a"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T048: generate synthetic stereo-camera measurements of markers on the cylinder",
+ "report_id": "sha256:2957ee22f42ad56f5068842d65a627ab21d223df565fb36d40223374b8bf7df2",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "observation",
+ "state": "completed",
+ "task_id": "T047",
+ "tests_passed": [
+  "independent: The exact helix chord expands as s - cos^4(alpha) s^3/(24 R^2) + (kappa^4/1920 + kappa^2 tau^2/720) s^5 with kappa = cos^2(alpha)/R, tau = sin(alpha)cos(alpha)/R vs sympy",
+  "check: Small-s fits of exact helix chords recover cos^4(alpha)/(24 R^2) at every angle and radius vs |fitted - cos^4(alpha)/(24R^2)| * 24 R^2",
+  "check: Geodesics integrated on ciw.lab.surfaces.Cylinder reproduce the exact helix chord and coefficient vs |c_integrated - c_exact| / R",
+  "check: Geodesics integrated on ciw.lab.surfaces.Cylinder reproduce the exact helix chord and coefficient vs fitted coefficient from integrated chords, normalized",
+  "check: Axial rulings (alpha = 90 deg) have zero chord correction; circumferential paths have the largest coefficient 1/(24 R^2) vs max (s - c)/R along integrated rulings",
+  "check: Axial rulings (alpha = 90 deg) have zero chord correction; circumferential paths have the largest coefficient 1/(24 R^2) vs largest coefficient over angles minus circumferential coefficient",
+  "check: Axial rulings (alpha = 90 deg) have zero chord correction; circumferential paths have the largest coefficient 1/(24 R^2) vs circumferential coefficient relative to 1/24",
+  "check: Zero Gaussian curvature does not make chord and geodesic distance equal vs s - c on the circumferential geodesic of Cylinder(1) at s = 0.1",
+  "pytest: tests/test_lab_observation.py::test_t047_cylinder_coefficient",
+  "pytest: tests/test_lab_observation.py::test_chord_derivation_degrades_without_sympy"
+ ],
+ "tests_skipped": [],
+ "title": "Validate the cylinder chord coefficient analytically and numerically.",
+ "uncertainty": "Fit truncation, estimated by adding an s^6 term, is 5.3e-12 normalized for exact-chord fits and 6.7e-10 for integrated-geodesic fits (checked below 1e-9 and 1e-8); the cylinder metric is constant, so RK4 integrates helices up to rounding.",
+ "unresolved_assumptions": [
+  "The part is an exact circular cylinder with a known axis",
+  "Markers lie exactly on one geodesic"
+ ]
+}

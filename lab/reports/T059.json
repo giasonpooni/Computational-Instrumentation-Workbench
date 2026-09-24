@@ -1,0 +1,309 @@
+{
+ "changed_files": [
+  "src/ciw/lab/observation.py",
+  "src/ciw/lab/observation_modes.py",
+  "docs/lab/OBSERVATION.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 4,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "State digest unchanged by retention and by refused updates; exact posterior on dyadic numbers.",
+ "experiment": "Retain records of all seven modes, attempt updates before admission, admit and update one record, then tamper with it, admit an unretained digest and admit a chord into a geodesic-distance store.",
+ "failure_modes_checked": [
+  "update before admission (every mode)",
+  "record altered after admission",
+  "admission of an unretained digest",
+  "camera chord admitted as intrinsic distance"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "modes whose state digest changed on retention or refusal",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "modes whose records lack retention retained / admission not_performed",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Every observation mode can be retained without changing estimator state; retained records carry state_admission not_performed",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact: integer counts, refusal codes or dyadic arithmetic; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "labelled_not_performed": 7,
+    "modes": 7,
+    "state_unchanged": 7
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "not_admitted",
+      "observed_refusal": "not_admitted",
+      "passed": true,
+      "reference": "update from unadmitted camera_chord_distance",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "not_admitted",
+      "observed_refusal": "not_admitted",
+      "passed": true,
+      "reference": "update from unadmitted encoder_displacement",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "not_admitted",
+      "observed_refusal": "not_admitted",
+      "passed": true,
+      "reference": "update from unadmitted image_residual",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "not_admitted",
+      "observed_refusal": "not_admitted",
+      "passed": true,
+      "reference": "update from unadmitted imu_orientation",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "not_admitted",
+      "observed_refusal": "not_admitted",
+      "passed": true,
+      "reference": "update from unadmitted intrinsic_geodesic_distance",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "not_admitted",
+      "observed_refusal": "not_admitted",
+      "passed": true,
+      "reference": "update from unadmitted reconstructed_surface_distance",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "not_admitted",
+      "observed_refusal": "not_admitted",
+      "passed": true,
+      "reference": "update from unadmitted tracker_measurement",
+      "reference_kind": "refusal"
+     }
+    ]
+   },
+   "claim": "Updating state from a retained but unadmitted observation is refused for every mode",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact: integer counts, refusal codes or dyadic arithmetic; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "camera_chord_distance": "not_admitted",
+    "encoder_displacement": "not_admitted",
+    "image_residual": "not_admitted",
+    "imu_orientation": "not_admitted",
+    "intrinsic_geodesic_distance": "not_admitted",
+    "reconstructed_surface_distance": "not_admitted",
+    "tracker_measurement": "not_admitted"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "posterior mean minus 1.5 (prior 1.0/0.5, observation 2.0/0.5)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "posterior variance minus 0.25",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "An admitted, digest-bound observation updates state by the exact Kalman formula",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "dyadic prior, observation and variances; the update is exact",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "mean": 1.5,
+    "variance": 0.25
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "admission_digest_mismatch",
+      "observed_refusal": "admission_digest_mismatch",
+      "passed": true,
+      "reference": "admission digest mismatch",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "not_retained",
+      "observed_refusal": "not_retained",
+      "passed": true,
+      "reference": "not retained",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "mode_substitution",
+      "observed_refusal": "mode_substitution",
+      "passed": true,
+      "reference": "mode substitution",
+      "reference_kind": "refusal"
+     }
+    ]
+   },
+   "claim": "Tampered, unretained and mode-substituted admissions are refused",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact: integer counts, refusal codes or dyadic arithmetic; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "admission_digest_mismatch": "admission_digest_mismatch",
+    "mode_substitution": "mode_substitution",
+    "not_retained": "not_retained"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": "Admission is bookkeeping inside the workbench; actuator authority is decided outside it."
+   },
+   "claim": "Admission as workbench state confers authority to act on a machine",
+   "domain": "actuator_authority",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 2313,
+   "path": "artifacts/T059/retention-study.json",
+   "sha256": "062982e7744be1aba50c1aff49cfc0cdd88758dc2c6131464e418fe96e9c3fe1"
+  }
+ ],
+ "hypothesis": "Retention and admission are separate: any observation can be retained as evidence without changing state, and only a retained, validated, admitted observation bound by content digest can update state.",
+ "input_data": [
+  "One synthetic record per mode, three sequences each",
+  "Prior 1.0 / 0.5 and observation 2.0 / 0.5 for the exact update"
+ ],
+ "mathematical_model": "State (mean, variance) per component; retain(o) stores (o, digest(o)) with state_admission = not_performed; admit(digest) validates mode and references; update applies K = P/(P + R), m' = m + K (z - m), P' = (1 - K) P only for admitted digests.",
+ "number": 59,
+ "numerical_result": "7/7 modes unchanged by retention; all unadmitted updates refused; posterior 1.5 / 0.25; refusals {'admission_digest_mismatch': 'admission_digest_mismatch', 'not_retained': 'not_retained', 'mode_substitution': 'mode_substitution'}.",
+ "observation_model": "Synthetic records; no instrument.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/observation.py": "9ebedc1a1693aaa28965ba0c97837ad2d2c45bf0fd360857cf7b32c0993ed5fc",
+   "src/ciw/lab/observation_modes.py": "bfd6aa4471cc876a7ac2fb8790a4a5c4f478c547350b059311f5e6d53702c83e"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T060: build the deterministic multi-sensor synthetic bench",
+ "report_id": "sha256:25c8a7ee7b08619076bd5b7845cb634f8aa7e30c8571eac51c411576b281b986",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "observation",
+ "state": "completed",
+ "task_id": "T059",
+ "tests_passed": [
+  "check: Every observation mode can be retained without changing estimator state; retained records carry state_admission not_performed vs modes whose state digest changed on retention or refusal",
+  "check: Every observation mode can be retained without changing estimator state; retained records carry state_admission not_performed vs modes whose records lack retention retained / admission not_performed",
+  "check: Updating state from a retained but unadmitted observation is refused for every mode vs update from unadmitted camera_chord_distance",
+  "check: Updating state from a retained but unadmitted observation is refused for every mode vs update from unadmitted encoder_displacement",
+  "check: Updating state from a retained but unadmitted observation is refused for every mode vs update from unadmitted image_residual",
+  "check: Updating state from a retained but unadmitted observation is refused for every mode vs update from unadmitted imu_orientation",
+  "check: Updating state from a retained but unadmitted observation is refused for every mode vs update from unadmitted intrinsic_geodesic_distance",
+  "check: Updating state from a retained but unadmitted observation is refused for every mode vs update from unadmitted reconstructed_surface_distance",
+  "check: Updating state from a retained but unadmitted observation is refused for every mode vs update from unadmitted tracker_measurement",
+  "check: An admitted, digest-bound observation updates state by the exact Kalman formula vs posterior mean minus 1.5 (prior 1.0/0.5, observation 2.0/0.5)",
+  "check: An admitted, digest-bound observation updates state by the exact Kalman formula vs posterior variance minus 0.25",
+  "check: Tampered, unretained and mode-substituted admissions are refused vs admission digest mismatch",
+  "check: Tampered, unretained and mode-substituted admissions are refused vs not retained",
+  "check: Tampered, unretained and mode-substituted admissions are refused vs mode substitution",
+  "pytest: tests/test_lab_observation.py::test_t059_retained_without_admission"
+ ],
+ "tests_skipped": [],
+ "title": "Test whether each observation can be retained without being admitted as state.",
+ "uncertainty": "Exact; no stochastic component.",
+ "unresolved_assumptions": [
+  "Admission decisions are declared, not reviewed by an operator",
+  "State is per-component independent (no cross-covariance)"
+ ]
+}

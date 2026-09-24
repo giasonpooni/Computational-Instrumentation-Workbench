@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420" font-family="sans-serif" font-size="11">
+<rect width="640" height="420" fill="#ffffff"/>
+<text x="78" y="22" font-size="13" font-weight="bold">max |det Phi - 1|, rk4, constant curvature</text>
+<rect x="78" y="40" width="392" height="322" fill="none" stroke="#333"/>
+<line x1="244.14" y1="40" x2="244.14" y2="362" stroke="#e5e7eb"/>
+<text x="244.14" y="378" text-anchor="middle">1e-1</text>
+<line x1="78" y1="326.51" x2="470" y2="326.51" stroke="#e5e7eb"/>
+<text x="72" y="330.51" text-anchor="end">1e-9</text>
+<line x1="78" y1="282.09" x2="470" y2="282.09" stroke="#e5e7eb"/>
+<text x="72" y="286.09" text-anchor="end">1e-8</text>
+<line x1="78" y1="237.67" x2="470" y2="237.67" stroke="#e5e7eb"/>
+<text x="72" y="241.67" text-anchor="end">1e-7</text>
+<line x1="78" y1="193.25" x2="470" y2="193.25" stroke="#e5e7eb"/>
+<text x="72" y="197.25" text-anchor="end">1e-6</text>
+<line x1="78" y1="148.84" x2="470" y2="148.84" stroke="#e5e7eb"/>
+<text x="72" y="152.84" text-anchor="end">1e-5</text>
+<line x1="78" y1="104.42" x2="470" y2="104.42" stroke="#e5e7eb"/>
+<text x="72" y="108.42" text-anchor="end">1e-4</text>
+<line x1="78" y1="60.00" x2="470" y2="60.00" stroke="#e5e7eb"/>
+<text x="72" y="64.00" text-anchor="end">1e-3</text>
+<text x="274.00" y="406" text-anchor="middle">step h</text>
+<text x="16" y="201.00" text-anchor="middle" transform="rotate(-90 16 201.00)">max |det Phi - 1|</text>
+<path d="M413.15,51.93 L333.78,118.42 L254.40,185.18 L175.03,252.02" fill="none" stroke="#1f5fa8" stroke-width="1.8"/>
+<circle cx="413.15" cy="51.93" r="2.6" fill="#1f5fa8"/>
+<circle cx="333.78" cy="118.42" r="2.6" fill="#1f5fa8"/>
+<circle cx="254.40" cy="185.18" r="2.6" fill="#1f5fa8"/>
+<circle cx="175.03" cy="252.02" r="2.6" fill="#1f5fa8"/>
+<line x1="482" y1="52" x2="502" y2="52" stroke="#1f5fa8" stroke-width="2"/>
+<text x="508" y="56">sphere-great-circle</text>
+<path d="M316.12,149.43 L236.75,216.35 L157.37,283.22 L78.00,350.07" fill="none" stroke="#c2410c" stroke-width="1.8"/>
+<circle cx="316.12" cy="149.43" r="2.6" fill="#c2410c"/>
+<circle cx="236.75" cy="216.35" r="2.6" fill="#c2410c"/>
+<circle cx="157.37" cy="283.22" r="2.6" fill="#c2410c"/>
+<circle cx="78.00" cy="350.07" r="2.6" fill="#c2410c"/>
+<line x1="482" y1="70" x2="502" y2="70" stroke="#c2410c" stroke-width="2"/>
+<text x="508" y="74">hyperbolic-long</text>
+<path d="M470.00,57.99 L390.63,124.52 L311.25,191.30 L231.88,258.14" fill="none" stroke="#15803d" stroke-width="1.8"/>
+<circle cx="470.00" cy="57.99" r="2.6" fill="#15803d"/>
+<circle cx="390.63" cy="124.52" r="2.6" fill="#15803d"/>
+<circle cx="311.25" cy="191.30" r="2.6" fill="#15803d"/>
+<circle cx="231.88" cy="258.14" r="2.6" fill="#15803d"/>
+<line x1="482" y1="88" x2="502" y2="88" stroke="#15803d" stroke-width="2"/>
+<text x="508" y="92">torus-outer-equator</text>
+<path d="M404.66,59.62 L325.29,126.78 L245.92,193.71 L166.54,260.60" fill="none" stroke="#7e22ce" stroke-width="1.8"/>
+<circle cx="404.66" cy="59.62" r="2.6" fill="#7e22ce"/>
+<circle cx="325.29" cy="126.78" r="2.6" fill="#7e22ce"/>
+<circle cx="245.92" cy="193.71" r="2.6" fill="#7e22ce"/>
+<circle cx="166.54" cy="260.60" r="2.6" fill="#7e22ce"/>
+<line x1="482" y1="106" x2="502" y2="106" stroke="#7e22ce" stroke-width="2"/>
+<text x="508" y="110">torus-inner-equator</text>
+</svg>

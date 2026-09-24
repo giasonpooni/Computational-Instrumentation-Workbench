@@ -1,0 +1,640 @@
+{
+ "changed_files": [
+  "src/ciw/lab/surfaces_discrete_mesh.py",
+  "src/ciw/lab/surfaces_discrete_mesh_geometry.py",
+  "src/ciw/lab/surfaces_discrete_mesh_studies.py",
+  "docs/lab/MESH_GEODESICS.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 8,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Delta fixed, h -> 0: convergence; h fixed, delta -> 0: the flat value L. Valence-5 limit 4.5 - 1.5 sqrt 5.",
+ "experiment": "Paired traces at +-delta on each level; angle defect with barycentric and mixed Voronoi areas; valence-6 errors split by the icosahedral mirror planes; torus grids.",
+ "failure_modes_checked": [
+  "pairs straddling a vertex (jumps)",
+  "identical face sequences (flat regime)",
+  "valence-5 versus valence-6 vertices",
+  "Voronoi versus barycentric area",
+  "mirror-plane versus generic valence-6 vertices",
+  "Gauss-Bonnet exactness"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 6.80930867247298e-11,
+      "passed": true,
+      "reference": "closed form sin(L)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-08
+     }
+    ],
+    "generator": {
+     "length": 2.0,
+     "name": "ciw.lab.jacobi.transfer",
+     "steps": 200
+    }
+   },
+   "claim": "The smooth ciw.lab.jacobi heading column equals sin(L) on the unit sphere",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "200-step integration error observed",
+    "kind": "truncation_bound",
+    "value": 6.80930867247298e-11
+   },
+   "unit": null,
+   "value": 6.80930867247298e-11
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 1.532560194023188,
+      "passed": true,
+      "reference": "fitted order",
+      "reference_kind": "self_convergence",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 1.4510923140710752,
+      "passed": true,
+      "reference": "finest-pair local order",
+      "reference_kind": "self_convergence",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 1.9487654406527475,
+      "passed": true,
+      "reference": "smallest coarse / fine error ratio between levels",
+      "reference_kind": "self_convergence",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "le",
+      "observed": 0.0011724521439582063,
+      "passed": true,
+      "reference": "mean abs error at the finest level",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.01
+     }
+    ],
+    "generator": {
+     "delta": 0.1,
+     "levels": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "name": "ciw.lab.surfaces_discrete_mesh_geometry.icosphere"
+    }
+   },
+   "claim": "Finite-difference mesh Jacobi fields with a 0.1 rad heading offset converge to the smooth field",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-06,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "largest deviation of a pairwise local order from the least-squares order",
+    "kind": "reference_error",
+    "value": 0.5698449997011262
+   },
+   "unit": null,
+   "value": {
+    "levels": [
+     2,
+     3,
+     4,
+     5,
+     6,
+     7
+    ],
+    "local_orders": [
+     1.4335924123751562,
+     1.7508627738218447,
+     1.945699227268726,
+     0.9627151943220619,
+     1.4510923140710752
+    ],
+    "mean_abs_error": [
+     0.21570040477427269,
+     0.08066883462351652,
+     0.024043452524447246,
+     0.0062468266296755726,
+     0.003205530280536569,
+     0.0011724521439582063
+    ],
+    "order": 1.532560194023188
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 4.96358509849415e-10,
+      "passed": true,
+      "reference": "max |j_FD - L| on levels with identical face sequences",
+      "reference_kind": "analytic",
+      "tolerance": 1e-06
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "pairs with differing face sequences below the crossover level",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 4.0,
+      "passed": true,
+      "reference": "pairs straddling a vertex at the crossover level",
+      "reference_kind": "self_convergence",
+      "tolerance": 1.0
+     }
+    ],
+    "derivation": "Paired traces through the same face sequence share one planar development, so |X+ - X-| = 2 L sin(delta) and j = L exactly"
+   },
+   "claim": "At fixed mesh a 1e-5 heading offset gives the flat Jacobi value L instead of sin(L) while no vertex lies between the paired geodesics",
+   "counterexample": {
+    "statement": "On a fixed mesh the finite-difference Jacobi field converges to the smooth Jacobi field as the perturbation tends to zero",
+    "witness": {
+     "delta": 1e-05,
+     "j_fd": 2.0,
+     "j_smooth": 0.9092974268256817,
+     "levels": [
+      2,
+      3,
+      4,
+      5,
+      6
+     ]
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-08,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "endpoint rounding amplified by 1 / (2 sin delta) ~ 5e4",
+    "kind": "roundoff",
+    "value": 4.96358509849415e-10
+   },
+   "unit": null,
+   "value": {
+    "crossover": {
+     "identical_face_sequences": 2,
+     "level": 7,
+     "pairs": 6,
+     "swept_vertices_per_pair": 0.36927819036059695
+    },
+    "error_vs_smooth": 1.0907025731743183,
+    "identical_face_sequences": 30,
+    "levels": [
+     2,
+     3,
+     4,
+     5,
+     6
+    ],
+    "max_flat_deviation": 4.96358509849415e-10,
+    "pairs": 30,
+    "swept_vertices_per_pair": [
+     0.0003651265660722935,
+     0.001446983058138348,
+     0.005774409026402567,
+     0.023084112899459445,
+     0.09232292839168695,
+     0.36927819036059695
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 7.589533820295813e-06,
+      "passed": true,
+      "reference": "finest valence-5 value - limit",
+      "reference_kind": "analytic",
+      "tolerance": 0.0001
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.00110964806591074,
+      "passed": true,
+      "reference": "order of |K5 - limit| - 2 (levels 4-7)",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.2
+     }
+    ],
+    "derivation": "Regular valence-n star on an umbilic surface: defect ~ Voronoi cell area, ratio 3 / (4 cos^2(pi/n)); docs/lab/MESH_GEODESICS.md"
+   },
+   "claim": "Angle-defect curvature at valence-5 icosphere vertices converges to (4.5 - 1.5 sqrt 5) K, not K",
+   "counterexample": {
+    "statement": "The angle defect over one third of the incident area converges pointwise to the Gaussian curvature under refinement",
+    "witness": {
+     "finest_value": 1.1459056232841356,
+     "limit": 1.1458980337503153,
+     "mesh": "icosphere, 12 valence-5 vertices"
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "remaining approach to the limit if the deviation keeps falling by the observed factor 4 per level",
+    "kind": "truncation_bound",
+    "value": 2.529844606765271e-06
+   },
+   "unit": null,
+   "value": {
+    "local_orders_to_limit": [
+     2.0026513212346653,
+     2.000662792609324,
+     2.000164906919444
+    ],
+    "order_to_limit": 2.0011096480659107,
+    "predicted_limit": 1.1458980337503153,
+    "valence5_values": [
+     1.1795144264904374,
+     1.1538267003954983,
+     1.1478507235912712,
+     1.1463843669218348,
+     1.1460195021320707,
+     1.1459283936643228,
+     1.1459056232841356
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 1.6496335229598813e-05,
+      "passed": true,
+      "reference": "finest valence-5 Voronoi error",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.001
+     },
+     {
+      "comparison": "signed_ge",
+      "observed": 0.06989420286809844,
+      "passed": true,
+      "reference": "coarsest minus finest Voronoi valence-5 error",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "levels": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "name": "ciw.lab.surfaces_discrete_mesh_geometry.mixed_voronoi_area"
+    }
+   },
+   "claim": "With the mixed Voronoi area the valence-5 curvature estimate converges",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "angle sums and areas in double precision",
+    "kind": "roundoff",
+    "value": 1e-13
+   },
+   "unit": null,
+   "value": [
+    0.06991069920332804,
+    0.01703436697063121,
+    0.004231854874286567,
+    0.001056307420673086,
+    0.00026397356576057796,
+    6.598694225457002e-05,
+    1.6496335229598813e-05
+   ]
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 0.0019319256495926584,
+      "passed": true,
+      "reference": "smallest base-edge valence-6 max error over levels 4-7",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.0015
+     },
+     {
+      "comparison": "signed_ge",
+      "observed": 0.0006560451538818457,
+      "passed": true,
+      "reference": "finest minus level-4 base-edge max error",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "le",
+      "observed": 2.225899449426194e-05,
+      "passed": true,
+      "reference": "finest mixed-Voronoi max error on the same mirror-plane vertices",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.0001
+     }
+    ],
+    "generator": {
+     "levels": [
+      4,
+      5,
+      6,
+      7
+     ],
+     "name": "ciw.lab.surfaces_discrete_mesh_studies.icosahedral_mirror_classes"
+    }
+   },
+   "claim": "Barycentric angle-defect curvature does not converge pointwise at valence-6 icosphere vertices on the icosahedral mirror planes",
+   "counterexample": {
+    "statement": "Angle-defect curvature with the barycentric area converges pointwise at the valence-6 vertices of icosphere refinements",
+    "witness": {
+     "base_edge_max_error": [
+      0.0019319256495926584,
+      0.002431873259649331,
+      0.0025567564634368933,
+      0.002587970803474504
+     ],
+     "levels": [
+      4,
+      5,
+      6,
+      7
+     ],
+     "median_max_error": [
+      0.0026966059689821353,
+      0.002135126501182638,
+      0.001994888688580332,
+      0.001959837496334327
+     ]
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "angle sums and areas in double precision",
+    "kind": "roundoff",
+    "value": 1e-13
+   },
+   "unit": null,
+   "value": {
+    "base_edge_max_error": [
+     0.0019319256495926584,
+     0.002431873259649331,
+     0.0025567564634368933,
+     0.002587970803474504
+    ],
+    "levels": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "median_max_error": [
+     0.0026966059689821353,
+     0.002135126501182638,
+     0.001994888688580332,
+     0.001959837496334327
+    ],
+    "off_mirror_max_error": [
+     0.0010940909114729447,
+     0.0005391859696588508,
+     0.0004327700549208169,
+     0.0004645538629906021
+    ],
+    "voronoi_mirror_max_error": [
+     0.001411643759544834,
+     0.0003553593135363631,
+     8.89965259738279e-05,
+     2.225899449426194e-05
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 3.963052108701959e-11,
+      "passed": true,
+      "reference": "max |sum of defects - 2 pi chi|",
+      "reference_kind": "invariant",
+      "tolerance": 1e-09
+     }
+    ],
+    "derivation": "Discrete Gauss-Bonnet: sum of angle defects = 2 pi chi for a closed mesh"
+   },
+   "claim": "Discrete Gauss-Bonnet holds: angle defects sum to 4 pi on icospheres and 0 on tori",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "accumulated rounding of the angle sum",
+    "kind": "roundoff",
+    "value": 3.963052108701959e-11
+   },
+   "unit": null,
+   "value": 3.963052108701959e-11
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": -0.06657904687627236,
+      "passed": true,
+      "reference": "fitted order - 2",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.2
+     }
+    ],
+    "generator": {
+     "n_theta": [
+      8,
+      16,
+      32,
+      64
+     ],
+     "name": "ciw.lab.surfaces_discrete_mesh_geometry.torus_mesh"
+    }
+   },
+   "claim": "Angle-defect curvature on regular torus grids converges at second order to the sign-changing K",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-06,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "largest deviation of a pairwise local order from the least-squares order",
+    "kind": "reference_error",
+    "value": 0.09213828478355301
+   },
+   "unit": null,
+   "value": {
+    "local_orders": [
+     1.8412826683401746,
+     1.9587870732947334,
+     1.9895863910151574
+    ],
+    "max_error": [
+     0.08554656030666064,
+     0.024507797262692144,
+     0.006348821947949501,
+     0.0016015537673207403
+    ],
+    "order": 1.9334209531237276
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": "No scanned surface, device or calibration was acquired; the computation is synthetic."
+   },
+   "claim": "Angle-defect curvature of a scanned mesh estimates the Gaussian curvature of the physical part",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 13937,
+   "path": "artifacts/T040/jacobi-and-curvature.json",
+   "sha256": "14191feeca8853f9f5345d086b842dff3633e9648c8593bdd5e0b808d1051558"
+  },
+  {
+   "bytes": 6893,
+   "path": "artifacts/T040/jacobi-curvature.svg",
+   "sha256": "48d777b3e23a2be7e82e2c244be00c2d56d4e83d95c12b20e7e4ab91542a60ea"
+  }
+ ],
+ "hypothesis": "Mesh Jacobi fields and angle-defect curvature approximate the smooth ones only in the right order of limits and at vertices whose stars become regular.",
+ "input_data": [
+  "icosphere levels 1-7",
+  "torus grids n_theta=8..64 (R=2, r=1)",
+  "six declared geodesics, L=2",
+  "heading offsets 0.1, 0.03, 0.01, 1e-5 rad",
+  "icosahedral mirror planes (15 great circles)"
+ ],
+ "mathematical_model": "Smooth: j'' + K j = 0, j_head(s) = sin(s) for K = 1. Mesh: curvature is concentrated at vertices (cone points); two geodesics are rotated relative to each other only when a vertex lies between them, so the finite-difference field depends on delta/h. For vertices on a sphere the angle defect tends to K times the circumcentric (Voronoi) cell area, so defect/(A/3) tends to K Voronoi/(A/3): 3K / (4 cos^2(pi/n)) at regular valence-n stars, and a value other than K wherever the star stays irregular.",
+ "number": 40,
+ "numerical_result": "FD Jacobi (delta=0.1): mean error 2.16e-01, 8.07e-02, 2.40e-02, 6.25e-03, 3.21e-03, 1.17e-03 (levels 2-7, order 1.53, pairwise 1.43, 1.75, 1.95, 0.96, 1.45); delta=1e-05: 30/30 pairs on levels 2-6 share face sequences and give j = L = 2.0 (deviation 5.0e-10), error 1.0907; at level 7 (about 0.37 vertices expected in each pair's wedge) 4/6 pairs straddle a vertex. Valence-5 angle-defect curvature 1.1459056 vs predicted limit 1.1458980 (order 2.00); Voronoi valence-5 error 1.6e-05. Valence-6 max error on base-edge arcs 1.93e-03, 2.43e-03, 2.56e-03, 2.59e-03, on face medians 2.70e-03, 2.14e-03, 1.99e-03, 1.96e-03, off the mirror planes 1.09e-03, 5.39e-04, 4.33e-04, 4.65e-04 (levels 4-7); torus order 1.93; Gauss-Bonnet residual 4.0e-11.",
+ "observation_model": "Central difference |X+(L) - X-(L)| / (2 sin delta), exact for the smooth unit sphere; vertex curvature estimates against K = 1 or the torus closed form.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/surfaces_discrete_mesh.py": "60ba6ad84646cb8fff5dfa94cc609eb405b633ef3e75a535333dadd77e5bf592",
+   "src/ciw/lab/surfaces_discrete_mesh_geometry.py": "8788d479e31b40eaaa93aca1ff5aa293aa03fa681dfef7d9d5fe225f83994e7d",
+   "src/ciw/lab/surfaces_discrete_mesh_studies.py": "afac8f09b471f4d995289ed69e37f5a240b7d79c65392e35015a830f67d757b1"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T041: quantify how mesh quality (jitter, slivers, anisotropy) changes geodesic and curvature errors.",
+ "report_id": "sha256:fa79b72df7ce8404ed1c3169d2f25b7465f599eae737cffab29c1b4e82400560",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "surfaces-discrete",
+ "state": "completed",
+ "task_id": "T040",
+ "tests_passed": [
+  "check: The smooth ciw.lab.jacobi heading column equals sin(L) on the unit sphere vs closed form sin(L)",
+  "check: Finite-difference mesh Jacobi fields with a 0.1 rad heading offset converge to the smooth field vs fitted order",
+  "check: Finite-difference mesh Jacobi fields with a 0.1 rad heading offset converge to the smooth field vs finest-pair local order",
+  "check: Finite-difference mesh Jacobi fields with a 0.1 rad heading offset converge to the smooth field vs smallest coarse / fine error ratio between levels",
+  "check: Finite-difference mesh Jacobi fields with a 0.1 rad heading offset converge to the smooth field vs mean abs error at the finest level",
+  "check: At fixed mesh a 1e-5 heading offset gives the flat Jacobi value L instead of sin(L) while no vertex lies between the paired geodesics vs max |j_FD - L| on levels with identical face sequences",
+  "check: At fixed mesh a 1e-5 heading offset gives the flat Jacobi value L instead of sin(L) while no vertex lies between the paired geodesics vs pairs with differing face sequences below the crossover level",
+  "check: At fixed mesh a 1e-5 heading offset gives the flat Jacobi value L instead of sin(L) while no vertex lies between the paired geodesics vs pairs straddling a vertex at the crossover level",
+  "check: Angle-defect curvature at valence-5 icosphere vertices converges to (4.5 - 1.5 sqrt 5) K, not K vs finest valence-5 value - limit",
+  "check: Angle-defect curvature at valence-5 icosphere vertices converges to (4.5 - 1.5 sqrt 5) K, not K vs order of |K5 - limit| - 2 (levels 4-7)",
+  "check: With the mixed Voronoi area the valence-5 curvature estimate converges vs finest valence-5 Voronoi error",
+  "check: With the mixed Voronoi area the valence-5 curvature estimate converges vs coarsest minus finest Voronoi valence-5 error",
+  "check: Barycentric angle-defect curvature does not converge pointwise at valence-6 icosphere vertices on the icosahedral mirror planes vs smallest base-edge valence-6 max error over levels 4-7",
+  "check: Barycentric angle-defect curvature does not converge pointwise at valence-6 icosphere vertices on the icosahedral mirror planes vs finest minus level-4 base-edge max error",
+  "check: Barycentric angle-defect curvature does not converge pointwise at valence-6 icosphere vertices on the icosahedral mirror planes vs finest mixed-Voronoi max error on the same mirror-plane vertices",
+  "check: Discrete Gauss-Bonnet holds: angle defects sum to 4 pi on icospheres and 0 on tori vs max |sum of defects - 2 pi chi|",
+  "check: Angle-defect curvature on regular torus grids converges at second order to the sign-changing K vs fitted order - 2",
+  "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_flat_jacobi_counterexample_and_valence_limit",
+  "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_jacobi_task_report"
+ ],
+ "tests_skipped": [],
+ "title": "Compare smooth and mesh Jacobi approximations.",
+ "uncertainty": "Deterministic. At intermediate delta the FD error depends on how many vertices lie between the paired geodesics (a pair that straddles a vertex jumps), so intermediate values are reported without a claim; only the two limits are asserted. The expected wedge vertex count is a heuristic for evenly spread vertices.",
+ "unresolved_assumptions": [
+  "The valence-6 plateau (about 2.6e-3) lives on the icosahedral mirror planes (base-edge arcs and base-face medians). The mixed Voronoi area converges on the same vertices, so their stars stay irregular (Voronoi cell different from A/3) under refinement; why is not derived (a kink of the recursive midpoint map across base edges is a plausible cause there, and no mechanism is given for the medians), and no closed form for the plateau is given. The off-mirror maximum stops decreasing near 4.5e-4 at level 7, so pointwise convergence off the planes is not established either.",
+  "The torus grid is regular; irregular torus meshes are not tested here."
+ ]
+}

@@ -1,0 +1,881 @@
+{
+ "allowed_calls": [
+  [
+   "integrate_adaptive",
+   "sqrt"
+  ]
+ ],
+ "drift_orders": {
+  "euler": {
+   "cylinder-polar": 0.9784061511021989,
+   "gaussian-bump": 1.0026927194942863,
+   "hyperbolic-plane": 1.0129999457858216,
+   "plane-polar": 0.9784061511020454,
+   "saddle": 1.000362367247455,
+   "sphere": 1.017589740880541,
+   "torus": 1.0029522639732351
+  },
+  "midpoint": {
+   "cylinder-polar": 2.0110155588928866,
+   "gaussian-bump": 2.004401614951156,
+   "hyperbolic-plane": 2.02570423720593,
+   "plane-polar": 2.0110155588941163,
+   "saddle": 2.0137912582383946,
+   "sphere": 1.982187034198236,
+   "torus": 2.0017823670391697
+  },
+  "rk4": {
+   "cylinder-polar": 3.9580484499153137,
+   "gaussian-bump": 3.9649488290229997,
+   "hyperbolic-plane": 3.9968380983190426,
+   "plane-polar": 3.9580484471077177,
+   "saddle": 4.015414549777357,
+   "sphere": 3.9054584796067524,
+   "torus": 3.9964214006969754
+  }
+ },
+ "exponential_growth_relative_error": {
+  "adaptive_1e-10": 4.561601168962278e-11,
+  "rk4_64": 1.548614416264312e-08
+ },
+ "flat_cartesian_max_drift": {
+  "cylinder": 2.220446049250313e-16,
+  "plane": 0.0
+ },
+ "nonunit_start": {
+  "hyperbolic-plane": {
+   "adaptive": {
+    "final_g": 1.6900000000146223,
+    "max_abs_g_minus_1.69": 1.9225732117433836e-11,
+    "min_abs_g_minus_1": 0.6899999999974407
+   },
+   "euler": {
+    "final_g": 1.7276900555548804,
+    "max_abs_g_minus_1.69": 0.037690055554880475,
+    "min_abs_g_minus_1": 0.6900000000000004
+   },
+   "midpoint": {
+    "final_g": 1.6898759515263602,
+    "max_abs_g_minus_1.69": 0.00012404847363978178,
+    "min_abs_g_minus_1": 0.6898759515263602
+   },
+   "rk4": {
+    "final_g": 1.6899999999405322,
+    "max_abs_g_minus_1.69": 4.0646286336709636e-10,
+    "min_abs_g_minus_1": 0.6899999995935371
+   }
+  },
+  "sphere": {
+   "adaptive": {
+    "final_g": 1.6899999999511004,
+    "max_abs_g_minus_1.69": 5.97679683522756e-11,
+    "min_abs_g_minus_1": 0.689999999940232
+   },
+   "euler": {
+    "final_g": 1.6928500055028193,
+    "max_abs_g_minus_1.69": 0.016989282782008175,
+    "min_abs_g_minus_1": 0.6730107172179918
+   },
+   "midpoint": {
+    "final_g": 1.690172751323753,
+    "max_abs_g_minus_1.69": 0.0003014616178931284,
+    "min_abs_g_minus_1": 0.6899809404015425
+   },
+   "rk4": {
+    "final_g": 1.6900000030533842,
+    "max_abs_g_minus_1.69": 2.1377283720980245e-08,
+    "min_abs_g_minus_1": 0.6899999973589646
+   }
+  },
+  "torus": {
+   "adaptive": {
+    "final_g": 1.689999999977871,
+    "max_abs_g_minus_1.69": 2.3015367389689345e-11,
+    "min_abs_g_minus_1": 0.6899999999769846
+   },
+   "euler": {
+    "final_g": 1.698744718232694,
+    "max_abs_g_minus_1.69": 0.01002380424584981,
+    "min_abs_g_minus_1": 0.6864387430279459
+   },
+   "midpoint": {
+    "final_g": 1.6900145690801187,
+    "max_abs_g_minus_1.69": 0.0001357891379976106,
+    "min_abs_g_minus_1": 0.6900000000000002
+   },
+   "rk4": {
+    "final_g": 1.6899999995003046,
+    "max_abs_g_minus_1.69": 3.020884431492732e-09,
+    "min_abs_g_minus_1": 0.6899999992822492
+   }
+  }
+ },
+ "normalization_calls": [],
+ "pairwise_drift_orders": {
+  "euler/cylinder-polar": [
+   0.9617906491334166,
+   0.9815007869604148,
+   0.9908954719266923
+  ],
+  "euler/gaussian-bump": [
+   1.0051807229052487,
+   1.0019451609581618,
+   1.0012014607981539
+  ],
+  "euler/hyperbolic-plane": [
+   1.022641405527407,
+   1.0112907461585185,
+   1.0056374188806398
+  ],
+  "euler/plane-polar": [
+   0.9617906491333007,
+   0.9815007869601187,
+   0.9908954719266935
+  ],
+  "euler/saddle": [
+   1.0006234490144845,
+   1.0003179315852038,
+   1.0001605330300942
+  ],
+  "euler/sphere": [
+   1.0309333265324576,
+   1.0151527701159515,
+   1.0074954495814117
+  ],
+  "euler/torus": [
+   1.0047333418030826,
+   1.0027396879752928,
+   1.0014546208073136
+  ],
+  "midpoint/cylinder-polar": [
+   2.018672828449455,
+   2.009781367007164,
+   2.0050038785172806
+  ],
+  "midpoint/gaussian-bump": [
+   2.008413418753362,
+   2.0037126041760858,
+   2.0013084921823756
+  ],
+  "midpoint/hyperbolic-plane": [
+   2.044040925342495,
+   2.0227018666355647,
+   2.011370709829857
+  ],
+  "midpoint/plane-polar": [
+   2.0186728284485334,
+   2.0097813670222298,
+   2.005003878502219
+  ],
+  "midpoint/saddle": [
+   2.023949881771198,
+   2.011996053379388,
+   2.0060262411842764
+  ],
+  "midpoint/sphere": [
+   1.9694456334984598,
+   1.9843415352352332,
+   1.9920557668486814
+  ],
+  "midpoint/torus": [
+   2.0034001131170496,
+   2.0014187578592155,
+   2.000649433201232
+  ],
+  "rk4/cylinder-polar": [
+   3.9250736775144413,
+   3.9643585798811634,
+   3.982609715695046
+  ],
+  "rk4/gaussian-bump": [
+   3.9416937111140533,
+   3.9683578712771506,
+   3.9836585572597296
+  ],
+  "rk4/hyperbolic-plane": [
+   4.010992087786072,
+   3.9902932045277426,
+   3.9914106339070767
+  ],
+  "rk4/plane-polar": [
+   3.9250737055904,
+   3.964358551805204,
+   3.982609715695046
+  ],
+  "rk4/saddle": [
+   4.038073313076206,
+   4.016111838220525,
+   3.991826068554291
+  ],
+  "rk4/sphere": [
+   3.827067841015929,
+   3.921502946999815,
+   3.9624564950068075
+  ],
+  "rk4/torus": [
+   3.9968226090638788,
+   3.9946212682485784,
+   3.9984203689279587
+  ]
+ },
+ "renormalized_euler": [
+  {
+   "error": 0.028046632309362645,
+   "h": 0.03125,
+   "max_speed_drift": 4.440892098500626e-16,
+   "steps": 64
+  },
+  {
+   "error": 0.013938653977328111,
+   "h": 0.015625,
+   "max_speed_drift": 4.440892098500626e-16,
+   "steps": 128
+  },
+  {
+   "error": 0.006946765695621122,
+   "h": 0.0078125,
+   "max_speed_drift": 4.440892098500626e-16,
+   "steps": 256
+  },
+  {
+   "error": 0.0034675786147426485,
+   "h": 0.00390625,
+   "max_speed_drift": 4.440892098500626e-16,
+   "steps": 512
+  }
+ ],
+ "renormalized_euler_counterexample": {
+  "plain_endpoint_error": 0.014891199556742403,
+  "plain_max_speed_drift": 0.007682993302337793,
+  "renormalized_endpoint_error": 0.013938653977328111,
+  "renormalized_error_order": 1.0052159069590567,
+  "renormalized_max_speed_drift": 4.440892098500626e-16,
+  "steps": 128
+ },
+ "scanned_functions": [
+  "ciw.lab.integrators.step_euler",
+  "ciw.lab.integrators.step_midpoint",
+  "ciw.lab.integrators.step_rk4",
+  "ciw.lab.integrators.integrate_fixed",
+  "ciw.lab.integrators.richardson_rk4",
+  "ciw.lab.integrators.integrate_adaptive",
+  "ciw.lab.jacobi.rhs",
+  "ciw.lab.jacobi.transfer",
+  "ciw.lab.surfaces.Surface.geodesic_rhs",
+  "ciw.lab.surfaces.Surface.christoffel"
+ ],
+ "table": {
+  "cylinder": {
+   "euler": [
+    {
+     "final_speed_drift": 0.0,
+     "h": 0.046875,
+     "max_speed_drift": 1.1102230246251565e-16
+    },
+    {
+     "final_speed_drift": 0.0,
+     "h": 0.0234375,
+     "max_speed_drift": 2.220446049250313e-16
+    },
+    {
+     "final_speed_drift": 0.0,
+     "h": 0.01171875,
+     "max_speed_drift": 2.220446049250313e-16
+    },
+    {
+     "final_speed_drift": 0.0,
+     "h": 0.005859375,
+     "max_speed_drift": 2.220446049250313e-16
+    }
+   ],
+   "midpoint": [
+    {
+     "final_speed_drift": -1.1102230246251565e-16,
+     "h": 0.09375,
+     "max_speed_drift": 1.1102230246251565e-16
+    },
+    {
+     "final_speed_drift": 0.0,
+     "h": 0.046875,
+     "max_speed_drift": 1.1102230246251565e-16
+    },
+    {
+     "final_speed_drift": 0.0,
+     "h": 0.0234375,
+     "max_speed_drift": 2.220446049250313e-16
+    },
+    {
+     "final_speed_drift": 0.0,
+     "h": 0.01171875,
+     "max_speed_drift": 2.220446049250313e-16
+    }
+   ],
+   "rk4": [
+    {
+     "final_speed_drift": 0.0,
+     "h": 0.125,
+     "max_speed_drift": 1.1102230246251565e-16
+    },
+    {
+     "final_speed_drift": 0.0,
+     "h": 0.0625,
+     "max_speed_drift": 2.220446049250313e-16
+    },
+    {
+     "final_speed_drift": 0.0,
+     "h": 0.03125,
+     "max_speed_drift": 2.220446049250313e-16
+    },
+    {
+     "final_speed_drift": 0.0,
+     "h": 0.015625,
+     "max_speed_drift": 2.220446049250313e-16
+    }
+   ]
+  },
+  "cylinder-polar": {
+   "euler": [
+    {
+     "final_speed_drift": -0.004147888873505701,
+     "h": 0.03125,
+     "max_speed_drift": 0.004147888873505701
+    },
+    {
+     "final_speed_drift": -0.0021296060783863036,
+     "h": 0.015625,
+     "max_speed_drift": 0.0021296060783863036
+    },
+    {
+     "final_speed_drift": -0.001078544578396845,
+     "h": 0.0078125,
+     "max_speed_drift": 0.001078544578396845
+    },
+    {
+     "final_speed_drift": -0.0005426862780101294,
+     "h": 0.00390625,
+     "max_speed_drift": 0.0005426862780101294
+    }
+   ],
+   "midpoint": [
+    {
+     "final_speed_drift": -0.0005204437442501986,
+     "h": 0.0625,
+     "max_speed_drift": 0.0005205096581401003
+    },
+    {
+     "final_speed_drift": -0.00012842725206763106,
+     "h": 0.03125,
+     "max_speed_drift": 0.00012845402572703168
+    },
+    {
+     "final_speed_drift": -3.1888407809432806e-05,
+     "h": 0.015625,
+     "max_speed_drift": 3.189651562574003e-05
+    },
+    {
+     "final_speed_drift": -7.944307624629943e-06,
+     "h": 0.0078125,
+     "max_speed_drift": 7.94651915292377e-06
+    }
+   ],
+   "rk4": [
+    {
+     "final_speed_drift": 1.733185808205917e-07,
+     "h": 0.08333333333333333,
+     "max_speed_drift": 1.733185808205917e-07
+    },
+    {
+     "final_speed_drift": 1.1409857281208247e-08,
+     "h": 0.041666666666666664,
+     "max_speed_drift": 1.1409857281208247e-08
+    },
+    {
+     "final_speed_drift": 7.309528538002041e-10,
+     "h": 0.020833333333333332,
+     "max_speed_drift": 7.309528538002041e-10
+    },
+    {
+     "final_speed_drift": 4.623856852958852e-11,
+     "h": 0.010416666666666666,
+     "max_speed_drift": 4.623856852958852e-11
+    }
+   ]
+  },
+  "gaussian-bump": {
+   "euler": [
+    {
+     "final_speed_drift": -0.0015826194414013672,
+     "h": 0.0390625,
+     "max_speed_drift": 0.0025909625700106798
+    },
+    {
+     "final_speed_drift": -0.0007909304205526713,
+     "h": 0.01953125,
+     "max_speed_drift": 0.0012908375500334524
+    },
+    {
+     "final_speed_drift": -0.00039538980957043446,
+     "h": 0.009765625,
+     "max_speed_drift": 0.0006445491543407567
+    },
+    {
+     "final_speed_drift": -0.00019767847288532092,
+     "h": 0.0048828125,
+     "max_speed_drift": 0.00032200630211820513
+    }
+   ],
+   "midpoint": [
+    {
+     "final_speed_drift": 2.1721068296898238e-05,
+     "h": 0.078125,
+     "max_speed_drift": 0.00014617667946614787
+    },
+    {
+     "final_speed_drift": 5.110804734309582e-06,
+     "h": 0.0390625,
+     "max_speed_drift": 3.6331674073242226e-05
+    },
+    {
+     "final_speed_drift": 1.2378308380522896e-06,
+     "h": 0.01953125,
+     "max_speed_drift": 9.059574756387079e-06
+    },
+    {
+     "final_speed_drift": 3.0448796062287897e-07,
+     "h": 0.009765625,
+     "max_speed_drift": 2.2628404123814505e-06
+    }
+   ],
+   "rk4": [
+    {
+     "final_speed_drift": -1.1062536886541352e-08,
+     "h": 0.10416666666666667,
+     "max_speed_drift": 2.3472504340205091e-07
+    },
+    {
+     "final_speed_drift": 6.821143649915484e-10,
+     "h": 0.052083333333333336,
+     "max_speed_drift": 1.5275357645450072e-08
+    },
+    {
+     "final_speed_drift": 8.60385096501659e-11,
+     "h": 0.026041666666666668,
+     "max_speed_drift": 9.758804875303895e-10
+    },
+    {
+     "final_speed_drift": 6.73860967026485e-12,
+     "h": 0.013020833333333334,
+     "max_speed_drift": 6.168732191724757e-11
+    }
+   ]
+  },
+  "hyperbolic-plane": {
+   "euler": [
+    {
+     "final_speed_drift": 0.03049762090051833,
+     "h": 0.0234375,
+     "max_speed_drift": 0.03049762090051833
+    },
+    {
+     "final_speed_drift": 0.015011366342912114,
+     "h": 0.01171875,
+     "max_speed_drift": 0.015011366342912114
+    },
+    {
+     "final_speed_drift": 0.007447171835471167,
+     "h": 0.005859375,
+     "max_speed_drift": 0.007447171835471167
+    },
+    {
+     "final_speed_drift": 0.003709064169399534,
+     "h": 0.0029296875,
+     "max_speed_drift": 0.003709064169399534
+    }
+   ],
+   "midpoint": [
+    {
+     "final_speed_drift": -0.0002164701701707905,
+     "h": 0.046875,
+     "max_speed_drift": 0.0005590505735173501
+    },
+    {
+     "final_speed_drift": -6.121535161929259e-05,
+     "h": 0.0234375,
+     "max_speed_drift": 0.00013556059502595197
+    },
+    {
+     "final_speed_drift": -1.6207140756119287e-05,
+     "h": 0.01171875,
+     "max_speed_drift": 3.336103626638831e-05
+    },
+    {
+     "final_speed_drift": -4.1656561324820984e-06,
+     "h": 0.005859375,
+     "max_speed_drift": 8.274783051431811e-06
+    }
+   ],
+   "rk4": [
+    {
+     "final_speed_drift": 1.2492345602410637e-08,
+     "h": 0.0625,
+     "max_speed_drift": 6.817529785152487e-08
+    },
+    {
+     "final_speed_drift": 7.186242712009516e-10,
+     "h": 0.03125,
+     "max_speed_drift": 4.228614680634735e-09
+    },
+    {
+     "final_speed_drift": 4.278022380788116e-11,
+     "h": 0.015625,
+     "max_speed_drift": 2.660726083902887e-10
+    },
+    {
+     "final_speed_drift": 2.5996982344622666e-12,
+     "h": 0.0078125,
+     "max_speed_drift": 1.672884053505186e-11
+    }
+   ]
+  },
+  "plane": {
+   "euler": [
+    {
+     "final_speed_drift": 0.0,
+     "h": 0.03125,
+     "max_speed_drift": 0.0
+    },
+    {
+     "final_speed_drift": 0.0,
+     "h": 0.015625,
+     "max_speed_drift": 0.0
+    },
+    {
+     "final_speed_drift": 0.0,
+     "h": 0.0078125,
+     "max_speed_drift": 0.0
+    },
+    {
+     "final_speed_drift": 0.0,
+     "h": 0.00390625,
+     "max_speed_drift": 0.0
+    }
+   ],
+   "midpoint": [
+    {
+     "final_speed_drift": 0.0,
+     "h": 0.0625,
+     "max_speed_drift": 0.0
+    },
+    {
+     "final_speed_drift": 0.0,
+     "h": 0.03125,
+     "max_speed_drift": 0.0
+    },
+    {
+     "final_speed_drift": 0.0,
+     "h": 0.015625,
+     "max_speed_drift": 0.0
+    },
+    {
+     "final_speed_drift": 0.0,
+     "h": 0.0078125,
+     "max_speed_drift": 0.0
+    }
+   ],
+   "rk4": [
+    {
+     "final_speed_drift": 0.0,
+     "h": 0.08333333333333333,
+     "max_speed_drift": 0.0
+    },
+    {
+     "final_speed_drift": 0.0,
+     "h": 0.041666666666666664,
+     "max_speed_drift": 0.0
+    },
+    {
+     "final_speed_drift": 0.0,
+     "h": 0.020833333333333332,
+     "max_speed_drift": 0.0
+    },
+    {
+     "final_speed_drift": 0.0,
+     "h": 0.010416666666666666,
+     "max_speed_drift": 0.0
+    }
+   ]
+  },
+  "plane-polar": {
+   "euler": [
+    {
+     "final_speed_drift": -0.004147888873505368,
+     "h": 0.03125,
+     "max_speed_drift": 0.004147888873505368
+    },
+    {
+     "final_speed_drift": -0.0021296060783863036,
+     "h": 0.015625,
+     "max_speed_drift": 0.0021296060783863036
+    },
+    {
+     "final_speed_drift": -0.001078544578397067,
+     "h": 0.0078125,
+     "max_speed_drift": 0.001078544578397067
+    },
+    {
+     "final_speed_drift": -0.0005426862780102404,
+     "h": 0.00390625,
+     "max_speed_drift": 0.0005426862780102404
+    }
+   ],
+   "midpoint": [
+    {
+     "final_speed_drift": -0.0005204437442499765,
+     "h": 0.0625,
+     "max_speed_drift": 0.0005205096581397672
+    },
+    {
+     "final_speed_drift": -0.00012842725206763106,
+     "h": 0.03125,
+     "max_speed_drift": 0.00012845402572703168
+    },
+    {
+     "final_speed_drift": -3.188840780909974e-05,
+     "h": 0.015625,
+     "max_speed_drift": 3.189651562540696e-05
+    },
+    {
+     "final_speed_drift": -7.944307624629943e-06,
+     "h": 0.0078125,
+     "max_speed_drift": 7.94651915292377e-06
+    }
+   ],
+   "rk4": [
+    {
+     "final_speed_drift": 1.733185808205917e-07,
+     "h": 0.08333333333333333,
+     "max_speed_drift": 1.733185808205917e-07
+    },
+    {
+     "final_speed_drift": 1.1409857059163642e-08,
+     "h": 0.041666666666666664,
+     "max_speed_drift": 1.1409857059163642e-08
+    },
+    {
+     "final_speed_drift": 7.309528538002041e-10,
+     "h": 0.020833333333333332,
+     "max_speed_drift": 7.309528538002041e-10
+    },
+    {
+     "final_speed_drift": 4.623856852958852e-11,
+     "h": 0.010416666666666666,
+     "max_speed_drift": 4.623856852958852e-11
+    }
+   ]
+  },
+  "saddle": {
+   "euler": [
+    {
+     "final_speed_drift": 0.0001138998629139909,
+     "h": 0.0234375,
+     "max_speed_drift": 0.0001138998629139909
+    },
+    {
+     "final_speed_drift": 5.692532632073366e-05,
+     "h": 0.01171875,
+     "max_speed_drift": 5.692532632073366e-05
+    },
+    {
+     "final_speed_drift": 2.845639143811418e-05,
+     "h": 0.005859375,
+     "max_speed_drift": 2.845639143811418e-05
+    },
+    {
+     "final_speed_drift": 1.422661259287139e-05,
+     "h": 0.0029296875,
+     "max_speed_drift": 1.422661259287139e-05
+    }
+   ],
+   "midpoint": [
+    {
+     "final_speed_drift": 1.5196686107277202e-06,
+     "h": 0.046875,
+     "max_speed_drift": 2.717242473915249e-06
+    },
+    {
+     "final_speed_drift": 3.6776016543171863e-07,
+     "h": 0.0234375,
+     "max_speed_drift": 6.681266120356355e-07
+    },
+    {
+     "final_speed_drift": 9.043312920731239e-08,
+     "h": 0.01171875,
+     "max_speed_drift": 1.6564853799749812e-07
+    },
+    {
+     "final_speed_drift": 2.242066066138193e-08,
+     "h": 0.005859375,
+     "max_speed_drift": 4.123951380385904e-08
+    }
+   ],
+   "rk4": [
+    {
+     "final_speed_drift": -9.648715160182064e-11,
+     "h": 0.0625,
+     "max_speed_drift": 1.6619738918421945e-10
+    },
+    {
+     "final_speed_drift": -5.706990435783155e-12,
+     "h": 0.03125,
+     "max_speed_drift": 1.0116796289594276e-11
+    },
+    {
+     "final_speed_drift": -3.4794389591752406e-13,
+     "h": 0.015625,
+     "max_speed_drift": 6.252776074688882e-13
+    },
+    {
+     "final_speed_drift": -2.275957200481571e-14,
+     "h": 0.0078125,
+     "max_speed_drift": 3.930189507173054e-14
+    }
+   ]
+  },
+  "sphere": {
+   "euler": [
+    {
+     "final_speed_drift": -0.014440964970637404,
+     "h": 0.03125,
+     "max_speed_drift": 0.015699011565571963
+    },
+    {
+     "final_speed_drift": -0.006892795518723793,
+     "h": 0.015625,
+     "max_speed_drift": 0.007682993302337793
+    },
+    {
+     "final_speed_drift": -0.0033662096042721412,
+     "h": 0.0078125,
+     "max_speed_drift": 0.003801360175815116
+    },
+    {
+     "final_speed_drift": -0.001663319752488679,
+     "h": 0.00390625,
+     "max_speed_drift": 0.0018908308079051972
+    }
+   ],
+   "midpoint": [
+    {
+     "final_speed_drift": 0.001169022692485644,
+     "h": 0.0625,
+     "max_speed_drift": 0.001169022692485644
+    },
+    {
+     "final_speed_drift": 0.0002985112692455161,
+     "h": 0.03125,
+     "max_speed_drift": 0.0002985112692455161
+    },
+    {
+     "final_speed_drift": 7.544221089927916e-05,
+     "h": 0.015625,
+     "max_speed_drift": 7.544221089927916e-05
+    },
+    {
+     "final_speed_drift": 1.896469525708433e-05,
+     "h": 0.0078125,
+     "max_speed_drift": 1.896469525708433e-05
+    }
+   ],
+   "rk4": [
+    {
+     "final_speed_drift": 1.068917006463721e-06,
+     "h": 0.08333333333333333,
+     "max_speed_drift": 1.068917006463721e-06
+    },
+    {
+     "final_speed_drift": 7.531505041846742e-08,
+     "h": 0.041666666666666664,
+     "max_speed_drift": 7.531505041846742e-08
+    },
+    {
+     "final_speed_drift": 4.970404754445212e-09,
+     "h": 0.020833333333333332,
+     "max_speed_drift": 4.970404754445212e-09
+    },
+    {
+     "final_speed_drift": 3.188405095500002e-10,
+     "h": 0.010416666666666666,
+     "max_speed_drift": 3.188405095500002e-10
+    }
+   ]
+  },
+  "torus": {
+   "euler": [
+    {
+     "final_speed_drift": 0.008577767318434626,
+     "h": 0.046875,
+     "max_speed_drift": 0.008577767318434626
+    },
+    {
+     "final_speed_drift": 0.0042748353082253665,
+     "h": 0.0234375,
+     "max_speed_drift": 0.0042748353082253665
+    },
+    {
+     "final_speed_drift": 0.002133362534603611,
+     "h": 0.01171875,
+     "max_speed_drift": 0.002133362534603611
+    },
+    {
+     "final_speed_drift": 0.0010656063105274338,
+     "h": 0.005859375,
+     "max_speed_drift": 0.0010656063105274338
+    }
+   ],
+   "midpoint": [
+    {
+     "final_speed_drift": 0.0004813395033562706,
+     "h": 0.09375,
+     "max_speed_drift": 0.0007629964796898037
+    },
+    {
+     "final_speed_drift": 0.00011853975057207755,
+     "h": 0.046875,
+     "max_speed_drift": 0.00019030009576970208
+    },
+    {
+     "final_speed_drift": 2.9394389237324958e-05,
+     "h": 0.0234375,
+     "max_speed_drift": 4.7528261279961015e-05
+    },
+    {
+     "final_speed_drift": 7.317460845035484e-06,
+     "h": 0.01171875,
+     "max_speed_drift": 1.1876717778802615e-05
+    }
+   ],
+   "rk4": [
+    {
+     "final_speed_drift": 6.946181674294394e-08,
+     "h": 0.125,
+     "max_speed_drift": 5.034257781755258e-07
+    },
+    {
+     "final_speed_drift": 3.731531528217147e-09,
+     "h": 0.0625,
+     "max_speed_drift": 3.153348404616452e-08
+    },
+    {
+     "final_speed_drift": 2.1412627226879977e-10,
+     "h": 0.03125,
+     "max_speed_drift": 1.978204267061301e-09
+    },
+    {
+     "final_speed_drift": 1.2786438574607928e-11,
+     "h": 0.015625,
+     "max_speed_drift": 1.2377321390033558e-10
+    }
+   ]
+  }
+ }
+}

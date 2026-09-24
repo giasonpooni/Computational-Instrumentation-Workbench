@@ -1,0 +1,301 @@
+{
+ "changed_files": [
+  "src/ciw/lab/observation.py",
+  "src/ciw/lab/observation_modes.py",
+  "docs/lab/OBSERVATION.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 4,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Flags equal age > limit exactly; residual O(a^2) below the curvature bound.",
+ "experiment": "Admit each record at its use time; compare flags with an independent numpy age computation; compare each record's constant-velocity stale error with v times the age acquisition_age derives from the record; scan a sinusoid's error against age; refusals for undeclared latency, future records and late arrival.",
+ "failure_modes_checked": [
+  "arrival stamp without latency",
+  "future observation",
+  "short arrival age with long latency",
+  "second-order motion"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "flags differing from age > limit computed independently",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "expected_refusal": "stale_observation",
+      "observed_refusal": "stale_observation",
+      "passed": true,
+      "reference": "record older than the validity limit",
+      "reference_kind": "refusal"
+     }
+    ],
+    "generator": {
+     "latency_range_s": [
+      0.002,
+      0.05
+     ],
+     "limit_s": 0.03,
+     "name": "uniform latency and processing delay",
+     "processing_range_s": [
+      0.0,
+      0.01
+     ],
+     "rate_hz": 100.0,
+     "samples": 400,
+     "seed": 56,
+     "velocity_m_per_s": 0.5
+    }
+   },
+   "claim": "Observations older than the validity limit are flagged exactly by acquisition-time age",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "integer flag counts; no sample lies within rounding of the limit",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "flag_mismatch": 0,
+    "fresh": 192,
+    "stale": 208
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 2.220446049250313e-16,
+      "passed": true,
+      "reference": "|(v t_use - recorded position) - v acquisition_age(record, t_use)| at constant velocity, over the 400 tracker records (m)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.003702848887563448,
+      "passed": true,
+      "reference": "log-log slope of the residual minus 2",
+      "reference_kind": "analytic",
+      "tolerance": 0.05
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "residuals above A omega^2 a^2 / 2",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Stale-state error equals velocity times age for constant velocity and to first order otherwise",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 1e-09
+   },
+   "uncertainty": {
+    "basis": "constant velocity: rounding of arrival - latency (a few ulp of 4 s times 0.5 m/s); slope: the O(a^3) term tilts the fit away from 2",
+    "kind": "truncation_bound",
+    "value": {
+     "constant_velocity_error_m": 1e-15,
+     "residual_slope": 0.003702848887563448
+    }
+   },
+   "unit": null,
+   "value": {
+    "bound_violations": 0,
+    "constant_velocity_error_m": 2.220446049250313e-16,
+    "residual_slope": 1.9962971511124366
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "missing_latency",
+      "observed_refusal": "missing_latency",
+      "passed": true,
+      "reference": "arrival-stamped record without a declared latency",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "future_observation",
+      "observed_refusal": "future_observation",
+      "passed": true,
+      "reference": "record acquired after the use time",
+      "reference_kind": "refusal"
+     }
+    ]
+   },
+   "claim": "Age is refused without a declared latency for arrival stamps and for observations from the future",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact: integer counts, refusal codes or dyadic arithmetic; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": [
+    "missing_latency",
+    "future_observation"
+   ]
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "stale_observation",
+      "observed_refusal": "stale_observation",
+      "passed": true,
+      "reference": "record older than the validity limit",
+      "reference_kind": "refusal"
+     },
+     {
+      "comparison": "signed_le",
+      "observed": -0.025000000000000105,
+      "passed": true,
+      "reference": "arrival age minus the limit (s; negative: fresh by arrival age)",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "signed_ge",
+      "observed": 0.009999999999999926,
+      "passed": true,
+      "reference": "acquisition age minus the limit (s; positive: stale)",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Staleness is decided by acquisition-time age, not arrival age: a record that arrived 5 ms before use with 35 ms latency is refused under a 30 ms limit",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "decimal stamps 1.0, 1.005 and 0.035 s are not dyadic (a few ulp)",
+    "kind": "roundoff",
+    "value": 1e-15
+   },
+   "unit": null,
+   "value": {
+    "acquisition_age_s": 0.039999999999999925,
+    "arrival_age_s": 0.004999999999999893,
+    "latency_s": 0.035,
+    "limit_s": 0.03
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": "No tracker was acquired; latency distributions and target dynamics are declared."
+   },
+   "claim": "Real tracker latencies and target speeds match the declared values",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 3388,
+   "path": "artifacts/T056/stale-study.json",
+   "sha256": "8b31527c3828f86b370f1877e48db0b8fc53647136c7fa29cc681c689fa7828f"
+  },
+  {
+   "bytes": 3006,
+   "path": "artifacts/T056/stale-error-vs-age.svg",
+   "sha256": "071aab723ac4e7e4892d89e9b9378a2a72825985f519b6ca760ddab5c9aa8670"
+  }
+ ],
+ "hypothesis": "An observation used after its validity age must be flagged, with age measured from acquisition, not arrival; using a stale position of a moving target costs velocity x age to first order.",
+ "input_data": [
+  "Declared {'limit_s': 0.03, 'samples': 400, 'rate_hz': 100.0, 'latency_range_s': (0.002, 0.05), 'processing_range_s': (0.0, 0.01), 'velocity_m_per_s': 0.5}",
+  "Sinusoid 50 mm at 1.5 Hz for the residual law",
+  "Seed 56"
+ ],
+ "mathematical_model": "age = t_use - (t_arrival - latency); stale iff age > limit. Error x(t) - x(t - a) = v a - x'' a^2/2 + ..., exact v a for constant velocity; |residual| <= max|x''| a^2 / 2.",
+ "number": 56,
+ "numerical_result": "208 stale / 192 fresh, 0 mismatches; constant-velocity error 2.2e-16 m; residual slope 1.9963; 0 bound violations.",
+ "observation_model": "Synthetic arrival-stamped tracker_measurement records with declared latency.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/observation.py": "9ebedc1a1693aaa28965ba0c97837ad2d2c45bf0fd360857cf7b32c0993ed5fc",
+   "src/ciw/lab/observation_modes.py": "bfd6aa4471cc876a7ac2fb8790a4a5c4f478c547350b059311f5e6d53702c83e"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T057: compare raw, filtered and smoothed measurements",
+ "report_id": "sha256:8b6b2e71a6b9b218cf3138991c0d392796590849d804b9ee833d7a081826e0ef",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "observation",
+ "state": "completed",
+ "task_id": "T056",
+ "tests_passed": [
+  "check: Observations older than the validity limit are flagged exactly by acquisition-time age vs flags differing from age > limit computed independently",
+  "check: Observations older than the validity limit are flagged exactly by acquisition-time age vs record older than the validity limit",
+  "check: Stale-state error equals velocity times age for constant velocity and to first order otherwise vs |(v t_use - recorded position) - v acquisition_age(record, t_use)| at constant velocity, over the 400 tracker records (m)",
+  "check: Stale-state error equals velocity times age for constant velocity and to first order otherwise vs log-log slope of the residual minus 2",
+  "check: Stale-state error equals velocity times age for constant velocity and to first order otherwise vs residuals above A omega^2 a^2 / 2",
+  "check: Age is refused without a declared latency for arrival stamps and for observations from the future vs arrival-stamped record without a declared latency",
+  "check: Age is refused without a declared latency for arrival stamps and for observations from the future vs record acquired after the use time",
+  "check: Staleness is decided by acquisition-time age, not arrival age: a record that arrived 5 ms before use with 35 ms latency is refused under a 30 ms limit vs record older than the validity limit",
+  "check: Staleness is decided by acquisition-time age, not arrival age: a record that arrived 5 ms before use with 35 ms latency is refused under a 30 ms limit vs arrival age minus the limit (s; negative: fresh by arrival age)",
+  "check: Staleness is decided by acquisition-time age, not arrival age: a record that arrived 5 ms before use with 35 ms latency is refused under a 30 ms limit vs acquisition age minus the limit (s; positive: stale)",
+  "pytest: tests/test_lab_observation.py::test_t056_stale_observations"
+ ],
+ "tests_skipped": [],
+ "title": "Add stale-state observations.",
+ "uncertainty": "Deterministic given the seed; flag equality is exact (no sample lies within rounding of the limit).",
+ "unresolved_assumptions": [
+  "Latency is known per record",
+  "Use time is on the same clock as the stamps"
+ ]
+}

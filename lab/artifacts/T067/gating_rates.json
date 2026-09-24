@@ -1,0 +1,104 @@
+{
+ "closed_loop": {
+  "0.9": {
+   "confidence": 0.999,
+   "count": 5407,
+   "gate": 4.605170185988092,
+   "nominal": 0.09999999999999998,
+   "nominal_inside_wilson": false,
+   "p": 0.9,
+   "rate": 0.135175,
+   "rejection_rate_after_a_rejection": 0.29975705475612036,
+   "rejections_followed_by_rejection": 1604,
+   "trials": 40000,
+   "wilson": [
+    0.12964829573860664,
+    0.1408991591539061
+   ]
+  },
+  "0.99": {
+   "confidence": 0.999,
+   "count": 453,
+   "gate": 9.21034037197618,
+   "nominal": 0.010000000000000009,
+   "nominal_inside_wilson": true,
+   "p": 0.99,
+   "rate": 0.011325,
+   "rejection_rate_after_a_rejection": 0.044444444444444446,
+   "rejections_followed_by_rejection": 20,
+   "trials": 40000,
+   "wilson": [
+    0.009711532670212655,
+    0.013202953781095962
+   ]
+  }
+ },
+ "dof4_closed_form_error": 1.1102230246251565e-16,
+ "gates": {
+  "0.9": 4.605170185988092,
+  "0.99": 9.21034037197618,
+  "0.999": 13.815510557964272
+ },
+ "open_loop": {
+  "0.9": {
+   "binomial_z": 1.050000000000014,
+   "confidence": 0.999,
+   "count": 4063,
+   "gate": 4.605170185988092,
+   "nominal": 0.09999999999999998,
+   "nominal_inside_wilson": true,
+   "p": 0.9,
+   "rate": 0.101575,
+   "trials": 40000,
+   "wilson": [
+    0.09671217017751961,
+    0.10665347010357239
+   ]
+  },
+  "0.99": {
+   "binomial_z": 1.2060453783110363,
+   "confidence": 0.999,
+   "count": 424,
+   "gate": 9.21034037197618,
+   "nominal": 0.010000000000000009,
+   "nominal_inside_wilson": true,
+   "p": 0.99,
+   "rate": 0.0106,
+   "trials": 40000,
+   "wilson": [
+    0.009042568908351974,
+    0.012422309936013783
+   ]
+  },
+  "0.999": {
+   "binomial_z": 2.3728949893812405,
+   "confidence": 0.999,
+   "count": 55,
+   "gate": 13.815510557964272,
+   "nominal": 0.0010000000000000009,
+   "nominal_inside_wilson": true,
+   "p": 0.999,
+   "rate": 0.001375,
+   "trials": 40000,
+   "wilson": [
+    0.0008856018759399587,
+    0.0021342698318080507
+   ]
+  }
+ },
+ "quantile_roundtrip_error": 8.881784197001252e-16,
+ "raw_R_gate_99": {
+  "confidence": 0.999,
+  "count": 1464,
+  "rate": 0.0366,
+  "trials": 40000,
+  "wilson": [
+   0.03363384041051803,
+   0.03981696640697093
+  ]
+ },
+ "runs": 400,
+ "seed": 672026,
+ "ticks": 100,
+ "trials": 40000
+}

@@ -1,0 +1,229 @@
+{
+ "algorithms": {
+  "absorbed-tiny-terms": {
+   "exact": {
+    "bound": 8.628174379315271e-30,
+    "distinct_results": 1,
+    "first_order_result": 7.771568583914383e-14,
+    "max_abs_error": 2.7610131682735413e-30,
+    "max_error_over_bound": 0.31999969482450985
+   },
+   "kahan": {
+    "bound": 4.440892098501787e-16,
+    "distinct_results": 24,
+    "first_order_result": 7.771561172376096e-14,
+    "max_abs_error": 1.5535725629540775e-16,
+    "max_error_over_bound": 0.34983344078055906
+   },
+   "neumaier": {
+    "bound": 2.4709859921021987e-26,
+    "distinct_results": 23,
+    "first_order_result": 7.77156858391424e-14,
+    "max_abs_error": 1.4290215298078629e-27,
+    "max_error_over_bound": 0.05783203686201874
+   },
+   "pairwise": {
+    "bound": 2.220446049250402e-15,
+    "distinct_results": 13,
+    "first_order_result": 7.80486786311485e-14,
+    "max_abs_error": 4.4401509446718773e-16,
+    "max_error_over_bound": 0.19996662139892224
+   },
+   "sequential": {
+    "bound": 2.2226664952998969e-13,
+    "distinct_results": 25,
+    "first_order_result": 0.0,
+    "max_abs_error": 7.771568583914383e-14,
+    "max_error_over_bound": 0.34965068310285535
+   }
+  },
+  "cancelling": {
+   "exact": {
+    "bound": 2.846287243517481e-15,
+    "distinct_results": 1,
+    "first_order_result": 25.63707633858945,
+    "max_abs_error": 4.440892098500626e-16,
+    "max_error_over_bound": 0.15602403125738323
+   },
+   "kahan": {
+    "bound": 82.94915449969724,
+    "distinct_results": 25,
+    "first_order_result": 28.45458984375,
+    "max_abs_error": 5.451542815029878,
+    "max_error_over_bound": 0.06572149948857858
+   },
+   "neumaier": {
+    "bound": 4.818853482000746e-09,
+    "distinct_results": 9,
+    "first_order_result": 25.63707633858934,
+    "max_abs_error": 1.0969003483296547e-13,
+    "max_error_over_bound": 2.2762683124248696e-05
+   },
+   "pairwise": {
+    "bound": 414.7457724983924,
+    "distinct_results": 10,
+    "first_order_result": 64.0,
+    "max_abs_error": 38.362923661410555,
+    "max_error_over_bound": 0.09249744350693592
+   },
+   "sequential": {
+    "bound": 42428.492526590315,
+    "distinct_results": 25,
+    "first_order_result": -179.5419921875,
+    "max_abs_error": 205.17906852608945,
+    "max_error_over_bound": 0.004835879294969103
+   }
+  },
+  "kahan-counterexample": {
+   "exact": {
+    "bound": 2.220446049250313e-16,
+    "distinct_results": 1,
+    "first_order_result": 2.0,
+    "max_abs_error": 0.0,
+    "max_error_over_bound": 0.0
+   },
+   "kahan": {
+    "bound": 4.4408920985006305e+84,
+    "distinct_results": 3,
+    "first_order_result": 0.0,
+    "max_abs_error": 2.0,
+    "max_error_over_bound": 4.5035996273704915e-85
+   },
+   "neumaier": {
+    "bound": 2.218671295934097e+69,
+    "distinct_results": 1,
+    "first_order_result": 2.0,
+    "max_abs_error": 0.0,
+    "max_error_over_bound": 0.0
+   },
+   "pairwise": {
+    "bound": 4.440892098500627e+84,
+    "distinct_results": 2,
+    "first_order_result": 0.0,
+    "max_abs_error": 2.0,
+    "max_error_over_bound": 4.503599627370495e-85
+   },
+   "sequential": {
+    "bound": 6.6613381477509415e+84,
+    "distinct_results": 3,
+    "first_order_result": 0.0,
+    "max_abs_error": 2.0,
+    "max_error_over_bound": 3.00239975158033e-85
+   }
+  },
+  "positive-wide-range": {
+   "exact": {
+    "bound": 2.446805773976522e-07,
+    "distinct_results": 1,
+    "first_order_result": 2203886714.3857284,
+    "max_abs_error": 5.106862781149597e-08,
+    "max_error_over_bound": 0.20871549493076352
+   },
+   "kahan": {
+    "bound": 4.893611547954156e-07,
+    "distinct_results": 1,
+    "first_order_result": 2203886714.3857284,
+    "max_abs_error": 5.106862781149597e-08,
+    "max_error_over_bound": 0.10435774746535803
+   },
+   "neumaier": {
+    "bound": 2.4468057742608115e-07,
+    "distinct_results": 1,
+    "first_order_result": 2203886714.3857284,
+    "max_abs_error": 5.106862781149597e-08,
+    "max_error_over_bound": 0.20871549490651328
+   },
+   "pairwise": {
+    "bound": 2.4468057739765245e-06,
+    "distinct_results": 3,
+    "first_order_result": 2203886714.385728,
+    "max_abs_error": 5.279057860146209e-07,
+    "max_error_over_bound": 0.21575304081315524
+   },
+   "sequential": {
+    "bound": 0.0002503082306778266,
+    "distinct_results": 9,
+    "first_order_result": 2203886714.385729,
+    "max_abs_error": 4.819440209842746e-06,
+    "max_error_over_bound": 0.01925402211821744
+   }
+  },
+  "uniform": {
+   "exact": {
+    "bound": 2.1630503513531795e-15,
+    "distinct_results": 1,
+    "first_order_result": 19.4830255126756,
+    "max_abs_error": 8.881784197001252e-16,
+    "max_error_over_bound": 0.41061384407648716
+   },
+   "kahan": {
+    "bound": 1.1123336201821676e-13,
+    "distinct_results": 1,
+    "first_order_result": 19.4830255126756,
+    "max_abs_error": 8.881784197001252e-16,
+    "max_error_over_bound": 0.007984820413453542
+   },
+   "neumaier": {
+    "bound": 2.163050357815174e-15,
+    "distinct_results": 1,
+    "first_order_result": 19.4830255126756,
+    "max_abs_error": 8.881784197001252e-16,
+    "max_error_over_bound": 0.41061384284980085
+   },
+   "pairwise": {
+    "bound": 5.56166810090958e-13,
+    "distinct_results": 4,
+    "first_order_result": 19.483025512675596,
+    "max_abs_error": 6.217248937900877e-15,
+    "max_error_over_bound": 0.01117874857883749
+   },
+   "sequential": {
+    "bound": 5.68958646723114e-11,
+    "distinct_results": 16,
+    "first_order_result": 19.4830255126756,
+    "max_abs_error": 6.128431095930864e-14,
+    "max_error_over_bound": 0.001077131199468929
+   }
+  }
+ },
+ "datasets": {
+  "absorbed-tiny-terms": {
+   "abs_sum": 2.0000000000000777,
+   "exact": 7.771568583914383e-14,
+   "n": 1002,
+   "orders": 25
+  },
+  "cancelling": {
+   "abs_sum": 3.735697812954493e+17,
+   "exact": 25.63707633858945,
+   "n": 1024,
+   "orders": 25
+  },
+  "kahan-counterexample": {
+   "abs_sum": 2e+100,
+   "exact": 2.0,
+   "n": 4,
+   "orders": 25
+  },
+  "positive-wide-range": {
+   "abs_sum": 2203886714.3857284,
+   "exact": 2203886714.3857284,
+   "n": 1024,
+   "orders": 25
+  },
+  "uniform": {
+   "abs_sum": 500.9505277362946,
+   "exact": 19.4830255126756,
+   "n": 1024,
+   "orders": 25
+  }
+ },
+ "superseded_neumaier_bound": {
+  "bound": 2.4709859921021987e-26,
+  "error": 1.4290215298078629e-27,
+  "n": 1002,
+  "ratio_to_bound": 0.05783203686201874,
+  "ratio_to_superseded": 12.312657557436786,
+  "superseded_bound": 1.160611771375661e-28
+ }
+}

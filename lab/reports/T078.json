@@ -1,0 +1,325 @@
+{
+ "changed_files": [
+  "src/ciw/lab/exchange_provenance.py",
+  "src/ciw/lab/exchange_provenance_common.py",
+  "tests/test_lab_exchange_provenance.py",
+  "docs/lab/EXCHANGE_PROVENANCE.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 4,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "bytes in == bytes retained for every accepted source; refused submissions leave the retained source count unchanged.",
+ "experiment": "Retain the four fixture logs, eight byte variants and two resealed content variants of the baseline log, execute each, compare source.get bytes live and after offline reopen and the bundle evidence bytes with the input; submit three refused re-encodings and three non-canonical base64 transports and count retained sources before and after. Retained as source-retention.json.",
+ "failure_modes_checked": [
+  "byte normalization on retention",
+  "re-encoding on workspace save",
+  "bundle evidence differing from the source",
+  "base64 padding, wrapping and non-canonical trailing bits",
+  "refused submission leaving a retained source",
+  "label leaking into evidence identity"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "sources with live byte mismatches",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "sources with reopened byte mismatches",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "sources with bundle byte mismatches",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "evidence_id differs from the lab's sha256 of the input bytes",
+      "reference_kind": "cross_implementation",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "declared byte_count differs from the input length",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "bundle artifact_ref differs from the source evidence_id",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Workbench sources retain the exact supplied bytes live, inside native bundles and after offline reopen",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "bundle_artifact_ref_mismatches": 0,
+    "bundle_byte_mismatches": 0,
+    "byte_count_mismatches": 0,
+    "byte_variants": 8,
+    "evidence_id_mismatches": 0,
+    "fixture_logs": 4,
+    "live_byte_mismatches": 0,
+    "reopened_byte_mismatches": 0,
+    "resealed_variants": 2,
+    "sources": 14
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "Source bytes must use canonical base64",
+      "observed_refusal": "Source bytes must use canonical base64",
+      "passed": true,
+      "reference": "base64/missing-padding: source.add refusal",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "Source bytes must use canonical base64",
+      "observed_refusal": "Source bytes must use canonical base64",
+      "passed": true,
+      "reference": "base64/line-wrapped: source.add refusal",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "Source bytes must use bounded canonical base64",
+      "observed_refusal": "Source bytes must use bounded canonical base64",
+      "passed": true,
+      "reference": "base64/noncanonical-trailing-bits: source.add refusal",
+      "reference_kind": "refusal"
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "sources retained by the six refused submissions",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Non-canonical base64 transports are refused rather than normalized, and refused submissions retain no source",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "messages": {
+     "base64/line-wrapped": "Source bytes must use canonical base64",
+     "base64/missing-padding": "Source bytes must use canonical base64",
+     "base64/noncanonical-trailing-bits": "Source bytes must use bounded canonical base64"
+    },
+    "refused_submissions": 6,
+    "sources_added_by_refused_submissions": 0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "distinct evidence ids for identical bytes (observed 1, predicted 1)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "distinct source ids for two labels (observed 2, predicted 2)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Evidence identity depends only on bytes: one byte string under two labels shares evidence_id while source_id differs",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "distinct_evidence_ids": 1,
+    "distinct_source_ids": 2,
+    "sources": 2
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "recording file (newlines LF-normalized) differs from the json.dumps(run, indent=2) re-serialization",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "The oscillator recording path retains canonical content, not caller bytes: its file is a CIW re-serialization named by a content digest",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "recording_file_is_reserialization": true
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": "The bundled logs declare origin synthetic_fixture and no device was sampled here. Byte retention says nothing about the physical truth of a log."
+   },
+   "claim": "The retained energy logs are real GPU energy measurements",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": null,
+   "unit": null,
+   "value": {
+    "declared_origins": [
+     "synthetic_fixture"
+    ]
+   }
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 16937,
+   "path": "artifacts/T078/source-retention.json",
+   "sha256": "66c6eec43a3538ceaf7c3fb81cfdf4b9628c27f2993fe1b7af165e6c3f5f6619"
+  }
+ ],
+ "hypothesis": "The workbench retains the exact bytes supplied for each source: live, inside every native bundle, and after save and reopen.",
+ "input_data": [
+  "examples/energy-accuracy/{baseline,reset,missing,under-target}.json, eight byte variants of baseline under one shared label (original, crlf, minified, tab-indented, sorted-keys, reversed-keys, trailing-whitespace, float-spelling 1e-09 -> 0.000000001) and two resealed content variants (sensor name renamed; initial_covariance diagonal written as integers)",
+  "make_demo_run() damped-oscillator recording; statistics.v1 on channel v over [1, 2] s, twice, plus one legacy analysis.stats result"
+ ],
+ "mathematical_model": "Let b be the supplied bytes and r the retained bytes (base64-decoded). Prediction: r == b, sha256(r) == evidence_id and len(r) == byte_count for every source; non-canonical base64 is refused, never normalized.",
+ "number": 78,
+ "numerical_result": "14 sources; byte mismatches live/reopened/bundle = 0/0/0; evidence_id mismatches 0; 3/3 non-canonical base64 transports refused with the pinned message; 0 sources added by 6 refused submissions",
+ "observation_model": "No physical observation. The observed objects are CIW records (sessions, executions, results, bundles, receipts, saved workspace JSON) produced offline by the unmodified CIW code; the energy logs are synthetic fixtures and no hardware was sampled.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/exchange_provenance.py": "5cc267c7777c9b434b8747b0cc841ac85313e1cfb6ff4c429ee93aa5ddbb645b",
+   "src/ciw/lab/exchange_provenance_common.py": "22028c4008079fba23c5e807de0104ba1a0014027e1d40a9209881cdf232f486"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T079 (whitespace-preserving evidence retention)",
+ "report_id": "sha256:f479293ae058ebe31a9877ec1fdef18f19c2b9995c96bc0e849dcc01f43ac3d9",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "exchange-provenance",
+ "state": "completed",
+ "task_id": "T078",
+ "tests_passed": [
+  "check: Workbench sources retain the exact supplied bytes live, inside native bundles and after offline reopen vs sources with live byte mismatches",
+  "check: Workbench sources retain the exact supplied bytes live, inside native bundles and after offline reopen vs sources with reopened byte mismatches",
+  "check: Workbench sources retain the exact supplied bytes live, inside native bundles and after offline reopen vs sources with bundle byte mismatches",
+  "check: Workbench sources retain the exact supplied bytes live, inside native bundles and after offline reopen vs evidence_id differs from the lab's sha256 of the input bytes",
+  "check: Workbench sources retain the exact supplied bytes live, inside native bundles and after offline reopen vs declared byte_count differs from the input length",
+  "check: Workbench sources retain the exact supplied bytes live, inside native bundles and after offline reopen vs bundle artifact_ref differs from the source evidence_id",
+  "check: Non-canonical base64 transports are refused rather than normalized, and refused submissions retain no source vs base64/missing-padding: source.add refusal",
+  "check: Non-canonical base64 transports are refused rather than normalized, and refused submissions retain no source vs base64/line-wrapped: source.add refusal",
+  "check: Non-canonical base64 transports are refused rather than normalized, and refused submissions retain no source vs base64/noncanonical-trailing-bits: source.add refusal",
+  "check: Non-canonical base64 transports are refused rather than normalized, and refused submissions retain no source vs sources retained by the six refused submissions",
+  "check: Evidence identity depends only on bytes: one byte string under two labels shares evidence_id while source_id differs vs distinct evidence ids for identical bytes (observed 1, predicted 1)",
+  "check: Evidence identity depends only on bytes: one byte string under two labels shares evidence_id while source_id differs vs distinct source ids for two labels (observed 2, predicted 2)",
+  "check: The oscillator recording path retains canonical content, not caller bytes: its file is a CIW re-serialization named by a content digest vs recording file (newlines LF-normalized) differs from the json.dumps(run, indent=2) re-serialization",
+  "pytest: tests/test_lab_exchange_provenance.py::test_exact_source_bytes"
+ ],
+ "tests_skipped": [],
+ "title": "Test exact source-byte retention.",
+ "uncertainty": "Exact byte equality; no numerical tolerance is involved. The sample is fourteen byte strings of one schema, not every possible source kind.",
+ "unresolved_assumptions": [
+  "Only the energy-accuracy source kind was exercised; other kinds share workbench._source but have their own parsers.",
+  "The oscillator recording is supplied as parsed JSON, so its input bytes do not exist to retain.",
+  "Exact retention is not authenticity: the retained bytes carry only the log author's unkeyed log_digest (see T081 energy-source.resealed)."
+ ]
+}

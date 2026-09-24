@@ -1,0 +1,147 @@
+{
+ "cylinder": {
+  "alpha": 0.5,
+  "leading_constant": 4.330696357576248,
+  "length": 3.0,
+  "radius": 1.0,
+  "rows": [
+   {
+    "chord_fraction": 0.9398506219618747,
+    "chord_position_term": 0.003973459741627328,
+    "chord_term_bound": 0.007769740532959686,
+    "circumference_prediction": 0.06890467517930858,
+    "development_error": 6.661338147750939e-16,
+    "exact_prediction": 0.07287813492093591,
+    "h": 0.8829976993868812,
+    "helix_error": 0.07287813492093509,
+    "n": 8,
+    "rings": 6,
+    "scaled_error": 4.664200634939846,
+    "status": "completed",
+    "z_error": 6.661338147750939e-16
+   },
+   {
+    "chord_fraction": 0.24750971361220842,
+    "chord_position_term": -0.000958385929113334,
+    "chord_term_bound": 0.0009712175666199607,
+    "circumference_prediction": 0.0169931826176171,
+    "development_error": 1.5543122344752192e-15,
+    "exact_prediction": 0.016034796688503765,
+    "h": 0.44773675482797637,
+    "helix_error": 0.01603479668850305,
+    "n": 16,
+    "rings": 11,
+    "scaled_error": 4.104907952256781,
+    "status": "completed",
+    "z_error": 1.5543122344752192e-15
+   },
+   {
+    "chord_fraction": 0.9300372201183169,
+    "chord_position_term": 7.057603462637396e-05,
+    "chord_term_bound": 0.00012140219582749509,
+    "circumference_prediction": 0.004233956088956089,
+    "development_error": 7.993605777301127e-15,
+    "exact_prediction": 0.004304532123582463,
+    "h": 0.22488149499883925,
+    "helix_error": 0.004304532123578397,
+    "n": 32,
+    "rings": 21,
+    "scaled_error": 4.407840894544279,
+    "status": "completed",
+    "z_error": 7.993605777301127e-15
+   },
+   {
+    "chord_fraction": 0.3277203042410406,
+    "chord_position_term": -1.1981467883056401e-05,
+    "chord_term_bound": 1.5175274478436886e-05,
+    "circumference_prediction": 0.001057596215299866,
+    "development_error": 2.220446049250313e-16,
+    "exact_prediction": 0.0010456147474168097,
+    "h": 0.11125173545016194,
+    "helix_error": 0.00104561474741649,
+    "n": 64,
+    "rings": 42,
+    "scaled_error": 4.282838005417943,
+    "status": "completed",
+    "z_error": 2.220446049250313e-16
+   },
+   {
+    "chord_fraction": 0.13928059292388184,
+    "chord_position_term": -1.7050342064374446e-06,
+    "chord_term_bound": 1.8969093098046108e-06,
+    "circumference_prediction": 0.0002643433065571385,
+    "development_error": 1.7763568394002505e-15,
+    "exact_prediction": 0.00026263827235070106,
+    "h": 0.056001821388613024,
+    "helix_error": 0.00026263827235117887,
+    "n": 128,
+    "rings": 82,
+    "scaled_error": 4.303065454201715,
+    "status": "completed",
+    "z_error": 1.7763568394002505e-15
+   }
+  ]
+ },
+ "plane": {
+  "length": 0.2,
+  "rows": [
+   {
+    "max_graph_excess": 0.08231174597004576,
+    "max_radius_ratio": 1.2071067811865477,
+    "max_trace_error": 2.220446049250313e-16,
+    "mean_graph_excess": 0.04409159405471378,
+    "min_angle_deg": 45.0,
+    "shear": 0.0,
+    "statuses": [
+     "completed",
+     "completed",
+     "completed",
+     "completed"
+    ]
+   },
+   {
+    "max_graph_excess": 0.04475790710240424,
+    "max_radius_ratio": 1.9756611119191974,
+    "max_trace_error": 8.881784197001252e-16,
+    "mean_graph_excess": 0.021009546165207543,
+    "min_angle_deg": 29.74488129694222,
+    "shear": 0.5,
+    "statuses": [
+     "completed",
+     "completed",
+     "completed",
+     "completed"
+    ]
+   },
+   {
+    "max_graph_excess": 0.02739739461930646,
+    "max_radius_ratio": 3.6763703567583588,
+    "max_trace_error": 2.220446049250313e-16,
+    "mean_graph_excess": 0.010484308497752351,
+    "min_angle_deg": 18.43494882292201,
+    "shear": 1.0,
+    "statuses": [
+     "completed",
+     "completed",
+     "completed",
+     "completed"
+    ]
+   },
+   {
+    "max_graph_excess": 0.018349192374151668,
+    "max_radius_ratio": 6.668784536221856,
+    "max_trace_error": 8.326672684688674e-16,
+    "mean_graph_excess": 0.005937500124875229,
+    "min_angle_deg": 11.888658039627975,
+    "shear": 1.5,
+    "statuses": [
+     "completed",
+     "completed",
+     "completed",
+     "completed"
+    ]
+   }
+  ],
+  "size": 8
+ }
+}

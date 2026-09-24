@@ -1,0 +1,291 @@
+{
+ "changed_files": [
+  "src/ciw/lab/exchange_provenance_bundles.py",
+  "src/ciw/lab/exchange_provenance_bundles_fixtures.py"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 4,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "All valid accepted, all single-field mutations refused, identity invariant under member order.",
+ "experiment": "Seal records with the lab's own canonical encoder (checked against json.dumps), re-validate them with members reordered, mutate each non-identity field and the identity itself; build valid ESM responses and apply every boundary mutation.",
+ "failure_modes_checked": [
+  "member-order dependence",
+  "identity forgery",
+  "admission/state/truth flags",
+  "binding to request, time, digest and bundle",
+  "capture receipt consistency"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "records whose lab canonical text differs from json.dumps canonical text",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "valid records not accepted",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "member-reordered records not accepted",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "mutations not refused",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "count": 24,
+     "name": "ciw.lab seeded nested JSON records",
+     "seed": 9601
+    }
+   },
+   "claim": "exchange._identity accepts every synthetic result and verification record sealed by an independently written canonical encoder, in any member order, and refuses every single-field mutation and a forged identity",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact counts, digests and string comparisons; no rounding is involved",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": {
+    "accepted": 24,
+    "encoder_agreement": 24,
+    "mutations": 114,
+    "refused": 114,
+    "reordered_accepted": 24,
+    "valid": 24
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "valid synthetic responses refused",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "boundary mutations accepted",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "candidate_evidence.validate_response accepts valid synthetic ESM responses and refuses every boundary mutation",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact counts, digests and string comparisons; no rounding is involved",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": {
+    "mutations": 64,
+    "mutations_refused": 64,
+    "valid": 6,
+    "valid_accepted": 6
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 24.0,
+      "passed": true,
+      "reference": "mutated batches accepted",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     }
+    ]
+   },
+   "claim": "Observation-batch identities are caller-declared: mutated batches pass exchange._identity",
+   "counterexample": {
+    "statement": "Every exchange artifact identity is bound to its content",
+    "witness": {
+     "identity_status": "caller_declared_reference",
+     "schema": "notation.instrument.observation-batch.v1"
+    }
+   },
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact counts, digests and string comparisons; no rounding is involved",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": {
+    "accepted": 24,
+    "mutations": 24
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 2.0,
+      "passed": true,
+      "reference": "responses with unknown fields accepted",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     }
+    ]
+   },
+   "claim": "validate_response accepts unknown extra fields in an ESM response",
+   "counterexample": {
+    "statement": "The CIW candidate boundary refuses any ESM response field it does not recognise",
+    "witness": {
+     "fields": [
+      "lab_admission_override",
+      "candidate.lab_admitted"
+     ],
+     "reason": "the boundary checks bindings only; ESM owns its record schema"
+    }
+   },
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact counts, digests and string comparisons; no rounding is involved",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": {
+    "accepted": 2,
+    "cases": 2
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "Passing provider-free conformance admits a candidate into canonical state",
+   "domain": "production_acceptance",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": "not decided by the workbench"
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 180,
+   "path": "artifacts/T096/identity-study.json",
+   "sha256": "368405af5e0c4c703a5fd9cea926ad73e554eb97809b7df19011f589e8e4297d"
+  },
+  {
+   "bytes": 11223,
+   "path": "artifacts/T096/candidate-study.json",
+   "sha256": "4d2780b71f8451b3672abb3ec5d296c669f5c372b320f707721939861530f088"
+  }
+ ],
+ "hypothesis": "The provider-free parts of the exchange and ESM candidate boundaries accept valid records and refuse every mutation of a bound field, without any provider checkout.",
+ "input_data": [
+  "24 seeded synthetic result/verification records (PCG64 seed 9601)",
+  "72 synthetic ESM inspect/capture responses over telemetry and calibrated bundle stubs"
+ ],
+ "mathematical_model": "exchange._identity: id = 'sha256:' + SHA-256(schema NUL canonical_json(record without id)); validate_response: equality of boundary fields with the explicit request and the selected bundle.",
+ "number": 96,
+ "numerical_result": "114/114 identity mutations refused; 64/64 candidate mutations refused; 2 response(s) with unknown fields accepted.",
+ "observation_model": "Accepted or refused (with message) per record or response.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/exchange_provenance_bundles.py": "a505b35560263c1b473912f79e61b15b7e474f8eb1807e691847e4c69791c2d3",
+   "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "f30205e8305a225f24d94b06cba8b519ecea4680ca723aaca3591ff707d04e1c"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T097: exact SCR/SET/PPDA integrations when the pinned checkouts are bound.",
+ "report_id": "sha256:91b2e9683aa27cd41a1ff382df68cce483523f55505cb7592920947e207a6715",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "exchange-provenance",
+ "state": "completed",
+ "task_id": "T096",
+ "tests_passed": [
+  "check: exchange._identity accepts every synthetic result and verification record sealed by an independently written canonical encoder, in any member order, and refuses every single-field mutation and a forged identity vs records whose lab canonical text differs from json.dumps canonical text",
+  "check: exchange._identity accepts every synthetic result and verification record sealed by an independently written canonical encoder, in any member order, and refuses every single-field mutation and a forged identity vs valid records not accepted",
+  "check: exchange._identity accepts every synthetic result and verification record sealed by an independently written canonical encoder, in any member order, and refuses every single-field mutation and a forged identity vs member-reordered records not accepted",
+  "check: exchange._identity accepts every synthetic result and verification record sealed by an independently written canonical encoder, in any member order, and refuses every single-field mutation and a forged identity vs mutations not refused",
+  "check: candidate_evidence.validate_response accepts valid synthetic ESM responses and refuses every boundary mutation vs valid synthetic responses refused",
+  "check: candidate_evidence.validate_response accepts valid synthetic ESM responses and refuses every boundary mutation vs boundary mutations accepted",
+  "check: Observation-batch identities are caller-declared: mutated batches pass exchange._identity vs mutated batches accepted",
+  "check: validate_response accepts unknown extra fields in an ESM response vs responses with unknown fields accepted",
+  "pytest: tests/test_lab_exchange_provenance_bundles.py::test_t096_provider_free_conformance"
+ ],
+ "tests_skipped": [],
+ "title": "Add provider-free conformance tests.",
+ "uncertainty": "Exact.",
+ "unresolved_assumptions": [
+  "Acceptance of valid records is agreement between the lab's canonical encoder and exchange._identity (both CIW-side code written to the same producer specification); producer-sealed artifacts are accepted only in T097's PPDA/SCR/SET roundtrip, when those checkouts are bound.",
+  "JSON escaping (for example \\u00e9 for é) is resolved by the JSON parser before _identity sees a record, so it is not an identity property and is not tested here.",
+  "The bundle stubs contain only the fields validate_response reads; full native bundles need providers.",
+  "Mutations are single-field; combined mutations that restore consistency are not explored."
+ ]
+}

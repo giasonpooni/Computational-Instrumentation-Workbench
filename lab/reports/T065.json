@@ -1,0 +1,324 @@
+{
+ "changed_files": [
+  "src/ciw/lab/sensor_fusion_filtering.py",
+  "src/ciw/lab/sensor_fusion_common.py",
+  "src/ciw/lab/sensor_fusion_bench.py",
+  "src/ciw/lab/sensor_fusion_objects.py"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 4,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Autocovariance a^j P (scalar) and A^j P_ss (planar); zero innovation autocorrelation; variance of a 20-tick average equal to the exact V_20.",
+ "experiment": "Simulate both filters from their steady state, estimate lag covariances across independent runs at a fixed base tick, compare with the closed forms; average 20 successive errors and compare the variance and the coverage of a naive interval.",
+ "failure_modes_checked": [
+  "non-stationary start (excluded by starting at P_ss)",
+  "gain schedule drift from the steady-state gain",
+  "innovation whiteness vs error correlation confusion",
+  "naive averaging of filter outputs"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "Riccati fixed-point residual in Fractions",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "derivation": "M^2 = qM + qr; e_{k+1} = (1 - K)(e_k + w_k) - K v_{k+1}"
+   },
+   "claim": "The scalar random-walk filter with q = 1, r = 30 has the exact rational steady state M = 6, P = 5, K = 1/6 and error autocovariance Cov(e_{k+j}, e_k) = (5/6)^j P",
+   "domain": "mathematical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "rational arithmetic",
+    "kind": "reference_error",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "K": "1/6",
+    "M": "6",
+    "P": "5",
+    "V_n": "9845123271808561/4874877920083968",
+    "a": "5/6",
+    "n": 20,
+    "q": "1",
+    "r": "30",
+    "riccati_residual": "0"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 1.4292287444923168,
+      "passed": true,
+      "reference": "autocovariance z against a^j P",
+      "reference_kind": "analytic",
+      "tolerance": 3.987878936606943
+     },
+     {
+      "comparison": "le",
+      "observed": 1.5728273596609426,
+      "passed": true,
+      "reference": "innovation autocorrelation z against 0",
+      "reference_kind": "analytic",
+      "tolerance": 3.987878936606943
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "runs": 20000,
+     "seed": 652026
+    }
+   },
+   "claim": "Monte Carlo error autocovariances of the scalar filter match a^j P at lags 0-8, while its innovations are white",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "sampling standard error of the lag-1 error autocovariance",
+    "kind": "monte_carlo_95ci",
+    "value": 0.09020378164036262
+   },
+   "unit": null,
+   "value": {
+    "lag1_correlation_errors": 0.8307042903951943,
+    "lag1_correlation_innovations": 0.003039760344939585,
+    "max_abs_z_autocovariance": 1.4292287444923168,
+    "max_abs_z_innovation_lags_1_5": 1.5728273596609426,
+    "z_critical": 3.987878936606943
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 1.5913556361760697,
+      "passed": true,
+      "reference": "matrix lag covariance z against A^j P_ss",
+      "reference_kind": "analytic",
+      "tolerance": 4.394337440842989
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 1.9888395648849283e-16,
+      "passed": true,
+      "reference": "steady-state Riccati fixed-point residual (relative)",
+      "reference_kind": "invariant",
+      "tolerance": 1e-12
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "runs": 4000,
+     "seed": 652026
+    }
+   },
+   "claim": "On the planar constant-velocity bench the lag-j cross-covariance of filtered errors equals [(I - K H) F]^j P_ss for j = 0-5",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "each standardized lag-covariance entry has unit sampling standard deviation",
+    "kind": "monte_carlo_95ci",
+    "value": 1.96
+   },
+   "unit": null,
+   "value": {
+    "max_abs_z": 1.5913556361760697,
+    "moments_tested": 90,
+    "position_correlation_by_lag": [
+     1.0,
+     0.8686178519578712,
+     0.741173498283411,
+     0.62071226588479,
+     0.5093398964951935,
+     0.40837878118259585
+    ],
+    "riccati_residual": 1.9888395648849283e-16,
+    "z_critical": 4.394337440842989
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.7339692019769413,
+      "passed": true,
+      "reference": "Monte Carlo variance of the average against the exact V_20 (z)",
+      "reference_kind": "analytic",
+      "tolerance": 3.987878936606943
+     },
+     {
+      "comparison": "ge",
+      "observed": 8.078252159913767,
+      "passed": true,
+      "reference": "exact variance ratio V_20 / (P/20)",
+      "reference_kind": "analytic",
+      "tolerance": 2.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.0025463774037216558,
+      "passed": true,
+      "reference": "naive coverage Monte Carlo minus exact",
+      "reference_kind": "analytic",
+      "tolerance": 0.02
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "seed": 652026
+    }
+   },
+   "claim": "Treating 20 successive filtered outputs as independent underestimates the variance of their average by the exact factor V_20 / (P/20), and a naive 95% interval covers far less often",
+   "counterexample": {
+    "statement": "Successive filtered estimates can be averaged as independent samples",
+    "witness": {
+     "n": 20,
+     "naive_95_coverage": 0.5095463774037217,
+     "variance_ratio": 8.078252159913767
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "sampling standard error of the Monte Carlo variance of the 20-tick average; the ratio itself is exact",
+    "kind": "monte_carlo_95ci",
+    "value": 0.03958343558357746
+   },
+   "unit": null,
+   "value": {
+    "exact_variance": 2.0195630399784417,
+    "monte_carlo_variance": 2.0343860107063927,
+    "naive_coverage_exact": 0.5095463774037217,
+    "naive_coverage_monte_carlo": 0.507,
+    "naive_variance": 0.25,
+    "ratio": 8.078252159913767,
+    "z_monte_carlo_vs_exact": 0.7339692019769413
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "seed": 652026
+    },
+    "notes": "synthetic draws only; no acquisition"
+   },
+   "claim": "A real sensor's internally filtered output can be fused downstream as white noise",
+   "domain": "sensor_performance",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": "not established: the correlation shown is that of a declared synthetic filter; a real sensor's internal filter is unknown here"
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 9386,
+   "path": "artifacts/T065/filter_correlation.json",
+   "sha256": "968e8b82578d5049d80187d44e160c2648ffa05cac43cdf5aef3284cc9d01783"
+  },
+  {
+   "bytes": 3694,
+   "path": "artifacts/T065/error_autocovariance.svg",
+   "sha256": "1edc45e2ce5f6b3a5117aa08f13f28bfa5ee6ee6a98bce9df8a6d6d7ad8cfd13"
+  }
+ ],
+ "hypothesis": "Filtered estimates are correlated in time even when the sensor noise is white; the steady-state correlation is [(I - K H) F]^j P, and ignoring it underestimates the variance of averaged filter outputs.",
+ "input_data": [
+  "seed 652026 (PCG64)",
+  "scalar: 20000 runs x 30 ticks from the steady state",
+  "planar CV: 4000 runs from P_ss, camera R, dt = 0.1 s, q = 0.05"
+ ],
+ "mathematical_model": "e_{k+1} = (I - K H) F e_k + (I - K H) w_k - K v_{k+1} in steady state gives Cov(e_{k+j}, e_k) = A^j P with A = (I - K H) F. Scalar random walk: q = 1, r = 30, M^2 = qM + qr -> M = 6, P = 5, K = 1/6, a = 5/6; Var(mean of n) = P/n^2 [n + 2 sum_j (n - j) a^j]. Innovations of the optimal filter are white.",
+ "number": 65,
+ "numerical_result": "V_20 / (P/20) = 8.078; naive 95% interval coverage 0.510 (Monte Carlo 0.507); scalar autocovariance max |z| 1.43; planar max |z| 1.59 vs 4.39; lag-1 position error correlation 0.869.",
+ "observation_model": "Scalar z = x + v, v ~ N(0, 30); planar z = (px, py) + v, v ~ N(0, R_camera).",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/sensor_fusion_bench.py": "f373849a4c6836fa20685c59ce7a6fe6bf732f6df9d6a49646cdc017262dd656",
+   "src/ciw/lab/sensor_fusion_common.py": "6787aa47d199d50d0b4de4d7e53714ce7b8b5aad37d647cfc1a954414e90209f",
+   "src/ciw/lab/sensor_fusion_filtering.py": "6b886646d4fb49b584d7e02c13cd96d604e800bfd0defc717489a010de26bb58",
+   "src/ciw/lab/sensor_fusion_objects.py": "a795ffc235e0a4118cb7b9ac7800191a90984372d79e59f1a934442d98d7a1f1"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T066: verify that residuals are normalized by the filter covariance, not the raw sensor covariance.",
+ "report_id": "sha256:299d4f5a9e54ff1111e9572a7bc2868b3e2b99426f2159ec9639d7e395ae69d9",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "sensor-fusion",
+ "state": "completed",
+ "task_id": "T065",
+ "tests_passed": [
+  "check: The scalar random-walk filter with q = 1, r = 30 has the exact rational steady state M = 6, P = 5, K = 1/6 and error autocovariance Cov(e_{k+j}, e_k) = (5/6)^j P vs Riccati fixed-point residual in Fractions",
+  "check: Monte Carlo error autocovariances of the scalar filter match a^j P at lags 0-8, while its innovations are white vs autocovariance z against a^j P",
+  "check: Monte Carlo error autocovariances of the scalar filter match a^j P at lags 0-8, while its innovations are white vs innovation autocorrelation z against 0",
+  "check: On the planar constant-velocity bench the lag-j cross-covariance of filtered errors equals [(I - K H) F]^j P_ss for j = 0-5 vs matrix lag covariance z against A^j P_ss",
+  "check: On the planar constant-velocity bench the lag-j cross-covariance of filtered errors equals [(I - K H) F]^j P_ss for j = 0-5 vs steady-state Riccati fixed-point residual (relative)",
+  "check: Treating 20 successive filtered outputs as independent underestimates the variance of their average by the exact factor V_20 / (P/20), and a naive 95% interval covers far less often vs Monte Carlo variance of the average against the exact V_20 (z)",
+  "check: Treating 20 successive filtered outputs as independent underestimates the variance of their average by the exact factor V_20 / (P/20), and a naive 95% interval covers far less often vs exact variance ratio V_20 / (P/20)",
+  "check: Treating 20 successive filtered outputs as independent underestimates the variance of their average by the exact factor V_20 / (P/20), and a naive 95% interval covers far less often vs naive coverage Monte Carlo minus exact",
+  "pytest: tests/test_lab_sensor_fusion.py::test_filter_induced_correlation_and_naive_average",
+  "pytest: tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T065]"
+ ],
+ "tests_skipped": [],
+ "title": "Model filter-induced correlation.",
+ "uncertainty": "Sampling error only (Bonferroni 99.9% family bounds); the scalar steady state and V_20 are exact rationals.",
+ "unresolved_assumptions": [
+  "The model is known exactly; with a mismatched model the innovations are no longer white either.",
+  "Only steady state is analysed; transients have time-varying cross-covariances."
+ ]
+}

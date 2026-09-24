@@ -1,0 +1,26 @@
+{
+ "bitstream_bytes": 32812,
+ "bitstream_sha256": "0f83a243c6e4df63f3b62d5aac61bed0dd6db943c48ced8ca725847a010c5df5",
+ "constraints": {
+  "pins.xdc": "db18ed5f45ae80745fbed4af611c14b838ac40abd5694540cac1f874527aa73c",
+  "timing.xdc": "1e5296cf02a4ed91df3224923b3ae2d4c348e2fc5e2ae3d3a414529a0cbe8ee7"
+ },
+ "constraints_sha256": "f6725fb7efc4ef1b62430d9f455ab5164737a2fc29793956cde5d201b8342bf0",
+ "part": "placeholder-part",
+ "record_sha256": "4fb69fd0987666392beb39560114d68e4516bae9ac884814653de26dee734137",
+ "schema": "ciw.fpga-bitstream-identity.v1",
+ "source_tree": {
+  "kind": "manifest-sha256",
+  "value": "aa954cf2549006d820087fb242da23a82845b51a72e8dc36c7cf23fb7946492e"
+ },
+ "synthesis_options": {
+  "seed": 150,
+  "version": "2.1.0"
+ },
+ "synthetic": true,
+ "toolchain": {
+  "installation_sha256": "f3bb99c3ffec25d9ae67832451092c2b65cc1bffc55a3592816fce1ea15af212",
+  "name": "placeholder-toolchain (not executed)",
+  "version": "0.0.1"
+ }
+}

@@ -1,0 +1,565 @@
+{
+ "rows": [
+  {
+   "across_reopen": "stable",
+   "across_replay": "not_applicable (source evidence is not replayed)",
+   "binds": "all scientific content including adapter and calibration metadata; excludes run_id and render",
+   "derivation": "sha256 over canonical JSON of instrument, metadata, time_s and channels",
+   "derivation_class": "content_hash",
+   "exercised": true,
+   "identity": "recording evidence_id",
+   "observed_refusals": {
+    "recording_sample_edit": "Evidence integrity mismatch: scientific content does not match evidence_id"
+   },
+   "properties": {
+    "recomputed_from_scientific_fields": true,
+    "render_excluded": true,
+    "retained_across_reopen": true,
+    "sample_edit_refused": true
+   },
+   "scope": "oscillator recording",
+   "validated_at": [
+    "src/ciw/core/identities.py:evidence_id",
+    "src/ciw/core/identities.py:validate_evidence_identity",
+    "src/ciw/session.py:_validate_evidence"
+   ]
+  },
+  {
+   "across_reopen": "stable",
+   "across_replay": "not_applicable",
+   "binds": "entire parsed run including run_id and render; the file is a CIW re-serialization",
+   "derivation": "'recording-' + sha256 over canonical JSON of the whole run, written by Session",
+   "derivation_class": "content_hash",
+   "exercised": true,
+   "identity": "recording file name",
+   "properties": {
+    "file_is_reserialization_not_input_bytes": true,
+    "recomputed_from_run": true
+   },
+   "scope": "oscillator recording",
+   "validated_at": [
+    "src/ciw/session.py:_recording_file",
+    "src/ciw/session.py:_validate_saved_result"
+   ]
+  },
+  {
+   "across_reopen": "stable",
+   "across_replay": "stable (bundle artifact_ref equals it)",
+   "binds": "exact retained bytes only (not label or kind); bundle artifact_ref and sha256 are copies of it",
+   "derivation": "'sha256:' + sha256(exact source bytes)",
+   "derivation_class": "byte_hash",
+   "exercised": true,
+   "identity": "workbench source evidence_id",
+   "properties": {
+    "equals_bundle_artifact_ref": true,
+    "label_independent": true,
+    "recomputed_sha256_of_bytes": true,
+    "retained_across_reopen": true
+   },
+   "scope": "workbench source",
+   "validated_at": [
+    "src/ciw/workbench.py:_source",
+    "src/ciw/workbench.py:Workbench.restore",
+    "src/ciw/energy_workflow.py:EnergyAccuracyWorkflow._validate"
+   ]
+  },
+  {
+   "across_reopen": "stable",
+   "across_replay": "stable",
+   "binds": "source bytes (through evidence_id) and the caller-declared label",
+   "derivation": "'source:' + sha256 over canonical descriptor {schema, kind, label, source_schema, evidence_id, byte_count}",
+   "derivation_class": "content_hash",
+   "exercised": true,
+   "identity": "workbench source_id",
+   "properties": {
+    "byte_bound_under_one_label": true,
+    "label_bound": true,
+    "recomputed_from_descriptor": true,
+    "same_bytes_and_label_same_id_across_sessions": true
+   },
+   "scope": "workbench source",
+   "validated_at": [
+    "src/ciw/workbench.py:_source",
+    "src/ciw/workbench.py:_source_claims",
+    "src/ciw/workbench.py:Workbench.restore"
+   ]
+  },
+  {
+   "across_reopen": "stable",
+   "across_replay": "stable",
+   "binds": "parsed log content (whitespace and key order excluded)",
+   "derivation": "sha256 over canonical JSON of the parsed log",
+   "derivation_class": "content_hash",
+   "exercised": true,
+   "identity": "bundle experiment_digest",
+   "properties": {
+    "byte_layout_insensitive": true,
+    "recomputed_from_parsed_content": true,
+    "stable_across_replay_and_sessions": true
+   },
+   "scope": "energy bundle source",
+   "validated_at": [
+    "src/ciw/energy_workflow.py:EnergyAccuracyWorkflow._validate"
+   ]
+  },
+  {
+   "across_reopen": "stable",
+   "across_replay": "stable",
+   "binds": "the log author's measurement-occurrence claim; bound to log_digest by workbench claims",
+   "derivation": "copied from the retained log's run_id field (format energy-run-<32 hex>)",
+   "derivation_class": "caller_declared",
+   "exercised": true,
+   "identity": "energy log run_id (bundle experiment_id)",
+   "properties": {
+    "copied_from_log": true,
+    "unchanged_by_resealed_content_edit": true
+   },
+   "scope": "energy log",
+   "validated_at": [
+    "src/ciw/energy_records.py:_validate",
+    "src/ciw/workbench.py:_claims"
+   ]
+  },
+  {
+   "across_reopen": "stable",
+   "across_replay": "stable (copied)",
+   "binds": "nothing outside the log: bound only by the log author's unkeyed log_digest; format-checked (GPU UUID pattern, 64 hex)",
+   "derivation": "sensor.device_uuid, runtime.workload.kernel_sha256, runtime.python.executable_sha256 and runtime.implementation.code_sha256 copied verbatim from the log",
+   "derivation_class": "caller_declared",
+   "exercised": true,
+   "identity": "energy log producer identities",
+   "observed_refusals": {
+    "producer_edit_resealed": "accepted",
+    "producer_edit_unsealed": "Retained log digest differs"
+   },
+   "properties": {
+    "device_uuid_copied_into_analysis": true,
+    "fixture_hashes_are_placeholders": true,
+    "resealed_edit_accepted_format_only": true,
+    "unsealed_edit_refused_by_log_digest": true
+   },
+   "scope": "energy log",
+   "validated_at": [
+    "src/ciw/energy_records.py:_sensor",
+    "src/ciw/energy_records.py:_runtime"
+   ]
+  },
+  {
+   "across_reopen": "stable",
+   "across_replay": "not_applicable",
+   "binds": "which registered operation ran",
+   "derivation": "versioned registry name chosen by the requester",
+   "derivation_class": "caller_declared_name",
+   "exercised": true,
+   "identity": "oscillator operation_id",
+   "properties": {
+    "same_for_repeat": true,
+    "versioned_name": true
+   },
+   "scope": "oscillator operation",
+   "validated_at": [
+    "src/ciw/operations/registry.py:valid_operation_id",
+    "src/ciw/operations/runner.py:validate_execution"
+   ]
+  },
+  {
+   "across_reopen": "stable",
+   "across_replay": "stable",
+   "binds": "which workflow ran",
+   "derivation": "fixed name ciw.energy-accuracy.v1",
+   "derivation_class": "constant_name",
+   "exercised": true,
+   "identity": "energy operation_id",
+   "properties": {
+    "constant_across_occurrences": true,
+    "versioned_name": true
+   },
+   "scope": "energy bundle step",
+   "validated_at": [
+    "src/ciw/energy_workflow.py:EnergyAccuracyWorkflow._validate_step",
+    "src/ciw/workbench.py:_claims"
+   ]
+  },
+  {
+   "across_reopen": "stable",
+   "across_replay": "fresh",
+   "binds": "one execution occurrence (nothing about its content)",
+   "derivation": "'execution-' + uuid4().hex",
+   "derivation_class": "fresh_event_uuid",
+   "exercised": true,
+   "identity": "oscillator execution_id",
+   "properties": {
+    "fresh_per_execution": true,
+    "result_links_execution": true,
+    "uuid4_form": true
+   },
+   "scope": "oscillator execution",
+   "validated_at": [
+    "src/ciw/operations/runner.py:execute",
+    "src/ciw/operations/runner.py:validate_execution",
+    "src/ciw/session.py:_identity"
+   ]
+  },
+  {
+   "across_reopen": "stable",
+   "across_replay": "fresh",
+   "binds": "one analysis occurrence",
+   "derivation": "'execution-' + uuid4().hex",
+   "derivation_class": "fresh_event_uuid",
+   "exercised": true,
+   "identity": "energy step execution_id",
+   "properties": {
+    "fresh_per_occurrence": true,
+    "result_execution_ref_matches": true,
+    "uuid4_form": true
+   },
+   "scope": "energy bundle step",
+   "validated_at": [
+    "src/ciw/energy_workflow.py:EnergyAccuracyWorkflow._validate_step",
+    "src/ciw/workbench.py:_validate_links"
+   ]
+  },
+  {
+   "across_reopen": "stable",
+   "across_replay": "fresh",
+   "binds": "one result occurrence (content bound only by the unkeyed record seal)",
+   "derivation": "'result-' + uuid4().hex",
+   "derivation_class": "fresh_event_uuid",
+   "exercised": true,
+   "identity": "oscillator result_id",
+   "properties": {
+    "fresh_per_execution": true,
+    "uuid4_form": true
+   },
+   "scope": "oscillator result",
+   "validated_at": [
+    "src/ciw/session.py:_validate_saved_result",
+    "src/ciw/session.py:_identity"
+   ]
+  },
+  {
+   "across_reopen": "stable",
+   "across_replay": "fresh",
+   "binds": "result content and its fresh occurrence",
+   "derivation": "sha256 over the result record, which includes execution_ref",
+   "derivation_class": "content_hash_of_fresh_occurrence",
+   "exercised": true,
+   "identity": "energy result_id",
+   "observed_refusals": {
+    "moved_step_recomputed_result_id": "accepted",
+    "moved_step_stale_result_id": "Retained energy analysis binding differs"
+   },
+   "properties": {
+    "ciw_accepts_recomputed_result_id": true,
+    "ciw_refuses_stale_result_id_after_occurrence_change": true,
+    "fresh_per_occurrence": true,
+    "recomputed_from_result": true
+   },
+   "scope": "energy bundle step",
+   "validated_at": [
+    "src/ciw/energy_workflow.py:EnergyAccuracyWorkflow._validate_step"
+   ]
+  },
+  {
+   "across_reopen": "stable",
+   "across_replay": "stable for canonically identical logs",
+   "binds": "operation name, analysed numbers and the log identity (data.log_digest = canonical digest of the whole retained log including unanalysed metadata, plus data.origin and measurement_scope.device_uuid)",
+   "derivation": "sha256 over {operation_id, data}",
+   "derivation_class": "content_hash",
+   "exercised": true,
+   "identity": "energy numerical_result_id",
+   "properties": {
+    "metadata_only_edit_changes_only_log_digest_in_data": true,
+    "metadata_only_resealed_edit_changes_it": true,
+    "occurrence_change_leaves_it_unchanged": true,
+    "recomputed_from_operation_and_data": true,
+    "single_value_across_replay_reopen_and_sessions": true
+   },
+   "scope": "energy bundle step",
+   "validated_at": [
+    "src/ciw/energy_workflow.py:EnergyAccuracyWorkflow._validate_step",
+    "src/ciw/workbench.py:_validate_links"
+   ]
+  },
+  {
+   "across_reopen": "absent",
+   "across_replay": "absent",
+   "binds": "nothing; equal numbers from two executions are not linked",
+   "derivation": "none: results carry data but no content-level numerical identity",
+   "derivation_class": "absent",
+   "exercised": true,
+   "identity": "oscillator numerical-result identity",
+   "properties": {
+    "absent": true,
+    "equal_data_distinct_ids": true
+   },
+   "scope": "oscillator result",
+   "validated_at": [
+    "(no validator)"
+   ]
+  },
+  {
+   "across_reopen": "stable",
+   "across_replay": "fresh",
+   "binds": "subject_ref, outcome, independent, method, runtime_digest, reproduction step, authority",
+   "derivation": "sha256(schema + NUL + canonical verification without its id)",
+   "derivation_class": "content_hash",
+   "exercised": true,
+   "identity": "energy verification_id",
+   "properties": {
+    "exchange_status_not_authenticated": true,
+    "fresh_per_reproduction": true,
+    "receipt_subject_is_source": true,
+    "recomputed": true
+   },
+   "scope": "energy verification",
+   "validated_at": [
+    "src/ciw/energy_workflow.py:EnergyAccuracyWorkflow._check_verification",
+    "src/ciw/energy_workflow.py:EnergyAccuracyWorkflow._validate",
+    "src/ciw/exchange.py:_identity"
+   ]
+  },
+  {
+   "across_reopen": "stable",
+   "across_replay": "absent",
+   "binds": "nothing (protocol v1 results are never verified)",
+   "derivation": "always null; status not_verified",
+   "derivation_class": "absent",
+   "exercised": true,
+   "identity": "oscillator verification_id",
+   "properties": {
+    "null_and_not_verified": true
+   },
+   "scope": "oscillator result",
+   "validated_at": [
+    "src/ciw/session.py:_validate_saved_result"
+   ]
+  },
+  {
+   "across_reopen": "stable",
+   "across_replay": "fresh",
+   "binds": "session_id, created_at, source bytes, configuration, runtimes and steps; NOT verification or receipts",
+   "derivation": "sha256 over the bundle without bundle_digest, verification and replay_receipts",
+   "derivation_class": "content_hash_of_fresh_occurrence",
+   "exercised": true,
+   "identity": "bundle_digest (workbench bundle_id)",
+   "properties": {
+    "catalog_id_equals_digest": true,
+    "fresh_per_execution_and_replay": true,
+    "receipts_excluded": true,
+    "recomputed_excluding_verification_and_receipts": true,
+    "verification_excluded": true
+   },
+   "scope": "energy bundle",
+   "validated_at": [
+    "src/ciw/telemetry.py:_bundle_digest",
+    "src/ciw/energy_workflow.py:EnergyAccuracyWorkflow._validate",
+    "src/ciw/workbench.py:_validate_record"
+   ]
+  },
+  {
+   "across_reopen": "stable",
+   "across_replay": "fresh",
+   "binds": "one workflow session occurrence",
+   "derivation": "'session-' + uuid4().hex",
+   "derivation_class": "fresh_event_uuid",
+   "exercised": true,
+   "identity": "bundle session_id",
+   "properties": {
+    "fresh_per_bundle": true,
+    "uuid4_form": true
+   },
+   "scope": "energy bundle",
+   "validated_at": [
+    "src/ciw/energy_workflow.py:EnergyAccuracyWorkflow._validate",
+    "src/ciw/workbench.py:_claims"
+   ]
+  },
+  {
+   "across_reopen": "fresh (not persisted)",
+   "across_replay": "not_applicable",
+   "binds": "one live protocol session; never saved",
+   "derivation": "'session-' + uuid4().hex",
+   "derivation_class": "fresh_event_uuid",
+   "exercised": true,
+   "identity": "protocol Session.session_id",
+   "properties": {
+    "fresh_per_session": true,
+    "not_persisted": true,
+    "uuid4_form": true
+   },
+   "scope": "protocol session",
+   "validated_at": [
+    "src/ciw/session.py:Session.__init__"
+   ]
+  },
+  {
+   "across_reopen": "stable",
+   "across_replay": "fresh",
+   "binds": "source and replayed bundle digests, numerical_match, verification, admission",
+   "derivation": "sha256 over the receipt without replay_id",
+   "derivation_class": "content_hash",
+   "exercised": true,
+   "identity": "replay_id",
+   "properties": {
+    "fresh_per_replay": true,
+    "recomputed": true
+   },
+   "scope": "energy replay receipt",
+   "validated_at": [
+    "src/ciw/workbench.py:_validate_receipts",
+    "src/ciw/energy_workflow.py:EnergyAccuracyWorkflow._validate"
+   ]
+  },
+  {
+   "across_reopen": "stable",
+   "across_replay": "not_applicable",
+   "binds": "the whole record, but anyone can recompute it",
+   "derivation": "sha256 over the record without record_digest",
+   "derivation_class": "unkeyed_seal",
+   "exercised": true,
+   "identity": "oscillator record_digest (seal)",
+   "properties": {
+    "legacy_result_unsealed": true,
+    "recomputed_without_secret": true
+   },
+   "scope": "oscillator execution and result",
+   "validated_at": [
+    "src/ciw/operations/runner.py:seal",
+    "src/ciw/operations/runner.py:check_seal"
+   ]
+  },
+  {
+   "across_reopen": "stable (never re-checked)",
+   "across_replay": "not_applicable",
+   "binds": "a provider name and version string",
+   "derivation": "the operation provider's runtime_identity() dict",
+   "derivation_class": "provider_declared",
+   "exercised": true,
+   "identity": "oscillator runtime identity",
+   "properties": {
+    "declared_by_provider": true,
+    "no_code_digest": true
+   },
+   "scope": "oscillator execution and result",
+   "validated_at": [
+    "src/ciw/operations/runner.py:validate_execution"
+   ]
+  },
+  {
+   "across_reopen": "stable (format-checked only)",
+   "across_replay": "stable (compared on replay)",
+   "binds": "analysis code bytes and dependency version strings",
+   "derivation": "sha256 of three CIW source files plus self-reported python and numpy versions",
+   "derivation_class": "code_hash_plus_declared_versions",
+   "exercised": true,
+   "identity": "energy runtime identity",
+   "properties": {
+    "equals_current_analysis_identity": true,
+    "stable_across_occurrences": true
+   },
+   "scope": "energy bundle",
+   "validated_at": [
+    "src/ciw/energy_workflow.py:analysis_identity",
+    "src/ciw/energy_workflow.py:_check_runtime",
+    "src/ciw/energy_workflow.py:EnergyAccuracyWorkflow._adapters"
+   ]
+  },
+  {
+   "across_reopen": "not_applicable",
+   "across_replay": "not_applicable",
+   "binds": "artifact content; status content_recomputed_not_authenticated",
+   "derivation": "sha256(schema + NUL + canonical artifact without its id)",
+   "derivation_class": "content_hash",
+   "exercised": true,
+   "identity": "exchange result_id / verification_id",
+   "observed_refusals": {
+    "exchange_tamper": "result_id does not match the artifact content"
+   },
+   "properties": {
+    "status_not_authenticated": true,
+    "tamper_refused": true
+   },
+   "scope": "external exchange artifact",
+   "validated_at": [
+    "src/ciw/exchange.py:_identity"
+   ]
+  },
+  {
+   "across_reopen": "not_applicable",
+   "across_replay": "not_applicable",
+   "binds": "nothing; reported as caller_declared_reference",
+   "derivation": "any string supplied by the producer",
+   "derivation_class": "caller_declared",
+   "exercised": true,
+   "identity": "exchange batch_id",
+   "properties": {
+    "caller_declared": true
+   },
+   "scope": "external exchange artifact",
+   "validated_at": [
+    "src/ciw/exchange.py:_identity"
+   ]
+  },
+  {
+   "across_reopen": "not_applicable",
+   "across_replay": "not_applicable",
+   "binds": "equality between request and response only",
+   "derivation": "copied from the operator's review context and request parameters",
+   "derivation_class": "caller_declared",
+   "exercised": true,
+   "identity": "ESM requestId / inspectedAt",
+   "observed_refusals": {
+    "esm_base": "accepted",
+    "esm_rename": "accepted",
+    "esm_request_mismatch": "Native ESM inspection binding or scope mismatch"
+   },
+   "properties": {
+    "base_case_accepted": true,
+    "consistent_rename_accepted": true,
+    "mismatch_refused": true
+   },
+   "scope": "external ESM inspection",
+   "validated_at": [
+    "src/ciw/candidate_evidence.py:validate_response"
+   ]
+  },
+  {
+   "across_reopen": "not_applicable",
+   "across_replay": "not_applicable",
+   "binds": "the exact canonical bytes of the selected bundle, not its content in another layout",
+   "derivation": "'sha256:' + sha256 of the bytes CIW passes (its canonical serialization of the selected bundle)",
+   "derivation_class": "byte_hash",
+   "exercised": true,
+   "identity": "ESM bundleBytesDigest",
+   "observed_refusals": {
+    "esm_forged_digest": "Native ESM inspection binding or scope mismatch",
+    "esm_noncanonical_bytes": "Native ESM inspection binding or scope mismatch"
+   },
+   "properties": {
+    "forged_digest_refused": true,
+    "noncanonical_layout_of_same_bundle_refused": true
+   },
+   "scope": "external ESM inspection",
+   "validated_at": [
+    "src/ciw/candidate_evidence.py:validate_response",
+    "src/ciw/workbench.py:Workbench._validate_candidate"
+   ]
+  },
+  {
+   "across_reopen": "stable",
+   "across_replay": "not_applicable",
+   "binds": "the retained ESM response bytes, policy and adapter identity",
+   "derivation": "'candidate:' + sha256(record); 'candidate-execution:' + uuid4",
+   "derivation_class": "content_hash / fresh_event_uuid",
+   "exercised": false,
+   "identity": "ESM candidate_id / candidate execution_id",
+   "properties": {},
+   "scope": "workbench candidate receipt",
+   "validated_at": [
+    "src/ciw/workbench.py:Workbench._validate_candidate"
+   ]
+  }
+ ],
+ "schema": "ciw.lab-identity-matrix.v2"
+}

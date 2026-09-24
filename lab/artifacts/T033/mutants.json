@@ -1,0 +1,156 @@
+{
+ "detection": {
+  "dropped-cross-term": {
+   "errors": [],
+   "failed": [
+    "derivative_consistency",
+    "mixed_partials",
+    "gauss_equation"
+   ],
+   "nonfinite": [],
+   "not_evaluated": [],
+   "worst": {
+    "christoffel_asymmetry": 0.0,
+    "compatibility": 2.3766840084597953e-17,
+    "derivative_asymmetry": 0.0,
+    "derivative_consistency": 0.07215367794589776,
+    "gauss_equation": 0.03526945879414889,
+    "metric_asymmetry": 0.0,
+    "min_eigenvalue_ratio": 0.9157965150779961,
+    "mixed_partials": 0.08163375986952855
+   }
+  },
+  "indefinite-metric": {
+   "errors": [],
+   "failed": [
+    "min_eigenvalue_ratio"
+   ],
+   "nonfinite": [],
+   "not_evaluated": [
+    "christoffel_asymmetry",
+    "compatibility",
+    "derivative_consistency",
+    "mixed_partials",
+    "gauss_equation"
+   ],
+   "worst": {
+    "christoffel_asymmetry": null,
+    "compatibility": null,
+    "derivative_asymmetry": 0.0,
+    "derivative_consistency": null,
+    "gauss_equation": null,
+    "metric_asymmetry": 0.0,
+    "min_eigenvalue_ratio": -4.8316120683532,
+    "mixed_partials": null
+   }
+  },
+  "misscaled-curvature": {
+   "errors": [],
+   "failed": [
+    "gauss_equation"
+   ],
+   "nonfinite": [],
+   "not_evaluated": [],
+   "worst": {
+    "christoffel_asymmetry": 0.0,
+    "compatibility": 6.100317569249007e-17,
+    "derivative_asymmetry": 0.0,
+    "derivative_consistency": 3.7703325595445476e-13,
+    "gauss_equation": 0.1666666666667811,
+    "metric_asymmetry": 0.0,
+    "min_eigenvalue_ratio": 0.12400651317262909,
+    "mixed_partials": 9.673334750606494e-14
+   }
+  },
+  "nan-derivatives": {
+   "errors": [],
+   "failed": [
+    "derivative_asymmetry",
+    "christoffel_asymmetry",
+    "compatibility",
+    "derivative_consistency",
+    "mixed_partials",
+    "gauss_equation"
+   ],
+   "nonfinite": [
+    "christoffel_asymmetry",
+    "compatibility",
+    "derivative_asymmetry",
+    "derivative_consistency",
+    "gauss_equation",
+    "mixed_partials"
+   ],
+   "not_evaluated": [],
+   "worst": {
+    "christoffel_asymmetry": "nonfinite",
+    "compatibility": "nonfinite",
+    "derivative_asymmetry": "nonfinite",
+    "derivative_consistency": "nonfinite",
+    "gauss_equation": "nonfinite",
+    "metric_asymmetry": 0.0,
+    "min_eigenvalue_ratio": 0.11139804003291641,
+    "mixed_partials": "nonfinite"
+   }
+  },
+  "nonsymmetric-metric": {
+   "errors": [],
+   "failed": [
+    "metric_asymmetry"
+   ],
+   "nonfinite": [],
+   "not_evaluated": [],
+   "worst": {
+    "christoffel_asymmetry": 0.0,
+    "compatibility": 0.0,
+    "derivative_asymmetry": 0.0,
+    "derivative_consistency": 4.163336342344337e-14,
+    "gauss_equation": 0.0,
+    "metric_asymmetry": 0.1,
+    "min_eigenvalue_ratio": 0.9047619047619047,
+    "mixed_partials": 0.0
+   }
+  },
+  "sign-flipped-derivatives": {
+   "errors": [],
+   "failed": [
+    "derivative_consistency",
+    "gauss_equation"
+   ],
+   "nonfinite": [],
+   "not_evaluated": [],
+   "worst": {
+    "christoffel_asymmetry": 0.0,
+    "compatibility": 1.6035737915386125e-16,
+    "derivative_asymmetry": 0.0,
+    "derivative_consistency": 0.9998471973746694,
+    "gauss_equation": 0.9998406373794916,
+    "metric_asymmetry": 0.0,
+    "min_eigenvalue_ratio": 0.21083754713372882,
+    "mixed_partials": 3.368311131992806e-14
+   }
+  },
+  "transposed-derivatives": {
+   "errors": [],
+   "failed": [
+    "derivative_asymmetry",
+    "christoffel_asymmetry",
+    "compatibility",
+    "derivative_consistency",
+    "mixed_partials",
+    "gauss_equation"
+   ],
+   "nonfinite": [],
+   "not_evaluated": [],
+   "worst": {
+    "christoffel_asymmetry": 0.3638774640783289,
+    "compatibility": 0.26679630220609835,
+    "derivative_asymmetry": 0.5335926044121967,
+    "derivative_consistency": 0.5335926044122007,
+    "gauss_equation": 0.49888362770746514,
+    "metric_asymmetry": 0.0,
+    "min_eigenvalue_ratio": 0.11139804003291641,
+    "mixed_partials": 0.6383060254771215
+   }
+  }
+ }
+}

@@ -1,0 +1,1686 @@
+[
+ {
+  "curvature": 0.0,
+  "curvature_signal": 0.0,
+  "max_abs_path_curvature": 0.0,
+  "methods": {
+   "euler": {
+    "computed_deviation": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "errors": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "ratios": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "resolved_from_steps": null,
+    "roundoff_limited": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ]
+   },
+   "midpoint": {
+    "computed_deviation": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "errors": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "ratios": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "resolved_from_steps": null,
+    "roundoff_limited": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ]
+   },
+   "rk4": {
+    "computed_deviation": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "errors": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "ratios": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "resolved_from_steps": null,
+    "roundoff_limited": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ]
+   }
+  },
+  "reference_j_head": 2.0,
+  "reference_kind": "analytic",
+  "reference_spread": 0.0,
+  "scipy": null,
+  "surface": "plane",
+  "true_deviation": 0.0
+ },
+ {
+  "curvature": 0.0,
+  "curvature_signal": 0.0,
+  "max_abs_path_curvature": 0.0,
+  "methods": {
+   "euler": {
+    "computed_deviation": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "errors": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "ratios": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "resolved_from_steps": null,
+    "roundoff_limited": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ]
+   },
+   "midpoint": {
+    "computed_deviation": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "errors": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "ratios": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "resolved_from_steps": null,
+    "roundoff_limited": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ]
+   },
+   "rk4": {
+    "computed_deviation": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "errors": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "ratios": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "resolved_from_steps": null,
+    "roundoff_limited": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ]
+   }
+  },
+  "reference_j_head": 2.0,
+  "reference_kind": "analytic",
+  "reference_spread": 0.0,
+  "scipy": null,
+  "surface": "cylinder",
+  "true_deviation": 0.0
+ },
+ {
+  "curvature": 1.0,
+  "curvature_signal": 1.09070257317,
+  "max_abs_path_curvature": null,
+  "methods": {
+   "euler": {
+    "computed_deviation": [
+     -0.5,
+     -0.82080078125,
+     -0.965819508682,
+     -1.03102826535,
+     -1.06157351761,
+     -1.07631620723
+    ],
+    "errors": [
+     0.590702573174,
+     0.269901791924,
+     0.124883064493,
+     0.0596743078231,
+     0.0291290555681,
+     0.0143863659476
+    ],
+    "ratios": [
+     1.84644967316,
+     4.0411090471,
+     8.73379090757,
+     18.2775906913,
+     37.4438014519,
+     75.8150166031
+    ],
+    "resolved_from_steps": 32,
+    "roundoff_limited": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ]
+   },
+   "midpoint": {
+    "computed_deviation": [
+     -1.09765625,
+     -1.09587230353,
+     -1.09242896766,
+     -1.0911890964,
+     -1.0908311097,
+     -1.09073557268
+    ],
+    "errors": [
+     0.00695367682568,
+     0.00516973035486,
+     0.00172639448513,
+     0.000486523229166,
+     0.000128536529144,
+     3.29995044408e-05
+    ],
+    "ratios": [
+     156.852640771,
+     210.978619446,
+     631.780617101,
+     2241.83041588,
+     8485.54555219,
+     33052.0894679
+    ],
+    "resolved_from_steps": 4,
+    "roundoff_limited": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ]
+   },
+   "rk4": {
+    "computed_deviation": [
+     -1.09068999026,
+     -1.09068832146,
+     -1.09070127397,
+     -1.09070247953,
+     -1.09070256694,
+     -1.09070257277
+    ],
+    "errors": [
+     1.25829187505e-05,
+     1.4251711012e-05,
+     1.29920035152e-06,
+     9.36457789091e-08,
+     6.235837402e-09,
+     4.01606969902e-10
+    ],
+    "ratios": [
+     86681.20607,
+     76531.3422547,
+     839518.379052,
+     11647108.7739,
+     174908757.695,
+     2715845727.08
+    ],
+    "resolved_from_steps": 4,
+    "roundoff_limited": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ]
+   }
+  },
+  "reference_j_head": 0.909297426826,
+  "reference_kind": "analytic",
+  "reference_spread": 0.0,
+  "scipy": null,
+  "surface": "sphere R=1",
+  "true_deviation": -1.09070257317
+ },
+ {
+  "curvature": 0.01,
+  "curvature_signal": 0.0133066920494,
+  "max_abs_path_curvature": null,
+  "methods": {
+   "euler": {
+    "computed_deviation": [
+     -0.005,
+     -0.00874453173828,
+     -0.010924175376,
+     -0.0120901828228,
+     -0.0126921390055,
+     -0.0129978427535
+    ],
+    "errors": [
+     0.00830669204939,
+     0.00456216031111,
+     0.00238251667335,
+     0.00121650922659,
+     0.000614553043909,
+     0.000308849295869
+    ],
+    "ratios": [
+     1.60192432442,
+     2.9167524028,
+     5.5851412073,
+     10.9384226264,
+     21.6526338634,
+     43.0847414171
+    ],
+    "resolved_from_steps": 32,
+    "roundoff_limited": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ]
+   },
+   "midpoint": {
+    "computed_deviation": [
+     -0.0124843789063,
+     -0.0131017741038,
+     -0.0132555523259,
+     -0.0132939187912,
+     -0.0133035002222,
+     -0.0133058942803
+    ],
+    "errors": [
+     0.000822313143138,
+     0.000204917945593,
+     5.11397234477e-05,
+     1.27732582245e-05,
+     3.19182716813e-06,
+     7.97769097005e-07
+    ],
+    "ratios": [
+     16.1820252545,
+     64.9366848319,
+     260.202659543,
+     1041.76176631,
+     4168.98890462,
+     16679.8790519
+    ],
+    "resolved_from_steps": 4,
+    "roundoff_limited": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ]
+   },
+   "rk4": {
+    "computed_deviation": [
+     -0.0133067949105,
+     -0.0133066984555,
+     -0.013306692449,
+     -0.0133066920743,
+     -0.0133066920509,
+     -0.0133066920495
+    ],
+    "errors": [
+     1.02861142048e-07,
+     6.40616182324e-09,
+     3.9961012277e-10,
+     2.49504861216e-11,
+     1.55808699276e-12,
+     9.81437153769e-14
+    ],
+    "ratios": [
+     129365.58728,
+     2077170.76411,
+     33299186.6101,
+     533323959.482,
+     8540403784.4,
+     135583740623.0
+    ],
+    "resolved_from_steps": 4,
+    "roundoff_limited": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ]
+   }
+  },
+  "reference_j_head": 1.98669330795,
+  "reference_kind": "analytic",
+  "reference_spread": 0.0,
+  "scipy": null,
+  "surface": "sphere R=10",
+  "true_deviation": -0.0133066920494
+ },
+ {
+  "curvature": 0.0001,
+  "curvature_signal": 0.000133330666692,
+  "max_abs_path_curvature": null,
+  "methods": {
+   "euler": {
+    "computed_deviation": [
+     -4.99999999999e-05,
+     -8.74994531255e-05,
+     -0.000109373666998,
+     -0.000121091829542,
+     -0.000127146165236,
+     -0.00013022214543
+    ],
+    "errors": [
+     8.33306666921e-05,
+     4.58312135665e-05,
+     2.39569996943e-05,
+     1.22388371504e-05,
+     6.18450145629e-06,
+     3.1085212624e-06
+    ],
+    "ratios": [
+     1.60001920043,
+     2.90916727524,
+     5.56541588653,
+     10.8940633047,
+     21.5588382725,
+     42.8919912194
+    ],
+    "resolved_from_steps": 32,
+    "roundoff_limited": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ]
+   },
+   "midpoint": {
+    "computed_deviation": [
+     -0.000124998437504,
+     -0.000131247675797,
+     -0.000132809928001,
+     -0.000133200483194,
+     -0.000133298120967,
+     -0.000133322530278
+    ],
+    "errors": [
+     8.33222918817e-06,
+     2.08299089466e-06,
+     5.20738690613e-07,
+     1.30183497538e-07,
+     3.25457245598e-08,
+     8.13641354291e-09
+    ],
+    "ratios": [
+     16.0018002003,
+     64.0092412472,
+     256.041406363,
+     1024.17487019,
+     4096.71833998,
+     16386.9088006
+    ],
+    "resolved_from_steps": 4,
+    "roundoff_limited": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ]
+   },
+   "rk4": {
+    "computed_deviation": [
+     -0.000133330677108,
+     -0.000133330667343,
+     -0.000133330666733,
+     -0.000133330666694,
+     -0.000133330666692,
+     -0.000133330666692
+    ],
+    "errors": [
+     1.04156683278e-11,
+     6.51256826245e-13,
+     4.08562073062e-14,
+     2.22044604925e-15,
+     4.4408920985e-16,
+     4.4408920985e-16
+    ],
+    "ratios": [
+     12800970.8542,
+     204728244.402,
+     3263412721.91,
+     60046794083.1,
+     300233970416.0,
+     300233970416.0
+    ],
+    "resolved_from_steps": 4,
+    "roundoff_limited": [
+     false,
+     false,
+     false,
+     true,
+     true,
+     true
+    ]
+   }
+  },
+  "reference_j_head": 1.99986666933,
+  "reference_kind": "analytic",
+  "reference_spread": 0.0,
+  "scipy": null,
+  "surface": "sphere R=100",
+  "true_deviation": -0.000133330666692
+ },
+ {
+  "curvature": 1e-08,
+  "curvature_signal": 1.33333333067e-08,
+  "max_abs_path_curvature": null,
+  "methods": {
+   "euler": {
+    "computed_deviation": [
+     -4.99999996961e-09,
+     -8.75000027989e-09,
+     -1.09375002388e-08,
+     -1.21093748362e-08,
+     -1.27148438445e-08,
+     -1.30224602213e-08
+    ],
+    "errors": [
+     8.33333333705e-09,
+     4.58333302678e-09,
+     2.39583306783e-09,
+     1.22395847047e-09,
+     6.18489462203e-10,
+     3.10873085387e-10
+    ],
+    "ratios": [
+     1.59999999609,
+     2.90909109785,
+     5.56521799691,
+     10.893615779,
+     21.5578989158,
+     42.8899571349
+    ],
+    "resolved_from_steps": 32,
+    "roundoff_limited": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ]
+   },
+   "midpoint": {
+    "computed_deviation": [
+     -1.2499999924e-08,
+     -1.31249999757e-08,
+     -1.32812498777e-08,
+     -1.33203124086e-08,
+     -1.33300777083e-08,
+     -1.33325190887e-08
+    ],
+    "errors": [
+     8.33333382635e-10,
+     2.08333330922e-10,
+     5.20834290164e-11,
+     1.30208980288e-11,
+     3.25559834882e-12,
+     8.14217917673e-13
+    ],
+    "ratios": [
+     15.9999990214,
+     64.0000006127,
+     255.999529187,
+     1023.99491012,
+     4095.50929754,
+     16375.6323918
+    ],
+    "resolved_from_steps": 4,
+    "roundoff_limited": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ]
+   },
+   "rk4": {
+    "computed_deviation": [
+     -1.33333333263e-08,
+     -1.33333335484e-08,
+     -1.33333331043e-08,
+     -1.33333331043e-08,
+     -1.33333335484e-08,
+     -1.33333324381e-08
+    ],
+    "errors": [
+     1.96485868815e-17,
+     2.41693191807e-16,
+     2.02396018044e-16,
+     2.02396018044e-16,
+     2.41693191807e-16,
+     8.68529832819e-16
+    ],
+    "ratios": [
+     678589935.606,
+     55166358.6674,
+     65877448.754,
+     65877448.754,
+     55166358.6674,
+     15351612.3486
+    ],
+    "resolved_from_steps": 4,
+    "roundoff_limited": [
+     true,
+     true,
+     true,
+     true,
+     true,
+     true
+    ]
+   }
+  },
+  "reference_j_head": 1.99999998667,
+  "reference_kind": "analytic",
+  "reference_spread": 0.0,
+  "scipy": null,
+  "surface": "sphere R=1e4",
+  "true_deviation": -1.33333333067e-08
+ },
+ {
+  "curvature": 1e-14,
+  "curvature_signal": 1.33333333333e-14,
+  "max_abs_path_curvature": null,
+  "methods": {
+   "euler": {
+    "computed_deviation": [
+     -5.10702591328e-15,
+     -8.881784197e-15,
+     -1.11022302463e-14,
+     -1.1990408666e-14,
+     -1.24344978758e-14,
+     -1.1768364061e-14
+    ],
+    "errors": [
+     8.22630742006e-15,
+     4.45154913633e-15,
+     2.23110308708e-15,
+     1.34292466738e-15,
+     8.98835457532e-16,
+     1.56496927231e-15
+    ],
+    "ratios": [
+     1.62081632165,
+     2.99521198688,
+     5.9761171102,
+     9.92857876334,
+     14.8340090743,
+     8.51986909218
+    ],
+    "resolved_from_steps": null,
+    "roundoff_limited": [
+     true,
+     true,
+     true,
+     true,
+     true,
+     true
+    ]
+   },
+   "midpoint": {
+    "computed_deviation": [
+     -1.24344978758e-14,
+     -1.31006316906e-14,
+     -1.35447209004e-14,
+     -1.35447209004e-14,
+     -1.33226762955e-14,
+     -1.24344978758e-14
+    ],
+    "errors": [
+     8.98835457532e-16,
+     2.32701642756e-16,
+     2.11387567094e-16,
+     2.11387567094e-16,
+     1.06570378314e-17,
+     8.98835457532e-16
+    ],
+    "ratios": [
+     14.8340090743,
+     57.297976823,
+     63.0752958495,
+     63.0752958495,
+     1251.12939864,
+     14.8340090743
+    ],
+    "resolved_from_steps": 4,
+    "roundoff_limited": [
+     true,
+     true,
+     true,
+     true,
+     true,
+     true
+    ]
+   },
+   "rk4": {
+    "computed_deviation": [
+     -1.35447209004e-14,
+     -1.35447209004e-14,
+     -1.35447209004e-14,
+     -1.37667655054e-14,
+     -1.31006316906e-14,
+     -1.1990408666e-14
+    ],
+    "errors": [
+     2.11387567094e-16,
+     2.11387567094e-16,
+     2.11387567094e-16,
+     4.33432172019e-16,
+     2.32701642756e-16,
+     1.34292466738e-15
+    ],
+    "ratios": [
+     63.0752958495,
+     63.0752958495,
+     63.0752958495,
+     30.7622142381,
+     57.297976823,
+     9.92857876334
+    ],
+    "resolved_from_steps": null,
+    "roundoff_limited": [
+     true,
+     true,
+     true,
+     true,
+     true,
+     true
+    ]
+   }
+  },
+  "reference_j_head": 2.0,
+  "reference_kind": "analytic",
+  "reference_spread": 0.0,
+  "scipy": null,
+  "surface": "sphere R=1e7",
+  "true_deviation": -1.33333333333e-14
+ },
+ {
+  "curvature": 1e-16,
+  "curvature_signal": 1.33333333333e-16,
+  "max_abs_path_curvature": null,
+  "methods": {
+   "euler": {
+    "computed_deviation": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "errors": [
+     1.33333333333e-16,
+     1.33333333333e-16,
+     1.33333333333e-16,
+     1.33333333333e-16,
+     1.33333333333e-16,
+     1.33333333333e-16
+    ],
+    "ratios": [
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     1.0
+    ],
+    "resolved_from_steps": null,
+    "roundoff_limited": [
+     true,
+     true,
+     true,
+     true,
+     true,
+     true
+    ]
+   },
+   "midpoint": {
+    "computed_deviation": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "errors": [
+     1.33333333333e-16,
+     1.33333333333e-16,
+     1.33333333333e-16,
+     1.33333333333e-16,
+     1.33333333333e-16,
+     1.33333333333e-16
+    ],
+    "ratios": [
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     1.0
+    ],
+    "resolved_from_steps": null,
+    "roundoff_limited": [
+     true,
+     true,
+     true,
+     true,
+     true,
+     true
+    ]
+   },
+   "rk4": {
+    "computed_deviation": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "errors": [
+     1.33333333333e-16,
+     1.33333333333e-16,
+     1.33333333333e-16,
+     1.33333333333e-16,
+     1.33333333333e-16,
+     1.33333333333e-16
+    ],
+    "ratios": [
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     1.0
+    ],
+    "resolved_from_steps": null,
+    "roundoff_limited": [
+     true,
+     true,
+     true,
+     true,
+     true,
+     true
+    ]
+   }
+  },
+  "reference_j_head": 2.0,
+  "reference_kind": "analytic",
+  "reference_spread": 0.0,
+  "scipy": null,
+  "surface": "sphere R=1e8",
+  "true_deviation": -1.33333333333e-16
+ },
+ {
+  "curvature": null,
+  "curvature_signal": 0.249971667501,
+  "max_abs_path_curvature": null,
+  "methods": {
+   "euler": {
+    "computed_deviation": [
+     -0.108209953786,
+     -0.173840857103,
+     -0.210170720425,
+     -0.229582400115,
+     -0.239648922832,
+     -0.244777624906
+    ],
+    "errors": [
+     0.141761713715,
+     0.0761308103981,
+     0.0398009470765,
+     0.0203892673862,
+     0.0103227446696,
+     0.00519404259487
+    ],
+    "ratios": [
+     1.76332283908,
+     3.28344944963,
+     6.28054571216,
+     12.2599631839,
+     24.2156205063,
+     48.126611004
+    ],
+    "resolved_from_steps": 32,
+    "roundoff_limited": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ]
+   },
+   "midpoint": {
+    "computed_deviation": [
+     -0.24380687193,
+     -0.248566803666,
+     -0.249638193499,
+     -0.249890497862,
+     -0.249951644618,
+     -0.249966694977
+    ],
+    "errors": [
+     0.00616479557178,
+     0.00140486383546,
+     0.000333474002377,
+     8.11696397953e-05,
+     2.00228829703e-05,
+     4.97252473952e-06
+    ],
+    "ratios": [
+     40.5482492632,
+     177.933021829,
+     749.598666521,
+     3079.62026358,
+     12484.2994823,
+     50270.5729173
+    ],
+    "resolved_from_steps": 4,
+    "roundoff_limited": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ]
+   },
+   "rk4": {
+    "computed_deviation": [
+     -0.249981145801,
+     -0.249973093612,
+     -0.249971783999,
+     -0.249971675634,
+     -0.249971668036,
+     -0.249971667536
+    ],
+    "errors": [
+     9.47829981812e-06,
+     1.42611072529e-06,
+     1.16497713032e-07,
+     8.13234302122e-09,
+     5.3476156836e-10,
+     3.43818307158e-11
+    ],
+    "ratios": [
+     26373.0492069,
+     175282.0893,
+     2145721.67123,
+     30737964.059,
+     467445086.355,
+     7270458329.21
+    ],
+    "resolved_from_steps": 4,
+    "roundoff_limited": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ]
+   }
+  },
+  "reference_j_head": 1.7500283325,
+  "reference_kind": "self_convergence",
+  "reference_spread": 1.3524736886e-12,
+  "scipy": {
+   "implementation": "scipy.integrate.solve_ivp(DOP853)",
+   "j_head": 1.7500283325,
+   "j_head_minus_reference": -9.72555369572e-14,
+   "revision": "1.16.2",
+   "right_hand_side": "ciw.lab.jacobi.rhs (shared model; independent stepper only)",
+   "status": 0,
+   "success": true
+  },
+  "surface": "torus R=2",
+  "true_deviation": -0.249971667501
+ },
+ {
+  "curvature": 0.0153846153846,
+  "curvature_signal": 0.0204497965412,
+  "max_abs_path_curvature": null,
+  "methods": {
+   "euler": {
+    "computed_deviation": [
+     -0.00769230769231,
+     -0.0134485964525,
+     -0.0167953924549,
+     -0.0185843983879,
+     -0.0195075820534,
+     -0.0199763147548
+    ],
+    "errors": [
+     0.0127574888489,
+     0.00700120008866,
+     0.00365440408632,
+     0.00186539815334,
+     0.000942214487853,
+     0.000473481786377
+    ],
+    "ratios": [
+     1.60296409297,
+     2.92089874339,
+     5.59593193806,
+     10.9626979659,
+     21.7039716592,
+     43.1902496138
+    ],
+    "resolved_from_steps": 32,
+    "roundoff_limited": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ]
+   },
+   "midpoint": {
+    "computed_deviation": [
+     -0.0191938012062,
+     -0.0201373559096,
+     -0.0203718981169,
+     -0.0204303494653,
+     -0.0204449382801,
+     -0.0204485824186
+    ],
+    "errors": [
+     0.00125599533502,
+     0.000312440631597,
+     7.78984243355e-05,
+     1.94470758959e-05,
+     4.8582610841e-06,
+     1.21412261689e-06
+    ],
+    "ratios": [
+     16.2817456172,
+     65.4517833891,
+     262.518744322,
+     1051.56151242,
+     4209.28315445,
+     16843.2712288
+    ],
+    "resolved_from_steps": 4,
+    "roundoff_limited": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ]
+   },
+   "rk4": {
+    "computed_deviation": [
+     -0.0204500383411,
+     -0.0204498115714,
+     -0.0204497974778,
+     -0.0204497965997,
+     -0.0204497965449,
+     -0.0204497965414
+    ],
+    "errors": [
+     2.41799881007e-07,
+     1.50301915358e-08,
+     9.36572819299e-10,
+     5.84441384177e-11,
+     3.65019126036e-12,
+     2.27817764653e-13
+    ],
+    "ratios": [
+     84573.2283079,
+     1360581.23361,
+     21834710.6811,
+     349903293.895,
+     5602390418.08,
+     89763836338.0
+    ],
+    "resolved_from_steps": 4,
+    "roundoff_limited": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ]
+   }
+  },
+  "reference_j_head": 1.97955020346,
+  "reference_kind": "analytic",
+  "reference_spread": 0.0,
+  "scipy": null,
+  "surface": "torus R=64 equator",
+  "true_deviation": -0.0204497965412
+ },
+ {
+  "curvature": null,
+  "curvature_signal": 0.513920897098,
+  "max_abs_path_curvature": null,
+  "methods": {
+   "euler": {
+    "computed_deviation": [
+     0.240950061533,
+     0.372223592678,
+     0.441495695204,
+     0.477292796936,
+     0.495501033128,
+     0.504684322622
+    ],
+    "errors": [
+     0.272970835564,
+     0.14169730442,
+     0.0724252018932,
+     0.036628100162,
+     0.0184198639701,
+     0.00923657447586
+    ],
+    "ratios": [
+     1.88269525583,
+     3.62689254535,
+     7.09588490834,
+     14.0307822362,
+     27.9003633215,
+     55.6397719134
+    ],
+    "resolved_from_steps": 32,
+    "roundoff_limited": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ]
+   },
+   "midpoint": {
+    "computed_deviation": [
+     0.508870965539,
+     0.512373669532,
+     0.513509844456,
+     0.51381651773,
+     0.513894723048,
+     0.513914352582
+    ],
+    "errors": [
+     0.00504993155822,
+     0.00154722756586,
+     0.000411052641982,
+     0.000104379367595,
+     2.6174049538e-05,
+     6.54451554594e-06
+    ],
+    "ratios": [
+     101.767893519,
+     332.155985608,
+     1250.25567192,
+     4923.58699752,
+     19634.7491569,
+     78526.9579529
+    ],
+    "resolved_from_steps": 4,
+    "roundoff_limited": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ]
+   },
+   "rk4": {
+    "computed_deviation": [
+     0.514024906552,
+     0.51392308576,
+     0.513921021452,
+     0.513920905647,
+     0.513920897672,
+     0.513920897135
+    ],
+    "errors": [
+     0.000104009454359,
+     2.18866209423e-06,
+     1.24354019082e-07,
+     8.54987192156e-09,
+     5.74655878438e-10,
+     3.71205288729e-11
+    ],
+    "ratios": [
+     4941.09790564,
+     234810.525779,
+     4132724.46593,
+     60108607.6859,
+     894310693.374,
+     13844654499.8
+    ],
+    "resolved_from_steps": 4,
+    "roundoff_limited": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ]
+   }
+  },
+  "reference_j_head": 2.5139208971,
+  "reference_kind": "self_convergence",
+  "reference_spread": 3.20365955986e-12,
+  "scipy": {
+   "implementation": "scipy.integrate.solve_ivp(DOP853)",
+   "j_head": 2.5139208971,
+   "j_head_minus_reference": -3.38840067116e-13,
+   "revision": "1.16.2",
+   "right_hand_side": "ciw.lab.jacobi.rhs (shared model; independent stepper only)",
+   "status": 0,
+   "success": true
+  },
+  "surface": "saddle c=1",
+  "true_deviation": 0.513920897098
+ },
+ {
+  "curvature": null,
+  "curvature_signal": 0.103904708271,
+  "max_abs_path_curvature": null,
+  "methods": {
+   "euler": {
+    "computed_deviation": [
+     -0.0363270421373,
+     -0.0676051933112,
+     -0.0851697381032,
+     -0.0943955943254,
+     -0.0991153756344,
+     -0.101501432271
+    ],
+    "errors": [
+     0.0675776661334,
+     0.0362995149595,
+     0.0187349701675,
+     0.00950911394526,
+     0.00478933263621,
+     0.00240327599949
+    ],
+    "ratios": [
+     1.53755988059,
+     2.86242690534,
+     5.54603008928,
+     10.9268548961,
+     21.6950285485,
+     43.2346132082
+    ],
+    "resolved_from_steps": 32,
+    "roundoff_limited": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ]
+   },
+   "midpoint": {
+    "computed_deviation": [
+     -0.0995117032874,
+     -0.102998717161,
+     -0.103703869037,
+     -0.103857914971,
+     -0.103893452719,
+     -0.103901950777
+    ],
+    "errors": [
+     0.00439300498321,
+     0.000905991110107,
+     0.000200839233315,
+     4.6793300061e-05,
+     1.12555511746e-05,
+     2.75749324219e-06
+    ],
+    "ratios": [
+     23.6523083101,
+     114.686233796,
+     517.352643483,
+     2220.50396393,
+     9231.41893794,
+     37680.8569033
+    ],
+    "resolved_from_steps": 4,
+    "roundoff_limited": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ]
+   },
+   "rk4": {
+    "computed_deviation": [
+     -0.103896318048,
+     -0.103905064251,
+     -0.103904744927,
+     -0.103904710702,
+     -0.103904708422,
+     -0.10390470828
+    ],
+    "errors": [
+     8.39022308985e-06,
+     3.55980491085e-07,
+     3.66568340127e-08,
+     2.43102249442e-09,
+     1.51235246548e-10,
+     9.35007626879e-12
+    ],
+    "ratios": [
+     12384.0221122,
+     291883.153355,
+     2834524.88654,
+     42741154.6002,
+     687040294.125,
+     11112712376.2
+    ],
+    "resolved_from_steps": 4,
+    "roundoff_limited": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ]
+   }
+  },
+  "reference_j_head": 1.89609529173,
+  "reference_kind": "self_convergence",
+  "reference_spread": 3.37507799486e-14,
+  "scipy": {
+   "implementation": "scipy.integrate.solve_ivp(DOP853)",
+   "j_head": 1.89609529173,
+   "j_head_minus_reference": -2.90878432452e-14,
+   "revision": "1.16.2",
+   "right_hand_side": "ciw.lab.jacobi.rhs (shared model; independent stepper only)",
+   "status": 0,
+   "success": true
+  },
+  "surface": "bump h=0.5",
+  "true_deviation": -0.103904708271
+ },
+ {
+  "curvature": null,
+  "curvature_signal": 0.00114401124293,
+  "max_abs_path_curvature": null,
+  "methods": {
+   "euler": {
+    "computed_deviation": [
+     -0.00043396743781,
+     -0.000776973761535,
+     -0.000959052190965,
+     -0.00105134521441,
+     -0.00109765229061,
+     -0.00112082781178
+    ],
+    "errors": [
+     0.000710043805122,
+     0.000367037481398,
+     0.000184959051968,
+     9.2666028521e-05,
+     4.63589523227e-05,
+     2.31834311568e-05
+    ],
+    "ratios": [
+     1.61118403496,
+     3.11687852308,
+     6.18521359598,
+     12.3455300847,
+     24.6772453995,
+     49.3460711313
+    ],
+    "resolved_from_steps": 32,
+    "roundoff_limited": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ]
+   },
+   "midpoint": {
+    "computed_deviation": [
+     -0.0011200478492,
+     -0.00114116171668,
+     -0.00114364838095,
+     -0.00114396223219,
+     -0.00114400409247,
+     -0.00114401008646
+    ],
+    "errors": [
+     2.39633937342e-05,
+     2.84952625584e-06,
+     3.62861983572e-07,
+     4.90107434636e-08,
+     7.15046621913e-09,
+     1.15646803245e-09
+    ],
+    "ratios": [
+     47.7399510111,
+     401.474189117,
+     3152.74483062,
+     23342.0503768,
+     159991.14014,
+     989228.591569
+    ],
+    "resolved_from_steps": 4,
+    "roundoff_limited": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ]
+   },
+   "rk4": {
+    "computed_deviation": [
+     -0.00114323601717,
+     -0.00114396884901,
+     -0.00114400867528,
+     -0.00114401108367,
+     -0.00114401123299,
+     -0.00114401124231
+    ],
+    "errors": [
+     7.75225764249e-07,
+     4.23939270355e-08,
+     2.5676538673e-09,
+     1.59260604704e-10,
+     9.93849447184e-12,
+     6.24167384444e-13
+    ],
+    "ratios": [
+     1475.71365103,
+     26985.262346,
+     445547.298061,
+     7183265.72387,
+     115109108.947,
+     1832859696.68
+    ],
+    "resolved_from_steps": 4,
+    "roundoff_limited": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ]
+   }
+  },
+  "reference_j_head": 1.99885598876,
+  "reference_kind": "self_convergence",
+  "reference_spread": 3.10862446895e-15,
+  "scipy": {
+   "implementation": "scipy.integrate.solve_ivp(DOP853)",
+   "j_head": 1.99885598876,
+   "j_head_minus_reference": 5.99520433298e-15,
+   "revision": "1.16.2",
+   "right_hand_side": "ciw.lab.jacobi.rhs (shared model; independent stepper only)",
+   "status": 0,
+   "success": true
+  },
+  "surface": "bump h=0.05",
+  "true_deviation": -0.00114401124293
+ },
+ {
+  "curvature": -1.0,
+  "curvature_signal": 1.62686040785,
+  "max_abs_path_curvature": null,
+  "methods": {
+   "euler": {
+    "computed_deviation": [
+     0.5,
+     0.93017578125,
+     1.2325915425,
+     1.41593898542,
+     1.51759606015,
+     1.57122731512
+    ],
+    "errors": [
+     1.12686040785,
+     0.696684626597,
+     0.394268865344,
+     0.210921422426,
+     0.109264347692,
+     0.0556330927226
+    ],
+    "ratios": [
+     1.44371068192,
+     2.33514612744,
+     4.12627156453,
+     7.71311130531,
+     14.8892153956,
+     29.2426742471
+    ],
+    "resolved_from_steps": 64,
+    "roundoff_limited": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ]
+   },
+   "midpoint": {
+    "computed_deviation": [
+     1.41015625,
+     1.56173465593,
+     1.60898558226,
+     1.62218013641,
+     1.62566322986,
+     1.62655768772
+    ],
+    "errors": [
+     0.216704157847,
+     0.0651257519168,
+     0.0178748255854,
+     0.00468027143895,
+     0.00119717798698,
+     0.000302720127066
+    ],
+    "ratios": [
+     7.50728746513,
+     24.9802936621,
+     91.0140577358,
+     347.599584568,
+     1358.91273106,
+     5374.14021199
+    ],
+    "resolved_from_steps": 8,
+    "roundoff_limited": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ]
+   },
+   "rk4": {
+    "computed_deviation": [
+     1.62421027672,
+     1.62665956581,
+     1.62684655421,
+     1.6268594978,
+     1.62686034953,
+     1.62686040416
+    ],
+    "errors": [
+     0.00265013112558,
+     0.000200842039155,
+     1.38536356045e-05,
+     9.10047909031e-07,
+     5.83179295965e-08,
+     3.69081654128e-09
+    ],
+    "ratios": [
+     613.879212293,
+     8100.19861723,
+     117432.019601,
+     1787664.57425,
+     27896402.0002,
+     440786040.068
+    ],
+    "resolved_from_steps": 4,
+    "roundoff_limited": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ]
+   }
+  },
+  "reference_j_head": 3.62686040785,
+  "reference_kind": "analytic",
+  "reference_spread": 0.0,
+  "scipy": null,
+  "surface": "hyperbolic k=1",
+  "true_deviation": 1.62686040785
+ }
+]

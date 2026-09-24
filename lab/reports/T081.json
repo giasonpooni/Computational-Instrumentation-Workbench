@@ -1,0 +1,651 @@
+{
+ "changed_files": [
+  "src/ciw/lab/exchange_provenance.py",
+  "src/ciw/lab/exchange_provenance_common.py",
+  "tests/test_lab_exchange_provenance.py",
+  "docs/lab/EXCHANGE_PROVENANCE.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 9,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "exactly one numerical_result_id over the baseline occurrences and a different one for the metadata variant; edits that keep the source bytes are refused where content is recomputed and survive where it is only sealed; energy-source.resealed and oscillator-stats.impossible-moments reopen.",
+ "experiment": "Collect the numerical identity from the original, a sibling, a replay, a replay after reopen, a replay of a replay and a separate session (steps and reproductions); compare a resealed metadata-only variant; recompute statistics.v1 from the samples; reopen data-edit and source-log forgeries. Digest re-derivations use a local canonical-JSON/SHA-256 implementation in ciw.lab, the same implementation origin as CIW, so they are cross_implementation checks (numerically_verified, never independently_verified); every other check compares CIW's own outputs or refusal messages. Retained numerical-identity.json and numerical-mutations.json/.md.",
+ "failure_modes_checked": [
+  "occurrence leaking into numerical identity",
+  "replay after reopen",
+  "replay of a replay",
+  "separate session",
+  "metadata-only resealed log edit",
+  "sealed and unsealed data edits with the source bytes unchanged",
+  "resealed edit of the retained source log",
+  "resealed variant analysed beside the original under one run_id",
+  "out-of-bounds statistics",
+  "statistics violating the moment inequalities"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "distinct numerical_result_id values (observed 1, predicted 1)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "distinct result_id values (fresh occurrences) (observed 12, predicted 12)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "numerical_result_id differs from the lab's sha256 over {operation_id, data}",
+      "reference_kind": "cross_implementation",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "The energy numerical_result_id is identical across original, sibling, replay, replay after offline reopen, replay of a replay and a separate session (same process and code) of one canonically identical log",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "distinct_numerical_result_ids": 1,
+    "distinct_result_ids": 12,
+    "occurrences": 12,
+    "recomputation_mismatches": 0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "metadata variant shares the baseline numerical_result_id",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "analysis data keys other than log_digest that differ from baseline",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "log_digest equal to baseline after the metadata edit",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "A resealed metadata-only log edit changes the energy numerical_result_id while every analysed number stays equal: the identity binds the whole log through data.log_digest",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "data_keys_differing": [
+     "log_digest"
+    ],
+    "edit": "sensor.name renamed; log_digest resealed",
+    "experiment_id_unchanged": true,
+    "numerical_result_id_differs": true
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "max relative difference of mean, minimum, maximum and rms from a NumPy recomputation",
+      "reference_kind": "invariant",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "sample count differs from the recomputation",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "moment inequalities violated by the computed result",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "The computed statistics.v1 result satisfies |mean| <= rms <= max(|min|, |max|) and agrees with a direct recomputation from the retained samples",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "bound on the relative disagreement of two float64 reductions over 64 samples",
+    "kind": "roundoff",
+    "value": 1e-12
+   },
+   "unit": null,
+   "value": {
+    "inequalities": {
+     "abs_mean_le_rms": true,
+     "rms_le_max_abs": true
+    },
+    "max_relative_difference": 0.0,
+    "sample_count": 64
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "Identity collision across retained workbench artifacts",
+      "observed_refusal": "Identity collision across retained workbench artifacts",
+      "passed": true,
+      "reference": "operation.execute on the resealed metadata variant in a workbench that already analysed baseline",
+      "reference_kind": "refusal"
+     }
+    ]
+   },
+   "claim": "CIW refuses to analyse a resealed variant of a log beside the original in one workbench when both keep one run_id",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "code": "invalid_payload",
+    "message": "Identity collision across retained workbench artifacts",
+    "outcome": "refused"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "Energy analysis bundle identity, schema or size differs",
+      "observed_refusal": "Energy analysis bundle identity, schema or size differs",
+      "passed": true,
+      "reference": "energy-data.naive (none recompute): refusal on reopen",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "Retained energy analysis binding differs",
+      "observed_refusal": "Retained energy analysis binding differs",
+      "passed": true,
+      "reference": "energy-data.reforged (full recompute): refusal on reopen",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "Operation record integrity mismatch",
+      "observed_refusal": "Operation record integrity mismatch",
+      "passed": true,
+      "reference": "oscillator-stats.naive (none recompute): refusal on reopen",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "Saved statistics mean is outside its bounds",
+      "observed_refusal": "Saved statistics mean is outside its bounds",
+      "passed": true,
+      "reference": "oscillator-stats.out-of-bounds (local recompute): refusal on reopen",
+      "reference_kind": "refusal"
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "harness control: the forger's recomputation of the unedited workspace reproduces every CIW digest",
+      "reference_kind": "cross_implementation",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "harness control: the unedited saved workspace reopens",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Numerical edits that leave the retained source bytes unchanged and break a seal, a digest, the statistics bounds or the recomputed analysis are refused on reopen",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": [
+    {
+     "kind": "workspace",
+     "mutant": "energy-data.naive",
+     "observed": "Energy analysis bundle identity, schema or size differs",
+     "recompute": "none"
+    },
+    {
+     "kind": "workspace",
+     "mutant": "energy-data.reforged",
+     "observed": "Retained energy analysis binding differs",
+     "recompute": "full"
+    },
+    {
+     "kind": "workspace",
+     "mutant": "oscillator-stats.naive",
+     "observed": "Operation record integrity mismatch",
+     "recompute": "none"
+    },
+    {
+     "kind": "workspace",
+     "mutant": "oscillator-stats.out-of-bounds",
+     "observed": "Saved statistics mean is outside its bounds",
+     "recompute": "local"
+    }
+   ]
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "energy-source.resealed: accepted (1 = accepted)",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "reopened baseline bundles (B0, B0b, B1) not reporting a gross energy different from the original bytes' value",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Surviving mutant energy-source.resealed: a resealed edit of the retained source log, with every derived record rebuilt, reopens with a different gross energy",
+   "counterexample": {
+    "statement": "Reopen re-analysis protects retained energy results from numerical forgery",
+    "witness": {
+     "description": "first measurement counter sample lowered by 50 mJ in the retained baseline log; log_digest resealed; source, evidence, experiment, request, analysis, step, bundle, verification and receipt digests recomputed; occurrence ids and times kept",
+     "name": "energy-source.resealed",
+     "observed": "accepted",
+     "post_reopen": {
+      "gross_energy_j_after_reopen": {
+       "B0": 0.25,
+       "B0b": 0.25,
+       "B1": 0.25
+      },
+      "gross_energy_j_computed_from_original_bytes": 0.2,
+      "original_session_ids_and_created_at_kept": true
+     },
+     "recompute": "full",
+     "target": "retained energy source log"
+    }
+   },
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "mutant": "energy-source.resealed",
+    "observed": "accepted"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "oscillator-stats.resealed: accepted (1 = accepted)",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     }
+    ]
+   },
+   "claim": "Surviving mutant oscillator-stats.resealed: an in-bounds statistics edit with a recomputed seal reopens",
+   "counterexample": {
+    "statement": "Unkeyed record seals detect every edit to a retained numerical result",
+    "witness": {
+     "description": "statistics mean moved to the midpoint of [minimum, maximum]; resealed",
+     "name": "oscillator-stats.resealed",
+     "observed": "accepted",
+     "post_reopen": {
+      "retained_mean_differs_from_computed": true,
+      "retained_mean_is_midpoint": true
+     },
+     "recompute": "local",
+     "target": "oscillator result data"
+    }
+   },
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "mutant": "oscillator-stats.resealed",
+    "observed": "accepted"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "oscillator-stats.impossible-moments: accepted (1 = accepted)",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "moment inequalities violated by the reopened results (observed 2, predicted 2)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Surviving mutant oscillator-stats.impossible-moments: resealed statistics that no sample set can have reopen",
+   "counterexample": {
+    "statement": "Saved statistics satisfy |mean| <= rms <= max(|min|, |max|)",
+    "witness": {
+     "description": "R1 mean set to its maximum and rms to half of it (|mean| > rms); R2 rms set to ten times max(|min|, |max|) (rms > max|x|); both resealed",
+     "name": "oscillator-stats.impossible-moments",
+     "observed": "accepted",
+     "post_reopen": {
+      "computed_inequalities": {
+       "abs_mean_le_rms": true,
+       "rms_le_max_abs": true
+      },
+      "retained": {
+       "result:R1": {
+        "maximum": 4.119458751885594,
+        "mean": 4.119458751885594,
+        "minimum": -3.978074288668829,
+        "rms": 2.059729375942797
+       },
+       "result:R2": {
+        "maximum": 4.119458751885594,
+        "mean": -0.8382494719867797,
+        "minimum": -3.978074288668829,
+        "rms": 41.19458751885594
+       }
+      },
+      "retained_inequalities": {
+       "result:R1": {
+        "abs_mean_le_rms": false,
+        "rms_le_max_abs": true
+       },
+       "result:R2": {
+        "abs_mean_le_rms": true,
+        "rms_le_max_abs": false
+       }
+      }
+     },
+     "recompute": "local",
+     "target": "oscillator result data"
+    }
+   },
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "mutant": "oscillator-stats.impossible-moments",
+    "observed": "accepted"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "oscillator-stats.legacy: accepted (1 = accepted)",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     }
+    ]
+   },
+   "claim": "Surviving mutant oscillator-stats.legacy: an edit to an unsealed legacy result reopens",
+   "counterexample": {
+    "statement": "Every retained oscillator result is sealed against edits",
+    "witness": {
+     "description": "legacy (unsealed) statistics mean moved to the midpoint",
+     "name": "oscillator-stats.legacy",
+     "observed": "accepted",
+     "post_reopen": {
+      "retained_mean_differs_from_computed": true,
+      "retained_mean_is_midpoint": true
+     },
+     "recompute": "none",
+     "target": "legacy oscillator result data"
+    }
+   },
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "mutant": "oscillator-stats.legacy",
+    "observed": "accepted"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": "Every CIW seal and identity on these paths (record_digest, log_digest, bundle_digest, verification_id, replay_id, result_id, source_id) is an unkeyed SHA-256 over public canonical JSON or raw bytes, and no keyed signature or MAC is retained. Authentication is therefore not established; the listed surviving mutants are concrete forgeries accepted on reopen."
+   },
+   "claim": "Retained workspace records are authenticated: a holder without a secret cannot produce a forged record that reopens",
+   "domain": "provenance",
+   "evidence_status": "not_established",
+   "expected_not_established": true,
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": null,
+   "unit": null,
+   "value": {
+    "surviving_mutants_in_this_task": [
+     "energy-source.resealed",
+     "oscillator-stats.impossible-moments",
+     "oscillator-stats.legacy",
+     "oscillator-stats.resealed"
+    ]
+   }
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 5637,
+   "path": "artifacts/T081/numerical-mutations.json",
+   "sha256": "963da216c5765e25ccf23b5f9d02be57ce67f203b1fe95bea50b7cd02f1ed694"
+  },
+  {
+   "bytes": 1432,
+   "path": "artifacts/T081/numerical-mutations.md",
+   "sha256": "78469067cf71bbf8df7a5dade4f032c1cd76fbdee770411f3de54215dbf93698"
+  },
+  {
+   "bytes": 1212,
+   "path": "artifacts/T081/numerical-identity.json",
+   "sha256": "c78d0a6109143c4dc7eb767544cd8bf2882aed0dfc7f1a98544f753003435894"
+  }
+ ],
+ "hypothesis": "The energy numerical_result_id is a content identity of the analysed data, and that data includes the retained log's identity (data.log_digest, origin and device_uuid), so it is equal across every occurrence of a canonically identical log (original, sibling, replay, replay after reopen, replay of a replay, separate session in the same process and code) and changes under a resealed metadata-only edit. Re-analysis on reopen refuses numerical edits that leave the retained source bytes unchanged, but not a forger who rewrites and reseals the source log itself. Oscillator results lack a numerical identity and their statistics are only bounds-checked.",
+ "input_data": [
+  "make_demo_run() damped-oscillator recording; statistics.v1 on channel v over [1, 2] s, twice, plus one legacy analysis.stats result",
+  "examples/energy-accuracy/{baseline,reset}.json (origin synthetic_fixture): two original executions of baseline, one of reset, replays, and a separate session in the same process",
+  "Workspaces saved by Session.save_workspace and reopened by Session.from_workspace in temporary directories",
+  "baseline.json with the sensor name renamed and log_digest resealed (variant fixture)"
+ ],
+ "mathematical_model": "numerical_result_id = sha256(canon({operation_id, data})) with data = analyze(parse(bytes)) deterministic in-process; data.log_digest = sha256(canon(log without log_digest)). For statistics, |mean| <= rms <= max(|min|, |max|) holds for every sample set (Cauchy-Schwarz and the maximum bound).",
+ "number": 81,
+ "numerical_result": "12 baseline occurrences -> 1 numerical_result_id, 12 result_id; metadata variant data differs only in ['log_digest']; statistics max relative difference 0.0e+00; mutants: 8 rows (8 workspace mutants, 0 pure-validator rows): 4 refused; 4 surviving forgeries (energy-source.resealed, oscillator-stats.resealed, oscillator-stats.impossible-moments, oscillator-stats.legacy); kill/survive predictions matched 8/8; refusal messages matched their regression pins 4/4",
+ "observation_model": "No physical observation. The observed objects are CIW records (sessions, executions, results, bundles, receipts, saved workspace JSON) produced offline by the unmodified CIW code; the energy logs are synthetic fixtures and no hardware was sampled.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/exchange_provenance.py": "5cc267c7777c9b434b8747b0cc841ac85313e1cfb6ff4c429ee93aa5ddbb645b",
+   "src/ciw/lab/exchange_provenance_common.py": "22028c4008079fba23c5e807de0104ba1a0014027e1d40a9209881cdf232f486"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T082 (fresh replay execution and result identities); CIW change: content-level numerical_result_id for operation results, recomputation of statistics (or at least the moment inequalities) on reopen, and keyed authentication of retained source bytes",
+ "report_id": "sha256:e773cf5095eed0307722dea566da8f24639a986e0b37f8f33760f4451ce19028",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "exchange-provenance",
+ "state": "completed",
+ "task_id": "T081",
+ "tests_passed": [
+  "check: The energy numerical_result_id is identical across original, sibling, replay, replay after offline reopen, replay of a replay and a separate session (same process and code) of one canonically identical log vs distinct numerical_result_id values (observed 1, predicted 1)",
+  "check: The energy numerical_result_id is identical across original, sibling, replay, replay after offline reopen, replay of a replay and a separate session (same process and code) of one canonically identical log vs distinct result_id values (fresh occurrences) (observed 12, predicted 12)",
+  "check: The energy numerical_result_id is identical across original, sibling, replay, replay after offline reopen, replay of a replay and a separate session (same process and code) of one canonically identical log vs numerical_result_id differs from the lab's sha256 over {operation_id, data}",
+  "check: A resealed metadata-only log edit changes the energy numerical_result_id while every analysed number stays equal: the identity binds the whole log through data.log_digest vs metadata variant shares the baseline numerical_result_id",
+  "check: A resealed metadata-only log edit changes the energy numerical_result_id while every analysed number stays equal: the identity binds the whole log through data.log_digest vs analysis data keys other than log_digest that differ from baseline",
+  "check: A resealed metadata-only log edit changes the energy numerical_result_id while every analysed number stays equal: the identity binds the whole log through data.log_digest vs log_digest equal to baseline after the metadata edit",
+  "check: The computed statistics.v1 result satisfies |mean| <= rms <= max(|min|, |max|) and agrees with a direct recomputation from the retained samples vs max relative difference of mean, minimum, maximum and rms from a NumPy recomputation",
+  "check: The computed statistics.v1 result satisfies |mean| <= rms <= max(|min|, |max|) and agrees with a direct recomputation from the retained samples vs sample count differs from the recomputation",
+  "check: The computed statistics.v1 result satisfies |mean| <= rms <= max(|min|, |max|) and agrees with a direct recomputation from the retained samples vs moment inequalities violated by the computed result",
+  "check: CIW refuses to analyse a resealed variant of a log beside the original in one workbench when both keep one run_id vs operation.execute on the resealed metadata variant in a workbench that already analysed baseline",
+  "check: Numerical edits that leave the retained source bytes unchanged and break a seal, a digest, the statistics bounds or the recomputed analysis are refused on reopen vs energy-data.naive (none recompute): refusal on reopen",
+  "check: Numerical edits that leave the retained source bytes unchanged and break a seal, a digest, the statistics bounds or the recomputed analysis are refused on reopen vs energy-data.reforged (full recompute): refusal on reopen",
+  "check: Numerical edits that leave the retained source bytes unchanged and break a seal, a digest, the statistics bounds or the recomputed analysis are refused on reopen vs oscillator-stats.naive (none recompute): refusal on reopen",
+  "check: Numerical edits that leave the retained source bytes unchanged and break a seal, a digest, the statistics bounds or the recomputed analysis are refused on reopen vs oscillator-stats.out-of-bounds (local recompute): refusal on reopen",
+  "check: Numerical edits that leave the retained source bytes unchanged and break a seal, a digest, the statistics bounds or the recomputed analysis are refused on reopen vs harness control: the forger's recomputation of the unedited workspace reproduces every CIW digest",
+  "check: Numerical edits that leave the retained source bytes unchanged and break a seal, a digest, the statistics bounds or the recomputed analysis are refused on reopen vs harness control: the unedited saved workspace reopens",
+  "check: Surviving mutant energy-source.resealed: a resealed edit of the retained source log, with every derived record rebuilt, reopens with a different gross energy vs energy-source.resealed: accepted (1 = accepted)",
+  "check: Surviving mutant energy-source.resealed: a resealed edit of the retained source log, with every derived record rebuilt, reopens with a different gross energy vs reopened baseline bundles (B0, B0b, B1) not reporting a gross energy different from the original bytes' value",
+  "check: Surviving mutant oscillator-stats.resealed: an in-bounds statistics edit with a recomputed seal reopens vs oscillator-stats.resealed: accepted (1 = accepted)",
+  "check: Surviving mutant oscillator-stats.impossible-moments: resealed statistics that no sample set can have reopen vs oscillator-stats.impossible-moments: accepted (1 = accepted)",
+  "check: Surviving mutant oscillator-stats.impossible-moments: resealed statistics that no sample set can have reopen vs moment inequalities violated by the reopened results (observed 2, predicted 2)",
+  "check: Surviving mutant oscillator-stats.legacy: an edit to an unsealed legacy result reopens vs oscillator-stats.legacy: accepted (1 = accepted)",
+  "pytest: tests/test_lab_exchange_provenance.py::test_numerical_identity"
+ ],
+ "tests_skipped": [],
+ "title": "Test stable numerical-result identity.",
+ "uncertainty": "Stability was observed within one process and platform; numerical_result_id hashes floats, so a different BLAS or NumPy build could change the last bits of analysed data and therefore the identity across platforms (not tested here). Value integrity after reopen is relative to the retained source bytes, which are themselves unauthenticated.",
+ "unresolved_assumptions": [
+  "Cross-platform stability of float-valued numerical identities is not established.",
+  "Oscillator results have no numerical identity, so their replays cannot be linked.",
+  "The separate session runs in the same process with the same code; it is not an independent reproduction."
+ ]
+}

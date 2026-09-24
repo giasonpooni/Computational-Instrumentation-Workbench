@@ -1,0 +1,141 @@
+{
+ "budget": {
+  "coarse-solver control (6 RK4 steps)": {
+   "combined_standard_mm": 0.102926578801,
+   "components": {
+    "execution": 0.0216412610538,
+    "geometry": 0.022512830501,
+    "instrument": 0.0282842712475,
+    "solver": 0.0939079810586
+   },
+   "dominant": "solver",
+   "dominant_share": 0.83243423442,
+   "reference_256_steps": 0.53970954254,
+   "unit": "mm",
+   "value": 0.624631187234
+  },
+  "coupon focal distance (conditioned on the measured start pose)": {
+   "combined_standard_mm": 4.64953979482,
+   "components": {
+    "execution": 0.832476239101,
+    "geometry": 4.3886502635,
+    "instrument": 1.29033037613,
+    "solver": 9.23539422123e-07
+   },
+   "dominant": "geometry",
+   "dominant_share": 0.890926767554,
+   "unit": "mm",
+   "value": 153.407155341
+  },
+  "coupon separation at L, 2 mm lateral offset (conditioned on the measured start pose)": {
+   "combined_standard_mm": 0.152600806367,
+   "components": {
+    "execution": 0.0221895069017,
+    "geometry": 0.148305872734,
+    "instrument": 0.0282842712475,
+    "solver": 2.84221282657e-08
+   },
+   "dominant": "geometry",
+   "dominant_share": 0.944502345609,
+   "unit": "mm",
+   "value": -1.03736170921
+  },
+  "coupon separation at L, 5 mrad heading offset (conditioned on the measured start pose)": {
+   "combined_standard_mm": 0.0421327867244,
+   "components": {
+    "execution": 0.0216412610538,
+    "geometry": 0.022512830501,
+    "instrument": 0.0282842712475,
+    "solver": 5.259972465e-09
+   },
+   "dominant": "mixed (largest: instrument)",
+   "dominant_share": 0.450660627513,
+   "unit": "mm",
+   "value": 0.539709539739
+  },
+  "coupon separation at L, 5 mrad heading offset (open-loop start)": {
+   "combined_standard_mm": 0.0702428218206,
+   "components": {
+    "execution": 0.060226459967,
+    "geometry": 0.022512830501,
+    "instrument": 0.0282842712475,
+    "solver": 5.259972465e-09
+   },
+   "dominant": "execution",
+   "dominant_share": 0.735141218037,
+   "unit": "mm",
+   "value": 0.539709539739
+  },
+  "cylinder gap, 90 deg pair": {
+   "combined_standard_mm": 0.0296938917464,
+   "components": {
+    "execution": 0.0,
+    "geometry": 0.00904031011894,
+    "instrument": 0.0282842712475,
+    "solver": 6.66133814775e-14
+   },
+   "dominant": "instrument",
+   "dominant_share": 0.907310099548,
+   "unit": "mm",
+   "value": 15.6582764422
+  },
+  "plate separation at 240 mm, 5 mrad heading offset (conditioned on the measured start pose)": {
+   "combined_standard_mm": 0.0557853027241,
+   "components": {
+    "execution": 0.0480832611207,
+    "geometry": 1.43659482532e-07,
+    "instrument": 0.0282842712475,
+    "solver": 0.0
+   },
+   "dominant": "execution",
+   "dominant_share": 0.742930591255,
+   "unit": "mm",
+   "value": 1.2
+  },
+  "plate separation at 240 mm, 5 mrad heading offset (open-loop start)": {
+   "combined_standard_mm": 0.133041346957,
+   "components": {
+    "execution": 0.13,
+    "geometry": 1.43659482532e-07,
+    "instrument": 0.0282842712475,
+    "solver": 0.0
+   },
+   "dominant": "execution",
+   "dominant_share": 0.954802259886,
+   "unit": "mm",
+   "value": 1.2
+  }
+ },
+ "coarse_check": {
+  "actual": 0.0849216446936,
+  "estimate": 0.0939079810586
+ },
+ "execution_declared": {
+  "heading_rad": 0.0005,
+  "lateral_mm": 0.05,
+  "source": "start jig and unsteered tape laying, relative pose of the offset tape",
+  "status": "declared_not_verified"
+ },
+ "linearity": {
+  "focal/height_mm": 0.0178678775816,
+  "focal/sigma_mm": 0.0144501515132,
+  "heading_end/height_mm": 0.00518513158964,
+  "heading_end/sigma_mm": 0.0283504739126,
+  "lateral/height_mm": 0.00526297378982,
+  "lateral/sigma_mm": 0.0293195879225
+ },
+ "plate_flatness": {
+  "deviation_mm": 0.05,
+  "model": "flatness deviation as a Gaussian bump of height u = 0.05 / sqrt(3) mm and width 75 mm",
+  "sigma_mm": 75.0
+ },
+ "standard_uncertainty": {
+  "height_mm": 0.115470053838,
+  "sigma_mm": 0.288675134595
+ },
+ "start_pose_uncertainty": {
+  "heading_rad": 0.0002,
+  "lateral_mm": 0.00282842712475,
+  "source": "CMM centreline points at s = 0 and 20 mm on both tapes"
+ }
+}

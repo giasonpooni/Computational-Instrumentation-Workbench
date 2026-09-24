@@ -1,0 +1,301 @@
+{
+ "changed_files": [
+  "src/ciw/lab/flat_torus_topology.py",
+  "src/ciw/lab/flat_torus_topology_lattice.py",
+  "docs/lab/FLAT_TORUS_TOPOLOGY.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 0,
+   "numerically_verified": 5,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Multiplicities 2 (half periods), 4 (square centre), sum (k_v - 2) = 2 on every tested lattice.",
+ "experiment": "Exact nearest-translate search, grid census, exact circumcenter enumeration of cut-locus vertices, and binary64 detection with and without a declared relative tolerance.",
+ "failure_modes_checked": [
+  "exact ties at half periods",
+  "Voronoi vertices of generic, boundary, square, hexagonal and rectangular lattices",
+  "binary64 rounding of the target itself",
+  "exact ties at targets binary64 cannot represent"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "mismatches against predicted multiplicities",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Square-torus half-period targets have exactly 2 (edge) or 4 (centre) shortest representatives",
+   "domain": "mathematical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "integer, Fraction or Q(sqrt d) arithmetic; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "(0, 1/2)": 2,
+    "(1/2, 0)": 2,
+    "(1/2, 1/2)": 4,
+    "(1/3, 1/5)": 1
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "census deviation from {1: n^2 - 2n + 1, 2: 2(n - 1), 4: 1}",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Multiplicity census on the 12 x 12 rational grid equals the predicted cut-locus counts",
+   "domain": "mathematical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "integer, Fraction or Q(sqrt d) arithmetic; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "1": 121,
+    "2": 22,
+    "4": 1
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "lattices violating the identity",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "derivation": "E = sum k_v / 2 and V - E + F = 0 with F = 1 give sum (k_v - 2) = 2"
+   },
+   "claim": "On six lattices the cut-locus vertices satisfy sum over vertices of (k_v - 2) = 2 (Euler characteristic 0)",
+   "domain": "mathematical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "integer, Fraction or Q(sqrt d) arithmetic; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "arc-boundary": 2,
+    "generic": 2,
+    "hexagonal": 2,
+    "rectangular": 2,
+    "square": 2,
+    "vertical-boundary": 2
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "binary64 multiplicity minus exact multiplicity (expect 1)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "exact multiplicity of the rounded target minus the binary64 multiplicity",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Rounding the target to binary64 changes its shortest-representative multiplicity (exact 1, binary64 2)",
+   "counterexample": {
+    "statement": "Converting a target to binary64 preserves its shortest-representative multiplicity",
+    "witness": {
+     "binary64_multiplicity": 2,
+     "binary64_target": [
+      0.5,
+      0.25
+     ],
+     "exact_multiplicity": 1,
+     "target": "(1/2 + 2^-60, 1/4)"
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "integer, Fraction or Q(sqrt d) arithmetic; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "binary64": 2,
+    "epsilon": "2^-60",
+    "exact": 1,
+    "exact_of_rounded_target": 2
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 4.0,
+      "passed": true,
+      "reference": "ties undercounted by raw binary64 comparison",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "ties undercounted with the declared tolerance",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "At exact cut-locus ties that binary64 cannot represent, raw float comparison undercounts some multiplicities while a relative tolerance of 1e-9 recovers all of them",
+   "counterexample": {
+    "statement": "Floating-point distance comparison finds every shortest representative",
+    "witness": {
+     "binary64": 2,
+     "exact": 3,
+     "lattice": "generic",
+     "target": [
+      "21/62",
+      "25/62"
+     ],
+     "tolerance": 3
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "integer, Fraction or Q(sqrt d) arithmetic; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "binary64_undercounts": 4,
+    "ties": 6,
+    "tolerance_undercounts": 0
+   }
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 2826,
+   "path": "artifacts/T022/degeneracy.json",
+   "sha256": "fb787e623d19ca84d338109077e6c86d1b933ef03edfef42770388365b049da1"
+  }
+ ],
+ "hypothesis": "Shortest representatives are tied exactly on the cut locus (the Voronoi boundary of the lattice): multiplicity 2 on edges and 3 or 4 at vertices, with sum over vertices of (k - 2) = 2 for every flat torus; binary64 cannot decide ties below its resolution, and a declared relative tolerance is needed so that exact ties at non-representable targets are not reported as unique.",
+ "input_data": [
+  "square torus G = (1, 0, 1); lattices {'generic': (5, 2, 7), 'vertical-boundary': (2, 1, 5), 'arc-boundary': (3, 1, 3), 'square': (1, 0, 1), 'hexagonal': (2, 1, 2), 'rectangular': (1, 0, 3)}",
+  "12 x 12 rational grid of targets",
+  "near-tie target (1/2 + eps, 1/4), eps down to 2^-60",
+  "6 cut-locus vertices with non-dyadic coordinates (exact ties binary64 cannot represent)"
+ ],
+ "mathematical_model": "Squared lengths Q(z + lambda) are exact rationals for rational z and integer G; the cut locus of a point is a graph with V vertices of multiplicity k_v and E = sum k_v / 2 edges, and V - E + 1 = chi = 0.",
+ "number": 22,
+ "numerical_result": "half periods {'(1/2, 0)': 2, '(0, 1/2)': 2, '(1/2, 1/2)': 4, '(1/3, 1/5)': 1}; census {'1': 121, '2': 22, '4': 1} (predicted {'1': 121, '2': 22, '4': 1}); cut-locus vertices {name: sum(k-2)} = {'generic': 2, 'vertical-boundary': 2, 'arc-boundary': 2, 'square': 2, 'hexagonal': 2, 'rectangular': 2}; eps = 2^-60: exact multiplicity 1, binary64 2 (the rounded target is an exact tie of multiplicity 2); non-representable exact ties undercounted by raw binary64 comparison: 4 of 6, with relative tolerance 1e-09: 0.",
+ "observation_model": "No physical observation: exact or floating-point computation on declared mathematical objects.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/flat_torus_topology.py": "4d8cf2437759501a1b9fa5ee0d8abfac43345ebee378c6ad08233e9155d4b184",
+   "src/ciw/lab/flat_torus_topology_lattice.py": "15a33fcd29591e43dec16fa3b9ad26d6b6b86846872e9e6bf815508fb0dade63"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T031: study route changes under small metric perturbations near these ties",
+ "report_id": "sha256:3495b96c60c380fbf64420bef88eacfe805a6284b11d5e4f88d50493bd4ef4d4",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "flat-torus-topology",
+ "state": "completed",
+ "task_id": "T022",
+ "tests_passed": [
+  "check: Square-torus half-period targets have exactly 2 (edge) or 4 (centre) shortest representatives vs mismatches against predicted multiplicities",
+  "check: Multiplicity census on the 12 x 12 rational grid equals the predicted cut-locus counts vs census deviation from {1: n^2 - 2n + 1, 2: 2(n - 1), 4: 1}",
+  "check: On six lattices the cut-locus vertices satisfy sum over vertices of (k_v - 2) = 2 (Euler characteristic 0) vs lattices violating the identity",
+  "check: Rounding the target to binary64 changes its shortest-representative multiplicity (exact 1, binary64 2) vs binary64 multiplicity minus exact multiplicity (expect 1)",
+  "check: Rounding the target to binary64 changes its shortest-representative multiplicity (exact 1, binary64 2) vs exact multiplicity of the rounded target minus the binary64 multiplicity",
+  "check: At exact cut-locus ties that binary64 cannot represent, raw float comparison undercounts some multiplicities while a relative tolerance of 1e-9 recovers all of them vs ties undercounted by raw binary64 comparison",
+  "check: At exact cut-locus ties that binary64 cannot represent, raw float comparison undercounts some multiplicities while a relative tolerance of 1e-9 recovers all of them vs ties undercounted with the declared tolerance",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_t022_degenerate_representatives",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_regeneration_is_within_tolerance",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+ ],
+ "tests_skipped": [],
+ "title": "Detect degenerate shortest representatives.",
+ "uncertainty": "Exact for rational inputs; the tolerance-aware float detector over-reports near ties by design ('ambiguous within tolerance').",
+ "unresolved_assumptions": [
+  "Targets with irrational coordinates are only handled in float with a declared tolerance."
+ ]
+}

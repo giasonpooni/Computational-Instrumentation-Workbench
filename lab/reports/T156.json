@@ -1,0 +1,117 @@
+{
+ "changed_files": [
+  "src/ciw/lab/research_portfolio.py"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 1,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Aggregates are exact functions of retained reports and never change a label.",
+ "experiment": "Build the ledger and verify each contribution names an existing source file in the package.",
+ "failure_modes_checked": [
+  "missing reports",
+  "report identity mismatch (validate_report)",
+  "aggregate differs from its re-read bytes"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "observed": 0.0,
+      "passed": true,
+      "reference": "attribution-ledger.json recomputed from a fresh read of the retained reports",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "contribution files missing",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Implementation contributions each name a present source file",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": null,
+   "unit": null,
+   "value": 0
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "Contributions are novel relative to the literature",
+   "domain": "mathematical",
+   "evidence_status": "not_established",
+   "expected_not_established": true,
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 3126,
+   "path": "artifacts/T156/attribution-ledger.json",
+   "sha256": "29a5d91ef3a93526fa271c11ce78a4ad0bc8a1ed592a54e4238ee378bc7008b6"
+  }
+ ],
+ "hypothesis": "Every result used by the lab can be attributed either to established literature or to a named implementation artifact in this repository.",
+ "input_data": [
+  "Retained reports T001-T154 in the same output directory"
+ ],
+ "mathematical_model": "A two-column ledger: textbook results with references; implementation contributions with their files.",
+ "number": 156,
+ "numerical_result": "13 textbook results; 9 contributions, 0 without a source file.",
+ "observation_model": "No physical observation; reads retained computational records only.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/research_portfolio.py": "6cd37207af02c6d64dc88b22c7ff2148e85f1eeebaa5445cd894879bc3043ba3"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "Add per-finding provenance tags so the ledger is derived from findings rather than curated.",
+ "report_id": "sha256:15f60981c64818abf818f7e07b4a9252dec2136362f01c908c0a47d1f27eff19",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "research-portfolio",
+ "state": "completed",
+ "task_id": "T156",
+ "tests_passed": [
+  "check: Implementation contributions each name a present source file vs attribution-ledger.json recomputed from a fresh read of the retained reports",
+  "check: Implementation contributions each name a present source file vs contribution files missing",
+  "pytest: tests/test_lab_research_portfolio.py::test_textbook_and_contribution_ledger"
+ ],
+ "tests_skipped": [],
+ "title": "Separate textbook results from implementation contributions.",
+ "uncertainty": "Curated attribution; references identify standard sources, not exhaustive priority.",
+ "unresolved_assumptions": [
+  "Novelty of contributions relative to published literature is not established by this ledger."
+ ]
+}

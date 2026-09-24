@@ -1,0 +1,392 @@
+{
+ "changed_files": [
+  "src/ciw/lab/sensor_fusion_robustness.py",
+  "src/ciw/lab/sensor_fusion_common.py",
+  "src/ciw/lab/sensor_fusion_bench.py",
+  "src/ciw/lab/sensor_fusion_objects.py"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 4,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Session covariance = closed form = schedule to roundoff; ANEES inside chi2(4N)/N; refusal codes zero_fill_refused, gap_strategy_refused, nonfinite_observation, missing_reading.",
+ "experiment": "Advance a FusionSession through gaps of 1, 5, 20 and 50 ticks and compare with the closed form; Monte Carlo NEES through the dropout pattern; request zero-fill, hold-last, NaN/None readings and a fractional tick through the API; zero-fill by hand outside the API as the counterexample, predicted beforehand from the exact joint moments of truth and filter.",
+ "failure_modes_checked": [
+  "zero-fill",
+  "hold-last substitution",
+  "NaN placeholder",
+  "None placeholder",
+  "fractional prediction tick",
+  "state mutation by a refused call",
+  "covariance growth mismatch"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 8.629212722298735e-16,
+      "passed": true,
+      "reference": "session and schedule covariance against the closed form (relative)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     }
+    ],
+    "derivation": "white-noise-acceleration discretization composes: F(a)F(b) = F(a+b), Q(a+b) = F(b) Q(a) F(b)^T + Q(b)"
+   },
+   "claim": "Prediction-only steps grow the covariance exactly as F(n dt) P F(n dt)^T + Q(n dt), identically in the session API and the batch schedule",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "observed floating-point residual of an exact identity",
+    "kind": "roundoff",
+    "value": 8.629212722298735e-16
+   },
+   "unit": null,
+   "value": {
+    "growth": [
+     {
+      "cubic_term": 1.666666666666667e-05,
+      "gap_ticks": 1,
+      "position_variance_x": 0.012077057467508331,
+      "relative_error": 0.0
+     },
+     {
+      "cubic_term": 0.0020833333333333333,
+      "gap_ticks": 5,
+      "position_variance_x": 0.032309981328987346,
+      "relative_error": 3.4743638866330344e-16
+     },
+     {
+      "cubic_term": 0.13333333333333333,
+      "gap_ticks": 20,
+      "position_variance_x": 0.33119144587584337,
+      "relative_error": 6.704418477289752e-16
+     },
+     {
+      "cubic_term": 2.0833333333333335,
+      "gap_ticks": 50,
+      "position_variance_x": 3.087808059494181,
+      "relative_error": 8.629212722298735e-16
+     }
+    ],
+    "max_relative_error": 8.629212722298735e-16
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "fraction of ticks with ANEES in the 99% interval",
+      "reference_kind": "analytic",
+      "tolerance": 0.9
+     },
+     {
+      "comparison": "le",
+      "observed": 2.2033947727418295,
+      "passed": true,
+      "reference": "gap-end error covariance against the predicted covariance (max |z|)",
+      "reference_kind": "analytic",
+      "tolerance": 3.89059188641312
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "runs": 400,
+     "seed": 692026,
+     "ticks": 100
+    }
+   },
+   "claim": "With a 30-tick gap and 20% dropout handled by prediction only, NEES stays chi-square consistent and the error covariance at the end of the gap equals the grown covariance",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "run-level standard error of the grand-mean NEES",
+    "kind": "monte_carlo_95ci",
+    "value": 0.09411833947965215
+   },
+   "unit": null,
+   "value": {
+    "gap_end_max_abs_z": 2.2033947727418295,
+    "gap_variance_growth": 86.28585014236369,
+    "missing_ticks": 47,
+    "nees": {
+     "fraction_above": 0.0,
+     "fraction_below": 0.0,
+     "fraction_inside": 1.0,
+     "grand_mean": 4.0635933314035,
+     "interval": [
+      3.6451175600580585,
+      4.373662919806389
+     ],
+     "runs": 400,
+     "ticks": 100
+    },
+    "z_critical": 3.89059188641312
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "zero_fill_refused",
+      "observed_refusal": "zero_fill_refused",
+      "passed": true,
+      "reference": "handle_gap strategy zero_fill",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "gap_strategy_refused",
+      "observed_refusal": "gap_strategy_refused",
+      "passed": true,
+      "reference": "handle_gap strategy hold_last",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "nonfinite_observation",
+      "observed_refusal": "nonfinite_observation",
+      "passed": true,
+      "reference": "Observation with NaN values",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "missing_reading",
+      "observed_refusal": "missing_reading",
+      "passed": true,
+      "reference": "Observation with no value",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "malformed_tick",
+      "observed_refusal": "malformed_tick",
+      "passed": true,
+      "reference": "predict to tick 50.5",
+      "reference_kind": "refusal"
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "state changed by a refused call",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     }
+    ],
+    "derivation": "FusionSession.handle_gap, FusionSession.predict and Observation validation"
+   },
+   "claim": "The session refuses requested substitution strategies (zero_fill, hold_last), NaN and absent observation values and a non-integer prediction tick, and leaves its state unchanged by the refusals",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "refusal codes and bitwise state comparison",
+    "kind": "reference_error",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "absent_value": "missing_reading",
+    "fractional_tick": "malformed_tick",
+    "hold_last": "gap_strategy_refused",
+    "nan_reading": "nonfinite_observation",
+    "state_unchanged": true,
+    "zero_fill": "zero_fill_refused"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 2305.6002151702023,
+      "passed": true,
+      "reference": "grand-mean NEES of the zero-filled filter",
+      "reference_kind": "analytic",
+      "tolerance": 100.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.406359768065074,
+      "passed": true,
+      "reference": "grand-mean NEES against the mismatch_moments prediction (run-level z)",
+      "reference_kind": "analytic",
+      "tolerance": 3.89059188641312
+     },
+     {
+      "comparison": "ge",
+      "observed": 8.208670299268318,
+      "passed": true,
+      "reference": "zero-filled RMSE relative to prediction only",
+      "reference_kind": "analytic",
+      "tolerance": 5.0
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "seed": 692026
+    }
+   },
+   "claim": "Zero-filling missing readings by hand drags the estimate toward the origin and destroys consistency by the amount the exact joint moments predict",
+   "counterexample": {
+    "statement": "A zero placeholder for a missing reading is harmless",
+    "witness": {
+     "grand_mean_nees": 2305.6002151702023,
+     "nominal": 4.0,
+     "rmse_m": 3.7711939615873082
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "run-level standard error of the zero-filled grand-mean NEES",
+    "kind": "monte_carlo_95ci",
+    "value": 117.35722012088766
+   },
+   "unit": null,
+   "value": {
+    "predict_only_rmse": 0.45941593755123217,
+    "zero_fill": {
+     "grand_mean_nees": 2305.6002151702023,
+     "grand_se": 59.8761327147386,
+     "max_anees": 9107.261415249604,
+     "nees": {
+      "fraction_above": 0.98,
+      "fraction_below": 0.0,
+      "fraction_inside": 0.02,
+      "grand_mean": 2305.6002151702023,
+      "interval": [
+       3.6451175600580585,
+       4.373662919806389
+      ],
+      "runs": 400,
+      "ticks": 100
+     },
+     "predicted_grand_mean_nees": 2281.268963767607,
+     "rmse": 3.7711939615873082,
+     "z_vs_predicted": 0.406359768065074
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "seed": 692026
+    },
+    "notes": "synthetic draws only; no acquisition"
+   },
+   "claim": "Real sensor dropouts are independent of the state and of the noise, as assumed here",
+   "domain": "sensor_performance",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": "not established: the dropout pattern is declared and state-independent"
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 5847,
+   "path": "artifacts/T069/missing_data.json",
+   "sha256": "3563f6f5b46b7a3afe25cf960a10621957cb9d588ae726e18195f0b8aab83900"
+  },
+  {
+   "bytes": 3669,
+   "path": "artifacts/T069/anees_gap.svg",
+   "sha256": "7e37b327ea5f96d44ae03a04b6ff753c2d9921cb325c8573ae9cda0cb9753efd"
+  }
+ ],
+ "hypothesis": "A missing reading is handled by prediction only: the covariance grows exactly by the model and the filter stays consistent; any substituted value (zero, hold-last) is refused because it fabricates information.",
+ "input_data": [
+  "seed 692026 (PCG64)",
+  "400 runs x 100 ticks",
+  "47 missing ticks (block 30-59 plus 20% random), shared by all runs"
+ ],
+ "mathematical_model": "P(k + n | k) = F(n dt) P F(n dt)^T + Q(n dt) with F(t) = [[I, t I], [0, I]], Q(t) = q [[t^3/3 I, t^2/2 I], [t^2/2 I, t I]]; the position variance gains q (n dt)^3 / 3 plus the propagated terms. dt = 0.1 s, q = 0.05.",
+ "number": 69,
+ "numerical_result": "max relative growth error 8.6e-16; ANEES inside 1.00 of ticks; gap-end |z| 2.20; position variance grows 86x over the gap; zero-fill grand NEES 2306 (exact prediction 2281), RMSE 3.77 m vs 0.459 m.",
+ "observation_model": "Camera position when present; absent otherwise (no placeholder value exists).",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/sensor_fusion_bench.py": "f373849a4c6836fa20685c59ce7a6fe6bf732f6df9d6a49646cdc017262dd656",
+   "src/ciw/lab/sensor_fusion_common.py": "6787aa47d199d50d0b4de4d7e53714ce7b8b5aad37d647cfc1a954414e90209f",
+   "src/ciw/lab/sensor_fusion_objects.py": "a795ffc235e0a4118cb7b9ac7800191a90984372d79e59f1a934442d98d7a1f1",
+   "src/ciw/lab/sensor_fusion_robustness.py": "9c94ececd04bce6abe83323c53b0ffee060b99e4b9f9fb8e3b58ec22c24516ec"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T070: stale clocks, where a reading is present but refers to the wrong time.",
+ "report_id": "sha256:fc2d2a8b0dffd1716bb3e808d7a8b2d6df0518b0328cfeedfadd056dc3ca304d",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "sensor-fusion",
+ "state": "completed",
+ "task_id": "T069",
+ "tests_passed": [
+  "check: Prediction-only steps grow the covariance exactly as F(n dt) P F(n dt)^T + Q(n dt), identically in the session API and the batch schedule vs session and schedule covariance against the closed form (relative)",
+  "check: With a 30-tick gap and 20% dropout handled by prediction only, NEES stays chi-square consistent and the error covariance at the end of the gap equals the grown covariance vs fraction of ticks with ANEES in the 99% interval",
+  "check: With a 30-tick gap and 20% dropout handled by prediction only, NEES stays chi-square consistent and the error covariance at the end of the gap equals the grown covariance vs gap-end error covariance against the predicted covariance (max |z|)",
+  "check: The session refuses requested substitution strategies (zero_fill, hold_last), NaN and absent observation values and a non-integer prediction tick, and leaves its state unchanged by the refusals vs handle_gap strategy zero_fill",
+  "check: The session refuses requested substitution strategies (zero_fill, hold_last), NaN and absent observation values and a non-integer prediction tick, and leaves its state unchanged by the refusals vs handle_gap strategy hold_last",
+  "check: The session refuses requested substitution strategies (zero_fill, hold_last), NaN and absent observation values and a non-integer prediction tick, and leaves its state unchanged by the refusals vs Observation with NaN values",
+  "check: The session refuses requested substitution strategies (zero_fill, hold_last), NaN and absent observation values and a non-integer prediction tick, and leaves its state unchanged by the refusals vs Observation with no value",
+  "check: The session refuses requested substitution strategies (zero_fill, hold_last), NaN and absent observation values and a non-integer prediction tick, and leaves its state unchanged by the refusals vs predict to tick 50.5",
+  "check: The session refuses requested substitution strategies (zero_fill, hold_last), NaN and absent observation values and a non-integer prediction tick, and leaves its state unchanged by the refusals vs state changed by a refused call",
+  "check: Zero-filling missing readings by hand drags the estimate toward the origin and destroys consistency by the amount the exact joint moments predict vs grand-mean NEES of the zero-filled filter",
+  "check: Zero-filling missing readings by hand drags the estimate toward the origin and destroys consistency by the amount the exact joint moments predict vs grand-mean NEES against the mismatch_moments prediction (run-level z)",
+  "check: Zero-filling missing readings by hand drags the estimate toward the origin and destroys consistency by the amount the exact joint moments predict vs zero-filled RMSE relative to prediction only",
+  "pytest: tests/test_lab_sensor_fusion.py::test_missing_data_prediction_only_and_zero_fill_refusal",
+  "pytest: tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T069]"
+ ],
+ "tests_skipped": [],
+ "title": "Add missing-data behavior.",
+ "uncertainty": "Closed-form comparison is exact to roundoff; Monte Carlo statements carry 99% per-tick intervals and a Bonferroni bound on the gap-end covariance.",
+ "unresolved_assumptions": [
+  "Dropouts are missing at random; state-dependent dropouts (occlusion near obstacles) bias the filter even with prediction-only steps.",
+  "A caller who builds an Observation with value (0, 0) is indistinguishable from a genuine reading at the origin: the API refuses requested substitutes, not zero-filling done before an Observation is constructed.",
+  "Long gaps stay consistent only while the motion model holds (see T073)."
+ ]
+}

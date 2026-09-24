@@ -1,0 +1,495 @@
+{
+ "changed_files": [
+  "src/ciw/lab/geodesic_jacobi_limits.py",
+  "src/ciw/lab/geodesic_jacobi_limits_core.py",
+  "docs/lab/GEODESIC_JACOBI_LIMITS.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 6,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "C2 = 0 for isotropic/symmetric configurations; eps_max -> 0 at first-order zeros only when the remainder does not vanish there.",
+ "experiment": "Tabulate C2, C3 and eps_max over s for five configurations; probe the predicted boundary at 0.9 s* on the generic torus path with new integrations at eps_max/2 and 2 eps_max.",
+ "failure_modes_checked": [
+  "fitted C2 compared with its analytic zero on isotropic surfaces",
+  "predicted boundary probed by new integrations on both sides",
+  "exact first-order zeros handled (eps_max = 0 when j = 0)",
+  "chord versus intrinsic distance difference is O(eps^3) and cannot change C2"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 1.5193096777532757,
+      "passed": true,
+      "reference": "|C2(s*)|",
+      "reference_kind": "invariant",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "le",
+      "observed": 8.585102871929361e-13,
+      "passed": true,
+      "reference": "eps_max at s*",
+      "reference_kind": "invariant",
+      "tolerance": 1e-06
+     },
+     {
+      "comparison": "ge",
+      "observed": 0.04055225742118131,
+      "passed": true,
+      "reference": "eps_max at s*/2",
+      "reference_kind": "invariant",
+      "tolerance": 0.01
+     }
+    ],
+    "derivation": "docs/lab/GEODESIC_JACOBI_LIMITS.md#t017-validity-domains-of-the-first-order-approximation",
+    "generator": {
+     "deterministic": true,
+     "eps": [
+      0.005,
+      0.01,
+      0.02,
+      0.04
+     ],
+     "name": "ciw.lab.geodesic_jacobi_limits:validity-torus-generic",
+     "seed": null,
+     "tau": 0.01
+    }
+   },
+   "claim": "On a generic torus geodesic C2(s*) != 0 and the validity domain shrinks to zero at the conjugate point",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-08,
+    "rel": 0.001
+   },
+   "uncertainty": {
+    "basis": "largest residual of the C2 eps^2 + C3 eps^3 model at s*, relative to the largest remainder",
+    "kind": "fit_residual",
+    "value": 0.00012508770066092895
+   },
+   "unit": null,
+   "value": {
+    "C2_at_s_star": 1.5193096777532757,
+    "eps_max_at_s_star": 8.585102871929361e-13,
+    "eps_max_by_fraction": {
+     "0.25": 0.5015440055495881,
+     "0.5": 0.04055225742118131,
+     "0.75": 0.010680792857480064,
+     "0.9": 0.0041206459082292,
+     "0.99": 0.000441622044026088,
+     "1.0": 8.585102871929361e-13,
+     "1.01": 0.0004520657186066277,
+     "1.1": 0.00524457465030904,
+     "1.25": 0.023662337629209718
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": -0.0023718742569261986,
+      "passed": true,
+      "reference": "relative error at eps_max / 2 divided by tau/2, minus 1",
+      "reference_kind": "invariant",
+      "tolerance": 0.05
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.005383712964368126,
+      "passed": true,
+      "reference": "relative error at 2 eps_max divided by 2 tau, minus 1",
+      "reference_kind": "invariant",
+      "tolerance": 0.05
+     }
+    ],
+    "generator": {
+     "deterministic": true,
+     "name": "ciw.lab.geodesic_jacobi_limits:validity-probe",
+     "s_fraction": 0.9,
+     "seed": null,
+     "tau": 0.01
+    }
+   },
+   "claim": "The predicted validity boundary holds: new integrations at eps_max/2 and 2 eps_max give the predicted relative errors tau/2 and 2 tau",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-08,
+    "rel": 0.001
+   },
+   "uncertainty": {
+    "basis": "grid-halving separation change relative to eps j at the smaller probe",
+    "kind": "truncation_bound",
+    "value": 9.431510248995778e-09
+   },
+   "unit": null,
+   "value": {
+    "double": {
+     "eps": 0.0082412918164584,
+     "j": 0.665874702922783,
+     "relative_error": 0.020107674259287365
+    },
+    "half": {
+     "eps": 0.0020603229541146,
+     "j": 0.665874702922783,
+     "relative_error": 0.004988140628715369
+    },
+    "relative_gap_to_prediction": {
+     "double": 0.005383712964368126,
+     "half": -0.0023718742569261986
+    },
+    "s": 5.446260530225366
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 1.5663757687783023e-08,
+      "passed": true,
+      "reference": "max |C2| / |j|",
+      "reference_kind": "analytic",
+      "tolerance": 1e-05
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 8.275677306457396e-05,
+      "passed": true,
+      "reference": "max |C3 / C3_analytic - 1|",
+      "reference_kind": "analytic",
+      "tolerance": 0.01
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 4.083325472370447e-05,
+      "passed": true,
+      "reference": "max |eps_max / (sqrt(24 tau)/|cos s|) - 1|",
+      "reference_kind": "analytic",
+      "tolerance": 0.02
+     },
+     {
+      "comparison": "ge",
+      "observed": 0.48990604983305625,
+      "passed": true,
+      "reference": "min eps_max at s = 0.999 pi and 1.001 pi",
+      "reference_kind": "invariant",
+      "tolerance": 0.4
+     }
+    ],
+    "derivation": "docs/lab/GEODESIC_JACOBI_LIMITS.md#t017-validity-domains-of-the-first-order-approximation",
+    "generator": {
+     "deterministic": true,
+     "eps": [
+      0.005,
+      0.01,
+      0.02,
+      0.04
+     ],
+     "name": "ciw.lab.geodesic_jacobi_limits:validity-sphere",
+     "seed": null,
+     "tau": 0.01
+    }
+   },
+   "claim": "Unit sphere, pure heading: C2 = 0, C3 = -|sin s| cos^2 s / 24, and the domain does not shrink at s = pi",
+   "counterexample": {
+    "statement": "The validity domain of the first-order approximation shrinks to zero at every conjugate point",
+    "witness": {
+     "eps_max_near_pi": {
+      "0.999": 0.4899060501928133,
+      "1.001": 0.48990604983305625
+     },
+     "perturbation": "pure heading",
+     "surface": "unit sphere",
+     "tau": 0.01
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-07,
+    "rel": 0.001
+   },
+   "uncertainty": {
+    "basis": "largest relative residual of the C2/C3 model over the tabulated s where the closed-form C3 is nonzero (at s = pi/2 the remainder is roundoff)",
+    "kind": "fit_residual",
+    "value": 6.041712184966308e-06
+   },
+   "unit": null,
+   "value": {
+    "eps_max_near_pi": {
+     "0.999": 0.4899060501928133,
+     "1.001": 0.48990604983305625
+    },
+    "max_C2_over_j": 1.5663757687783023e-08,
+    "max_C3_relative_error": 8.275677306457396e-05,
+    "max_eps_max_relative_error": 4.083325472370447e-05
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.014169729258414752,
+      "passed": true,
+      "reference": "max |C2| / (|C3| eps_min): quadratic term negligible",
+      "reference_kind": "analytic",
+      "tolerance": 0.05
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.00345180239911258,
+      "passed": true,
+      "reference": "max |eps_max / (sqrt(24 tau)/cosh s) - 1|",
+      "reference_kind": "analytic",
+      "tolerance": 0.05
+     }
+    ],
+    "derivation": "docs/lab/GEODESIC_JACOBI_LIMITS.md#t017-validity-domains-of-the-first-order-approximation",
+    "generator": {
+     "deterministic": true,
+     "eps": [
+      0.005,
+      0.01,
+      0.02,
+      0.04
+     ],
+     "name": "ciw.lab.geodesic_jacobi_limits:validity-hyperbolic",
+     "seed": null,
+     "tau": 0.01
+    }
+   },
+   "claim": "Hyperbolic plane, pure heading: C2 = 0 and eps_max = sqrt(24 tau)/cosh(s) shrinks exponentially",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-07,
+    "rel": 0.001
+   },
+   "uncertainty": {
+    "basis": "eps^5 terms absorbed by the fitted C3 (largest at s = 2.5)",
+    "kind": "model_truncation",
+    "value": 0.007744974876021327
+   },
+   "unit": null,
+   "value": {
+    "eps_max": [
+     0.47498610579044526,
+     0.43446806911245356,
+     0.317529414911324,
+     0.2083520665302066,
+     0.13038674031807784,
+     0.08016402048550128
+    ],
+    "max_C2_over_C3_eps_min": 0.014169729258414752,
+    "max_eps_max_relative_error": 0.00345180239911258
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 1.4034982000810103e-05,
+      "passed": true,
+      "reference": "|C2(s0)| - 1/2",
+      "reference_kind": "analytic",
+      "tolerance": 0.01
+     },
+     {
+      "comparison": "le",
+      "observed": 2.2203837231591348e-18,
+      "passed": true,
+      "reference": "eps_max at s0",
+      "reference_kind": "invariant",
+      "tolerance": 1e-06
+     }
+    ],
+    "derivation": "docs/lab/GEODESIC_JACOBI_LIMITS.md#t017-validity-domains-of-the-first-order-approximation",
+    "generator": {
+     "deterministic": true,
+     "eps": [
+      0.005,
+      0.01,
+      0.02,
+      0.04
+     ],
+     "name": "ciw.lab.geodesic_jacobi_limits:validity-sphere-mixed",
+     "seed": null,
+     "tau": 0.01
+    }
+   },
+   "claim": "Sphere lateral+heading perturbation: C2(s0) = 1/2 at the first-order zero s0 = 3pi/4, eps_max -> 0",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-08,
+    "rel": 0.001
+   },
+   "uncertainty": {
+    "basis": "relative residual of the C2/C3 model at s0",
+    "kind": "fit_residual",
+    "value": 7.062650395732436e-06
+   },
+   "unit": null,
+   "value": {
+    "C2_at_s0": 0.5000140349820008,
+    "eps_max_at_0.9_s0": 0.1008281905308577,
+    "eps_max_at_s0": 2.2203837231591348e-18
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 5.117970796264466e-06,
+      "passed": true,
+      "reference": "max |C2| over the tabulated nodes",
+      "reference_kind": "invariant",
+      "tolerance": 0.0001
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0003172873301551249,
+      "passed": true,
+      "reference": "remainder exponent at s* minus 3 (reflection symmetry)",
+      "reference_kind": "analytic",
+      "tolerance": 0.05
+     }
+    ],
+    "generator": {
+     "deterministic": true,
+     "eps": [
+      0.005,
+      0.01,
+      0.02,
+      0.04
+     ],
+     "name": "ciw.lab.geodesic_jacobi_limits:validity-torus-equator",
+     "seed": null
+    }
+   },
+   "claim": "Torus outer equator: C2 vanishes along the whole path (reflection symmetry); the remainder is cubic",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-06,
+    "rel": 0.001
+   },
+   "uncertainty": {
+    "basis": "the fitted C2 is not exactly zero because eps^5 terms leak into the two-term fit; RK4 chord errors contribute at most 5.2e-07",
+    "kind": "model_truncation",
+    "value": 5.117970796264466e-06
+   },
+   "unit": null,
+   "value": {
+    "eps_max_at_s_star": 3.5376386015910856e-07,
+    "max_abs_C2": 5.117970796264466e-06,
+    "remainder_exponent_at_s_star": 3.000317287330155
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "These validity domains certify first-order path corrections as safe on real machines",
+   "domain": "machine_safety",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 13398,
+   "path": "artifacts/T017/validity-domains.json",
+   "sha256": "2425a32b0a3bcc79d5f6cda04037d9246fe56d253e5def5a0d60c8d8ff557add"
+  },
+  {
+   "bytes": 4864,
+   "path": "artifacts/T017/validity-domains.svg",
+   "sha256": "aacbd7709a1407b19b398fd334fafea9975c3c0cb48c00e5b402e9eebb707fc0"
+  }
+ ],
+ "hypothesis": "The first-order remainder r(eps, s) = d(s) - eps |j(s)| is C2(s) eps^2 + C3(s) eps^3 + ...; the first-order prediction is within relative tolerance tau while |C2 eps + C3 eps^2| <= tau |j|, a domain that shrinks to zero where j vanishes unless the remainder vanishes there too.",
+ "input_data": [
+  "eps = [0.005, 0.01, 0.02, 0.04]; tau = 0.01; bounds capped at eps = 1.0",
+  "Closed forms: unit sphere (pure heading; lateral = heading), HyperbolicPlane(1) (pure heading)",
+  "Numerical: Torus(2, 1) generic and outer-equator families from T010 (RK4 chords at grid nodes)"
+ ],
+ "mathematical_model": "Unsigned separation d at matched arclength. Unit sphere, pure heading: d = 2 arcsin(|sin s| sin(eps/2)), so C2 = 0, C3 = -|sin s| cos^2 s / 24 and eps_max = sqrt(24 tau)/|cos s| (no collapse at s = pi). Hyperbolic plane: d = 2 asinh(sinh s sin(eps/2)), C2 = 0, eps_max = sqrt(24 tau)/cosh s. Generic paths: C2(s*) != 0 so eps_max ~ tau |j'(s*)| |s - s*| / |C2(s*)| -> 0; symmetric paths: C2 = 0 and eps_max ~ sqrt(|s - s*|).",
+ "number": 17,
+ "numerical_result": "Generic torus: C2(s*) = 1.519, eps_max(s*) = 8.6e-13, eps_max(s*/2) = 0.0406; boundary probe relative errors 0.00499 (eps_max/2) and 0.0201 (2 eps_max) against tau = 0.01; sphere pure heading eps_max near pi = 0.4899 (C3 relative error 8.3e-05); hyperbolic eps_max within 0.0035 (relative) of sqrt(24 tau)/cosh s; sphere lateral+heading C2(s0) = 0.5; equator max |C2| = 5.1e-06; hyperbolic eps_max = 0.475, 0.4345, 0.3175, 0.2084, 0.1304, 0.08016.",
+ "observation_model": "Great-circle or hyperbolic distance (closed form) or embedded chord (torus) versus eps |j(s)|; C2 and C3 by least squares over eps; eps_max from the fitted quadratic.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/geodesic_jacobi_limits.py": "29c8472e91cdf4deb2e1f526ab40e57f703f41e20ef14edd8fb1cc2fc6ede661",
+   "src/ciw/lab/geodesic_jacobi_limits_core.py": "8aa707ec2a190208bf07cd3b1f94a40f191a7a9c4be277714ed8b627e2c5fcb9"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T018 (curvature signal versus integrator error) and a sampled survey of C2(s*) over random torus geodesics",
+ "report_id": "sha256:d9112a850399e18df6ec6d69faf74980df431c32e00851b1dc56fde669a0b9ff",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "geodesic-jacobi",
+ "state": "completed",
+ "task_id": "T017",
+ "tests_passed": [
+  "check: On a generic torus geodesic C2(s*) != 0 and the validity domain shrinks to zero at the conjugate point vs |C2(s*)|",
+  "check: On a generic torus geodesic C2(s*) != 0 and the validity domain shrinks to zero at the conjugate point vs eps_max at s*",
+  "check: On a generic torus geodesic C2(s*) != 0 and the validity domain shrinks to zero at the conjugate point vs eps_max at s*/2",
+  "check: The predicted validity boundary holds: new integrations at eps_max/2 and 2 eps_max give the predicted relative errors tau/2 and 2 tau vs relative error at eps_max / 2 divided by tau/2, minus 1",
+  "check: The predicted validity boundary holds: new integrations at eps_max/2 and 2 eps_max give the predicted relative errors tau/2 and 2 tau vs relative error at 2 eps_max divided by 2 tau, minus 1",
+  "check: Unit sphere, pure heading: C2 = 0, C3 = -|sin s| cos^2 s / 24, and the domain does not shrink at s = pi vs max |C2| / |j|",
+  "check: Unit sphere, pure heading: C2 = 0, C3 = -|sin s| cos^2 s / 24, and the domain does not shrink at s = pi vs max |C3 / C3_analytic - 1|",
+  "check: Unit sphere, pure heading: C2 = 0, C3 = -|sin s| cos^2 s / 24, and the domain does not shrink at s = pi vs max |eps_max / (sqrt(24 tau)/|cos s|) - 1|",
+  "check: Unit sphere, pure heading: C2 = 0, C3 = -|sin s| cos^2 s / 24, and the domain does not shrink at s = pi vs min eps_max at s = 0.999 pi and 1.001 pi",
+  "check: Hyperbolic plane, pure heading: C2 = 0 and eps_max = sqrt(24 tau)/cosh(s) shrinks exponentially vs max |C2| / (|C3| eps_min): quadratic term negligible",
+  "check: Hyperbolic plane, pure heading: C2 = 0 and eps_max = sqrt(24 tau)/cosh(s) shrinks exponentially vs max |eps_max / (sqrt(24 tau)/cosh s) - 1|",
+  "check: Sphere lateral+heading perturbation: C2(s0) = 1/2 at the first-order zero s0 = 3pi/4, eps_max -> 0 vs |C2(s0)| - 1/2",
+  "check: Sphere lateral+heading perturbation: C2(s0) = 1/2 at the first-order zero s0 = 3pi/4, eps_max -> 0 vs eps_max at s0",
+  "check: Torus outer equator: C2 vanishes along the whole path (reflection symmetry); the remainder is cubic vs max |C2| over the tabulated nodes",
+  "check: Torus outer equator: C2 vanishes along the whole path (reflection symmetry); the remainder is cubic vs remainder exponent at s* minus 3 (reflection symmetry)",
+  "pytest: tests/test_lab_geodesic_jacobi_limits.py::test_t017_validity_domains"
+ ],
+ "tests_skipped": [],
+ "title": "Derive validity domains for the first-order approximation.",
+ "uncertainty": "C2 and C3 absorb higher-order terms from eps up to 0.04 (on the hyperbolic plane the fitted C3 differs from its closed form by up to 0.77 percent at s = 2.5, and the fitted C2 is not exactly zero); eps_max beyond the fitted eps range is an extrapolation of the quadratic model; halving the torus grid changes the smallest chord at s* by 1.3e-11, so the 400-step chords carry RK4 errors of about 8.6e-13.",
+ "unresolved_assumptions": [
+  "The quadratic remainder model is extrapolated to eps_max up to the cap",
+  "Heading perturbations (plus one lateral case on the sphere) only",
+  "Machine-safety use of these domains is outside what the computation establishes"
+ ]
+}

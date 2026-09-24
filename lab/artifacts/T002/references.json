@@ -1,0 +1,492 @@
+{
+ "clairaut": {
+  "ciw_richardson": 6.750155989720952e-14,
+  "ciw_rk4_100_max": 3.3145450828442335e-09,
+  "ciw_rk4_200_max": 2.0641754971961745e-10,
+  "ciw_rk4_50_max": 5.339766140366464e-08,
+  "mpmath_reference": 2.295831753226026e-28
+ },
+ "clairaut_initial": 2.2008965407279346,
+ "figure_path_index": {
+  "1": "plane",
+  "2": "sphere",
+  "3": "cylinder",
+  "4": "saddle",
+  "5": "torus",
+  "6": "gaussian-bump",
+  "7": "hyperbolic-plane",
+  "8": "plane-polar",
+  "9": "cylinder-polar"
+ },
+ "mp_dps": 34,
+ "mp_macro_steps": [
+  10,
+  20
+ ],
+ "paths": {
+  "cylinder": {
+   "heading": 0.6,
+   "key": "cylinder",
+   "length": 3.0,
+   "note": "helix",
+   "surface": "cylinder",
+   "u0": [
+    0.2,
+    0.1
+   ]
+  },
+  "cylinder-polar": {
+   "heading": 1.2,
+   "key": "cylinder-polar",
+   "length": 2.0,
+   "note": "helix seen in a polar chart of the (phi, z) development",
+   "surface": "cylinder-polar",
+   "u0": [
+    1.5,
+    0.4
+   ]
+  },
+  "gaussian-bump": {
+   "heading": 0.2,
+   "key": "gaussian-bump",
+   "length": 2.5,
+   "note": "passes over the bump",
+   "surface": "gaussian-bump",
+   "u0": [
+    -1.2,
+    0.3
+   ]
+  },
+  "hyperbolic-plane": {
+   "heading": 0.6,
+   "key": "hyperbolic-plane",
+   "length": 1.5,
+   "note": "semicircle arc",
+   "surface": "hyperbolic-plane",
+   "u0": [
+    0.0,
+    1.0
+   ]
+  },
+  "plane": {
+   "heading": 0.7,
+   "key": "plane",
+   "length": 2.0,
+   "note": "",
+   "surface": "plane",
+   "u0": [
+    0.3,
+    -0.2
+   ]
+  },
+  "plane-polar": {
+   "heading": 1.2,
+   "key": "plane-polar",
+   "length": 2.0,
+   "note": "straight line seen in polar chart",
+   "surface": "plane-polar",
+   "u0": [
+    1.5,
+    0.4
+   ]
+  },
+  "saddle": {
+   "heading": 0.8,
+   "key": "saddle",
+   "length": 1.5,
+   "note": "",
+   "surface": "saddle",
+   "u0": [
+    0.1,
+    -0.2
+   ]
+  },
+  "sphere": {
+   "heading": 0.9,
+   "key": "sphere",
+   "length": 2.0,
+   "note": "inclined great-circle arc",
+   "surface": "sphere",
+   "u0": [
+    1.1,
+    0.4
+   ]
+  },
+  "torus": {
+   "heading": 0.7,
+   "key": "torus",
+   "length": 3.0,
+   "note": "crosses the K > 0 and K < 0 regions",
+   "surface": "torus",
+   "u0": [
+    0.0,
+    0.5
+   ]
+  }
+ },
+ "richardson_steps": [
+  200,
+  400
+ ],
+ "rows": {
+  "cylinder": {
+   "ciw_vs_reference": {
+    "matrix": 1.7319479184152442e-14,
+    "max": 1.8491463559123068e-14,
+    "position": 1.8491463559123068e-14
+   },
+   "ciw_vs_scipy": {
+    "matrix": 1.9095836023552692e-14,
+    "max": 1.9095836023552692e-14,
+    "position": 1.7279935722617635e-14
+   },
+   "reference_error_estimate": 0.0,
+   "reference_kind": "closed_form",
+   "reference_matrix": [
+    [
+     1.0,
+     3.0
+    ],
+    [
+     0.0,
+     1.0
+    ]
+   ],
+   "reference_position": [
+    -0.8935587222040202,
+    0.44894633306567805,
+    1.7939274201851063
+   ],
+   "richardson_error_estimate": 1.3322676295501878e-15,
+   "scipy_nfev": 86,
+   "scipy_vs_reference": {
+    "matrix": 1.7763568394002505e-15,
+    "max": 1.7763568394002505e-15,
+    "position": 1.2262814116578437e-15
+   }
+  },
+  "cylinder-polar": {
+   "ciw_vs_reference": {
+    "matrix": 2.220446049250313e-14,
+    "max": 2.9041737216383977e-14,
+    "position": 2.9041737216383977e-14
+   },
+   "ciw_vs_scipy": {
+    "matrix": 2.2648549702353193e-14,
+    "max": 3.0123700476684845e-14,
+    "position": 3.0123700476684845e-14
+   },
+   "reference_error_estimate": 0.0,
+   "reference_kind": "closed_form",
+   "reference_matrix": [
+    [
+     1.0,
+     2.0
+    ],
+    [
+     0.0,
+     1.0
+    ]
+   ],
+   "reference_position": [
+    0.2450816212042345,
+    0.9695024491706579,
+    2.5832747195459858
+   ],
+   "richardson_error_estimate": 3.0348760541680046e-12,
+   "scipy_nfev": 242,
+   "scipy_vs_reference": {
+    "matrix": 4.440892098500626e-16,
+    "max": 3.341752861827898e-15,
+    "position": 3.341752861827898e-15
+   }
+  },
+  "gaussian-bump": {
+   "ciw_vs_reference": {
+    "matrix": 1.1324274851176597e-14,
+    "max": 2.3309462240877263e-14,
+    "position": 2.3309462240877263e-14
+   },
+   "ciw_vs_scipy": {
+    "matrix": 1.2989609388114332e-14,
+    "max": 2.1650772296255348e-14,
+    "position": 2.1650772296255348e-14
+   },
+   "reference_digits": [
+    "1.22221273162958446587184992734",
+    "0.663004004724506921670610724469",
+    "0.96665494099311707717278001956",
+    "0.0971724249382339161626369344747",
+    "0.845703105692156722979890023396",
+    "-0.111268257411827148354503773727",
+    "2.32781323817475791185019934794",
+    "0.876180154028946309496408975607"
+   ],
+   "reference_error_estimate": 6.39498405169957e-22,
+   "reference_kind": "mpmath",
+   "reference_local_indicator": 5.694097068193792e-25,
+   "reference_matrix": [
+    [
+     0.8457031056921567,
+     2.327813238174758
+    ],
+    [
+     -0.11126825741182715,
+     0.8761801540289463
+    ]
+   ],
+   "reference_position": [
+    1.2222127316295845,
+    0.6630040047245069,
+    0.1901701052855415
+   ],
+   "reference_speed_squared_minus_one": -2.8924106628079047e-16,
+   "richardson_error_estimate": 1.369349078572668e-12,
+   "scipy_nfev": 494,
+   "scipy_vs_reference": {
+    "matrix": 4.884981308350689e-15,
+    "max": 4.884981308350689e-15,
+    "position": 2.1276056357529605e-15
+   }
+  },
+  "hyperbolic-plane": {
+   "ciw_vs_reference": {
+    "matrix": 2.220446049250313e-14,
+    "max": 2.871617124444836e-14,
+    "position": 2.871617124444836e-14
+   },
+   "ciw_vs_scipy": {
+    "matrix": 2.1316282072803006e-14,
+    "max": 2.867321573545017e-14,
+    "position": 2.867321573545017e-14
+   },
+   "reference_error_estimate": 0.0,
+   "reference_kind": "closed_form",
+   "reference_matrix": [
+    [
+     2.352409615243247,
+     2.1292794550948173
+    ],
+    [
+     2.1292794550948173,
+     2.352409615243247
+    ]
+   ],
+   "reference_position": [
+    1.5279779056857228,
+    0.8694684439133945
+   ],
+   "richardson_error_estimate": 5.780827668407558e-12,
+   "scipy_nfev": 338,
+   "scipy_vs_reference": {
+    "matrix": 8.881784197001252e-16,
+    "max": 3.3893637946200144e-15,
+    "position": 3.3893637946200144e-15
+   }
+  },
+  "plane": {
+   "ciw_vs_reference": {
+    "matrix": 2.220446049250313e-14,
+    "max": 2.220446049250313e-14,
+    "position": 1.1460599492142567e-14
+   },
+   "ciw_vs_scipy": {
+    "matrix": 2.3092638912203256e-14,
+    "max": 2.3092638912203256e-14,
+    "position": 1.231096671328401e-14
+   },
+   "reference_error_estimate": 0.0,
+   "reference_kind": "closed_form",
+   "reference_matrix": [
+    [
+     1.0,
+     2.0
+    ],
+    [
+     0.0,
+     1.0
+    ]
+   ],
+   "reference_position": [
+    1.829684374568977,
+    1.088435374475382,
+    0.0
+   ],
+   "richardson_error_estimate": 1.4654943925052066e-15,
+   "scipy_nfev": 86,
+   "scipy_vs_reference": {
+    "matrix": 8.881784197001252e-16,
+    "max": 1.1322097734007351e-15,
+    "position": 1.1322097734007351e-15
+   }
+  },
+  "plane-polar": {
+   "ciw_vs_reference": {
+    "matrix": 2.220446049250313e-14,
+    "max": 2.90394956512895e-14,
+    "position": 2.90394956512895e-14
+   },
+   "ciw_vs_scipy": {
+    "matrix": 2.2648549702353193e-14,
+    "max": 3.008356151646287e-14,
+    "position": 3.008356151646287e-14
+   },
+   "reference_error_estimate": 0.0,
+   "reference_kind": "closed_form",
+   "reference_matrix": [
+    [
+     1.0,
+     2.0
+    ],
+    [
+     0.0,
+     1.0
+    ]
+   ],
+   "reference_position": [
+    1.3231924464017504,
+    2.5832747195459858,
+    0.0
+   ],
+   "richardson_error_estimate": 3.0348760541680046e-12,
+   "scipy_nfev": 242,
+   "scipy_vs_reference": {
+    "matrix": 4.440892098500626e-16,
+    "max": 4.0943002132167226e-15,
+    "position": 4.0943002132167226e-15
+   }
+  },
+  "saddle": {
+   "ciw_vs_reference": {
+    "matrix": 8.881784197001252e-16,
+    "max": 9.222205069512407e-16,
+    "position": 9.222205069512407e-16
+   },
+   "ciw_vs_scipy": {
+    "matrix": 1.354472090042691e-14,
+    "max": 1.354472090042691e-14,
+    "position": 1.0235750533041806e-15
+   },
+   "reference_digits": [
+    "1.12815335409057747446393605489",
+    "0.853760464168039985822941537285",
+    "0.691013758391921646667243367978",
+    "0.699447670769627643593947473287",
+    "1.80937874361171661709260191316",
+    "0.865605882976049018283543084274",
+    "1.78873403914056805069499733441",
+    "1.40840535258683597489176400998"
+   ],
+   "reference_error_estimate": 1.4378105484480408e-24,
+   "reference_kind": "mpmath",
+   "reference_local_indicator": 4.160492930886821e-28,
+   "reference_matrix": [
+    [
+     1.8093787436117166,
+     1.788734039140568
+    ],
+    [
+     0.865605882976049,
+     1.408405352586836
+    ]
+   ],
+   "reference_position": [
+    1.1281533540905775,
+    0.85376046416804,
+    0.2719115300846965
+   ],
+   "reference_speed_squared_minus_one": 1.989013737968456e-16,
+   "richardson_error_estimate": 7.207567875866516e-13,
+   "scipy_nfev": 254,
+   "scipy_vs_reference": {
+    "matrix": 1.2878587085651816e-14,
+    "max": 1.2878587085651816e-14,
+    "position": 6.280369834735101e-16
+   }
+  },
+  "sphere": {
+   "ciw_vs_reference": {
+    "matrix": 4.163336342344337e-14,
+    "max": 4.5168888562624316e-14,
+    "position": 4.5168888562624316e-14
+   },
+   "ciw_vs_scipy": {
+    "matrix": 4.1522341120980855e-14,
+    "max": 4.659383296651036e-14,
+    "position": 4.659383296651036e-14
+   },
+   "reference_error_estimate": 0.0,
+   "reference_kind": "closed_form",
+   "reference_matrix": [
+    [
+     -0.4161468365471424,
+     0.9092974268256817
+    ],
+    [
+     -0.9092974268256817,
+     -0.4161468365471424
+    ]
+   ],
+   "reference_position": [
+    -0.382823974857271,
+    0.6114670681634499,
+    -0.6924982518577751
+   ],
+   "richardson_error_estimate": 1.7304972269964008e-11,
+   "scipy_nfev": 338,
+   "scipy_vs_reference": {
+    "matrix": 4.440892098500626e-16,
+    "max": 1.2673695489552187e-14,
+    "position": 1.2673695489552187e-14
+   }
+  },
+  "torus": {
+   "ciw_vs_reference": {
+    "matrix": 6.378231276471524e-14,
+    "max": 6.378231276471524e-14,
+    "position": 5.911445021871554e-14
+   },
+   "ciw_vs_scipy": {
+    "matrix": 8.248957072964913e-14,
+    "max": 8.248957072964913e-14,
+    "position": 7.896214921972928e-14
+   },
+   "reference_digits": [
+    "1.15739853639754297522791383529",
+    "1.2334125592388341774036833302",
+    "0.405049237513329504918951582028",
+    "-0.329436692450045045434675783765",
+    "0.195523682339556745433670153909",
+    "-0.384054886908402541443473866505",
+    "2.35778661078103265679231914142",
+    "0.483217831782980172819784031983"
+   ],
+   "reference_error_estimate": 4.3530344385152934e-23,
+   "reference_kind": "mpmath",
+   "reference_local_indicator": 3.036995248370626e-26,
+   "reference_matrix": [
+    [
+     0.19552368233955675,
+     2.357786610781033
+    ],
+    [
+     -0.38405488690840256,
+     0.48321783178298017
+    ]
+   ],
+   "reference_position": [
+    0.9364246205699459,
+    2.1346570649311136,
+    0.9436239178616481
+   ],
+   "reference_speed_squared_minus_one": 4.3639886733663996e-17,
+   "richardson_error_estimate": 1.2458537905028304e-11,
+   "scipy_nfev": 302,
+   "scipy_vs_reference": {
+    "matrix": 1.8707257964933888e-14,
+    "max": 1.9850340605588998e-14,
+    "position": 1.9850340605588998e-14
+   }
+  }
+ }
+}

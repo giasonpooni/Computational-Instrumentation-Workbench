@@ -1,0 +1,68 @@
+{
+ "execution_attempts": [],
+ "failures": [],
+ "golden_platform": {
+  "blas": "scipy-openblas 0.3.31.dev",
+  "lapack": "scipy-openblas 0.3.31.dev",
+  "machine": "x86_64",
+  "numpy": "2.4.3",
+  "simd_found": [
+   "AVX512_ICL",
+   "AVX512_SPR",
+   "X86_V3",
+   "X86_V4"
+  ],
+  "system": "Linux"
+ },
+ "manifest": {
+  "golden/energy-accuracy-workspace.json": "cd08fa0a122b27db4d76d27f66e881c58c4bd3b0930f8b3a67d55da7b6ea6ada",
+  "golden/numerical-heat-workspace.json": "98ba55e5be14213e6787024576b424cba6d4ba4da0a8cc905ddf652452490fec",
+  "golden/oscillator-workspace.json": "68e63248edcb7bb6660734cbf0efe751c53ede53c5029873b4e21fb598a1586d"
+ },
+ "observed": {
+  "golden/energy-accuracy-workspace.json": {
+   "bundles": 2,
+   "energy_classification": "synthetic_only",
+   "energy_origin": "synthetic_fixture",
+   "executions": 0,
+   "kinds": [
+    "energy-accuracy"
+   ],
+   "replay_numerical_identity_equal": true,
+   "results": 0,
+   "sha256": "cd08fa0a122b27db4d76d27f66e881c58c4bd3b0930f8b3a67d55da7b6ea6ada"
+  },
+  "golden/numerical-heat-workspace.json": {
+   "bundles": 2,
+   "executions": 0,
+   "kinds": [
+    "numerical-heat"
+   ],
+   "replay_numerical_identity_equal": true,
+   "results": 0,
+   "sha256": "98ba55e5be14213e6787024576b424cba6d4ba4da0a8cc905ddf652452490fec"
+  },
+  "golden/oscillator-workspace.json": {
+   "bundles": 0,
+   "executions": 1,
+   "kinds": [],
+   "results": 3,
+   "sha256": "68e63248edcb7bb6660734cbf0efe751c53ede53c5029873b4e21fb598a1586d"
+  }
+ },
+ "platform": {
+  "blas": "scipy-openblas 0.3.31.dev",
+  "lapack": "scipy-openblas 0.3.31.dev",
+  "machine": "x86_64",
+  "numpy": "2.4.3",
+  "simd_found": [
+   "AVX512_ICL",
+   "AVX512_SPR",
+   "X86_V3",
+   "X86_V4"
+  ],
+  "system": "Linux"
+ },
+ "platform_refusals": [],
+ "root": "tests/fixtures/lab"
+}

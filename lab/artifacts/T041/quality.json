@@ -1,0 +1,652 @@
+{
+ "permutation_p_radius_ratio": {
+  "geodesic_mean": 0.0004997501249375312,
+  "voronoi_curvature_rms": 0.0004997501249375312
+ },
+ "plane": {
+  "length": 0.2,
+  "rows": [
+   {
+    "max_graph_excess": 0.08231174597004576,
+    "max_radius_ratio": 1.2071067811865477,
+    "max_trace_error": 2.220446049250313e-16,
+    "mean_graph_excess": 0.04409159405471378,
+    "min_angle_deg": 45.0,
+    "shear": 0.0,
+    "statuses": [
+     "completed",
+     "completed",
+     "completed",
+     "completed"
+    ]
+   },
+   {
+    "max_graph_excess": 0.04475790710240424,
+    "max_radius_ratio": 1.9756611119191974,
+    "max_trace_error": 8.881784197001252e-16,
+    "mean_graph_excess": 0.021009546165207543,
+    "min_angle_deg": 29.74488129694222,
+    "shear": 0.5,
+    "statuses": [
+     "completed",
+     "completed",
+     "completed",
+     "completed"
+    ]
+   },
+   {
+    "max_graph_excess": 0.02739739461930646,
+    "max_radius_ratio": 3.6763703567583588,
+    "max_trace_error": 2.220446049250313e-16,
+    "mean_graph_excess": 0.010484308497752351,
+    "min_angle_deg": 18.43494882292201,
+    "shear": 1.0,
+    "statuses": [
+     "completed",
+     "completed",
+     "completed",
+     "completed"
+    ]
+   },
+   {
+    "max_graph_excess": 0.018349192374151668,
+    "max_radius_ratio": 6.668784536221856,
+    "max_trace_error": 8.326672684688674e-16,
+    "mean_graph_excess": 0.005937500124875229,
+    "min_angle_deg": 11.888658039627975,
+    "shear": 1.5,
+    "statuses": [
+     "completed",
+     "completed",
+     "completed",
+     "completed"
+    ]
+   }
+  ],
+  "size": 8
+ },
+ "quality": {
+  "base": "icosphere-3",
+  "jitter": [
+   {
+    "amplitude": 0.0,
+    "area_error": -0.004764930322906702,
+    "curvature_max": 0.14785072359127138,
+    "curvature_rms": 0.02042617452826786,
+    "geodesic_max": 0.01922902941871128,
+    "geodesic_mean": 0.012334617469521443,
+    "inverted_faces": 0,
+    "issues": [],
+    "max_radius_ratio": 1.0307631773587616,
+    "mesh": "icosphere-3",
+    "min_angle_deg": 54.0995585363326,
+    "seed": 0,
+    "trace_statuses": [
+     "completed",
+     "completed",
+     "completed",
+     "completed",
+     "completed",
+     "completed"
+    ],
+    "vertices": 642,
+    "voronoi_curvature_rms": 0.004777035900366827
+   },
+   {
+    "amplitude": 0.05,
+    "area_error": -0.004836524361066852,
+    "curvature_max": 0.15972208594156423,
+    "curvature_rms": 0.022066794534793134,
+    "geodesic_max": 0.021439099447140897,
+    "geodesic_mean": 0.009929414081371678,
+    "inverted_faces": 0,
+    "issues": [],
+    "max_radius_ratio": 1.1781341946844393,
+    "mesh": "icosphere-3-jitter0.05-s20260939",
+    "min_angle_deg": 40.899799628611895,
+    "seed": 1,
+    "trace_statuses": [
+     "completed",
+     "completed",
+     "completed",
+     "completed",
+     "completed",
+     "completed"
+    ],
+    "vertices": 642,
+    "voronoi_curvature_rms": 0.004845612660010916
+   },
+   {
+    "amplitude": 0.05,
+    "area_error": -0.004841892918691526,
+    "curvature_max": 0.1613993552850279,
+    "curvature_rms": 0.02260608886088619,
+    "geodesic_max": 0.020809335902183434,
+    "geodesic_mean": 0.014026145657029922,
+    "inverted_faces": 0,
+    "issues": [],
+    "max_radius_ratio": 1.2089604190700418,
+    "mesh": "icosphere-3-jitter0.05-s20260940",
+    "min_angle_deg": 40.44653928212341,
+    "seed": 2,
+    "trace_statuses": [
+     "completed",
+     "completed",
+     "completed",
+     "completed",
+     "completed",
+     "completed"
+    ],
+    "vertices": 642,
+    "voronoi_curvature_rms": 0.004850689672526188
+   },
+   {
+    "amplitude": 0.05,
+    "area_error": -0.004842254788802625,
+    "curvature_max": 0.15894370683407466,
+    "curvature_rms": 0.022858321788149595,
+    "geodesic_max": 0.018123239758625752,
+    "geodesic_mean": 0.011144356623585608,
+    "inverted_faces": 0,
+    "issues": [],
+    "max_radius_ratio": 1.1720667251932981,
+    "mesh": "icosphere-3-jitter0.05-s20260941",
+    "min_angle_deg": 38.99859545558357,
+    "seed": 3,
+    "trace_statuses": [
+     "completed",
+     "completed",
+     "completed",
+     "completed",
+     "completed",
+     "completed"
+    ],
+    "vertices": 642,
+    "voronoi_curvature_rms": 0.0048509535410065285
+   },
+   {
+    "amplitude": 0.1,
+    "area_error": -0.005047280875411064,
+    "curvature_max": 0.20748864449197724,
+    "curvature_rms": 0.03147631922407223,
+    "geodesic_max": 0.023951484421856316,
+    "geodesic_mean": 0.012672141646975508,
+    "inverted_faces": 0,
+    "issues": [],
+    "max_radius_ratio": 1.7476983454328048,
+    "mesh": "icosphere-3-jitter0.1-s20260939",
+    "min_angle_deg": 25.03599490224248,
+    "seed": 1,
+    "trace_statuses": [
+     "completed",
+     "completed",
+     "completed",
+     "completed",
+     "completed",
+     "completed"
+    ],
+    "vertices": 642,
+    "voronoi_curvature_rms": 0.01033204728134352
+   },
+   {
+    "amplitude": 0.1,
+    "area_error": -0.005063213967249736,
+    "curvature_max": 0.19734878940279343,
+    "curvature_rms": 0.0340913501302308,
+    "geodesic_max": 0.02563332584570737,
+    "geodesic_mean": 0.015004900339791127,
+    "inverted_faces": 0,
+    "issues": [],
+    "max_radius_ratio": 1.8120266853381015,
+    "mesh": "icosphere-3-jitter0.1-s20260940",
+    "min_angle_deg": 26.986655969143225,
+    "seed": 2,
+    "trace_statuses": [
+     "completed",
+     "completed",
+     "completed",
+     "completed",
+     "completed",
+     "completed"
+    ],
+    "vertices": 642,
+    "voronoi_curvature_rms": 0.011802890529408848
+   },
+   {
+    "amplitude": 0.1,
+    "area_error": -0.005061788662465649,
+    "curvature_max": 0.19214175863885452,
+    "curvature_rms": 0.03436751379091635,
+    "geodesic_max": 0.027722729932773867,
+    "geodesic_mean": 0.011796975571588575,
+    "inverted_faces": 0,
+    "issues": [],
+    "max_radius_ratio": 1.6384229850146381,
+    "mesh": "icosphere-3-jitter0.1-s20260941",
+    "min_angle_deg": 23.837348040799444,
+    "seed": 3,
+    "trace_statuses": [
+     "completed",
+     "completed",
+     "completed",
+     "completed",
+     "completed",
+     "completed"
+    ],
+    "vertices": 642,
+    "voronoi_curvature_rms": 0.010368840804464666
+   },
+   {
+    "amplitude": 0.15,
+    "area_error": -0.00537722351434633,
+    "curvature_max": 0.32088327348581913,
+    "curvature_rms": 0.05642976038054445,
+    "geodesic_max": 0.0466439867289462,
+    "geodesic_mean": 0.018859199550744315,
+    "inverted_faces": 0,
+    "issues": [],
+    "max_radius_ratio": 14.116450568666936,
+    "mesh": "icosphere-3-jitter0.15-s20260939",
+    "min_angle_deg": 6.451889920604318,
+    "seed": 1,
+    "trace_statuses": [
+     "completed",
+     "completed",
+     "completed",
+     "completed",
+     "completed",
+     "completed"
+    ],
+    "vertices": 642,
+    "voronoi_curvature_rms": 0.0371359665760768
+   },
+   {
+    "amplitude": 0.15,
+    "area_error": -0.005403209830225686,
+    "curvature_max": 0.34951298181130885,
+    "curvature_rms": 0.06398349941373646,
+    "geodesic_max": 0.02609284816468689,
+    "geodesic_mean": 0.018094906503166645,
+    "inverted_faces": 0,
+    "issues": [],
+    "max_radius_ratio": 4.520938730270097,
+    "mesh": "icosphere-3-jitter0.15-s20260940",
+    "min_angle_deg": 11.71686990020696,
+    "seed": 2,
+    "trace_statuses": [
+     "completed",
+     "completed",
+     "completed",
+     "completed",
+     "completed",
+     "completed"
+    ],
+    "vertices": 642,
+    "voronoi_curvature_rms": 0.046119000035417385
+   },
+   {
+    "amplitude": 0.15,
+    "area_error": -0.005401626517588687,
+    "curvature_max": 0.29932602928955965,
+    "curvature_rms": 0.06182991454307692,
+    "geodesic_max": 0.029082008947830782,
+    "geodesic_mean": 0.014868388022847434,
+    "inverted_faces": 0,
+    "issues": [],
+    "max_radius_ratio": 3.49070220769597,
+    "mesh": "icosphere-3-jitter0.15-s20260941",
+    "min_angle_deg": 10.844897002786865,
+    "seed": 3,
+    "trace_statuses": [
+     "completed",
+     "completed",
+     "completed",
+     "completed",
+     "completed",
+     "completed"
+    ],
+    "vertices": 642,
+    "voronoi_curvature_rms": 0.03926562291872185
+   },
+   {
+    "amplitude": 0.2,
+    "area_error": -0.005297619507754758,
+    "curvature_max": 45.670663152186535,
+    "curvature_rms": 2.4949909327275415,
+    "geodesic_max": 0.02063895073983543,
+    "geodesic_mean": 0.012426648502844433,
+    "inverted_faces": 2,
+    "issues": [
+     "folded_face"
+    ],
+    "max_radius_ratio": 47.66153874937935,
+    "mesh": "icosphere-3-jitter0.2-s20260939",
+    "min_angle_deg": 1.878616825638005,
+    "seed": 1,
+    "trace_statuses": [
+     "completed",
+     "completed",
+     "completed",
+     "completed",
+     "completed",
+     "completed"
+    ],
+    "vertices": 642,
+    "voronoi_curvature_rms": 2.7080431228740522
+   },
+   {
+    "amplitude": 0.2,
+    "area_error": -0.005534000779120363,
+    "curvature_max": 30.23399527618947,
+    "curvature_rms": 1.4569418010522144,
+    "geodesic_max": 0.06265820548579516,
+    "geodesic_mean": 0.025077964076234718,
+    "inverted_faces": 3,
+    "issues": [
+     "folded_face"
+    ],
+    "max_radius_ratio": 207.59142381548835,
+    "mesh": "icosphere-3-jitter0.2-s20260940",
+    "min_angle_deg": 1.7104221766212169,
+    "seed": 2,
+    "trace_statuses": [
+     "completed",
+     "completed",
+     "completed",
+     "completed",
+     "completed",
+     "completed"
+    ],
+    "vertices": 642,
+    "voronoi_curvature_rms": 1.647528790813632
+   },
+   {
+    "amplitude": 0.2,
+    "area_error": -0.005754595467768797,
+    "curvature_max": 39.6521010955163,
+    "curvature_rms": 1.808711101326335,
+    "geodesic_max": 0.05853232775901307,
+    "geodesic_mean": 0.024050015757288223,
+    "inverted_faces": 2,
+    "issues": [
+     "folded_face"
+    ],
+    "max_radius_ratio": 943.4485033613128,
+    "mesh": "icosphere-3-jitter0.2-s20260941",
+    "min_angle_deg": 0.3316480901515501,
+    "seed": 3,
+    "trace_statuses": [
+     "completed",
+     "completed",
+     "completed",
+     "completed",
+     "completed",
+     "completed"
+    ],
+    "vertices": 642,
+    "voronoi_curvature_rms": 2.171186588329594
+   },
+   {
+    "amplitude": 0.3,
+    "area_error": 0.0017069418463002695,
+    "curvature_max": 444.5312140669391,
+    "curvature_rms": 28.21829103920227,
+    "geodesic_max": 0.21894978386432778,
+    "geodesic_mean": 0.0734821394085891,
+    "inverted_faces": 28,
+    "issues": [
+     "folded_face"
+    ],
+    "max_radius_ratio": 197.32408078868824,
+    "mesh": "icosphere-3-jitter0.3-s20260939",
+    "min_angle_deg": 1.1624710529123128,
+    "seed": 1,
+    "trace_statuses": [
+     "completed",
+     "completed",
+     "completed",
+     "completed",
+     "completed",
+     "completed"
+    ],
+    "vertices": 642,
+    "voronoi_curvature_rms": 30.347851251555912
+   },
+   {
+    "amplitude": 0.3,
+    "area_error": 0.008965594873077798,
+    "curvature_max": 146.7723658795948,
+    "curvature_rms": 17.206841772203056,
+    "geodesic_max": 0.734018022915978,
+    "geodesic_mean": 0.17985135598163768,
+    "inverted_faces": 47,
+    "issues": [
+     "folded_face"
+    ],
+    "max_radius_ratio": 1321.4616038636373,
+    "mesh": "icosphere-3-jitter0.3-s20260940",
+    "min_angle_deg": 0.19482584522893,
+    "seed": 2,
+    "trace_statuses": [
+     "completed",
+     "completed",
+     "completed",
+     "completed",
+     "completed",
+     "completed"
+    ],
+    "vertices": 642,
+    "voronoi_curvature_rms": 18.750954353829847
+   },
+   {
+    "amplitude": 0.3,
+    "area_error": 0.009167186641747538,
+    "curvature_max": 261.46434457203907,
+    "curvature_rms": 23.920220199372118,
+    "geodesic_max": 0.1509094296397101,
+    "geodesic_mean": 0.05043449370307679,
+    "inverted_faces": 50,
+    "issues": [
+     "folded_face"
+    ],
+    "max_radius_ratio": 468.8030320865666,
+    "mesh": "icosphere-3-jitter0.3-s20260941",
+    "min_angle_deg": 1.0936713514881842,
+    "seed": 3,
+    "trace_statuses": [
+     "completed",
+     "completed",
+     "completed",
+     "completed",
+     "completed",
+     "completed"
+    ],
+    "vertices": 642,
+    "voronoi_curvature_rms": 25.94553017036796
+   }
+  ],
+  "latitude_longitude": [
+   {
+    "area_error": -0.005996809596521269,
+    "curvature_max": 0.23956884745994234,
+    "curvature_rms": 0.016086019912477642,
+    "geodesic_max": 0.030643200510712693,
+    "geodesic_mean": 0.017540432159243127,
+    "inverted_faces": 0,
+    "issues": [],
+    "max_radius_ratio": 2.9883869951905715,
+    "mesh": "uv-sphere-20x32",
+    "min_angle_deg": 10.814533544494136,
+    "n_lat": 20,
+    "n_lon": 32,
+    "trace_statuses": [
+     "completed",
+     "completed",
+     "completed",
+     "completed",
+     "completed",
+     "completed"
+    ],
+    "twist": 0.0,
+    "vertices": 642,
+    "voronoi_curvature_rms": 0.006270019710208169
+   },
+   {
+    "area_error": -0.010975947044378764,
+    "curvature_max": 0.23660159344372866,
+    "curvature_rms": 0.019809420109286775,
+    "geodesic_max": 0.049046853341568594,
+    "geodesic_mean": 0.023050102115429637,
+    "inverted_faces": 0,
+    "issues": [],
+    "max_radius_ratio": 5.4803648232272275,
+    "mesh": "uv-sphere-10x64",
+    "min_angle_deg": 5.518830794453714,
+    "n_lat": 10,
+    "n_lon": 64,
+    "trace_statuses": [
+     "completed",
+     "completed",
+     "completed",
+     "completed",
+     "completed",
+     "completed"
+    ],
+    "twist": 0.0,
+    "vertices": 642,
+    "voronoi_curvature_rms": 0.011105733411546024
+   },
+   {
+    "area_error": -0.013479903862753662,
+    "curvature_max": 0.2195004380023058,
+    "curvature_rms": 0.02720448926919287,
+    "geodesic_max": 0.10717656866488516,
+    "geodesic_mean": 0.03389020913807546,
+    "inverted_faces": 0,
+    "issues": [],
+    "max_radius_ratio": 2.873046712440642,
+    "mesh": "uv-sphere-40x16",
+    "min_angle_deg": 11.115740571525883,
+    "n_lat": 40,
+    "n_lon": 16,
+    "trace_statuses": [
+     "completed",
+     "completed",
+     "completed",
+     "completed",
+     "completed",
+     "completed"
+    ],
+    "twist": 0.0,
+    "vertices": 642,
+    "voronoi_curvature_rms": 0.014991349479723933
+   },
+   {
+    "area_error": -0.0045614933414599435,
+    "curvature_max": 0.23956884745990403,
+    "curvature_rms": 0.017412340772201225,
+    "geodesic_max": 0.028779737576797138,
+    "geodesic_mean": 0.013209119613979197,
+    "inverted_faces": 0,
+    "issues": [],
+    "max_radius_ratio": 3.3047697000491865,
+    "mesh": "uv-sphere-20x32-t0.08",
+    "min_angle_deg": 10.168974304409714,
+    "n_lat": 20,
+    "n_lon": 32,
+    "trace_statuses": [
+     "completed",
+     "completed",
+     "completed",
+     "completed",
+     "completed",
+     "completed"
+    ],
+    "twist": 0.08,
+    "vertices": 642,
+    "voronoi_curvature_rms": 0.011487716381650736
+   },
+   {
+    "area_error": 0.003489863710369301,
+    "curvature_max": 0.23956884745994234,
+    "curvature_rms": 0.027191384698590993,
+    "geodesic_max": 0.029615142007147266,
+    "geodesic_mean": 0.01656021477473328,
+    "inverted_faces": 0,
+    "issues": [],
+    "max_radius_ratio": 3.9972727819086824,
+    "mesh": "uv-sphere-20x32-t0.16",
+    "min_angle_deg": 9.250125955408276,
+    "n_lat": 20,
+    "n_lon": 32,
+    "trace_statuses": [
+     "completed",
+     "completed",
+     "completed",
+     "completed",
+     "completed",
+     "completed"
+    ],
+    "twist": 0.16,
+    "vertices": 642,
+    "voronoi_curvature_rms": 0.026011977269575468
+   }
+  ],
+  "vertex_count": 642
+ },
+ "scipy_max_abs_difference": 1.1102230246251565e-16,
+ "seed_averaged": [
+  {
+   "amplitude": 0.0,
+   "curvature_rms": 0.02042617452826786,
+   "geodesic_mean": 0.012334617469521443,
+   "max_radius_ratio": 1.0307631773587616,
+   "meshes": 1,
+   "min_angle_deg": 54.0995585363326,
+   "voronoi_curvature_rms": 0.004777035900366827
+  },
+  {
+   "amplitude": 0.05,
+   "curvature_rms": 0.02251040172794297,
+   "geodesic_mean": 0.011699972120662401,
+   "max_radius_ratio": 1.1863871129825931,
+   "meshes": 3,
+   "min_angle_deg": 40.114978122106294,
+   "voronoi_curvature_rms": 0.004849085291181211
+  },
+  {
+   "amplitude": 0.1,
+   "curvature_rms": 0.033311727715073125,
+   "geodesic_mean": 0.01315800585278507,
+   "max_radius_ratio": 1.732716005261848,
+   "meshes": 3,
+   "min_angle_deg": 25.286666304061715,
+   "voronoi_curvature_rms": 0.010834592871739011
+  },
+  {
+   "amplitude": 0.15,
+   "curvature_rms": 0.06074772477911928,
+   "geodesic_mean": 0.0172741646922528,
+   "max_radius_ratio": 7.376030502211002,
+   "meshes": 3,
+   "min_angle_deg": 9.671218941199381,
+   "voronoi_curvature_rms": 0.04084019651007201
+  }
+ ],
+ "spearman": {
+  "max_radius_ratio": {
+   "area_error": -0.4428571428571427,
+   "curvature_max": 0.9247371227251237,
+   "curvature_rms": 0.27499999999999997,
+   "geodesic_mean": 0.7892857142857141,
+   "voronoi_curvature_rms": 0.825
+  },
+  "min_angle_deg": {
+   "area_error": 0.3714285714285714,
+   "curvature_max": -0.7992882882469091,
+   "curvature_rms": -0.021428571428571425,
+   "geodesic_mean": -0.7035714285714285,
+   "voronoi_curvature_rms": -0.6607142857142856
+  }
+ }
+}

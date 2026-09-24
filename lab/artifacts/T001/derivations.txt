@@ -1,0 +1,82 @@
+[plane] {'name': 'plane', 'key': 'plane'}
+  X(u, v) = [u, v, 0]
+  g = [[1, 0], [0, 1]]
+  u'' = 0
+  v'' = 0
+  K (Brioschi) = 0
+
+[sphere] {'name': 'sphere', 'radius': 1.0, 'chart': 'polar (theta, phi)', 'key': 'sphere'}
+  X(u, v) = [sin(u)*cos(v), sin(u)*sin(v), cos(u)]
+  g = [[1, 0], [0, sin(u)**2]]
+  Gamma^u_vv = -sin(2*u)/2
+  Gamma^v_uv = 1/tan(u)
+  u'' = dv**2*sin(2*u)/2
+  v'' = -2*du*dv/tan(u)
+  K (Brioschi) = 1
+
+[cylinder] {'name': 'cylinder', 'radius': 1.0, 'chart': '(phi, z)', 'key': 'cylinder'}
+  X(u, v) = [cos(u), sin(u), v]
+  g = [[1, 0], [0, 1]]
+  u'' = 0
+  v'' = 0
+  K (Brioschi) = 0
+
+[saddle] {'name': 'saddle', 'c': 1.0, 'graph': 'z = c (x^2 - y^2) / 2', 'key': 'saddle'}
+  X(u, v) = [u, v, u**2/2 - v**2/2]
+  g = [[u**2 + 1, -u*v], [-u*v, v**2 + 1]]
+  Gamma^u_uu = u/(u**2 + v**2 + 1)
+  Gamma^u_vv = -u/(u**2 + v**2 + 1)
+  Gamma^v_uu = -v/(u**2 + v**2 + 1)
+  Gamma^v_vv = v/(u**2 + v**2 + 1)
+  u'' = -du**2*u/(u**2 + v**2 + 1) + dv**2*u/(u**2 + v**2 + 1)
+  v'' = du**2*v/(u**2 + v**2 + 1) - dv**2*v/(u**2 + v**2 + 1)
+  K (Brioschi) = -1/(u**2 + v**2 + 1)**2
+
+[torus] {'name': 'torus', 'major': 2.0, 'minor': 1.0, 'chart': '(phi, theta)', 'key': 'torus'}
+  X(u, v) = [(cos(v) + 2)*cos(u), (cos(v) + 2)*sin(u), sin(v)]
+  g = [[(cos(v) + 2)**2, 0], [0, 1]]
+  Gamma^u_uv = -sin(v)/(cos(v) + 2)
+  Gamma^v_uu = (cos(v) + 2)*sin(v)
+  u'' = 2*du*dv*sin(v)/(cos(v) + 2)
+  v'' = -du**2*sin(v)*cos(v) - 2*du**2*sin(v)
+  K (Brioschi) = cos(v)/(cos(v) + 2)
+
+[gaussian-bump] {'name': 'gaussian-bump', 'height': 0.5, 'sigma': 1.0, 'key': 'gaussian-bump'}
+  X(u, v) = [u, v, exp(-u**2/2 - v**2/2)/2]
+  g = [[u**2*exp(-u**2 - v**2)/4 + 1, u*v*exp(-u**2 - v**2)/4], [u*v*exp(-u**2 - v**2)/4, v**2*exp(-u**2 - v**2)/4 + 1]]
+  Gamma^u_uu = u*(1 - u**2)/(u**2 + v**2 + 4*exp(u**2 + v**2))
+  Gamma^u_uv = -u**2*v/(u**2 + v**2 + 4*exp(u**2 + v**2))
+  Gamma^u_vv = u*(1 - v**2)/(u**2 + v**2 + 4*exp(u**2 + v**2))
+  Gamma^v_uu = v*(1 - u**2)/(u**2 + v**2 + 4*exp(u**2 + v**2))
+  Gamma^v_uv = -u*v**2/(u**2 + v**2 + 4*exp(u**2 + v**2))
+  Gamma^v_vv = v*(1 - v**2)/(u**2 + v**2 + 4*exp(u**2 + v**2))
+  u'' = du**2*u**3/(u**2 + v**2 + 4*exp(u**2)*exp(v**2)) - du**2*u/(u**2 + v**2 + 4*exp(u**2)*exp(v**2)) + 2*du*dv*u**2*v/(u**2 + v**2 + 4*exp(u**2)*exp(v**2)) + dv**2*u*v**2/(u**2 + v**2 + 4*exp(u**2)*exp(v**2)) - dv**2*u/(u**2 + v**2 + 4*exp(u**2)*exp(v**2))
+  v'' = du**2*u**2*v/(u**2 + v**2 + 4*exp(u**2)*exp(v**2)) - du**2*v/(u**2 + v**2 + 4*exp(u**2)*exp(v**2)) + 2*du*dv*u*v**2/(u**2 + v**2 + 4*exp(u**2)*exp(v**2)) + dv**2*v**3/(u**2 + v**2 + 4*exp(u**2)*exp(v**2)) - dv**2*v/(u**2 + v**2 + 4*exp(u**2)*exp(v**2))
+  K (Brioschi) = 64*(-u**2 - v**2 + 1)*exp(3*u**2 + 3*v**2)/(u**2*v**2 - (u**2 + 4*exp(u**2 + v**2))*(v**2 + 4*exp(u**2 + v**2)))**2
+
+[hyperbolic-plane] {'name': 'hyperbolic-plane', 'k': 1.0, 'chart': 'upper half-plane (x, y > 0)', 'key': 'hyperbolic-plane'}
+  g = [[v**(-2), 0], [0, v**(-2)]]
+  Gamma^u_uv = -1/v
+  Gamma^v_uu = 1/v
+  Gamma^v_vv = -1/v
+  u'' = 2*du*dv/v
+  v'' = -du**2/v + dv**2/v
+  K (Brioschi) = -1
+
+[plane-polar] {'name': 'plane∘polar', 'base': {'name': 'plane'}, 'chart': 'polar', 'key': 'plane-polar'}
+  X(u, v) = [u*cos(v), u*sin(v), 0]
+  g = [[1, 0], [0, u**2]]
+  Gamma^u_vv = -u
+  Gamma^v_uv = 1/u
+  u'' = dv**2*u
+  v'' = -2*du*dv/u
+  K (Brioschi) = 0
+
+[cylinder-polar] {'name': 'cylinder∘polar', 'base': {'name': 'cylinder', 'radius': 1.0, 'chart': '(phi, z)'}, 'chart': 'polar', 'key': 'cylinder-polar'}
+  X(u, v) = [cos(u*cos(v)), sin(u*cos(v)), u*sin(v)]
+  g = [[1, 0], [0, u**2]]
+  Gamma^u_vv = -u
+  Gamma^v_uv = 1/u
+  u'' = dv**2*u
+  v'' = -2*du*dv/u
+  K (Brioschi) = 0

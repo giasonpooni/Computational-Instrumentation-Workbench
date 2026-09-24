@@ -1,0 +1,440 @@
+{
+ "changed_files": [
+  "src/ciw/lab/exchange_provenance.py",
+  "src/ciw/lab/exchange_provenance_common.py",
+  "tests/test_lab_exchange_provenance.py",
+  "docs/lab/EXCHANGE_PROVENANCE.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 5,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Every predicted refusal is observed; the three survivors reopen; a replay of a reopened forged-runtime bundle is refused; the harness controls hold.",
+ "experiment": "Edit the saved workspace (provider runtime identity), recompute none, local or all unkeyed digests, write it and reopen with Session.from_workspace. Rows retained as runtime-mutations.json/.md and the full matrix as mutation-matrix.json/.md.",
+ "failure_modes_checked": [
+  "oscillator-runtime.naive: execution runtime forged; not resealed",
+  "oscillator-runtime.execution-only: execution runtime forged; resealed",
+  "oscillator-runtime.empty: runtime emptied in execution and result; both resealed",
+  "oscillator-runtime.both: runtime forged identically in execution and result; both resealed",
+  "energy-runtime.naive: code_sha256 forged in the replay bundle; nothing recomputed",
+  "energy-runtime.replay-only: code_sha256 forged in the replay bundle only; every digest recomputed",
+  "energy-runtime.malformed: code_sha256 replaced by a non-hex string in every energy bundle; every digest recomputed",
+  "energy-runtime.all-bundles: code_sha256 forged in every energy bundle; every digest recomputed",
+  "energy-runtime.python-version: python_version forged as 3.99.0 in every energy bundle; every digest recomputed"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "Operation record integrity mismatch",
+      "observed_refusal": "Operation record integrity mismatch",
+      "passed": true,
+      "reference": "oscillator-runtime.naive (none recompute): refusal on reopen",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "Execution/result runtime binding mismatch",
+      "observed_refusal": "Execution/result runtime binding mismatch",
+      "passed": true,
+      "reference": "oscillator-runtime.execution-only (local recompute): refusal on reopen",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "Invalid execution runtime identity",
+      "observed_refusal": "Invalid execution runtime identity",
+      "passed": true,
+      "reference": "oscillator-runtime.empty (local recompute): refusal on reopen",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "Energy analysis bundle identity, schema or size differs",
+      "observed_refusal": "Energy analysis bundle identity, schema or size differs",
+      "passed": true,
+      "reference": "energy-runtime.naive (none recompute): refusal on reopen",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "Retained energy analysis binding differs",
+      "observed_refusal": "Retained energy analysis binding differs",
+      "passed": true,
+      "reference": "energy-runtime.replay-only (full recompute): refusal on reopen",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "Invalid retained analysis implementation identity",
+      "observed_refusal": "Invalid retained analysis implementation identity",
+      "passed": true,
+      "reference": "energy-runtime.malformed (full recompute): refusal on reopen",
+      "reference_kind": "refusal"
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "harness control: the forger's recomputation of the unedited workspace reproduces every CIW digest",
+      "reference_kind": "cross_implementation",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "harness control: the unedited saved workspace reopens",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Provider runtime identity forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": [
+    {
+     "kind": "workspace",
+     "mutant": "oscillator-runtime.naive",
+     "observed": "Operation record integrity mismatch",
+     "recompute": "none"
+    },
+    {
+     "kind": "workspace",
+     "mutant": "oscillator-runtime.execution-only",
+     "observed": "Execution/result runtime binding mismatch",
+     "recompute": "local"
+    },
+    {
+     "kind": "workspace",
+     "mutant": "oscillator-runtime.empty",
+     "observed": "Invalid execution runtime identity",
+     "recompute": "local"
+    },
+    {
+     "kind": "workspace",
+     "mutant": "energy-runtime.naive",
+     "observed": "Energy analysis bundle identity, schema or size differs",
+     "recompute": "none"
+    },
+    {
+     "kind": "workspace",
+     "mutant": "energy-runtime.replay-only",
+     "observed": "Retained energy analysis binding differs",
+     "recompute": "full"
+    },
+    {
+     "kind": "workspace",
+     "mutant": "energy-runtime.malformed",
+     "observed": "Invalid retained analysis implementation identity",
+     "recompute": "full"
+    }
+   ]
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "oscillator-runtime.both: accepted (1 = accepted)",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     }
+    ]
+   },
+   "claim": "Surviving mutant oscillator-runtime.both: a provider runtime forged identically in execution and result reopens",
+   "counterexample": {
+    "statement": "Unkeyed record seals detect a forged provider runtime identity",
+    "witness": {
+     "description": "runtime forged identically in execution and result; both resealed",
+     "name": "oscillator-runtime.both",
+     "observed": "accepted",
+     "post_reopen": {
+      "execution_runtime": {
+       "provider": "lab.forged-provider",
+       "version": "99"
+      },
+      "result_runtime": {
+       "provider": "lab.forged-provider",
+       "version": "99"
+      }
+     },
+     "recompute": "local",
+     "target": "oscillator execution and result"
+    }
+   },
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "mutant": "oscillator-runtime.both",
+    "observed": "accepted"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "energy-runtime.all-bundles: accepted (1 = accepted)",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     }
+    ]
+   },
+   "claim": "Surviving mutant energy-runtime.all-bundles: a consistently forged analysis code digest reopens",
+   "counterexample": {
+    "statement": "Reopening a workspace detects a forged analysis runtime identity",
+    "witness": {
+     "description": "code_sha256 forged in every energy bundle; every digest recomputed",
+     "name": "energy-runtime.all-bundles",
+     "observed": "accepted",
+     "post_reopen": {
+      "replay_after_reopen": {
+       "message": "Retained energy analysis binding differs",
+       "outcome": "refused"
+      },
+      "retained_runtime_forged": {
+       "code_sha256": true,
+       "python_version": false
+      }
+     },
+     "recompute": "full",
+     "target": "energy bundle runtimes"
+    }
+   },
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "mutant": "energy-runtime.all-bundles",
+    "observed": "accepted"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "energy-runtime.python-version: accepted (1 = accepted)",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     }
+    ]
+   },
+   "claim": "Surviving mutant energy-runtime.python-version: forged dependency versions reopen",
+   "counterexample": {
+    "statement": "Reopening a workspace detects forged runtime dependency versions",
+    "witness": {
+     "description": "python_version forged as 3.99.0 in every energy bundle; every digest recomputed",
+     "name": "energy-runtime.python-version",
+     "observed": "accepted",
+     "post_reopen": {
+      "replay_after_reopen": {
+       "message": "Retained energy analysis binding differs",
+       "outcome": "refused"
+      },
+      "retained_runtime_forged": {
+       "code_sha256": false,
+       "python_version": true
+      }
+     },
+     "recompute": "full",
+     "target": "energy bundle runtimes"
+    }
+   },
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "mutant": "energy-runtime.python-version",
+    "observed": "accepted"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "Retained energy analysis binding differs",
+      "observed_refusal": "Retained energy analysis binding differs",
+      "passed": true,
+      "reference": "bundle.replay on the reopened forged workspace",
+      "reference_kind": "refusal"
+     }
+    ]
+   },
+   "claim": "A consistently forged energy runtime identity is detected only when a replay recomputes the current analysis identity",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "replay_after_reopen": {
+     "message": "Retained energy analysis binding differs",
+     "outcome": "refused"
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": "Every CIW seal and identity on these paths (record_digest, log_digest, bundle_digest, verification_id, replay_id, result_id, source_id) is an unkeyed SHA-256 over public canonical JSON or raw bytes, and no keyed signature or MAC is retained. Authentication is therefore not established; the listed surviving mutants are concrete forgeries accepted on reopen."
+   },
+   "claim": "Retained workspace records are authenticated: a holder without a secret cannot produce a forged record that reopens",
+   "domain": "provenance",
+   "evidence_status": "not_established",
+   "expected_not_established": true,
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": null,
+   "unit": null,
+   "value": {
+    "surviving_mutants_in_this_task": [
+     "energy-runtime.all-bundles",
+     "energy-runtime.python-version",
+     "oscillator-runtime.both"
+    ]
+   }
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 5513,
+   "path": "artifacts/T090/runtime-mutations.json",
+   "sha256": "28dbdc2c54f4c6da71d2a98ce894798c41365be5b551ca27c771bc61b90420b2"
+  },
+  {
+   "bytes": 1698,
+   "path": "artifacts/T090/runtime-mutations.md",
+   "sha256": "aed2a485168ffc220d965e2715a48d088c5ffe68dde335ea8ebd585aa81dfbe5"
+  },
+  {
+   "bytes": 41460,
+   "path": "artifacts/T090/mutation-matrix.json",
+   "sha256": "6446634a2e9b0dd358e9752755ed5b4955e3bf92731608d1a9db1419bf4e1b46"
+  },
+  {
+   "bytes": 12891,
+   "path": "artifacts/T090/mutation-matrix.md",
+   "sha256": "7dce5898f614e345199aca3867f01aecbf0a0f9c69c4c8831fff8373a50e05ce"
+  }
+ ],
+ "hypothesis": "Predicted kills: oscillator runtime edits that break the seal, differ between execution and result, or empty the identity; energy runtime edits that leave bundle_digest stale, differ between a replay and its source (the receipt verification binds one runtime digest), or break the code_sha256 format. Predicted survivors: oscillator-runtime.both (a provider-declared identity checked only for equality between the two records) and energy-runtime.all-bundles and energy-runtime.python-version (reopen format-checks the retained runtime; only a new replay compares it with the current analysis identity).",
+ "input_data": [
+  "make_demo_run() damped-oscillator recording; statistics.v1 on channel v over [1, 2] s, twice, plus one legacy analysis.stats result",
+  "examples/energy-accuracy/{baseline,reset}.json (origin synthetic_fixture): two original executions of baseline, one of reset, replays, and a separate session in the same process",
+  "Workspaces saved by Session.save_workspace and reopened by Session.from_workspace in temporary directories"
+ ],
+ "mathematical_model": "Each record seal or identity d = sha256(canon(record \\ d)) is unkeyed, so any holder can recompute d after an edit. Reopen kills a mutant only if some check compares the edited field with an independently recomputed, fixed or cross-referenced value; otherwise a consistent recomputation survives.",
+ "number": 90,
+ "numerical_result": "9 rows (9 workspace mutants, 0 pure-validator rows): 6 refused; 3 surviving forgeries (oscillator-runtime.both, energy-runtime.all-bundles, energy-runtime.python-version); kill/survive predictions matched 9/9; refusal messages matched their regression pins 6/6. Full matrix: 68 rows (61 workspace mutants, 7 pure-validator rows): 52 refused; 15 surviving forgeries (revision.gap, energy-source.resealed, oscillator-stats.resealed, oscillator-stats.impossible-moments, oscillator-stats.legacy, fresh.created-at-shift, receipt.deleted, receipt-source.sibling-execution, receipt-replayed.reidentified-bundle, oscillator-method.injected, oscillator-independent.injected, oscillator-admission.injected, oscillator-runtime.both, energy-runtime.all-bundles, energy-runtime.python-version); 1 documented validator acceptance (exchange.verification-independent); kill/survive predictions matched 68/68; refusal messages matched their regression pins 52/52",
+ "observation_model": "No physical observation. The observed objects are CIW records (sessions, executions, results, bundles, receipts, saved workspace JSON) produced offline by the unmodified CIW code; the energy logs are synthetic fixtures and no hardware was sampled.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/exchange_provenance.py": "5cc267c7777c9b434b8747b0cc841ac85313e1cfb6ff4c429ee93aa5ddbb645b",
+   "src/ciw/lab/exchange_provenance_common.py": "22028c4008079fba23c5e807de0104ba1a0014027e1d40a9209881cdf232f486"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T091 (save/reopen without provider access); CIW change: keyed signatures over workspace records; label a retained runtime that differs from the current analysis identity as historical and unverified on reopen",
+ "report_id": "sha256:bf59095ef3f68db3b4eda8d80f7d104d9d32f6b58760a494ef7d6a040dc234e4",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "exchange-provenance",
+ "state": "completed",
+ "task_id": "T090",
+ "tests_passed": [
+  "check: Provider runtime identity forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs oscillator-runtime.naive (none recompute): refusal on reopen",
+  "check: Provider runtime identity forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs oscillator-runtime.execution-only (local recompute): refusal on reopen",
+  "check: Provider runtime identity forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs oscillator-runtime.empty (local recompute): refusal on reopen",
+  "check: Provider runtime identity forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs energy-runtime.naive (none recompute): refusal on reopen",
+  "check: Provider runtime identity forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs energy-runtime.replay-only (full recompute): refusal on reopen",
+  "check: Provider runtime identity forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs energy-runtime.malformed (full recompute): refusal on reopen",
+  "check: Provider runtime identity forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs harness control: the forger's recomputation of the unedited workspace reproduces every CIW digest",
+  "check: Provider runtime identity forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs harness control: the unedited saved workspace reopens",
+  "check: Surviving mutant oscillator-runtime.both: a provider runtime forged identically in execution and result reopens vs oscillator-runtime.both: accepted (1 = accepted)",
+  "check: Surviving mutant energy-runtime.all-bundles: a consistently forged analysis code digest reopens vs energy-runtime.all-bundles: accepted (1 = accepted)",
+  "check: Surviving mutant energy-runtime.python-version: forged dependency versions reopen vs energy-runtime.python-version: accepted (1 = accepted)",
+  "check: A consistently forged energy runtime identity is detected only when a replay recomputes the current analysis identity vs bundle.replay on the reopened forged workspace",
+  "pytest: tests/test_lab_exchange_provenance.py::test_admission_and_runtime_mutations"
+ ],
+ "tests_skipped": [],
+ "title": "Mutate provider runtime identity.",
+ "uncertainty": "Outcomes are exact (accepted or a refusal message). Only kill/survive is a prediction; refusal messages are regression pins recorded from observed runs. Survivors are demonstrated forgeries; kills show only that these particular edits are detected, not that every edit of this field is.",
+ "unresolved_assumptions": [
+  "The forger model recomputes only unkeyed SHA-256 digests with CIW's public canonicalization; no key exists to steal.",
+  "Whether a reader of a forged workspace would be misled depends on how the record is displayed; not assessed."
+ ]
+}

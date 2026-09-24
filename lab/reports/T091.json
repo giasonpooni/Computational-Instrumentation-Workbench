@@ -1,0 +1,262 @@
+{
+ "changed_files": [
+  "src/ciw/lab/exchange_provenance_bundles.py",
+  "src/ciw/lab/exchange_provenance_bundles_fixtures.py"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 0,
+   "numerically_verified": 4,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Zero execution-path calls, zero bindings, identical retained content, answered read requests.",
+ "experiment": "Build a session (stats, selection update, spectrum, statistics.v1 operation, energy source, execute, replay), save, reopen under the guard, issue read requests, compare digests, run a guard sensitivity control and a binding-free replay control after the guard.",
+ "failure_modes_checked": [
+  "execution entry point reached during reopen",
+  "retained content drift across reopen",
+  "binding restored from saved data",
+  "saved workspace rewritten by reopen",
+  "guard insensitivity (control replay must be intercepted)"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "execution entry points reached while reopening and reading",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "selection/results/executions/catalog digest mismatches after reopen",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "provider bindings present after reopen",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "binding-like keys in the saved workspace",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "read requests not answered",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "saved workspace bytes changed by reopen",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "A saved workspace with oscillator results and an energy-accuracy original and replay reopens with no provider binding and reaches no execution path",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact counts, digests and string comparisons; no rounding is involved",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": {
+    "available_operations": [
+     "ciw.energy-accuracy.v1"
+    ],
+    "bundles": 2,
+    "execution_path_calls": 0,
+    "executions": 1,
+    "provider_bindings": [],
+    "read_requests": 10,
+    "read_requests_answered": 10,
+    "results": 3,
+    "workspace_version": 3
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "intercepted",
+      "observed_refusal": "intercepted",
+      "passed": true,
+      "reference": "Workbench.replay inside execution_guard",
+      "reference_kind": "refusal"
+     }
+    ]
+   },
+   "claim": "The execution guard intercepts a replay attempted while it is active",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact counts, digests and string comparisons; no rounding is involved",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": "intercepted"
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 7.0,
+      "passed": true,
+      "reference": "ciw.energy_records.analyze calls during reopen and reads",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     }
+    ]
+   },
+   "claim": "Reopening recomputes the retained energy analysis to validate content",
+   "counterexample": {
+    "statement": "Reopening a saved workspace performs no numerical recomputation",
+    "witness": {
+     "ciw.energy_records.analyze calls": 7,
+     "new execution occurrences": 0
+    }
+   },
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact counts, digests and string comparisons; no rounding is involved",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": 7
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "replay numerical_match is false",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "After reopen the binding-free energy-accuracy workflow still replays with a numerical match",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact counts, digests and string comparisons; no rounding is involved",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": true
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 2133,
+   "path": "artifacts/T091/reopen.json",
+   "sha256": "25affa98d2d5df397cf740ae49e3b99d467a518fc1f46806661b77dec5c4207e"
+  }
+ ],
+ "hypothesis": "A CIW workspace saved with retained oscillator results and an energy-accuracy original and replay can be reopened with no provider binding and without reaching any execution entry point.",
+ "input_data": [
+  "ciw.instruments.make_demo_run (synthetic analytic oscillator)",
+  "examples/energy-accuracy/baseline.json bytes (synthetic_fixture origin), embedded"
+ ],
+ "mathematical_model": "Reopen = validate(saved JSON) then construct; the guard replaces 22 execution entry points (workflow steps, sessions, provider adapters, subprocesses, recording operations) with a refusing recorder.",
+ "number": 91,
+ "numerical_result": "2 bundles, 3 results and 1 execution reopened with 0 execution-path calls and bindings []; the energy analysis was recomputed 7 times for validation.",
+ "observation_model": "Protocol v1 requests against the reopened Session; digests of selection, results, executions and the retained catalog; guard attempt and recomputation counters.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/exchange_provenance_bundles.py": "a505b35560263c1b473912f79e61b15b7e474f8eb1807e691847e4c69791c2d3",
+   "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "f30205e8305a225f24d94b06cba8b519ecea4680ca723aaca3591ff707d04e1c"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T092: refuse replay of provider kinds without a binding in the reopened session.",
+ "report_id": "sha256:32c92bd0d670fc35f68ef5ee9f2ab41f728fc6e23374dd74fed969ae07bebc7c",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "exchange-provenance",
+ "state": "completed",
+ "task_id": "T091",
+ "tests_passed": [
+  "check: A saved workspace with oscillator results and an energy-accuracy original and replay reopens with no provider binding and reaches no execution path vs execution entry points reached while reopening and reading",
+  "check: A saved workspace with oscillator results and an energy-accuracy original and replay reopens with no provider binding and reaches no execution path vs selection/results/executions/catalog digest mismatches after reopen",
+  "check: A saved workspace with oscillator results and an energy-accuracy original and replay reopens with no provider binding and reaches no execution path vs provider bindings present after reopen",
+  "check: A saved workspace with oscillator results and an energy-accuracy original and replay reopens with no provider binding and reaches no execution path vs binding-like keys in the saved workspace",
+  "check: A saved workspace with oscillator results and an energy-accuracy original and replay reopens with no provider binding and reaches no execution path vs read requests not answered",
+  "check: A saved workspace with oscillator results and an energy-accuracy original and replay reopens with no provider binding and reaches no execution path vs saved workspace bytes changed by reopen",
+  "check: The execution guard intercepts a replay attempted while it is active vs Workbench.replay inside execution_guard",
+  "check: Reopening recomputes the retained energy analysis to validate content vs ciw.energy_records.analyze calls during reopen and reads",
+  "check: After reopen the binding-free energy-accuracy workflow still replays with a numerical match vs replay numerical_match is false",
+  "pytest: tests/test_lab_exchange_provenance_bundles.py::test_t091_reopen_needs_no_provider_and_reaches_no_execution_path",
+  "pytest: tests/test_lab_exchange_provenance_bundles.py::test_execution_guard_restores_every_patched_attribute"
+ ],
+ "tests_skipped": [],
+ "title": "Test save/reopen without provider access.",
+ "uncertainty": "Exact: counts and digest equalities; no floating-point tolerance is involved.",
+ "unresolved_assumptions": [
+  "The guard covers the execution entry points listed in reopen.json; a new entry point added to CIW must be added to EXECUTION_PATHS.",
+  "Validation recomputation (energy analysis) is counted separately from execution because it creates no occurrence and no result; the counterexample finding records it."
+ ]
+}

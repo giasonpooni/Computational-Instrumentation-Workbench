@@ -1,0 +1,340 @@
+{
+ "changed_files": [
+  "src/ciw/lab/manufacturing.py",
+  "src/ciw/lab/manufacturing_geometry.py",
+  "src/ciw/lab/manufacturing_metrology.py",
+  "src/ciw/lab/manufacturing_records.py",
+  "docs/lab/MANUFACTURING.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 2,
+   "numerically_verified": 5,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Helix kappa_g = 0; chart and embedded curvatures agree; Phi = [[1, s], [0, 1]]; MC std of the exact deviation model equals the RSS.",
+ "experiment": "Evaluate curvatures by two routes along the steered course, integrate the transfer and an exactly perturbed course, sample the four error sources through the exact development model, and evaluate a radius-error witness.",
+ "failure_modes_checked": [
+  "chart vs embedded curvature",
+  "helix is geodesic",
+  "nonlinear vs linear deviation",
+  "RSS vs exact sampling",
+  "radius error through machine-angle programming"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 1.0842021724855044e-18,
+      "passed": true,
+      "reference": "chart kappa_g vs -theta' cos theta (1/mm)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 2.6020852139652106e-18,
+      "passed": true,
+      "reference": "chart (Christoffel) vs embedded 3D curvatures (1/mm)",
+      "reference_kind": "cross_implementation",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 2.6020852139652106e-18,
+      "passed": true,
+      "reference": "kappa_n vs -sin^2 theta / R (1/mm)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 7.146319983531111e-21,
+      "passed": true,
+      "reference": "constant-angle helix kappa_g (1/mm)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-15
+     }
+    ],
+    "derivation": "development (R phi, z) with N the tangent rotated +90 deg: signed kappa_g = -theta'(z) cos theta (theta from the axis, heading from the circumferential direction 90 deg - theta), |kappa_g| = theta' cos theta (docs/lab/MANUFACTURING.md#t132)"
+   },
+   "claim": "Geodesic curvature of a 30-to-60 degree variable-angle steered course on the R = 100 mm mandrel",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 1e-09
+   },
+   "uncertainty": {
+    "basis": "closed-form vs chart vs embedded evaluation (1/mm)",
+    "kind": "roundoff",
+    "value": 2.6020852139652106e-18
+   },
+   "unit": null,
+   "value": {
+    "max_kappa_g_per_mm": 0.0015114994701951807,
+    "min_steering_radius_mm": 661.5946745061508
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "max |Phi(500) - [[1, 500], [0, 1]]|",
+      "reference_kind": "analytic",
+      "tolerance": 1e-09
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 5.623279619726418e-13,
+      "passed": true,
+      "reference": "exactly perturbed course minus delta + s sin(dpsi) (mm)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-09
+     }
+    ]
+   },
+   "claim": "Lateral deviation on the mandrel follows e(s) = delta + s sin(dpsi) (flat Jacobi transfer)",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact perturbation vs closed form (mm)",
+    "kind": "roundoff",
+    "value": 5.623279619726418e-13
+   },
+   "unit": null,
+   "value": {
+    "perturbed_exact_error_mm": 5.623279619726418e-13,
+    "phi_error": 0.0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.012483928018509838,
+      "passed": true,
+      "reference": "exact-model MC std / RSS - 1 at L_max (4 standard errors)",
+      "reference_kind": "analytic",
+      "tolerance": 0.02
+     }
+    ],
+    "generator": {
+     "name": "placement error sources",
+     "samples": 20000,
+     "seed": 20260926,
+     "sigma": {
+      "course_mm": 500.0,
+      "fibre_angle_deg": 45.0,
+      "min_steering_radius_mm": 635.0,
+      "sigma_encoder_rad": 5e-05,
+      "sigma_heading_rad": 0.0005,
+      "sigma_lateral_mm": 0.1,
+      "sigma_radius_mm": 0.05,
+      "spec_mm": 0.5
+     }
+    }
+   },
+   "claim": "Tolerance stack of the placed course and the longest course meeting a 0.5 mm lateral spec at k = 2",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-09
+   },
+   "uncertainty": {
+    "basis": "relative difference between the exact-model MC std and the RSS at L_max",
+    "kind": "reference_error",
+    "value": 0.012483928018509838
+   },
+   "unit": "mm",
+   "value": {
+    "length_max_mm": 409.82923272992616,
+    "sigma_at_500mm": 0.29687960522743895
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": -0.0009994995016313624,
+      "passed": true,
+      "reference": "drift at 1 m / first-order L sin(theta) cos(theta) dR / R - 1",
+      "reference_kind": "analytic",
+      "tolerance": 0.01
+     },
+     {
+      "comparison": "ge",
+      "observed": 0.9990005004983686,
+      "passed": true,
+      "reference": "drift exceeds the 0.5 mm spec (mm)",
+      "reference_kind": "analytic",
+      "tolerance": 0.5
+     }
+    ]
+   },
+   "claim": "Programming a helix in machine angles transfers mandrel radius error into lateral drift",
+   "counterexample": {
+    "statement": "A helix programmed in machine coordinates (phi, z) is insensitive to mandrel radius error because it is a geodesic on every cylinder",
+    "witness": {
+     "course_mm": 1000.0,
+     "fibre_angle_deg": 45.0,
+     "radius_error_mm": 0.2,
+     "radius_mm": 100.0
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-09
+   },
+   "uncertainty": {
+    "basis": "closed-form development model",
+    "kind": "roundoff",
+    "value": 1e-12
+   },
+   "unit": "mm",
+   "value": 0.9990005004983686
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 1.1937117960769683e-12,
+      "passed": true,
+      "reference": "closed-form end abscissa vs Simpson quadrature of tan theta (mm)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-08
+     }
+    ],
+    "derivation": "development closed form x(z) = (ln cos theta0 - ln cos theta(z)) / theta'"
+   },
+   "claim": "End deviation of the steered course from the geodesic along its initial tangent",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-09
+   },
+   "uncertainty": {
+    "basis": "closed-form development model",
+    "kind": "roundoff",
+    "value": 1e-12
+   },
+   "unit": "mm",
+   "value": 122.56351482368811
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "Tows placed by a real AFP head follow the programmed course within the stack, with gaps and overlaps inside 0.5 mm",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "The declared 635 mm minimum steering radius avoids tow wrinkling for the placed material",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 3516,
+   "path": "artifacts/T132/placement-stack.svg",
+   "sha256": "81ba01f91eeef24e11e9ee7602432cd322303de5b0f0b9cefd3dcfb2c6b50705"
+  },
+  {
+   "bytes": 1587,
+   "path": "artifacts/T132/placement.json",
+   "sha256": "37645cd481b892dac2114bc211a71e6400000b52eee9079e8a87188bb9e58dc5"
+  }
+ ],
+ "hypothesis": "On a cylindrical mandrel geodesic placement paths are helices (straight in the development); a steered variable-angle course has geodesic curvature of magnitude theta' cos theta; lateral placement errors grow linearly (flat Jacobi transfer) and radius error enters through the machine-angle programming.",
+ "input_data": [
+  "Declared mandrel R = 100 mm; course 500 mm at 45 deg; steered course 30 -> 60 deg over 300 mm axial",
+  "Declared 1 sigma sources: head lateral 0.10 mm, heading 0.5 mrad, radius 0.05 mm, encoder 50 urad",
+  "Declared spec 0.5 mm (k = 2) and minimum steering radius 635 mm"
+ ],
+ "mathematical_model": "Development (R phi, z); kappa_g = <u'' + Gamma(u', u'), N> / |u'|^2 with N the tangent rotated +90 deg (signed -theta'(z) cos theta for theta measured from the axis); kappa_n = II(u', u') / I(u', u'); e(s) = delta + R cos(theta) dphi + s (dpsi + sin(theta) cos(theta) dR / R); RSS with k = 2.",
+ "number": 132,
+ "numerical_result": "max kappa_g 0.00151 /mm (steering radius 661.6 mm); 2 sigma at 500 mm = 0.594 mm; longest course within 0.5 mm: 409.8 mm; radius witness drift 0.999 mm at 1 m.",
+ "observation_model": "No observation: placement is modelled, not executed.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/manufacturing.py": "088763a0bcc42bf085c1e228797a5dc0d702b994f2a49e053cbe2b0a5622e25d",
+   "src/ciw/lab/manufacturing_geometry.py": "1db6df2ddf778668da2ffd53a66bcddbff4fc933d6f299e8f283cedc60a9332f",
+   "src/ciw/lab/manufacturing_metrology.py": "afbb6fccf146ca4f47850805c118d2f1bf6186872f381b298ab924a9214257ec",
+   "src/ciw/lab/manufacturing_records.py": "66970104ea454e836c5cbafc3013c90e721c3e96ad7f16780c32250112cac921"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T133: winding path sensitivity on a torus mandrel, where Gaussian curvature is nonzero.",
+ "report_id": "sha256:ba3a82e14ab75741dacda447e1e2ddf6722f8e83aadb1f982ee318bbda1f1ef9",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "manufacturing",
+ "state": "completed",
+ "task_id": "T132",
+ "tests_passed": [
+  "check: Geodesic curvature of a 30-to-60 degree variable-angle steered course on the R = 100 mm mandrel vs chart kappa_g vs -theta' cos theta (1/mm)",
+  "check: Geodesic curvature of a 30-to-60 degree variable-angle steered course on the R = 100 mm mandrel vs chart (Christoffel) vs embedded 3D curvatures (1/mm)",
+  "check: Geodesic curvature of a 30-to-60 degree variable-angle steered course on the R = 100 mm mandrel vs kappa_n vs -sin^2 theta / R (1/mm)",
+  "check: Geodesic curvature of a 30-to-60 degree variable-angle steered course on the R = 100 mm mandrel vs constant-angle helix kappa_g (1/mm)",
+  "check: Lateral deviation on the mandrel follows e(s) = delta + s sin(dpsi) (flat Jacobi transfer) vs max |Phi(500) - [[1, 500], [0, 1]]|",
+  "check: Lateral deviation on the mandrel follows e(s) = delta + s sin(dpsi) (flat Jacobi transfer) vs exactly perturbed course minus delta + s sin(dpsi) (mm)",
+  "check: Tolerance stack of the placed course and the longest course meeting a 0.5 mm lateral spec at k = 2 vs exact-model MC std / RSS - 1 at L_max (4 standard errors)",
+  "check: Programming a helix in machine angles transfers mandrel radius error into lateral drift vs drift at 1 m / first-order L sin(theta) cos(theta) dR / R - 1",
+  "check: Programming a helix in machine angles transfers mandrel radius error into lateral drift vs drift exceeds the 0.5 mm spec (mm)",
+  "check: End deviation of the steered course from the geodesic along its initial tangent vs closed-form end abscissa vs Simpson quadrature of tan theta (mm)",
+  "pytest: tests/test_lab_manufacturing.py::test_placement_curvature_stack_and_radius_counterexample",
+  "pytest: tests/test_lab_manufacturing.py::test_every_task_is_registered_and_reports_honestly"
+ ],
+ "tests_skipped": [],
+ "title": "Model fibre/tape placement path tolerance.",
+ "uncertainty": "Closed forms; Monte Carlo standard error of the std is about 0.5% with 20000 samples.",
+ "unresolved_assumptions": [
+  "Tow width, compaction and tack are not modelled; tows are curves, not strips.",
+  "Error sources are independent and Gaussian with declared sigmas."
+ ]
+}

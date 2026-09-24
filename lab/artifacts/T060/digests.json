@@ -1,0 +1,7 @@
+{
+ "digest": "4680164da82e1c4a4bd067f28db5fadd78d76e9994f97592bc04969aea580e87",
+ "note": "SHA-256 over little-endian float64 truth and readings",
+ "other_seed_digest": "7fcded24300c83eb3515ccfd247b6244d125f5de4cd1aa4e0e0354d3a84497d6",
+ "regenerated_digest": "4680164da82e1c4a4bd067f28db5fadd78d76e9994f97592bc04969aea580e87",
+ "seed": 602026
+}

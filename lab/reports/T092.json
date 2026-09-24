@@ -1,0 +1,471 @@
+{
+ "changed_files": [
+  "src/ciw/lab/exchange_provenance_bundles.py",
+  "src/ciw/lab/exchange_provenance_bundles_fixtures.py"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 3,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Every case refused with its expected code and text; no provider path reached; the builtin still replays.",
+ "experiment": "25 refusal cases on a reopened session, each compared with its expected error text; a counting guard records which execution entry points each request reached.",
+ "failure_modes_checked": [
+  "client-supplied repositories in replay/execute payloads",
+  "client binding request",
+  "unknown bundle",
+  "unversioned and unregistered operation identities",
+  "ESM on a non-telemetry bundle",
+  "upstream bundle of the wrong kind",
+  "provider adapter constructed before refusal"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+      "observed_refusal": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+      "passed": true,
+      "reference": "execute unbound acquired-dataset",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+      "observed_refusal": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+      "passed": true,
+      "reference": "execute unbound calibrated-observable",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+      "observed_refusal": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+      "passed": true,
+      "reference": "execute unbound calibrated-window",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+      "observed_refusal": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+      "passed": true,
+      "reference": "execute unbound covariance-geometry",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+      "observed_refusal": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+      "passed": true,
+      "reference": "execute unbound curved-path-transfer",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+      "observed_refusal": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+      "passed": true,
+      "reference": "execute unbound flat-torus-reference",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+      "observed_refusal": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+      "passed": true,
+      "reference": "execute unbound geometric-circle",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+      "observed_refusal": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+      "passed": true,
+      "reference": "execute unbound measurement-chain",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+      "observed_refusal": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+      "passed": true,
+      "reference": "execute unbound mesh-path",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+      "observed_refusal": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+      "passed": true,
+      "reference": "execute unbound numerical-heat",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+      "observed_refusal": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+      "passed": true,
+      "reference": "execute unbound proved-heat",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+      "observed_refusal": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+      "passed": true,
+      "reference": "execute unbound schematic-assessment",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+      "observed_refusal": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+      "passed": true,
+      "reference": "execute unbound telemetry",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+      "observed_refusal": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+      "passed": true,
+      "reference": "execute unbound translation-flow",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+      "observed_refusal": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+      "passed": true,
+      "reference": "execute unbound variational-free-energy",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "invalid_payload: Select a retained upstream bundle of the declared kind",
+      "observed_refusal": "invalid_payload: Select a retained upstream bundle of the declared kind",
+      "passed": true,
+      "reference": "execute identified-design with an upstream bundle of another kind",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "invalid_payload: Select a retained upstream bundle of the declared kind",
+      "observed_refusal": "invalid_payload: Select a retained upstream bundle of the declared kind",
+      "passed": true,
+      "reference": "execute schematic-companions with an upstream bundle of another kind",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+      "observed_refusal": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+      "passed": true,
+      "reference": "replay retained numerical-heat bundle without SCR binding",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "invalid_payload: Unexpected or missing workbench fields",
+      "observed_refusal": "invalid_payload: Unexpected or missing workbench fields",
+      "passed": true,
+      "reference": "replay with client-supplied repositories",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "invalid_payload: Unknown payload fields: repositories",
+      "observed_refusal": "invalid_payload: Unknown payload fields: repositories",
+      "passed": true,
+      "reference": "execute with client-supplied repositories",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "unknown_command: Unknown request type: workflow.bind",
+      "observed_refusal": "unknown_command: Unknown request type: workflow.bind",
+      "passed": true,
+      "reference": "client request to bind a workflow",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "invalid_payload: Unknown retained workbench bundle",
+      "observed_refusal": "invalid_payload: Unknown retained workbench bundle",
+      "passed": true,
+      "reference": "replay an unknown bundle",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "invalid_payload: operation_id must be versioned and parameters must be an object",
+      "observed_refusal": "invalid_payload: operation_id must be versioned and parameters must be an object",
+      "passed": true,
+      "reference": "unversioned operation identity",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "invalid_payload: ESM requires an explicitly selected calibrated or telemetry bundle",
+      "observed_refusal": "invalid_payload: ESM requires an explicitly selected calibrated or telemetry bundle",
+      "passed": true,
+      "reference": "ESM candidate inspection of a non-telemetry bundle",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "operation_unavailable: No trusted provider bound for ciw.lab-unregistered.v1",
+      "observed_refusal": "operation_unavailable: No trusted provider bound for ciw.lab-unregistered.v1",
+      "passed": true,
+      "reference": "unregistered recording operation",
+      "reference_kind": "refusal"
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "provider process or adapter entry points reached",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "execution entry points reached while reopening",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact counts, digests and string comparisons; no rounding is involved",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": {
+    "codes": [
+     "invalid_payload",
+     "operation_unavailable",
+     "unknown_command"
+    ],
+    "kinds_refused_at_upstream_selection": [
+     "identified-design",
+     "schematic-companions"
+    ],
+    "kinds_refused_unbound": [
+     "acquired-dataset",
+     "calibrated-observable",
+     "calibrated-window",
+     "covariance-geometry",
+     "curved-path-transfer",
+     "flat-torus-reference",
+     "geometric-circle",
+     "measurement-chain",
+     "mesh-path",
+     "numerical-heat",
+     "proved-heat",
+     "schematic-assessment",
+     "telemetry",
+     "translation-flow",
+     "variational-free-energy"
+    ],
+    "refused_as_expected": 25,
+    "requests": 25,
+    "unavailable_kinds_not_exercised": [
+     "acquired-calibrated-window",
+     "bim-quantity",
+     "identified-stability",
+     "residual-monitor"
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 3.0,
+      "passed": true,
+      "reference": "cells differing from the independent integer reference",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     }
+    ]
+   },
+   "claim": "A retained numerical-heat bundle whose values no provider computed passes reopen validation",
+   "counterexample": {
+    "statement": "Reopen validation of a retained numerical-heat bundle establishes that its values are the pinned SCR heat-kernel output",
+    "witness": {
+     "bundle_id": "sha256:954c39d69990ad4cce8c3bc853d4a79ac19d2dc4a756c4c484beca68652b2e43",
+     "reference_values": [
+      0,
+      16,
+      24,
+      16,
+      0
+     ],
+     "retained_values": [
+      0,
+      1,
+      2,
+      3,
+      0
+     ],
+     "runtime_repository_root": "/fabricated/not-a-provider-checkout"
+    }
+   },
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact int64 arithmetic compared cell by cell",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": {
+    "accepted_on_reopen": true,
+    "mismatched_cells": 3,
+    "reference_values": [
+     0,
+     16,
+     24,
+     16,
+     0
+    ],
+    "retained_values": [
+     0,
+     1,
+     2,
+     3,
+     0
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "energy replay without numerical match",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "The binding-free energy-accuracy replay succeeds in the same reopened session",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact counts, digests and string comparisons; no rounding is involved",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": true
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "A content-consistent reopened bundle is acceptable as a verified production result",
+   "domain": "production_acceptance",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": "not decided by the workbench"
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 8669,
+   "path": "artifacts/T092/refusals.json",
+   "sha256": "7ee737cd5e65ca351b512ab1024eba51e2907524bbcf8fd55d49127644c6b9f1"
+  },
+  {
+   "bytes": 14694,
+   "path": "artifacts/T092/fabricated-heat-catalog.json",
+   "sha256": "b884df65f501a5c714eb0442b47089e947848c4c34ab80270d8d330bb55f37b3"
+  }
+ ],
+ "hypothesis": "Without a host-side trusted binding, CIW refuses every replay or execution of a provider workflow with a named error, and no client or saved value can supply the binding.",
+ "input_data": [
+  "embedded example sources for numerical-heat, proved-heat, flat-torus-reference, curved-path-transfer, translation-flow",
+  "examples/ sources (via runner.repository_path) for calibrated-observable, telemetry, calibrated-window, schematic-assessment, acquired-dataset, measurement-chain, geometric-circle, covariance-geometry, mesh-path, variational-free-energy, identified-design, schematic-companions",
+  "fabricated numerical-heat catalog (values [0, 1, 2, 3, 0], fabricated runtime identity)",
+  "energy-accuracy session from examples/energy-accuracy/baseline.json (synthetic)"
+ ],
+ "mathematical_model": "Workbench._reserve(kind) requires kind in trusted bindings; bindings are process configuration set only by Workbench.bind_workflow, never by a protocol request or a saved workspace. Kinds that consume an upstream bundle are checked for that bundle first.",
+ "number": 92,
+ "numerical_result": "25/25 refused exactly as expected: 15 of 21 unavailable workflow kinds refused unbound, 2 refused at upstream selection, 4 not exercised; provider paths reached: none; the fabricated heat bundle (values [0, 1, 2, 3, 0]) reopened although the reference field is [0, 16, 24, 16, 0].",
+ "observation_model": "Protocol v1 error envelopes (code: message) or refused execution records; counted entry points.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/exchange_provenance_bundles.py": "a505b35560263c1b473912f79e61b15b7e474f8eb1807e691847e4c69791c2d3",
+   "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "f30205e8305a225f24d94b06cba8b519ecea4680ca723aaca3591ff707d04e1c"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T093: show these refusals leave the saved workspace and in-memory state unchanged.",
+ "report_id": "sha256:b2710ad17a18bf161efee7418838ccdf83936e480060ed6fac63b6b0b9ecf3e0",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "exchange-provenance",
+ "state": "completed",
+ "task_id": "T092",
+ "tests_passed": [
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs execute unbound acquired-dataset",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs execute unbound calibrated-observable",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs execute unbound calibrated-window",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs execute unbound covariance-geometry",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs execute unbound curved-path-transfer",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs execute unbound flat-torus-reference",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs execute unbound geometric-circle",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs execute unbound measurement-chain",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs execute unbound mesh-path",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs execute unbound numerical-heat",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs execute unbound proved-heat",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs execute unbound schematic-assessment",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs execute unbound telemetry",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs execute unbound translation-flow",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs execute unbound variational-free-energy",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs execute identified-design with an upstream bundle of another kind",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs execute schematic-companions with an upstream bundle of another kind",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs replay retained numerical-heat bundle without SCR binding",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs replay with client-supplied repositories",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs execute with client-supplied repositories",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs client request to bind a workflow",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs replay an unknown bundle",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs unversioned operation identity",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs ESM candidate inspection of a non-telemetry bundle",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs unregistered recording operation",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs provider process or adapter entry points reached",
+  "check: Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process or adapter vs execution entry points reached while reopening",
+  "check: A retained numerical-heat bundle whose values no provider computed passes reopen validation vs cells differing from the independent integer reference",
+  "check: The binding-free energy-accuracy replay succeeds in the same reopened session vs energy replay without numerical match",
+  "pytest: tests/test_lab_exchange_provenance_bundles.py::test_t092_unbound_replay_and_execution_are_refused",
+  "pytest: tests/test_lab_exchange_provenance_bundles.py::test_fabricated_heat_bundle_is_content_consistent_but_wrong"
+ ],
+ "tests_skipped": [],
+ "title": "Test replay refusal without provider binding.",
+ "uncertainty": "Exact string and count comparisons.",
+ "unresolved_assumptions": [
+  "Not exercised (no example source reachable here): acquired-calibrated-window, bim-quantity, identified-stability, residual-monitor. That they are refused too is inferred from the shared code path (Workbench.execute and Workbench.replay call Workbench._reserve, which refuses any kind without a trusted binding), not observed.",
+  "No ESM candidate adapter refusal ('No operator-bound ESM candidate adapter') is reached: that path needs a retained telemetry or calibrated-observable bundle, which needs bound providers. The ESM case here is refused for its bundle kind.",
+  "The fabricated bundle's runtime identity is syntactically valid but names no real checkout."
+ ]
+}

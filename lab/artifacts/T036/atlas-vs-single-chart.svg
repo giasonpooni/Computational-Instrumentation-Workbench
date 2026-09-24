@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420" font-family="sans-serif" font-size="11">
+<rect width="640" height="420" fill="#ffffff"/>
+<text x="78" y="22" font-size="13" font-weight="bold">Great-circle error after 2 pi R, RK4 with 400 steps</text>
+<rect x="78" y="40" width="392" height="322" fill="none" stroke="#333"/>
+<line x1="78.00" y1="40" x2="78.00" y2="362" stroke="#e5e7eb"/>
+<text x="78.00" y="378" text-anchor="middle">1e-12</text>
+<line x1="113.64" y1="40" x2="113.64" y2="362" stroke="#e5e7eb"/>
+<text x="113.64" y="378" text-anchor="middle">1e-11</text>
+<line x1="149.27" y1="40" x2="149.27" y2="362" stroke="#e5e7eb"/>
+<text x="149.27" y="378" text-anchor="middle">1e-10</text>
+<line x1="184.91" y1="40" x2="184.91" y2="362" stroke="#e5e7eb"/>
+<text x="184.91" y="378" text-anchor="middle">1e-9</text>
+<line x1="220.55" y1="40" x2="220.55" y2="362" stroke="#e5e7eb"/>
+<text x="220.55" y="378" text-anchor="middle">1e-8</text>
+<line x1="256.18" y1="40" x2="256.18" y2="362" stroke="#e5e7eb"/>
+<text x="256.18" y="378" text-anchor="middle">1e-7</text>
+<line x1="291.82" y1="40" x2="291.82" y2="362" stroke="#e5e7eb"/>
+<text x="291.82" y="378" text-anchor="middle">1e-6</text>
+<line x1="327.45" y1="40" x2="327.45" y2="362" stroke="#e5e7eb"/>
+<text x="327.45" y="378" text-anchor="middle">1e-5</text>
+<line x1="363.09" y1="40" x2="363.09" y2="362" stroke="#e5e7eb"/>
+<text x="363.09" y="378" text-anchor="middle">1e-4</text>
+<line x1="398.73" y1="40" x2="398.73" y2="362" stroke="#e5e7eb"/>
+<text x="398.73" y="378" text-anchor="middle">1e-3</text>
+<line x1="434.36" y1="40" x2="434.36" y2="362" stroke="#e5e7eb"/>
+<text x="434.36" y="378" text-anchor="middle">1e-2</text>
+<line x1="470.00" y1="40" x2="470.00" y2="362" stroke="#e5e7eb"/>
+<text x="470.00" y="378" text-anchor="middle">1e-1</text>
+<line x1="78" y1="336.77" x2="470" y2="336.77" stroke="#e5e7eb"/>
+<text x="72" y="340.77" text-anchor="end">1e-7</text>
+<line x1="78" y1="296.08" x2="470" y2="296.08" stroke="#e5e7eb"/>
+<text x="72" y="300.08" text-anchor="end">1e-6</text>
+<line x1="78" y1="255.38" x2="470" y2="255.38" stroke="#e5e7eb"/>
+<text x="72" y="259.38" text-anchor="end">1e-5</text>
+<line x1="78" y1="214.69" x2="470" y2="214.69" stroke="#e5e7eb"/>
+<text x="72" y="218.69" text-anchor="end">1e-4</text>
+<line x1="78" y1="174.00" x2="470" y2="174.00" stroke="#e5e7eb"/>
+<text x="72" y="178.00" text-anchor="end">1e-3</text>
+<line x1="78" y1="133.31" x2="470" y2="133.31" stroke="#e5e7eb"/>
+<text x="72" y="137.31" text-anchor="end">1e-2</text>
+<line x1="78" y1="92.62" x2="470" y2="92.62" stroke="#e5e7eb"/>
+<text x="72" y="96.62" text-anchor="end">1e-1</text>
+<line x1="78" y1="51.93" x2="470" y2="51.93" stroke="#e5e7eb"/>
+<text x="72" y="55.93" text-anchor="end">1e0</text>
+<text x="274.00" y="406" text-anchor="middle">closest approach to the pole</text>
+<text x="16" y="201.00" text-anchor="middle" transform="rotate(-90 16 201.00)">max |X - X_exact|</text>
+<path d="M470.00,346.76 L434.36,350.07 L398.73,349.58 L363.09,349.53 L291.82,349.53 L220.55,349.53 L149.27,349.53 L78.00,349.53" fill="none" stroke="#1f5fa8" stroke-width="1.8"/>
+<circle cx="470.00" cy="346.76" r="2.6" fill="#1f5fa8"/>
+<circle cx="434.36" cy="350.07" r="2.6" fill="#1f5fa8"/>
+<circle cx="398.73" cy="349.58" r="2.6" fill="#1f5fa8"/>
+<circle cx="363.09" cy="349.53" r="2.6" fill="#1f5fa8"/>
+<circle cx="291.82" cy="349.53" r="2.6" fill="#1f5fa8"/>
+<circle cx="220.55" cy="349.53" r="2.6" fill="#1f5fa8"/>
+<circle cx="149.27" cy="349.53" r="2.6" fill="#1f5fa8"/>
+<circle cx="78.00" cy="349.53" r="2.6" fill="#1f5fa8"/>
+<line x1="482" y1="52" x2="502" y2="52" stroke="#1f5fa8" stroke-width="2"/>
+<text x="508" y="56">atlas (chart switching)</text>
+<path d="M470.00,261.11" fill="none" stroke="#c2410c" stroke-width="1.8"/>
+<circle cx="470.00" cy="261.11" r="2.6" fill="#c2410c"/>
+<line x1="482" y1="70" x2="502" y2="70" stroke="#c2410c" stroke-width="2"/>
+<text x="508" y="74">chart A alone</text>
+<path d="M220.55,92.54 L149.27,253.35 L78.00,336.19" fill="none" stroke="#15803d" stroke-width="1.8"/>
+<circle cx="220.55" cy="92.54" r="2.6" fill="#15803d"/>
+<circle cx="149.27" cy="253.35" r="2.6" fill="#15803d"/>
+<circle cx="78.00" cy="336.19" r="2.6" fill="#15803d"/>
+<line x1="482" y1="88" x2="502" y2="88" stroke="#15803d" stroke-width="2"/>
+<text x="508" y="92">chart A alone (cont.)</text>
+<path d="M434.36,51.93 L398.73,51.93 L363.09,51.93 L291.82,51.93" fill="none" stroke="#7e22ce" stroke-width="1.8"/>
+<circle cx="434.36" cy="51.93" r="2.6" fill="#7e22ce"/>
+<circle cx="398.73" cy="51.93" r="2.6" fill="#7e22ce"/>
+<circle cx="363.09" cy="51.93" r="2.6" fill="#7e22ce"/>
+<circle cx="291.82" cy="51.93" r="2.6" fill="#7e22ce"/>
+<line x1="482" y1="106" x2="502" y2="106" stroke="#7e22ce" stroke-width="2"/>
+<text x="508" y="110">chart A failed (at 1)</text>
+</svg>

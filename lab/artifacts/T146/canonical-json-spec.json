@@ -1,0 +1,42 @@
+{
+ "ascii_variant": "ciw.core.identities.canonical_json escapes every character outside U+0020-U+007E as \\uxxxx (surrogate pairs above U+FFFF); it is described, not recommended",
+ "encoding": "UTF-8 without byte order mark; non-ASCII characters written raw",
+ "examples": [
+  {
+   "bytes_hex": "5b31652b31362c313030303030303030303030303030302e302c31652d30352c302e303030312c2d302e302c35652d3332342c312e305d",
+   "value_repr": "[1e+16, 1000000000000000.0, 1e-05, 0.0001, -0.0, 5e-324, 1.0]"
+  },
+  {
+   "bytes_hex": "5b313030303030303030303030303030302e322c3132333435363738393031323334352e36322c302e312c302e333333333333333333333333333333335d",
+   "value_repr": "[1000000000000000.2, 123456789012345.62, 0.1, 0.3333333333333333]"
+  },
+  {
+   "bytes_hex": "7b2262223a5b6e756c6c2c747275652c66616c73652c393030373139393235343734303939315d2c22666c6f6174223a312e302c22696e74223a317d",
+   "value_repr": "{'int': 1, 'float': 1.0, 'b': [None, True, False, 9007199254740991]}"
+  },
+  {
+   "bytes_hex": "7b2262223a312c22efbca1223a332c22f09f9880223a327d",
+   "value_repr": "{'b': 1, '😀': 2, 'Ａ': 3}"
+  },
+  {
+   "bytes_hex": "225c225c5c2f5c625c665c6e5c725c745c75303030305c75303031667fe280a8c3a922",
+   "value_repr": "'\"\\\\/\\x08\\x0c\\n\\r\\t\\x00\\x1f\\x7f\\u2028é'"
+  }
+ ],
+ "floats": "finite binary64 only; digits: the fewest significant decimal digits k for which some k-digit decimal converts back to the same binary64 value; among such k-digit decimals the one nearest the exact binary value, and on an exact tie the one whose last digit is even (the CPython repr and ECMA-262 rule); layout: fixed notation when -4 < decpt <= 16 with at least one fractional digit ('1.0', '-0.0'), otherwise d[.ddd]e(+|-)XX with at least two exponent digits ('1e+16', '5e-324'); integers and floats are distinct types",
+ "id": "ciw.canonical-json.v1",
+ "integers": "decimal without leading zeros or '+'; |n| <= 2**53 - 1, otherwise refused",
+ "literals": "null, true, false",
+ "nesting": "a value inside more than 64 containers is refused",
+ "object_keys": "strings only, unique, sorted by Unicode code point (equivalently by UTF-8 bytes)",
+ "refusals": [
+  "nonfinite_number",
+  "unsafe_integer",
+  "non_string_key",
+  "invalid_unicode",
+  "nesting_too_deep",
+  "unsupported_type"
+ ],
+ "strings": "escape '\"' and '\\\\'; \\b \\f \\n \\r \\t short forms; other U+0000-U+001F as \\u00xx (lowercase hex); everything else raw, including U+007F and U+2028; no Unicode normalization; lone surrogates refused",
+ "whitespace": "none: separators are ',' and ':'"
+}

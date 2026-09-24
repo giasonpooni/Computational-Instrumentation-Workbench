@@ -1,0 +1,87 @@
+\documentclass{article}
+\usepackage{amsmath}
+\begin{document}
+\section*{plane}
+Coordinates $(u, v)$: \texttt{(u, v)}.
+\[ g = \left[\begin{matrix}1 & 0\\0 & 1\end{matrix}\right] \]
+\[ \ddot{u} = 0 \]
+\[ \ddot{v} = 0 \]
+\[ K = 0 \]
+
+\section*{sphere}
+Coordinates $(u, v)$: \texttt{polar (theta, phi)}.
+\[ g = \left[\begin{matrix}1 & 0\\0 & \sin^{2}{\left(u \right)}\end{matrix}\right] \]
+\[ \Gamma^{u}_{vv} = - \frac{\sin{\left(2 u \right)}}{2} \]
+\[ \Gamma^{v}_{uv} = \frac{1}{\tan{\left(u \right)}} \]
+\[ \ddot{u} = \frac{\dot{v}^{2} \sin{\left(2 u \right)}}{2} \]
+\[ \ddot{v} = - \frac{2 \dot{u} \dot{v}}{\tan{\left(u \right)}} \]
+\[ K = 1 \]
+
+\section*{cylinder}
+Coordinates $(u, v)$: \texttt{(phi, z)}.
+\[ g = \left[\begin{matrix}1 & 0\\0 & 1\end{matrix}\right] \]
+\[ \ddot{u} = 0 \]
+\[ \ddot{v} = 0 \]
+\[ K = 0 \]
+
+\section*{saddle}
+Coordinates $(u, v)$: \texttt{(u, v)}.
+\[ g = \left[\begin{matrix}u^{2} + 1 & - u v\\- u v & v^{2} + 1\end{matrix}\right] \]
+\[ \Gamma^{u}_{uu} = \frac{u}{u^{2} + v^{2} + 1} \]
+\[ \Gamma^{u}_{vv} = - \frac{u}{u^{2} + v^{2} + 1} \]
+\[ \Gamma^{v}_{uu} = - \frac{v}{u^{2} + v^{2} + 1} \]
+\[ \Gamma^{v}_{vv} = \frac{v}{u^{2} + v^{2} + 1} \]
+\[ \ddot{u} = - \frac{\dot{u}^{2} u}{u^{2} + v^{2} + 1} + \frac{\dot{v}^{2} u}{u^{2} + v^{2} + 1} \]
+\[ \ddot{v} = \frac{\dot{u}^{2} v}{u^{2} + v^{2} + 1} - \frac{\dot{v}^{2} v}{u^{2} + v^{2} + 1} \]
+\[ K = - \frac{1}{\left(u^{2} + v^{2} + 1\right)^{2}} \]
+
+\section*{torus}
+Coordinates $(u, v)$: \texttt{(phi, theta)}.
+\[ g = \left[\begin{matrix}\left(\cos{\left(v \right)} + 2\right)^{2} & 0\\0 & 1\end{matrix}\right] \]
+\[ \Gamma^{u}_{uv} = - \frac{\sin{\left(v \right)}}{\cos{\left(v \right)} + 2} \]
+\[ \Gamma^{v}_{uu} = \left(\cos{\left(v \right)} + 2\right) \sin{\left(v \right)} \]
+\[ \ddot{u} = \frac{2 \dot{u} \dot{v} \sin{\left(v \right)}}{\cos{\left(v \right)} + 2} \]
+\[ \ddot{v} = - \dot{u}^{2} \sin{\left(v \right)} \cos{\left(v \right)} - 2 \dot{u}^{2} \sin{\left(v \right)} \]
+\[ K = \frac{\cos{\left(v \right)}}{\cos{\left(v \right)} + 2} \]
+
+\section*{gaussian-bump}
+Coordinates $(u, v)$: \texttt{(u, v)}.
+\[ g = \left[\begin{matrix}\frac{u^{2} e^{- u^{2} - v^{2}}}{4} + 1 & \frac{u v e^{- u^{2} - v^{2}}}{4}\\\frac{u v e^{- u^{2} - v^{2}}}{4} & \frac{v^{2} e^{- u^{2} - v^{2}}}{4} + 1\end{matrix}\right] \]
+\[ \Gamma^{u}_{uu} = \frac{u \left(1 - u^{2}\right)}{u^{2} + v^{2} + 4 e^{u^{2} + v^{2}}} \]
+\[ \Gamma^{u}_{uv} = - \frac{u^{2} v}{u^{2} + v^{2} + 4 e^{u^{2} + v^{2}}} \]
+\[ \Gamma^{u}_{vv} = \frac{u \left(1 - v^{2}\right)}{u^{2} + v^{2} + 4 e^{u^{2} + v^{2}}} \]
+\[ \Gamma^{v}_{uu} = \frac{v \left(1 - u^{2}\right)}{u^{2} + v^{2} + 4 e^{u^{2} + v^{2}}} \]
+\[ \Gamma^{v}_{uv} = - \frac{u v^{2}}{u^{2} + v^{2} + 4 e^{u^{2} + v^{2}}} \]
+\[ \Gamma^{v}_{vv} = \frac{v \left(1 - v^{2}\right)}{u^{2} + v^{2} + 4 e^{u^{2} + v^{2}}} \]
+\[ \ddot{u} = \frac{\dot{u}^{2} u^{3}}{u^{2} + v^{2} + 4 e^{u^{2}} e^{v^{2}}} - \frac{\dot{u}^{2} u}{u^{2} + v^{2} + 4 e^{u^{2}} e^{v^{2}}} + \frac{2 \dot{u} \dot{v} u^{2} v}{u^{2} + v^{2} + 4 e^{u^{2}} e^{v^{2}}} + \frac{\dot{v}^{2} u v^{2}}{u^{2} + v^{2} + 4 e^{u^{2}} e^{v^{2}}} - \frac{\dot{v}^{2} u}{u^{2} + v^{2} + 4 e^{u^{2}} e^{v^{2}}} \]
+\[ \ddot{v} = \frac{\dot{u}^{2} u^{2} v}{u^{2} + v^{2} + 4 e^{u^{2}} e^{v^{2}}} - \frac{\dot{u}^{2} v}{u^{2} + v^{2} + 4 e^{u^{2}} e^{v^{2}}} + \frac{2 \dot{u} \dot{v} u v^{2}}{u^{2} + v^{2} + 4 e^{u^{2}} e^{v^{2}}} + \frac{\dot{v}^{2} v^{3}}{u^{2} + v^{2} + 4 e^{u^{2}} e^{v^{2}}} - \frac{\dot{v}^{2} v}{u^{2} + v^{2} + 4 e^{u^{2}} e^{v^{2}}} \]
+\[ K = \frac{64 \left(- u^{2} - v^{2} + 1\right) e^{3 u^{2} + 3 v^{2}}}{\left(u^{2} v^{2} - \left(u^{2} + 4 e^{u^{2} + v^{2}}\right) \left(v^{2} + 4 e^{u^{2} + v^{2}}\right)\right)^{2}} \]
+
+\section*{hyperbolic-plane}
+Coordinates $(u, v)$: \texttt{upper half-plane (x, y > 0)}.
+\[ g = \left[\begin{matrix}\frac{1}{v^{2}} & 0\\0 & \frac{1}{v^{2}}\end{matrix}\right] \]
+\[ \Gamma^{u}_{uv} = - \frac{1}{v} \]
+\[ \Gamma^{v}_{uu} = \frac{1}{v} \]
+\[ \Gamma^{v}_{vv} = - \frac{1}{v} \]
+\[ \ddot{u} = \frac{2 \dot{u} \dot{v}}{v} \]
+\[ \ddot{v} = - \frac{\dot{u}^{2}}{v} + \frac{\dot{v}^{2}}{v} \]
+\[ K = -1 \]
+
+\section*{plane-polar}
+Coordinates $(u, v)$: \texttt{polar}.
+\[ g = \left[\begin{matrix}1 & 0\\0 & u^{2}\end{matrix}\right] \]
+\[ \Gamma^{u}_{vv} = - u \]
+\[ \Gamma^{v}_{uv} = \frac{1}{u} \]
+\[ \ddot{u} = \dot{v}^{2} u \]
+\[ \ddot{v} = - \frac{2 \dot{u} \dot{v}}{u} \]
+\[ K = 0 \]
+
+\section*{cylinder-polar}
+Coordinates $(u, v)$: \texttt{polar}.
+\[ g = \left[\begin{matrix}1 & 0\\0 & u^{2}\end{matrix}\right] \]
+\[ \Gamma^{u}_{vv} = - u \]
+\[ \Gamma^{v}_{uv} = \frac{1}{u} \]
+\[ \ddot{u} = \dot{v}^{2} u \]
+\[ \ddot{v} = - \frac{2 \dot{u} \dot{v}}{u} \]
+\[ K = 0 \]
+\end{document}

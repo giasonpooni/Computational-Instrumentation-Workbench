@@ -1,0 +1,11 @@
+{
+ "channel": "heading_offset",
+ "inputs_sha256": "0622e504f3f0c7c79a97516a2f321ae075527325ecad7116673e0faed979e4a3",
+ "produced_by": "ciw.lab.implementation_targets T154 (Jacobi transfer, RK4)",
+ "proposal_sha256": "b0ea2e579cf808aec62e11a4d58725e413cb4df8e93f3a9ccb1c7268508da5e8",
+ "rationale": "First-order Jacobi cancellation of a lateral offset at the stated arclength",
+ "schema": "ciw.control-proposal.v1",
+ "status": "proposal",
+ "unit": "rad",
+ "value": -0.0027761564654242656
+}

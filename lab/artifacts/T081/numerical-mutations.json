@@ -1,0 +1,180 @@
+{
+ "rows": [
+  {
+   "description": "measurement.batch_count incremented in the replay step; nothing recomputed",
+   "error": "ValueError",
+   "killed": true,
+   "kind": "workspace",
+   "message_matches_pin": true,
+   "name": "energy-data.naive",
+   "observed": "Energy analysis bundle identity, schema or size differs",
+   "observed_outcome": "killed",
+   "outcome_matches_prediction": true,
+   "pinned_message": "Energy analysis bundle identity, schema or size differs",
+   "predicted_outcome": "killed",
+   "recompute": "none",
+   "target": "energy replay result data",
+   "task": "T081"
+  },
+  {
+   "description": "batch_count incremented in the step and its reproductions; every derived digest recomputed; source bytes unchanged",
+   "error": "ValueError",
+   "killed": true,
+   "kind": "workspace",
+   "message_matches_pin": true,
+   "name": "energy-data.reforged",
+   "observed": "Retained energy analysis binding differs",
+   "observed_outcome": "killed",
+   "outcome_matches_prediction": true,
+   "pinned_message": "Retained energy analysis binding differs",
+   "predicted_outcome": "killed",
+   "recompute": "full",
+   "target": "energy replay result data",
+   "task": "T081"
+  },
+  {
+   "description": "first measurement counter sample lowered by 50 mJ in the retained baseline log; log_digest resealed; source, evidence, experiment, request, analysis, step, bundle, verification and receipt digests recomputed; occurrence ids and times kept",
+   "error": null,
+   "killed": false,
+   "kind": "workspace",
+   "message_matches_pin": true,
+   "name": "energy-source.resealed",
+   "observed": "accepted",
+   "observed_outcome": "accepted",
+   "outcome_matches_prediction": true,
+   "pinned_message": "accepted",
+   "post_reopen": {
+    "gross_energy_j_after_reopen": {
+     "B0": 0.25,
+     "B0b": 0.25,
+     "B1": 0.25
+    },
+    "gross_energy_j_computed_from_original_bytes": 0.2,
+    "original_session_ids_and_created_at_kept": true
+   },
+   "predicted_outcome": "accepted",
+   "recompute": "full",
+   "target": "retained energy source log",
+   "task": "T081"
+  },
+  {
+   "description": "statistics mean moved to the interval midpoint; not resealed",
+   "error": "ValueError",
+   "killed": true,
+   "kind": "workspace",
+   "message_matches_pin": true,
+   "name": "oscillator-stats.naive",
+   "observed": "Operation record integrity mismatch",
+   "observed_outcome": "killed",
+   "outcome_matches_prediction": true,
+   "pinned_message": "Operation record integrity mismatch",
+   "predicted_outcome": "killed",
+   "recompute": "none",
+   "target": "oscillator result data",
+   "task": "T081"
+  },
+  {
+   "description": "statistics mean moved above the maximum; resealed",
+   "error": "ValueError",
+   "killed": true,
+   "kind": "workspace",
+   "message_matches_pin": true,
+   "name": "oscillator-stats.out-of-bounds",
+   "observed": "Saved statistics mean is outside its bounds",
+   "observed_outcome": "killed",
+   "outcome_matches_prediction": true,
+   "pinned_message": "Saved statistics mean is outside its bounds",
+   "predicted_outcome": "killed",
+   "recompute": "local",
+   "target": "oscillator result data",
+   "task": "T081"
+  },
+  {
+   "description": "statistics mean moved to the midpoint of [minimum, maximum]; resealed",
+   "error": null,
+   "killed": false,
+   "kind": "workspace",
+   "message_matches_pin": true,
+   "name": "oscillator-stats.resealed",
+   "observed": "accepted",
+   "observed_outcome": "accepted",
+   "outcome_matches_prediction": true,
+   "pinned_message": "accepted",
+   "post_reopen": {
+    "retained_mean_differs_from_computed": true,
+    "retained_mean_is_midpoint": true
+   },
+   "predicted_outcome": "accepted",
+   "recompute": "local",
+   "target": "oscillator result data",
+   "task": "T081"
+  },
+  {
+   "description": "R1 mean set to its maximum and rms to half of it (|mean| > rms); R2 rms set to ten times max(|min|, |max|) (rms > max|x|); both resealed",
+   "error": null,
+   "killed": false,
+   "kind": "workspace",
+   "message_matches_pin": true,
+   "name": "oscillator-stats.impossible-moments",
+   "observed": "accepted",
+   "observed_outcome": "accepted",
+   "outcome_matches_prediction": true,
+   "pinned_message": "accepted",
+   "post_reopen": {
+    "computed_inequalities": {
+     "abs_mean_le_rms": true,
+     "rms_le_max_abs": true
+    },
+    "retained": {
+     "result:R1": {
+      "maximum": 4.119458751885594,
+      "mean": 4.119458751885594,
+      "minimum": -3.978074288668829,
+      "rms": 2.059729375942797
+     },
+     "result:R2": {
+      "maximum": 4.119458751885594,
+      "mean": -0.8382494719867797,
+      "minimum": -3.978074288668829,
+      "rms": 41.19458751885594
+     }
+    },
+    "retained_inequalities": {
+     "result:R1": {
+      "abs_mean_le_rms": false,
+      "rms_le_max_abs": true
+     },
+     "result:R2": {
+      "abs_mean_le_rms": true,
+      "rms_le_max_abs": false
+     }
+    }
+   },
+   "predicted_outcome": "accepted",
+   "recompute": "local",
+   "target": "oscillator result data",
+   "task": "T081"
+  },
+  {
+   "description": "legacy (unsealed) statistics mean moved to the midpoint",
+   "error": null,
+   "killed": false,
+   "kind": "workspace",
+   "message_matches_pin": true,
+   "name": "oscillator-stats.legacy",
+   "observed": "accepted",
+   "observed_outcome": "accepted",
+   "outcome_matches_prediction": true,
+   "pinned_message": "accepted",
+   "post_reopen": {
+    "retained_mean_differs_from_computed": true,
+    "retained_mean_is_midpoint": true
+   },
+   "predicted_outcome": "accepted",
+   "recompute": "none",
+   "target": "legacy oscillator result data",
+   "task": "T081"
+  }
+ ],
+ "schema": "ciw.lab-mutation-matrix.v2"
+}

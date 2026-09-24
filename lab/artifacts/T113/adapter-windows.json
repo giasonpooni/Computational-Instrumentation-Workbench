@@ -1,0 +1,162 @@
+{
+ "payload_example": {
+  "certificate": {
+   "P": [
+    [
+     699.7639960369154,
+     15.977579623506891
+    ],
+    [
+     15.977579623506891,
+     173.87898117534448
+    ]
+   ]
+  },
+  "id": "w0:estimate",
+  "op": "verdict",
+  "plant": {
+   "A0": [
+    [
+     1.0,
+     0.01
+    ],
+    [
+     -0.04,
+     0.996
+    ]
+   ],
+   "terms": [
+    [
+     [
+      0.0,
+      0.0
+     ],
+     [
+      -0.01,
+      0.0
+     ]
+    ]
+   ],
+   "theta_max": [
+    0.5
+   ],
+   "theta_min": [
+    -0.5
+   ],
+   "time": "discrete"
+  },
+  "theta": [
+   0.09368559444200639
+  ],
+  "x": [
+   -0.40547997868113606,
+   -0.3100052790551927
+  ]
+ },
+ "rows": [
+  {
+   "estimate_inside_box": true,
+   "forwarded": true,
+   "guard_interval": [
+    0.05793448287563836,
+    0.12943670600837442
+   ],
+   "host_status": null,
+   "interval_inside_box": true,
+   "statistics": {
+    "innovations": 399,
+    "mean_nis": 1.1016063948157155,
+    "theta": 0.09368559444200639,
+    "theta_se": 0.011917037188789342
+   },
+   "window": "nominal theta 0.1"
+  },
+  {
+   "estimate_inside_box": true,
+   "forwarded": true,
+   "guard_interval": [
+    -0.33317266407992463,
+    -0.2605972601699569
+   ],
+   "host_status": null,
+   "interval_inside_box": true,
+   "statistics": {
+    "innovations": 399,
+    "mean_nis": 0.9737203285110163,
+    "theta": -0.29688496212494075,
+    "theta_se": 0.012095900651661289
+   },
+   "window": "nominal theta -0.3"
+  },
+  {
+   "estimate_inside_box": true,
+   "forwarded": true,
+   "guard_interval": [
+    0.4451971177816746,
+    0.515238064256039
+   ],
+   "host_status": null,
+   "interval_inside_box": false,
+   "statistics": {
+    "innovations": 399,
+    "mean_nis": 0.9781853334253271,
+    "theta": 0.4802175910188568,
+    "theta_se": 0.011673491079060735
+   },
+   "window": "estimate near bound theta 0.48"
+  },
+  {
+   "estimate_inside_box": false,
+   "forwarded": true,
+   "guard_interval": [
+    0.8685252149237158,
+    0.9369996437757825
+   ],
+   "host_status": null,
+   "interval_inside_box": false,
+   "statistics": {
+    "innovations": 399,
+    "mean_nis": 1.0504186670802618,
+    "theta": 0.9027624293497492,
+    "theta_se": 0.011412404808677768
+   },
+   "window": "estimate outside box theta 0.9"
+  },
+  {
+   "host_status": "MODEL_MISMATCH",
+   "statistics": {
+    "innovations": 399,
+    "mean_nis": 6.463011022472564,
+    "theta": -5.083990058047158,
+    "theta_se": 0.035991314712475006
+   },
+   "window": "structural mismatch damping 3"
+  },
+  {
+   "host_status": "STALE_STATE",
+   "statistics": {},
+   "window": "stale window"
+  },
+  {
+   "host_status": "INVALID_SENSOR_DATA",
+   "statistics": {},
+   "window": "sensor dropout"
+  },
+  {
+   "host_status": "CERTIFICATE_EXPIRED",
+   "statistics": {},
+   "window": "certificate expired"
+  }
+ ],
+ "sample_fields": [
+  "sample_schema",
+  "x",
+  "theta",
+  "theta_dot"
+ ],
+ "sample_roles": [
+  "estimate",
+  "lower",
+  "upper"
+ ]
+}

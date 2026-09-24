@@ -1,0 +1,26 @@
+{
+ "candidate_version": "Julia 1.10.12 LTS (candidate only; not installed or accepted)",
+ "identity_fields": [
+  "julia_version",
+  "platform",
+  "executable_sha256",
+  "worker_source_sha256",
+  "project_sha256",
+  "manifest_sha256",
+  "package_artifacts",
+  "threads",
+  "numerical_preferences",
+  "sysimage"
+ ],
+ "julia_on_path": false,
+ "reference": "docs/JULIA_SP1.md (CIW -> SCR execution boundary)",
+ "steps": [
+  "Install the candidate Julia release; record executable sha256, platform and architecture",
+  "Create a dedicated project with OrdinaryDiffEqTsit5 and SciMLBase as direct dependencies",
+  "Instantiate and precompile separately from execution; commit machine-generated Project.toml and Manifest.toml",
+  "Run the worker with --project=<env> --startup-file=no --threads=1 and a fixed operation allowlist",
+  "Handshake reports Julia version, project/manifest digests, package artifact identities, thread settings and worker source digest; the host compares them with the expected identity before accepting work",
+  "Dispatch through SCR ExecutionSpecification (program, configuration, input_payload bytes); retain raw input and output bytes before decoding",
+  "Accept the oscillator operation only after the analytic-oracle fixtures pass on Windows and Linux"
+ ]
+}

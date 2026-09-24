@@ -1,0 +1,499 @@
+{
+ "committed_fixture_mismatches": 0,
+ "fixtures": {
+  "deep-nesting.json": {
+   "exchange_identity": {
+    "error_type": "not_applicable",
+    "message": null,
+    "refused": null
+   },
+   "exchange_inspect": {
+    "error_type": "ValueError",
+    "message": "exchange input must be bounded UTF-8 JSON",
+    "refused": true
+   },
+   "session_from_workspace": {
+    "error_type": "RecursionError",
+    "message": "maximum recursion depth exceeded while decoding a JSON array from a unicode string",
+    "refused": true
+   },
+   "session_read_json": {
+    "error_type": "RecursionError",
+    "message": "maximum recursion depth exceeded while decoding a JSON array from a unicode string",
+    "refused": true
+   },
+   "workbench_restore": {
+    "error_type": "not_applicable",
+    "message": null,
+    "refused": null
+   },
+   "workbench_source_add": {
+    "error_type": null,
+    "message": "MALFORMED_RESPONSE: The bound runtime did not return finite, unambiguous JSON",
+    "refused": true
+   }
+  },
+  "duplicate-key.json": {
+   "exchange_identity": {
+    "error_type": "not_applicable",
+    "message": null,
+    "refused": null
+   },
+   "exchange_inspect": {
+    "error_type": "ValueError",
+    "message": "duplicate JSON member: schema",
+    "refused": true
+   },
+   "session_from_workspace": {
+    "error_type": "ValueError",
+    "message": "Duplicate JSON key: schema",
+    "refused": true
+   },
+   "session_read_json": {
+    "error_type": "ValueError",
+    "message": "Duplicate JSON key: schema",
+    "refused": true
+   },
+   "workbench_restore": {
+    "error_type": "ValueError",
+    "message": "Unexpected or missing workbench fields",
+    "refused": true
+   },
+   "workbench_source_add": {
+    "error_type": null,
+    "message": "MALFORMED_RESPONSE: The bound runtime did not return finite, unambiguous JSON",
+    "refused": true
+   }
+  },
+  "extra-field-energy-log.json": {
+   "exchange_identity": {
+    "error_type": "not_applicable",
+    "message": null,
+    "refused": null
+   },
+   "exchange_inspect": {
+    "error_type": "ValueError",
+    "message": "unsupported instrument-exchange schema",
+    "refused": true
+   },
+   "session_from_workspace": {
+    "error_type": "ValueError",
+    "message": "Unsupported workspace format",
+    "refused": true
+   },
+   "session_read_json": {
+    "error_type": null,
+    "message": null,
+    "parsed_component_value": "None",
+    "refused": false
+   },
+   "workbench_restore": {
+    "error_type": "ValueError",
+    "message": "Unexpected or missing workbench fields",
+    "refused": true
+   },
+   "workbench_source_add": {
+    "error_type": null,
+    "message": "invalid_payload: Require exactly the declared energy-log fields",
+    "refused": true
+   }
+  },
+  "incomplete-workspace.json": {
+   "exchange_identity": {
+    "error_type": "not_applicable",
+    "message": null,
+    "refused": null
+   },
+   "exchange_inspect": {
+    "error_type": "ValueError",
+    "message": "unsupported instrument-exchange schema",
+    "refused": true
+   },
+   "session_from_workspace": {
+    "error_type": "AttributeError",
+    "message": "'NoneType' object has no attribute 'get'",
+    "refused": true
+   },
+   "session_read_json": {
+    "error_type": null,
+    "message": null,
+    "parsed_component_value": "None",
+    "refused": false
+   },
+   "workbench_restore": {
+    "error_type": "ValueError",
+    "message": "Unexpected or missing workbench fields",
+    "refused": true
+   },
+   "workbench_source_add": {
+    "error_type": null,
+    "message": "invalid_payload: Require exactly the declared energy-log fields",
+    "refused": true
+   }
+  },
+  "infinity.json": {
+   "exchange_identity": {
+    "error_type": "ValueError",
+    "message": "Out of range float values are not JSON compliant: -inf",
+    "refused": true
+   },
+   "exchange_inspect": {
+    "error_type": "ValueError",
+    "message": "nonfinite JSON number: -Infinity",
+    "refused": true
+   },
+   "session_from_workspace": {
+    "error_type": "ValueError",
+    "message": "Nonfinite JSON number: -Infinity",
+    "refused": true
+   },
+   "session_read_json": {
+    "error_type": "ValueError",
+    "message": "Nonfinite JSON number: -Infinity",
+    "refused": true
+   },
+   "workbench_restore": {
+    "error_type": "ValueError",
+    "message": "Out of range float values are not JSON compliant: -inf",
+    "refused": true
+   },
+   "workbench_source_add": {
+    "error_type": null,
+    "message": "MALFORMED_RESPONSE: The bound runtime did not return finite, unambiguous JSON",
+    "refused": true
+   }
+  },
+  "invalid-utf8.json": {
+   "exchange_identity": {
+    "error_type": "not_applicable",
+    "message": null,
+    "refused": null
+   },
+   "exchange_inspect": {
+    "error_type": "ValueError",
+    "message": "exchange input must be bounded UTF-8 JSON",
+    "refused": true
+   },
+   "session_from_workspace": {
+    "error_type": "UnicodeDecodeError",
+    "message": "'utf-8' codec can't decode byte 0xff in position 63: invalid start byte",
+    "refused": true
+   },
+   "session_read_json": {
+    "error_type": "UnicodeDecodeError",
+    "message": "'utf-8' codec can't decode byte 0xff in position 63: invalid start byte",
+    "refused": true
+   },
+   "workbench_restore": {
+    "error_type": "not_applicable",
+    "message": null,
+    "refused": null
+   },
+   "workbench_source_add": {
+    "error_type": null,
+    "message": "MALFORMED_RESPONSE: The bound runtime did not return finite, unambiguous JSON",
+    "refused": true
+   }
+  },
+  "nan.json": {
+   "exchange_identity": {
+    "error_type": "ValueError",
+    "message": "Out of range float values are not JSON compliant: nan",
+    "refused": true
+   },
+   "exchange_inspect": {
+    "error_type": "ValueError",
+    "message": "nonfinite JSON number: NaN",
+    "refused": true
+   },
+   "session_from_workspace": {
+    "error_type": "ValueError",
+    "message": "Nonfinite JSON number: NaN",
+    "refused": true
+   },
+   "session_read_json": {
+    "error_type": "ValueError",
+    "message": "Nonfinite JSON number: NaN",
+    "refused": true
+   },
+   "workbench_restore": {
+    "error_type": "ValueError",
+    "message": "Out of range float values are not JSON compliant: nan",
+    "refused": true
+   },
+   "workbench_source_add": {
+    "error_type": null,
+    "message": "MALFORMED_RESPONSE: The bound runtime did not return finite, unambiguous JSON",
+    "refused": true
+   }
+  },
+  "overflow.json": {
+   "exchange_identity": {
+    "error_type": "ValueError",
+    "message": "Out of range float values are not JSON compliant: inf",
+    "refused": true
+   },
+   "exchange_inspect": {
+    "error_type": "ValueError",
+    "message": "JSON number overflows float64",
+    "refused": true
+   },
+   "session_from_workspace": {
+    "error_type": "ValueError",
+    "message": "Unsupported workspace format",
+    "refused": true
+   },
+   "session_read_json": {
+    "error_type": null,
+    "message": null,
+    "parsed_component_value": "inf",
+    "refused": false
+   },
+   "workbench_restore": {
+    "error_type": "ValueError",
+    "message": "Out of range float values are not JSON compliant: inf",
+    "refused": true
+   },
+   "workbench_source_add": {
+    "error_type": null,
+    "message": "MALFORMED_RESPONSE: The bound runtime did not return finite, unambiguous JSON",
+    "refused": true
+   }
+  },
+  "truncated-energy-log.json": {
+   "exchange_identity": {
+    "error_type": "not_applicable",
+    "message": null,
+    "refused": null
+   },
+   "exchange_inspect": {
+    "error_type": "JSONDecodeError",
+    "message": "Unterminated string starting at: line 162 column 5 (char 4086)",
+    "refused": true
+   },
+   "session_from_workspace": {
+    "error_type": "JSONDecodeError",
+    "message": "Unterminated string starting at: line 162 column 5 (char 4086)",
+    "refused": true
+   },
+   "session_read_json": {
+    "error_type": "JSONDecodeError",
+    "message": "Unterminated string starting at: line 162 column 5 (char 4086)",
+    "refused": true
+   },
+   "workbench_restore": {
+    "error_type": "not_applicable",
+    "message": null,
+    "refused": null
+   },
+   "workbench_source_add": {
+    "error_type": null,
+    "message": "MALFORMED_RESPONSE: The bound runtime did not return finite, unambiguous JSON",
+    "refused": true
+   }
+  },
+  "wrong-identity-result.json": {
+   "exchange_identity": {
+    "error_type": "ValueError",
+    "message": "result_id does not match the artifact content",
+    "refused": true
+   },
+   "exchange_inspect": {
+    "error_type": "validator_unavailable",
+    "message": null,
+    "refused": false
+   },
+   "session_from_workspace": {
+    "error_type": "ValueError",
+    "message": "Unsupported workspace format",
+    "refused": true
+   },
+   "session_read_json": {
+    "error_type": null,
+    "message": null,
+    "parsed_component_value": "2.4",
+    "refused": false
+   },
+   "workbench_restore": {
+    "error_type": "ValueError",
+    "message": "Unexpected or missing workbench fields",
+    "refused": true
+   },
+   "workbench_source_add": {
+    "error_type": null,
+    "message": "invalid_payload: Require exactly the declared energy-log fields",
+    "refused": true
+   }
+  },
+  "wrong-revision-workbench.json": {
+   "exchange_identity": {
+    "error_type": "not_applicable",
+    "message": null,
+    "refused": null
+   },
+   "exchange_inspect": {
+    "error_type": "ValueError",
+    "message": "unsupported instrument-exchange schema",
+    "refused": true
+   },
+   "session_from_workspace": {
+    "error_type": "ValueError",
+    "message": "Unsupported workspace format",
+    "refused": true
+   },
+   "session_read_json": {
+    "error_type": null,
+    "message": null,
+    "parsed_component_value": "None",
+    "refused": false
+   },
+   "workbench_restore": {
+    "error_type": "ValueError",
+    "message": "Malformed retained workbench catalog",
+    "refused": true
+   },
+   "workbench_source_add": {
+    "error_type": null,
+    "message": "invalid_payload: Require exactly the declared energy-log fields",
+    "refused": true
+   }
+  },
+  "wrong-schema-energy-log.json": {
+   "exchange_identity": {
+    "error_type": "not_applicable",
+    "message": null,
+    "refused": null
+   },
+   "exchange_inspect": {
+    "error_type": "ValueError",
+    "message": "unsupported instrument-exchange schema",
+    "refused": true
+   },
+   "session_from_workspace": {
+    "error_type": "ValueError",
+    "message": "Unsupported workspace format",
+    "refused": true
+   },
+   "session_read_json": {
+    "error_type": null,
+    "message": null,
+    "parsed_component_value": "None",
+    "refused": false
+   },
+   "workbench_restore": {
+    "error_type": "ValueError",
+    "message": "Unexpected or missing workbench fields",
+    "refused": true
+   },
+   "workbench_source_add": {
+    "error_type": null,
+    "message": "invalid_payload: Unsupported energy log schema or occurrence identity",
+    "refused": true
+   }
+  },
+  "wrong-schema-exchange.json": {
+   "exchange_identity": {
+    "error_type": "not_applicable",
+    "message": null,
+    "refused": null
+   },
+   "exchange_inspect": {
+    "error_type": "ValueError",
+    "message": "unsupported instrument-exchange schema",
+    "refused": true
+   },
+   "session_from_workspace": {
+    "error_type": "ValueError",
+    "message": "Unsupported workspace format",
+    "refused": true
+   },
+   "session_read_json": {
+    "error_type": null,
+    "message": null,
+    "parsed_component_value": "1.2",
+    "refused": false
+   },
+   "workbench_restore": {
+    "error_type": "ValueError",
+    "message": "Unexpected or missing workbench fields",
+    "refused": true
+   },
+   "workbench_source_add": {
+    "error_type": null,
+    "message": "invalid_payload: Require exactly the declared energy-log fields",
+    "refused": true
+   }
+  },
+  "wrong-type-energy-log.json": {
+   "exchange_identity": {
+    "error_type": "not_applicable",
+    "message": null,
+    "refused": null
+   },
+   "exchange_inspect": {
+    "error_type": "ValueError",
+    "message": "unsupported instrument-exchange schema",
+    "refused": true
+   },
+   "session_from_workspace": {
+    "error_type": "ValueError",
+    "message": "Unsupported workspace format",
+    "refused": true
+   },
+   "session_read_json": {
+    "error_type": null,
+    "message": null,
+    "parsed_component_value": "None",
+    "refused": false
+   },
+   "workbench_restore": {
+    "error_type": "ValueError",
+    "message": "Unexpected or missing workbench fields",
+    "refused": true
+   },
+   "workbench_source_add": {
+    "error_type": null,
+    "message": "invalid_payload: Declare actual measurement versus synthetic fixture",
+    "refused": true
+   }
+  }
+ },
+ "runtime": {
+  "extra source payload field": {
+   "error_type": null,
+   "message": "invalid_payload: Unexpected or missing workbench fields",
+   "refused": true
+  },
+  "extra top-level workspace field (Session.from_workspace)": {
+   "dropped_on_resave": true,
+   "error_type": null,
+   "message": null,
+   "refused": false
+  },
+  "non-canonical base64": {
+   "error_type": null,
+   "message": "invalid_payload: Source bytes must use bounded canonical base64",
+   "refused": true
+  },
+  "oversize-energy-source (4 MiB + 1 byte)": {
+   "error_type": null,
+   "message": "invalid_payload: Energy analysis source must contain 1..4194304 exact retained bytes",
+   "refused": true
+  },
+  "oversize-exchange (1 MiB + 1 byte)": {
+   "error_type": "ValueError",
+   "message": "file exceeds 1048576 bytes: <path>",
+   "refused": true
+  },
+  "wrong-type selection revision (Session.from_workspace)": {
+   "error_type": "ValueError",
+   "message": "Invalid saved selection revision",
+   "refused": true
+  },
+  "wrong-type workspace_version (Session.from_workspace)": {
+   "error_type": "ValueError",
+   "message": "Unsupported workspace format",
+   "refused": true
+  }
+ }
+}

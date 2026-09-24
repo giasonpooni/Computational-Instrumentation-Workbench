@@ -1,0 +1,1151 @@
+{
+ "changed_files": [
+  "src/ciw/lab/surfaces_discrete_mesh.py",
+  "src/ciw/lab/surfaces_discrete_mesh_geometry.py",
+  "src/ciw/lab/surfaces_discrete_mesh_studies.py",
+  "docs/lab/MESH_GEODESICS.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 1,
+   "not_established": 1,
+   "numerically_verified": 11,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Monotone trend within the jitter family; fold refusal exactly when a face normal points inward; lantern closed forms for area, height, Hausdorff distance and tilt; angle defects of the lantern are exactly zero.",
+ "experiment": "Measure quality metrics and errors for each mesh (both area choices); fold detection by the validator against inverted faces; rank correlations with a permutation test; trace lantern geodesics from the bottom boundary to the top boundary.",
+ "failure_modes_checked": [
+  "folded (inverted) faces from large jitter, checked against inward normals",
+  "degenerate triangles",
+  "vertex hits on skewed meshes (none)",
+  "pole valence on latitude-longitude spheres",
+  "lantern pleat folding (refused at q = 1)",
+  "tied ranks in the Spearman statistic (average ranks)",
+  "estimator dependence of quality rankings (barycentric versus Voronoi area)"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "signed_ge",
+      "observed": 0.0020842271996751108,
+      "passed": true,
+      "reference": "smallest increase of curvature RMS between amplitudes",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "signed_ge",
+      "observed": 13.984580414226308,
+      "passed": true,
+      "reference": "smallest decrease of min angle between amplitudes",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "jitter": [
+      0.0,
+      0.05,
+      0.1,
+      0.15
+     ],
+     "level": 3,
+     "name": "ciw.lab.surfaces_discrete_mesh_studies.quality_study",
+     "seed": 20260938,
+     "seeds": [
+      1,
+      2,
+      3
+     ]
+    }
+   },
+   "claim": "Seed-averaged curvature RMS error grows and minimum angle falls with tangential jitter",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "largest t-interval half-width (2 dof) of a three-seed mean curvature RMS",
+    "kind": "monte_carlo_95ci",
+    "value": 0.009667585752155409
+   },
+   "unit": null,
+   "value": [
+    {
+     "amplitude": 0.0,
+     "curvature_rms": 0.02042617452826786,
+     "geodesic_mean": 0.012334617469521443,
+     "max_radius_ratio": 1.0307631773587616,
+     "meshes": 1,
+     "min_angle_deg": 54.0995585363326,
+     "voronoi_curvature_rms": 0.004777035900366827
+    },
+    {
+     "amplitude": 0.05,
+     "curvature_rms": 0.02251040172794297,
+     "geodesic_mean": 0.011699972120662401,
+     "max_radius_ratio": 1.1863871129825931,
+     "meshes": 3,
+     "min_angle_deg": 40.114978122106294,
+     "voronoi_curvature_rms": 0.004849085291181211
+    },
+    {
+     "amplitude": 0.1,
+     "curvature_rms": 0.033311727715073125,
+     "geodesic_mean": 0.01315800585278507,
+     "max_radius_ratio": 1.732716005261848,
+     "meshes": 3,
+     "min_angle_deg": 25.286666304061715,
+     "voronoi_curvature_rms": 0.010834592871739011
+    },
+    {
+     "amplitude": 0.15,
+     "curvature_rms": 0.06074772477911928,
+     "geodesic_mean": 0.0172741646922528,
+     "max_radius_ratio": 7.376030502211002,
+     "meshes": 3,
+     "min_angle_deg": 9.671218941199381,
+     "voronoi_curvature_rms": 0.04084019651007201
+    }
+   ]
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "none",
+      "observed_refusal": "none",
+      "passed": true,
+      "reference": "validator on icosphere-3 (0 inverted faces)",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "none",
+      "observed_refusal": "none",
+      "passed": true,
+      "reference": "validator on icosphere-3-jitter0.05-s20260939 (0 inverted faces)",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "none",
+      "observed_refusal": "none",
+      "passed": true,
+      "reference": "validator on icosphere-3-jitter0.05-s20260940 (0 inverted faces)",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "none",
+      "observed_refusal": "none",
+      "passed": true,
+      "reference": "validator on icosphere-3-jitter0.05-s20260941 (0 inverted faces)",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "none",
+      "observed_refusal": "none",
+      "passed": true,
+      "reference": "validator on icosphere-3-jitter0.1-s20260939 (0 inverted faces)",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "none",
+      "observed_refusal": "none",
+      "passed": true,
+      "reference": "validator on icosphere-3-jitter0.1-s20260940 (0 inverted faces)",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "none",
+      "observed_refusal": "none",
+      "passed": true,
+      "reference": "validator on icosphere-3-jitter0.1-s20260941 (0 inverted faces)",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "none",
+      "observed_refusal": "none",
+      "passed": true,
+      "reference": "validator on icosphere-3-jitter0.15-s20260939 (0 inverted faces)",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "none",
+      "observed_refusal": "none",
+      "passed": true,
+      "reference": "validator on icosphere-3-jitter0.15-s20260940 (0 inverted faces)",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "none",
+      "observed_refusal": "none",
+      "passed": true,
+      "reference": "validator on icosphere-3-jitter0.15-s20260941 (0 inverted faces)",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "folded_face",
+      "observed_refusal": "folded_face",
+      "passed": true,
+      "reference": "validator on icosphere-3-jitter0.2-s20260939 (2 inverted faces)",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "folded_face",
+      "observed_refusal": "folded_face",
+      "passed": true,
+      "reference": "validator on icosphere-3-jitter0.2-s20260940 (3 inverted faces)",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "folded_face",
+      "observed_refusal": "folded_face",
+      "passed": true,
+      "reference": "validator on icosphere-3-jitter0.2-s20260941 (2 inverted faces)",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "folded_face",
+      "observed_refusal": "folded_face",
+      "passed": true,
+      "reference": "validator on icosphere-3-jitter0.3-s20260939 (28 inverted faces)",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "folded_face",
+      "observed_refusal": "folded_face",
+      "passed": true,
+      "reference": "validator on icosphere-3-jitter0.3-s20260940 (47 inverted faces)",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "folded_face",
+      "observed_refusal": "folded_face",
+      "passed": true,
+      "reference": "validator on icosphere-3-jitter0.3-s20260941 (50 inverted faces)",
+      "reference_kind": "refusal"
+     },
+     {
+      "comparison": "le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "jittered meshes at 0.2 h or more that pass validation",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "jittered meshes below 0.2 h that are refused",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 1.4569418010522144,
+      "passed": true,
+      "reference": "smallest unguarded curvature RMS among meshes jittered by 0.2 h or more",
+      "reference_kind": "self_convergence",
+      "tolerance": 1.0
+     }
+    ],
+    "generator": {
+     "jitter": [
+      0.0,
+      0.05,
+      0.1,
+      0.15,
+      0.2,
+      0.3
+     ],
+     "level": 3,
+     "name": "ciw.lab.surfaces_discrete_mesh_studies.quality_study",
+     "seed": 20260938
+    }
+   },
+   "claim": "Jittered meshes are refused as folded exactly when a face is inverted, which happens at every jitter of 0.2 h or more",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "exact comparison of refusal codes, integer counts or ordered code lists",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "curvature_rms": [
+     2.4949909327275415,
+     1.4569418010522144,
+     1.808711101326335,
+     28.21829103920227,
+     17.206841772203056,
+     23.920220199372118
+    ],
+    "inverted_faces": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     2,
+     3,
+     2,
+     28,
+     47,
+     50
+    ],
+    "issues": [
+     [],
+     [],
+     [],
+     [],
+     [],
+     [],
+     [],
+     [],
+     [],
+     [],
+     [
+      "folded_face"
+     ],
+     [
+      "folded_face"
+     ],
+     [
+      "folded_face"
+     ],
+     [
+      "folded_face"
+     ],
+     [
+      "folded_face"
+     ],
+     [
+      "folded_face"
+     ]
+    ],
+    "meshes": [
+     "icosphere-3-jitter0.2-s20260939",
+     "icosphere-3-jitter0.2-s20260940",
+     "icosphere-3-jitter0.2-s20260941",
+     "icosphere-3-jitter0.3-s20260939",
+     "icosphere-3-jitter0.3-s20260940",
+     "icosphere-3-jitter0.3-s20260941"
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "signed_ge",
+      "observed": 0.0024052033881497657,
+      "passed": true,
+      "reference": "regular minus witness geodesic error",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "signed_ge",
+      "observed": 13.199758907720707,
+      "passed": true,
+      "reference": "regular minus witness min angle",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "jitter": 0.05,
+     "level": 3,
+     "name": "ciw.lab.surfaces_discrete_mesh_studies._jitter_unvalidated",
+     "seed": 20260939
+    }
+   },
+   "claim": "A mesh with a smaller minimum angle can have a smaller geodesic error",
+   "counterexample": {
+    "statement": "A larger minimum angle implies a smaller geodesic error",
+    "witness": {
+     "better_quality": "icosphere-3",
+     "worse_quality": "icosphere-3-jitter0.05-s20260939"
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "deterministic mesh metrics and traces",
+    "kind": "roundoff",
+    "value": 1e-15
+   },
+   "unit": null,
+   "value": {
+    "regular": {
+     "geodesic_mean": 0.012334617469521443,
+     "mesh": "icosphere-3",
+     "min_angle_deg": 54.0995585363326
+    },
+    "witness": {
+     "geodesic_mean": 0.009929414081371678,
+     "mesh": "icosphere-3-jitter0.05-s20260939",
+     "min_angle_deg": 40.899799628611895
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "signed_ge",
+      "observed": 0.004340154615790216,
+      "passed": true,
+      "reference": "regular minus witness barycentric curvature RMS",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "signed_ge",
+      "observed": 43.28502499183847,
+      "passed": true,
+      "reference": "regular minus witness min angle (deg)",
+      "reference_kind": "self_convergence",
+      "tolerance": 20.0
+     }
+    ],
+    "generator": {
+     "n_lat": 20,
+     "n_lon": 32,
+     "name": "ciw.lab.surfaces_discrete_mesh_geometry.uv_sphere",
+     "twist": 0.0
+    }
+   },
+   "claim": "Across mesh families a much smaller minimum angle can come with a smaller barycentric-area angle-defect RMS error",
+   "counterexample": {
+    "statement": "Minimum angle orders the barycentric angle-defect curvature error across mesh families",
+    "witness": {
+     "better_quality": "icosphere-3",
+     "note": "the icosphere's RMS is dominated by its 12 valence-5 vertices (T040); with the mixed Voronoi area the icosphere is better",
+     "worse_quality": "uv-sphere-20x32"
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "deterministic mesh metrics and traces",
+    "kind": "roundoff",
+    "value": 1e-15
+   },
+   "unit": null,
+   "value": {
+    "regular": {
+     "curvature_max": 0.14785072359127138,
+     "curvature_rms": 0.02042617452826786,
+     "max_radius_ratio": 1.0307631773587616,
+     "mesh": "icosphere-3",
+     "min_angle_deg": 54.0995585363326,
+     "voronoi_curvature_rms": 0.004777035900366827
+    },
+    "witness": {
+     "curvature_max": 0.23956884745994234,
+     "curvature_rms": 0.016086019912477642,
+     "max_radius_ratio": 2.9883869951905715,
+     "mesh": "uv-sphere-20x32",
+     "min_angle_deg": 10.814533544494136,
+     "voronoi_curvature_rms": 0.006270019710208169
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "signed_ge",
+      "observed": 0.0014929838098413422,
+      "passed": true,
+      "reference": "smallest latitude-longitude Voronoi RMS minus the icosphere's",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "meshes": [
+      "icosphere-3",
+      "uv-sphere-20x32",
+      "uv-sphere-10x64",
+      "uv-sphere-40x16",
+      "uv-sphere-20x32-t0.08",
+      "uv-sphere-20x32-t0.16"
+     ],
+     "name": "ciw.lab.surfaces_discrete_mesh_geometry.mixed_voronoi_area"
+    }
+   },
+   "claim": "With the mixed Voronoi area the regular icosphere has a smaller curvature RMS error than every latitude-longitude sphere of the same vertex count",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "deterministic mesh metrics and traces",
+    "kind": "roundoff",
+    "value": 1e-15
+   },
+   "unit": null,
+   "value": {
+    "icosphere": 0.004777035900366827,
+    "latitude_longitude": {
+     "uv-sphere-10x64": 0.011105733411546024,
+     "uv-sphere-20x32": 0.006270019710208169,
+     "uv-sphere-20x32-t0.08": 0.011487716381650736,
+     "uv-sphere-20x32-t0.16": 0.026011977269575468,
+     "uv-sphere-40x16": 0.014991349479723933
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "signed_ge",
+      "observed": 5.596909777072169,
+      "passed": true,
+      "reference": "min angle difference (better - worse quality)",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "signed_ge",
+      "observed": 2.6073181107865855,
+      "passed": true,
+      "reference": "radius ratio difference (worse - better quality)",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "signed_ge",
+      "observed": 0.007395069159906096,
+      "passed": true,
+      "reference": "barycentric RMS difference (better - worse quality)",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "signed_ge",
+      "observed": 0.0038856160681779092,
+      "passed": true,
+      "reference": "Voronoi RMS difference (better - worse quality)",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "meshes": [
+      "uv-sphere-40x16",
+      "uv-sphere-10x64"
+     ],
+     "name": "ciw.lab.surfaces_discrete_mesh_geometry.uv_sphere"
+    }
+   },
+   "claim": "Within the latitude-longitude family a mesh with smaller minimum angle and larger radius ratio can have smaller curvature errors under both area choices",
+   "counterexample": {
+    "statement": "Within one mesh family better triangle quality (larger minimum angle, smaller radius ratio) implies smaller curvature error",
+    "witness": {
+     "better_quality": "uv-sphere-40x16",
+     "worse_quality": "uv-sphere-10x64"
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "deterministic mesh metrics and traces",
+    "kind": "roundoff",
+    "value": 1e-15
+   },
+   "unit": null,
+   "value": {
+    "better_quality": {
+     "curvature_max": 0.2195004380023058,
+     "curvature_rms": 0.02720448926919287,
+     "max_radius_ratio": 2.873046712440642,
+     "mesh": "uv-sphere-40x16",
+     "min_angle_deg": 11.115740571525883,
+     "voronoi_curvature_rms": 0.014991349479723933
+    },
+    "worse_quality": {
+     "curvature_max": 0.23660159344372866,
+     "curvature_rms": 0.019809420109286775,
+     "max_radius_ratio": 5.4803648232272275,
+     "mesh": "uv-sphere-10x64",
+     "min_angle_deg": 5.518830794453714,
+     "voronoi_curvature_rms": 0.011105733411546024
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 0.825,
+      "passed": true,
+      "reference": "Spearman rho of max radius ratio with Voronoi curvature RMS",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.6
+     },
+     {
+      "comparison": "ge",
+      "observed": 0.7892857142857141,
+      "passed": true,
+      "reference": "Spearman rho of max radius ratio with geodesic error",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.6
+     },
+     {
+      "comparison": "le",
+      "observed": 0.0004997501249375312,
+      "passed": true,
+      "reference": "largest one-sided permutation p-value (2000 seeded permutations)",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.01
+     }
+    ],
+    "generator": {
+     "meshes": 15,
+     "name": "ciw.lab.surfaces_discrete_mesh_studies.quality_study",
+     "seed": 20260938
+    },
+    "independent_check": {
+     "checker": {
+      "implementation": "scipy.stats.spearmanr",
+      "revision": "1.16.2"
+     },
+     "comparison": "abs_le",
+     "observed": 1.1102230246251565e-16,
+     "passed": true,
+     "producer": {
+      "implementation": "ciw.lab.surfaces_discrete_mesh",
+      "revision": "working tree"
+     },
+     "reference": "scipy.stats.spearmanr on the same rounded inputs, largest difference over the table",
+     "reference_kind": "exact_arithmetic",
+     "tolerance": 1e-12
+    }
+   },
+   "claim": "Maximum radius ratio ranks the mixed-Voronoi curvature error and the geodesic error across the valid 642-vertex meshes",
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "approximate standard error of a Spearman coefficient from n meshes",
+    "kind": "reference_error",
+    "value": 0.30599564267050167
+   },
+   "unit": null,
+   "value": {
+    "meshes": 15,
+    "permutation_p": {
+     "geodesic_mean": 0.0004997501249375312,
+     "voronoi_curvature_rms": 0.0004997501249375312
+    },
+    "spearman": {
+     "max_radius_ratio": {
+      "area_error": -0.4428571428571427,
+      "curvature_max": 0.9247371227251237,
+      "curvature_rms": 0.27499999999999997,
+      "geodesic_mean": 0.7892857142857141,
+      "voronoi_curvature_rms": 0.825
+     },
+     "min_angle_deg": {
+      "area_error": 0.3714285714285714,
+      "curvature_max": -0.7992882882469091,
+      "curvature_rms": -0.021428571428571425,
+      "geodesic_mean": -0.7035714285714285,
+      "voronoi_curvature_rms": -0.6607142857142856
+     }
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 2.220446049250313e-16,
+      "passed": true,
+      "reference": "max |sampled mesh-to-cylinder distance - closed form|",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 6.039613253960852e-14,
+      "passed": true,
+      "reference": "max |mesh area - closed form|",
+      "reference_kind": "analytic",
+      "tolerance": 1e-09
+     },
+     {
+      "comparison": "signed_ge",
+      "observed": 0.5872559353818663,
+      "passed": true,
+      "reference": "area ratio at the finest n - 1",
+      "reference_kind": "analytic",
+      "tolerance": 0.5
+     }
+    ],
+    "derivation": "A = 2 n R sin(pi/n) sqrt(H^2 + m^2 R^2 (1 - cos(pi/n))^2). Hausdorff distance d_H = R (1 - cos(pi/n)) in both directions: every face lies between radius R cos(pi/n) and R (sampled, attained at horizontal edge midpoints), and every horizontal ray from the axis crosses the closed mesh tube at such a radius"
+   },
+   "claim": "Schwarz lantern meshes converge in Hausdorff distance but not in area",
+   "counterexample": {
+    "statement": "Hausdorff convergence of a mesh to a surface implies convergence of area",
+    "witness": {
+     "area_ratio": 1.5872559353818663,
+     "bands": 1024,
+     "hausdorff": 0.001204543794827706,
+     "n": 64,
+     "q": 0.25
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "difference from the closed forms",
+    "kind": "roundoff",
+    "value": 6.039613253960852e-14
+   },
+   "unit": null,
+   "value": {
+    "area_ratio": [
+     1.3867744389205312,
+     1.5356721533539741,
+     1.5748478593251627,
+     1.5847679576325404,
+     1.5872559353818663
+    ],
+    "hausdorff": [
+     0.29289321881345254,
+     0.07612046748871348,
+     0.01921471959676968,
+     0.004815273327803182,
+     0.001204543794827706
+    ],
+    "limit_area_ratio": 1.5880859697781753,
+    "n": [
+     4,
+     8,
+     16,
+     32,
+     64
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 1.4654943925052066e-14,
+      "passed": true,
+      "reference": "max |traced height - development height|",
+      "reference_kind": "analytic",
+      "tolerance": 1e-10
+     },
+     {
+      "comparison": "signed_ge",
+      "observed": 0.08789354903512026,
+      "passed": true,
+      "reference": "traced height at the finest n - 1.5 H",
+      "reference_kind": "analytic",
+      "tolerance": 0.0
+     }
+    ],
+    "derivation": "The lantern develops to a flat strip of height sqrt(H^2 + m^2 R^2 (1 - cos(pi/n))^2)"
+   },
+   "claim": "Schwarz lantern intrinsic height does not converge to the cylinder height",
+   "counterexample": {
+    "statement": "Hausdorff convergence of a mesh implies convergence of its geodesic distances",
+    "witness": {
+     "H": 1.0,
+     "n": 64,
+     "traced_height": 1.5878935490351203
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "difference from the development",
+    "kind": "roundoff",
+    "value": 1.4654943925052066e-14
+   },
+   "unit": null,
+   "value": {
+    "height": 1.0,
+    "traced_height": [
+     1.5403191234385416,
+     1.575863999874121,
+     1.5850127822359787,
+     1.5873165641626445,
+     1.5878935490351203
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 6.420162261836559e-11,
+      "passed": true,
+      "reference": "max interior |K| (angle defect)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-09
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.005628085253555071,
+      "passed": true,
+      "reference": "max normal tilt at the finest n - limit (deg)",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.006616165200458379,
+      "passed": true,
+      "reference": "growth exponent of total |H| in n (last three n) - 2",
+      "reference_kind": "analytic",
+      "tolerance": 0.15
+     },
+     {
+      "comparison": "ge",
+      "observed": 3641.7461661867155,
+      "passed": true,
+      "reference": "total |H| at finest n / smooth value",
+      "reference_kind": "analytic",
+      "tolerance": 5.0
+     }
+    ],
+    "derivation": "Isosceles lantern faces give angle sums 2 alpha + 4 beta = 2 pi at interior vertices; a face rises H/m while its apex sags R (1 - cos(pi/n)), so its normal tilts by atan(m R (1 - cos(pi/n)) / H) -> atan(pi^2 q R / 2H); about q n^3 edges of length ~2 pi R / n bend by a fixed angle, so total |H| ~ n^2"
+   },
+   "claim": "Lantern angle defects vanish while total absolute mean curvature grows like n^2 and normal tilt converges to atan(pi^2 q R / 2H) instead of 0",
+   "counterexample": {
+    "statement": "Hausdorff convergence of a mesh implies convergence of its normals and curvature",
+    "witness": {
+     "n": 64,
+     "tilt_deg": 50.96720303293561,
+     "total_abs_mean_curvature": 11440.883001930979
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "remaining approach of the tilt to its limit (deg)",
+    "kind": "truncation_bound",
+    "value": 0.005628085253555071
+   },
+   "unit": null,
+   "value": {
+    "growth_exponent_in_n": 2.0066161652004584,
+    "limit_tilt_deg": 50.97283111818916,
+    "max_interior_angle_defect_curvature": 6.420162261836559e-11,
+    "max_normal_tilt_deg": [
+     49.51747351598615,
+     50.61171322839888,
+     50.882726668667395,
+     50.95031601920528,
+     50.96720303293561
+    ],
+    "smooth_total_abs_mean_curvature": 3.141592653589793,
+    "total_abs_mean_curvature": [
+     38.5651537857936,
+     172.07381975503864,
+     708.5267205600366,
+     2854.9662818404504,
+     11440.883001930979
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "folded_face",
+      "observed_refusal": "folded_face",
+      "passed": true,
+      "reference": "validator on the m = n^2 lantern",
+      "reference_kind": "refusal"
+     }
+    ],
+    "generator": {
+     "lantern": true,
+     "n": 8,
+     "name": "ciw.lab.surfaces_discrete_mesh_geometry.cylinder_mesh",
+     "q": 1.0
+    }
+   },
+   "claim": "A strongly pleated lantern (m = n^2) is refused as folded",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact comparison of refusal codes, integer counts or ordered code lists",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "issues": [
+     "folded_face"
+    ],
+    "n": 8,
+    "q": 1.0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 8.881784197001252e-16,
+      "passed": true,
+      "reference": "max trace error over all shears",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "ge",
+      "observed": 0.06396255359589409,
+      "passed": true,
+      "reference": "spread of max relative graph excess across shears",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.01
+     }
+    ],
+    "generator": {
+     "name": "ciw.lab.surfaces_discrete_mesh_geometry.plane_mesh",
+     "shears": [
+      0.0,
+      0.5,
+      1.0,
+      1.5
+     ]
+    }
+   },
+   "claim": "Straightest geodesics on planar meshes are exact at any tested triangle quality, while edge-graph distance error changes with the edge directions",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "largest trace deviation observed",
+    "kind": "roundoff",
+    "value": 8.881784197001252e-16
+   },
+   "unit": null,
+   "value": {
+    "max_graph_excess": [
+     0.08231174597004576,
+     0.04475790710240424,
+     0.02739739461930646,
+     0.018349192374151668
+    ],
+    "max_trace_error": 8.881784197001252e-16,
+    "min_angle_deg": [
+     45.0,
+     29.74488129694222,
+     18.43494882292201,
+     11.888658039627975
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": "No scanned surface, device or calibration was acquired; the computation is synthetic."
+   },
+   "claim": "A minimum-angle or radius-ratio threshold certifies a scanned mesh for production metrology",
+   "domain": "production_acceptance",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 16819,
+   "path": "artifacts/T041/quality.json",
+   "sha256": "69560e4cbdc41ee502a107979f91c1ce90e03e2464dba3398842dc08972d11e7"
+  },
+  {
+   "bytes": 2870,
+   "path": "artifacts/T041/schwarz-lantern.json",
+   "sha256": "62b4f9ddebb54a6f1e9100fac4f096c598413c4419c2258ffc8b9bc59b95ba17"
+  },
+  {
+   "bytes": 3625,
+   "path": "artifacts/T041/schwarz-lantern.svg",
+   "sha256": "d7cc428a6394f80ba2a2ff45e096f498eac10df661c4bd7b3d31da9323d7cb03"
+  },
+  {
+   "bytes": 3108,
+   "path": "artifacts/T041/jitter.svg",
+   "sha256": "a812f7c2b23e447c21005e4c299615f84f03080e2b904e00f89ee5ea2186295a"
+  }
+ ],
+ "hypothesis": "Under isotropic tangential jitter of the icosphere at fixed vertex count, worse triangle quality comes with larger curvature error; within the latitude-longitude family and across families quality metrics do not order the errors pairwise (and the barycentric estimator's cross-family ranking reverses with the mixed Voronoi area), although the maximum radius ratio ranks the Voronoi-area curvature and geodesic errors over all tested meshes; Hausdorff convergence does not imply convergence of area, distances, normals or mean curvature.",
+ "input_data": [
+  "icosphere level 3 (642 vertices), tangential jitter 0-0.3 h, 3 seeds",
+  "latitude-longitude spheres with 642 vertices (20x32, 10x64, 40x16, 20x32 twisted by 0.08 and 0.16 rad per ring)",
+  "Schwarz lanterns q=0.25, n=4..64; q=1, n=8",
+  "sheared planar grids"
+ ],
+ "mathematical_model": "Quality: minimum angle and radius ratio R_circ / (2 r_in). Curvature: angle defect over the barycentric area A/3 or the mixed Voronoi area. Schwarz lantern with m = q n^2 bands: face height sqrt((H/m)^2 + R^2 (1 - cos(pi/n))^2), so area and developed height tend to sqrt(1 + (pi^2 q R / 2H)^2) times their cylinder values while d_H = R (1 - cos(pi/n)) -> 0.",
+ "number": 41,
+ "numerical_result": "Jitter (seed-averaged, valid meshes): curvature RMS 0.0204@0, 0.0225@0.05, 0.0333@0.1, 0.0607@0.15; 6 of 6 jittered meshes at 0.2 h or more are refused as folded, each with inverted faces, and no mesh below 0.2 h is refused. Min angle vs geodesic error counterexample: icosphere-3 (54.1 deg, 0.0123) vs icosphere-3-jitter0.05-s20260939 (40.9 deg, 0.0099). uv-sphere-20x32 has min angle 10.8 deg and barycentric curvature RMS 0.0161 < 0.0204, but mixed Voronoi RMS 0.0063 > 0.0048. Within the latitude-longitude family uv-sphere-40x16 (min angle 11.1 deg, radius ratio 2.87) has larger errors than uv-sphere-10x64 (5.5 deg, 5.48). Spearman over 15 valid meshes: radius ratio vs Voronoi RMS 0.825, vs geodesic error 0.789, vs barycentric RMS 0.275; min angle vs barycentric RMS -0.021, vs Voronoi RMS -0.661. Lantern (m=0.25 n^2, n=64): Hausdorff 1.20e-03, area ratio 1.5873 (limit 1.5881), traced height 1.5879, interior K 6.4e-11, normal tilt 50.967 deg (limit 50.973), total |H| exponent 2.01. Planar traces exact to 8.9e-16 for min angles down to 11.9 deg, while the max edge-graph excess moves from 0.082 (shear 0) to 0.018 (shear 1.5).",
+ "observation_model": "Curvature error against K = 1, geodesic endpoint error against great circles, area error; lantern area, developed height, Hausdorff distance, normal tilt and total absolute mean curvature.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/surfaces_discrete_mesh.py": "60ba6ad84646cb8fff5dfa94cc609eb405b633ef3e75a535333dadd77e5bf592",
+   "src/ciw/lab/surfaces_discrete_mesh_geometry.py": "8788d479e31b40eaaa93aca1ff5aa293aa03fa681dfef7d9d5fe225f83994e7d",
+   "src/ciw/lab/surfaces_discrete_mesh_studies.py": "afac8f09b471f4d995289ed69e37f5a240b7d79c65392e35015a830f67d757b1"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T042: name the refusal states for invalid or incomplete surface data (including folded faces).",
+ "report_id": "sha256:8df4df9d5d56381995fd2c66e5ce827f9e7b9e606cfcdc504036acac86a4dd66",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "surfaces-discrete",
+ "state": "completed",
+ "task_id": "T041",
+ "tests_passed": [
+  "check: Seed-averaged curvature RMS error grows and minimum angle falls with tangential jitter vs smallest increase of curvature RMS between amplitudes",
+  "check: Seed-averaged curvature RMS error grows and minimum angle falls with tangential jitter vs smallest decrease of min angle between amplitudes",
+  "check: Jittered meshes are refused as folded exactly when a face is inverted, which happens at every jitter of 0.2 h or more vs validator on icosphere-3 (0 inverted faces)",
+  "check: Jittered meshes are refused as folded exactly when a face is inverted, which happens at every jitter of 0.2 h or more vs validator on icosphere-3-jitter0.05-s20260939 (0 inverted faces)",
+  "check: Jittered meshes are refused as folded exactly when a face is inverted, which happens at every jitter of 0.2 h or more vs validator on icosphere-3-jitter0.05-s20260940 (0 inverted faces)",
+  "check: Jittered meshes are refused as folded exactly when a face is inverted, which happens at every jitter of 0.2 h or more vs validator on icosphere-3-jitter0.05-s20260941 (0 inverted faces)",
+  "check: Jittered meshes are refused as folded exactly when a face is inverted, which happens at every jitter of 0.2 h or more vs validator on icosphere-3-jitter0.1-s20260939 (0 inverted faces)",
+  "check: Jittered meshes are refused as folded exactly when a face is inverted, which happens at every jitter of 0.2 h or more vs validator on icosphere-3-jitter0.1-s20260940 (0 inverted faces)",
+  "check: Jittered meshes are refused as folded exactly when a face is inverted, which happens at every jitter of 0.2 h or more vs validator on icosphere-3-jitter0.1-s20260941 (0 inverted faces)",
+  "check: Jittered meshes are refused as folded exactly when a face is inverted, which happens at every jitter of 0.2 h or more vs validator on icosphere-3-jitter0.15-s20260939 (0 inverted faces)",
+  "check: Jittered meshes are refused as folded exactly when a face is inverted, which happens at every jitter of 0.2 h or more vs validator on icosphere-3-jitter0.15-s20260940 (0 inverted faces)",
+  "check: Jittered meshes are refused as folded exactly when a face is inverted, which happens at every jitter of 0.2 h or more vs validator on icosphere-3-jitter0.15-s20260941 (0 inverted faces)",
+  "check: Jittered meshes are refused as folded exactly when a face is inverted, which happens at every jitter of 0.2 h or more vs validator on icosphere-3-jitter0.2-s20260939 (2 inverted faces)",
+  "check: Jittered meshes are refused as folded exactly when a face is inverted, which happens at every jitter of 0.2 h or more vs validator on icosphere-3-jitter0.2-s20260940 (3 inverted faces)",
+  "check: Jittered meshes are refused as folded exactly when a face is inverted, which happens at every jitter of 0.2 h or more vs validator on icosphere-3-jitter0.2-s20260941 (2 inverted faces)",
+  "check: Jittered meshes are refused as folded exactly when a face is inverted, which happens at every jitter of 0.2 h or more vs validator on icosphere-3-jitter0.3-s20260939 (28 inverted faces)",
+  "check: Jittered meshes are refused as folded exactly when a face is inverted, which happens at every jitter of 0.2 h or more vs validator on icosphere-3-jitter0.3-s20260940 (47 inverted faces)",
+  "check: Jittered meshes are refused as folded exactly when a face is inverted, which happens at every jitter of 0.2 h or more vs validator on icosphere-3-jitter0.3-s20260941 (50 inverted faces)",
+  "check: Jittered meshes are refused as folded exactly when a face is inverted, which happens at every jitter of 0.2 h or more vs jittered meshes at 0.2 h or more that pass validation",
+  "check: Jittered meshes are refused as folded exactly when a face is inverted, which happens at every jitter of 0.2 h or more vs jittered meshes below 0.2 h that are refused",
+  "check: Jittered meshes are refused as folded exactly when a face is inverted, which happens at every jitter of 0.2 h or more vs smallest unguarded curvature RMS among meshes jittered by 0.2 h or more",
+  "check: A mesh with a smaller minimum angle can have a smaller geodesic error vs regular minus witness geodesic error",
+  "check: A mesh with a smaller minimum angle can have a smaller geodesic error vs regular minus witness min angle",
+  "check: Across mesh families a much smaller minimum angle can come with a smaller barycentric-area angle-defect RMS error vs regular minus witness barycentric curvature RMS",
+  "check: Across mesh families a much smaller minimum angle can come with a smaller barycentric-area angle-defect RMS error vs regular minus witness min angle (deg)",
+  "check: With the mixed Voronoi area the regular icosphere has a smaller curvature RMS error than every latitude-longitude sphere of the same vertex count vs smallest latitude-longitude Voronoi RMS minus the icosphere's",
+  "check: Within the latitude-longitude family a mesh with smaller minimum angle and larger radius ratio can have smaller curvature errors under both area choices vs min angle difference (better - worse quality)",
+  "check: Within the latitude-longitude family a mesh with smaller minimum angle and larger radius ratio can have smaller curvature errors under both area choices vs radius ratio difference (worse - better quality)",
+  "check: Within the latitude-longitude family a mesh with smaller minimum angle and larger radius ratio can have smaller curvature errors under both area choices vs barycentric RMS difference (better - worse quality)",
+  "check: Within the latitude-longitude family a mesh with smaller minimum angle and larger radius ratio can have smaller curvature errors under both area choices vs Voronoi RMS difference (better - worse quality)",
+  "check: Maximum radius ratio ranks the mixed-Voronoi curvature error and the geodesic error across the valid 642-vertex meshes vs Spearman rho of max radius ratio with Voronoi curvature RMS",
+  "check: Maximum radius ratio ranks the mixed-Voronoi curvature error and the geodesic error across the valid 642-vertex meshes vs Spearman rho of max radius ratio with geodesic error",
+  "check: Maximum radius ratio ranks the mixed-Voronoi curvature error and the geodesic error across the valid 642-vertex meshes vs largest one-sided permutation p-value (2000 seeded permutations)",
+  "independent: Maximum radius ratio ranks the mixed-Voronoi curvature error and the geodesic error across the valid 642-vertex meshes vs scipy.stats.spearmanr",
+  "check: Schwarz lantern meshes converge in Hausdorff distance but not in area vs max |sampled mesh-to-cylinder distance - closed form|",
+  "check: Schwarz lantern meshes converge in Hausdorff distance but not in area vs max |mesh area - closed form|",
+  "check: Schwarz lantern meshes converge in Hausdorff distance but not in area vs area ratio at the finest n - 1",
+  "check: Schwarz lantern intrinsic height does not converge to the cylinder height vs max |traced height - development height|",
+  "check: Schwarz lantern intrinsic height does not converge to the cylinder height vs traced height at the finest n - 1.5 H",
+  "check: Lantern angle defects vanish while total absolute mean curvature grows like n^2 and normal tilt converges to atan(pi^2 q R / 2H) instead of 0 vs max interior |K| (angle defect)",
+  "check: Lantern angle defects vanish while total absolute mean curvature grows like n^2 and normal tilt converges to atan(pi^2 q R / 2H) instead of 0 vs max normal tilt at the finest n - limit (deg)",
+  "check: Lantern angle defects vanish while total absolute mean curvature grows like n^2 and normal tilt converges to atan(pi^2 q R / 2H) instead of 0 vs growth exponent of total |H| in n (last three n) - 2",
+  "check: Lantern angle defects vanish while total absolute mean curvature grows like n^2 and normal tilt converges to atan(pi^2 q R / 2H) instead of 0 vs total |H| at finest n / smooth value",
+  "check: A strongly pleated lantern (m = n^2) is refused as folded vs validator on the m = n^2 lantern",
+  "check: Straightest geodesics on planar meshes are exact at any tested triangle quality, while edge-graph distance error changes with the edge directions vs max trace error over all shears",
+  "check: Straightest geodesics on planar meshes are exact at any tested triangle quality, while edge-graph distance error changes with the edge directions vs spread of max relative graph excess across shears",
+  "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_schwarz_lantern_counterexample",
+  "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_rank_correlation_matches_average_ranks",
+  "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_quality_task_report"
+ ],
+ "tests_skipped": [],
+ "title": "Quantify mesh-quality effects.",
+ "uncertainty": "Deterministic given the seeds; with three seeds per amplitude the monotone trend is a seed-average (t-interval reported per finding) and a different seed set could reorder neighbouring amplitudes. Rank correlations over 15 meshes have a standard error near 0.3.",
+ "unresolved_assumptions": [
+  "Quality metrics are summarised by the worst triangle; per-region error attribution is not attempted.",
+  "Only tangential jitter is studied here; normal noise is the subject of T043.",
+  "The radius-ratio ranking is observed on 15 meshes from two families; it is not a general law."
+ ]
+}

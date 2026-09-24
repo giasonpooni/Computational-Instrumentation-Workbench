@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420" font-family="sans-serif" font-size="11">
+<rect width="640" height="420" fill="#ffffff"/>
+<text x="78" y="22" font-size="13" font-weight="bold">T061 standardized moment deviations</text>
+<rect x="78" y="40" width="392" height="322" fill="none" stroke="#333"/>
+<line x1="78.00" y1="40" x2="78.00" y2="362" stroke="#e5e7eb"/>
+<text x="78.00" y="378" text-anchor="middle">0</text>
+<line x1="223.19" y1="40" x2="223.19" y2="362" stroke="#e5e7eb"/>
+<text x="223.19" y="378" text-anchor="middle">10</text>
+<line x1="368.37" y1="40" x2="368.37" y2="362" stroke="#e5e7eb"/>
+<text x="368.37" y="378" text-anchor="middle">20</text>
+<line x1="78" y1="352.11" x2="470" y2="352.11" stroke="#e5e7eb"/>
+<text x="72" y="356.11" text-anchor="end">0</text>
+<line x1="78" y1="279.49" x2="470" y2="279.49" stroke="#e5e7eb"/>
+<text x="72" y="283.49" text-anchor="end">1</text>
+<line x1="78" y1="206.87" x2="470" y2="206.87" stroke="#e5e7eb"/>
+<text x="72" y="210.87" text-anchor="end">2</text>
+<line x1="78" y1="134.25" x2="470" y2="134.25" stroke="#e5e7eb"/>
+<text x="72" y="138.25" text-anchor="end">3</text>
+<line x1="78" y1="61.63" x2="470" y2="61.63" stroke="#e5e7eb"/>
+<text x="72" y="65.63" text-anchor="end">4</text>
+<text x="274.00" y="406" text-anchor="middle">moment index</text>
+<text x="16" y="201.00" text-anchor="middle" transform="rotate(-90 16 201.00)">|z|</text>
+<path d="M78.00,341.25 L92.52,335.97 L107.04,329.14 L121.56,300.55 L136.07,321.52 L150.59,325.49 L165.11,280.05 L179.63,310.62 L194.15,283.77 L208.67,334.56 L223.19,330.98 L237.70,342.27 L252.22,296.65 L266.74,350.07 L281.26,343.11 L295.78,315.51 L310.30,308.02 L324.81,279.22 L339.33,160.09 L353.85,283.19 L368.37,139.71 L382.89,289.35 L397.41,302.72 L411.93,254.81 L426.44,326.15 L440.96,116.97 L455.48,265.05 L470.00,327.57" fill="none" stroke="#1f5fa8" stroke-width="1.8"/>
+<circle cx="78.00" cy="341.25" r="2.6" fill="#1f5fa8"/>
+<circle cx="92.52" cy="335.97" r="2.6" fill="#1f5fa8"/>
+<circle cx="107.04" cy="329.14" r="2.6" fill="#1f5fa8"/>
+<circle cx="121.56" cy="300.55" r="2.6" fill="#1f5fa8"/>
+<circle cx="136.07" cy="321.52" r="2.6" fill="#1f5fa8"/>
+<circle cx="150.59" cy="325.49" r="2.6" fill="#1f5fa8"/>
+<circle cx="165.11" cy="280.05" r="2.6" fill="#1f5fa8"/>
+<circle cx="179.63" cy="310.62" r="2.6" fill="#1f5fa8"/>
+<circle cx="194.15" cy="283.77" r="2.6" fill="#1f5fa8"/>
+<circle cx="208.67" cy="334.56" r="2.6" fill="#1f5fa8"/>
+<circle cx="223.19" cy="330.98" r="2.6" fill="#1f5fa8"/>
+<circle cx="237.70" cy="342.27" r="2.6" fill="#1f5fa8"/>
+<circle cx="252.22" cy="296.65" r="2.6" fill="#1f5fa8"/>
+<circle cx="266.74" cy="350.07" r="2.6" fill="#1f5fa8"/>
+<circle cx="281.26" cy="343.11" r="2.6" fill="#1f5fa8"/>
+<circle cx="295.78" cy="315.51" r="2.6" fill="#1f5fa8"/>
+<circle cx="310.30" cy="308.02" r="2.6" fill="#1f5fa8"/>
+<circle cx="324.81" cy="279.22" r="2.6" fill="#1f5fa8"/>
+<circle cx="339.33" cy="160.09" r="2.6" fill="#1f5fa8"/>
+<circle cx="353.85" cy="283.19" r="2.6" fill="#1f5fa8"/>
+<circle cx="368.37" cy="139.71" r="2.6" fill="#1f5fa8"/>
+<circle cx="382.89" cy="289.35" r="2.6" fill="#1f5fa8"/>
+<circle cx="397.41" cy="302.72" r="2.6" fill="#1f5fa8"/>
+<circle cx="411.93" cy="254.81" r="2.6" fill="#1f5fa8"/>
+<circle cx="426.44" cy="326.15" r="2.6" fill="#1f5fa8"/>
+<circle cx="440.96" cy="116.97" r="2.6" fill="#1f5fa8"/>
+<circle cx="455.48" cy="265.05" r="2.6" fill="#1f5fa8"/>
+<circle cx="470.00" cy="327.57" r="2.6" fill="#1f5fa8"/>
+<line x1="482" y1="52" x2="502" y2="52" stroke="#1f5fa8" stroke-width="2"/>
+<text x="508" y="56">|z| per moment</text>
+<path d="M78.00,51.93 L470.00,51.93" fill="none" stroke="#c2410c" stroke-width="1.8"/>
+<circle cx="78.00" cy="51.93" r="2.6" fill="#c2410c"/>
+<circle cx="470.00" cy="51.93" r="2.6" fill="#c2410c"/>
+<line x1="482" y1="70" x2="502" y2="70" stroke="#c2410c" stroke-width="2"/>
+<text x="508" y="74">Bonferroni bound</text>
+</svg>

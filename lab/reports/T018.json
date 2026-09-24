@@ -1,0 +1,475 @@
+{
+ "changed_files": [
+  "src/ciw/lab/geodesic_jacobi_limits.py",
+  "src/ciw/lab/geodesic_jacobi_limits_core.py",
+  "docs/lab/GEODESIC_JACOBI_LIMITS.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 5,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Flat surfaces: S = E = 0; truncation-limited curved surfaces: ratio grows like h^-p.",
+ "experiment": "Integrate each path with each method and step count; form ratios; classify each error as truncation- or roundoff-limited; find the smallest N from which every finer step keeps the ratio above the threshold; compare curvature scales 1 ... 1e-16.",
+ "failure_modes_checked": [
+  "exact zero errors on flat surfaces kept as 'no signal', not as infinite ratios",
+  "flat surfaces tested with K from the second fundamental form, not the closed-form K = 0 of the core classes",
+  "resolution required to persist for every finer step, not just one lucky step",
+  "roundoff-limited errors classified per method and step and excluded from the claims",
+  "true deviation computed without cancellation (series for small sqrt|K| L)",
+  "adaptive references checked by tightening rtol",
+  "the a priori expectation (weak curvature is harder) tested: it holds for Euler and midpoint between K = 1 and 1e-2 and fails below K = 1e-2 and for RK4"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 117432.0196008736,
+      "passed": true,
+      "reference": "min over truncation-limited (surface, N >= 16) of signal / RK4 error",
+      "reference_kind": "invariant",
+      "tolerance": 10.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 3.2036595598583517e-12,
+      "passed": true,
+      "reference": "max reference spread (DP45 rtol 1e-12 vs 1e-11)",
+      "reference_kind": "self_convergence",
+      "tolerance": 1e-09
+     }
+    ],
+    "derivation": "docs/lab/GEODESIC_JACOBI_LIMITS.md#t018-curvature-signal-versus-integrator-error",
+    "generator": {
+     "deterministic": true,
+     "length": 2.0,
+     "name": "ciw.lab.geodesic_jacobi_limits:resolvability",
+     "seed": null,
+     "steps": [
+      4,
+      8,
+      16,
+      32,
+      64,
+      128
+     ]
+    }
+   },
+   "claim": "RK4 resolves every truncation-limited curvature signal from N = 16 (h = 1/8)",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 0.05
+   },
+   "uncertainty": {
+    "basis": "largest adaptive reference spread (rtol 1e-12 against 1e-11); closed-form references are exact",
+    "kind": "reference_error",
+    "value": 3.2036595598583517e-12
+   },
+   "unit": null,
+   "value": {
+    "min_ratio_rk4_N_ge_16": 117432.0196008736,
+    "min_ratio_steps": 16,
+    "min_ratio_surface": "hyperbolic k=1",
+    "roundoff_limited_surfaces_excluded": [
+     "sphere R=1e4",
+     "sphere R=1e7",
+     "sphere R=1e8"
+    ],
+    "weakest_signal": 0.00013333066669196647,
+    "weakest_signal_surface": "sphere R=100"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": -0.003567181141435616,
+      "passed": true,
+      "reference": "euler: ratio(K = 1e-8) / ratio(K = 1e-2) minus 1",
+      "reference_kind": "analytic",
+      "tolerance": 0.05
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.01615329513953545,
+      "passed": true,
+      "reference": "midpoint: ratio(K = 1e-8) / ratio(K = 1e-2) minus 1",
+      "reference_kind": "analytic",
+      "tolerance": 0.05
+     },
+     {
+      "comparison": "le",
+      "observed": 0.008761623014184705,
+      "passed": true,
+      "reference": "RK4 ratio grows like 1/K: ratio(K = 1e-4)/ratio(K = 1e-2) in [50, 200] (distance from 100)",
+      "reference_kind": "analytic",
+      "tolerance": 0.3010299956639812
+     },
+     {
+      "comparison": "le",
+      "observed": 0.6394864803160453,
+      "passed": true,
+      "reference": "Euler and midpoint: max ratio(K = 1e-2) / ratio(K = 1) (weaker is harder above K = 1e-2)",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "roundoff-limited entries among the compared ratios",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     }
+    ],
+    "derivation": "docs/lab/GEODESIC_JACOBI_LIMITS.md#t018-curvature-signal-versus-integrator-error",
+    "generator": {
+     "deterministic": true,
+     "name": "ciw.lab.geodesic_jacobi_limits:resolvability",
+     "seed": null,
+     "surfaces": [
+      "sphere R=1",
+      "sphere R=10",
+      "sphere R=100",
+      "sphere R=1e4"
+     ]
+    }
+   },
+   "claim": "Weak curvature is harder to resolve for Euler and midpoint only down to K ~ 1e-2: for K <= 1e-2 their ratios no longer depend on K, and the RK4 ratio grows like 1/K",
+   "counterexample": {
+    "statement": "Weaker intrinsic curvature is harder to resolve at a fixed step size",
+    "witness": {
+     "truncation_limited_ratios_at_N16": {
+      "euler": {
+       "sphere R=1": 8.733790907567972,
+       "sphere R=10": 5.585141207296921,
+       "sphere R=100": 5.565415886526588,
+       "sphere R=1e4": 5.565217996909997
+      },
+      "midpoint": {
+       "sphere R=1": 631.7806171014632,
+       "sphere R=10": 260.2026595429322,
+       "sphere R=100": 256.0414063628206,
+       "sphere R=1e4": 255.99952918724318
+      },
+      "rk4": {
+       "sphere R=1": 839518.3790517536,
+       "sphere R=10": 33299186.61006988,
+       "sphere R=100": 3263412721.9076085
+      }
+     }
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-06,
+    "rel": 0.02
+   },
+   "uncertainty": {
+    "basis": "O(K L^2) corrections to K-independence at K = 1e-2",
+    "kind": "model_truncation",
+    "value": 0.01615329513953545
+   },
+   "unit": null,
+   "value": {
+    "ratio_K_1e-2_over_K_1_at_N16": {
+     "euler": 0.6394864803160453,
+     "midpoint": 0.41185603435685014
+    },
+    "ratio_K_1e-8_over_K_1e-2_at_N16": {
+     "euler": 0.9964328188585644,
+     "midpoint": 0.9838467048604645
+    },
+    "rk4_ratio_K_1e-4_over_K_1e-2_at_N16": 98.0027758672259
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "max ratio over methods and N for K = 1e-16",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "nonzero computed deviations for K = 1e-16",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "K = 1e-14 runs (all methods and N) not classed roundoff-limited",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "deterministic": true,
+     "name": "ciw.lab.geodesic_jacobi_limits:resolvability",
+     "seed": null,
+     "surfaces": [
+      "sphere R=1e7",
+      "sphere R=1e8"
+     ]
+    }
+   },
+   "claim": "Below the floating-point resolution of L no step size resolves the curvature signal",
+   "counterexample": {
+    "statement": "Refining the step size always makes a nonzero curvature effect resolvable",
+    "witness": {
+     "computed_deviation": 0.0,
+     "signal": 1.3333333333333334e-16,
+     "steps": [
+      4,
+      8,
+      16,
+      32,
+      64,
+      128
+     ],
+     "surface": "Sphere(1e8), K = 1e-16"
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "one unit in the last place of L = 2",
+    "kind": "roundoff",
+    "value": 4.440892098500626e-16
+   },
+   "unit": null,
+   "value": {
+    "K_1e-14_all_runs_roundoff_limited": true,
+    "max_ratio_K_1e-16": 1.0,
+    "nonzero_computed_deviations_K_1e-16": 0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.03880621971828968,
+      "passed": true,
+      "reference": "euler order minus 1",
+      "reference_kind": "analytic",
+      "tolerance": 0.3
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.09521477576125803,
+      "passed": true,
+      "reference": "midpoint order minus 2",
+      "reference_kind": "analytic",
+      "tolerance": 0.3
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.11127852493369916,
+      "passed": true,
+      "reference": "rk4 order minus 4",
+      "reference_kind": "analytic",
+      "tolerance": 0.3
+     }
+    ],
+    "generator": {
+     "deterministic": true,
+     "name": "ciw.lab.geodesic_jacobi_limits:resolvability",
+     "seed": null,
+     "surface": "sphere R=1"
+    }
+   },
+   "claim": "Resolvability ratios improve like h^-p with p = 1, 2, 4 (sphere R = 1)",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.02,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "largest gap between a fitted order and consecutive-step-pair orders",
+    "kind": "fit_spread",
+    "value": 0.09445532364848397
+   },
+   "unit": null,
+   "value": {
+    "euler": 1.0388062197182897,
+    "midpoint": 1.904785224238742,
+    "rk4": 3.888721475066301
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "max |K| from the second fundamental form along the plane and cylinder paths",
+      "reference_kind": "analytic",
+      "tolerance": 1e-14
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "max |j_head(L) - L| on plane and cylinder",
+      "reference_kind": "analytic",
+      "tolerance": 1e-13
+     }
+    ],
+    "generator": {
+     "deterministic": true,
+     "name": "ciw.lab.geodesic_jacobi_limits:resolvability",
+     "seed": null,
+     "surfaces": [
+      "plane",
+      "cylinder"
+     ]
+    }
+   },
+   "claim": "Flat surfaces (K from the second fundamental form) show no spurious curvature signal for any method or step",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-13,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "with K = 0 from the embedding, j'' = 0 is integrated exactly by every method",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "max_abs_deviation": 0.0,
+    "max_abs_path_curvature": 0.0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "Curvature signals resolvable here would be resolvable in measured sensor data",
+   "domain": "sensor_performance",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 29988,
+   "path": "artifacts/T018/resolvability.json",
+   "sha256": "e030e21d69c2ef9254ad1f7314a1079e1b2a0571bb812ba6445766168a267f2a"
+  },
+  {
+   "bytes": 2180,
+   "path": "artifacts/T018/resolvability.md",
+   "sha256": "6fad7cf11f203fa0052674dfb33633e5c3881650770c864aa705f04b98df8641"
+  },
+  {
+   "bytes": 8783,
+   "path": "artifacts/T018/resolvability-rk4.svg",
+   "sha256": "a48b8d5091f43dd89ab7e9b9f3479ca0efe9250ee020ff224f8306a53b406ac0"
+  },
+  {
+   "bytes": 8313,
+   "path": "artifacts/T018/resolvability-euler.svg",
+   "sha256": "4cd0555134c88f7c092f6446b316c1cd8ebcfb5198582fad824e1d5b45e41fe3"
+  }
+ ],
+ "hypothesis": "A curvature effect in a numerical Jacobi field is meaningful only where it exceeds the integrator error; the working expectation was that weak curvature (small |K| L^3/6) is the hard case for coarse steps and low-order methods.",
+ "input_data": [
+  "14 declared paths of length 2.0: plane, cylinder, sphere R=1, sphere R=10, sphere R=100, sphere R=1e4, sphere R=1e7, sphere R=1e8, torus R=2, torus R=64 equator, saddle c=1, bump h=0.5, bump h=0.05, hyperbolic k=1",
+  "Plane and cylinder with K recomputed from their second fundamental form",
+  "Euler, midpoint, RK4 with N = 4, 8, 16, 32, 64, 128",
+  "References: cancellation-free closed forms for constant curvature, DP45 at rtol 1e-12 (checked at 1e-11) otherwise",
+  "Per method and step, an error below 64 ulp(L), or below 1000 ulp(L) and not decreasing at the next step, is classed as roundoff-limited (declared)"
+ ],
+ "mathematical_model": "Signal S = |j_head(L) - L| (zero on flat surfaces; |K| L^3/6 for small constant K). Truncation error E(h) ~ C h^p. For j'' + K j = 0 the Euler and midpoint errors are themselves proportional to K (the K-free part j = s is integrated exactly), so S/E is independent of K as K -> 0; the RK4 error enters at O(K^2 h^4), so S/E grows like 1/K. The limit is floating point: when S approaches ulp(L) = 4.4e-16 the computed deviation is rounded away. Resolved when S/E >= 10 for every finer step.",
+ "number": 18,
+ "numerical_result": "Min RK4 ratio over truncation-limited entries with N >= 16: 1.174e+05 (hyperbolic k=1, N = 16); the weakest signal with truncation-limited RK4 errors (sphere R=100, S = 0.000133) is resolved from N = 4; RK4 errors are roundoff-limited at every N >= 16 for sphere R=1e4, sphere R=1e7, sphere R=1e8. At N = 16, ratio(K = 1e-2)/ratio(K = 1): Euler 0.639, midpoint 0.412 (weaker is harder there); ratio(K = 1e-8)/ratio(K = 1e-2): Euler 0.9964, midpoint 0.9838; RK4 ratio gain from K = 1e-2 to 1e-4: 98; K = 1e-16: computed deviation 0 for all runs (max ratio 1); K = 1e-14: every run roundoff-limited; orders euler 1.04, midpoint 1.9, rk4 3.89; flat max |j - L| 0 with second-form max |K| 0. Resolved from N (truncation-limited at N = 16): euler: N = 32 (sphere R=1, sphere R=10, sphere R=100, sphere R=1e4, torus R=2, torus R=64 equator, saddle c=1, bump h=0.5, bump h=0.05); N = 64 (hyperbolic k=1) | midpoint: N = 4 (sphere R=1, sphere R=10, sphere R=100, sphere R=1e4, torus R=2, torus R=64 equator, saddle c=1, bump h=0.5, bump h=0.05); N = 8 (hyperbolic k=1) | rk4: N = 4 (sphere R=1, sphere R=10, sphere R=100, torus R=2, torus R=64 equator, saddle c=1, bump h=0.5, bump h=0.05, hyperbolic k=1). Optional SciPy DOP853 cross-check of the adaptive references: max |DOP853 - DP45 reference| = 3.4e-13 (artifact only; it shares ciw's right-hand side, so it checks the integrator, not the geometry).",
+ "observation_model": "Computed deviation j_head,h(L) - L (an exact floating-point subtraction) against the true deviation; no renormalization.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/geodesic_jacobi_limits.py": "29c8472e91cdf4deb2e1f526ab40e57f703f41e20ef14edd8fb1cc2fc6ede661",
+   "src/ciw/lab/geodesic_jacobi_limits_core.py": "8aa707ec2a190208bf07cd3b1f94a40f191a7a9c4be277714ed8b627e2c5fcb9"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T005 (Jacobi separation law) with resolvability-aware step selection, and T046",
+ "report_id": "sha256:5be956b775d7eb3a64451d8def7369dd65bc91c3dd8de9bd97a29552ee50a39f",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "geodesic-jacobi",
+ "state": "completed",
+ "task_id": "T018",
+ "tests_passed": [
+  "check: RK4 resolves every truncation-limited curvature signal from N = 16 (h = 1/8) vs min over truncation-limited (surface, N >= 16) of signal / RK4 error",
+  "check: RK4 resolves every truncation-limited curvature signal from N = 16 (h = 1/8) vs max reference spread (DP45 rtol 1e-12 vs 1e-11)",
+  "check: Weak curvature is harder to resolve for Euler and midpoint only down to K ~ 1e-2: for K <= 1e-2 their ratios no longer depend on K, and the RK4 ratio grows like 1/K vs euler: ratio(K = 1e-8) / ratio(K = 1e-2) minus 1",
+  "check: Weak curvature is harder to resolve for Euler and midpoint only down to K ~ 1e-2: for K <= 1e-2 their ratios no longer depend on K, and the RK4 ratio grows like 1/K vs midpoint: ratio(K = 1e-8) / ratio(K = 1e-2) minus 1",
+  "check: Weak curvature is harder to resolve for Euler and midpoint only down to K ~ 1e-2: for K <= 1e-2 their ratios no longer depend on K, and the RK4 ratio grows like 1/K vs RK4 ratio grows like 1/K: ratio(K = 1e-4)/ratio(K = 1e-2) in [50, 200] (distance from 100)",
+  "check: Weak curvature is harder to resolve for Euler and midpoint only down to K ~ 1e-2: for K <= 1e-2 their ratios no longer depend on K, and the RK4 ratio grows like 1/K vs Euler and midpoint: max ratio(K = 1e-2) / ratio(K = 1) (weaker is harder above K = 1e-2)",
+  "check: Weak curvature is harder to resolve for Euler and midpoint only down to K ~ 1e-2: for K <= 1e-2 their ratios no longer depend on K, and the RK4 ratio grows like 1/K vs roundoff-limited entries among the compared ratios",
+  "check: Below the floating-point resolution of L no step size resolves the curvature signal vs max ratio over methods and N for K = 1e-16",
+  "check: Below the floating-point resolution of L no step size resolves the curvature signal vs nonzero computed deviations for K = 1e-16",
+  "check: Below the floating-point resolution of L no step size resolves the curvature signal vs K = 1e-14 runs (all methods and N) not classed roundoff-limited",
+  "check: Resolvability ratios improve like h^-p with p = 1, 2, 4 (sphere R = 1) vs euler order minus 1",
+  "check: Resolvability ratios improve like h^-p with p = 1, 2, 4 (sphere R = 1) vs midpoint order minus 2",
+  "check: Resolvability ratios improve like h^-p with p = 1, 2, 4 (sphere R = 1) vs rk4 order minus 4",
+  "check: Flat surfaces (K from the second fundamental form) show no spurious curvature signal for any method or step vs max |K| from the second fundamental form along the plane and cylinder paths",
+  "check: Flat surfaces (K from the second fundamental form) show no spurious curvature signal for any method or step vs max |j_head(L) - L| on plane and cylinder",
+  "pytest: tests/test_lab_geodesic_jacobi_limits.py::test_t018_resolvability_report",
+  "pytest: tests/test_lab_geodesic_jacobi_limits.py::test_optional_scipy_cross_check_agrees_with_adaptive_references"
+ ],
+ "tests_skipped": [],
+ "title": "Generate a report comparing intrinsic curvature effects with integrator error.",
+ "uncertainty": "Reference spread up to 3.2e-12. Roundoff-limited errors (marked (r) in resolvability.md) occur for euler on sphere R=1e7 (from N = 4), sphere R=1e8 (from N = 4); midpoint on sphere R=1e7 (from N = 4), sphere R=1e8 (from N = 4); rk4 on sphere R=100 (from N = 32), sphere R=1e4 (from N = 4), sphere R=1e7 (from N = 4), sphere R=1e8 (from N = 4). Their ratios depend on the rounding sequence; they are kept in the artifacts and out of every checked ratio and witness except the K = 1e-16 floor finding, whose claim is about roundoff and whose computed deviations are exactly zero. The threshold 10 and the roundoff classification are declared conventions.",
+ "unresolved_assumptions": [
+  "Only j_head(L) is compared; the lateral column and conjugate-point locations are not",
+  "Variable-curvature paths add geodesic-position error to K(gamma(s)); its K-scaling is not separated here",
+  "The SciPy cross-check shares ciw's right-hand side and is independent in the integrator only",
+  "Measurement noise of any real observation is absent; sensor-level resolvability is not established"
+ ]
+}

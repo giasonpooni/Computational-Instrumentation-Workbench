@@ -1,0 +1,14 @@
+{
+ "cases": 1152,
+ "label_counts": {
+  "analytic": 4,
+  "hardware_measured": 48,
+  "independently_verified": 112,
+  "not_established": 804,
+  "numerically_verified": 32,
+  "provider_backed": 16,
+  "refused": 128,
+  "synthetic": 8
+ },
+ "violations": []
+}

@@ -1,0 +1,394 @@
+{
+ "changed_files": [
+  "src/ciw/lab/sensor_fusion_admission.py",
+  "src/ciw/lab/sensor_fusion_common.py",
+  "src/ciw/lab/sensor_fusion_bench.py",
+  "src/ciw/lab/sensor_fusion_objects.py"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 4,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Observed lost tick = predicted; refusal codes as declared with no side effects; two-point covariance exact; turning-truth Monte Carlo NEES equal to the expectation.",
+ "experiment": "Run a FusionSession with a 1 m track radius, stop the sensor, predict tick by tick, then exercise admit, fuse and reacquire (including readings older than the clock); compare the reacquisition covariance with the error map; Monte Carlo the two-point estimator; evaluate and simulate the NEES of the coasting track under an unmodelled turn.",
+ "failure_modes_checked": [
+  "off-by-one in the loss tick",
+  "fusion into a lost track",
+  "side effects of a refused fusion",
+  "admission of a lost track",
+  "reacquisition from non-consecutive readings",
+  "reacquisition moving the clock backwards",
+  "redundant reacquisition",
+  "unmodelled manoeuvre during the gap"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "observed minus predicted track-lost tick",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "derivation": "radius(n) = sqrt(lambda_max(P_pos(n)) chi2_2(0.99)) with the closed-form P(n)"
+   },
+   "claim": "The track is declared lost at exactly the tick at which the 99% position ellipse, grown in closed form from the last update, first exceeds the 1 m radius",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-09
+   },
+   "uncertainty": {
+    "basis": "integer tick from a deterministic closed form",
+    "kind": "reference_error",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "active_ticks": 30,
+    "observed_lost_tick": 41,
+    "predicted_lost_tick": 41,
+    "radius_at_loss": 1.009661364098545,
+    "radius_m": 1.0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "track_lost",
+      "observed_refusal": "track_lost",
+      "passed": true,
+      "reference": "admit a lost-track candidate",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "track_lost_requires_reacquisition",
+      "observed_refusal": "track_lost_requires_reacquisition",
+      "passed": true,
+      "reference": "fuse into a lost track",
+      "reference_kind": "refusal"
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "state, covariance, clock or status changed by the refused fuse",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     },
+     {
+      "expected_refusal": "reacquisition_needs_consecutive_readings",
+      "observed_refusal": "reacquisition_needs_consecutive_readings",
+      "passed": true,
+      "reference": "reacquire from non-consecutive readings",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "out_of_order",
+      "observed_refusal": "out_of_order",
+      "passed": true,
+      "reference": "reacquire from readings older than the session clock",
+      "reference_kind": "refusal"
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "session clock after the refusals minus the lost tick",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "expected_refusal": "reacquisition_not_needed",
+      "observed_refusal": "reacquisition_not_needed",
+      "passed": true,
+      "reference": "reacquire while tracking",
+      "reference_kind": "refusal"
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "admission of the first update after reacquisition refused",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     }
+    ],
+    "derivation": "FusionSession.fuse, reacquire and the admission gate"
+   },
+   "claim": "A lost track is not admissible and cannot be updated, and the refused update leaves the state, covariance and clock unchanged; reacquisition is explicit, needs two consecutive readings no older than the session clock, and is refused while tracking",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "refusal codes and bitwise state comparison",
+    "kind": "reference_error",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "admit_after_reacquisition": "none",
+    "admit_lost": "track_lost",
+    "clock_after_refusals": 41,
+    "dispositions": {
+     "fused": 1,
+     "reacquired": 2,
+     "recorded": 3,
+     "refused:out_of_order": 1,
+     "refused:reacquisition_needs_consecutive_readings": 1,
+     "refused:reacquisition_not_needed": 1,
+     "refused:track_lost_requires_reacquisition": 1
+    },
+    "fuse_lost": "track_lost_requires_reacquisition",
+    "reacquire_gap": "reacquisition_needs_consecutive_readings",
+    "reacquire_older_than_clock": "out_of_order",
+    "reacquire_while_tracking": "reacquisition_not_needed",
+    "refused_fuse_left_state_unchanged": true
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 2.387245667789383,
+      "passed": true,
+      "reference": "sample covariance of the two-point error against the formula (max |z|)",
+      "reference_kind": "analytic",
+      "tolerance": 3.9136560829349545
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.5356597811279062,
+      "passed": true,
+      "reference": "mean NEES against 4 (z)",
+      "reference_kind": "analytic",
+      "tolerance": 3.9136560829349545
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 2.2199835526768386e-16,
+      "passed": true,
+      "reference": "session reacquisition covariance against the linear error map J Sigma J^T with Q(dt) from cv_model (relative)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "runs": 20000,
+     "seed": 732027
+    }
+   },
+   "claim": "The two-point reacquisition covariance [[R, R/dt], [R/dt, 2R/dt^2 + q dt/3 I]] is exact for the constant-velocity truth",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "sampling standard error of the mean NEES (Var chi2(4) = 8)",
+    "kind": "monte_carlo_95ci",
+    "value": 0.0392
+   },
+   "unit": null,
+   "value": {
+    "formula_vs_error_map": 2.2199835526768386e-16,
+    "max_abs_z": 2.387245667789383,
+    "nees_mean": 4.010713195622558,
+    "nees_z": 0.5356597811279062,
+    "runs": 20000,
+    "session_vs_error_map": 2.2199835526768386e-16,
+    "z_critical": 3.9136560829349545
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 44.0,
+      "passed": true,
+      "reference": "a finite gap (ticks) after which the coasting track is inconsistent",
+      "reference_kind": "analytic",
+      "tolerance": 399.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.8776614619895199,
+      "passed": true,
+      "reference": "Monte Carlo mean NEES of the turning truth at that gap against the expectation (z)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     },
+     {
+      "comparison": "signed_ge",
+      "observed": 3.590603032028965,
+      "passed": true,
+      "reference": "declared 1 m radius below the radius reached at inconsistency (margin, m)",
+      "reference_kind": "analytic",
+      "tolerance": 0.0
+     }
+    ],
+    "derivation": "E[NEES] = tr(P_f^-1 (T P T^T + Q_turn)) + d^T P_f^-1 d for a linear turning truth",
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "runs": 4000,
+     "seed": 732028
+    }
+   },
+   "claim": "Under an unmodelled 0.2 rad/s turn during the gap, the expected NEES of the coasting track exceeds the 99% chi-square(4) quantile after a finite gap even though its covariance keeps growing; a radius rule protects against this only if its radius is below the ellipse radius reached by then",
+   "counterexample": {
+    "statement": "A coasting track stays statistically consistent for any gap because its covariance grows",
+    "witness": {
+     "gap_ticks": 44,
+     "omega_rad_s": 0.2,
+     "radius_at_inconsistency_m": 4.590603032028965
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "standard error of the Monte Carlo mean NEES at the first inconsistent gap; the expectation itself is exact",
+    "kind": "monte_carlo_95ci",
+    "value": 0.2376933589916655
+   },
+   "unit": null,
+   "value": {
+    "first_inconsistent_gap_ticks": 44,
+    "gap_ticks_before_track_loss": 11,
+    "monte_carlo": {
+     "expected_nees": 13.401899932629272,
+     "mean_nees": 13.295464064793647,
+     "random_part": 4.594804619393447,
+     "runs": 4000,
+     "standard_error": 0.12127212193452322,
+     "z_vs_expected": -0.8776614619895199
+    },
+    "omega_rad_s": 0.2,
+    "radius_at_inconsistency_m": 4.590603032028965,
+    "speed_m_s": 1.6691446678371058,
+    "threshold_chi2_4_99": 13.276704135987641
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "seed": 732026
+    },
+    "notes": "synthetic draws only; no acquisition"
+   },
+   "claim": "A 1 m, 99% track-loss radius is a safe operating threshold",
+   "domain": "machine_safety",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": "not established: the threshold is a declared policy value"
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 3270,
+   "path": "artifacts/T073/track_lost.json",
+   "sha256": "ff43a87ff355bf17cbeaa9bd794d4989a81914b2f129f151c932333e8d3a0c36"
+  },
+  {
+   "bytes": 3087,
+   "path": "artifacts/T073/turn_nees.svg",
+   "sha256": "8f60e3b3c38e2462c67e5c79ca9d988a90b9e1d0fd4d7548a3326d8102681621"
+  }
+ ],
+ "hypothesis": "After a sensor stops, the covariance grows by the model, the track-lost tick is predictable exactly from a declared radius rule, a lost track is neither updated nor admitted (and a refused update has no side effects), and reacquisition is an explicit, refusable operation with an exact initial covariance.",
+ "input_data": [
+  "seed 732026: one synthetic camera run (30 active ticks)",
+  "seed 732027: 20000 two-point Monte Carlo draws",
+  "seed 732028: 4000 turning-truth draws; turn rate 0.2 rad/s from the last estimated state"
+ ],
+ "mathematical_model": "P(n) = F(n dt) P F(n dt)^T + Q(n dt); lost when sqrt(lambda_max(P_pos) chi2_2(0.99)) > 1 m. Two-point initialization p = z2, v = (z2 - z1)/dt has error covariance [[R, R/dt], [R/dt, 2R/dt^2 + q dt/3 I]], equal to J blockdiag(R, R, Q(dt)) J^T for the error map J. A coordinated turn at omega has linear transition T(t); with white acceleration through the turn, E[NEES] = tr(P_f^-1 (T P T^T + Q_turn(t))) + d^T P_f^-1 d with d = (T - F) x_hat.",
+ "number": 73,
+ "numerical_result": "lost at tick 41 (predicted 41); refused fuse left the state unchanged: True; two-point max |z| 2.39, mean NEES 4.011; under the turn the coasting track becomes inconsistent after 44 ticks (99% ellipse radius 4.59 m; simulated mean NEES 13.30), while the 1 m rule had already declared loss after 11 ticks.",
+ "observation_model": "Camera positions until tick 30, then none; readings after loss are offered to fuse, reacquire and admit.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/sensor_fusion_admission.py": "db737df809fa23fd26fb21a196b6efa2bda6326aba21a8ff0288a99a95746c2c",
+   "src/ciw/lab/sensor_fusion_bench.py": "f373849a4c6836fa20685c59ce7a6fe6bf732f6df9d6a49646cdc017262dd656",
+   "src/ciw/lab/sensor_fusion_common.py": "6787aa47d199d50d0b4de4d7e53714ce7b8b5aad37d647cfc1a954414e90209f",
+   "src/ciw/lab/sensor_fusion_objects.py": "a795ffc235e0a4118cb7b9ac7800191a90984372d79e59f1a934442d98d7a1f1"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T074: compare the fused state with the exact batch posterior.",
+ "report_id": "sha256:0f6d22593da114a7fd40728eea73aab43041a87f843dde459a9ef2d361469c02",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "sensor-fusion",
+ "state": "completed",
+ "task_id": "T073",
+ "tests_passed": [
+  "check: The track is declared lost at exactly the tick at which the 99% position ellipse, grown in closed form from the last update, first exceeds the 1 m radius vs observed minus predicted track-lost tick",
+  "check: A lost track is not admissible and cannot be updated, and the refused update leaves the state, covariance and clock unchanged; reacquisition is explicit, needs two consecutive readings no older than the session clock, and is refused while tracking vs admit a lost-track candidate",
+  "check: A lost track is not admissible and cannot be updated, and the refused update leaves the state, covariance and clock unchanged; reacquisition is explicit, needs two consecutive readings no older than the session clock, and is refused while tracking vs fuse into a lost track",
+  "check: A lost track is not admissible and cannot be updated, and the refused update leaves the state, covariance and clock unchanged; reacquisition is explicit, needs two consecutive readings no older than the session clock, and is refused while tracking vs state, covariance, clock or status changed by the refused fuse",
+  "check: A lost track is not admissible and cannot be updated, and the refused update leaves the state, covariance and clock unchanged; reacquisition is explicit, needs two consecutive readings no older than the session clock, and is refused while tracking vs reacquire from non-consecutive readings",
+  "check: A lost track is not admissible and cannot be updated, and the refused update leaves the state, covariance and clock unchanged; reacquisition is explicit, needs two consecutive readings no older than the session clock, and is refused while tracking vs reacquire from readings older than the session clock",
+  "check: A lost track is not admissible and cannot be updated, and the refused update leaves the state, covariance and clock unchanged; reacquisition is explicit, needs two consecutive readings no older than the session clock, and is refused while tracking vs session clock after the refusals minus the lost tick",
+  "check: A lost track is not admissible and cannot be updated, and the refused update leaves the state, covariance and clock unchanged; reacquisition is explicit, needs two consecutive readings no older than the session clock, and is refused while tracking vs reacquire while tracking",
+  "check: A lost track is not admissible and cannot be updated, and the refused update leaves the state, covariance and clock unchanged; reacquisition is explicit, needs two consecutive readings no older than the session clock, and is refused while tracking vs admission of the first update after reacquisition refused",
+  "check: The two-point reacquisition covariance [[R, R/dt], [R/dt, 2R/dt^2 + q dt/3 I]] is exact for the constant-velocity truth vs sample covariance of the two-point error against the formula (max |z|)",
+  "check: The two-point reacquisition covariance [[R, R/dt], [R/dt, 2R/dt^2 + q dt/3 I]] is exact for the constant-velocity truth vs mean NEES against 4 (z)",
+  "check: The two-point reacquisition covariance [[R, R/dt], [R/dt, 2R/dt^2 + q dt/3 I]] is exact for the constant-velocity truth vs session reacquisition covariance against the linear error map J Sigma J^T with Q(dt) from cv_model (relative)",
+  "check: Under an unmodelled 0.2 rad/s turn during the gap, the expected NEES of the coasting track exceeds the 99% chi-square(4) quantile after a finite gap even though its covariance keeps growing; a radius rule protects against this only if its radius is below the ellipse radius reached by then vs a finite gap (ticks) after which the coasting track is inconsistent",
+  "check: Under an unmodelled 0.2 rad/s turn during the gap, the expected NEES of the coasting track exceeds the 99% chi-square(4) quantile after a finite gap even though its covariance keeps growing; a radius rule protects against this only if its radius is below the ellipse radius reached by then vs Monte Carlo mean NEES of the turning truth at that gap against the expectation (z)",
+  "check: Under an unmodelled 0.2 rad/s turn during the gap, the expected NEES of the coasting track exceeds the 99% chi-square(4) quantile after a finite gap even though its covariance keeps growing; a radius rule protects against this only if its radius is below the ellipse radius reached by then vs declared 1 m radius below the radius reached at inconsistency (margin, m)",
+  "pytest: tests/test_lab_sensor_fusion.py::test_track_lost_prediction_refusals_and_reacquisition",
+  "pytest: tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T073]"
+ ],
+ "tests_skipped": [],
+ "title": "Add sensor-track-lost behavior.",
+ "uncertainty": "The lost tick and refusals are exact; the two-point and turning-truth statements carry Monte Carlo error (Bonferroni and single z bounds); the turn expectation is exact given the declared turn rate and process noise (Gauss-Legendre quadrature of a smooth integrand).",
+ "unresolved_assumptions": [
+  "Under the correct model a coasting track stays consistent (T069); the radius rule is a policy for model validity and data association, not a statistical necessity.",
+  "Reacquisition assumes the readings belong to the lost target (no association ambiguity).",
+  "The turning truth adds white acceleration through the turn dynamics; other manoeuvre noise models change the random part of the expectation."
+ ]
+}

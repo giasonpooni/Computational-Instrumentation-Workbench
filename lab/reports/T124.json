@@ -1,0 +1,423 @@
+{
+ "changed_files": [
+  "src/ciw/lab/energy_gpu.py",
+  "src/ciw/lab/energy_gpu_kernels.py",
+  "src/ciw/lab/energy_gpu_telemetry.py",
+  "docs/lab/ENERGY_GPU.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 5,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "All readings carry monotonic and UTC brackets; identity fields present; each tampering class refused with its specific message.",
+ "experiment": "Validate the four fixtures; apply 9 mutations (with or without resealing); validate a resealed doubling, an origin relabelling and a UUID mismatch.",
+ "failure_modes_checked": [
+  "raw counter reading edited without resealing",
+  "sensor device UUID replaced by a non-UUID",
+  "calibration metadata invented for the sensor",
+  "monotonic read bracket reversed",
+  "failed counter read keeps a fabricated energy",
+  "UTC timestamp of a reading removed",
+  "runtime executable identity removed",
+  "prepared device input identity replaced",
+  "retained batch output edited",
+  "resealed modification",
+  "origin relabelling",
+  "sensor/workload UUID mismatch",
+  "placeholder identity values counted as identification"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "readings without monotonic and UTC brackets",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "missing identity fields",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "name": "examples/energy-accuracy synthetic fixtures",
+     "origin": "synthetic_fixture",
+     "seed": null
+    }
+   },
+   "claim": "Every fixture retains raw timestamped counter readings and the 14 device/runtime identity fields (placeholder values in these synthetic fixtures)",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "integer counts, refusal codes or exact comparisons",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "baseline": {
+     "batches": 2,
+     "identity_fields_present": 14,
+     "placeholder_values": 10,
+     "raw_counter_readings": 12,
+     "samples": 12
+    },
+    "missing": {
+     "batches": 2,
+     "identity_fields_present": 14,
+     "placeholder_values": 10,
+     "raw_counter_readings": 11,
+     "samples": 11
+    },
+    "reset": {
+     "batches": 2,
+     "identity_fields_present": 14,
+     "placeholder_values": 10,
+     "raw_counter_readings": 12,
+     "samples": 12
+    },
+    "under-target": {
+     "batches": 2,
+     "identity_fields_present": 14,
+     "placeholder_values": 10,
+     "raw_counter_readings": 12,
+     "samples": 12
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "Retained log digest differs",
+      "observed_refusal": "Retained log digest differs",
+      "passed": true,
+      "reference": "raw counter reading edited without resealing",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "Require a physical GPU UUID",
+      "observed_refusal": "Require a physical GPU UUID",
+      "passed": true,
+      "reference": "sensor device UUID replaced by a non-UUID",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "Unsupported sensor scope or invented calibration metadata",
+      "observed_refusal": "Unsupported sensor scope or invented calibration metadata",
+      "passed": true,
+      "reference": "calibration metadata invented for the sensor",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "Reversed monotonic hardware call bracket",
+      "observed_refusal": "Reversed monotonic hardware call bracket",
+      "passed": true,
+      "reference": "monotonic read bracket reversed",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "Failed counter reading cannot contain fabricated energy",
+      "observed_refusal": "Failed counter reading cannot contain fabricated energy",
+      "passed": true,
+      "reference": "failed counter read keeps a fabricated energy",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "Require exactly the declared energy-log fields",
+      "observed_refusal": "Require exactly the declared energy-log fields",
+      "passed": true,
+      "reference": "UTC timestamp of a reading removed",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "Require exactly the declared energy-log fields",
+      "observed_refusal": "Require exactly the declared energy-log fields",
+      "passed": true,
+      "reference": "runtime executable identity removed",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "Prepared device input differs from declared initial problem",
+      "observed_refusal": "Prepared device input differs from declared initial problem",
+      "passed": true,
+      "reference": "prepared device input identity replaced",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "Expanded result bytes differ from their digest",
+      "observed_refusal": "Expanded result bytes differ from their digest",
+      "passed": true,
+      "reference": "retained batch output edited",
+      "reference_kind": "refusal"
+     }
+    ],
+    "generator": {
+     "name": "examples/energy-accuracy synthetic fixtures",
+     "origin": "synthetic_fixture",
+     "seed": null
+    }
+   },
+   "claim": "The energy-log validator refuses 9 classes of tampering",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "integer counts, refusal codes or exact comparisons",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": [
+    "UTC timestamp of a reading removed",
+    "calibration metadata invented for the sensor",
+    "failed counter read keeps a fabricated energy",
+    "monotonic read bracket reversed",
+    "prepared device input identity replaced",
+    "raw counter reading edited without resealing",
+    "retained batch output edited",
+    "runtime executable identity removed",
+    "sensor device UUID replaced by a non-UUID"
+   ]
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "energy_records.validate_log refusals of the resealed log (0 = accepted)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "name": "examples/energy-accuracy synthetic fixtures",
+     "origin": "synthetic_fixture",
+     "seed": null
+    }
+   },
+   "claim": "A log whose counter readings were doubled and then resealed passes validation",
+   "counterexample": {
+    "statement": "A valid log digest shows that the retained readings are unmodified hardware output",
+    "witness": {
+     "log_digest": "sha256:d93ef3111f855922cfa1fd87f8fe04d6b18b63b70836e93b48a4776ef8054688",
+     "mutation": "every energy_mj doubled, then energy_records.seal"
+    }
+   },
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "synthetic fixture with exact decimal counter readings; no physical uncertainty model",
+    "kind": "reference_error",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "gross_energy_j_original": 0.2,
+    "gross_energy_j_resealed": 0.4
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "eligible after relabelling (1 = yes)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     }
+    ],
+    "generator": {
+     "name": "examples/energy-accuracy synthetic fixtures",
+     "origin": "synthetic_fixture",
+     "seed": null
+    }
+   },
+   "claim": "Relabelling a synthetic fixture as physical_measurement makes its analysis eligible for physical comparison",
+   "counterexample": {
+    "statement": "The declared origin of a retained energy log authenticates a physical measurement",
+    "witness": {
+     "origin": "physical_measurement",
+     "run_id": "energy-run-11111111111111111111111111111111"
+    }
+   },
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "integer counts, refusal codes or exact comparisons",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "classification": "physical_domain_measurement",
+    "hardware_provenance": "retained_operator_record_not_authenticated"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "workload_sensor_device_mismatch reported (1 = yes)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     }
+    ],
+    "generator": {
+     "name": "examples/energy-accuracy synthetic fixtures",
+     "origin": "synthetic_fixture",
+     "seed": null
+    }
+   },
+   "claim": "A resealed sensor/workload UUID mismatch validates but is withheld by the analysis",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "integer counts, refusal codes or exact comparisons",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": [
+    "workload_sensor_device_mismatch"
+   ]
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": [
+     "the fixtures declare origin synthetic_fixture and carry placeholder library and executable digests"
+    ]
+   },
+   "claim": "The fixtures' counter readings were produced by a physical GPU and NVML counter",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 5807,
+   "path": "artifacts/T124/inventory.json",
+   "sha256": "527bdcd69510678f8c550e8734b4dfc3b23b56372fd2c3414e3b14f28a32c9c1"
+  },
+  {
+   "bytes": 1384,
+   "path": "artifacts/T124/tampering.json",
+   "sha256": "49fa312ecfcda8ea45b1eef227f188673fe5a843f0eb7d6ec71b02a997dc15d1"
+  },
+  {
+   "bytes": 919,
+   "path": "artifacts/T124/baseline-measurement-samples.json",
+   "sha256": "f45be4e4033142b229bf52bc2e043bcff03e4603ece7711d4e853f71eca65f69"
+  }
+ ],
+ "hypothesis": "Every retained energy log keeps raw timestamped counter readings with device and runtime identity fields, and the validator refuses edits to them unless the log is deliberately resealed.",
+ "input_data": [
+  "examples/energy-accuracy/{baseline,reset,missing,under-target}.json: synthetic fixtures (origin synthetic_fixture) constructed on the CPU, not hardware captures"
+ ],
+ "mathematical_model": "log_digest = sha256(canonical(log without digest)); structural profile of energy_records.validate_log; analysis eligibility rules of energy_records.analyze.",
+ "number": 124,
+ "numerical_result": "47 raw readings retained; 14 identity fields per fixture, 40 placeholder values over the four fixtures; refusals {'raw counter reading edited without resealing': 'Retained log digest differs', 'sensor device UUID replaced by a non-UUID': 'Require a physical GPU UUID', 'calibration metadata invented for the sensor': 'Unsupported sensor scope or invented calibration metadata', 'monotonic read bracket reversed': 'Reversed monotonic hardware call bracket', 'failed counter read keeps a fabricated energy': 'Failed counter reading cannot contain fabricated energy', 'UTC timestamp of a reading removed': 'Require exactly the declared energy-log fields', 'runtime executable identity removed': 'Require exactly the declared energy-log fields', 'prepared device input identity replaced': 'Prepared device input differs from declared initial problem', 'retained batch output edited': 'Expanded result bytes differ from their digest'}; resealed doubling accepted; relabelled fixture classified physical_domain_measurement.",
+ "observation_model": "Field inventory of each sealed fixture (identity fields present, and how many hold placeholder values); validation outcome of each mutated copy.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/energy_gpu.py": "fca900557e7fac2261a168afe0ee81efc48508a874a5045bf4f6b74937165bb1",
+   "src/ciw/lab/energy_gpu_kernels.py": "03f3d92f8407f476cb74536911d476929843ee74232a7d7017c00f43c785a2b4",
+   "src/ciw/lab/energy_gpu_telemetry.py": "21cac5f654ce4a120887ff40da62fda47bd38a3c383bbad6cc3cb13b4168fa2d"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T125: replay the retained logs through a Session; later, signed capture on the RTX 2080 host (T116)",
+ "report_id": "sha256:225ddebda2cb8e1de96e807d58a31bb9a4b87afb23b0a2cc500c046a8757479a",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "energy-gpu",
+ "state": "completed",
+ "task_id": "T124",
+ "tests_passed": [
+  "check: Every fixture retains raw timestamped counter readings and the 14 device/runtime identity fields (placeholder values in these synthetic fixtures) vs readings without monotonic and UTC brackets",
+  "check: Every fixture retains raw timestamped counter readings and the 14 device/runtime identity fields (placeholder values in these synthetic fixtures) vs missing identity fields",
+  "check: The energy-log validator refuses 9 classes of tampering vs raw counter reading edited without resealing",
+  "check: The energy-log validator refuses 9 classes of tampering vs sensor device UUID replaced by a non-UUID",
+  "check: The energy-log validator refuses 9 classes of tampering vs calibration metadata invented for the sensor",
+  "check: The energy-log validator refuses 9 classes of tampering vs monotonic read bracket reversed",
+  "check: The energy-log validator refuses 9 classes of tampering vs failed counter read keeps a fabricated energy",
+  "check: The energy-log validator refuses 9 classes of tampering vs UTC timestamp of a reading removed",
+  "check: The energy-log validator refuses 9 classes of tampering vs runtime executable identity removed",
+  "check: The energy-log validator refuses 9 classes of tampering vs prepared device input identity replaced",
+  "check: The energy-log validator refuses 9 classes of tampering vs retained batch output edited",
+  "check: A log whose counter readings were doubled and then resealed passes validation vs energy_records.validate_log refusals of the resealed log (0 = accepted)",
+  "check: Relabelling a synthetic fixture as physical_measurement makes its analysis eligible for physical comparison vs eligible after relabelling (1 = yes)",
+  "check: A resealed sensor/workload UUID mismatch validates but is withheld by the analysis vs workload_sensor_device_mismatch reported (1 = yes)",
+  "pytest: tests/test_lab_energy_gpu.py::test_raw_telemetry_retention_and_tampering",
+  "pytest: tests/test_lab_energy_gpu.py::test_fixture_tasks_without_repository_files",
+  "pytest: tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance"
+ ],
+ "tests_skipped": [],
+ "title": "Retain raw telemetry and device/runtime identity.",
+ "uncertainty": "Exact (structural checks).",
+ "unresolved_assumptions": [
+  "Sealing is integrity, not authenticity: no signature binds a log to the device",
+  "Hardware provenance of every fixture is not established",
+  "The fixtures' identity fields are present but mostly placeholders"
+ ]
+}

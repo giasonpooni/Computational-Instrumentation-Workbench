@@ -1,0 +1,114 @@
+{
+ "admission": {
+  "decision": "declared synthetic admission",
+  "observation_digest": "sha256:1bbccb740c96b78ffac09e4ee9ca0fe1072469f2fc158d8a69ffc9e4a8a3031b",
+  "state_admission": "admitted"
+ },
+ "exact_update_gap": {
+  "mean": 0.0,
+  "variance": 0.0
+ },
+ "per_mode": {
+  "camera_chord_distance": {
+   "admission": [
+    "not_performed"
+   ],
+   "retained": 3,
+   "retention": [
+    "retained"
+   ],
+   "state_after_refusal_unchanged": true,
+   "state_unchanged": true,
+   "update_code": "not_admitted"
+  },
+  "encoder_displacement": {
+   "admission": [
+    "not_performed"
+   ],
+   "retained": 3,
+   "retention": [
+    "retained"
+   ],
+   "state_after_refusal_unchanged": true,
+   "state_unchanged": true,
+   "update_code": "not_admitted"
+  },
+  "image_residual": {
+   "admission": [
+    "not_performed"
+   ],
+   "retained": 3,
+   "retention": [
+    "retained"
+   ],
+   "state_after_refusal_unchanged": true,
+   "state_unchanged": true,
+   "update_code": "not_admitted"
+  },
+  "imu_orientation": {
+   "admission": [
+    "not_performed"
+   ],
+   "retained": 3,
+   "retention": [
+    "retained"
+   ],
+   "state_after_refusal_unchanged": true,
+   "state_unchanged": true,
+   "update_code": "not_admitted"
+  },
+  "intrinsic_geodesic_distance": {
+   "admission": [
+    "not_performed"
+   ],
+   "retained": 3,
+   "retention": [
+    "retained"
+   ],
+   "state_after_refusal_unchanged": true,
+   "state_unchanged": true,
+   "update_code": "not_admitted"
+  },
+  "reconstructed_surface_distance": {
+   "admission": [
+    "not_performed"
+   ],
+   "retained": 3,
+   "retention": [
+    "retained"
+   ],
+   "state_after_refusal_unchanged": true,
+   "state_unchanged": true,
+   "update_code": "not_admitted"
+  },
+  "tracker_measurement": {
+   "admission": [
+    "not_performed"
+   ],
+   "retained": 3,
+   "retention": [
+    "retained"
+   ],
+   "state_after_refusal_unchanged": true,
+   "state_unchanged": true,
+   "update_code": "not_admitted"
+  }
+ },
+ "refusals": {
+  "admission_digest_mismatch": "admission_digest_mismatch",
+  "mode_substitution": "mode_substitution",
+  "not_retained": "not_retained"
+ },
+ "updated_state": {
+  "mean": [
+   1.5
+  ],
+  "mode": "intrinsic_geodesic_distance",
+  "updates": [
+   "sha256:1bbccb740c96b78ffac09e4ee9ca0fe1072469f2fc158d8a69ffc9e4a8a3031b"
+  ],
+  "variance": [
+   0.25
+  ]
+ }
+}

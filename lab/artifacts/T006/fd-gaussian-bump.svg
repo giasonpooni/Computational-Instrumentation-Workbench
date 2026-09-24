@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420" font-family="sans-serif" font-size="11">
+<rect width="640" height="420" fill="#ffffff"/>
+<text x="78" y="22" font-size="13" font-weight="bold">Finite differences vs Jacobi columns on gaussian-bump</text>
+<rect x="78" y="40" width="392" height="322" fill="none" stroke="#333"/>
+<line x1="78.00" y1="40" x2="78.00" y2="362" stroke="#e5e7eb"/>
+<text x="78.00" y="378" text-anchor="middle">1e-2</text>
+<line x1="78" y1="351.25" x2="470" y2="351.25" stroke="#e5e7eb"/>
+<text x="72" y="355.25" text-anchor="end">1e-6</text>
+<line x1="78" y1="281.87" x2="470" y2="281.87" stroke="#e5e7eb"/>
+<text x="72" y="285.87" text-anchor="end">1e-5</text>
+<line x1="78" y1="212.48" x2="470" y2="212.48" stroke="#e5e7eb"/>
+<text x="72" y="216.48" text-anchor="end">1e-4</text>
+<line x1="78" y1="143.10" x2="470" y2="143.10" stroke="#e5e7eb"/>
+<text x="72" y="147.10" text-anchor="end">1e-3</text>
+<line x1="78" y1="73.72" x2="470" y2="73.72" stroke="#e5e7eb"/>
+<text x="72" y="77.72" text-anchor="end">1e-2</text>
+<text x="274.00" y="406" text-anchor="middle">perturbation eps</text>
+<text x="16" y="201.00" text-anchor="middle" transform="rotate(-90 16 201.00)">max |FD - column|</text>
+<path d="M470.00,51.93 L339.33,72.70 L208.67,93.55 L78.00,114.42" fill="none" stroke="#1f5fa8" stroke-width="1.8"/>
+<circle cx="470.00" cy="51.93" r="2.6" fill="#1f5fa8"/>
+<circle cx="339.33" cy="72.70" r="2.6" fill="#1f5fa8"/>
+<circle cx="208.67" cy="93.55" r="2.6" fill="#1f5fa8"/>
+<circle cx="78.00" cy="114.42" r="2.6" fill="#1f5fa8"/>
+<line x1="482" y1="52" x2="502" y2="52" stroke="#1f5fa8" stroke-width="2"/>
+<text x="508" y="56">lateral one-sided</text>
+<path d="M470.00,225.59 L339.33,266.73 L208.67,308.34 L78.00,350.07" fill="none" stroke="#c2410c" stroke-width="1.8"/>
+<circle cx="470.00" cy="225.59" r="2.6" fill="#c2410c"/>
+<circle cx="339.33" cy="266.73" r="2.6" fill="#c2410c"/>
+<circle cx="208.67" cy="308.34" r="2.6" fill="#c2410c"/>
+<circle cx="78.00" cy="350.07" r="2.6" fill="#c2410c"/>
+<line x1="482" y1="70" x2="502" y2="70" stroke="#c2410c" stroke-width="2"/>
+<text x="508" y="74">lateral central</text>
+<path d="M470.00,53.35 L339.33,72.26 L208.67,92.25 L78.00,112.71" fill="none" stroke="#15803d" stroke-width="1.8"/>
+<circle cx="470.00" cy="53.35" r="2.6" fill="#15803d"/>
+<circle cx="339.33" cy="72.26" r="2.6" fill="#15803d"/>
+<circle cx="208.67" cy="92.25" r="2.6" fill="#15803d"/>
+<circle cx="78.00" cy="112.71" r="2.6" fill="#15803d"/>
+<line x1="482" y1="88" x2="502" y2="88" stroke="#15803d" stroke-width="2"/>
+<text x="508" y="92">heading one-sided</text>
+<path d="M470.00,117.20 L339.33,158.89 L208.67,200.64 L78.00,242.41" fill="none" stroke="#7e22ce" stroke-width="1.8"/>
+<circle cx="470.00" cy="117.20" r="2.6" fill="#7e22ce"/>
+<circle cx="339.33" cy="158.89" r="2.6" fill="#7e22ce"/>
+<circle cx="208.67" cy="200.64" r="2.6" fill="#7e22ce"/>
+<circle cx="78.00" cy="242.41" r="2.6" fill="#7e22ce"/>
+<line x1="482" y1="106" x2="502" y2="106" stroke="#7e22ce" stroke-width="2"/>
+<text x="508" y="110">heading central</text>
+</svg>

@@ -1,0 +1,264 @@
+{
+ "changed_files": [
+  "src/ciw/lab/manufacturing.py",
+  "src/ciw/lab/manufacturing_geometry.py",
+  "src/ciw/lab/manufacturing_metrology.py",
+  "src/ciw/lab/manufacturing_records.py",
+  "docs/lab/MANUFACTURING.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 3,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "At all four corners of each route's derated tolerance box the exactly perturbed route stays within the spec.",
+ "experiment": "Integrate each route with Jacobi fields, allocate tolerances to first order, evaluate the exact perturbation at the four box corners, derate where a corner exceeds the spec, re-verify, rank.",
+ "failure_modes_checked": [
+  "exact perturbation at all four box corners",
+  "first-order allocation exceeding the spec (derated)",
+  "flat-plate reference",
+  "mirror symmetry (T137)"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 0.999899921151906,
+      "passed": true,
+      "reference": "max realized / spec over the four corners of every route's derated tolerance box (exact perturbation)",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 0.7297733434660557,
+      "passed": true,
+      "reference": "min realized / spec (the allocation is not vacuous)",
+      "reference_kind": "invariant",
+      "tolerance": 0.5
+     },
+     {
+      "comparison": "le",
+      "observed": 1.3535716040160765e-08,
+      "passed": true,
+      "reference": "Richardson estimate of max |j_head| (relative)",
+      "reference_kind": "self_convergence",
+      "tolerance": 1e-06
+     }
+    ],
+    "derivation": "first order: tolerance = spec / (2 max |j|) per error source (half the spec each, worst case); then derated by the worst exact corner ratio"
+   },
+   "claim": "Candidate coupon routes ranked by the heading calibration tolerance that keeps the exactly perturbed route within a 0.5 mm lateral spec",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "RK4 Richardson estimate of max |j_head| (relative)",
+    "kind": "truncation_bound",
+    "value": 1.3535716040160765e-08
+   },
+   "unit": null,
+   "value": {
+    "derating": {
+     "fan+0deg": 1.0,
+     "fan+10deg": 1.0,
+     "fan+15deg": 0.9908346220619293,
+     "fan+20deg": 0.9975982132139856,
+     "fan+25deg": 0.999649438270725,
+     "fan+5deg": 1.0
+    },
+    "heading_tolerance_mrad": {
+     "fan+0deg": 2.316060601396007,
+     "fan+10deg": 1.4757447190771031,
+     "fan+15deg": 1.1623847099828841,
+     "fan+20deg": 1.0272094480825036,
+     "fan+25deg": 0.9714497770159284,
+     "fan+5deg": 1.9773618416065826
+    },
+    "lateral_tolerance_mm": {
+     "fan+0deg": 0.243664546643262,
+     "fan+10deg": 0.2425584906155107,
+     "fan+15deg": 0.20994551138920592,
+     "fan+20deg": 0.15327894414850515,
+     "fan+25deg": 0.14118572215817848,
+     "fan+5deg": 0.24342545794498927
+    },
+    "ranking": [
+     "fan+0deg",
+     "fan+5deg",
+     "fan+10deg",
+     "fan+15deg",
+     "fan+20deg",
+     "fan+25deg"
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "signed_ge",
+      "observed": 0.009149234126685668,
+      "passed": true,
+      "reference": "max first-order corner ratio minus one (exceedance)",
+      "reference_kind": "analytic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 3.0,
+      "passed": true,
+      "reference": "routes whose first-order box exceeds the spec",
+      "reference_kind": "analytic",
+      "tolerance": 1.0
+     }
+    ]
+   },
+   "claim": "The first-order tolerance allocation exceeds the spec at a tolerance corner on some off-axis routes",
+   "counterexample": {
+    "statement": "Allocating spec / (2 max |j|) to each error source keeps the exactly perturbed route within the spec",
+    "witness": {
+     "route": "fan+15deg",
+     "worst_corner_ratio": 1.0091492341266857
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "RK4 Richardson estimate of max |j_head| (relative)",
+    "kind": "truncation_bound",
+    "value": 1.3535716040160765e-08
+   },
+   "unit": null,
+   "value": {
+    "fan+0deg": 0.7653732767812682,
+    "fan+10deg": 0.7455545647457993,
+    "fan+15deg": 1.0091492341266857,
+    "fan+20deg": 1.0023073284971098,
+    "fan+25deg": 1.0002506495974313,
+    "fan+5deg": 0.7297733434660557
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 1.8730416064774404,
+      "passed": true,
+      "reference": "coupon / flat heading tolerance ratio for the straight route",
+      "reference_kind": "analytic",
+      "tolerance": 1.0
+     }
+    ]
+   },
+   "claim": "The dome loosens the heading tolerance of the straight route relative to a flat plate of equal length",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "RK4 Richardson estimate of max |j_head| (relative)",
+    "kind": "truncation_bound",
+    "value": 1.3535716040160765e-08
+   },
+   "unit": null,
+   "value": 1.8730416064774404
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "The robot, fixture and frame calibration achieves the required heading and lateral tolerances",
+   "domain": "calibration",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 4653,
+   "path": "artifacts/T136/calibration-ranking.json",
+   "sha256": "9e6c3ee5565f854b47d246ad9f5ac984118da7f086d4cac4cd7e73e0b3bb35c1"
+  },
+  {
+   "bytes": 3468,
+   "path": "artifacts/T136/heading-tolerance.svg",
+   "sha256": "f779bb6a89c2d88ec39980e1aba9294db667e4b32dc21da7f8fcede9285f4ecd"
+  }
+ ],
+ "hypothesis": "The calibration tolerance a route requires is the inverse of its Jacobi sensitivity: routes whose heading field j_head grows least tolerate the largest heading calibration error; the first-order allocation must be derated where second-order terms push a tolerance corner past the spec.",
+ "input_data": [
+  "Fan of geodesic routes from the station (-60, 0) mm at 0..25 deg to the far edge x = 140 mm",
+  "Declared lateral spec 0.5 mm"
+ ],
+ "mathematical_model": "Lateral error e(s) = delta j_lat(s) + dtheta j_head(s) + O(2); first order delta_req = spec / (2 max|j_lat|), dtheta_req = spec / (2 max|j_head|); both derated by the worst exact corner ratio until all four corners are within 0.9999 of the spec; flat reference spec / (2 L).",
+ "number": 136,
+ "numerical_result": "Ranking by heading tolerance: fan+0deg 2.316 mrad, fan+5deg 1.977 mrad, fan+10deg 1.476 mrad, fan+15deg 1.162 mrad, fan+20deg 1.027 mrad, fan+25deg 0.971 mrad. First-order corner ratios reach 1.0091 (fan+15deg, fan+20deg, fan+25deg derated by 0.92%, 0.24%, 0.04%).",
+ "observation_model": "No observation: required tolerances are model outputs.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/manufacturing.py": "088763a0bcc42bf085c1e228797a5dc0d702b994f2a49e053cbe2b0a5622e25d",
+   "src/ciw/lab/manufacturing_geometry.py": "1db6df2ddf778668da2ffd53a66bcddbff4fc933d6f299e8f283cedc60a9332f",
+   "src/ciw/lab/manufacturing_metrology.py": "afbb6fccf146ca4f47850805c118d2f1bf6186872f381b298ab924a9214257ec",
+   "src/ciw/lab/manufacturing_records.py": "66970104ea454e836c5cbafc3013c90e721c3e96ad7f16780c32250112cac921"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T137: rank the same routes by focus margin and compare the two rankings.",
+ "report_id": "sha256:1572b044dca291361da9969b860d027f8bd52bdd7268e15538cf55530fcde062",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "manufacturing",
+ "state": "completed",
+ "task_id": "T136",
+ "tests_passed": [
+  "check: Candidate coupon routes ranked by the heading calibration tolerance that keeps the exactly perturbed route within a 0.5 mm lateral spec vs max realized / spec over the four corners of every route's derated tolerance box (exact perturbation)",
+  "check: Candidate coupon routes ranked by the heading calibration tolerance that keeps the exactly perturbed route within a 0.5 mm lateral spec vs min realized / spec (the allocation is not vacuous)",
+  "check: Candidate coupon routes ranked by the heading calibration tolerance that keeps the exactly perturbed route within a 0.5 mm lateral spec vs Richardson estimate of max |j_head| (relative)",
+  "check: The first-order tolerance allocation exceeds the spec at a tolerance corner on some off-axis routes vs max first-order corner ratio minus one (exceedance)",
+  "check: The first-order tolerance allocation exceeds the spec at a tolerance corner on some off-axis routes vs routes whose first-order box exceeds the spec",
+  "check: The dome loosens the heading tolerance of the straight route relative to a flat plate of equal length vs coupon / flat heading tolerance ratio for the straight route",
+  "pytest: tests/test_lab_manufacturing.py::test_rankings_by_calibration_tolerance_and_focus_margin",
+  "pytest: tests/test_lab_manufacturing.py::test_every_task_is_registered_and_reports_honestly"
+ ],
+ "tests_skipped": [],
+ "title": "Rank paths by calibration tolerance.",
+ "uncertainty": "Exact perturbation at the corners of the derated boxes gives realized / spec in [0.730, 0.99990] (derating aims at 0.9999); max |j_head| Richardson error 1.4e-08 relative.",
+ "unresolved_assumptions": [
+  "Tolerances are allocated half to lateral and half to heading error; other splits rescale every heading tolerance by the same factor and leave the first-order ranking unchanged.",
+  "Only the corners of the tolerance box are evaluated exactly; interior points are covered by the linear model (where the error is maximal at a corner) plus the small second-order terms.",
+  "Tape or robot path-following error along the route (after the start) is not included."
+ ]
+}

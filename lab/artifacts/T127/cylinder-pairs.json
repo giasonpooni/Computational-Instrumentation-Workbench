@@ -1,0 +1,106 @@
+{
+ "pairs": [
+  {
+   "chord_mm": 51.7638090205,
+   "gap_mm": 0.596068539326,
+   "geodesic_mm": 52.3598775598,
+   "pair": "circumferential 30 deg",
+   "rk4_closure_mm": 1.58882185808e-14,
+   "series_mm": 0.596065197633,
+   "series_remainder_bound_mm": 3.34487463943e-06
+  },
+  {
+   "chord_mm": 100.0,
+   "gap_mm": 4.71975511966,
+   "geodesic_mm": 104.71975512,
+   "pair": "circumferential 60 deg",
+   "rk4_closure_mm": 3.17764371616e-14,
+   "series_mm": 4.7193286019,
+   "series_remainder_bound_mm": 0.000428143953847
+  },
+  {
+   "chord_mm": 141.421356237,
+   "gap_mm": 15.6582764422,
+   "geodesic_mm": 157.079632679,
+   "pair": "circumferential 90 deg",
+   "rk4_closure_mm": 6.66133814775e-14,
+   "series_mm": 15.6510235236,
+   "series_remainder_bound_mm": 0.00731524083644
+  },
+  {
+   "chord_mm": 173.205080757,
+   "gap_mm": 36.2344294824,
+   "geodesic_mm": 209.439510239,
+   "pair": "circumferential 120 deg",
+   "rk4_closure_mm": 5.12379653438e-14,
+   "series_mm": 36.180453482,
+   "series_remainder_bound_mm": 0.0548024260924
+  },
+  {
+   "chord_mm": 193.185165258,
+   "gap_mm": 68.6142225413,
+   "geodesic_mm": 261.799387799,
+   "pair": "circumferential 150 deg",
+   "rk4_closure_mm": 0.0,
+   "series_mm": 68.3590273086,
+   "series_remainder_bound_mm": 0.261318331206
+  },
+  {
+   "chord_mm": 200.0,
+   "gap_mm": 114.159265359,
+   "geodesic_mm": 314.159265359,
+   "pair": "circumferential 180 deg",
+   "rk4_closure_mm": 1.33226762955e-13,
+   "series_mm": 113.254294252,
+   "series_remainder_bound_mm": 0.936350827064
+  },
+  {
+   "chord_mm": 100.0,
+   "gap_mm": 0.0,
+   "geodesic_mm": 100.0,
+   "pair": "axial 100 mm",
+   "rk4_closure_mm": 6.12323399574e-15
+  },
+  {
+   "chord_mm": 200.0,
+   "gap_mm": 0.0,
+   "geodesic_mm": 200.0,
+   "pair": "axial 200 mm",
+   "rk4_closure_mm": 1.22464679915e-14
+  },
+  {
+   "chord_mm": 141.421356237,
+   "gap_mm": 3.37583680289,
+   "geodesic_mm": 144.79719304,
+   "pair": "helical 60 deg / 100 mm",
+   "rk4_closure_mm": 3.17764371616e-14
+  },
+  {
+   "chord_mm": 244.948974278,
+   "gap_mm": 9.36188078439,
+   "geodesic_mm": 254.310855063,
+   "pair": "helical 90 deg / 200 mm",
+   "rk4_closure_mm": 7.24233122607e-14
+  }
+ ],
+ "resolvable": {
+  "camera": {
+   "min_angle_deg": 13.6716545393,
+   "min_arc_mm": 23.8615385906,
+   "series_estimate_mm": 23.8558782844,
+   "target_gap_mm": 0.0565685424949
+  },
+  "cmm": {
+   "min_angle_deg": 6.34463873975,
+   "min_arc_mm": 11.0734835858,
+   "series_estimate_mm": 11.0729178261,
+   "target_gap_mm": 0.00565685424949
+  },
+  "tracker": {
+   "min_angle_deg": 12.4210080122,
+   "min_arc_mm": 21.6787486229,
+   "series_estimate_mm": 21.6745038453,
+   "target_gap_mm": 0.0424264068712
+  }
+ }
+}

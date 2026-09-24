@@ -1,0 +1,596 @@
+{
+ "changed_files": [
+  "src/ciw/lab/implementation_targets.py",
+  "src/ciw/lab/implementation_targets_fpga.py",
+  "docs/lab/IMPLEMENTATION_TARGETS.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 1,
+   "not_established": 2,
+   "numerically_verified": 6,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Round trip exact; CRC matches zlib and 0xCBF43926; all single-bit errors refused; every 32-bit window has full rank with the little-endian trailer (not with a big-endian trailer, nor in MSB-first numbering); command, write and malformed frames refused; the receiver has no sending method.",
+ "experiment": "Encode/decode random frames, compare CRC implementations, flip every bit, compute window ranks for three layouts and extract escaping bursts, corrupt at random, forge command frames, headers and specs.",
+ "failure_modes_checked": [
+  "command frame types",
+  "write-request flag",
+  "reserved flags",
+  "unknown types",
+  "host-to-device spec fields",
+  "truncation",
+  "length mismatch",
+  "bad magic",
+  "unsupported version",
+  "bit errors",
+  "bursts across the payload/CRC boundary",
+  "trailer byte order",
+  "bit numbering on the link"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "round-trip failures",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "frames": 400,
+     "name": "PCG64 random frames",
+     "seed": 149
+    }
+   },
+   "claim": "Telemetry frames round-trip every header field and channel bit-exactly",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": "failures",
+   "value": 0
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "CRC-32(b'123456789') - 0xCBF43926",
+      "reference_kind": "analytic",
+      "tolerance": 0.0
+     }
+    ],
+    "independent_check": {
+     "checker": {
+      "implementation": "zlib.crc32",
+      "revision": "1.3"
+     },
+     "comparison": "abs_le",
+     "observed": 0.0,
+     "passed": true,
+     "producer": {
+      "implementation": "ciw.lab.implementation_targets_fpga.crc32"
+     },
+     "reference": "mismatches against zlib.crc32 on random messages",
+     "reference_kind": "exact_arithmetic",
+     "tolerance": 0.0
+    }
+   },
+   "claim": "CIW table-driven CRC-32 agrees with zlib and the catalogue check value",
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "check_value": "0xcbf43926",
+    "messages": 500,
+    "mismatches": 0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "undetected single-bit errors",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "32-bit windows (LSB-first bit order) whose syndromes are linearly dependent",
+      "reference_kind": "analytic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "undetected random 2-11 bit errors",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Every burst of at most 32 bits and every single-bit error in a frame is refused by the decoder",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "burst_windows": 353,
+    "random_multi_bit": [
+     5000,
+     5000
+    ],
+    "rank_deficient_windows": 0,
+    "single_bit": [
+     384,
+     384
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 16.0,
+      "passed": true,
+      "reference": "rank-deficient 32-bit windows with the trailer stored big-endian",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "witness error pattern leaves the big-endian CRC check at zero",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     }
+    ]
+   },
+   "claim": "A big-endian CRC trailer lets a 32-bit burst across the payload/CRC boundary escape",
+   "counterexample": {
+    "statement": "Appending CRC-32 in either byte order keeps the 32-bit burst guarantee",
+    "witness": {
+     "flipped_bits": [
+      321,
+      326,
+      327,
+      328,
+      330,
+      331,
+      333,
+      334,
+      336,
+      337,
+      344,
+      345,
+      346,
+      347,
+      348,
+      349,
+      352
+     ],
+     "frame": "encode_frame(123456, 987654321, 7, [1, -2, 3, 2**31 - 1])",
+     "trailer": "big-endian"
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "first_window": 321,
+    "rank_deficient_windows": 16,
+    "witness_bits": [
+     321,
+     326,
+     327,
+     328,
+     330,
+     331,
+     333,
+     334,
+     336,
+     337,
+     344,
+     345,
+     346,
+     347,
+     348,
+     349,
+     352
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 132.0,
+      "passed": true,
+      "reference": "rank-deficient 32-bit windows when bits are numbered MSB-first within bytes",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "decoder accepts the MSB-first witness burst inside the payload",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     }
+    ]
+   },
+   "claim": "The burst guarantee holds only in the LSB-first bit order of the reflected CRC",
+   "counterexample": {
+    "statement": "CRC-32 detects every 32-bit burst whatever order the link sends bits in",
+    "witness": {
+     "flipped_bits": [
+      228,
+      230,
+      235,
+      236,
+      237,
+      238,
+      240,
+      241,
+      242,
+      244,
+      247,
+      248,
+      249,
+      251,
+      253,
+      255,
+      256,
+      257,
+      258
+     ],
+     "numbering": "bit p = bit 7 - p % 8 of byte p // 8"
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "rank_deficient_windows_msb_first": 132,
+    "witness_bits": [
+     228,
+     230,
+     235,
+     236,
+     237,
+     238,
+     240,
+     241,
+     242,
+     244,
+     247,
+     248,
+     249,
+     251,
+     253,
+     255,
+     256,
+     257,
+     258
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "command_path_refused",
+      "observed_refusal": "command_path_refused",
+      "passed": true,
+      "reference": "decode a forged command frame (type 0x80)",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "command_path_refused",
+      "observed_refusal": "command_path_refused",
+      "passed": true,
+      "reference": "decode a forged register-write frame (type 0x81)",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "command_path_refused",
+      "observed_refusal": "command_path_refused",
+      "passed": true,
+      "reference": "decode a telemetry frame with the write-request flag",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "unknown_frame_type",
+      "observed_refusal": "unknown_frame_type",
+      "passed": true,
+      "reference": "decode an undefined frame type 0x02",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "reserved_flags",
+      "observed_refusal": "reserved_flags",
+      "passed": true,
+      "reference": "decode reserved flag bits",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "command_path_refused",
+      "observed_refusal": "command_path_refused",
+      "passed": true,
+      "reference": "encode a write request",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "command_path_refused",
+      "observed_refusal": "command_path_refused",
+      "passed": true,
+      "reference": "interface spec with a host-to-device field",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "command_path_refused",
+      "observed_refusal": "command_path_refused",
+      "passed": true,
+      "reference": "interface spec with a write_enable field",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "truncated_frame",
+      "observed_refusal": "truncated_frame",
+      "passed": true,
+      "reference": "truncated frame",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "length_mismatch",
+      "observed_refusal": "length_mismatch",
+      "passed": true,
+      "reference": "valid CRC, payload_bytes not 4 x channel count",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "length_mismatch",
+      "observed_refusal": "length_mismatch",
+      "passed": true,
+      "reference": "valid CRC, header without payload (trailing bytes missing)",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "bad_magic",
+      "observed_refusal": "bad_magic",
+      "passed": true,
+      "reference": "valid CRC, magic 'XXXX'",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "unsupported_version",
+      "observed_refusal": "unsupported_version",
+      "passed": true,
+      "reference": "valid CRC, frame version 2",
+      "reference_kind": "refusal"
+     }
+    ]
+   },
+   "claim": "Decoder, encoder and interface validator refuse every command, write or malformed path",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": "refusals",
+   "value": 13
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "public receiver attributes naming a send/write/command path",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Host receiver exposes no sending or writing method",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": []
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "The frame format works on real FPGA links",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "A telemetry-only interface guarantees the FPGA cannot actuate the machine",
+   "domain": "machine_safety",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 1940,
+   "path": "artifacts/T149/telemetry-interface.json",
+   "sha256": "157d859276eec8789fc27acd847b7ef43c34194d5188ac91e40f8160d0f05237"
+  },
+  {
+   "bytes": 331,
+   "path": "artifacts/T149/frame-example.json",
+   "sha256": "1f46643bf08afc9d67998ec9fd57bac8f6b1ed51ed670b0f75444d362f77cb21"
+  },
+  {
+   "bytes": 2096,
+   "path": "artifacts/T149/error-detection.json",
+   "sha256": "891da74d8232286656fd55eb89d2841bf8069185d376b29b171f0eb79a6bd31c"
+  }
+ ],
+ "hypothesis": "A read-only frame (header, sequence, timestamp, clock id, raw payload, CRC-32) with a single telemetry frame type and no host-to-device field lets the host refuse every corrupted frame and every command or write path before any payload is used, provided the CRC is appended in the order that keeps the frame one codeword.",
+ "input_data": [
+  "400 PCG64(149) random frames",
+  "500 random messages for CRC comparison",
+  "one 48-byte frame for exhaustive single-bit, exact 32-bit-window rank analysis and 5000 random corruptions",
+  "13 forged frames and specs"
+ ],
+ "mathematical_model": "Frame = 28-byte big-endian header | 4*c bytes int32 payload | CRC-32/IEEE (reflected) appended little-endian. Bit p is bit p % 8 of byte p // 8 (LSB first, the reflected CRC's polynomial order). An error pattern e escapes iff its syndrome sum is zero; if the 32 single-bit syndromes of every 32-bit window are linearly independent over GF(2), no burst of length <= 32 escapes. Other patterns escape with probability about 2^-32.",
+ "number": 149,
+ "numerical_result": "Round-trip failures 0/400; CRC mismatches 0/500; single-bit 384/384 refused; rank-deficient 32-bit windows 0/353 (little-endian trailer), 16 (big-endian), 132 (MSB-first numbering); random 5000/5000 refused; 13/13 command/write/malformed refusals.",
+ "observation_model": "Decoder outcomes (accepted record or refusal code) and GF(2) ranks of syndrome windows; no device was attached.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/implementation_targets.py": "4e27c12d31365590b7fb82d98b8d02e1668c7b8e73b03f71ef270eca9fcf6eea",
+   "src/ciw/lab/implementation_targets_fpga.py": "d546fbe93f98a17bb6a94d6e1e887da44edfb783f37684b9689d47adb1a9f477"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T152 (drive the decoder with a lossy, jittered stream)",
+ "report_id": "sha256:26dbf0a8c5a0c689246f1271fcff50295969b4a81d62dd7b178929a55c75fcd8",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "implementation-targets",
+ "state": "completed",
+ "task_id": "T149",
+ "tests_passed": [
+  "check: Telemetry frames round-trip every header field and channel bit-exactly vs round-trip failures",
+  "check: CIW table-driven CRC-32 agrees with zlib and the catalogue check value vs CRC-32(b'123456789') - 0xCBF43926",
+  "independent: CIW table-driven CRC-32 agrees with zlib and the catalogue check value vs zlib.crc32",
+  "check: Every burst of at most 32 bits and every single-bit error in a frame is refused by the decoder vs undetected single-bit errors",
+  "check: Every burst of at most 32 bits and every single-bit error in a frame is refused by the decoder vs 32-bit windows (LSB-first bit order) whose syndromes are linearly dependent",
+  "check: Every burst of at most 32 bits and every single-bit error in a frame is refused by the decoder vs undetected random 2-11 bit errors",
+  "check: A big-endian CRC trailer lets a 32-bit burst across the payload/CRC boundary escape vs rank-deficient 32-bit windows with the trailer stored big-endian",
+  "check: A big-endian CRC trailer lets a 32-bit burst across the payload/CRC boundary escape vs witness error pattern leaves the big-endian CRC check at zero",
+  "check: The burst guarantee holds only in the LSB-first bit order of the reflected CRC vs rank-deficient 32-bit windows when bits are numbered MSB-first within bytes",
+  "check: The burst guarantee holds only in the LSB-first bit order of the reflected CRC vs decoder accepts the MSB-first witness burst inside the payload",
+  "check: Decoder, encoder and interface validator refuse every command, write or malformed path vs decode a forged command frame (type 0x80)",
+  "check: Decoder, encoder and interface validator refuse every command, write or malformed path vs decode a forged register-write frame (type 0x81)",
+  "check: Decoder, encoder and interface validator refuse every command, write or malformed path vs decode a telemetry frame with the write-request flag",
+  "check: Decoder, encoder and interface validator refuse every command, write or malformed path vs decode an undefined frame type 0x02",
+  "check: Decoder, encoder and interface validator refuse every command, write or malformed path vs decode reserved flag bits",
+  "check: Decoder, encoder and interface validator refuse every command, write or malformed path vs encode a write request",
+  "check: Decoder, encoder and interface validator refuse every command, write or malformed path vs interface spec with a host-to-device field",
+  "check: Decoder, encoder and interface validator refuse every command, write or malformed path vs interface spec with a write_enable field",
+  "check: Decoder, encoder and interface validator refuse every command, write or malformed path vs truncated frame",
+  "check: Decoder, encoder and interface validator refuse every command, write or malformed path vs valid CRC, payload_bytes not 4 x channel count",
+  "check: Decoder, encoder and interface validator refuse every command, write or malformed path vs valid CRC, header without payload (trailing bytes missing)",
+  "check: Decoder, encoder and interface validator refuse every command, write or malformed path vs valid CRC, magic 'XXXX'",
+  "check: Decoder, encoder and interface validator refuse every command, write or malformed path vs valid CRC, frame version 2",
+  "check: Host receiver exposes no sending or writing method vs public receiver attributes naming a send/write/command path",
+  "pytest: tests/test_lab_implementation_targets.py::test_t149_telemetry_only_frames"
+ ],
+ "tests_skipped": [],
+ "title": "Define FPGA telemetry-only interfaces.",
+ "uncertainty": "Exact: exhaustive for single-bit errors and exact (rank) for bursts on one frame layout; random corruptions escape CRC-32 with probability 2^-32 each.",
+ "unresolved_assumptions": [
+  "No FPGA, HDL implementation or physical link exists; the device side is simulated",
+  "The link is assumed to send bits LSB first (as UART and Ethernet do); an MSB-first link loses the burst guarantee",
+  "A unidirectional physical transport (TX-only UART, multicast UDP) is assumed but not demonstrated",
+  "CRC protects against noise, not against a malicious sender"
+ ]
+}

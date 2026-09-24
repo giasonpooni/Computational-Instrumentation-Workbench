@@ -1,0 +1,103 @@
+{
+ "contributions": [
+  {
+   "contribution": "Evidence-label validator with non-upgrade rule and origin-based independence",
+   "file": "src/ciw/lab/evidence.py",
+   "present": true
+  },
+  {
+   "contribution": "Nineteen-question task report with derived evidence and physical status",
+   "file": "src/ciw/lab/report.py",
+   "present": true
+  },
+  {
+   "contribution": "Queue runner that reports blocked, deferred and failed tasks instead of hiding them",
+   "file": "src/ciw/lab/runner.py",
+   "present": true
+  },
+  {
+   "contribution": "Chart-level surface interface with exact embedding derivatives and pullback charts",
+   "file": "src/ciw/lab/surfaces.py",
+   "present": true
+  },
+  {
+   "contribution": "Joint geodesic/Jacobi transfer integration without renormalization",
+   "file": "src/ciw/lab/jacobi.py",
+   "present": true
+  },
+  {
+   "contribution": "Identity matrix and mutation experiments over retained CIW workspaces",
+   "file": "src/ciw/lab/exchange_provenance.py",
+   "present": true
+  },
+  {
+   "contribution": "Counterexample library for shortest-versus-safest routes",
+   "file": "src/ciw/lab/flat_torus_topology.py",
+   "present": true
+  },
+  {
+   "contribution": "Focus-margin route ranking for manufacturing paths",
+   "file": "src/ciw/lab/manufacturing.py",
+   "present": true
+  },
+  {
+   "contribution": "Deterministic SVG figures",
+   "file": "src/ciw/lab/svg.py",
+   "present": true
+  }
+ ],
+ "textbook": [
+  {
+   "reference": "do Carmo, Differential Geometry of Curves and Surfaces, ch. 4",
+   "result": "Geodesic equation and Christoffel symbols"
+  },
+  {
+   "reference": "do Carmo, Riemannian Geometry, ch. 5",
+   "result": "Jacobi equation j'' + K j = 0, conjugate and focal points"
+  },
+  {
+   "reference": "do Carmo, Differential Geometry of Curves and Surfaces, 4-4",
+   "result": "Clairaut relation on surfaces of revolution"
+  },
+  {
+   "reference": "Gauss-Bonnet theorem; flat surfaces with cone points (Troyanov)",
+   "result": "Gauss-Bonnet and cone angles"
+  },
+  {
+   "reference": "Taylor expansion of a space curve",
+   "result": "Chord-arc expansion c = s - kappa^2 s^3/24"
+  },
+  {
+   "reference": "Hairer, Norsett and Wanner, Solving ODEs I",
+   "result": "Classical RK4, explicit Euler/midpoint, Dormand-Prince 5(4)"
+  },
+  {
+   "reference": "Richardson (1911); Hairer et al.",
+   "result": "Richardson extrapolation"
+  },
+  {
+   "reference": "Kalman (1960); Rauch, Tung and Striebel (1965)",
+   "result": "Kalman filter and Rauch-Tung-Striebel smoother"
+  },
+  {
+   "reference": "Bar-Shalom, Li and Kirubarajan (2001)",
+   "result": "NEES/NIS chi-square consistency and gating"
+  },
+  {
+   "reference": "Brioschi (1852); Gauss's Theorema Egregium",
+   "result": "Brioschi formula for Gaussian curvature"
+  },
+  {
+   "reference": "Lagrange/Gauss reduction of binary quadratic forms",
+   "result": "Lattice reduction and SL(2,Z) action"
+  },
+  {
+   "reference": "AIAG Measurement Systems Analysis manual",
+   "result": "Gage R&R ANOVA method"
+  },
+  {
+   "reference": "Lyapunov (1892); Khalil, Nonlinear Systems",
+   "result": "Lyapunov equation and quadratic stability"
+  }
+ ]
+}

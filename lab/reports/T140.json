@@ -1,0 +1,403 @@
+{
+ "changed_files": [
+  "src/ciw/lab/manufacturing.py",
+  "src/ciw/lab/manufacturing_geometry.py",
+  "src/ciw/lab/manufacturing_metrology.py",
+  "src/ciw/lab/manufacturing_records.py",
+  "docs/lab/MANUFACTURING.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 3,
+   "numerically_verified": 4,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Forward and central sensitivities agree (linear regime); the Richardson estimate brackets the actual solver error.",
+ "experiment": "Compute each component, classify, compare open-loop and conditioned start poses, and validate the solver estimate against a 256-step reference in a deliberately coarse control.",
+ "failure_modes_checked": [
+  "nonlinear geometry sensitivity (lateral, heading, focal)",
+  "Richardson estimate validity",
+  "solver-limited control",
+  "start pose open loop vs conditioned",
+  "plate flatness as a second-order geometry term"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.017867877581636105,
+      "passed": true,
+      "reference": "geometry sensitivity linearity (forward vs central), focal/height_mm",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.014450151513199172,
+      "passed": true,
+      "reference": "geometry sensitivity linearity (forward vs central), focal/sigma_mm",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0051851315896449535,
+      "passed": true,
+      "reference": "geometry sensitivity linearity (forward vs central), heading_end/height_mm",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.028350473912550522,
+      "passed": true,
+      "reference": "geometry sensitivity linearity (forward vs central), heading_end/sigma_mm",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.005262973789821546,
+      "passed": true,
+      "reference": "geometry sensitivity linearity (forward vs central), lateral/height_mm",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.02931958792246836,
+      "passed": true,
+      "reference": "geometry sensitivity linearity (forward vs central), lateral/sigma_mm",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "le",
+      "observed": 0.9043070007080961,
+      "passed": true,
+      "reference": "coarse control: actual error / Richardson estimate",
+      "reference_kind": "self_convergence",
+      "tolerance": 3.0
+     },
+     {
+      "comparison": "le",
+      "observed": 1.105819151258338,
+      "passed": true,
+      "reference": "coarse control: Richardson estimate / actual error",
+      "reference_kind": "self_convergence",
+      "tolerance": 3.0
+     }
+    ]
+   },
+   "claim": "Uncertainty budget per predicted quantity and its limiting term",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-07,
+    "rel": 1e-05
+   },
+   "uncertainty": {
+    "basis": "forward vs central geometry sensitivity (relative)",
+    "kind": "reference_error",
+    "value": 0.02931958792246836
+   },
+   "unit": "mm",
+   "value": {
+    "coarse-solver control (6 RK4 steps)": {
+     "dominant": "solver",
+     "execution": 0.021641261053807325,
+     "geometry": 0.022512830500950105,
+     "instrument": 0.028284271247461905,
+     "solver": 0.09390798105856722,
+     "value": 0.6246311872337922
+    },
+    "coupon focal distance (conditioned on the measured start pose)": {
+     "dominant": "geometry",
+     "execution": 0.8324762391006113,
+     "geometry": 4.388650263504834,
+     "instrument": 1.2903303761332685,
+     "solver": 9.235394221226064e-07,
+     "value": 153.40715534052734
+    },
+    "coupon separation at L, 2 mm lateral offset (conditioned on the measured start pose)": {
+     "dominant": "geometry",
+     "execution": 0.022189506901739445,
+     "geometry": 0.14830587273383286,
+     "instrument": 0.028284271247461905,
+     "solver": 2.842212826574079e-08,
+     "value": -1.0373617092070082
+    },
+    "coupon separation at L, 5 mrad heading offset (conditioned on the measured start pose)": {
+     "dominant": "mixed (largest: instrument)",
+     "execution": 0.021641261053807325,
+     "geometry": 0.022512830500950105,
+     "instrument": 0.028284271247461905,
+     "solver": 5.259972464995618e-09,
+     "value": 0.5397095397385409
+    },
+    "coupon separation at L, 5 mrad heading offset (open-loop start)": {
+     "dominant": "execution",
+     "execution": 0.06022645996697278,
+     "geometry": 0.022512830500950105,
+     "instrument": 0.028284271247461905,
+     "solver": 5.259972464995618e-09,
+     "value": 0.5397095397385409
+    },
+    "cylinder gap, 90 deg pair": {
+     "dominant": "instrument",
+     "execution": 0.0,
+     "geometry": 0.009040310118938294,
+     "instrument": 0.028284271247461905,
+     "solver": 6.661338147750939e-14,
+     "value": 15.658276442180153
+    },
+    "plate separation at 240 mm, 5 mrad heading offset (conditioned on the measured start pose)": {
+     "dominant": "execution",
+     "execution": 0.048083261120685235,
+     "geometry": 1.4365948253214356e-07,
+     "instrument": 0.028284271247461905,
+     "solver": 0.0,
+     "value": 1.2
+    },
+    "plate separation at 240 mm, 5 mrad heading offset (open-loop start)": {
+     "dominant": "execution",
+     "execution": 0.13,
+     "geometry": 1.4365948253214356e-07,
+     "instrument": 0.028284271247461905,
+     "solver": 0.0,
+     "value": 1.2
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 0.39092676755415534,
+      "passed": true,
+      "reference": "geometry share of the focal-distance variance minus one half",
+      "reference_kind": "analytic",
+      "tolerance": 1e-09
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "dominant term is geometry",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "The coupon focal-distance prediction is geometry-limited, not instrument-limited",
+   "counterexample": {
+    "statement": "The uncertainty of a curved-surface prediction compared with a photogrammetric measurement is limited by the instrument",
+    "witness": {
+     "components_mm": {
+      "execution": 0.8324762391006113,
+      "geometry": 4.388650263504834,
+      "instrument": 1.2903303761332685,
+      "solver": 9.235394221226064e-07
+     },
+     "quantity": "coupon focal distance"
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "forward vs central geometry sensitivity (relative)",
+    "kind": "reference_error",
+    "value": 0.02931958792246836
+   },
+   "unit": null,
+   "value": 0.8909267675541553
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "open-loop dominant term is execution (start pose)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "le",
+      "observed": 0.26383035256294685,
+      "passed": true,
+      "reference": "conditioned execution variance share (must be below one half)",
+      "reference_kind": "analytic",
+      "tolerance": 0.5
+     }
+    ]
+   },
+   "claim": "On the coupon, the heading-offset separation at the route end is limited by the start pose open loop, and a CMM start-pose measurement removes that limit",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "forward vs central geometry sensitivity (relative)",
+    "kind": "reference_error",
+    "value": 0.02931958792246836
+   },
+   "unit": null,
+   "value": {
+    "conditioned_execution_share": 0.26383035256294685,
+    "open_loop_dominant": "execution",
+    "open_loop_share": 0.7351412180373915
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "coarse control classified solver-limited",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "The classification detects a solver-limited prediction in the coarse-solver control",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact logic or integer count",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": "solver"
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "The declared instrument uncertainties are the uncertainties of the instruments used",
+   "domain": "calibration",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "The start jig and tape laying realize the relative start pose of the offset tape within the declared 0.05 mm and 0.5 mrad",
+   "domain": "calibration",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "The budget contains every significant physical error source (thermal, fixturing, tape bending along the route, target centring)",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 4054,
+   "path": "artifacts/T140/uncertainty-budget.json",
+   "sha256": "3be940679b93f23dd80aa399bb1d394df406ac502d203bb59baca24bcab17e3c"
+  },
+  {
+   "bytes": 1289,
+   "path": "artifacts/T140/uncertainty-budget.md",
+   "sha256": "5182a0af62020bae319188a339f8c177590a12f8b0ea72681cde7412f0f143c4"
+  }
+ ],
+ "hypothesis": "Each predicted quantity has a limiting uncertainty term; extrinsic chord-geodesic gaps are instrument-limited, path separations open loop are limited by the realized start pose (a CMM start-pose measurement removes that limit on the coupon but not over the 240 mm plate route, where the 20 mm heading baseline still dominates), and the location of a Jacobi focus is geometry-limited because it depends sensitively on the dome shape.",
+ "input_data": [
+  "Declared camera pair uncertainty sqrt(2) x 0.02 mm",
+  "Declared tolerances: cylinder radius +/- 0.1 mm, dome height +/- 0.2 mm, dome sigma +/- 0.5 mm, plate flatness 0.05 mm",
+  "Declared start-pose error 0.05 mm / 0.5 mrad (open loop); CMM start-pose estimate 0.0028 mm / 0.2 mrad",
+  "Predictions from T126, T127, T128 and T138"
+ ],
+ "mathematical_model": "u_c^2 = u_instrument^2 + u_geometry^2 + u_execution^2 + u_solver^2; u_geometry from central differences over rectangular tolerances (u = a / sqrt 3); u_execution = start-pose uncertainty times the Jacobi fields (declared jig error open loop, CMM estimate when conditioned); u_solver = |Q(h) - Q(2h)| / 15 for a reported h-solution and (16/15) |Q(h) - Q(2h)| when the reported value is the coarse one (the 6-step control); u_instrument(focal) = u_pair / |d sep / ds|; limiting term = variance share > 50%, otherwise mixed.",
+ "number": 140,
+ "numerical_result": "cylinder gap, 90 deg pair = 15.66 mm, u (instrument, geometry, execution, solver) = (0.028, 0.009, 0, 6.7e-14) mm -> instrument; coupon separation at L, 5 mrad heading offset (open-loop start) = 0.5397 mm, u (instrument, geometry, execution, solver) = (0.028, 0.023, 0.06, 5.3e-09) mm -> execution; coupon separation at L, 5 mrad heading offset (conditioned on the measured start pose) = 0.5397 mm, u (instrument, geometry, execution, solver) = (0.028, 0.023, 0.022, 5.3e-09) mm -> mixed (largest: instrument); coupon separation at L, 2 mm lateral offset (conditioned on the measured start pose) = -1.037 mm, u (instrument, geometry, execution, solver) = (0.028, 0.15, 0.022, 2.8e-08) mm -> geometry; coupon focal distance (conditioned on the measured start pose) = 153.4 mm, u (instrument, geometry, execution, solver) = (1.3, 4.4, 0.83, 9.2e-07) mm -> geometry; plate separation at 240 mm, 5 mrad heading offset (open-loop start) = 1.2 mm, u (instrument, geometry, execution, solver) = (0.028, 1.4e-07, 0.13, 0) mm -> execution; plate separation at 240 mm, 5 mrad heading offset (conditioned on the measured start pose) = 1.2 mm, u (instrument, geometry, execution, solver) = (0.028, 1.4e-07, 0.048, 0) mm -> execution; coarse-solver control (6 RK4 steps) = 0.6246 mm, u (instrument, geometry, execution, solver) = (0.028, 0.023, 0.022, 0.094) mm -> solver.",
+ "observation_model": "No observation: declared instrument noise, declared start-pose errors and model sensitivities only.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/manufacturing.py": "088763a0bcc42bf085c1e228797a5dc0d702b994f2a49e053cbe2b0a5622e25d",
+   "src/ciw/lab/manufacturing_geometry.py": "1db6df2ddf778668da2ffd53a66bcddbff4fc933d6f299e8f283cedc60a9332f",
+   "src/ciw/lab/manufacturing_metrology.py": "afbb6fccf146ca4f47850805c118d2f1bf6186872f381b298ab924a9214257ec",
+   "src/ciw/lab/manufacturing_records.py": "66970104ea454e836c5cbafc3013c90e721c3e96ad7f16780c32250112cac921"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T141: keep production acceptance outside the system and record it as not performed.",
+ "report_id": "sha256:e2a332efa46d996b7dfe460f81df114a7fbc8f010a103c04fc0879c4acf0cabe",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "manufacturing",
+ "state": "completed",
+ "task_id": "T140",
+ "tests_passed": [
+  "check: Uncertainty budget per predicted quantity and its limiting term vs geometry sensitivity linearity (forward vs central), focal/height_mm",
+  "check: Uncertainty budget per predicted quantity and its limiting term vs geometry sensitivity linearity (forward vs central), focal/sigma_mm",
+  "check: Uncertainty budget per predicted quantity and its limiting term vs geometry sensitivity linearity (forward vs central), heading_end/height_mm",
+  "check: Uncertainty budget per predicted quantity and its limiting term vs geometry sensitivity linearity (forward vs central), heading_end/sigma_mm",
+  "check: Uncertainty budget per predicted quantity and its limiting term vs geometry sensitivity linearity (forward vs central), lateral/height_mm",
+  "check: Uncertainty budget per predicted quantity and its limiting term vs geometry sensitivity linearity (forward vs central), lateral/sigma_mm",
+  "check: Uncertainty budget per predicted quantity and its limiting term vs coarse control: actual error / Richardson estimate",
+  "check: Uncertainty budget per predicted quantity and its limiting term vs coarse control: Richardson estimate / actual error",
+  "check: The coupon focal-distance prediction is geometry-limited, not instrument-limited vs geometry share of the focal-distance variance minus one half",
+  "check: The coupon focal-distance prediction is geometry-limited, not instrument-limited vs dominant term is geometry",
+  "check: On the coupon, the heading-offset separation at the route end is limited by the start pose open loop, and a CMM start-pose measurement removes that limit vs open-loop dominant term is execution (start pose)",
+  "check: On the coupon, the heading-offset separation at the route end is limited by the start pose open loop, and a CMM start-pose measurement removes that limit vs conditioned execution variance share (must be below one half)",
+  "check: The classification detects a solver-limited prediction in the coarse-solver control vs coarse control classified solver-limited",
+  "pytest: tests/test_lab_manufacturing.py::test_uncertainty_budget_classifies_limiting_terms",
+  "pytest: tests/test_lab_manufacturing.py::test_every_task_is_registered_and_reports_honestly"
+ ],
+ "tests_skipped": [],
+ "title": "Report whether uncertainty is instrument-, geometry-, or solver-limited.",
+ "uncertainty": "Components are standard uncertainties; classification uses variance shares.",
+ "unresolved_assumptions": [
+  "Instrument and start-pose uncertainties are declared; the real budget needs calibration records (T130/T139).",
+  "In-plane tape bending along the route, thermal drift and target centring are not budgeted."
+ ]
+}

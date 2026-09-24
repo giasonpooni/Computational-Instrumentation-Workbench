@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420" font-family="sans-serif" font-size="11">
+<rect width="640" height="420" fill="#ffffff"/>
+<text x="78" y="22" font-size="13" font-weight="bold">Saddle(c): ridge geodesic crossing the saddle point</text>
+<rect x="78" y="40" width="392" height="322" fill="none" stroke="#333"/>
+<line x1="78.00" y1="40" x2="78.00" y2="362" stroke="#e5e7eb"/>
+<text x="78.00" y="378" text-anchor="middle">1e0</text>
+<line x1="171.01" y1="40" x2="171.01" y2="362" stroke="#e5e7eb"/>
+<text x="171.01" y="378" text-anchor="middle">1e1</text>
+<line x1="264.03" y1="40" x2="264.03" y2="362" stroke="#e5e7eb"/>
+<text x="264.03" y="378" text-anchor="middle">1e2</text>
+<line x1="357.04" y1="40" x2="357.04" y2="362" stroke="#e5e7eb"/>
+<text x="357.04" y="378" text-anchor="middle">1e3</text>
+<line x1="450.06" y1="40" x2="450.06" y2="362" stroke="#e5e7eb"/>
+<text x="450.06" y="378" text-anchor="middle">1e4</text>
+<line x1="78" y1="350.07" x2="470" y2="350.07" stroke="#e5e7eb"/>
+<text x="72" y="354.07" text-anchor="end">1e0</text>
+<line x1="78" y1="314.70" x2="470" y2="314.70" stroke="#e5e7eb"/>
+<text x="72" y="318.70" text-anchor="end">1e1</text>
+<line x1="78" y1="279.33" x2="470" y2="279.33" stroke="#e5e7eb"/>
+<text x="72" y="283.33" text-anchor="end">1e2</text>
+<line x1="78" y1="243.96" x2="470" y2="243.96" stroke="#e5e7eb"/>
+<text x="72" y="247.96" text-anchor="end">1e3</text>
+<line x1="78" y1="208.58" x2="470" y2="208.58" stroke="#e5e7eb"/>
+<text x="72" y="212.58" text-anchor="end">1e4</text>
+<line x1="78" y1="173.21" x2="470" y2="173.21" stroke="#e5e7eb"/>
+<text x="72" y="177.21" text-anchor="end">1e5</text>
+<line x1="78" y1="137.84" x2="470" y2="137.84" stroke="#e5e7eb"/>
+<text x="72" y="141.84" text-anchor="end">1e6</text>
+<line x1="78" y1="102.47" x2="470" y2="102.47" stroke="#e5e7eb"/>
+<text x="72" y="106.47" text-anchor="end">1e7</text>
+<line x1="78" y1="67.10" x2="470" y2="67.10" stroke="#e5e7eb"/>
+<text x="72" y="71.10" text-anchor="end">1e8</text>
+<text x="274.00" y="406" text-anchor="middle">c</text>
+<text x="16" y="201.00" text-anchor="middle" transform="rotate(-90 16 201.00)">value</text>
+<path d="M78.00,332.36 L134.00,309.25 L190.00,278.46 L246.00,247.50 L302.00,217.02 L358.00,186.77 L414.00,156.61 L470.00,126.48" fill="none" stroke="#1f5fa8" stroke-width="1.8"/>
+<circle cx="78.00" cy="332.36" r="2.6" fill="#1f5fa8"/>
+<circle cx="134.00" cy="309.25" r="2.6" fill="#1f5fa8"/>
+<circle cx="190.00" cy="278.46" r="2.6" fill="#1f5fa8"/>
+<circle cx="246.00" cy="247.50" r="2.6" fill="#1f5fa8"/>
+<circle cx="302.00" cy="217.02" r="2.6" fill="#1f5fa8"/>
+<circle cx="358.00" cy="186.77" r="2.6" fill="#1f5fa8"/>
+<circle cx="414.00" cy="156.61" r="2.6" fill="#1f5fa8"/>
+<circle cx="470.00" cy="126.48" r="2.6" fill="#1f5fa8"/>
+<line x1="482" y1="52" x2="502" y2="52" stroke="#1f5fa8" stroke-width="2"/>
+<text x="508" y="56">j_head(L)</text>
+<path d="M78.00,350.07 L134.00,307.48 L190.00,264.89 L246.00,222.30 L302.00,179.70 L358.00,137.11 L414.00,94.52 L470.00,51.93" fill="none" stroke="#c2410c" stroke-width="1.8"/>
+<circle cx="78.00" cy="350.07" r="2.6" fill="#c2410c"/>
+<circle cx="134.00" cy="307.48" r="2.6" fill="#c2410c"/>
+<circle cx="190.00" cy="264.89" r="2.6" fill="#c2410c"/>
+<circle cx="246.00" cy="222.30" r="2.6" fill="#c2410c"/>
+<circle cx="302.00" cy="179.70" r="2.6" fill="#c2410c"/>
+<circle cx="358.00" cy="137.11" r="2.6" fill="#c2410c"/>
+<circle cx="414.00" cy="94.52" r="2.6" fill="#c2410c"/>
+<circle cx="470.00" cy="51.93" r="2.6" fill="#c2410c"/>
+<line x1="482" y1="70" x2="502" y2="70" stroke="#c2410c" stroke-width="2"/>
+<text x="508" y="74">peak |K| = c^2</text>
+<path d="M78.00,294.19 L134.00,281.83 L190.00,274.49 L246.00,269.88 L302.00,266.34 L358.00,263.51 L414.00,261.18 L470.00,259.15" fill="none" stroke="#15803d" stroke-width="1.8"/>
+<circle cx="78.00" cy="294.19" r="2.6" fill="#15803d"/>
+<circle cx="134.00" cy="281.83" r="2.6" fill="#15803d"/>
+<circle cx="190.00" cy="274.49" r="2.6" fill="#15803d"/>
+<circle cx="246.00" cy="269.88" r="2.6" fill="#15803d"/>
+<circle cx="302.00" cy="266.34" r="2.6" fill="#15803d"/>
+<circle cx="358.00" cy="263.51" r="2.6" fill="#15803d"/>
+<circle cx="414.00" cy="261.18" r="2.6" fill="#15803d"/>
+<circle cx="470.00" cy="259.15" r="2.6" fill="#15803d"/>
+<line x1="482" y1="88" x2="502" y2="88" stroke="#15803d" stroke-width="2"/>
+<text x="508" y="92">DP45 accepted steps</text>
+</svg>

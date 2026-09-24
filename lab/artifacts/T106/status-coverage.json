@@ -1,0 +1,241 @@
+{
+ "constants": {
+  "DECREASE_RESOLUTION_FACTOR": 1.0,
+  "HOST_OWNED_STATUSES": [
+   "CERTIFICATE_EXPIRED",
+   "INVALID_SENSOR_DATA",
+   "MODEL_MISMATCH",
+   "RUNTIME_FAULT",
+   "STALE_STATE"
+  ],
+  "MAX_KRONECKER_DIM": 24,
+  "MIN_DECREASE_MARGIN": 0.0,
+  "NUMERICAL_POLICY_VERSION": "float64-decrease-v1",
+  "RUNTIME_STATUSES": [
+   "CERTIFICATE_NOT_POSITIVE",
+   "CERTIFIED_WITH_MARGIN",
+   "DECREASE_NOT_DEFINITE",
+   "MARGIN_LOW",
+   "NOT_CERTIFIED",
+   "NUMERICAL_INCONCLUSIVE",
+   "NUMERICAL_OVERFLOW",
+   "OUTSIDE_LEVEL_SET",
+   "OUTSIDE_PARAMETER_BOX"
+  ],
+  "RUNTIME_STATUS_VERSION": "runtime-status-v1"
+ },
+ "coverage_examples": {
+  "CERTIFICATE_NOT_POSITIVE": [
+   "indefinite P#1",
+   "indefinite P#2",
+   "indefinite P#3"
+  ],
+  "CERTIFIED_WITH_MARGIN": [
+   "level (V = 4)#0",
+   "level (V = 4)#1",
+   "matrix scale k, A = -2^k I#0"
+  ],
+  "DECREASE_NOT_DEFINITE": [
+   "direction phi, A = diag(-1, 1)#0",
+   "direction phi, A = diag(-1, 1)#1",
+   "direction phi, A = diag(-1, 1)#2"
+  ],
+  "MARGIN_LOW": [
+   "required_margin (margin 2)#3",
+   "required_margin (margin 2)#4",
+   "required_margin (margin 2)#5"
+  ],
+  "NOT_CERTIFIED": [
+   "direction phi, A = diag(-1, 1)#3",
+   "direction phi, A = diag(-1, 1)#4",
+   "stability a, A = [[a, 1], [-1, a]]#5"
+  ],
+  "NUMERICAL_INCONCLUSIVE": [
+   "indefinite P#0",
+   "indefinite P#5",
+   "stability a, A = [[a, 1], [-1, a]]#2"
+  ],
+  "NUMERICAL_OVERFLOW": [
+   "matrix scale k, A = -2^k I#3"
+  ],
+  "OUTSIDE_LEVEL_SET": [
+   "level (V = 4)#2",
+   "level (V = 4)#3",
+   "level (V = 4)#4"
+  ],
+  "OUTSIDE_PARAMETER_BOX": [
+   "theta, box [-1, 1]#0",
+   "theta, box [-1, 1]#4",
+   "theta_dot, rate box [-0.2, 0.2]#0"
+  ]
+ },
+ "host_owned": {
+  "CERTIFICATE_EXPIRED": {
+   "Verdict": "raises ValueError",
+   "require_status": "raises ValueError"
+  },
+  "INVALID_SENSOR_DATA": {
+   "Verdict": "raises ValueError",
+   "require_status": "raises ValueError"
+  },
+  "MODEL_MISMATCH": {
+   "Verdict": "raises ValueError",
+   "require_status": "raises ValueError"
+  },
+  "RUNTIME_FAULT": {
+   "Verdict": "raises ValueError",
+   "require_status": "raises ValueError"
+  },
+  "STALE_STATE": {
+   "Verdict": "raises ValueError",
+   "require_status": "raises ValueError"
+  }
+ },
+ "observed": {
+  "direction phi, A = diag(-1, 1)#0": "DECREASE_NOT_DEFINITE",
+  "direction phi, A = diag(-1, 1)#1": "DECREASE_NOT_DEFINITE",
+  "direction phi, A = diag(-1, 1)#2": "DECREASE_NOT_DEFINITE",
+  "direction phi, A = diag(-1, 1)#3": "NOT_CERTIFIED",
+  "direction phi, A = diag(-1, 1)#4": "NOT_CERTIFIED",
+  "indefinite P#0": "NUMERICAL_INCONCLUSIVE",
+  "indefinite P#1": "CERTIFICATE_NOT_POSITIVE",
+  "indefinite P#2": "CERTIFICATE_NOT_POSITIVE",
+  "indefinite P#3": "CERTIFICATE_NOT_POSITIVE",
+  "indefinite P#4": "CERTIFICATE_NOT_POSITIVE",
+  "indefinite P#5": "NUMERICAL_INCONCLUSIVE",
+  "indefinite P#6": "CERTIFICATE_NOT_POSITIVE",
+  "indefinite P#7": "CERTIFICATE_NOT_POSITIVE",
+  "level (V = 4)#0": "CERTIFIED_WITH_MARGIN",
+  "level (V = 4)#1": "CERTIFIED_WITH_MARGIN",
+  "level (V = 4)#2": "OUTSIDE_LEVEL_SET",
+  "level (V = 4)#3": "OUTSIDE_LEVEL_SET",
+  "level (V = 4)#4": "OUTSIDE_LEVEL_SET",
+  "matrix scale k, A = -2^k I#0": "CERTIFIED_WITH_MARGIN",
+  "matrix scale k, A = -2^k I#1": "CERTIFIED_WITH_MARGIN",
+  "matrix scale k, A = -2^k I#2": "CERTIFIED_WITH_MARGIN",
+  "matrix scale k, A = -2^k I#3": "NUMERICAL_OVERFLOW",
+  "required_margin (margin 2)#0": "CERTIFIED_WITH_MARGIN",
+  "required_margin (margin 2)#1": "CERTIFIED_WITH_MARGIN",
+  "required_margin (margin 2)#2": "CERTIFIED_WITH_MARGIN",
+  "required_margin (margin 2)#3": "MARGIN_LOW",
+  "required_margin (margin 2)#4": "MARGIN_LOW",
+  "required_margin (margin 2)#5": "MARGIN_LOW",
+  "stability a, A = [[a, 1], [-1, a]]#0": "CERTIFIED_WITH_MARGIN",
+  "stability a, A = [[a, 1], [-1, a]]#1": "CERTIFIED_WITH_MARGIN",
+  "stability a, A = [[a, 1], [-1, a]]#2": "NUMERICAL_INCONCLUSIVE",
+  "stability a, A = [[a, 1], [-1, a]]#3": "NUMERICAL_INCONCLUSIVE",
+  "stability a, A = [[a, 1], [-1, a]]#4": "NUMERICAL_INCONCLUSIVE",
+  "stability a, A = [[a, 1], [-1, a]]#5": "NOT_CERTIFIED",
+  "stability a, A = [[a, 1], [-1, a]]#6": "NOT_CERTIFIED",
+  "theta, box [-1, 1]#0": "OUTSIDE_PARAMETER_BOX",
+  "theta, box [-1, 1]#1": "CERTIFIED_WITH_MARGIN",
+  "theta, box [-1, 1]#2": "CERTIFIED_WITH_MARGIN",
+  "theta, box [-1, 1]#3": "CERTIFIED_WITH_MARGIN",
+  "theta, box [-1, 1]#4": "OUTSIDE_PARAMETER_BOX",
+  "theta_dot, rate box [-0.2, 0.2]#0": "OUTSIDE_PARAMETER_BOX",
+  "theta_dot, rate box [-0.2, 0.2]#1": "CERTIFIED_WITH_MARGIN",
+  "theta_dot, rate box [-0.2, 0.2]#2": "CERTIFIED_WITH_MARGIN",
+  "theta_dot, rate box [-0.2, 0.2]#3": "CERTIFIED_WITH_MARGIN",
+  "theta_dot, rate box [-0.2, 0.2]#4": "OUTSIDE_PARAMETER_BOX"
+ },
+ "predicted": {
+  "direction phi, A = diag(-1, 1)#0": "DECREASE_NOT_DEFINITE",
+  "direction phi, A = diag(-1, 1)#1": "DECREASE_NOT_DEFINITE",
+  "direction phi, A = diag(-1, 1)#2": "DECREASE_NOT_DEFINITE",
+  "direction phi, A = diag(-1, 1)#3": "NOT_CERTIFIED",
+  "direction phi, A = diag(-1, 1)#4": "NOT_CERTIFIED",
+  "indefinite P#0": "NUMERICAL_INCONCLUSIVE",
+  "indefinite P#1": "CERTIFICATE_NOT_POSITIVE",
+  "indefinite P#2": "CERTIFICATE_NOT_POSITIVE",
+  "indefinite P#3": "CERTIFICATE_NOT_POSITIVE",
+  "indefinite P#4": "CERTIFICATE_NOT_POSITIVE",
+  "indefinite P#5": "NUMERICAL_INCONCLUSIVE",
+  "indefinite P#6": "CERTIFICATE_NOT_POSITIVE",
+  "indefinite P#7": "CERTIFICATE_NOT_POSITIVE",
+  "level (V = 4)#0": "CERTIFIED_WITH_MARGIN",
+  "level (V = 4)#1": "CERTIFIED_WITH_MARGIN",
+  "level (V = 4)#2": "OUTSIDE_LEVEL_SET",
+  "level (V = 4)#3": "OUTSIDE_LEVEL_SET",
+  "level (V = 4)#4": "OUTSIDE_LEVEL_SET",
+  "matrix scale k, A = -2^k I#0": "CERTIFIED_WITH_MARGIN",
+  "matrix scale k, A = -2^k I#1": "CERTIFIED_WITH_MARGIN",
+  "matrix scale k, A = -2^k I#2": "CERTIFIED_WITH_MARGIN",
+  "matrix scale k, A = -2^k I#3": "NUMERICAL_OVERFLOW",
+  "required_margin (margin 2)#0": "CERTIFIED_WITH_MARGIN",
+  "required_margin (margin 2)#1": "CERTIFIED_WITH_MARGIN",
+  "required_margin (margin 2)#2": "CERTIFIED_WITH_MARGIN",
+  "required_margin (margin 2)#3": "MARGIN_LOW",
+  "required_margin (margin 2)#4": "MARGIN_LOW",
+  "required_margin (margin 2)#5": "MARGIN_LOW",
+  "stability a, A = [[a, 1], [-1, a]]#0": "CERTIFIED_WITH_MARGIN",
+  "stability a, A = [[a, 1], [-1, a]]#1": "CERTIFIED_WITH_MARGIN",
+  "stability a, A = [[a, 1], [-1, a]]#2": "NUMERICAL_INCONCLUSIVE",
+  "stability a, A = [[a, 1], [-1, a]]#3": "NUMERICAL_INCONCLUSIVE",
+  "stability a, A = [[a, 1], [-1, a]]#4": "NUMERICAL_INCONCLUSIVE",
+  "stability a, A = [[a, 1], [-1, a]]#5": "NOT_CERTIFIED",
+  "stability a, A = [[a, 1], [-1, a]]#6": "NOT_CERTIFIED",
+  "theta, box [-1, 1]#0": "OUTSIDE_PARAMETER_BOX",
+  "theta, box [-1, 1]#1": "CERTIFIED_WITH_MARGIN",
+  "theta, box [-1, 1]#2": "CERTIFIED_WITH_MARGIN",
+  "theta, box [-1, 1]#3": "CERTIFIED_WITH_MARGIN",
+  "theta, box [-1, 1]#4": "OUTSIDE_PARAMETER_BOX",
+  "theta_dot, rate box [-0.2, 0.2]#0": "OUTSIDE_PARAMETER_BOX",
+  "theta_dot, rate box [-0.2, 0.2]#1": "CERTIFIED_WITH_MARGIN",
+  "theta_dot, rate box [-0.2, 0.2]#2": "CERTIFIED_WITH_MARGIN",
+  "theta_dot, rate box [-0.2, 0.2]#3": "CERTIFIED_WITH_MARGIN",
+  "theta_dot, rate box [-0.2, 0.2]#4": "OUTSIDE_PARAMETER_BOX"
+ },
+ "transitions": {
+  "direction phi, A = diag(-1, 1)": [
+   "DECREASE_NOT_DEFINITE",
+   "DECREASE_NOT_DEFINITE",
+   "DECREASE_NOT_DEFINITE",
+   "NOT_CERTIFIED",
+   "NOT_CERTIFIED"
+  ],
+  "level (V = 4)": [
+   "CERTIFIED_WITH_MARGIN",
+   "CERTIFIED_WITH_MARGIN",
+   "OUTSIDE_LEVEL_SET",
+   "OUTSIDE_LEVEL_SET",
+   "OUTSIDE_LEVEL_SET"
+  ],
+  "matrix scale k, A = -2^k I": [
+   "CERTIFIED_WITH_MARGIN",
+   "CERTIFIED_WITH_MARGIN",
+   "CERTIFIED_WITH_MARGIN",
+   "NUMERICAL_OVERFLOW"
+  ],
+  "required_margin (margin 2)": [
+   "CERTIFIED_WITH_MARGIN",
+   "CERTIFIED_WITH_MARGIN",
+   "CERTIFIED_WITH_MARGIN",
+   "MARGIN_LOW",
+   "MARGIN_LOW",
+   "MARGIN_LOW"
+  ],
+  "stability a, A = [[a, 1], [-1, a]]": [
+   "CERTIFIED_WITH_MARGIN",
+   "CERTIFIED_WITH_MARGIN",
+   "NUMERICAL_INCONCLUSIVE",
+   "NUMERICAL_INCONCLUSIVE",
+   "NUMERICAL_INCONCLUSIVE",
+   "NOT_CERTIFIED",
+   "NOT_CERTIFIED"
+  ],
+  "theta, box [-1, 1]": [
+   "OUTSIDE_PARAMETER_BOX",
+   "CERTIFIED_WITH_MARGIN",
+   "CERTIFIED_WITH_MARGIN",
+   "CERTIFIED_WITH_MARGIN",
+   "OUTSIDE_PARAMETER_BOX"
+  ],
+  "theta_dot, rate box [-0.2, 0.2]": [
+   "OUTSIDE_PARAMETER_BOX",
+   "CERTIFIED_WITH_MARGIN",
+   "CERTIFIED_WITH_MARGIN",
+   "CERTIFIED_WITH_MARGIN",
+   "OUTSIDE_PARAMETER_BOX"
+  ]
+ }
+}

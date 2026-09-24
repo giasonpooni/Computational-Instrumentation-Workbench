@@ -1,0 +1,52 @@
+{
+ "ambiguous_energy_numbers": [],
+ "energy_record_joule_fields": [
+  "amortized_domain_energy_j_per_qualified_solve",
+  "counter_delta_mj",
+  "energy_mj",
+  "gross_energy_j"
+ ],
+ "energy_record_nat_fields": [
+  "kl_nats",
+  "log_evidence",
+  "max_kl_nats",
+  "target_kl_nats"
+ ],
+ "energy_record_power_fields": [
+  "power_mw"
+ ],
+ "fixtures_reachable": true,
+ "free_energy_in_energy_records": [],
+ "panel_units": {
+  "accuracy": [
+   "nat"
+  ],
+  "elapsed-time": [
+   "ms"
+  ],
+  "energy-per-solve": [
+   "J/solve"
+  ],
+  "gross-energy": [
+   "J"
+  ]
+ },
+ "physical_units_in_variational_records": [],
+ "refusals": {
+  "add": "Cannot add information and energy",
+  "compare": "Cannot compare information and energy",
+  "convert": "Cannot express energy in nat",
+  "equal": "Cannot compare information and energy",
+  "power_plus_energy": "Cannot add energy/time and energy",
+  "untyped": "Cannot add a quantity and an untyped number",
+  "untyped_left": "Cannot add a quantity and an untyped number"
+ },
+ "variational_nat_fields": [
+  "free_energy",
+  "free_energy_identity_residual",
+  "kl_to_reference",
+  "negative_log_evidence",
+  "prior_cross_entropy",
+  "variational_entropy"
+ ]
+}

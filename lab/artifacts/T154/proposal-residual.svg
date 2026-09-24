@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420" font-family="sans-serif" font-size="11">
+<rect width="640" height="420" fill="#ffffff"/>
+<text x="78" y="22" font-size="13" font-weight="bold">Normal separation at L = 2 on the torus</text>
+<rect x="78" y="40" width="392" height="322" fill="none" stroke="#333"/>
+<line x1="274.00" y1="40" x2="274.00" y2="362" stroke="#e5e7eb"/>
+<text x="274.00" y="378" text-anchor="middle">1e-2</text>
+<line x1="78" y1="360.48" x2="470" y2="360.48" stroke="#e5e7eb"/>
+<text x="72" y="364.48" text-anchor="end">1e-6</text>
+<line x1="78" y1="282.83" x2="470" y2="282.83" stroke="#e5e7eb"/>
+<text x="72" y="286.83" text-anchor="end">1e-5</text>
+<line x1="78" y1="205.18" x2="470" y2="205.18" stroke="#e5e7eb"/>
+<text x="72" y="209.18" text-anchor="end">1e-4</text>
+<line x1="78" y1="127.53" x2="470" y2="127.53" stroke="#e5e7eb"/>
+<text x="72" y="131.53" text-anchor="end">1e-3</text>
+<line x1="78" y1="49.88" x2="470" y2="49.88" stroke="#e5e7eb"/>
+<text x="72" y="53.88" text-anchor="end">1e-2</text>
+<text x="274.00" y="406" text-anchor="middle">lateral offset d</text>
+<text x="16" y="201.00" text-anchor="middle" transform="rotate(-90 16 201.00)">|separation at L|</text>
+<path d="M470.00,51.93 L274.00,75.37 L78.00,98.77" fill="none" stroke="#1f5fa8" stroke-width="1.8"/>
+<circle cx="470.00" cy="51.93" r="2.6" fill="#1f5fa8"/>
+<circle cx="274.00" cy="75.37" r="2.6" fill="#1f5fa8"/>
+<circle cx="78.00" cy="98.77" r="2.6" fill="#1f5fa8"/>
+<line x1="482" y1="52" x2="502" y2="52" stroke="#1f5fa8" stroke-width="2"/>
+<text x="508" y="56">uncorrected</text>
+<path d="M470.00,255.83 L274.00,303.08 L78.00,350.07" fill="none" stroke="#c2410c" stroke-width="1.8"/>
+<circle cx="470.00" cy="255.83" r="2.6" fill="#c2410c"/>
+<circle cx="274.00" cy="303.08" r="2.6" fill="#c2410c"/>
+<circle cx="78.00" cy="350.07" r="2.6" fill="#c2410c"/>
+<line x1="482" y1="70" x2="502" y2="70" stroke="#c2410c" stroke-width="2"/>
+<text x="508" y="74">with heading proposal</text>
+</svg>

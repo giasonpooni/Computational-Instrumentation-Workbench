@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420" font-family="sans-serif" font-size="11">
+<rect width="640" height="420" fill="#ffffff"/>
+<text x="78" y="22" font-size="13" font-weight="bold">Tape placement on R = 100 mm: lateral tolerance stack</text>
+<rect x="78" y="40" width="392" height="322" fill="none" stroke="#333"/>
+<line x1="78.00" y1="40" x2="78.00" y2="362" stroke="#e5e7eb"/>
+<text x="78.00" y="378" text-anchor="middle">0</text>
+<line x1="156.40" y1="40" x2="156.40" y2="362" stroke="#e5e7eb"/>
+<text x="156.40" y="378" text-anchor="middle">200</text>
+<line x1="234.80" y1="40" x2="234.80" y2="362" stroke="#e5e7eb"/>
+<text x="234.80" y="378" text-anchor="middle">400</text>
+<line x1="313.20" y1="40" x2="313.20" y2="362" stroke="#e5e7eb"/>
+<text x="313.20" y="378" text-anchor="middle">600</text>
+<line x1="391.60" y1="40" x2="391.60" y2="362" stroke="#e5e7eb"/>
+<text x="391.60" y="378" text-anchor="middle">800</text>
+<line x1="470.00" y1="40" x2="470.00" y2="362" stroke="#e5e7eb"/>
+<text x="470.00" y="378" text-anchor="middle">1e+03</text>
+<line x1="78" y1="254.52" x2="470" y2="254.52" stroke="#e5e7eb"/>
+<text x="72" y="258.52" text-anchor="end">0.5</text>
+<line x1="78" y1="95.20" x2="470" y2="95.20" stroke="#e5e7eb"/>
+<text x="72" y="99.20" text-anchor="end">1</text>
+<text x="274.00" y="406" text-anchor="middle">course length (mm)</text>
+<text x="16" y="201.00" text-anchor="middle" transform="rotate(-90 16 201.00)">2 sigma (mm)</text>
+<path d="M78.00,350.07 L97.60,347.63 L117.20,340.80 L136.80,330.64 L156.40,318.22 L176.00,304.30 L195.60,289.39 L215.20,273.79 L234.80,257.72 L254.40,241.31 L274.00,224.64 L293.60,207.79 L313.20,190.78 L332.80,173.66 L352.40,156.44 L372.00,139.15 L391.60,121.79 L411.20,104.38 L430.80,86.93 L450.40,69.45 L470.00,51.93" fill="none" stroke="#1f5fa8" stroke-width="1.8"/>
+<circle cx="78.00" cy="350.07" r="2.6" fill="#1f5fa8"/>
+<circle cx="97.60" cy="347.63" r="2.6" fill="#1f5fa8"/>
+<circle cx="117.20" cy="340.80" r="2.6" fill="#1f5fa8"/>
+<circle cx="136.80" cy="330.64" r="2.6" fill="#1f5fa8"/>
+<circle cx="156.40" cy="318.22" r="2.6" fill="#1f5fa8"/>
+<circle cx="176.00" cy="304.30" r="2.6" fill="#1f5fa8"/>
+<circle cx="195.60" cy="289.39" r="2.6" fill="#1f5fa8"/>
+<circle cx="215.20" cy="273.79" r="2.6" fill="#1f5fa8"/>
+<circle cx="234.80" cy="257.72" r="2.6" fill="#1f5fa8"/>
+<circle cx="254.40" cy="241.31" r="2.6" fill="#1f5fa8"/>
+<circle cx="274.00" cy="224.64" r="2.6" fill="#1f5fa8"/>
+<circle cx="293.60" cy="207.79" r="2.6" fill="#1f5fa8"/>
+<circle cx="313.20" cy="190.78" r="2.6" fill="#1f5fa8"/>
+<circle cx="332.80" cy="173.66" r="2.6" fill="#1f5fa8"/>
+<circle cx="352.40" cy="156.44" r="2.6" fill="#1f5fa8"/>
+<circle cx="372.00" cy="139.15" r="2.6" fill="#1f5fa8"/>
+<circle cx="391.60" cy="121.79" r="2.6" fill="#1f5fa8"/>
+<circle cx="411.20" cy="104.38" r="2.6" fill="#1f5fa8"/>
+<circle cx="430.80" cy="86.93" r="2.6" fill="#1f5fa8"/>
+<circle cx="450.40" cy="69.45" r="2.6" fill="#1f5fa8"/>
+<circle cx="470.00" cy="51.93" r="2.6" fill="#1f5fa8"/>
+<line x1="482" y1="52" x2="502" y2="52" stroke="#1f5fa8" stroke-width="2"/>
+<text x="508" y="56">2 sigma lateral (RSS)</text>
+<path d="M78.00,254.52 L470.00,254.52" fill="none" stroke="#c2410c" stroke-width="1.8"/>
+<circle cx="78.00" cy="254.52" r="2.6" fill="#c2410c"/>
+<circle cx="470.00" cy="254.52" r="2.6" fill="#c2410c"/>
+<line x1="482" y1="70" x2="502" y2="70" stroke="#c2410c" stroke-width="2"/>
+<text x="508" y="74">spec 0.5 mm</text>
+</svg>

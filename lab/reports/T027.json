@@ -1,0 +1,321 @@
+{
+ "changed_files": [
+  "src/ciw/lab/flat_torus_topology.py",
+  "src/ciw/lab/flat_torus_topology_surfaces.py",
+  "docs/lab/FLAT_TORUS_TOPOLOGY.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 0,
+   "numerically_verified": 3,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Translation gluing (opposite edge vectors), chi = -2 for the genus-2 examples, cylinder areas summing to the surface area.",
+ "experiment": "Build each surface, validate gluing and convexity exactly, compute topology, trace exact horizontal flows to measure cylinder circumferences, and exercise refusals.",
+ "failure_modes_checked": [
+  "non-translation pairings refused",
+  "unequal glued edge lengths refused",
+  "non-convex or clockwise polygons refused",
+  "half-translation pillowcase recognized"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "genus mismatches (L 2, octagon 2, square torus 1, hexagon 1)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "vertex classes of the L-shape and the octagon that differ from 1",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "octagon area minus 2 + 2 sqrt 2 (exact)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "L-shape and regular octagon are genus-2 translation surfaces with one vertex class",
+   "domain": "mathematical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "integer, Fraction or Q(sqrt d) arithmetic; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "H(1,1) origami": {
+     "area": "4",
+     "cone_angles_over_pi": [
+      "4",
+      "4"
+     ],
+     "edges": 8,
+     "euler_characteristic": -2,
+     "faces": 4,
+     "genus": 2,
+     "gluing": "translation",
+     "vertices": 2
+    },
+    "L-shape": {
+     "area": "3",
+     "cone_angles_over_pi": [
+      "6"
+     ],
+     "edges": 6,
+     "euler_characteristic": -2,
+     "faces": 3,
+     "genus": 2,
+     "gluing": "translation",
+     "vertices": 1
+    },
+    "hexagon": {
+     "area": {
+      "radicand": 3,
+      "rational": "0",
+      "sqrt_coefficient": "3/2"
+     },
+     "cone_angles_over_pi": [
+      "2",
+      "2"
+     ],
+     "edges": 3,
+     "euler_characteristic": 0,
+     "faces": 1,
+     "genus": 1,
+     "gluing": "translation",
+     "vertices": 2
+    },
+    "octagon": {
+     "area": {
+      "radicand": 2,
+      "rational": "2",
+      "sqrt_coefficient": "2"
+     },
+     "cone_angles_over_pi": [
+      "6"
+     ],
+     "edges": 4,
+     "euler_characteristic": -2,
+     "faces": 1,
+     "genus": 2,
+     "gluing": "translation",
+     "vertices": 1
+    },
+    "pillowcase": {
+     "area": "2",
+     "cone_angles_over_pi": [
+      "1",
+      "1",
+      "1",
+      "1"
+     ],
+     "edges": 4,
+     "euler_characteristic": 2,
+     "faces": 2,
+     "genus": null,
+     "gluing": "half-translation",
+     "vertices": 4
+    },
+    "square torus": {
+     "area": "1",
+     "cone_angles_over_pi": [
+      "2"
+     ],
+     "edges": 2,
+     "euler_characteristic": 0,
+     "faces": 1,
+     "genus": 1,
+     "gluing": "translation",
+     "vertices": 1
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "L-shape circumferences minus r-cycles",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "octagon circumference mismatch (exact surd)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "octagon cylinder area minus surface area (exact surd)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Horizontal cylinders: L-shape circumferences equal the r-cycle lengths, octagon strips have circumferences 2 + sqrt 2 and 1 + sqrt 2 with areas summing to the surface area",
+   "domain": "mathematical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 1e-09
+   },
+   "uncertainty": {
+    "basis": "integer, Fraction or Q(sqrt d) arithmetic; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "l_shape": [
+     2.0,
+     1.0
+    ],
+    "octagon": [
+     3.414213562373095,
+     2.414213562373095
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "GLUING_NOT_TRANSLATION",
+      "observed_refusal": "GLUING_NOT_TRANSLATION",
+      "passed": true,
+      "reference": "octagon adjacent pairing",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "GLUING_NOT_TRANSLATION",
+      "observed_refusal": "GLUING_NOT_TRANSLATION",
+      "passed": true,
+      "reference": "pillowcase (half-translation)",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "EDGE_LENGTH_MISMATCH",
+      "observed_refusal": "EDGE_LENGTH_MISMATCH",
+      "passed": true,
+      "reference": "edges of length 1 and 2 glued",
+      "reference_kind": "refusal"
+     }
+    ]
+   },
+   "claim": "Pairings that are not translations, or glue unequal edges, are refused as translation surfaces",
+   "domain": "mathematical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "integer, Fraction or Q(sqrt d) arithmetic; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "mismatched edge lengths": "EDGE_LENGTH_MISMATCH",
+    "octagon adjacent pairing": "GLUING_NOT_TRANSLATION",
+    "pillowcase": "GLUING_NOT_TRANSLATION"
+   }
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 1905,
+   "path": "artifacts/T027/translation-surfaces.json",
+   "sha256": "534666e7b39079ba644d293fa565bd19586ee137eb3b67b4fc751c871869bb18"
+  }
+ ],
+ "hypothesis": "The square-tiled L (3 squares) and the regular octagon with opposite sides glued are genus-2 translation surfaces with one vertex class; their horizontal cylinder decompositions are exactly predictable; non-translation pairings are refused.",
+ "input_data": [
+  "square torus, L-shape r = (A B)(C), u = (A C)(B), H(1,1) origami r = (2 3), u = (0 2)(1 3)",
+  "regular octagon and hexagon (exact surds), pillowcase (half-translation)"
+ ],
+ "mathematical_model": "Surface = convex polygons + edge involution; chi = V - E + F; genus (2 - chi)/2; octagon of side 1 in Q(sqrt 2): area 2 + 2 sqrt 2, horizontal cylinders of circumference 1 + sqrt 2 (height 1) and 2 + sqrt 2 (height sqrt 2 / 2).",
+ "number": 27,
+ "numerical_result": "{'square torus': (1, 1, ['2']), 'L-shape': (2, 1, ['6']), 'H(1,1) origami': (2, 2, ['4', '4']), 'octagon': (2, 1, ['6']), 'hexagon': (1, 2, ['2', '2']), 'pillowcase': (None, 4, ['1', '1', '1', '1'])}; octagon cylinders 2+1*sqrt(2) and 1+1*sqrt(2); L-shape horizontal circumferences [2.0, 1.0].",
+ "observation_model": "No physical observation: exact or floating-point computation on declared mathematical objects.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/flat_torus_topology.py": "4d8cf2437759501a1b9fa5ee0d8abfac43345ebee378c6ad08233e9155d4b184",
+   "src/ciw/lab/flat_torus_topology_surfaces.py": "654ca2094a5742a0e397ced722161068aab79ec9cd8bca9947b98db5a1f5e4e7"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T028: trace geodesics across glued edges",
+ "report_id": "sha256:173384af382c9a6dfc6962fdb402e1dd9aae73bb40f6fd039ac415b2aa97bceb",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "flat-torus-topology",
+ "state": "completed",
+ "task_id": "T027",
+ "tests_passed": [
+  "check: L-shape and regular octagon are genus-2 translation surfaces with one vertex class vs genus mismatches (L 2, octagon 2, square torus 1, hexagon 1)",
+  "check: L-shape and regular octagon are genus-2 translation surfaces with one vertex class vs vertex classes of the L-shape and the octagon that differ from 1",
+  "check: L-shape and regular octagon are genus-2 translation surfaces with one vertex class vs octagon area minus 2 + 2 sqrt 2 (exact)",
+  "check: Horizontal cylinders: L-shape circumferences equal the r-cycle lengths, octagon strips have circumferences 2 + sqrt 2 and 1 + sqrt 2 with areas summing to the surface area vs L-shape circumferences minus r-cycles",
+  "check: Horizontal cylinders: L-shape circumferences equal the r-cycle lengths, octagon strips have circumferences 2 + sqrt 2 and 1 + sqrt 2 with areas summing to the surface area vs octagon circumference mismatch (exact surd)",
+  "check: Horizontal cylinders: L-shape circumferences equal the r-cycle lengths, octagon strips have circumferences 2 + sqrt 2 and 1 + sqrt 2 with areas summing to the surface area vs octagon cylinder area minus surface area (exact surd)",
+  "check: Pairings that are not translations, or glue unequal edges, are refused as translation surfaces vs octagon adjacent pairing",
+  "check: Pairings that are not translations, or glue unequal edges, are refused as translation surfaces vs pillowcase (half-translation)",
+  "check: Pairings that are not translations, or glue unequal edges, are refused as translation surfaces vs edges of length 1 and 2 glued",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_t027_t029_surfaces_and_cones",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_surface_helpers_exact",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_regeneration_is_within_tolerance",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+ ],
+ "tests_skipped": [],
+ "title": "Build polygonal translation-surface examples.",
+ "uncertainty": "Exact in Q and Q(sqrt 2), Q(sqrt 3); corner angles recognized to 1e-12 from exact edge vectors.",
+ "unresolved_assumptions": [
+  "Only horizontal cylinders are predicted; other periodic directions are traced in T028."
+ ]
+}

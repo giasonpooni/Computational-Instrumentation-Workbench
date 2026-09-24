@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420" font-family="sans-serif" font-size="11">
+<rect width="640" height="420" fill="#ffffff"/>
+<text x="78" y="22" font-size="13" font-weight="bold">First-order validity bound eps_max (relative tolerance 0.01)</text>
+<rect x="78" y="40" width="392" height="322" fill="none" stroke="#333"/>
+<line x1="176.00" y1="40" x2="176.00" y2="362" stroke="#e5e7eb"/>
+<text x="176.00" y="378" text-anchor="middle">0.5</text>
+<line x1="372.00" y1="40" x2="372.00" y2="362" stroke="#e5e7eb"/>
+<text x="372.00" y="378" text-anchor="middle">1</text>
+<line x1="78" y1="325.23" x2="470" y2="325.23" stroke="#e5e7eb"/>
+<text x="72" y="329.23" text-anchor="end">1e-11</text>
+<line x1="78" y1="275.54" x2="470" y2="275.54" stroke="#e5e7eb"/>
+<text x="72" y="279.54" text-anchor="end">1e-9</text>
+<line x1="78" y1="225.85" x2="470" y2="225.85" stroke="#e5e7eb"/>
+<text x="72" y="229.85" text-anchor="end">1e-7</text>
+<line x1="78" y1="176.15" x2="470" y2="176.15" stroke="#e5e7eb"/>
+<text x="72" y="180.15" text-anchor="end">1e-5</text>
+<line x1="78" y1="126.46" x2="470" y2="126.46" stroke="#e5e7eb"/>
+<text x="72" y="130.46" text-anchor="end">1e-3</text>
+<line x1="78" y1="76.77" x2="470" y2="76.77" stroke="#e5e7eb"/>
+<text x="72" y="80.77" text-anchor="end">1e-1</text>
+<text x="274.00" y="406" text-anchor="middle">s / s0 (first-order zero at 1)</text>
+<text x="16" y="201.00" text-anchor="middle" transform="rotate(-90 16 201.00)">eps_max (floored at 1e-12)</text>
+<path d="M78.00,55.89 L176.00,51.93 L274.00,55.89 L332.80,59.08 L368.08,59.62 L371.61,59.63 L372.39,59.63 L375.92,59.62 L411.20,59.08 L470.00,55.89" fill="none" stroke="#1f5fa8" stroke-width="1.8"/>
+<circle cx="78.00" cy="55.89" r="2.6" fill="#1f5fa8"/>
+<circle cx="176.00" cy="51.93" r="2.6" fill="#1f5fa8"/>
+<circle cx="274.00" cy="55.89" r="2.6" fill="#1f5fa8"/>
+<circle cx="332.80" cy="59.08" r="2.6" fill="#1f5fa8"/>
+<circle cx="368.08" cy="59.62" r="2.6" fill="#1f5fa8"/>
+<circle cx="371.61" cy="59.63" r="2.6" fill="#1f5fa8"/>
+<circle cx="372.39" cy="59.63" r="2.6" fill="#1f5fa8"/>
+<circle cx="375.92" cy="59.62" r="2.6" fill="#1f5fa8"/>
+<circle cx="411.20" cy="59.08" r="2.6" fill="#1f5fa8"/>
+<circle cx="470.00" cy="55.89" r="2.6" fill="#1f5fa8"/>
+<line x1="482" y1="52" x2="502" y2="52" stroke="#1f5fa8" stroke-width="2"/>
+<text x="508" y="56">sphere-heading</text>
+<path d="M78.00,56.06 L176.00,56.26 L274.00,61.73 L332.80,76.68 L368.08,102.22 L372.00,350.07 L375.92,102.22 L411.20,76.68 L470.00,61.73" fill="none" stroke="#c2410c" stroke-width="1.8"/>
+<circle cx="78.00" cy="56.06" r="2.6" fill="#c2410c"/>
+<circle cx="176.00" cy="56.26" r="2.6" fill="#c2410c"/>
+<circle cx="274.00" cy="61.73" r="2.6" fill="#c2410c"/>
+<circle cx="332.80" cy="76.68" r="2.6" fill="#c2410c"/>
+<circle cx="368.08" cy="102.22" r="2.6" fill="#c2410c"/>
+<circle cx="372.00" cy="350.07" r="2.6" fill="#c2410c"/>
+<circle cx="375.92" cy="102.22" r="2.6" fill="#c2410c"/>
+<circle cx="411.20" cy="76.68" r="2.6" fill="#c2410c"/>
+<circle cx="470.00" cy="61.73" r="2.6" fill="#c2410c"/>
+<line x1="482" y1="70" x2="502" y2="70" stroke="#c2410c" stroke-width="2"/>
+<text x="508" y="74">sphere-lateral-heading</text>
+<path d="M78.00,59.37 L176.00,86.51 L274.00,100.91 L332.80,111.18 L368.08,135.28 L372.00,350.07 L375.92,135.03 L411.20,108.58 L470.00,92.32" fill="none" stroke="#15803d" stroke-width="1.8"/>
+<circle cx="78.00" cy="59.37" r="2.6" fill="#15803d"/>
+<circle cx="176.00" cy="86.51" r="2.6" fill="#15803d"/>
+<circle cx="274.00" cy="100.91" r="2.6" fill="#15803d"/>
+<circle cx="332.80" cy="111.18" r="2.6" fill="#15803d"/>
+<circle cx="368.08" cy="135.28" r="2.6" fill="#15803d"/>
+<circle cx="372.00" cy="350.07" r="2.6" fill="#15803d"/>
+<circle cx="375.92" cy="135.03" r="2.6" fill="#15803d"/>
+<circle cx="411.20" cy="108.58" r="2.6" fill="#15803d"/>
+<circle cx="470.00" cy="92.32" r="2.6" fill="#15803d"/>
+<line x1="482" y1="88" x2="502" y2="88" stroke="#15803d" stroke-width="2"/>
+<text x="508" y="92">torus-generic</text>
+<path d="M78.00,62.96 L176.00,59.63 L274.00,70.55 L332.80,77.57 L368.08,90.38 L372.00,212.21 L375.92,90.42 L411.20,78.01 L470.00,72.70" fill="none" stroke="#7e22ce" stroke-width="1.8"/>
+<circle cx="78.00" cy="62.96" r="2.6" fill="#7e22ce"/>
+<circle cx="176.00" cy="59.63" r="2.6" fill="#7e22ce"/>
+<circle cx="274.00" cy="70.55" r="2.6" fill="#7e22ce"/>
+<circle cx="332.80" cy="77.57" r="2.6" fill="#7e22ce"/>
+<circle cx="368.08" cy="90.38" r="2.6" fill="#7e22ce"/>
+<circle cx="372.00" cy="212.21" r="2.6" fill="#7e22ce"/>
+<circle cx="375.92" cy="90.42" r="2.6" fill="#7e22ce"/>
+<circle cx="411.20" cy="78.01" r="2.6" fill="#7e22ce"/>
+<circle cx="470.00" cy="72.70" r="2.6" fill="#7e22ce"/>
+<line x1="482" y1="106" x2="502" y2="106" stroke="#7e22ce" stroke-width="2"/>
+<text x="508" y="110">torus-equator</text>
+</svg>

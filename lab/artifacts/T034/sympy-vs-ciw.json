@@ -1,0 +1,133 @@
+{
+ "exact_curvature": {
+  "cylinder": {
+   "declared": "0",
+   "difference_simplifies_to_zero": true,
+   "sympy_diffgeom": "0"
+  },
+  "hyperbolic-plane": {
+   "declared": "-1",
+   "difference_simplifies_to_zero": true,
+   "sympy_diffgeom": "-1"
+  },
+  "plane": {
+   "declared": "0",
+   "difference_simplifies_to_zero": true,
+   "sympy_diffgeom": "0"
+  },
+  "plane-polar": {
+   "declared": "0",
+   "difference_simplifies_to_zero": true,
+   "sympy_diffgeom": "0"
+  },
+  "saddle": {
+   "declared": "-1/(u**2 + v**2 + 1)**2",
+   "difference_simplifies_to_zero": true,
+   "sympy_diffgeom": "-1/(u**4 + 2*u**2*v**2 + 2*u**2 + v**4 + 2*v**2 + 1)"
+  },
+  "sphere": {
+   "declared": "1",
+   "difference_simplifies_to_zero": true,
+   "sympy_diffgeom": "1"
+  },
+  "torus": {
+   "declared": "cos(v)/(cos(v) + 2)",
+   "difference_simplifies_to_zero": true,
+   "sympy_diffgeom": "cos(v)/(cos(v) + 2)"
+  }
+ },
+ "points_per_surface": 12,
+ "sympy": "1.14.0",
+ "sympy_derivatives": {
+  "cylinder": {
+   "christoffel": 2.273177434160718e-17,
+   "gaussian_curvature": 0.0,
+   "metric": 2.2204460492503126e-16,
+   "metric_derivatives": 4.546354868321435e-17
+  },
+  "gaussian-bump": {
+   "christoffel": 2.610826990479103e-17,
+   "gaussian_curvature": 2.3023582137157746e-17,
+   "metric": 6.697716634782752e-18,
+   "metric_derivatives": 2.4421146124006995e-17
+  },
+  "gaussian-bump-shear": {
+   "christoffel": 3.469764647367182e-16,
+   "gaussian_curvature": 6.403641292352012e-17,
+   "metric": 4.226085531613157e-16,
+   "metric_derivatives": 1.321850844079258e-16
+  },
+  "hyperbolic-plane": {
+   "christoffel": 1.0832068102141227e-16,
+   "gaussian_curvature": 0.0,
+   "metric": 1.706801278463197e-16,
+   "metric_derivatives": 0.0
+  },
+  "plane": {
+   "christoffel": 0.0,
+   "gaussian_curvature": 0.0,
+   "metric": 0.0,
+   "metric_derivatives": 0.0
+  },
+  "plane-polar": {
+   "christoffel": 1.817349289946462e-16,
+   "gaussian_curvature": 3.8029255394526767e-16,
+   "metric": 2.5638117272322325e-16,
+   "metric_derivatives": 8.933189914998904e-17
+  },
+  "rotated-torus": {
+   "christoffel": 3.319469742407782e-16,
+   "gaussian_curvature": 2.2211427271322037e-16,
+   "metric": 3.1119711437449245e-16,
+   "metric_derivatives": 1.598684708013436e-16
+  },
+  "saddle": {
+   "christoffel": 1.236761619083017e-16,
+   "gaussian_curvature": 1.7656070400360466e-16,
+   "metric": 1.6298205327627385e-16,
+   "metric_derivatives": 0.0
+  },
+  "sphere": {
+   "christoffel": 1.4667493606304243e-16,
+   "gaussian_curvature": 5.551115123125783e-16,
+   "metric": 2.2204460492503126e-16,
+   "metric_derivatives": 1.2381384717553353e-16
+  },
+  "torus": {
+   "christoffel": 1.4308839645732735e-16,
+   "gaussian_curvature": 1.1105713635661019e-16,
+   "metric": 1.9156581696608931e-16,
+   "metric_derivatives": 1.3194009834046795e-16
+  }
+ },
+ "sympy_diffgeom": {
+  "cylinder": {
+   "christoffel": 2.273177434160718e-17,
+   "gaussian_curvature": 0.0
+  },
+  "hyperbolic-plane": {
+   "christoffel": 1.0832068102141227e-16,
+   "gaussian_curvature": 0.0
+  },
+  "plane": {
+   "christoffel": 0.0,
+   "gaussian_curvature": 0.0
+  },
+  "plane-polar": {
+   "christoffel": 1.817349289946462e-16,
+   "gaussian_curvature": 6.977634294120269e-16
+  },
+  "saddle": {
+   "christoffel": 1.236761619083017e-16,
+   "gaussian_curvature": 8.535824858304647e-17
+  },
+  "sphere": {
+   "christoffel": 1.4667493606304243e-16,
+   "gaussian_curvature": 5.551115123125783e-16
+  },
+  "torus": {
+   "christoffel": 1.8041659230926867e-16,
+   "gaussian_curvature": 1.772951462365169e-16
+  }
+ }
+}

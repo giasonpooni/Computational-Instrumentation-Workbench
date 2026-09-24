@@ -1,0 +1,834 @@
+{
+ "diagonal": {
+  "diag(-0.5, -0.25) continuous": "CERTIFIED_WITH_MARGIN",
+  "diag(-0.5, -0.25) discrete": "CERTIFIED_WITH_MARGIN",
+  "diag(-1.5, -0.25) continuous": "CERTIFIED_WITH_MARGIN",
+  "diag(-1.5, -0.25) discrete": "NOT_CERTIFIED",
+  "diag(0.5, 0.25) continuous": "NOT_CERTIFIED",
+  "diag(0.5, 0.25) discrete": "CERTIFIED_WITH_MARGIN",
+  "diag(1.5, 2) continuous": "NOT_CERTIFIED",
+  "diag(1.5, 2) discrete": "NOT_CERTIFIED"
+ },
+ "family": [
+  {
+   "certified": {
+    "continuous": true,
+    "discrete": true
+   },
+   "cross": {
+    "P_continuous->continuous": "CERTIFIED_WITH_MARGIN",
+    "P_continuous->discrete": "CERTIFIED_WITH_MARGIN",
+    "P_discrete->continuous": "CERTIFIED_WITH_MARGIN",
+    "P_discrete->discrete": "CERTIFIED_WITH_MARGIN"
+   },
+   "quadrant": "continuous and discrete stable",
+   "solve_errors": {},
+   "stable": {
+    "continuous": true,
+    "discrete": true
+   }
+  },
+  {
+   "certified": {
+    "continuous": true,
+    "discrete": true
+   },
+   "cross": {
+    "P_continuous->continuous": "CERTIFIED_WITH_MARGIN",
+    "P_continuous->discrete": "CERTIFIED_WITH_MARGIN",
+    "P_discrete->continuous": "CERTIFIED_WITH_MARGIN",
+    "P_discrete->discrete": "CERTIFIED_WITH_MARGIN"
+   },
+   "quadrant": "continuous and discrete stable",
+   "solve_errors": {},
+   "stable": {
+    "continuous": true,
+    "discrete": true
+   }
+  },
+  {
+   "certified": {
+    "continuous": true,
+    "discrete": true
+   },
+   "cross": {
+    "P_continuous->continuous": "CERTIFIED_WITH_MARGIN",
+    "P_continuous->discrete": "CERTIFIED_WITH_MARGIN",
+    "P_discrete->continuous": "CERTIFIED_WITH_MARGIN",
+    "P_discrete->discrete": "CERTIFIED_WITH_MARGIN"
+   },
+   "quadrant": "continuous and discrete stable",
+   "solve_errors": {},
+   "stable": {
+    "continuous": true,
+    "discrete": true
+   }
+  },
+  {
+   "certified": {
+    "continuous": true,
+    "discrete": true
+   },
+   "cross": {
+    "P_continuous->continuous": "CERTIFIED_WITH_MARGIN",
+    "P_continuous->discrete": "CERTIFIED_WITH_MARGIN",
+    "P_discrete->continuous": "CERTIFIED_WITH_MARGIN",
+    "P_discrete->discrete": "CERTIFIED_WITH_MARGIN"
+   },
+   "quadrant": "continuous and discrete stable",
+   "solve_errors": {},
+   "stable": {
+    "continuous": true,
+    "discrete": true
+   }
+  },
+  {
+   "certified": {
+    "continuous": true,
+    "discrete": true
+   },
+   "cross": {
+    "P_continuous->continuous": "CERTIFIED_WITH_MARGIN",
+    "P_continuous->discrete": "CERTIFIED_WITH_MARGIN",
+    "P_discrete->continuous": "CERTIFIED_WITH_MARGIN",
+    "P_discrete->discrete": "CERTIFIED_WITH_MARGIN"
+   },
+   "quadrant": "continuous and discrete stable",
+   "solve_errors": {},
+   "stable": {
+    "continuous": true,
+    "discrete": true
+   }
+  },
+  {
+   "certified": {
+    "continuous": true,
+    "discrete": true
+   },
+   "cross": {
+    "P_continuous->continuous": "CERTIFIED_WITH_MARGIN",
+    "P_continuous->discrete": "CERTIFIED_WITH_MARGIN",
+    "P_discrete->continuous": "CERTIFIED_WITH_MARGIN",
+    "P_discrete->discrete": "CERTIFIED_WITH_MARGIN"
+   },
+   "quadrant": "continuous and discrete stable",
+   "solve_errors": {},
+   "stable": {
+    "continuous": true,
+    "discrete": true
+   }
+  },
+  {
+   "certified": {
+    "continuous": true,
+    "discrete": true
+   },
+   "cross": {
+    "P_continuous->continuous": "CERTIFIED_WITH_MARGIN",
+    "P_continuous->discrete": "CERTIFIED_WITH_MARGIN",
+    "P_discrete->continuous": "CERTIFIED_WITH_MARGIN",
+    "P_discrete->discrete": "CERTIFIED_WITH_MARGIN"
+   },
+   "quadrant": "continuous and discrete stable",
+   "solve_errors": {},
+   "stable": {
+    "continuous": true,
+    "discrete": true
+   }
+  },
+  {
+   "certified": {
+    "continuous": true,
+    "discrete": true
+   },
+   "cross": {
+    "P_continuous->continuous": "CERTIFIED_WITH_MARGIN",
+    "P_continuous->discrete": "CERTIFIED_WITH_MARGIN",
+    "P_discrete->continuous": "CERTIFIED_WITH_MARGIN",
+    "P_discrete->discrete": "CERTIFIED_WITH_MARGIN"
+   },
+   "quadrant": "continuous and discrete stable",
+   "solve_errors": {},
+   "stable": {
+    "continuous": true,
+    "discrete": true
+   }
+  },
+  {
+   "certified": {
+    "continuous": true,
+    "discrete": true
+   },
+   "cross": {
+    "P_continuous->continuous": "CERTIFIED_WITH_MARGIN",
+    "P_continuous->discrete": "CERTIFIED_WITH_MARGIN",
+    "P_discrete->continuous": "CERTIFIED_WITH_MARGIN",
+    "P_discrete->discrete": "CERTIFIED_WITH_MARGIN"
+   },
+   "quadrant": "continuous and discrete stable",
+   "solve_errors": {},
+   "stable": {
+    "continuous": true,
+    "discrete": true
+   }
+  },
+  {
+   "certified": {
+    "continuous": true,
+    "discrete": true
+   },
+   "cross": {
+    "P_continuous->continuous": "CERTIFIED_WITH_MARGIN",
+    "P_continuous->discrete": "CERTIFIED_WITH_MARGIN",
+    "P_discrete->continuous": "CERTIFIED_WITH_MARGIN",
+    "P_discrete->discrete": "CERTIFIED_WITH_MARGIN"
+   },
+   "quadrant": "continuous and discrete stable",
+   "solve_errors": {},
+   "stable": {
+    "continuous": true,
+    "discrete": true
+   }
+  },
+  {
+   "certified": {
+    "continuous": true,
+    "discrete": false
+   },
+   "cross": {
+    "P_continuous->continuous": "CERTIFIED_WITH_MARGIN",
+    "P_continuous->discrete": "NOT_CERTIFIED"
+   },
+   "quadrant": "continuous only",
+   "solve_errors": {
+    "discrete": {
+     "message": "solved P must be positive definite; min eigenvalue=-9.299e-01",
+     "type": "ValueError"
+    }
+   },
+   "stable": {
+    "continuous": true,
+    "discrete": false
+   }
+  },
+  {
+   "certified": {
+    "continuous": true,
+    "discrete": false
+   },
+   "cross": {
+    "P_continuous->continuous": "CERTIFIED_WITH_MARGIN",
+    "P_continuous->discrete": "NOT_CERTIFIED"
+   },
+   "quadrant": "continuous only",
+   "solve_errors": {
+    "discrete": {
+     "message": "solved P must be positive definite; min eigenvalue=-5.339e-01",
+     "type": "ValueError"
+    }
+   },
+   "stable": {
+    "continuous": true,
+    "discrete": false
+   }
+  },
+  {
+   "certified": {
+    "continuous": true,
+    "discrete": false
+   },
+   "cross": {
+    "P_continuous->continuous": "CERTIFIED_WITH_MARGIN",
+    "P_continuous->discrete": "NOT_CERTIFIED"
+   },
+   "quadrant": "continuous only",
+   "solve_errors": {
+    "discrete": {
+     "message": "solved P must be positive definite; min eigenvalue=-1.017e+00",
+     "type": "ValueError"
+    }
+   },
+   "stable": {
+    "continuous": true,
+    "discrete": false
+   }
+  },
+  {
+   "certified": {
+    "continuous": true,
+    "discrete": false
+   },
+   "cross": {
+    "P_continuous->continuous": "CERTIFIED_WITH_MARGIN",
+    "P_continuous->discrete": "NOT_CERTIFIED"
+   },
+   "quadrant": "continuous only",
+   "solve_errors": {
+    "discrete": {
+     "message": "solved P must be positive definite; min eigenvalue=-2.610e+00",
+     "type": "ValueError"
+    }
+   },
+   "stable": {
+    "continuous": true,
+    "discrete": false
+   }
+  },
+  {
+   "certified": {
+    "continuous": true,
+    "discrete": false
+   },
+   "cross": {
+    "P_continuous->continuous": "CERTIFIED_WITH_MARGIN",
+    "P_continuous->discrete": "NOT_CERTIFIED"
+   },
+   "quadrant": "continuous only",
+   "solve_errors": {
+    "discrete": {
+     "message": "solved P must be positive definite; min eigenvalue=-5.609e-01",
+     "type": "ValueError"
+    }
+   },
+   "stable": {
+    "continuous": true,
+    "discrete": false
+   }
+  },
+  {
+   "certified": {
+    "continuous": true,
+    "discrete": false
+   },
+   "cross": {
+    "P_continuous->continuous": "CERTIFIED_WITH_MARGIN",
+    "P_continuous->discrete": "NOT_CERTIFIED"
+   },
+   "quadrant": "continuous only",
+   "solve_errors": {
+    "discrete": {
+     "message": "solved P must be positive definite; min eigenvalue=-9.289e-01",
+     "type": "ValueError"
+    }
+   },
+   "stable": {
+    "continuous": true,
+    "discrete": false
+   }
+  },
+  {
+   "certified": {
+    "continuous": true,
+    "discrete": false
+   },
+   "cross": {
+    "P_continuous->continuous": "CERTIFIED_WITH_MARGIN",
+    "P_continuous->discrete": "NOT_CERTIFIED"
+   },
+   "quadrant": "continuous only",
+   "solve_errors": {
+    "discrete": {
+     "message": "solved P must be positive definite; min eigenvalue=-3.499e-01",
+     "type": "ValueError"
+    }
+   },
+   "stable": {
+    "continuous": true,
+    "discrete": false
+   }
+  },
+  {
+   "certified": {
+    "continuous": true,
+    "discrete": false
+   },
+   "cross": {
+    "P_continuous->continuous": "CERTIFIED_WITH_MARGIN",
+    "P_continuous->discrete": "NOT_CERTIFIED"
+   },
+   "quadrant": "continuous only",
+   "solve_errors": {
+    "discrete": {
+     "message": "solved P must be positive definite; min eigenvalue=-1.387e+00",
+     "type": "ValueError"
+    }
+   },
+   "stable": {
+    "continuous": true,
+    "discrete": false
+   }
+  },
+  {
+   "certified": {
+    "continuous": true,
+    "discrete": false
+   },
+   "cross": {
+    "P_continuous->continuous": "CERTIFIED_WITH_MARGIN",
+    "P_continuous->discrete": "NOT_CERTIFIED"
+   },
+   "quadrant": "continuous only",
+   "solve_errors": {
+    "discrete": {
+     "message": "solved P must be positive definite; min eigenvalue=-1.497e-01",
+     "type": "ValueError"
+    }
+   },
+   "stable": {
+    "continuous": true,
+    "discrete": false
+   }
+  },
+  {
+   "certified": {
+    "continuous": true,
+    "discrete": false
+   },
+   "cross": {
+    "P_continuous->continuous": "CERTIFIED_WITH_MARGIN",
+    "P_continuous->discrete": "NOT_CERTIFIED"
+   },
+   "quadrant": "continuous only",
+   "solve_errors": {
+    "discrete": {
+     "message": "solved P must be positive definite; min eigenvalue=-4.540e+00",
+     "type": "ValueError"
+    }
+   },
+   "stable": {
+    "continuous": true,
+    "discrete": false
+   }
+  },
+  {
+   "certified": {
+    "continuous": false,
+    "discrete": true
+   },
+   "cross": {
+    "P_discrete->continuous": "NOT_CERTIFIED",
+    "P_discrete->discrete": "CERTIFIED_WITH_MARGIN"
+   },
+   "quadrant": "discrete only",
+   "solve_errors": {
+    "continuous": {
+     "message": "solved P must be positive definite; min eigenvalue=-1.689e+00",
+     "type": "ValueError"
+    }
+   },
+   "stable": {
+    "continuous": false,
+    "discrete": true
+   }
+  },
+  {
+   "certified": {
+    "continuous": false,
+    "discrete": true
+   },
+   "cross": {
+    "P_discrete->continuous": "NOT_CERTIFIED",
+    "P_discrete->discrete": "CERTIFIED_WITH_MARGIN"
+   },
+   "quadrant": "discrete only",
+   "solve_errors": {
+    "continuous": {
+     "message": "solved P must be positive definite; min eigenvalue=-2.818e+00",
+     "type": "ValueError"
+    }
+   },
+   "stable": {
+    "continuous": false,
+    "discrete": true
+   }
+  },
+  {
+   "certified": {
+    "continuous": false,
+    "discrete": true
+   },
+   "cross": {
+    "P_discrete->continuous": "NOT_CERTIFIED",
+    "P_discrete->discrete": "CERTIFIED_WITH_MARGIN"
+   },
+   "quadrant": "discrete only",
+   "solve_errors": {
+    "continuous": {
+     "message": "solved P must be positive definite; min eigenvalue=-8.957e-01",
+     "type": "ValueError"
+    }
+   },
+   "stable": {
+    "continuous": false,
+    "discrete": true
+   }
+  },
+  {
+   "certified": {
+    "continuous": false,
+    "discrete": true
+   },
+   "cross": {
+    "P_discrete->continuous": "NOT_CERTIFIED",
+    "P_discrete->discrete": "CERTIFIED_WITH_MARGIN"
+   },
+   "quadrant": "discrete only",
+   "solve_errors": {
+    "continuous": {
+     "message": "solved P must be positive definite; min eigenvalue=-1.541e+00",
+     "type": "ValueError"
+    }
+   },
+   "stable": {
+    "continuous": false,
+    "discrete": true
+   }
+  },
+  {
+   "certified": {
+    "continuous": false,
+    "discrete": true
+   },
+   "cross": {
+    "P_discrete->continuous": "NOT_CERTIFIED",
+    "P_discrete->discrete": "CERTIFIED_WITH_MARGIN"
+   },
+   "quadrant": "discrete only",
+   "solve_errors": {
+    "continuous": {
+     "message": "solved P must be positive definite; min eigenvalue=-2.279e+00",
+     "type": "ValueError"
+    }
+   },
+   "stable": {
+    "continuous": false,
+    "discrete": true
+   }
+  },
+  {
+   "certified": {
+    "continuous": false,
+    "discrete": true
+   },
+   "cross": {
+    "P_discrete->continuous": "NOT_CERTIFIED",
+    "P_discrete->discrete": "CERTIFIED_WITH_MARGIN"
+   },
+   "quadrant": "discrete only",
+   "solve_errors": {
+    "continuous": {
+     "message": "solved P must be positive definite; min eigenvalue=-2.483e+00",
+     "type": "ValueError"
+    }
+   },
+   "stable": {
+    "continuous": false,
+    "discrete": true
+   }
+  },
+  {
+   "certified": {
+    "continuous": false,
+    "discrete": true
+   },
+   "cross": {
+    "P_discrete->continuous": "NOT_CERTIFIED",
+    "P_discrete->discrete": "CERTIFIED_WITH_MARGIN"
+   },
+   "quadrant": "discrete only",
+   "solve_errors": {
+    "continuous": {
+     "message": "solved P must be positive definite; min eigenvalue=-9.888e-01",
+     "type": "ValueError"
+    }
+   },
+   "stable": {
+    "continuous": false,
+    "discrete": true
+   }
+  },
+  {
+   "certified": {
+    "continuous": false,
+    "discrete": true
+   },
+   "cross": {
+    "P_discrete->continuous": "NOT_CERTIFIED",
+    "P_discrete->discrete": "CERTIFIED_WITH_MARGIN"
+   },
+   "quadrant": "discrete only",
+   "solve_errors": {
+    "continuous": {
+     "message": "solved P must be positive definite; min eigenvalue=-1.474e+00",
+     "type": "ValueError"
+    }
+   },
+   "stable": {
+    "continuous": false,
+    "discrete": true
+   }
+  },
+  {
+   "certified": {
+    "continuous": false,
+    "discrete": true
+   },
+   "cross": {
+    "P_discrete->continuous": "NOT_CERTIFIED",
+    "P_discrete->discrete": "CERTIFIED_WITH_MARGIN"
+   },
+   "quadrant": "discrete only",
+   "solve_errors": {
+    "continuous": {
+     "message": "solved P must be positive definite; min eigenvalue=-9.127e-01",
+     "type": "ValueError"
+    }
+   },
+   "stable": {
+    "continuous": false,
+    "discrete": true
+   }
+  },
+  {
+   "certified": {
+    "continuous": false,
+    "discrete": true
+   },
+   "cross": {
+    "P_discrete->continuous": "NOT_CERTIFIED",
+    "P_discrete->discrete": "CERTIFIED_WITH_MARGIN"
+   },
+   "quadrant": "discrete only",
+   "solve_errors": {
+    "continuous": {
+     "message": "solved P must be positive definite; min eigenvalue=-8.076e-01",
+     "type": "ValueError"
+    }
+   },
+   "stable": {
+    "continuous": false,
+    "discrete": true
+   }
+  },
+  {
+   "certified": {
+    "continuous": false,
+    "discrete": false
+   },
+   "cross": {},
+   "quadrant": "neither",
+   "solve_errors": {
+    "continuous": {
+     "message": "solved P must be positive definite; min eigenvalue=-2.347e-01",
+     "type": "ValueError"
+    },
+    "discrete": {
+     "message": "solved P must be positive definite; min eigenvalue=-2.826e-01",
+     "type": "ValueError"
+    }
+   },
+   "stable": {
+    "continuous": false,
+    "discrete": false
+   }
+  },
+  {
+   "certified": {
+    "continuous": false,
+    "discrete": false
+   },
+   "cross": {},
+   "quadrant": "neither",
+   "solve_errors": {
+    "continuous": {
+     "message": "solved P must be positive definite; min eigenvalue=-3.589e-01",
+     "type": "ValueError"
+    },
+    "discrete": {
+     "message": "solved P must be positive definite; min eigenvalue=-1.063e+00",
+     "type": "ValueError"
+    }
+   },
+   "stable": {
+    "continuous": false,
+    "discrete": false
+   }
+  },
+  {
+   "certified": {
+    "continuous": false,
+    "discrete": false
+   },
+   "cross": {},
+   "quadrant": "neither",
+   "solve_errors": {
+    "continuous": {
+     "message": "solved P must be positive definite; min eigenvalue=-2.906e-01",
+     "type": "ValueError"
+    },
+    "discrete": {
+     "message": "solved P must be positive definite; min eigenvalue=-5.103e-01",
+     "type": "ValueError"
+    }
+   },
+   "stable": {
+    "continuous": false,
+    "discrete": false
+   }
+  },
+  {
+   "certified": {
+    "continuous": false,
+    "discrete": false
+   },
+   "cross": {},
+   "quadrant": "neither",
+   "solve_errors": {
+    "continuous": {
+     "message": "solved P must be positive definite; min eigenvalue=-4.275e-01",
+     "type": "ValueError"
+    },
+    "discrete": {
+     "message": "solved P must be positive definite; min eigenvalue=-2.717e+00",
+     "type": "ValueError"
+    }
+   },
+   "stable": {
+    "continuous": false,
+    "discrete": false
+   }
+  },
+  {
+   "certified": {
+    "continuous": false,
+    "discrete": false
+   },
+   "cross": {},
+   "quadrant": "neither",
+   "solve_errors": {
+    "continuous": {
+     "message": "solved P must be positive definite; min eigenvalue=-2.101e-01",
+     "type": "ValueError"
+    },
+    "discrete": {
+     "message": "solved P must be positive definite; min eigenvalue=-2.143e-01",
+     "type": "ValueError"
+    }
+   },
+   "stable": {
+    "continuous": false,
+    "discrete": false
+   }
+  },
+  {
+   "certified": {
+    "continuous": false,
+    "discrete": false
+   },
+   "cross": {},
+   "quadrant": "neither",
+   "solve_errors": {
+    "continuous": {
+     "message": "solved P must be positive definite; min eigenvalue=-3.691e-01",
+     "type": "ValueError"
+    },
+    "discrete": {
+     "message": "solved P must be positive definite; min eigenvalue=-1.198e+00",
+     "type": "ValueError"
+    }
+   },
+   "stable": {
+    "continuous": false,
+    "discrete": false
+   }
+  },
+  {
+   "certified": {
+    "continuous": false,
+    "discrete": false
+   },
+   "cross": {},
+   "quadrant": "neither",
+   "solve_errors": {
+    "continuous": {
+     "message": "solved P must be positive definite; min eigenvalue=-3.983e-01",
+     "type": "ValueError"
+    },
+    "discrete": {
+     "message": "solved P must be positive definite; min eigenvalue=-1.738e+00",
+     "type": "ValueError"
+    }
+   },
+   "stable": {
+    "continuous": false,
+    "discrete": false
+   }
+  },
+  {
+   "certified": {
+    "continuous": false,
+    "discrete": false
+   },
+   "cross": {},
+   "quadrant": "neither",
+   "solve_errors": {
+    "continuous": {
+     "message": "solved P must be positive definite; min eigenvalue=-2.296e-01",
+     "type": "ValueError"
+    },
+    "discrete": {
+     "message": "solved P must be positive definite; min eigenvalue=-2.672e-01",
+     "type": "ValueError"
+    }
+   },
+   "stable": {
+    "continuous": false,
+    "discrete": false
+   }
+  },
+  {
+   "certified": {
+    "continuous": false,
+    "discrete": false
+   },
+   "cross": {},
+   "quadrant": "neither",
+   "solve_errors": {
+    "continuous": {
+     "message": "solved P must be positive definite; min eigenvalue=-3.396e-01",
+     "type": "ValueError"
+    },
+    "discrete": {
+     "message": "solved P must be positive definite; min eigenvalue=-8.560e-01",
+     "type": "ValueError"
+    }
+   },
+   "stable": {
+    "continuous": false,
+    "discrete": false
+   }
+  },
+  {
+   "certified": {
+    "continuous": false,
+    "discrete": false
+   },
+   "cross": {},
+   "quadrant": "neither",
+   "solve_errors": {
+    "continuous": {
+     "message": "solved P must be positive definite; min eigenvalue=-3.856e-01",
+     "type": "ValueError"
+    },
+    "discrete": {
+     "message": "solved P must be positive definite; min eigenvalue=-1.468e+00",
+     "type": "ValueError"
+    }
+   },
+   "stable": {
+    "continuous": false,
+    "discrete": false
+   }
+  }
+ ]
+}

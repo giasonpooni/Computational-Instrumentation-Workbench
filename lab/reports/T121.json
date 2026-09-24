@@ -1,0 +1,630 @@
+{
+ "changed_files": [
+  "src/ciw/lab/energy_gpu.py",
+  "src/ciw/lab/energy_gpu_kernels.py",
+  "src/ciw/lab/energy_gpu_telemetry.py",
+  "docs/lab/ENERGY_GPU.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 10,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Every error within its order-specific bound; guarded decisions cannot contradict (if |S_i - s| <= b and |S_j - s| <= b, then S_i - T > b and T - S_j > b would need S_i - S_j > 2b, which the triangle inequality excludes); max of NaN-free, zero-free data order-invariant.",
+ "experiment": "Emulate the orders in float32 and float64; search seeds for a sign flip among the sequential and two tree orders; test a pass/fail tolerance across atomic orders; test the guarded sign decision; compare max reductions, including signed zeros.",
+ "failure_modes_checked": [
+  "error exceeds its order-specific bound",
+  "no sign counterexample in 399 seeds (would raise)",
+  "atomic-order pass/fail flip",
+  "guarded sign test deciding wrongly",
+  "max reduction order dependence (including signed zeros)"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 0.12485540998144516,
+      "passed": true,
+      "reference": "order-specific a priori bounds gamma_d sum|x| (Higham 4.2; Kahan 4.3, leading order)",
+      "reference_kind": "analytic",
+      "tolerance": 1.0
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "cancellation_seed": 201,
+     "n": 16384,
+     "name": "seeded reduction datasets",
+     "native_float64_seed": 1,
+     "seed": 20260923
+    }
+   },
+   "claim": "Every emulated float32 summation order of the positive dataset stays within its order-specific a priori error bound; relative spread across orders",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-15,
+    "rel": 0.5
+   },
+   "uncertainty": {
+    "basis": "deterministic IEEE-754 arithmetic in the declared order; exact reference by math.fsum",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": "relative",
+   "value": {
+    "relative_spread": 4.022247476013461e-06,
+    "worst_fraction_of_order_bound": 0.12485540998144516,
+    "worst_order": "kahan"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 0.043202378175756805,
+      "passed": true,
+      "reference": "order-specific a priori bounds gamma_d sum|x| (Higham 4.2; Kahan 4.3, leading order)",
+      "reference_kind": "analytic",
+      "tolerance": 1.0
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "cancellation_seed": 201,
+     "n": 16384,
+     "name": "seeded reduction datasets",
+     "native_float64_seed": 1,
+     "seed": 20260923
+    }
+   },
+   "claim": "Every emulated float64 summation order of the same data stays within its order-specific bound; relative spread",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-15,
+    "rel": 0.5
+   },
+   "uncertainty": {
+    "basis": "deterministic IEEE-754 arithmetic in the declared order; exact reference by math.fsum",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": "relative",
+   "value": {
+    "relative_spread": 6.81092704563903e-16,
+    "worst_fraction_of_order_bound": 0.043202378175756805,
+    "worst_order": "atomic-7"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 2.0,
+      "passed": true,
+      "reference": "distinct signs across emulated orders",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 2.0
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "cancellation_seed": 201,
+     "n": 16384,
+     "name": "seeded reduction datasets",
+     "native_float64_seed": 1,
+     "seed": 20260923
+    }
+   },
+   "claim": "Reduction order alone flips the sign of a float32 sum whose exact value is +0.25 (the one-thread sequential CPU fold against the GPU-style orders)",
+   "counterexample": {
+    "statement": "The sign of a float32 reduction (a pass/fail decision at threshold 0) does not depend on the reduction order",
+    "witness": {
+     "exact_sum": 0.25,
+     "found_by": "first flipping seed of 1..399 comparing sequential, strided-tree and adjacent-tree sums",
+     "seed": 201,
+     "sums": {
+      "atomic-0": 0.2431640625,
+      "atomic-1": 0.24072265625,
+      "atomic-2": 0.24609375,
+      "atomic-3": 0.242919921875,
+      "atomic-4": 0.2421875,
+      "atomic-5": 0.232421875,
+      "atomic-6": 0.24462890625,
+      "atomic-7": 0.23779296875,
+      "block-sequential": 0.25640869140625,
+      "blocked-two-pass": 0.2412109375,
+      "kahan": 0.248779296875,
+      "sequential": -0.02398681640625,
+      "tree-adjacent": 0.25,
+      "tree-strided": 0.2578125
+     }
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "deterministic IEEE-754 arithmetic in the declared order; exact reference by math.fsum",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "atomic-0": 1,
+    "atomic-1": 1,
+    "atomic-2": 1,
+    "atomic-3": 1,
+    "atomic-4": 1,
+    "atomic-5": 1,
+    "atomic-6": 1,
+    "atomic-7": 1,
+    "block-sequential": 1,
+    "blocked-two-pass": 1,
+    "kahan": 1,
+    "sequential": -1,
+    "tree-adjacent": 1,
+    "tree-strided": 1
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "largest |float64 sum - exact| over orders",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "cancellation_seed": 201,
+     "n": 16384,
+     "name": "seeded reduction datasets",
+     "native_float64_seed": 1,
+     "seed": 20260923
+    }
+   },
+   "claim": "float64 accumulation of these float32-valued cancellation inputs is exact in every emulated order (all errors 0), hence sign-correct",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "integer counts, refusal codes or exact comparisons",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "exact_zero_errors": 14,
+    "max_abs_error": 0.0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 2.0,
+      "passed": true,
+      "reference": "distinct signs across emulated float64 orders",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 2.0
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "cancellation_seed": 201,
+     "n": 16384,
+     "name": "seeded reduction datasets",
+     "native_float64_seed": 1,
+     "seed": 20260923
+    }
+   },
+   "claim": "Reduction order alone flips the sign of a float64 sum of float64-native cancellation data whose exact value is +0.25 (the sequential fold against the GPU-style orders)",
+   "counterexample": {
+    "statement": "float64 reductions are order-robust for sign decisions",
+    "witness": {
+     "exact_sum": 0.25,
+     "scale": 1099511627776.0,
+     "seed": 1,
+     "sums": {
+      "atomic-0": 0.2529296875,
+      "atomic-1": 0.244140625,
+      "atomic-2": 0.248046875,
+      "atomic-3": 0.23876953125,
+      "atomic-4": 0.240234375,
+      "atomic-5": 0.241943359375,
+      "atomic-6": 0.240234375,
+      "atomic-7": 0.25390625,
+      "block-sequential": 0.22802734375,
+      "blocked-two-pass": 0.2431640625,
+      "kahan": 0.25,
+      "sequential": -0.26123046875,
+      "tree-adjacent": 0.2578125,
+      "tree-strided": 0.2578125
+     }
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "deterministic IEEE-754 arithmetic in the declared order; exact reference by math.fsum",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "atomic-0": 1,
+    "atomic-1": 1,
+    "atomic-2": 1,
+    "atomic-3": 1,
+    "atomic-4": 1,
+    "atomic-5": 1,
+    "atomic-6": 1,
+    "atomic-7": 1,
+    "block-sequential": 1,
+    "blocked-two-pass": 1,
+    "kahan": 1,
+    "sequential": -1,
+    "tree-adjacent": 1,
+    "tree-strided": 1
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 2.0,
+      "passed": true,
+      "reference": "distinct pass/fail outcomes over 8 atomic completion orders",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 2.0
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "cancellation_seed": 201,
+     "n": 16384,
+     "name": "seeded reduction datasets",
+     "native_float64_seed": 1,
+     "seed": 20260923
+    }
+   },
+   "claim": "Atomic completion order alone changes a float32 pass/fail test |S - 0.25| <= 0.01 on identical inputs",
+   "counterexample": {
+    "statement": "Atomic completion order cannot change a float32 pass/fail decision on identical inputs",
+    "witness": {
+     "exact_sum": 0.25,
+     "failing": {
+      "atomic-5": 0.232421875,
+      "atomic-7": 0.23779296875
+     },
+     "passing": {
+      "atomic-0": 0.2431640625,
+      "atomic-1": 0.24072265625,
+      "atomic-2": 0.24609375,
+      "atomic-3": 0.242919921875,
+      "atomic-4": 0.2421875,
+      "atomic-6": 0.24462890625
+     },
+     "tolerance": 0.01
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "deterministic IEEE-754 arithmetic in the declared order; exact reference by math.fsum",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "atomic-0": true,
+    "atomic-1": true,
+    "atomic-2": true,
+    "atomic-3": true,
+    "atomic-4": true,
+    "atomic-5": false,
+    "atomic-6": true,
+    "atomic-7": false
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 4.0,
+      "passed": true,
+      "reference": "distinct float32 results over 8 completion orders",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 2.0
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "cancellation_seed": 201,
+     "n": 16384,
+     "name": "seeded reduction datasets",
+     "native_float64_seed": 1,
+     "seed": 20260923
+    }
+   },
+   "claim": "Emulated atomicAdd completion orders of identical float32 block partials give distinct sums",
+   "counterexample": {
+    "statement": "Accumulating the same block partials yields the same float32 result whatever the atomic completion order",
+    "witness": {
+     "distinct_results": [
+      4102183.5,
+      4102183.75,
+      4102184.0,
+      4102184.25
+     ]
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "integer counts, refusal codes or exact comparisons",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": "distinct results",
+   "value": 4
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "orders whose guarded sign test decides",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "cancellation_seed": 201,
+     "n": 16384,
+     "name": "seeded reduction datasets",
+     "native_float64_seed": 1,
+     "seed": 20260923
+    }
+   },
+   "claim": "The bound-guarded sign test (decide only when |S| exceeds the order's own a priori bound) cannot contradict across orders but leaves both cancellation sums undecided in every emulated order",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "deterministic IEEE-754 arithmetic in the declared order; exact reference by math.fsum",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "cancellation-float32": {
+     "decided_orders": 0,
+     "largest_abs_sum": 0.2578125,
+     "orders": 14,
+     "smallest_order_bound": 0.9986378276577599
+    },
+    "cancellation-native-float64": {
+     "decided_orders": 0,
+     "largest_abs_sum": 0.26123046875,
+     "orders": 14,
+     "smallest_order_bound": 0.9990954694065205
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "distinct maxima minus one",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "cancellation_seed": 201,
+     "n": 16384,
+     "name": "seeded reduction datasets",
+     "native_float64_seed": 1,
+     "seed": 20260923
+    }
+   },
+   "claim": "Max reductions of this NaN-free, zero-free positive data are bitwise order-invariant over 8 permutations",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "integer counts, refusal codes or exact comparisons",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": "distinct results",
+   "value": 1
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 2.0,
+      "passed": true,
+      "reference": "distinct sign bits of max over the two operand orders",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 2.0
+     }
+    ]
+   },
+   "claim": "The IEEE maximum of +0.0 and -0.0 depends on operand order (numpy max)",
+   "counterexample": {
+    "statement": "Max reductions are bitwise order-invariant for all IEEE inputs",
+    "witness": {
+     "orders": [
+      "[0.0, -0.0]",
+      "[-0.0, 0.0]"
+     ],
+     "signbits": [
+      true,
+      false
+     ]
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "integer counts, refusal codes or exact comparisons",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": [
+    true,
+    false
+   ]
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": [
+     "no GPU was available; the orders are CPU emulations"
+    ]
+   },
+   "claim": "Reductions on the RTX 2080 (CUB, cuBLAS or atomicAdd) reproduce these emulated spreads and sign flips",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 10770,
+   "path": "artifacts/T121/reductions.json",
+   "sha256": "3daa32c2356da117fccf6d32c9a4bf1798e60af164b263da7bcd8fbfffd5f802"
+  },
+  {
+   "bytes": 5714,
+   "path": "artifacts/T121/reduction-errors.svg",
+   "sha256": "944209c7fa8c94e88a1b579b7b78f46e7e1e0647197e583b684033e3cbb00e62"
+  }
+ ],
+ "hypothesis": "GPU-style reduction orders keep float32 sums within their order-specific a priori bounds, yet the order differences suffice to flip sign and pass/fail decisions near their boundary; float64 suffers the same with data scaled to its precision.",
+ "input_data": [
+  "n = 16384: positive data (u^3 * 1000 + 1e-3 from PCG64 seed 20260923); float32 cancellation data (+a, -a pairs plus 64 x 2^-8, first flipping seed 201); float64-native cancellation data (scale 2^40, first flipping seed 1)"
+ ],
+ "mathematical_model": "|fl(sum x) - sum x| <= gamma_d sum|x_i|, gamma_d = d u / (1 - d u), where d is the largest number of additions any input passes through (n - 1 sequential, log2 n trees, block height plus partial fold otherwise); Kahan (2u + n u^2) sum|x| to leading order.",
+ "number": 121,
+ "numerical_result": "float32 relative spread 4.02e-06; float64 6.81e-16; float32 cancellation signs {'sequential': -1, 'tree-adjacent': 1, 'tree-strided': 1, 'blocked-two-pass': 1, 'block-sequential': 1, 'kahan': 1, 'atomic-0': 1, 'atomic-1': 1, 'atomic-2': 1, 'atomic-3': 1, 'atomic-4': 1, 'atomic-5': 1, 'atomic-6': 1, 'atomic-7': 1}; float64-native cancellation signs {'sequential': -1, 'tree-adjacent': 1, 'tree-strided': 1, 'blocked-two-pass': 1, 'block-sequential': 1, 'kahan': 1, 'atomic-0': 1, 'atomic-1': 1, 'atomic-2': 1, 'atomic-3': 1, 'atomic-4': 1, 'atomic-5': 1, 'atomic-6': 1, 'atomic-7': 1}; atomic pass/fail {'atomic-0': True, 'atomic-1': True, 'atomic-2': True, 'atomic-3': True, 'atomic-4': True, 'atomic-5': False, 'atomic-6': True, 'atomic-7': False}; 4 distinct atomic-order results on positive data.",
+ "observation_model": "Sums in sequential, adjacent tree, strided tree, two-pass blocked, block-sequential, Kahan and 8 atomic completion orders; exact reference by math.fsum.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/energy_gpu.py": "fca900557e7fac2261a168afe0ee81efc48508a874a5045bf4f6b74937165bb1",
+   "src/ciw/lab/energy_gpu_kernels.py": "03f3d92f8407f476cb74536911d476929843ee74232a7d7017c00f43c785a2b4",
+   "src/ciw/lab/energy_gpu_telemetry.py": "21cac5f654ce4a120887ff40da62fda47bd38a3c383bbad6cc3cb13b4168fa2d"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T148: adopt a deterministic reduction policy (fixed tree or compensated) and T147 to compare against RTX 2080 outputs",
+ "report_id": "sha256:3dcc7e46790be192d799c87c52e510fa8b0b3c350222c370044242b7503d7153",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "energy-gpu",
+ "state": "partial",
+ "task_id": "T121",
+ "tests_passed": [
+  "check: Every emulated float32 summation order of the positive dataset stays within its order-specific a priori error bound; relative spread across orders vs order-specific a priori bounds gamma_d sum|x| (Higham 4.2; Kahan 4.3, leading order)",
+  "check: Every emulated float64 summation order of the same data stays within its order-specific bound; relative spread vs order-specific a priori bounds gamma_d sum|x| (Higham 4.2; Kahan 4.3, leading order)",
+  "check: Reduction order alone flips the sign of a float32 sum whose exact value is +0.25 (the one-thread sequential CPU fold against the GPU-style orders) vs distinct signs across emulated orders",
+  "check: float64 accumulation of these float32-valued cancellation inputs is exact in every emulated order (all errors 0), hence sign-correct vs largest |float64 sum - exact| over orders",
+  "check: Reduction order alone flips the sign of a float64 sum of float64-native cancellation data whose exact value is +0.25 (the sequential fold against the GPU-style orders) vs distinct signs across emulated float64 orders",
+  "check: Atomic completion order alone changes a float32 pass/fail test |S - 0.25| <= 0.01 on identical inputs vs distinct pass/fail outcomes over 8 atomic completion orders",
+  "check: Emulated atomicAdd completion orders of identical float32 block partials give distinct sums vs distinct float32 results over 8 completion orders",
+  "check: The bound-guarded sign test (decide only when |S| exceeds the order's own a priori bound) cannot contradict across orders but leaves both cancellation sums undecided in every emulated order vs orders whose guarded sign test decides",
+  "check: Max reductions of this NaN-free, zero-free positive data are bitwise order-invariant over 8 permutations vs distinct maxima minus one",
+  "check: The IEEE maximum of +0.0 and -0.0 depends on operand order (numpy max) vs distinct sign bits of max over the two operand orders",
+  "pytest: tests/test_lab_energy_gpu.py::test_reduction_orders_bound_and_sign_counterexample",
+  "pytest: tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance"
+ ],
+ "tests_skipped": [],
+ "title": "Detect whether GPU reductions alter numerical conclusions.",
+ "uncertainty": "Deterministic IEEE arithmetic; the emulated orders are a sample of plausible GPU orders, not those of a specific library; the witnesses were found by search, so they show existence, not frequency.",
+ "unresolved_assumptions": [
+  "Real GPU reduction orders, FMA contraction and warp-shuffle trees were not observed",
+  "The pass/fail tolerance 0.01 was chosen inside the observed atomic spread; it shows that such flips exist, not how often they occur",
+  "The a priori guard is sound but so conservative that it decides none of the cancellation signs"
+ ]
+}

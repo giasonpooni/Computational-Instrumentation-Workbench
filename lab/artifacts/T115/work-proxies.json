@@ -1,0 +1,60 @@
+{
+ "adaptive_endpoint_errors": [
+  4.009533523982074e-10,
+  4.93522363568445e-10,
+  3.115472881178825e-10,
+  3.3945135055325884e-11,
+  9.956418425634799e-11,
+  6.069895126234933e-11
+ ],
+ "adaptive_stats": [
+  {
+   "accepted_steps": 73,
+   "function_evaluations": 487,
+   "rejected_steps": 8
+  },
+  {
+   "accepted_steps": 66,
+   "function_evaluations": 427,
+   "rejected_steps": 5
+  },
+  {
+   "accepted_steps": 58,
+   "function_evaluations": 361,
+   "rejected_steps": 2
+  },
+  {
+   "accepted_steps": 55,
+   "function_evaluations": 337,
+   "rejected_steps": 1
+  },
+  {
+   "accepted_steps": 51,
+   "function_evaluations": 313,
+   "rejected_steps": 1
+  },
+  {
+   "accepted_steps": 48,
+   "function_evaluations": 295,
+   "rejected_steps": 1
+  }
+ ],
+ "fixed_step_endpoint_errors": [
+  1.087370094109951e-09,
+  6.606204165812515e-10,
+  4.04008740810314e-10,
+  2.456089490440272e-10,
+  1.3897677091587819e-10,
+  5.745645019478708e-11
+ ],
+ "fixed_step_evaluations": [
+  1024,
+  1024,
+  1024,
+  1024,
+  1024,
+  1024
+ ],
+ "steps": 256,
+ "trajectories": 6
+}

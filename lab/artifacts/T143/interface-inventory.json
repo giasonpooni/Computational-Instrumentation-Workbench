@@ -1,0 +1,113 @@
+{
+ "boundaries": [
+  "pinned_subprocess"
+ ],
+ "interfaces": [
+  {
+   "boundary": "pinned_subprocess",
+   "category": "plant data",
+   "direction": "read_only",
+   "exchange": "framed JSON/CBOR records over stdio with node ids, source timestamps and status codes retained raw",
+   "identity": [
+    "executable sha256",
+    "library version and build flags",
+    "server certificate fingerprint"
+   ],
+   "libraries": [
+    "open62541 (C)",
+    "Unified Automation C++ SDK",
+    "Siemens/vendor OPC UA stacks"
+   ],
+   "name": "OPC UA client (read-only subscriptions)",
+   "why_native": "Certified and vendor-supported stacks are C/C++; security policies (X.509, SignAndEncrypt) and subscription timing are implemented there",
+   "write_path": "absent"
+  },
+  {
+   "boundary": "pinned_subprocess",
+   "category": "fieldbus",
+   "direction": "read_only",
+   "exchange": "pcapng captures with sha256; decoded PDO snapshots with working counters and TAP timestamps retained",
+   "fieldbus_role": "passive_tap",
+   "identity": [
+    "TAP device model and firmware version",
+    "capture library version",
+    "ENI/ESI decoding configuration digest"
+   ],
+   "libraries": [
+    "libpcap / Npcap (C)",
+    "Wireshark EtherCAT dissectors (C)",
+    "TAP or probe device driver (vendor C)"
+   ],
+   "name": "EtherCAT passive monitoring (network TAP capture)",
+   "why_native": "Line-rate capture with hardware timestamps needs kernel capture drivers and C dissectors; a Python loop cannot keep up with cyclic frames at microsecond spacing",
+   "write_path": "absent"
+  },
+  {
+   "boundary": "pinned_subprocess",
+   "category": "vision acquisition",
+   "direction": "read_only",
+   "exchange": "raw frame bytes with sha256, chunk timestamps and camera feature snapshot (GenICam XML digest)",
+   "identity": [
+    "SDK version",
+    "camera firmware version",
+    "GenICam XML digest"
+   ],
+   "libraries": [
+    "Basler pylon (C++)",
+    "Teledyne FLIR Spinnaker (C++)",
+    "Allied Vision Vimba X (C/C++)",
+    "GenICam reference implementation (C++)"
+   ],
+   "name": "Vendor camera SDKs (GenICam GenTL)",
+   "why_native": "Proprietary drivers, zero-copy buffers and hardware triggers are exposed only through C/C++ ABIs",
+   "write_path": "absent"
+  },
+  {
+   "boundary": "pinned_subprocess",
+   "category": "3D geometry",
+   "direction": "geometry_exchange",
+   "exchange": "PLY/PCD files with sha256 in and out; parameters in a retained request",
+   "identity": [
+    "library version",
+    "thread count",
+    "build flags (OpenMP, SIMD)"
+   ],
+   "libraries": [
+    "PCL (C++)",
+    "Open3D (C++ core with Python bindings)"
+   ],
+   "name": "Point cloud processing (PCL / Open3D)",
+   "why_native": "Registration, KD-tree and surface reconstruction kernels are C++ with nondeterministic threading unless pinned; bindings would put unaudited native state in the evidence process",
+   "write_path": "absent"
+  },
+  {
+   "boundary": "pinned_subprocess",
+   "category": "CAD geometry",
+   "direction": "geometry_exchange",
+   "exchange": "STEP/BREP files with sha256; exported meshes and measurements as retained records",
+   "identity": [
+    "OCCT version",
+    "translator settings digest",
+    "tolerance settings"
+   ],
+   "libraries": [
+    "OpenCASCADE Technology (C++)",
+    "pythonOCC bindings"
+   ],
+   "name": "CAD kernel (OpenCASCADE)",
+   "why_native": "B-rep, STEP/IGES translation and tolerance handling live in the C++ kernel",
+   "write_path": "absent"
+  }
+ ],
+ "python_bindings_present_here": {
+  "OCC": false,
+  "PySpin": false,
+  "asyncua": false,
+  "opcua": false,
+  "open3d": false,
+  "pcl": false,
+  "pypylon": false,
+  "pysoem": false,
+  "vmbpy": false
+ }
+}

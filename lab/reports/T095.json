@@ -1,0 +1,524 @@
+{
+ "changed_files": [
+  "src/ciw/lab/exchange_provenance_bundles.py",
+  "src/ciw/lab/exchange_provenance_bundles_fixtures.py",
+  "tests/fixtures/lab/malformed"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 0,
+   "numerically_verified": 6,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Every fixture refused by the validator it targets with its exact CIW text; wrong-type cases are single-field mutations of a valid input so the refusal is attributable.",
+ "experiment": "Write each committed fixture from its generator, apply the byte-level validators to each, apply the structural validators to the runtime-generated cases, and compare exact CIW messages.",
+ "failure_modes_checked": [
+  "duplicate keys",
+  "NaN and ±Infinity literals",
+  "float overflow",
+  "truncation",
+  "invalid UTF-8",
+  "recursion depth",
+  "wrong schema",
+  "wrong types (single-field mutations)",
+  "incomplete workspace",
+  "extra fields",
+  "oversize bytes",
+  "forged identity",
+  "non-canonical base64"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "malformed fixtures not refused with their expected text",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "expected_refusal": "exchange input must be bounded UTF-8 JSON",
+      "observed_refusal": "exchange input must be bounded UTF-8 JSON",
+      "passed": true,
+      "reference": "deep-nesting.json via exchange_inspect",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "duplicate JSON member: schema",
+      "observed_refusal": "duplicate JSON member: schema",
+      "passed": true,
+      "reference": "duplicate-key.json via exchange_inspect",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "invalid_payload: Require exactly the declared energy-log fields",
+      "observed_refusal": "invalid_payload: Require exactly the declared energy-log fields",
+      "passed": true,
+      "reference": "extra-field-energy-log.json via workbench_source_add",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "nonfinite JSON number: -Infinity",
+      "observed_refusal": "nonfinite JSON number: -Infinity",
+      "passed": true,
+      "reference": "infinity.json via exchange_inspect",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "exchange input must be bounded UTF-8 JSON",
+      "observed_refusal": "exchange input must be bounded UTF-8 JSON",
+      "passed": true,
+      "reference": "invalid-utf8.json via exchange_inspect",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "nonfinite JSON number: NaN",
+      "observed_refusal": "nonfinite JSON number: NaN",
+      "passed": true,
+      "reference": "nan.json via exchange_inspect",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "JSON number overflows float64",
+      "observed_refusal": "JSON number overflows float64",
+      "passed": true,
+      "reference": "overflow.json via exchange_inspect",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "MALFORMED_RESPONSE: The bound runtime did not return finite, unambiguous JSON",
+      "observed_refusal": "MALFORMED_RESPONSE: The bound runtime did not return finite, unambiguous JSON",
+      "passed": true,
+      "reference": "truncated-energy-log.json via workbench_source_add",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "result_id does not match the artifact content",
+      "observed_refusal": "result_id does not match the artifact content",
+      "passed": true,
+      "reference": "wrong-identity-result.json via exchange_identity",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "Malformed retained workbench catalog",
+      "observed_refusal": "Malformed retained workbench catalog",
+      "passed": true,
+      "reference": "wrong-revision-workbench.json via workbench_restore",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "invalid_payload: Unsupported energy log schema or occurrence identity",
+      "observed_refusal": "invalid_payload: Unsupported energy log schema or occurrence identity",
+      "passed": true,
+      "reference": "wrong-schema-energy-log.json via workbench_source_add",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "unsupported instrument-exchange schema",
+      "observed_refusal": "unsupported instrument-exchange schema",
+      "passed": true,
+      "reference": "wrong-schema-exchange.json via exchange_inspect",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "invalid_payload: Declare actual measurement versus synthetic fixture",
+      "observed_refusal": "invalid_payload: Declare actual measurement versus synthetic fixture",
+      "passed": true,
+      "reference": "wrong-type-energy-log.json via workbench_source_add",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "invalid_payload: Unexpected or missing workbench fields",
+      "observed_refusal": "invalid_payload: Unexpected or missing workbench fields",
+      "passed": true,
+      "reference": "extra source payload field",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "invalid_payload: Source bytes must use bounded canonical base64",
+      "observed_refusal": "invalid_payload: Source bytes must use bounded canonical base64",
+      "passed": true,
+      "reference": "non-canonical base64",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "invalid_payload: Energy analysis source must contain 1..4194304 exact retained bytes",
+      "observed_refusal": "invalid_payload: Energy analysis source must contain 1..4194304 exact retained bytes",
+      "passed": true,
+      "reference": "oversize-energy-source (4 MiB + 1 byte)",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "file exceeds 1048576 bytes: <path>",
+      "observed_refusal": "file exceeds 1048576 bytes: <path>",
+      "passed": true,
+      "reference": "oversize-exchange (1 MiB + 1 byte)",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "Invalid saved selection revision",
+      "observed_refusal": "Invalid saved selection revision",
+      "passed": true,
+      "reference": "wrong-type selection revision (Session.from_workspace)",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "Unsupported workspace format",
+      "observed_refusal": "Unsupported workspace format",
+      "passed": true,
+      "reference": "wrong-type workspace_version (Session.from_workspace)",
+      "reference_kind": "refusal"
+     }
+    ]
+   },
+   "claim": "Every malformed exchange fixture is refused by the CIW validator it targets, with the error text retained",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact counts, digests and string comparisons; no rounding is involved",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": {
+    "fixtures": 19,
+    "refused": 19
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "read_json refusals of 1e999",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "read_json values of 1e999 other than inf",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "exchange refusals of 1e999",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "workbench refusals of 1e999",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     }
+    ]
+   },
+   "claim": "session.read_json accepts an overflowing number as infinity while the exchange and workbench parsers refuse it",
+   "counterexample": {
+    "statement": "Every CIW JSON reader refuses nonfinite numbers",
+    "witness": {
+     "fixture": "overflow.json",
+     "parsed_value": "inf",
+     "reader": "ciw.session.read_json"
+    }
+   },
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact counts, digests and string comparisons; no rounding is involved",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": {
+    "exchange_refused": true,
+    "session_read_json_refused": false,
+    "session_read_json_value": "inf",
+    "workbench_refused": true
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "not_refused_with_value_error",
+      "observed_refusal": "not_refused_with_value_error",
+      "passed": true,
+      "reference": "read_json on deep-nesting.json",
+      "reference_kind": "refusal"
+     }
+    ]
+   },
+   "claim": "session.read_json does not refuse a 20000-deep array with a ValueError",
+   "counterexample": {
+    "statement": "session.read_json refuses every malformed workspace file with a ValueError",
+    "witness": {
+     "fixture": "deep-nesting.json",
+     "observed": "RecursionError"
+    }
+   },
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact counts, digests and string comparisons; no rounding is involved",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": "not_refused_with_value_error"
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "AttributeError",
+      "observed_refusal": "AttributeError",
+      "passed": true,
+      "reference": "Session.from_workspace on incomplete-workspace.json",
+      "reference_kind": "refusal"
+     }
+    ]
+   },
+   "claim": "Session.from_workspace raises AttributeError, not a ValueError refusal, on a workspace holding only its version",
+   "counterexample": {
+    "statement": "Session.from_workspace refuses every malformed workspace with a ValueError",
+    "witness": {
+     "content": {
+      "workspace_version": 3
+     },
+     "error_type": "AttributeError",
+     "fixture": "incomplete-workspace.json"
+    }
+   },
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact counts, digests and string comparisons; no rounding is involved",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": "AttributeError"
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "extra-field workspaces refused",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "extra field kept after re-save",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Session.from_workspace accepts an unknown top-level field and drops it on re-save",
+   "counterexample": {
+    "statement": "Saved workspaces with fields outside the schema are refused on reopen",
+    "witness": {
+     "dropped_on_resave": true,
+     "field": "lab_unexpected_field",
+     "reopened": true
+    }
+   },
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact counts, digests and string comparisons; no rounding is involved",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": {
+    "accepted": true,
+    "dropped_on_resave": true
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "MALFORMED_RESPONSE: The bound runtime did not return finite, unambiguous JSON",
+      "observed_refusal": "MALFORMED_RESPONSE: The bound runtime did not return finite, unambiguous JSON",
+      "passed": true,
+      "reference": "source.add of duplicate-key.json",
+      "reference_kind": "refusal"
+     }
+    ]
+   },
+   "claim": "Workbench source.add reports malformed source JSON with text that names a bound runtime",
+   "counterexample": {
+    "statement": "Workbench source errors name the source, not a bound runtime",
+    "witness": {
+     "fixture": "duplicate-key.json",
+     "message": "MALFORMED_RESPONSE: The bound runtime did not return finite, unambiguous JSON",
+     "request": "source.add (energy-accuracy)"
+    }
+   },
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact counts, digests and string comparisons; no rounding is involved",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": "MALFORMED_RESPONSE: The bound runtime did not return finite, unambiguous JSON"
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 13700,
+   "path": "artifacts/T095/malformed-refusals.json",
+   "sha256": "ee7ade157ff2ead0c92d80cd9ed6efee77d2b1532770cecc43f3a1d529e154f5"
+  }
+ ],
+ "hypothesis": "Each malformed exchange input (duplicate keys, NaN/Infinity, overflow, wrong schema, oversize, truncated bytes, invalid UTF-8, wrong types, extra fields, forged identity) is refused by the relevant CIW validator.",
+ "input_data": [
+  "tests/fixtures/lab/malformed/deep-nesting.json",
+  "tests/fixtures/lab/malformed/duplicate-key.json",
+  "tests/fixtures/lab/malformed/extra-field-energy-log.json",
+  "tests/fixtures/lab/malformed/incomplete-workspace.json",
+  "tests/fixtures/lab/malformed/infinity.json",
+  "tests/fixtures/lab/malformed/invalid-utf8.json",
+  "tests/fixtures/lab/malformed/nan.json",
+  "tests/fixtures/lab/malformed/overflow.json",
+  "tests/fixtures/lab/malformed/truncated-energy-log.json",
+  "tests/fixtures/lab/malformed/wrong-identity-result.json",
+  "tests/fixtures/lab/malformed/wrong-revision-workbench.json",
+  "tests/fixtures/lab/malformed/wrong-schema-energy-log.json",
+  "tests/fixtures/lab/malformed/wrong-schema-exchange.json",
+  "tests/fixtures/lab/malformed/wrong-type-energy-log.json",
+  "extra source payload field",
+  "non-canonical base64",
+  "oversize-energy-source (4 MiB + 1 byte)",
+  "oversize-exchange (1 MiB + 1 byte)",
+  "wrong-type selection revision (Session.from_workspace)",
+  "wrong-type workspace_version (Session.from_workspace)",
+  "extra top-level workspace field (generated)"
+ ],
+ "mathematical_model": "Validators: Workbench source.add (energy-accuracy), ciw.session.read_json, ciw.exchange.inspect_exchange (parsing stage, no SET checkout), ciw.exchange._identity, Session.from_workspace, Workbench.restore.",
+ "number": 95,
+ "numerical_result": "19/19 malformed inputs refused with their expected text; read_json accepted 1e999 as inf and raised RecursionError on 20000-deep nesting; Session.from_workspace raised AttributeError on a version-only workspace; an extra top-level workspace field was accepted and dropped on re-save.",
+ "observation_model": "Refused/accepted, exception type and exact message per validator (retained in malformed-refusals.json).",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/exchange_provenance_bundles.py": "a505b35560263c1b473912f79e61b15b7e474f8eb1807e691847e4c69791c2d3",
+   "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "f30205e8305a225f24d94b06cba8b519ecea4680ca723aaca3591ff707d04e1c"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T096: provider-free conformance of exchange identities and ESM candidate responses.",
+ "report_id": "sha256:9f187ad8806e306e65f31f035d434432fc7ad7d564f321e92f01c004ae6dd858",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "exchange-provenance",
+ "state": "completed",
+ "task_id": "T095",
+ "tests_passed": [
+  "check: Every malformed exchange fixture is refused by the CIW validator it targets, with the error text retained vs malformed fixtures not refused with their expected text",
+  "check: Every malformed exchange fixture is refused by the CIW validator it targets, with the error text retained vs deep-nesting.json via exchange_inspect",
+  "check: Every malformed exchange fixture is refused by the CIW validator it targets, with the error text retained vs duplicate-key.json via exchange_inspect",
+  "check: Every malformed exchange fixture is refused by the CIW validator it targets, with the error text retained vs extra-field-energy-log.json via workbench_source_add",
+  "check: Every malformed exchange fixture is refused by the CIW validator it targets, with the error text retained vs infinity.json via exchange_inspect",
+  "check: Every malformed exchange fixture is refused by the CIW validator it targets, with the error text retained vs invalid-utf8.json via exchange_inspect",
+  "check: Every malformed exchange fixture is refused by the CIW validator it targets, with the error text retained vs nan.json via exchange_inspect",
+  "check: Every malformed exchange fixture is refused by the CIW validator it targets, with the error text retained vs overflow.json via exchange_inspect",
+  "check: Every malformed exchange fixture is refused by the CIW validator it targets, with the error text retained vs truncated-energy-log.json via workbench_source_add",
+  "check: Every malformed exchange fixture is refused by the CIW validator it targets, with the error text retained vs wrong-identity-result.json via exchange_identity",
+  "check: Every malformed exchange fixture is refused by the CIW validator it targets, with the error text retained vs wrong-revision-workbench.json via workbench_restore",
+  "check: Every malformed exchange fixture is refused by the CIW validator it targets, with the error text retained vs wrong-schema-energy-log.json via workbench_source_add",
+  "check: Every malformed exchange fixture is refused by the CIW validator it targets, with the error text retained vs wrong-schema-exchange.json via exchange_inspect",
+  "check: Every malformed exchange fixture is refused by the CIW validator it targets, with the error text retained vs wrong-type-energy-log.json via workbench_source_add",
+  "check: Every malformed exchange fixture is refused by the CIW validator it targets, with the error text retained vs extra source payload field",
+  "check: Every malformed exchange fixture is refused by the CIW validator it targets, with the error text retained vs non-canonical base64",
+  "check: Every malformed exchange fixture is refused by the CIW validator it targets, with the error text retained vs oversize-energy-source (4 MiB + 1 byte)",
+  "check: Every malformed exchange fixture is refused by the CIW validator it targets, with the error text retained vs oversize-exchange (1 MiB + 1 byte)",
+  "check: Every malformed exchange fixture is refused by the CIW validator it targets, with the error text retained vs wrong-type selection revision (Session.from_workspace)",
+  "check: Every malformed exchange fixture is refused by the CIW validator it targets, with the error text retained vs wrong-type workspace_version (Session.from_workspace)",
+  "check: session.read_json accepts an overflowing number as infinity while the exchange and workbench parsers refuse it vs read_json refusals of 1e999",
+  "check: session.read_json accepts an overflowing number as infinity while the exchange and workbench parsers refuse it vs read_json values of 1e999 other than inf",
+  "check: session.read_json accepts an overflowing number as infinity while the exchange and workbench parsers refuse it vs exchange refusals of 1e999",
+  "check: session.read_json accepts an overflowing number as infinity while the exchange and workbench parsers refuse it vs workbench refusals of 1e999",
+  "check: session.read_json does not refuse a 20000-deep array with a ValueError vs read_json on deep-nesting.json",
+  "check: Session.from_workspace raises AttributeError, not a ValueError refusal, on a workspace holding only its version vs Session.from_workspace on incomplete-workspace.json",
+  "check: Session.from_workspace accepts an unknown top-level field and drops it on re-save vs extra-field workspaces refused",
+  "check: Session.from_workspace accepts an unknown top-level field and drops it on re-save vs extra field kept after re-save",
+  "check: Workbench source.add reports malformed source JSON with text that names a bound runtime vs source.add of duplicate-key.json",
+  "pytest: tests/test_lab_exchange_provenance_bundles.py::test_t095_malformed_fixtures_are_refused_with_retained_text",
+  "pytest: tests/test_lab_exchange_provenance_bundles.py::test_committed_malformed_fixtures_match_their_generator"
+ ],
+ "tests_skipped": [],
+ "title": "Add malformed exchange fixtures.",
+ "uncertainty": "Exact string comparison of CIW-generated text; messages from Python's json module and interpreter exceptions are retained but not compared, because they vary between interpreter versions.",
+ "unresolved_assumptions": [
+  "The workbench validator is exercised through the energy-accuracy kind; other kinds apply their own source parsers after the same canonical-base64 and byte-budget checks.",
+  "The exchange stage stops before the SET validator; conformance of well-formed artifacts needs SET (T097)."
+ ]
+}

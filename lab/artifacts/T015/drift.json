@@ -1,0 +1,311 @@
+{
+ "sphere:adaptive": {
+  "accepted_steps": 1501,
+  "envelopes": {
+   "angular_momentum": [
+    4.19496803691e-06,
+    8.14501563303e-06,
+    1.63185833433e-05,
+    3.39357189711e-05,
+    6.8902032346e-05,
+    0.000138042843086
+   ],
+   "energy": [
+    4.10001488704e-06,
+    7.91392852451e-06,
+    1.56426608864e-05,
+    3.15763103399e-05,
+    6.38287161744e-05,
+    0.00012888832126
+   ],
+   "position": [
+    8.22024712306e-06,
+    3.55232505329e-05,
+    0.000149630249658,
+    0.00061146228907,
+    0.00251230281579,
+    0.0102084818155
+   ]
+  },
+  "exponent_spreads": {
+   "angular_momentum": 0.0570144240215,
+   "energy": 0.0489585030148,
+   "position": 0.0585194942808
+  },
+  "exponents": {
+   "angular_momentum": 1.01427207354,
+   "energy": 0.997723390402,
+   "position": 2.05299043534
+  },
+  "failed_at": null,
+  "max_energy_error": 0.00012888832126,
+  "method": "adaptive",
+  "reached": 320.0,
+  "surface": "sphere"
+ },
+ "sphere:euler": {
+  "accepted_steps": null,
+  "envelopes": {
+   "angular_momentum": [
+    0.625642660511
+   ],
+   "energy": [
+    0.0683572605412
+   ],
+   "position": [
+    0.477877622879
+   ]
+  },
+  "exponent_spreads": {
+   "angular_momentum": null,
+   "energy": null,
+   "position": null
+  },
+  "exponents": {
+   "angular_momentum": null,
+   "energy": null,
+   "position": null
+  },
+  "failed_at": 14.0,
+  "max_energy_error": 0.290152193512,
+  "method": "euler",
+  "reached": 13.875,
+  "surface": "sphere"
+ },
+ "sphere:midpoint": {
+  "accepted_steps": null,
+  "envelopes": {
+   "angular_momentum": [
+    0.0178094163672,
+    0.0358626052425,
+    0.0726548450318,
+    0.146393728112,
+    0.296319021961,
+    0.599598945161
+   ],
+   "energy": [
+    0.00306189548735,
+    0.00318414876404,
+    0.00346501345064,
+    0.00400608780623,
+    0.00519500389849,
+    0.00807601876475
+   ],
+   "position": [
+    0.0194783054013,
+    0.0390703059911,
+    0.0792471509111,
+    0.170726805215,
+    0.372089366001,
+    0.830937356308
+   ]
+  },
+  "exponent_spreads": {
+   "angular_momentum": 0.00492989790648,
+   "energy": 0.37011713161,
+   "position": 0.0796747844191
+  },
+  "exponents": {
+   "angular_momentum": 1.01476995602,
+   "energy": 0.266402299414,
+   "position": 1.08387916946
+  },
+  "failed_at": null,
+  "max_energy_error": 0.00807601876475,
+  "method": "midpoint",
+  "reached": 320.0,
+  "surface": "sphere"
+ },
+ "sphere:rk4": {
+  "accepted_steps": null,
+  "envelopes": {
+   "angular_momentum": [
+    1.65918317771e-05,
+    3.36634797956e-05,
+    6.85845908552e-05,
+    0.000136290485489,
+    0.000273209174006,
+    0.000546286294506
+   ],
+   "energy": [
+    4.6511488685e-06,
+    4.6511488685e-06,
+    4.66112841435e-06,
+    4.67900136081e-06,
+    4.70419122145e-06,
+    4.76660704063e-06
+   ],
+   "position": [
+    1.62086119858e-05,
+    3.2310447733e-05,
+    6.45297587687e-05,
+    0.000134142823543,
+    0.000268472669833,
+    0.000541450231335
+   ]
+  },
+  "exponent_spreads": {
+   "angular_momentum": 0.019313351624,
+   "energy": 0.0124023303159,
+   "position": 0.0405955519508
+  },
+  "exponents": {
+   "angular_momentum": 1.0073868099,
+   "energy": 0.00661365841183,
+   "position": 1.01513778512
+  },
+  "failed_at": null,
+  "max_energy_error": 4.76660704063e-06,
+  "method": "rk4",
+  "reached": 320.0,
+  "surface": "sphere"
+ },
+ "torus:adaptive": {
+  "accepted_steps": 894,
+  "clairaut_initial": 2.20089654073,
+  "envelopes": {
+   "clairaut": [
+    1.69277890905e-06,
+    4.26425001088e-06,
+    9.53390217262e-06,
+    1.81426504056e-05,
+    3.76385586645e-05,
+    7.52171969052e-05
+   ],
+   "energy": [
+    1.36904121772e-06,
+    2.63195028949e-06,
+    4.54707293307e-06,
+    9.11900825573e-06,
+    1.76834078915e-05,
+    3.52145077317e-05
+   ]
+  },
+  "exponent_spreads": {
+   "clairaut": 0.255133488587,
+   "energy": 0.144713410143
+  },
+  "exponents": {
+   "clairaut": 1.07776497888,
+   "energy": 0.933519313936
+  },
+  "failed_at": null,
+  "max_energy_error": 3.52145077317e-05,
+  "method": "adaptive",
+  "reached": 320.0,
+  "surface": "torus",
+  "theta_max_abs": 1.36851219976,
+  "theta_turning": 1.36852329236
+ },
+ "torus:euler": {
+  "accepted_steps": null,
+  "clairaut_initial": 2.20089654073,
+  "envelopes": {
+   "clairaut": [
+    0.32991203562,
+    0.817903699786,
+    1.44436242163,
+    2.03955860346,
+    2.19376933637,
+    2.20088461505
+   ],
+   "energy": [
+    0.0289194998449,
+    0.0323869528838,
+    0.034992560187,
+    0.034992560187,
+    0.034992560187,
+    0.034992560187
+   ]
+  },
+  "exponent_spreads": {
+   "clairaut": 0.782486665541,
+   "energy": 0.114514864769
+  },
+  "exponents": {
+   "clairaut": 0.527362914049,
+   "energy": 0.0488552727699
+  },
+  "failed_at": null,
+  "max_energy_error": 0.034992560187,
+  "method": "euler",
+  "reached": 320.0,
+  "surface": "torus",
+  "theta_max_abs": 285.034650631,
+  "theta_turning": 1.36852329236
+ },
+ "torus:midpoint": {
+  "accepted_steps": null,
+  "clairaut_initial": 2.20089654073,
+  "envelopes": {
+   "clairaut": [
+    0.000978521410405,
+    0.000978521410405,
+    0.00202004054205,
+    0.00385929306981,
+    0.00798012121181,
+    0.0159819964616
+   ],
+   "energy": [
+    0.00135954719071,
+    0.00135954719071,
+    0.00136079862823,
+    0.00136296312988,
+    0.00136585260528,
+    0.0013705398519
+   ]
+  },
+  "exponent_spreads": {
+   "clairaut": 0.861876012217,
+   "energy": 0.00264504754541
+  },
+  "exponents": {
+   "clairaut": 0.861876012217,
+   "energy": 0.00229742628876
+  },
+  "failed_at": null,
+  "max_energy_error": 0.0013705398519,
+  "method": "midpoint",
+  "reached": 320.0,
+  "surface": "torus",
+  "theta_max_abs": 1.38494789076,
+  "theta_turning": 1.36852329236
+ },
+ "torus:rk4": {
+  "accepted_steps": null,
+  "clairaut_initial": 2.20089654073,
+  "envelopes": {
+   "clairaut": [
+    1.09181135066e-06,
+    1.24042104943e-06,
+    1.45885096803e-06,
+    1.96987258638e-06,
+    2.9168636182e-06,
+    4.88562198386e-06
+   ],
+   "energy": [
+    5.03425778176e-07,
+    5.03425778176e-07,
+    5.03425778176e-07,
+    5.03425778176e-07,
+    5.53778972012e-07,
+    1.00558483651e-06
+   ]
+  },
+  "exponent_spreads": {
+   "clairaut": 0.31717782151,
+   "energy": 0.706266549091
+  },
+  "exponents": {
+   "clairaut": 0.426946487797,
+   "energy": 0.154386073029
+  },
+  "failed_at": null,
+  "max_energy_error": 1.00558483651e-06,
+  "method": "rk4",
+  "reached": 320.0,
+  "surface": "torus",
+  "theta_max_abs": 1.36852207254,
+  "theta_turning": 1.36852329236
+ }
+}

@@ -1,0 +1,164 @@
+{
+ "circle_rule": {
+  "actual_bias_per_mm": 0.0024508269693,
+  "bias_over_tolerance": 1.96066157544,
+  "quartic_ratio_gauss_over_circle": 4.0,
+  "tolerance_per_mm": 0.00125,
+  "window_mm": 27.3252020426
+ },
+ "designs": {
+  "coupon crest": {
+   "bias_per_mm": 0.000665799799267,
+   "coverage_factor": 2.0,
+   "curvature_per_mm": 0.025,
+   "max_spacing_mm": 0.645705488081,
+   "noise_mm": 0.01,
+   "noise_std_per_mm": 0.000275539779542,
+   "points_per_window": 23,
+   "quartic_per_mm3": 7.8125e-06,
+   "repeats_at_native_spacing": 1,
+   "samples": 23,
+   "tolerance_per_mm": 0.00125,
+   "used_spacing_mm": 0.645705488081,
+   "window_mm": 13.6626010213,
+   "worst_error_per_mm": 0.00121687935835
+  },
+  "cylinder circumference": {
+   "bias_per_mm": -0.000288406116367,
+   "coverage_factor": 2.0,
+   "curvature_per_mm": 0.01,
+   "max_spacing_mm": 322.852744041,
+   "noise_mm": 0.01,
+   "noise_std_per_mm": 1.14457104348e-05,
+   "points_per_window": 2,
+   "quartic_per_mm3": 1.25e-07,
+   "repeats_at_native_spacing": 1,
+   "samples": 21,
+   "tolerance_per_mm": 0.0005,
+   "used_spacing_mm": 3.41565025532,
+   "window_mm": 68.3130051064,
+   "worst_error_per_mm": 0.000311297537236
+  },
+  "flat plate": {
+   "bias_per_mm": 0.0,
+   "coverage_factor": 2.0,
+   "curvature_per_mm": 0.0,
+   "max_spacing_mm": 86.8055555556,
+   "noise_mm": 0.01,
+   "noise_std_per_mm": 5.34133153625e-06,
+   "points_per_window": 3,
+   "quartic_per_mm3": 0.0,
+   "repeats_at_native_spacing": 1,
+   "samples": 21,
+   "tolerance_per_mm": 0.0001,
+   "used_spacing_mm": 5.0,
+   "window_mm": 100.0,
+   "worst_error_per_mm": 1.06826630725e-05
+  }
+ },
+ "ladder": {
+  "1%": {
+   "exact_worst_error_per_mm": 0.000247778011247,
+   "max_spacing_mm": 0.000462029236734,
+   "repeats_at_native_spacing": 109,
+   "tolerance_per_mm": 0.00025,
+   "window_mm": 6.11010092661
+  },
+  "2%": {
+   "exact_worst_error_per_mm": 0.000491424723615,
+   "max_spacing_mm": 0.0104545282048,
+   "repeats_at_native_spacing": 5,
+   "tolerance_per_mm": 0.0005,
+   "window_mm": 8.64098759788
+  },
+  "5%": {
+   "exact_worst_error_per_mm": 0.000791499264655,
+   "max_spacing_mm": 0.645705488081,
+   "repeats_at_native_spacing": 1,
+   "tolerance_per_mm": 0.00125,
+   "window_mm": 13.6626010213
+  }
+ },
+ "registration": {
+  "lever_arm_error_mm": 0.00987920764393,
+  "lever_arm_mm": 130.064089336,
+  "noise_mm": 0.01,
+  "rotation_cov_rel_frobenius": 0.0380708716517,
+  "rotation_std_urad": [
+   66.1827932223,
+   62.6278623575,
+   45.0775654097
+  ],
+  "ssr_ratio": 0.999101808918,
+  "ssr_ratio_se": 0.00912870929175,
+  "targets": 6,
+  "trials": 2000
+ },
+ "repeat": {
+  "expected": 0.5,
+  "repeats": 4,
+  "std_ratio": 0.482436704368
+ },
+ "sweep": {
+  "0.3333": {
+   "exact_bias": 8.30124334681e-05,
+   "exact_std": 0.0035164977879,
+   "fraction_within_tolerance": 0.273,
+   "mc_mean_error": 4.27405073036e-05,
+   "mc_rms": 0.00348130814032,
+   "mc_std": 0.00348148097717,
+   "samples": 9,
+   "window_mm": 4.55420034043
+  },
+  "0.5": {
+   "exact_bias": 0.000177856436713,
+   "exact_std": 0.00137928391077,
+   "fraction_within_tolerance": 0.6215,
+   "mc_mean_error": 0.000166053539601,
+   "mc_rms": 0.00140337738944,
+   "mc_std": 0.00139369290526,
+   "samples": 13,
+   "window_mm": 6.83130051064
+  },
+  "1": {
+   "exact_bias": 0.000665799799267,
+   "exact_std": 0.000275539779542,
+   "fraction_within_tolerance": 0.9795,
+   "mc_mean_error": 0.000667326914291,
+   "mc_rms": 0.000722085632683,
+   "mc_std": 0.000275864959281,
+   "samples": 23,
+   "window_mm": 13.6626010213
+  },
+  "1.5": {
+   "exact_bias": 0.00143375946508,
+   "exact_std": 0.000104816735065,
+   "fraction_within_tolerance": 0.0365,
+   "mc_mean_error": 0.00143748275761,
+   "mc_rms": 0.00144119076035,
+   "mc_std": 0.000103328594734,
+   "samples": 33,
+   "window_mm": 20.4939015319
+  },
+  "2": {
+   "exact_bias": 0.00244165983898,
+   "exact_std": 5.12802542589e-05,
+   "fraction_within_tolerance": 0.0,
+   "mc_mean_error": 0.00244003140654,
+   "mc_rms": 0.00244058065387,
+   "mc_std": 5.17815938908e-05,
+   "samples": 45,
+   "window_mm": 27.3252020426
+  },
+  "3": {
+   "exact_bias": 0.00501667922915,
+   "exact_std": 1.92172219158e-05,
+   "fraction_within_tolerance": 0.0,
+   "mc_mean_error": 0.00501672676643,
+   "mc_rms": 0.00501676227621,
+   "mc_std": 1.88779243025e-05,
+   "samples": 65,
+   "window_mm": 40.9878030638
+  }
+ }
+}

@@ -1,0 +1,73 @@
+{
+ "rows": [
+  {
+   "description": "numerical_match false; replay_id recomputed",
+   "error": "ValueError",
+   "killed": true,
+   "kind": "workspace",
+   "message_matches_pin": true,
+   "name": "receipt.numerical-match-false",
+   "observed": "Invalid retained energy replay receipt",
+   "observed_outcome": "killed",
+   "outcome_matches_prediction": true,
+   "pinned_message": "Invalid retained energy replay receipt",
+   "predicted_outcome": "killed",
+   "recompute": "local",
+   "target": "energy replay receipt",
+   "task": "T083"
+  },
+  {
+   "description": "receipt moved from the replay bundle onto a sibling execution",
+   "error": "ValueError",
+   "killed": true,
+   "kind": "workspace",
+   "message_matches_pin": true,
+   "name": "receipt.transplanted",
+   "observed": "Invalid retained energy replay receipt",
+   "observed_outcome": "killed",
+   "outcome_matches_prediction": true,
+   "pinned_message": "Invalid retained energy replay receipt",
+   "predicted_outcome": "killed",
+   "recompute": "none",
+   "target": "energy bundle",
+   "task": "T083"
+  },
+  {
+   "description": "receipt moved onto a sibling execution; replayed digest and replay_id recomputed",
+   "error": "ValueError",
+   "killed": true,
+   "kind": "workspace",
+   "message_matches_pin": true,
+   "name": "receipt.transplanted-resealed",
+   "observed": "Retained energy analysis binding differs",
+   "observed_outcome": "killed",
+   "outcome_matches_prediction": true,
+   "pinned_message": "Retained energy analysis binding differs",
+   "predicted_outcome": "killed",
+   "recompute": "local",
+   "target": "energy bundle",
+   "task": "T083"
+  },
+  {
+   "description": "replay_receipts removed from the replay bundle",
+   "error": null,
+   "killed": false,
+   "kind": "workspace",
+   "message_matches_pin": true,
+   "name": "receipt.deleted",
+   "observed": "accepted",
+   "observed_outcome": "accepted",
+   "outcome_matches_prediction": true,
+   "pinned_message": "accepted",
+   "post_reopen": {
+    "bundles_with_receipts": 0,
+    "replay_bundle_listed": true
+   },
+   "predicted_outcome": "accepted",
+   "recompute": "none",
+   "target": "energy replay bundle",
+   "task": "T083"
+  }
+ ],
+ "schema": "ciw.lab-mutation-matrix.v2"
+}

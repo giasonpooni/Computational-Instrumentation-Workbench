@@ -1,0 +1,164 @@
+{
+ "changed_files": [
+  "src/ciw/lab/implementation_targets.py",
+  "docs/lab/IMPLEMENTATION_TARGETS.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 1,
+   "hardware_measured": 0,
+   "independently_verified": 1,
+   "not_established": 1,
+   "numerically_verified": 0,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "analytic"
+ },
+ "expected_invariant": "Symbolic and core Christoffel symbols and curvature agree to rounding; Julia claims stay unestablished.",
+ "experiment": "Probe for julia; record the pin procedure; derive torus geometry with SymPy and compare with the core.",
+ "failure_modes_checked": [
+  "julia absent (recorded, not substituted)",
+  "symbolic/core Christoffel disagreement",
+  "symbolic/core curvature disagreement"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "Julia environment pinned and exercised through the CIW to SCR boundary",
+   "domain": "computational_pipeline",
+   "evidence_status": "not_established",
+   "expected_not_established": true,
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "derivation": "docs/JULIA_SP1.md#worker-lifecycle-and-environment"
+   },
+   "claim": "Julia provider pin procedure",
+   "domain": "provenance",
+   "evidence_status": "analytic",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "declared design record; the value is a list of names or rules, not a measurement",
+    "kind": "reference_error",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": [
+    "julia_version",
+    "platform",
+    "executable_sha256",
+    "worker_source_sha256",
+    "project_sha256",
+    "manifest_sha256",
+    "package_artifacts",
+    "threads",
+    "numerical_preferences",
+    "sysimage"
+   ]
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "independent_check": {
+     "checker": {
+      "implementation": "sympy",
+      "revision": "1.14.0"
+     },
+     "comparison": "abs_le",
+     "observed": 4.440892098500626e-16,
+     "passed": true,
+     "producer": {
+      "implementation": "ciw.lab.surfaces.Torus",
+      "revision": "e8f264c182743d0177d93b961a49d7ddf78f30d79a7a75b9fea4018b10d4eef0"
+     },
+     "reference": "sympy-derived Gamma and K against the core at 16 seeded points",
+     "reference_kind": "analytic",
+     "tolerance": 1e-12
+    }
+   },
+   "claim": "Symbolic torus Christoffel symbols and curvature agree with ciw.lab.surfaces.Torus",
+   "domain": "mathematical",
+   "evidence_status": "independently_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "largest difference between float evaluations of the symbolic expressions and the core",
+    "kind": "roundoff",
+    "value": 4.440892098500626e-16
+   },
+   "unit": null,
+   "value": 4.440892098500626e-16
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 1284,
+   "path": "artifacts/T145/julia-pin-procedure.json",
+   "sha256": "89bb542ff08f896bafb3fa6bdbca75652bf535252a149f7370cb81ccdcdcfc60"
+  },
+  {
+   "bytes": 494,
+   "path": "artifacts/T145/sympy-torus.json",
+   "sha256": "725ba5f3af5dd7cbc1c00edd16eee27387d380cc76d4bd5d7b51a82b9daa0a0a"
+  }
+ ],
+ "hypothesis": "Julia can carry symbolic, optimization and exploratory work behind the pinned CIW to SCR boundary; until a pinned Julia environment exists, SymPy demonstrates the symbolic role on the geometry core.",
+ "input_data": [
+  "Torus R=2, r=1",
+  "16 PCG64(145) chart points",
+  "docs/JULIA_SP1.md"
+ ],
+ "mathematical_model": "Pin procedure from docs/JULIA_SP1.md; symbolic Christoffel symbols Gamma^k_ij = 1/2 g^kl (d_i g_jl + d_j g_il - d_l g_ij) and K = -(1/2W)[d_phi(G_phi/W) + d_theta(E_theta/W)], W = sqrt(EG), for the torus embedding.",
+ "number": 145,
+ "numerical_result": "julia on PATH: False; SymPy agreement max |difference| = 4.44e-16",
+ "observation_model": "Symbolic derivation evaluated at sample points; no Julia process ran.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "requirement_probes": {
+   "module:sympy": true,
+   "tool:julia": false
+  },
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/implementation_targets.py": "4e27c12d31365590b7fb82d98b8d02e1668c7b8e73b03f71ef270eca9fcf6eea"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "Provision Julia 1.10.12 LTS through SCR per docs/JULIA_SP1.md, then rerun T145 with the oscillator fixtures",
+ "report_id": "sha256:10d8dad92251e9aed82eb8ea4639220189373b55341d610c90b006e86769ef83",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "implementation-targets",
+ "state": "partial",
+ "task_id": "T145",
+ "tests_passed": [
+  "independent: Symbolic torus Christoffel symbols and curvature agree with ciw.lab.surfaces.Torus vs sympy",
+  "pytest: tests/test_lab_implementation_targets.py::test_t145_julia_partial_with_plan",
+  "pytest: tests/test_lab_implementation_targets.py::test_sympy_torus_geometry_matches_core"
+ ],
+ "tests_skipped": [],
+ "title": "Use Julia for symbolic, optimization, and exploratory work.",
+ "uncertainty": "SymPy stands in for the symbolic role only; it says nothing about Julia performance or pinning.",
+ "unresolved_assumptions": [
+  "No Julia environment, manifest or worker exists; the pin procedure is unexecuted",
+  "Optimization and exploratory roles are not demonstrated"
+ ]
+}

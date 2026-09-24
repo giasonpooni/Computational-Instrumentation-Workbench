@@ -1,0 +1,350 @@
+{
+ "changed_files": [
+  "src/ciw/lab/observation.py",
+  "src/ciw/lab/observation_camera.py",
+  "src/ciw/lab/observation_signals.py",
+  "docs/lab/OBSERVATION.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 3,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Sample variances within 99.9 % sampling intervals of the predictions.",
+ "experiment": "Scalar Monte Carlo of the additivity law at five sigmas; aligned-coordinate counterexample; seeded stereo Monte Carlo against first-order chord propagation.",
+ "failure_modes_checked": [
+  "no dither (integer-aligned coordinate)",
+  "sigma = 0 (pure quantization)",
+  "nonlinearity bias of chords (mean error z recorded)",
+  "correlated rounding from a grid phase shared by all markers"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.09706907892113194,
+      "passed": true,
+      "reference": "sample variance against sigma^2 + 1/12 at sigma = 0.0 (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.7891799634712404,
+      "passed": true,
+      "reference": "sample variance against sigma^2 + 1/12 at sigma = 0.1 (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -1.1861539077141077,
+      "passed": true,
+      "reference": "sample variance against sigma^2 + 1/12 at sigma = 0.25 (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -1.369099485635051,
+      "passed": true,
+      "reference": "sample variance against sigma^2 + 1/12 at sigma = 0.5 (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.012566305805864065,
+      "passed": true,
+      "reference": "sample variance against sigma^2 + 1/12 at sigma = 1.0 (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     }
+    ],
+    "generator": {
+     "name": "uniform sub-pixel phase, Gaussian noise, integer rounding",
+     "samples": 200000,
+     "seed": 51
+    }
+   },
+   "claim": "Rounding plus Gaussian pixel noise has error variance sigma^2 + 1/12 px^2 under a uniform grid phase",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-06,
+    "rel": 0.0001
+   },
+   "uncertainty": {
+    "basis": "95 % half-width of each sample variance from 200000 samples (fourth-moment standard error)",
+    "kind": "monte_carlo_95ci",
+    "value": {
+     "sample_variance_px2": [
+      0.00032682511030770827,
+      0.00041834976429956015,
+      0.0008078215034949501,
+      0.0020116837290311065,
+      0.006718900280772497
+     ]
+    }
+   },
+   "unit": null,
+   "value": {
+    "sigma_px": [
+     0.0,
+     0.1,
+     0.25,
+     0.5,
+     1.0
+    ],
+    "z": [
+     0.09706907892113194,
+     0.7891799634712404,
+     -1.1861539077141077,
+     -1.369099485635051,
+     0.012566305805864065
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "sample variance for an integer-aligned coordinate, sigma = 0.1 px (px^2)",
+      "reference_kind": "analytic",
+      "tolerance": 0.01
+     }
+    ]
+   },
+   "claim": "Without a random grid phase the quantization variance is not 1/12: an integer-aligned coordinate with sigma = 0.1 px has almost no rounding error",
+   "counterexample": {
+    "statement": "Integer pixel rounding always adds 1/12 px^2 to the noise variance",
+    "witness": {
+     "sample_variance": 0.0,
+     "sigma_px": 0.1,
+     "true_coordinate_px": 512.0
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-06,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "one-sided 95 % upper bound (rule of three) on the variance when no rounding flip occurs in the samples; the exact value is 2 Phi(-5) = 5.7e-7 px^2",
+    "kind": "monte_carlo_95ci",
+    "value": 1.5e-05
+   },
+   "unit": null,
+   "value": {
+    "additive_prediction": 0.09333333333333332,
+    "sample_variance": 0.0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.2127960934408294,
+      "passed": true,
+      "reference": "chord variance, pair s = 0.015 m, alpha = 0 deg (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.6450869939319482,
+      "passed": true,
+      "reference": "chord variance, pair s = 0.060 m, alpha = 0 deg (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.16289692932128197,
+      "passed": true,
+      "reference": "chord variance, pair s = 0.120 m, alpha = 0 deg (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 1.0739189286206543,
+      "passed": true,
+      "reference": "chord variance, pair s = 0.015 m, alpha = 45 deg (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 1.8137277234321276,
+      "passed": true,
+      "reference": "chord variance, pair s = 0.060 m, alpha = 45 deg (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.6663312447108765,
+      "passed": true,
+      "reference": "chord variance, pair s = 0.120 m, alpha = 45 deg (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     }
+    ],
+    "generator": {
+     "name": "ciw.lab.observation_camera.noisy_chords",
+     "pixel_sigma_px": 0.25,
+     "seed": 5100,
+     "trials": 4000
+    }
+   },
+   "claim": "Linear propagation J (sigma^2 + 1/12) J^T predicts the chord standard deviation",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 0.0001
+   },
+   "uncertainty": {
+    "basis": "95 % half-width of each sample SD from 4000 trials; the 99.9 % chi-square intervals contain the prediction for 6/6 pairs",
+    "kind": "monte_carlo_95ci",
+    "value": {
+     "sample_sd_m": [
+      7.595616157255793e-06,
+      4.695453970528712e-06,
+      2.387108206049676e-06,
+      6.493763311980344e-06,
+      4.59947839664859e-06,
+      2.9407874567880156e-06
+     ]
+    }
+   },
+   "unit": "m",
+   "value": {
+    "predicted_sd_m": [
+     0.00035811294844791906,
+     0.00022639861935284779,
+     0.0001128806322690809,
+     0.0002877801112777494,
+     0.0002144432067138012,
+     0.00013621449693556231
+    ],
+    "sample_sd_m": [
+     0.0003589385648846006,
+     0.00022794931838123874,
+     0.00011307920444753573,
+     0.00029136022072595276,
+     0.00021874174591043221,
+     0.00013721794892009698
+    ],
+    "z": [
+     0.2127960934408294,
+     0.6450869939319482,
+     0.16289692932128197,
+     1.0739189286206543,
+     1.8137277234321276,
+     0.6663312447108765
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": "No images were acquired; real noise is signal dependent, spatially correlated and marker detectors interpolate below one pixel."
+   },
+   "claim": "Real image noise is Gaussian with sigma = 0.25 px and marker localization rounds to whole pixels",
+   "domain": "sensor_performance",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 3357,
+   "path": "artifacts/T051/quantization.json",
+   "sha256": "af0a688aa3516b1aabd813ec7bca4302f711910a6b6622b00f09cc4d7662560f"
+  },
+  {
+   "bytes": 2564,
+   "path": "artifacts/T051/error-variance-vs-sigma.svg",
+   "sha256": "dba9141c60e9388257dfc1ce2f393ff11633193bf909b15b39ab7f6a0ac90e40"
+  }
+ ],
+ "hypothesis": "Rounding to integer pixels after Gaussian noise gives error variance sigma^2 + 1/12 when the true coordinate is uniformly placed on the pixel grid, and chord standard deviations follow linear propagation through the triangulation Jacobian.",
+ "input_data": [
+  "Stereo rig {'focal_px': 2400.0, 'principal_point_px': (1024.0, 768.0), 'image_size_px': (2048, 1536), 'baseline_m': 0.2, 'convergence_distance_m': 0.6}",
+  "Cylinder {'radius_m': 0.1, 'axis': 'world +y', 'front_point_m': (0.1, 0.0, 0.6), 'chart_origin_direction': 'toward the cameras (world -z)'}",
+  "Markers at s = [0.0, 0.015, 0.03, 0.045, 0.06, 0.075, 0.09, 0.105, 0.12] m along helices alpha = [0.0, 45.0, 90.0] deg (27/27 visible in both images)",
+  "200000 scalar samples per sigma (seed 51)",
+  "4000 stereo trials (seed 5100), sigma = 0.25 px"
+ ],
+ "mathematical_model": "e = round(x + n) - x = n + q; with frac(x) ~ U(0,1) independent of n, q ~ U(-1/2, 1/2) is independent of n, so Var e = sigma^2 + 1/12. sigma_c^2 = (sigma^2 + 1/12) sum_j J_j^2 (8 pixel coordinates per pair).",
+ "number": 51,
+ "numerical_result": "additivity max |z| = 1.37; aligned variance 0.00e+00 vs 0.0933; chord propagation max |z| = 1.81, predicted SD inside the 99.9 % interval for 6/6 pairs.",
+ "observation_model": "Synthetic pixels with a uniform grid phase drawn independently per marker, camera and axis, Gaussian noise and integer rounding.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/observation.py": "9ebedc1a1693aaa28965ba0c97837ad2d2c45bf0fd360857cf7b32c0993ed5fc",
+   "src/ciw/lab/observation_camera.py": "dbf305a988b5ad39796c8220477dd065671a490a26a9ff03738510296087ab68",
+   "src/ciw/lab/observation_signals.py": "19e94cb28160a07e5a285b5a4acd76e3820deb37ee5ed180f5c7bf1975a56793"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T052: add encoder bias, scale and backlash",
+ "report_id": "sha256:905f120f7c44f133fa752e2df4584f7dead179c7236ef21aa11e953647a49224",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "observation",
+ "state": "completed",
+ "task_id": "T051",
+ "tests_passed": [
+  "check: Rounding plus Gaussian pixel noise has error variance sigma^2 + 1/12 px^2 under a uniform grid phase vs sample variance against sigma^2 + 1/12 at sigma = 0.0 (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: Rounding plus Gaussian pixel noise has error variance sigma^2 + 1/12 px^2 under a uniform grid phase vs sample variance against sigma^2 + 1/12 at sigma = 0.1 (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: Rounding plus Gaussian pixel noise has error variance sigma^2 + 1/12 px^2 under a uniform grid phase vs sample variance against sigma^2 + 1/12 at sigma = 0.25 (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: Rounding plus Gaussian pixel noise has error variance sigma^2 + 1/12 px^2 under a uniform grid phase vs sample variance against sigma^2 + 1/12 at sigma = 0.5 (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: Rounding plus Gaussian pixel noise has error variance sigma^2 + 1/12 px^2 under a uniform grid phase vs sample variance against sigma^2 + 1/12 at sigma = 1.0 (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: Without a random grid phase the quantization variance is not 1/12: an integer-aligned coordinate with sigma = 0.1 px has almost no rounding error vs sample variance for an integer-aligned coordinate, sigma = 0.1 px (px^2)",
+  "check: Linear propagation J (sigma^2 + 1/12) J^T predicts the chord standard deviation vs chord variance, pair s = 0.015 m, alpha = 0 deg (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: Linear propagation J (sigma^2 + 1/12) J^T predicts the chord standard deviation vs chord variance, pair s = 0.060 m, alpha = 0 deg (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: Linear propagation J (sigma^2 + 1/12) J^T predicts the chord standard deviation vs chord variance, pair s = 0.120 m, alpha = 0 deg (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: Linear propagation J (sigma^2 + 1/12) J^T predicts the chord standard deviation vs chord variance, pair s = 0.015 m, alpha = 45 deg (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: Linear propagation J (sigma^2 + 1/12) J^T predicts the chord standard deviation vs chord variance, pair s = 0.060 m, alpha = 45 deg (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: Linear propagation J (sigma^2 + 1/12) J^T predicts the chord standard deviation vs chord variance, pair s = 0.120 m, alpha = 45 deg (|z| <= 3.2905, two-sided 99.9 %)",
+  "pytest: tests/test_lab_observation.py::test_t051_quantization_noise"
+ ],
+ "tests_skipped": [],
+ "title": "Add quantization and pixel noise.",
+ "uncertainty": "Variance z-scores use a fourth-moment standard error; intervals are 99.9 % two-sided (chi-square Wilson-Hilferty quantiles).",
+ "unresolved_assumptions": [
+  "Real pixel noise and rounding errors are independent between markers and cameras (the generator draws them so; a shared grid phase would correlate them)",
+  "Grid phase is uniform, which a fixed rig and target do not guarantee"
+ ]
+}

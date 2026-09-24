@@ -1,0 +1,127 @@
+{
+ "dropped_cross_term_defect": 0.06083965588416231,
+ "points_per_surface": 12,
+ "seed": 3335,
+ "self_test": {
+  "d/dx 1/(1+x^2)": {
+   "closed_form": -0.6306022251249943,
+   "dual": -0.6306022251249943,
+   "error": 0.0
+  },
+  "d/dx [x d/dy (x + y)]": {
+   "closed_form": 1.0,
+   "dual": 1.0,
+   "error": 0.0
+  },
+  "d/dx sin x": {
+   "closed_form": 0.7648421872844885,
+   "dual": 0.7648421872844885,
+   "error": 0.0
+  },
+  "d/dx sqrt(1+x^2)": {
+   "closed_form": 0.5734623443633283,
+   "dual": 0.5734623443633283,
+   "error": 0.0
+  },
+  "d2/dx2 cos(x)/(2+cos(x))": {
+   "closed_form": -0.278650693264177,
+   "dual": -0.2786506932641771,
+   "error": 5.551115123125783e-17
+  },
+  "d2/dxdy sin x exp y": {
+   "closed_form": 0.5126890501905375,
+   "dual": 0.5126890501905375,
+   "error": 0.0
+  },
+  "d3/dx3 exp(x^2)": {
+   "closed_form": 18.19053195518274,
+   "dual": 18.190531955182742,
+   "error": 3.552713678800501e-15
+  },
+  "d3/dx3 sin x": {
+   "closed_form": -0.7648421872844885,
+   "dual": -0.7648421872844885,
+   "error": 0.0
+  }
+ },
+ "surfaces": {
+  "cylinder": {
+   "christoffel": 2.273177434160718e-17,
+   "embedding": 0.0,
+   "extrinsic_curvature": 0.0,
+   "gaussian_curvature": 0.0,
+   "metric": 2.2204460492503126e-16,
+   "metric_derivatives": 4.546354868321435e-17
+  },
+  "gaussian-bump": {
+   "christoffel": 6.759570333916158e-18,
+   "embedding": 0.0,
+   "extrinsic_curvature": 2.3023582137157746e-17,
+   "gaussian_curvature": 2.3023582137157746e-17,
+   "metric": 0.0,
+   "metric_derivatives": 1.2378200522904146e-17
+  },
+  "gaussian-bump-shear": {
+   "christoffel": 2.0818587884203092e-16,
+   "embedding": 2.220446049250313e-16,
+   "extrinsic_curvature": 2.6615508085529197e-17,
+   "gaussian_curvature": 3.9923262128293796e-17,
+   "metric": 2.1130427658065785e-16,
+   "metric_derivatives": 1.0533855730938974e-16
+  },
+  "hyperbolic-plane": {
+   "christoffel": 2.4976464006856137e-16,
+   "gaussian_curvature": 1.0416744990940514e-15,
+   "metric": 0.0,
+   "metric_derivatives": 1.4972814201085842e-16
+  },
+  "plane": {
+   "christoffel": 0.0,
+   "embedding": 0.0,
+   "extrinsic_curvature": 0.0,
+   "gaussian_curvature": 0.0,
+   "metric": 0.0,
+   "metric_derivatives": 0.0
+  },
+  "plane-polar": {
+   "christoffel": 1.2663048712919993e-16,
+   "embedding": 0.0,
+   "extrinsic_curvature": 0.0,
+   "gaussian_curvature": 2.635593819316802e-16,
+   "metric": 1.2819058636161163e-16,
+   "metric_derivatives": 1.241611983640909e-16
+  },
+  "rotated-torus": {
+   "christoffel": 4.4259596565437094e-16,
+   "embedding": 4.440892098500626e-16,
+   "extrinsic_curvature": 1.2852320147085646e-16,
+   "gaussian_curvature": 2.3905692572324927e-16,
+   "metric": 3.1119711437449245e-16,
+   "metric_derivatives": 1.598684708013436e-16
+  },
+  "saddle": {
+   "christoffel": 8.544563374894829e-17,
+   "embedding": 0.0,
+   "extrinsic_curvature": 8.828035200180233e-17,
+   "gaussian_curvature": 5.335225247549016e-17,
+   "metric": 1.6298205327627385e-16,
+   "metric_derivatives": 0.0
+  },
+  "sphere": {
+   "christoffel": 1.0922622570941186e-16,
+   "embedding": 0.0,
+   "extrinsic_curvature": 2.220446049250313e-16,
+   "gaussian_curvature": 2.220446049250313e-16,
+   "metric": 2.220446049250313e-16,
+   "metric_derivatives": 7.14619307220649e-17
+  },
+  "torus": {
+   "christoffel": 9.020829615463434e-17,
+   "embedding": 0.0,
+   "extrinsic_curvature": 8.413218917521512e-17,
+   "gaussian_curvature": 5.700103214462267e-17,
+   "metric": 1.7413937778859347e-16,
+   "metric_derivatives": 3.9867230171038647e-17
+  }
+ }
+}

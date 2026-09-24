@@ -1,0 +1,179 @@
+{
+ "rows": [
+  {
+   "description": "execution runtime forged; not resealed",
+   "error": "ValueError",
+   "killed": true,
+   "kind": "workspace",
+   "message_matches_pin": true,
+   "name": "oscillator-runtime.naive",
+   "observed": "Operation record integrity mismatch",
+   "observed_outcome": "killed",
+   "outcome_matches_prediction": true,
+   "pinned_message": "Operation record integrity mismatch",
+   "predicted_outcome": "killed",
+   "recompute": "none",
+   "target": "oscillator execution",
+   "task": "T090"
+  },
+  {
+   "description": "execution runtime forged; resealed",
+   "error": "ValueError",
+   "killed": true,
+   "kind": "workspace",
+   "message_matches_pin": true,
+   "name": "oscillator-runtime.execution-only",
+   "observed": "Execution/result runtime binding mismatch",
+   "observed_outcome": "killed",
+   "outcome_matches_prediction": true,
+   "pinned_message": "Execution/result runtime binding mismatch",
+   "predicted_outcome": "killed",
+   "recompute": "local",
+   "target": "oscillator execution",
+   "task": "T090"
+  },
+  {
+   "description": "runtime emptied in execution and result; both resealed",
+   "error": "ValueError",
+   "killed": true,
+   "kind": "workspace",
+   "message_matches_pin": true,
+   "name": "oscillator-runtime.empty",
+   "observed": "Invalid execution runtime identity",
+   "observed_outcome": "killed",
+   "outcome_matches_prediction": true,
+   "pinned_message": "Invalid execution runtime identity",
+   "predicted_outcome": "killed",
+   "recompute": "local",
+   "target": "oscillator execution and result",
+   "task": "T090"
+  },
+  {
+   "description": "runtime forged identically in execution and result; both resealed",
+   "error": null,
+   "killed": false,
+   "kind": "workspace",
+   "message_matches_pin": true,
+   "name": "oscillator-runtime.both",
+   "observed": "accepted",
+   "observed_outcome": "accepted",
+   "outcome_matches_prediction": true,
+   "pinned_message": "accepted",
+   "post_reopen": {
+    "execution_runtime": {
+     "provider": "lab.forged-provider",
+     "version": "99"
+    },
+    "result_runtime": {
+     "provider": "lab.forged-provider",
+     "version": "99"
+    }
+   },
+   "predicted_outcome": "accepted",
+   "recompute": "local",
+   "target": "oscillator execution and result",
+   "task": "T090"
+  },
+  {
+   "description": "code_sha256 forged in the replay bundle; nothing recomputed",
+   "error": "ValueError",
+   "killed": true,
+   "kind": "workspace",
+   "message_matches_pin": true,
+   "name": "energy-runtime.naive",
+   "observed": "Energy analysis bundle identity, schema or size differs",
+   "observed_outcome": "killed",
+   "outcome_matches_prediction": true,
+   "pinned_message": "Energy analysis bundle identity, schema or size differs",
+   "predicted_outcome": "killed",
+   "recompute": "none",
+   "target": "energy replay bundle runtime",
+   "task": "T090"
+  },
+  {
+   "description": "code_sha256 forged in the replay bundle only; every digest recomputed",
+   "error": "ValueError",
+   "killed": true,
+   "kind": "workspace",
+   "message_matches_pin": true,
+   "name": "energy-runtime.replay-only",
+   "observed": "Retained energy analysis binding differs",
+   "observed_outcome": "killed",
+   "outcome_matches_prediction": true,
+   "pinned_message": "Retained energy analysis binding differs",
+   "predicted_outcome": "killed",
+   "recompute": "full",
+   "target": "energy replay bundle runtime",
+   "task": "T090"
+  },
+  {
+   "description": "code_sha256 replaced by a non-hex string in every energy bundle; every digest recomputed",
+   "error": "ValueError",
+   "killed": true,
+   "kind": "workspace",
+   "message_matches_pin": true,
+   "name": "energy-runtime.malformed",
+   "observed": "Invalid retained analysis implementation identity",
+   "observed_outcome": "killed",
+   "outcome_matches_prediction": true,
+   "pinned_message": "Invalid retained analysis implementation identity",
+   "predicted_outcome": "killed",
+   "recompute": "full",
+   "target": "energy bundle runtimes",
+   "task": "T090"
+  },
+  {
+   "description": "code_sha256 forged in every energy bundle; every digest recomputed",
+   "error": null,
+   "killed": false,
+   "kind": "workspace",
+   "message_matches_pin": true,
+   "name": "energy-runtime.all-bundles",
+   "observed": "accepted",
+   "observed_outcome": "accepted",
+   "outcome_matches_prediction": true,
+   "pinned_message": "accepted",
+   "post_reopen": {
+    "replay_after_reopen": {
+     "message": "Retained energy analysis binding differs",
+     "outcome": "refused"
+    },
+    "retained_runtime_forged": {
+     "code_sha256": true,
+     "python_version": false
+    }
+   },
+   "predicted_outcome": "accepted",
+   "recompute": "full",
+   "target": "energy bundle runtimes",
+   "task": "T090"
+  },
+  {
+   "description": "python_version forged as 3.99.0 in every energy bundle; every digest recomputed",
+   "error": null,
+   "killed": false,
+   "kind": "workspace",
+   "message_matches_pin": true,
+   "name": "energy-runtime.python-version",
+   "observed": "accepted",
+   "observed_outcome": "accepted",
+   "outcome_matches_prediction": true,
+   "pinned_message": "accepted",
+   "post_reopen": {
+    "replay_after_reopen": {
+     "message": "Retained energy analysis binding differs",
+     "outcome": "refused"
+    },
+    "retained_runtime_forged": {
+     "code_sha256": false,
+     "python_version": true
+    }
+   },
+   "predicted_outcome": "accepted",
+   "recompute": "full",
+   "target": "energy bundle runtimes",
+   "task": "T090"
+  }
+ ],
+ "schema": "ciw.lab-mutation-matrix.v2"
+}

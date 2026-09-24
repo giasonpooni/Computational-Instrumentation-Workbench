@@ -1,0 +1,69 @@
+{
+ "agreement": {
+  "geodesic_rhs": 2.7755575615628914e-17,
+  "jacobi_rhs": 2.7755575615628914e-17,
+  "jacobi_transfer": 0.0,
+  "kalman_update": 4.440892098500626e-16,
+  "rk4_step": 0.0
+ },
+ "baseline": 2,
+ "count_drift": 0,
+ "counts": {
+  "geodesic_rhs": {
+   "add": 72,
+   "div": 3,
+   "flops": 173,
+   "mul": 86,
+   "neg": 12,
+   "trig": 4
+  },
+  "jacobi_rhs": {
+   "add": 72,
+   "div": 4,
+   "flops": 178,
+   "mul": 89,
+   "neg": 13,
+   "trig": 4
+  },
+  "jacobi_transfer": {
+   "add": 3440,
+   "div": 171,
+   "flops": 8191,
+   "mul": 4060,
+   "neg": 520,
+   "trig": 160
+  },
+  "kalman_update": {
+   "add": 199,
+   "div": 3,
+   "flops": 453,
+   "mul": 250,
+   "neg": 1,
+   "trig": 0
+  },
+  "rk4_step": {
+   "add": 344,
+   "div": 17,
+   "flops": 819,
+   "mul": 406,
+   "neg": 52,
+   "trig": 16
+  }
+ },
+ "dispatch_linearity": 0,
+ "dispatches": {
+  "geodesic_rhs": 73,
+  "jacobi_rhs": 79,
+  "jacobi_transfer_fixed": 6,
+  "jacobi_transfer_per_step": 319,
+  "kalman_update": 5,
+  "rk4_step": 317
+ },
+ "rk4_formula": 819,
+ "transfer_dispatches": {
+  "10": 3196,
+  "20": 6386,
+  "30": 9576
+ },
+ "transfer_formula": 8191
+}

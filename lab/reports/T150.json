@@ -1,0 +1,376 @@
+{
+ "changed_files": [
+  "src/ciw/lab/implementation_targets.py",
+  "src/ciw/lab/implementation_targets_fpga.py",
+  "src/ciw/lab/implementation_targets_serial.py",
+  "docs/lab/IMPLEMENTATION_TARGETS.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 2,
+   "numerically_verified": 2,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "The unmodified record validates and regenerates identically; each of 23 mutations is refused with its code and the pinned pre-release control is accepted; deployment is refused.",
+ "experiment": "Build the record, regenerate it, apply 23 mutations and one positive control, request a deployment decision.",
+ "failure_modes_checked": [
+  "bitstream bit flip",
+  "truncation",
+  "constraint edit/addition",
+  "source edit",
+  "floating toolchain versions (latest, ranges, .x, nightly, unnumbered rc, trailing newline)",
+  "non-string toolchain version",
+  "toolchain without installation digest",
+  "unrecomputed digest",
+  "missing field",
+  "digest format (uppercase, TBD, trailing newline)",
+  "malformed source tree",
+  "non-boolean synthetic flag",
+  "negative size"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "bitstream_digest_mismatch",
+      "observed_refusal": "bitstream_digest_mismatch",
+      "passed": true,
+      "reference": "one flipped bitstream bit",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "bitstream_size_mismatch",
+      "observed_refusal": "bitstream_size_mismatch",
+      "passed": true,
+      "reference": "truncated bitstream",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "constraints_digest_mismatch",
+      "observed_refusal": "constraints_digest_mismatch",
+      "passed": true,
+      "reference": "edited constraint file",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "constraints_digest_mismatch",
+      "observed_refusal": "constraints_digest_mismatch",
+      "passed": true,
+      "reference": "added constraint file",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "source_tree_mismatch",
+      "observed_refusal": "source_tree_mismatch",
+      "passed": true,
+      "reference": "edited source file",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "floating_toolchain_version",
+      "observed_refusal": "floating_toolchain_version",
+      "passed": true,
+      "reference": "floating toolchain version 'latest'",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "floating_toolchain_version",
+      "observed_refusal": "floating_toolchain_version",
+      "passed": true,
+      "reference": "floating toolchain version '>=2024.1'",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "floating_toolchain_version",
+      "observed_refusal": "floating_toolchain_version",
+      "passed": true,
+      "reference": "floating toolchain version '2024.1.x'",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "floating_toolchain_version",
+      "observed_refusal": "floating_toolchain_version",
+      "passed": true,
+      "reference": "floating toolchain version '1.0-latest'",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "floating_toolchain_version",
+      "observed_refusal": "floating_toolchain_version",
+      "passed": true,
+      "reference": "floating toolchain version '2023.2_nightly'",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "floating_toolchain_version",
+      "observed_refusal": "floating_toolchain_version",
+      "passed": true,
+      "reference": "floating toolchain version '2024.1-rc'",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "floating_toolchain_version",
+      "observed_refusal": "floating_toolchain_version",
+      "passed": true,
+      "reference": "toolchain version with a trailing newline '2024.1\\n'",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "floating_toolchain_version",
+      "observed_refusal": "floating_toolchain_version",
+      "passed": true,
+      "reference": "toolchain version as the number 2024.1, not a string",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "unpinned_toolchain_installation",
+      "observed_refusal": "unpinned_toolchain_installation",
+      "passed": true,
+      "reference": "toolchain without an installation digest",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "unpinned_toolchain_installation",
+      "observed_refusal": "unpinned_toolchain_installation",
+      "passed": true,
+      "reference": "installation digest with a trailing newline",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "record_digest_mismatch",
+      "observed_refusal": "record_digest_mismatch",
+      "passed": true,
+      "reference": "part changed without recomputing the record digest",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "missing_field",
+      "observed_refusal": "missing_field",
+      "passed": true,
+      "reference": "record without toolchain",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "bad_digest_format",
+      "observed_refusal": "bad_digest_format",
+      "passed": true,
+      "reference": "uppercase digest",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "bad_digest_format",
+      "observed_refusal": "bad_digest_format",
+      "passed": true,
+      "reference": "source-tree digest 'TBD'",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "bad_digest_format",
+      "observed_refusal": "bad_digest_format",
+      "passed": true,
+      "reference": "source-tree digest with a trailing newline",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "missing_field",
+      "observed_refusal": "missing_field",
+      "passed": true,
+      "reference": "source tree given as a bare string, with source files supplied",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "bad_field_type",
+      "observed_refusal": "bad_field_type",
+      "passed": true,
+      "reference": "synthetic flag 'no' instead of a boolean",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "bad_field_type",
+      "observed_refusal": "bad_field_type",
+      "passed": true,
+      "reference": "negative bitstream size",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "none",
+      "observed_refusal": "none",
+      "passed": true,
+      "reference": "pinned pre-release version '2024.1-rc2' (positive control)",
+      "reference_kind": "refusal"
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "record digest differs on regeneration",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "name": "seeded synthetic placeholder bitstream",
+     "seed": 150
+    }
+   },
+   "claim": "Bitstream identity record binds bitstream, toolchain, constraints and source tree",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "accepted_positive_controls": 1,
+    "record_sha256": "4fb69fd0987666392beb39560114d68e4516bae9ac884814653de26dee734137",
+    "refused_mutations": 23
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "synthetic_bitstream",
+      "observed_refusal": "synthetic_bitstream",
+      "passed": true,
+      "reference": "deployment decision for a synthetic record",
+      "reference_kind": "refusal"
+     }
+    ]
+   },
+   "claim": "Deployment of a synthetic placeholder bitstream is refused",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": "synthetic_bitstream"
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "A real bitstream with this identity exists and is loaded on hardware",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "The bitstream is approved for production deployment",
+   "domain": "production_acceptance",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 954,
+   "path": "artifacts/T150/bitstream-identity.json",
+   "sha256": "30b8f738190e6642922c770bc671acfd9436f9225b4631aa88bed38ff30d4433"
+  },
+  {
+   "bytes": 469,
+   "path": "artifacts/T150/identity-schema.json",
+   "sha256": "f8d10354b176b6deed60f704b91d588b355552b901445a08cb1b685a639fc630"
+  }
+ ],
+ "hypothesis": "An identity record over canonical JSON can bind a bitstream's sha256 to its exact toolchain version and installation digest, constraint files and source tree, so that a change to any of them is detected when the changed artifact is checked against the record.",
+ "input_data": [
+  "Seeded synthetic placeholder bitstream (prefix CIW-SYNTHETIC-BITSTREAM-NOT-A-CONFIGURATION)",
+  "placeholder constraint and source files",
+  "placeholder toolchain installation digest"
+ ],
+ "mathematical_model": "record_sha256 = sha256(E(record without record_sha256)), E = ciw.canonical-json.v1; constraints_sha256 = sha256(E({file: sha256})); source tree = sha256(E({path: sha256})); toolchain version must match [0-9]+(\\.[0-9]+){1,3}([-_.](rc|beta|alpha)[0-9]+)?\\Z and the toolchain carries installation_sha256; every digest field is 64 lowercase hex digits, sizes are nonnegative integers and the synthetic flag is a boolean.",
+ "number": 150,
+ "numerical_result": "record_sha256 4fb69fd098766639...; 23/23 mutations refused with their codes; 1/1 pinned pre-release accepted; deployment refused (synthetic_bitstream).",
+ "observation_model": "Validator outcomes over the record and supplied artifacts; no FPGA toolchain ran.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/implementation_targets.py": "4e27c12d31365590b7fb82d98b8d02e1668c7b8e73b03f71ef270eca9fcf6eea",
+   "src/ciw/lab/implementation_targets_fpga.py": "d546fbe93f98a17bb6a94d6e1e887da44edfb783f37684b9689d47adb1a9f477",
+   "src/ciw/lab/implementation_targets_serial.py": "7978adc19db2c04e37532de2a5dbff32738b3c286c40e19ab8ec1d78361ef3e6"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T151 (compatibility and rollback records referencing these identities)",
+ "report_id": "sha256:053c6428e0712719d34a27485fdb87fe542823c6e8ac14ebe4e442a3e2f9b1ef",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "implementation-targets",
+ "state": "completed",
+ "task_id": "T150",
+ "tests_passed": [
+  "check: Bitstream identity record binds bitstream, toolchain, constraints and source tree vs one flipped bitstream bit",
+  "check: Bitstream identity record binds bitstream, toolchain, constraints and source tree vs truncated bitstream",
+  "check: Bitstream identity record binds bitstream, toolchain, constraints and source tree vs edited constraint file",
+  "check: Bitstream identity record binds bitstream, toolchain, constraints and source tree vs added constraint file",
+  "check: Bitstream identity record binds bitstream, toolchain, constraints and source tree vs edited source file",
+  "check: Bitstream identity record binds bitstream, toolchain, constraints and source tree vs floating toolchain version 'latest'",
+  "check: Bitstream identity record binds bitstream, toolchain, constraints and source tree vs floating toolchain version '>=2024.1'",
+  "check: Bitstream identity record binds bitstream, toolchain, constraints and source tree vs floating toolchain version '2024.1.x'",
+  "check: Bitstream identity record binds bitstream, toolchain, constraints and source tree vs floating toolchain version '1.0-latest'",
+  "check: Bitstream identity record binds bitstream, toolchain, constraints and source tree vs floating toolchain version '2023.2_nightly'",
+  "check: Bitstream identity record binds bitstream, toolchain, constraints and source tree vs floating toolchain version '2024.1-rc'",
+  "check: Bitstream identity record binds bitstream, toolchain, constraints and source tree vs toolchain version with a trailing newline '2024.1\\n'",
+  "check: Bitstream identity record binds bitstream, toolchain, constraints and source tree vs toolchain version as the number 2024.1, not a string",
+  "check: Bitstream identity record binds bitstream, toolchain, constraints and source tree vs toolchain without an installation digest",
+  "check: Bitstream identity record binds bitstream, toolchain, constraints and source tree vs installation digest with a trailing newline",
+  "check: Bitstream identity record binds bitstream, toolchain, constraints and source tree vs part changed without recomputing the record digest",
+  "check: Bitstream identity record binds bitstream, toolchain, constraints and source tree vs record without toolchain",
+  "check: Bitstream identity record binds bitstream, toolchain, constraints and source tree vs uppercase digest",
+  "check: Bitstream identity record binds bitstream, toolchain, constraints and source tree vs source-tree digest 'TBD'",
+  "check: Bitstream identity record binds bitstream, toolchain, constraints and source tree vs source-tree digest with a trailing newline",
+  "check: Bitstream identity record binds bitstream, toolchain, constraints and source tree vs source tree given as a bare string, with source files supplied",
+  "check: Bitstream identity record binds bitstream, toolchain, constraints and source tree vs synthetic flag 'no' instead of a boolean",
+  "check: Bitstream identity record binds bitstream, toolchain, constraints and source tree vs negative bitstream size",
+  "check: Bitstream identity record binds bitstream, toolchain, constraints and source tree vs pinned pre-release version '2024.1-rc2' (positive control)",
+  "check: Bitstream identity record binds bitstream, toolchain, constraints and source tree vs record digest differs on regeneration",
+  "check: Deployment of a synthetic placeholder bitstream is refused vs deployment decision for a synthetic record",
+  "pytest: tests/test_lab_implementation_targets.py::test_t150_bitstream_identity"
+ ],
+ "tests_skipped": [],
+ "title": "Record bitstream identity and toolchain.",
+ "uncertainty": "Exact digests; the placeholder bitstream has no hardware meaning.",
+ "unresolved_assumptions": [
+  "No real bitstream, toolchain log or device part exists here",
+  "Toolchain determinism (same inputs -> same bitstream) is not established",
+  "How installation_sha256 is computed for a vendor toolchain (which files) is not specified here",
+  "Detection of unseen changes relies on sha256 collision resistance"
+ ]
+}

@@ -1,0 +1,432 @@
+{
+ "adapter_pin_checks": {
+  "csg": [
+   {
+    "at_head": true,
+    "declared_in": "ciw.geodesic_reference.PINS[curved-path-transfer]",
+    "outcome": "accepted",
+    "revision": "bbc535af29c30997e56fd120320c570830676462"
+   }
+  ],
+  "ftr": [
+   {
+    "at_head": true,
+    "declared_in": "ciw.geodesic_reference.PINS[flat-torus-reference]",
+    "outcome": "accepted",
+    "revision": "dc918562cd9e351a65475d29f46963c9f2fd7db8"
+   }
+  ],
+  "scr": [
+   {
+    "at_head": true,
+    "declared_in": "ciw.declared_workload.PINS[numerical-heat]",
+    "outcome": "accepted",
+    "revision": "a59aba283b0304faeeb3e5d305087e7709e171ca"
+   },
+   {
+    "at_head": true,
+    "declared_in": "ciw.proved_heat.PIN",
+    "outcome": "accepted",
+    "revision": "a59aba283b0304faeeb3e5d305087e7709e171ca"
+   }
+  ]
+ },
+ "ciw_pins": {
+  "cbsr": [
+   {
+    "declared_in": "ciw/telemetry-runtimes.json[cbsr]",
+    "module": "cbsr",
+    "revision": "b543969cb80a69a5df1274eee10d22549bcea773",
+    "source_root": "src"
+   },
+   {
+    "declared_in": "ciw/calibrated-observable-runtimes.json[cbsr]",
+    "module": "cbsr",
+    "revision": "daf43fc870ba926289c3bc4908db784691c7addd",
+    "source_root": "src"
+   }
+  ],
+  "csg": [
+   {
+    "declared_in": "ciw.geodesic_reference.PINS[curved-path-transfer]",
+    "module": "geodesic_testbed.jacobi",
+    "revision": "bbc535af29c30997e56fd120320c570830676462",
+    "source_root": "src",
+    "source_tree": "181b6eb73288d001f45c39bb149b1a80a431f34b"
+   }
+  ],
+  "fdir": [
+   {
+    "declared_in": "ciw/calibrated-observable-runtimes.json[fdir]",
+    "module": "fdir.diagnostics",
+    "revision": "29e4b306492b793487d47a96b97a56548217aa12",
+    "source_root": "src"
+   }
+  ],
+  "fsrt": [
+   {
+    "declared_in": "ciw/calibrated-observable-runtimes.json[fsrt]",
+    "module": "set_lcm.bridge.calibrated_observable",
+    "revision": "d7c181fb9967883e085b3728d38096f59e54efbd",
+    "source_root": "src"
+   }
+  ],
+  "ftr": [
+   {
+    "declared_in": "ciw.geodesic_reference.PINS[flat-torus-reference]",
+    "module": "flat_torus.companion",
+    "revision": "dc918562cd9e351a65475d29f46963c9f2fd7db8",
+    "source_root": "src",
+    "source_tree": "1f082c6b443f2e301ac5889122912f26968ae756"
+   }
+  ],
+  "gsie": [
+   {
+    "declared_in": "ciw/telemetry-runtimes.json[gsie]",
+    "module": "geometric_state_inference.contracts",
+    "revision": "de38873db1ba98744d395dfa7df1d3b5b7bb3059",
+    "source_root": "src"
+   },
+   {
+    "declared_in": "ciw/calibrated-observable-runtimes.json[gsie]",
+    "module": "geometric_state_inference.contracts",
+    "revision": "5241eee6dab434533bdf0cf0e824bc43b4a79831",
+    "source_root": "src"
+   },
+   {
+    "declared_in": "ciw/calibrated-window-runtimes.json[gsie]",
+    "module": "geometric_state_inference.contracts",
+    "revision": "de38873db1ba98744d395dfa7df1d3b5b7bb3059",
+    "source_root": "src"
+   }
+  ],
+  "mcur": [
+   {
+    "declared_in": "ciw/calibrated-observable-runtimes.json[mcur]",
+    "module": "mcur.core",
+    "revision": "49405ecd623474ddf601989b0a8195be401544e0",
+    "source_root": "src"
+   },
+   {
+    "declared_in": "ciw/calibrated-window-runtimes.json[mcur]",
+    "module": "mcur.core",
+    "revision": "49405ecd623474ddf601989b0a8195be401544e0",
+    "source_root": "src"
+   }
+  ],
+  "oit": [
+   {
+    "declared_in": "ciw/calibrated-observable-runtimes.json[oit]",
+    "module": "oit.diagnostics",
+    "revision": "db4c564bddbe1911f96585bd18f58659a0026fb7",
+    "source_root": "src"
+   }
+  ],
+  "plsr": [
+   {
+    "declared_in": "ciw/plsr-runtime.json",
+    "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196"
+   }
+  ],
+  "ppda": [
+   {
+    "declared_in": "ciw/telemetry-runtimes.json[ppda]",
+    "module": "instrumentation",
+    "revision": "209985a8c7482aba037021035c2f0b550c9b1ddc",
+    "source_root": "bridge"
+   },
+   {
+    "declared_in": ".github/workflows/exchange.yml",
+    "revision": "a29845e13e55de30b24ae752b896058041d653e6"
+   }
+  ],
+  "scr": [
+   {
+    "declared_in": "ciw.declared_workload.PINS[numerical-heat]",
+    "module": "execution.engine",
+    "revision": "a59aba283b0304faeeb3e5d305087e7709e171ca",
+    "source_root": "."
+   },
+   {
+    "declared_in": "ciw.proved_heat.PIN",
+    "module": "execution.proving",
+    "revision": "a59aba283b0304faeeb3e5d305087e7709e171ca",
+    "source_root": ".",
+    "source_tree": "4068a711534932e8d89bb0d87d373376dafdf6cd"
+   }
+  ],
+  "scr-exchange": [
+   {
+    "declared_in": ".github/workflows/exchange.yml",
+    "revision": "5f0409743e0098a0691a88302a9b3dcdcbcf25fd"
+   }
+  ],
+  "set": [
+   {
+    "declared_in": "ciw/exchange-runtime.json",
+    "revision": "542e672be512bf43b61253f2b2a43cd967cb3062",
+    "validator_path": "state_estimation_testbed/contracts.py",
+    "validator_sha256": "2385537daa6147ef2475d17bd75c026fe187077b90841515a9e9378e0246ae54"
+   },
+   {
+    "declared_in": "ciw/telemetry-runtimes.json[set]",
+    "module": "state_estimation_testbed.replay",
+    "revision": "1467ec5058b3e7ebd6ba4a45f2d9b49148a2560d",
+    "source_root": "."
+   },
+   {
+    "declared_in": "ciw/calibrated-observable-runtimes.json[set]",
+    "module": "state_estimation_testbed.replay",
+    "revision": "5e7bda36f521a5c1b0082b512f35e29803bffafc",
+    "source_root": "."
+   },
+   {
+    "declared_in": "ciw/calibrated-window-runtimes.json[set]",
+    "module": "state_estimation_testbed.replay",
+    "revision": "2f838f4e196f453efc3a59045b0b3ec4b5680296",
+    "source_root": "."
+   },
+   {
+    "declared_in": ".github/workflows/exchange.yml",
+    "revision": "542e672be512bf43b61253f2b2a43cd967cb3062"
+   }
+  ],
+  "sra": [
+   {
+    "declared_in": "ciw.declared_workload.PINS[schematic-assessment]",
+    "module": "schematics.eligibility",
+    "revision": "a6e79585950bb6860e5edce5ebd2cce39ea481f2",
+    "source_root": "src"
+   }
+  ],
+  "stfe": [
+   {
+    "declared_in": "ciw/telemetry-runtimes.json[stfe]",
+    "module": "stfe",
+    "revision": "54dd43b657b92d87c2fc263dfd99437c664be353",
+    "source_root": "."
+   },
+   {
+    "declared_in": "ciw/calibrated-window-runtimes.json[stfe]",
+    "module": "stfe",
+    "revision": "54dd43b657b92d87c2fc263dfd99437c664be353",
+    "source_root": "."
+   }
+  ],
+  "tbrt": [
+   {
+    "declared_in": "ciw/calibrated-observable-runtimes.json[tbrt]",
+    "module": "tbrt.clock",
+    "revision": "40507060ca7a9126a9d641999b994a757eef3bfd",
+    "source_root": "src"
+   },
+   {
+    "declared_in": "ciw/calibrated-window-runtimes.json[tbrt]",
+    "module": "tbrt.clock",
+    "revision": "40507060ca7a9126a9d641999b994a757eef3bfd",
+    "source_root": "src"
+   }
+  ]
+ },
+ "comparisons": {
+  "csg": {
+   "accepted": true,
+   "clean": true,
+   "matched": [
+    "ciw.geodesic_reference.PINS[curved-path-transfer]"
+   ],
+   "role": "csg",
+   "tree_refusals": [],
+   "unmatched": []
+  },
+  "ftr": {
+   "accepted": true,
+   "clean": true,
+   "matched": [
+    "ciw.geodesic_reference.PINS[flat-torus-reference]"
+   ],
+   "role": "ftr",
+   "tree_refusals": [],
+   "unmatched": []
+  },
+  "scr": {
+   "accepted": true,
+   "clean": true,
+   "matched": [
+    "ciw.declared_workload.PINS[numerical-heat]",
+    "ciw.proved_heat.PIN"
+   ],
+   "role": "scr",
+   "tree_refusals": [],
+   "unmatched": []
+  }
+ },
+ "engine": {
+  "byte_count": 509160,
+  "origin": "cargo_build_locked_offline_in_this_run",
+  "sha256": "b9f40b3094ecf4b793676c766ffd559dc69abc4fada564c1bde94e79c6f0b201",
+  "toolchain": {
+   "cargo": "cargo 1.94.1 (29ea6fb6a 2026-03-24)",
+   "rustc": "rustc 1.94.1 (e408947bf 2026-03-25)"
+  }
+ },
+ "errors": {},
+ "identities": {
+  "csg": {
+   "cargo_locks": {},
+   "dirty": false,
+   "gitlinks": 0,
+   "head": "bbc535af29c30997e56fd120320c570830676462",
+   "mismatched_files": [],
+   "object_format": "sha1",
+   "path": "<csg>",
+   "recomputed_tree": "181b6eb73288d001f45c39bb149b1a80a431f34b",
+   "tracked_files": 96,
+   "tracked_sha256": "9a2a9839c6913a4cc23b2f0870da79523915ee7ad0a8a465f28a31049d6e99d7",
+   "tree": "181b6eb73288d001f45c39bb149b1a80a431f34b",
+   "untracked_outside_caches": 0
+  },
+  "ftr": {
+   "cargo_locks": {},
+   "dirty": false,
+   "gitlinks": 0,
+   "head": "dc918562cd9e351a65475d29f46963c9f2fd7db8",
+   "mismatched_files": [],
+   "object_format": "sha1",
+   "path": "<ftr>",
+   "recomputed_tree": "1f082c6b443f2e301ac5889122912f26968ae756",
+   "tracked_files": 50,
+   "tracked_sha256": "57f05deef7dc59dc42989bf438cf8f53a66c3d788d8583c806855864e71d7dac",
+   "tree": "1f082c6b443f2e301ac5889122912f26968ae756",
+   "untracked_outside_caches": 0
+  },
+  "scr": {
+   "cargo_locks": {
+    "crates/Cargo.lock": "24b1db68d762d3457eb40465dae6c3edc8a2da2925d42f3f794d090d18a5f2bc",
+    "zk/Cargo.lock": "d306d736c6212b081f441057318041f6b82e64e46348e81ec0f2a36529308613",
+    "zk/guest-heat-nexus/Cargo.lock": "21009e13c513af590adb03b25d67b779af5e5c67c25da19f08787e0134416345",
+    "zk/guest-heat-risc0/Cargo.lock": "d98241e518f939795dbaef44c5430db005a7c30f26ac0db99163ab66bfa8a81d",
+    "zk/guest-heat/Cargo.lock": "a3a91548ec428e26e69445b84d6215b85ec416f84cb160e810cde5fd9a075eea",
+    "zk/guest-pairwise-nexus/Cargo.lock": "314ae7ce66a002ae9c7067acaa1453405469f17383f19bfff8af286c608d37fb",
+    "zk/guest-pairwise/Cargo.lock": "1257bd33d7f18a625b33c4367c782824e5bf3e76a21d49a989c987fcf7a434a8",
+    "zk/nexus/Cargo.lock": "5231c9bfb2f4f93e985fcee0e534a98069f0f5a5ad3c6b0ed357418f6dcf4201",
+    "zk/risc0/Cargo.lock": "589ae1270f71de9e745efac59a6cb6d822c5825d8386ada8e342b242237e2054"
+   },
+   "dirty": false,
+   "gitlinks": 0,
+   "head": "a59aba283b0304faeeb3e5d305087e7709e171ca",
+   "mismatched_files": [],
+   "object_format": "sha1",
+   "path": "<scr>",
+   "recomputed_tree": "4068a711534932e8d89bb0d87d373376dafdf6cd",
+   "tracked_files": 511,
+   "tracked_sha256": "b1c1ef22c6de60ecf1d348eff896b9e10ca62e9cff3af06e59b269dda7e455ea",
+   "tree": "4068a711534932e8d89bb0d87d373376dafdf6cd",
+   "untracked_outside_caches": 0
+  }
+ },
+ "pins_by_repository": {
+  "cbsr": {
+   "b543969cb80a69a5df1274eee10d22549bcea773": [
+    "ciw/telemetry-runtimes.json[cbsr]"
+   ],
+   "daf43fc870ba926289c3bc4908db784691c7addd": [
+    "ciw/calibrated-observable-runtimes.json[cbsr]"
+   ]
+  },
+  "fdir": {
+   "29e4b306492b793487d47a96b97a56548217aa12": [
+    "ciw/calibrated-observable-runtimes.json[fdir]"
+   ]
+  },
+  "fsrt": {
+   "d7c181fb9967883e085b3728d38096f59e54efbd": [
+    "ciw/calibrated-observable-runtimes.json[fsrt]"
+   ]
+  },
+  "giasonpooni/Curved-Surface-Geodesic-Sensitivity-Runtime": {
+   "bbc535af29c30997e56fd120320c570830676462": [
+    "ciw.geodesic_reference.PINS[curved-path-transfer]"
+   ]
+  },
+  "giasonpooni/Flat-Torus-Geodesic-Reference": {
+   "dc918562cd9e351a65475d29f46963c9f2fd7db8": [
+    "ciw.geodesic_reference.PINS[flat-torus-reference]"
+   ]
+  },
+  "giasonpooni/Parameterized-Lyapunov-Stability-Runtime": {
+   "19ea6967060166ba09db6cd4563bd87bd6b3d196": [
+    "ciw/plsr-runtime.json"
+   ]
+  },
+  "giasonpooni/Provenance-Preserving-Data-Acquisition": {
+   "209985a8c7482aba037021035c2f0b550c9b1ddc": [
+    "ciw/telemetry-runtimes.json[ppda]"
+   ],
+   "a29845e13e55de30b24ae752b896058041d653e6": [
+    ".github/workflows/exchange.yml"
+   ]
+  },
+  "giasonpooni/Schematics-Retrieval-Agent": {
+   "a6e79585950bb6860e5edce5ebd2cce39ea481f2": [
+    "ciw.declared_workload.PINS[schematic-assessment]"
+   ]
+  },
+  "giasonpooni/Scientific-Computation-Runtime": {
+   "5f0409743e0098a0691a88302a9b3dcdcbcf25fd": [
+    ".github/workflows/exchange.yml"
+   ],
+   "a59aba283b0304faeeb3e5d305087e7709e171ca": [
+    "ciw.declared_workload.PINS[numerical-heat]",
+    "ciw.proved_heat.PIN"
+   ]
+  },
+  "giasonpooni/State-Estimation-Evaluation-Testbed": {
+   "1467ec5058b3e7ebd6ba4a45f2d9b49148a2560d": [
+    "ciw/telemetry-runtimes.json[set]"
+   ],
+   "2f838f4e196f453efc3a59045b0b3ec4b5680296": [
+    "ciw/calibrated-window-runtimes.json[set]"
+   ],
+   "542e672be512bf43b61253f2b2a43cd967cb3062": [
+    ".github/workflows/exchange.yml",
+    "ciw/exchange-runtime.json"
+   ],
+   "5e7bda36f521a5c1b0082b512f35e29803bffafc": [
+    "ciw/calibrated-observable-runtimes.json[set]"
+   ]
+  },
+  "gsie": {
+   "5241eee6dab434533bdf0cf0e824bc43b4a79831": [
+    "ciw/calibrated-observable-runtimes.json[gsie]"
+   ],
+   "de38873db1ba98744d395dfa7df1d3b5b7bb3059": [
+    "ciw/calibrated-window-runtimes.json[gsie]",
+    "ciw/telemetry-runtimes.json[gsie]"
+   ]
+  },
+  "mcur": {
+   "49405ecd623474ddf601989b0a8195be401544e0": [
+    "ciw/calibrated-observable-runtimes.json[mcur]",
+    "ciw/calibrated-window-runtimes.json[mcur]"
+   ]
+  },
+  "oit": {
+   "db4c564bddbe1911f96585bd18f58659a0026fb7": [
+    "ciw/calibrated-observable-runtimes.json[oit]"
+   ]
+  },
+  "stfe": {
+   "54dd43b657b92d87c2fc263dfd99437c664be353": [
+    "ciw/calibrated-window-runtimes.json[stfe]",
+    "ciw/telemetry-runtimes.json[stfe]"
+   ]
+  },
+  "tbrt": {
+   "40507060ca7a9126a9d641999b994a757eef3bfd": [
+    "ciw/calibrated-observable-runtimes.json[tbrt]",
+    "ciw/calibrated-window-runtimes.json[tbrt]"
+   ]
+  }
+ }
+}

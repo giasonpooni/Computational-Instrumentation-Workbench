@@ -1,0 +1,58 @@
+{
+ "calibration": {
+  "applied_requires": [
+   "reference",
+   "sha256 (64 hex)",
+   "valid_from",
+   "valid_until"
+  ],
+  "status": [
+   "applied",
+   "not_applied"
+  ],
+  "window": "clock.acquired_at within [valid_from, valid_until]"
+ },
+ "clock": [
+  "source",
+  "acquired_at (ISO 8601 with Z or +hh:mm)",
+  "synchronization",
+  "uncertainty_s"
+ ],
+ "frame_chain": {
+  "continuity": "child of link k is the parent of link k + 1",
+  "covariance": "symmetric PSD 6x6 over (rho, phi), tolerances relative to its scale",
+  "link": [
+   "parent",
+   "child",
+   "rotation",
+   "translation_mm",
+   "covariance",
+   "source"
+  ],
+  "rotation": "proper orthonormal 3x3"
+ },
+ "instrument": [
+  "id",
+  "kind",
+  "serial"
+ ],
+ "protocol_hardware_slot": "acquisition with a 64-hex raw digest, an ISO 8601 time and the retention identity",
+ "raw": [
+  "name",
+  "sha256",
+  "bytes",
+  "media_type"
+ ],
+ "required": [
+  "schema",
+  "record_kind",
+  "protocol_id",
+  "raw",
+  "instrument",
+  "calibration",
+  "frame_chain",
+  "clock"
+ ],
+ "schema": "ciw.lab-measurement-retention.v1",
+ "to_acquisition": "measurement records with matching raw bytes only; schema-fixture bytes, FIXTURE- serials and all-zero calibration digests are refused; raw_sha256 = SHA-256 of the raw manifest, which the citing task must retain"
+}

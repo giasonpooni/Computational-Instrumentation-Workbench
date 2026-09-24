@@ -1,0 +1,334 @@
+{
+ "changed_files": [
+  "src/ciw/lab/observation.py",
+  "src/ciw/lab/observation_signals.py",
+  "docs/lab/OBSERVATION.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 4,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "0 <= play - x <= b; error constant on engaged samples; LS estimates within sampling error.",
+ "experiment": "Generate the reference and readings, label engagement by travel since reversal, check the invariants, fit with and without a direction term.",
+ "failure_modes_checked": [
+  "reversal within one sample of engagement",
+  "rounding at the engaged offset",
+  "fitting without a direction term"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "minimum of played - reference (m)",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "signed_le",
+      "observed": 5.082197683525802e-20,
+      "passed": true,
+      "reference": "maximum minus b (m)",
+      "reference_kind": "invariant",
+      "tolerance": 2.0000000000000003e-14
+     }
+    ],
+    "generator": {
+     "backlash_m": 2e-05,
+     "bias_m": 3e-05,
+     "duration_s": 20.0,
+     "name": "two-tone reference with drift",
+     "noise_m": 5e-07,
+     "samples": 4000,
+     "scale": 0.0005,
+     "seed": 52
+    }
+   },
+   "claim": "Backlash error stays within [0, b] for a play operator of width b",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-15,
+    "rel": 1e-09
+   },
+   "uncertainty": {
+    "basis": "rounding of x + b at |x| <= 1 cm (a few ulp)",
+    "kind": "roundoff",
+    "value": 1e-20
+   },
+   "unit": "m",
+   "value": {
+    "backlash_m": 2e-05,
+    "max_m": 2.0000000000000052e-05,
+    "min_m": 0.0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "error changes outside post-reversal windows",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "rising engaged |error| (m)",
+      "reference_kind": "invariant",
+      "tolerance": 1e-15
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 8.165397611531455e-19,
+      "passed": true,
+      "reference": "falling engaged |error - b| (m)",
+      "reference_kind": "invariant",
+      "tolerance": 1e-15
+     }
+    ]
+   },
+   "claim": "Backlash error changes only while the play is taken up after a direction reversal",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "integer counts of reversals and error changes",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "changes_outside_windows": 0,
+    "error_changes": 192,
+    "reversals": 25
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.055074200351694774,
+      "passed": true,
+      "reference": "1 + scale estimate against truth (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.674746964271893,
+      "passed": true,
+      "reference": "bias estimate against truth (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 1.8404153613411818,
+      "passed": true,
+      "reference": "(1 + scale) backlash estimate against truth (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     }
+    ],
+    "generator": {
+     "backlash_m": 2e-05,
+     "bias_m": 3e-05,
+     "duration_s": 20.0,
+     "name": "encoder reading (1 + scale) play(x) + bias + noise",
+     "noise_m": 5e-07,
+     "samples": 4000,
+     "scale": 0.0005,
+     "seed": 52
+    }
+   },
+   "claim": "Least squares with a direction term recovers scale, bias and backlash",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "95 % half-widths from the least-squares standard errors",
+    "kind": "monte_carlo_95ci",
+    "value": {
+     "estimates": [
+      3.667138413434188e-06,
+      2.940998756567423e-08,
+      3.1511125042604494e-08
+     ]
+    }
+   },
+   "unit": null,
+   "value": {
+    "estimates": [
+     1.0005001030451157,
+     2.998987517118389e-05,
+     2.0039589094003256e-05
+    ],
+    "truth": [
+     1.0005,
+     3e-05,
+     2.001e-05
+    ],
+    "z": [
+     0.055074200351694774,
+     -0.674746964271893,
+     1.8404153613411818
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 40.156837606636714,
+      "passed": true,
+      "reference": "|z| of the naive bias estimate exceeds the 99.9 % bound",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0005259641376962332,
+      "passed": true,
+      "reference": "naive offset error relative to the OLS projection of (1 + s)(play(x) - x) onto [x, 1], minus 1",
+      "reference_kind": "analytic",
+      "tolerance": 0.01
+     }
+    ]
+   },
+   "claim": "Least squares that ignores backlash biases the offset estimate by the projection of the play error onto [x, 1]",
+   "counterexample": {
+    "statement": "Fitting reading = a x + c without a direction term gives unbiased scale and bias under backlash",
+    "witness": {
+     "backlash_m": 2e-05,
+     "bias_error_over_backlash": 0.49788561310110585,
+     "naive_bias_z": 40.156837606636714
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "95 % half-width of the noise contribution to the naive offset, in units of b",
+    "kind": "monte_carlo_95ci",
+    "value": {
+     "bias_error_over_backlash": 0.0012266347180586161
+    }
+   },
+   "unit": null,
+   "value": {
+    "bias_error_over_backlash": 0.49788561310110585,
+    "falling_fraction": 0.45825,
+    "naive_bias_z": 40.156837606636714,
+    "predicted_over_backlash": 0.49762388078575137
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": "No drive was measured; real backlash varies with load, wear, temperature and position."
+   },
+   "claim": "A real encoder drive train behaves as a constant-width play operator with constant scale and bias",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 9029,
+   "path": "artifacts/T052/encoder-study.json",
+   "sha256": "afb619572dc4a54c39b5a2f42f1a6405332fc4fbbd1ea0263405db19eb75ada2"
+  },
+  {
+   "bytes": 4543,
+   "path": "artifacts/T052/backlash-error.svg",
+   "sha256": "43b284c5542f5cd0e16d6cc4d258127f6ea4965c12f0b29ddf537f089d509db1"
+  }
+ ],
+ "hypothesis": "With reading = (1 + scale) play_b(x) + bias + noise, the backlash error lies in [0, b], changes only during take-up after reversals, and a direction-aware least-squares fit recovers scale, bias and backlash.",
+ "input_data": [
+  "Declared parameters {'backlash_m': 2e-05, 'scale': 0.0005, 'bias_m': 3e-05, 'noise_m': 5e-07, 'samples': 4000, 'duration_s': 20.0}",
+  "Reference x(t) = 4 mm sin(2 pi 0.23 t) + 2.5 mm sin(2 pi 0.61 t + 0.4) + 0.5 mm/s t",
+  "Seed 52"
+ ],
+ "mathematical_model": "Play operator: y_k = max(min(y_{k-1}, x_k + b), x_k) (engaged on the positive flank at start); engaged samples: reading = (1 + s) x + beta + (1 + s) b [falling]. A fit on [x, 1] alone absorbs the OLS projection of (1 + s)(play(x) - x) onto [x, 1] into its coefficients.",
+ "number": 52,
+ "numerical_result": "error in [0.0e+00, 2.0000e-05] m for b = 2e-05 m; 25 reversals, 0 changes outside take-up; z = [0.06, -0.67, 1.84]; naive bias z = 40.2, offset error 0.4979 b against the projected 0.4976 b (falling fraction 0.458).",
+ "observation_model": "Synthetic encoder_displacement readings with Gaussian noise; no quantization (studied in T051).",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/observation.py": "9ebedc1a1693aaa28965ba0c97837ad2d2c45bf0fd360857cf7b32c0993ed5fc",
+   "src/ciw/lab/observation_signals.py": "19e94cb28160a07e5a285b5a4acd76e3820deb37ee5ed180f5c7bf1975a56793"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T053: add IMU drift and orientation noise",
+ "report_id": "sha256:122cf70b124a97d1dc7138c0767fe809b43cd8cffc83a04c8a4a4fa0ee861be2",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "observation",
+ "state": "completed",
+ "task_id": "T052",
+ "tests_passed": [
+  "check: Backlash error stays within [0, b] for a play operator of width b vs minimum of played - reference (m)",
+  "check: Backlash error stays within [0, b] for a play operator of width b vs maximum minus b (m)",
+  "check: Backlash error changes only while the play is taken up after a direction reversal vs error changes outside post-reversal windows",
+  "check: Backlash error changes only while the play is taken up after a direction reversal vs rising engaged |error| (m)",
+  "check: Backlash error changes only while the play is taken up after a direction reversal vs falling engaged |error - b| (m)",
+  "check: Least squares with a direction term recovers scale, bias and backlash vs 1 + scale estimate against truth (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: Least squares with a direction term recovers scale, bias and backlash vs bias estimate against truth (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: Least squares with a direction term recovers scale, bias and backlash vs (1 + scale) backlash estimate against truth (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: Least squares that ignores backlash biases the offset estimate by the projection of the play error onto [x, 1] vs |z| of the naive bias estimate exceeds the 99.9 % bound",
+  "check: Least squares that ignores backlash biases the offset estimate by the projection of the play error onto [x, 1] vs naive offset error relative to the OLS projection of (1 + s)(play(x) - x) onto [x, 1], minus 1",
+  "pytest: tests/test_lab_observation.py::test_t052_encoder_backlash"
+ ],
+ "tests_skipped": [],
+ "title": "Add encoder bias, scale, and backlash.",
+ "uncertainty": "Estimates carry LS standard errors from the residual variance; checks use the two-sided 99.9 % normal bound.",
+ "unresolved_assumptions": [
+  "Backlash width, scale and bias are constant",
+  "The reference position is known exactly (a real calibration needs an independent reference instrument)"
+ ]
+}

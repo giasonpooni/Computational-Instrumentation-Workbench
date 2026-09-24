@@ -1,0 +1,735 @@
+{
+ "changed_files": [
+  "src/ciw/lab/geodesic_jacobi.py",
+  "src/ciw/lab/geodesic_jacobi_common.py",
+  "tests/test_lab_geodesic_jacobi.py",
+  "docs/lab/GEODESIC_JACOBI.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 0,
+   "numerically_verified": 7,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Fitted log-log slopes within declared tolerances of the nominal orders; adaptive medians above the half-way thresholds 4.5 (order) and 0.9 (tolerance exponent), which the y4 variant fails.",
+ "experiment": "Integrate the geodesic state (u, v) with each fixed-step method at four halvings and the adaptive method and its y4 variant at 5 tolerances; fit log-log slopes against the reference end point.",
+ "failure_modes_checked": [
+  "flat Cartesian charts where every method is exact (recorded as a counterexample)",
+  "RK4 errors kept above the rounding floor (smallest near 1e-12)",
+  "reference accuracy exceeds the smallest measured error by several digits",
+  "a DP5(4) pair advancing with y4 (rejected by the median checks)",
+  "single accept/reject flips (per-chart orders are not claimed)"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0009745212977696482,
+      "passed": true,
+      "reference": "nominal order 1 on sphere (steps (64, 128, 256, 512))",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.002370118972833124,
+      "passed": true,
+      "reference": "nominal order 1 on saddle (steps (64, 128, 256, 512))",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.00826982954166855,
+      "passed": true,
+      "reference": "nominal order 1 on torus (steps (64, 128, 256, 512))",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.002734268757823566,
+      "passed": true,
+      "reference": "nominal order 1 on gaussian-bump (steps (64, 128, 256, 512))",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0072833001746590575,
+      "passed": true,
+      "reference": "nominal order 1 on hyperbolic-plane (steps (64, 128, 256, 512))",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.007105056430406487,
+      "passed": true,
+      "reference": "nominal order 1 on plane-polar (steps (64, 128, 256, 512))",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.007103482489008384,
+      "passed": true,
+      "reference": "nominal order 1 on cylinder-polar (steps (64, 128, 256, 512))",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     }
+    ],
+    "generator": {
+     "name": "declared standard geodesics",
+     "paths": [
+      "plane",
+      "sphere",
+      "cylinder",
+      "saddle",
+      "torus",
+      "gaussian-bump",
+      "hyperbolic-plane",
+      "plane-polar",
+      "cylinder-polar"
+     ]
+    }
+   },
+   "claim": "Explicit Euler global endpoint error converges at order 1 on every curved chart",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.02,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "largest distance of a pairwise (halving) slope from the least-squares slope",
+    "kind": "fit",
+    "value": 0.005896128537169032
+   },
+   "unit": null,
+   "value": {
+    "cylinder-polar": 1.0071034824890084,
+    "gaussian-bump": 1.0027342687578236,
+    "hyperbolic-plane": 1.007283300174659,
+    "plane-polar": 1.0071050564304065,
+    "saddle": 1.0023701189728331,
+    "sphere": 1.0009745212977696,
+    "torus": 1.0082698295416685
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.03851328562608902,
+      "passed": true,
+      "reference": "nominal order 2 on sphere (steps (32, 64, 128, 256))",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0017983374668313346,
+      "passed": true,
+      "reference": "nominal order 2 on saddle (steps (32, 64, 128, 256))",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.011108596141785831,
+      "passed": true,
+      "reference": "nominal order 2 on torus (steps (32, 64, 128, 256))",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.018418722968555734,
+      "passed": true,
+      "reference": "nominal order 2 on gaussian-bump (steps (32, 64, 128, 256))",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0034284091119953786,
+      "passed": true,
+      "reference": "nominal order 2 on hyperbolic-plane (steps (32, 64, 128, 256))",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.007631064911508112,
+      "passed": true,
+      "reference": "nominal order 2 on plane-polar (steps (32, 64, 128, 256))",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.007631061026072139,
+      "passed": true,
+      "reference": "nominal order 2 on cylinder-polar (steps (32, 64, 128, 256))",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     }
+    ],
+    "generator": {
+     "name": "declared standard geodesics",
+     "paths": [
+      "plane",
+      "sphere",
+      "cylinder",
+      "saddle",
+      "torus",
+      "gaussian-bump",
+      "hyperbolic-plane",
+      "plane-polar",
+      "cylinder-polar"
+     ]
+    }
+   },
+   "claim": "Explicit midpoint global endpoint error converges at order 2 on every curved chart",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.02,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "largest distance of a pairwise (halving) slope from the least-squares slope",
+    "kind": "fit",
+    "value": 0.027477563753034673
+   },
+   "unit": null,
+   "value": {
+    "cylinder-polar": 2.007631061026072,
+    "gaussian-bump": 1.9815812770314443,
+    "hyperbolic-plane": 2.0034284091119954,
+    "plane-polar": 2.007631064911508,
+    "saddle": 2.0017983374668313,
+    "sphere": 2.038513285626089,
+    "torus": 1.9888914038582142
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.016713782766311525,
+      "passed": true,
+      "reference": "nominal order 4 on sphere (steps (24, 48, 96, 192))",
+      "reference_kind": "analytic",
+      "tolerance": 0.25
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.015999048335177513,
+      "passed": true,
+      "reference": "nominal order 4 on saddle (steps (24, 48, 96, 192))",
+      "reference_kind": "analytic",
+      "tolerance": 0.25
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.022713731271776894,
+      "passed": true,
+      "reference": "nominal order 4 on torus (steps (24, 48, 96, 192))",
+      "reference_kind": "analytic",
+      "tolerance": 0.25
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.11198228073747396,
+      "passed": true,
+      "reference": "nominal order 4 on gaussian-bump (steps (24, 48, 96, 192))",
+      "reference_kind": "analytic",
+      "tolerance": 0.25
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.03468728120365716,
+      "passed": true,
+      "reference": "nominal order 4 on hyperbolic-plane (steps (24, 48, 96, 192))",
+      "reference_kind": "analytic",
+      "tolerance": 0.25
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.04711997735032947,
+      "passed": true,
+      "reference": "nominal order 4 on plane-polar (steps (24, 48, 96, 192))",
+      "reference_kind": "analytic",
+      "tolerance": 0.25
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.04711996639946214,
+      "passed": true,
+      "reference": "nominal order 4 on cylinder-polar (steps (24, 48, 96, 192))",
+      "reference_kind": "analytic",
+      "tolerance": 0.25
+     }
+    ],
+    "generator": {
+     "name": "declared standard geodesics",
+     "paths": [
+      "plane",
+      "sphere",
+      "cylinder",
+      "saddle",
+      "torus",
+      "gaussian-bump",
+      "hyperbolic-plane",
+      "plane-polar",
+      "cylinder-polar"
+     ]
+    }
+   },
+   "claim": "Classical RK4 global endpoint error converges at order 4 on every curved chart",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.02,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "largest distance of a pairwise (halving) slope from the least-squares slope",
+    "kind": "fit",
+    "value": 0.08683044915798277
+   },
+   "unit": null,
+   "value": {
+    "cylinder-polar": 3.952880033600538,
+    "gaussian-bump": 3.888017719262526,
+    "hyperbolic-plane": 3.965312718796343,
+    "plane-polar": 3.9528800226496705,
+    "saddle": 4.0159990483351775,
+    "sphere": 4.0167137827663115,
+    "torus": 4.022713731271777
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "signed_ge",
+      "observed": 5.394386914005626,
+      "passed": true,
+      "reference": "median effective order over seven charts, at least half-way from 4 to 5 (rtol 1e-8..1e-12)",
+      "reference_kind": "analytic",
+      "tolerance": 4.5
+     },
+     {
+      "comparison": "signed_le",
+      "observed": 5.394386914005626,
+      "passed": true,
+      "reference": "median effective order over seven charts, at most 6",
+      "reference_kind": "analytic",
+      "tolerance": 6.0
+     }
+    ],
+    "generator": {
+     "charts": [
+      "sphere",
+      "saddle",
+      "torus",
+      "gaussian-bump",
+      "hyperbolic-plane",
+      "plane-polar",
+      "cylinder-polar"
+     ],
+     "name": "declared standard geodesics",
+     "paths": [
+      "plane",
+      "sphere",
+      "cylinder",
+      "saddle",
+      "torus",
+      "gaussian-bump",
+      "hyperbolic-plane",
+      "plane-polar",
+      "cylinder-polar"
+     ],
+     "rtol": [
+      1e-08,
+      1e-09,
+      1e-10,
+      1e-11,
+      1e-12
+     ]
+    }
+   },
+   "claim": "Adaptive Dormand-Prince error falls with function evaluations at a median effective order near 5",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.35,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "median absolute deviation of the seven per-chart effective orders; the controller's start-step ramp biases loose tolerances upward",
+    "kind": "fit",
+    "value": 0.20346352279437063
+   },
+   "unit": null,
+   "value": 5.394386914005626
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "signed_ge",
+      "observed": 0.9710731803196047,
+      "passed": true,
+      "reference": "median exponent of error ~ rtol^q, at least half-way from 0.8 to 1",
+      "reference_kind": "analytic",
+      "tolerance": 0.9
+     },
+     {
+      "comparison": "signed_le",
+      "observed": 0.9710731803196047,
+      "passed": true,
+      "reference": "median exponent of error ~ rtol^q, at most 1.1",
+      "reference_kind": "analytic",
+      "tolerance": 1.1
+     }
+    ],
+    "generator": {
+     "charts": [
+      "sphere",
+      "saddle",
+      "torus",
+      "gaussian-bump",
+      "hyperbolic-plane",
+      "plane-polar",
+      "cylinder-polar"
+     ],
+     "name": "declared standard geodesics",
+     "paths": [
+      "plane",
+      "sphere",
+      "cylinder",
+      "saddle",
+      "torus",
+      "gaussian-bump",
+      "hyperbolic-plane",
+      "plane-polar",
+      "cylinder-polar"
+     ],
+     "rtol": [
+      1e-08,
+      1e-09,
+      1e-10,
+      1e-11,
+      1e-12
+     ]
+    }
+   },
+   "claim": "Adaptive Dormand-Prince endpoint error is proportional to the requested tolerance (median over charts)",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.1,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "median absolute deviation of the seven per-chart tolerance exponents",
+    "kind": "fit",
+    "value": 0.02053382637409451
+   },
+   "unit": null,
+   "value": 0.9710731803196047
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "signed_le",
+      "observed": 4.195900523492557,
+      "passed": true,
+      "reference": "variant median effective order below the acceptance threshold",
+      "reference_kind": "analytic",
+      "tolerance": 4.5
+     },
+     {
+      "comparison": "signed_le",
+      "observed": 0.7686254902067906,
+      "passed": true,
+      "reference": "variant median tolerance exponent below the acceptance threshold",
+      "reference_kind": "analytic",
+      "tolerance": 0.9
+     }
+    ],
+    "generator": {
+     "charts": [
+      "sphere",
+      "saddle",
+      "torus",
+      "gaussian-bump",
+      "hyperbolic-plane",
+      "plane-polar",
+      "cylinder-polar"
+     ],
+     "name": "declared standard geodesics",
+     "paths": [
+      "plane",
+      "sphere",
+      "cylinder",
+      "saddle",
+      "torus",
+      "gaussian-bump",
+      "hyperbolic-plane",
+      "plane-polar",
+      "cylinder-polar"
+     ],
+     "rtol": [
+      1e-08,
+      1e-09,
+      1e-10,
+      1e-11,
+      1e-12
+     ],
+     "variant": "accepted state y4, no local extrapolation"
+    }
+   },
+   "claim": "The adaptive-order checks reject a Dormand-Prince variant that advances with its fourth-order solution",
+   "counterexample": {
+    "statement": "An effective order near 5 is observed whatever solution a DP5(4) pair advances",
+    "witness": {
+     "median_effective_order": 4.195900523492557,
+     "median_tolerance_exponent": 0.7686254902067906,
+     "variant": "advance with y4"
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.35,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "median absolute deviation over the seven charts",
+    "kind": "fit",
+    "value": 0.043291010115125594
+   },
+   "unit": null,
+   "value": {
+    "median_effective_order": 4.195900523492557,
+    "median_tolerance_exponent": 0.7686254902067906
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 2.1111760027289807e-14,
+      "passed": true,
+      "reference": "straight-line geodesic on plane (Gamma = 0)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 2.0945586572537882e-14,
+      "passed": true,
+      "reference": "straight-line geodesic on cylinder (Gamma = 0)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     }
+    ],
+    "generator": {
+     "name": "declared standard geodesics",
+     "paths": [
+      "plane",
+      "sphere",
+      "cylinder",
+      "saddle",
+      "torus",
+      "gaussian-bump",
+      "hyperbolic-plane",
+      "plane-polar",
+      "cylinder-polar"
+     ]
+    }
+   },
+   "claim": "No convergence order is observable on flat Cartesian charts: every method is exact to rounding there",
+   "counterexample": {
+    "statement": "Every integrator exhibits its nominal convergence order on every surface",
+    "witness": {
+     "charts": [
+      "plane",
+      "cylinder"
+     ],
+     "max_endpoint_error": {
+      "cylinder": 2.0945586572537882e-14,
+      "plane": 2.1111760027289807e-14
+     },
+     "reason": "Gamma vanishes, so Euler, midpoint and RK4 reproduce u(s) = u0 + s v0"
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "accumulated binary64 rounding over at most 512 steps",
+    "kind": "roundoff",
+    "value": 2.1111760027289807e-14
+   },
+   "unit": null,
+   "value": {
+    "cylinder": 2.0945586572537882e-14,
+    "plane": 2.1111760027289807e-14
+   }
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 37210,
+   "path": "artifacts/T003/orders.json",
+   "sha256": "597f9146477fcea8b2e4ac68ae0fb49610f419befec3ae5596004152f74fcd71"
+  },
+  {
+   "bytes": 2956,
+   "path": "artifacts/T003/orders-sphere.svg",
+   "sha256": "4fcd6c212c6a0cbd6f57d71c7090f5b71f141cee152ecc265f305e69b2fadcf5"
+  },
+  {
+   "bytes": 3079,
+   "path": "artifacts/T003/orders-saddle.svg",
+   "sha256": "9ae5ed4a79954fcd50c38a437d9ee79fecb99e3bbe0f40b2fffa29a871f9b619"
+  },
+  {
+   "bytes": 3200,
+   "path": "artifacts/T003/orders-torus.svg",
+   "sha256": "5e51c9898cb8e65b5ac41ade561d67712104b1d520cd74cb9136901e3e659852"
+  },
+  {
+   "bytes": 3088,
+   "path": "artifacts/T003/orders-gaussian-bump.svg",
+   "sha256": "07f8a6c40503956095da5cf1442f67e9376e7bb97448ee251a1f58ad1d5b23d3"
+  },
+  {
+   "bytes": 3087,
+   "path": "artifacts/T003/orders-hyperbolic-plane.svg",
+   "sha256": "2cd70724721fcaf3b9f43756e6188aa62bd79602fe71c222b7607c397bdef36d"
+  },
+  {
+   "bytes": 3077,
+   "path": "artifacts/T003/orders-plane-polar.svg",
+   "sha256": "7271d6407da46f58cff57e86c7a22f2085ef1b2480e39d01652ea0b7b0d8a5c8"
+  },
+  {
+   "bytes": 3080,
+   "path": "artifacts/T003/orders-cylinder-polar.svg",
+   "sha256": "f8c37ac6eab0b0884d37f405e6313fe2a499c0bb27c428f77d013bce13a31c3d"
+  },
+  {
+   "bytes": 5130,
+   "path": "artifacts/T003/adaptive.svg",
+   "sha256": "6cefb661339e6dc11347846f56060105fa3911312672f7f1d74807c9331c7b11"
+  }
+ ],
+ "hypothesis": "On charts with nonzero Christoffel symbols the global endpoint error of Euler, midpoint and RK4 scales like h^1, h^2 and h^4, and the Dormand-Prince error scales like (evaluations)^-5 and like the requested tolerance, which distinguishes it from a pair advancing with y4 ((evaluations)^-4, tol^0.8).",
+ "input_data": [
+  "Standard paths on plane, sphere, cylinder, saddle, torus, gaussian-bump, hyperbolic-plane, plane-polar, cylinder-polar",
+  "Steps {'euler': (64, 128, 256, 512), 'midpoint': (32, 64, 128, 256), 'rk4': (24, 48, 96, 192)}; adaptive rtol = atol in [1e-08, 1e-09, 1e-10, 1e-11, 1e-12]",
+  "References from T002 (closed form or mpmath)"
+ ],
+ "mathematical_model": "Global error e(h) = C h^p + O(h^(p+1)) for a p-th order one-step method on a smooth ODE; for DP5(4) with per-step error control and local extrapolation, h ~ tol^(1/5) and e ~ h^5 ~ tol; advancing with y4 gives e ~ h^4 ~ tol^(4/5).",
+ "number": 3,
+ "numerical_result": "Fitted orders: euler sphere 1.001, saddle 1.002, torus 1.008, gaussian-bump 1.003, hyperbolic-plane 1.007, plane-polar 1.007, cylinder-polar 1.007; midpoint sphere 2.039, saddle 2.002, torus 1.989, gaussian-bump 1.982, hyperbolic-plane 2.003, plane-polar 2.008, cylinder-polar 2.008; rk4 sphere 4.017, saddle 4.016, torus 4.023, gaussian-bump 3.888, hyperbolic-plane 3.965, plane-polar 3.953, cylinder-polar 3.953; adaptive effective orders sphere 5.42, saddle 5.86, torus 4.61, gaussian-bump 5.19, hyperbolic-plane 4.76, plane-polar 5.39, cylinder-polar 5.39 (median 5.39), tolerance-exponent median 0.971; y4 variant medians 4.2 and 0.769.",
+ "observation_model": "Euclidean distance of the embedded end point (chart distance on the hyperbolic plane).",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "requirement_probes": {
+   "module:mpmath": true,
+   "module:sympy": true
+  },
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/geodesic_jacobi.py": "7f7307ebfb5c0a38ca1e7b9365fd7df627d9ae001791d99b823122873040d3c1",
+   "src/ciw/lab/geodesic_jacobi_common.py": "8616e9157492f0cd2aeebd695b3501215420c73af2cfbcb8c1b8cd5ab8d23a52"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T004: measure unit-speed drift of the same integrations without renormalization",
+ "report_id": "sha256:2d7c8c621fc0644e5741d549f7e801ea08eca7e2cc16c647cd5b695f94a469ad",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "geodesic-jacobi",
+ "state": "completed",
+ "task_id": "T003",
+ "tests_passed": [
+  "check: Explicit Euler global endpoint error converges at order 1 on every curved chart vs nominal order 1 on sphere (steps (64, 128, 256, 512))",
+  "check: Explicit Euler global endpoint error converges at order 1 on every curved chart vs nominal order 1 on saddle (steps (64, 128, 256, 512))",
+  "check: Explicit Euler global endpoint error converges at order 1 on every curved chart vs nominal order 1 on torus (steps (64, 128, 256, 512))",
+  "check: Explicit Euler global endpoint error converges at order 1 on every curved chart vs nominal order 1 on gaussian-bump (steps (64, 128, 256, 512))",
+  "check: Explicit Euler global endpoint error converges at order 1 on every curved chart vs nominal order 1 on hyperbolic-plane (steps (64, 128, 256, 512))",
+  "check: Explicit Euler global endpoint error converges at order 1 on every curved chart vs nominal order 1 on plane-polar (steps (64, 128, 256, 512))",
+  "check: Explicit Euler global endpoint error converges at order 1 on every curved chart vs nominal order 1 on cylinder-polar (steps (64, 128, 256, 512))",
+  "check: Explicit midpoint global endpoint error converges at order 2 on every curved chart vs nominal order 2 on sphere (steps (32, 64, 128, 256))",
+  "check: Explicit midpoint global endpoint error converges at order 2 on every curved chart vs nominal order 2 on saddle (steps (32, 64, 128, 256))",
+  "check: Explicit midpoint global endpoint error converges at order 2 on every curved chart vs nominal order 2 on torus (steps (32, 64, 128, 256))",
+  "check: Explicit midpoint global endpoint error converges at order 2 on every curved chart vs nominal order 2 on gaussian-bump (steps (32, 64, 128, 256))",
+  "check: Explicit midpoint global endpoint error converges at order 2 on every curved chart vs nominal order 2 on hyperbolic-plane (steps (32, 64, 128, 256))",
+  "check: Explicit midpoint global endpoint error converges at order 2 on every curved chart vs nominal order 2 on plane-polar (steps (32, 64, 128, 256))",
+  "check: Explicit midpoint global endpoint error converges at order 2 on every curved chart vs nominal order 2 on cylinder-polar (steps (32, 64, 128, 256))",
+  "check: Classical RK4 global endpoint error converges at order 4 on every curved chart vs nominal order 4 on sphere (steps (24, 48, 96, 192))",
+  "check: Classical RK4 global endpoint error converges at order 4 on every curved chart vs nominal order 4 on saddle (steps (24, 48, 96, 192))",
+  "check: Classical RK4 global endpoint error converges at order 4 on every curved chart vs nominal order 4 on torus (steps (24, 48, 96, 192))",
+  "check: Classical RK4 global endpoint error converges at order 4 on every curved chart vs nominal order 4 on gaussian-bump (steps (24, 48, 96, 192))",
+  "check: Classical RK4 global endpoint error converges at order 4 on every curved chart vs nominal order 4 on hyperbolic-plane (steps (24, 48, 96, 192))",
+  "check: Classical RK4 global endpoint error converges at order 4 on every curved chart vs nominal order 4 on plane-polar (steps (24, 48, 96, 192))",
+  "check: Classical RK4 global endpoint error converges at order 4 on every curved chart vs nominal order 4 on cylinder-polar (steps (24, 48, 96, 192))",
+  "check: Adaptive Dormand-Prince error falls with function evaluations at a median effective order near 5 vs median effective order over seven charts, at least half-way from 4 to 5 (rtol 1e-8..1e-12)",
+  "check: Adaptive Dormand-Prince error falls with function evaluations at a median effective order near 5 vs median effective order over seven charts, at most 6",
+  "check: Adaptive Dormand-Prince endpoint error is proportional to the requested tolerance (median over charts) vs median exponent of error ~ rtol^q, at least half-way from 0.8 to 1",
+  "check: Adaptive Dormand-Prince endpoint error is proportional to the requested tolerance (median over charts) vs median exponent of error ~ rtol^q, at most 1.1",
+  "check: The adaptive-order checks reject a Dormand-Prince variant that advances with its fourth-order solution vs variant median effective order below the acceptance threshold",
+  "check: The adaptive-order checks reject a Dormand-Prince variant that advances with its fourth-order solution vs variant median tolerance exponent below the acceptance threshold",
+  "check: No convergence order is observable on flat Cartesian charts: every method is exact to rounding there vs straight-line geodesic on plane (Gamma = 0)",
+  "check: No convergence order is observable on flat Cartesian charts: every method is exact to rounding there vs straight-line geodesic on cylinder (Gamma = 0)",
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_t003_integrator_orders",
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_adaptive_checks_reject_fourth_order_variant",
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_every_numerical_finding_declares_uncertainty_and_tolerance",
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space"
+ ],
+ "tests_skipped": [],
+ "title": "Verify Euler, midpoint, RK4, and adaptive integrator orders.",
+ "uncertainty": "Fixed-step slopes are least-squares fits over four points; the pre-asymptotic bias is the retained spread of pairwise slopes. Adaptive slopes depend on accept/reject decisions, so only their medians over seven charts are claimed.",
+ "unresolved_assumptions": [
+  "The adaptive effective order depends on the step-size controller and its start step; the retained numbers are for integrators.integrate_adaptive only",
+  "The half-way thresholds separate order 5 from order 4; they do not certify the exact order of the pair"
+ ]
+}

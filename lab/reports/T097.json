@@ -1,0 +1,401 @@
+{
+ "changed_files": [
+  "src/ciw/lab/exchange_provenance_bundles.py",
+  "src/ciw/lab/exchange_provenance_bundles_fixtures.py",
+  "src/ciw/lab/exchange_provenance_bundles_providers.py"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 1,
+   "not_established": 3,
+   "numerically_verified": 2,
+   "provider_backed": 1,
+   "synthetic": 0
+  },
+  "primary": "provider_backed"
+ },
+ "expected_invariant": "Provider values equal the independent integer reference; replay numerical identity equal with fresh occurrences.",
+ "experiment": "Bind SCR and its engine in a fresh session, add the example source, execute, replay, save, reopen unbound under the guard and request replay; run four cases (including [0, 0, 1000, 0, 0] for 3 steps) through SCR's own Python API; when bound, validate a synthetic observation with SET and run the PPDA/SCR/SET producer roundtrip.",
+ "failure_modes_checked": [
+  "pin mismatch",
+  "engine drift",
+  "replay identity drift",
+  "binding recovered from saved data",
+  "descriptor drift between SCR and CIW",
+  "verification marked independent",
+  "SET status, rank and refusal text",
+  "roundtrip link and claim-boundary drift"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": {
+     "engine_origin": "cargo_build_locked_offline_in_this_run",
+     "engine_sha256": "b9f40b3094ecf4b793676c766ffd559dc69abc4fada564c1bde94e79c6f0b201",
+     "engine_source_binding": "built_from_the_bound_checkout_in_this_run"
+    },
+    "provider": {
+     "executed": true,
+     "repository": "giasonpooni/Scientific-Computation-Runtime",
+     "revision": "a59aba283b0304faeeb3e5d305087e7709e171ca",
+     "runtime_digest": "sha256:b9f40b3094ecf4b793676c766ffd559dc69abc4fada564c1bde94e79c6f0b201",
+     "source_tree": "4068a711534932e8d89bb0d87d373376dafdf6cd"
+    }
+   },
+   "claim": "SCR executed through CIW's shared numerical-heat workflow and through its own Python API returns the declared integer heat fields",
+   "domain": "numerical",
+   "evidence_status": "provider_backed",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact int64 arithmetic compared cell by cell",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": {
+    "api_cases": [
+     [
+      0,
+      219,
+      313,
+      219,
+      0
+     ],
+     [
+      0,
+      16,
+      24,
+      16,
+      0
+     ],
+     [
+      0,
+      -2,
+      0
+     ],
+     [
+      7,
+      1,
+      5
+     ]
+    ],
+    "workbench_example": [
+     0,
+     16,
+     24,
+     16,
+     0
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "independent_check": {
+     "checker": {
+      "implementation": "ciw.lab.exchange_provenance_bundles_fixtures.heat_reference",
+      "revision": "0.1.0"
+     },
+     "comparison": "abs_le",
+     "observed": 0.0,
+     "passed": true,
+     "producer": {
+      "implementation": "Scientific-Computation-Runtime execution-cli",
+      "revision": "a59aba283b0304faeeb3e5d305087e7709e171ca"
+     },
+     "reference": "cells differing from the integer Jacobi reference",
+     "reference_kind": "exact_arithmetic",
+     "tolerance": 0.0
+    },
+    "notes": {
+     "engine_origin": "cargo_build_locked_offline_in_this_run",
+     "engine_sha256": "b9f40b3094ecf4b793676c766ffd559dc69abc4fada564c1bde94e79c6f0b201",
+     "engine_source_binding": "built_from_the_bound_checkout_in_this_run"
+    }
+   },
+   "claim": "SCR heat outputs from the workbench and from SCR's Python API equal an independent integer reference",
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact int64 arithmetic compared cell by cell",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": {
+    "cases": 5,
+    "mismatched_cells": 0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "runs with different replay numerical identity",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "runs without four distinct occurrences",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "runs whose replay receipt lacks a numerical match",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "runs whose verification claims independence",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "SCR descriptor digest differs from CIW's HEAT_DESCRIPTOR",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "SCR replay reproduces the numerical identity with fresh execution occurrences and a non-independent verification",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact counts, digests and string comparisons; no rounding is involved",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": {
+    "fresh_occurrences_per_run": [
+     4
+    ],
+    "numerical_identity_equal": true,
+    "runs": 1,
+    "verification_independent": false
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+      "observed_refusal": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+      "passed": true,
+      "reference": "bundle.replay after reopen",
+      "reference_kind": "refusal"
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "execution entry points reached while reopening",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "bindings after reopen",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "The reopened SCR workspace carries no binding and refuses replay",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact counts, digests and string comparisons; no rounding is involved",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": {
+    "available": [
+     "ciw.energy-accuracy.v1"
+    ],
+    "bindings": [],
+    "replay": "operation_unavailable: No trusted repositories bound for this workbench workflow"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "SET exchange conformance was not executed",
+   "domain": "computational_pipeline",
+   "evidence_status": "not_established",
+   "expected_not_established": true,
+   "uncertainty": null,
+   "unit": null,
+   "value": {
+    "pytest": "CIW_SET_REPO=<set> python -m pytest -q tests/test_exchange.py",
+    "reason": "no set checkout bound (needs State-Estimation-Evaluation-Testbed at 542e672be512bf43b61253f2b2a43cd967cb3062)",
+    "required": "--provider set=<State-Estimation-Evaluation-Testbed at 542e672be512bf43b61253f2b2a43cd967cb3062>"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "The PPDA/SCR/SET exchange producer roundtrip was not executed",
+   "domain": "computational_pipeline",
+   "evidence_status": "not_established",
+   "expected_not_established": true,
+   "uncertainty": null,
+   "unit": null,
+   "value": {
+    "pytest": "CIW_SET_REPO=<set> CIW_ACQUISITION_REPO=<ppda> CIW_RUNTIME_REPO=<scr-exchange> python -m pytest -q tests/test_exchange_integration.py",
+    "reason": "no ppda checkout bound (needs Provenance-Preserving-Data-Acquisition at a29845e13e55de30b24ae752b896058041d653e6); no scr-exchange checkout bound (needs Scientific-Computation-Runtime at 5f0409743e0098a0691a88302a9b3dcdcbcf25fd); no set checkout bound (needs State-Estimation-Evaluation-Testbed at 542e672be512bf43b61253f2b2a43cd967cb3062)",
+    "required": {
+     "ppda": "a29845e13e55de30b24ae752b896058041d653e6",
+     "scr-exchange": "5f0409743e0098a0691a88302a9b3dcdcbcf25fd",
+     "set": "542e672be512bf43b61253f2b2a43cd967cb3062"
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "The integer heat field describes physical heat diffusion in a material",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": "not established: dimensionless integer arithmetic"
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 4900,
+   "path": "artifacts/T097/integration.json",
+   "sha256": "a3161b54da8120603e0e0c69f2106feca74f27c8646d87cf3bc853a48e8addb6"
+  },
+  {
+   "bytes": 3098,
+   "path": "artifacts/T097/heat-fields.svg",
+   "sha256": "4f4b36ca7257d8d24d8da1d00b6daea8ccad0ffe3cf3a28470259dc12c644f38"
+  }
+ ],
+ "hypothesis": "The pinned SCR provider, driven through CIW's shared numerical-heat workflow, returns the declared integer heat field, replays with the same numerical identity, and its reopened workspace refuses replay unbound.",
+ "input_data": [
+  "examples/declared-workloads/numerical-heat.json (embedded)",
+  "API cases (steps, initial field): [[3, [0, 0, 1000, 0, 0]], [2, [0, 0, 64, 0, 0]], [1, [0, -3, 0]], [1, [7, -3, 5]]]",
+  "SCR checkout a59aba283b0304faeeb3e5d305087e7709e171ca",
+  "engine: cargo_build_locked_offline_in_this_run"
+ ],
+ "mathematical_model": "u_i <- u_i + trunc((u_{i-1} - 2 u_i + u_{i+1}) / 4), fixed ends (SCR heat descriptor, ciw.declared_workload).",
+ "number": 97,
+ "numerical_result": "workbench [0, 0, 64, 0, 0] x2 -> [0, 16, 24, 16, 0]; API [0, 0, 1000, 0, 0] x3 -> [0, 219, 313, 219, 0]; API [0, 0, 64, 0, 0] x2 -> [0, 16, 24, 16, 0]; API [0, -3, 0] x1 -> [0, -2, 0]; API [7, -3, 5] x1 -> [7, 1, 5]; not executed here: ['SET exchange validator: no set checkout bound (needs State-Estimation-Evaluation-Testbed at 542e672be512bf43b61253f2b2a43cd967cb3062)', 'PPDA/SCR/SET producer roundtrip: no ppda checkout bound (needs Provenance-Preserving-Data-Acquisition at a29845e13e55de30b24ae752b896058041d653e6); no scr-exchange checkout bound (needs Scientific-Computation-Runtime at 5f0409743e0098a0691a88302a9b3dcdcbcf25fd); no set checkout bound (needs State-Estimation-Evaluation-Testbed at 542e672be512bf43b61253f2b2a43cd967cb3062)']",
+ "observation_model": "Workbench bundle values, replay receipts, SCR Python API output.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw": {
+   "ciw_version": "0.1.0",
+   "implementation": "ciw.lab",
+   "mpmath": "1.3.0",
+   "numpy": "2.4.3",
+   "python": "3.12.3",
+   "scipy": "1.16.2",
+   "sources": {
+    "src/ciw/lab/exchange_provenance_bundles.py": "a505b35560263c1b473912f79e61b15b7e474f8eb1807e691847e4c69791c2d3",
+    "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "f30205e8305a225f24d94b06cba8b519ecea4680ca723aaca3591ff707d04e1c",
+    "src/ciw/lab/exchange_provenance_bundles_providers.py": "c9a30c9dc0751a22ff578a8c9a01abf06df582a1f1e835c1f1c0c33ed176f94b"
+   },
+   "sympy": "1.14.0"
+  },
+  "ppda": {
+   "head": null,
+   "matched": null,
+   "state": "not_bound"
+  },
+  "requirement_probes": {
+   "provider:scr": true,
+   "tool:cargo": true
+  },
+  "scr": {
+   "engine_origin": "cargo_build_locked_offline_in_this_run",
+   "engine_sha256": "b9f40b3094ecf4b793676c766ffd559dc69abc4fada564c1bde94e79c6f0b201",
+   "revision": "a59aba283b0304faeeb3e5d305087e7709e171ca",
+   "source_tree": "4068a711534932e8d89bb0d87d373376dafdf6cd"
+  },
+  "scr-exchange": {
+   "head": null,
+   "matched": null,
+   "state": "not_bound"
+  },
+  "set": {
+   "head": null,
+   "matched": null,
+   "state": "not_bound"
+  }
+ },
+ "recommended_next_task": "T098: record the identities of every bound provider checkout.",
+ "report_id": "sha256:1a2a57e2011d7329f85843780be185731d143cca321aadf2dae56a1486378911",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "exchange-provenance",
+ "state": "partial",
+ "task_id": "T097",
+ "tests_passed": [
+  "independent: SCR heat outputs from the workbench and from SCR's Python API equal an independent integer reference vs ciw.lab.exchange_provenance_bundles_fixtures.heat_reference",
+  "check: SCR replay reproduces the numerical identity with fresh execution occurrences and a non-independent verification vs runs with different replay numerical identity",
+  "check: SCR replay reproduces the numerical identity with fresh execution occurrences and a non-independent verification vs runs without four distinct occurrences",
+  "check: SCR replay reproduces the numerical identity with fresh execution occurrences and a non-independent verification vs runs whose replay receipt lacks a numerical match",
+  "check: SCR replay reproduces the numerical identity with fresh execution occurrences and a non-independent verification vs runs whose verification claims independence",
+  "check: SCR replay reproduces the numerical identity with fresh execution occurrences and a non-independent verification vs SCR descriptor digest differs from CIW's HEAT_DESCRIPTOR",
+  "check: The reopened SCR workspace carries no binding and refuses replay vs bundle.replay after reopen",
+  "check: The reopened SCR workspace carries no binding and refuses replay vs execution entry points reached while reopening",
+  "check: The reopened SCR workspace carries no binding and refuses replay vs bindings after reopen",
+  "pytest: tests/test_lab_exchange_provenance_bundles.py::test_t097_scr_numerical_heat_integration",
+  "pytest: tests/test_lab_exchange_provenance_bundles.py::test_t097_is_blocked_without_scr",
+  "pytest: tests/test_lab_exchange_provenance_bundles.py::test_t097_keeps_set_results_when_the_engine_is_missing",
+  "pytest: tests/test_lab_exchange_provenance_bundles.py::test_t097_t099_refuse_a_non_repository_scr_binding"
+ ],
+ "tests_skipped": [],
+ "title": "Add exact SET/SCR/PPDA integration tests when checkouts are available.",
+ "uncertainty": "Exact integer arithmetic and exact string comparisons; no tolerance.",
+ "unresolved_assumptions": [
+  "SET exchange validator: no set checkout bound (needs State-Estimation-Evaluation-Testbed at 542e672be512bf43b61253f2b2a43cd967cb3062)",
+  "PPDA/SCR/SET producer roundtrip: no ppda checkout bound (needs Provenance-Preserving-Data-Acquisition at a29845e13e55de30b24ae752b896058041d653e6); no scr-exchange checkout bound (needs Scientific-Computation-Runtime at 5f0409743e0098a0691a88302a9b3dcdcbcf25fd); no set checkout bound (needs State-Estimation-Evaluation-Testbed at 542e672be512bf43b61253f2b2a43cd967cb3062)",
+  "CIW records a bound engine as operator_asserted_not_attested; this run's engine origin is cargo_build_locked_offline_in_this_run (checked against a locked build only when an operator-bound engine and cargo are both present).",
+  "The PPDA telemetry stack (ppda, stfe, gsie, set, cbsr at src/ciw/telemetry-runtimes.json pins) is a separate integration."
+ ]
+}

@@ -1,0 +1,186 @@
+{
+ "burn_in": 20,
+ "cases": {
+  "gross": {
+   "accepted_first_reading_outliers": 11,
+   "detection": {
+    "confidence": 0.999,
+    "count": 1886,
+    "rate": 0.9926315789473684,
+    "trials": 1900,
+    "wilson": [
+     0.9828231932329227,
+     0.9968570422534878
+    ]
+   },
+   "detection_rate_sd": 0.0015338361526613415,
+   "detection_z": 0.9041642803100759,
+   "false_alarm": {
+    "confidence": 0.999,
+    "count": 577,
+    "rate": 0.015144356955380578,
+    "trials": 38100,
+    "wilson": [
+     0.013218994342201466,
+     0.017345221670904222
+    ]
+   },
+   "first_reading_detection_predicted": 0.4708166614834159,
+   "lockout_run_ids": [
+    23,
+    83,
+    150,
+    261,
+    282,
+    298,
+    299,
+    335,
+    340,
+    367
+   ],
+   "lockout_runs": 10,
+   "lockout_runs_with_accepted_first_outlier": 10,
+   "magnitude_m": 1.5,
+   "outliers": 1900,
+   "paired_mse_difference": {
+    "mean": -0.0069092559662992,
+    "median": -0.016819429476439093,
+    "standard_error": 0.009838129123455724
+   },
+   "paired_mse_z_gated_minus_ungated": -0.7022936860857409,
+   "predicted_detection_rate": 0.9912447390862839,
+   "rmse": {
+    "gated": 0.17795991041645262,
+    "oracle": 0.13794394236831456,
+    "ungated": 0.1964153397312212
+   },
+   "rmse_se": {
+    "gated_without_lockout": 0.000999439810385552
+   },
+   "rmse_without_lockout_runs": {
+    "gated": 0.14123228348840525,
+    "oracle": 0.13777613676893002,
+    "ungated": 0.1962141697122598
+   },
+   "sign_test": {
+    "gated_better": 374,
+    "runs": 400,
+    "ties": 3,
+    "wins": {
+     "confidence": 0.999,
+     "count": 374,
+     "rate": 0.9420654911838791,
+     "trials": 397,
+     "wilson": [
+      0.8904947576520857,
+      0.970163101491054
+     ]
+    }
+   },
+   "worst_run": {
+    "longest_valid_rejection_streak": 36,
+    "rmse_gated": 1.9753980773555264,
+    "rmse_oracle": 0.13815641328637332,
+    "run": 150
+   }
+  },
+  "subtle": {
+   "accepted_first_reading_outliers": 23,
+   "detection": {
+    "confidence": 0.999,
+    "count": 154,
+    "rate": 0.08105263157894736,
+    "trials": 1900,
+    "wilson": [
+     0.06274593116730723,
+     0.10410720190194181
+    ]
+   },
+   "detection_rate_sd": 0.0061206742038241975,
+   "detection_z": 0.5700408287906554,
+   "false_alarm": {
+    "confidence": 0.999,
+    "count": 418,
+    "rate": 0.010971128608923884,
+    "trials": 38100,
+    "wilson": [
+     0.009348791647674866,
+     0.0128713389621982
+    ]
+   },
+   "first_reading_detection_predicted": 0.017871673155501863,
+   "lockout_run_ids": [],
+   "lockout_runs": 0,
+   "lockout_runs_with_accepted_first_outlier": 0,
+   "magnitude_m": 0.3,
+   "outliers": 1900,
+   "paired_mse_difference": {
+    "mean": 0.0011709472799982309,
+    "median": 0.0002389739859323739,
+    "standard_error": 0.0001158936933794649
+   },
+   "paired_mse_z_gated_minus_ungated": 10.103632439810655,
+   "predicted_detection_rate": 0.07756359738304183,
+   "rmse": {
+    "gated": 0.1426001142269842,
+    "oracle": 0.13794394236831456,
+    "ungated": 0.1384335410857886
+   },
+   "rmse_se": {
+    "gated_without_lockout": 0.0010030033828656148
+   },
+   "rmse_without_lockout_runs": {
+    "gated": 0.1426001142269842,
+    "oracle": 0.13794394236831456,
+    "ungated": 0.1384335410857886
+   },
+   "sign_test": {
+    "gated_better": 75,
+    "runs": 400,
+    "ties": 112,
+    "wins": {
+     "confidence": 0.999,
+     "count": 75,
+     "rate": 0.2604166666666667,
+     "trials": 288,
+     "wilson": [
+      0.1851099716329152,
+      0.3530852431914526
+     ]
+    }
+   },
+   "worst_run": {
+    "longest_valid_rejection_streak": 1,
+    "rmse_gated": 0.1917698862126838,
+    "rmse_oracle": 0.14780379697455295,
+    "run": 296
+   }
+  }
+ },
+ "clean": {
+  "false_alarm": {
+   "confidence": 0.999,
+   "count": 413,
+   "rate": 0.010325,
+   "trials": 40000,
+   "wilson": [
+    0.008789335216934691,
+    0.012125692466176882
+   ]
+  },
+  "longest_valid_rejection_streak": 3,
+  "paired_mse_se": 9.957537020004894e-05,
+  "paired_mse_z_gated_minus_ungated": 9.577530243653909,
+  "rmse_gated": 0.13882950665782604,
+  "rmse_ungated": 0.13535119430297377
+ },
+ "contamination_rate": 0.05,
+ "first_reading_outliers": 24,
+ "gate": 9.21034037197618,
+ "gate_p": 0.99,
+ "noncentral_cdf_agreement": 1.1102230246251565e-16,
+ "outliers": 1900,
+ "runs": 400,
+ "seed": 682026,
+ "ticks": 100
+}

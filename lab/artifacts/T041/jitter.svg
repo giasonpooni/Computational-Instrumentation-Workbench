@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420" font-family="sans-serif" font-size="11">
+<rect width="640" height="420" fill="#ffffff"/>
+<text x="78" y="22" font-size="13" font-weight="bold">Tangential jitter at fixed vertex count (642)</text>
+<rect x="78" y="40" width="392" height="322" fill="none" stroke="#333"/>
+<line x1="78.00" y1="40" x2="78.00" y2="362" stroke="#e5e7eb"/>
+<text x="78.00" y="378" text-anchor="middle">0</text>
+<line x1="208.67" y1="40" x2="208.67" y2="362" stroke="#e5e7eb"/>
+<text x="208.67" y="378" text-anchor="middle">0.05</text>
+<line x1="339.33" y1="40" x2="339.33" y2="362" stroke="#e5e7eb"/>
+<text x="339.33" y="378" text-anchor="middle">0.1</text>
+<line x1="78" y1="268.98" x2="470" y2="268.98" stroke="#e5e7eb"/>
+<text x="72" y="272.98" text-anchor="end">0.02</text>
+<line x1="78" y1="162.45" x2="470" y2="162.45" stroke="#e5e7eb"/>
+<text x="72" y="166.45" text-anchor="end">0.04</text>
+<line x1="78" y1="55.91" x2="470" y2="55.91" stroke="#e5e7eb"/>
+<text x="72" y="59.91" text-anchor="end">0.06</text>
+<text x="274.00" y="406" text-anchor="middle">jitter amplitude / h</text>
+<text x="16" y="201.00" text-anchor="middle" transform="rotate(-90 16 201.00)">value</text>
+<path d="M78.00,266.71 L208.67,255.61 L339.33,198.07 L470.00,51.93" fill="none" stroke="#1f5fa8" stroke-width="1.8"/>
+<circle cx="78.00" cy="266.71" r="2.6" fill="#1f5fa8"/>
+<circle cx="208.67" cy="255.61" r="2.6" fill="#1f5fa8"/>
+<circle cx="339.33" cy="198.07" r="2.6" fill="#1f5fa8"/>
+<circle cx="470.00" cy="51.93" r="2.6" fill="#1f5fa8"/>
+<line x1="482" y1="52" x2="502" y2="52" stroke="#1f5fa8" stroke-width="2"/>
+<text x="508" y="56">curvature RMS</text>
+<path d="M78.00,350.07 L208.67,349.69 L339.33,317.81 L470.00,157.97" fill="none" stroke="#c2410c" stroke-width="1.8"/>
+<circle cx="78.00" cy="350.07" r="2.6" fill="#c2410c"/>
+<circle cx="208.67" cy="349.69" r="2.6" fill="#c2410c"/>
+<circle cx="339.33" cy="317.81" r="2.6" fill="#c2410c"/>
+<circle cx="470.00" cy="157.97" r="2.6" fill="#c2410c"/>
+<line x1="482" y1="70" x2="502" y2="70" stroke="#c2410c" stroke-width="2"/>
+<text x="508" y="74">Voronoi RMS</text>
+<path d="M78.00,309.82 L208.67,313.20 L339.33,305.43 L470.00,283.50" fill="none" stroke="#15803d" stroke-width="1.8"/>
+<circle cx="78.00" cy="309.82" r="2.6" fill="#15803d"/>
+<circle cx="208.67" cy="313.20" r="2.6" fill="#15803d"/>
+<circle cx="339.33" cy="305.43" r="2.6" fill="#15803d"/>
+<circle cx="470.00" cy="283.50" r="2.6" fill="#15803d"/>
+<line x1="482" y1="88" x2="502" y2="88" stroke="#15803d" stroke-width="2"/>
+<text x="508" y="92">geodesic error</text>
+<path d="M78.00,87.34 L208.67,161.83 L339.33,240.82 L470.00,324.00" fill="none" stroke="#7e22ce" stroke-width="1.8"/>
+<circle cx="78.00" cy="87.34" r="2.6" fill="#7e22ce"/>
+<circle cx="208.67" cy="161.83" r="2.6" fill="#7e22ce"/>
+<circle cx="339.33" cy="240.82" r="2.6" fill="#7e22ce"/>
+<circle cx="470.00" cy="324.00" r="2.6" fill="#7e22ce"/>
+<line x1="482" y1="106" x2="502" y2="106" stroke="#7e22ce" stroke-width="2"/>
+<text x="508" y="110">min angle / 1000</text>
+</svg>

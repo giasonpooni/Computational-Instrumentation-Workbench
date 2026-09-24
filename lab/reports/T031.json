@@ -1,0 +1,262 @@
+{
+ "changed_files": [
+  "src/ciw/lab/flat_torus_topology.py",
+  "src/ciw/lab/flat_torus_topology_lattice.py",
+  "docs/lab/FLAT_TORUS_TOPOLOGY.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 1,
+   "not_established": 1,
+   "numerically_verified": 1,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Exactly one route switch in the sweep, at eps* = 1/250; tie (two translates) at eps*; eps*/delta = 4.",
+ "experiment": "Exact rational minimization over translates for every eps; float bisection for eps*; optional sympy solve.",
+ "failure_modes_checked": [
+  "other translates overtaking within the sweep (checked exactly)",
+  "positive definiteness (|eps| < 1)",
+  "tie at eps* has multiplicity 2"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "eps*/delta - 4 mismatches over four deltas",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "switches in the sweep minus 1",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -1.1449174941446927e-16,
+      "passed": true,
+      "reference": "float bisection minus exact eps*",
+      "reference_kind": "analytic",
+      "tolerance": 1e-15
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "tie multiplicity at eps* minus 2",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "independent_check": {
+     "checker": {
+      "implementation": "sympy.solve",
+      "revision": "1.14.0"
+     },
+     "comparison": "abs_le",
+     "observed": 0.0,
+     "passed": true,
+     "producer": {
+      "implementation": "ciw.lab.flat_torus_topology",
+      "revision": "ciw 0.1.0"
+     },
+     "reference": "sympy.solve eps* - exact eps*",
+     "reference_kind": "exact_arithmetic",
+     "tolerance": 0.0
+    }
+   },
+   "claim": "The shortest route switches at eps* = 4 delta, which vanishes as the unperturbed gap vanishes",
+   "domain": "mathematical",
+   "evidence_status": "independently_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "integer, Fraction or Q(sqrt d) arithmetic; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "eps_star": "1/250",
+    "scaling": [
+     {
+      "delta": "1/10",
+      "eps_star": "2/5",
+      "ratio": "4"
+     },
+     {
+      "delta": "1/100",
+      "eps_star": "1/25",
+      "ratio": "4"
+     },
+     {
+      "delta": "1/1000",
+      "eps_star": "1/250",
+      "ratio": "4"
+     },
+     {
+      "delta": "1/10000",
+      "eps_star": "1/2500",
+      "ratio": "4"
+     }
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 126.86975096836686,
+      "passed": true,
+      "reference": "heading jump (deg)",
+      "reference_kind": "invariant",
+      "tolerance": 90.0
+     },
+     {
+      "comparison": "le",
+      "observed": 8.944644025454807e-08,
+      "passed": true,
+      "reference": "length change across the switch",
+      "reference_kind": "invariant",
+      "tolerance": 0.001
+     }
+    ]
+   },
+   "claim": "A metric perturbation just above eps* = 1/250 (0.4%) turns the shortest-route heading by about 127 deg while the minimal length changes continuously",
+   "counterexample": {
+    "statement": "A small metric perturbation changes the shortest route only slightly",
+    "witness": {
+     "delta": "1/1000",
+     "eps_after": 0.0041,
+     "eps_before": 0.0039,
+     "eps_star": "1/250",
+     "heading_after_deg": 153.48071221535733,
+     "heading_before_deg": 26.610961246990474,
+     "heading_jump_deg": 126.86975096836686,
+     "length_jump": 8.944644025454807e-08,
+     "translates_after": [
+      [
+       -1,
+       0
+      ]
+     ],
+     "translates_before": [
+      [
+       0,
+       0
+      ]
+     ]
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-07
+   },
+   "uncertainty": {
+    "basis": "sweep step in eps; the jump is measured between sweep points bracketing eps*",
+    "kind": "truncation_bound",
+    "value": 0.0001
+   },
+   "unit": null,
+   "value": {
+    "heading_jump_deg": 126.86975096836686,
+    "length_jump": 8.944644025454807e-08
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "A metric calibrated from physical measurements is accurate enough to decide between near-tied routes",
+   "domain": "calibration",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 15929,
+   "path": "artifacts/T031/metric-perturbation.json",
+   "sha256": "b4b4a5d0a1ee397bbbd7d423776cc4bf405188d895ae641d48a1ef0413898a89"
+  },
+  {
+   "bytes": 3253,
+   "path": "artifacts/T031/route-switch.svg",
+   "sha256": "52aba05f119b6174bbb0264ca6b0fbf36883a1167b0ca639dd9b00ab7b1f4fcd"
+  }
+ ],
+ "hypothesis": "Near a tie, an arbitrarily small constant metric perturbation g = I + eps h switches the shortest route discontinuously: the switch occurs at eps* = 4 delta for a target delta away from the tie, the heading jumps by about 127 deg, and the minimal length stays continuous.",
+ "input_data": [
+  "delta in {1/10, 1/100, 1/1000, 1/10000}",
+  "sweep eps = j/10000, j = 0..100, target (1/2 - 1/1000, 1/4)"
+ ],
+ "mathematical_model": "Flat torus Z^2 with g = I + eps h, h = [[0, 1], [1, 0]]; Q_eps(x) = |x|^2 + 2 eps x1 x2; routes a = (1/2 - delta, 1/4) and b = a - (1, 0) tie when eps* = (|b|^2 - |a|^2) / (a^T h a - b^T h b) = 4 delta.",
+ "number": 31,
+ "numerical_result": "eps* = 1/250 (float bisection 0.00399999999999989); 1 switch; heading jump 126.87 deg; length change across the switch 8.94e-08.",
+ "observation_model": "No physical observation: exact or floating-point computation on declared mathematical objects.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "requirement_probes": {
+   "module:sympy": true
+  },
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/flat_torus_topology.py": "4d8cf2437759501a1b9fa5ee0d8abfac43345ebee378c6ad08233e9155d4b184",
+   "src/ciw/lab/flat_torus_topology_lattice.py": "15a33fcd29591e43dec16fa3b9ad26d6b6b86846872e9e6bf815508fb0dade63"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T032: counterexample library for 'shortest means safest'",
+ "report_id": "sha256:cc2aecfbcbf21afe883907e9d840381f2e1c013e13909451d60d3a00d3595a3f",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "flat-torus-topology",
+ "state": "completed",
+ "task_id": "T031",
+ "tests_passed": [
+  "check: The shortest route switches at eps* = 4 delta, which vanishes as the unperturbed gap vanishes vs eps*/delta - 4 mismatches over four deltas",
+  "check: The shortest route switches at eps* = 4 delta, which vanishes as the unperturbed gap vanishes vs switches in the sweep minus 1",
+  "check: The shortest route switches at eps* = 4 delta, which vanishes as the unperturbed gap vanishes vs float bisection minus exact eps*",
+  "check: The shortest route switches at eps* = 4 delta, which vanishes as the unperturbed gap vanishes vs tie multiplicity at eps* minus 2",
+  "independent: The shortest route switches at eps* = 4 delta, which vanishes as the unperturbed gap vanishes vs sympy.solve",
+  "check: A metric perturbation just above eps* = 1/250 (0.4%) turns the shortest-route heading by about 127 deg while the minimal length changes continuously vs heading jump (deg)",
+  "check: A metric perturbation just above eps* = 1/250 (0.4%) turns the shortest-route heading by about 127 deg while the minimal length changes continuously vs length change across the switch",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_t031_route_switch",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_regeneration_is_within_tolerance",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+ ],
+ "tests_skipped": [],
+ "title": "Study route changes under small metric perturbations.",
+ "uncertainty": "Exact rational thresholds; float bisection converges to binary64 resolution.",
+ "unresolved_assumptions": [
+  "Only constant perturbations are studied; a varying metric can also bend routes continuously."
+ ]
+}

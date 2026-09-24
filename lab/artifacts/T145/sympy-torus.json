@@ -1,0 +1,15 @@
+{
+ "christoffel": {
+  "Gamma^0_00": "0",
+  "Gamma^0_01": "-r*sin(theta)/(R + r*cos(theta))",
+  "Gamma^0_11": "0",
+  "Gamma^1_00": "(R + r*cos(theta))*sin(theta)/r",
+  "Gamma^1_01": "0",
+  "Gamma^1_11": "0"
+ },
+ "gaussian_curvature": "Piecewise(((R*cos(theta) - 2*r*sin(theta)**2 + r)/(r*(R + r*cos(theta))**2), Eq(R + r*cos(theta), 0)), (cos(theta)/(r*(R + r*cos(theta))), True))",
+ "max_abs_difference": 4.440892098500626e-16,
+ "metric_off_diagonal": "0",
+ "samples": 16,
+ "sympy": "1.14.0"
+}

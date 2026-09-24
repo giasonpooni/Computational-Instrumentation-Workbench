@@ -1,0 +1,536 @@
+{
+ "changed_files": [
+  "src/ciw/lab/surfaces_discrete_mesh.py",
+  "src/ciw/lab/surfaces_discrete_mesh_geometry.py",
+  "src/ciw/lab/surfaces_discrete_mesh_studies.py",
+  "docs/lab/MESH_GEODESICS.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 5,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Exactly the expected code for every defect; no code for valid controls; partial traces keep their length.",
+ "experiment": "Construct each defect explicitly, validate, trace or query, and compare the observed code with the declared code.",
+ "failure_modes_checked": [
+  "boundary_reached",
+  "boundary_vertex_curvature",
+  "degenerate_face",
+  "disconnected_components",
+  "empty_mesh",
+  "folded_face",
+  "inconsistent_orientation",
+  "invalid_direction",
+  "invalid_face_index",
+  "invalid_shape",
+  "invalid_strip",
+  "mesh_too_large",
+  "non_manifold_edge",
+  "non_manifold_vertex",
+  "nonfinite_vertex",
+  "open_boundary",
+  "point_outside_face",
+  "step_budget_exceeded",
+  "unreachable_target",
+  "unreferenced_vertex",
+  "vertex_hit",
+  "unguarded evaluation on zero-area faces"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "nonfinite_vertex",
+      "observed_refusal": "nonfinite_vertex",
+      "passed": true,
+      "reference": "validation: nan-vertex",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "invalid_face_index",
+      "observed_refusal": "invalid_face_index",
+      "passed": true,
+      "reference": "validation: index-out-of-range",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "degenerate_face",
+      "observed_refusal": "degenerate_face",
+      "passed": true,
+      "reference": "validation: zero-area-face",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "degenerate_face",
+      "observed_refusal": "degenerate_face",
+      "passed": true,
+      "reference": "validation: repeated-index",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "non_manifold_edge",
+      "observed_refusal": "non_manifold_edge",
+      "passed": true,
+      "reference": "validation: three-faces-on-one-edge",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "inconsistent_orientation",
+      "observed_refusal": "inconsistent_orientation",
+      "passed": true,
+      "reference": "validation: flipped-face",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "non_manifold_vertex",
+      "observed_refusal": "non_manifold_vertex",
+      "passed": true,
+      "reference": "validation: bowtie-vertex",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "folded_face",
+      "observed_refusal": "folded_face",
+      "passed": true,
+      "reference": "validation: fold-over",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "unreferenced_vertex",
+      "observed_refusal": "unreferenced_vertex",
+      "passed": true,
+      "reference": "validation: unreferenced-vertex",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "disconnected_components",
+      "observed_refusal": "disconnected_components",
+      "passed": true,
+      "reference": "validation: two-components",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "open_boundary",
+      "observed_refusal": "open_boundary",
+      "passed": true,
+      "reference": "validation: hole-when-closed-required",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "empty_mesh",
+      "observed_refusal": "empty_mesh",
+      "passed": true,
+      "reference": "validation: empty",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "invalid_shape",
+      "observed_refusal": "invalid_shape",
+      "passed": true,
+      "reference": "validation: planar-coordinates",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "boundary_reached",
+      "observed_refusal": "boundary_reached",
+      "passed": true,
+      "reference": "tracing: leave-planar-patch",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "vertex_hit",
+      "observed_refusal": "vertex_hit",
+      "passed": true,
+      "reference": "tracing: aimed-at-vertex",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "point_outside_face",
+      "observed_refusal": "point_outside_face",
+      "passed": true,
+      "reference": "tracing: point-off-face",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "invalid_direction",
+      "observed_refusal": "invalid_direction",
+      "passed": true,
+      "reference": "tracing: normal-direction",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "step_budget_exceeded",
+      "observed_refusal": "step_budget_exceeded",
+      "passed": true,
+      "reference": "tracing: step-budget",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "boundary_reached",
+      "observed_refusal": "boundary_reached",
+      "passed": true,
+      "reference": "tracing: trace-into-hole",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "unreachable_target",
+      "observed_refusal": "unreachable_target",
+      "passed": true,
+      "reference": "query: distance-across-components",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "boundary_vertex_curvature",
+      "observed_refusal": "boundary_vertex_curvature",
+      "passed": true,
+      "reference": "query: curvature-at-boundary-vertex",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "mesh_too_large",
+      "observed_refusal": "mesh_too_large",
+      "passed": true,
+      "reference": "query: heat-method-above-size-limit",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "invalid_strip",
+      "observed_refusal": "invalid_strip",
+      "passed": true,
+      "reference": "query: strip-faces-not-adjacent",
+      "reference_kind": "refusal"
+     }
+    ],
+    "generator": {
+     "cases": 23,
+     "name": "ciw.lab.surfaces_discrete_mesh_studies.refusal_study"
+    }
+   },
+   "claim": "Every declared surface-data defect is refused with its named code",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact comparison of refusal codes, integer counts or ordered code lists",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "aimed-at-vertex": "vertex_hit",
+    "bowtie-vertex": "non_manifold_vertex",
+    "curvature-at-boundary-vertex": "boundary_vertex_curvature",
+    "distance-across-components": "unreachable_target",
+    "empty": "empty_mesh",
+    "flipped-face": "inconsistent_orientation",
+    "fold-over": "folded_face",
+    "heat-method-above-size-limit": "mesh_too_large",
+    "hole-when-closed-required": "open_boundary",
+    "index-out-of-range": "invalid_face_index",
+    "leave-planar-patch": "boundary_reached",
+    "nan-vertex": "nonfinite_vertex",
+    "normal-direction": "invalid_direction",
+    "planar-coordinates": "invalid_shape",
+    "point-off-face": "point_outside_face",
+    "repeated-index": "degenerate_face",
+    "step-budget": "step_budget_exceeded",
+    "strip-faces-not-adjacent": "invalid_strip",
+    "three-faces-on-one-edge": "non_manifold_edge",
+    "trace-into-hole": "boundary_reached",
+    "two-components": "disconnected_components",
+    "unreferenced-vertex": "unreferenced_vertex",
+    "zero-area-face": "degenerate_face"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "issues reported on valid meshes",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "meshes": [
+      "icosphere-2",
+      "prism-cylinder-12x6",
+      "plane-5x5",
+      "torus-16x8"
+     ],
+     "name": "ciw.lab.surfaces_discrete_mesh_studies.refusal_study",
+     "part": "controls"
+    }
+   },
+   "claim": "Valid control meshes pass validation without issues",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact comparison of refusal codes, integer counts or ordered code lists",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": 0
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "mismatches with the expected ordered codes",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "defects": [
+      "nonfinite_vertex",
+      "inconsistent_orientation",
+      "unreferenced_vertex"
+     ],
+     "name": "ciw.lab.surfaces_discrete_mesh_studies._octahedron"
+    }
+   },
+   "claim": "A mesh with several defects reports all of them in declared order",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact comparison of refusal codes, integer counts or ordered code lists",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": [
+    "nonfinite_vertex",
+    "inconsistent_orientation",
+    "unreferenced_vertex"
+   ]
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "|partial length - distance to the boundary|",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     }
+    ],
+    "generator": {
+     "name": "ciw.lab.surfaces_discrete_mesh_geometry.plane_mesh",
+     "nx": 4,
+     "ny": 4
+    }
+   },
+   "claim": "A geodesic stopped at a boundary retains its partial length",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "difference from the closed form",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": "normalized length",
+   "value": 0.5700000000000001
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "nonfinite curvature values",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 3.0,
+      "passed": true,
+      "reference": "nonfinite normal components",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     }
+    ],
+    "generator": {
+     "name": "ciw.lab.surfaces_discrete_mesh_geometry.TriMesh",
+     "validation": "bypassed"
+    }
+   },
+   "claim": "Curvature and normals evaluated on an unvalidated zero-area face are nonfinite",
+   "counterexample": {
+    "statement": "Curvature and normal formulas can be evaluated safely on unvalidated meshes",
+    "witness": {
+     "defect": "zero-area face",
+     "mesh": "square plus a collinear face"
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact comparison of refusal codes, integer counts or ordered code lists",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "nonfinite_curvatures": 1,
+    "nonfinite_normals": 3
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": "No scanned surface, device or calibration was acquired; the computation is synthetic."
+   },
+   "claim": "The refusal catalogue covers every defect present in real scanned surface data",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 3833,
+   "path": "artifacts/T042/refusal-catalogue.json",
+   "sha256": "b2e4a57fef3d722a53269a013f9b5c17acecb407c2cff349f8b051a3b7a40a54"
+  }
+ ],
+ "hypothesis": "Each declared defect class in the mesh, trace and query catalogues (MESH_CODES, TRACE_CODES, QUERY_CODES) is detected before geometry is computed and reported under a stable name, and valid meshes pass; defects outside the catalogue are not claimed.",
+ "input_data": [
+  "nan-vertex (validation)",
+  "index-out-of-range (validation)",
+  "zero-area-face (validation)",
+  "repeated-index (validation)",
+  "three-faces-on-one-edge (validation)",
+  "flipped-face (validation)",
+  "bowtie-vertex (validation)",
+  "fold-over (validation)",
+  "unreferenced-vertex (validation)",
+  "two-components (validation)",
+  "hole-when-closed-required (validation)",
+  "empty (validation)",
+  "planar-coordinates (validation)",
+  "leave-planar-patch (tracing)",
+  "aimed-at-vertex (tracing)",
+  "point-off-face (tracing)",
+  "normal-direction (tracing)",
+  "step-budget (tracing)",
+  "trace-into-hole (tracing)",
+  "distance-across-components (query)",
+  "curvature-at-boundary-vertex (query)",
+  "heat-method-above-size-limit (query)",
+  "strip-faces-not-adjacent (query)"
+ ],
+ "mathematical_model": "Validation order: invalid_shape, empty_mesh, nonfinite_vertex, invalid_face_index, degenerate_face, non_manifold_edge, inconsistent_orientation, non_manifold_vertex, folded_face, unreferenced_vertex, disconnected_components, open_boundary. Tracing refusals: point_outside_face, invalid_direction, boundary_reached, vertex_hit, step_budget_exceeded. Query refusals: unreachable_target, boundary_vertex_curvature, mesh_too_large, invalid_strip.",
+ "number": 42,
+ "numerical_result": "23/23 defect cases refused with the expected code (21 distinct codes); 0 issues on 4 valid controls; multiple-defect report ['nonfinite_vertex', 'inconsistent_orientation', 'unreferenced_vertex']; boundary partial length 0.57 (analytic 0.57); unguarded zero-area evaluation gave 1 nonfinite curvature values.",
+ "observation_model": "No physical observation; the refusal code (or its absence) for each constructed input.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/surfaces_discrete_mesh.py": "60ba6ad84646cb8fff5dfa94cc609eb405b633ef3e75a535333dadd77e5bf592",
+   "src/ciw/lab/surfaces_discrete_mesh_geometry.py": "8788d479e31b40eaaa93aca1ff5aa293aa03fa681dfef7d9d5fe225f83994e7d",
+   "src/ciw/lab/surfaces_discrete_mesh_studies.py": "afac8f09b471f4d995289ed69e37f5a240b7d79c65392e35015a830f67d757b1"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T043: propagate vertex noise to geodesic length, normals and curvature on validated meshes.",
+ "report_id": "sha256:f9b726f71c2032c80b0d7afbcc868139b90eac3d06470cdb488be629d466c430",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "surfaces-discrete",
+ "state": "completed",
+ "task_id": "T042",
+ "tests_passed": [
+  "check: Every declared surface-data defect is refused with its named code vs validation: nan-vertex",
+  "check: Every declared surface-data defect is refused with its named code vs validation: index-out-of-range",
+  "check: Every declared surface-data defect is refused with its named code vs validation: zero-area-face",
+  "check: Every declared surface-data defect is refused with its named code vs validation: repeated-index",
+  "check: Every declared surface-data defect is refused with its named code vs validation: three-faces-on-one-edge",
+  "check: Every declared surface-data defect is refused with its named code vs validation: flipped-face",
+  "check: Every declared surface-data defect is refused with its named code vs validation: bowtie-vertex",
+  "check: Every declared surface-data defect is refused with its named code vs validation: fold-over",
+  "check: Every declared surface-data defect is refused with its named code vs validation: unreferenced-vertex",
+  "check: Every declared surface-data defect is refused with its named code vs validation: two-components",
+  "check: Every declared surface-data defect is refused with its named code vs validation: hole-when-closed-required",
+  "check: Every declared surface-data defect is refused with its named code vs validation: empty",
+  "check: Every declared surface-data defect is refused with its named code vs validation: planar-coordinates",
+  "check: Every declared surface-data defect is refused with its named code vs tracing: leave-planar-patch",
+  "check: Every declared surface-data defect is refused with its named code vs tracing: aimed-at-vertex",
+  "check: Every declared surface-data defect is refused with its named code vs tracing: point-off-face",
+  "check: Every declared surface-data defect is refused with its named code vs tracing: normal-direction",
+  "check: Every declared surface-data defect is refused with its named code vs tracing: step-budget",
+  "check: Every declared surface-data defect is refused with its named code vs tracing: trace-into-hole",
+  "check: Every declared surface-data defect is refused with its named code vs query: distance-across-components",
+  "check: Every declared surface-data defect is refused with its named code vs query: curvature-at-boundary-vertex",
+  "check: Every declared surface-data defect is refused with its named code vs query: heat-method-above-size-limit",
+  "check: Every declared surface-data defect is refused with its named code vs query: strip-faces-not-adjacent",
+  "check: Valid control meshes pass validation without issues vs issues reported on valid meshes",
+  "check: A mesh with several defects reports all of them in declared order vs mismatches with the expected ordered codes",
+  "check: A geodesic stopped at a boundary retains its partial length vs |partial length - distance to the boundary|",
+  "check: Curvature and normals evaluated on an unvalidated zero-area face are nonfinite vs nonfinite curvature values",
+  "check: Curvature and normals evaluated on an unvalidated zero-area face are nonfinite vs nonfinite normal components",
+  "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_every_defect_has_a_named_refusal",
+  "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_refusal_task_report"
+ ],
+ "tests_skipped": [],
+ "title": "Define refusal states for invalid or incomplete surface data.",
+ "uncertainty": "Exact (categorical); thresholds are declared: zero area at 2A/l_max^2 <= 1e-12, vertex hit at edge parameter <= 1e-9, fold at adjacent normal dot <= -0.9.",
+ "unresolved_assumptions": [
+  "Thresholds are relative and unitless; scans with very different scales may need other thresholds.",
+  "Not detected: self-intersections between non-adjacent faces; unwelded seams (coincident duplicate vertices pass validation and surface only as boundary_reached during tracing); duplicate faces; near-degenerate slivers just above the 2A/l_max^2 = 1e-12 threshold.",
+  "False-positive risk: a legitimate sharp crease with a dihedral bend over about 154 degrees is refused as folded_face (the embedded m = n^2 lantern is refused although it does not overlap itself)."
+ ]
+}

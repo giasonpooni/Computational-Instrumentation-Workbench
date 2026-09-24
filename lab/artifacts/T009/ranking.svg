@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420" font-family="sans-serif" font-size="11">
+<rect width="640" height="420" fill="#ffffff"/>
+<text x="78" y="22" font-size="13" font-weight="bold">Paths ordered by |j_lat(L)| (order: columns.json)</text>
+<rect x="78" y="40" width="392" height="322" fill="none" stroke="#333"/>
+<line x1="182.53" y1="40" x2="182.53" y2="362" stroke="#e5e7eb"/>
+<text x="182.53" y="378" text-anchor="middle">5</text>
+<line x1="313.20" y1="40" x2="313.20" y2="362" stroke="#e5e7eb"/>
+<text x="313.20" y="378" text-anchor="middle">10</text>
+<line x1="443.87" y1="40" x2="443.87" y2="362" stroke="#e5e7eb"/>
+<text x="443.87" y="378" text-anchor="middle">15</text>
+<line x1="78" y1="284.66" x2="470" y2="284.66" stroke="#e5e7eb"/>
+<text x="72" y="288.66" text-anchor="end">1e0</text>
+<line x1="78" y1="192.38" x2="470" y2="192.38" stroke="#e5e7eb"/>
+<text x="72" y="196.38" text-anchor="end">1e1</text>
+<line x1="78" y1="100.09" x2="470" y2="100.09" stroke="#e5e7eb"/>
+<text x="72" y="104.09" text-anchor="end">1e2</text>
+<text x="274.00" y="406" text-anchor="middle">rank by |j_lat(L)| (rank_order_by_lateral)</text>
+<text x="16" y="201.00" text-anchor="middle" transform="rotate(-90 16 201.00)">endpoint sensitivity</text>
+<path d="M78.00,350.07 L104.13,319.80 L130.27,300.28 L156.40,295.98 L182.53,291.38 L208.67,290.86 L234.80,287.26 L260.93,284.66 L287.07,284.66 L313.20,284.66 L339.33,284.66 L365.47,261.03 L391.60,260.90 L417.73,250.38 L443.87,192.10 L470.00,51.93" fill="none" stroke="#1f5fa8" stroke-width="1.8"/>
+<circle cx="78.00" cy="350.07" r="2.6" fill="#1f5fa8"/>
+<circle cx="104.13" cy="319.80" r="2.6" fill="#1f5fa8"/>
+<circle cx="130.27" cy="300.28" r="2.6" fill="#1f5fa8"/>
+<circle cx="156.40" cy="295.98" r="2.6" fill="#1f5fa8"/>
+<circle cx="182.53" cy="291.38" r="2.6" fill="#1f5fa8"/>
+<circle cx="208.67" cy="290.86" r="2.6" fill="#1f5fa8"/>
+<circle cx="234.80" cy="287.26" r="2.6" fill="#1f5fa8"/>
+<circle cx="260.93" cy="284.66" r="2.6" fill="#1f5fa8"/>
+<circle cx="287.07" cy="284.66" r="2.6" fill="#1f5fa8"/>
+<circle cx="313.20" cy="284.66" r="2.6" fill="#1f5fa8"/>
+<circle cx="339.33" cy="284.66" r="2.6" fill="#1f5fa8"/>
+<circle cx="365.47" cy="261.03" r="2.6" fill="#1f5fa8"/>
+<circle cx="391.60" cy="260.90" r="2.6" fill="#1f5fa8"/>
+<circle cx="417.73" cy="250.38" r="2.6" fill="#1f5fa8"/>
+<circle cx="443.87" cy="192.10" r="2.6" fill="#1f5fa8"/>
+<circle cx="470.00" cy="51.93" r="2.6" fill="#1f5fa8"/>
+<line x1="482" y1="52" x2="502" y2="52" stroke="#1f5fa8" stroke-width="2"/>
+<text x="508" y="56">|j_lat(L)|</text>
+<path d="M78.00,250.28 L104.13,288.47 L130.27,241.36 L156.40,301.50 L182.53,250.80 L208.67,230.04 L234.80,304.85 L260.93,256.88 L287.07,240.63 L313.20,256.88 L339.33,256.88 L365.47,242.74 L391.60,261.35 L417.73,254.37 L443.87,192.30 L470.00,51.93" fill="none" stroke="#c2410c" stroke-width="1.8"/>
+<circle cx="78.00" cy="250.28" r="2.6" fill="#c2410c"/>
+<circle cx="104.13" cy="288.47" r="2.6" fill="#c2410c"/>
+<circle cx="130.27" cy="241.36" r="2.6" fill="#c2410c"/>
+<circle cx="156.40" cy="301.50" r="2.6" fill="#c2410c"/>
+<circle cx="182.53" cy="250.80" r="2.6" fill="#c2410c"/>
+<circle cx="208.67" cy="230.04" r="2.6" fill="#c2410c"/>
+<circle cx="234.80" cy="304.85" r="2.6" fill="#c2410c"/>
+<circle cx="260.93" cy="256.88" r="2.6" fill="#c2410c"/>
+<circle cx="287.07" cy="240.63" r="2.6" fill="#c2410c"/>
+<circle cx="313.20" cy="256.88" r="2.6" fill="#c2410c"/>
+<circle cx="339.33" cy="256.88" r="2.6" fill="#c2410c"/>
+<circle cx="365.47" cy="242.74" r="2.6" fill="#c2410c"/>
+<circle cx="391.60" cy="261.35" r="2.6" fill="#c2410c"/>
+<circle cx="417.73" cy="254.37" r="2.6" fill="#c2410c"/>
+<circle cx="443.87" cy="192.30" r="2.6" fill="#c2410c"/>
+<circle cx="470.00" cy="51.93" r="2.6" fill="#c2410c"/>
+<line x1="482" y1="70" x2="502" y2="70" stroke="#c2410c" stroke-width="2"/>
+<text x="508" y="74">|j_head(L)|</text>
+</svg>

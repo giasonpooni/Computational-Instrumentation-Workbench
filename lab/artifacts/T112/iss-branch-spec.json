@@ -1,0 +1,88 @@
+{
+ "bound": {
+  "P": [
+   [
+    2.2333333333333334,
+    0.125
+   ],
+   [
+    0.125,
+    0.5208333333333334
+   ]
+  ],
+  "beta": 0.36084391824351614,
+  "c": 0.4459489136356866,
+  "sqrt_V_bound": 1.618319530376988,
+  "state_bound": 2.2622064284977506
+ },
+ "data_needed": [
+  "the disturbance input matrix B (or a bound on how w enters), in the declared state units",
+  "a disturbance bound w_bar with units, provenance and the procedure that established it",
+  "whether w is sampled, held or continuous, and the sampling period if the model is discrete",
+  "the declared model uncertainty that w is meant to cover, separately from exogenous disturbance",
+  "the certificate P and Q used, with the Lyapunov-equation residual"
+ ],
+ "definition": "x' = f(x, w) is input-to-state stable if |x(t)| <= beta(|x(0)|, t) + gamma(sup |w|) for a class-KL beta and a class-K gamma.",
+ "iss_lyapunov_function": "V with a1(|x|) <= V(x) <= a2(|x|) and V' <= -a3(|x|) + sigma(|w|); for linear x' = A x + B w and V = x^T P x: V' <= -c V + 2 sqrt(V) ||P^(1/2) B|| |w| with c = min eig(P^-1 Q).",
+ "numerical_illustration": "synthetic: A = [[0, 1], [-4, -1.2]], B = [0, 1]^T, w_bar = 0.5, Q = I; exact ZOH simulation with h = 0.005 s over 30 s from x(0) = 0 for four bounded disturbance classes, compared with the quadratic ISS bound and with the sharp reachable-set supremum; plus the scalar system x' = -x + w, where the bound is approached as t grows.",
+ "open_questions": [
+  "a resolution-aware float64 evaluation of the ISS inequality analogous to decrease_resolution",
+  "sampled-data ISS: inter-sample behaviour of a discrete certificate under held disturbances",
+  "how a host would evidence w_bar from acquired data (hardware-gated; not available here)"
+ ],
+ "plsr_must_not_claim": [
+  "an ISS gain, ultimate bound or invariant set: runtime-status-v1 evaluates the undisturbed decrease only",
+  "that a CERTIFIED_WITH_MARGIN sample is robust to disturbances or unmodelled dynamics",
+  "that a declared required_margin corresponds to any physical disturbance level",
+  "that a disturbance bound supplied by a host is true of a physical plant",
+  "any new status code for disturbance robustness (a new code is a new runtime-status version)"
+ ],
+ "reachable": {
+  "angles": 361,
+  "direction_angle": 0.1552821296899602,
+  "horizon": 60.0,
+  "step": 0.005,
+  "sup_sqrt_V": 0.41175425146104444
+ },
+ "scalar": {
+  "exact_sup": 0.4999999999999532,
+  "ratio": 0.9999999999999062,
+  "state_bound": 0.5000000000000001
+ },
+ "simulations": {
+  "constant": {
+   "final_state": [
+    0.12499999814891355,
+    2.5335035271946416e-09
+   ],
+   "sup_sqrt_V": 0.25698278219981935,
+   "sup_state": 0.18917328664800148
+  },
+  "random held": {
+   "final_state": [
+    -0.06245562999959923,
+    0.010453248406346309
+   ],
+   "sup_sqrt_V": 0.18646062087717225,
+   "sup_state": 0.20731066188631272
+  },
+  "resonant sinusoid": {
+   "final_state": [
+    0.1987335754596614,
+    -0.1250161484096829
+   ],
+   "sup_sqrt_V": 0.3240477410592294,
+   "sup_state": 0.4166650388344542
+  },
+  "worst-case switching": {
+   "final_state": [
+    0.12488518710977321,
+    -0.4943985709145302
+   ],
+   "sup_sqrt_V": 0.4093310303289144,
+   "sup_state": 0.5306714977559531
+  }
+ },
+ "status": "research branch; not a runtime feature and not part of runtime-status-v1",
+ "title": "Disturbance-aware (ISS) research branch for PLSR-style certificates"
+}

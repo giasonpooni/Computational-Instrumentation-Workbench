@@ -1,0 +1,417 @@
+{
+ "changed_files": [
+  "src/ciw/lab/surfaces_discrete.py",
+  "src/ciw/lab/surfaces_discrete_ad.py",
+  "src/ciw/lab/surfaces_discrete_geometry.py",
+  "docs/lab/SURFACE_INTERFACE.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 4,
+   "not_established": 1,
+   "numerically_verified": 5,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Residuals at rounding level (<= 1e-12); exact closed forms identical.",
+ "experiment": "Evaluate sympy-lambdified, sympy.diffgeom and dual-number quantities at seeded points, compare with the ciw interface, simplify the diffgeom curvature exactly, self-test the dual numbers, and confirm a seeded derivative defect is exposed.",
+ "failure_modes_checked": [
+  "perturbation confusion in nested dual numbers",
+  "formula re-expression not equal to the core embedding",
+  "dropped mixed derivative (seeded defect)",
+  "sign and index convention of the sympy.diffgeom Riemann components",
+  "float parameters rounded by simplification (parameters are exact rationals)"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "independent_check": {
+     "checker": {
+      "implementation": "sympy",
+      "revision": "1.14.0"
+     },
+     "comparison": "abs_le",
+     "observed": 4.226085531613157e-16,
+     "passed": true,
+     "producer": {
+      "implementation": "ciw.lab.surfaces",
+      "revision": "surfaces.py sha256 e8f264c182743d0177d93b961a49d7ddf78f30d79a7a75b9fea4018b10d4eef0; surfaces_discrete_geometry.py sha256 d4445a253778e1dff32b68a903a9caf560affa08ca5a7110207e54c8e1baa60e"
+     },
+     "reference": "max normalized residual over g and dg (sympy differentiation of the re-expressed formula)",
+     "reference_kind": "analytic",
+     "tolerance": 1e-12
+    }
+   },
+   "claim": "sympy-differentiated metric and metric derivatives match the ciw surface interface on every conformance surface",
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "floating evaluation of lambdified expressions",
+    "kind": "roundoff",
+    "value": 1e-12
+   },
+   "unit": "normalized residual",
+   "value": 4.226085531613157e-16
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "independent_check": {
+     "checker": {
+      "implementation": "sympy.diffgeom",
+      "revision": "1.14.0"
+     },
+     "comparison": "abs_le",
+     "observed": 1.817349289946462e-16,
+     "passed": true,
+     "producer": {
+      "implementation": "ciw.lab.surfaces",
+      "revision": "surfaces.py sha256 e8f264c182743d0177d93b961a49d7ddf78f30d79a7a75b9fea4018b10d4eef0; surfaces_discrete_geometry.py sha256 d4445a253778e1dff32b68a903a9caf560affa08ca5a7110207e54c8e1baa60e"
+     },
+     "reference": "max |Gamma_diffgeom - Gamma| / (max|Gamma| + 1/l) (metric_to_Christoffel_2nd)",
+     "reference_kind": "analytic",
+     "tolerance": 1e-12
+    }
+   },
+   "claim": "sympy.diffgeom Christoffel symbols match the ciw surface interface on seven surfaces",
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "floating evaluation of lambdified expressions",
+    "kind": "roundoff",
+    "value": 1e-12
+   },
+   "unit": "normalized residual",
+   "value": 1.817349289946462e-16
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "independent_check": {
+     "checker": {
+      "implementation": "sympy.diffgeom",
+      "revision": "1.14.0"
+     },
+     "comparison": "abs_le",
+     "observed": 6.977634294120269e-16,
+     "passed": true,
+     "producer": {
+      "implementation": "ciw.lab.surfaces",
+      "revision": "surfaces.py sha256 e8f264c182743d0177d93b961a49d7ddf78f30d79a7a75b9fea4018b10d4eef0; surfaces_discrete_geometry.py sha256 d4445a253778e1dff32b68a903a9caf560affa08ca5a7110207e54c8e1baa60e"
+     },
+     "reference": "max |K_diffgeom - K| / (|K| + 1/l^2) (metric_to_Riemann_components)",
+     "reference_kind": "analytic",
+     "tolerance": 1e-12
+    }
+   },
+   "claim": "sympy.diffgeom Riemann curvature R_1212 / det g matches the supplied Gaussian curvature on seven surfaces",
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "floating evaluation of lambdified expressions",
+    "kind": "roundoff",
+    "value": 1e-12
+   },
+   "unit": "normalized residual",
+   "value": 6.977634294120269e-16
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "independent_check": {
+     "checker": {
+      "implementation": "sympy.diffgeom",
+      "revision": "1.14.0"
+     },
+     "comparison": "abs_le",
+     "observed": 0.0,
+     "passed": true,
+     "producer": {
+      "implementation": "ciw.lab.surfaces_discrete._declared_curvature",
+      "revision": "surfaces_discrete.py sha256 65515cd7d7440c047bb6cba986dbcd2b496978ebb32ed15939e371828e755eef"
+     },
+     "reference": "restated closed forms whose difference from the diffgeom curvature does not simplify to 0",
+     "reference_kind": "exact_arithmetic",
+     "tolerance": 0.0
+    }
+   },
+   "claim": "sympy.diffgeom curvature of seven surfaces simplifies exactly to the closed forms restated from ciw.lab.surfaces",
+   "domain": "mathematical",
+   "evidence_status": "independently_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact rational parameters; symbolic identity",
+    "kind": "reference_error",
+    "value": 0
+   },
+   "unit": null,
+   "value": {
+    "mismatches": 0,
+    "surfaces": 7
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 5.551115123125783e-16,
+      "passed": true,
+      "reference": "max normalized residual over Gamma and K (sympy differentiation; Levi-Civita and Riemann assembly written in ciw, same origin)",
+      "reference_kind": "cross_implementation",
+      "tolerance": 1e-12
+     }
+    ]
+   },
+   "claim": "Christoffel symbols and curvature assembled in ciw code from sympy derivatives match the interface on every conformance surface",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "floating evaluation of lambdified expressions",
+    "kind": "roundoff",
+    "value": 1e-12
+   },
+   "unit": "normalized residual",
+   "value": 5.551115123125783e-16
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 4.4259596565437094e-16,
+      "passed": true,
+      "reference": "max normalized residual over metric, dg and Gamma (same ciw origin)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 4.440892098500626e-16,
+      "passed": true,
+      "reference": "max |X_dual - X| (formula re-expresses the same embedding)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-13
+     }
+    ]
+   },
+   "claim": "Nested dual-number derivatives of re-expressed embeddings match the metric, dg and Christoffel symbols",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "dual arithmetic",
+    "kind": "roundoff",
+    "value": 1e-12
+   },
+   "unit": "normalized residual",
+   "value": 4.4259596565437094e-16
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 1.0416744990940514e-15,
+      "passed": true,
+      "reference": "max normalized curvature residual",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     }
+    ]
+   },
+   "claim": "Dual-number curvature (Brioschi with exact second derivatives, and LN - M^2) matches the supplied K",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "dual arithmetic",
+    "kind": "roundoff",
+    "value": 1e-12
+   },
+   "unit": "normalized residual",
+   "value": 1.0416744990940514e-15
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 3.552713678800501e-15,
+      "passed": true,
+      "reference": "max |dual - closed form| over 8 cases",
+      "reference_kind": "analytic",
+      "tolerance": 1e-13
+     }
+    ]
+   },
+   "claim": "Dual numbers reproduce closed-form first, mixed and third derivatives without perturbation confusion",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-13,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "dual arithmetic",
+    "kind": "roundoff",
+    "value": 1e-13
+   },
+   "unit": null,
+   "value": 3.552713678800501e-15
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 0.06083965588416231,
+      "passed": true,
+      "reference": "dropped-cross-term mutant: max normalized |dg_mutant - dg_dual|",
+      "reference_kind": "analytic",
+      "tolerance": 0.001
+     }
+    ]
+   },
+   "claim": "Dual-number checks expose a hand-coded derivative defect that symmetry checks cannot see",
+   "counterexample": {
+    "statement": "Finite, index-symmetric hand-coded metric derivatives are correct",
+    "witness": {
+     "mutant": "gaussian-bump with f_xy dropped",
+     "normalized_error": 0.0608
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-06,
+    "rel": 0.0001
+   },
+   "uncertainty": {
+    "basis": "dual arithmetic",
+    "kind": "roundoff",
+    "value": 1e-12
+   },
+   "unit": null,
+   "value": 0.0608397
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "Symbolic and dual-number derivative agreement certifies derivatives of surfaces reconstructed from physical measurements",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 3499,
+   "path": "artifacts/T034/dual-vs-ciw.json",
+   "sha256": "5c28f1b80689ec47838a1b0071d0c548b8c27aad9d68a9280afada092817903e"
+  },
+  {
+   "bytes": 3514,
+   "path": "artifacts/T034/sympy-vs-ciw.json",
+   "sha256": "4f017bbbbe834eae27d3fcc4c522ef271c8d6d09f51869add35706f3ed83ed92"
+  }
+ ],
+ "hypothesis": "At seeded points of every conformance surface, the hand-coded metric, metric derivatives, Christoffel symbols and Gaussian curvature equal those of its closed-form embedding (or metric) computed by an independent symbolic system (sympy differentiation, and sympy.diffgeom for the connection and curvature of seven surfaces) and by forward-mode automatic differentiation; for those seven surfaces the symbolic curvature equals the declared closed form exactly.",
+ "input_data": [
+  "10 conformance surfaces, 12 points each (PCG64 seed 3335)",
+  "sympy available; sympy.diffgeom and exact closed forms for 7 surfaces (plane, sphere, cylinder, saddle, torus, hyperbolic-plane, plane-polar)"
+ ],
+ "mathematical_model": "Re-expressed X(u) per surface with exact rational parameters; g = X_i . X_j; dg by differentiation; sympy.diffgeom Gamma from metric_to_Christoffel_2nd and K = g_0m R^m_101 / det g from metric_to_Riemann_components; ciw-assembled Gamma and R_1212 / det g from sympy derivatives; dual-number K from Brioschi with exact second derivatives and from LN - M^2.",
+ "number": 34,
+ "numerical_result": "dual numbers: derivatives 4.43e-16, curvature 1.04e-15, self-test 3.55e-15, defect exposed at 0.0608; sympy: g and dg 4.23e-16; sympy.diffgeom: Gamma 1.82e-16, K 6.98e-16, exact closed forms 7/7; ciw assembly from sympy derivatives 5.55e-16",
+ "observation_model": "Same normalization as T033; exact symbolic comparison by sympy.simplify(simplify(K_diffgeom) - declared) == 0.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "requirement_probes": {
+   "module:sympy": true
+  },
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/surfaces_discrete.py": "65515cd7d7440c047bb6cba986dbcd2b496978ebb32ed15939e371828e755eef",
+   "src/ciw/lab/surfaces_discrete_ad.py": "a76cc131eeadc83d5c64a788dd8c0a1453a0c0ffc89a5f49e79cbb1bf35559c0",
+   "src/ciw/lab/surfaces_discrete_geometry.py": "d4445a253778e1dff32b68a903a9caf560affa08ca5a7110207e54c8e1baa60e"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T040: compare smooth and mesh Jacobi approximations using these verified smooth derivatives and curvatures as the reference. Complex-step derivatives remain open until the core surfaces accept complex coordinates.",
+ "report_id": "sha256:c9f341a5aa4fee550ff43669b40092caa94cfcd5acac5041856fc0526eec75a3",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "surfaces-discrete",
+ "state": "completed",
+ "task_id": "T034",
+ "tests_passed": [
+  "independent: sympy-differentiated metric and metric derivatives match the ciw surface interface on every conformance surface vs sympy",
+  "independent: sympy.diffgeom Christoffel symbols match the ciw surface interface on seven surfaces vs sympy.diffgeom",
+  "independent: sympy.diffgeom Riemann curvature R_1212 / det g matches the supplied Gaussian curvature on seven surfaces vs sympy.diffgeom",
+  "independent: sympy.diffgeom curvature of seven surfaces simplifies exactly to the closed forms restated from ciw.lab.surfaces vs sympy.diffgeom",
+  "check: Christoffel symbols and curvature assembled in ciw code from sympy derivatives match the interface on every conformance surface vs max normalized residual over Gamma and K (sympy differentiation; Levi-Civita and Riemann assembly written in ciw, same origin)",
+  "check: Nested dual-number derivatives of re-expressed embeddings match the metric, dg and Christoffel symbols vs max normalized residual over metric, dg and Gamma (same ciw origin)",
+  "check: Nested dual-number derivatives of re-expressed embeddings match the metric, dg and Christoffel symbols vs max |X_dual - X| (formula re-expresses the same embedding)",
+  "check: Dual-number curvature (Brioschi with exact second derivatives, and LN - M^2) matches the supplied K vs max normalized curvature residual",
+  "check: Dual numbers reproduce closed-form first, mixed and third derivatives without perturbation confusion vs max |dual - closed form| over 8 cases",
+  "check: Dual-number checks expose a hand-coded derivative defect that symmetry checks cannot see vs dropped-cross-term mutant: max normalized |dg_mutant - dg_dual|",
+  "pytest: tests/test_lab_surfaces_discrete.py::test_dual_numbers_match_closed_forms",
+  "pytest: tests/test_lab_surfaces_discrete.py::test_dual_derivatives_match_surface_interface",
+  "pytest: tests/test_lab_surfaces_discrete.py::test_sympy_references_match_surface_interface",
+  "pytest: tests/test_lab_surfaces_discrete.py::test_t034_report",
+  "pytest: tests/test_lab_surfaces_discrete.py::test_t034_degrades_without_sympy"
+ ],
+ "tests_skipped": [],
+ "title": "Add automatic differentiation or symbolic derivative checks.",
+ "uncertainty": "Rounding only for the pointwise comparisons (floating evaluation of lambdified expressions and dual arithmetic); agreement is shown at sampled points, and the exact symbolic identity for seven closed forms with the declared parameters.",
+ "unresolved_assumptions": [
+  "The re-expressed formulas and the restated closed forms are written by hand from the same definitions as the core; a shared misunderstanding of a surface definition would pass both.",
+  "sympy.diffgeom assembles the connection and curvature only for seven surfaces; for gaussian-bump, gaussian-bump-shear and rotated-torus they come from ciw-written assembly of sympy derivatives, which is same-origin evidence.",
+  "Dual-number agreement is same-origin (ciw) evidence."
+ ]
+}

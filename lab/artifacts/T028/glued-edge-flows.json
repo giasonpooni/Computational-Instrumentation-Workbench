@@ -1,0 +1,978 @@
+{
+ "l_shape": {
+  "bad_multiplier": 0,
+  "rows": [
+   {
+    "crossings": 10,
+    "direction": [
+     -3,
+     -2
+    ],
+    "multiplier": "2",
+    "outcome": "closed",
+    "square": 0
+   },
+   {
+    "crossings": 10,
+    "direction": [
+     -3,
+     -2
+    ],
+    "multiplier": "2",
+    "outcome": "closed",
+    "square": 1
+   },
+   {
+    "crossings": 5,
+    "direction": [
+     -3,
+     -2
+    ],
+    "multiplier": "1",
+    "outcome": "closed",
+    "square": 2
+   },
+   {
+    "crossings": 12,
+    "direction": [
+     -3,
+     -1
+    ],
+    "multiplier": "3",
+    "outcome": "closed",
+    "square": 0
+   },
+   {
+    "crossings": 12,
+    "direction": [
+     -3,
+     -1
+    ],
+    "multiplier": "3",
+    "outcome": "closed",
+    "square": 1
+   },
+   {
+    "direction": [
+     -3,
+     -1
+    ],
+    "outcome": "SADDLE_CONNECTION",
+    "square": 2
+   },
+   {
+    "crossings": 12,
+    "direction": [
+     -3,
+     1
+    ],
+    "multiplier": "3",
+    "outcome": "closed",
+    "square": 0
+   },
+   {
+    "crossings": 12,
+    "direction": [
+     -3,
+     1
+    ],
+    "multiplier": "3",
+    "outcome": "closed",
+    "square": 1
+   },
+   {
+    "crossings": 12,
+    "direction": [
+     -3,
+     1
+    ],
+    "multiplier": "3",
+    "outcome": "closed",
+    "square": 2
+   },
+   {
+    "crossings": 10,
+    "direction": [
+     -3,
+     2
+    ],
+    "multiplier": "2",
+    "outcome": "closed",
+    "square": 0
+   },
+   {
+    "crossings": 5,
+    "direction": [
+     -3,
+     2
+    ],
+    "multiplier": "1",
+    "outcome": "closed",
+    "square": 1
+   },
+   {
+    "crossings": 10,
+    "direction": [
+     -3,
+     2
+    ],
+    "multiplier": "2",
+    "outcome": "closed",
+    "square": 2
+   },
+   {
+    "crossings": 10,
+    "direction": [
+     -2,
+     -3
+    ],
+    "multiplier": "2",
+    "outcome": "closed",
+    "square": 0
+   },
+   {
+    "crossings": 5,
+    "direction": [
+     -2,
+     -3
+    ],
+    "multiplier": "1",
+    "outcome": "closed",
+    "square": 1
+   },
+   {
+    "crossings": 10,
+    "direction": [
+     -2,
+     -3
+    ],
+    "multiplier": "2",
+    "outcome": "closed",
+    "square": 2
+   },
+   {
+    "crossings": 6,
+    "direction": [
+     -2,
+     -1
+    ],
+    "multiplier": "2",
+    "outcome": "closed",
+    "square": 0
+   },
+   {
+    "crossings": 3,
+    "direction": [
+     -2,
+     -1
+    ],
+    "multiplier": "1",
+    "outcome": "closed",
+    "square": 1
+   },
+   {
+    "crossings": 6,
+    "direction": [
+     -2,
+     -1
+    ],
+    "multiplier": "2",
+    "outcome": "closed",
+    "square": 2
+   },
+   {
+    "crossings": 6,
+    "direction": [
+     -2,
+     1
+    ],
+    "multiplier": "2",
+    "outcome": "closed",
+    "square": 0
+   },
+   {
+    "crossings": 6,
+    "direction": [
+     -2,
+     1
+    ],
+    "multiplier": "2",
+    "outcome": "closed",
+    "square": 1
+   },
+   {
+    "crossings": 6,
+    "direction": [
+     -2,
+     1
+    ],
+    "multiplier": "2",
+    "outcome": "closed",
+    "square": 2
+   },
+   {
+    "crossings": 10,
+    "direction": [
+     -2,
+     3
+    ],
+    "multiplier": "2",
+    "outcome": "closed",
+    "square": 0
+   },
+   {
+    "crossings": 5,
+    "direction": [
+     -2,
+     3
+    ],
+    "multiplier": "1",
+    "outcome": "closed",
+    "square": 1
+   },
+   {
+    "crossings": 5,
+    "direction": [
+     -2,
+     3
+    ],
+    "multiplier": "1",
+    "outcome": "closed",
+    "square": 2
+   },
+   {
+    "crossings": 12,
+    "direction": [
+     -1,
+     -3
+    ],
+    "multiplier": "3",
+    "outcome": "closed",
+    "square": 0
+   },
+   {
+    "crossings": 12,
+    "direction": [
+     -1,
+     -3
+    ],
+    "multiplier": "3",
+    "outcome": "closed",
+    "square": 1
+   },
+   {
+    "direction": [
+     -1,
+     -3
+    ],
+    "outcome": "SADDLE_CONNECTION",
+    "square": 2
+   },
+   {
+    "crossings": 3,
+    "direction": [
+     -1,
+     -2
+    ],
+    "multiplier": "1",
+    "outcome": "closed",
+    "square": 0
+   },
+   {
+    "crossings": 6,
+    "direction": [
+     -1,
+     -2
+    ],
+    "multiplier": "2",
+    "outcome": "closed",
+    "square": 1
+   },
+   {
+    "crossings": 3,
+    "direction": [
+     -1,
+     -2
+    ],
+    "multiplier": "1",
+    "outcome": "closed",
+    "square": 2
+   },
+   {
+    "crossings": 6,
+    "direction": [
+     -1,
+     -1
+    ],
+    "multiplier": "3",
+    "outcome": "closed",
+    "square": 0
+   },
+   {
+    "crossings": 6,
+    "direction": [
+     -1,
+     -1
+    ],
+    "multiplier": "3",
+    "outcome": "closed",
+    "square": 1
+   },
+   {
+    "crossings": 6,
+    "direction": [
+     -1,
+     -1
+    ],
+    "multiplier": "3",
+    "outcome": "closed",
+    "square": 2
+   },
+   {
+    "crossings": 2,
+    "direction": [
+     -1,
+     0
+    ],
+    "multiplier": "2",
+    "outcome": "closed",
+    "square": 0
+   },
+   {
+    "crossings": 2,
+    "direction": [
+     -1,
+     0
+    ],
+    "multiplier": "2",
+    "outcome": "closed",
+    "square": 1
+   },
+   {
+    "crossings": 1,
+    "direction": [
+     -1,
+     0
+    ],
+    "multiplier": "1",
+    "outcome": "closed",
+    "square": 2
+   },
+   {
+    "crossings": 6,
+    "direction": [
+     -1,
+     1
+    ],
+    "multiplier": "3",
+    "outcome": "closed",
+    "square": 0
+   },
+   {
+    "crossings": 6,
+    "direction": [
+     -1,
+     1
+    ],
+    "multiplier": "3",
+    "outcome": "closed",
+    "square": 1
+   },
+   {
+    "direction": [
+     -1,
+     1
+    ],
+    "outcome": "SADDLE_CONNECTION",
+    "square": 2
+   },
+   {
+    "crossings": 6,
+    "direction": [
+     -1,
+     2
+    ],
+    "multiplier": "2",
+    "outcome": "closed",
+    "square": 0
+   },
+   {
+    "crossings": 6,
+    "direction": [
+     -1,
+     2
+    ],
+    "multiplier": "2",
+    "outcome": "closed",
+    "square": 1
+   },
+   {
+    "crossings": 6,
+    "direction": [
+     -1,
+     2
+    ],
+    "multiplier": "2",
+    "outcome": "closed",
+    "square": 2
+   },
+   {
+    "crossings": 12,
+    "direction": [
+     -1,
+     3
+    ],
+    "multiplier": "3",
+    "outcome": "closed",
+    "square": 0
+   },
+   {
+    "crossings": 12,
+    "direction": [
+     -1,
+     3
+    ],
+    "multiplier": "3",
+    "outcome": "closed",
+    "square": 1
+   },
+   {
+    "crossings": 12,
+    "direction": [
+     -1,
+     3
+    ],
+    "multiplier": "3",
+    "outcome": "closed",
+    "square": 2
+   },
+   {
+    "crossings": 2,
+    "direction": [
+     0,
+     -1
+    ],
+    "multiplier": "2",
+    "outcome": "closed",
+    "square": 0
+   },
+   {
+    "crossings": 1,
+    "direction": [
+     0,
+     -1
+    ],
+    "multiplier": "1",
+    "outcome": "closed",
+    "square": 1
+   },
+   {
+    "crossings": 2,
+    "direction": [
+     0,
+     -1
+    ],
+    "multiplier": "2",
+    "outcome": "closed",
+    "square": 2
+   },
+   {
+    "crossings": 2,
+    "direction": [
+     0,
+     1
+    ],
+    "multiplier": "2",
+    "outcome": "closed",
+    "square": 0
+   },
+   {
+    "crossings": 1,
+    "direction": [
+     0,
+     1
+    ],
+    "multiplier": "1",
+    "outcome": "closed",
+    "square": 1
+   },
+   {
+    "crossings": 2,
+    "direction": [
+     0,
+     1
+    ],
+    "multiplier": "2",
+    "outcome": "closed",
+    "square": 2
+   },
+   {
+    "crossings": 12,
+    "direction": [
+     1,
+     -3
+    ],
+    "multiplier": "3",
+    "outcome": "closed",
+    "square": 0
+   },
+   {
+    "crossings": 12,
+    "direction": [
+     1,
+     -3
+    ],
+    "multiplier": "3",
+    "outcome": "closed",
+    "square": 1
+   },
+   {
+    "crossings": 12,
+    "direction": [
+     1,
+     -3
+    ],
+    "multiplier": "3",
+    "outcome": "closed",
+    "square": 2
+   },
+   {
+    "crossings": 6,
+    "direction": [
+     1,
+     -2
+    ],
+    "multiplier": "2",
+    "outcome": "closed",
+    "square": 0
+   },
+   {
+    "crossings": 6,
+    "direction": [
+     1,
+     -2
+    ],
+    "multiplier": "2",
+    "outcome": "closed",
+    "square": 1
+   },
+   {
+    "crossings": 6,
+    "direction": [
+     1,
+     -2
+    ],
+    "multiplier": "2",
+    "outcome": "closed",
+    "square": 2
+   },
+   {
+    "crossings": 6,
+    "direction": [
+     1,
+     -1
+    ],
+    "multiplier": "3",
+    "outcome": "closed",
+    "square": 0
+   },
+   {
+    "crossings": 6,
+    "direction": [
+     1,
+     -1
+    ],
+    "multiplier": "3",
+    "outcome": "closed",
+    "square": 1
+   },
+   {
+    "direction": [
+     1,
+     -1
+    ],
+    "outcome": "SADDLE_CONNECTION",
+    "square": 2
+   },
+   {
+    "crossings": 2,
+    "direction": [
+     1,
+     0
+    ],
+    "multiplier": "2",
+    "outcome": "closed",
+    "square": 0
+   },
+   {
+    "crossings": 2,
+    "direction": [
+     1,
+     0
+    ],
+    "multiplier": "2",
+    "outcome": "closed",
+    "square": 1
+   },
+   {
+    "crossings": 1,
+    "direction": [
+     1,
+     0
+    ],
+    "multiplier": "1",
+    "outcome": "closed",
+    "square": 2
+   },
+   {
+    "crossings": 6,
+    "direction": [
+     1,
+     1
+    ],
+    "multiplier": "3",
+    "outcome": "closed",
+    "square": 0
+   },
+   {
+    "crossings": 6,
+    "direction": [
+     1,
+     1
+    ],
+    "multiplier": "3",
+    "outcome": "closed",
+    "square": 1
+   },
+   {
+    "crossings": 6,
+    "direction": [
+     1,
+     1
+    ],
+    "multiplier": "3",
+    "outcome": "closed",
+    "square": 2
+   },
+   {
+    "crossings": 3,
+    "direction": [
+     1,
+     2
+    ],
+    "multiplier": "1",
+    "outcome": "closed",
+    "square": 0
+   },
+   {
+    "crossings": 6,
+    "direction": [
+     1,
+     2
+    ],
+    "multiplier": "2",
+    "outcome": "closed",
+    "square": 1
+   },
+   {
+    "crossings": 3,
+    "direction": [
+     1,
+     2
+    ],
+    "multiplier": "1",
+    "outcome": "closed",
+    "square": 2
+   },
+   {
+    "crossings": 12,
+    "direction": [
+     1,
+     3
+    ],
+    "multiplier": "3",
+    "outcome": "closed",
+    "square": 0
+   },
+   {
+    "crossings": 12,
+    "direction": [
+     1,
+     3
+    ],
+    "multiplier": "3",
+    "outcome": "closed",
+    "square": 1
+   },
+   {
+    "direction": [
+     1,
+     3
+    ],
+    "outcome": "SADDLE_CONNECTION",
+    "square": 2
+   },
+   {
+    "crossings": 10,
+    "direction": [
+     2,
+     -3
+    ],
+    "multiplier": "2",
+    "outcome": "closed",
+    "square": 0
+   },
+   {
+    "crossings": 5,
+    "direction": [
+     2,
+     -3
+    ],
+    "multiplier": "1",
+    "outcome": "closed",
+    "square": 1
+   },
+   {
+    "crossings": 5,
+    "direction": [
+     2,
+     -3
+    ],
+    "multiplier": "1",
+    "outcome": "closed",
+    "square": 2
+   },
+   {
+    "crossings": 6,
+    "direction": [
+     2,
+     -1
+    ],
+    "multiplier": "2",
+    "outcome": "closed",
+    "square": 0
+   },
+   {
+    "crossings": 6,
+    "direction": [
+     2,
+     -1
+    ],
+    "multiplier": "2",
+    "outcome": "closed",
+    "square": 1
+   },
+   {
+    "crossings": 6,
+    "direction": [
+     2,
+     -1
+    ],
+    "multiplier": "2",
+    "outcome": "closed",
+    "square": 2
+   },
+   {
+    "crossings": 6,
+    "direction": [
+     2,
+     1
+    ],
+    "multiplier": "2",
+    "outcome": "closed",
+    "square": 0
+   },
+   {
+    "crossings": 3,
+    "direction": [
+     2,
+     1
+    ],
+    "multiplier": "1",
+    "outcome": "closed",
+    "square": 1
+   },
+   {
+    "crossings": 6,
+    "direction": [
+     2,
+     1
+    ],
+    "multiplier": "2",
+    "outcome": "closed",
+    "square": 2
+   },
+   {
+    "crossings": 10,
+    "direction": [
+     2,
+     3
+    ],
+    "multiplier": "2",
+    "outcome": "closed",
+    "square": 0
+   },
+   {
+    "crossings": 5,
+    "direction": [
+     2,
+     3
+    ],
+    "multiplier": "1",
+    "outcome": "closed",
+    "square": 1
+   },
+   {
+    "crossings": 10,
+    "direction": [
+     2,
+     3
+    ],
+    "multiplier": "2",
+    "outcome": "closed",
+    "square": 2
+   },
+   {
+    "crossings": 10,
+    "direction": [
+     3,
+     -2
+    ],
+    "multiplier": "2",
+    "outcome": "closed",
+    "square": 0
+   },
+   {
+    "crossings": 5,
+    "direction": [
+     3,
+     -2
+    ],
+    "multiplier": "1",
+    "outcome": "closed",
+    "square": 1
+   },
+   {
+    "crossings": 10,
+    "direction": [
+     3,
+     -2
+    ],
+    "multiplier": "2",
+    "outcome": "closed",
+    "square": 2
+   },
+   {
+    "crossings": 12,
+    "direction": [
+     3,
+     -1
+    ],
+    "multiplier": "3",
+    "outcome": "closed",
+    "square": 0
+   },
+   {
+    "crossings": 12,
+    "direction": [
+     3,
+     -1
+    ],
+    "multiplier": "3",
+    "outcome": "closed",
+    "square": 1
+   },
+   {
+    "crossings": 12,
+    "direction": [
+     3,
+     -1
+    ],
+    "multiplier": "3",
+    "outcome": "closed",
+    "square": 2
+   },
+   {
+    "crossings": 12,
+    "direction": [
+     3,
+     1
+    ],
+    "multiplier": "3",
+    "outcome": "closed",
+    "square": 0
+   },
+   {
+    "crossings": 12,
+    "direction": [
+     3,
+     1
+    ],
+    "multiplier": "3",
+    "outcome": "closed",
+    "square": 1
+   },
+   {
+    "direction": [
+     3,
+     1
+    ],
+    "outcome": "SADDLE_CONNECTION",
+    "square": 2
+   },
+   {
+    "crossings": 10,
+    "direction": [
+     3,
+     2
+    ],
+    "multiplier": "2",
+    "outcome": "closed",
+    "square": 0
+   },
+   {
+    "crossings": 10,
+    "direction": [
+     3,
+     2
+    ],
+    "multiplier": "2",
+    "outcome": "closed",
+    "square": 1
+   },
+   {
+    "crossings": 5,
+    "direction": [
+     3,
+     2
+    ],
+    "multiplier": "1",
+    "outcome": "closed",
+    "square": 2
+   }
+  ],
+  "undecided": 0
+ },
+ "octagon": {
+  "exact_closed": true,
+  "exact_crossings": 20,
+  "exact_length": 38.31418586987901,
+  "exact_time": {
+   "radicand": 2,
+   "rational": "5",
+   "sqrt_coefficient": "7/2"
+  },
+  "exact_vertex_code": "SADDLE_CONNECTION",
+  "float_closed": true,
+  "float_time": 9.949747468305832,
+  "generic_closed": false,
+  "generic_crossings": 400,
+  "generic_min_clearance": 0.00027425327282185557,
+  "generic_theta": 0.3,
+  "near_vertex_code": "NEAR_VERTEX_WITHIN_TOLERANCE",
+  "same_crossing_sequence": true,
+  "start_code": "START_NOT_INTERIOR",
+  "time_difference": 1.7763568394002505e-15,
+  "tolerance": 1e-09
+ }
+}

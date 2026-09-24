@@ -1,0 +1,10 @@
+{
+ "accepted": 24,
+ "batch_mutations": 24,
+ "batch_mutations_accepted": 24,
+ "encoder_agreement": 24,
+ "mutations": 114,
+ "refused": 114,
+ "reordered_accepted": 24,
+ "valid": 24
+}

@@ -1,0 +1,614 @@
+{
+ "changed_files": [
+  "src/ciw/lab/lyapunov.py",
+  "src/ciw/lab/lyapunov_reference.py",
+  "src/ciw/lab/lyapunov_provider.py",
+  "docs/lab/LYAPUNOV.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 0,
+   "numerically_verified": 9,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "State scaling never changes the code; levels are decided exactly; overflow returns NUMERICAL_OVERFLOW; certificates only for exactly negative definite forms.",
+ "experiment": "One PLSR subprocess evaluates every case; CIW predicts the level decisions from the documented rule and from exact exponents and recomputes where the decrease form overflows.",
+ "failure_modes_checked": [
+  "state scaling changes the code",
+  "non-finite state accepted",
+  "level gate misses an exceedance",
+  "level gate reports a spurious exceedance",
+  "overflow not reported as NUMERICAL_OVERFLOW",
+  "overflow while forming A(theta) raises",
+  "false certificate from subnormal arithmetic"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "level decisions differing from the documented rule transcribed in CIW (same specification)",
+      "reference_kind": "analytic",
+      "tolerance": 0.0
+     }
+    ],
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "PLSR decides the level gate exactly as the documented rule predicts across the near-limit scan",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact rational, integer or bitwise comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "cases": 68,
+    "disagreements": 0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "codes differing from the unit-state code",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     }
+    ],
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "States from 2^-1074 to the largest binary64 number leave the PLSR code of a fixed negative definite form unchanged",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact rational, integer or bitwise comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "code": "CERTIFIED_WITH_MARGIN",
+    "mismatches": 0,
+    "states": 10
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "raises ValueError",
+      "observed_refusal": "raises ValueError",
+      "passed": true,
+      "reference": "x = (inf, 0)",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "raises ValueError",
+      "observed_refusal": "raises ValueError",
+      "passed": true,
+      "reference": "x = (nan, 0)",
+      "reference_kind": "refusal"
+     }
+    ],
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "Non-finite states are refused as input errors, not classified",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact rational, integer or bitwise comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "inf": "raises ValueError",
+    "nan": "raises ValueError"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "codes differing from the CIW transcription of the documented order",
+      "reference_kind": "analytic",
+      "tolerance": 0.0
+     }
+    ],
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "Matrices whose decrease form or scaled V leaves binary64 return NUMERICAL_OVERFLOW as predicted, and a control at the limit is still certified",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact rational, integer or bitwise comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "A=-2^1000 I, P=2^30 I": "NUMERICAL_OVERFLOW",
+    "A=-2^511 I, P=2^511 I": "CERTIFIED_WITH_MARGIN",
+    "A=-2^512 I, P=2^511 I": "NUMERICAL_OVERFLOW",
+    "P=2^1022 I, x=(1.5, 1.5)": "NUMERICAL_OVERFLOW"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 5.0,
+      "passed": true,
+      "reference": "scan cases with exact V > level and code != OUTSIDE_LEVEL_SET",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     }
+    ],
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "The PLSR level gate misses exceedances when s^2 underflows: V > level is certified",
+   "counterexample": {
+    "statement": "OUTSIDE_LEVEL_SET is returned whenever V(x) exceeds the declared level",
+    "witness": {
+     "A": "-I",
+     "P": "2^500 I",
+     "documented_exceeded": false,
+     "e": -700,
+     "exact_exceeded": true,
+     "log2_V": -900,
+     "log2_level": -901,
+     "p": 500,
+     "plsr_code": "CERTIFIED_WITH_MARGIN",
+     "plsr_exceeded": false,
+     "x": "(2^-700, 0)"
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact rational, integer or bitwise comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "cases": 68,
+    "missed": 5
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 9.0,
+      "passed": true,
+      "reference": "scan cases with exact V < level and code OUTSIDE_LEVEL_SET",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     }
+    ],
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "The PLSR level gate reports OUTSIDE_LEVEL_SET for V below the level when s^2 overflows",
+   "counterexample": {
+    "statement": "The level gate is decided exactly through the power-of-two scaling",
+    "witness": {
+     "A": "-I",
+     "P": "2^-1060 I",
+     "documented_exceeded": true,
+     "e": 512,
+     "exact_exceeded": false,
+     "log2_V": -36,
+     "log2_level": -35,
+     "p": -1060,
+     "plsr_code": "OUTSIDE_LEVEL_SET",
+     "plsr_exceeded": true,
+     "x": "(2^512, 0)"
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact rational, integer or bitwise comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "cases": 68,
+    "spurious": 9
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "raises ValueError",
+      "observed_refusal": "raises ValueError",
+      "passed": true,
+      "reference": "theta = 1e308, A1 = 2I (A(theta) = inf)",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "NUMERICAL_OVERFLOW",
+      "observed_refusal": "NUMERICAL_OVERFLOW",
+      "passed": true,
+      "reference": "theta = 1e308, A1 = I (A finite, M overflows)",
+      "reference_kind": "refusal"
+     }
+    ],
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "A finite in-box theta whose A(theta) overflows raises an input error instead of NUMERICAL_OVERFLOW",
+   "counterexample": {
+    "statement": "Every finite in-box sample yields a runtime-status-v1 code",
+    "witness": {
+     "A0": "-I",
+     "A1": "2I",
+     "box": [
+      -1e+308,
+      1e+308
+     ],
+     "error": {
+      "message": "A must be finite",
+      "type": "ValueError"
+     },
+     "theta": 1e+308
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact rational, integer or bitwise comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "theta:+1e308,c=1": "NUMERICAL_OVERFLOW",
+    "theta:+1e308,c=2": "raises ValueError",
+    "theta:-1e308,c=1": "NUMERICAL_OVERFLOW"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "negated exact determinant of the declared 2x2 decrease form, units (2^-1074)^2 (at least 1 means indefinite)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "PLSR resolution of the witness (underflows to zero)",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "PLSR code on the witness is certifying (1 if so)",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     }
+    ],
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "A subnormal plant whose declared decrease form is exactly indefinite drives the PLSR resolution to zero; PLSR's code on it is recorded",
+   "counterexample": {
+    "statement": "No binary64 input near the representable limits yields a false certificate",
+    "witness": {
+     "A_hex": [
+      [
+       "-0x0.0000000000002p-1022",
+       "0x0.0000000000005p-1022"
+      ],
+      [
+       "0x0.0p+0",
+       "-0x0.0000000000003p-1022"
+      ]
+     ],
+     "P_hex": [
+      [
+       "0x1.0000000000000p+0",
+       "0x0.0p+0"
+      ],
+      [
+       "0x0.0p+0",
+       "0x1.0000000000000p+0"
+      ]
+     ],
+     "binary64_form_units_of_2^-1074": [
+      [
+       -4.0,
+       4.0
+      ],
+      [
+       4.0,
+       -6.0
+      ]
+     ],
+     "code": "CERTIFIED_WITH_MARGIN",
+     "exact_form_units_of_2^-1074": [
+      [
+       -4.0,
+       5.0
+      ],
+      [
+       5.0,
+       -6.0
+      ]
+     ],
+     "plsr_details": "V=1.000e+00, decrease=-1.976e-323, max eig(M)=-4.941e-324 at infx resolution",
+     "x": [
+      1.0,
+      0.0
+     ]
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "the exact class and the zero resolution are exact; whether PLSR certifies depends on LAPACK's subnormal handling",
+    "kind": "reference_error",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "certified": true,
+    "code": "CERTIFIED_WITH_MARGIN",
+    "exact_class": "has_positive_eigenvalue",
+    "exact_det_units2": -1.0,
+    "resolution": 0.0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 5.0,
+      "passed": true,
+      "reference": "predicted missed exceedances (exact exponent comparison)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 9.0,
+      "passed": true,
+      "reference": "predicted spurious exceedances",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     }
+    ]
+   },
+   "claim": "The documented level rule, re-derived in CIW, misses exceedances when s^2 underflows and reports spurious ones when s^2 overflows",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact rational, integer or bitwise comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "cases": 68,
+    "predicted_missed": 5,
+    "predicted_spurious": 9
+   }
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 15681,
+   "path": "artifacts/T103/near-limits.json",
+   "sha256": "356a3a2a9337a1844cff492069a23324673b6cfe61f9d2b35e9e37002d151e57"
+  }
+ ],
+ "hypothesis": "States anywhere in binary64 are classified with the code unchanged through PLSR's power-of-two state scaling (components more than about 2^1022 below the largest one become subnormal in the scaled state and vanish beyond about 2^1075, which a code decided relative to |x|^2 does not see); matrices whose arithmetic leaves binary64 return NUMERICAL_OVERFLOW or an input refusal; no near-limit input yields a false certificate or a missed level-set exceedance.",
+ "input_data": [
+  "A = [[-1, 2], [0, -3]], P = I with ten states from 2^-1074 to 1.797e308 (mixed scales included) and non-finite states",
+  "Level scan: A = -I, P = 2^p I (p in -1060..1000), x = 2^e e1 (e in -1074..1023), level = 2^(p + 2e -+ 1)",
+  "Near-limit matrices: A = -2^1000 I with P = 2^30 I; A = -2^511 I or -2^512 I with P = 2^511 I; P = 2^1022 I with x = (1.5, 1.5); affine A(theta) = -I + theta c I, theta = +-1e308",
+  "The subnormal witness A = [[-2, 5], [0, -3]] 2^-1074, P = I"
+ ],
+ "mathematical_model": "V(x) = x^T P x and x^T M x are homogeneous of degree two in x, so PLSR evaluates at x / 2^e with the unit state in [1, 2). The level gate decides V > level as scaled_value > level / s^2 and treats an infinite s^2 as 'exceeded' and a zero s^2 as 'not exceeded'. Exact truth: V = 2^(p + 2e) for P = 2^p I and x = 2^e e1.",
+ "number": 103,
+ "numerical_result": "10 states from 2^-1074 to 1.797e308: 0 code changes (all CERTIFIED_WITH_MARGIN). Level scan (68 cases): 5 missed exceedances (certified with V > level, s^2 underflowed), 9 spurious exceedances (s^2 overflowed), 0 disagreements with the documented rule. Near-limit matrices: {'A=-2^1000 I, P=2^30 I': 'NUMERICAL_OVERFLOW', 'A=-2^511 I, P=2^511 I': 'CERTIFIED_WITH_MARGIN', 'A=-2^512 I, P=2^511 I': 'NUMERICAL_OVERFLOW', 'P=2^1022 I, x=(1.5, 1.5)': 'NUMERICAL_OVERFLOW'}. theta overflow: {'theta:+1e308,c=1': 'NUMERICAL_OVERFLOW', 'theta:-1e308,c=1': 'NUMERICAL_OVERFLOW', 'theta:+1e308,c=2': 'raises ValueError'}. Subnormal witness: CERTIFIED_WITH_MARGIN. Conclusion: state scaling and matrix overflow behave as documented; the hypothesis is refuted by level-gate errors (missed, spurious), by an input error raised for an in-box theta, by a false certificate for a subnormal plant.",
+ "observation_model": "PLSR code (or raised input error) per case; exact exponent arithmetic for V against the level; exact rational class of the witness's decrease form.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "provider": {
+   "commit": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+   "entry": "lyapunov.verdict / lyapunov.solve_lyapunov / lyapunov.decrease_resolution",
+   "files_pinned": 20,
+   "files_verified": 20,
+   "implementation": "Parameterized-Lyapunov-Stability-Runtime",
+   "numpy_version": "2.4.3",
+   "package_version": "0.1.0rc1",
+   "python_version": "3.12.3",
+   "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+   "role": "plsr-python",
+   "source_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7",
+   "verification": "package version and per-file sha256 checked in the subprocess before use"
+  },
+  "python": "3.12.3",
+  "requirement_probes": {
+   "provider:plsr-python": true
+  },
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/lyapunov.py": "58d6c7473f0a42002b57888de0ccfbbf73b571bbbabbf9ee81e0a05c734f2320",
+   "src/ciw/lab/lyapunov_provider.py": "da3465b48b5f5efc47bfe6ab8379cf2cf2bc23e4835dc7ff047252e77fa6ef17",
+   "src/ciw/lab/lyapunov_reference.py": "fa37ef453c23ad2bed2eab41132e72670e166b93eebd5fc9d67a4a89a7c92cca"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T104: semidefinite and skew-symmetric edge cases; propose upstream that the level gate compare exponents (log2 V = 2 e + log2 scaled_value) instead of forming s^2, and that forming A(theta) report NUMERICAL_OVERFLOW rather than raise.",
+ "report_id": "sha256:84a9bbcc4902e2099739a828a0363a54c5a5a5d48065a0509d31244c3e493ef0",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "lyapunov",
+ "state": "completed",
+ "task_id": "T103",
+ "tests_passed": [
+  "check: PLSR decides the level gate exactly as the documented rule predicts across the near-limit scan vs level decisions differing from the documented rule transcribed in CIW (same specification)",
+  "check: States from 2^-1074 to the largest binary64 number leave the PLSR code of a fixed negative definite form unchanged vs codes differing from the unit-state code",
+  "check: Non-finite states are refused as input errors, not classified vs x = (inf, 0)",
+  "check: Non-finite states are refused as input errors, not classified vs x = (nan, 0)",
+  "check: Matrices whose decrease form or scaled V leaves binary64 return NUMERICAL_OVERFLOW as predicted, and a control at the limit is still certified vs codes differing from the CIW transcription of the documented order",
+  "check: The PLSR level gate misses exceedances when s^2 underflows: V > level is certified vs scan cases with exact V > level and code != OUTSIDE_LEVEL_SET",
+  "check: The PLSR level gate reports OUTSIDE_LEVEL_SET for V below the level when s^2 overflows vs scan cases with exact V < level and code OUTSIDE_LEVEL_SET",
+  "check: A finite in-box theta whose A(theta) overflows raises an input error instead of NUMERICAL_OVERFLOW vs theta = 1e308, A1 = 2I (A(theta) = inf)",
+  "check: A finite in-box theta whose A(theta) overflows raises an input error instead of NUMERICAL_OVERFLOW vs theta = 1e308, A1 = I (A finite, M overflows)",
+  "check: A subnormal plant whose declared decrease form is exactly indefinite drives the PLSR resolution to zero; PLSR's code on it is recorded vs negated exact determinant of the declared 2x2 decrease form, units (2^-1074)^2 (at least 1 means indefinite)",
+  "check: A subnormal plant whose declared decrease form is exactly indefinite drives the PLSR resolution to zero; PLSR's code on it is recorded vs PLSR resolution of the witness (underflows to zero)",
+  "check: A subnormal plant whose declared decrease form is exactly indefinite drives the PLSR resolution to zero; PLSR's code on it is recorded vs PLSR code on the witness is certifying (1 if so)",
+  "check: The documented level rule, re-derived in CIW, misses exceedances when s^2 underflows and reports spurious ones when s^2 overflows vs predicted missed exceedances (exact exponent comparison)",
+  "check: The documented level rule, re-derived in CIW, misses exceedances when s^2 underflows and reports spurious ones when s^2 overflows vs predicted spurious exceedances",
+  "pytest: tests/test_lab_lyapunov.py::test_t103_overflow_underflow",
+  "pytest: tests/test_lab_lyapunov.py::test_level_gate_prediction",
+  "pytest: tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider"
+ ],
+ "tests_skipped": [],
+ "title": "Test overflow and underflow state evaluation.",
+ "uncertainty": "The level scan and the overflow cases involve only exact powers of two, so they are platform-independent; the witness depends on LAPACK's subnormal handling.",
+ "unresolved_assumptions": [
+  "Near-limit inputs are synthetic binary64 numbers chosen to reach the limits, not plant data.",
+  "The documented level rule is transcribed from the runtime source at the pinned commit, so agreement with it is a same-specification check; the exact exponent comparison is the independent reference.",
+  "Mixed-scale states lose their smallest components in the scaled evaluation; with a strictly negative definite test form this cannot change the code and is not probed further here."
+ ]
+}

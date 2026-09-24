@@ -1,0 +1,351 @@
+{
+ "changed_files": [
+  "src/ciw/lab/observation.py",
+  "src/ciw/lab/observation_modes.py",
+  "src/ciw/lab/observation_chord.py",
+  "docs/lab/OBSERVATION.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 4,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Every well-formed record validates; every record with a missing reference or a substituted mode is refused with a stable code; conversion needs a declared model.",
+ "experiment": "Validate the registry declarations; strip each reference from a valid record; attempt all 42 ordered mode substitutions; convert chords to arc lengths with and without a surface model.",
+ "failure_modes_checked": [
+  "missing frame, clock, epoch, calibration or clock basis",
+  "arrival stamp on an acquisition-stamped mode",
+  "frame kind or unit mismatch",
+  "surface distance without surface model",
+  "all 42 mode substitutions",
+  "model-derived distance presented as a direct intrinsic observation"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "missing declarations",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "invalid clock basis or geometry class",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "well-formed examples accepted minus modes",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "derivation": "docs/lab/OBSERVATION.md#observation-modes"
+   },
+   "claim": "Seven typed observation modes declare quantity, unit, frame kind, clock basis, geometry class, noise model and non-observables",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact: integer counts, refusal codes or dyadic arithmetic; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "examples_accepted": 7,
+    "extrinsic": [
+     "camera_chord_distance",
+     "tracker_measurement"
+    ],
+    "intrinsic": [
+     "intrinsic_geodesic_distance",
+     "reconstructed_surface_distance"
+    ],
+    "missing_declarations": 0,
+    "modes": 7
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "missing_frame",
+      "observed_refusal": "missing_frame",
+      "passed": true,
+      "reference": "validate: frame id removed",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "missing_clock",
+      "observed_refusal": "missing_clock",
+      "passed": true,
+      "reference": "validate: clock id removed",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "missing_epoch",
+      "observed_refusal": "missing_epoch",
+      "passed": true,
+      "reference": "validate: clock epoch removed",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "missing_calibration",
+      "observed_refusal": "missing_calibration",
+      "passed": true,
+      "reference": "validate: calibration reference removed",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "missing_clock_basis",
+      "observed_refusal": "missing_clock_basis",
+      "passed": true,
+      "reference": "validate: clock basis removed",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "clock_basis_mismatch",
+      "observed_refusal": "clock_basis_mismatch",
+      "passed": true,
+      "reference": "validate: arrival stamp on an acquisition-stamped mode",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "frame_kind_mismatch",
+      "observed_refusal": "frame_kind_mismatch",
+      "passed": true,
+      "reference": "validate: tracker frame on a camera-rig mode",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "unit_mismatch",
+      "observed_refusal": "unit_mismatch",
+      "passed": true,
+      "reference": "validate: pixel unit on a metric mode",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "surface_model_required",
+      "observed_refusal": "surface_model_required",
+      "passed": true,
+      "reference": "validate: surface distance without a surface model",
+      "reference_kind": "refusal"
+     }
+    ]
+   },
+   "claim": "Validation refuses records lacking frame, clock, epoch, calibration or clock-basis references",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact: integer counts, refusal codes or dyadic arithmetic; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": [
+    "missing_frame",
+    "missing_clock",
+    "missing_epoch",
+    "missing_calibration",
+    "missing_clock_basis",
+    "clock_basis_mismatch",
+    "frame_kind_mismatch",
+    "unit_mismatch",
+    "surface_model_required"
+   ]
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "ordered pairs not refused as mode_substitution",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "expected_refusal": "mode_substitution",
+      "observed_refusal": "mode_substitution",
+      "passed": true,
+      "reference": "camera chord used as an intrinsic geodesic distance",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "mode_substitution",
+      "observed_refusal": "mode_substitution",
+      "passed": true,
+      "reference": "model-derived distance used as a direct intrinsic observation",
+      "reference_kind": "refusal"
+     }
+    ]
+   },
+   "claim": "No observation mode stands in for another: every ordered substitution is refused",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact: integer counts, refusal codes or dyadic arithmetic; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "ordered_pairs": 42,
+    "refused": 42
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "surface_model_required",
+      "observed_refusal": "surface_model_required",
+      "passed": true,
+      "reference": "camera chord converted without a declared surface model",
+      "reference_kind": "refusal"
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 2.7755575615628914e-17,
+      "passed": true,
+      "reference": "recovered arc length against the arc length of Cylinder.exact_geodesic embeddings (m)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-13
+     }
+    ]
+   },
+   "claim": "A camera chord becomes a surface distance only through a declared surface model",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "a few ulp of the 0.12 m chord amplified by 1/(dc/ds) <= 1.22; the bisection converges to adjacent doubles",
+    "kind": "roundoff",
+    "value": 1e-15
+   },
+   "unit": "m",
+   "value": 2.7755575615628914e-17
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": "Noise parameters are declared placeholders; no instrument was acquired."
+   },
+   "claim": "The declared noise-model parameters describe real instruments of these modes",
+   "domain": "sensor_performance",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 4222,
+   "path": "artifacts/T045/observation-modes.json",
+   "sha256": "5a9c713da9dd05c36687b8ae8f3cb8a908144926d0a2cef97db624a01002c143"
+  },
+  {
+   "bytes": 7331,
+   "path": "artifacts/T045/refusals.json",
+   "sha256": "7a1ab39e6ededd1e819a61c417a1d6e0585f7bb58edf0e546d0bd42d2f1ebf2c"
+  }
+ ],
+ "hypothesis": "A typed registry can make every observation declare its frame, clock basis, calibration and geometry class, and can refuse malformed records and silent substitution of one mode for another.",
+ "input_data": [
+  "Seven declared modes in ciw.lab.observation_modes.MODES",
+  "One synthetic well-formed record per mode (example_observation)",
+  "Chords of Cylinder.exact_geodesic embeddings on a declared cylinder R = 0.1 m at alpha = 0, 30, 60, 90 deg and s = 0.015, 0.06, 0.12 m"
+ ],
+ "mathematical_model": "Each mode is a tuple (quantity, unit, components, frame kind, clock basis in {acquisition, arrival}, geometry in {intrinsic, extrinsic, none}, noise model, non-observables). A camera chord is extrinsic; it maps to a surface distance only through an inverted chord-arc relation of a declared surface model (T046/T047).",
+ "number": 45,
+ "numerical_result": "7 modes, 0 missing declarations; 9 record refusals as expected; 42/42 substitutions refused; chord-to-arc inversion error 2.78e-17 m.",
+ "observation_model": "No instrument: records are generated with declared (synthetic) calibration references.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/observation.py": "9ebedc1a1693aaa28965ba0c97837ad2d2c45bf0fd360857cf7b32c0993ed5fc",
+   "src/ciw/lab/observation_chord.py": "9b6fe24560daf8b06617824d20854f695e1f73774215a03acc41a28855ba164a",
+   "src/ciw/lab/observation_modes.py": "bfd6aa4471cc876a7ac2fb8790a4a5c4f478c547350b059311f5e6d53702c83e"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T058: track exact frame and clock bases and apply declared mappings",
+ "report_id": "sha256:57bd1d99bf9769d76f9f43f1ceb79710064dd936918020484991f25b6d0217b0",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "observation",
+ "state": "completed",
+ "task_id": "T045",
+ "tests_passed": [
+  "check: Seven typed observation modes declare quantity, unit, frame kind, clock basis, geometry class, noise model and non-observables vs missing declarations",
+  "check: Seven typed observation modes declare quantity, unit, frame kind, clock basis, geometry class, noise model and non-observables vs invalid clock basis or geometry class",
+  "check: Seven typed observation modes declare quantity, unit, frame kind, clock basis, geometry class, noise model and non-observables vs well-formed examples accepted minus modes",
+  "check: Validation refuses records lacking frame, clock, epoch, calibration or clock-basis references vs validate: frame id removed",
+  "check: Validation refuses records lacking frame, clock, epoch, calibration or clock-basis references vs validate: clock id removed",
+  "check: Validation refuses records lacking frame, clock, epoch, calibration or clock-basis references vs validate: clock epoch removed",
+  "check: Validation refuses records lacking frame, clock, epoch, calibration or clock-basis references vs validate: calibration reference removed",
+  "check: Validation refuses records lacking frame, clock, epoch, calibration or clock-basis references vs validate: clock basis removed",
+  "check: Validation refuses records lacking frame, clock, epoch, calibration or clock-basis references vs validate: arrival stamp on an acquisition-stamped mode",
+  "check: Validation refuses records lacking frame, clock, epoch, calibration or clock-basis references vs validate: tracker frame on a camera-rig mode",
+  "check: Validation refuses records lacking frame, clock, epoch, calibration or clock-basis references vs validate: pixel unit on a metric mode",
+  "check: Validation refuses records lacking frame, clock, epoch, calibration or clock-basis references vs validate: surface distance without a surface model",
+  "check: No observation mode stands in for another: every ordered substitution is refused vs ordered pairs not refused as mode_substitution",
+  "check: No observation mode stands in for another: every ordered substitution is refused vs camera chord used as an intrinsic geodesic distance",
+  "check: No observation mode stands in for another: every ordered substitution is refused vs model-derived distance used as a direct intrinsic observation",
+  "check: A camera chord becomes a surface distance only through a declared surface model vs camera chord converted without a declared surface model",
+  "check: A camera chord becomes a surface distance only through a declared surface model vs recovered arc length against the arc length of Cylinder.exact_geodesic embeddings (m)",
+  "pytest: tests/test_lab_observation.py::test_t045_modes_and_refusals"
+ ],
+ "tests_skipped": [],
+ "title": "Define typed observation modes: intrinsic geodesic distance; camera chord distance; reconstructed surface distance; encoder displacement; tracker measurement; image residual; IMU orientation.",
+ "uncertainty": "Refusals and counts are exact; the chord inversion is a bisection converged to adjacent doubles, so the recovered arc carries rounding of about 1e-16 m.",
+ "unresolved_assumptions": [
+  "Noise-model values are placeholders, not instrument characteristics",
+  "Frame kinds are declared strings; their physical realization is not checked"
+ ]
+}

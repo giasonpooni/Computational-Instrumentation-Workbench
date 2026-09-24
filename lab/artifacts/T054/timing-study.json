@@ -1,0 +1,58 @@
+{
+ "baseline_rms": 0.00021067040993660524,
+ "bound_violations": 0,
+ "declared": {
+  "jitter_s": 0.0005,
+  "offset_s": 0.00390625,
+  "rate_a_hz": 100.0,
+  "rate_b_hz": 30.0,
+  "runs": 300
+ },
+ "deltas_s": [
+  0.0001,
+  0.00021544346900318845,
+  0.00046415888336127773,
+  0.001,
+  0.002154434690031882,
+  0.004641588833612777,
+  0.01
+ ],
+ "exact_residual": 9.118140270603092e-17,
+ "excluded_near_knots": 36,
+ "interp_delta_s": 0.002,
+ "jitter_mse": 8.186484882383608e-09,
+ "jitter_mse_95ci": 1.9585385179860218e-10,
+ "jitter_predicted": 8.254376789701232e-09,
+ "jitter_z": -0.6794132051133122,
+ "mapped_interpolation_gap": 0.0,
+ "mapping": {
+  "kind": "clock",
+  "offset_s": -0.00390625,
+  "rate": 1.0,
+  "reference": "declared synthetic synchronization",
+  "source": [
+   "clock:B",
+   "epoch:B-boot",
+   "acquisition"
+  ],
+  "target": [
+   "clock:A",
+   "epoch:run-0",
+   "acquisition"
+  ]
+ },
+ "sample_residual_max": [
+  1.8968299669373333e-08,
+  8.804654457131113e-08,
+  4.087104803259221e-07,
+  1.897404815191167e-06,
+  8.810201460646266e-06,
+  4.0922174380726966e-05,
+  0.0001901580498561504
+ ],
+ "sample_slope": 2.0004987614543297,
+ "seed": 54,
+ "unmapped_interpolation_gap": 0.0017606614163031076,
+ "velocity_regression": 0.9919034246661147,
+ "velocity_regression_predicted": 0.9920766752469412
+}

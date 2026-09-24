@@ -1,0 +1,572 @@
+{
+ "changed_files": [
+  "src/ciw/lab/lyapunov.py",
+  "src/ciw/lab/lyapunov_reference.py",
+  "src/ciw/lab/lyapunov_provider.py",
+  "docs/lab/LYAPUNOV.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 6,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "The eight codes that do not depend on rounding are reached on paths far from every threshold, each path step equals the CIW transcription of the documented order, CERTIFICATE_NOT_POSITIVE is reached only through rounding and never with a certificate, and every host-owned code is refused.",
+ "experiment": "Build each path, evaluate all steps in one PLSR subprocess, recompute each expected code in CIW from A, P and x, and tabulate transitions and coverage.",
+ "failure_modes_checked": [
+  "a code unreachable",
+  "a transition out of documented order",
+  "a host-owned code accepted",
+  "CERTIFICATE_NOT_POSITIVE only reachable through rounding"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 8.0,
+      "passed": true,
+      "reference": "rounding-free codes reached",
+      "reference_kind": "invariant",
+      "tolerance": 8.0
+     }
+    ],
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "The eight rounding-free runtime-status-v1 codes are reached on one-parameter paths far from every threshold",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact rational, integer or bitwise comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "codes": [
+     "CERTIFIED_WITH_MARGIN",
+     "DECREASE_NOT_DEFINITE",
+     "MARGIN_LOW",
+     "NOT_CERTIFIED",
+     "NUMERICAL_INCONCLUSIVE",
+     "NUMERICAL_OVERFLOW",
+     "OUTSIDE_LEVEL_SET",
+     "OUTSIDE_PARAMETER_BOX"
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "path steps differing from the CIW transcription of the documented order (same specification)",
+      "reference_kind": "analytic",
+      "tolerance": 0.0
+     }
+    ],
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "Codes along each one-parameter path follow the documented decision order",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact rational, integer or bitwise comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "direction phi, A = diag(-1, 1)": [
+     "DECREASE_NOT_DEFINITE",
+     "DECREASE_NOT_DEFINITE",
+     "DECREASE_NOT_DEFINITE",
+     "NOT_CERTIFIED",
+     "NOT_CERTIFIED"
+    ],
+    "level (V = 4)": [
+     "CERTIFIED_WITH_MARGIN",
+     "CERTIFIED_WITH_MARGIN",
+     "OUTSIDE_LEVEL_SET",
+     "OUTSIDE_LEVEL_SET",
+     "OUTSIDE_LEVEL_SET"
+    ],
+    "matrix scale k, A = -2^k I": [
+     "CERTIFIED_WITH_MARGIN",
+     "CERTIFIED_WITH_MARGIN",
+     "CERTIFIED_WITH_MARGIN",
+     "NUMERICAL_OVERFLOW"
+    ],
+    "required_margin (margin 2)": [
+     "CERTIFIED_WITH_MARGIN",
+     "CERTIFIED_WITH_MARGIN",
+     "CERTIFIED_WITH_MARGIN",
+     "MARGIN_LOW",
+     "MARGIN_LOW",
+     "MARGIN_LOW"
+    ],
+    "stability a, A = [[a, 1], [-1, a]]": [
+     "CERTIFIED_WITH_MARGIN",
+     "CERTIFIED_WITH_MARGIN",
+     "NUMERICAL_INCONCLUSIVE",
+     "NUMERICAL_INCONCLUSIVE",
+     "NUMERICAL_INCONCLUSIVE",
+     "NOT_CERTIFIED",
+     "NOT_CERTIFIED"
+    ],
+    "theta, box [-1, 1]": [
+     "OUTSIDE_PARAMETER_BOX",
+     "CERTIFIED_WITH_MARGIN",
+     "CERTIFIED_WITH_MARGIN",
+     "CERTIFIED_WITH_MARGIN",
+     "OUTSIDE_PARAMETER_BOX"
+    ],
+    "theta_dot, rate box [-0.2, 0.2]": [
+     "OUTSIDE_PARAMETER_BOX",
+     "CERTIFIED_WITH_MARGIN",
+     "CERTIFIED_WITH_MARGIN",
+     "CERTIFIED_WITH_MARGIN",
+     "OUTSIDE_PARAMETER_BOX"
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "certifying verdicts on the exactly indefinite P witnesses",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 6.0,
+      "passed": true,
+      "reference": "CERTIFICATE_NOT_POSITIVE verdicts observed",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     }
+    ],
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "The exactly indefinite P witnesses are never certified along their weak direction; whether they reach CERTIFICATE_NOT_POSITIVE is recorded",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "whether the witnesses reach CERTIFICATE_NOT_POSITIVE depends on eigvalsh and dot-product rounding; the certification count does not",
+    "kind": "reference_error",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "certificate_not_positive_reached": true,
+    "certifying": 0,
+    "witnesses": 8
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "raises ValueError",
+      "observed_refusal": "raises ValueError",
+      "passed": true,
+      "reference": "require_status for MODEL_MISMATCH",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "raises ValueError",
+      "observed_refusal": "raises ValueError",
+      "passed": true,
+      "reference": "Verdict for MODEL_MISMATCH",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "raises ValueError",
+      "observed_refusal": "raises ValueError",
+      "passed": true,
+      "reference": "require_status for STALE_STATE",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "raises ValueError",
+      "observed_refusal": "raises ValueError",
+      "passed": true,
+      "reference": "Verdict for STALE_STATE",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "raises ValueError",
+      "observed_refusal": "raises ValueError",
+      "passed": true,
+      "reference": "require_status for INVALID_SENSOR_DATA",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "raises ValueError",
+      "observed_refusal": "raises ValueError",
+      "passed": true,
+      "reference": "Verdict for INVALID_SENSOR_DATA",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "raises ValueError",
+      "observed_refusal": "raises ValueError",
+      "passed": true,
+      "reference": "require_status for CERTIFICATE_EXPIRED",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "raises ValueError",
+      "observed_refusal": "raises ValueError",
+      "passed": true,
+      "reference": "Verdict for CERTIFICATE_EXPIRED",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "raises ValueError",
+      "observed_refusal": "raises ValueError",
+      "passed": true,
+      "reference": "require_status for RUNTIME_FAULT",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "raises ValueError",
+      "observed_refusal": "raises ValueError",
+      "passed": true,
+      "reference": "Verdict for RUNTIME_FAULT",
+      "reference_kind": "refusal"
+     }
+    ],
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "The runtime refuses to emit the five host-owned status codes",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact rational, integer or bitwise comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "CERTIFICATE_EXPIRED": {
+     "Verdict": "raises ValueError",
+     "require_status": "raises ValueError"
+    },
+    "INVALID_SENSOR_DATA": {
+     "Verdict": "raises ValueError",
+     "require_status": "raises ValueError"
+    },
+    "MODEL_MISMATCH": {
+     "Verdict": "raises ValueError",
+     "require_status": "raises ValueError"
+    },
+    "RUNTIME_FAULT": {
+     "Verdict": "raises ValueError",
+     "require_status": "raises ValueError"
+    },
+    "STALE_STATE": {
+     "Verdict": "raises ValueError",
+     "require_status": "raises ValueError"
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "DECREASE_RESOLUTION_FACTOR minus the documented 1.0",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "NUMERICAL_POLICY_VERSION is float64-decrease-v1 (1 if so)",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "status codes outside or missing from the documented nine",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "host-owned codes outside or missing from the documented five",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     }
+    ],
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "Pinned runtime constants: resolution factor, numerical policy, status vocabulary",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact rational, integer or bitwise comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "DECREASE_RESOLUTION_FACTOR": 1.0,
+    "HOST_OWNED_STATUSES": [
+     "CERTIFICATE_EXPIRED",
+     "INVALID_SENSOR_DATA",
+     "MODEL_MISMATCH",
+     "RUNTIME_FAULT",
+     "STALE_STATE"
+    ],
+    "MAX_KRONECKER_DIM": 24,
+    "MIN_DECREASE_MARGIN": 0.0,
+    "NUMERICAL_POLICY_VERSION": "float64-decrease-v1",
+    "RUNTIME_STATUSES": [
+     "CERTIFICATE_NOT_POSITIVE",
+     "CERTIFIED_WITH_MARGIN",
+     "DECREASE_NOT_DEFINITE",
+     "MARGIN_LOW",
+     "NOT_CERTIFIED",
+     "NUMERICAL_INCONCLUSIVE",
+     "NUMERICAL_OVERFLOW",
+     "OUTSIDE_LEVEL_SET",
+     "OUTSIDE_PARAMETER_BOX"
+    ],
+    "RUNTIME_STATUS_VERSION": "runtime-status-v1"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 8.0,
+      "passed": true,
+      "reference": "rounding-free runtime codes predicted on the paths",
+      "reference_kind": "analytic",
+      "tolerance": 8.0
+     }
+    ],
+    "generator": {
+     "name": "status_paths",
+     "seed": null
+    }
+   },
+   "claim": "The documented decision order, transcribed in CIW, assigns the eight rounding-free codes to the constructed path steps",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact rational, integer or bitwise comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "codes": [
+     "CERTIFIED_WITH_MARGIN",
+     "DECREASE_NOT_DEFINITE",
+     "MARGIN_LOW",
+     "NOT_CERTIFIED",
+     "NUMERICAL_INCONCLUSIVE",
+     "NUMERICAL_OVERFLOW",
+     "OUTSIDE_LEVEL_SET",
+     "OUTSIDE_PARAMETER_BOX"
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "derivation": "runtime-status-v1: operationally_acceptable is not an authorization; host statuses and machine-safety functions are outside the evaluator"
+   },
+   "claim": "A CERTIFIED_WITH_MARGIN verdict (operationally_acceptable) authorizes actuation",
+   "domain": "actuator_authority",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 8469,
+   "path": "artifacts/T106/status-coverage.json",
+   "sha256": "5b59ca300aefa8bc668fafb0c9d29b54ddc1d26c59006e8db5b992e7efd0904a"
+  },
+  {
+   "bytes": 545,
+   "path": "artifacts/T106/status-coverage.md",
+   "sha256": "9ac78e6693bedb137cc474b303dac9d4b6c597fe2e46452968390bd99c785494"
+  }
+ ],
+ "hypothesis": "Each of the nine runtime-status-v1 codes is reachable with declared inputs, codes change along one-parameter paths exactly as the documented decision order predicts, and the runtime refuses the five host-owned codes.",
+ "input_data": [
+  "Seven paths: required margin 0..3; level 5..-1; stability a in [-1, 1] for [[a, 1], [-1, a]]; state direction 0..90 degrees for diag(-1, 1); matrix scale 2^0..2^1023; theta across [-1, 1]; theta_dot across [-0.2, 0.2]",
+  "8 candidate P that NumPy calls positive definite but are exactly indefinite (seed 1041) evaluated along their weak direction",
+  "Host-owned codes MODEL_MISMATCH, STALE_STATE, INVALID_SENSOR_DATA, CERTIFICATE_EXPIRED, RUNTIME_FAULT"
+ ],
+ "mathematical_model": "Decision order: outside box -> NUMERICAL_OVERFLOW -> CERTIFICATE_NOT_POSITIVE (min eig P <= 0 or V < 0) -> OUTSIDE_LEVEL_SET -> NOT_CERTIFIED (x^T M x > res |x|^2) -> CERTIFIED_WITH_MARGIN / MARGIN_LOW (margin > res, MARGIN_LOW iff margin <= required margin) -> DECREASE_NOT_DEFINITE (max eig M > res) -> NUMERICAL_INCONCLUSIVE.",
+ "number": 106,
+ "numerical_result": "Codes reached: 9/9 (['CERTIFICATE_NOT_POSITIVE', 'CERTIFIED_WITH_MARGIN', 'DECREASE_NOT_DEFINITE', 'MARGIN_LOW', 'NOT_CERTIFIED', 'NUMERICAL_INCONCLUSIVE', 'NUMERICAL_OVERFLOW', 'OUTSIDE_LEVEL_SET', 'OUTSIDE_PARAMETER_BOX']); rounding-free codes on the paths: 8/8. 0 of 37 path steps differ from the CIW transcription of the documented order. Indefinite-P witnesses: {'CERTIFICATE_NOT_POSITIVE': 6, 'NUMERICAL_INCONCLUSIVE': 2} (0 certifying). Transitions: {'required_margin (margin 2)': ['CERTIFIED_WITH_MARGIN', 'CERTIFIED_WITH_MARGIN', 'CERTIFIED_WITH_MARGIN', 'MARGIN_LOW', 'MARGIN_LOW', 'MARGIN_LOW'], 'level (V = 4)': ['CERTIFIED_WITH_MARGIN', 'CERTIFIED_WITH_MARGIN', 'OUTSIDE_LEVEL_SET', 'OUTSIDE_LEVEL_SET', 'OUTSIDE_LEVEL_SET'], 'stability a, A = [[a, 1], [-1, a]]': ['CERTIFIED_WITH_MARGIN', 'CERTIFIED_WITH_MARGIN', 'NUMERICAL_INCONCLUSIVE', 'NUMERICAL_INCONCLUSIVE', 'NUMERICAL_INCONCLUSIVE', 'NOT_CERTIFIED', 'NOT_CERTIFIED'], 'direction phi, A = diag(-1, 1)': ['DECREASE_NOT_DEFINITE', 'DECREASE_NOT_DEFINITE', 'DECREASE_NOT_DEFINITE', 'NOT_CERTIFIED', 'NOT_CERTIFIED'], 'matrix scale k, A = -2^k I': ['CERTIFIED_WITH_MARGIN', 'CERTIFIED_WITH_MARGIN', 'CERTIFIED_WITH_MARGIN', 'NUMERICAL_OVERFLOW'], 'theta, box [-1, 1]': ['OUTSIDE_PARAMETER_BOX', 'CERTIFIED_WITH_MARGIN', 'CERTIFIED_WITH_MARGIN', 'CERTIFIED_WITH_MARGIN', 'OUTSIDE_PARAMETER_BOX'], 'theta_dot, rate box [-0.2, 0.2]': ['OUTSIDE_PARAMETER_BOX', 'CERTIFIED_WITH_MARGIN', 'CERTIFIED_WITH_MARGIN', 'CERTIFIED_WITH_MARGIN', 'OUTSIDE_PARAMETER_BOX']}. Host-owned codes refused: 5/5. Constants: resolution factor 1.0, policy float64-decrease-v1.",
+ "observation_model": "PLSR verdict code per step; require_status and Verdict construction outcomes for host-owned codes; the runtime's published constants.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "provider": {
+   "commit": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+   "entry": "lyapunov.verdict / lyapunov.solve_lyapunov / lyapunov.decrease_resolution",
+   "files_pinned": 20,
+   "files_verified": 20,
+   "implementation": "Parameterized-Lyapunov-Stability-Runtime",
+   "numpy_version": "2.4.3",
+   "package_version": "0.1.0rc1",
+   "python_version": "3.12.3",
+   "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+   "role": "plsr-python",
+   "source_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7",
+   "verification": "package version and per-file sha256 checked in the subprocess before use"
+  },
+  "python": "3.12.3",
+  "requirement_probes": {
+   "provider:plsr-python": true
+  },
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/lyapunov.py": "58d6c7473f0a42002b57888de0ccfbbf73b571bbbabbf9ee81e0a05c734f2320",
+   "src/ciw/lab/lyapunov_provider.py": "da3465b48b5f5efc47bfe6ab8379cf2cf2bc23e4835dc7ff047252e77fa6ef17",
+   "src/ciw/lab/lyapunov_reference.py": "fa37ef453c23ad2bed2eab41132e72670e166b93eebd5fc9d67a4a89a7c92cca"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T107: near-boundary spectra; add an upstream regression that pins one witness per code, including a CERTIFICATE_NOT_POSITIVE witness that does not depend on eigvalsh rounding.",
+ "report_id": "sha256:28322d4c406c7c27215235ef47dd03a98470278a3d7eca2dfb029a51f1f61b61",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "lyapunov",
+ "state": "completed",
+ "task_id": "T106",
+ "tests_passed": [
+  "check: The eight rounding-free runtime-status-v1 codes are reached on one-parameter paths far from every threshold vs rounding-free codes reached",
+  "check: Codes along each one-parameter path follow the documented decision order vs path steps differing from the CIW transcription of the documented order (same specification)",
+  "check: The exactly indefinite P witnesses are never certified along their weak direction; whether they reach CERTIFICATE_NOT_POSITIVE is recorded vs certifying verdicts on the exactly indefinite P witnesses",
+  "check: The exactly indefinite P witnesses are never certified along their weak direction; whether they reach CERTIFICATE_NOT_POSITIVE is recorded vs CERTIFICATE_NOT_POSITIVE verdicts observed",
+  "check: The runtime refuses to emit the five host-owned status codes vs require_status for MODEL_MISMATCH",
+  "check: The runtime refuses to emit the five host-owned status codes vs Verdict for MODEL_MISMATCH",
+  "check: The runtime refuses to emit the five host-owned status codes vs require_status for STALE_STATE",
+  "check: The runtime refuses to emit the five host-owned status codes vs Verdict for STALE_STATE",
+  "check: The runtime refuses to emit the five host-owned status codes vs require_status for INVALID_SENSOR_DATA",
+  "check: The runtime refuses to emit the five host-owned status codes vs Verdict for INVALID_SENSOR_DATA",
+  "check: The runtime refuses to emit the five host-owned status codes vs require_status for CERTIFICATE_EXPIRED",
+  "check: The runtime refuses to emit the five host-owned status codes vs Verdict for CERTIFICATE_EXPIRED",
+  "check: The runtime refuses to emit the five host-owned status codes vs require_status for RUNTIME_FAULT",
+  "check: The runtime refuses to emit the five host-owned status codes vs Verdict for RUNTIME_FAULT",
+  "check: Pinned runtime constants: resolution factor, numerical policy, status vocabulary vs DECREASE_RESOLUTION_FACTOR minus the documented 1.0",
+  "check: Pinned runtime constants: resolution factor, numerical policy, status vocabulary vs NUMERICAL_POLICY_VERSION is float64-decrease-v1 (1 if so)",
+  "check: Pinned runtime constants: resolution factor, numerical policy, status vocabulary vs status codes outside or missing from the documented nine",
+  "check: Pinned runtime constants: resolution factor, numerical policy, status vocabulary vs host-owned codes outside or missing from the documented five",
+  "check: The documented decision order, transcribed in CIW, assigns the eight rounding-free codes to the constructed path steps vs rounding-free runtime codes predicted on the paths",
+  "pytest: tests/test_lab_lyapunov.py::test_t106_status_coverage",
+  "pytest: tests/test_lab_lyapunov.py::test_documented_decision_order",
+  "pytest: tests/test_lab_lyapunov.py::test_t106_offline_findings_without_the_provider",
+  "pytest: tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider"
+ ],
+ "tests_skipped": [],
+ "title": "Test every runtime status transition.",
+ "uncertainty": "Path codes are far from thresholds and platform-independent. The indefinite-P witnesses depend on eigvalsh and dot-product rounding, so only their non-certification is checked and CERTIFICATE_NOT_POSITIVE reachability is recorded.",
+ "unresolved_assumptions": [
+  "CERTIFICATE_NOT_POSITIVE is reached only when a P accepted by quadratic() evaluates V < 0, which depends on eigvalsh rounding; min eig P <= 0 cannot follow a passed construction check. Its reachability is therefore recorded, not required.",
+  "The CIW transcription shares the documented specification with the runtime, so it checks implementation against specification (a same-specification check), not the specification itself."
+ ]
+}

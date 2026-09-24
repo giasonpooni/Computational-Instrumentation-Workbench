@@ -1,0 +1,340 @@
+{
+ "independent_solver": "scipy.linalg.solve_continuous_lyapunov@1.16.2",
+ "refused_with_certificate": [
+  {
+   "certificate": "scipy.linalg.solve_continuous_lyapunov@1.16.2",
+   "certificate_condition": 496874100465.51154,
+   "name": "Jordan n=4, lambda=2^-6",
+   "solver_error": "Lyapunov residual 5.875e-04 exceeds tolerance 1.000e-06; the equation is not resolvable in float64 at this scale",
+   "verdict_with_certificate": "CERTIFIED_WITH_MARGIN"
+  }
+ ],
+ "rows": [
+  {
+   "code_P_identity": "CERTIFIED_WITH_MARGIN",
+   "code_identity": "CERTIFIED_WITH_MARGIN",
+   "code_independent": "CERTIFIED_WITH_MARGIN",
+   "code_own": "CERTIFIED_WITH_MARGIN",
+   "condition_P": 2.618033988749894,
+   "exact_spectrum_max": -1.0,
+   "group": "non-normal",
+   "name": "non-normal K=1",
+   "normalised_difference": 0.0,
+   "numpy_abscissa": -1.0,
+   "relative_difference": 0.0,
+   "solve": "P returned",
+   "solve_error": null
+  },
+  {
+   "code_P_identity": "CERTIFIED_WITH_MARGIN",
+   "code_identity": "CERTIFIED_WITH_MARGIN",
+   "code_independent": "CERTIFIED_WITH_MARGIN",
+   "code_own": "CERTIFIED_WITH_MARGIN",
+   "condition_P": 6.317920061302285,
+   "exact_spectrum_max": -1.0,
+   "group": "non-normal",
+   "name": "non-normal K=2.82",
+   "normalised_difference": 0.0,
+   "numpy_abscissa": -1.0,
+   "relative_difference": 0.0,
+   "solve": "P returned",
+   "solve_error": null
+  },
+  {
+   "code_P_identity": "DECREASE_NOT_DEFINITE",
+   "code_identity": "DECREASE_NOT_DEFINITE",
+   "code_independent": "CERTIFIED_WITH_MARGIN",
+   "code_own": "CERTIFIED_WITH_MARGIN",
+   "condition_P": 6.346892583218753,
+   "exact_spectrum_max": -1.0,
+   "group": "non-normal",
+   "name": "non-normal K=2.83",
+   "normalised_difference": 0.04203593669040682,
+   "numpy_abscissa": -1.0,
+   "relative_difference": 1.1848192418684004e-16,
+   "solve": "P returned",
+   "solve_error": null
+  },
+  {
+   "code_P_identity": "NOT_CERTIFIED",
+   "code_identity": "NOT_CERTIFIED",
+   "code_independent": "CERTIFIED_WITH_MARGIN",
+   "code_own": "CERTIFIED_WITH_MARGIN",
+   "condition_P": 52.48094546523246,
+   "exact_spectrum_max": -1.0,
+   "group": "non-normal",
+   "name": "non-normal K=10",
+   "normalised_difference": 0.008681877809996073,
+   "numpy_abscissa": -1.0,
+   "relative_difference": 2.0234176817722358e-16,
+   "solve": "P returned",
+   "solve_error": null
+  },
+  {
+   "code_P_identity": "NOT_CERTIFIED",
+   "code_identity": "NOT_CERTIFIED",
+   "code_independent": "CERTIFIED_WITH_MARGIN",
+   "code_own": "CERTIFIED_WITH_MARGIN",
+   "condition_P": 5002.499800099944,
+   "exact_spectrum_max": -1.0,
+   "group": "non-normal",
+   "name": "non-normal K=100",
+   "normalised_difference": 0.0,
+   "numpy_abscissa": -1.0,
+   "relative_difference": 0.0,
+   "solve": "P returned",
+   "solve_error": null
+  },
+  {
+   "code_P_identity": "NOT_CERTIFIED",
+   "code_identity": "NOT_CERTIFIED",
+   "code_independent": "CERTIFIED_WITH_MARGIN",
+   "code_own": "CERTIFIED_WITH_MARGIN",
+   "condition_P": 500002.4999979998,
+   "exact_spectrum_max": -1.0,
+   "group": "non-normal",
+   "name": "non-normal K=1000",
+   "normalised_difference": 0.0,
+   "numpy_abscissa": -1.0,
+   "relative_difference": 0.0,
+   "solve": "P returned",
+   "solve_error": null
+  },
+  {
+   "code_P_identity": "NOT_CERTIFIED",
+   "code_identity": "NOT_CERTIFIED",
+   "code_independent": "CERTIFIED_WITH_MARGIN",
+   "code_own": "CERTIFIED_WITH_MARGIN",
+   "condition_P": 50000002.49999998,
+   "exact_spectrum_max": -1.0,
+   "group": "non-normal",
+   "name": "non-normal K=10000",
+   "normalised_difference": 5.033164496020236e-09,
+   "numpy_abscissa": -1.0,
+   "relative_difference": 1.1175870779208583e-16,
+   "solve": "P returned",
+   "solve_error": null
+  },
+  {
+   "code_P_identity": "NOT_CERTIFIED",
+   "code_identity": "NOT_CERTIFIED",
+   "code_independent": "CERTIFIED_WITH_MARGIN",
+   "code_own": "CERTIFIED_WITH_MARGIN",
+   "condition_P": 5000000002.499998,
+   "exact_spectrum_max": -1.0,
+   "group": "non-normal",
+   "name": "non-normal K=100000",
+   "normalised_difference": 6.44245094226906e-11,
+   "numpy_abscissa": -1.0,
+   "relative_difference": 1.4305114749402844e-16,
+   "solve": "P returned",
+   "solve_error": null
+  },
+  {
+   "code_P_identity": "NOT_CERTIFIED",
+   "code_identity": "NOT_CERTIFIED",
+   "code_independent": "NUMERICAL_INCONCLUSIVE",
+   "code_own": "NUMERICAL_INCONCLUSIVE",
+   "condition_P": 500000000002.4999,
+   "exact_spectrum_max": -1.0,
+   "group": "non-normal",
+   "name": "non-normal K=1e+06",
+   "normalised_difference": 0.0,
+   "numpy_abscissa": -1.0,
+   "relative_difference": 0.0,
+   "solve": "P returned",
+   "solve_error": null
+  },
+  {
+   "code_P_identity": "NOT_CERTIFIED",
+   "code_identity": "NOT_CERTIFIED",
+   "code_independent": "NUMERICAL_INCONCLUSIVE",
+   "code_own": "NUMERICAL_INCONCLUSIVE",
+   "condition_P": 5000000000000003.0,
+   "exact_spectrum_max": -1.0,
+   "group": "non-normal",
+   "name": "non-normal K=1e+08",
+   "normalised_difference": 6.755399441055742e-17,
+   "numpy_abscissa": -1.0,
+   "relative_difference": 1.5000000000000005e-16,
+   "solve": "P returned",
+   "solve_error": null
+  },
+  {
+   "code_P_identity": "DECREASE_NOT_DEFINITE",
+   "code_identity": "DECREASE_NOT_DEFINITE",
+   "code_independent": "CERTIFIED_WITH_MARGIN",
+   "code_own": "CERTIFIED_WITH_MARGIN",
+   "condition_P": 28.591257765443785,
+   "exact_spectrum_max": -1.0,
+   "group": "Jordan",
+   "name": "Jordan n=3, lambda=2^-0",
+   "normalised_difference": 0.06291238596049607,
+   "numpy_abscissa": -0.9999937056062356,
+   "relative_difference": 1.797306547226615e-15,
+   "solve": "P returned",
+   "solve_error": null
+  },
+  {
+   "code_P_identity": "NOT_CERTIFIED",
+   "code_identity": "NOT_CERTIFIED",
+   "code_independent": "CERTIFIED_WITH_MARGIN",
+   "exact_spectrum_max": -0.015625,
+   "group": "Jordan",
+   "name": "Jordan n=4, lambda=2^-6",
+   "numpy_abscissa": -0.015494916858018236,
+   "solve": "raises ValueError",
+   "solve_error": "Lyapunov residual 5.875e-04 exceeds tolerance 1.000e-06; the equation is not resolvable in float64 at this scale"
+  },
+  {
+   "code_P_identity": "DECREASE_NOT_DEFINITE",
+   "code_identity": "DECREASE_NOT_DEFINITE",
+   "code_independent": "raises ValueError",
+   "exact_spectrum_max": -0.000244140625,
+   "group": "Jordan",
+   "name": "Jordan n=5, lambda=2^-12",
+   "numpy_abscissa": 0.00018266938715315225,
+   "solve": "raises ValueError",
+   "solve_error": "solved P must be positive definite; min eigenvalue=-1.465e+16"
+  },
+  {
+   "code_P_identity": "NOT_CERTIFIED",
+   "code_identity": "NOT_CERTIFIED",
+   "code_independent": "raises ValueError",
+   "exact_spectrum_max": -0.0009765625,
+   "group": "Jordan",
+   "name": "Jordan n=6, lambda=2^-10",
+   "numpy_abscissa": 0.0014909178562170639,
+   "solve": "raises ValueError",
+   "solve_error": "solved P must be positive definite; min eigenvalue=-1.416e+16"
+  },
+  {
+   "code_P_identity": "NOT_CERTIFIED",
+   "code_identity": "NOT_CERTIFIED",
+   "code_independent": "raises ValueError",
+   "exact_spectrum_max": -0.000244140625,
+   "group": "Jordan",
+   "name": "Jordan n=6, lambda=2^-12",
+   "numpy_abscissa": 0.00312585722017415,
+   "solve": "raises ValueError",
+   "solve_error": "solved P must be positive definite; min eigenvalue=-4.508e+13"
+  },
+  {
+   "code_P_identity": "DECREASE_NOT_DEFINITE",
+   "code_identity": "DECREASE_NOT_DEFINITE",
+   "code_independent": "raises ValueError",
+   "exact_spectrum_max": -0.00390625,
+   "group": "Jordan",
+   "name": "Jordan n=8, lambda=2^-8",
+   "numpy_abscissa": 0.010196556443523214,
+   "solve": "raises ValueError",
+   "solve_error": "solved P must be positive definite; min eigenvalue=-7.642e+15"
+  },
+  {
+   "code_P_identity": "NOT_CERTIFIED",
+   "code_identity": "NOT_CERTIFIED",
+   "code_independent": "raises ValueError",
+   "exact_spectrum_max": -0.0009765625,
+   "group": "Jordan",
+   "name": "Jordan n=8, lambda=2^-10",
+   "numpy_abscissa": 0.013966617036941305,
+   "solve": "raises ValueError",
+   "solve_error": "solved P must be positive definite; min eigenvalue=-2.636e+16"
+  },
+  {
+   "code_P_identity": "CERTIFIED_WITH_MARGIN",
+   "code_identity": "CERTIFIED_WITH_MARGIN",
+   "code_independent": "CERTIFIED_WITH_MARGIN",
+   "code_own": "CERTIFIED_WITH_MARGIN",
+   "condition_P": 1.0015579271804878,
+   "exact_spectrum_max": null,
+   "group": "clustered",
+   "name": "clustered n=3, spacing 1e-08",
+   "normalised_difference": 1.6683571401477033,
+   "numpy_abscissa": -0.9999857181403845,
+   "relative_difference": 1.6696207607300617e-15,
+   "solve": "P returned",
+   "solve_error": null
+  },
+  {
+   "code_P_identity": "CERTIFIED_WITH_MARGIN",
+   "code_identity": "CERTIFIED_WITH_MARGIN",
+   "code_independent": "CERTIFIED_WITH_MARGIN",
+   "code_own": "CERTIFIED_WITH_MARGIN",
+   "condition_P": 1.0028539360380464,
+   "exact_spectrum_max": null,
+   "group": "clustered",
+   "name": "clustered n=4, spacing 1e-10",
+   "normalised_difference": 0.9518238707626391,
+   "numpy_abscissa": -0.9999904811909688,
+   "relative_difference": 1.695604217405278e-15,
+   "solve": "P returned",
+   "solve_error": null
+  },
+  {
+   "code_P_identity": "CERTIFIED_WITH_MARGIN",
+   "code_identity": "CERTIFIED_WITH_MARGIN",
+   "code_independent": "CERTIFIED_WITH_MARGIN",
+   "code_own": "CERTIFIED_WITH_MARGIN",
+   "condition_P": 1.0032431129555839,
+   "exact_spectrum_max": null,
+   "group": "clustered",
+   "name": "clustered n=5, spacing 1e-12",
+   "normalised_difference": 0.6148604988819982,
+   "numpy_abscissa": -0.9999888292057217,
+   "relative_difference": 1.7121153409788126e-15,
+   "solve": "P returned",
+   "solve_error": null
+  }
+ ],
+ "transient": [
+  {
+   "K": 1.0,
+   "peak": 1.0,
+   "ratio": 0.6180339887498949,
+   "sqrt_cond_P": 1.6180339887498947
+  },
+  {
+   "K": 2.82,
+   "peak": 1.0,
+   "ratio": 0.397844113564241,
+   "sqrt_cond_P": 2.5135473063585425
+  },
+  {
+   "K": 2.83,
+   "peak": 1.0000108249004596,
+   "ratio": 0.3969393251951935,
+   "sqrt_cond_P": 2.5193039878543346
+  },
+  {
+   "K": 10.0,
+   "peak": 2.563479623460208,
+   "ratio": 0.35385802111061454,
+   "sqrt_cond_P": 7.244373365946323
+  },
+  {
+   "K": 100.0,
+   "peak": 25.00613536465003,
+   "ratio": 0.3535517879167446,
+   "sqrt_cond_P": 70.72835216587436
+  },
+  {
+   "K": 1000.0,
+   "peak": 249.9997655819551,
+   "ratio": 0.35355217519746945,
+   "sqrt_cond_P": 707.1085489498764
+  },
+  {
+   "K": 10000.0,
+   "peak": 2499.991495757652,
+   "ratio": 0.35355217907298286,
+   "sqrt_cond_P": 7071.067988642167
+  },
+  {
+   "K": 100000.0,
+   "peak": 24999.91434156908,
+   "ratio": 0.3535521791117384,
+   "sqrt_cond_P": 70710.67813633241
+  }
+ ]
+}

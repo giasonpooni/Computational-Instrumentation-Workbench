@@ -1,0 +1,306 @@
+{
+ "calibration_ranking": [
+  "fan+0deg",
+  "fan+5deg",
+  "fan+10deg",
+  "fan+15deg",
+  "fan+20deg",
+  "fan+25deg"
+ ],
+ "coarse": [
+  {
+   "end_u_mm": [
+    140.000000215,
+    0.0
+   ],
+   "exits_side": false,
+   "first_conjugate_mm": null,
+   "first_focal_mm": 153.407141487,
+   "focus_margin": 0.758766332889,
+   "heading_deg": 0.0,
+   "horizon_mm": 500.0,
+   "j_head_end_mm": 107.941892452,
+   "j_head_prime_end": 0.342442074842,
+   "j_lat_end": -0.534551538693,
+   "j_lat_prime_end_per_mm": -0.010960090615,
+   "length_mm": 202.179689369,
+   "margin_is_lower_bound": false,
+   "max_abs_j_head_mm": 107.941892452,
+   "max_abs_j_lat": 1.02592282843,
+   "nearest_focus_kind": "focal",
+   "nearest_focus_mm": 153.407141487,
+   "route": "fan+0deg"
+  },
+  {
+   "end_u_mm": [
+    140.000000166,
+    9.97366550058
+   ],
+   "exits_side": false,
+   "first_conjugate_mm": null,
+   "first_focal_mm": 175.964121667,
+   "focus_margin": 0.869631311086,
+   "heading_deg": 5.0,
+   "horizon_mm": 501.909918772,
+   "j_head_end_mm": 126.431057776,
+   "j_head_prime_end": 0.475264697756,
+   "j_lat_end": -0.231612301279,
+   "j_lat_prime_end_per_mm": -0.00878009848555,
+   "length_mm": 202.343360253,
+   "margin_is_lower_bound": false,
+   "max_abs_j_head_mm": 126.431057776,
+   "max_abs_j_lat": 1.0270142329,
+   "nearest_focus_kind": "focal",
+   "nearest_focus_mm": 175.964121667,
+   "route": "fan+5deg"
+  },
+  {
+   "end_u_mm": [
+    140.000000047,
+    22.8167579117
+   ],
+   "exits_side": false,
+   "first_conjugate_mm": null,
+   "first_focal_mm": 329.854617039,
+   "focus_margin": 1.62398671506,
+   "heading_deg": 10.0,
+   "horizon_mm": 507.713305943,
+   "j_head_end_mm": 169.405959979,
+   "j_head_prime_end": 0.779827553667,
+   "j_lat_end": 0.472486229025,
+   "j_lat_prime_end_per_mm": -0.003727981088,
+   "length_mm": 203.114110466,
+   "margin_is_lower_bound": false,
+   "max_abs_j_head_mm": 169.405959979,
+   "max_abs_j_lat": 1.03067196131,
+   "nearest_focus_kind": "focal",
+   "nearest_focus_mm": 329.854617039,
+   "route": "fan+10deg"
+  },
+  {
+   "end_u_mm": [
+    140.000000007,
+    39.7185247047
+   ],
+   "exits_side": false,
+   "first_conjugate_mm": null,
+   "first_focal_mm": null,
+   "focus_margin": 2.52167482587,
+   "heading_deg": 15.0,
+   "horizon_mm": 517.638090205,
+   "j_head_end_mm": 213.103824711,
+   "j_head_prime_end": 1.07224953822,
+   "j_lat_end": 1.17987075275,
+   "j_lat_prime_end_per_mm": 0.00124406904233,
+   "length_mm": 205.275511693,
+   "margin_is_lower_bound": true,
+   "max_abs_j_head_mm": 213.103824711,
+   "max_abs_j_lat": 1.17987075275,
+   "nearest_focus_kind": "none",
+   "nearest_focus_mm": null,
+   "route": "fan+15deg"
+  },
+  {
+   "end_u_mm": [
+    140.000000008,
+    60.2376550293
+   ],
+   "exits_side": false,
+   "first_conjugate_mm": null,
+   "first_focal_mm": null,
+   "focus_margin": 2.53663518063,
+   "heading_deg": 20.0,
+   "horizon_mm": 532.088886238,
+   "j_head_end_mm": 242.793270034,
+   "j_head_prime_end": 1.23433992871,
+   "j_lat_end": 1.62709577484,
+   "j_lat_prime_end_per_mm": 0.00415328350275,
+   "length_mm": 209.761691512,
+   "margin_is_lower_bound": true,
+   "max_abs_j_head_mm": 242.793270034,
+   "max_abs_j_lat": 1.62709577484,
+   "nearest_focus_kind": "none",
+   "nearest_focus_mm": null,
+   "route": "fan+20deg"
+  },
+  {
+   "end_u_mm": [
+    139.999999985,
+    83.3853631355
+   ],
+   "exits_side": false,
+   "first_conjugate_mm": null,
+   "first_focal_mm": null,
+   "focus_margin": 2.54014031332,
+   "heading_deg": 25.0,
+   "horizon_mm": 551.688959481,
+   "j_head_end_mm": 257.257102854,
+   "j_head_prime_end": 1.26037988349,
+   "j_lat_end": 1.77009648168,
+   "j_lat_prime_end_per_mm": 0.00478507292436,
+   "length_mm": 217.188379944,
+   "margin_is_lower_bound": true,
+   "max_abs_j_head_mm": 257.257102854,
+   "max_abs_j_lat": 1.77009648168,
+   "nearest_focus_kind": "none",
+   "nearest_focus_mm": null,
+   "route": "fan+25deg"
+  }
+ ],
+ "ranking": [
+  "fan+15deg",
+  "fan+20deg",
+  "fan+25deg",
+  "fan+10deg",
+  "fan+5deg",
+  "fan+0deg"
+ ],
+ "routes": [
+  {
+   "end_u_mm": [
+    140.000000003,
+    0.0
+   ],
+   "exits_side": false,
+   "first_conjugate_mm": null,
+   "first_focal_mm": 153.407155341,
+   "focus_margin": 0.758766419769,
+   "heading_deg": 0.0,
+   "horizon_mm": 500.0,
+   "j_head_end_mm": 107.941907845,
+   "j_head_prime_end": 0.342442198394,
+   "j_lat_end": -0.534551255261,
+   "j_lat_prime_end_per_mm": -0.0109600889045,
+   "length_mm": 202.179684477,
+   "margin_is_lower_bound": false,
+   "max_abs_j_head_mm": 107.941907845,
+   "max_abs_j_lat": 1.02600071879,
+   "nearest_focus_kind": "focal",
+   "nearest_focus_mm": 153.407155341,
+   "route": "fan+0deg"
+  },
+  {
+   "end_u_mm": [
+    140.000000002,
+    9.97366947525
+   ],
+   "exits_side": false,
+   "first_conjugate_mm": null,
+   "first_focal_mm": 175.964161196,
+   "focus_margin": 0.869631524514,
+   "heading_deg": 5.0,
+   "horizon_mm": 501.909918772,
+   "j_head_end_mm": 126.431083446,
+   "j_head_prime_end": 0.475264897113,
+   "j_lat_end": -0.231611848515,
+   "j_lat_prime_end_per_mm": -0.00878009545379,
+   "length_mm": 202.343356049,
+   "margin_is_lower_bound": false,
+   "max_abs_j_head_mm": 126.431083446,
+   "max_abs_j_lat": 1.02700844074,
+   "nearest_focus_kind": "focal",
+   "nearest_focus_mm": 175.964161196,
+   "route": "fan+5deg"
+  },
+  {
+   "end_u_mm": [
+    140.000000001,
+    22.8167654582
+   ],
+   "exits_side": false,
+   "first_conjugate_mm": null,
+   "first_focal_mm": 329.854911531,
+   "focus_margin": 1.62398818388,
+   "heading_deg": 10.0,
+   "horizon_mm": 507.713305943,
+   "j_head_end_mm": 169.405993305,
+   "j_head_prime_end": 0.7798278043,
+   "j_lat_end": 0.472486805218,
+   "j_lat_prime_end_per_mm": -0.00372797703111,
+   "length_mm": 203.114108099,
+   "margin_is_lower_bound": false,
+   "max_abs_j_head_mm": 169.405993305,
+   "max_abs_j_lat": 1.03067923685,
+   "nearest_focus_kind": "focal",
+   "nearest_focus_mm": 329.854911531,
+   "route": "fan+10deg"
+  },
+  {
+   "end_u_mm": [
+    140.0,
+    39.7185330947
+   ],
+   "exits_side": false,
+   "first_conjugate_mm": null,
+   "first_focal_mm": null,
+   "focus_margin": 2.52167482918,
+   "heading_deg": 15.0,
+   "horizon_mm": 517.638090205,
+   "j_head_end_mm": 213.103848827,
+   "j_head_prime_end": 1.07224970756,
+   "j_lat_end": 1.17987116693,
+   "j_lat_prime_end_per_mm": 0.00124407191705,
+   "length_mm": 205.275511424,
+   "margin_is_lower_bound": true,
+   "max_abs_j_head_mm": 213.103848827,
+   "max_abs_j_lat": 1.17987116693,
+   "nearest_focus_kind": "none",
+   "nearest_focus_mm": null,
+   "route": "fan+15deg"
+  },
+  {
+   "end_u_mm": [
+    140.0,
+    60.2376617396
+   ],
+   "exits_side": false,
+   "first_conjugate_mm": null,
+   "first_focal_mm": null,
+   "focus_margin": 2.53663516823,
+   "heading_deg": 20.0,
+   "horizon_mm": 532.088886238,
+   "j_head_end_mm": 242.793282099,
+   "j_head_prime_end": 1.23433999996,
+   "j_lat_end": 1.62709597648,
+   "j_lat_prime_end_per_mm": 0.0041532847978,
+   "length_mm": 209.761692537,
+   "margin_is_lower_bound": true,
+   "max_abs_j_head_mm": 242.793282099,
+   "max_abs_j_lat": 1.62709597648,
+   "nearest_focus_kind": "none",
+   "nearest_focus_mm": null,
+   "route": "fan+20deg"
+  },
+  {
+   "end_u_mm": [
+    139.999999999,
+    83.3853672744
+   ],
+   "exits_side": false,
+   "first_conjugate_mm": null,
+   "first_focal_mm": null,
+   "focus_margin": 2.54014029829,
+   "heading_deg": 25.0,
+   "horizon_mm": 551.688959481,
+   "j_head_end_mm": 257.257107347,
+   "j_head_prime_end": 1.26037990098,
+   "j_lat_end": 1.77009654905,
+   "j_lat_prime_end_per_mm": 0.0047850732908,
+   "length_mm": 217.188381229,
+   "margin_is_lower_bound": true,
+   "max_abs_j_head_mm": 257.257107347,
+   "max_abs_j_lat": 1.77009654905,
+   "nearest_focus_kind": "none",
+   "nearest_focus_mm": null,
+   "route": "fan+25deg"
+  }
+ ],
+ "second_variation": {
+  "extrapolated": 36.9632703153,
+  "finite_difference": {
+   "1.0": 37.2017410931,
+   "2.0": 37.9171534267
+  },
+  "index_form": 36.9638642214
+ }
+}

@@ -1,0 +1,45 @@
+{
+ "rust_build": {
+  "available": true,
+  "identity": {
+   "binary_sha256": "014343936914720e0dab50e5e34a1396f59c0ca5d4ac262cc553b5fbd869ce1c",
+   "flags": [
+    "-O",
+    "--edition",
+    "2021",
+    "--remap-path-prefix=<build dir>=ciw-lab-rust"
+   ],
+   "host": "x86_64-unknown-linux-gnu",
+   "rustc_commit": "e408947bfd200af42db322daf0fadfe7e26d3bd1",
+   "rustc_release": "1.94.1",
+   "source_sha256": "e98705beb878e01a13f0383d51b21ee35476936e05af7df47ecbc7e6b158c2f1"
+  },
+  "usable": true
+ },
+ "rust_fused_sphere": {
+  "core_jacobi_error": 1.5459494795422302e-11,
+  "length": 3.0,
+  "max_abs_difference": 4.440892098500626e-16,
+  "python_seconds": 0.13867681699775858,
+  "rust_jacobi_error": 1.5459494795422302e-11,
+  "rust_seconds": 6.1789e-05,
+  "steps": 600
+ },
+ "timings": {
+  "note": "Wall-clock timings on the machine that ran this report; not reproducible, never used in findings.",
+  "ns_per_flop": {
+   "geodesic_rhs": 264.87195163680934,
+   "jacobi_rhs": 464.0178224530689,
+   "jacobi_transfer_200_steps": 254.71299320852435,
+   "kalman_update": 42.066419932620235,
+   "rk4_step": 424.75636664909337
+  },
+  "seconds_per_call": {
+   "geodesic_rhs": 4.582284763316801e-05,
+   "jacobi_rhs": 8.259517239664625e-05,
+   "jacobi_transfer_200_steps": 0.0417222430005495,
+   "kalman_update": 1.9056088229476966e-05,
+   "rk4_step": 0.00034787546428560745
+  }
+ }
+}

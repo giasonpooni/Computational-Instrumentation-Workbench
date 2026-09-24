@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420" font-family="sans-serif" font-size="11">
+<rect width="640" height="420" fill="#ffffff"/>
+<text x="78" y="22" font-size="13" font-weight="bold">Domed coupon: scan coverage vs total path length</text>
+<rect x="78" y="40" width="392" height="322" fill="none" stroke="#333"/>
+<line x1="167.00" y1="40" x2="167.00" y2="362" stroke="#e5e7eb"/>
+<text x="167.00" y="378" text-anchor="middle">2.5e+03</text>
+<line x1="304.79" y1="40" x2="304.79" y2="362" stroke="#e5e7eb"/>
+<text x="304.79" y="378" text-anchor="middle">3e+03</text>
+<line x1="442.58" y1="40" x2="442.58" y2="362" stroke="#e5e7eb"/>
+<text x="442.58" y="378" text-anchor="middle">3.5e+03</text>
+<line x1="78" y1="352.74" x2="470" y2="352.74" stroke="#e5e7eb"/>
+<text x="72" y="356.74" text-anchor="end">0.96</text>
+<line x1="78" y1="277.54" x2="470" y2="277.54" stroke="#e5e7eb"/>
+<text x="72" y="281.54" text-anchor="end">0.97</text>
+<line x1="78" y1="202.33" x2="470" y2="202.33" stroke="#e5e7eb"/>
+<text x="72" y="206.33" text-anchor="end">0.98</text>
+<line x1="78" y1="127.13" x2="470" y2="127.13" stroke="#e5e7eb"/>
+<text x="72" y="131.13" text-anchor="end">0.99</text>
+<line x1="78" y1="51.93" x2="470" y2="51.93" stroke="#e5e7eb"/>
+<text x="72" y="55.93" text-anchor="end">1</text>
+<text x="274.00" y="406" text-anchor="middle">path length (mm)</text>
+<text x="16" y="201.00" text-anchor="middle" transform="rotate(-90 16 201.00)">area coverage</text>
+<path d="M78.00,350.07 L197.87,144.40 L248.13,120.99 L359.63,56.61 L470.00,51.93" fill="none" stroke="#1f5fa8" stroke-width="1.8"/>
+<circle cx="78.00" cy="350.07" r="2.6" fill="#1f5fa8"/>
+<circle cx="197.87" cy="144.40" r="2.6" fill="#1f5fa8"/>
+<circle cx="248.13" cy="120.99" r="2.6" fill="#1f5fa8"/>
+<circle cx="359.63" cy="56.61" r="2.6" fill="#1f5fa8"/>
+<circle cx="470.00" cy="51.93" r="2.6" fill="#1f5fa8"/>
+<line x1="482" y1="52" x2="502" y2="52" stroke="#1f5fa8" stroke-width="2"/>
+<text x="508" y="56">geodesic rows</text>
+<path d="M79.88,64.03 L195.19,51.93 L248.80,51.93 L360.33,51.93 L469.72,51.93" fill="none" stroke="#c2410c" stroke-width="1.8"/>
+<circle cx="79.88" cy="64.03" r="2.6" fill="#c2410c"/>
+<circle cx="195.19" cy="51.93" r="2.6" fill="#c2410c"/>
+<circle cx="248.80" cy="51.93" r="2.6" fill="#c2410c"/>
+<circle cx="360.33" cy="51.93" r="2.6" fill="#c2410c"/>
+<circle cx="469.72" cy="51.93" r="2.6" fill="#c2410c"/>
+<line x1="482" y1="70" x2="502" y2="70" stroke="#c2410c" stroke-width="2"/>
+<text x="508" y="74">chart-parallel rows</text>
+</svg>

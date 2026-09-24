@@ -1,0 +1,302 @@
+{
+ "changed_files": [
+  "src/ciw/lab/exchange_provenance.py",
+  "src/ciw/lab/exchange_provenance_common.py",
+  "tests/test_lab_exchange_provenance.py",
+  "docs/lab/EXCHANGE_PROVENANCE.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 3,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Every predicted refusal is observed; the injected flag is returned after reopen; exchange identity status is content_recomputed_not_authenticated; the harness controls hold.",
+ "experiment": "Edit the saved workspace (independence flag), recompute none, local or all unkeyed digests, write it and reopen with Session.from_workspace; pure ESM and exchange validators are also run on synthetic records. Rows retained as independence-mutations.json/.md.",
+ "failure_modes_checked": [
+  "receipt-independent.naive: independent set true",
+  "receipt-independent.resealed: independent true; verification_id and replay_id recomputed",
+  "bundle-independent.resealed: original bundle's verification independent true; verification_id recomputed",
+  "oscillator-independent.injected: independent: true injected into a sealed execution and result; resealed",
+  "esm.inspection-independent: independentlyVerified set true",
+  "esm.candidate-independent: candidate verification independent set true",
+  "exchange.verification-independent: independent true and method independent_reimplementation; verification_id recomputed"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "Invalid retained energy replay receipt",
+      "observed_refusal": "Invalid retained energy replay receipt",
+      "passed": true,
+      "reference": "receipt-independent.naive (none recompute): refusal on reopen",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "Retained energy analysis binding differs",
+      "observed_refusal": "Retained energy analysis binding differs",
+      "passed": true,
+      "reference": "receipt-independent.resealed (local recompute): refusal on reopen",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "Retained energy analysis binding differs",
+      "observed_refusal": "Retained energy analysis binding differs",
+      "passed": true,
+      "reference": "bundle-independent.resealed (local recompute): refusal on reopen",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "Native ESM inspection binding or scope mismatch",
+      "observed_refusal": "Native ESM inspection binding or scope mismatch",
+      "passed": true,
+      "reference": "esm.inspection-independent: validator refusal",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "ESM candidate does not bind the selected native bundle",
+      "observed_refusal": "ESM candidate does not bind the selected native bundle",
+      "passed": true,
+      "reference": "esm.candidate-independent: validator refusal",
+      "reference_kind": "refusal"
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "harness control: the forger's recomputation of the unedited workspace reproduces every CIW digest",
+      "reference_kind": "cross_implementation",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "harness control: the unedited saved workspace reopens",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Independence flag forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": [
+    {
+     "kind": "workspace",
+     "mutant": "receipt-independent.naive",
+     "observed": "Invalid retained energy replay receipt",
+     "recompute": "none"
+    },
+    {
+     "kind": "workspace",
+     "mutant": "receipt-independent.resealed",
+     "observed": "Retained energy analysis binding differs",
+     "recompute": "local"
+    },
+    {
+     "kind": "workspace",
+     "mutant": "bundle-independent.resealed",
+     "observed": "Retained energy analysis binding differs",
+     "recompute": "local"
+    },
+    {
+     "kind": "validator",
+     "mutant": "esm.inspection-independent",
+     "observed": "Native ESM inspection binding or scope mismatch",
+     "recompute": "none"
+    },
+    {
+     "kind": "validator",
+     "mutant": "esm.candidate-independent",
+     "observed": "ESM candidate does not bind the selected native bundle",
+     "recompute": "none"
+    }
+   ]
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "oscillator-independent.injected: accepted (1 = accepted)",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     }
+    ]
+   },
+   "claim": "Surviving mutant oscillator-independent.injected: sealed records carrying an injected independent: true reopen",
+   "counterexample": {
+    "statement": "Sealed operation records refuse independence claims outside their schema",
+    "witness": {
+     "description": "independent: true injected into a sealed execution and result; resealed",
+     "name": "oscillator-independent.injected",
+     "observed": "accepted",
+     "post_reopen": {
+      "result.get": {
+       "independent": true,
+       "verification_status": "not_verified"
+      }
+     },
+     "recompute": "local",
+     "target": "oscillator execution and result"
+    }
+   },
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "mutant": "oscillator-independent.injected",
+    "observed": "accepted"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "accepted:content_recomputed_not_authenticated",
+      "observed_refusal": "accepted:content_recomputed_not_authenticated",
+      "passed": true,
+      "reference": "exchange._identity on a recomputed artifact claiming independence (observed status)",
+      "reference_kind": "refusal"
+     }
+    ]
+   },
+   "claim": "exchange._identity checks content only: a recomputed verification artifact claiming independent: true is accepted with status content_recomputed_not_authenticated",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "documented_behaviour": "exchange._identity recomputes content only and returns content_recomputed_not_authenticated; ciw.exchange documents that a hash does not establish verification authority, and inspect_exchange reports verification_independence not_established",
+    "full_inspector": "not run: inspect_exchange needs the pinned State Estimation Evaluation Testbed validator (CIW_SET_REPO)",
+    "observed": "accepted:content_recomputed_not_authenticated"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": "Every CIW seal and identity on these paths (record_digest, log_digest, bundle_digest, verification_id, replay_id, result_id, source_id) is an unkeyed SHA-256 over public canonical JSON or raw bytes, and no keyed signature or MAC is retained. Authentication is therefore not established; the listed surviving mutants are concrete forgeries accepted on reopen."
+   },
+   "claim": "Retained workspace records are authenticated: a holder without a secret cannot produce a forged record that reopens",
+   "domain": "provenance",
+   "evidence_status": "not_established",
+   "expected_not_established": true,
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": null,
+   "unit": null,
+   "value": {
+    "surviving_mutants_in_this_task": [
+     "oscillator-independent.injected"
+    ]
+   }
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 4391,
+   "path": "artifacts/T088/independence-mutations.json",
+   "sha256": "28bb6c21181c45289888f5d1b5e9bab40a20d86832e0acc8fa5ee93e78962342"
+  },
+  {
+   "bytes": 1653,
+   "path": "artifacts/T088/independence-mutations.md",
+   "sha256": "a42efc17ecb9c1bbbf1a7fda52786705ca30c94c011836bdda24040e706fbdea"
+  }
+ ],
+ "hypothesis": "Predicted kills: independent true in an energy receipt or bundle verification (reopen fixes independent: false) and in an ESM inspection or candidate (the validator requires false). Predicted survivor: oscillator-independent.injected (open key set, unkeyed seal). exchange._identity is predicted to accept a recomputed artifact claiming independence, by design: it checks content only and reports content_recomputed_not_authenticated.",
+ "input_data": [
+  "make_demo_run() damped-oscillator recording; statistics.v1 on channel v over [1, 2] s, twice, plus one legacy analysis.stats result",
+  "examples/energy-accuracy/{baseline,reset}.json (origin synthetic_fixture): two original executions of baseline, one of reset, replays, and a separate session in the same process",
+  "Workspaces saved by Session.save_workspace and reopened by Session.from_workspace in temporary directories"
+ ],
+ "mathematical_model": "Each record seal or identity d = sha256(canon(record \\ d)) is unkeyed, so any holder can recompute d after an edit. Reopen kills a mutant only if some check compares the edited field with an independently recomputed, fixed or cross-referenced value; otherwise a consistent recomputation survives.",
+ "number": 88,
+ "numerical_result": "7 rows (4 workspace mutants, 3 pure-validator rows): 5 refused; 1 surviving forgery (oscillator-independent.injected); 1 documented validator acceptance (exchange.verification-independent); kill/survive predictions matched 7/7; refusal messages matched their regression pins 5/5",
+ "observation_model": "No physical observation. The observed objects are CIW records (sessions, executions, results, bundles, receipts, saved workspace JSON) produced offline by the unmodified CIW code; the energy logs are synthetic fixtures and no hardware was sampled.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/exchange_provenance.py": "5cc267c7777c9b434b8747b0cc841ac85313e1cfb6ff4c429ee93aa5ddbb645b",
+   "src/ciw/lab/exchange_provenance_common.py": "22028c4008079fba23c5e807de0104ba1a0014027e1d40a9209881cdf232f486"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T089 (mutate admission status)",
+ "report_id": "sha256:1ad1e1050e507a331f9e84b8081bb89ee6234df1ed4aee45d58710cc8a812f92",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "exchange-provenance",
+ "state": "completed",
+ "task_id": "T088",
+ "tests_passed": [
+  "check: Independence flag forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs receipt-independent.naive (none recompute): refusal on reopen",
+  "check: Independence flag forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs receipt-independent.resealed (local recompute): refusal on reopen",
+  "check: Independence flag forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs bundle-independent.resealed (local recompute): refusal on reopen",
+  "check: Independence flag forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs esm.inspection-independent: validator refusal",
+  "check: Independence flag forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs esm.candidate-independent: validator refusal",
+  "check: Independence flag forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs harness control: the forger's recomputation of the unedited workspace reproduces every CIW digest",
+  "check: Independence flag forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs harness control: the unedited saved workspace reopens",
+  "check: Surviving mutant oscillator-independent.injected: sealed records carrying an injected independent: true reopen vs oscillator-independent.injected: accepted (1 = accepted)",
+  "check: exchange._identity checks content only: a recomputed verification artifact claiming independent: true is accepted with status content_recomputed_not_authenticated vs exchange._identity on a recomputed artifact claiming independence (observed status)",
+  "pytest: tests/test_lab_exchange_provenance.py::test_verification_mutations"
+ ],
+ "tests_skipped": [],
+ "title": "Mutate independence flag.",
+ "uncertainty": "Outcomes are exact (accepted or a refusal message). Only kill/survive is a prediction; refusal messages are regression pins recorded from observed runs. Survivors are demonstrated forgeries; kills show only that these particular edits are detected, not that every edit of this field is.",
+ "unresolved_assumptions": [
+  "The forger model recomputes only unkeyed SHA-256 digests with CIW's public canonicalization; no key exists to steal.",
+  "Pure-validator rows run candidate_evidence.validate_response on a synthetic telemetry-shaped record (schema, digest, three step occurrences) that no telemetry workflow validated, without an ESM process, and exchange._identity without the pinned exchange validator.",
+  "Whether a reader of a forged workspace would be misled depends on how the record is displayed; not assessed."
+ ]
+}

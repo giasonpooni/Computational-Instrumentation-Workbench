@@ -1,0 +1,109 @@
+{
+ "changed_files": [
+  "src/ciw/lab/research_portfolio.py"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 1,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Aggregates are exact functions of retained reports and never change a label.",
+ "experiment": "Generate the draft from retained reports of sections exchange-provenance, implementation-targets, lyapunov.",
+ "failure_modes_checked": [
+  "missing reports",
+  "report identity mismatch (validate_report)",
+  "aggregate differs from its re-read bytes"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "cited (task, claim, label) triples absent from the retained reports",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Draft cites only retained findings with their retained labels",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": null,
+   "unit": "findings",
+   "value": 308
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "Draft has passed external peer review",
+   "domain": "provenance",
+   "evidence_status": "not_established",
+   "expected_not_established": true,
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 104015,
+   "path": "artifacts/T162/evidence-provenance-note-draft.md",
+   "sha256": "7b462c2758f174f70adcf966112582789093a85cd33c97ede5da09ca1083e79b"
+  }
+ ],
+ "hypothesis": "A evidence provenance note draft can be assembled entirely from retained findings, with every number traceable to a report identity and every limitation drawn from not_established findings.",
+ "input_data": [
+  "Retained reports T001-T154 in the same output directory"
+ ],
+ "mathematical_model": "Draft = generated Markdown: abstract, methods (task hypotheses and models), results (findings tables), limitations (not_established findings and blocked tasks).",
+ "number": 162,
+ "numerical_result": "Draft cites 308 findings from 51 reports.",
+ "observation_model": "No physical observation; reads retained computational records only.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/research_portfolio.py": "6cd37207af02c6d64dc88b22c7ff2148e85f1eeebaa5445cd894879bc3043ba3"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "Human authorship pass, related-work section and external review; physical experiments from the manufacturing protocols.",
+ "report_id": "sha256:005a325bca6f3293b6745337bdc43fb679b21574cd9d7d72e2e638d5e0e778a1",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "research-portfolio",
+ "state": "partial",
+ "task_id": "T162",
+ "tests_passed": [
+  "check: Draft cites only retained findings with their retained labels vs cited (task, claim, label) triples absent from the retained reports",
+  "pytest: tests/test_lab_research_portfolio.py::test_paper_drafts_trace_to_reports"
+ ],
+ "tests_skipped": [],
+ "title": "Write an evidence/provenance methods note.",
+ "uncertainty": "Numbers carry the uncertainty stated in their source findings.",
+ "unresolved_assumptions": [
+  "Prose beyond the generated structure, related work and peer review are outstanding."
+ ]
+}

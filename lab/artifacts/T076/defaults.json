@@ -1,0 +1,45 @@
+{
+ "admitted": 0,
+ "authority_mutable": false,
+ "ciw_authority": {
+  "physical_truth": "not_established",
+  "sensor_fusion": "not_performed",
+  "state_admission": "not_performed"
+ },
+ "codes": {
+  "admit": "read_only_session",
+  "fuse": "read_only_session",
+  "handle_gap": "read_only_session",
+  "initialize": "read_only_session",
+  "predict": "read_only_session",
+  "reacquire": "read_only_session"
+ },
+ "default_matches_module_constant": true,
+ "enabled_authority": {
+  "physical_truth": "not_established",
+  "sensor_fusion": "synthetic_only",
+  "state_admission": "synthetic_only"
+ },
+ "enabled_matches_synthetic": true,
+ "log": [
+  "refused:read_only_session",
+  "recorded",
+  "recorded",
+  "refused:read_only_session"
+ ],
+ "matches_ciw": true,
+ "no_state": true,
+ "read_only_default": true,
+ "rebinding": {
+  "authority": "read_only_session",
+  "read_only": "read_only_session"
+ },
+ "record_disposition": "recorded",
+ "session_authority": {
+  "physical_truth": "not_established",
+  "sensor_fusion": "not_performed",
+  "state_admission": "not_performed"
+ },
+ "session_read_only": true,
+ "still_read_only_after_rebinding": true
+}

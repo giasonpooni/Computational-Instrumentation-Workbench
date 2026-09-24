@@ -1,0 +1,503 @@
+{
+ "changed_files": [
+  "src/ciw/lab/sensor_fusion_admission.py",
+  "src/ciw/lab/sensor_fusion_common.py",
+  "src/ciw/lab/sensor_fusion_bench.py",
+  "src/ciw/lab/sensor_fusion_objects.py"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 3,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Full gate refuses each scenario with its check's code; the gate without that check gives a different outcome; no admission without an explicit gate call; AdmittedState immutable.",
+ "experiment": "Build each violating candidate (private state corruption simulates internal faults), run the full gate and the gate with the targeted check deleted, and exercise construction and mutation of each type.",
+ "failure_modes_checked": [
+  "subclass imposter",
+  "tampered mean with a stale digest",
+  "forged digest",
+  "NaN state",
+  "indefinite covariance",
+  "candidate stale by tick",
+  "candidate superseded at the same tick",
+  "lost track",
+  "excess uncertainty",
+  "inconsistent innovation",
+  "revoked calibration",
+  "read-only session",
+  "missing declaration",
+  "frame mismatch"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "admission_checks_not_declared",
+      "observed_refusal": "admission_checks_not_declared",
+      "passed": true,
+      "reference": "admission of a candidate in scenario 'declared' (check 'declared')",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "read_only_session",
+      "observed_refusal": "read_only_session",
+      "passed": true,
+      "reference": "admission of a candidate in scenario 'writable' (check 'writable')",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "not_a_candidate",
+      "observed_refusal": "not_a_candidate",
+      "passed": true,
+      "reference": "admission of a candidate in scenario 'typed' (check 'typed')",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "nonfinite_state",
+      "observed_refusal": "nonfinite_state",
+      "passed": true,
+      "reference": "admission of a candidate in scenario 'finite' (check 'finite')",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "covariance_not_positive_definite",
+      "observed_refusal": "covariance_not_positive_definite",
+      "passed": true,
+      "reference": "admission of a candidate in scenario 'covariance' (check 'covariance')",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "digest_mismatch",
+      "observed_refusal": "digest_mismatch",
+      "passed": true,
+      "reference": "admission of a candidate in scenario 'integrity' (check 'integrity')",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "unknown_candidate",
+      "observed_refusal": "unknown_candidate",
+      "passed": true,
+      "reference": "admission of a candidate in scenario 'provenance' (check 'provenance')",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "frame_mismatch",
+      "observed_refusal": "frame_mismatch",
+      "passed": true,
+      "reference": "admission of a candidate in scenario 'frame' (check 'frame')",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "stale_candidate",
+      "observed_refusal": "stale_candidate",
+      "passed": true,
+      "reference": "admission of a candidate in scenario 'stale_tick' (check 'fresh')",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "stale_candidate",
+      "observed_refusal": "stale_candidate",
+      "passed": true,
+      "reference": "admission of a candidate in scenario 'superseded_same_tick' (check 'fresh')",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "track_lost",
+      "observed_refusal": "track_lost",
+      "passed": true,
+      "reference": "admission of a candidate in scenario 'track' (check 'track')",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "uncertainty_exceeds_limit",
+      "observed_refusal": "uncertainty_exceeds_limit",
+      "passed": true,
+      "reference": "admission of a candidate in scenario 'uncertainty' (check 'uncertainty')",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "inconsistent_innovation",
+      "observed_refusal": "inconsistent_innovation",
+      "passed": true,
+      "reference": "admission of a candidate in scenario 'innovation' (check 'innovation')",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "calibration_revoked",
+      "observed_refusal": "calibration_revoked",
+      "passed": true,
+      "reference": "admission of a candidate in scenario 'calibration' (check 'calibration')",
+      "reference_kind": "refusal"
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "admission checks without a violation scenario",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "derivation": "ADMISSION_CHECKS in ciw.lab.sensor_fusion_objects"
+   },
+   "claim": "Every admission check refuses the candidates built to violate it, with that check's own refusal code, including a candidate superseded by a second update at the same tick",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "refusal codes",
+    "kind": "reference_error",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "calibration": {
+     "check": "calibration",
+     "expected": "calibration_revoked",
+     "full_gate": "calibration_revoked"
+    },
+    "covariance": {
+     "check": "covariance",
+     "expected": "covariance_not_positive_definite",
+     "full_gate": "covariance_not_positive_definite"
+    },
+    "declared": {
+     "check": "declared",
+     "expected": "admission_checks_not_declared",
+     "full_gate": "admission_checks_not_declared"
+    },
+    "finite": {
+     "check": "finite",
+     "expected": "nonfinite_state",
+     "full_gate": "nonfinite_state"
+    },
+    "frame": {
+     "check": "frame",
+     "expected": "frame_mismatch",
+     "full_gate": "frame_mismatch"
+    },
+    "innovation": {
+     "check": "innovation",
+     "expected": "inconsistent_innovation",
+     "full_gate": "inconsistent_innovation"
+    },
+    "integrity": {
+     "check": "integrity",
+     "expected": "digest_mismatch",
+     "full_gate": "digest_mismatch"
+    },
+    "provenance": {
+     "check": "provenance",
+     "expected": "unknown_candidate",
+     "full_gate": "unknown_candidate"
+    },
+    "stale_tick": {
+     "check": "fresh",
+     "expected": "stale_candidate",
+     "full_gate": "stale_candidate"
+    },
+    "superseded_same_tick": {
+     "check": "fresh",
+     "expected": "stale_candidate",
+     "full_gate": "stale_candidate"
+    },
+    "track": {
+     "check": "track",
+     "expected": "track_lost",
+     "full_gate": "track_lost"
+    },
+    "typed": {
+     "check": "typed",
+     "expected": "not_a_candidate",
+     "full_gate": "not_a_candidate"
+    },
+    "uncertainty": {
+     "check": "uncertainty",
+     "expected": "uncertainty_exceeds_limit",
+     "full_gate": "uncertainty_exceeds_limit"
+    },
+    "writable": {
+     "check": "writable",
+     "expected": "read_only_session",
+     "full_gate": "read_only_session"
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "surviving mutants",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "scenarios backed up by a later check differ from {declared, provenance}",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     },
+     {
+      "expected_refusal": "stale_candidate",
+      "observed_refusal": "stale_candidate",
+      "passed": true,
+      "reference": "forged candidate with the provenance check deleted",
+      "reference_kind": "refusal"
+     }
+    ],
+    "derivation": "admission_verdict with one check removed"
+   },
+   "claim": "Mutation analysis: deleting the check a scenario targets changes that scenario's outcome for every scenario, and the violating candidate is then admitted except in two scenarios where a later check still refuses it (a missing declaration fails the innovation check closed; a forged candidate is not the latest issue, so the freshness check refuses it)",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "deterministic gate outcomes",
+    "kind": "reference_error",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "backed_up_scenarios": [
+     "declared",
+     "provenance"
+    ],
+    "checks": 13,
+    "mutants_killed": 14,
+    "scenarios": 14,
+    "sole_guard_scenarios": 12,
+    "without_targeted_check": {
+     "calibration": "admitted",
+     "covariance": "admitted",
+     "declared": "inconsistent_innovation",
+     "finite": "admitted",
+     "frame": "admitted",
+     "innovation": "admitted",
+     "integrity": "admitted",
+     "provenance": "stale_candidate",
+     "stale_tick": "admitted",
+     "superseded_same_tick": "admitted",
+     "track": "admitted",
+     "typed": "admitted",
+     "uncertainty": "admitted",
+     "writable": "admitted"
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "subclass relations among the three types",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "states admitted without calling the gate",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "admitted states after one explicit gate call minus one",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "expected_refusal": "admission_requires_gate",
+      "observed_refusal": "admission_requires_gate",
+      "passed": true,
+      "reference": "construct AdmittedState without the gate",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "admitted_state_immutable",
+      "observed_refusal": "admitted_state_immutable",
+      "passed": true,
+      "reference": "mutate an admitted state",
+      "reference_kind": "refusal"
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "a candidate accepted an attribute assignment (frozen dataclass)",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "an observation accepted an attribute assignment (frozen dataclass)",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     }
+    ],
+    "derivation": "class definitions and the gate token in ciw.lab.sensor_fusion_objects"
+   },
+   "claim": "Observations, candidates and admitted states are unrelated types; candidates are never admitted automatically; an admitted state exists only through the gate and is immutable",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "deterministic type and gate outcomes",
+    "kind": "reference_error",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "admitted_after_gate": 1,
+    "admitted_checks": [
+     "declared",
+     "writable",
+     "typed",
+     "finite",
+     "covariance",
+     "integrity",
+     "provenance",
+     "frame",
+     "fresh",
+     "track",
+     "uncertainty",
+     "innovation",
+     "calibration"
+    ],
+    "admitted_digest_matches_candidate": true,
+    "auto_admitted_before_gate": 0,
+    "construct_admitted_directly": "admission_requires_gate",
+    "mutate_admitted": "admitted_state_immutable",
+    "mutate_candidate": "frozen_instance",
+    "mutate_observation": "frozen_instance",
+    "type_relations_true": 0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "seed": 752026
+    },
+    "notes": "synthetic draws only; no acquisition"
+   },
+   "claim": "An admitted synthetic state may command actuators",
+   "domain": "actuator_authority",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": "not established: admission is a software gate over synthetic data; authority is decided elsewhere"
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 3572,
+   "path": "artifacts/T075/admission_mutations.json",
+   "sha256": "109d6a2f7b721099a6e2d56b88fe9d10c56eac761a467a64ed57ce68a72ef6a4"
+  }
+ ],
+ "hypothesis": "Keeping observations, candidate states and admitted states as separate types, with a single explicit gate whose every check is load-bearing, guards against a candidate becoming state by accident, naive tampering or omission.",
+ "input_data": [
+  "one synthetic camera run (seed 752026) driving a FusionSession for each scenario",
+  "14 violation scenarios covering all 13 checks, plus one valid control"
+ ],
+ "mathematical_model": "Admission = ordered conjunction of declared checks (declared, writable, typed, finite, covariance, integrity, provenance, frame, fresh, track, uncertainty, innovation, calibration); fresh means the most recently issued candidate at the session tick; fail closed on any exception. Mutation m_i removes check i.",
+ "number": 75,
+ "numerical_result": "14/14 scenarios refused with the expected code; 14/14 mutants killed; in 12 scenarios the targeted check is the sole guard; backed up by a later check: declared, provenance (the provenance check adds a specific refusal code, but freshness already implies an issued digest).",
+ "observation_model": "Typed Observation objects; candidates issued by the session and sealed by a content digest.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/sensor_fusion_admission.py": "db737df809fa23fd26fb21a196b6efa2bda6326aba21a8ff0288a99a95746c2c",
+   "src/ciw/lab/sensor_fusion_bench.py": "f373849a4c6836fa20685c59ce7a6fe6bf732f6df9d6a49646cdc017262dd656",
+   "src/ciw/lab/sensor_fusion_common.py": "6787aa47d199d50d0b4de4d7e53714ce7b8b5aad37d647cfc1a954414e90209f",
+   "src/ciw/lab/sensor_fusion_objects.py": "a795ffc235e0a4118cb7b9ac7800191a90984372d79e59f1a934442d98d7a1f1"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T076: confirm that the session defaults to read-only with sensor fusion and state admission not performed.",
+ "report_id": "sha256:704ed0c5f054f06cf65ea1927b765e11fade7528ee9a864853f43223132f0dc5",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "sensor-fusion",
+ "state": "completed",
+ "task_id": "T075",
+ "tests_passed": [
+  "check: Every admission check refuses the candidates built to violate it, with that check's own refusal code, including a candidate superseded by a second update at the same tick vs admission of a candidate in scenario 'declared' (check 'declared')",
+  "check: Every admission check refuses the candidates built to violate it, with that check's own refusal code, including a candidate superseded by a second update at the same tick vs admission of a candidate in scenario 'writable' (check 'writable')",
+  "check: Every admission check refuses the candidates built to violate it, with that check's own refusal code, including a candidate superseded by a second update at the same tick vs admission of a candidate in scenario 'typed' (check 'typed')",
+  "check: Every admission check refuses the candidates built to violate it, with that check's own refusal code, including a candidate superseded by a second update at the same tick vs admission of a candidate in scenario 'finite' (check 'finite')",
+  "check: Every admission check refuses the candidates built to violate it, with that check's own refusal code, including a candidate superseded by a second update at the same tick vs admission of a candidate in scenario 'covariance' (check 'covariance')",
+  "check: Every admission check refuses the candidates built to violate it, with that check's own refusal code, including a candidate superseded by a second update at the same tick vs admission of a candidate in scenario 'integrity' (check 'integrity')",
+  "check: Every admission check refuses the candidates built to violate it, with that check's own refusal code, including a candidate superseded by a second update at the same tick vs admission of a candidate in scenario 'provenance' (check 'provenance')",
+  "check: Every admission check refuses the candidates built to violate it, with that check's own refusal code, including a candidate superseded by a second update at the same tick vs admission of a candidate in scenario 'frame' (check 'frame')",
+  "check: Every admission check refuses the candidates built to violate it, with that check's own refusal code, including a candidate superseded by a second update at the same tick vs admission of a candidate in scenario 'stale_tick' (check 'fresh')",
+  "check: Every admission check refuses the candidates built to violate it, with that check's own refusal code, including a candidate superseded by a second update at the same tick vs admission of a candidate in scenario 'superseded_same_tick' (check 'fresh')",
+  "check: Every admission check refuses the candidates built to violate it, with that check's own refusal code, including a candidate superseded by a second update at the same tick vs admission of a candidate in scenario 'track' (check 'track')",
+  "check: Every admission check refuses the candidates built to violate it, with that check's own refusal code, including a candidate superseded by a second update at the same tick vs admission of a candidate in scenario 'uncertainty' (check 'uncertainty')",
+  "check: Every admission check refuses the candidates built to violate it, with that check's own refusal code, including a candidate superseded by a second update at the same tick vs admission of a candidate in scenario 'innovation' (check 'innovation')",
+  "check: Every admission check refuses the candidates built to violate it, with that check's own refusal code, including a candidate superseded by a second update at the same tick vs admission of a candidate in scenario 'calibration' (check 'calibration')",
+  "check: Every admission check refuses the candidates built to violate it, with that check's own refusal code, including a candidate superseded by a second update at the same tick vs admission checks without a violation scenario",
+  "check: Mutation analysis: deleting the check a scenario targets changes that scenario's outcome for every scenario, and the violating candidate is then admitted except in two scenarios where a later check still refuses it (a missing declaration fails the innovation check closed; a forged candidate is not the latest issue, so the freshness check refuses it) vs surviving mutants",
+  "check: Mutation analysis: deleting the check a scenario targets changes that scenario's outcome for every scenario, and the violating candidate is then admitted except in two scenarios where a later check still refuses it (a missing declaration fails the innovation check closed; a forged candidate is not the latest issue, so the freshness check refuses it) vs scenarios backed up by a later check differ from {declared, provenance}",
+  "check: Mutation analysis: deleting the check a scenario targets changes that scenario's outcome for every scenario, and the violating candidate is then admitted except in two scenarios where a later check still refuses it (a missing declaration fails the innovation check closed; a forged candidate is not the latest issue, so the freshness check refuses it) vs forged candidate with the provenance check deleted",
+  "check: Observations, candidates and admitted states are unrelated types; candidates are never admitted automatically; an admitted state exists only through the gate and is immutable vs subclass relations among the three types",
+  "check: Observations, candidates and admitted states are unrelated types; candidates are never admitted automatically; an admitted state exists only through the gate and is immutable vs states admitted without calling the gate",
+  "check: Observations, candidates and admitted states are unrelated types; candidates are never admitted automatically; an admitted state exists only through the gate and is immutable vs admitted states after one explicit gate call minus one",
+  "check: Observations, candidates and admitted states are unrelated types; candidates are never admitted automatically; an admitted state exists only through the gate and is immutable vs construct AdmittedState without the gate",
+  "check: Observations, candidates and admitted states are unrelated types; candidates are never admitted automatically; an admitted state exists only through the gate and is immutable vs mutate an admitted state",
+  "check: Observations, candidates and admitted states are unrelated types; candidates are never admitted automatically; an admitted state exists only through the gate and is immutable vs a candidate accepted an attribute assignment (frozen dataclass)",
+  "check: Observations, candidates and admitted states are unrelated types; candidates are never admitted automatically; an admitted state exists only through the gate and is immutable vs an observation accepted an attribute assignment (frozen dataclass)",
+  "pytest: tests/test_lab_sensor_fusion.py::test_typed_objects_and_admission_mutations",
+  "pytest: tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T075]"
+ ],
+ "tests_skipped": [],
+ "title": "Keep observation, candidate state, and admitted state as separate objects.",
+ "uncertainty": "None: the outcomes are deterministic.",
+ "unresolved_assumptions": [
+  "Python objects can be forced (object.__setattr__) by code with that intent; the gate defends against accident and naive tampering, not a hostile process.",
+  "The declared thresholds are inputs; choosing them is outside this experiment."
+ ]
+}

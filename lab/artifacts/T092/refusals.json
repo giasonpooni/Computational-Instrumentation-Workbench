@@ -1,0 +1,226 @@
+{
+ "cases": [
+  {
+   "case": "execute unbound acquired-dataset",
+   "entry_points": [
+    "ciw.workbench.Workbench.execute"
+   ],
+   "expected": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+   "observed": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+   "request": "operation.execute"
+  },
+  {
+   "case": "execute unbound calibrated-observable",
+   "entry_points": [
+    "ciw.workbench.Workbench.execute"
+   ],
+   "expected": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+   "observed": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+   "request": "operation.execute"
+  },
+  {
+   "case": "execute unbound calibrated-window",
+   "entry_points": [
+    "ciw.workbench.Workbench.execute"
+   ],
+   "expected": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+   "observed": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+   "request": "operation.execute"
+  },
+  {
+   "case": "execute unbound covariance-geometry",
+   "entry_points": [
+    "ciw.workbench.Workbench.execute"
+   ],
+   "expected": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+   "observed": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+   "request": "operation.execute"
+  },
+  {
+   "case": "execute unbound curved-path-transfer",
+   "entry_points": [
+    "ciw.workbench.Workbench.execute"
+   ],
+   "expected": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+   "observed": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+   "request": "operation.execute"
+  },
+  {
+   "case": "execute unbound flat-torus-reference",
+   "entry_points": [
+    "ciw.workbench.Workbench.execute"
+   ],
+   "expected": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+   "observed": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+   "request": "operation.execute"
+  },
+  {
+   "case": "execute unbound geometric-circle",
+   "entry_points": [
+    "ciw.workbench.Workbench.execute"
+   ],
+   "expected": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+   "observed": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+   "request": "operation.execute"
+  },
+  {
+   "case": "execute unbound measurement-chain",
+   "entry_points": [
+    "ciw.workbench.Workbench.execute"
+   ],
+   "expected": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+   "observed": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+   "request": "operation.execute"
+  },
+  {
+   "case": "execute unbound mesh-path",
+   "entry_points": [
+    "ciw.workbench.Workbench.execute"
+   ],
+   "expected": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+   "observed": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+   "request": "operation.execute"
+  },
+  {
+   "case": "execute unbound numerical-heat",
+   "entry_points": [
+    "ciw.workbench.Workbench.execute"
+   ],
+   "expected": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+   "observed": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+   "request": "operation.execute"
+  },
+  {
+   "case": "execute unbound proved-heat",
+   "entry_points": [
+    "ciw.workbench.Workbench.execute"
+   ],
+   "expected": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+   "observed": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+   "request": "operation.execute"
+  },
+  {
+   "case": "execute unbound schematic-assessment",
+   "entry_points": [
+    "ciw.workbench.Workbench.execute"
+   ],
+   "expected": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+   "observed": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+   "request": "operation.execute"
+  },
+  {
+   "case": "execute unbound telemetry",
+   "entry_points": [
+    "ciw.workbench.Workbench.execute"
+   ],
+   "expected": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+   "observed": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+   "request": "operation.execute"
+  },
+  {
+   "case": "execute unbound translation-flow",
+   "entry_points": [
+    "ciw.workbench.Workbench.execute"
+   ],
+   "expected": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+   "observed": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+   "request": "operation.execute"
+  },
+  {
+   "case": "execute unbound variational-free-energy",
+   "entry_points": [
+    "ciw.workbench.Workbench.execute"
+   ],
+   "expected": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+   "observed": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+   "request": "operation.execute"
+  },
+  {
+   "case": "execute identified-design with an upstream bundle of another kind",
+   "entry_points": [
+    "ciw.workbench.Workbench.execute"
+   ],
+   "expected": "invalid_payload: Select a retained upstream bundle of the declared kind",
+   "observed": "invalid_payload: Select a retained upstream bundle of the declared kind",
+   "request": "operation.execute"
+  },
+  {
+   "case": "execute schematic-companions with an upstream bundle of another kind",
+   "entry_points": [
+    "ciw.workbench.Workbench.execute"
+   ],
+   "expected": "invalid_payload: Select a retained upstream bundle of the declared kind",
+   "observed": "invalid_payload: Select a retained upstream bundle of the declared kind",
+   "request": "operation.execute"
+  },
+  {
+   "case": "replay retained numerical-heat bundle without SCR binding",
+   "entry_points": [
+    "ciw.workbench.Workbench.replay"
+   ],
+   "expected": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+   "observed": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+   "request": "bundle.replay"
+  },
+  {
+   "case": "replay with client-supplied repositories",
+   "entry_points": [
+    "ciw.workbench.Workbench.replay"
+   ],
+   "expected": "invalid_payload: Unexpected or missing workbench fields",
+   "observed": "invalid_payload: Unexpected or missing workbench fields",
+   "request": "bundle.replay"
+  },
+  {
+   "case": "execute with client-supplied repositories",
+   "entry_points": [],
+   "expected": "invalid_payload: Unknown payload fields: repositories",
+   "observed": "invalid_payload: Unknown payload fields: repositories",
+   "request": "operation.execute"
+  },
+  {
+   "case": "client request to bind a workflow",
+   "entry_points": [],
+   "expected": "unknown_command: Unknown request type: workflow.bind",
+   "observed": "unknown_command: Unknown request type: workflow.bind",
+   "request": "workflow.bind"
+  },
+  {
+   "case": "replay an unknown bundle",
+   "entry_points": [
+    "ciw.workbench.Workbench.replay"
+   ],
+   "expected": "invalid_payload: Unknown retained workbench bundle",
+   "observed": "invalid_payload: Unknown retained workbench bundle",
+   "request": "bundle.replay"
+  },
+  {
+   "case": "unversioned operation identity",
+   "entry_points": [],
+   "expected": "invalid_payload: operation_id must be versioned and parameters must be an object",
+   "observed": "invalid_payload: operation_id must be versioned and parameters must be an object",
+   "request": "operation.execute"
+  },
+  {
+   "case": "ESM candidate inspection of a non-telemetry bundle",
+   "entry_points": [
+    "ciw.workbench.Workbench.execute_candidate"
+   ],
+   "expected": "invalid_payload: ESM requires an explicitly selected calibrated or telemetry bundle",
+   "observed": "invalid_payload: ESM requires an explicitly selected calibrated or telemetry bundle",
+   "request": "operation.execute"
+  },
+  {
+   "case": "unregistered recording operation",
+   "entry_points": [
+    "ciw.session.execute_operation"
+   ],
+   "expected": "operation_unavailable: No trusted provider bound for ciw.lab-unregistered.v1",
+   "observed": "operation_unavailable: No trusted provider bound for ciw.lab-unregistered.v1",
+   "request": "operation.execute"
+  }
+ ],
+ "energy_replay_control": "accepted",
+ "provider_paths_reached": [],
+ "reopen_attempts": []
+}

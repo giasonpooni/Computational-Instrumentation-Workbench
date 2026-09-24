@@ -1,0 +1,272 @@
+{
+ "indefinite_candidates": {
+  "accepted": 16,
+  "accepted_exactly_indefinite": 8,
+  "codes": {
+   "CERTIFICATE_NOT_POSITIVE": 6,
+   "NUMERICAL_INCONCLUSIVE": 26
+  }
+ },
+ "rows": [
+  {
+   "code": "NUMERICAL_INCONCLUSIVE",
+   "exact_bin": "[0, 1) res",
+   "exact_class": "negative_semidefinite",
+   "group": "skew P=I",
+   "margin_ratio": -0.0,
+   "name": "skew n=2, P=I",
+   "time": "continuous"
+  },
+  {
+   "code": "NOT_CERTIFIED",
+   "exact_bin": "at or above 2 res",
+   "exact_class": "has_positive_eigenvalue",
+   "group": "skew P=SPD",
+   "margin_ratio": -175029887813819.1,
+   "name": "skew n=2, P=SPD",
+   "time": "continuous"
+  },
+  {
+   "code": "NUMERICAL_INCONCLUSIVE",
+   "exact_bin": "[0, 1) res",
+   "exact_class": "negative_semidefinite",
+   "group": "skew P=I",
+   "margin_ratio": -0.0,
+   "name": "skew n=3, P=I",
+   "time": "continuous"
+  },
+  {
+   "code": "NOT_CERTIFIED",
+   "exact_bin": "at or above 2 res",
+   "exact_class": "has_positive_eigenvalue",
+   "group": "skew P=SPD",
+   "margin_ratio": -39809154575342.89,
+   "name": "skew n=3, P=SPD",
+   "time": "continuous"
+  },
+  {
+   "code": "NUMERICAL_INCONCLUSIVE",
+   "exact_bin": "[0, 1) res",
+   "exact_class": "negative_semidefinite",
+   "group": "skew P=I",
+   "margin_ratio": -0.0,
+   "name": "skew n=4, P=I",
+   "time": "continuous"
+  },
+  {
+   "code": "NOT_CERTIFIED",
+   "exact_bin": "at or above 2 res",
+   "exact_class": "has_positive_eigenvalue",
+   "group": "skew P=SPD",
+   "margin_ratio": -24433738420725.676,
+   "name": "skew n=4, P=SPD",
+   "time": "continuous"
+  },
+  {
+   "code": "NUMERICAL_INCONCLUSIVE",
+   "exact_bin": "[0, 1) res",
+   "exact_class": "negative_semidefinite",
+   "group": "skew P=I",
+   "margin_ratio": -0.0,
+   "name": "skew n=5, P=I",
+   "time": "continuous"
+  },
+  {
+   "code": "DECREASE_NOT_DEFINITE",
+   "exact_bin": "at or above 2 res",
+   "exact_class": "has_positive_eigenvalue",
+   "group": "skew P=SPD",
+   "margin_ratio": -23315990113405.277,
+   "name": "skew n=5, P=SPD",
+   "time": "continuous"
+  },
+  {
+   "code": "NUMERICAL_INCONCLUSIVE",
+   "exact_bin": "[0, 1) res",
+   "exact_class": "negative_semidefinite",
+   "group": "skew P=I",
+   "margin_ratio": -0.0,
+   "name": "skew n=6, P=I",
+   "time": "continuous"
+  },
+  {
+   "code": "DECREASE_NOT_DEFINITE",
+   "exact_bin": "at or above 2 res",
+   "exact_class": "has_positive_eigenvalue",
+   "group": "skew P=SPD",
+   "margin_ratio": -14938718982410.98,
+   "name": "skew n=6, P=SPD",
+   "time": "continuous"
+  },
+  {
+   "code": "NUMERICAL_INCONCLUSIVE",
+   "exact_bin": "zero resolution",
+   "exact_class": "negative_semidefinite",
+   "group": "marginal",
+   "margin_ratio": 0.0,
+   "name": "A = 0",
+   "time": "continuous"
+  },
+  {
+   "code": "NUMERICAL_INCONCLUSIVE",
+   "exact_bin": "[0, 1) res",
+   "exact_class": "negative_semidefinite",
+   "group": "marginal",
+   "margin_ratio": -0.0,
+   "name": "A = diag(0, -1)",
+   "time": "continuous"
+  },
+  {
+   "code": "NOT_CERTIFIED",
+   "exact_bin": "at or above 2 res",
+   "exact_class": "has_positive_eigenvalue",
+   "group": "marginal",
+   "margin_ratio": -187649984473770.6,
+   "name": "A = [[0, 1], [0, 0]]",
+   "time": "continuous"
+  },
+  {
+   "code": "DECREASE_NOT_DEFINITE",
+   "exact_bin": "at or above 2 res",
+   "exact_class": "has_positive_eigenvalue",
+   "group": "Jordan P=I",
+   "margin_ratio": -93824992236885.3,
+   "name": "Jordan lambda=0.25, P=I",
+   "time": "continuous"
+  },
+  {
+   "code": "DECREASE_NOT_DEFINITE",
+   "exact_bin": "at or above 2 res",
+   "exact_class": "has_positive_eigenvalue",
+   "group": "Jordan P=I",
+   "margin_ratio": -3752999689475.415,
+   "name": "Jordan lambda=0.49, P=I",
+   "time": "continuous"
+  },
+  {
+   "code": "NUMERICAL_INCONCLUSIVE",
+   "exact_bin": "[0, 1) res",
+   "exact_class": "negative_semidefinite",
+   "group": "Jordan P=I",
+   "margin_ratio": -0.0,
+   "name": "Jordan lambda=0.5, P=I",
+   "time": "continuous"
+  },
+  {
+   "code": "CERTIFIED_WITH_MARGIN",
+   "exact_bin": "below -2 res",
+   "exact_class": "negative_definite",
+   "group": "Jordan P=I",
+   "margin_ratio": 3740531251968.852,
+   "name": "Jordan lambda=0.51, P=I",
+   "time": "continuous"
+  },
+  {
+   "code": "CERTIFIED_WITH_MARGIN",
+   "exact_bin": "below -2 res",
+   "exact_class": "negative_definite",
+   "group": "Jordan P=I",
+   "margin_ratio": 160842843834660.5,
+   "name": "Jordan lambda=1.0, P=I",
+   "time": "continuous"
+  },
+  {
+   "code": "CERTIFIED_WITH_MARGIN",
+   "exact_bin": "below -2 res",
+   "exact_class": "negative_definite",
+   "group": "Jordan P=I",
+   "margin_ratio": 241264265751990.75,
+   "name": "Jordan lambda=2.0, P=I",
+   "time": "continuous"
+  },
+  {
+   "code": "CERTIFIED_WITH_MARGIN",
+   "exact_bin": "below -2 res",
+   "exact_class": "negative_definite",
+   "group": "Jordan P=Lyapunov",
+   "margin_ratio": 900718.1233172775,
+   "name": "Jordan lambda=0.001, P=Lyapunov(Q=I)",
+   "time": "continuous"
+  },
+  {
+   "code": "CERTIFIED_WITH_MARGIN",
+   "exact_bin": "below -2 res",
+   "exact_class": "negative_definite",
+   "group": "Jordan P=Lyapunov",
+   "margin_ratio": 900539097.2232409,
+   "name": "Jordan lambda=0.01, P=Lyapunov(Q=I)",
+   "time": "continuous"
+  },
+  {
+   "code": "CERTIFIED_WITH_MARGIN",
+   "exact_bin": "below -2 res",
+   "exact_class": "negative_definite",
+   "group": "Jordan P=Lyapunov",
+   "margin_ratio": 882366698152.5261,
+   "name": "Jordan lambda=0.1, P=Lyapunov(Q=I)",
+   "time": "continuous"
+  },
+  {
+   "code": "CERTIFIED_WITH_MARGIN",
+   "exact_bin": "below -2 res",
+   "exact_class": "negative_definite",
+   "group": "Jordan P=Lyapunov",
+   "margin_ratio": 237031559335289.2,
+   "name": "Jordan lambda=1.0, P=Lyapunov(Q=I)",
+   "time": "continuous"
+  },
+  {
+   "code": "NUMERICAL_INCONCLUSIVE",
+   "exact_bin": "[0, 1) res",
+   "exact_class": "has_positive_eigenvalue",
+   "group": "semidefinite Q",
+   "margin_ratio": -1.4456028966473387e-19,
+   "name": "Q = diag(1, 0), P from CIW solve",
+   "time": "continuous"
+  },
+  {
+   "code": "NUMERICAL_INCONCLUSIVE",
+   "exact_bin": "[-1, 0) res",
+   "exact_class": "negative_definite",
+   "group": "orthogonal discrete",
+   "margin_ratio": 0.012205750023574954,
+   "name": "rotation 0.3 rad, discrete",
+   "time": "discrete"
+  },
+  {
+   "code": "NUMERICAL_INCONCLUSIVE",
+   "exact_bin": "[0, 1) res",
+   "exact_class": "has_positive_eigenvalue",
+   "group": "orthogonal discrete",
+   "margin_ratio": -0.0035969262325015908,
+   "name": "rotation 1.0 rad, discrete",
+   "time": "discrete"
+  },
+  {
+   "code": "NUMERICAL_INCONCLUSIVE",
+   "exact_bin": "[0, 1) res",
+   "exact_class": "has_positive_eigenvalue",
+   "group": "orthogonal discrete",
+   "margin_ratio": -0.0009404067565248706,
+   "name": "rotation 2.0 rad, discrete",
+   "time": "discrete"
+  },
+  {
+   "code": "NUMERICAL_INCONCLUSIVE",
+   "exact_bin": "[0, 1) res",
+   "exact_class": "negative_semidefinite",
+   "group": "orthogonal discrete",
+   "margin_ratio": -0.0,
+   "name": "diag(1, -1), discrete",
+   "time": "discrete"
+  }
+ ],
+ "solves": {
+  "quadratic:psd": "raises ValueError",
+  "solve:0.001": "P returned",
+  "solve:0.01": "P returned",
+  "solve:0.1": "P returned",
+  "solve:1.0": "P returned",
+  "solve:psdQ": "raises ValueError"
+ }
+}

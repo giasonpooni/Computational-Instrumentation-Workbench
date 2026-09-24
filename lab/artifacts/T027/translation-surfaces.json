@@ -1,0 +1,119 @@
+{
+ "cylinders": {
+  "l_shape_circumferences": [
+   2.0,
+   1.0
+  ],
+  "l_shape_r_cycles": [
+   2,
+   1
+  ],
+  "octagon_area": {
+   "radicand": 2,
+   "rational": "2",
+   "sqrt_coefficient": "2"
+  },
+  "octagon_cylinder_area": {
+   "radicand": 2,
+   "rational": "2",
+   "sqrt_coefficient": "2"
+  },
+  "octagon_middle": {
+   "radicand": 2,
+   "rational": "1",
+   "sqrt_coefficient": "1"
+  },
+  "octagon_outer": {
+   "radicand": 2,
+   "rational": "2",
+   "sqrt_coefficient": "1"
+  }
+ },
+ "surfaces": {
+  "H(1,1) origami": {
+   "area": "4",
+   "cone_angles_over_pi": [
+    "4",
+    "4"
+   ],
+   "edges": 8,
+   "euler_characteristic": -2,
+   "faces": 4,
+   "genus": 2,
+   "gluing": "translation",
+   "vertices": 2
+  },
+  "L-shape": {
+   "area": "3",
+   "cone_angles_over_pi": [
+    "6"
+   ],
+   "edges": 6,
+   "euler_characteristic": -2,
+   "faces": 3,
+   "genus": 2,
+   "gluing": "translation",
+   "vertices": 1
+  },
+  "hexagon": {
+   "area": {
+    "radicand": 3,
+    "rational": "0",
+    "sqrt_coefficient": "3/2"
+   },
+   "cone_angles_over_pi": [
+    "2",
+    "2"
+   ],
+   "edges": 3,
+   "euler_characteristic": 0,
+   "faces": 1,
+   "genus": 1,
+   "gluing": "translation",
+   "vertices": 2
+  },
+  "octagon": {
+   "area": {
+    "radicand": 2,
+    "rational": "2",
+    "sqrt_coefficient": "2"
+   },
+   "cone_angles_over_pi": [
+    "6"
+   ],
+   "edges": 4,
+   "euler_characteristic": -2,
+   "faces": 1,
+   "genus": 2,
+   "gluing": "translation",
+   "vertices": 1
+  },
+  "pillowcase": {
+   "area": "2",
+   "cone_angles_over_pi": [
+    "1",
+    "1",
+    "1",
+    "1"
+   ],
+   "edges": 4,
+   "euler_characteristic": 2,
+   "faces": 2,
+   "genus": null,
+   "gluing": "half-translation",
+   "vertices": 4
+  },
+  "square torus": {
+   "area": "1",
+   "cone_angles_over_pi": [
+    "2"
+   ],
+   "edges": 2,
+   "euler_characteristic": 0,
+   "faces": 1,
+   "genus": 1,
+   "gluing": "translation",
+   "vertices": 1
+  }
+ }
+}

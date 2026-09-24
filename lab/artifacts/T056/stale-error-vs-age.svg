@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420" font-family="sans-serif" font-size="11">
+<rect width="640" height="420" fill="#ffffff"/>
+<text x="78" y="22" font-size="13" font-weight="bold">Stale observation: second-order residual</text>
+<rect x="78" y="40" width="392" height="322" fill="none" stroke="#333"/>
+<line x1="78.00" y1="40" x2="78.00" y2="362" stroke="#e5e7eb"/>
+<text x="78.00" y="378" text-anchor="middle">1e-3</text>
+<line x1="274.00" y1="40" x2="274.00" y2="362" stroke="#e5e7eb"/>
+<text x="274.00" y="378" text-anchor="middle">1e-2</text>
+<line x1="470.00" y1="40" x2="470.00" y2="362" stroke="#e5e7eb"/>
+<text x="470.00" y="378" text-anchor="middle">1e-1</text>
+<line x1="78" y1="301.36" x2="470" y2="301.36" stroke="#e5e7eb"/>
+<text x="72" y="305.36" text-anchor="end">1e-5</text>
+<line x1="78" y1="226.83" x2="470" y2="226.83" stroke="#e5e7eb"/>
+<text x="72" y="230.83" text-anchor="end">1e-4</text>
+<line x1="78" y1="152.29" x2="470" y2="152.29" stroke="#e5e7eb"/>
+<text x="72" y="156.29" text-anchor="end">1e-3</text>
+<line x1="78" y1="77.75" x2="470" y2="77.75" stroke="#e5e7eb"/>
+<text x="72" y="81.75" text-anchor="end">1e-2</text>
+<text x="274.00" y="406" text-anchor="middle">age a (s)</text>
+<text x="16" y="201.00" text-anchor="middle" transform="rotate(-90 16 201.00)">m</text>
+<path d="M78.00,350.07 L127.00,312.81 L176.00,275.54 L225.00,238.27 L274.00,201.01 L323.00,163.76 L372.00,126.54 L421.00,89.45 L470.00,52.73" fill="none" stroke="#1f5fa8" stroke-width="1.8"/>
+<circle cx="78.00" cy="350.07" r="2.6" fill="#1f5fa8"/>
+<circle cx="127.00" cy="312.81" r="2.6" fill="#1f5fa8"/>
+<circle cx="176.00" cy="275.54" r="2.6" fill="#1f5fa8"/>
+<circle cx="225.00" cy="238.27" r="2.6" fill="#1f5fa8"/>
+<circle cx="274.00" cy="201.01" r="2.6" fill="#1f5fa8"/>
+<circle cx="323.00" cy="163.76" r="2.6" fill="#1f5fa8"/>
+<circle cx="372.00" cy="126.54" r="2.6" fill="#1f5fa8"/>
+<circle cx="421.00" cy="89.45" r="2.6" fill="#1f5fa8"/>
+<circle cx="470.00" cy="52.73" r="2.6" fill="#1f5fa8"/>
+<line x1="482" y1="52" x2="502" y2="52" stroke="#1f5fa8" stroke-width="2"/>
+<text x="508" y="56">max |e - v a| (sinusoid)</text>
+<path d="M78.00,350.07 L127.00,312.81 L176.00,275.54 L225.00,238.27 L274.00,201.00 L323.00,163.73 L372.00,126.46 L421.00,89.19 L470.00,51.93" fill="none" stroke="#c2410c" stroke-width="1.8"/>
+<circle cx="78.00" cy="350.07" r="2.6" fill="#c2410c"/>
+<circle cx="127.00" cy="312.81" r="2.6" fill="#c2410c"/>
+<circle cx="176.00" cy="275.54" r="2.6" fill="#c2410c"/>
+<circle cx="225.00" cy="238.27" r="2.6" fill="#c2410c"/>
+<circle cx="274.00" cy="201.00" r="2.6" fill="#c2410c"/>
+<circle cx="323.00" cy="163.73" r="2.6" fill="#c2410c"/>
+<circle cx="372.00" cy="126.46" r="2.6" fill="#c2410c"/>
+<circle cx="421.00" cy="89.19" r="2.6" fill="#c2410c"/>
+<circle cx="470.00" cy="51.93" r="2.6" fill="#c2410c"/>
+<line x1="482" y1="70" x2="502" y2="70" stroke="#c2410c" stroke-width="2"/>
+<text x="508" y="74">A w^2 a^2 / 2</text>
+</svg>

@@ -1,0 +1,768 @@
+{
+ "changed_files": [
+  "src/ciw/lab/geodesic_jacobi.py",
+  "src/ciw/lab/geodesic_jacobi_common.py",
+  "tests/test_lab_geodesic_jacobi.py",
+  "docs/lab/GEODESIC_JACOBI.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 3,
+   "not_established": 0,
+   "numerically_verified": 5,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Hand, symbolic and numeric quantities agree to rounding; Gamma is symmetric; nabla g = 0; the generic second-fundamental-form curvature equals the intrinsic (finite-difference Riemann and Brioschi) curvature on every embedded chart (Theorema Egregium).",
+ "experiment": "Evaluate the hand table and (when installed) the sympy derivation at seeded points and compare with ciw.lab.surfaces; check symmetry, metric compatibility and metric derivatives of ciw alone; compare the generic extrinsic curvature with the intrinsic ones; record the flat polar charts and the cylinder as counterexamples separating Christoffel symbols from curvature.",
+ "failure_modes_checked": [
+  "Christoffel index order (symmetry and compatibility)",
+  "sign convention of the Riemann tensor (sphere K = +1, hyperbolic plane K = -1)",
+  "chart singularities excluded from the sampling boxes",
+  "intrinsic versus extrinsic curvature (cylinder, polar charts, Theorema Egregium)",
+  "hand table transcription errors (every row evaluated against the implementation)"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "generator": {
+     "charts": [
+      "plane",
+      "sphere",
+      "cylinder",
+      "saddle",
+      "torus",
+      "gaussian-bump",
+      "hyperbolic-plane",
+      "plane-polar",
+      "cylinder-polar"
+     ],
+     "name": "seeded chart samples",
+     "samples_per_chart": 8,
+     "seed": 20260923
+    },
+    "independent_check": {
+     "checker": {
+      "implementation": "sympy",
+      "revision": "1.14.0"
+     },
+     "comparison": "abs_le",
+     "observed": 3.230228932514562e-16,
+     "passed": true,
+     "producer": {
+      "implementation": "ciw.lab.surfaces",
+      "revision": "ciw 0.1.0"
+     },
+     "reference": "sympy symbolic metric, Christoffel symbols and geodesic accelerations (max relative discrepancy over nine charts)",
+     "reference_kind": "analytic",
+     "tolerance": 1e-10
+    }
+   },
+   "claim": "Sympy-derived metrics, Christoffel symbols and geodesic equations match ciw.lab.surfaces on nine charts",
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "binary64 evaluation of both sides, relative to max(1, |value|)",
+    "kind": "roundoff",
+    "value": 1e-15
+   },
+   "unit": null,
+   "value": {
+    "cylinder": 1.1102230246251565e-16,
+    "cylinder-polar": 2.220446049250313e-16,
+    "gaussian-bump": 1.474514954580286e-17,
+    "hyperbolic-plane": 2.048224298943313e-16,
+    "plane": 0.0,
+    "plane-polar": 3.230228932514562e-16,
+    "saddle": 2.1323648481775948e-16,
+    "sphere": 1.8746167016318193e-16,
+    "torus": 2.8193521300919135e-16
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "generator": {
+     "charts": [
+      "plane",
+      "sphere",
+      "cylinder",
+      "saddle",
+      "torus",
+      "gaussian-bump",
+      "hyperbolic-plane",
+      "plane-polar",
+      "cylinder-polar"
+     ],
+     "name": "seeded chart samples",
+     "samples_per_chart": 8,
+     "seed": 20260923
+    },
+    "independent_check": {
+     "checker": {
+      "implementation": "sympy",
+      "revision": "1.14.0"
+     },
+     "comparison": "abs_le",
+     "observed": 1.3877787807814457e-17,
+     "passed": true,
+     "producer": {
+      "implementation": "ciw.lab.surfaces",
+      "revision": "ciw 0.1.0"
+     },
+     "reference": "sympy Brioschi formula (first fundamental form only)",
+     "reference_kind": "analytic",
+     "tolerance": 1e-10
+    }
+   },
+   "claim": "Intrinsic Brioschi curvature from sympy matches the ciw Gaussian curvature on nine charts",
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "binary64 evaluation of both sides, relative to max(1, |value|)",
+    "kind": "roundoff",
+    "value": 1e-15
+   },
+   "unit": null,
+   "value": {
+    "cylinder": 0.0,
+    "cylinder-polar": 0.0,
+    "gaussian-bump": 1.0408340855860843e-17,
+    "hyperbolic-plane": 0.0,
+    "plane": 0.0,
+    "plane-polar": 0.0,
+    "saddle": 1.3877787807814457e-17,
+    "sphere": 0.0,
+    "torus": 0.0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 2.220446049250313e-16,
+      "passed": true,
+      "reference": "hand-derived metric (doc table) against ciw.lab.surfaces, all charts",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 2.863761754778721e-16,
+      "passed": true,
+      "reference": "hand-derived christoffel (doc table) against ciw.lab.surfaces, all charts",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 3.230228932514562e-16,
+      "passed": true,
+      "reference": "hand-derived acceleration (doc table) against ciw.lab.surfaces, all charts",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 1.3877787807814457e-17,
+      "passed": true,
+      "reference": "hand-derived curvature (doc table) against ciw.lab.surfaces, all charts",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     }
+    ],
+    "derivation": "docs/lab/GEODESIC_JACOBI.md, section T001 (metric, Christoffel symbols and curvature of each chart by hand)",
+    "generator": {
+     "charts": [
+      "plane",
+      "sphere",
+      "cylinder",
+      "saddle",
+      "torus",
+      "gaussian-bump",
+      "hyperbolic-plane",
+      "plane-polar",
+      "cylinder-polar"
+     ],
+     "name": "seeded chart samples",
+     "samples_per_chart": 8,
+     "seed": 20260923
+    }
+   },
+   "claim": "The hand-derived metrics, Christoffel symbols, geodesic equations and curvatures of the section doc match ciw.lab.surfaces on nine charts",
+   "domain": "mathematical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "binary64 evaluation of both sides, relative to max(1, |value|)",
+    "kind": "roundoff",
+    "value": 1e-15
+   },
+   "unit": null,
+   "value": {
+    "cylinder": {
+     "acceleration": 8.250512182813516e-18,
+     "christoffel": 2.349193846774299e-17,
+     "curvature": 0.0,
+     "metric": 1.1102230246251565e-16
+    },
+    "cylinder-polar": {
+     "acceleration": 2.220446049250313e-16,
+     "christoffel": 1.6653345369377348e-16,
+     "curvature": 0.0,
+     "metric": 1.7375969724856833e-16
+    },
+    "gaussian-bump": {
+     "acceleration": 4.336808689942018e-18,
+     "christoffel": 1.3877787807814457e-17,
+     "curvature": 6.938893903907228e-18,
+     "metric": 0.0
+    },
+    "hyperbolic-plane": {
+     "acceleration": 5.551115123125783e-17,
+     "christoffel": 2.048224298943313e-16,
+     "curvature": 0.0,
+     "metric": 0.0
+    },
+    "plane": {
+     "acceleration": 0.0,
+     "christoffel": 0.0,
+     "curvature": 0.0,
+     "metric": 0.0
+    },
+    "plane-polar": {
+     "acceleration": 3.230228932514562e-16,
+     "christoffel": 2.863761754778721e-16,
+     "curvature": 0.0,
+     "metric": 1.9902828820347725e-16
+    },
+    "saddle": {
+     "acceleration": 1.1102230246251565e-16,
+     "christoffel": 1.6653345369377348e-16,
+     "curvature": 1.3877787807814457e-17,
+     "metric": 2.1323648481775948e-16
+    },
+    "sphere": {
+     "acceleration": 1.6653345369377348e-16,
+     "christoffel": 1.4637048490485424e-16,
+     "curvature": 0.0,
+     "metric": 1.1102230246251565e-16
+    },
+    "torus": {
+     "acceleration": 2.8193521300919135e-16,
+     "christoffel": 2.1585823144256267e-16,
+     "curvature": 0.0,
+     "metric": 2.220446049250313e-16
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 2.7755575615628907e-17,
+      "passed": true,
+      "reference": "Gamma^k_ij - Gamma^k_ji",
+      "reference_kind": "invariant",
+      "tolerance": 1e-14
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 4.440892098500626e-16,
+      "passed": true,
+      "reference": "nabla g = 0 residual",
+      "reference_kind": "invariant",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 2.322664296899297e-10,
+      "passed": true,
+      "reference": "central differences of g with step 1e-5",
+      "reference_kind": "self_convergence",
+      "tolerance": 1e-06
+     }
+    ],
+    "generator": {
+     "charts": [
+      "plane",
+      "sphere",
+      "cylinder",
+      "saddle",
+      "torus",
+      "gaussian-bump",
+      "hyperbolic-plane",
+      "plane-polar",
+      "cylinder-polar"
+     ],
+     "name": "seeded chart samples",
+     "samples_per_chart": 8,
+     "seed": 20260923
+    }
+   },
+   "claim": "ciw.lab.surfaces Christoffel symbols are symmetric and metric-compatible and its exact metric derivatives match finite differences",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-07,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "the metric-derivative residual is the truncation and rounding of central differences with step 1e-5; symmetry and compatibility are rounding",
+    "kind": "truncation_bound",
+    "value": 2.322664296899297e-10
+   },
+   "unit": null,
+   "value": {
+    "cylinder": {
+     "compatibility": 6.162975822039155e-33,
+     "metric_derivatives": 1.1102260975773557e-11,
+     "symmetry": 0.0
+    },
+    "cylinder-polar": {
+     "compatibility": 4.440892098500626e-16,
+     "metric_derivatives": 4.440912633267274e-11,
+     "symmetry": 2.7755575615628907e-17
+    },
+    "gaussian-bump": {
+     "compatibility": 1.3877787807814457e-17,
+     "metric_derivatives": 1.0337817407668481e-11,
+     "symmetry": 0.0
+    },
+    "hyperbolic-plane": {
+     "compatibility": 1.3877787807814457e-17,
+     "metric_derivatives": 2.322664296899297e-10,
+     "symmetry": 0.0
+    },
+    "plane": {
+     "compatibility": 0.0,
+     "metric_derivatives": 0.0,
+     "symmetry": 0.0
+    },
+    "plane-polar": {
+     "compatibility": 2.220446049250313e-16,
+     "metric_derivatives": 4.4409019037930025e-11,
+     "symmetry": 0.0
+    },
+    "saddle": {
+     "compatibility": 3.9993543807821826e-16,
+     "metric_derivatives": 9.827613519896058e-12,
+     "symmetry": 0.0
+    },
+    "sphere": {
+     "compatibility": 1.1102230246251565e-16,
+     "metric_derivatives": 6.916711647875218e-11,
+     "symmetry": 0.0
+    },
+    "torus": {
+     "compatibility": 2.220446049250313e-16,
+     "metric_derivatives": 4.440891883564736e-11,
+     "symmetry": 0.0
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 5.46830167813539e-08,
+      "passed": true,
+      "reference": "Riemann tensor from central differences (step 1e-4) of ciw Christoffel symbols",
+      "reference_kind": "self_convergence",
+      "tolerance": 1e-06
+     }
+    ],
+    "generator": {
+     "charts": [
+      "plane",
+      "sphere",
+      "cylinder",
+      "saddle",
+      "torus",
+      "gaussian-bump",
+      "hyperbolic-plane",
+      "plane-polar",
+      "cylinder-polar"
+     ],
+     "name": "seeded chart samples",
+     "samples_per_chart": 8,
+     "seed": 20260923
+    }
+   },
+   "claim": "Intrinsic curvature from finite-differenced Christoffel symbols matches the ciw Gaussian curvature",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-06,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "central differences of Christoffel symbols with step 1e-4 (O(step^2) truncation plus rounding)",
+    "kind": "truncation_bound",
+    "value": 5.46830167813539e-08
+   },
+   "unit": null,
+   "value": {
+    "cylinder": 0.0,
+    "cylinder-polar": 1.964112847374832e-12,
+    "gaussian-bump": 4.406477890905869e-10,
+    "hyperbolic-plane": 1.1751106088198071e-08,
+    "plane": 0.0,
+    "plane-polar": 8.742192596148665e-13,
+    "saddle": 3.3098599971914666e-09,
+    "sphere": 5.46830167813539e-08,
+    "torus": 2.268842447250563e-09
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 6.661338147750939e-16,
+      "passed": true,
+      "reference": "generic (LN - M^2)/det g against the closed-form curvatures",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 5.468301312498796e-08,
+      "passed": true,
+      "reference": "generic (LN - M^2)/det g against the finite-difference Riemann curvature",
+      "reference_kind": "self_convergence",
+      "tolerance": 1e-06
+     }
+    ],
+    "generator": {
+     "charts": [
+      "plane",
+      "sphere",
+      "cylinder",
+      "saddle",
+      "torus",
+      "gaussian-bump"
+     ],
+     "name": "seeded chart samples",
+     "samples_per_chart": 8,
+     "seed": 20260923
+    },
+    "independent_check": {
+     "checker": {
+      "implementation": "sympy",
+      "revision": "1.14.0"
+     },
+     "comparison": "abs_le",
+     "observed": 6.661338147750939e-16,
+     "passed": true,
+     "producer": {
+      "implementation": "ciw.lab.surfaces.EmbeddedSurface.gaussian_curvature",
+      "revision": "ciw 0.1.0"
+     },
+     "reference": "sympy Brioschi curvature (first fundamental form only) against the generic second-fundamental-form curvature",
+     "reference_kind": "analytic",
+     "tolerance": 1e-10
+    }
+   },
+   "claim": "The second-fundamental-form curvature (LN - M^2)/det g equals the intrinsic curvature on the six embedded charts (Theorema Egregium)",
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "regression_tolerance": {
+    "abs": 1e-06,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "central differences of Christoffel symbols with step 1e-4 (O(step^2) truncation plus rounding)",
+    "kind": "truncation_bound",
+    "value": 5.468301312498796e-08
+   },
+   "unit": null,
+   "value": {
+    "cylinder": {
+     "extrinsic_vs_brioschi": 0.0,
+     "extrinsic_vs_closed_form": 0.0,
+     "extrinsic_vs_intrinsic": 0.0
+    },
+    "gaussian-bump": {
+     "extrinsic_vs_brioschi": 1.734723475976807e-17,
+     "extrinsic_vs_closed_form": 6.938893903907228e-18,
+     "extrinsic_vs_intrinsic": 4.406477960294808e-10
+    },
+    "plane": {
+     "extrinsic_vs_brioschi": 0.0,
+     "extrinsic_vs_closed_form": 0.0,
+     "extrinsic_vs_intrinsic": 0.0
+    },
+    "saddle": {
+     "extrinsic_vs_brioschi": 1.1102230246251565e-16,
+     "extrinsic_vs_closed_form": 1.1102230246251565e-16,
+     "extrinsic_vs_intrinsic": 3.309860052702618e-09
+    },
+    "sphere": {
+     "extrinsic_vs_brioschi": 6.661338147750939e-16,
+     "extrinsic_vs_closed_form": 6.661338147750939e-16,
+     "extrinsic_vs_intrinsic": 5.468301312498796e-08
+    },
+    "torus": {
+     "extrinsic_vs_brioschi": 1.1102230246251565e-16,
+     "extrinsic_vs_closed_form": 1.1102230246251565e-16,
+     "extrinsic_vs_intrinsic": 2.2688425027617143e-09
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 2.3849089821188505,
+      "passed": true,
+      "reference": "largest |Gamma| on the polar charts",
+      "reference_kind": "invariant",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "polar charts whose Brioschi curvature does not simplify to 0",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "charts": [
+      "plane",
+      "sphere",
+      "cylinder",
+      "saddle",
+      "torus",
+      "gaussian-bump",
+      "hyperbolic-plane",
+      "plane-polar",
+      "cylinder-polar"
+     ],
+     "name": "seeded chart samples",
+     "samples_per_chart": 8,
+     "seed": 20260923
+    }
+   },
+   "claim": "Nonzero Christoffel symbols do not imply curvature: the polar charts of the plane and cylinder are flat",
+   "counterexample": {
+    "statement": "A chart with nonzero Christoffel symbols describes a curved surface",
+    "witness": {
+     "chart": "plane-polar",
+     "christoffel": "Gamma^r_tt = -r, Gamma^t_rt = 1/r",
+     "gaussian_curvature": 0.0
+    }
+   },
+   "domain": "mathematical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-06,
+    "rel": 1e-09
+   },
+   "uncertainty": {
+    "basis": "finite-difference curvature of a flat chart is pure truncation and rounding",
+    "kind": "truncation_bound",
+    "value": 1.964112847374832e-12
+   },
+   "unit": null,
+   "value": {
+    "cylinder-polar": {
+     "max_abs_christoffel": 2.3849089821188505,
+     "max_abs_intrinsic_curvature": 1.964112847374832e-12
+    },
+    "plane-polar": {
+     "max_abs_christoffel": 2.4581872115706753,
+     "max_abs_intrinsic_curvature": 8.742192596148665e-13
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "nonzero symbolic Christoffel symbols of the cylinder",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 2.349193846774299e-17,
+      "passed": true,
+      "reference": "max |Gamma| of the cylinder (phi, z) chart in binary64",
+      "reference_kind": "analytic",
+      "tolerance": 1e-15
+     },
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "|II(e_phi, e_phi)| / g_phiphi of the unit cylinder",
+      "reference_kind": "invariant",
+      "tolerance": 0.5
+     }
+    ],
+    "generator": {
+     "charts": [
+      "plane",
+      "sphere",
+      "cylinder",
+      "saddle",
+      "torus",
+      "gaussian-bump",
+      "hyperbolic-plane",
+      "plane-polar",
+      "cylinder-polar"
+     ],
+     "name": "seeded chart samples",
+     "samples_per_chart": 8,
+     "seed": 20260923
+    }
+   },
+   "claim": "An extrinsically curved surface can have identically zero Christoffel symbols: the cylinder in (phi, z)",
+   "counterexample": {
+    "statement": "A surface that bends in space has nonzero Christoffel symbols in every chart",
+    "witness": {
+     "chart": "cylinder (phi, z)",
+     "normal_curvature_phi": -1.0
+    }
+   },
+   "domain": "mathematical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-07
+   },
+   "uncertainty": {
+    "basis": "binary64 evaluation of both sides, relative to max(1, |value|)",
+    "kind": "roundoff",
+    "value": 1e-15
+   },
+   "unit": null,
+   "value": {
+    "max_abs_christoffel": 2.349193846774299e-17,
+    "normal_curvature_phi": -1.0
+   }
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 8507,
+   "path": "artifacts/T001/comparison.json",
+   "sha256": "e235f724ebbf6a3f248a70bf96959ca746cf4d802d959b9382939bb0d00f52ec"
+  },
+  {
+   "bytes": 3620,
+   "path": "artifacts/T001/derivations.txt",
+   "sha256": "cb2631ee02945e8b1384eaeb2a9bf8dfab62bb80d238ee9840d9a4c495e5e651"
+  },
+  {
+   "bytes": 4708,
+   "path": "artifacts/T001/derivations.tex",
+   "sha256": "4b06742000e589e2e1f96a7ffa52623c837abb035885971285e7ff079b68e43a"
+  },
+  {
+   "bytes": 6253,
+   "path": "artifacts/T001/curvature-along-paths.svg",
+   "sha256": "2b3aba78c6f86d1c1b6c6fee04515f171d617a0fdc8a4696e9797f0fa713783f"
+  }
+ ],
+ "hypothesis": "The metric, Christoffel symbols, geodesic equations and Gaussian curvature derived by hand (doc table) and symbolically from each chart's embedding (or intrinsic metric) coincide with the exact-derivative implementation in ciw.lab.surfaces, and the extrinsic and intrinsic curvatures agree.",
+ "input_data": [
+  "Charts: plane, sphere, cylinder, saddle, torus, gaussian-bump, hyperbolic-plane, plane-polar, cylinder-polar with catalogue parameters",
+  "8 seeded points and velocities per chart (PCG64 seed 20260923 + 1000 i) in ciw.lab.surfaces.SAMPLING_DOMAINS plus r in [0.5, 2.5] on the polar charts"
+ ],
+ "mathematical_model": "g_ij = X_i . X_j (or the declared intrinsic metric), Gamma^k_ij = 1/2 g^kl (d_i g_jl + d_j g_il - d_l g_ij), u''^k = -Gamma^k_ij u'^i u'^j (first variation of length), K from the second fundamental form (LN - M^2)/det g, from the Brioschi formula (sympy) and from the Riemann tensor of finite-differenced Christoffel symbols.",
+ "number": 1,
+ "numerical_result": "Largest sympy/ciw discrepancy 3.23e-16; largest hand-table/ciw discrepancy 3.23e-16; largest intrinsic-curvature discrepancy 5.47e-08; largest extrinsic-intrinsic discrepancy 5.47e-08.",
+ "observation_model": "Relative discrepancy max |a - b| / max(1, |b|) over samples and components, evaluated in binary64.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "requirement_probes": {
+   "module:sympy": true
+  },
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/geodesic_jacobi.py": "7f7307ebfb5c0a38ca1e7b9365fd7df627d9ae001791d99b823122873040d3c1",
+   "src/ciw/lab/geodesic_jacobi_common.py": "8616e9157492f0cd2aeebd695b3501215420c73af2cfbcb8c1b8cd5ab8d23a52"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T002: build high-precision reference solutions on the same equations",
+ "report_id": "sha256:1eab2f596a90b1d65a342edf761c83a50de695e52c2e77979fe6dde4371d3cbb",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "geodesic-jacobi",
+ "state": "completed",
+ "task_id": "T001",
+ "tests_passed": [
+  "independent: Sympy-derived metrics, Christoffel symbols and geodesic equations match ciw.lab.surfaces on nine charts vs sympy",
+  "independent: Intrinsic Brioschi curvature from sympy matches the ciw Gaussian curvature on nine charts vs sympy",
+  "check: The hand-derived metrics, Christoffel symbols, geodesic equations and curvatures of the section doc match ciw.lab.surfaces on nine charts vs hand-derived metric (doc table) against ciw.lab.surfaces, all charts",
+  "check: The hand-derived metrics, Christoffel symbols, geodesic equations and curvatures of the section doc match ciw.lab.surfaces on nine charts vs hand-derived christoffel (doc table) against ciw.lab.surfaces, all charts",
+  "check: The hand-derived metrics, Christoffel symbols, geodesic equations and curvatures of the section doc match ciw.lab.surfaces on nine charts vs hand-derived acceleration (doc table) against ciw.lab.surfaces, all charts",
+  "check: The hand-derived metrics, Christoffel symbols, geodesic equations and curvatures of the section doc match ciw.lab.surfaces on nine charts vs hand-derived curvature (doc table) against ciw.lab.surfaces, all charts",
+  "check: ciw.lab.surfaces Christoffel symbols are symmetric and metric-compatible and its exact metric derivatives match finite differences vs Gamma^k_ij - Gamma^k_ji",
+  "check: ciw.lab.surfaces Christoffel symbols are symmetric and metric-compatible and its exact metric derivatives match finite differences vs nabla g = 0 residual",
+  "check: ciw.lab.surfaces Christoffel symbols are symmetric and metric-compatible and its exact metric derivatives match finite differences vs central differences of g with step 1e-5",
+  "check: Intrinsic curvature from finite-differenced Christoffel symbols matches the ciw Gaussian curvature vs Riemann tensor from central differences (step 1e-4) of ciw Christoffel symbols",
+  "check: The second-fundamental-form curvature (LN - M^2)/det g equals the intrinsic curvature on the six embedded charts (Theorema Egregium) vs generic (LN - M^2)/det g against the closed-form curvatures",
+  "check: The second-fundamental-form curvature (LN - M^2)/det g equals the intrinsic curvature on the six embedded charts (Theorema Egregium) vs generic (LN - M^2)/det g against the finite-difference Riemann curvature",
+  "independent: The second-fundamental-form curvature (LN - M^2)/det g equals the intrinsic curvature on the six embedded charts (Theorema Egregium) vs sympy",
+  "check: Nonzero Christoffel symbols do not imply curvature: the polar charts of the plane and cylinder are flat vs largest |Gamma| on the polar charts",
+  "check: Nonzero Christoffel symbols do not imply curvature: the polar charts of the plane and cylinder are flat vs polar charts whose Brioschi curvature does not simplify to 0",
+  "check: An extrinsically curved surface can have identically zero Christoffel symbols: the cylinder in (phi, z) vs nonzero symbolic Christoffel symbols of the cylinder",
+  "check: An extrinsically curved surface can have identically zero Christoffel symbols: the cylinder in (phi, z) vs max |Gamma| of the cylinder (phi, z) chart in binary64",
+  "check: An extrinsically curved surface can have identically zero Christoffel symbols: the cylinder in (phi, z) vs |II(e_phi, e_phi)| / g_phiphi of the unit cylinder",
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_t001_symbolic_derivations_match_surfaces",
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_t001_without_sympy_is_partial",
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_t001_self_consistency_helpers",
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_every_numerical_finding_declares_uncertainty_and_tolerance",
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space"
+ ],
+ "tests_skipped": [],
+ "title": "Re-derive the geodesic equation for the plane, sphere, cylinder, saddle, torus, and variable-curvature surfaces.",
+ "uncertainty": "Binary64 rounding of both sides (about 1e-15 relative) for the hand and symbolic comparisons; finite-difference checks carry a truncation error near 1e-8.",
+ "unresolved_assumptions": [
+  "sympy simplification is trusted to be correct; it is an independent implementation, not a proof checker",
+  "Only 8 sample points per chart are compared",
+  "The hand table covers the unit-radius polar cylinder only"
+ ]
+}

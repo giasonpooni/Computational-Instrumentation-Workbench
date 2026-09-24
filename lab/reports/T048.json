@@ -1,0 +1,412 @@
+{
+ "changed_files": [
+  "src/ciw/lab/observation.py",
+  "src/ciw/lab/observation_camera.py",
+  "src/ciw/lab/observation_chord.py",
+  "src/ciw/lab/observation_modes.py",
+  "docs/lab/OBSERVATION.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 5,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Noise-free chords equal truth to rounding; substitution bias equals s - c(s) exactly; model conversion recovers s; noisy mean squared errors within 99.9 % Monte Carlo bounds of first-order propagation.",
+ "experiment": "Project, triangulate (DLT and ray midpoint), compare chords with truth, convert chords through typed records and the declared cylinder model, then repeat with seeded noisy pixels and compare per-helix mean squared errors with first-order propagation.",
+ "failure_modes_checked": [
+  "markers outside the image or back-facing (visibility check)",
+  "DLT versus ray-midpoint disagreement",
+  "chord substituted for geodesic distance",
+  "conversion without a surface model (refused in T045)",
+  "correlated rounding errors (grid phase drawn per marker)"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 3.885780586188048e-16,
+      "passed": true,
+      "reference": "|triangulated chord - true chord| (m)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 1.9984014443252818e-15,
+      "passed": true,
+      "reference": "DLT against ray-midpoint triangulation (m)",
+      "reference_kind": "cross_implementation",
+      "tolerance": 1e-12
+     }
+    ],
+    "generator": {
+     "name": "declared stereo rig and cylinder markers",
+     "pairs": 24,
+     "seed": null
+    }
+   },
+   "claim": "Noise-free triangulation of the synthetic rig reproduces ground-truth marker chords",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-11,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "double-precision projection and triangulation of 0.6 m coordinates (a few ulp)",
+    "kind": "roundoff",
+    "value": 1e-15
+   },
+   "unit": "m",
+   "value": {
+    "dlt_midpoint_gap_m": 1.9984014443252818e-15,
+    "max_chord_error_m": 3.885780586188048e-16
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 3.885780586188048e-16,
+      "passed": true,
+      "reference": "measured bias against s - helix_chord(s) from T047 (m)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "largest bias over all helices minus largest circumferential bias (m)",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "signed_le",
+      "observed": -0.005301094501416553,
+      "passed": true,
+      "reference": "largest 45 deg bias minus largest circumferential bias (m)",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "signed_le",
+      "observed": -0.0017704108195759904,
+      "passed": true,
+      "reference": "largest ruling bias minus largest 45 deg bias (m)",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Using the camera chord as geodesic distance underestimates it by exactly s - c(s); the largest bias is on the circumferential helix",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 1e-09
+   },
+   "uncertainty": {
+    "basis": "noise-free triangulation rounding (a few ulp)",
+    "kind": "roundoff",
+    "value": 1e-15
+   },
+   "unit": "m",
+   "value": 0.007071505320992932
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 3.885780586188048e-16,
+      "passed": true,
+      "reference": "|converted arc - true arc| (m)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-11
+     }
+    ]
+   },
+   "claim": "The declared cylinder model converts noise-free chords to arc lengths",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-11,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "triangulation rounding amplified by ds/dc <= 1.22",
+    "kind": "roundoff",
+    "value": 1e-15
+   },
+   "unit": "m",
+   "value": 3.885780586188048e-16
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": -0.1622548495725552,
+      "passed": true,
+      "reference": "chord mean squared error against first-order propagation, alpha = 0 deg (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.1521736926925684,
+      "passed": true,
+      "reference": "arc mean squared error against first-order propagation, alpha = 0 deg (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.6961578205298248,
+      "passed": true,
+      "reference": "chord mean squared error against first-order propagation, alpha = 45 deg (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.6858511296184834,
+      "passed": true,
+      "reference": "arc mean squared error against first-order propagation, alpha = 45 deg (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.3357461651680309,
+      "passed": true,
+      "reference": "chord mean squared error against first-order propagation, alpha = 90 deg (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.3357461651680309,
+      "passed": true,
+      "reference": "arc mean squared error against first-order propagation, alpha = 90 deg (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     }
+    ],
+    "generator": {
+     "name": "ciw.lab.observation_camera.noisy_chords",
+     "pixel_sigma_px": 0.25,
+     "rounding": "integer",
+     "seed": 48,
+     "trials": 500
+    }
+   },
+   "claim": "Synthetic chord and model-converted arc RMS errors under 0.25 px Gaussian noise with integer rounding match first-order propagation",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 0.0001
+   },
+   "uncertainty": {
+    "basis": "95 % half-width of each per-helix RMS from 500 independent trials",
+    "kind": "monte_carlo_95ci",
+    "value": {
+     "0": {
+      "arc": 8.85115360590672e-06,
+      "chord": 8.668514487875448e-06
+     },
+     "45": {
+      "arc": 9.091655207866935e-06,
+      "chord": 9.004130498236317e-06
+     },
+     "90": {
+      "arc": 3.633488582257451e-06,
+      "chord": 3.633488582257451e-06
+     }
+    }
+   },
+   "unit": "m",
+   "value": {
+    "per_helix": {
+     "0": {
+      "arc_z": -0.1521736926925684,
+      "chord_z": -0.1622548495725552,
+      "max_substitution_bias_m": 0.007071505320992932,
+      "predicted_rms_arc_error_m": 0.0002417364706962948,
+      "predicted_rms_chord_error_m": 0.00023303352347342165,
+      "rms_arc_error_95ci_m": 8.85115360590672e-06,
+      "rms_arc_error_m": 0.00024105023450582449,
+      "rms_chord_error_95ci_m": 8.668514487875448e-06,
+      "rms_chord_error_m": 0.00023231700884325748
+     },
+     "45": {
+      "arc_z": 0.6858511296184834,
+      "chord_z": 0.6961578205298248,
+      "max_substitution_bias_m": 0.001770410819576379,
+      "predicted_rms_arc_error_m": 0.00021517218900692797,
+      "predicted_rms_chord_error_m": 0.0002127013595634843,
+      "rms_arc_error_95ci_m": 9.091655207866935e-06,
+      "rms_arc_error_m": 0.00021837715473738243,
+      "rms_chord_error_95ci_m": 9.004130498236317e-06,
+      "rms_chord_error_m": 0.00021592357087427255
+     },
+     "90": {
+      "arc_z": 0.3357461651680309,
+      "chord_z": 0.3357461651680309,
+      "max_substitution_bias_m": 3.885780586188048e-16,
+      "predicted_rms_arc_error_m": 0.0001076620323297073,
+      "predicted_rms_chord_error_m": 0.0001076620323297073,
+      "rms_arc_error_95ci_m": 3.633488582257451e-06,
+      "rms_arc_error_m": 0.00010828625615089245,
+      "rms_chord_error_95ci_m": 3.633488582257451e-06,
+      "rms_chord_error_m": 0.00010828625615089245
+     }
+    },
+    "rms_chord_error_m": 0.00019349426720892093
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 64.03426858494534,
+      "passed": true,
+      "reference": "circumferential bias over its chord RMS at s = 0.12 m",
+      "reference_kind": "analytic",
+      "tolerance": 10.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 3.885780586188048e-16,
+      "passed": true,
+      "reference": "largest |bias| on the ruling (m)",
+      "reference_kind": "invariant",
+      "tolerance": 1e-12
+     }
+    ]
+   },
+   "claim": "For the longest circumferential chord the substitution bias exceeds the 0.25 px noise RMS more than tenfold, while on rulings it vanishes",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 0.0001
+   },
+   "uncertainty": {
+    "basis": "relative 95 % half-width of that pair's chord RMS (500 trials) carried to the ratio; the bias is exact",
+    "kind": "monte_carlo_95ci",
+    "value": {
+     "bias_to_noise_ratio": 3.6317998603289428
+    }
+   },
+   "unit": null,
+   "value": {
+    "bias_to_noise_ratio": 64.03426858494534,
+    "ruling_max_abs_bias_m": 3.885780586188048e-16
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": "No camera was acquired; lens, sensor, marker detection and calibration errors of real hardware are not represented."
+   },
+   "claim": "A physical stereo rig with this geometry achieves the synthetic chord accuracy",
+   "domain": "sensor_performance",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 11508,
+   "path": "artifacts/T048/camera-measurements.json",
+   "sha256": "0fb17a74e22100824b2d107e6496ad9c1097a81386a8d7c529d047338159d42b"
+  },
+  {
+   "bytes": 4156,
+   "path": "artifacts/T048/substitution-bias-vs-noise.svg",
+   "sha256": "92cc8f9d521b56eadd42156b343978fb119da4e72c3d3ab61861b698187ad21e"
+  }
+ ],
+ "hypothesis": "A declared pinhole stereo pair observing markers on the cylinder recovers chords exactly without noise; the chord differs from the geodesic distance by the T047 correction, which a declared surface model removes; for long circumferential chords that bias exceeds the error caused by 0.25 px pixel noise, while along rulings it vanishes.",
+ "input_data": [
+  "Stereo rig {'focal_px': 2400.0, 'principal_point_px': (1024.0, 768.0), 'image_size_px': (2048, 1536), 'baseline_m': 0.2, 'convergence_distance_m': 0.6}",
+  "Cylinder {'radius_m': 0.1, 'axis': 'world +y', 'front_point_m': (0.1, 0.0, 0.6), 'chart_origin_direction': 'toward the cameras (world -z)'}",
+  "Markers at s = [0.0, 0.015, 0.03, 0.045, 0.06, 0.075, 0.09, 0.105, 0.12] m along helices alpha = [0.0, 45.0, 90.0] deg (27/27 visible in both images)",
+  "Pixel noise sigma = 0.25 px, integer rounding, uniform grid phase per marker, camera and axis, 500 trials, seed 48"
+ ],
+ "mathematical_model": "x_cam = R X + t, pixels u = f x/z + c; linear DLT triangulation on normalized coordinates; chord = |X_i - X_j|; arc from chord by inverting the helix chord on its monotone branch. Noise: sigma_c^2 = (sigma^2 + 1/12) sum J^2 over the 8 pixel coordinates of a pair (T051) and sigma_s = sigma_c / c'(s) for the converted arc.",
+ "number": 48,
+ "numerical_result": "noise-free chord error 3.9e-16 m; substitution bias up to 7.0715e-03 m (largest circumferential, 1.770e-03 m at 45 deg, 3.9e-16 m on the ruling); conversion error 3.9e-16 m; noisy chord RMS 1.935e-04 m; longest circumferential bias / noise RMS = 64.0.",
+ "observation_model": "Synthetic images: ideal projection, then Gaussian pixel noise and integer rounding; the camera_chord_distance mode (extrinsic).",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/observation.py": "9ebedc1a1693aaa28965ba0c97837ad2d2c45bf0fd360857cf7b32c0993ed5fc",
+   "src/ciw/lab/observation_camera.py": "dbf305a988b5ad39796c8220477dd065671a490a26a9ff03738510296087ab68",
+   "src/ciw/lab/observation_chord.py": "9b6fe24560daf8b06617824d20854f695e1f73774215a03acc41a28855ba164a",
+   "src/ciw/lab/observation_modes.py": "bfd6aa4471cc876a7ac2fb8790a4a5c4f478c547350b059311f5e6d53702c83e"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T049: perturb focal length, principal point and extrinsic rotation",
+ "report_id": "sha256:3e5c1827be9704d4f87c211f7ad2521f6aca4c9c4f095243ffb000bd964c5d2e",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "observation",
+ "state": "completed",
+ "task_id": "T048",
+ "tests_passed": [
+  "check: Noise-free triangulation of the synthetic rig reproduces ground-truth marker chords vs |triangulated chord - true chord| (m)",
+  "check: Noise-free triangulation of the synthetic rig reproduces ground-truth marker chords vs DLT against ray-midpoint triangulation (m)",
+  "check: Using the camera chord as geodesic distance underestimates it by exactly s - c(s); the largest bias is on the circumferential helix vs measured bias against s - helix_chord(s) from T047 (m)",
+  "check: Using the camera chord as geodesic distance underestimates it by exactly s - c(s); the largest bias is on the circumferential helix vs largest bias over all helices minus largest circumferential bias (m)",
+  "check: Using the camera chord as geodesic distance underestimates it by exactly s - c(s); the largest bias is on the circumferential helix vs largest 45 deg bias minus largest circumferential bias (m)",
+  "check: Using the camera chord as geodesic distance underestimates it by exactly s - c(s); the largest bias is on the circumferential helix vs largest ruling bias minus largest 45 deg bias (m)",
+  "check: The declared cylinder model converts noise-free chords to arc lengths vs |converted arc - true arc| (m)",
+  "check: Synthetic chord and model-converted arc RMS errors under 0.25 px Gaussian noise with integer rounding match first-order propagation vs chord mean squared error against first-order propagation, alpha = 0 deg (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: Synthetic chord and model-converted arc RMS errors under 0.25 px Gaussian noise with integer rounding match first-order propagation vs arc mean squared error against first-order propagation, alpha = 0 deg (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: Synthetic chord and model-converted arc RMS errors under 0.25 px Gaussian noise with integer rounding match first-order propagation vs chord mean squared error against first-order propagation, alpha = 45 deg (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: Synthetic chord and model-converted arc RMS errors under 0.25 px Gaussian noise with integer rounding match first-order propagation vs arc mean squared error against first-order propagation, alpha = 45 deg (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: Synthetic chord and model-converted arc RMS errors under 0.25 px Gaussian noise with integer rounding match first-order propagation vs chord mean squared error against first-order propagation, alpha = 90 deg (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: Synthetic chord and model-converted arc RMS errors under 0.25 px Gaussian noise with integer rounding match first-order propagation vs arc mean squared error against first-order propagation, alpha = 90 deg (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: For the longest circumferential chord the substitution bias exceeds the 0.25 px noise RMS more than tenfold, while on rulings it vanishes vs circumferential bias over its chord RMS at s = 0.12 m",
+  "check: For the longest circumferential chord the substitution bias exceeds the 0.25 px noise RMS more than tenfold, while on rulings it vanishes vs largest |bias| on the ruling (m)",
+  "pytest: tests/test_lab_observation.py::test_t048_synthetic_camera"
+ ],
+ "tests_skipped": [],
+ "title": "Generate synthetic camera measurements.",
+ "uncertainty": "Noise-free results are exact to rounding; noisy RMS values carry about 3.2 % relative Monte Carlo standard error (95 % half-widths per helix in the finding).",
+ "unresolved_assumptions": [
+  "Pinhole cameras with perfectly known calibration (perturbed in T049/T050)",
+  "Marker centres are detected without bias; occlusion is not modelled"
+ ]
+}

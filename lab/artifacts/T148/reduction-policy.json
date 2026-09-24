@@ -1,0 +1,11 @@
+{
+ "fixed_layout_arrays": "pairwise: fixed binary tree split at n//2 over the stored order (bitwise reproducible only for the same order and length); error <= gamma_{ceil(log2 n)} sum|x|",
+ "forbidden_for_identity": [
+  "sequential float accumulation in unspecified order",
+  "BLAS/numpy.sum (order is implementation-defined)",
+  "Kahan without the Neumaier branch (fails on large cancelling terms)"
+ ],
+ "identity_bearing_sums": "exact: integer accumulation at scale 2^1074 with one final rounding (bitwise order-independent; cross-checked with math.fsum)",
+ "schema": "ciw.reduction-policy.v1",
+ "streaming_accumulators": "neumaier: compensated, error <= u|S| + gamma_{n-1}^2 sum|x| = u|S| + O(n^2 u^2) sum|x| (Ogita, Rump and Oishi 2005, Prop. 4.5); not order-invariant"
+}

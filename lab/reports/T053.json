@@ -1,0 +1,632 @@
+{
+ "changed_files": [
+  "src/ciw/lab/observation.py",
+  "src/ciw/lab/observation_signals.py",
+  "docs/lab/OBSERVATION.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 5,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Moments within 99.9 % Monte Carlo intervals; deterministic bias propagation matches the linearized recursion.",
+ "experiment": "Seeded single-axis ensemble; noise-free and noisy SO(3) integrations for a stationary and a rotating body; counterexample search for unbounded bias growth.",
+ "failure_modes_checked": [
+  "noncommuting rotation with a transverse bias",
+  "small-angle log map",
+  "variance versus mean squared error",
+  "anisotropy hidden by a trace-only test (per-axis checks)"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.13435458371144826,
+      "passed": true,
+      "reference": "mean at t = 0.5 s (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.5118676019085241,
+      "passed": true,
+      "reference": "mean at t = 1 s (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 1.3484644898289062,
+      "passed": true,
+      "reference": "mean at t = 2 s (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.14565651995622358,
+      "passed": true,
+      "reference": "mean at t = 5 s (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.28420058513078017,
+      "passed": true,
+      "reference": "variance at t = 0.5 s (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.7574008471937654,
+      "passed": true,
+      "reference": "variance at t = 1 s (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.4744599075910174,
+      "passed": true,
+      "reference": "variance at t = 2 s (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.5988202412630504,
+      "passed": true,
+      "reference": "variance at t = 5 s (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     }
+    ],
+    "generator": {
+     "arw_rad_per_sqrt_s": 0.001,
+     "bias_rad_per_s": 0.001,
+     "dt_s": 0.01,
+     "name": "gyro bias plus white rate noise",
+     "runs": 2000,
+     "seed": 53,
+     "steps": 500
+    }
+   },
+   "claim": "Single-axis gyro heading error has mean b t and variance N^2 t",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "95 % half-widths of the sample moments over 2000 runs",
+    "kind": "monte_carlo_95ci",
+    "value": {
+     "mean_rad": [
+      3.113039113537044e-05,
+      4.3310541091169534e-05,
+      6.15435730544187e-05,
+      9.896739570751869e-05
+     ],
+     "variance_rad2": [
+      3.136871712564484e-08,
+      6.05282519045604e-08,
+      1.1581036132783326e-07,
+      3.253026740788875e-07
+     ]
+    }
+   },
+   "unit": null,
+   "value": {
+    "mean_z": [
+     0.13435458371144826,
+     0.5118676019085241,
+     1.3484644898289062,
+     -0.14565651995622358
+    ],
+    "t_s": [
+     0.5,
+     1.0,
+     2.0,
+     5.0
+    ],
+    "variance_z": [
+     0.28420058513078017,
+     -0.7574008471937654,
+     -0.4744599075910174,
+     0.5988202412630504
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.2772382756038234,
+      "passed": true,
+      "reference": "mean squared error at t = 0.5 s (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.02025266979871098,
+      "passed": true,
+      "reference": "mean squared error at t = 1 s (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 1.0051174534599556,
+      "passed": true,
+      "reference": "mean squared error at t = 2 s (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.04328494931390304,
+      "passed": true,
+      "reference": "mean squared error at t = 5 s (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     }
+    ]
+   },
+   "claim": "Mean squared heading error is N^2 t + (b t)^2",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-15,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "95 % half-width of each sample MSE over 2000 runs",
+    "kind": "monte_carlo_95ci",
+    "value": [
+     4.5491537351013004e-08,
+     1.0921650439607303e-07,
+     2.771729642441733e-07,
+     1.0570435026988257e-06
+    ]
+   },
+   "unit": "rad^2",
+   "value": {
+    "mse": [
+     7.564348097563239e-07,
+     1.9988714456910685e-06,
+     6.1421410730944775e-06,
+     3.0023344344486844e-05
+    ],
+    "predicted": [
+     7.5e-07,
+     2e-06,
+     6e-06,
+     3e-05
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 5.811323644522345e-15,
+      "passed": true,
+      "reference": "stationary body: integrated error against b t (relative)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-09
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.00031836050646762766,
+      "passed": true,
+      "reference": "rotating body: integrated error against the linearized recursion (relative)",
+      "reference_kind": "analytic",
+      "tolerance": 0.002
+     }
+    ]
+   },
+   "claim": "Strapdown bias error follows e_{k+1} = exp(-omega dt) e_k + J_r(omega dt) b dt",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "second-order BCH terms of the linearized recursion (relative); the stationary case is exact up to rounding",
+    "kind": "truncation_bound",
+    "value": 0.002
+   },
+   "unit": null,
+   "value": {
+    "rotating_relative_error": 0.00031836050646762766,
+    "stationary_relative_error": 5.811323644522345e-15
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "signed_le",
+      "observed": -1.0133982044377519e-07,
+      "passed": true,
+      "reference": "max transverse error minus the bound (rad)",
+      "reference_kind": "analytic",
+      "tolerance": 6.366197723675814e-07
+     },
+     {
+      "comparison": "ge",
+      "observed": 15.707963267948854,
+      "passed": true,
+      "reference": "stationary transverse error over the rotating bound",
+      "reference_kind": "analytic",
+      "tolerance": 10.0
+     }
+    ]
+   },
+   "claim": "On a body rotating about z, transverse gyro bias produces a bounded orientation error 2 |b_perp| / |omega| instead of |b_perp| t",
+   "counterexample": {
+    "statement": "The mean orientation error from a constant gyro bias grows as |bias| t",
+    "witness": {
+     "bias_rad_per_s": [
+      0.002,
+      0.0,
+      0.001
+     ],
+     "max_transverse_rad": 0.0006365184325471376,
+     "rotation_rad_per_s": [
+      0.0,
+      0.0,
+      6.283185307179586
+     ],
+     "stationary_transverse_rad": 0.009999999999999929
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "linearization error of the recursion carried to the transverse maximum (rad)",
+    "kind": "truncation_bound",
+    "value": 2.0267459315824906e-07
+   },
+   "unit": null,
+   "value": {
+    "bound_rad": 0.0006366197723675814,
+    "max_transverse_rad": 0.0006365184325471376,
+    "stationary_transverse_rad": 0.009999999999999929
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": -1.9116303236707137,
+      "passed": true,
+      "reference": "stationary total spread at step 100 (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.7226929214185439,
+      "passed": true,
+      "reference": "stationary total spread at step 500 (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 1.453142932531849,
+      "passed": true,
+      "reference": "rotating total spread at step 100 (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.39351158401110053,
+      "passed": true,
+      "reference": "rotating total spread at step 500 (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.5967847980766036,
+      "passed": true,
+      "reference": "stationary spread of body axis x at step 100 (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -1.4275617106089464,
+      "passed": true,
+      "reference": "stationary spread of body axis y at step 100 (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -1.3953445474403172,
+      "passed": true,
+      "reference": "stationary spread of body axis z at step 100 (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.439788478262125,
+      "passed": true,
+      "reference": "stationary spread of body axis x at step 500 (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -2.0146840296547266,
+      "passed": true,
+      "reference": "stationary spread of body axis y at step 500 (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.04098388805192547,
+      "passed": true,
+      "reference": "stationary spread of body axis z at step 500 (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.2437831964127573,
+      "passed": true,
+      "reference": "rotating spread of body axis x at step 100 (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 1.5616697340735581,
+      "passed": true,
+      "reference": "rotating spread of body axis y at step 100 (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.8778814975632626,
+      "passed": true,
+      "reference": "rotating spread of body axis z at step 100 (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.37006634967595164,
+      "passed": true,
+      "reference": "rotating spread of body axis x at step 500 (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.0467917722738728,
+      "passed": true,
+      "reference": "rotating spread of body axis y at step 500 (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.33814107911203994,
+      "passed": true,
+      "reference": "rotating spread of body axis z at step 500 (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     }
+    ],
+    "generator": {
+     "arw_rad_per_sqrt_s": 0.0002,
+     "bias_rad_per_s": [
+      0.002,
+      0.0,
+      0.001
+     ],
+     "dt_s": 0.01,
+     "name": "strapdown SO(3) integration",
+     "rotation_rad_per_s": [
+      0.0,
+      0.0,
+      6.283185307179586
+     ],
+     "runs": 200,
+     "seed": 53,
+     "steps": 500
+    }
+   },
+   "claim": "Angle random walk stays isotropic, N^2 t per body axis and E|e - m|^2 = 3 N^2 t, on stationary and rotating bodies",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "95 % half-width of the total spread at steps 100 and 500 over 200 runs (rad^2)",
+    "kind": "monte_carlo_95ci",
+    "value": {
+     "rotating": [
+      1.4749367569325148e-08,
+      6.751538259642068e-08
+     ],
+     "stationary": [
+      1.1672522694103777e-08,
+      6.091334734069761e-08
+     ]
+    }
+   },
+   "unit": null,
+   "value": {
+    "rotating_axis_z": [
+     [
+      -0.2437831964127573,
+      1.5616697340735581,
+      0.8778814975632626
+     ],
+     [
+      0.37006634967595164,
+      -0.0467917722738728,
+      0.33814107911203994
+     ]
+    ],
+    "rotating_z": [
+     1.453142932531849,
+     0.39351158401110053
+    ],
+    "stationary_axis_z": [
+     [
+      -0.5967847980766036,
+      -1.4275617106089464,
+      -1.3953445474403172
+     ],
+     [
+      0.439788478262125,
+      -2.0146840296547266,
+      0.04098388805192547
+     ]
+    ],
+    "stationary_z": [
+     -1.9116303236707137,
+     -0.7226929214185439
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": "No IMU was acquired; bias instability, scale factor, temperature and vibration effects are not modelled."
+   },
+   "claim": "Real gyroscopes have constant bias and white rate noise with the declared densities",
+   "domain": "sensor_performance",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 8582,
+   "path": "artifacts/T053/imu-study.json",
+   "sha256": "2d4e1adc08423b65966b8432f13a76678e51e489778652af4554b7bf9134f962"
+  },
+  {
+   "bytes": 5027,
+   "path": "artifacts/T053/heading-error-moments.svg",
+   "sha256": "2db747098df17135ec8e152f93574d621272f66c3c7243b87e9633b301cd0e4e"
+  }
+ ],
+ "hypothesis": "Integrating a gyro with constant bias b and white rate noise of density N gives heading error with mean b t and variance N^2 t; in 3-D the bias error rotates with the body, so transverse bias stays bounded while the random walk stays isotropic.",
+ "input_data": [
+  "Single axis {'runs': 2000, 'steps': 500, 'dt_s': 0.01, 'bias_rad_per_s': 0.001, 'arw_rad_per_sqrt_s': 0.001}",
+  "Strapdown {'bias_rad_per_s': [0.002, 0.0, 0.001], 'rotation_rad_per_s': [0.0, 0.0, 6.283185307179586], 'arw_rad_per_sqrt_s': 0.0002, 'runs': 200, 'steps': 500, 'dt_s': 0.01}",
+  "Seed 53"
+ ],
+ "mathematical_model": "Single axis: e(t) = b t + N W(t). Strapdown: E_{k+1} = exp(-[w] dt) E_k exp([w + b + n] dt); linearized e_{k+1} = exp(-[w] dt) e_k + J_r(w dt)(b + n) dt, so transverse components circle with radius |b_perp|/|w| (maximum 2|b_perp|/|w|).",
+ "number": 53,
+ "numerical_result": "single-axis max |z| = 1.35; rotating transverse max 6.365e-04 rad vs bound 6.366e-04 (stationary 1.000e-02); linearization error 3.2e-04.",
+ "observation_model": "Synthetic imu_orientation outputs from integrated gyro rates; no accelerometer or magnetometer aiding.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/observation.py": "9ebedc1a1693aaa28965ba0c97837ad2d2c45bf0fd360857cf7b32c0993ed5fc",
+   "src/ciw/lab/observation_signals.py": "19e94cb28160a07e5a285b5a4acd76e3820deb37ee5ed180f5c7bf1975a56793"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T054: add asynchronous timestamps",
+ "report_id": "sha256:757f3abc71ee107547dc1777f3c199596d9e5ce95b04746bae9de22c10c866b5",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "observation",
+ "state": "completed",
+ "task_id": "T053",
+ "tests_passed": [
+  "check: Single-axis gyro heading error has mean b t and variance N^2 t vs mean at t = 0.5 s (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: Single-axis gyro heading error has mean b t and variance N^2 t vs mean at t = 1 s (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: Single-axis gyro heading error has mean b t and variance N^2 t vs mean at t = 2 s (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: Single-axis gyro heading error has mean b t and variance N^2 t vs mean at t = 5 s (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: Single-axis gyro heading error has mean b t and variance N^2 t vs variance at t = 0.5 s (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: Single-axis gyro heading error has mean b t and variance N^2 t vs variance at t = 1 s (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: Single-axis gyro heading error has mean b t and variance N^2 t vs variance at t = 2 s (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: Single-axis gyro heading error has mean b t and variance N^2 t vs variance at t = 5 s (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: Mean squared heading error is N^2 t + (b t)^2 vs mean squared error at t = 0.5 s (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: Mean squared heading error is N^2 t + (b t)^2 vs mean squared error at t = 1 s (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: Mean squared heading error is N^2 t + (b t)^2 vs mean squared error at t = 2 s (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: Mean squared heading error is N^2 t + (b t)^2 vs mean squared error at t = 5 s (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: Strapdown bias error follows e_{k+1} = exp(-omega dt) e_k + J_r(omega dt) b dt vs stationary body: integrated error against b t (relative)",
+  "check: Strapdown bias error follows e_{k+1} = exp(-omega dt) e_k + J_r(omega dt) b dt vs rotating body: integrated error against the linearized recursion (relative)",
+  "check: On a body rotating about z, transverse gyro bias produces a bounded orientation error 2 |b_perp| / |omega| instead of |b_perp| t vs max transverse error minus the bound (rad)",
+  "check: On a body rotating about z, transverse gyro bias produces a bounded orientation error 2 |b_perp| / |omega| instead of |b_perp| t vs stationary transverse error over the rotating bound",
+  "check: Angle random walk stays isotropic, N^2 t per body axis and E|e - m|^2 = 3 N^2 t, on stationary and rotating bodies vs stationary total spread at step 100 (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: Angle random walk stays isotropic, N^2 t per body axis and E|e - m|^2 = 3 N^2 t, on stationary and rotating bodies vs stationary total spread at step 500 (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: Angle random walk stays isotropic, N^2 t per body axis and E|e - m|^2 = 3 N^2 t, on stationary and rotating bodies vs rotating total spread at step 100 (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: Angle random walk stays isotropic, N^2 t per body axis and E|e - m|^2 = 3 N^2 t, on stationary and rotating bodies vs rotating total spread at step 500 (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: Angle random walk stays isotropic, N^2 t per body axis and E|e - m|^2 = 3 N^2 t, on stationary and rotating bodies vs stationary spread of body axis x at step 100 (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: Angle random walk stays isotropic, N^2 t per body axis and E|e - m|^2 = 3 N^2 t, on stationary and rotating bodies vs stationary spread of body axis y at step 100 (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: Angle random walk stays isotropic, N^2 t per body axis and E|e - m|^2 = 3 N^2 t, on stationary and rotating bodies vs stationary spread of body axis z at step 100 (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: Angle random walk stays isotropic, N^2 t per body axis and E|e - m|^2 = 3 N^2 t, on stationary and rotating bodies vs stationary spread of body axis x at step 500 (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: Angle random walk stays isotropic, N^2 t per body axis and E|e - m|^2 = 3 N^2 t, on stationary and rotating bodies vs stationary spread of body axis y at step 500 (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: Angle random walk stays isotropic, N^2 t per body axis and E|e - m|^2 = 3 N^2 t, on stationary and rotating bodies vs stationary spread of body axis z at step 500 (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: Angle random walk stays isotropic, N^2 t per body axis and E|e - m|^2 = 3 N^2 t, on stationary and rotating bodies vs rotating spread of body axis x at step 100 (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: Angle random walk stays isotropic, N^2 t per body axis and E|e - m|^2 = 3 N^2 t, on stationary and rotating bodies vs rotating spread of body axis y at step 100 (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: Angle random walk stays isotropic, N^2 t per body axis and E|e - m|^2 = 3 N^2 t, on stationary and rotating bodies vs rotating spread of body axis z at step 100 (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: Angle random walk stays isotropic, N^2 t per body axis and E|e - m|^2 = 3 N^2 t, on stationary and rotating bodies vs rotating spread of body axis x at step 500 (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: Angle random walk stays isotropic, N^2 t per body axis and E|e - m|^2 = 3 N^2 t, on stationary and rotating bodies vs rotating spread of body axis y at step 500 (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: Angle random walk stays isotropic, N^2 t per body axis and E|e - m|^2 = 3 N^2 t, on stationary and rotating bodies vs rotating spread of body axis z at step 500 (|z| <= 3.2905, two-sided 99.9 %)",
+  "pytest: tests/test_lab_observation.py::test_t053_imu_drift"
+ ],
+ "tests_skipped": [],
+ "title": "Add IMU drift and orientation noise.",
+ "uncertainty": "Monte Carlo z-scores with 2000 (single axis) and 200 (strapdown) runs; second-order BCH terms limit the linearized recursion to about 1e-3 relative.",
+ "unresolved_assumptions": [
+  "Bias is constant (no bias instability)",
+  "Truth rotation rate is constant and known"
+ ]
+}

@@ -1,0 +1,113 @@
+{
+ "ciw_key_order": [
+  "",
+  "B",
+  "a",
+  "a\u0000b",
+  "aa",
+  "b",
+  "é",
+  "Ａ",
+  "😀"
+ ],
+ "jcs_key_order": [
+  "",
+  "B",
+  "a",
+  "a\u0000b",
+  "aa",
+  "b",
+  "é",
+  "😀",
+  "Ａ"
+ ],
+ "jcs_number_differences": [
+  [
+   "-0.0",
+   "0"
+  ],
+  [
+   "-1.0",
+   "-1"
+  ],
+  [
+   "-2.5e-08",
+   "-2.5e-8"
+  ],
+  [
+   "0.0",
+   "0"
+  ],
+  [
+   "1.0",
+   "1"
+  ],
+  [
+   "1.2345678901234568e+16",
+   "12345678901234568"
+  ],
+  [
+   "100.0",
+   "100"
+  ],
+  [
+   "1000000000000000.0",
+   "1000000000000000"
+  ],
+  [
+   "1234567890123456.0",
+   "1234567890123456"
+  ],
+  [
+   "1e+16",
+   "10000000000000000"
+  ],
+  [
+   "1e-05",
+   "0.00001"
+  ],
+  [
+   "9007199254740992.0",
+   "9007199254740992"
+  ]
+ ],
+ "rust": {
+  "byte_mismatches": [],
+  "decimal_ties": 96,
+  "float_mismatches": [],
+  "floats": 2164,
+  "refusal_mismatches": [],
+  "rust_refusals": {
+   "depth-65": "nesting_too_deep",
+   "integer-10^30": "unsafe_integer",
+   "integer-2^53": "unsafe_integer",
+   "integer-minus-2^53": "unsafe_integer",
+   "lone-surrogate": "invalid_unicode",
+   "nan": "nonfinite_number",
+   "negative-infinity": "nonfinite_number",
+   "non-string-key": "non_string_key",
+   "positive-infinity": "nonfinite_number"
+  },
+  "shortest_differs_on_ties": 42,
+  "vectors": 28,
+  "witness_rust_shortest": "1.0000000000000003e15"
+ },
+ "rust_build": {
+  "available": true,
+  "identity": {
+   "binary_sha256": "014343936914720e0dab50e5e34a1396f59c0ca5d4ac262cc553b5fbd869ce1c",
+   "flags": [
+    "-O",
+    "--edition",
+    "2021",
+    "--remap-path-prefix=<build dir>=ciw-lab-rust"
+   ],
+   "host": "x86_64-unknown-linux-gnu",
+   "rustc_commit": "e408947bfd200af42db322daf0fadfe7e26d3bd1",
+   "rustc_release": "1.94.1",
+   "source_sha256": "e98705beb878e01a13f0383d51b21ee35476936e05af7df47ecbc7e6b158c2f1"
+  },
+  "usable": true
+ },
+ "rust_status": "ran"
+}

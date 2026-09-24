@@ -1,0 +1,91 @@
+{
+ "rows": [
+  {
+   "description": "replayed_bundle_digest set to a forged digest",
+   "error": "ValueError",
+   "killed": true,
+   "kind": "workspace",
+   "message_matches_pin": true,
+   "name": "receipt-replayed.naive",
+   "observed": "Invalid retained energy replay receipt",
+   "observed_outcome": "killed",
+   "outcome_matches_prediction": true,
+   "pinned_message": "Invalid retained energy replay receipt",
+   "predicted_outcome": "killed",
+   "recompute": "none",
+   "target": "energy replay receipt",
+   "task": "T085"
+  },
+  {
+   "description": "forged replayed digest; replay_id recomputed",
+   "error": "ValueError",
+   "killed": true,
+   "kind": "workspace",
+   "message_matches_pin": true,
+   "name": "receipt-replayed.replay-id",
+   "observed": "Invalid retained energy replay receipt",
+   "observed_outcome": "killed",
+   "outcome_matches_prediction": true,
+   "pinned_message": "Invalid retained energy replay receipt",
+   "predicted_outcome": "killed",
+   "recompute": "local",
+   "target": "energy replay receipt",
+   "task": "T085"
+  },
+  {
+   "description": "replayed digest set to the source bundle digest; replay_id recomputed",
+   "error": "ValueError",
+   "killed": true,
+   "kind": "workspace",
+   "message_matches_pin": true,
+   "name": "receipt-replayed.source",
+   "observed": "Invalid retained energy replay receipt",
+   "observed_outcome": "killed",
+   "outcome_matches_prediction": true,
+   "pinned_message": "Invalid retained energy replay receipt",
+   "predicted_outcome": "killed",
+   "recompute": "local",
+   "target": "energy replay receipt",
+   "task": "T085"
+  },
+  {
+   "description": "replayed digest set to a sibling execution digest; replay_id recomputed",
+   "error": "ValueError",
+   "killed": true,
+   "kind": "workspace",
+   "message_matches_pin": true,
+   "name": "receipt-replayed.sibling",
+   "observed": "Invalid retained energy replay receipt",
+   "observed_outcome": "killed",
+   "outcome_matches_prediction": true,
+   "pinned_message": "Invalid retained energy replay receipt",
+   "predicted_outcome": "killed",
+   "recompute": "local",
+   "target": "energy replay receipt",
+   "task": "T085"
+  },
+  {
+   "description": "replay bundle dated 2001, before its source, with a new session id; bundle, verification and receipt digests recomputed",
+   "error": null,
+   "killed": false,
+   "kind": "workspace",
+   "message_matches_pin": true,
+   "name": "receipt-replayed.reidentified-bundle",
+   "observed": "accepted",
+   "observed_outcome": "accepted",
+   "outcome_matches_prediction": true,
+   "pinned_message": "accepted",
+   "post_reopen": {
+    "created_at": "2001-01-01T00:00:00Z",
+    "receipt_source": "bundle:B0",
+    "replay_predates_source": true,
+    "session_id": "session:<forged-constant>"
+   },
+   "predicted_outcome": "accepted",
+   "recompute": "full",
+   "target": "energy replay bundle",
+   "task": "T085"
+  }
+ ],
+ "schema": "ciw.lab-mutation-matrix.v2"
+}

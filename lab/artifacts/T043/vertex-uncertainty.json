@@ -1,0 +1,450 @@
+{
+ "corridors": {
+  "h": 0.1507297051948821,
+  "level": 3,
+  "rows": [
+   {
+    "faces": 17,
+    "left_fraction": [
+     0.00075,
+     0.3715,
+     0.46925,
+     0.5995
+    ],
+    "margin_times_h": 0.0004007946507511425,
+    "start_index": 0,
+    "vertex_margin": 0.002659028956720544
+   },
+   {
+    "faces": 16,
+    "left_fraction": [
+     0.0,
+     0.0,
+     0.0,
+     0.26025
+    ],
+    "margin_times_h": 0.007641296125625126,
+    "start_index": 1,
+    "vertex_margin": 0.05069535640466827
+   },
+   {
+    "faces": 17,
+    "left_fraction": [
+     0.0,
+     0.0,
+     0.0805,
+     0.47525
+    ],
+    "margin_times_h": 0.005563519255729836,
+    "start_index": 2,
+    "vertex_margin": 0.036910569476246415
+   },
+   {
+    "faces": 17,
+    "left_fraction": [
+     0.0,
+     0.0,
+     0.0125,
+     0.291
+    ],
+    "margin_times_h": 0.0015397864111079652,
+    "start_index": 3,
+    "vertex_margin": 0.010215547155201676
+   },
+   {
+    "faces": 16,
+    "left_fraction": [
+     0.0,
+     0.031,
+     0.26475,
+     0.49
+    ],
+    "margin_times_h": 0.0015638464884263038,
+    "start_index": 4,
+    "vertex_margin": 0.010375171147613993
+   },
+   {
+    "faces": 17,
+    "left_fraction": [
+     0.0,
+     0.0,
+     0.02825,
+     0.41075
+    ],
+    "margin_times_h": 0.00795934257417335,
+    "start_index": 5,
+    "vertex_margin": 0.05280540132339888
+   }
+  ],
+  "samples": 4000,
+  "sigmas": [
+   0.0001,
+   0.001,
+   0.003,
+   0.01
+  ]
+ },
+ "propagation": {
+  "h": 0.1507297051948821,
+  "h_squared": 0.022719444028136068,
+  "level": 3,
+  "observables": [
+   {
+    "gradient_norm": 1.0515093665234345,
+    "observable": "marker geodesic distance",
+    "rows": [
+     {
+      "bias": 1.0637274822089537e-06,
+      "invalid_fraction": 0.0,
+      "linear_sd": 0.00010515093665234345,
+      "linear_variance": 1.1056719478865144e-08,
+      "mc_variance": 1.1111490280883368e-08,
+      "ratio": 1.0049536213813617,
+      "sigma": 0.0001
+     },
+     {
+      "bias": 7.840194860542216e-05,
+      "invalid_fraction": 0.0,
+      "linear_sd": 0.0010515093665234344,
+      "linear_variance": 1.1056719478865145e-06,
+      "mc_variance": 1.1084229107337052e-06,
+      "ratio": 1.0024880461627421,
+      "sigma": 0.001
+     },
+     {
+      "bias": 0.00033418780986982366,
+      "invalid_fraction": 0.03075,
+      "linear_sd": 0.0031545280995703036,
+      "linear_variance": 9.951047530978631e-06,
+      "mc_variance": 9.705644827827879e-06,
+      "ratio": 0.975339008040431,
+      "sigma": 0.003
+     },
+     {
+      "bias": 0.004443101815665762,
+      "invalid_fraction": 0.39525,
+      "linear_sd": 0.010515093665234345,
+      "linear_variance": 0.00011056719478865145,
+      "mc_variance": 0.00011297470759676656,
+      "ratio": 1.021774205384491,
+      "sigma": 0.01
+     }
+    ],
+    "value": 0.9999999999999999
+   },
+   {
+    "gradient_norm": 6.483600246158659,
+    "observable": "vertex normal at valence-5 vertex 0",
+    "rows": [
+     {
+      "bias": 9.748515302527256e-06,
+      "flipped_normals": 0,
+      "linear_sd": 0.0006483600246158658,
+      "linear_variance": 4.203707215198862e-07,
+      "mc_variance": 4.1690942905482017e-07,
+      "min_normal_dot": 0.9999981609630226,
+      "ratio": 0.9917660952871518,
+      "sigma": 0.0001
+     },
+     {
+      "bias": 6.731022026559418e-05,
+      "flipped_normals": 0,
+      "linear_sd": 0.0064836002461586585,
+      "linear_variance": 4.203707215198862e-05,
+      "mc_variance": 4.149165703461699e-05,
+      "min_normal_dot": 0.999701568983715,
+      "ratio": 0.9870253780900908,
+      "sigma": 0.001
+     },
+     {
+      "bias": 0.00022537879368591908,
+      "flipped_normals": 0,
+      "linear_sd": 0.019450800738475976,
+      "linear_variance": 0.00037833364936789757,
+      "mc_variance": 0.00038699552409093905,
+      "min_normal_dot": 0.9986729643552859,
+      "ratio": 1.0228948039316972,
+      "sigma": 0.003
+     },
+     {
+      "bias": 0.0010629520041182802,
+      "flipped_normals": 0,
+      "linear_sd": 0.06483600246158659,
+      "linear_variance": 0.004203707215198862,
+      "mc_variance": 0.004106262669246367,
+      "min_normal_dot": 0.9816869074782865,
+      "ratio": 0.9768193784761754,
+      "sigma": 0.01
+     }
+    ],
+    "value": 0.0
+   },
+   {
+    "gradient_norm": 261.3794613627055,
+    "observable": "angle-defect curvature at valence-5 vertex 0",
+    "rows": [
+     {
+      "bias": 0.000362186276524179,
+      "linear_sd": 0.02613794613627055,
+      "linear_variance": 0.0006831922282225806,
+      "mc_variance": 0.0006977312044726822,
+      "ratio": 1.021280945024692,
+      "sigma": 0.0001
+     },
+     {
+      "bias": 0.004229448244924328,
+      "linear_sd": 0.2613794613627055,
+      "linear_variance": 0.06831922282225805,
+      "mc_variance": 0.06977274403064739,
+      "ratio": 1.0212754353510558,
+      "sigma": 0.001
+     },
+     {
+      "bias": 0.06471350964769296,
+      "linear_sd": 0.7841383840881165,
+      "linear_variance": 0.6148730054003225,
+      "mc_variance": 0.6595524620033737,
+      "ratio": 1.0726645278141003,
+      "sigma": 0.003
+     },
+     {
+      "bias": 0.6359997385538216,
+      "linear_sd": 2.613794613627055,
+      "linear_variance": 6.831922282225806,
+      "mc_variance": 11.15970778681683,
+      "ratio": 1.6334652716776885,
+      "sigma": 0.01
+     }
+    ],
+    "value": 1.1478507235912714
+   },
+   {
+    "gradient_norm": 5.057135486323666,
+    "observable": "vertex normal at valence-6 vertex far from valence 5",
+    "rows": [
+     {
+      "bias": 1.2747647352703379e-05,
+      "flipped_normals": 0,
+      "linear_sd": 0.0005057135486323666,
+      "linear_variance": 2.5574619327034105e-07,
+      "mc_variance": 2.533558221561466e-07,
+      "min_normal_dot": 0.9999987838099162,
+      "ratio": 0.9906533462585396,
+      "sigma": 0.0001
+     },
+     {
+      "bias": 0.00010715808526821058,
+      "flipped_normals": 0,
+      "linear_sd": 0.005057135486323666,
+      "linear_variance": 2.55746193270341e-05,
+      "mc_variance": 2.5608790784495577e-05,
+      "min_normal_dot": 0.9998980107381795,
+      "ratio": 1.0013361472569546,
+      "sigma": 0.001
+     },
+     {
+      "bias": 8.758384663912425e-05,
+      "flipped_normals": 0,
+      "linear_sd": 0.015171406458970998,
+      "linear_variance": 0.00023017157394330693,
+      "mc_variance": 0.0002275333372037408,
+      "min_normal_dot": 0.9987805360574814,
+      "ratio": 0.9885379558632381,
+      "sigma": 0.003
+     },
+     {
+      "bias": 0.0008263635272659718,
+      "flipped_normals": 0,
+      "linear_sd": 0.05057135486323666,
+      "linear_variance": 0.0025574619327034106,
+      "mc_variance": 0.002598462959649712,
+      "min_normal_dot": 0.9874361398796886,
+      "ratio": 1.0160319207187418,
+      "sigma": 0.01
+     }
+    ],
+    "value": 0.0
+   },
+   {
+    "gradient_norm": 163.92771750641123,
+    "observable": "angle-defect curvature at valence-6 vertex far from valence 5",
+    "rows": [
+     {
+      "bias": 0.00012583089173667794,
+      "linear_sd": 0.016392771750641123,
+      "linear_variance": 0.0002687229656686176,
+      "mc_variance": 0.0002661345109066209,
+      "ratio": 0.9903675714669332,
+      "sigma": 0.0001
+     },
+     {
+      "bias": -0.00018415443288710698,
+      "linear_sd": 0.16392771750641122,
+      "linear_variance": 0.02687229656686176,
+      "mc_variance": 0.027404141082716674,
+      "ratio": 1.0197915542697147,
+      "sigma": 0.001
+     },
+     {
+      "bias": -0.012108872149475092,
+      "linear_sd": 0.4917831525192337,
+      "linear_variance": 0.24185066910175587,
+      "mc_variance": 0.25167945831963806,
+      "ratio": 1.0406399091405731,
+      "sigma": 0.003
+     },
+     {
+      "bias": -0.021354373765355206,
+      "linear_sd": 1.6392771750641124,
+      "linear_variance": 2.6872296566861764,
+      "mc_variance": 3.724470925941141,
+      "ratio": 1.3859890674673723,
+      "sigma": 0.01
+     }
+    ],
+    "value": 1.0034959528570253
+   }
+  ],
+  "samples": 4000,
+  "strip": {
+   "faces": 17,
+   "length": 1.0,
+   "start_index": 5,
+   "vertex_margin": 0.05280540132339888,
+   "vertices": 19
+  }
+ },
+ "refinement": {
+  "rows": [
+   {
+    "discretization_error": 0.008929308868696362,
+    "h": 0.2993320753185587,
+    "level": 2,
+    "noise_sd": 0.04704511699628665,
+    "total_rms_error": 0.04764173912603594
+   },
+   {
+    "discretization_error": 0.0034959528570253084,
+    "h": 0.1507297051948821,
+    "level": 3,
+    "noise_sd": 0.1636670559021328,
+    "total_rms_error": 0.1636633988376962
+   },
+   {
+    "discretization_error": 0.0010150870472893647,
+    "h": 0.07549909830150697,
+    "level": 4,
+    "noise_sd": 0.6806668925796865,
+    "total_rms_error": 0.6805204581995875
+   },
+   {
+    "discretization_error": 0.00021411616684008372,
+    "h": 0.03776637041792051,
+    "level": 5,
+    "noise_sd": 3.640366766542064,
+    "total_rms_error": 3.639522243174912
+   }
+  ],
+  "samples": 2000,
+  "sigma": 0.001
+ },
+ "scaling": {
+  "local_slopes": {
+   "angle-defect curvature at valence-5 vertex 0": [
+    -2.0333906874577137,
+    -2.008374282747887,
+    -2.0020951666806215
+   ],
+   "angle-defect curvature at valence-6 vertex far from valence 5": [
+    -1.7973091893267128,
+    -2.0078398123776955,
+    -1.9483109432879313
+   ],
+   "interior part": [
+    0.29333524873033456,
+    0.3607603289270139,
+    0.524336659909398
+   ],
+   "marker geodesic distance": [
+    -0.14018006703017435,
+    -0.03907340375310291,
+    0.03997582971223008
+   ],
+   "marker-face part": [
+    -0.18831261459477688,
+    -0.06283144791937334,
+    0.02469260862491054
+   ],
+   "vertex normal at valence-5 vertex 0": [
+    -0.9963191345218696,
+    -0.9991085515527904,
+    -0.9997789214834504
+   ],
+   "vertex normal at valence-6 vertex far from valence 5": [
+    -0.8869614923588,
+    -0.9978107494433814,
+    -0.972832737747017
+   ]
+  },
+  "rows": [
+   {
+    "angle-defect curvature at valence-5 vertex 0": 64.77594271420621,
+    "angle-defect curvature at valence-6 vertex far from valence 5": 47.76790541319028,
+    "h": 0.2993320753185587,
+    "interior part": 0.34720529869296474,
+    "level": 2,
+    "marker geodesic distance": 0.9550934723438999,
+    "marker-face part": 0.8897482910764465,
+    "strip_vertex_margin": 0.03355899170586566,
+    "vertex normal at valence-5 vertex 0": 3.2730945666150015,
+    "vertex normal at valence-6 vertex far from valence 5": 2.7518864102790555
+   },
+   {
+    "angle-defect curvature at valence-5 vertex 0": 261.3794613627055,
+    "angle-defect curvature at valence-6 vertex far from valence 5": 163.92771750641123,
+    "h": 0.1507297051948821,
+    "interior part": 0.28391335006097834,
+    "level": 3,
+    "marker geodesic distance": 1.0515093665234345,
+    "marker-face part": 1.0124550150716163,
+    "strip_vertex_margin": 0.05280540132339888,
+    "vertex normal at valence-5 vertex 0": 6.483600246158659,
+    "vertex normal at valence-6 vertex far from valence 5": 5.057135486323666
+   },
+   {
+    "angle-defect curvature at valence-5 vertex 0": 1047.8522885183324,
+    "angle-defect curvature at valence-6 vertex far from valence 5": 656.9321566156639,
+    "h": 0.07549909830150697,
+    "interior part": 0.22124067229367092,
+    "level": 4,
+    "marker geodesic distance": 1.080302079089472,
+    "marker-face part": 1.0574049115679762,
+    "strip_vertex_margin": 0.006970931372208069,
+    "vertex normal at valence-5 vertex 0": 12.936168126251658,
+    "vertex normal at valence-6 vertex far from valence 5": 10.081016741144282
+   },
+   {
+    "angle-defect curvature at valence-5 vertex 0": 4193.758344094499,
+    "angle-defect curvature at valence-6 vertex far from valence 5": 2533.0490405366645,
+    "h": 0.03776637041792051,
+    "interior part": 0.15385986793949513,
+    "level": 5,
+    "marker geodesic distance": 1.0507974799077695,
+    "marker-face part": 1.0394722145484026,
+    "strip_vertex_margin": 0.020075414329700465,
+    "vertex normal at valence-5 vertex 0": 25.856852568412943,
+    "vertex normal at valence-6 vertex far from valence 5": 19.777343099354695
+   }
+  ],
+  "slopes": {
+   "angle-defect curvature at valence-5 vertex 0": -2.0139277881597546,
+   "angle-defect curvature at valence-6 vertex far from valence 5": -1.9272206666689276,
+   "interior part": 0.3900111336592245,
+   "marker geodesic distance": -0.045335473928179736,
+   "marker-face part": -0.07379389366227951,
+   "vertex normal at valence-5 vertex 0": -0.9984803388359066,
+   "vertex normal at valence-6 vertex far from valence 5": -0.957282174287202
+  },
+  "start_index": 5
+ }
+}

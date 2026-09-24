@@ -1,0 +1,320 @@
+{
+ "changed_files": [
+  "src/ciw/lab/exchange_provenance.py",
+  "src/ciw/lab/exchange_provenance_common.py",
+  "tests/test_lab_exchange_provenance.py",
+  "docs/lab/EXCHANGE_PROVENANCE.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 2,
+   "numerically_verified": 2,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Every predicted refusal is observed; the injected state_admission is returned after reopen; the harness controls hold.",
+ "experiment": "Edit the saved workspace (admission status), recompute none, local or all unkeyed digests, write it and reopen with Session.from_workspace; pure ESM validators are also run on synthetic records. Rows retained as admission-mutations.json/.md.",
+ "failure_modes_checked": [
+  "receipt-admission.naive: admission set to admitted",
+  "receipt-admission.resealed: admission admitted; replay_id recomputed",
+  "bundle-authority.resealed: verification authority.state_admission set to performed; verification_id recomputed",
+  "result-authority.reforged: result authority.state_admission set to performed; every digest recomputed",
+  "oscillator-status.resealed: verification_status set to admitted; resealed",
+  "oscillator-admission.injected: state_admission: admitted injected into a sealed result; resealed",
+  "esm.canonical-admission: canonicalAdmission set to ADMITTED",
+  "esm.candidate-admitted: candidate state set to ADMITTED"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "Invalid retained energy replay receipt",
+      "observed_refusal": "Invalid retained energy replay receipt",
+      "passed": true,
+      "reference": "receipt-admission.naive (none recompute): refusal on reopen",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "Invalid retained energy replay receipt",
+      "observed_refusal": "Invalid retained energy replay receipt",
+      "passed": true,
+      "reference": "receipt-admission.resealed (local recompute): refusal on reopen",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "Retained energy analysis binding differs",
+      "observed_refusal": "Retained energy analysis binding differs",
+      "passed": true,
+      "reference": "bundle-authority.resealed (local recompute): refusal on reopen",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "Retained energy analysis binding differs",
+      "observed_refusal": "Retained energy analysis binding differs",
+      "passed": true,
+      "reference": "result-authority.reforged (full recompute): refusal on reopen",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "Protocol v1 saved results must remain not_verified with verification_id null",
+      "observed_refusal": "Protocol v1 saved results must remain not_verified with verification_id null",
+      "passed": true,
+      "reference": "oscillator-status.resealed (local recompute): refusal on reopen",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "ESM may retain candidate evidence only",
+      "observed_refusal": "ESM may retain candidate evidence only",
+      "passed": true,
+      "reference": "esm.canonical-admission: validator refusal",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "ESM candidate does not bind the selected native bundle",
+      "observed_refusal": "ESM candidate does not bind the selected native bundle",
+      "passed": true,
+      "reference": "esm.candidate-admitted: validator refusal",
+      "reference_kind": "refusal"
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "harness control: the forger's recomputation of the unedited workspace reproduces every CIW digest",
+      "reference_kind": "cross_implementation",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "harness control: the unedited saved workspace reopens",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Admission status forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": [
+    {
+     "kind": "workspace",
+     "mutant": "receipt-admission.naive",
+     "observed": "Invalid retained energy replay receipt",
+     "recompute": "none"
+    },
+    {
+     "kind": "workspace",
+     "mutant": "receipt-admission.resealed",
+     "observed": "Invalid retained energy replay receipt",
+     "recompute": "local"
+    },
+    {
+     "kind": "workspace",
+     "mutant": "bundle-authority.resealed",
+     "observed": "Retained energy analysis binding differs",
+     "recompute": "local"
+    },
+    {
+     "kind": "workspace",
+     "mutant": "result-authority.reforged",
+     "observed": "Retained energy analysis binding differs",
+     "recompute": "full"
+    },
+    {
+     "kind": "workspace",
+     "mutant": "oscillator-status.resealed",
+     "observed": "Protocol v1 saved results must remain not_verified with verification_id null",
+     "recompute": "local"
+    },
+    {
+     "kind": "validator",
+     "mutant": "esm.canonical-admission",
+     "observed": "ESM may retain candidate evidence only",
+     "recompute": "none"
+    },
+    {
+     "kind": "validator",
+     "mutant": "esm.candidate-admitted",
+     "observed": "ESM candidate does not bind the selected native bundle",
+     "recompute": "none"
+    }
+   ]
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "oscillator-admission.injected: accepted (1 = accepted)",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     }
+    ]
+   },
+   "claim": "Surviving mutant oscillator-admission.injected: a sealed result carrying an injected state_admission reopens",
+   "counterexample": {
+    "statement": "Sealed operation records refuse admission claims outside their schema",
+    "witness": {
+     "description": "state_admission: admitted injected into a sealed result; resealed",
+     "name": "oscillator-admission.injected",
+     "observed": "accepted",
+     "post_reopen": {
+      "result.get": {
+       "state_admission": "admitted",
+       "verification_status": "not_verified"
+      }
+     },
+     "recompute": "local",
+     "target": "oscillator result"
+    }
+   },
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "mutant": "oscillator-admission.injected",
+    "observed": "accepted"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": "Admission is an authority decision outside the workbench; the retained receipts record admission not_performed and CIW refuses any other value."
+   },
+   "claim": "A retained replay receipt or verification authorizes admission of the replayed result into canonical state",
+   "domain": "production_acceptance",
+   "evidence_status": "not_established",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": null,
+   "unit": null,
+   "value": {
+    "receipt_admissions": [
+     "not_performed",
+     "not_performed",
+     "not_performed"
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": "Every CIW seal and identity on these paths (record_digest, log_digest, bundle_digest, verification_id, replay_id, result_id, source_id) is an unkeyed SHA-256 over public canonical JSON or raw bytes, and no keyed signature or MAC is retained. Authentication is therefore not established; the listed surviving mutants are concrete forgeries accepted on reopen."
+   },
+   "claim": "Retained workspace records are authenticated: a holder without a secret cannot produce a forged record that reopens",
+   "domain": "provenance",
+   "evidence_status": "not_established",
+   "expected_not_established": true,
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": null,
+   "unit": null,
+   "value": {
+    "surviving_mutants_in_this_task": [
+     "oscillator-admission.injected"
+    ]
+   }
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 4583,
+   "path": "artifacts/T089/admission-mutations.json",
+   "sha256": "16ce534125e1e6e5f475e24e241b1be91b90d686070674895a8cb6f754b8b523"
+  },
+  {
+   "bytes": 1772,
+   "path": "artifacts/T089/admission-mutations.md",
+   "sha256": "576f6a0b2aa52966f871fd2f3b99daf862b38cb97eeafdb9152b2e64aed2a261"
+  }
+ ],
+ "hypothesis": "Predicted kills: receipt admission other than not_performed; energy verification or result authority other than the fixed not_performed record; an oscillator verification_status other than not_verified; an ESM response or candidate claiming admission. Predicted survivor: oscillator-admission.injected (open key set, unkeyed seal).",
+ "input_data": [
+  "make_demo_run() damped-oscillator recording; statistics.v1 on channel v over [1, 2] s, twice, plus one legacy analysis.stats result",
+  "examples/energy-accuracy/{baseline,reset}.json (origin synthetic_fixture): two original executions of baseline, one of reset, replays, and a separate session in the same process",
+  "Workspaces saved by Session.save_workspace and reopened by Session.from_workspace in temporary directories"
+ ],
+ "mathematical_model": "Each record seal or identity d = sha256(canon(record \\ d)) is unkeyed, so any holder can recompute d after an edit. Reopen kills a mutant only if some check compares the edited field with an independently recomputed, fixed or cross-referenced value; otherwise a consistent recomputation survives.",
+ "number": 89,
+ "numerical_result": "8 rows (6 workspace mutants, 2 pure-validator rows): 7 refused; 1 surviving forgery (oscillator-admission.injected); kill/survive predictions matched 8/8; refusal messages matched their regression pins 7/7",
+ "observation_model": "No physical observation. The observed objects are CIW records (sessions, executions, results, bundles, receipts, saved workspace JSON) produced offline by the unmodified CIW code; the energy logs are synthetic fixtures and no hardware was sampled.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/exchange_provenance.py": "5cc267c7777c9b434b8747b0cc841ac85313e1cfb6ff4c429ee93aa5ddbb645b",
+   "src/ciw/lab/exchange_provenance_common.py": "22028c4008079fba23c5e807de0104ba1a0014027e1d40a9209881cdf232f486"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T090 (mutate provider runtime identity)",
+ "report_id": "sha256:288847889f8210be1f0979ad0d572d93a5f76fb82d68b076f95292adef9bb491",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "exchange-provenance",
+ "state": "completed",
+ "task_id": "T089",
+ "tests_passed": [
+  "check: Admission status forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs receipt-admission.naive (none recompute): refusal on reopen",
+  "check: Admission status forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs receipt-admission.resealed (local recompute): refusal on reopen",
+  "check: Admission status forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs bundle-authority.resealed (local recompute): refusal on reopen",
+  "check: Admission status forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs result-authority.reforged (full recompute): refusal on reopen",
+  "check: Admission status forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs oscillator-status.resealed (local recompute): refusal on reopen",
+  "check: Admission status forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs esm.canonical-admission: validator refusal",
+  "check: Admission status forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs esm.candidate-admitted: validator refusal",
+  "check: Admission status forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs harness control: the forger's recomputation of the unedited workspace reproduces every CIW digest",
+  "check: Admission status forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs harness control: the unedited saved workspace reopens",
+  "check: Surviving mutant oscillator-admission.injected: a sealed result carrying an injected state_admission reopens vs oscillator-admission.injected: accepted (1 = accepted)",
+  "pytest: tests/test_lab_exchange_provenance.py::test_admission_and_runtime_mutations"
+ ],
+ "tests_skipped": [],
+ "title": "Mutate admission status.",
+ "uncertainty": "Outcomes are exact (accepted or a refusal message). Only kill/survive is a prediction; refusal messages are regression pins recorded from observed runs. Survivors are demonstrated forgeries; kills show only that these particular edits are detected, not that every edit of this field is.",
+ "unresolved_assumptions": [
+  "The forger model recomputes only unkeyed SHA-256 digests with CIW's public canonicalization; no key exists to steal.",
+  "Pure-validator rows run candidate_evidence.validate_response on a synthetic telemetry-shaped record (schema, digest, three step occurrences) that no telemetry workflow validated, without an ESM process.",
+  "Whether a reader of a forged workspace would be misled depends on how the record is displayed; not assessed."
+ ]
+}

@@ -1,0 +1,9 @@
+{
+ "covering_min": 0.5016141944817782,
+ "jacobian_defect": 3.7175822615951626e-10,
+ "metric_defect": 5.248858339920839e-16,
+ "points": 256,
+ "roundtrip": 6.497413668604471e-16,
+ "seed": 3337,
+ "used": 242
+}

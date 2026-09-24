@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420" font-family="sans-serif" font-size="11">
+<rect width="640" height="420" fill="#ffffff"/>
+<text x="78" y="22" font-size="13" font-weight="bold">Fast-marching relative error against grid spacing</text>
+<rect x="78" y="40" width="392" height="322" fill="none" stroke="#333"/>
+<line x1="104.13" y1="40" x2="104.13" y2="362" stroke="#e5e7eb"/>
+<text x="104.13" y="378" text-anchor="middle">0.01</text>
+<line x1="182.53" y1="40" x2="182.53" y2="362" stroke="#e5e7eb"/>
+<text x="182.53" y="378" text-anchor="middle">0.015</text>
+<line x1="260.93" y1="40" x2="260.93" y2="362" stroke="#e5e7eb"/>
+<text x="260.93" y="378" text-anchor="middle">0.02</text>
+<line x1="339.33" y1="40" x2="339.33" y2="362" stroke="#e5e7eb"/>
+<text x="339.33" y="378" text-anchor="middle">0.025</text>
+<line x1="417.73" y1="40" x2="417.73" y2="362" stroke="#e5e7eb"/>
+<text x="417.73" y="378" text-anchor="middle">0.03</text>
+<line x1="78" y1="350.07" x2="470" y2="350.07" stroke="#e5e7eb"/>
+<text x="72" y="354.07" text-anchor="end">0</text>
+<line x1="78" y1="234.17" x2="470" y2="234.17" stroke="#e5e7eb"/>
+<text x="72" y="238.17" text-anchor="end">0.02</text>
+<line x1="78" y1="118.27" x2="470" y2="118.27" stroke="#e5e7eb"/>
+<text x="72" y="122.27" text-anchor="end">0.04</text>
+<text x="274.00" y="406" text-anchor="middle">grid spacing h = 1/N</text>
+<text x="16" y="201.00" text-anchor="middle" transform="rotate(-90 16 201.00)">relative length error</text>
+<path d="M470.00,350.07 L208.67,350.07 L78.00,350.07" fill="none" stroke="#1f5fa8" stroke-width="1.8"/>
+<circle cx="470.00" cy="350.07" r="2.6" fill="#1f5fa8"/>
+<circle cx="208.67" cy="350.07" r="2.6" fill="#1f5fa8"/>
+<circle cx="78.00" cy="350.07" r="2.6" fill="#1f5fa8"/>
+<line x1="482" y1="52" x2="502" y2="52" stroke="#1f5fa8" stroke-width="2"/>
+<text x="508" y="56">fast marching, 0 deg</text>
+<path d="M470.00,100.82 L208.67,196.95 L78.00,258.38" fill="none" stroke="#c2410c" stroke-width="1.8"/>
+<circle cx="470.00" cy="100.82" r="2.6" fill="#c2410c"/>
+<circle cx="208.67" cy="196.95" r="2.6" fill="#c2410c"/>
+<circle cx="78.00" cy="258.38" r="2.6" fill="#c2410c"/>
+<line x1="482" y1="70" x2="502" y2="70" stroke="#c2410c" stroke-width="2"/>
+<text x="508" y="74">fast marching, 22.62 deg (tan 5/12)</text>
+<path d="M470.00,73.65 L208.67,179.36 L78.00,247.42" fill="none" stroke="#15803d" stroke-width="1.8"/>
+<circle cx="470.00" cy="73.65" r="2.6" fill="#15803d"/>
+<circle cx="208.67" cy="179.36" r="2.6" fill="#15803d"/>
+<circle cx="78.00" cy="247.42" r="2.6" fill="#15803d"/>
+<line x1="482" y1="88" x2="502" y2="88" stroke="#15803d" stroke-width="2"/>
+<text x="508" y="92">fast marching, 26.57 deg (tan 1/2)</text>
+<path d="M470.00,51.93 L208.67,165.53 L78.00,238.96" fill="none" stroke="#7e22ce" stroke-width="1.8"/>
+<circle cx="470.00" cy="51.93" r="2.6" fill="#7e22ce"/>
+<circle cx="208.67" cy="165.53" r="2.6" fill="#7e22ce"/>
+<circle cx="78.00" cy="238.96" r="2.6" fill="#7e22ce"/>
+<line x1="482" y1="106" x2="502" y2="106" stroke="#7e22ce" stroke-width="2"/>
+<text x="508" y="110">fast marching, 45 deg</text>
+</svg>

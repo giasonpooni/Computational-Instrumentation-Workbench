@@ -1,0 +1,328 @@
+{
+ "changed_files": [
+  "src/ciw/lab/sensor_fusion_robustness.py",
+  "src/ciw/lab/sensor_fusion_common.py",
+  "src/ciw/lab/sensor_fusion_bench.py",
+  "src/ciw/lab/sensor_fusion_objects.py"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 3,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Naive two-sensor mean innovations nonzero and equal to the prediction; augmented mean innovations zero and tau-hat -> 0.1 s; camera-only innovations unbiased while the position error mean is -tau E[v] = (-0.1, -0.05) m.",
+ "experiment": "Whiten innovations with their filter covariance, average per run after a 50-tick burn-in, and test the grand mean with run-level standard errors for the naive two-sensor, naive camera-only and offset-augmented filters.",
+ "failure_modes_checked": [
+  "unmodelled lag with a reference sensor",
+  "unmodelled lag with no reference",
+  "offset state convergence",
+  "EKF consistency"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 20.81323810317474,
+      "passed": true,
+      "reference": "largest mean-innovation z against zero",
+      "reference_kind": "analytic",
+      "tolerance": 4.003167571450172
+     },
+     {
+      "comparison": "le",
+      "observed": 1.6163524284484705,
+      "passed": true,
+      "reference": "mean innovations against the noise-free linear prediction (max |z|)",
+      "reference_kind": "analytic",
+      "tolerance": 4.003167571450172
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "runs": 200,
+     "seed": 702026,
+     "ticks": 200
+    }
+   },
+   "claim": "With a correctly clocked tracker fused alongside, an unmodelled one-tick camera lag biases the whitened innovations of both sensors; a mean test detects it and the bias matches the exact linear prediction within sampling error",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "largest run-level standard error of the camera's whitened mean innovation",
+    "kind": "monte_carlo_95ci",
+    "value": 0.03162719637972903
+   },
+   "unit": null,
+   "value": {
+    "camera_whitened_mean": [
+     -0.3335196226444212,
+     -0.07726522209795668
+    ],
+    "max_abs_mean_z": 20.81323810317474,
+    "max_abs_z_vs_predicted": 1.6163524284484705,
+    "tracker_predicted_whitened_mean": [
+     0.4534351873534505,
+     0.12587230351667725
+    ],
+    "tracker_whitened_mean": [
+     0.45105495271791224,
+     0.08538896033924179
+    ],
+    "z_critical": 4.003167571450172
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 2.2901573025069744,
+      "passed": true,
+      "reference": "largest mean-innovation z of the augmented filter",
+      "reference_kind": "analytic",
+      "tolerance": 4.003167571450172
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -1.4534253270516253,
+      "passed": true,
+      "reference": "mean final tau estimate against 0.1 s (z)",
+      "reference_kind": "analytic",
+      "tolerance": 4.003167571450172
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.01070777520707944,
+      "passed": true,
+      "reference": "grand-mean 5-state NEES minus 5, relative",
+      "reference_kind": "analytic",
+      "tolerance": 0.15
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "seed": 702026
+    }
+   },
+   "claim": "A filter that estimates the clock offset as a state (h = p - tau v) removes the innovation bias and recovers tau = 0.1 s",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "run-level standard error of the mean final tau estimate (s)",
+    "kind": "monte_carlo_95ci",
+    "value": 0.0020419099168452895
+   },
+   "unit": null,
+   "value": {
+    "max_abs_mean_z": 2.2901573025069744,
+    "nees_grand_mean": 5.053538876035398,
+    "nees_grand_z": 0.5855399424590109,
+    "tau_mean": 0.09848583490372408,
+    "tau_mean_posterior_std": 0.013113017182961264,
+    "tau_run_std": 0.014733146416054731,
+    "tau_z": -1.4534253270516253
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 0.5395726400825746,
+      "passed": true,
+      "reference": "largest mean-innovation z (camera only)",
+      "reference_kind": "analytic",
+      "tolerance": 4.003167571450172
+     },
+     {
+      "comparison": "ge",
+      "observed": 15.839276659802664,
+      "passed": true,
+      "reference": "position error mean z against zero",
+      "reference_kind": "analytic",
+      "tolerance": 4.003167571450172
+     },
+     {
+      "comparison": "le",
+      "observed": 1.8108975072833187,
+      "passed": true,
+      "reference": "position error mean against the exact linear prediction (max |z|)",
+      "reference_kind": "analytic",
+      "tolerance": 4.003167571450172
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "seed": 702026
+    }
+   },
+   "claim": "With the stale camera as the only position sensor the lag is invisible to the innovations: the lagged constant-velocity path is itself a constant-velocity path, so the estimate is biased by about -tau E[v] while the mean test passes",
+   "counterexample": {
+    "statement": "A stale sensor clock always shows up as a bias in the filter innovations",
+    "witness": {
+     "camera_mean_z": [
+      0.4228861059098964,
+      -0.5395726400825746
+     ],
+     "position_error_mean_m": [
+      -0.09866380307289671,
+      -0.03973045449682786
+     ],
+     "sensors": "camera only"
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "largest run-level standard error of the mean position error (m)",
+    "kind": "monte_carlo_95ci",
+    "value": 0.01220895740230644
+   },
+   "unit": null,
+   "value": {
+    "camera_mean_z": [
+     0.4228861059098964,
+     -0.5395726400825746
+    ],
+    "nees": {
+     "fraction_above": 1.0,
+     "fraction_below": 0.0,
+     "fraction_inside": 0.0,
+     "grand_mean": 9.193537708173098,
+     "interval": [
+      3.5036250326357607,
+      4.533930905960961
+     ],
+     "runs": 200,
+     "ticks": 150
+    },
+    "position_error_mean": [
+     -0.09866380307289671,
+     -0.03973045449682786
+    ],
+    "position_error_mean_z_vs_zero": [
+     -15.839276659802664,
+     -7.006076220608331
+    ],
+    "position_error_z_vs_predicted": [
+     0.21448542232121443,
+     1.8108975072833187
+    ],
+    "predicted_position_error_mean": [
+     -0.0999998456160269,
+     -0.049999794816007775
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "seed": 702026
+    },
+    "notes": "synthetic draws only; no acquisition"
+   },
+   "claim": "The recovered offset calibrates the clock of a real camera",
+   "domain": "calibration",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": "not established: the lag is a declared synthetic fault"
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 7883,
+   "path": "artifacts/T070/stale_clock.json",
+   "sha256": "2a5b7e50f9681369d6a5ea657e75b7cd7fdc4277887b102f8989c01625fc8b5d"
+  },
+  {
+   "bytes": 4421,
+   "path": "artifacts/T070/tau_estimate.svg",
+   "sha256": "9420069349d222f507c26a4e3992b4e20494d6d921c032fe193c96c6cfa5386b"
+  }
+ ],
+ "hypothesis": "An unmodelled clock offset biases innovations only when another sensor pins the true time; a mean test then detects it, and an offset state in the filter removes it.",
+ "input_data": [
+  "seed 702026 (PCG64)",
+  "200 runs x 200 ticks",
+  "camera every tick (lagged one tick), tracker every 5 ticks"
+ ],
+ "mathematical_model": "Camera reports z_k = p(t_k - tau) + v = p_k - tau v_k + eta + v with tau = dt = 0.1 s; tracker (2 Hz, R = 0.0025 I) reports p_k + v. Naive filter: z = p + v. Augmented EKF: state (p, v, tau), h = p - tau v, H = [I, -tau I, -v], R + q dt^3/3 I. Expected naive innovations follow from the same linear filter run on noise-free mean readings.",
+ "number": 70,
+ "numerical_result": "naive two-sensor mean-innovation max |z| 20.8 against zero, 1.62 against the exact predicted bias; augmented max |z| 2.29, tau-hat 0.0985 s (run spread 0.0147, posterior std 0.0131), NEES 5.05; camera-only innovation |z| 0.54, position error mean (-0.099, -0.040) m.",
+ "observation_model": "Camera and tracker positions, independent noise; tau prior N(0, 0.2^2) s.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/sensor_fusion_bench.py": "f373849a4c6836fa20685c59ce7a6fe6bf732f6df9d6a49646cdc017262dd656",
+   "src/ciw/lab/sensor_fusion_common.py": "6787aa47d199d50d0b4de4d7e53714ce7b8b5aad37d647cfc1a954414e90209f",
+   "src/ciw/lab/sensor_fusion_objects.py": "a795ffc235e0a4118cb7b9ac7800191a90984372d79e59f1a934442d98d7a1f1",
+   "src/ciw/lab/sensor_fusion_robustness.py": "9c94ececd04bce6abe83323c53b0ffee060b99e4b9f9fb8e3b58ec22c24516ec"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T071: frame mismatch, the spatial analogue of a stale clock.",
+ "report_id": "sha256:edd0c188bfc2522dc3bd3ebbecebdbe89a84c771f2cbe1ab91c4043313f0ccd3",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "sensor-fusion",
+ "state": "completed",
+ "task_id": "T070",
+ "tests_passed": [
+  "check: With a correctly clocked tracker fused alongside, an unmodelled one-tick camera lag biases the whitened innovations of both sensors; a mean test detects it and the bias matches the exact linear prediction within sampling error vs largest mean-innovation z against zero",
+  "check: With a correctly clocked tracker fused alongside, an unmodelled one-tick camera lag biases the whitened innovations of both sensors; a mean test detects it and the bias matches the exact linear prediction within sampling error vs mean innovations against the noise-free linear prediction (max |z|)",
+  "check: A filter that estimates the clock offset as a state (h = p - tau v) removes the innovation bias and recovers tau = 0.1 s vs largest mean-innovation z of the augmented filter",
+  "check: A filter that estimates the clock offset as a state (h = p - tau v) removes the innovation bias and recovers tau = 0.1 s vs mean final tau estimate against 0.1 s (z)",
+  "check: A filter that estimates the clock offset as a state (h = p - tau v) removes the innovation bias and recovers tau = 0.1 s vs grand-mean 5-state NEES minus 5, relative",
+  "check: With the stale camera as the only position sensor the lag is invisible to the innovations: the lagged constant-velocity path is itself a constant-velocity path, so the estimate is biased by about -tau E[v] while the mean test passes vs largest mean-innovation z (camera only)",
+  "check: With the stale camera as the only position sensor the lag is invisible to the innovations: the lagged constant-velocity path is itself a constant-velocity path, so the estimate is biased by about -tau E[v] while the mean test passes vs position error mean z against zero",
+  "check: With the stale camera as the only position sensor the lag is invisible to the innovations: the lagged constant-velocity path is itself a constant-velocity path, so the estimate is biased by about -tau E[v] while the mean test passes vs position error mean against the exact linear prediction (max |z|)",
+  "pytest: tests/test_lab_sensor_fusion.py::test_stale_clock_bias_detection_and_augmented_offset",
+  "pytest: tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T070]"
+ ],
+ "tests_skipped": [],
+ "title": "Add stale-clock behavior.",
+ "uncertainty": "Run-level z-tests with a Bonferroni family bound; the augmented filter is an EKF whose linearization and the ignored correlation of the lagged-state noise with the process noise are approximations (NEES tolerance 15%).",
+ "unresolved_assumptions": [
+  "The lag is constant and exactly one tick; drifting or jittering clocks need a random-walk offset state.",
+  "The offset is observable only while the velocity is nonzero."
+ ]
+}

@@ -1,0 +1,398 @@
+{
+ "changed_files": [
+  "src/ciw/lab/observation.py",
+  "src/ciw/lab/observation_chord.py",
+  "docs/lab/OBSERVATION.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 1,
+   "not_established": 1,
+   "numerically_verified": 4,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Integrated chords agree with closed forms to integration accuracy; fitted coefficients agree with the derived ones.",
+ "experiment": "Derive the series by hand and (when sympy is present) expand the Frenet-Serret recursion with sympy and simplify the coefficient residuals symbolically; integrate geodesics with ciw.lab.jacobi; fit polynomial models of (s - c)/s^3 and of the remainders; search for counterexamples to the O(s^5) remainder and to the constant-curvature circle formula.",
+ "failure_modes_checked": [
+  "start-point versus midpoint curvature",
+  "nonzero torsion with constant curvature",
+  "integration drift (speed drift recorded)",
+  "sympy unavailable (analytic fallback)"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "derivation": "docs/lab/OBSERVATION.md#chord-versus-geodesic-correction",
+    "independent_check": {
+     "checker": {
+      "implementation": "sympy",
+      "revision": "1.14.0"
+     },
+     "comparison": "abs_le",
+     "observed": 0.0,
+     "passed": true,
+     "producer": {
+      "implementation": "ciw.lab.observation",
+      "revision": "0.1.0"
+     },
+     "reference": "sympy series of |gamma(s) - gamma(0)| from the Frenet-Serret Taylor recursion (set up in ciw.lab.observation_chord.sympy_general_series) against the closed-form c1..c5 and the constant-curvature c5: number of residuals not simplifying to 0 as polynomials in kappa0, kappa0', kappa0'', tau0",
+     "reference_kind": "exact_arithmetic",
+     "tolerance": 0.0
+    }
+   },
+   "claim": "Chord expansion c = s - kappa0^2 s^3/24 - kappa0 kappa0' s^4/24 + c5 s^5 + O(s^6) with c5 = (3 kappa0^4 + 8 kappa0^2 tau0^2 - 72 kappa0 kappa0'' - 64 kappa0'^2)/5760, which is kappa^4/1920 + kappa^2 tau^2/720 for constant curvature and torsion",
+   "domain": "mathematical",
+   "evidence_status": "independently_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "closed-form coefficients; the symbolic comparison is exact",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "c3": "-kappa0^2/24",
+    "c4": "-kappa0*kappa0'/24",
+    "c5": "(3 kappa0^4 + 8 kappa0^2 tau0^2 - 72 kappa0 kappa0'' - 64 kappa0'^2)/5760",
+    "c5_constant_curvature_torsion": "kappa^4/1920 + kappa^2*tau^2/720"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 4.7628567756419216e-14,
+      "passed": true,
+      "reference": "|c_integrated - 2R sin(s/2R)| / R",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 1.210610733881623e-08,
+      "passed": true,
+      "reference": "fitted (s - c)/s^3 intercept relative to kappa^2/24",
+      "reference_kind": "analytic",
+      "tolerance": 1e-06
+     }
+    ],
+    "generator": {
+     "name": "ciw.lab.jacobi.transfer RK4 on Sphere(R)",
+     "radii": [
+      0.5,
+      1.0,
+      2.0
+     ],
+     "seed": null,
+     "steps": 400
+    }
+   },
+   "claim": "RK4 sphere geodesics reproduce the chord 2R sin(s/2R) and the s^3 coefficient kappa^2/24",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "change of the fitted intercept when one more s^2 term is fitted; the chord error is a direct comparison with the closed form (rounding about 1e-16 R)",
+    "kind": "truncation_bound",
+    "value": {
+     "max_c3_relative_error": 4.325822366979537e-09
+    }
+   },
+   "unit": null,
+   "value": {
+    "max_c3_relative_error": 1.210610733881623e-08,
+    "max_relative_chord_error": 4.7628567756419216e-14
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 4.47513696100188e-07,
+      "passed": true,
+      "reference": "fitted s^4 coefficient relative to kappa0 kappa0'/24",
+      "reference_kind": "analytic",
+      "tolerance": 0.0001
+     },
+     {
+      "comparison": "ge",
+      "observed": 0.004608767558825094,
+      "passed": true,
+      "reference": "|kappa0 kappa0'/24| is resolved away from zero",
+      "reference_kind": "analytic",
+      "tolerance": 0.001
+     }
+    ],
+    "generator": {
+     "heading_rad": 0.6,
+     "name": "ciw.lab.jacobi.transfer RK4 on Torus(2, 1)",
+     "seed": null,
+     "steps": 800,
+     "u0": [
+      0.0,
+      0.7853981633974483
+     ]
+    }
+   },
+   "claim": "A torus geodesic with varying curvature keeps the s^4 term kappa0 kappa0'/24 at the start point",
+   "counterexample": {
+    "statement": "c = s - kappa(0)^2 s^3/24 + O(s^5) along every surface geodesic",
+    "witness": {
+     "heading_rad": 0.6,
+     "kappa0": 0.4967476850397676,
+     "kappa0_prime": -0.222669223718571,
+     "s4_coefficient": -0.0046087696213116995,
+     "surface": "torus major 2, minor 1",
+     "u0": [
+      0.0,
+      0.7853981633974483
+     ]
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 1e-05
+   },
+   "uncertainty": {
+    "basis": "change when one more polynomial term is fitted (s^4 remainder model, degree-8 fit of exact normal-curvature samples)",
+    "kind": "truncation_bound",
+    "value": {
+     "fitted_s4": 2.2155547474769777e-09,
+     "kappa0_prime": 1.0818107520904618e-10
+    }
+   },
+   "unit": null,
+   "value": {
+    "fitted_s4": -0.0046087696213116995,
+    "kappa0": 0.4967476850397676,
+    "kappa0_prime": -0.222669223718571,
+    "predicted_s4": -0.004608767558825094
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 3.4228989803754016e-07,
+      "passed": true,
+      "reference": "midpoint-curvature s^4 coefficient relative to kappa0 kappa0'/24",
+      "reference_kind": "analytic",
+      "tolerance": 0.0001
+     }
+    ],
+    "generator": {
+     "heading_rad": 0.6,
+     "name": "ciw.lab.jacobi.transfer RK4 on Torus(2, 1)",
+     "seed": null,
+     "steps": 800,
+     "u0": [
+      0.0,
+      0.7853981633974483
+     ]
+    }
+   },
+   "claim": "Evaluating the curvature at the arc midpoint removes the s^4 term on the same torus geodesic",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-05,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "the exact midpoint s^4 coefficient is 0; the fitted ratio is fit truncation and rounding amplified by 1/s^4, so only the bound is regression-tested",
+    "kind": "truncation_bound",
+    "value": 3.721170437313542e-07
+   },
+   "unit": null,
+   "value": {
+    "midpoint_ratio": 3.4228989803754016e-07
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 1.963215434663823e-08,
+      "passed": true,
+      "reference": "fitted (c - 2 sin(kappa s/2)/kappa)/s^5 relative to kappa^2 tau^2/720",
+      "reference_kind": "analytic",
+      "tolerance": 1e-05
+     },
+     {
+      "comparison": "ge",
+      "observed": 2.839002859589268e-05,
+      "passed": true,
+      "reference": "largest deviation from the circle chord (resolved)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-06
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 1.5543122344752192e-15,
+      "passed": true,
+      "reference": "integrated chord against the exact helix chord",
+      "reference_kind": "analytic",
+      "tolerance": 1e-13
+     }
+    ],
+    "generator": {
+     "alpha_deg": 45.0,
+     "length": 0.8,
+     "name": "ciw.lab.jacobi.transfer RK4 on Cylinder(1)",
+     "seed": null
+    }
+   },
+   "claim": "Constant curvature alone does not give the circle chord: a cylinder helix with torsion deviates at order s^5 by kappa^2 tau^2/720",
+   "counterexample": {
+    "statement": "For constant space curvature kappa, c = 2 sin(kappa s/2)/kappa",
+    "witness": {
+     "alpha_deg": 45.0,
+     "gap": 2.839002859589268e-05,
+     "kappa": 0.5000000000000001,
+     "s": 0.8,
+     "surface": "cylinder R = 1",
+     "tau": 0.5
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "change of the fitted s^5 coefficient when one more s^2 term is fitted",
+    "kind": "truncation_bound",
+    "value": {
+     "fitted_s5_gap": 8.374239480026316e-13
+    }
+   },
+   "unit": null,
+   "value": {
+    "fitted_s5_gap": 8.680555725973566e-05,
+    "kappa": 0.5000000000000001,
+    "max_gap": 2.839002859589268e-05,
+    "predicted_s5_gap": 8.68055555555556e-05,
+    "tau": 0.5
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": "No part was measured; curvature, marker placement and surface form error of a real object are not modelled."
+   },
+   "claim": "The chord correction computed from nominal curvature holds for chords measured on a physical part",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 544,
+   "path": "artifacts/T046/sympy-series.json",
+   "sha256": "d0e28ab722fc26baeb74f98e1fd2062ed399c69ef61d7ab93188da22894d2ebd"
+  },
+  {
+   "bytes": 4810,
+   "path": "artifacts/T046/sphere-geodesic-chords.json",
+   "sha256": "d69529908acd7dbcbc46e3b504d611829702c2b4194836375fcc5babd315b151"
+  },
+  {
+   "bytes": 4510,
+   "path": "artifacts/T046/counterexamples.json",
+   "sha256": "629915b1f21d7738eaceaaa7330e9109171275c99eb97ab3e0c6abbb0f22e9be"
+  },
+  {
+   "bytes": 9416,
+   "path": "artifacts/T046/sphere-chord-deficit.svg",
+   "sha256": "e57399ccc0b1d7214294c5dcfbef0a46d83a2253fe91aabdd8f6d07fb275382c"
+  },
+  {
+   "bytes": 8936,
+   "path": "artifacts/T046/torus-remainder.svg",
+   "sha256": "661f6683e0a80f1e08381be3987eaa7cb48d09b655453ea78704fd16ef864beb"
+  }
+ ],
+ "hypothesis": "Along a unit-speed surface geodesic the chord deficit is s - c = kappa^2 s^3/24 + O(s^4), with kappa the absolute normal curvature; the s^4 term -kappa kappa' s^4/24 vanishes only when kappa kappa' = 0, and the circle formula 2 sin(kappa s/2)/kappa additionally needs zero torsion.",
+ "input_data": [
+  "Sphere radii 0.5, 1, 2 (RK4, 400 steps over s in [0, R])",
+  "Torus major 2, minor 1, start (0, pi/4), heading 0.6 rad, 800 RK4 steps over s in [0, 0.4]",
+  "Cylinder R = 1 helix at 45 deg, 160 steps over s in [0, 0.8]",
+  "Symbols kappa0, kappa0', kappa0'', tau0 for the symbolic sympy comparison"
+ ],
+ "mathematical_model": "Taylor expansion of gamma(s) - gamma(0) in the Frenet frame (T' = kappa N, N' = -kappa T + tau B, B' = -tau N): |delta|^2 = s^2 - kappa^2 s^4/12 - kappa kappa' s^5/12 + O(s^6), so c = s - kappa^2 s^3/24 - kappa kappa' s^4/24 + c5 s^5 with c5 = (3 kappa^4 + 8 kappa^2 tau^2 - 72 kappa kappa'' - 64 kappa'^2)/5760. For a geodesic k_g = 0, hence kappa = |II(T, T)|. For a circle (tau = 0) c = 2 sin(kappa s/2)/kappa exactly.",
+ "number": 46,
+ "numerical_result": "sphere chord error 4.8e-14 R, c3 relative error 1.2e-08; torus s^4 coefficient -4.608770e-03 vs predicted -4.608768e-03 (midpoint ratio 3.4e-07); helix s^5 gap 8.680556e-05 vs 8.680556e-05; the symbolic sympy comparison, when sympy is available, is recorded on the derivation finding (independent_check).",
+ "observation_model": "Chords are Euclidean distances between embedded points of integrated geodesics; no instrument noise.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "requirement_probes": {
+   "module:sympy": true
+  },
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/observation.py": "9ebedc1a1693aaa28965ba0c97837ad2d2c45bf0fd360857cf7b32c0993ed5fc",
+   "src/ciw/lab/observation_chord.py": "9b6fe24560daf8b06617824d20854f695e1f73774215a03acc41a28855ba164a"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T047: validate the cylinder chord coefficient cos^4(alpha)/(24 R^2)",
+ "report_id": "sha256:4f71c6c389861033d099545c118aef82af1d88ebe115e9ef2882c2884480ff5c",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "observation",
+ "state": "completed",
+ "task_id": "T046",
+ "tests_passed": [
+  "independent: Chord expansion c = s - kappa0^2 s^3/24 - kappa0 kappa0' s^4/24 + c5 s^5 + O(s^6) with c5 = (3 kappa0^4 + 8 kappa0^2 tau0^2 - 72 kappa0 kappa0'' - 64 kappa0'^2)/5760, which is kappa^4/1920 + kappa^2 tau^2/720 for constant curvature and torsion vs sympy",
+  "check: RK4 sphere geodesics reproduce the chord 2R sin(s/2R) and the s^3 coefficient kappa^2/24 vs |c_integrated - 2R sin(s/2R)| / R",
+  "check: RK4 sphere geodesics reproduce the chord 2R sin(s/2R) and the s^3 coefficient kappa^2/24 vs fitted (s - c)/s^3 intercept relative to kappa^2/24",
+  "check: A torus geodesic with varying curvature keeps the s^4 term kappa0 kappa0'/24 at the start point vs fitted s^4 coefficient relative to kappa0 kappa0'/24",
+  "check: A torus geodesic with varying curvature keeps the s^4 term kappa0 kappa0'/24 at the start point vs |kappa0 kappa0'/24| is resolved away from zero",
+  "check: Evaluating the curvature at the arc midpoint removes the s^4 term on the same torus geodesic vs midpoint-curvature s^4 coefficient relative to kappa0 kappa0'/24",
+  "check: Constant curvature alone does not give the circle chord: a cylinder helix with torsion deviates at order s^5 by kappa^2 tau^2/720 vs fitted (c - 2 sin(kappa s/2)/kappa)/s^5 relative to kappa^2 tau^2/720",
+  "check: Constant curvature alone does not give the circle chord: a cylinder helix with torsion deviates at order s^5 by kappa^2 tau^2/720 vs largest deviation from the circle chord (resolved)",
+  "check: Constant curvature alone does not give the circle chord: a cylinder helix with torsion deviates at order s^5 by kappa^2 tau^2/720 vs integrated chord against the exact helix chord",
+  "pytest: tests/test_lab_observation.py::test_t046_chord_expansion",
+  "pytest: tests/test_lab_observation.py::test_chord_derivation_degrades_without_sympy"
+ ],
+ "tests_skipped": [],
+ "title": "Derive the chord-versus-geodesic correction.",
+ "uncertainty": "Fit truncation, estimated by fitting one more term: c3 4.3e-09 relative (sphere), s^4 2.2e-09 and kappa0' 1.1e-10 (torus), s^5 8.4e-13 (helix); RK4 chord error below 1e-12 R. The torus midpoint ratio is zero within its fit truncation, so only its bound is regression-tested.",
+ "unresolved_assumptions": [
+  "kappa must be known along the path; estimating it from data is not modelled",
+  "Markers are points on the surface; marker thickness and offsets are ignored"
+ ]
+}

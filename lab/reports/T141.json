@@ -1,0 +1,255 @@
+{
+ "changed_files": [
+  "src/ciw/lab/manufacturing.py",
+  "src/ciw/lab/manufacturing_geometry.py",
+  "src/ciw/lab/manufacturing_metrology.py",
+  "src/ciw/lab/manufacturing_records.py",
+  "docs/lab/MANUFACTURING.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 3,
+   "numerically_verified": 2,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Zero bases establish a claim filed in an authority domain; every decision request, forged record and screened statement is refused.",
+ "experiment": "Enumerate bases, call the policy, forge a hardware_measured acceptance finding, mutate a protocol, file an acceptance and a rejection statement in a computational domain and screen them.",
+ "failure_modes_checked": [
+  "authority domain with hardware acquisition and passing checks",
+  "forged label",
+  "policy decide calls",
+  "protocol acceptance field and criterion status",
+  "acceptance and rejection statements filed in a computational domain"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "bases establishing a claim filed in an authority domain",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "expected_refusal": "production_acceptance_outside_system",
+      "observed_refusal": "production_acceptance_outside_system",
+      "passed": true,
+      "reference": "policy.decide(accept)",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "production_acceptance_outside_system",
+      "observed_refusal": "production_acceptance_outside_system",
+      "passed": true,
+      "reference": "policy.decide(conditional)",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "production_acceptance_outside_system",
+      "observed_refusal": "production_acceptance_outside_system",
+      "passed": true,
+      "reference": "policy.decide(reject)",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "label_refused",
+      "observed_refusal": "label_refused",
+      "passed": true,
+      "reference": "forged hardware_measured acceptance finding",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "acceptance_inside_system",
+      "observed_refusal": "acceptance_inside_system",
+      "passed": true,
+      "reference": "protocol declaring acceptance inside the system",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "criterion_is_decision",
+      "observed_refusal": "criterion_is_decision",
+      "passed": true,
+      "reference": "protocol criterion marked accepted",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "acceptance_outside_authority_domain",
+      "observed_refusal": "acceptance_outside_authority_domain",
+      "passed": true,
+      "reference": "acceptance statement filed in a computational domain (section screen)",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "acceptance_outside_authority_domain",
+      "observed_refusal": "acceptance_outside_authority_domain",
+      "passed": true,
+      "reference": "rejection statement filed in a computational domain (section screen)",
+      "reference_kind": "refusal"
+     }
+    ]
+   },
+   "claim": "No basis establishes a claim filed in an authority domain, and the acceptance policy, the protocol validator and this section's acceptance-language screen refuse acceptance decisions",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact logic or integer count",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": "cases",
+   "value": {
+    "basis_domain_cases": 320,
+    "refusals": 8,
+    "violations": 0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "label of the statement filed as computational_pipeline with one passing check is established (0 = yes)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "evidence.finding establishes an acceptance statement when its author files it in a computational domain",
+   "counterexample": {
+    "statement": "The lab API cannot mark production acceptance",
+    "witness": {
+     "caught_by": "manufacturing_records.screen_acceptance_language",
+     "claim": "Coupon lot accepted for production",
+     "domain": "computational_pipeline",
+     "label": "numerically_verified"
+    }
+   },
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact logic or integer count",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": "numerically_verified"
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": "Only this section screens its findings for decision words; other sections and paraphrases rely on review."
+   },
+   "claim": "Domain assignment of free-text claims is machine-checked across the lab",
+   "domain": "computational_pipeline",
+   "evidence_status": "not_established",
+   "expected_not_established": true,
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "Production acceptance of the coupon, cylinder or plate process",
+   "domain": "production_acceptance",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": "not_performed"
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "The manufacturing protocols and models are ready for industrial use",
+   "domain": "industrial_readiness",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 760,
+   "path": "artifacts/T141/acceptance-policy.json",
+   "sha256": "3c093d201cb5c868226645f9e7286341c9da7cd3ecbcbb687c894e3cf3b517f1"
+  }
+ ],
+ "hypothesis": "Production acceptance is an authority decision outside the workbench: no evidence basis makes a claim filed in an authority domain established, and no policy call or protocol field can record a decision; a statement filed in a computational domain is caught only by a screen on its wording.",
+ "input_data": [
+  "64 bases (all combinations of derivation, generator, checks, provider, independent check and acquisition) x the five authority domains = 320 cases",
+  "Acceptance requests: accept, reject, conditional",
+  "One acceptance and one rejection statement filed in computational_pipeline with a passing check"
+ ],
+ "mathematical_model": "Label function L(basis, domain) = not_established for every authority domain; AcceptancePolicy.decide always refuses; protocols require production_acceptance = outside_system and hypothesis-status criteria; the section screen refuses decision phrases (accepted, approved, rejected, scrapped, quarantined, signed off, dispositioned, released for or to production, passed or passes inspection or acceptance, certified for production) in claims and string values outside the authority domains.",
+ "number": 141,
+ "numerical_result": "320 cases, 0 violations; all decisions refused; honest label of an acceptance claim even with hardware acquisition: not_established; the same statement filed in a computational domain is labelled numerically_verified by evidence.finding and refused by the section screen, as is a rejection statement (labelled numerically_verified).",
+ "observation_model": "No observation: the task enumerates bases and domains through the label function and calls the policy, the protocol validator and the language screen; no instrument, part or acceptance authority is involved.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/manufacturing.py": "088763a0bcc42bf085c1e228797a5dc0d702b994f2a49e053cbe2b0a5622e25d",
+   "src/ciw/lab/manufacturing_geometry.py": "1db6df2ddf778668da2ffd53a66bcddbff4fc933d6f299e8f283cedc60a9332f",
+   "src/ciw/lab/manufacturing_metrology.py": "afbb6fccf146ca4f47850805c118d2f1bf6186872f381b298ab924a9214257ec",
+   "src/ciw/lab/manufacturing_records.py": "66970104ea454e836c5cbafc3013c90e721c3e96ad7f16780c32250112cac921"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T155: include the acceptance boundary, and the computational-domain loophole, in the formal specification of the evidence labels.",
+ "report_id": "sha256:176b5f7aecd45a9c340b8f804057e4c6bf37cb93fc23a09a9ced16ff637b521c",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "manufacturing",
+ "state": "completed",
+ "task_id": "T141",
+ "tests_passed": [
+  "check: No basis establishes a claim filed in an authority domain, and the acceptance policy, the protocol validator and this section's acceptance-language screen refuse acceptance decisions vs bases establishing a claim filed in an authority domain",
+  "check: No basis establishes a claim filed in an authority domain, and the acceptance policy, the protocol validator and this section's acceptance-language screen refuse acceptance decisions vs policy.decide(accept)",
+  "check: No basis establishes a claim filed in an authority domain, and the acceptance policy, the protocol validator and this section's acceptance-language screen refuse acceptance decisions vs policy.decide(conditional)",
+  "check: No basis establishes a claim filed in an authority domain, and the acceptance policy, the protocol validator and this section's acceptance-language screen refuse acceptance decisions vs policy.decide(reject)",
+  "check: No basis establishes a claim filed in an authority domain, and the acceptance policy, the protocol validator and this section's acceptance-language screen refuse acceptance decisions vs forged hardware_measured acceptance finding",
+  "check: No basis establishes a claim filed in an authority domain, and the acceptance policy, the protocol validator and this section's acceptance-language screen refuse acceptance decisions vs protocol declaring acceptance inside the system",
+  "check: No basis establishes a claim filed in an authority domain, and the acceptance policy, the protocol validator and this section's acceptance-language screen refuse acceptance decisions vs protocol criterion marked accepted",
+  "check: No basis establishes a claim filed in an authority domain, and the acceptance policy, the protocol validator and this section's acceptance-language screen refuse acceptance decisions vs acceptance statement filed in a computational domain (section screen)",
+  "check: No basis establishes a claim filed in an authority domain, and the acceptance policy, the protocol validator and this section's acceptance-language screen refuse acceptance decisions vs rejection statement filed in a computational domain (section screen)",
+  "check: evidence.finding establishes an acceptance statement when its author files it in a computational domain vs label of the statement filed as computational_pipeline with one passing check is established (0 = yes)",
+  "pytest: tests/test_lab_manufacturing.py::test_production_acceptance_stays_outside_the_system",
+  "pytest: tests/test_lab_manufacturing.py::test_every_task_is_registered_and_reports_honestly"
+ ],
+ "tests_skipped": [],
+ "title": "Keep production acceptance outside the system until independently validated.",
+ "uncertainty": "Exact: every outcome is a label or refusal code returned by deterministic validators; no quantity is estimated.",
+ "unresolved_assumptions": [
+  "The external acceptance authority and its criteria are outside the repository.",
+  "The language screen is a vocabulary check on this section only; paraphrased decisions and other sections rely on review, and evidence.finding itself does not refuse them."
+ ]
+}

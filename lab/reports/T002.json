@@ -1,0 +1,481 @@
+{
+ "changed_files": [
+  "src/ciw/lab/geodesic_jacobi.py",
+  "src/ciw/lab/geodesic_jacobi_common.py",
+  "tests/test_lab_geodesic_jacobi.py",
+  "docs/lab/GEODESIC_JACOBI.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 4,
+   "not_established": 0,
+   "numerically_verified": 1,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "ciw Richardson RK4 (200/400 steps) and scipy DOP853 (rtol 1e-13) agree with each reference to about 1e-12; the mpmath reference changes by less than 1e-18 between 10 and 20 macro-steps; Clairaut's integral is conserved on the torus.",
+ "experiment": "Build each reference, integrate the ciw joint geodesic + Jacobi system with Richardson RK4 and with scipy DOP853, and compare end states; check the torus Clairaut integral.",
+ "failure_modes_checked": [
+  "reference and integrator start from the same binary64 state",
+  "reference equations derived independently of ciw.lab.surfaces (sympy)",
+  "extrapolation self-consistency (macro-step halving)",
+  "missing or wrong Richardson extrapolation (gap must be far below the RK4 estimate)",
+  "Clairaut invariant on the torus"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 2.220446049250313e-14,
+      "passed": true,
+      "reference": "closed-form geodesic and constant-curvature transfer on plane",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 4.5168888562624316e-14,
+      "passed": true,
+      "reference": "closed-form geodesic and constant-curvature transfer on sphere",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 1.8491463559123068e-14,
+      "passed": true,
+      "reference": "closed-form geodesic and constant-curvature transfer on cylinder",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 2.871617124444836e-14,
+      "passed": true,
+      "reference": "closed-form geodesic and constant-curvature transfer on hyperbolic-plane",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 2.90394956512895e-14,
+      "passed": true,
+      "reference": "closed-form geodesic and constant-curvature transfer on plane-polar",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 2.9041737216383977e-14,
+      "passed": true,
+      "reference": "closed-form geodesic and constant-curvature transfer on cylinder-polar",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "le",
+      "observed": 0.009569332222480373,
+      "passed": true,
+      "reference": "gap over the Richardson error estimate on the curved closed-form charts (about 1 without extrapolation)",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.1
+     }
+    ],
+    "independent_check": {
+     "checker": {
+      "implementation": "scipy.integrate.solve_ivp(DOP853)",
+      "revision": "1.16.2"
+     },
+     "comparison": "abs_le",
+     "observed": 4.659383296651036e-14,
+     "passed": true,
+     "producer": {
+      "implementation": "ciw.lab.integrators.richardson_rk4",
+      "revision": "ciw 0.1.0"
+     },
+     "reference": "scipy DOP853 rtol 1e-13 on the same right-hand side",
+     "reference_kind": "high_precision",
+     "tolerance": 1e-12
+    }
+   },
+   "claim": "ciw Richardson RK4 end states match closed-form geodesics and transfer matrices on the six closed-form charts",
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "closed forms evaluated in binary64; the retained ciw Richardson error estimates are up to 1.73e-11",
+    "kind": "reference_error",
+    "value": 1e-15
+   },
+   "unit": null,
+   "value": {
+    "cylinder": 1.8491463559123068e-14,
+    "cylinder-polar": 2.9041737216383977e-14,
+    "hyperbolic-plane": 2.871617124444836e-14,
+    "plane": 2.220446049250313e-14,
+    "plane-polar": 2.90394956512895e-14,
+    "sphere": 4.5168888562624316e-14
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 1.4378105484480408e-24,
+      "passed": true,
+      "reference": "mpmath macro-step 10 vs 20 at 34 digits",
+      "reference_kind": "high_precision",
+      "tolerance": 1e-18
+     },
+     {
+      "comparison": "le",
+      "observed": 0.0012795169228154767,
+      "passed": true,
+      "reference": "gap over the Richardson error estimate on saddle (about 1 without extrapolation)",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 1.2878587085651816e-14,
+      "passed": true,
+      "reference": "scipy DOP853 vs the mpmath reference",
+      "reference_kind": "high_precision",
+      "tolerance": 1e-11
+     }
+    ],
+    "independent_check": {
+     "checker": {
+      "implementation": "mpmath",
+      "revision": "1.3.0"
+     },
+     "comparison": "abs_le",
+     "observed": 9.222205069512407e-16,
+     "passed": true,
+     "producer": {
+      "implementation": "ciw.lab.integrators.richardson_rk4",
+      "revision": "ciw 0.1.0"
+     },
+     "reference": "34-digit Gragg-Bulirsch-Stoer reference on sympy-derived saddle equations",
+     "reference_kind": "high_precision",
+     "tolerance": 1e-12
+    }
+   },
+   "claim": "ciw Richardson RK4 matches the 34-digit mpmath reference on the saddle path",
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-07
+   },
+   "uncertainty": {
+    "basis": "mpmath 10 vs 20 macro-steps at 34 digits; the ciw Richardson estimate on this path is 7.21e-13",
+    "kind": "reference_error",
+    "value": 1.4378105484480408e-24
+   },
+   "unit": null,
+   "value": {
+    "ciw_minus_reference": 9.222205069512407e-16,
+    "reference_end_state": [
+     1.1281533540905775,
+     0.85376046416804,
+     0.6910137583919217,
+     0.6994476707696277,
+     1.8093787436117166,
+     0.865605882976049,
+     1.788734039140568,
+     1.408405352586836
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 4.3530344385152934e-23,
+      "passed": true,
+      "reference": "mpmath macro-step 10 vs 20 at 34 digits",
+      "reference_kind": "high_precision",
+      "tolerance": 1e-18
+     },
+     {
+      "comparison": "le",
+      "observed": 0.0051195664572303064,
+      "passed": true,
+      "reference": "gap over the Richardson error estimate on torus (about 1 without extrapolation)",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 1.9850340605588998e-14,
+      "passed": true,
+      "reference": "scipy DOP853 vs the mpmath reference",
+      "reference_kind": "high_precision",
+      "tolerance": 1e-11
+     }
+    ],
+    "independent_check": {
+     "checker": {
+      "implementation": "mpmath",
+      "revision": "1.3.0"
+     },
+     "comparison": "abs_le",
+     "observed": 6.378231276471524e-14,
+     "passed": true,
+     "producer": {
+      "implementation": "ciw.lab.integrators.richardson_rk4",
+      "revision": "ciw 0.1.0"
+     },
+     "reference": "34-digit Gragg-Bulirsch-Stoer reference on sympy-derived torus equations",
+     "reference_kind": "high_precision",
+     "tolerance": 1e-12
+    }
+   },
+   "claim": "ciw Richardson RK4 matches the 34-digit mpmath reference on the torus path",
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-07
+   },
+   "uncertainty": {
+    "basis": "mpmath 10 vs 20 macro-steps at 34 digits; the ciw Richardson estimate on this path is 1.25e-11",
+    "kind": "reference_error",
+    "value": 4.3530344385152934e-23
+   },
+   "unit": null,
+   "value": {
+    "ciw_minus_reference": 6.378231276471524e-14,
+    "reference_end_state": [
+     1.157398536397543,
+     1.233412559238834,
+     0.4050492375133295,
+     -0.32943669245004503,
+     0.19552368233955675,
+     -0.38405488690840256,
+     2.357786610781033,
+     0.48321783178298017
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 6.39498405169957e-22,
+      "passed": true,
+      "reference": "mpmath macro-step 10 vs 20 at 34 digits",
+      "reference_kind": "high_precision",
+      "tolerance": 1e-18
+     },
+     {
+      "comparison": "le",
+      "observed": 0.017022293734752957,
+      "passed": true,
+      "reference": "gap over the Richardson error estimate on gaussian-bump (about 1 without extrapolation)",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 4.884981308350689e-15,
+      "passed": true,
+      "reference": "scipy DOP853 vs the mpmath reference",
+      "reference_kind": "high_precision",
+      "tolerance": 1e-11
+     }
+    ],
+    "independent_check": {
+     "checker": {
+      "implementation": "mpmath",
+      "revision": "1.3.0"
+     },
+     "comparison": "abs_le",
+     "observed": 2.3309462240877263e-14,
+     "passed": true,
+     "producer": {
+      "implementation": "ciw.lab.integrators.richardson_rk4",
+      "revision": "ciw 0.1.0"
+     },
+     "reference": "34-digit Gragg-Bulirsch-Stoer reference on sympy-derived gaussian-bump equations",
+     "reference_kind": "high_precision",
+     "tolerance": 1e-12
+    }
+   },
+   "claim": "ciw Richardson RK4 matches the 34-digit mpmath reference on the gaussian-bump path",
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-07
+   },
+   "uncertainty": {
+    "basis": "mpmath 10 vs 20 macro-steps at 34 digits; the ciw Richardson estimate on this path is 1.37e-12",
+    "kind": "reference_error",
+    "value": 6.39498405169957e-22
+   },
+   "unit": null,
+   "value": {
+    "ciw_minus_reference": 2.3309462240877263e-14,
+    "reference_end_state": [
+     1.2222127316295845,
+     0.6630040047245069,
+     0.9666549409931171,
+     0.09717242493823391,
+     0.8457031056921567,
+     -0.11126825741182715,
+     2.327813238174758,
+     0.8761801540289463
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 6.750155989720952e-14,
+      "passed": true,
+      "reference": "Clairaut drift of the ciw Richardson end state",
+      "reference_kind": "invariant",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 2.295831753226026e-28,
+      "passed": true,
+      "reference": "Clairaut drift of the mpmath reference end state",
+      "reference_kind": "invariant",
+      "tolerance": 1e-20
+     }
+    ]
+   },
+   "claim": "Clairaut's integral rho^2 phi' is conserved along the torus reference path",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "binary64 evaluation of rho^2 phi'",
+    "kind": "roundoff",
+    "value": 2.200896540727935e-15
+   },
+   "unit": null,
+   "value": {
+    "ciw_richardson": 6.750155989720952e-14,
+    "ciw_rk4_100_max": 3.3145450828442335e-09,
+    "ciw_rk4_200_max": 2.0641754971961745e-10,
+    "ciw_rk4_50_max": 5.339766140366464e-08,
+    "mpmath_reference": 2.295831753226026e-28
+   }
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 11034,
+   "path": "artifacts/T002/references.json",
+   "sha256": "7e2e38348f3f1b70ab8f9108ab86227de24c1667889a1f4c8005a8a537ebc543"
+  },
+  {
+   "bytes": 2941,
+   "path": "artifacts/T002/agreement.svg",
+   "sha256": "20111894b8165fedd75328fb4fb25d91d0b258d170d41dfdcf3d31f2cdb77ca2"
+  },
+  {
+   "bytes": 7306,
+   "path": "artifacts/T002/clairaut.svg",
+   "sha256": "166017ef8c78dfbfabe73288a8a948e89838e19919ad8c62cda462697bd24ff1"
+  }
+ ],
+ "hypothesis": "Every declared standard path has a reference end state accurate far beyond the integrators under test: closed forms on constant-curvature charts and a 34-digit extrapolated integration on the saddle, torus and gaussian bump.",
+ "input_data": [
+  "Standard paths: plane (L=2.0), sphere (L=2.0), cylinder (L=3.0), saddle (L=1.5), torus (L=3.0), gaussian-bump (L=2.5), hyperbolic-plane (L=1.5), plane-polar (L=2.0), cylinder-polar (L=2.0)",
+  "Start states are the binary64 states used by the ciw integrators, converted exactly"
+ ],
+ "mathematical_model": "Great circle X(s) = cos(s/R) X0 + R sin(s/R) T0; helix and polar lines through the flat development; hyperbolic semicircles; transfer matrices cn_K, sn_K; otherwise the sympy-derived geodesic + Jacobi system integrated by Gragg-Bulirsch-Stoer in mpmath.",
+ "number": 2,
+ "numerical_result": "Largest ciw-vs-reference gap 6.38e-14; variable-curvature references saddle mpmath (self-estimate 1.44e-24), torus mpmath (self-estimate 4.35e-23), gaussian-bump mpmath (self-estimate 6.39e-22); Clairaut drift of the ciw end state 6.75e-14.",
+ "observation_model": "Euclidean distance of embedded end points (chart distance on the hyperbolic plane) and max-abs difference of the 2x2 transfer matrix.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "requirement_probes": {
+   "module:mpmath": true,
+   "module:scipy": true,
+   "module:sympy": true
+  },
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/geodesic_jacobi.py": "7f7307ebfb5c0a38ca1e7b9365fd7df627d9ae001791d99b823122873040d3c1",
+   "src/ciw/lab/geodesic_jacobi_common.py": "8616e9157492f0cd2aeebd695b3501215420c73af2cfbcb8c1b8cd5ab8d23a52"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T003: measure Euler, midpoint, RK4 and adaptive orders against these references",
+ "report_id": "sha256:45c80a7493b17270a8edbbcb8b567fd3d38e079bc56b13abf236581a5a51fc8e",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "geodesic-jacobi",
+ "state": "completed",
+ "task_id": "T002",
+ "tests_passed": [
+  "check: ciw Richardson RK4 end states match closed-form geodesics and transfer matrices on the six closed-form charts vs closed-form geodesic and constant-curvature transfer on plane",
+  "check: ciw Richardson RK4 end states match closed-form geodesics and transfer matrices on the six closed-form charts vs closed-form geodesic and constant-curvature transfer on sphere",
+  "check: ciw Richardson RK4 end states match closed-form geodesics and transfer matrices on the six closed-form charts vs closed-form geodesic and constant-curvature transfer on cylinder",
+  "check: ciw Richardson RK4 end states match closed-form geodesics and transfer matrices on the six closed-form charts vs closed-form geodesic and constant-curvature transfer on hyperbolic-plane",
+  "check: ciw Richardson RK4 end states match closed-form geodesics and transfer matrices on the six closed-form charts vs closed-form geodesic and constant-curvature transfer on plane-polar",
+  "check: ciw Richardson RK4 end states match closed-form geodesics and transfer matrices on the six closed-form charts vs closed-form geodesic and constant-curvature transfer on cylinder-polar",
+  "check: ciw Richardson RK4 end states match closed-form geodesics and transfer matrices on the six closed-form charts vs gap over the Richardson error estimate on the curved closed-form charts (about 1 without extrapolation)",
+  "independent: ciw Richardson RK4 end states match closed-form geodesics and transfer matrices on the six closed-form charts vs scipy.integrate.solve_ivp(DOP853)",
+  "check: ciw Richardson RK4 matches the 34-digit mpmath reference on the saddle path vs mpmath macro-step 10 vs 20 at 34 digits",
+  "check: ciw Richardson RK4 matches the 34-digit mpmath reference on the saddle path vs gap over the Richardson error estimate on saddle (about 1 without extrapolation)",
+  "check: ciw Richardson RK4 matches the 34-digit mpmath reference on the saddle path vs scipy DOP853 vs the mpmath reference",
+  "independent: ciw Richardson RK4 matches the 34-digit mpmath reference on the saddle path vs mpmath",
+  "check: ciw Richardson RK4 matches the 34-digit mpmath reference on the torus path vs mpmath macro-step 10 vs 20 at 34 digits",
+  "check: ciw Richardson RK4 matches the 34-digit mpmath reference on the torus path vs gap over the Richardson error estimate on torus (about 1 without extrapolation)",
+  "check: ciw Richardson RK4 matches the 34-digit mpmath reference on the torus path vs scipy DOP853 vs the mpmath reference",
+  "independent: ciw Richardson RK4 matches the 34-digit mpmath reference on the torus path vs mpmath",
+  "check: ciw Richardson RK4 matches the 34-digit mpmath reference on the gaussian-bump path vs mpmath macro-step 10 vs 20 at 34 digits",
+  "check: ciw Richardson RK4 matches the 34-digit mpmath reference on the gaussian-bump path vs gap over the Richardson error estimate on gaussian-bump (about 1 without extrapolation)",
+  "check: ciw Richardson RK4 matches the 34-digit mpmath reference on the gaussian-bump path vs scipy DOP853 vs the mpmath reference",
+  "independent: ciw Richardson RK4 matches the 34-digit mpmath reference on the gaussian-bump path vs mpmath",
+  "check: Clairaut's integral rho^2 phi' is conserved along the torus reference path vs Clairaut drift of the ciw Richardson end state",
+  "check: Clairaut's integral rho^2 phi' is conserved along the torus reference path vs Clairaut drift of the mpmath reference end state",
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_t002_references_agree",
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_t002_without_optional_modules",
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_every_numerical_finding_declares_uncertainty_and_tolerance",
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space"
+ ],
+ "tests_skipped": [],
+ "title": "Build high-precision reference solutions for each surface.",
+ "uncertainty": "Reference uncertainty is the 10-vs-20 macro-step difference at 34 digits (mpmath) or rounding of closed forms (about 1e-16); the ciw Richardson error estimate is retained per path.",
+ "unresolved_assumptions": [
+  "The mpmath reference is an extrapolated integration, not a closed form; its error estimate is empirical"
+ ]
+}

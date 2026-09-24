@@ -1,0 +1,1484 @@
+[
+ {
+  "claim": "Adaptive Dormand-Prince error falls with function evaluations at a median effective order near 5",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T003",
+  "task_uncertainty": "Fixed-step slopes are least-squares fits over four points; the pre-asymptotic bias is the retained spread of pairwise slopes. Adaptive slopes depend on accept/reject decisions, so only their medians over seven charts are claimed.",
+  "uncertainty": {
+   "basis": "median absolute deviation of the seven per-chart effective orders; the controller's start-step ramp biases loose tolerances upward",
+   "kind": "fit",
+   "value": 0.20346352279437063
+  },
+  "unit": null,
+  "value": 5.394386914005626
+ },
+ {
+  "claim": "Adaptive Dormand-Prince endpoint error is proportional to the requested tolerance (median over charts)",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T003",
+  "task_uncertainty": "Fixed-step slopes are least-squares fits over four points; the pre-asymptotic bias is the retained spread of pairwise slopes. Adaptive slopes depend on accept/reject decisions, so only their medians over seven charts are claimed.",
+  "uncertainty": {
+   "basis": "median absolute deviation of the seven per-chart tolerance exponents",
+   "kind": "fit",
+   "value": 0.02053382637409451
+  },
+  "unit": null,
+  "value": 0.9710731803196047
+ },
+ {
+  "claim": "Adaptive Dormand-Prince determinant drift decreases in proportion to the tolerance or faster (median over paths)",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T007",
+  "task_uncertainty": "Fitted orders over four halvings; the exact per-step predictions hold to rounding once scaled by |a b'| + |a' b| (the columns reach cosh(6.5) on the inner equator). Euler slopes on the long constant-curvature paths are not fitted claims: (1 + h^2 K)^(L/h) - 1 ~ exp(h L K) - 1 is not yet linear in h when h L |K| is near 1, so the exact product formula is checked there instead.",
+  "uncertainty": {
+   "basis": "median absolute deviation of the nine per-path slopes",
+   "kind": "fit",
+   "value": 0.044094515570331505
+  },
+  "unit": null,
+  "value": 1.027724743253913
+ },
+ {
+  "claim": "Where K = 0 every method preserves det Phi = 1 exactly, Euler included",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T007",
+  "task_uncertainty": "Fitted orders over four halvings; the exact per-step predictions hold to rounding once scaled by |a b'| + |a' b| (the columns reach cosh(6.5) on the inner equator). Euler slopes on the long constant-curvature paths are not fitted claims: (1 + h^2 K)^(L/h) - 1 ~ exp(h L K) - 1 is not yet linear in h when h L |K| is near 1, so the exact product formula is checked there instead.",
+  "uncertainty": {
+   "basis": "binary64 rounding of j_lat j_head' - j_lat' j_head",
+   "kind": "roundoff",
+   "value": 0.0
+  },
+  "unit": null,
+  "value": 0.0
+ },
+ {
+  "claim": "Separation does not grow monotonically with length: it nearly vanishes at the conjugate point",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T010",
+  "task_uncertainty": "Halving the grid changes the smallest separation (equator, eps = 0.005, chord 8.5e-08) by a relative 0.00015, so the 400-step values are accurate to about a sixteenth of that; exponents are least-squares fits over eps in [0.005, 0.04] and include higher-order terms (largest gap to consecutive-pair slopes 0.017 for the generic path).",
+  "uncertainty": {
+   "basis": "grid-halving separation change relative to chord(s*/2)",
+   "kind": "truncation_bound",
+   "value": 3.7353016069795323e-10
+  },
+  "unit": null,
+  "value": 0.00015710984529684768
+ },
+ {
+  "claim": "On the unit sphere the image inverts after the conjugate point (signed ratio -1)",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T010",
+  "task_uncertainty": "Halving the grid changes the smallest separation (equator, eps = 0.005, chord 8.5e-08) by a relative 0.00015, so the 400-step values are accurate to about a sixteenth of that; exponents are least-squares fits over eps in [0.005, 0.04] and include higher-order terms (largest gap to consecutive-pair slopes 0.017 for the generic path).",
+  "uncertainty": {
+   "basis": "numerical-versus-great-circle deviation relative to the signed separation at 3pi/4",
+   "kind": "reference_error",
+   "value": 2.584492286117983e-09
+  },
+  "unit": null,
+  "value": -0.999999996944685
+ },
+ {
+  "claim": "The identity chart reproduces the base-chart integration bit for bit",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T011",
+  "task_uncertainty": "Torus reference spread (rtol 1e-13 vs 1e-12) 2.6e-13; torus base error at N = 256 is 7.4e-11, so torus factors are reliable to a few percent; orders are two-point estimates.",
+  "uncertainty": {
+   "basis": "bitwise comparison of identical floating-point operations",
+   "kind": "roundoff",
+   "value": 0.0
+  },
+  "unit": null,
+  "value": 0.0
+ },
+ {
+  "claim": "Ambient rotations leave chart trajectories and Jacobi fields unchanged to roundoff",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T012",
+  "task_uncertainty": "Roundoff differences depend on platform arithmetic (observed up to 1.8e-15); the regression tolerances allow 1e-11. On the unit sphere the orientation ratios differ from -1 and +1 by at most 2.5e-12: RK4 truncation of the +eps and -eps runs, not a second-order eps term, because the exact sphere separation is odd in eps. On the torus the gap own/right - 1 is a second-order term of the separation, not truncation: it changes by 9.9e-08 relative from N = 64 to 128, and its slope in eps is within 0.0035 of the consecutive-eps slopes.",
+  "uncertainty": {
+   "basis": "the observed difference is itself the roundoff of rotated dot products",
+   "kind": "roundoff",
+   "value": 1.7763568394002505e-15
+  },
+  "unit": null,
+  "value": 1.7763568394002505e-15
+ },
+ {
+  "claim": "Embedded endpoints rotate exactly with the ambient frame",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T012",
+  "task_uncertainty": "Roundoff differences depend on platform arithmetic (observed up to 1.8e-15); the regression tolerances allow 1e-11. On the unit sphere the orientation ratios differ from -1 and +1 by at most 2.5e-12: RK4 truncation of the +eps and -eps runs, not a second-order eps term, because the exact sphere separation is odd in eps. On the torus the gap own/right - 1 is a second-order term of the separation, not truncation: it changes by 9.9e-08 relative from N = 64 to 128, and its slope in eps is within 0.0035 of the consecutive-eps slopes.",
+  "uncertainty": {
+   "basis": "the observed difference is itself roundoff",
+   "kind": "roundoff",
+   "value": 1.3732700395566711e-15
+  },
+  "unit": null,
+  "value": 1.3732700395566711e-15
+ },
+ {
+  "claim": "Gaussian curvature from the rotated second fundamental form is unchanged",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T012",
+  "task_uncertainty": "Roundoff differences depend on platform arithmetic (observed up to 1.8e-15); the regression tolerances allow 1e-11. On the unit sphere the orientation ratios differ from -1 and +1 by at most 2.5e-12: RK4 truncation of the +eps and -eps runs, not a second-order eps term, because the exact sphere separation is odd in eps. On the torus the gap own/right - 1 is a second-order term of the separation, not truncation: it changes by 9.9e-08 relative from N = 64 to 128, and its slope in eps is within 0.0035 of the consecutive-eps slopes.",
+  "uncertainty": {
+   "basis": "the observed difference is itself roundoff",
+   "kind": "roundoff",
+   "value": 1.9984014443252818e-15
+  },
+  "unit": null,
+  "value": 1.9984014443252818e-15
+ },
+ {
+  "claim": "On the unit sphere, where the separation sin(s) sin(eps) is odd in eps, signed separations are invariant under an orientation-reversing basis change when the perturbation and the normal are both expressed in the new basis",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T012",
+  "task_uncertainty": "Roundoff differences depend on platform arithmetic (observed up to 1.8e-15); the regression tolerances allow 1e-11. On the unit sphere the orientation ratios differ from -1 and +1 by at most 2.5e-12: RK4 truncation of the +eps and -eps runs, not a second-order eps term, because the exact sphere separation is odd in eps. On the torus the gap own/right - 1 is a second-order term of the separation, not truncation: it changes by 9.9e-08 relative from N = 64 to 128, and its slope in eps is within 0.0035 of the consecutive-eps slopes.",
+  "uncertainty": {
+   "basis": "RK4 truncation (N = 64) of the difference between the +eps and -eps runs; the exact sphere separation sin(s) sin(eps) is odd in eps, so no eps^2 term enters the ratio",
+   "kind": "truncation_bound",
+   "value": 2.4560353750757713e-12
+  },
+  "unit": null,
+  "value": 1.000000000002456
+ },
+ {
+  "claim": "Plane and cylinder runs give bitwise identical Jacobi columns (both supply K = 0 to the same Jacobi arithmetic)",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T013",
+  "task_uncertainty": "RK4 relative error of j_head(L) at h = 0.0312 is at most 4.7e-10 (largest at R = 2). The finite-R exponent in R, -0.98472, sits 0.015 above -1: 0.013 of that comes from K = 1/(R + 1) rather than 1/R (the fit of K L^3/6 alone) and 0.0025 from the K L^2/20 correction; the chord-deficit offset from -2 in R is the same R/(R + 1) effect. The numerical chord deficit is limited by rounding of embedded coordinates of size R + 1.",
+  "uncertainty": {
+   "basis": "bitwise comparison; both core classes return a closed-form K = 0, so this is a pipeline consistency check, not evidence of flatness",
+   "kind": "roundoff",
+   "value": 0.0
+  },
+  "unit": null,
+  "value": 0.0
+ },
+ {
+  "claim": "Torus outer-equator Jacobi deviation L - j_head(L) matches the closed form for every major radius",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T013",
+  "task_uncertainty": "RK4 relative error of j_head(L) at h = 0.0312 is at most 4.7e-10 (largest at R = 2). The finite-R exponent in R, -0.98472, sits 0.015 above -1: 0.013 of that comes from K = 1/(R + 1) rather than 1/R (the fit of K L^3/6 alone) and 0.0025 from the K L^2/20 correction; the chord-deficit offset from -2 in R is the same R/(R + 1) effect. The numerical chord deficit is limited by rounding of embedded coordinates of size R + 1.",
+  "uncertainty": {
+   "basis": "the RK4 relative error itself bounds the deviation error",
+   "kind": "truncation_bound",
+   "value": 1.7752341818777495e-09
+  },
+  "unit": null,
+  "value": 1.7752341818777495e-09
+ },
+ {
+  "claim": "Adaptive forward-then-reversed integration returns to the start at tolerance level",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T014",
+  "task_uncertainty": "Orders are least-squares fits over four step sizes; the smallest RK4 return error (7.6e-12) stays far above roundoff. Adaptive ratios depend on the accepted step sequence.",
+  "uncertainty": {
+   "basis": "spread of return error / rtol over the three surfaces (set by the accepted step sequences)",
+   "kind": "step_sequence",
+   "value": 0.5772714528617938
+  },
+  "unit": null,
+  "value": 0.954654133522581
+ },
+ {
+  "claim": "Adaptive restart at L1 reproduces direct adaptive integration only to tolerance level",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T014",
+  "task_uncertainty": "Orders are least-squares fits over four step sizes; the smallest RK4 return error (7.6e-12) stays far above roundoff. Adaptive ratios depend on the accepted step sequence.",
+  "uncertainty": {
+   "basis": "the whole difference comes from different accepted step sequences after the restart",
+   "kind": "step_sequence",
+   "value": 0.010709114151019605
+  },
+  "unit": null,
+  "value": 0.010709114151019605
+ },
+ {
+  "claim": "Torus Clairaut drift of adaptive DP45 grows linearly with length",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T015",
+  "task_uncertainty": "Envelope exponents mix oscillatory and secular parts, so single-exponent fits are reported only where the local slopes agree; the torus RK4 energy local slopes are 0, 0, 0, 0.14, 0.86 over L = 10-320, so its secular part appears between L = 160 and 320 and may dominate beyond. Fits use the six checkpoints or the stated subrange.",
+  "uncertainty": {
+   "basis": "largest gap between the adaptive fitted exponent and consecutive-checkpoint slopes",
+   "kind": "fit_spread",
+   "value": 0.2551334885865655
+  },
+  "unit": null,
+  "value": 1.0777649788802994
+ },
+ {
+  "claim": "Euler on the sphere leaves the polar chart before the horizon",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T015",
+  "task_uncertainty": "Envelope exponents mix oscillatory and secular parts, so single-exponent fits are reported only where the local slopes agree; the torus RK4 energy local slopes are 0, 0, 0, 0.14, 0.86 over L = 10-320, so its secular part appears between L = 160 and 320 and may dominate beyond. Fits use the six checkpoints or the stated subrange.",
+  "uncertainty": {
+   "basis": "the stop is located to one fixed step",
+   "kind": "step_quantization",
+   "value": 0.125
+  },
+  "unit": "arclength",
+  "value": 14.0
+ },
+ {
+  "claim": "A flat torus has no conjugate points: j_head(s) = s > 0 (infinite focus margin)",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T024",
+  "task_uncertainty": "Endpoint residual <= 3.1e-07; Wronskian drift <= 5.2e-09; Clairaut drift <= 2.4e-08; batch-vs-transfer amplification difference <= 2.4e-07 (relative); scipy/sympy re-integration: j_head 2.4e-07 (relative), conjugate points 5.6e-07, endpoint 7.4e-09.",
+  "uncertainty": {
+   "basis": "RK4 on the linear flat Jacobi system",
+   "kind": "roundoff",
+   "value": 0.0
+  },
+  "unit": null,
+  "value": 1.0
+ },
+ {
+  "claim": "Area-one float spectra agree to rounding under the same basis changes",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T026",
+  "task_uncertainty": "Exact for integer forms; the float comparison loses digits with basis skew (entries up to 85: deviation 1.1e-10, tolerance 1e-8).",
+  "uncertainty": {
+   "basis": "binary64 Gram entries of skewed bases (entries up to 85)",
+   "kind": "roundoff",
+   "value": 1.1122324405657753e-10
+  },
+  "unit": null,
+  "value": 1.1122324405657753e-10
+ },
+ {
+  "claim": "Transporting winding labels with M instead of M^-1 breaks length invariance",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T026",
+  "task_uncertainty": "Exact for integer forms; the float comparison loses digits with basis skew (entries up to 85: deviation 1.1e-10, tolerance 1e-8).",
+  "uncertainty": {
+   "basis": "integer, Fraction or Q(sqrt d) arithmetic; no rounding",
+   "kind": "exact",
+   "value": 0.0
+  },
+  "unit": null,
+  "value": 6428
+ },
+ {
+  "claim": "Brioschi curvature from the metric alone equals the supplied Gaussian curvature at every sampled point",
+  "evidence_status": "numerically_verified",
+  "source": "task_statement_only",
+  "task_id": "T033",
+  "task_uncertainty": "Residuals are worst cases over 32 seeded points per surface; a defect confined between samples or outside the declared domains would not be seen. The Gauss residual includes the fourth-order stencil error (~h^4) of the second derivatives.",
+  "uncertainty": null,
+  "unit": "normalized residual",
+  "value": 7.569957621233518e-11
+ },
+ {
+  "claim": "Christoffel symbols are symmetric in their lower indices at every sampled point",
+  "evidence_status": "numerically_verified",
+  "source": "task_statement_only",
+  "task_id": "T033",
+  "task_uncertainty": "Residuals are worst cases over 32 seeded points per surface; a defect confined between samples or outside the declared domains would not be seen. The Gauss residual includes the fourth-order stencil error (~h^4) of the second derivatives.",
+  "uncertainty": null,
+  "unit": null,
+  "value": 0.0
+ },
+ {
+  "claim": "The connection is metric compatible at every sampled point: d_k g_ij = Gamma^l_ki g_lj + Gamma^l_kj g_il",
+  "evidence_status": "numerically_verified",
+  "source": "task_statement_only",
+  "task_id": "T033",
+  "task_uncertainty": "Residuals are worst cases over 32 seeded points per surface; a defect confined between samples or outside the declared domains would not be seen. The Gauss residual includes the fourth-order stencil error (~h^4) of the second derivatives.",
+  "uncertainty": null,
+  "unit": null,
+  "value": 1.6035737915386125e-16
+ },
+ {
+  "claim": "Supplied metric derivatives agree with fourth-order differences of the metric at every sampled point",
+  "evidence_status": "numerically_verified",
+  "source": "task_statement_only",
+  "task_id": "T033",
+  "task_uncertainty": "Residuals are worst cases over 32 seeded points per surface; a defect confined between samples or outside the declared domains would not be seen. The Gauss residual includes the fourth-order stencil error (~h^4) of the second derivatives.",
+  "uncertainty": null,
+  "unit": null,
+  "value": 8.102692869746462e-12
+ },
+ {
+  "claim": "Differences of the exact metric derivatives have symmetric mixed partials (dg is a gradient field)",
+  "evidence_status": "numerically_verified",
+  "source": "task_statement_only",
+  "task_id": "T033",
+  "task_uncertainty": "Residuals are worst cases over 32 seeded points per surface; a defect confined between samples or outside the declared domains would not be seen. The Gauss residual includes the fourth-order stencil error (~h^4) of the second derivatives.",
+  "uncertainty": null,
+  "unit": null,
+  "value": 5.882921077369268e-13
+ },
+ {
+  "claim": "A rigid rotation leaves the torus metric unchanged at every sampled point",
+  "evidence_status": "numerically_verified",
+  "source": "task_statement_only",
+  "task_id": "T033",
+  "task_uncertainty": "Residuals are worst cases over 32 seeded points per surface; a defect confined between samples or outside the declared domains would not be seen. The Gauss residual includes the fourth-order stencil error (~h^4) of the second derivatives.",
+  "uncertainty": null,
+  "unit": null,
+  "value": 3.665815015959401e-16
+ },
+ {
+  "claim": "sympy-differentiated metric and metric derivatives match the ciw surface interface on every conformance surface",
+  "evidence_status": "independently_verified",
+  "source": "finding",
+  "task_id": "T034",
+  "task_uncertainty": "Rounding only for the pointwise comparisons (floating evaluation of lambdified expressions and dual arithmetic); agreement is shown at sampled points, and the exact symbolic identity for seven closed forms with the declared parameters.",
+  "uncertainty": {
+   "basis": "floating evaluation of lambdified expressions",
+   "kind": "roundoff",
+   "value": 1e-12
+  },
+  "unit": "normalized residual",
+  "value": 4.226085531613157e-16
+ },
+ {
+  "claim": "sympy.diffgeom Christoffel symbols match the ciw surface interface on seven surfaces",
+  "evidence_status": "independently_verified",
+  "source": "finding",
+  "task_id": "T034",
+  "task_uncertainty": "Rounding only for the pointwise comparisons (floating evaluation of lambdified expressions and dual arithmetic); agreement is shown at sampled points, and the exact symbolic identity for seven closed forms with the declared parameters.",
+  "uncertainty": {
+   "basis": "floating evaluation of lambdified expressions",
+   "kind": "roundoff",
+   "value": 1e-12
+  },
+  "unit": "normalized residual",
+  "value": 1.817349289946462e-16
+ },
+ {
+  "claim": "sympy.diffgeom Riemann curvature R_1212 / det g matches the supplied Gaussian curvature on seven surfaces",
+  "evidence_status": "independently_verified",
+  "source": "finding",
+  "task_id": "T034",
+  "task_uncertainty": "Rounding only for the pointwise comparisons (floating evaluation of lambdified expressions and dual arithmetic); agreement is shown at sampled points, and the exact symbolic identity for seven closed forms with the declared parameters.",
+  "uncertainty": {
+   "basis": "floating evaluation of lambdified expressions",
+   "kind": "roundoff",
+   "value": 1e-12
+  },
+  "unit": "normalized residual",
+  "value": 6.977634294120269e-16
+ },
+ {
+  "claim": "Christoffel symbols and curvature assembled in ciw code from sympy derivatives match the interface on every conformance surface",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T034",
+  "task_uncertainty": "Rounding only for the pointwise comparisons (floating evaluation of lambdified expressions and dual arithmetic); agreement is shown at sampled points, and the exact symbolic identity for seven closed forms with the declared parameters.",
+  "uncertainty": {
+   "basis": "floating evaluation of lambdified expressions",
+   "kind": "roundoff",
+   "value": 1e-12
+  },
+  "unit": "normalized residual",
+  "value": 5.551115123125783e-16
+ },
+ {
+  "claim": "Nested dual-number derivatives of re-expressed embeddings match the metric, dg and Christoffel symbols",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T034",
+  "task_uncertainty": "Rounding only for the pointwise comparisons (floating evaluation of lambdified expressions and dual arithmetic); agreement is shown at sampled points, and the exact symbolic identity for seven closed forms with the declared parameters.",
+  "uncertainty": {
+   "basis": "dual arithmetic",
+   "kind": "roundoff",
+   "value": 1e-12
+  },
+  "unit": "normalized residual",
+  "value": 4.4259596565437094e-16
+ },
+ {
+  "claim": "Dual-number curvature (Brioschi with exact second derivatives, and LN - M^2) matches the supplied K",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T034",
+  "task_uncertainty": "Rounding only for the pointwise comparisons (floating evaluation of lambdified expressions and dual arithmetic); agreement is shown at sampled points, and the exact symbolic identity for seven closed forms with the declared parameters.",
+  "uncertainty": {
+   "basis": "dual arithmetic",
+   "kind": "roundoff",
+   "value": 1e-12
+  },
+  "unit": "normalized residual",
+  "value": 1.0416744990940514e-15
+ },
+ {
+  "claim": "Dual numbers reproduce closed-form first, mixed and third derivatives without perturbation confusion",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T034",
+  "task_uncertainty": "Rounding only for the pointwise comparisons (floating evaluation of lambdified expressions and dual arithmetic); agreement is shown at sampled points, and the exact symbolic identity for seven closed forms with the declared parameters.",
+  "uncertainty": {
+   "basis": "dual arithmetic",
+   "kind": "roundoff",
+   "value": 1e-13
+  },
+  "unit": null,
+  "value": 3.552713678800501e-15
+ },
+ {
+  "claim": "Dual-number checks expose a hand-coded derivative defect that symmetry checks cannot see",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T034",
+  "task_uncertainty": "Rounding only for the pointwise comparisons (floating evaluation of lambdified expressions and dual arithmetic); agreement is shown at sampled points, and the exact symbolic identity for seven closed forms with the declared parameters.",
+  "uncertainty": {
+   "basis": "dual arithmetic",
+   "kind": "roundoff",
+   "value": 1e-12
+  },
+  "unit": null,
+  "value": 0.0608397
+ },
+ {
+  "claim": "The median central-difference error curve bottoms out at or below the predicted minimum error",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T035",
+  "task_uncertainty": "Rounding-branch values depend on libm and summation details and scatter by tens of percent; h* is resolved only on a grid of 4 points per decade (factor 1.78).",
+  "uncertainty": {
+   "basis": "rounding floor eps^(2/3) of the V-bottom",
+   "kind": "roundoff",
+   "value": 1e-10
+  },
+  "unit": "normalized error",
+  "value": 4e-11
+ },
+ {
+  "claim": "At every sampled point the best central difference agrees with the analytic metric derivatives to within twice that point's predicted minimum error",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T035",
+  "task_uncertainty": "Rounding-branch values depend on libm and summation details and scatter by tens of percent; h* is resolved only on a grid of 4 points per decade (factor 1.78).",
+  "uncertainty": {
+   "basis": "rounding of the difference quotient at its best step",
+   "kind": "roundoff",
+   "value": 2e-10
+  },
+  "unit": "normalized error",
+  "value": 7.4e-11
+ },
+ {
+  "claim": "Smaller finite-difference steps can be far less accurate",
+  "evidence_status": "numerically_verified",
+  "source": "task_statement_only",
+  "task_id": "T035",
+  "task_uncertainty": "Rounding-branch values depend on libm and summation details and scatter by tens of percent; h* is resolved only on a grid of 4 points per decade (factor 1.78).",
+  "uncertainty": null,
+  "unit": "log10 error ratio",
+  "value": 6.71
+ },
+ {
+  "claim": "Atlas integration of the great circle through the north pole matches the exact great circle",
+  "evidence_status": "numerically_verified",
+  "source": "task_statement_only",
+  "task_id": "T036",
+  "task_uncertainty": "Atlas errors are RK4 truncation errors (order 4). Single-chart errors for small delta come from the unresolved azimuthal rate 1/sin(delta) at a fixed step; the failure steps and the errors for delta <= 1e-8 depend on rounding and may differ across platforms.",
+  "uncertainty": null,
+  "unit": "length",
+  "value": 4.86e-08
+ },
+ {
+  "claim": "Atlas accuracy is independent of the distance of closest approach to a pole",
+  "evidence_status": "numerically_verified",
+  "source": "task_statement_only",
+  "task_id": "T036",
+  "task_uncertainty": "Atlas errors are RK4 truncation errors (order 4). Single-chart errors for small delta come from the unresolved azimuthal rate 1/sin(delta) at a fixed step; the failure steps and the errors for delta <= 1e-8 depend on rounding and may differ across platforms.",
+  "uncertainty": null,
+  "unit": null,
+  "value": 1.21
+ },
+ {
+  "claim": "Along the exact meridian (v_phi = 0 exactly) chart A alone crosses the pole accurately",
+  "evidence_status": "numerically_verified",
+  "source": "task_statement_only",
+  "task_id": "T036",
+  "task_uncertainty": "Atlas errors are RK4 truncation errors (order 4). Single-chart errors for small delta come from the unresolved azimuthal rate 1/sin(delta) at a fixed step; the failure steps and the errors for delta <= 1e-8 depend on rounding and may differ across platforms.",
+  "uncertainty": null,
+  "unit": "length",
+  "value": 7.4e-14
+ },
+ {
+  "claim": "The core Surface.check accepts sphere-chart points with metric condition number above 1e10",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T037",
+  "task_uncertainty": "Fits on r <= 1e-5 keep the leading smooth correction of each quantity: for z = r^(3/2), K = (9/8) r^-1 (1 + 9r/4)^-2, so the K exponent is -1 - O(r) (observed -1.000005) and the det exponent O(r) (2.32e-06); exact power laws (sphere pole, cone, hyperbolic boundary) fit to rounding. The circumference ratio at r = 1e-8 is exact to rounding for these examples.",
+  "uncertainty": {
+   "basis": "theta grid of 4 points per decade",
+   "kind": "reference_error",
+   "value": 0.25
+  },
+  "unit": "log10 condition number",
+  "value": 11.5
+ },
+ {
+  "claim": "Straightest geodesics on sheared planar meshes coincide with straight lines",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T038",
+  "task_uncertainty": "Deterministic computation; floating-point rounding only (differences at 1e-15 relative). The strip layout and Floyd-Warshall are ciw code (same origin); only the scipy comparison is independent. The Steiner sandwich is consistent with, but does not prove, that the traced geodesics are shortest paths.",
+  "uncertainty": {
+   "basis": "largest deviation observed",
+   "kind": "roundoff",
+   "value": 8.881784197001252e-16
+  },
+  "unit": "normalized length",
+  "value": 8.881784197001252e-16
+ },
+ {
+  "claim": "Traced prism-cylinder geodesics match the exact planar development of the mesh",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T038",
+  "task_uncertainty": "Deterministic computation; floating-point rounding only (differences at 1e-15 relative). The strip layout and Floyd-Warshall are ciw code (same origin); only the scipy comparison is independent. The Steiner sandwich is consistent with, but does not prove, that the traced geodesics are shortest paths.",
+  "uncertainty": {
+   "basis": "largest deviation observed",
+   "kind": "roundoff",
+   "value": 7.993605777301127e-15
+  },
+  "unit": "normalized length",
+  "value": 7.993605777301127e-15
+ },
+ {
+  "claim": "Heap Dijkstra edge-graph distances agree with a dense Floyd-Warshall recomputation (and scipy.sparse.csgraph when installed)",
+  "evidence_status": "independently_verified",
+  "source": "finding",
+  "task_id": "T038",
+  "task_uncertainty": "Deterministic computation; floating-point rounding only (differences at 1e-15 relative). The strip layout and Floyd-Warshall are ciw code (same origin); only the scipy comparison is independent. The Steiner sandwich is consistent with, but does not prove, that the traced geodesics are shortest paths.",
+  "uncertainty": {
+   "basis": "summation-order rounding",
+   "kind": "roundoff",
+   "value": 8.881784197001252e-16
+  },
+  "unit": "normalized length",
+  "value": 8.881784197001252e-16
+ },
+ {
+  "claim": "The smooth ciw.lab.jacobi heading column equals sin(L) on the unit sphere",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T040",
+  "task_uncertainty": "Deterministic. At intermediate delta the FD error depends on how many vertices lie between the paired geodesics (a pair that straddles a vertex jumps), so intermediate values are reported without a claim; only the two limits are asserted. The expected wedge vertex count is a heuristic for evenly spread vertices.",
+  "uncertainty": {
+   "basis": "200-step integration error observed",
+   "kind": "truncation_bound",
+   "value": 6.80930867247298e-11
+  },
+  "unit": null,
+  "value": 6.80930867247298e-11
+ },
+ {
+  "claim": "Discrete Gauss-Bonnet holds: angle defects sum to 4 pi on icospheres and 0 on tori",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T040",
+  "task_uncertainty": "Deterministic. At intermediate delta the FD error depends on how many vertices lie between the paired geodesics (a pair that straddles a vertex jumps), so intermediate values are reported without a claim; only the two limits are asserted. The expected wedge vertex count is a heuristic for evenly spread vertices.",
+  "uncertainty": {
+   "basis": "accumulated rounding of the angle sum",
+   "kind": "roundoff",
+   "value": 3.963052108701959e-11
+  },
+  "unit": null,
+  "value": 3.963052108701959e-11
+ },
+ {
+  "claim": "Valid control meshes pass validation without issues",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T042",
+  "task_uncertainty": "Exact (categorical); thresholds are declared: zero area at 2A/l_max^2 <= 1e-12, vertex hit at edge parameter <= 1e-9, fold at adjacent normal dot <= -0.9.",
+  "uncertainty": {
+   "basis": "exact comparison of refusal codes, integer counts or ordered code lists",
+   "kind": "roundoff",
+   "value": 0.0
+  },
+  "unit": null,
+  "value": 0
+ },
+ {
+  "claim": "A geodesic stopped at a boundary retains its partial length",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T042",
+  "task_uncertainty": "Exact (categorical); thresholds are declared: zero area at 2A/l_max^2 <= 1e-12, vertex hit at edge parameter <= 1e-9, fold at adjacent normal dot <= -0.9.",
+  "uncertainty": {
+   "basis": "difference from the closed form",
+   "kind": "roundoff",
+   "value": 0.0
+  },
+  "unit": "normalized length",
+  "value": 0.5700000000000001
+ },
+ {
+  "claim": "Nested Monte Carlo sums of squares decompose exactly into between and within parts",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T044",
+  "task_uncertainty": "z-scores use sqrt(2/(N-1)) relative standard errors of Gaussian variances; the geometry variance uses the T043 linearization, which holds for this declared strip at these sigma (no sample left its corridor), not for every strip (T043 reports up to 38% leaving at sigma_g = 1e-3 for the smallest-margin strip). When sigma_s^2 / inner greatly exceeds the geometry variance the corrected between-group estimate is dominated by sensor noise (it can be negative, as at sigma_g = 1e-4, sigma_s = 2e-3); consistency there is not a useful estimate of the geometry part.",
+  "uncertainty": {
+   "basis": "accumulated rounding of the sums of squares",
+   "kind": "roundoff",
+   "value": 3.1907705800688217e-16
+  },
+  "unit": null,
+  "value": 3.1907705800688217e-16
+ },
+ {
+  "claim": "A camera chord becomes a surface distance only through a declared surface model",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T045",
+  "task_uncertainty": "Refusals and counts are exact; the chord inversion is a bisection converged to adjacent doubles, so the recovered arc carries rounding of about 1e-16 m.",
+  "uncertainty": {
+   "basis": "a few ulp of the 0.12 m chord amplified by 1/(dc/ds) <= 1.22; the bisection converges to adjacent doubles",
+   "kind": "roundoff",
+   "value": 1e-15
+  },
+  "unit": "m",
+  "value": 2.7755575615628914e-17
+ },
+ {
+  "claim": "Using the camera chord as geodesic distance underestimates it by exactly s - c(s); the largest bias is on the circumferential helix",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T048",
+  "task_uncertainty": "Noise-free results are exact to rounding; noisy RMS values carry about 3.2 % relative Monte Carlo standard error (95 % half-widths per helix in the finding).",
+  "uncertainty": {
+   "basis": "noise-free triangulation rounding (a few ulp)",
+   "kind": "roundoff",
+   "value": 1e-15
+  },
+  "unit": "m",
+  "value": 0.007071505320992932
+ },
+ {
+  "claim": "The declared cylinder model converts noise-free chords to arc lengths",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T048",
+  "task_uncertainty": "Noise-free results are exact to rounding; noisy RMS values carry about 3.2 % relative Monte Carlo standard error (95 % half-widths per helix in the finding).",
+  "uncertainty": {
+   "basis": "triangulation rounding amplified by ds/dc <= 1.22",
+   "kind": "roundoff",
+   "value": 1e-15
+  },
+  "unit": "m",
+  "value": 3.885780586188048e-16
+ },
+ {
+  "claim": "The finite-difference chord Jacobian matches the analytic focal-length and principal-point derivatives on a rectified rig",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T049",
+  "task_uncertainty": "Finite-difference truncation below 1e-5 relative (step halving); no stochastic component.",
+  "uncertainty": {
+   "basis": "closed-form derivatives evaluated in double precision; the recorded gap is the finite-difference error itself",
+   "kind": "reference_error",
+   "value": 1e-15
+  },
+  "unit": null,
+  "value": 1.0553356164047979e-08
+ },
+ {
+  "claim": "Every raw reading equals the noise-free sensor function of the retained truth plus its retained noise draw; h(truth) is recomputed by a separate code path (hypot and complex-angle forms for speed and heading rate, positions re-read)",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T060",
+  "task_uncertainty": "None for the determinism and rate claims (exact). The composition residual is floating-point roundoff. Cross-platform byte identity of the digest is not claimed (libm may differ in the last bit); findings avoid digest values for that reason.",
+  "uncertainty": {
+   "basis": "observed floating-point residual of an exact identity",
+   "kind": "roundoff",
+   "value": 2.152097944296827e-14
+  },
+  "unit": "max abs difference",
+  "value": 2.152097944296827e-14
+ },
+ {
+  "claim": "Changing the tracker rate from 2 Hz to 4 Hz leaves the truth and the camera, encoder and IMU streams unchanged (independent spawned PCG64 streams)",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T060",
+  "task_uncertainty": "None for the determinism and rate claims (exact). The composition residual is floating-point roundoff. Cross-platform byte identity of the digest is not claimed (libm may differ in the last bit); findings avoid digest values for that reason.",
+  "uncertainty": {
+   "basis": "deterministic bitwise comparison",
+   "kind": "reference_error",
+   "value": 0.0
+  },
+  "unit": null,
+  "value": 0
+ },
+ {
+  "claim": "Every declared sensor covariance is symmetric positive definite",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T060",
+  "task_uncertainty": "None for the determinism and rate claims (exact). The composition residual is floating-point roundoff. Cross-platform byte identity of the digest is not claimed (libm may differ in the last bit); findings avoid digest values for that reason.",
+  "uncertainty": {
+   "basis": "eigvalsh roundoff bound eps * max |R_ij|",
+   "kind": "roundoff",
+   "value": 8.881784197001253e-18
+  },
+  "unit": "smallest eigenvalue",
+  "value": 0.0004
+ },
+ {
+  "claim": "FrameTransform.apply moves a typed position observation to value R z + t and covariance R Sigma R^T, matching J P J^T to roundoff",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T063",
+  "task_uncertainty": "Monte Carlo sampling error enters only the z-scores; the invariance and round-trip statements are exact up to floating-point roundoff (relative 1e-12 or better).",
+  "uncertainty": {
+   "basis": "observed floating-point residual of an exact identity",
+   "kind": "roundoff",
+   "value": 6.938893903907228e-18
+  },
+  "unit": "max abs difference",
+  "value": 6.938893903907228e-18
+ },
+ {
+  "claim": "The vectorized and scalar noncentral chi-square CDFs agree",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T068",
+  "task_uncertainty": "Detection prediction uses each outlier's own prior covariance from the gated run and assumes the prior error is still N(0, P-); lock-out runs violate that assumption. Paired and sign tests use run-level independence. The lock-out-free comparison is conditioned on the gated filter's outcome and is descriptive, not a test.",
+  "uncertainty": {
+   "basis": "observed floating-point residual of an exact identity",
+   "kind": "roundoff",
+   "value": 1.1102230246251565e-16
+  },
+  "unit": null,
+  "value": 1.1102230246251565e-16
+ },
+ {
+  "claim": "Reopening recomputes the retained energy analysis to validate content",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T091",
+  "task_uncertainty": "Exact: counts and digest equalities; no floating-point tolerance is involved.",
+  "uncertainty": {
+   "basis": "exact counts, digests and string comparisons; no rounding is involved",
+   "kind": "roundoff",
+   "value": 0
+  },
+  "unit": null,
+  "value": 7
+ },
+ {
+  "claim": "Inconclusive threshold of the family A = s[[-eps, 1], [-1, -eps]], P = I: certified iff eps > 4 gamma_5 / (1 - 8u), independent of s",
+  "evidence_status": "analytic",
+  "source": "finding",
+  "task_id": "T101",
+  "task_uncertainty": "Resolution comparison is deterministic float arithmetic (relative 1e-12 allowed). Subnormal-range codes depend on LAPACK's handling of tiny matrices and may differ between BLAS builds; the witness's exact class is exact rational arithmetic.",
+  "uncertainty": {
+   "basis": "one rounding of the closed form",
+   "kind": "roundoff",
+   "value": 2.4651903288156654e-31
+  },
+  "unit": null,
+  "value": 2.2204460492503162e-15
+ },
+ {
+  "claim": "The fixed-step trajectories are accepted results: embedded endpoint error against the exact great circle is below 1e-8",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T115",
+  "task_uncertainty": "Work counts are exact; a RAPL energy would carry model error, background load and a model-dependent counter unit (commonly 2^-16 J), none characterized here.",
+  "uncertainty": {
+   "basis": "closed-form great-circle endpoint evaluated in binary64 (a few ulp)",
+   "kind": "reference_error",
+   "value": 1e-15
+  },
+  "unit": "normalized length",
+  "value": 1.087370094109951e-09
+ },
+ {
+  "claim": "Rust and Python closed-form RK4 kernels agree on every endpoint to 1e-12",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T117",
+  "task_uncertainty": "Agreement is limited by libm sin/cos differences across platforms; both kernels are ciw code, so shared modelling errors would not be detected.",
+  "uncertainty": {
+   "basis": "libm sin/cos may differ by an ulp across platforms; differences propagate through 256 steps",
+   "kind": "roundoff",
+   "value": 1e-15
+  },
+  "unit": "radians or radians per unit length",
+  "value": 0.0
+ },
+ {
+  "claim": "Rust kernel endpoint error against the exact great circle is below 1e-8",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T117",
+  "task_uncertainty": "Agreement is limited by libm sin/cos differences across platforms; both kernels are ciw code, so shared modelling errors would not be detected.",
+  "uncertainty": {
+   "basis": "closed-form endpoint in binary64",
+   "kind": "reference_error",
+   "value": 1e-15
+  },
+  "unit": "normalized length",
+  "value": 1.0873703982101779e-09
+ },
+ {
+  "claim": "Generic Christoffel-symbol RK4 (ciw.lab.surfaces) and the closed-form kernel agree to 1e-12",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T117",
+  "task_uncertainty": "Agreement is limited by libm sin/cos differences across platforms; both kernels are ciw code, so shared modelling errors would not be detected.",
+  "uncertainty": {
+   "basis": "libm sin/cos may differ by an ulp across platforms; differences propagate through 256 steps",
+   "kind": "roundoff",
+   "value": 1e-15
+  },
+  "unit": "radians or radians per unit length",
+  "value": 8.881784197001252e-16
+ },
+ {
+  "claim": "Energy per accepted replica solve of the synthetic baseline fixture, recomputed from raw counter readings, directly decoded outputs and a textbook Gaussian KL, equals the CIW analysis value",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T119",
+  "task_uncertainty": "Synthetic values carry no physical uncertainty model; a real NVML counter has undeclared resolution and background-inclusive scope.",
+  "uncertainty": {
+   "basis": "synthetic fixture with exact decimal counter readings; no physical uncertainty model",
+   "kind": "reference_error",
+   "value": 0.0
+  },
+  "unit": "J per accepted replica solve (synthetic fixture values)",
+  "value": 0.05
+ },
+ {
+  "claim": "Energy per distinct accepted result (one batch output; its replicas are bitwise copies) of the synthetic baseline fixture",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T119",
+  "task_uncertainty": "Synthetic values carry no physical uncertainty model; a real NVML counter has undeclared resolution and background-inclusive scope.",
+  "uncertainty": {
+   "basis": "synthetic fixture with exact decimal counter readings; no physical uncertainty model",
+   "kind": "reference_error",
+   "value": 0.0
+  },
+  "unit": "J per distinct accepted result (synthetic fixture values)",
+  "value": 0.2
+ },
+ {
+  "claim": "Widening the boundary from the measurement phase to the whole run multiplies the baseline energy per accepted result by 7",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T119",
+  "task_uncertainty": "Synthetic values carry no physical uncertainty model; a real NVML counter has undeclared resolution and background-inclusive scope.",
+  "uncertainty": {
+   "basis": "synthetic fixture with exact decimal counter readings; no physical uncertainty model",
+   "kind": "reference_error",
+   "value": 0.0
+  },
+  "unit": "ratio",
+  "value": 6.999999999999999
+ },
+ {
+  "claim": "float64 RK4 endpoint error converges at order 4 on the sphere geodesics (N = 16..256)",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T120",
+  "task_uncertainty": "float32 errors depend on the platform's float32 sin/cos and vary by tens of percent; float64 order fit is stable to about 0.05.",
+  "uncertainty": {
+   "basis": "rms residual of the least-squares log-log fit (natural log)",
+   "kind": "fit_residual",
+   "value": 0.016602103424221967
+  },
+  "unit": "order",
+  "value": 3.9632677890817516
+ },
+ {
+  "claim": "Emulated atomicAdd completion orders of identical float32 block partials give distinct sums",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T121",
+  "task_uncertainty": "Deterministic IEEE arithmetic; the emulated orders are a sample of plausible GPU orders, not those of a specific library; the witnesses were found by search, so they show existence, not frequency.",
+  "uncertainty": {
+   "basis": "integer counts, refusal codes or exact comparisons",
+   "kind": "exact",
+   "value": 0.0
+  },
+  "unit": "distinct results",
+  "value": 4
+ },
+ {
+  "claim": "Max reductions of this NaN-free, zero-free positive data are bitwise order-invariant over 8 permutations",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T121",
+  "task_uncertainty": "Deterministic IEEE arithmetic; the emulated orders are a sample of plausible GPU orders, not those of a specific library; the witnesses were found by search, so they show existence, not frequency.",
+  "uncertainty": {
+   "basis": "integer counts, refusal codes or exact comparisons",
+   "kind": "exact",
+   "value": 0.0
+  },
+  "unit": "distinct results",
+  "value": 1
+ },
+ {
+  "claim": "The variational free-energy identity F + log Z = KL(q || p) holds at every iterate to 1e-10 nats",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T122",
+  "task_uncertainty": "Roundoff only (the problem is exact); KL below 1e-15 is at the roundoff level.",
+  "uncertainty": {
+   "basis": "largest binary64 residual of F + log Z - KL over the retained trace",
+   "kind": "roundoff",
+   "value": 2.842170943040401e-14
+  },
+  "unit": "nat",
+  "value": 2.842170943040401e-14
+ },
+ {
+  "claim": "The raw-unit posterior and log evidence are invariant under the choice of normalization scales",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T122",
+  "task_uncertainty": "Roundoff only (the problem is exact); KL below 1e-15 is at the roundoff level.",
+  "uncertainty": {
+   "basis": "binary64 back-transformation",
+   "kind": "roundoff",
+   "value": 1.7763568394002505e-15
+  },
+  "unit": null,
+  "value": 1.7763568394002505e-15
+ },
+ {
+  "claim": "Flat-plate control: chord and geodesic marker distances coincide",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T126",
+  "task_uncertainty": "Rounding only (flat metric, zero Christoffel symbols). Measurement uncertainty is declared, not known.",
+  "uncertainty": {
+   "basis": "shooting arclength vs chord and RK4 closure onto the target marker (mm)",
+   "kind": "roundoff",
+   "value": 2.842170943040401e-14
+  },
+  "unit": "mm",
+  "value": 2.842170943040401e-14
+ },
+ {
+  "claim": "Flat-plate protocol record validates and refuses malformed variants",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T126",
+  "task_uncertainty": "Rounding only (flat metric, zero Christoffel symbols). Measurement uncertainty is declared, not known.",
+  "uncertainty": {
+   "basis": "exact logic or integer count",
+   "kind": "roundoff",
+   "value": 0.0
+  },
+  "unit": "refused mutations",
+  "value": 9
+ },
+ {
+  "claim": "Rolled-cylinder Jacobi transfer equals the flat-plate transfer (K = 0)",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T127",
+  "task_uncertainty": "Closed forms; RK4 closure at rounding level. The radius tolerance term is budgeted in T140.",
+  "uncertainty": {
+   "basis": "deviation of Phi from the flat closed form",
+   "kind": "roundoff",
+   "value": 0.0
+  },
+  "unit": null,
+  "value": 0.0
+ },
+ {
+  "claim": "A marker chord differs from the surface distance on a developable (intrinsically flat) part",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T127",
+  "task_uncertainty": "Closed forms; RK4 closure at rounding level. The radius tolerance term is budgeted in T140.",
+  "uncertainty": {
+   "basis": "closed form; RK4 closure",
+   "kind": "roundoff",
+   "value": 1.3322676295501878e-13
+  },
+  "unit": "mm",
+  "value": 15.658276442180153
+ },
+ {
+  "claim": "Rolled-cylinder protocol record validates and refuses malformed variants",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T127",
+  "task_uncertainty": "Closed forms; RK4 closure at rounding level. The radius tolerance term is budgeted in T140.",
+  "uncertainty": {
+   "basis": "exact logic or integer count",
+   "kind": "roundoff",
+   "value": 0.0
+  },
+  "unit": "refused mutations",
+  "value": 9
+ },
+ {
+  "claim": "Laterally offset routes cross the nominal route at the first focal point (small-offset limit)",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T128",
+  "task_uncertainty": "Solver error ~1e-6 (Richardson); geometry, start-pose and instrument terms are budgeted in T138 and T140.",
+  "uncertainty": {
+   "basis": "RK4 Richardson estimate of the focal location (mm)",
+   "kind": "truncation_bound",
+   "value": 9.235394221226064e-07
+  },
+  "unit": "mm",
+  "value": 153.40715534052734
+ },
+ {
+  "claim": "The RK4 coupon transfer agrees with ciw's adaptive Dormand-Prince 5(4) integration of the same equations",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T128",
+  "task_uncertainty": "Solver error ~1e-6 (Richardson); geometry, start-pose and instrument terms are budgeted in T138 and T140.",
+  "uncertainty": {
+   "basis": "difference between the two integrations",
+   "kind": "truncation_bound",
+   "value": 9.824155142723612e-07
+  },
+  "unit": null,
+  "value": 9.824155142723612e-07
+ },
+ {
+  "claim": "scipy DOP853 integrating the ciw right-hand side agrees with the RK4 coupon transfer (independent time stepping; the geometry code is shared)",
+  "evidence_status": "independently_verified",
+  "source": "finding",
+  "task_id": "T128",
+  "task_uncertainty": "Solver error ~1e-6 (Richardson); geometry, start-pose and instrument terms are budgeted in T138 and T140.",
+  "uncertainty": {
+   "basis": "difference between the two integrations",
+   "kind": "truncation_bound",
+   "value": 9.82036297614286e-07
+  },
+  "unit": null,
+  "value": 9.82036297614286e-07
+ },
+ {
+  "claim": "A sympy derivation of the coupon Christoffel symbols and Gaussian curvature from the height formula agrees with ciw at six points",
+  "evidence_status": "independently_verified",
+  "source": "finding",
+  "task_id": "T128",
+  "task_uncertainty": "Solver error ~1e-6 (Richardson); geometry, start-pose and instrument terms are budgeted in T138 and T140.",
+  "uncertainty": {
+   "basis": "double-precision evaluation of both derivations",
+   "kind": "roundoff",
+   "value": 1e-15
+  },
+  "unit": null,
+  "value": 8.673617379884035e-19
+ },
+ {
+  "claim": "Domed-coupon protocol record validates and refuses malformed variants",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T128",
+  "task_uncertainty": "Solver error ~1e-6 (Richardson); geometry, start-pose and instrument terms are budgeted in T138 and T140.",
+  "uncertainty": {
+   "basis": "exact logic or integer count",
+   "kind": "roundoff",
+   "value": 0.0
+  },
+  "unit": "refused mutations",
+  "value": 9
+ },
+ {
+  "claim": "The osculating-circle window rule under-predicts the coupon-crest curvature bias",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T129",
+  "task_uncertainty": "Monte Carlo standard errors are stated in the checks; the design rules are exact for the declared profiles.",
+  "uncertainty": {
+   "basis": "noise-free exact least-squares fit",
+   "kind": "roundoff",
+   "value": 1e-12
+  },
+  "unit": null,
+  "value": 1.9606615754433288
+ },
+ {
+  "claim": "Gage R&R refuses unbalanced or incomplete designs",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T131",
+  "task_uncertainty": "Monte Carlo standard errors are in the checks; quantiles are sample quantiles of 2000 studies.",
+  "uncertainty": {
+   "basis": "exact logic or integer count",
+   "kind": "roundoff",
+   "value": 0.0
+  },
+  "unit": "refusals",
+  "value": 2
+ },
+ {
+  "claim": "Programming a helix in machine angles transfers mandrel radius error into lateral drift",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T132",
+  "task_uncertainty": "Closed forms; Monte Carlo standard error of the std is about 0.5% with 20000 samples.",
+  "uncertainty": {
+   "basis": "closed-form development model",
+   "kind": "roundoff",
+   "value": 1e-12
+  },
+  "unit": "mm",
+  "value": 0.9990005004983686
+ },
+ {
+  "claim": "End deviation of the steered course from the geodesic along its initial tangent",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T132",
+  "task_uncertainty": "Closed forms; Monte Carlo standard error of the std is about 0.5% with 20000 samples.",
+  "uncertainty": {
+   "basis": "closed-form development model",
+   "kind": "roundoff",
+   "value": 1e-12
+  },
+  "unit": "mm",
+  "value": 122.56351482368811
+ },
+ {
+  "claim": "A constant winding angle is not geodesic on the torus mandrel",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T133",
+  "task_uncertainty": "RK4 at about 2 mm steps; monodromy Richardson estimate in the finding uncertainty; Clairaut drift below 1e-8 relative.",
+  "uncertainty": {
+   "basis": "chart vs embedded curvature evaluation (1/mm)",
+   "kind": "roundoff",
+   "value": 6.938893903907228e-18
+  },
+  "unit": "1/mm",
+  "value": 0.004545022346608683
+ },
+ {
+  "claim": "Geodesic rows at the swath spacing leave gaps on the domed coupon",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T135",
+  "task_uncertainty": "Area sampling: coverage changes by 0.0009 between the two samples; 'complete' means no uncovered sample among 32000 points (uncovered area below about 1e-4 of the coupon).",
+  "uncertainty": {
+   "basis": "coverage change between 6400 and 25600 Halton samples",
+   "kind": "reference_error",
+   "value": 0.0008815342657851888
+  },
+  "unit": null,
+  "value": 0.03964534619021176
+ },
+ {
+  "claim": "The dome loosens the heading tolerance of the straight route relative to a flat plate of equal length",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T136",
+  "task_uncertainty": "Exact perturbation at the corners of the derated boxes gives realized / spec in [0.730, 0.99990] (derating aims at 0.9999); max |j_head| Richardson error 1.4e-08 relative.",
+  "uncertainty": {
+   "basis": "RK4 Richardson estimate of max |j_head| (relative)",
+   "kind": "truncation_bound",
+   "value": 1.3535716040160765e-08
+  },
+  "unit": null,
+  "value": 1.8730416064774404
+ },
+ {
+  "claim": "The comparison refuses to run without acquired hardware evidence",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T138",
+  "task_uncertainty": "Prediction uncertainty only (geometry dominates beyond mid-route; start pose dominates near the start in the open-loop case); measurement uncertainty is declared until the protocol is executed.",
+  "uncertainty": {
+   "basis": "exact logic or integer count",
+   "kind": "roundoff",
+   "value": 0.0
+  },
+  "unit": "refusals",
+  "value": 4
+ },
+ {
+  "claim": "The retention schema refuses records missing raw digests, calibration, frame-chain or clock metadata",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T139",
+  "task_uncertainty": "Exact: the outcomes are booleans and refusal codes of deterministic validators; the only floating-point quantity is the rounding-level eigenvalue of the rank-deficient covariance.",
+  "uncertainty": {
+   "basis": "exact logic or integer count",
+   "kind": "roundoff",
+   "value": 0.0
+  },
+  "unit": "refused mutations",
+  "value": 11
+ },
+ {
+  "claim": "A schema fixture (as is or relabelled as a measurement), or a record without its raw bytes, is refused as hardware evidence",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T139",
+  "task_uncertainty": "Exact: the outcomes are booleans and refusal codes of deterministic validators; the only floating-point quantity is the rounding-level eigenvalue of the rank-deficient covariance.",
+  "uncertainty": {
+   "basis": "exact logic or integer count",
+   "kind": "roundoff",
+   "value": 0.0
+  },
+  "unit": "refusals",
+  "value": 3
+ },
+ {
+  "claim": "A real measurement with raw bytes, calibration and frame metadata has been retained",
+  "evidence_status": "not_established",
+  "source": "task_statement_only",
+  "task_id": "T139",
+  "task_uncertainty": "Exact: the outcomes are booleans and refusal codes of deterministic validators; the only floating-point quantity is the rounding-level eigenvalue of the rank-deficient covariance.",
+  "uncertainty": null,
+  "unit": "records",
+  "value": 0
+ },
+ {
+  "claim": "The coupon focal-distance prediction is geometry-limited, not instrument-limited",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T140",
+  "task_uncertainty": "Components are standard uncertainties; classification uses variance shares.",
+  "uncertainty": {
+   "basis": "forward vs central geometry sensitivity (relative)",
+   "kind": "reference_error",
+   "value": 0.02931958792246836
+  },
+  "unit": null,
+  "value": 0.8909267675541553
+ },
+ {
+  "claim": "Rust fused RK4 loop reproduces ciw.lab.jacobi.transfer on the unit sphere",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T142",
+  "task_uncertainty": "Counts are exact for the scalar restatements, which use common subexpressions the NumPy core does not (the core repeats trigonometry and forms the full metric), so they count the port specification rather than the core's executed operations. Dispatch counts depend on the Python and NumPy versions (regression tolerance 25%); operator applications on arrays are not calls and are not counted. Timings are machine-specific and appear only in artifacts.",
+  "uncertainty": {
+   "basis": "largest componentwise difference after 600 steps; different rounding of the same RK4 recurrence",
+   "kind": "roundoff",
+   "value": 4.440892098500626e-16
+  },
+  "unit": null,
+  "value": 4.440892098500626e-16
+ },
+ {
+  "claim": "Inventory validator refuses in-process bindings, write-capable directions or bus roles and unpinned entries",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T143",
+  "task_uncertainty": "Analytic design record; library capabilities are stated from vendor documentation, not tested.",
+  "uncertainty": {
+   "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+   "kind": "roundoff",
+   "value": 0.0
+  },
+  "unit": "refused mutations",
+  "value": 10
+ },
+ {
+  "claim": "Package-wide structural rules hold (no shell spawns, native loading only in declared hardware probes, no compiled extensions)",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T144",
+  "task_uncertainty": "Static scan: dynamic imports, exec, importlib and spawns through third-party libraries are not seen; the identity-token rule shows that a name appears in code, not that the spawned binary is pinned.",
+  "uncertainty": {
+   "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+   "kind": "roundoff",
+   "value": 0.0
+  },
+  "unit": "violations",
+  "value": 0
+ },
+ {
+  "claim": "Every process-spawning module names an identity in its code (heuristic, not a pin)",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T144",
+  "task_uncertainty": "Static scan: dynamic imports, exec, importlib and spawns through third-party libraries are not seen; the identity-token rule shows that a name appears in code, not that the spawned binary is pinned.",
+  "uncertainty": {
+   "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+   "kind": "roundoff",
+   "value": 0.0
+  },
+  "unit": "violations",
+  "value": 0
+ },
+ {
+  "claim": "Scanner flags forged modules that cross the boundary",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T144",
+  "task_uncertainty": "Static scan: dynamic imports, exec, importlib and spawns through third-party libraries are not seen; the identity-token rule shows that a name appears in code, not that the spawned binary is pinned.",
+  "uncertainty": {
+   "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+   "kind": "roundoff",
+   "value": 0.0
+  },
+  "unit": "detected mutations",
+  "value": 8
+ },
+ {
+  "claim": "Symbolic torus Christoffel symbols and curvature agree with ciw.lab.surfaces.Torus",
+  "evidence_status": "independently_verified",
+  "source": "finding",
+  "task_id": "T145",
+  "task_uncertainty": "SymPy stands in for the symbolic role only; it says nothing about Julia performance or pinning.",
+  "uncertainty": {
+   "basis": "largest difference between float evaluations of the symbolic expressions and the core",
+   "kind": "roundoff",
+   "value": 4.440892098500626e-16
+  },
+  "unit": null,
+  "value": 4.440892098500626e-16
+ },
+ {
+  "claim": "Bitwise policy detects reduction-order differences between float64 CPU orders",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T147",
+  "task_uncertainty": "Bounds are worst-case (not probabilistic), so typical ratios are far below one; a worst-case policy can miss faults up to about its bound (the bound plus the candidate's own deviation); the harness has not seen GPU fused multiply-add or atomics ordering.",
+  "uncertainty": {
+   "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+   "kind": "roundoff",
+   "value": 0.0
+  },
+  "unit": "rows of 128",
+  "value": 123
+ },
+ {
+  "claim": "Float64 reduction-order differences lie within the analytic error-bound policy",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T147",
+  "task_uncertainty": "Bounds are worst-case (not probabilistic), so typical ratios are far below one; a worst-case policy can miss faults up to about its bound (the bound plus the candidate's own deviation); the harness has not seen GPU fused multiply-add or atomics ordering.",
+  "uncertainty": {
+   "basis": "worst-case bound gamma_k sum|a_j x_j| per output; the ratio is at most 1 by construction of the bound",
+   "kind": "truncation_bound",
+   "value": 1.0
+  },
+  "unit": "fraction of the policy bound",
+  "value": 0.0017336060475265365
+ },
+ {
+  "claim": "Correctly rounded exact accumulation is permutation-invariant",
+  "evidence_status": "independently_verified",
+  "source": "finding",
+  "task_id": "T148",
+  "task_uncertainty": "Exact arithmetic; permutation counts are samples (25 orders), so invariance of non-exact algorithms is only refuted, never proven, and the exact algorithm's invariance is a theorem sampled here. The Kahan allowance constant is declared, not proven.",
+  "uncertainty": {
+   "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+   "kind": "roundoff",
+   "value": 0.0
+  },
+  "unit": "distinct results",
+  "value": 1
+ },
+ {
+  "claim": "Fixed-order pairwise summation is reproducible for one order but not permutation-invariant",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T148",
+  "task_uncertainty": "Exact arithmetic; permutation counts are samples (25 orders), so invariance of non-exact algorithms is only refuted, never proven, and the exact algorithm's invariance is a theorem sampled here. The Kahan allowance constant is declared, not proven.",
+  "uncertainty": {
+   "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+   "kind": "roundoff",
+   "value": 0.0
+  },
+  "unit": "distinct results",
+  "value": 4
+ },
+ {
+  "claim": "Observed Kahan errors lie within 2u sum|x| plus the declared second-order allowance",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T148",
+  "task_uncertainty": "Exact arithmetic; permutation counts are samples (25 orders), so invariance of non-exact algorithms is only refuted, never proven, and the exact algorithm's invariance is a theorem sampled here. The Kahan allowance constant is declared, not proven.",
+  "uncertainty": {
+   "basis": "first-order bound 2u sum|x| (Higham eq. 4.8) plus a declared, unproven second-order constant",
+   "kind": "truncation_bound",
+   "value": 1.0
+  },
+  "unit": "fraction of the allowance",
+  "value": 0.34983344078055906
+ },
+ {
+  "claim": "Telemetry frames round-trip every header field and channel bit-exactly",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T149",
+  "task_uncertainty": "Exact: exhaustive for single-bit errors and exact (rank) for bursts on one frame layout; random corruptions escape CRC-32 with probability 2^-32 each.",
+  "uncertainty": {
+   "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+   "kind": "roundoff",
+   "value": 0.0
+  },
+  "unit": "failures",
+  "value": 0
+ },
+ {
+  "claim": "Decoder, encoder and interface validator refuse every command, write or malformed path",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T149",
+  "task_uncertainty": "Exact: exhaustive for single-bit errors and exact (rank) for bursts on one frame layout; random corruptions escape CRC-32 with probability 2^-32 each.",
+  "uncertainty": {
+   "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+   "kind": "roundoff",
+   "value": 0.0
+  },
+  "unit": "refusals",
+  "value": 13
+ },
+ {
+  "claim": "Rollback validation refuses incompatible, unregistered, no-op, forward and unexplained rollbacks",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T151",
+  "task_uncertainty": "Exact enumeration over a declared, synthetic matrix.",
+  "uncertainty": {
+   "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+   "kind": "roundoff",
+   "value": 0.0
+  },
+  "unit": "refusals",
+  "value": 8
+ },
+ {
+  "claim": "Enabling writes is refused on every route, including a well-formed external record",
+  "evidence_status": "numerically_verified",
+  "source": "finding",
+  "task_id": "T153",
+  "task_uncertainty": "Exhaustive over the declared routes; software refusals inside one process can be bypassed by code with the same privileges (the counterexample shows the mutation itself succeeds).",
+  "uncertainty": {
+   "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+   "kind": "roundoff",
+   "value": 0.0
+  },
+  "unit": "refused routes",
+  "value": 8
+ }
+]

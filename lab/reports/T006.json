@@ -1,0 +1,378 @@
+{
+ "changed_files": [
+  "src/ciw/lab/geodesic_jacobi.py",
+  "src/ciw/lab/geodesic_jacobi_common.py",
+  "tests/test_lab_geodesic_jacobi.py",
+  "docs/lab/GEODESIC_JACOBI.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 0,
+   "numerically_verified": 3,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Slopes 1 (one-sided) and 2 (central) in eps until cancellation dominates.",
+ "experiment": "Perturb the start by exact lateral displacement along a normal geodesic (tangent parallel transported) or by heading rotation, integrate, and difference.",
+ "failure_modes_checked": [
+  "chart-dependent perturbations avoided (exact exponential-map offset)",
+  "cancellation at tiny eps (recorded as a counterexample)",
+  "matched nodes: base and perturbed paths share the arclength grid"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": -0.00030228763807715886,
+      "passed": true,
+      "reference": "central difference order 2, lateral column on sphere",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0012145363577857893,
+      "passed": true,
+      "reference": "central difference order 2, heading column on sphere",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0004736391896624781,
+      "passed": true,
+      "reference": "central difference order 2, lateral column on torus",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.0018023529661195248,
+      "passed": true,
+      "reference": "central difference order 2, heading column on torus",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.012769419794228076,
+      "passed": true,
+      "reference": "central difference order 2, lateral column on gaussian-bump",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.0015909070684769766,
+      "passed": true,
+      "reference": "central difference order 2, heading column on gaussian-bump",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 7.943281962630167e-05,
+      "passed": true,
+      "reference": "largest central-difference error at eps = 0.01",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.001
+     }
+    ],
+    "generator": {
+     "eps": [
+      0.08,
+      0.04,
+      0.02,
+      0.01
+     ],
+     "name": "perturbed geodesics",
+     "steps": 160,
+     "surfaces": [
+      "sphere",
+      "torus",
+      "gaussian-bump"
+     ]
+    }
+   },
+   "claim": "Central finite differences of perturbed geodesics converge to the integrated Jacobi columns at second order",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.02,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "largest distance of a pairwise (eps-halving) slope from the least-squares slope",
+    "kind": "fit",
+    "value": 0.017788461058202865
+   },
+   "unit": null,
+   "value": {
+    "gaussian-bump": {
+     "heading": 1.998409092931523,
+     "lateral": 1.987230580205772
+    },
+    "sphere": {
+     "heading": 2.001214536357786,
+     "lateral": 1.9996977123619228
+    },
+    "torus": {
+     "heading": 1.9981976470338805,
+     "lateral": 2.0004736391896625
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.024362724416771453,
+      "passed": true,
+      "reference": "one-sided difference order 1, lateral column on sphere",
+      "reference_kind": "analytic",
+      "tolerance": 0.15
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.025931772102858908,
+      "passed": true,
+      "reference": "one-sided difference order 1, heading column on sphere",
+      "reference_kind": "analytic",
+      "tolerance": 0.15
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.016133076149024816,
+      "passed": true,
+      "reference": "one-sided difference order 1, lateral column on torus",
+      "reference_kind": "analytic",
+      "tolerance": 0.15
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.025889003511040176,
+      "passed": true,
+      "reference": "one-sided difference order 1, heading column on torus",
+      "reference_kind": "analytic",
+      "tolerance": 0.15
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.002491068182717604,
+      "passed": true,
+      "reference": "one-sided difference order 1, lateral column on gaussian-bump",
+      "reference_kind": "analytic",
+      "tolerance": 0.15
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.05164926498268063,
+      "passed": true,
+      "reference": "one-sided difference order 1, heading column on gaussian-bump",
+      "reference_kind": "analytic",
+      "tolerance": 0.15
+     }
+    ],
+    "generator": {
+     "eps": [
+      0.08,
+      0.04,
+      0.02,
+      0.01
+     ],
+     "name": "perturbed geodesics",
+     "steps": 160,
+     "surfaces": [
+      "sphere",
+      "torus",
+      "gaussian-bump"
+     ]
+    }
+   },
+   "claim": "One-sided finite differences converge to the integrated Jacobi columns at first order",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.02,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "largest distance of a pairwise (eps-halving) slope from the least-squares slope",
+    "kind": "fit",
+    "value": 0.04323490300333299
+   },
+   "unit": null,
+   "value": {
+    "gaussian-bump": {
+     "heading": 0.9483507350173194,
+     "lateral": 0.9975089318172824
+    },
+    "sphere": {
+     "heading": 0.9740682278971411,
+     "lateral": 1.0243627244167715
+    },
+    "torus": {
+     "heading": 1.0258890035110402,
+     "lateral": 1.0161330761490248
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 8750.989556232224,
+      "passed": true,
+      "reference": "error at eps = 1e-11 over the best error",
+      "reference_kind": "invariant",
+      "tolerance": 10.0
+     }
+    ],
+    "generator": {
+     "eps": [
+      0.1,
+      0.01,
+      0.001,
+      0.0001,
+      1e-05,
+      1e-06,
+      1e-07,
+      1e-08,
+      1e-09,
+      1e-10,
+      1e-11
+     ],
+     "name": "perturbed geodesics",
+     "steps": 160,
+     "surfaces": [
+      "sphere"
+     ]
+    }
+   },
+   "claim": "Shrinking the finite-difference step far below its optimum degrades the Jacobi estimate (cancellation)",
+   "counterexample": {
+    "statement": "A smaller finite-difference step always gives a more accurate Jacobi estimate",
+    "witness": {
+     "best_eps": 1e-07,
+     "best_error": 1.2829856288476549e-08,
+     "column": "heading",
+     "eps": 1e-11,
+     "error": 0.00011227393838841859,
+     "surface": "sphere"
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1.5,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "cancellation errors depend on platform rounding; values are decades (log10) and are uncertain to about one decade",
+    "kind": "roundoff",
+    "value": 1.0
+   },
+   "unit": null,
+   "value": {
+    "log10_best_eps": -7.0,
+    "log10_error_ratio_1e-11_over_best": 3.942057165537953
+   }
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 4086,
+   "path": "artifacts/T006/finite-differences.json",
+   "sha256": "732bfe33208348c61be5683fd3f34a24ab8a4b4885beeaa8b0ade82f98a8f05a"
+  },
+  {
+   "bytes": 2882,
+   "path": "artifacts/T006/fd-sphere.svg",
+   "sha256": "45e3c56b25c109821d9b24b1ab9fe6fb04b4b7e26da8a1e4c17d5e2128f28de5"
+  },
+  {
+   "bytes": 3000,
+   "path": "artifacts/T006/fd-torus.svg",
+   "sha256": "9392f7e0c7f6a27e8cc1bc98915ad8cc21026bbc3a93c39c4ada7d3293fc6199"
+  },
+  {
+   "bytes": 3122,
+   "path": "artifacts/T006/fd-gaussian-bump.svg",
+   "sha256": "bf5f45434ac89eb02933a6c9260fb45ccf00fbf0ba62fad75a9a8c9e2b307165"
+  },
+  {
+   "bytes": 3699,
+   "path": "artifacts/T006/fd-roundoff.svg",
+   "sha256": "313af0656d44fd213f332efefb0a8832d5b0476c596ea07f2e39bce8f5744660"
+  }
+ ],
+ "hypothesis": "The integrated lateral and heading Jacobi columns are the derivatives of the geodesic flow with respect to exact lateral displacement and heading rotation of the start.",
+ "input_data": [
+  "Standard paths on sphere, torus, gaussian-bump; RK4 with 160 steps for base and perturbed paths; eps in [0.08, 0.04, 0.02, 0.01] and 1e-1..1e-11 for the cancellation sweep"
+ ],
+ "mathematical_model": "gamma_eps(s) = exp flow of the perturbed start; (gamma_eps - gamma_0)/eps = J + O(eps) and (gamma_eps - gamma_-eps)/(2 eps) = J + O(eps^2), with J = j N and g(J, N) = j.",
+ "number": 6,
+ "numerical_result": "Central orders sphere lateral 2, heading 2; torus lateral 2, heading 2; gaussian-bump lateral 1.99, heading 2; one-sided orders sphere lateral 1.02, heading 0.974; torus lateral 1.02, heading 1.03; gaussian-bump lateral 0.998, heading 0.948; best one-sided eps 1e-07 (error 1.28e-08), error at 1e-11 0.000112.",
+ "observation_model": "Normal separation g(delta u, N) at matched arclength nodes (ciw.lab.jacobi.normal_separation), divided by eps; max over nodes of the difference from the column.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/geodesic_jacobi.py": "7f7307ebfb5c0a38ca1e7b9365fd7df627d9ae001791d99b823122873040d3c1",
+   "src/ciw/lab/geodesic_jacobi_common.py": "8616e9157492f0cd2aeebd695b3501215420c73af2cfbcb8c1b8cd5ab8d23a52"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T007: measure the Wronskian and transfer-matrix determinant",
+ "report_id": "sha256:b183a28a42de76a438f57ed10cb019fccae42d378e6384108afd95fb7cd80588",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "geodesic-jacobi",
+ "state": "completed",
+ "task_id": "T006",
+ "tests_passed": [
+  "check: Central finite differences of perturbed geodesics converge to the integrated Jacobi columns at second order vs central difference order 2, lateral column on sphere",
+  "check: Central finite differences of perturbed geodesics converge to the integrated Jacobi columns at second order vs central difference order 2, heading column on sphere",
+  "check: Central finite differences of perturbed geodesics converge to the integrated Jacobi columns at second order vs central difference order 2, lateral column on torus",
+  "check: Central finite differences of perturbed geodesics converge to the integrated Jacobi columns at second order vs central difference order 2, heading column on torus",
+  "check: Central finite differences of perturbed geodesics converge to the integrated Jacobi columns at second order vs central difference order 2, lateral column on gaussian-bump",
+  "check: Central finite differences of perturbed geodesics converge to the integrated Jacobi columns at second order vs central difference order 2, heading column on gaussian-bump",
+  "check: Central finite differences of perturbed geodesics converge to the integrated Jacobi columns at second order vs largest central-difference error at eps = 0.01",
+  "check: One-sided finite differences converge to the integrated Jacobi columns at first order vs one-sided difference order 1, lateral column on sphere",
+  "check: One-sided finite differences converge to the integrated Jacobi columns at first order vs one-sided difference order 1, heading column on sphere",
+  "check: One-sided finite differences converge to the integrated Jacobi columns at first order vs one-sided difference order 1, lateral column on torus",
+  "check: One-sided finite differences converge to the integrated Jacobi columns at first order vs one-sided difference order 1, heading column on torus",
+  "check: One-sided finite differences converge to the integrated Jacobi columns at first order vs one-sided difference order 1, lateral column on gaussian-bump",
+  "check: One-sided finite differences converge to the integrated Jacobi columns at first order vs one-sided difference order 1, heading column on gaussian-bump",
+  "check: Shrinking the finite-difference step far below its optimum degrades the Jacobi estimate (cancellation) vs error at eps = 1e-11 over the best error",
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_t006_finite_differences",
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_perturbation_helpers_are_geometric",
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_every_numerical_finding_declares_uncertainty_and_tolerance",
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space"
+ ],
+ "tests_skipped": [],
+ "title": "Compare integrated Jacobi fields with finite-difference flow perturbations.",
+ "uncertainty": "RK4 error of base and perturbed paths (about 1e-9) is far below the smallest central truncation error (about 1e-6).",
+ "unresolved_assumptions": [
+  "The separation is measured in the chart and projected on N; its second-order chart curvature term cancels only in the central difference"
+ ]
+}

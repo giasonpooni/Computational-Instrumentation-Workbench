@@ -1,0 +1,362 @@
+[
+ {
+  "case": "telemetry inspect valid",
+  "expected": "accepted",
+  "observed": "accepted"
+ },
+ {
+  "case": "telemetry inspect refused state valid",
+  "expected": "accepted",
+  "observed": "accepted"
+ },
+ {
+  "case": "telemetry inspect canonical admission granted",
+  "expected": "refused",
+  "observed": "refused: ESM may retain candidate evidence only"
+ },
+ {
+  "case": "telemetry inspect canonical state mutated",
+  "expected": "refused",
+  "observed": "refused: ESM response exceeds candidate-only scope"
+ },
+ {
+  "case": "telemetry inspect release activated",
+  "expected": "refused",
+  "observed": "refused: ESM response exceeds candidate-only scope"
+ },
+ {
+  "case": "telemetry inspect source truth claimed",
+  "expected": "refused",
+  "observed": "refused: ESM response exceeds candidate-only scope"
+ },
+ {
+  "case": "telemetry inspect evidence retained on inspect",
+  "expected": "refused",
+  "observed": "refused: Native ESM inspection binding or scope mismatch"
+ },
+ {
+  "case": "telemetry inspect independently verified",
+  "expected": "refused",
+  "observed": "refused: Native ESM inspection binding or scope mismatch"
+ },
+ {
+  "case": "telemetry inspect retraction history complete",
+  "expected": "refused",
+  "observed": "refused: Native ESM inspection binding or scope mismatch"
+ },
+ {
+  "case": "telemetry inspect schema changed",
+  "expected": "refused",
+  "observed": "refused: Native ESM inspection binding or scope mismatch"
+ },
+ {
+  "case": "telemetry inspect inspection time changed",
+  "expected": "refused",
+  "observed": "refused: Native ESM inspection binding or scope mismatch"
+ },
+ {
+  "case": "telemetry inspect request identity changed",
+  "expected": "refused",
+  "observed": "refused: Native ESM inspection binding or scope mismatch"
+ },
+ {
+  "case": "telemetry inspect authority changed",
+  "expected": "refused",
+  "observed": "refused: Native ESM inspection binding or scope mismatch"
+ },
+ {
+  "case": "telemetry inspect unknown state",
+  "expected": "refused",
+  "observed": "refused: Native ESM inspection binding or scope mismatch"
+ },
+ {
+  "case": "telemetry inspect bundle bytes digest changed",
+  "expected": "refused",
+  "observed": "refused: Native ESM inspection binding or scope mismatch"
+ },
+ {
+  "case": "telemetry inspect eligible without candidate",
+  "expected": "refused",
+  "observed": "refused: Eligible inspection requires a candidate"
+ },
+ {
+  "case": "telemetry inspect candidate admitted",
+  "expected": "refused",
+  "observed": "refused: ESM candidate does not bind the selected native bundle"
+ },
+ {
+  "case": "telemetry inspect candidate bundle changed",
+  "expected": "refused",
+  "observed": "refused: ESM candidate does not bind the selected native bundle"
+ },
+ {
+  "case": "telemetry inspect candidate executions changed",
+  "expected": "refused",
+  "observed": "refused: ESM candidate does not bind the selected native bundle"
+ },
+ {
+  "case": "telemetry inspect candidate verification failed",
+  "expected": "refused",
+  "observed": "refused: ESM candidate does not bind the selected native bundle"
+ },
+ {
+  "case": "telemetry inspect candidate verification independent",
+  "expected": "refused",
+  "observed": "refused: ESM candidate does not bind the selected native bundle"
+ },
+ {
+  "case": "telemetry inspect candidate reconciliation changed",
+  "expected": "refused",
+  "observed": "refused: ESM candidate does not bind the selected native bundle"
+ },
+ {
+  "case": "telemetry inspect telemetry inherits process assessment",
+  "expected": "refused",
+  "observed": "refused: Telemetry cannot inherit calibrated observability or fault claims"
+ },
+ {
+  "case": "telemetry capture valid",
+  "expected": "accepted",
+  "observed": "accepted"
+ },
+ {
+  "case": "telemetry capture evidence identity differs",
+  "expected": "refused",
+  "observed": "refused: ESM capture receipt differs from the explicit request"
+ },
+ {
+  "case": "telemetry capture receipt identity differs",
+  "expected": "refused",
+  "observed": "refused: ESM capture receipt differs from the explicit request"
+ },
+ {
+  "case": "telemetry capture capture time differs",
+  "expected": "refused",
+  "observed": "refused: ESM capture receipt differs from the explicit request"
+ },
+ {
+  "case": "telemetry capture storage time differs",
+  "expected": "refused",
+  "observed": "refused: ESM capture receipt differs from the explicit request"
+ },
+ {
+  "case": "telemetry capture derived source differs",
+  "expected": "refused",
+  "observed": "refused: ESM capture receipt differs from the explicit request"
+ },
+ {
+  "case": "telemetry capture content digest differs",
+  "expected": "refused",
+  "observed": "refused: ESM capture receipt differs from the explicit request"
+ },
+ {
+  "case": "telemetry capture storage key differs",
+  "expected": "refused",
+  "observed": "refused: ESM capture receipt differs from the explicit request"
+ },
+ {
+  "case": "telemetry capture capture claims source truth",
+  "expected": "refused",
+  "observed": "refused: ESM capture receipt differs from the explicit request"
+ },
+ {
+  "case": "telemetry capture inspection not eligible",
+  "expected": "refused",
+  "observed": "refused: Retention requires fresh eligible inspection"
+ },
+ {
+  "case": "telemetry capture refused capture with receipt",
+  "expected": "refused",
+  "observed": "refused: Refused retention cannot have a successful receipt"
+ },
+ {
+  "case": "telemetry capture unknown capture state",
+  "expected": "refused",
+  "observed": "refused: Invalid ESM capture state"
+ },
+ {
+  "case": "telemetry inspect unknown extra fields",
+  "expected": "extra",
+  "observed": "accepted"
+ },
+ {
+  "case": "calibrated inspect valid",
+  "expected": "accepted",
+  "observed": "accepted"
+ },
+ {
+  "case": "calibrated inspect refused state valid",
+  "expected": "accepted",
+  "observed": "accepted"
+ },
+ {
+  "case": "calibrated inspect canonical admission granted",
+  "expected": "refused",
+  "observed": "refused: ESM may retain candidate evidence only"
+ },
+ {
+  "case": "calibrated inspect canonical state mutated",
+  "expected": "refused",
+  "observed": "refused: ESM response exceeds candidate-only scope"
+ },
+ {
+  "case": "calibrated inspect release activated",
+  "expected": "refused",
+  "observed": "refused: ESM response exceeds candidate-only scope"
+ },
+ {
+  "case": "calibrated inspect source truth claimed",
+  "expected": "refused",
+  "observed": "refused: ESM response exceeds candidate-only scope"
+ },
+ {
+  "case": "calibrated inspect evidence retained on inspect",
+  "expected": "refused",
+  "observed": "refused: Native ESM inspection binding or scope mismatch"
+ },
+ {
+  "case": "calibrated inspect independently verified",
+  "expected": "refused",
+  "observed": "refused: Native ESM inspection binding or scope mismatch"
+ },
+ {
+  "case": "calibrated inspect retraction history complete",
+  "expected": "refused",
+  "observed": "refused: Native ESM inspection binding or scope mismatch"
+ },
+ {
+  "case": "calibrated inspect schema changed",
+  "expected": "refused",
+  "observed": "refused: Native ESM inspection binding or scope mismatch"
+ },
+ {
+  "case": "calibrated inspect inspection time changed",
+  "expected": "refused",
+  "observed": "refused: Native ESM inspection binding or scope mismatch"
+ },
+ {
+  "case": "calibrated inspect request identity changed",
+  "expected": "refused",
+  "observed": "refused: Native ESM inspection binding or scope mismatch"
+ },
+ {
+  "case": "calibrated inspect authority changed",
+  "expected": "refused",
+  "observed": "refused: Native ESM inspection binding or scope mismatch"
+ },
+ {
+  "case": "calibrated inspect unknown state",
+  "expected": "refused",
+  "observed": "refused: Native ESM inspection binding or scope mismatch"
+ },
+ {
+  "case": "calibrated inspect bundle bytes digest changed",
+  "expected": "refused",
+  "observed": "refused: Native ESM inspection binding or scope mismatch"
+ },
+ {
+  "case": "calibrated inspect eligible without candidate",
+  "expected": "refused",
+  "observed": "refused: Eligible inspection requires a candidate"
+ },
+ {
+  "case": "calibrated inspect candidate admitted",
+  "expected": "refused",
+  "observed": "refused: ESM candidate does not bind the selected native bundle"
+ },
+ {
+  "case": "calibrated inspect candidate bundle changed",
+  "expected": "refused",
+  "observed": "refused: ESM candidate does not bind the selected native bundle"
+ },
+ {
+  "case": "calibrated inspect candidate executions changed",
+  "expected": "refused",
+  "observed": "refused: ESM candidate does not bind the selected native bundle"
+ },
+ {
+  "case": "calibrated inspect candidate verification failed",
+  "expected": "refused",
+  "observed": "refused: ESM candidate does not bind the selected native bundle"
+ },
+ {
+  "case": "calibrated inspect candidate verification independent",
+  "expected": "refused",
+  "observed": "refused: ESM candidate does not bind the selected native bundle"
+ },
+ {
+  "case": "calibrated inspect candidate reconciliation changed",
+  "expected": "refused",
+  "observed": "refused: ESM candidate does not bind the selected native bundle"
+ },
+ {
+  "case": "calibrated inspect process assessment changed",
+  "expected": "refused",
+  "observed": "refused: ESM changed native state/reconciliation/fault bindings"
+ },
+ {
+  "case": "calibrated capture valid",
+  "expected": "accepted",
+  "observed": "accepted"
+ },
+ {
+  "case": "calibrated capture evidence identity differs",
+  "expected": "refused",
+  "observed": "refused: ESM capture receipt differs from the explicit request"
+ },
+ {
+  "case": "calibrated capture receipt identity differs",
+  "expected": "refused",
+  "observed": "refused: ESM capture receipt differs from the explicit request"
+ },
+ {
+  "case": "calibrated capture capture time differs",
+  "expected": "refused",
+  "observed": "refused: ESM capture receipt differs from the explicit request"
+ },
+ {
+  "case": "calibrated capture storage time differs",
+  "expected": "refused",
+  "observed": "refused: ESM capture receipt differs from the explicit request"
+ },
+ {
+  "case": "calibrated capture derived source differs",
+  "expected": "refused",
+  "observed": "refused: ESM capture receipt differs from the explicit request"
+ },
+ {
+  "case": "calibrated capture content digest differs",
+  "expected": "refused",
+  "observed": "refused: ESM capture receipt differs from the explicit request"
+ },
+ {
+  "case": "calibrated capture storage key differs",
+  "expected": "refused",
+  "observed": "refused: ESM capture receipt differs from the explicit request"
+ },
+ {
+  "case": "calibrated capture capture claims source truth",
+  "expected": "refused",
+  "observed": "refused: ESM capture receipt differs from the explicit request"
+ },
+ {
+  "case": "calibrated capture inspection not eligible",
+  "expected": "refused",
+  "observed": "refused: Retention requires fresh eligible inspection"
+ },
+ {
+  "case": "calibrated capture refused capture with receipt",
+  "expected": "refused",
+  "observed": "refused: Refused retention cannot have a successful receipt"
+ },
+ {
+  "case": "calibrated capture unknown capture state",
+  "expected": "refused",
+  "observed": "refused: Invalid ESM capture state"
+ },
+ {
+  "case": "calibrated inspect unknown extra fields",
+  "expected": "extra",
+  "observed": "accepted"
+ }
+]

@@ -1,0 +1,158 @@
+{
+ "changed_files": [
+  "src/ciw/lab/flat_torus_topology.py",
+  "src/ciw/lab/flat_torus_topology_routes.py",
+  "docs/lab/FLAT_TORUS_TOPOLOGY.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 1,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Front members are mutually non-dominated; every non-member is dominated by a front member.",
+ "experiment": "Exhaustive pairwise dominance on the T024 route set; two-objective fronts for length/amplification and length/margin; retained JSON and SVG.",
+ "failure_modes_checked": [
+  "ties in objectives",
+  "censored margins",
+  "dominance violations counted exhaustively",
+  "front members past a conjugate point flagged"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "dominance violations (members dominated or non-members undominated)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 5.0,
+      "passed": true,
+      "reference": "front size",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 2.0
+     }
+    ],
+    "derivation": "The shortest route is always on the front: no route is strictly shorter, so none dominates it (exact length ties aside)"
+   },
+   "claim": "The three-objective front has several members, and every route off the front is dominated by a front member",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exhaustive dominance on the T024 values (which carry their own uncertainty)",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "front": [
+     0,
+     1,
+     2,
+     3,
+     4
+    ],
+    "front_members_past_conjugate_point": [
+     2
+    ],
+    "fronts_2d": {
+     "length_amplification": [
+      0,
+      1,
+      2
+     ],
+     "length_margin": [
+      0,
+      3
+     ]
+    },
+    "routes": 9
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "A Pareto-optimal route is safe to execute on a physical part",
+   "domain": "machine_safety",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 2971,
+   "path": "artifacts/T025/pareto.json",
+   "sha256": "73ce8bde169399984aa8b87ec5547b914f0f91c9408245b43072135bdcc38012"
+  },
+  {
+   "bytes": 2586,
+   "path": "artifacts/T025/pareto-length-amplification.svg",
+   "sha256": "853c42921bf8ff9286e35a7e334f70b47c00d3a82236e477a6258e1152967f4e"
+  }
+ ],
+ "hypothesis": "Length, amplification and focus margin conflict, so the three-objective Pareto front of the torus routes has several members.",
+ "input_data": [
+  "T024 routes (same run, shared memo)"
+ ],
+ "mathematical_model": "Minimize (L, |j_head(L)|, -margin) with censored margins treated as +infinity; a dominates b when no worse in every objective and better in one. The shortest route is on the front by definition (nothing is shorter), so its membership is not a test.",
+ "number": 25,
+ "numerical_result": "3-objective front [0, 1, 2, 3, 4] of 9 routes (members past a conjugate point: [2]); length/amplification front [0, 1, 2]; length/margin front [0, 3]; targeting condition 1/|j_head| of front members [0.545, 1.27, 2.286, 0.028, 0.028].",
+ "observation_model": "No physical observation: exact or floating-point computation on declared mathematical objects.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/flat_torus_topology.py": "4d8cf2437759501a1b9fa5ee0d8abfac43345ebee378c6ad08233e9155d4b184",
+   "src/ciw/lab/flat_torus_topology_routes.py": "cc2f3a7ce7a919c0aa83509104816ba8f4fedb15e14f5004c5982f8fff4de17a"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T032: build the counterexample library for 'shortest means safest'",
+ "report_id": "sha256:3974b5d19da3e92732ce73341cd3a87bee411563e4cf7d0f8912f83190c2fb26",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "flat-torus-topology",
+ "state": "completed",
+ "task_id": "T025",
+ "tests_passed": [
+  "check: The three-objective front has several members, and every route off the front is dominated by a front member vs dominance violations (members dominated or non-members undominated)",
+  "check: The three-objective front has several members, and every route off the front is dominated by a front member vs front size",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_t024_t025_route_ranking_and_front",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_route_helpers",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+ ],
+ "tests_skipped": [],
+ "title": "Generate Pareto fronts for length, amplification, and focus margin.",
+ "uncertainty": "Inherits T024 route uncertainty (<= 1e-5 relative); front membership is exact given the values.",
+ "unresolved_assumptions": [
+  "Objectives are unweighted; a decision needs weights or constraints that the workbench does not set.",
+  "Small |j_head(L)| is not robustness: the targeting condition number 1/|j_head(L)| grows as q approaches a conjugate point, and a route with negative focus margin is not locally minimizing."
+ ]
+}

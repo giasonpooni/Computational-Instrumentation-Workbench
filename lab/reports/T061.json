@@ -1,0 +1,385 @@
+{
+ "changed_files": [
+  "src/ciw/lab/sensor_fusion.py",
+  "src/ciw/lab/sensor_fusion_common.py",
+  "src/ciw/lab/sensor_fusion_bench.py",
+  "src/ciw/lab/sensor_fusion_objects.py"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 4,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "max |z| <= z_crit under the declared model; detection power of a misstated covariance given by the chi-square law, near 1 when (1 - c)/c exceeds z_crit sqrt(2/N) and near 1/2 when they are equal.",
+ "experiment": "Compute residual moments per stream and the process-noise moments, standardize, compare with the Bonferroni bound; compute the exact power of the variance test against a covariance declared 10% low and check it with replicate tracker streams; check Q against the continuous-time integral and the semigroup identity.",
+ "failure_modes_checked": [
+  "nonzero residual mean",
+  "misstated variances",
+  "misstated cross-covariance",
+  "process-noise structure checked against the continuous-time integral and the semigroup identity (the moment test alone compares Q with its own draws)",
+  "insufficient samples for low-rate sensors (power quantified, not read off one seed)"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 3.2379033796806405,
+      "passed": true,
+      "reference": "Gaussian sampling law Var(S_ij) = (R_ij^2 + R_ii R_jj)/N",
+      "reference_kind": "analytic",
+      "tolerance": 4.133588386895672
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "runs": 50,
+     "seed": 602026
+    }
+   },
+   "claim": "Sample means and covariances of every sensor residual z - h(truth) and of the process noise x_{k+1} - F x_k agree with the declared covariances within a Bonferroni-corrected 99.9% Monte Carlo bound",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "each standardized moment has unit sampling standard deviation; the bound is family-wise",
+    "kind": "monte_carlo_95ci",
+    "value": 1.96
+   },
+   "unit": null,
+   "value": {
+    "max_abs_z": 3.2379033796806405,
+    "moments_tested": 28,
+    "z_critical": 4.133588386895672
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 0.9996637457152081,
+      "passed": true,
+      "reference": "smallest exact per-variance power of the camera, encoder and IMU streams",
+      "reference_kind": "analytic",
+      "tolerance": 0.999
+     },
+     {
+      "comparison": "le",
+      "observed": 0.4901452071629382,
+      "passed": true,
+      "reference": "exact tracker detection power (two independent variances)",
+      "reference_kind": "analytic",
+      "tolerance": 0.6
+     },
+     {
+      "comparison": "ge",
+      "observed": 0.4901452071629382,
+      "passed": true,
+      "reference": "exact tracker detection power",
+      "reference_kind": "analytic",
+      "tolerance": 0.4
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.6059259893077257,
+      "passed": true,
+      "reference": "replicate detection frequency against the exact power (binomial z)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "replicates": 400,
+     "seed": 602087
+    }
+   },
+   "claim": "At this sample size a 10% understatement of every declared variance is detected with probability above 0.999 per variance for the 10-20 Hz streams but only about half the time for the 2 Hz tracker (exact chi-square power); replicate tracker noise streams reproduce that power",
+   "counterexample": {
+    "statement": "A covariance check on one bench run detects a 10% misstatement for every sensor",
+    "witness": {
+     "detected_this_run": false,
+     "detection_power": 0.4901452071629382,
+     "samples": 2000,
+     "sensor": "tracker",
+     "z_critical": 4.133588386895672,
+     "z_this_run": 3.48247611344711
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "binomial standard error of the replicate detection frequency; the exact powers carry chi-square series roundoff below 1e-9",
+    "kind": "monte_carlo_95ci",
+    "value": 0.04899048161521137
+   },
+   "unit": null,
+   "value": {
+    "power": {
+     "camera": {
+      "detected_in_this_run": true,
+      "per_axis": 0.9996637457152081,
+      "samples": 10000,
+      "stream_bounds": [
+       0.9996637457152081,
+       1.0
+      ],
+      "stream_exact": null
+     },
+     "encoder": {
+      "detected_in_this_run": true,
+      "per_axis": 1.0,
+      "samples": 20000,
+      "stream_bounds": [
+       1.0,
+       1.0
+      ],
+      "stream_exact": 1.0
+     },
+     "imu": {
+      "detected_in_this_run": true,
+      "per_axis": 1.0,
+      "samples": 20000,
+      "stream_bounds": [
+       1.0,
+       1.0
+      ],
+      "stream_exact": 1.0
+     },
+     "tracker": {
+      "detected_in_this_run": false,
+      "per_axis": 0.28595882973244335,
+      "samples": 2000,
+      "stream_bounds": [
+       0.28595882973244335,
+       0.5719176594648867
+      ],
+      "stream_exact": 0.4901452071629382
+     }
+    },
+    "tracker_replicate_detection": {
+     "confidence": 0.999,
+     "count": 190,
+     "rate": 0.475,
+     "trials": 400,
+     "wilson": [
+      0.3945858519406198,
+      0.5567319230898616
+     ]
+    },
+    "tracker_replicate_z": -0.6059259893077257,
+    "variance_z_this_run": {
+     "camera": 8.208263976744652,
+     "encoder": 12.213698049774,
+     "imu": 12.156730695751257,
+     "tracker": 3.48247611344711
+    },
+    "z_critical": 4.133588386895672
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 0.002875895675814699,
+      "passed": true,
+      "reference": "max relative gap between the closed form and the exact 50%-power level",
+      "reference_kind": "analytic",
+      "tolerance": 0.01
+     }
+    ],
+    "derivation": "E z = sqrt(N/2) (1 - c)/c for declared c R; setting E z = z_crit gives delta = (1 - c)/c = z_crit sqrt(2/N)"
+   },
+   "claim": "The relative variance misstatement that one variance test flags with probability one half is z_crit sqrt(2 / N) to within 1% of the exact chi-square value for every stream",
+   "domain": "mathematical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "relative gap of the normal closed form to the exact chi-square bisection",
+    "kind": "reference_error",
+    "value": 0.002875895675814699
+   },
+   "unit": null,
+   "value": {
+    "camera": {
+     "closed_form": 0.058457767580157846,
+     "exact": 0.05852833529932944
+    },
+    "encoder": {
+     "closed_form": 0.04133588386895672,
+     "exact": 0.0413705960144678
+    },
+    "imu": {
+     "closed_form": 0.04133588386895672,
+     "exact": 0.0413705960144678
+    },
+    "tracker": {
+     "closed_form": 0.1307155421221163,
+     "exact": 0.13109255062158043
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 2.168404344971008e-16,
+      "passed": true,
+      "reference": "three-point Gauss-Legendre integral against Q (relative)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 2.0328790734103203e-16,
+      "passed": true,
+      "reference": "semigroup identity (relative)",
+      "reference_kind": "invariant",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "ge",
+      "observed": 0.2500000000000002,
+      "passed": true,
+      "reference": "alternative discretization against the integral (relative)",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     }
+    ],
+    "derivation": "white-noise acceleration: dx = A x dt + G dW, F(u) = exp(A u)"
+   },
+   "claim": "The declared process-noise covariance Q(dt) equals the continuous-time integral of F(u) G q G^T F(u)^T and composes as Q(a + b) = F(b) Q(a) F(b)^T + Q(b); the discrete white-noise-acceleration alternative fails the integral",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "observed floating-point residual of an exact identity",
+    "kind": "roundoff",
+    "value": 2.168404344971008e-16
+   },
+   "unit": null,
+   "value": {
+    "alternative_model_relative_error": 0.2500000000000002,
+    "dt": 0.05,
+    "q": 0.05,
+    "quadrature_relative_error": 2.168404344971008e-16,
+    "semigroup_relative_error": 2.0328790734103203e-16
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "seed": 602026
+    },
+    "notes": "synthetic draws only; no acquisition"
+   },
+   "claim": "Real sensors' noise covariance equals the covariance declared for this bench",
+   "domain": "sensor_performance",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": "not established: residuals are synthetic draws from the declared covariance"
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 3996,
+   "path": "artifacts/T061/covariance_moments.json",
+   "sha256": "8555feccdb0f1a3515133e10e2abb08ddbf4bb2cc28601b8cb7f2e04a4563048"
+  },
+  {
+   "bytes": 3963,
+   "path": "artifacts/T061/zscores.svg",
+   "sha256": "709f154b680b8840ad0c93668695ce81be1f6e51cc0da9a0ff56d82b8e383371"
+  }
+ ],
+ "hypothesis": "The empirical residual and process-noise moments reproduce the declared means (zero) and covariances within a stated Monte Carlo bound, and the bound's power against a misstated covariance is quantified exactly rather than read off one run.",
+ "input_data": [
+  "T060 bench, seed 602026, 50 replicas",
+  "camera: N = 10000, encoder: N = 20000, imu: N = 20000, tracker: N = 2000, process_noise: N = 20000",
+  "400 replicate tracker noise streams (seed 602087), drawn as generate_bench draws them"
+ ],
+ "mathematical_model": "For N i.i.d. N(0, R) residuals with known zero mean, S = sum r r^T / N has E S = R and Var S_ij = (R_ij^2 + R_ii R_jj)/N; the mean has Var = R_ii / N. 28 standardized moments are tested jointly with a Bonferroni bound at family error 1e-3. Power against a declared c R: N S_ii / R_ii ~ chi2(N), so the variance test flags with probability P(|chi2(N)/N - c| >= z_crit c sqrt(2/N)). Q(dt) = int_0^dt F(u) G q G^T F(u)^T du.",
+ "number": 61,
+ "numerical_result": "max |z| = 3.238 vs bound 4.134; under a 10% understatement the exact detection power is 0.490 for the tracker (replicates 0.475) and at least 0.9997 per variance for the other streams; in this run the tracker's variance z is 3.48 (not flagged); 50%-power misstatement for the tracker 0.131; Q against the integral 2.2e-16 relative.",
+ "observation_model": "Residual z - h(truth) recomputed from the retained truth (not the retained noise).",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/sensor_fusion.py": "65b367d0079a3a037969f69ceec717d0ec7279bb12bfc0d53ed5c08887b46a15",
+   "src/ciw/lab/sensor_fusion_bench.py": "f373849a4c6836fa20685c59ce7a6fe6bf732f6df9d6a49646cdc017262dd656",
+   "src/ciw/lab/sensor_fusion_common.py": "6787aa47d199d50d0b4de4d7e53714ce7b8b5aad37d647cfc1a954414e90209f",
+   "src/ciw/lab/sensor_fusion_objects.py": "a795ffc235e0a4118cb7b9ac7800191a90984372d79e59f1a934442d98d7a1f1"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T062: test independent versus correlated noise in the filter.",
+ "report_id": "sha256:82b11cb88d72d9957ccc4eafe23c57ee960b8098511ec420414d54e0d6398f3f",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "sensor-fusion",
+ "state": "completed",
+ "task_id": "T061",
+ "tests_passed": [
+  "check: Sample means and covariances of every sensor residual z - h(truth) and of the process noise x_{k+1} - F x_k agree with the declared covariances within a Bonferroni-corrected 99.9% Monte Carlo bound vs Gaussian sampling law Var(S_ij) = (R_ij^2 + R_ii R_jj)/N",
+  "check: At this sample size a 10% understatement of every declared variance is detected with probability above 0.999 per variance for the 10-20 Hz streams but only about half the time for the 2 Hz tracker (exact chi-square power); replicate tracker noise streams reproduce that power vs smallest exact per-variance power of the camera, encoder and IMU streams",
+  "check: At this sample size a 10% understatement of every declared variance is detected with probability above 0.999 per variance for the 10-20 Hz streams but only about half the time for the 2 Hz tracker (exact chi-square power); replicate tracker noise streams reproduce that power vs exact tracker detection power (two independent variances)",
+  "check: At this sample size a 10% understatement of every declared variance is detected with probability above 0.999 per variance for the 10-20 Hz streams but only about half the time for the 2 Hz tracker (exact chi-square power); replicate tracker noise streams reproduce that power vs exact tracker detection power",
+  "check: At this sample size a 10% understatement of every declared variance is detected with probability above 0.999 per variance for the 10-20 Hz streams but only about half the time for the 2 Hz tracker (exact chi-square power); replicate tracker noise streams reproduce that power vs replicate detection frequency against the exact power (binomial z)",
+  "check: The relative variance misstatement that one variance test flags with probability one half is z_crit sqrt(2 / N) to within 1% of the exact chi-square value for every stream vs max relative gap between the closed form and the exact 50%-power level",
+  "check: The declared process-noise covariance Q(dt) equals the continuous-time integral of F(u) G q G^T F(u)^T and composes as Q(a + b) = F(b) Q(a) F(b)^T + Q(b); the discrete white-noise-acceleration alternative fails the integral vs three-point Gauss-Legendre integral against Q (relative)",
+  "check: The declared process-noise covariance Q(dt) equals the continuous-time integral of F(u) G q G^T F(u)^T and composes as Q(a + b) = F(b) Q(a) F(b)^T + Q(b); the discrete white-noise-acceleration alternative fails the integral vs semigroup identity (relative)",
+  "check: The declared process-noise covariance Q(dt) equals the continuous-time integral of F(u) G q G^T F(u)^T and composes as Q(a + b) = F(b) Q(a) F(b)^T + Q(b); the discrete white-noise-acceleration alternative fails the integral vs alternative discretization against the integral (relative)",
+  "pytest: tests/test_lab_sensor_fusion.py::test_declared_covariance_matches_and_power_is_quantified",
+  "pytest: tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T061]"
+ ],
+ "tests_skipped": [],
+ "title": "Generate known ground truth and known covariance.",
+ "uncertainty": "The bound has family-wise false-alarm probability 1e-3 under the Gaussian model. Powers are exact chi-square probabilities; the replicate frequency carries binomial error (400 replicates). Whether one particular run flags the tracker is a coin flip at this N.",
+ "unresolved_assumptions": [
+  "Residuals are Gaussian and independent by construction; real residuals may be heavy-tailed, correlated or biased.",
+  "The heading-rate residual is exact because the truth heading rate is defined as the gyro's own integrated increment.",
+  "The camera's stream power is bounded, not exact, because its axis variances are correlated (both bounds exceed 0.999)."
+ ]
+}

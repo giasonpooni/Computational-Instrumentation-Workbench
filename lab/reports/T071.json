@@ -1,0 +1,397 @@
+{
+ "changed_files": [
+  "src/ciw/lab/sensor_fusion_robustness.py",
+  "src/ciw/lab/sensor_fusion_common.py",
+  "src/ciw/lab/sensor_fusion_bench.py",
+  "src/ciw/lab/sensor_fusion_objects.py"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 5,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Late ANIS above the interval and equal to the prediction for mixed frames; inside the interval after the transform; inside for the rotated sensor alone while NEES grows; API refusal code frame_mismatch.",
+ "experiment": "Three filters on the same readings (mixed frames, transformed, rotated sensor alone); per-tick ANIS against 99% chi-square intervals; late grand means against exact predictions; then the typed API with frame ids.",
+ "failure_modes_checked": [
+  "rotated frame with a reference sensor",
+  "rotated frame alone",
+  "mismatch near the rotation centre",
+  "wrong source frame in a transform",
+  "frame-id mismatch at the API"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "fraction of ticks 51-100 above the 99% upper bound",
+      "reference_kind": "analytic",
+      "tolerance": 0.9
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.08762596148209147,
+      "passed": true,
+      "reference": "late grand NIS against the exact prediction (run-level z)",
+      "reference_kind": "analytic",
+      "tolerance": 3.5879146722879613
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "runs": 200,
+     "seed": 712026,
+     "ticks": 100
+    }
+   },
+   "claim": "Fusing a tracker expressed in a frame rotated by 2 degrees with a world-frame camera inflates NIS as the target moves away from the rotation centre, matching the exact mismatched-filter moments within sampling error",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "run-level standard error of the late grand NIS",
+    "kind": "monte_carlo_95ci",
+    "value": 0.322976081175845
+   },
+   "unit": null,
+   "value": {
+    "dof": 4,
+    "early_fraction_inside": 0.95,
+    "final_nees": 313.793072652473,
+    "final_predicted_nees": 308.36830232417213,
+    "late_fraction_above": 1.0,
+    "late_fraction_inside": 0.0,
+    "late_grand_nis": 7.450613588041438,
+    "late_predicted_nis": 7.465052919494883,
+    "late_z_vs_predicted": -0.08762596148209147
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 0.95,
+      "passed": true,
+      "reference": "fraction of ticks 1-20 inside the 99% interval",
+      "reference_kind": "analytic",
+      "tolerance": 0.9
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "seed": 712026
+    }
+   },
+   "claim": "Near the rotation centre (ticks 1-20) the same mismatch goes undetected by the per-tick NIS test at this sample size; its predicted inflation there is only about 2%",
+   "counterexample": {
+    "statement": "A passing NIS test shows that the sensor frames agree",
+    "witness": {
+     "fraction_inside": 0.95,
+     "rotation_deg": 2.0,
+     "ticks": "1-20"
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "run-level standard error of the early grand NIS",
+    "kind": "monte_carlo_95ci",
+    "value": 0.07709247481719661
+   },
+   "unit": null,
+   "value": {
+    "early_fraction_inside": 0.95,
+    "early_predicted_nis": 4.090633987763374
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 0.98,
+      "passed": true,
+      "reference": "fraction of ticks 51-100 inside the 99% NIS interval",
+      "reference_kind": "analytic",
+      "tolerance": 0.9
+     },
+     {
+      "comparison": "ge",
+      "observed": 343.25789304896057,
+      "passed": true,
+      "reference": "final ANEES",
+      "reference_kind": "analytic",
+      "tolerance": 20.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.014803712155967874,
+      "passed": true,
+      "reference": "final ANEES against the exact prediction, relative",
+      "reference_kind": "analytic",
+      "tolerance": 0.25
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "seed": 712026
+    }
+   },
+   "claim": "A rotated sensor fused alone keeps NIS consistent (its readings form a rotated constant-velocity path) while NEES grows: the estimate is confidently in the wrong frame",
+   "counterexample": {
+    "statement": "A frame mismatch always produces NIS inflation",
+    "witness": {
+     "final_nees": 343.25789304896057,
+     "late_grand_nis": 1.9946921697683178,
+     "sensors": "rotated tracker alone"
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "standard error of the final ANEES across runs",
+    "kind": "monte_carlo_95ci",
+    "value": 32.936654668754635
+   },
+   "unit": null,
+   "value": {
+    "dof": 2,
+    "early_fraction_inside": 1.0,
+    "final_nees": 343.25789304896057,
+    "final_predicted_nees": 338.25052957256463,
+    "late_fraction_above": 0.0,
+    "late_fraction_inside": 0.98,
+    "late_grand_nis": 1.9946921697683178,
+    "late_predicted_nis": 2.0000000000000178,
+    "late_z_vs_predicted": -0.2759986175661322
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 0.96,
+      "passed": true,
+      "reference": "fraction of ticks 51-100 inside the 99% interval",
+      "reference_kind": "analytic",
+      "tolerance": 0.9
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.5120697487985696,
+      "passed": true,
+      "reference": "late grand NIS against 4 (run-level z)",
+      "reference_kind": "analytic",
+      "tolerance": 3.5879146722879613
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "seed": 712026
+    }
+   },
+   "claim": "Applying the declared FrameTransform before fusion restores chi-square consistency",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "run-level standard error of the late grand NIS",
+    "kind": "monte_carlo_95ci",
+    "value": 0.05410659200218101
+   },
+   "unit": null,
+   "value": {
+    "dof": 4,
+    "early_fraction_inside": 1.0,
+    "final_nees": 4.0809639998989296,
+    "final_predicted_nees": 4.000000000013028,
+    "late_fraction_above": 0.02,
+    "late_fraction_inside": 0.96,
+    "late_grand_nis": 3.985864107666181,
+    "late_predicted_nis": 4.000000000000316,
+    "late_z_vs_predicted": -0.5120697487985696
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "frame_mismatch",
+      "observed_refusal": "frame_mismatch",
+      "passed": true,
+      "reference": "fuse a tracker-frame observation into a world session",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "frame_mismatch",
+      "observed_refusal": "frame_mismatch",
+      "passed": true,
+      "reference": "apply a camera-frame transform to a tracker-frame observation",
+      "reference_kind": "refusal"
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "fusion after the explicit transform refused",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "refused observation not retained",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     }
+    ],
+    "derivation": "FusionSession._admissible_source and FrameTransform.apply"
+   },
+   "claim": "The session refuses an observation whose frame id differs from its own, and a transform refuses an observation from another source frame; the refused observation is retained in the log",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "refusal codes and log dispositions",
+    "kind": "reference_error",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "fuse_after_transform": "none",
+    "fuse_in_wrong_frame": "frame_mismatch",
+    "log_dispositions": [
+     "refused:frame_mismatch",
+     "fused"
+    ],
+    "transform_from_wrong_frame": "frame_mismatch"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "seed": 712026
+    },
+    "notes": "synthetic draws only; no acquisition"
+   },
+   "claim": "A 2 degree rotation is the size of a real extrinsic calibration error",
+   "domain": "calibration",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": "not established: the rotation is a declared synthetic fault"
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 31173,
+   "path": "artifacts/T071/frame_mismatch.json",
+   "sha256": "5dd0ff49abd3faee8c1d9e15635487330b291bd59ff0e52e1d1427c3a0dd1611"
+  },
+  {
+   "bytes": 6821,
+   "path": "artifacts/T071/anis_frames.svg",
+   "sha256": "fe81588cb227a1834b5cc65f739cf120c8e19cd1b0ab6faece355e1012edb563"
+  }
+ ],
+ "hypothesis": "A measurement expressed in a rotated frame inflates NIS when another sensor fixes the true frame; alone it is invisible to NIS; frame-id mismatches must therefore be refused at the API rather than left to statistical detection.",
+ "input_data": [
+  "seed 712026 (PCG64)",
+  "200 runs x 100 ticks",
+  "camera (world frame) and tracker (rotated frame) every tick"
+ ],
+ "mathematical_model": "Tracker readings R(theta)^T p + v with theta = 2 deg about the world origin; filter assumes p + v. The bias (R^T - I) p grows with |p|. Expected NIS/NEES per tick from the exact joint moments of [x; x_hat] (mismatch_moments).",
+ "number": 71,
+ "numerical_result": "mixed: late ANIS 7.45 (predicted 7.47), early inside 0.95; transformed late inside 0.96; rotated alone late ANIS 1.99, final ANEES 343.3 (predicted 338.3); API: frame_mismatch.",
+ "observation_model": "Stacked 4-vector (camera, tracker) or tracker alone; FrameTransform rotates value and covariance by R(theta).",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/sensor_fusion_bench.py": "f373849a4c6836fa20685c59ce7a6fe6bf732f6df9d6a49646cdc017262dd656",
+   "src/ciw/lab/sensor_fusion_common.py": "6787aa47d199d50d0b4de4d7e53714ce7b8b5aad37d647cfc1a954414e90209f",
+   "src/ciw/lab/sensor_fusion_objects.py": "a795ffc235e0a4118cb7b9ac7800191a90984372d79e59f1a934442d98d7a1f1",
+   "src/ciw/lab/sensor_fusion_robustness.py": "9c94ececd04bce6abe83323c53b0ffee060b99e4b9f9fb8e3b58ec22c24516ec"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T072: calibration expiry, the temporal validity of the declared transform and noise.",
+ "report_id": "sha256:ef3b37b040ea8526de62b418716664ea2f389c0ecabcf9aecf2ca0772adb905f",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "sensor-fusion",
+ "state": "completed",
+ "task_id": "T071",
+ "tests_passed": [
+  "check: Fusing a tracker expressed in a frame rotated by 2 degrees with a world-frame camera inflates NIS as the target moves away from the rotation centre, matching the exact mismatched-filter moments within sampling error vs fraction of ticks 51-100 above the 99% upper bound",
+  "check: Fusing a tracker expressed in a frame rotated by 2 degrees with a world-frame camera inflates NIS as the target moves away from the rotation centre, matching the exact mismatched-filter moments within sampling error vs late grand NIS against the exact prediction (run-level z)",
+  "check: Near the rotation centre (ticks 1-20) the same mismatch goes undetected by the per-tick NIS test at this sample size; its predicted inflation there is only about 2% vs fraction of ticks 1-20 inside the 99% interval",
+  "check: A rotated sensor fused alone keeps NIS consistent (its readings form a rotated constant-velocity path) while NEES grows: the estimate is confidently in the wrong frame vs fraction of ticks 51-100 inside the 99% NIS interval",
+  "check: A rotated sensor fused alone keeps NIS consistent (its readings form a rotated constant-velocity path) while NEES grows: the estimate is confidently in the wrong frame vs final ANEES",
+  "check: A rotated sensor fused alone keeps NIS consistent (its readings form a rotated constant-velocity path) while NEES grows: the estimate is confidently in the wrong frame vs final ANEES against the exact prediction, relative",
+  "check: Applying the declared FrameTransform before fusion restores chi-square consistency vs fraction of ticks 51-100 inside the 99% interval",
+  "check: Applying the declared FrameTransform before fusion restores chi-square consistency vs late grand NIS against 4 (run-level z)",
+  "check: The session refuses an observation whose frame id differs from its own, and a transform refuses an observation from another source frame; the refused observation is retained in the log vs fuse a tracker-frame observation into a world session",
+  "check: The session refuses an observation whose frame id differs from its own, and a transform refuses an observation from another source frame; the refused observation is retained in the log vs apply a camera-frame transform to a tracker-frame observation",
+  "check: The session refuses an observation whose frame id differs from its own, and a transform refuses an observation from another source frame; the refused observation is retained in the log vs fusion after the explicit transform refused",
+  "check: The session refuses an observation whose frame id differs from its own, and a transform refuses an observation from another source frame; the refused observation is retained in the log vs refused observation not retained",
+  "pytest: tests/test_lab_sensor_fusion.py::test_frame_mismatch_inflation_blind_spot_and_refusal",
+  "pytest: tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T071]"
+ ],
+ "tests_skipped": [],
+ "title": "Add frame mismatch behavior.",
+ "uncertainty": "Per-tick 99% intervals and run-level z-tests; predictions are exact for the declared linear-Gaussian model.",
+ "unresolved_assumptions": [
+  "The transform is exact; an uncertain extrinsic needs its own covariance term.",
+  "Rotation about the world origin only; a translated frame adds a constant bias."
+ ]
+}

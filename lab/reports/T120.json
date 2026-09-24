@@ -1,0 +1,450 @@
+{
+ "changed_files": [
+  "src/ciw/lab/energy_gpu.py",
+  "src/ciw/lab/energy_gpu_kernels.py",
+  "src/ciw/lab/energy_gpu_telemetry.py",
+  "docs/lab/ENERGY_GPU.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 5,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "float64 order near 4; float32 minimum inside the grid, above float32 roundoff and followed by a roundoff plateau; counted operations per step equal.",
+ "experiment": "Vectorized RK4 in float32 and float64 across the step grid; smallest grid N per accuracy target; operation counts derived from the kernel source and checked by running one step of the same code on counting scalars.",
+ "failure_modes_checked": [
+  "dtype promotion to float64 (asserted)",
+  "roundoff floor mistaken for convergence (minimum must lie inside the grid)",
+  "target unreachable at any N (counterexample)"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": -0.03673221091824841,
+      "passed": true,
+      "reference": "RK4 global order 4",
+      "reference_kind": "analytic",
+      "tolerance": 0.3
+     }
+    ],
+    "generator": {
+     "grid": [
+      16,
+      32,
+      64,
+      128,
+      256,
+      512,
+      1024,
+      2048
+     ],
+     "headings_rad": [
+      0.7,
+      0.85,
+      1.0,
+      1.15,
+      1.3,
+      1.45
+     ],
+     "length": 3.0,
+     "name": "equatorial unit-sphere geodesics",
+     "seed": null
+    }
+   },
+   "claim": "float64 RK4 endpoint error converges at order 4 on the sphere geodesics (N = 16..256)",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.05,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "rms residual of the least-squares log-log fit (natural log)",
+    "kind": "fit_residual",
+    "value": 0.016602103424221967
+   },
+   "unit": "order",
+   "value": 3.9632677890817516
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 5.0,
+      "passed": true,
+      "reference": "grid positions after the float32 minimum",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 4.853471577427914,
+      "passed": true,
+      "reference": "float32 error at N = 2048 over its minimum",
+      "reference_kind": "self_convergence",
+      "tolerance": 2.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 10600956.991972104,
+      "passed": true,
+      "reference": "float32 over float64 error at N = 2048 (roundoff, not truncation)",
+      "reference_kind": "high_precision",
+      "tolerance": 10000.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 5.826263982645739e-07,
+      "passed": true,
+      "reference": "float32 minimum above the unit roundoff 2^-24 = 6.0e-8",
+      "reference_kind": "analytic",
+      "tolerance": 1e-07
+     }
+    ],
+    "generator": {
+     "grid": [
+      16,
+      32,
+      64,
+      128,
+      256,
+      512,
+      1024,
+      2048
+     ],
+     "headings_rad": [
+      0.7,
+      0.85,
+      1.0,
+      1.15,
+      1.3,
+      1.45
+     ],
+     "length": 3.0,
+     "name": "equatorial unit-sphere geodesics",
+     "seed": null
+    }
+   },
+   "claim": "float32 RK4 endpoint error stops improving: its minimum is a truncation/roundoff crossover inside the step grid, followed by a roundoff-dominated plateau above it",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 1.0
+   },
+   "uncertainty": {
+    "basis": "float32 sin/cos implementations differ by platform; plateau errors vary by tens of percent (regression tolerance rel 1.0)",
+    "kind": "roundoff",
+    "value": null
+   },
+   "unit": "normalized length",
+   "value": {
+    "crossover_min_error": 5.826263982645739e-07,
+    "crossover_steps": 64,
+    "error_at_2048": 2.8277606642363056e-06,
+    "float64_error_at_2048": 2.667457915712433e-13,
+    "plateau_median_error_n_ge_128": 2.457571461271778e-06
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "float64 reaches all five targets",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "grid": [
+      16,
+      32,
+      64,
+      128,
+      256,
+      512,
+      1024,
+      2048
+     ],
+     "headings_rad": [
+      0.7,
+      0.85,
+      1.0,
+      1.15,
+      1.3,
+      1.45
+     ],
+     "length": 3.0,
+     "name": "equatorial unit-sphere geodesics",
+     "seed": null
+    }
+   },
+   "claim": "Smallest grid N (>= 16) meeting each accuracy target, by precision (None: not reached for N <= 2048; 16 is censored at the grid minimum)",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 1.0
+   },
+   "uncertainty": {
+    "basis": "the true minimal N lies within a factor 2 below the tabulated grid value",
+    "kind": "grid_resolution",
+    "value": 2.0
+   },
+   "unit": null,
+   "value": {
+    "0.0001": {
+     "float32": 16,
+     "float64": 16
+    },
+    "1e-05": {
+     "float32": 32,
+     "float64": 32
+    },
+    "1e-07": {
+     "float32": null,
+     "float64": 128
+    },
+    "1e-10": {
+     "float32": null,
+     "float64": 512
+    },
+    "1e-11": {
+     "float32": null,
+     "float64": 1024
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "grid points where float32 meets 1e-7",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "grid": [
+      16,
+      32,
+      64,
+      128,
+      256,
+      512,
+      1024,
+      2048
+     ],
+     "headings_rad": [
+      0.7,
+      0.85,
+      1.0,
+      1.15,
+      1.3,
+      1.45
+     ],
+     "length": 3.0,
+     "name": "equatorial unit-sphere geodesics",
+     "seed": null
+    }
+   },
+   "claim": "Lowering precision to float32 cannot reach a 1e-7 endpoint accuracy at any step count up to 2048, while float64 reaches it",
+   "counterexample": {
+    "statement": "Halving floating-point precision reaches every accuracy target at no greater operation count",
+    "witness": {
+     "float32_min_error": 5.826263982645739e-07,
+     "float64_steps": 128,
+     "target": 1e-07
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 1.0
+   },
+   "uncertainty": {
+    "basis": "float32 sin/cos implementations differ by platform; plateau errors vary by tens of percent (regression tolerance rel 1.0)",
+    "kind": "roundoff",
+    "value": null
+   },
+   "unit": null,
+   "value": {
+    "float32_min_error": 5.826263982645739e-07,
+    "float64_steps": 128
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "instrumented flops minus the count derived from the source: 4 x (6 mul + 1 div) + 3 x 4 x 2 stage + 4 x 5 + 4 x 2 combine",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "instrumented sin/cos calls minus 4 x 2",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "grid": [
+      16,
+      32,
+      64,
+      128,
+      256,
+      512,
+      1024,
+      2048
+     ],
+     "headings_rad": [
+      0.7,
+      0.85,
+      1.0,
+      1.15,
+      1.3,
+      1.45
+     ],
+     "instrumented_trajectories": 1,
+     "length": 3.0,
+     "name": "equatorial unit-sphere geodesics",
+     "seed": null
+    }
+   },
+   "claim": "Per RK4 step the kernel performs the same counted arithmetic in both precisions (the float32 and float64 transcendental implementations differ)",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "integer counts, refusal codes or exact comparisons",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "flops_per_step": 80,
+    "instrumented": {
+     "flops": 80,
+     "transcendentals": 8
+    },
+    "rhs_evaluations_per_step": 4,
+    "state_bytes": {
+     "float32": 16,
+     "float64": 32
+    },
+    "state_values": 4,
+    "transcendentals_per_step": 8
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": [
+     "no energy counter is available; operation counts are only a proxy"
+    ]
+   },
+   "claim": "float32 lowers the energy per accepted trajectory relative to float64 on real CPU or GPU hardware",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": "J/trajectory",
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 1087,
+   "path": "artifacts/T120/precision.json",
+   "sha256": "2391ac6836f7ef6ffb65e680a65af8f3386f812e0f94fafa0e52d20aea28624d"
+  },
+  {
+   "bytes": 3333,
+   "path": "artifacts/T120/precision.svg",
+   "sha256": "85a212120901eb6c5c3f0c46ad09ab45c2a8584631bed5da138c1506baacea21"
+  }
+ ],
+ "hypothesis": "float32 RK4 matches float64 until truncation error reaches float32 roundoff, after which more steps cannot buy accuracy; the counted operations per step are precision-independent.",
+ "input_data": [
+  "6 equatorial sphere geodesics, L = 3.0, N in [16, 32, 64, 128, 256, 512, 1024, 2048]"
+ ],
+ "mathematical_model": "Global error ~ C h^4 + c N u with u = 2^-24 (float32) or 2^-53 (float64); cost ~ 4 N right-hand-side evaluations of fixed counted arithmetic.",
+ "number": 120,
+ "numerical_result": "float64 order 3.963; float32 crossover minimum 5.83e-07 at N = 64, plateau median 2.46e-06 for N >= 128; smallest grid N per target {'0.0001': {'float32': 16, 'float64': 16}, '1e-05': {'float32': 32, 'float64': 32}, '1e-07': {'float32': None, 'float64': 128}, '1e-10': {'float32': None, 'float64': 512}, '1e-11': {'float32': None, 'float64': 1024}}.",
+ "observation_model": "Endpoints computed entirely in the declared dtype, mapped to R^3 and compared in float64 with the exact great circle; maximum over trajectories.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/energy_gpu.py": "fca900557e7fac2261a168afe0ee81efc48508a874a5045bf4f6b74937165bb1",
+   "src/ciw/lab/energy_gpu_kernels.py": "03f3d92f8407f476cb74536911d476929843ee74232a7d7017c00f43c785a2b4",
+   "src/ciw/lab/energy_gpu_telemetry.py": "21cac5f654ce4a120887ff40da62fda47bd38a3c383bbad6cc3cb13b4168fa2d"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T115/T116 energy measurement of both precisions on hardware; T148 for deterministic reduction policies",
+ "report_id": "sha256:a619044e6d206bbf97174f8f3f1623fd0bd26e29aca608f3365596ec8b9fbb8a",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "energy-gpu",
+ "state": "partial",
+ "task_id": "T120",
+ "tests_passed": [
+  "check: float64 RK4 endpoint error converges at order 4 on the sphere geodesics (N = 16..256) vs RK4 global order 4",
+  "check: float32 RK4 endpoint error stops improving: its minimum is a truncation/roundoff crossover inside the step grid, followed by a roundoff-dominated plateau above it vs grid positions after the float32 minimum",
+  "check: float32 RK4 endpoint error stops improving: its minimum is a truncation/roundoff crossover inside the step grid, followed by a roundoff-dominated plateau above it vs float32 error at N = 2048 over its minimum",
+  "check: float32 RK4 endpoint error stops improving: its minimum is a truncation/roundoff crossover inside the step grid, followed by a roundoff-dominated plateau above it vs float32 over float64 error at N = 2048 (roundoff, not truncation)",
+  "check: float32 RK4 endpoint error stops improving: its minimum is a truncation/roundoff crossover inside the step grid, followed by a roundoff-dominated plateau above it vs float32 minimum above the unit roundoff 2^-24 = 6.0e-8",
+  "check: Smallest grid N (>= 16) meeting each accuracy target, by precision (None: not reached for N <= 2048; 16 is censored at the grid minimum) vs float64 reaches all five targets",
+  "check: Lowering precision to float32 cannot reach a 1e-7 endpoint accuracy at any step count up to 2048, while float64 reaches it vs grid points where float32 meets 1e-7",
+  "check: Per RK4 step the kernel performs the same counted arithmetic in both precisions (the float32 and float64 transcendental implementations differ) vs instrumented flops minus the count derived from the source: 4 x (6 mul + 1 div) + 3 x 4 x 2 stage + 4 x 5 + 4 x 2 combine",
+  "check: Per RK4 step the kernel performs the same counted arithmetic in both precisions (the float32 and float64 transcendental implementations differ) vs instrumented sin/cos calls minus 4 x 2",
+  "pytest: tests/test_lab_energy_gpu.py::test_precision_study_float32_floor_and_counterexample",
+  "pytest: tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance"
+ ],
+ "tests_skipped": [],
+ "title": "Compare precision versus energy cost.",
+ "uncertainty": "float32 errors depend on the platform's float32 sin/cos and vary by tens of percent; float64 order fit is stable to about 0.05.",
+ "unresolved_assumptions": [
+  "Energy cost was not measured; operation counts do not capture memory traffic, vector width, transcendental cost or GPU float32 throughput"
+ ]
+}

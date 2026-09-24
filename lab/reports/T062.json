@@ -1,0 +1,363 @@
+{
+ "changed_files": [
+  "src/ciw/lab/sensor_fusion.py",
+  "src/ciw/lab/sensor_fusion_common.py",
+  "src/ciw/lab/sensor_fusion_bench.py",
+  "src/ciw/lab/sensor_fusion_objects.py"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 4,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Correct model: E NEES = 4, E NIS = 4, whitened innovations ~ N(0, I). Ignored model: E NEES = tr(P^-1 E ee^T) = 5.44, E NIS = 3.91.",
+ "experiment": "Run both filters on the same readings; per-tick ANEES/ANIS against chi2(4N)/N 99% intervals; sample covariance of Cholesky-whitened innovations (ticks 21-100) against I.",
+ "failure_modes_checked": [
+  "dropped cross-covariance",
+  "NIS blind spot (trace insensitive to off-diagonal blocks)",
+  "filter/truth prior mismatch (excluded by construction)",
+  "prediction-vs-simulation disagreement"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 0.98,
+      "passed": true,
+      "reference": "fraction of ticks with ANEES in chi2(4N)/N 99% interval",
+      "reference_kind": "analytic",
+      "tolerance": 0.9
+     },
+     {
+      "comparison": "ge",
+      "observed": 0.99,
+      "passed": true,
+      "reference": "fraction of ticks with ANIS in chi2(4N)/N 99% interval",
+      "reference_kind": "analytic",
+      "tolerance": 0.9
+     },
+     {
+      "comparison": "le",
+      "observed": 1.4486690572953456,
+      "passed": true,
+      "reference": "whitened innovation covariance vs I (Bonferroni 99.9%)",
+      "reference_kind": "analytic",
+      "tolerance": 3.89059188641312
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "runs": 200,
+     "seed": 602088,
+     "ticks": 100
+    }
+   },
+   "claim": "With the correct cross-correlated measurement covariance, run-averaged NEES and NIS lie inside their 99% chi-square intervals and the whitened innovations have identity covariance",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "run-level standard error of the grand-mean NEES",
+    "kind": "monte_carlo_95ci",
+    "value": 0.11339734338566543
+   },
+   "unit": null,
+   "value": {
+    "nees": {
+     "fraction_above": 0.02,
+     "fraction_below": 0.0,
+     "fraction_inside": 0.98,
+     "grand_mean": 4.06588830470077,
+     "interval": [
+      3.5036250326357607,
+      4.533930905960961
+     ],
+     "runs": 200,
+     "ticks": 100
+    },
+    "nis": {
+     "fraction_above": 0.01,
+     "fraction_below": 0.0,
+     "fraction_inside": 0.99,
+     "grand_mean": 4.00150349945739,
+     "interval": [
+      3.5036250326357607,
+      4.533930905960961
+     ],
+     "runs": 200,
+     "ticks": 100
+    },
+    "whitened_max_z": 1.4486690572953456,
+    "z_critical": 3.89059188641312
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "fraction of ticks with ANEES above the 99% upper bound",
+      "reference_kind": "analytic",
+      "tolerance": 0.9
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "seed": 602088
+    }
+   },
+   "claim": "Ignoring the camera-tracker cross-correlation makes the filter overconfident: run-averaged NEES exceeds the 99% upper bound at nearly every tick",
+   "counterexample": {
+    "statement": "Ignoring correlation between sensor noises is harmless",
+    "witness": {
+     "common_mode_covariance": 0.09,
+     "grand_mean_nees": 5.514214143152381,
+     "nominal": 4.0
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "run-level standard error of the grand-mean NEES",
+    "kind": "monte_carlo_95ci",
+    "value": 0.1498178335167287
+   },
+   "unit": null,
+   "value": {
+    "nees": {
+     "fraction_above": 1.0,
+     "fraction_below": 0.0,
+     "fraction_inside": 0.0,
+     "grand_mean": 5.514214143152381,
+     "interval": [
+      3.5036250326357607,
+      4.533930905960961
+     ],
+     "runs": 200,
+     "ticks": 100
+    },
+    "predicted_mean_nees": 5.4350781551546445
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 0.96,
+      "passed": true,
+      "reference": "fraction of ticks with ANIS inside the 99% interval",
+      "reference_kind": "analytic",
+      "tolerance": 0.9
+     },
+     {
+      "comparison": "ge",
+      "observed": 84.66993711053826,
+      "passed": true,
+      "reference": "whitened innovation covariance deviates from I",
+      "reference_kind": "analytic",
+      "tolerance": 3.89059188641312
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "seed": 602088
+    }
+   },
+   "claim": "The ignored-correlation filter still passes the mean-NIS test (grand mean near 4); only the full whitened-innovation covariance test exposes the missing cross-correlation",
+   "counterexample": {
+    "statement": "A passing mean-NIS chi-square test shows the measurement noise model is correct",
+    "witness": {
+     "grand_mean_nis": 3.9174506536208624,
+     "whitened_cross_term": 0.6662952145647711
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "run-level standard error of the grand-mean NIS",
+    "kind": "monte_carlo_95ci",
+    "value": 0.05242515376441485
+   },
+   "unit": null,
+   "value": {
+    "nis": {
+     "fraction_above": 0.01,
+     "fraction_below": 0.03,
+     "fraction_inside": 0.96,
+     "grand_mean": 3.9174506536208624,
+     "interval": [
+      3.5036250326357607,
+      4.533930905960961
+     ],
+     "runs": 200,
+     "ticks": 100
+    },
+    "whitened_max_z": 84.66993711053826,
+    "z_critical": 3.89059188641312
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 1.1388368841615117,
+      "passed": true,
+      "reference": "mismatch_moments exact propagation",
+      "reference_kind": "analytic",
+      "tolerance": 4.0
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "seed": 602088
+    }
+   },
+   "claim": "Monte Carlo grand-mean NEES and NIS of both filters agree with the exact second-moment prediction tr(P_f^-1 E[e e^T]) and tr(S_f^-1 E[nu nu^T]) within 4 run-level standard errors",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "largest run-level standard error among the four grand means",
+    "kind": "monte_carlo_95ci",
+    "value": 0.1498178335167287
+   },
+   "unit": null,
+   "value": {
+    "max_gap_in_standard_errors": 1.1388368841615117,
+    "observed_position_rmse": {
+     "correct": 0.2098572260313429,
+     "ignored": 0.21180406657782963
+    },
+    "predicted": {
+     "correct": {
+      "nees": 3.999999999999992,
+      "nis": 4.000000000000003,
+      "position_rmse": 0.20822222511661082
+     },
+     "ignored": {
+      "nees": 5.4350781551546445,
+      "nis": 3.9068304243875485,
+      "position_rmse": 0.21069289369376443
+     }
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "seed": 602088
+    },
+    "notes": "synthetic draws only; no acquisition"
+   },
+   "claim": "Real camera and tracker noises share the common-mode covariance assumed here",
+   "domain": "sensor_performance",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": "not established: the cross-correlation is a declared synthetic parameter"
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 3104,
+   "path": "artifacts/T062/consistency.json",
+   "sha256": "90a5bcfa02a0fc020d7de4a056df30a6a857b5ba8537af072764b02c9ac9527a"
+  },
+  {
+   "bytes": 5201,
+   "path": "artifacts/T062/anees.svg",
+   "sha256": "51c85a5107177e19ba99bae6e76394a919d0a6088624fb3947d97f8cce873a8a"
+  }
+ ],
+ "hypothesis": "NEES/NIS consistency holds for a filter with the correct cross-correlated R and fails for one that drops the cross-covariance; the failure size is predictable in closed form.",
+ "input_data": [
+  "seed 602088",
+  "200 runs x 100 ticks",
+  "x0 ~ N((0,0,1,0.5), P0)"
+ ],
+ "mathematical_model": "Camera and tracker positions z_c = p + e_m + e_c, z_t = p + e_m + e_t with Var e_c = Var e_t = 0.04 I, common mode Var e_m = 0.09 I: R_true = [[0.13 I, 0.09 I], [0.09 I, 0.13 I]]; the ignoring filter uses blockdiag(0.13 I, 0.13 I). CV motion dt = 0.1 s, q = 0.05. Mismatched moments: joint [x; x_hat] propagated exactly.",
+ "number": 62,
+ "numerical_result": "Correct: ANEES inside 0.98 of ticks, grand NEES 4.066, NIS 4.002. Ignored: ANEES above bound 1.00 of ticks, grand NEES 5.514; grand NIS 3.917 (passes); whitened max |z| 84.7 vs 3.89.",
+ "observation_model": "Stacked 4-vector measurement at every tick; filter prior equals the truth prior.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/sensor_fusion.py": "65b367d0079a3a037969f69ceec717d0ec7279bb12bfc0d53ed5c08887b46a15",
+   "src/ciw/lab/sensor_fusion_bench.py": "f373849a4c6836fa20685c59ce7a6fe6bf732f6df9d6a49646cdc017262dd656",
+   "src/ciw/lab/sensor_fusion_common.py": "6787aa47d199d50d0b4de4d7e53714ce7b8b5aad37d647cfc1a954414e90209f",
+   "src/ciw/lab/sensor_fusion_objects.py": "a795ffc235e0a4118cb7b9ac7800191a90984372d79e59f1a934442d98d7a1f1"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T066: show that residual consistency needs the filter covariance S, not raw R.",
+ "report_id": "sha256:cbdbf14b8b52b354f736f7fce4ba100274e88dbce0c180e6a9e052df9f474cc5",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "sensor-fusion",
+ "state": "completed",
+ "task_id": "T062",
+ "tests_passed": [
+  "check: With the correct cross-correlated measurement covariance, run-averaged NEES and NIS lie inside their 99% chi-square intervals and the whitened innovations have identity covariance vs fraction of ticks with ANEES in chi2(4N)/N 99% interval",
+  "check: With the correct cross-correlated measurement covariance, run-averaged NEES and NIS lie inside their 99% chi-square intervals and the whitened innovations have identity covariance vs fraction of ticks with ANIS in chi2(4N)/N 99% interval",
+  "check: With the correct cross-correlated measurement covariance, run-averaged NEES and NIS lie inside their 99% chi-square intervals and the whitened innovations have identity covariance vs whitened innovation covariance vs I (Bonferroni 99.9%)",
+  "check: Ignoring the camera-tracker cross-correlation makes the filter overconfident: run-averaged NEES exceeds the 99% upper bound at nearly every tick vs fraction of ticks with ANEES above the 99% upper bound",
+  "check: The ignored-correlation filter still passes the mean-NIS test (grand mean near 4); only the full whitened-innovation covariance test exposes the missing cross-correlation vs fraction of ticks with ANIS inside the 99% interval",
+  "check: The ignored-correlation filter still passes the mean-NIS test (grand mean near 4); only the full whitened-innovation covariance test exposes the missing cross-correlation vs whitened innovation covariance deviates from I",
+  "check: Monte Carlo grand-mean NEES and NIS of both filters agree with the exact second-moment prediction tr(P_f^-1 E[e e^T]) and tr(S_f^-1 E[nu nu^T]) within 4 run-level standard errors vs mismatch_moments exact propagation",
+  "pytest: tests/test_lab_sensor_fusion.py::test_correlated_noise_consistency_and_ignored_correlation_counterexample",
+  "pytest: tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T062]"
+ ],
+ "tests_skipped": [],
+ "title": "Test independent-noise and correlated-noise cases.",
+ "uncertainty": "Per-tick intervals are exact chi-square quantiles; the fraction-inside threshold 0.9 allows for time correlation of NEES. Moment agreement uses run-level standard errors.",
+ "unresolved_assumptions": [
+  "White common-mode error; a slowly varying common bias would defeat both filters and needs state augmentation.",
+  "NEES needs ground truth, which a deployed system does not have."
+ ]
+}

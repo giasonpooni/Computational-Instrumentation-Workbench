@@ -1,0 +1,269 @@
+{
+ "changed_files": [
+  "src/ciw/lab/exchange_provenance.py",
+  "src/ciw/lab/exchange_provenance_common.py",
+  "tests/test_lab_exchange_provenance.py",
+  "docs/lab/EXCHANGE_PROVENANCE.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 2,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Every predicted refusal is observed; T084's sibling-execution survivor shows the subject and source moved together; the harness controls hold.",
+ "experiment": "Edit the saved workspace (verification subject), recompute none, local or all unkeyed digests, write it and reopen with Session.from_workspace; pure ESM and exchange validators are also run on synthetic records. Rows retained as verification-subject-mutations.json/.md.",
+ "failure_modes_checked": [
+  "receipt-subject.naive: verification subject set to the replay bundle",
+  "receipt-subject.resealed: subject set to the replay bundle; verification_id and replay_id recomputed",
+  "bundle-subject.resealed: original bundle's verification subject set to a sibling; verification_id recomputed",
+  "oscillator-verification.resealed: verification_id and verification_status forged; resealed",
+  "esm.bundle-subject: candidate bundleDigest set to another synthetic bundle",
+  "exchange.verification-subject: subject_ref edited without recomputing verification_id"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "Invalid retained energy replay receipt",
+      "observed_refusal": "Invalid retained energy replay receipt",
+      "passed": true,
+      "reference": "receipt-subject.naive (none recompute): refusal on reopen",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "Retained energy analysis binding differs",
+      "observed_refusal": "Retained energy analysis binding differs",
+      "passed": true,
+      "reference": "receipt-subject.resealed (local recompute): refusal on reopen",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "Retained energy analysis binding differs",
+      "observed_refusal": "Retained energy analysis binding differs",
+      "passed": true,
+      "reference": "bundle-subject.resealed (local recompute): refusal on reopen",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "Protocol v1 saved results must remain not_verified with verification_id null",
+      "observed_refusal": "Protocol v1 saved results must remain not_verified with verification_id null",
+      "passed": true,
+      "reference": "oscillator-verification.resealed (local recompute): refusal on reopen",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "ESM candidate does not bind the selected native bundle",
+      "observed_refusal": "ESM candidate does not bind the selected native bundle",
+      "passed": true,
+      "reference": "esm.bundle-subject: validator refusal",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "verification_id does not match the artifact content",
+      "observed_refusal": "verification_id does not match the artifact content",
+      "passed": true,
+      "reference": "exchange.verification-subject: validator refusal",
+      "reference_kind": "refusal"
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "harness control: the forger's recomputation of the unedited workspace reproduces every CIW digest",
+      "reference_kind": "cross_implementation",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "harness control: the unedited saved workspace reopens",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Verification subject forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": [
+    {
+     "kind": "workspace",
+     "mutant": "receipt-subject.naive",
+     "observed": "Invalid retained energy replay receipt",
+     "recompute": "none"
+    },
+    {
+     "kind": "workspace",
+     "mutant": "receipt-subject.resealed",
+     "observed": "Retained energy analysis binding differs",
+     "recompute": "local"
+    },
+    {
+     "kind": "workspace",
+     "mutant": "bundle-subject.resealed",
+     "observed": "Retained energy analysis binding differs",
+     "recompute": "local"
+    },
+    {
+     "kind": "workspace",
+     "mutant": "oscillator-verification.resealed",
+     "observed": "Protocol v1 saved results must remain not_verified with verification_id null",
+     "recompute": "local"
+    },
+    {
+     "kind": "validator",
+     "mutant": "esm.bundle-subject",
+     "observed": "ESM candidate does not bind the selected native bundle",
+     "recompute": "none"
+    },
+    {
+     "kind": "validator",
+     "mutant": "exchange.verification-subject",
+     "observed": "verification_id does not match the artifact content",
+     "recompute": "none"
+    }
+   ]
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "T084 sibling-execution row accepted with subject and source both naming the sibling (0 = observed)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "The verification subject moves with the receipt source: T084's surviving mutant receipt-source.sibling-execution rebinds both to a sibling execution and reopens",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "mutant": "receipt-source.sibling-execution",
+    "post_reopen": {
+     "receipt_source": "bundle:B0b",
+     "replay_bundle": "bundle:B1",
+     "verification_subject": "bundle:B0b"
+    },
+    "task": "T084"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": "Every CIW seal and identity on these paths (record_digest, log_digest, bundle_digest, verification_id, replay_id, result_id, source_id) is an unkeyed SHA-256 over public canonical JSON or raw bytes, and no keyed signature or MAC is retained. Authentication is therefore not established; the listed surviving mutants are concrete forgeries accepted on reopen."
+   },
+   "claim": "Retained workspace records are authenticated: a holder without a secret cannot produce a forged record that reopens",
+   "domain": "provenance",
+   "evidence_status": "not_established",
+   "expected_not_established": true,
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": null,
+   "unit": null,
+   "value": {
+    "surviving_mutants_in_this_task": []
+   }
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 3546,
+   "path": "artifacts/T086/verification-subject-mutations.json",
+   "sha256": "beb54b230bea51aad4105af0940d54129ab93dbf1a529957f84fa9977aef72e9"
+  },
+  {
+   "bytes": 1486,
+   "path": "artifacts/T086/verification-subject-mutations.md",
+   "sha256": "1a31cdae8ce9ad93ebd074ac985455adffe8b9f2703c86c23e810f90220c345c"
+  }
+ ],
+ "hypothesis": "Predicted kills: a receipt verification subject edited with or without recomputed ids (reopen rebuilds the expected verification with subject = receipt source); a bundle verification subject other than the bundle's own digest; oscillator verification fields (protocol v1 fixes them); an ESM candidate naming another bundle; an exchange subject edit without a recomputed verification_id. No survivor of its own is predicted: the subject can move only together with the receipt source, which is T084's receipt-source.sibling-execution (cross-referenced here, not re-run).",
+ "input_data": [
+  "make_demo_run() damped-oscillator recording; statistics.v1 on channel v over [1, 2] s, twice, plus one legacy analysis.stats result",
+  "examples/energy-accuracy/{baseline,reset}.json (origin synthetic_fixture): two original executions of baseline, one of reset, replays, and a separate session in the same process",
+  "Workspaces saved by Session.save_workspace and reopened by Session.from_workspace in temporary directories"
+ ],
+ "mathematical_model": "Each record seal or identity d = sha256(canon(record \\ d)) is unkeyed, so any holder can recompute d after an edit. Reopen kills a mutant only if some check compares the edited field with an independently recomputed, fixed or cross-referenced value; otherwise a consistent recomputation survives.",
+ "number": 86,
+ "numerical_result": "6 rows (4 workspace mutants, 2 pure-validator rows): 6 refused; 0 surviving forgeries (none); kill/survive predictions matched 6/6; refusal messages matched their regression pins 6/6",
+ "observation_model": "No physical observation. The observed objects are CIW records (sessions, executions, results, bundles, receipts, saved workspace JSON) produced offline by the unmodified CIW code; the energy logs are synthetic fixtures and no hardware was sampled.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/exchange_provenance.py": "5cc267c7777c9b434b8747b0cc841ac85313e1cfb6ff4c429ee93aa5ddbb645b",
+   "src/ciw/lab/exchange_provenance_common.py": "22028c4008079fba23c5e807de0104ba1a0014027e1d40a9209881cdf232f486"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T087 (mutate verification method)",
+ "report_id": "sha256:14daf835e681c3b0e48a6ac93bcdb6eb9e95ae5a9df67e0dc1fdfc3d1f3fcb4f",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "exchange-provenance",
+ "state": "completed",
+ "task_id": "T086",
+ "tests_passed": [
+  "check: Verification subject forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs receipt-subject.naive (none recompute): refusal on reopen",
+  "check: Verification subject forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs receipt-subject.resealed (local recompute): refusal on reopen",
+  "check: Verification subject forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs bundle-subject.resealed (local recompute): refusal on reopen",
+  "check: Verification subject forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs oscillator-verification.resealed (local recompute): refusal on reopen",
+  "check: Verification subject forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs esm.bundle-subject: validator refusal",
+  "check: Verification subject forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs exchange.verification-subject: validator refusal",
+  "check: Verification subject forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs harness control: the forger's recomputation of the unedited workspace reproduces every CIW digest",
+  "check: Verification subject forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs harness control: the unedited saved workspace reopens",
+  "check: The verification subject moves with the receipt source: T084's surviving mutant receipt-source.sibling-execution rebinds both to a sibling execution and reopens vs T084 sibling-execution row accepted with subject and source both naming the sibling (0 = observed)",
+  "pytest: tests/test_lab_exchange_provenance.py::test_verification_mutations"
+ ],
+ "tests_skipped": [],
+ "title": "Mutate verification subject.",
+ "uncertainty": "Outcomes are exact (accepted or a refusal message). Only kill/survive is a prediction; refusal messages are regression pins recorded from observed runs. Survivors are demonstrated forgeries; kills show only that these particular edits are detected, not that every edit of this field is.",
+ "unresolved_assumptions": [
+  "The forger model recomputes only unkeyed SHA-256 digests with CIW's public canonicalization; no key exists to steal.",
+  "Pure-validator rows run candidate_evidence.validate_response on a synthetic telemetry-shaped record (schema, digest, three step occurrences) that no telemetry workflow validated, without an ESM process, and exchange._identity without the pinned exchange validator.",
+  "Whether a reader of a forged workspace would be misled depends on how the record is displayed; not assessed."
+ ]
+}

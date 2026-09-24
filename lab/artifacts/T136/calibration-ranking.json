@@ -1,0 +1,163 @@
+{
+ "ranking": [
+  "fan+0deg",
+  "fan+5deg",
+  "fan+10deg",
+  "fan+15deg",
+  "fan+20deg",
+  "fan+25deg"
+ ],
+ "richardson_rel": 1.35357160402e-08,
+ "rows": [
+  {
+   "corner_ratios": {
+    "+1+1": 0.765373276781,
+    "+1-1": 0.760488834886,
+    "-1+1": 0.760488834886,
+    "-1-1": 0.765373276781
+   },
+   "derating": 1.0,
+   "first_order_corner_ratios": {
+    "+1+1": 0.765373276781,
+    "+1-1": 0.760488834886,
+    "-1+1": 0.760488834886,
+    "-1-1": 0.765373276781
+   },
+   "first_order_heading_tolerance_mrad": 2.3160606014,
+   "first_order_lateral_tolerance_mm": 0.243664546643,
+   "flat_plate_heading_tolerance_mrad": 1.23652384089,
+   "heading_tolerance_mrad": 2.3160606014,
+   "lateral_tolerance_mm": 0.243664546643,
+   "length_mm": 202.179684477,
+   "max_abs_j_head_mm": 107.941907845,
+   "max_abs_j_lat": 1.02600071879,
+   "realized_max_error_mm": 0.382686638391,
+   "route": "fan+0deg"
+  },
+  {
+   "corner_ratios": {
+    "+1+1": 0.729773343466,
+    "+1-1": 0.610973574837,
+    "-1+1": 0.614521732746,
+    "-1-1": 0.729605468954
+   },
+   "derating": 1.0,
+   "first_order_corner_ratios": {
+    "+1+1": 0.729773343466,
+    "+1-1": 0.610973574837,
+    "-1+1": 0.614521732746,
+    "-1-1": 0.729605468954
+   },
+   "first_order_heading_tolerance_mrad": 1.97736184161,
+   "first_order_lateral_tolerance_mm": 0.243425457945,
+   "flat_plate_heading_tolerance_mrad": 1.23552364101,
+   "heading_tolerance_mrad": 1.97736184161,
+   "lateral_tolerance_mm": 0.243425457945,
+   "length_mm": 202.343356049,
+   "max_abs_j_head_mm": 126.431083446,
+   "max_abs_j_lat": 1.02700844074,
+   "realized_max_error_mm": 0.364886671733,
+   "route": "fan+5deg"
+  },
+  {
+   "corner_ratios": {
+    "+1+1": 0.745554564746,
+    "+1-1": 0.485116946864,
+    "-1+1": 0.485117015751,
+    "-1-1": 0.712853302512
+   },
+   "derating": 1.0,
+   "first_order_corner_ratios": {
+    "+1+1": 0.745554564746,
+    "+1-1": 0.485116946864,
+    "-1+1": 0.485117015751,
+    "-1-1": 0.712853302512
+   },
+   "first_order_heading_tolerance_mrad": 1.47574471908,
+   "first_order_lateral_tolerance_mm": 0.242558490616,
+   "flat_plate_heading_tolerance_mrad": 1.2308352302,
+   "heading_tolerance_mrad": 1.47574471908,
+   "lateral_tolerance_mm": 0.242558490616,
+   "length_mm": 203.114108099,
+   "max_abs_j_head_mm": 169.405993305,
+   "max_abs_j_lat": 1.03067923685,
+   "realized_max_error_mm": 0.372777282373,
+   "route": "fan+10deg"
+  },
+  {
+   "corner_ratios": {
+    "+1+1": 0.999817711135,
+    "+1-1": 0.419891002115,
+    "-1+1": 0.419891044054,
+    "-1-1": 0.981681436183
+   },
+   "derating": 0.990834622062,
+   "first_order_corner_ratios": {
+    "+1+1": 1.00914923413,
+    "+1-1": 0.423775060517,
+    "-1+1": 0.423775103235,
+    "-1-1": 0.990675904531
+   },
+   "first_order_heading_tolerance_mrad": 1.17313695354,
+   "first_order_lateral_tolerance_mm": 0.211887540781,
+   "flat_plate_heading_tolerance_mrad": 1.21787542151,
+   "heading_tolerance_mrad": 1.16238470998,
+   "lateral_tolerance_mm": 0.209945511389,
+   "length_mm": 205.275511424,
+   "max_abs_j_head_mm": 213.103848827,
+   "max_abs_j_lat": 1.17987116693,
+   "realized_max_error_mm": 0.499908855568,
+   "route": "fan+15deg"
+  },
+  {
+   "corner_ratios": {
+    "+1+1": 0.99989458043,
+    "+1-1": 0.30655789044,
+    "-1+1": 0.306557886533,
+    "-1-1": 0.995211223016
+   },
+   "derating": 0.997598213214,
+   "first_order_corner_ratios": {
+    "+1+1": 1.0023073285,
+    "+1-1": 0.307295949797,
+    "-1+1": 0.307295945872,
+    "-1-1": 0.997601392206
+   },
+   "first_order_heading_tolerance_mrad": 1.02968252597,
+   "first_order_lateral_tolerance_mm": 0.153647973822,
+   "flat_plate_heading_tolerance_mrad": 1.19182867461,
+   "heading_tolerance_mrad": 1.02720944808,
+   "lateral_tolerance_mm": 0.153278944149,
+   "length_mm": 209.761692537,
+   "max_abs_j_head_mm": 242.793282099,
+   "max_abs_j_lat": 1.62709597648,
+   "realized_max_error_mm": 0.499947290215,
+   "route": "fan+20deg"
+  },
+  {
+   "corner_ratios": {
+    "+1+1": 0.999348412226,
+    "+1-1": 0.282371468114,
+    "-1+1": 0.282371420789,
+    "-1-1": 0.999899921152
+   },
+   "derating": 0.999649438271,
+   "first_order_corner_ratios": {
+    "+1+1": 0.999698754024,
+    "+1-1": 0.282470491467,
+    "-1+1": 0.282470444108,
+    "-1-1": 1.0002506496
+   },
+   "first_order_heading_tolerance_mrad": 0.971790449556,
+   "first_order_lateral_tolerance_mm": 0.141235233826,
+   "flat_plate_heading_tolerance_mrad": 1.15107446625,
+   "heading_tolerance_mrad": 0.971449777016,
+   "lateral_tolerance_mm": 0.141185722158,
+   "length_mm": 217.188381229,
+   "max_abs_j_head_mm": 257.257107347,
+   "max_abs_j_lat": 1.77009654905,
+   "realized_max_error_mm": 0.499949960576,
+   "route": "fan+25deg"
+  }
+ ]
+}

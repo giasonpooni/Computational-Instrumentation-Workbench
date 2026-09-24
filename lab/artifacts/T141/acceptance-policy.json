@@ -1,0 +1,28 @@
+{
+ "cases": 320,
+ "computational_domain_loophole": {
+  "label": "numerically_verified",
+  "rejection_label": "numerically_verified",
+  "rejection_screen": "acceptance_outside_authority_domain",
+  "screen": "acceptance_outside_authority_domain"
+ },
+ "decisions": {
+  "accept": "production_acceptance_outside_system",
+  "conditional": "production_acceptance_outside_system",
+  "reject": "production_acceptance_outside_system"
+ },
+ "honest_label_with_hardware_basis": "not_established",
+ "policy": {
+  "authority": "external",
+  "decisions_performed": false
+ },
+ "record": {
+  "authority": "external",
+  "decision": "not_performed",
+  "request": {
+   "part": "coupon-001"
+  },
+  "statement": "The workbench supplies evidence records only."
+ },
+ "violations": 0
+}

@@ -1,0 +1,435 @@
+{
+ "changed_files": [
+  "src/ciw/lab/exchange_provenance_bundles.py",
+  "src/ciw/lab/exchange_provenance_bundles_fixtures.py"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 2,
+   "numerically_verified": 7,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Zero violations; relabels refused where detectable; physical claims not established.",
+ "experiment": "Audit every retained report below T100 present in the output directory; forge a relabelled physical finding; render a claim containing a pipe character; relabel the energy fixture unsealed, resealed in the same occurrence and resealed in a fresh occurrence (reading the retained bundle's classification); relabel free-energy source policies; inspect the free-energy truth panel basis.",
+ "failure_modes_checked": [
+  "unknown label",
+  "physical finding with computational label",
+  "authority finding established",
+  "label missing from rendered row",
+  "origin relabel with and without resealing",
+  "occurrence rebinding",
+  "free-energy policy relabel"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "label or domain violations",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Every earlier report present in the output directory when T100 runs keeps labels among the seven and physical and authority findings unestablished without acquisition",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact counts, digests and string comparisons; no rounding is involved",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": {
+    "label_violations": 0,
+    "reports_absent_of_T001_T099": 0,
+    "reports_checked": 99
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "findings whose rendered label leaves its column",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Every finding of those reports shows its label in the label column of its rendered Markdown row",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact counts, digests and string comparisons; no rounding is involved",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": {
+    "rendering_violations": 0,
+    "reports_absent_of_T001_T099": 0,
+    "reports_checked": 99
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "Evidence label refused: basis supports not_established, finding states synthetic",
+      "observed_refusal": "Evidence label refused: basis supports not_established, finding states synthetic",
+      "passed": true,
+      "reference": "validate_finding on a physical finding relabelled synthetic",
+      "reference_kind": "refusal"
+     }
+    ]
+   },
+   "claim": "A physical finding relabelled with a computational label is refused by the evidence validator",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact counts, digests and string comparisons; no rounding is involved",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": "Evidence label refused: basis supports not_established, finding states synthetic"
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "rendered cells beyond three for a claim containing a pipe",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "render_markdown keeps the label column for a claim containing a pipe character",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact counts, digests and string comparisons; no rounding is involved",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": {
+    "label_column_shifted": false,
+    "row_cells": 3
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "Retained log digest differs",
+      "observed_refusal": "Retained log digest differs",
+      "passed": true,
+      "reference": "validate_log after changing origin without resealing",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "invalid_payload: Identity collision across retained workbench artifacts",
+      "observed_refusal": "invalid_payload: Identity collision across retained workbench artifacts",
+      "passed": true,
+      "reference": "workbench execute of a resealed relabel of a retained occurrence",
+      "reference_kind": "refusal"
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "synthetic fixture classified other than synthetic_only",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "synthetic fixture eligible for a physical comparison",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "CIW keeps the synthetic energy fixture synthetic_only and refuses an unsealed relabel to physical",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact counts, digests and string comparisons; no rounding is involved",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": {
+    "same_occurrence_relabel": "invalid_payload: Identity collision across retained workbench artifacts",
+    "synthetic": {
+     "classification": "synthetic_only",
+     "eligible": false,
+     "hardware_provenance": "synthetic_fixture_no_physical_verification",
+     "origin": "synthetic_fixture"
+    },
+    "unsealed_relabel": "Retained log digest differs"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "accepted",
+      "observed_refusal": "accepted",
+      "passed": true,
+      "reference": "workbench execute of a fresh-occurrence reseal",
+      "reference_kind": "refusal"
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "fresh-occurrence bundle classified other than physical_domain_measurement",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "fresh-occurrence bundle whose origin is not physical_measurement",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "fresh-occurrence bundle whose hardware provenance is not retained_operator_record_not_authenticated",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "A resealed relabel of the synthetic energy fixture under a fresh occurrence is accepted by the workbench and classified as a physical-domain measurement",
+   "counterexample": {
+    "statement": "CIW energy records can distinguish a genuinely acquired log from a relabelled synthetic fixture",
+    "witness": {
+     "classification": "physical_domain_measurement",
+     "hardware_provenance": "retained_operator_record_not_authenticated",
+     "origin": "physical_measurement (declared)",
+     "run_id": "energy-run-22222222222222222222222222222222"
+    }
+   },
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact counts, digests and string comparisons; no rounding is involved",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": {
+    "fresh_bundle": {
+     "classification": "physical_domain_measurement",
+     "eligible": true,
+     "hardware_provenance": "retained_operator_record_not_authenticated",
+     "origin": "physical_measurement"
+    },
+    "fresh_occurrence_execute": "accepted"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "Unsupported free-energy source or authority policy",
+      "observed_refusal": "Unsupported free-energy source or authority policy",
+      "passed": true,
+      "reference": "observations relabelled physical",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "Unsupported free-energy source or authority policy",
+      "observed_refusal": "Unsupported free-energy source or authority policy",
+      "passed": true,
+      "reference": "physical validation claimed",
+      "reference_kind": "refusal"
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "declared synthetic policy refused at the policy check",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "view basis literals naming the synthetic reference",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     }
+    ]
+   },
+   "claim": "CIW refuses free-energy sources that relabel synthetic observations as physical or claim physical validation",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact counts, digests and string comparisons; no rounding is involved",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": {
+    "outcomes": {
+     "declared synthetic policy": "Require a bounded experiment identity",
+     "observations relabelled physical": "Unsupported free-energy source or authority policy",
+     "physical validation claimed": "Unsupported free-energy source or authority policy"
+    },
+    "truth_panel_basis": [
+     "synthetic_reference_not_hardware_measurement"
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "The relabelled energy log is a physical GPU energy measurement",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": "not established: origin is operator-declared and unauthenticated"
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "The synthetic energy fixture characterizes real NVML counter accuracy",
+   "domain": "sensor_performance",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": "not established: synthetic fixture"
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 19655,
+   "path": "artifacts/T100/visibility-audit.json",
+   "sha256": "4fe1765f82e06f7a98fe4aebe414fbe4929425d4f93ab3027be03ef78b6c878a"
+  }
+ ],
+ "hypothesis": "Retained lab reports and CIW's own records keep synthetic, provider-backed and physical results visibly distinct, and relabelling is refused wherever the record can detect it.",
+ "input_data": [
+  "retained reports ctx.output_dir/reports/T001-T099 (only those present when T100 runs)",
+  "examples/energy-accuracy/baseline.json (synthetic, embedded)",
+  "ciw.free_energy_profile.POLICY",
+  "ciw.free_energy_view source text"
+ ],
+ "mathematical_model": "Allowed labels per domain: physical -> {not_established, hardware_measured, independently_verified with acquisition}; authority -> {not_established}; computational -> never hardware_measured.",
+ "number": 100,
+ "numerical_result": "99 of 99 earlier reports present and audited: 0 label violations, 0 rendering violations; the pipe probe kept its label column; fresh-occurrence energy relabel accepted and classified physical_domain_measurement; same-occurrence relabel: invalid_payload: Identity collision across retained workbench artifacts.",
+ "observation_model": "validate_report, per-finding label/domain rules, rendered Markdown rows; CIW analysis/refusal outputs and the retained bundle of a fresh-occurrence relabel.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/exchange_provenance_bundles.py": "a505b35560263c1b473912f79e61b15b7e474f8eb1807e691847e4c69791c2d3",
+   "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "f30205e8305a225f24d94b06cba8b519ecea4680ca723aaca3591ff707d04e1c"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "Authenticate energy-log origin at acquisition (outside the workbench).",
+ "report_id": "sha256:581d024b2ef2f93bc1f67c36e13bd37bab50457b2b78ae4005e85070a03cf113",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "exchange-provenance",
+ "state": "completed",
+ "task_id": "T100",
+ "tests_passed": [
+  "check: Every earlier report present in the output directory when T100 runs keeps labels among the seven and physical and authority findings unestablished without acquisition vs label or domain violations",
+  "check: Every finding of those reports shows its label in the label column of its rendered Markdown row vs findings whose rendered label leaves its column",
+  "check: A physical finding relabelled with a computational label is refused by the evidence validator vs validate_finding on a physical finding relabelled synthetic",
+  "check: render_markdown keeps the label column for a claim containing a pipe character vs rendered cells beyond three for a claim containing a pipe",
+  "check: CIW keeps the synthetic energy fixture synthetic_only and refuses an unsealed relabel to physical vs validate_log after changing origin without resealing",
+  "check: CIW keeps the synthetic energy fixture synthetic_only and refuses an unsealed relabel to physical vs workbench execute of a resealed relabel of a retained occurrence",
+  "check: CIW keeps the synthetic energy fixture synthetic_only and refuses an unsealed relabel to physical vs synthetic fixture classified other than synthetic_only",
+  "check: CIW keeps the synthetic energy fixture synthetic_only and refuses an unsealed relabel to physical vs synthetic fixture eligible for a physical comparison",
+  "check: A resealed relabel of the synthetic energy fixture under a fresh occurrence is accepted by the workbench and classified as a physical-domain measurement vs workbench execute of a fresh-occurrence reseal",
+  "check: A resealed relabel of the synthetic energy fixture under a fresh occurrence is accepted by the workbench and classified as a physical-domain measurement vs fresh-occurrence bundle classified other than physical_domain_measurement",
+  "check: A resealed relabel of the synthetic energy fixture under a fresh occurrence is accepted by the workbench and classified as a physical-domain measurement vs fresh-occurrence bundle whose origin is not physical_measurement",
+  "check: A resealed relabel of the synthetic energy fixture under a fresh occurrence is accepted by the workbench and classified as a physical-domain measurement vs fresh-occurrence bundle whose hardware provenance is not retained_operator_record_not_authenticated",
+  "check: CIW refuses free-energy sources that relabel synthetic observations as physical or claim physical validation vs observations relabelled physical",
+  "check: CIW refuses free-energy sources that relabel synthetic observations as physical or claim physical validation vs physical validation claimed",
+  "check: CIW refuses free-energy sources that relabel synthetic observations as physical or claim physical validation vs declared synthetic policy refused at the policy check",
+  "check: CIW refuses free-energy sources that relabel synthetic observations as physical or claim physical validation vs view basis literals naming the synthetic reference",
+  "pytest: tests/test_lab_exchange_provenance_bundles.py::test_t100_labels_and_origins_stay_distinct",
+  "pytest: tests/test_lab_exchange_provenance_bundles.py::test_t100_flags_a_retained_report_whose_label_leaves_its_column",
+  "pytest: tests/test_lab_exchange_provenance_bundles.py::test_render_markdown_pipe_probe_matches_the_renderer"
+ ],
+ "tests_skipped": [],
+ "title": "Keep synthetic, provider-backed, and physical results visibly distinct.",
+ "uncertainty": "Exact.",
+ "unresolved_assumptions": [
+  "The report audit covers only reports present in the output directory when T100 runs: a section-only run audits its own section, a full run T001-T099; stale reports from earlier runs in the same directory are included if present (task ids in visibility-audit.json).",
+  "Retained claims containing a pipe or newline: 17; the rendering probe uses a synthetic claim."
+ ]
+}

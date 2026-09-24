@@ -1,0 +1,55 @@
+[
+ {
+  "arithmetic_intensity": 12796.8828125,
+  "bytes_per_call": 128,
+  "calls_per_experiment": 1,
+  "determinism_need": "high",
+  "determinism_note": "retained trajectories; bitwise replay needs a fixed order over thousands of dependent steps",
+  "dispatches_per_call": 638006,
+  "flops_per_call": 1638001,
+  "kernel": "jacobi_transfer (fused geodesic + Jacobi RK4 loop)",
+  "rank": 1,
+  "removable_dispatches": 638005,
+  "unit": "jacobi_transfer"
+ },
+ {
+  "arithmetic_intensity": 2.703125,
+  "bytes_per_call": 64,
+  "calls_per_experiment": 8000,
+  "determinism_need": "high",
+  "determinism_note": "einsum/inverse order must be fixed for bitwise replay",
+  "dispatches_per_call": 73,
+  "flops_per_call": 173,
+  "kernel": "geodesic_rhs (generic embedded Christoffel contraction)",
+  "rank": 2,
+  "removable_dispatches": 576000,
+  "unit": "geodesic_rhs"
+ },
+ {
+  "arithmetic_intensity": 1.0486111111111112,
+  "bytes_per_call": 432,
+  "calls_per_experiment": 2000,
+  "determinism_need": "medium",
+  "determinism_note": "covariance symmetry and positive definiteness; small fixed-size reductions",
+  "dispatches_per_call": 5,
+  "flops_per_call": 453,
+  "kernel": "kalman_update (CIW Joseph-form reference, n=4, m=2; not a core kernel)",
+  "rank": 3,
+  "removable_dispatches": 8000,
+  "unit": "kalman_update"
+ },
+ {
+  "arithmetic_intensity": 0.1857638888888889,
+  "bytes_per_call": 576,
+  "calls_per_experiment": 2000,
+  "determinism_need": "high",
+  "determinism_note": "stage combination order; negligible alone",
+  "dispatch_note": "dispatches per call include the four right-hand-side callbacks, which a lone port keeps",
+  "dispatches_per_call": 317,
+  "flops_per_call": 107,
+  "kernel": "rk4_step alone (right-hand side stays in Python)",
+  "rank": 4,
+  "removable_dispatches": 0,
+  "unit": "rk4_step"
+ }
+]

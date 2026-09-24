@@ -1,0 +1,209 @@
+{
+ "averaging": {
+  "rows": [
+   {
+    "geometry_share": 0.2165575773712226,
+    "predicted": 5.105671947886514e-06,
+    "ratio": 0.9920800183526166,
+    "repeats": 1,
+    "variance": 5.065235119761693e-06
+   },
+   {
+    "geometry_share": 0.5250922153359593,
+    "predicted": 2.105671947886515e-06,
+    "ratio": 1.0141820735510734,
+    "repeats": 4,
+    "variance": 2.1355347423258732e-06
+   },
+   {
+    "geometry_share": 0.8155896045575417,
+    "predicted": 1.3556719478865146e-06,
+    "ratio": 0.9830148947409324,
+    "repeats": 16,
+    "variance": 1.332645717154897e-06
+   },
+   {
+    "geometry_share": 0.9464976024179689,
+    "predicted": 1.1681719478865147e-06,
+    "ratio": 1.0061659394122247,
+    "repeats": 64,
+    "variance": 1.1753748253402434e-06
+   }
+  ],
+  "sigma_geometry": 0.001,
+  "sigma_sensor": 0.002
+ },
+ "fresh": 20000,
+ "gain": 1.0515093665234345,
+ "gain_split": {
+  "interior": 0.28391335006097834,
+  "interior_normal": 0.2834028088486743,
+  "interior_vertices": 13,
+  "marker": 1.0124550150716163,
+  "marker_vertices": 6,
+  "normal": 0.31170668909770055,
+  "tangential": 1.0042464278543708,
+  "total": 1.0515093665234345
+ },
+ "inner": 16,
+ "level": 3,
+ "nominal_distance": 0.9999999999999999,
+ "normal_only": {
+  "crossover_sensor_sigma": 0.00031170668909770053,
+  "gain": 0.31170668909770055,
+  "geometry_share": 0.27987315173062316,
+  "geometry_variance_linear": 9.716106002825055e-08,
+  "geometry_variance_mc": 9.643874832652443e-08,
+  "predicted_total": 3.4716106002825053e-07,
+  "sigma_geometry": 0.001,
+  "sigma_sensor": 0.0005,
+  "total_mc": 3.43098781182633e-07
+ },
+ "outer": 1000,
+ "scenarios": [
+  {
+   "anova_residual": -7.815279770001998e-17,
+   "between_corrected": 1.1597722394330114e-08,
+   "between_ratio": 1.0489297857740798,
+   "corridor_left_fraction": 0.0,
+   "crossover_sensor_sigma": 0.00010515093665234346,
+   "fresh_ratio": 0.9950280512988768,
+   "fresh_total": 2.095202654980229e-08,
+   "geometry_share": 0.5250922153359593,
+   "geometry_variance_linear": 1.1056719478865147e-08,
+   "nested_total": 2.16776856376625e-08,
+   "predicted_total": 2.1056719478865148e-08,
+   "sensor_variance": 1e-08,
+   "sigma_geometry": 0.0001,
+   "sigma_sensor": 0.0001,
+   "within_ratio": 1.0090836787673594,
+   "within_variance": 1.0090836787673594e-08
+  },
+  {
+   "anova_residual": 0.0,
+   "between_corrected": 9.813495804578292e-09,
+   "between_ratio": 0.8875594450358201,
+   "corridor_left_fraction": 0.0,
+   "crossover_sensor_sigma": 0.00010515093665234346,
+   "fresh_ratio": 1.006972816193483,
+   "fresh_total": 2.628770199998649e-07,
+   "geometry_share": 0.04235370574232734,
+   "geometry_variance_linear": 1.1056719478865147e-08,
+   "nested_total": 2.638338364975162e-07,
+   "predicted_total": 2.6105671947886515e-07,
+   "sensor_variance": 2.5e-07,
+   "sigma_geometry": 0.0001,
+   "sigma_sensor": 0.0005,
+   "within_ratio": 1.0161181656812004,
+   "within_variance": 2.540295414203001e-07
+  },
+  {
+   "anova_residual": -3.1907705800688217e-16,
+   "between_corrected": -3.659518283999473e-09,
+   "between_ratio": -0.3309768590036692,
+   "corridor_left_fraction": 0.0,
+   "crossover_sensor_sigma": 0.00010515093665234346,
+   "fresh_ratio": 0.9908944486612336,
+   "fresh_total": 3.974533836596946e-06,
+   "geometry_share": 0.002756560241387384,
+   "geometry_variance_linear": 1.1056719478865147e-08,
+   "nested_total": 4.077773360941522e-06,
+   "predicted_total": 4.011056719478865e-06,
+   "sensor_variance": 4e-06,
+   "sigma_geometry": 0.0001,
+   "sigma_sensor": 0.002,
+   "within_ratio": 1.0203573620531736,
+   "within_variance": 4.081429448212694e-06
+  },
+  {
+   "anova_residual": -1.6516721880210092e-16,
+   "between_corrected": 1.0682385155597256e-06,
+   "between_ratio": 0.9661441782995915,
+   "corridor_left_fraction": 0.0,
+   "crossover_sensor_sigma": 0.0010515093665234346,
+   "fresh_ratio": 0.9980880619771525,
+   "fresh_total": 1.113538852268326e-06,
+   "geometry_share": 0.9910367917568031,
+   "geometry_variance_linear": 1.1056719478865147e-06,
+   "nested_total": 1.0770178139213674e-06,
+   "predicted_total": 1.1156719478865146e-06,
+   "sensor_variance": 1e-08,
+   "sigma_geometry": 0.001,
+   "sigma_sensor": 0.0001,
+   "within_ratio": 0.9780834565992171,
+   "within_variance": 9.780834565992172e-09
+  },
+  {
+   "anova_residual": -2.7734416255456854e-16,
+   "between_corrected": 1.1215633678331835e-06,
+   "between_ratio": 1.0143726355516618,
+   "corridor_left_fraction": 0.0,
+   "crossover_sensor_sigma": 0.0010515093665234346,
+   "fresh_ratio": 0.9948864248740475,
+   "fresh_total": 1.3487396175348506e-06,
+   "geometry_share": 0.8155896045575417,
+   "geometry_variance_linear": 1.1056719478865147e-06,
+   "nested_total": 1.3683160852544823e-06,
+   "predicted_total": 1.3556719478865146e-06,
+   "sensor_variance": 2.5e-07,
+   "sigma_geometry": 0.001,
+   "sigma_sensor": 0.0005,
+   "within_ratio": 0.9912169951974154,
+   "within_variance": 2.478042487993538e-07
+  },
+  {
+   "anova_residual": 8.303966680935551e-17,
+   "between_corrected": 1.2041518147697136e-06,
+   "between_ratio": 1.0890678895050585,
+   "corridor_left_fraction": 0.0,
+   "crossover_sensor_sigma": 0.0010515093665234346,
+   "fresh_ratio": 0.9860002241026807,
+   "fresh_total": 5.0341936848108735e-06,
+   "geometry_share": 0.2165575773712226,
+   "geometry_variance_linear": 1.1056719478865147e-06,
+   "nested_total": 5.222901203811463e-06,
+   "predicted_total": 5.105671947886514e-06,
+   "sensor_variance": 4e-06,
+   "sigma_geometry": 0.001,
+   "sigma_sensor": 0.002,
+   "within_ratio": 1.004969587982069,
+   "within_variance": 4.019878351928276e-06
+  }
+ ],
+ "strip_start_index": 5,
+ "strip_vertex_margin": 0.05280540132339888,
+ "z_averaging": [
+  -0.7919783645367102,
+  1.4181718994802532,
+  -1.6984680626128112,
+  0.6165785261812463
+ ],
+ "z_between": [
+  1.035048210372391,
+  -1.0413655443587402,
+  -1.2598814045888065,
+  -0.7562330995833736,
+  0.3167450311449801,
+  1.6235310152355067
+ ],
+ "z_fresh": [
+  -0.49718244008518514,
+  0.6972641870899093,
+  -0.9105323697137451,
+  -0.1911890223799477,
+  -0.5113447284976277,
+  -1.3999425898546765
+ ],
+ "z_normal_only": [
+  -0.743398274471097,
+  -1.170113170828075
+ ],
+ "z_within": [
+  0.7866696572350579,
+  1.395874094232614,
+  1.7629992692085603,
+  -1.8980283348222142,
+  -0.7606305280599058,
+  0.4303789438813702
+ ]
+}

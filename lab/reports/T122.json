@@ -1,0 +1,566 @@
+{
+ "changed_files": [
+  "src/ciw/lab/energy_gpu.py",
+  "src/ciw/lab/energy_gpu_kernels.py",
+  "src/ciw/lab/energy_gpu_telemetry.py",
+  "docs/lab/ENERGY_GPU.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 5,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "|F + log Z - KL| <= 1e-10; KL nonincreasing; raw posterior independent of scales.",
+ "experiment": "normalize_problem with three scale choices; variational_fit with alpha = 2 / (lambda_min + lambda_max), beta = 0.3, at most 512 iterations; one unstable step size.",
+ "failure_modes_checked": [
+  "unstable step size (counterexample)",
+  "ill-conditioned normalization (counterexample)",
+  "identity violation",
+  "iteration bound exceeded"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 2.842170943040401e-14,
+      "passed": true,
+      "reference": "F from free_energy, log Z from observation-space conditioning, KL from the whitened Gaussian formula",
+      "reference_kind": "invariant",
+      "tolerance": 1e-10
+     }
+    ],
+    "generator": {
+     "name": "declared two-latent linear-Gaussian problem",
+     "raw_problem": {
+      "noise_covariance": [
+       [
+        9.0,
+        0.06
+       ],
+       [
+        0.06,
+        0.04
+       ]
+      ],
+      "observation_matrix": [
+       [
+        3.0,
+        0.2
+       ],
+       [
+        -0.1,
+        8.0
+       ]
+      ],
+      "observations": [
+       12.0,
+       -0.9
+      ],
+      "prior_covariance": [
+       [
+        4.0,
+        0.1
+       ],
+       [
+        0.1,
+        0.25
+       ]
+      ],
+      "prior_mean": [
+       0.4,
+       -1.0
+      ]
+     },
+     "scales": {
+      "latent_scales": [
+       0.7,
+       0.05
+      ],
+      "observation_scales": [
+       3.0,
+       0.2
+      ]
+     },
+     "seed": null
+    }
+   },
+   "claim": "The variational free-energy identity F + log Z = KL(q || p) holds at every iterate to 1e-10 nats",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-10,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "largest binary64 residual of F + log Z - KL over the retained trace",
+    "kind": "roundoff",
+    "value": 2.842170943040401e-14
+   },
+   "unit": "nat",
+   "value": 2.842170943040401e-14
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 1.0002092777780527e-21,
+      "passed": true,
+      "reference": "final KL",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "signed_le",
+      "observed": -7.362310250364535e-22,
+      "passed": true,
+      "reference": "largest KL increase between iterates",
+      "reference_kind": "invariant",
+      "tolerance": 1e-15
+     },
+     {
+      "comparison": "le",
+      "observed": 93.0,
+      "passed": true,
+      "reference": "iterations within the declared bound",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 512.0
+     }
+    ],
+    "generator": {
+     "name": "declared two-latent linear-Gaussian problem",
+     "raw_problem": {
+      "noise_covariance": [
+       [
+        9.0,
+        0.06
+       ],
+       [
+        0.06,
+        0.04
+       ]
+      ],
+      "observation_matrix": [
+       [
+        3.0,
+        0.2
+       ],
+       [
+        -0.1,
+        8.0
+       ]
+      ],
+      "observations": [
+       12.0,
+       -0.9
+      ],
+      "prior_covariance": [
+       [
+        4.0,
+        0.1
+       ],
+       [
+        0.1,
+        0.25
+       ]
+      ],
+      "prior_mean": [
+       0.4,
+       -1.0
+      ]
+     },
+     "scales": {
+      "latent_scales": [
+       0.7,
+       0.05
+      ],
+      "observation_scales": [
+       3.0,
+       0.2
+      ]
+     },
+     "seed": null
+    }
+   },
+   "claim": "KL to the exact posterior decreases monotonically and ends below 1e-12 nats within the 512-iteration bound",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 0.05
+   },
+   "uncertainty": {
+    "basis": "largest binary64 residual of F + log Z - KL over the retained trace",
+    "kind": "roundoff",
+    "value": 2.842170943040401e-14
+   },
+   "unit": null,
+   "value": {
+    "condition_number": 7.2943769712106,
+    "final_kl_nats": 1.0002092777780527e-21,
+    "initial_kl_nats": 20.401454571982327,
+    "iterations": 93,
+    "status": "converged"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 1.7763568394002505e-15,
+      "passed": true,
+      "reference": "posterior mapped back by x_raw = D x_norm, log Z_raw = log Z_norm - sum log T",
+      "reference_kind": "invariant",
+      "tolerance": 1e-10
+     }
+    ],
+    "generator": {
+     "name": "declared two-latent linear-Gaussian problem",
+     "raw_problem": {
+      "noise_covariance": [
+       [
+        9.0,
+        0.06
+       ],
+       [
+        0.06,
+        0.04
+       ]
+      ],
+      "observation_matrix": [
+       [
+        3.0,
+        0.2
+       ],
+       [
+        -0.1,
+        8.0
+       ]
+      ],
+      "observations": [
+       12.0,
+       -0.9
+      ],
+      "prior_covariance": [
+       [
+        4.0,
+        0.1
+       ],
+       [
+        0.1,
+        0.25
+       ]
+      ],
+      "prior_mean": [
+       0.4,
+       -1.0
+      ]
+     },
+     "scales": {
+      "latent_scales": [
+       0.7,
+       0.05
+      ],
+      "observation_scales": [
+       3.0,
+       0.2
+      ]
+     },
+     "seed": null
+    }
+   },
+   "claim": "The raw-unit posterior and log evidence are invariant under the choice of normalization scales",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-10,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "binary64 back-transformation",
+    "kind": "roundoff",
+    "value": 1.7763568394002505e-15
+   },
+   "unit": null,
+   "value": 1.7763568394002505e-15
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 2.3865748721343267e+17,
+      "passed": true,
+      "reference": "KL growth factor over 60 iterations",
+      "reference_kind": "analytic",
+      "tolerance": 1000.0
+     }
+    ],
+    "generator": {
+     "name": "declared two-latent linear-Gaussian problem",
+     "raw_problem": {
+      "noise_covariance": [
+       [
+        9.0,
+        0.06
+       ],
+       [
+        0.06,
+        0.04
+       ]
+      ],
+      "observation_matrix": [
+       [
+        3.0,
+        0.2
+       ],
+       [
+        -0.1,
+        8.0
+       ]
+      ],
+      "observations": [
+       12.0,
+       -0.9
+      ],
+      "prior_covariance": [
+       [
+        4.0,
+        0.1
+       ],
+       [
+        0.1,
+        0.25
+       ]
+      ],
+      "prior_mean": [
+       0.4,
+       -1.0
+      ]
+     },
+     "scales": {
+      "latent_scales": [
+       0.7,
+       0.05
+      ],
+      "observation_scales": [
+       3.0,
+       0.2
+      ]
+     },
+     "seed": null
+    }
+   },
+   "claim": "A mean step 1.2 times the stability bound makes KL grow instead of converge",
+   "counterexample": {
+    "statement": "Gradient descent on the variational free energy converges for every positive step size",
+    "witness": {
+     "alpha": 0.563720425245574,
+     "stable_bound": 0.46976702103797835
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.001
+   },
+   "uncertainty": {
+    "basis": "geometric growth amplifies roundoff; the final KL is reproducible to about 1e-3 relative",
+    "kind": "roundoff",
+    "value": null
+   },
+   "unit": null,
+   "value": {
+    "alpha": 0.563720425245574,
+    "kl_final": 4.8689598836483e+18,
+    "kl_initial": 20.401454571982327,
+    "spectral_radius": 1.4
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 3.9917424034797877,
+      "passed": true,
+      "reference": "final KL with unit scales",
+      "reference_kind": "analytic",
+      "tolerance": 0.001
+     }
+    ],
+    "generator": {
+     "name": "declared two-latent linear-Gaussian problem",
+     "raw_problem": {
+      "noise_covariance": [
+       [
+        9.0,
+        0.06
+       ],
+       [
+        0.06,
+        0.04
+       ]
+      ],
+      "observation_matrix": [
+       [
+        3.0,
+        0.2
+       ],
+       [
+        -0.1,
+        8.0
+       ]
+      ],
+      "observations": [
+       12.0,
+       -0.9
+      ],
+      "prior_covariance": [
+       [
+        4.0,
+        0.1
+       ],
+       [
+        0.1,
+        0.25
+       ]
+      ],
+      "prior_mean": [
+       0.4,
+       -1.0
+      ]
+     },
+     "scales": {
+      "latent_scales": [
+       1.0,
+       1.0
+      ],
+      "observation_scales": [
+       1.0,
+       1.0
+      ]
+     },
+     "seed": null
+    }
+   },
+   "claim": "Unit scales leave the same problem unconverged after 512 iterations (condition number 1.3e3)",
+   "counterexample": {
+    "statement": "Coordinate normalization changes only units, not bounded convergence",
+    "witness": {
+     "declared_iterations": 93,
+     "unit_final_kl_nats": 3.9917424034797877
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 0.0001
+   },
+   "uncertainty": {
+    "basis": "binary64 iteration of a contraction",
+    "kind": "roundoff",
+    "value": 1e-12
+   },
+   "unit": null,
+   "value": {
+    "condition_number": 1293.8276986715925,
+    "final_kl_nats": 3.9917424034797877,
+    "iterations": 512
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": [
+     "the model is a normalized, dimensionless inference problem; no physical system or temperature is declared"
+    ]
+   },
+   "claim": "The variational free energy of this model equals a thermodynamic free energy of a physical system",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": "nat",
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 16231,
+   "path": "artifacts/T122/free-energy-trace.json",
+   "sha256": "cf161d627ff6e3dd15197a535f1c10f41c2f9ef85e3c86216c32a47aba288bfd"
+  },
+  {
+   "bytes": 13369,
+   "path": "artifacts/T122/free-energy.svg",
+   "sha256": "17bcbc7eae74099081d2507cb673047970d8214c49197280f1d33e0d3238d363"
+  }
+ ],
+ "hypothesis": "Bounded natural-gradient/Euclidean descent on the Gaussian variational free energy reaches the exact posterior, with F + log Z = KL at every iterate; convergence speed depends on normalization.",
+ "input_data": [
+  "raw problem {'prior_mean': [0.4, -1.0], 'prior_covariance': [[4.0, 0.1], [0.1, 0.25]], 'observation_matrix': [[3.0, 0.2], [-0.1, 8.0]], 'observations': [12.0, -0.9], 'noise_covariance': [[9.0, 0.06], [0.06, 0.04]]}",
+  "declared scales {'latent_scales': [0.7, 0.05], 'observation_scales': [3.0, 0.2]}, unit scales, alternate {'latent_scales': [2.0, 0.2], 'observation_scales': [1.0, 0.5]}"
+ ],
+ "mathematical_model": "F(q) = E_q[-log p(y|x)] + KL(q || p(x)) = KL(q || p(x|y)) - log p(y); mean step m <- m - alpha (Lambda m - b), precision Q <- (1 - beta) Q + beta Lambda.",
+ "number": 122,
+ "numerical_result": "identity residual 2.84e-14; 93 iterations to KL 1e-21; invariance gap 1.78e-15; unit-scale KL after 512 iterations 3.992.",
+ "observation_model": "Trace of F, KL and log Z from ciw.free_energy_math.variational_fit; identity residual recomputed here from the retained trace.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/energy_gpu.py": "fca900557e7fac2261a168afe0ee81efc48508a874a5045bf4f6b74937165bb1",
+   "src/ciw/lab/energy_gpu_kernels.py": "03f3d92f8407f476cb74536911d476929843ee74232a7d7017c00f43c785a2b4",
+   "src/ciw/lab/energy_gpu_telemetry.py": "21cac5f654ce4a120887ff40da62fda47bd38a3c383bbad6cc3cb13b4168fa2d"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T123: keep these nats separate from the joules of T116/T119",
+ "report_id": "sha256:bc6befd35e868805e91e0dbe10675ea24b092a3975fa49d2ac81942c737a01f1",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "energy-gpu",
+ "state": "completed",
+ "task_id": "T122",
+ "tests_passed": [
+  "check: The variational free-energy identity F + log Z = KL(q || p) holds at every iterate to 1e-10 nats vs F from free_energy, log Z from observation-space conditioning, KL from the whitened Gaussian formula",
+  "check: KL to the exact posterior decreases monotonically and ends below 1e-12 nats within the 512-iteration bound vs final KL",
+  "check: KL to the exact posterior decreases monotonically and ends below 1e-12 nats within the 512-iteration bound vs largest KL increase between iterates",
+  "check: KL to the exact posterior decreases monotonically and ends below 1e-12 nats within the 512-iteration bound vs iterations within the declared bound",
+  "check: The raw-unit posterior and log evidence are invariant under the choice of normalization scales vs posterior mapped back by x_raw = D x_norm, log Z_raw = log Z_norm - sum log T",
+  "check: A mean step 1.2 times the stability bound makes KL grow instead of converge vs KL growth factor over 60 iterations",
+  "check: Unit scales leave the same problem unconverged after 512 iterations (condition number 1.3e3) vs final KL with unit scales",
+  "pytest: tests/test_lab_energy_gpu.py::test_bounded_free_energy_identity_and_counterexamples",
+  "pytest: tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance"
+ ],
+ "tests_skipped": [],
+ "title": "Build a bounded free-energy-style computational example.",
+ "uncertainty": "Roundoff only (the problem is exact); KL below 1e-15 is at the roundoff level.",
+ "unresolved_assumptions": [
+  "Gaussian model with known noise; no claim about non-Gaussian free energies"
+ ]
+}

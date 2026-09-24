@@ -1,0 +1,385 @@
+{
+ "changed_files": [
+  "src/ciw/lab/sensor_fusion_geometry.py",
+  "src/ciw/lab/sensor_fusion_common.py",
+  "src/ciw/lab/sensor_fusion_bench.py",
+  "src/ciw/lab/sensor_fusion_objects.py"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 6,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Sample covariance of J x + b within sampling error of J P J^T; exact J S J^T identity; d^2 unchanged; vector-only transforms change d^2 by the predicted amount.",
+ "experiment": "Transform 100000 samples by each map, compare sample covariance with J P J^T via z-scores (Var(S_ij) = (P'_ij^2 + P'_ii P'_jj)/N), round-trip through J^-1, compare d^2 before and after, then drop the covariance transform (rotation-only and unit-only counterexamples) and route one observation through FrameTransform.apply.",
+ "failure_modes_checked": [
+  "translation leaking into covariance",
+  "rotation applied to vector only",
+  "unit change applied to vector only",
+  "velocity block translated",
+  "API transform differing from J P J^T",
+  "loss of symmetry in the transformed P"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 1.58872527437002,
+      "passed": true,
+      "reference": "Gaussian sampling law Var(S_ij) = (P'_ij^2 + P'_ii P'_jj)/N",
+      "reference_kind": "analytic",
+      "tolerance": 4.214799669993038
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "samples": 100000,
+     "seed": 632026
+    }
+   },
+   "claim": "Monte Carlo covariances of rotated, translated, metre-to-millimetre and composite-transformed states match P' = J P J^T within a Bonferroni-corrected 99.9% sampling bound",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "each standardized covariance entry has unit sampling standard deviation",
+    "kind": "monte_carlo_95ci",
+    "value": 1.96
+   },
+   "unit": null,
+   "value": {
+    "max_abs_z": 1.58872527437002,
+    "moments_tested": 40,
+    "per_transform_max_abs_z": {
+     "composite": 1.4103545401969466,
+     "rotation": 1.4103545401956137,
+     "translation": 1.5887252743685227,
+     "unit_m_to_mm": 1.58872527437002
+    },
+    "z_critical": 4.214799669993038
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 2.2770527735624006e-14,
+      "passed": true,
+      "reference": "sample covariance of J x + b against J S J^T",
+      "reference_kind": "invariant",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 3.0839528461809903e-16,
+      "passed": true,
+      "reference": "J^-1 (J P J^T) J^-T against P",
+      "reference_kind": "invariant",
+      "tolerance": 1e-12
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "seed": 632026
+    }
+   },
+   "claim": "Roundoff sanity: the sample covariance of transformed samples equals J S J^T and J^-1 (J P J^T) J^-T returns P to roundoff (algebraic identities that check the arithmetic, not the propagation law)",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "observed floating-point residual of an exact identity",
+    "kind": "roundoff",
+    "value": 2.2770527735624006e-14
+   },
+   "unit": null,
+   "value": {
+    "relative_roundtrip_error": 3.0839528461809903e-16,
+    "relative_transport_error": 2.2770527735624006e-14
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 2.3253064000617867e-13,
+      "passed": true,
+      "reference": "max relative change of d^2 over all samples and transforms",
+      "reference_kind": "invariant",
+      "tolerance": 1e-09
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "seed": 632026
+    }
+   },
+   "claim": "Mahalanobis distance is invariant under every transform, including the metre-to-millimetre unit change, when the covariance is transformed with the vector",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "observed floating-point residual of an exact identity",
+    "kind": "roundoff",
+    "value": 2.3253064000617867e-13
+   },
+   "unit": "max relative difference",
+   "value": {
+    "composite": 2.3253064000617867e-13,
+    "rotation": 4.3010729345958187e-14,
+    "translation": 4.1260009903535366e-14,
+    "unit_m_to_mm": 7.530102263211514e-15
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 6.938893903907228e-18,
+      "passed": true,
+      "reference": "API output against J P J^T and J mu + b",
+      "reference_kind": "invariant",
+      "tolerance": 1e-12
+     }
+    ],
+    "derivation": "FrameTransform.apply in ciw.lab.sensor_fusion_objects"
+   },
+   "claim": "FrameTransform.apply moves a typed position observation to value R z + t and covariance R Sigma R^T, matching J P J^T to roundoff",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "observed floating-point residual of an exact identity",
+    "kind": "roundoff",
+    "value": 6.938893903907228e-18
+   },
+   "unit": "max abs difference",
+   "value": 6.938893903907228e-18
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.9782974537795476,
+      "passed": true,
+      "reference": "mean d^2 against tr(P^-1 R P R^T) (z)",
+      "reference_kind": "analytic",
+      "tolerance": 4.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 0.41985449339135755,
+      "passed": true,
+      "reference": "Wilson lower bound of the rejection rate above the nominal 1%",
+      "reference_kind": "analytic",
+      "tolerance": 0.05
+     },
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "rejection with the rotated covariance inside its Wilson interval around 1%",
+      "reference_kind": "analytic",
+      "tolerance": 1.0
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "seed": 632026
+    }
+   },
+   "claim": "Rotating a position measurement by 35 degrees without rotating its covariance inflates the mean Mahalanobis distance to tr(P^-1 R P R^T) and multiplies the 99% gate rejection rate",
+   "counterexample": {
+    "statement": "Rotating a measurement into another frame without rotating its covariance is harmless",
+    "witness": {
+     "mean_d2": 14.49496148224193,
+     "nominal_mean_d2": 2.0,
+     "rejection_rate_at_99pct_gate": 0.42499,
+     "rotation_deg": 35.0
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "sampling standard error of the mean d^2 (exact variance 2 tr((P^-1 R P R^T)^2) / N)",
+    "kind": "monte_carlo_95ci",
+    "value": 0.12589432412127943
+   },
+   "unit": null,
+   "value": {
+    "mean_d2": 14.49496148224193,
+    "predicted_mean_d2": 14.432123677786244,
+    "rejection_rate": 0.42499,
+    "rejection_rate_with_rotated_covariance": 0.01058,
+    "z": 0.9782974537795476
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 8.881784197001252e-16,
+      "passed": true,
+      "reference": "per-sample d^2 ratio against scale^2 (max relative deviation)",
+      "reference_kind": "invariant",
+      "tolerance": 1e-09
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "seed": 632026
+    }
+   },
+   "claim": "Converting a state to millimetres while keeping its covariance in metres multiplies every squared Mahalanobis distance by exactly 10^6",
+   "counterexample": {
+    "statement": "A unit change of the measurement vector alone leaves gating decisions unchanged",
+    "witness": {
+     "consistent_mean_d2": 1.9955687303281424,
+     "mean_d2": 1995568.7303281422
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "observed floating-point residual of an exact identity",
+    "kind": "roundoff",
+    "value": 8.881784197001252e-16
+   },
+   "unit": null,
+   "value": {
+    "exact_ratio": 1000000.0,
+    "max_relative_deviation_from_scale_squared": 8.881784197001252e-16,
+    "mean_d2": 1995568.7303281422,
+    "mean_d2_consistent": 1.9955687303281424
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "seed": 632026
+    },
+    "notes": "synthetic draws only; no acquisition"
+   },
+   "claim": "The declared 35 degree rotation, translation and body covariance describe a real sensor mounting or extrinsic calibration",
+   "domain": "calibration",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": "not established: the transform and covariance are declared synthetic values"
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 5352,
+   "path": "artifacts/T063/frame_transforms.json",
+   "sha256": "67c7e39de3082228b3255f2e4455492770a18e315939c026cad314edc968069c"
+  },
+  {
+   "bytes": 2169,
+   "path": "artifacts/T063/transform_z.svg",
+   "sha256": "0eed6a84fa50d9c95e8d75c4ee959d507cef629553c17bf5d25e809b5ded1374"
+  }
+ ],
+ "hypothesis": "For affine frame maps y = J x + b (rotation, translation, unit scale and their composite) the covariance transforms as J P J^T, translations do not change it, and Mahalanobis distance is invariant when vector and covariance are transformed together.",
+ "input_data": [
+  "seed 632026 (PCG64)",
+  "100000 Gaussian samples of the body state"
+ ],
+ "mathematical_model": "State (x, y, vx, vy) with declared body covariance (std 0.30, 0.05 m, 0.10, 0.06 m/s, correlations 0.2-0.4). Rotation J = blockdiag(R, R) with R = R(35 deg); translation (12.5, -4.0) m acts on positions; unit change J = 1000 I; composite J = 1000 blockdiag(R, R). d^2 = e^T P^-1 e is invariant because (J e)^T (J P J^T)^-1 (J e) = e^T P^-1 e for invertible J.",
+ "number": 63,
+ "numerical_result": "max |z| = 1.589 vs 4.215 over 40 moments; max relative d^2 change 2.3e-13; rotation without covariance: mean d^2 14.495 (predicted 14.432, nominal 2), 99% gate rejects 0.425; unit-only d^2 ratio 1e+06.",
+ "observation_model": "Samples x = mu + L xi with L the Cholesky factor of P; each map applied exactly.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/sensor_fusion_bench.py": "f373849a4c6836fa20685c59ce7a6fe6bf732f6df9d6a49646cdc017262dd656",
+   "src/ciw/lab/sensor_fusion_common.py": "6787aa47d199d50d0b4de4d7e53714ce7b8b5aad37d647cfc1a954414e90209f",
+   "src/ciw/lab/sensor_fusion_geometry.py": "f32baa091afd99ee4652c64a1d319755f676357fc0bfa06823999a276d7dfd07",
+   "src/ciw/lab/sensor_fusion_objects.py": "a795ffc235e0a4118cb7b9ac7800191a90984372d79e59f1a934442d98d7a1f1"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T064: propagate covariance through the Jacobi transfer matrix, where the map is only first-order.",
+ "report_id": "sha256:6bf922a3bca9c43a68452d9017105e39356b14ac4cf7526d154f86510a343439",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "sensor-fusion",
+ "state": "completed",
+ "task_id": "T063",
+ "tests_passed": [
+  "check: Monte Carlo covariances of rotated, translated, metre-to-millimetre and composite-transformed states match P' = J P J^T within a Bonferroni-corrected 99.9% sampling bound vs Gaussian sampling law Var(S_ij) = (P'_ij^2 + P'_ii P'_jj)/N",
+  "check: Roundoff sanity: the sample covariance of transformed samples equals J S J^T and J^-1 (J P J^T) J^-T returns P to roundoff (algebraic identities that check the arithmetic, not the propagation law) vs sample covariance of J x + b against J S J^T",
+  "check: Roundoff sanity: the sample covariance of transformed samples equals J S J^T and J^-1 (J P J^T) J^-T returns P to roundoff (algebraic identities that check the arithmetic, not the propagation law) vs J^-1 (J P J^T) J^-T against P",
+  "check: Mahalanobis distance is invariant under every transform, including the metre-to-millimetre unit change, when the covariance is transformed with the vector vs max relative change of d^2 over all samples and transforms",
+  "check: FrameTransform.apply moves a typed position observation to value R z + t and covariance R Sigma R^T, matching J P J^T to roundoff vs API output against J P J^T and J mu + b",
+  "check: Rotating a position measurement by 35 degrees without rotating its covariance inflates the mean Mahalanobis distance to tr(P^-1 R P R^T) and multiplies the 99% gate rejection rate vs mean d^2 against tr(P^-1 R P R^T) (z)",
+  "check: Rotating a position measurement by 35 degrees without rotating its covariance inflates the mean Mahalanobis distance to tr(P^-1 R P R^T) and multiplies the 99% gate rejection rate vs Wilson lower bound of the rejection rate above the nominal 1%",
+  "check: Rotating a position measurement by 35 degrees without rotating its covariance inflates the mean Mahalanobis distance to tr(P^-1 R P R^T) and multiplies the 99% gate rejection rate vs rejection with the rotated covariance inside its Wilson interval around 1%",
+  "check: Converting a state to millimetres while keeping its covariance in metres multiplies every squared Mahalanobis distance by exactly 10^6 vs per-sample d^2 ratio against scale^2 (max relative deviation)",
+  "pytest: tests/test_lab_sensor_fusion.py::test_frame_transform_covariance_and_mahalanobis_invariance",
+  "pytest: tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T063]"
+ ],
+ "tests_skipped": [],
+ "title": "Propagate covariance through frame transforms.",
+ "uncertainty": "Monte Carlo sampling error enters only the z-scores; the invariance and round-trip statements are exact up to floating-point roundoff (relative 1e-12 or better).",
+ "unresolved_assumptions": [
+  "The transforms are exact and known; an uncertain extrinsic (rotation with its own covariance) adds a J_theta Sigma_theta J_theta^T term not modelled here.",
+  "Only affine maps are covered; nonlinear maps (range-bearing) need a linearization check such as T064's."
+ ]
+}

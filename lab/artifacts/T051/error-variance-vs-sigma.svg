@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420" font-family="sans-serif" font-size="11">
+<rect width="640" height="420" fill="#ffffff"/>
+<text x="78" y="22" font-size="13" font-weight="bold">Rounded noisy pixels: error variance</text>
+<rect x="78" y="40" width="392" height="322" fill="none" stroke="#333"/>
+<line x1="78.00" y1="40" x2="78.00" y2="362" stroke="#e5e7eb"/>
+<text x="78.00" y="378" text-anchor="middle">0</text>
+<line x1="156.40" y1="40" x2="156.40" y2="362" stroke="#e5e7eb"/>
+<text x="156.40" y="378" text-anchor="middle">0.2</text>
+<line x1="234.80" y1="40" x2="234.80" y2="362" stroke="#e5e7eb"/>
+<text x="234.80" y="378" text-anchor="middle">0.4</text>
+<line x1="313.20" y1="40" x2="313.20" y2="362" stroke="#e5e7eb"/>
+<text x="313.20" y="378" text-anchor="middle">0.6</text>
+<line x1="391.60" y1="40" x2="391.60" y2="362" stroke="#e5e7eb"/>
+<text x="391.60" y="378" text-anchor="middle">0.8</text>
+<line x1="470.00" y1="40" x2="470.00" y2="362" stroke="#e5e7eb"/>
+<text x="470.00" y="378" text-anchor="middle">1</text>
+<line x1="78" y1="225.85" x2="470" y2="225.85" stroke="#e5e7eb"/>
+<text x="72" y="229.85" text-anchor="end">0.5</text>
+<line x1="78" y1="76.78" x2="470" y2="76.78" stroke="#e5e7eb"/>
+<text x="72" y="80.78" text-anchor="end">1</text>
+<text x="274.00" y="406" text-anchor="middle">Gaussian sigma (px)</text>
+<text x="16" y="201.00" text-anchor="middle" transform="rotate(-90 16 201.00)">variance (px^2)</text>
+<path d="M78.00,350.07 L117.20,347.04 L176.00,331.59 L274.00,275.96 L470.00,51.93" fill="none" stroke="#1f5fa8" stroke-width="1.8"/>
+<circle cx="78.00" cy="350.07" r="2.6" fill="#1f5fa8"/>
+<circle cx="117.20" cy="347.04" r="2.6" fill="#1f5fa8"/>
+<circle cx="176.00" cy="331.59" r="2.6" fill="#1f5fa8"/>
+<circle cx="274.00" cy="275.96" r="2.6" fill="#1f5fa8"/>
+<circle cx="470.00" cy="51.93" r="2.6" fill="#1f5fa8"/>
+<line x1="482" y1="52" x2="502" y2="52" stroke="#1f5fa8" stroke-width="2"/>
+<text x="508" y="56">sample variance</text>
+<path d="M78.00,350.07 L117.20,347.09 L176.00,331.44 L274.00,275.54 L470.00,51.94" fill="none" stroke="#c2410c" stroke-width="1.8"/>
+<circle cx="78.00" cy="350.07" r="2.6" fill="#c2410c"/>
+<circle cx="117.20" cy="347.09" r="2.6" fill="#c2410c"/>
+<circle cx="176.00" cy="331.44" r="2.6" fill="#c2410c"/>
+<circle cx="274.00" cy="275.54" r="2.6" fill="#c2410c"/>
+<circle cx="470.00" cy="51.94" r="2.6" fill="#c2410c"/>
+<line x1="482" y1="70" x2="502" y2="70" stroke="#c2410c" stroke-width="2"/>
+<text x="508" y="74">sigma^2 + 1/12</text>
+</svg>

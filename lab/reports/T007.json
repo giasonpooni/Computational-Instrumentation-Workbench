@@ -1,0 +1,810 @@
+{
+ "changed_files": [
+  "src/ciw/lab/geodesic_jacobi.py",
+  "src/ciw/lab/geodesic_jacobi_common.py",
+  "tests/test_lab_geodesic_jacobi.py",
+  "docs/lab/GEODESIC_JACOBI.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 0,
+   "numerically_verified": 5,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Exact per-step factors on constant K; fitted drift orders 1 (Euler), 2 or 3 (midpoint), 5 (RK4); adaptive drift proportional to the tolerance or faster (median slope >= 0.9).",
+ "experiment": "Integrate geodesic and Jacobi columns jointly with each method and step, compare the determinant with the per-step predictions, fit drift orders, and derive the step determinants symbolically.",
+ "failure_modes_checked": [
+  "Euler area growth (K > 0) and shrinkage (K < 0) from 1 + h^2 K",
+  "midpoint cancellation when K(L) = K(0) (constant K gives order 3)",
+  "RK4 superconvergence of the determinant (recorded as a counterexample to the h^4 expectation)",
+  "flat charts where every method is exact"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 4.824514648044523e-16,
+      "passed": true,
+      "reference": "per-step Euler factor 1 + h^2 K_n on every path and step",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 1.8084274401897394e-14,
+      "passed": true,
+      "reference": "(1 + h^2 K)^n on constant-curvature paths",
+      "reference_kind": "analytic",
+      "tolerance": 1e-10
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.008333463406956176,
+      "passed": true,
+      "reference": "Euler determinant drift order 1 on variable-curvature torus",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.004525890773679486,
+      "passed": true,
+      "reference": "Euler determinant drift order 1 on variable-curvature gaussian-bump",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0020241951117832002,
+      "passed": true,
+      "reference": "Euler determinant drift order 1 on variable-curvature saddle",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.022990266495343636,
+      "passed": true,
+      "reference": "Euler determinant drift order 1 on variable-curvature bump-radial",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.003785320062754116,
+      "passed": true,
+      "reference": "Euler determinant drift order 1 on variable-curvature torus-outer-to-inner",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     }
+    ],
+    "generator": {
+     "constant": [
+      "sphere-great-circle",
+      "hyperbolic-long",
+      "torus-outer-equator",
+      "torus-inner-equator"
+     ],
+     "flat": [
+      "plane",
+      "cylinder"
+     ],
+     "name": "declared geodesics",
+     "variable": [
+      "torus",
+      "gaussian-bump",
+      "saddle",
+      "bump-radial",
+      "torus-outer-to-inner"
+     ]
+    }
+   },
+   "claim": "Explicit Euler multiplies det Phi by exactly 1 + h^2 K(gamma_n) per step, so it is not area-preserving where K is nonzero",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.02,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "largest distance of a pairwise (halving) slope from the least-squares slope (variable-curvature paths); the per-step factors hold to rounding",
+    "kind": "fit",
+    "value": 0.016465302576432306
+   },
+   "unit": null,
+   "value": {
+    "constant_curvature_prediction_error": 1.8084274401897394e-14,
+    "per_step_factor_error": 4.824514648044523e-16,
+    "variable_curvature_orders": {
+     "bump-radial": 1.0229902664953436,
+     "gaussian-bump": 0.9954741092263205,
+     "saddle": 1.0020241951117832,
+     "torus": 0.9916665365930438,
+     "torus-outer-to-inner": 0.9962146799372459
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 2.0204844254383162e-14,
+      "passed": true,
+      "reference": "(1 + h^4 K^2 / 4)^n on constant-curvature paths",
+      "reference_kind": "analytic",
+      "tolerance": 1e-10
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.00828181670550343,
+      "passed": true,
+      "reference": "midpoint drift order 3 on constant-curvature sphere-great-circle",
+      "reference_kind": "analytic",
+      "tolerance": 0.15
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.000278723562727734,
+      "passed": true,
+      "reference": "midpoint drift order 3 on constant-curvature hyperbolic-long",
+      "reference_kind": "analytic",
+      "tolerance": 0.15
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.006700039831704974,
+      "passed": true,
+      "reference": "midpoint drift order 3 on constant-curvature torus-outer-equator",
+      "reference_kind": "analytic",
+      "tolerance": 0.15
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0061532234013634834,
+      "passed": true,
+      "reference": "midpoint drift order 3 on constant-curvature torus-inner-equator",
+      "reference_kind": "analytic",
+      "tolerance": 0.15
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.004463300628757549,
+      "passed": true,
+      "reference": "midpoint drift order 2 on variable-curvature torus",
+      "reference_kind": "analytic",
+      "tolerance": 0.15
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.004069466781531528,
+      "passed": true,
+      "reference": "midpoint drift order 2 on variable-curvature gaussian-bump",
+      "reference_kind": "analytic",
+      "tolerance": 0.15
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.012077899955584392,
+      "passed": true,
+      "reference": "midpoint drift order 2 on variable-curvature saddle",
+      "reference_kind": "analytic",
+      "tolerance": 0.15
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.004686559003442614,
+      "passed": true,
+      "reference": "midpoint drift order 2 on variable-curvature bump-radial",
+      "reference_kind": "analytic",
+      "tolerance": 0.15
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.020198113954146724,
+      "passed": true,
+      "reference": "midpoint drift order 2 on variable-curvature torus-outer-to-inner",
+      "reference_kind": "analytic",
+      "tolerance": 0.15
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0031131603614749093,
+      "passed": true,
+      "reference": "end drift / (h^2 (K(L) - K(0)) / 4) at N=200 on torus",
+      "reference_kind": "analytic",
+      "tolerance": 0.05
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.04307939600111477,
+      "passed": true,
+      "reference": "end drift / (h^2 (K(L) - K(0)) / 4) at N=200 on gaussian-bump",
+      "reference_kind": "analytic",
+      "tolerance": 0.05
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.00354631867885713,
+      "passed": true,
+      "reference": "end drift / (h^2 (K(L) - K(0)) / 4) at N=200 on saddle",
+      "reference_kind": "analytic",
+      "tolerance": 0.05
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.0013102187836344648,
+      "passed": true,
+      "reference": "end drift / (h^2 (K(L) - K(0)) / 4) at N=200 on bump-radial",
+      "reference_kind": "analytic",
+      "tolerance": 0.05
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.006147899517518263,
+      "passed": true,
+      "reference": "end drift / (h^2 (K(L) - K(0)) / 4) at N=200 on torus-outer-to-inner",
+      "reference_kind": "analytic",
+      "tolerance": 0.05
+     },
+     {
+      "comparison": "ge",
+      "observed": 1.9678349233694923,
+      "passed": true,
+      "reference": "|ratio - 1| at N=100 over N=200 on torus",
+      "reference_kind": "self_convergence",
+      "tolerance": 1.5
+     },
+     {
+      "comparison": "ge",
+      "observed": 1.999805640696755,
+      "passed": true,
+      "reference": "|ratio - 1| at N=100 over N=200 on gaussian-bump",
+      "reference_kind": "self_convergence",
+      "tolerance": 1.5
+     },
+     {
+      "comparison": "ge",
+      "observed": 2.0111891265889983,
+      "passed": true,
+      "reference": "|ratio - 1| at N=100 over N=200 on saddle",
+      "reference_kind": "self_convergence",
+      "tolerance": 1.5
+     },
+     {
+      "comparison": "ge",
+      "observed": 2.0281169937941925,
+      "passed": true,
+      "reference": "|ratio - 1| at N=100 over N=200 on bump-radial",
+      "reference_kind": "self_convergence",
+      "tolerance": 1.5
+     },
+     {
+      "comparison": "ge",
+      "observed": 2.0036926579587084,
+      "passed": true,
+      "reference": "|ratio - 1| at N=100 over N=200 on torus-outer-to-inner",
+      "reference_kind": "self_convergence",
+      "tolerance": 1.5
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.00010013504158989939,
+      "passed": true,
+      "reference": "extrapolated ratio 2 r(N=200) - r(N=100) on torus",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.001
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -8.372881390994458e-06,
+      "passed": true,
+      "reference": "extrapolated ratio 2 r(N=200) - r(N=100) on gaussian-bump",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.001
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -3.9680208622661084e-05,
+      "passed": true,
+      "reference": "extrapolated ratio 2 r(N=200) - r(N=100) on saddle",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.001
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 3.6839413408484845e-05,
+      "passed": true,
+      "reference": "extrapolated ratio 2 r(N=200) - r(N=100) on bump-radial",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.001
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 2.270209008270463e-05,
+      "passed": true,
+      "reference": "extrapolated ratio 2 r(N=200) - r(N=100) on torus-outer-to-inner",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.001
+     }
+    ],
+    "generator": {
+     "constant": [
+      "sphere-great-circle",
+      "hyperbolic-long",
+      "torus-outer-equator",
+      "torus-inner-equator"
+     ],
+     "flat": [
+      "plane",
+      "cylinder"
+     ],
+     "name": "declared geodesics",
+     "variable": [
+      "torus",
+      "gaussian-bump",
+      "saddle",
+      "bump-radial",
+      "torus-outer-to-inner"
+     ]
+    }
+   },
+   "claim": "Midpoint determinant drift is (h^2/4)(K(L) - K(0)) + O(h^3): second order on variable curvature, third order on constant curvature",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.02,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "largest distance of a pairwise (halving) slope from the least-squares slope",
+    "kind": "fit",
+    "value": 0.01499317870512673
+   },
+   "unit": null,
+   "value": {
+    "boundary_ratio": {
+     "bump-radial": 0.9986897812163655,
+     "gaussian-bump": 0.9569206039988852,
+     "saddle": 1.0035463186788571,
+     "torus": 1.003113160361475,
+     "torus-outer-to-inner": 0.9938521004824817
+    },
+    "extrapolated_boundary_ratio": {
+     "bump-radial": 1.0000368394134085,
+     "gaussian-bump": 0.999991627118609,
+     "saddle": 0.9999603197913773,
+     "torus": 1.00010013504159,
+     "torus-outer-to-inner": 1.0000227020900827
+    },
+    "orders": {
+     "bump-radial": 1.9953134409965574,
+     "gaussian-bump": 2.0040694667815315,
+     "hyperbolic-long": 3.0002787235627277,
+     "saddle": 2.0120778999555844,
+     "sphere-great-circle": 3.0082818167055034,
+     "torus": 1.9955366993712425,
+     "torus-inner-equator": 3.0061532234013635,
+     "torus-outer-equator": 3.006700039831705,
+     "torus-outer-to-inner": 1.9798018860458533
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 7.216449660063518e-15,
+      "passed": true,
+      "reference": "(1 - h^6 K^3/72 + h^8 K^4/576)^n on constant-curvature paths",
+      "reference_kind": "analytic",
+      "tolerance": 1e-10
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.011280798060977482,
+      "passed": true,
+      "reference": "RK4 determinant drift order 5 on sphere-great-circle",
+      "reference_kind": "analytic",
+      "tolerance": 0.2
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.001956250322551867,
+      "passed": true,
+      "reference": "RK4 determinant drift order 5 on hyperbolic-long",
+      "reference_kind": "analytic",
+      "tolerance": 0.2
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.01008422655854968,
+      "passed": true,
+      "reference": "RK4 determinant drift order 5 on torus-outer-equator",
+      "reference_kind": "analytic",
+      "tolerance": 0.2
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.010013224995699233,
+      "passed": true,
+      "reference": "RK4 determinant drift order 5 on torus-inner-equator",
+      "reference_kind": "analytic",
+      "tolerance": 0.2
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.004523624155879702,
+      "passed": true,
+      "reference": "RK4 determinant drift order 5 on torus",
+      "reference_kind": "analytic",
+      "tolerance": 0.2
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.007015569313042924,
+      "passed": true,
+      "reference": "RK4 determinant drift order 5 on gaussian-bump",
+      "reference_kind": "analytic",
+      "tolerance": 0.2
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.0024541794312247234,
+      "passed": true,
+      "reference": "RK4 determinant drift order 5 on saddle",
+      "reference_kind": "analytic",
+      "tolerance": 0.2
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.010150420518002967,
+      "passed": true,
+      "reference": "RK4 determinant drift order 5 on bump-radial",
+      "reference_kind": "analytic",
+      "tolerance": 0.2
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.019920790248059816,
+      "passed": true,
+      "reference": "RK4 determinant drift order 5 on torus-outer-to-inner",
+      "reference_kind": "analytic",
+      "tolerance": 0.2
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "nonzero h^1..h^5 coefficients of det(RK4 step) - 1 for smooth K(s) (sympy)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "constant": [
+      "sphere-great-circle",
+      "hyperbolic-long",
+      "torus-outer-equator",
+      "torus-inner-equator"
+     ],
+     "flat": [
+      "plane",
+      "cylinder"
+     ],
+     "name": "declared geodesics",
+     "variable": [
+      "torus",
+      "gaussian-bump",
+      "saddle",
+      "bump-radial",
+      "torus-outer-to-inner"
+     ]
+    }
+   },
+   "claim": "RK4 determinant drift is O(h^5), one order above its O(h^4) global error, on constant and variable curvature",
+   "counterexample": {
+    "statement": "The RK4 transfer-matrix determinant drifts at the method's global order h^4",
+    "witness": {
+     "orders": {
+      "bump-radial": 4.989849579481997,
+      "gaussian-bump": 4.992984430686957,
+      "hyperbolic-long": 5.001956250322552,
+      "saddle": 4.997545820568775,
+      "sphere-great-circle": 4.9887192019390225,
+      "torus": 5.00452362415588,
+      "torus-inner-equator": 5.010013224995699,
+      "torus-outer-equator": 4.98991577344145,
+      "torus-outer-to-inner": 5.01992079024806
+     },
+     "per_step_defect": "-h^6 K^3/72 + O(h^7) (constant K); O(h^6) for smooth K(s)"
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.02,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "largest distance of a pairwise (halving) slope from the least-squares slope",
+    "kind": "fit",
+    "value": 0.015995835066553
+   },
+   "unit": null,
+   "value": {
+    "bump-radial": 4.989849579481997,
+    "gaussian-bump": 4.992984430686957,
+    "hyperbolic-long": 5.001956250322552,
+    "saddle": 4.997545820568775,
+    "sphere-great-circle": 4.9887192019390225,
+    "torus": 5.00452362415588,
+    "torus-inner-equator": 5.010013224995699,
+    "torus-outer-equator": 4.98991577344145,
+    "torus-outer-to-inner": 5.01992079024806
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "signed_ge",
+      "observed": 1.027724743253913,
+      "passed": true,
+      "reference": "median log-log slope of drift against rtol, at least half-way from 0.8 (a y4-advancing pair) to 1",
+      "reference_kind": "analytic",
+      "tolerance": 0.9
+     }
+    ],
+    "generator": {
+     "constant": [
+      "sphere-great-circle",
+      "hyperbolic-long",
+      "torus-outer-equator",
+      "torus-inner-equator"
+     ],
+     "flat": [
+      "plane",
+      "cylinder"
+     ],
+     "name": "declared geodesics",
+     "rtol": [
+      1e-06,
+      1e-07,
+      1e-08,
+      1e-09,
+      1e-10
+     ],
+     "variable": [
+      "torus",
+      "gaussian-bump",
+      "saddle",
+      "bump-radial",
+      "torus-outer-to-inner"
+     ]
+    }
+   },
+   "claim": "Adaptive Dormand-Prince determinant drift decreases in proportion to the tolerance or faster (median over paths)",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.15,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "median absolute deviation of the nine per-path slopes",
+    "kind": "fit",
+    "value": 0.044094515570331505
+   },
+   "unit": null,
+   "value": 1.027724743253913
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "max |det Phi - 1| on plane and cylinder, all methods",
+      "reference_kind": "analytic",
+      "tolerance": 1e-14
+     }
+    ],
+    "generator": {
+     "constant": [
+      "sphere-great-circle",
+      "hyperbolic-long",
+      "torus-outer-equator",
+      "torus-inner-equator"
+     ],
+     "flat": [
+      "plane",
+      "cylinder"
+     ],
+     "name": "declared geodesics",
+     "variable": [
+      "torus",
+      "gaussian-bump",
+      "saddle",
+      "bump-radial",
+      "torus-outer-to-inner"
+     ]
+    }
+   },
+   "claim": "Where K = 0 every method preserves det Phi = 1 exactly, Euler included",
+   "counterexample": {
+    "statement": "Explicit Euler never preserves the transfer-matrix determinant",
+    "witness": {
+     "charts": [
+      "plane",
+      "cylinder"
+     ],
+     "max_drift": 0.0,
+     "per_step_factor": "1 + h^2 K = 1"
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "binary64 rounding of j_lat j_head' - j_lat' j_head",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": 0.0
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 40306,
+   "path": "artifacts/T007/determinant.json",
+   "sha256": "28e6d304ed6960a79c50a4f3406c1094f70a3863987707aff3ab6d9ee06c728a"
+  },
+  {
+   "bytes": 2891,
+   "path": "artifacts/T007/det-euler-constant.svg",
+   "sha256": "72424194aa6038158bb376345ba111db8a27e10d9d1a6eca049273bfc9e5c08c"
+  },
+  {
+   "bytes": 3208,
+   "path": "artifacts/T007/det-euler-variable.svg",
+   "sha256": "2cce9f7cacc9f1e0a2ab8df097ac073ea629eb92bcf593f94d1c2af50f9bbf5a"
+  },
+  {
+   "bytes": 3009,
+   "path": "artifacts/T007/det-midpoint-constant.svg",
+   "sha256": "89170503a85d427457425d6110835e7e09ac091e886db3da2de6a9afc3f4495e"
+  },
+  {
+   "bytes": 3459,
+   "path": "artifacts/T007/det-midpoint-variable.svg",
+   "sha256": "00959cc565eb259ac7131d68b8f0c81bcad7c3e9826451aaa48e9ef4bcf20558"
+  },
+  {
+   "bytes": 3364,
+   "path": "artifacts/T007/det-rk4-constant.svg",
+   "sha256": "594f29e17d635171b78bbc88d5d98e88c38b9c9e58cf7d398ea726567b9a0d72"
+  },
+  {
+   "bytes": 3803,
+   "path": "artifacts/T007/det-rk4-variable.svg",
+   "sha256": "163649df54b043bd9d69c745e2f62e06ef955612f03d172877fc45777e75185f"
+  },
+  {
+   "bytes": 4878,
+   "path": "artifacts/T007/det-along-sphere.svg",
+   "sha256": "bea1ef7eccb34fd1b7fd9d4f8c6f28276e8d4698d2c31b6a41366dbade7c71dd"
+  }
+ ],
+ "hypothesis": "det Phi(s) = 1 exactly; its numerical drift measures each method: Euler drifts at O(h) through the per-step factor 1 + h^2 K, and RK4 drifts at O(h^4) or better.",
+ "input_data": [
+  "Constant-curvature paths ['sphere-great-circle', 'hyperbolic-long', 'torus-outer-equator', 'torus-inner-equator'], variable ['torus', 'gaussian-bump', 'saddle', 'bump-radial', 'torus-outer-to-inner'], flat ['plane', 'cylinder']",
+  "Steps {'euler': (50, 100, 200, 400), 'midpoint': (25, 50, 100, 200), 'rk4': (16, 32, 64, 128)}; adaptive rtol = atol in [1e-06, 1e-07, 1e-08, 1e-09, 1e-10]"
+ ],
+ "mathematical_model": "Phi' = A(s) Phi with A = [[0, 1], [-K, 0]] and tr A = 0 (Liouville). Step matrices: Euler [[1, h], [-h K_n, 1]]; midpoint det = 1 + h^2 (K_mid - K_n)/2 + h^4 K_n K_mid/4; RK4 det - 1 has no h^1..h^5 terms for smooth K (sympy) and equals -h^6 K^3/72 + h^8 K^4/576 for constant K.",
+ "number": 7,
+ "numerical_result": "Drift orders: euler sphere-great-circle 1.21, hyperbolic-long 0.964, torus-outer-equator 1.19, torus-inner-equator 0.841, torus 0.992, gaussian-bump 0.995, saddle 1, bump-radial 1.02, torus-outer-to-inner 0.996; midpoint sphere-great-circle 3.01, hyperbolic-long 3, torus-outer-equator 3.01, torus-inner-equator 3.01, torus 2, gaussian-bump 2, saddle 2.01, bump-radial 2, torus-outer-to-inner 1.98; rk4 sphere-great-circle 4.99, hyperbolic-long 5, torus-outer-equator 4.99, torus-inner-equator 5.01, torus 5, gaussian-bump 4.99, saddle 5, bump-radial 4.99, torus-outer-to-inner 5.02; Euler per-step factor error 4.82e-16; midpoint boundary ratio 0.9569..1.004 at N = 200; adaptive median drift slope 1.03.",
+ "observation_model": "max over nodes of |det Phi - 1| with det = j_lat j_head' - j_lat' j_head.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "requirement_probes": {
+   "module:sympy": true
+  },
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/geodesic_jacobi.py": "7f7307ebfb5c0a38ca1e7b9365fd7df627d9ae001791d99b823122873040d3c1",
+   "src/ciw/lab/geodesic_jacobi_common.py": "8616e9157492f0cd2aeebd695b3501215420c73af2cfbcb8c1b8cd5ab8d23a52"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T008: locate conjugate and focal points",
+ "report_id": "sha256:194626340cfc4a117777dc845a744f5ed8e022316e697a32f758992587c5eb2a",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "geodesic-jacobi",
+ "state": "completed",
+ "task_id": "T007",
+ "tests_passed": [
+  "check: Explicit Euler multiplies det Phi by exactly 1 + h^2 K(gamma_n) per step, so it is not area-preserving where K is nonzero vs per-step Euler factor 1 + h^2 K_n on every path and step",
+  "check: Explicit Euler multiplies det Phi by exactly 1 + h^2 K(gamma_n) per step, so it is not area-preserving where K is nonzero vs (1 + h^2 K)^n on constant-curvature paths",
+  "check: Explicit Euler multiplies det Phi by exactly 1 + h^2 K(gamma_n) per step, so it is not area-preserving where K is nonzero vs Euler determinant drift order 1 on variable-curvature torus",
+  "check: Explicit Euler multiplies det Phi by exactly 1 + h^2 K(gamma_n) per step, so it is not area-preserving where K is nonzero vs Euler determinant drift order 1 on variable-curvature gaussian-bump",
+  "check: Explicit Euler multiplies det Phi by exactly 1 + h^2 K(gamma_n) per step, so it is not area-preserving where K is nonzero vs Euler determinant drift order 1 on variable-curvature saddle",
+  "check: Explicit Euler multiplies det Phi by exactly 1 + h^2 K(gamma_n) per step, so it is not area-preserving where K is nonzero vs Euler determinant drift order 1 on variable-curvature bump-radial",
+  "check: Explicit Euler multiplies det Phi by exactly 1 + h^2 K(gamma_n) per step, so it is not area-preserving where K is nonzero vs Euler determinant drift order 1 on variable-curvature torus-outer-to-inner",
+  "check: Midpoint determinant drift is (h^2/4)(K(L) - K(0)) + O(h^3): second order on variable curvature, third order on constant curvature vs (1 + h^4 K^2 / 4)^n on constant-curvature paths",
+  "check: Midpoint determinant drift is (h^2/4)(K(L) - K(0)) + O(h^3): second order on variable curvature, third order on constant curvature vs midpoint drift order 3 on constant-curvature sphere-great-circle",
+  "check: Midpoint determinant drift is (h^2/4)(K(L) - K(0)) + O(h^3): second order on variable curvature, third order on constant curvature vs midpoint drift order 3 on constant-curvature hyperbolic-long",
+  "check: Midpoint determinant drift is (h^2/4)(K(L) - K(0)) + O(h^3): second order on variable curvature, third order on constant curvature vs midpoint drift order 3 on constant-curvature torus-outer-equator",
+  "check: Midpoint determinant drift is (h^2/4)(K(L) - K(0)) + O(h^3): second order on variable curvature, third order on constant curvature vs midpoint drift order 3 on constant-curvature torus-inner-equator",
+  "check: Midpoint determinant drift is (h^2/4)(K(L) - K(0)) + O(h^3): second order on variable curvature, third order on constant curvature vs midpoint drift order 2 on variable-curvature torus",
+  "check: Midpoint determinant drift is (h^2/4)(K(L) - K(0)) + O(h^3): second order on variable curvature, third order on constant curvature vs midpoint drift order 2 on variable-curvature gaussian-bump",
+  "check: Midpoint determinant drift is (h^2/4)(K(L) - K(0)) + O(h^3): second order on variable curvature, third order on constant curvature vs midpoint drift order 2 on variable-curvature saddle",
+  "check: Midpoint determinant drift is (h^2/4)(K(L) - K(0)) + O(h^3): second order on variable curvature, third order on constant curvature vs midpoint drift order 2 on variable-curvature bump-radial",
+  "check: Midpoint determinant drift is (h^2/4)(K(L) - K(0)) + O(h^3): second order on variable curvature, third order on constant curvature vs midpoint drift order 2 on variable-curvature torus-outer-to-inner",
+  "check: Midpoint determinant drift is (h^2/4)(K(L) - K(0)) + O(h^3): second order on variable curvature, third order on constant curvature vs end drift / (h^2 (K(L) - K(0)) / 4) at N=200 on torus",
+  "check: Midpoint determinant drift is (h^2/4)(K(L) - K(0)) + O(h^3): second order on variable curvature, third order on constant curvature vs end drift / (h^2 (K(L) - K(0)) / 4) at N=200 on gaussian-bump",
+  "check: Midpoint determinant drift is (h^2/4)(K(L) - K(0)) + O(h^3): second order on variable curvature, third order on constant curvature vs end drift / (h^2 (K(L) - K(0)) / 4) at N=200 on saddle",
+  "check: Midpoint determinant drift is (h^2/4)(K(L) - K(0)) + O(h^3): second order on variable curvature, third order on constant curvature vs end drift / (h^2 (K(L) - K(0)) / 4) at N=200 on bump-radial",
+  "check: Midpoint determinant drift is (h^2/4)(K(L) - K(0)) + O(h^3): second order on variable curvature, third order on constant curvature vs end drift / (h^2 (K(L) - K(0)) / 4) at N=200 on torus-outer-to-inner",
+  "check: Midpoint determinant drift is (h^2/4)(K(L) - K(0)) + O(h^3): second order on variable curvature, third order on constant curvature vs |ratio - 1| at N=100 over N=200 on torus",
+  "check: Midpoint determinant drift is (h^2/4)(K(L) - K(0)) + O(h^3): second order on variable curvature, third order on constant curvature vs |ratio - 1| at N=100 over N=200 on gaussian-bump",
+  "check: Midpoint determinant drift is (h^2/4)(K(L) - K(0)) + O(h^3): second order on variable curvature, third order on constant curvature vs |ratio - 1| at N=100 over N=200 on saddle",
+  "check: Midpoint determinant drift is (h^2/4)(K(L) - K(0)) + O(h^3): second order on variable curvature, third order on constant curvature vs |ratio - 1| at N=100 over N=200 on bump-radial",
+  "check: Midpoint determinant drift is (h^2/4)(K(L) - K(0)) + O(h^3): second order on variable curvature, third order on constant curvature vs |ratio - 1| at N=100 over N=200 on torus-outer-to-inner",
+  "check: Midpoint determinant drift is (h^2/4)(K(L) - K(0)) + O(h^3): second order on variable curvature, third order on constant curvature vs extrapolated ratio 2 r(N=200) - r(N=100) on torus",
+  "check: Midpoint determinant drift is (h^2/4)(K(L) - K(0)) + O(h^3): second order on variable curvature, third order on constant curvature vs extrapolated ratio 2 r(N=200) - r(N=100) on gaussian-bump",
+  "check: Midpoint determinant drift is (h^2/4)(K(L) - K(0)) + O(h^3): second order on variable curvature, third order on constant curvature vs extrapolated ratio 2 r(N=200) - r(N=100) on saddle",
+  "check: Midpoint determinant drift is (h^2/4)(K(L) - K(0)) + O(h^3): second order on variable curvature, third order on constant curvature vs extrapolated ratio 2 r(N=200) - r(N=100) on bump-radial",
+  "check: Midpoint determinant drift is (h^2/4)(K(L) - K(0)) + O(h^3): second order on variable curvature, third order on constant curvature vs extrapolated ratio 2 r(N=200) - r(N=100) on torus-outer-to-inner",
+  "check: RK4 determinant drift is O(h^5), one order above its O(h^4) global error, on constant and variable curvature vs (1 - h^6 K^3/72 + h^8 K^4/576)^n on constant-curvature paths",
+  "check: RK4 determinant drift is O(h^5), one order above its O(h^4) global error, on constant and variable curvature vs RK4 determinant drift order 5 on sphere-great-circle",
+  "check: RK4 determinant drift is O(h^5), one order above its O(h^4) global error, on constant and variable curvature vs RK4 determinant drift order 5 on hyperbolic-long",
+  "check: RK4 determinant drift is O(h^5), one order above its O(h^4) global error, on constant and variable curvature vs RK4 determinant drift order 5 on torus-outer-equator",
+  "check: RK4 determinant drift is O(h^5), one order above its O(h^4) global error, on constant and variable curvature vs RK4 determinant drift order 5 on torus-inner-equator",
+  "check: RK4 determinant drift is O(h^5), one order above its O(h^4) global error, on constant and variable curvature vs RK4 determinant drift order 5 on torus",
+  "check: RK4 determinant drift is O(h^5), one order above its O(h^4) global error, on constant and variable curvature vs RK4 determinant drift order 5 on gaussian-bump",
+  "check: RK4 determinant drift is O(h^5), one order above its O(h^4) global error, on constant and variable curvature vs RK4 determinant drift order 5 on saddle",
+  "check: RK4 determinant drift is O(h^5), one order above its O(h^4) global error, on constant and variable curvature vs RK4 determinant drift order 5 on bump-radial",
+  "check: RK4 determinant drift is O(h^5), one order above its O(h^4) global error, on constant and variable curvature vs RK4 determinant drift order 5 on torus-outer-to-inner",
+  "check: RK4 determinant drift is O(h^5), one order above its O(h^4) global error, on constant and variable curvature vs nonzero h^1..h^5 coefficients of det(RK4 step) - 1 for smooth K(s) (sympy)",
+  "check: Adaptive Dormand-Prince determinant drift decreases in proportion to the tolerance or faster (median over paths) vs median log-log slope of drift against rtol, at least half-way from 0.8 (a y4-advancing pair) to 1",
+  "check: Where K = 0 every method preserves det Phi = 1 exactly, Euler included vs max |det Phi - 1| on plane and cylinder, all methods",
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_t007_determinant",
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_t007_symbolic_step_determinants",
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_every_numerical_finding_declares_uncertainty_and_tolerance",
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space"
+ ],
+ "tests_skipped": [],
+ "title": "Measure the Wronskian and transfer-matrix determinant.",
+ "uncertainty": "Fitted orders over four halvings; the exact per-step predictions hold to rounding once scaled by |a b'| + |a' b| (the columns reach cosh(6.5) on the inner equator). Euler slopes on the long constant-curvature paths are not fitted claims: (1 + h^2 K)^(L/h) - 1 ~ exp(h L K) - 1 is not yet linear in h when h L |K| is near 1, so the exact product formula is checked there instead.",
+ "unresolved_assumptions": [
+  "The O(h^6) RK4 per-step defect is derived for smooth K(s) along the stage points; paths through curvature discontinuities were not tested"
+ ]
+}

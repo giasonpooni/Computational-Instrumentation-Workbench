@@ -1,0 +1,670 @@
+{
+ "changed_files": [
+  "src/ciw/lab/geodesic_jacobi.py",
+  "src/ciw/lab/geodesic_jacobi_common.py",
+  "tests/test_lab_geodesic_jacobi.py",
+  "docs/lab/GEODESIC_JACOBI.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 0,
+   "numerically_verified": 5,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Drift slopes near p; g stays at 1.69; zero normalizing operations in the state-update path.",
+ "experiment": "Measure drift for every method and step; restart with speed 1.3 under all four methods; scan the state-update source for normalizing calls, half powers and divisions by magnitudes; integrate y' = y; compare a deliberately renormalized Euler at four step counts.",
+ "failure_modes_checked": [
+  "hidden renormalization (static scan, speed-1.3 start under every method, y' = y growth)",
+  "normalization through an intermediate name or a -0.5 power (scanner probes)",
+  "speed drift mistaken for accuracy (renormalized Euler counterexample)",
+  "flat charts where drift is identically at rounding"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.017589740880540994,
+      "passed": true,
+      "reference": "drift order 1 for euler on sphere",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.00036236724745508653,
+      "passed": true,
+      "reference": "drift order 1 for euler on saddle",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.002952263973235114,
+      "passed": true,
+      "reference": "drift order 1 for euler on torus",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0026927194942862887,
+      "passed": true,
+      "reference": "drift order 1 for euler on gaussian-bump",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.012999945785821643,
+      "passed": true,
+      "reference": "drift order 1 for euler on hyperbolic-plane",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.02159384889795457,
+      "passed": true,
+      "reference": "drift order 1 for euler on plane-polar",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.021593848897801138,
+      "passed": true,
+      "reference": "drift order 1 for euler on cylinder-polar",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.017812965801764058,
+      "passed": true,
+      "reference": "drift order 2 for midpoint on sphere",
+      "reference_kind": "analytic",
+      "tolerance": 0.15
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.013791258238394555,
+      "passed": true,
+      "reference": "drift order 2 for midpoint on saddle",
+      "reference_kind": "analytic",
+      "tolerance": 0.15
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0017823670391696744,
+      "passed": true,
+      "reference": "drift order 2 for midpoint on torus",
+      "reference_kind": "analytic",
+      "tolerance": 0.15
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.004401614951155874,
+      "passed": true,
+      "reference": "drift order 2 for midpoint on gaussian-bump",
+      "reference_kind": "analytic",
+      "tolerance": 0.15
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.02570423720593018,
+      "passed": true,
+      "reference": "drift order 2 for midpoint on hyperbolic-plane",
+      "reference_kind": "analytic",
+      "tolerance": 0.15
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.011015558894116317,
+      "passed": true,
+      "reference": "drift order 2 for midpoint on plane-polar",
+      "reference_kind": "analytic",
+      "tolerance": 0.15
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.011015558892886634,
+      "passed": true,
+      "reference": "drift order 2 for midpoint on cylinder-polar",
+      "reference_kind": "analytic",
+      "tolerance": 0.15
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.09454152039324759,
+      "passed": true,
+      "reference": "drift order 4 for rk4 on sphere",
+      "reference_kind": "analytic",
+      "tolerance": 0.3
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.01541454977735679,
+      "passed": true,
+      "reference": "drift order 4 for rk4 on saddle",
+      "reference_kind": "analytic",
+      "tolerance": 0.3
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.003578599303024621,
+      "passed": true,
+      "reference": "drift order 4 for rk4 on torus",
+      "reference_kind": "analytic",
+      "tolerance": 0.3
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.03505117097700028,
+      "passed": true,
+      "reference": "drift order 4 for rk4 on gaussian-bump",
+      "reference_kind": "analytic",
+      "tolerance": 0.3
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.003161901680957424,
+      "passed": true,
+      "reference": "drift order 4 for rk4 on hyperbolic-plane",
+      "reference_kind": "analytic",
+      "tolerance": 0.3
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.04195155289228225,
+      "passed": true,
+      "reference": "drift order 4 for rk4 on plane-polar",
+      "reference_kind": "analytic",
+      "tolerance": 0.3
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.04195155008468632,
+      "passed": true,
+      "reference": "drift order 4 for rk4 on cylinder-polar",
+      "reference_kind": "analytic",
+      "tolerance": 0.3
+     }
+    ],
+    "generator": {
+     "name": "declared standard geodesics",
+     "paths": [
+      "plane",
+      "sphere",
+      "cylinder",
+      "saddle",
+      "torus",
+      "gaussian-bump",
+      "hyperbolic-plane",
+      "plane-polar",
+      "cylinder-polar"
+     ]
+    }
+   },
+   "claim": "Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every curved chart",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.02,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "largest distance of a pairwise (halving) slope from the least-squares slope",
+    "kind": "fit",
+    "value": 0.07839063859082351
+   },
+   "unit": null,
+   "value": {
+    "euler": {
+     "cylinder-polar": 0.9784061511021989,
+     "gaussian-bump": 1.0026927194942863,
+     "hyperbolic-plane": 1.0129999457858216,
+     "plane-polar": 0.9784061511020454,
+     "saddle": 1.000362367247455,
+     "sphere": 1.017589740880541,
+     "torus": 1.0029522639732351
+    },
+    "midpoint": {
+     "cylinder-polar": 2.0110155588928866,
+     "gaussian-bump": 2.004401614951156,
+     "hyperbolic-plane": 2.02570423720593,
+     "plane-polar": 2.0110155588941163,
+     "saddle": 2.0137912582383946,
+     "sphere": 1.982187034198236,
+     "torus": 2.0017823670391697
+    },
+    "rk4": {
+     "cylinder-polar": 3.9580484499153137,
+     "gaussian-bump": 3.9649488290229997,
+     "hyperbolic-plane": 3.9968380983190426,
+     "plane-polar": 3.9580484471077177,
+     "saddle": 4.015414549777357,
+     "sphere": 3.9054584796067524,
+     "torus": 3.9964214006969754
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 2.1377283720980245e-08,
+      "passed": true,
+      "reference": "rk4 |g - 1.69| on sphere",
+      "reference_kind": "invariant",
+      "tolerance": 1e-07
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 5.97679683522756e-11,
+      "passed": true,
+      "reference": "adaptive |g - 1.69| on sphere",
+      "reference_kind": "invariant",
+      "tolerance": 1e-07
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 3.020884431492732e-09,
+      "passed": true,
+      "reference": "rk4 |g - 1.69| on torus",
+      "reference_kind": "invariant",
+      "tolerance": 1e-07
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 2.3015367389689345e-11,
+      "passed": true,
+      "reference": "adaptive |g - 1.69| on torus",
+      "reference_kind": "invariant",
+      "tolerance": 1e-07
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 4.0646286336709636e-10,
+      "passed": true,
+      "reference": "rk4 |g - 1.69| on hyperbolic-plane",
+      "reference_kind": "invariant",
+      "tolerance": 1e-07
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 1.9225732117433836e-11,
+      "passed": true,
+      "reference": "adaptive |g - 1.69| on hyperbolic-plane",
+      "reference_kind": "invariant",
+      "tolerance": 1e-07
+     },
+     {
+      "comparison": "ge",
+      "observed": 0.6730107172179918,
+      "passed": true,
+      "reference": "distance of g from 1 on sphere, all four methods (a renormalizer would drive it to 0)",
+      "reference_kind": "invariant",
+      "tolerance": 0.6
+     },
+     {
+      "comparison": "ge",
+      "observed": 0.6864387430279459,
+      "passed": true,
+      "reference": "distance of g from 1 on torus, all four methods (a renormalizer would drive it to 0)",
+      "reference_kind": "invariant",
+      "tolerance": 0.6
+     },
+     {
+      "comparison": "ge",
+      "observed": 0.6898759515263602,
+      "passed": true,
+      "reference": "distance of g from 1 on hyperbolic-plane, all four methods (a renormalizer would drive it to 0)",
+      "reference_kind": "invariant",
+      "tolerance": 0.6
+     }
+    ],
+    "generator": {
+     "methods": [
+      "rk4 N=128",
+      "adaptive rtol 1e-10",
+      "midpoint N=128",
+      "euler N=128"
+     ],
+     "name": "declared standard geodesics with speed 1.3",
+     "paths": [
+      "sphere",
+      "torus",
+      "hyperbolic-plane"
+     ]
+    }
+   },
+   "claim": "A non-unit initial speed stays non-unit: g(v,v) remains 1.69 to integrator accuracy",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "RK4 (N = 128) and adaptive (rtol 1e-10) truncation of the speed invariant",
+    "kind": "truncation_bound",
+    "value": 2.1377283720980245e-08
+   },
+   "unit": null,
+   "value": {
+    "hyperbolic-plane": {
+     "adaptive": 1.9225732117433836e-11,
+     "rk4": 4.0646286336709636e-10
+    },
+    "sphere": {
+     "adaptive": 5.97679683522756e-11,
+     "rk4": 2.1377283720980245e-08
+    },
+    "torus": {
+     "adaptive": 2.3015367389689345e-11,
+     "rk4": 3.020884431492732e-09
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "normalizing calls, half powers or divisions by a computed magnitude in 10 scanned functions",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 1.548614416264312e-08,
+      "passed": true,
+      "reference": "RK4 N=64 growth |y(2)|/|y0| against e^2 for y' = y",
+      "reference_kind": "analytic",
+      "tolerance": 1e-06
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 4.561601168962278e-11,
+      "passed": true,
+      "reference": "adaptive rtol 1e-10 growth against e^2 for y' = y",
+      "reference_kind": "analytic",
+      "tolerance": 1e-08
+     }
+    ]
+   },
+   "claim": "The integrator and geodesic/Jacobi right-hand-side code paths contain no state normalization",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-08,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "global error of the y' = y probes; the normalization count is exact",
+    "kind": "truncation_bound",
+    "value": 1.548614416264312e-08
+   },
+   "unit": null,
+   "value": {
+    "exponential_growth": {
+     "adaptive_1e-10": 4.561601168962278e-11,
+     "rk4_64": 1.548614416264312e-08
+    },
+    "normalization_calls": 0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 4.440892098500626e-16,
+      "passed": true,
+      "reference": "renormalized Euler speed drift, all steps",
+      "reference_kind": "invariant",
+      "tolerance": 1e-13
+     },
+     {
+      "comparison": "ge",
+      "observed": 0.013938653977328111,
+      "passed": true,
+      "reference": "renormalized Euler endpoint error against the great circle at N = 128",
+      "reference_kind": "analytic",
+      "tolerance": 0.001
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.005215906959056715,
+      "passed": true,
+      "reference": "renormalized Euler endpoint error order 1 (N = 64..512)",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     }
+    ],
+    "generator": {
+     "name": "renormalized Euler on the standard sphere path",
+     "steps": [
+      64,
+      128,
+      256,
+      512
+     ]
+    }
+   },
+   "claim": "Unit speed does not certify an accurate path: renormalized Euler keeps |g - 1| at rounding with a first-order endpoint error",
+   "counterexample": {
+    "statement": "A computed geodesic whose speed stays exactly 1 is accurate",
+    "witness": {
+     "endpoint_error": 0.013938653977328111,
+     "method": "Euler with per-step speed renormalization",
+     "steps": 128,
+     "surface": "sphere"
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "largest distance of a pairwise slope from the fitted order",
+    "kind": "fit",
+    "value": 0.003520392813954887
+   },
+   "unit": null,
+   "value": {
+    "plain_endpoint_error": 0.014891199556742403,
+    "plain_max_speed_drift": 0.007682993302337793,
+    "renormalized_endpoint_error": 0.013938653977328111,
+    "renormalized_error_order": 1.0052159069590567,
+    "renormalized_max_speed_drift": 4.440892098500626e-16,
+    "steps": 128
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "constant metric on plane",
+      "reference_kind": "analytic",
+      "tolerance": 1e-13
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 2.220446049250313e-16,
+      "passed": true,
+      "reference": "constant metric on cylinder",
+      "reference_kind": "analytic",
+      "tolerance": 1e-13
+     }
+    ],
+    "generator": {
+     "name": "declared standard geodesics",
+     "paths": [
+      "plane",
+      "sphere",
+      "cylinder",
+      "saddle",
+      "torus",
+      "gaussian-bump",
+      "hyperbolic-plane",
+      "plane-polar",
+      "cylinder-polar"
+     ]
+    }
+   },
+   "claim": "Speed drift is at rounding on flat Cartesian charts, where every method is exact",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "accumulated binary64 rounding",
+    "kind": "roundoff",
+    "value": 2.220446049250313e-16
+   },
+   "unit": null,
+   "value": {
+    "cylinder": 2.220446049250313e-16,
+    "plane": 0.0
+   }
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 20589,
+   "path": "artifacts/T004/speed-drift.json",
+   "sha256": "2ac83bae7822448c2012b5785b572fe8122e85dd97b431a03bebc79f48d02a4e"
+  },
+  {
+   "bytes": 4245,
+   "path": "artifacts/T004/drift-euler.svg",
+   "sha256": "fc017b90f1b6daafbd7147750036b09da92103a91476f9a0374bc03341f1adf0"
+  },
+  {
+   "bytes": 4482,
+   "path": "artifacts/T004/drift-midpoint.svg",
+   "sha256": "4027cd215d21ea47958da6b9f2b6e7e0833f5a3a2431a061046f448233144625"
+  },
+  {
+   "bytes": 4960,
+   "path": "artifacts/T004/drift-rk4.svg",
+   "sha256": "c3cc59e5d294f5ed85658cc9028e29a9549638a0954fa3aaa1f66d6d9b2d6514"
+  },
+  {
+   "bytes": 6114,
+   "path": "artifacts/T004/drift-along-sphere.svg",
+   "sha256": "4a9bb1f0212b6c1182c223e6765314b748a706054605c0454ad02d0ec08f5d48"
+  }
+ ],
+ "hypothesis": "Without renormalization the speed invariant g(v, v) drifts at the global order of each method, and a non-unit initial speed is carried unchanged, showing that nothing resets it.",
+ "input_data": [
+  "The T003 fixed-step integrations (steps {'euler': (64, 128, 256, 512), 'midpoint': (32, 64, 128, 256), 'rk4': (24, 48, 96, 192)})",
+  "Speed-1.3 starts on the sphere, torus and hyperbolic plane (RK4, midpoint and Euler with 128 steps, adaptive rtol 1e-10); y' = y growth probes",
+  "Renormalized Euler on the sphere path with [64, 128, 256, 512] steps"
+ ],
+ "mathematical_model": "g(v, v) is a first integral of the geodesic flow; for a p-th order method its global defect is O(h^p). A renormalizing step would force g(v, v) = 1 whatever the initial speed.",
+ "number": 4,
+ "numerical_result": "Drift orders: euler sphere 1.02, saddle 1, torus 1, gaussian-bump 1, hyperbolic-plane 1.01, plane-polar 0.978, cylinder-polar 0.978; midpoint sphere 1.98, saddle 2.01, torus 2, gaussian-bump 2, hyperbolic-plane 2.03, plane-polar 2.01, cylinder-polar 2.01; rk4 sphere 3.91, saddle 4.02, torus 4, gaussian-bump 3.96, hyperbolic-plane 4, plane-polar 3.96, cylinder-polar 3.96; speed-1.3 starts keep |g - 1.69| <= 2.14e-08 (RK4, adaptive); renormalized Euler endpoint error 0.0139 at N = 128 (order 1.01) with speed drift 4.44e-16.",
+ "observation_model": "max over nodes of |g(v, v) - 1| (or |g - 1.69|) evaluated with the exact metric.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "requirement_probes": {
+   "module:mpmath": true,
+   "module:sympy": true
+  },
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/geodesic_jacobi.py": "7f7307ebfb5c0a38ca1e7b9365fd7df627d9ae001791d99b823122873040d3c1",
+   "src/ciw/lab/geodesic_jacobi_common.py": "8616e9157492f0cd2aeebd695b3501215420c73af2cfbcb8c1b8cd5ab8d23a52"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T005: verify the Jacobi separation law on constant-curvature paths",
+ "report_id": "sha256:9bc03c016d01054982e32d300ba6423510d5f5d2541cd27fea51b25049ae8d04",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "geodesic-jacobi",
+ "state": "completed",
+ "task_id": "T004",
+ "tests_passed": [
+  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every curved chart vs drift order 1 for euler on sphere",
+  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every curved chart vs drift order 1 for euler on saddle",
+  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every curved chart vs drift order 1 for euler on torus",
+  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every curved chart vs drift order 1 for euler on gaussian-bump",
+  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every curved chart vs drift order 1 for euler on hyperbolic-plane",
+  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every curved chart vs drift order 1 for euler on plane-polar",
+  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every curved chart vs drift order 1 for euler on cylinder-polar",
+  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every curved chart vs drift order 2 for midpoint on sphere",
+  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every curved chart vs drift order 2 for midpoint on saddle",
+  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every curved chart vs drift order 2 for midpoint on torus",
+  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every curved chart vs drift order 2 for midpoint on gaussian-bump",
+  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every curved chart vs drift order 2 for midpoint on hyperbolic-plane",
+  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every curved chart vs drift order 2 for midpoint on plane-polar",
+  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every curved chart vs drift order 2 for midpoint on cylinder-polar",
+  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every curved chart vs drift order 4 for rk4 on sphere",
+  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every curved chart vs drift order 4 for rk4 on saddle",
+  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every curved chart vs drift order 4 for rk4 on torus",
+  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every curved chart vs drift order 4 for rk4 on gaussian-bump",
+  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every curved chart vs drift order 4 for rk4 on hyperbolic-plane",
+  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every curved chart vs drift order 4 for rk4 on plane-polar",
+  "check: Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every curved chart vs drift order 4 for rk4 on cylinder-polar",
+  "check: A non-unit initial speed stays non-unit: g(v,v) remains 1.69 to integrator accuracy vs rk4 |g - 1.69| on sphere",
+  "check: A non-unit initial speed stays non-unit: g(v,v) remains 1.69 to integrator accuracy vs adaptive |g - 1.69| on sphere",
+  "check: A non-unit initial speed stays non-unit: g(v,v) remains 1.69 to integrator accuracy vs rk4 |g - 1.69| on torus",
+  "check: A non-unit initial speed stays non-unit: g(v,v) remains 1.69 to integrator accuracy vs adaptive |g - 1.69| on torus",
+  "check: A non-unit initial speed stays non-unit: g(v,v) remains 1.69 to integrator accuracy vs rk4 |g - 1.69| on hyperbolic-plane",
+  "check: A non-unit initial speed stays non-unit: g(v,v) remains 1.69 to integrator accuracy vs adaptive |g - 1.69| on hyperbolic-plane",
+  "check: A non-unit initial speed stays non-unit: g(v,v) remains 1.69 to integrator accuracy vs distance of g from 1 on sphere, all four methods (a renormalizer would drive it to 0)",
+  "check: A non-unit initial speed stays non-unit: g(v,v) remains 1.69 to integrator accuracy vs distance of g from 1 on torus, all four methods (a renormalizer would drive it to 0)",
+  "check: A non-unit initial speed stays non-unit: g(v,v) remains 1.69 to integrator accuracy vs distance of g from 1 on hyperbolic-plane, all four methods (a renormalizer would drive it to 0)",
+  "check: The integrator and geodesic/Jacobi right-hand-side code paths contain no state normalization vs normalizing calls, half powers or divisions by a computed magnitude in 10 scanned functions",
+  "check: The integrator and geodesic/Jacobi right-hand-side code paths contain no state normalization vs RK4 N=64 growth |y(2)|/|y0| against e^2 for y' = y",
+  "check: The integrator and geodesic/Jacobi right-hand-side code paths contain no state normalization vs adaptive rtol 1e-10 growth against e^2 for y' = y",
+  "check: Unit speed does not certify an accurate path: renormalized Euler keeps |g - 1| at rounding with a first-order endpoint error vs renormalized Euler speed drift, all steps",
+  "check: Unit speed does not certify an accurate path: renormalized Euler keeps |g - 1| at rounding with a first-order endpoint error vs renormalized Euler endpoint error against the great circle at N = 128",
+  "check: Unit speed does not certify an accurate path: renormalized Euler keeps |g - 1| at rounding with a first-order endpoint error vs renormalized Euler endpoint error order 1 (N = 64..512)",
+  "check: Speed drift is at rounding on flat Cartesian charts, where every method is exact vs constant metric on plane",
+  "check: Speed drift is at rounding on flat Cartesian charts, where every method is exact vs constant metric on cylinder",
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_t004_speed_drift_and_no_renormalization",
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_integrator_code_path_has_no_normalization",
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_every_numerical_finding_declares_uncertainty_and_tolerance",
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space"
+ ],
+ "tests_skipped": [],
+ "title": "Measure unit-speed drift without hidden renormalization.",
+ "uncertainty": "Slopes are least-squares fits over four halvings; RK4 sphere drift is still slightly pre-asymptotic.",
+ "unresolved_assumptions": [
+  "The static scan covers the listed functions only; code outside them (for example initial-state construction, which normalizes the start by design, and the metric evaluations called from the right-hand side) is not scanned"
+ ]
+}

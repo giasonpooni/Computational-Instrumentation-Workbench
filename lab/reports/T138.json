@@ -1,0 +1,326 @@
+{
+ "changed_files": [
+  "src/ciw/lab/manufacturing.py",
+  "src/ciw/lab/manufacturing_geometry.py",
+  "src/ciw/lab/manufacturing_metrology.py",
+  "src/ciw/lab/manufacturing_records.py",
+  "docs/lab/MANUFACTURING.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 2,
+   "numerically_verified": 3,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "The comparator refuses absent measurements, schema fixtures (also when relabelled) and digest mismatches; start-pose and geometry sensitivities are linear over their declared steps.",
+ "experiment": "Compute the prediction and its uncertainty components; evaluate a correct model against a tape realized 0.1 mm off its nominal offset with and without the start-pose term, and against the prediction re-integrated from a CMM start-pose estimate at the four 2-sigma corners; attempt the comparison with no measurement, with a schema fixture (as is and relabelled) and with a tampered record, and record the refusals.",
+ "failure_modes_checked": [
+  "absent measurement (refused)",
+  "schema fixture as measurement, also relabelled (refused)",
+  "raw digest mismatch (refused)",
+  "start-pose error outside the prediction uncertainty",
+  "linearity of geometry and start-pose sensitivities"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 2.842212826574079e-08,
+      "passed": true,
+      "reference": "Richardson solver error estimate, max over stations (mm)",
+      "reference_kind": "self_convergence",
+      "tolerance": 1e-06
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.005262973789821546,
+      "passed": true,
+      "reference": "sensitivity linearity max |forward / central - 1|, geometry/height_mm",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.02931958792246836,
+      "passed": true,
+      "reference": "sensitivity linearity max |forward / central - 1|, geometry/sigma_mm",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0003838384886023505,
+      "passed": true,
+      "reference": "sensitivity linearity max |forward / central - 1|, start/heading",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.01508371514497453,
+      "passed": true,
+      "reference": "sensitivity linearity max |forward / central - 1|, start/lateral",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.1
+     }
+    ]
+   },
+   "claim": "Predicted separation of the 2 mm offset route at the MFG-COUPON-01 stations",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-06,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "k = 2 open-loop expanded uncertainty: dome tolerances, start pose and solver (mm)",
+    "kind": "reference_error",
+    "value": 0.32033300742553683
+   },
+   "unit": "mm",
+   "value": {
+    "conditioned_expanded_mm": [
+     0.00565685338560051,
+     0.011618211815425375,
+     0.021594997432115452,
+     0.037883504045472256,
+     0.08634305017594016,
+     0.13880587360524438,
+     0.1922831074277405,
+     0.24603490449531729,
+     0.2999133615155349
+    ],
+    "open_loop_expanded_mm": [
+     0.09999998472840499,
+     0.10339701574993883,
+     0.11460896823209223,
+     0.11270147793168625,
+     0.1245563618152636,
+     0.16154665516090277,
+     0.21016793425389638,
+     0.26396199937135395,
+     0.32033300742553683
+    ],
+    "separation_mm": [
+     1.9999998978014066,
+     2.0050978124984047,
+     2.0514978712704037,
+     1.7330291983144734,
+     1.1568159354567291,
+     0.6073795343573035,
+     0.05913181373094956,
+     -0.4891149477357937,
+     -1.0373617092070082
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 1.8079673521997977,
+      "passed": true,
+      "reference": "max E_n at stations 1..8, U_p without the start-pose term",
+      "reference_kind": "analytic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "le",
+      "observed": 0.8505815944043508,
+      "passed": true,
+      "reference": "max E_n at stations 1..8, U_p with the declared start-pose term",
+      "reference_kind": "analytic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "le",
+      "observed": 0.4639852132798529,
+      "passed": true,
+      "reference": "max E_n at stations 1..8, prediction re-integrated from a start pose estimated with 2-sigma CMM error, conditioned U_p",
+      "reference_kind": "analytic",
+      "tolerance": 1.0
+     }
+    ],
+    "generator": {
+     "name": "exactly re-integrated realized tape (model output as ideal data)",
+     "realized_offset_mm": 2.1,
+     "seed": 20260926
+    }
+   },
+   "claim": "A 2-sigma start offset of the declared jig makes a correct model fail E_n <= 1 unless the start pose is budgeted or measured",
+   "counterexample": {
+    "statement": "A physically correct model passes E_n <= 1 against its open-loop prediction when U covers only the instrument and the dome tolerances",
+    "witness": {
+     "declared_jig_sigma_mm": 0.05,
+     "max_en_without_execution": 1.8079673521997977,
+     "realized_offset_mm": 2.1
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-06,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "deterministic re-integration; E_n is a ratio of computed values",
+    "kind": "roundoff",
+    "value": 1e-09
+   },
+   "unit": null,
+   "value": {
+    "max_en_conditioned": 0.4639852132798529,
+    "max_en_open_loop": 0.8505815944043508,
+    "max_en_without_execution": 1.8079673521997977,
+    "realized_offset_mm": 2.1
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "measurement_absent",
+      "observed_refusal": "measurement_absent",
+      "passed": true,
+      "reference": "no measured separation exists",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "fixture_is_not_measurement",
+      "observed_refusal": "fixture_is_not_measurement",
+      "passed": true,
+      "reference": "schema fixture offered as a measurement",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "fixture_is_not_measurement",
+      "observed_refusal": "fixture_is_not_measurement",
+      "passed": true,
+      "reference": "schema fixture relabelled as a measurement",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "raw_digest_mismatch",
+      "observed_refusal": "raw_digest_mismatch",
+      "passed": true,
+      "reference": "measurement record whose raw bytes do not match",
+      "reference_kind": "refusal"
+     }
+    ]
+   },
+   "claim": "The comparison refuses to run without acquired hardware evidence",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact logic or integer count",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": "refusals",
+   "value": 4
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "Measured separation on the coupon agrees with the prediction (E_n <= 1 at every station)",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "The start jig and tape laying realize the relative start pose of the offset tape within the declared 0.05 mm and 0.5 mrad",
+   "domain": "calibration",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 4485,
+   "path": "artifacts/T138/predicted-separation.json",
+   "sha256": "7136fe6cfcf73bd09084fe95b2233e511e3fdb4818f8fed033d52e718aa63719"
+  }
+ ],
+ "hypothesis": "The predicted separation of the 2 mm offset tape (and its crossing near s = 154 mm) can be compared with measurement by the normalized error E_n, provided the prediction uncertainty includes the realized start pose of the tape (budgeted open loop, or removed by conditioning on its measured start pose); the comparison is only meaningful against acquired hardware evidence.",
+ "input_data": [
+  "Nominal route and offset stations from T128 (k L / 8)",
+  "Declared dome tolerances height +/- 0.2 mm, sigma +/- 0.5 mm",
+  "Declared relative start-pose error of the offset tape 0.05 mm and 0.5 mrad (1 sigma); CMM 0.002 mm",
+  "No measured separation (none exists)"
+ ],
+ "mathematical_model": "E_n = |m - p| / sqrt(U_m^2 + U_p^2), U = 2 u. Open loop: u_p^2 = u_geometry^2 + u_solver^2 + u_start^2 with u_start from the declared jig error (0.05 mm, 0.5 mrad) times central-difference start sensitivities of the exactly re-integrated offset route. Conditioned: p is re-integrated from the CMM start pose and u_start uses its estimate uncertainty (offset sqrt(2) u_cmm, heading 2 u_cmm / 20 mm).",
+ "number": 138,
+ "numerical_result": "Predicted separation (mm) at stations: 2.000, 2.005, 2.051, 1.733, 1.157, 0.607, 0.059, -0.489, -1.037; k = 2 uncertainty up to 0.320 mm open loop and 0.300 mm conditioned on the measured start pose; a 0.1 mm start error gives max E_n 1.81 without the start-pose term, 0.85 with it (open loop) and 0.46 when the prediction is re-integrated from a CMM start-pose estimate 2 sigma off in offset and heading (conditioned U_p). No measured value exists.",
+ "observation_model": "No observation: the measurement slot of MFG-COUPON-01 is empty. The planned observation is photogrammetry of coded targets on the tape centrelines at the nine stations plus CMM probing of the start pose.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/manufacturing.py": "088763a0bcc42bf085c1e228797a5dc0d702b994f2a49e053cbe2b0a5622e25d",
+   "src/ciw/lab/manufacturing_geometry.py": "1db6df2ddf778668da2ffd53a66bcddbff4fc933d6f299e8f283cedc60a9332f",
+   "src/ciw/lab/manufacturing_metrology.py": "afbb6fccf146ca4f47850805c118d2f1bf6186872f381b298ab924a9214257ec",
+   "src/ciw/lab/manufacturing_records.py": "66970104ea454e836c5cbafc3013c90e721c3e96ad7f16780c32250112cac921"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "Execute MFG-COUPON-01 on hardware, retain it with a T139 measurement record, add a raw-file reader, and rerun T138.",
+ "report_id": "sha256:f7ea13178c444c0cb4f33b21e91357d1c774639084ce6b99a9e0a943bab40fc2",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "manufacturing",
+ "state": "partial",
+ "task_id": "T138",
+ "tests_passed": [
+  "check: Predicted separation of the 2 mm offset route at the MFG-COUPON-01 stations vs Richardson solver error estimate, max over stations (mm)",
+  "check: Predicted separation of the 2 mm offset route at the MFG-COUPON-01 stations vs sensitivity linearity max |forward / central - 1|, geometry/height_mm",
+  "check: Predicted separation of the 2 mm offset route at the MFG-COUPON-01 stations vs sensitivity linearity max |forward / central - 1|, geometry/sigma_mm",
+  "check: Predicted separation of the 2 mm offset route at the MFG-COUPON-01 stations vs sensitivity linearity max |forward / central - 1|, start/heading",
+  "check: Predicted separation of the 2 mm offset route at the MFG-COUPON-01 stations vs sensitivity linearity max |forward / central - 1|, start/lateral",
+  "check: A 2-sigma start offset of the declared jig makes a correct model fail E_n <= 1 unless the start pose is budgeted or measured vs max E_n at stations 1..8, U_p without the start-pose term",
+  "check: A 2-sigma start offset of the declared jig makes a correct model fail E_n <= 1 unless the start pose is budgeted or measured vs max E_n at stations 1..8, U_p with the declared start-pose term",
+  "check: A 2-sigma start offset of the declared jig makes a correct model fail E_n <= 1 unless the start pose is budgeted or measured vs max E_n at stations 1..8, prediction re-integrated from a start pose estimated with 2-sigma CMM error, conditioned U_p",
+  "check: The comparison refuses to run without acquired hardware evidence vs no measured separation exists",
+  "check: The comparison refuses to run without acquired hardware evidence vs schema fixture offered as a measurement",
+  "check: The comparison refuses to run without acquired hardware evidence vs schema fixture relabelled as a measurement",
+  "check: The comparison refuses to run without acquired hardware evidence vs measurement record whose raw bytes do not match",
+  "pytest: tests/test_lab_manufacturing.py::test_predicted_separation_has_no_measured_counterpart",
+  "pytest: tests/test_lab_manufacturing.py::test_every_task_is_registered_and_reports_honestly"
+ ],
+ "tests_skipped": [],
+ "title": "Compare predicted and measured path separation.",
+ "uncertainty": "Prediction uncertainty only (geometry dominates beyond mid-route; start pose dominates near the start in the open-loop case); measurement uncertainty is declared until the protocol is executed.",
+ "unresolved_assumptions": [
+  "The physical comparison has not been performed; its outcome is unknown.",
+  "The tapes are assumed to follow geodesics after their measured start; in-plane tape bending is not budgeted.",
+  "A registered reader that parses separations from raw photogrammetry files does not exist yet."
+ ]
+}

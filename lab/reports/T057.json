@@ -1,0 +1,468 @@
+{
+ "changed_files": [
+  "src/ciw/lab/observation.py",
+  "src/ciw/lab/observation_signals.py",
+  "docs/lab/OBSERVATION.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 2,
+   "not_established": 1,
+   "numerically_verified": 4,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Matrix order P_s <= P_f; RMSE order; NEES inside 95 % bounds at about 95 % of steps.",
+ "experiment": "Seeded ensemble, filter and smoother, eigenvalue test of P_f - P_s, RMSE and NEES statistics, Riccati fixed point and Wilson-Hilferty quantiles (each also compared with scipy solve_discrete_are and scipy.stats.chi2 when scipy is available), and a per-sample dominance counterexample search.",
+ "failure_modes_checked": [
+  "final step where P_s = P_f (equality allowed)",
+  "rank-one difference at step N-2 (semidefinite, not definite)",
+  "covariance symmetry (Joseph form)",
+  "per-sample versus ensemble ordering",
+  "chi-square quantile approximation"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "signed_ge",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "min eigenvalue of P_filt - P_smooth over all steps (>= -1e-12: semidefinite up to rounding)",
+      "reference_kind": "invariant",
+      "tolerance": -1e-12
+     },
+     {
+      "comparison": "ge",
+      "observed": 0.06444518848961221,
+      "passed": true,
+      "reference": "min trace(P_filt - P_smooth) before the final step (strict reduction)",
+      "reference_kind": "invariant",
+      "tolerance": 1e-06
+     }
+    ],
+    "generator": {
+     "dt_s": 0.1,
+     "name": "constant-velocity track",
+     "p0_diag": [
+      1.0,
+      0.25
+     ],
+     "q": 0.5,
+     "r": 0.25,
+     "runs": 300,
+     "seed": 57,
+     "steps": 200,
+     "x0": [
+      0.0,
+      1.0
+     ]
+    }
+   },
+   "claim": "The RTS smoothed covariance never exceeds the filtered covariance in matrix order",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "eigenvalues of 2 x 2 covariance differences with entries below 1",
+    "kind": "roundoff",
+    "value": 1e-15
+   },
+   "unit": null,
+   "value": {
+    "interior_min_trace_reduction": 0.06444518848961221,
+    "min_eigenvalue_filtered_minus_smoothed": 0.0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "signed_le",
+      "observed": -0.2459121820526078,
+      "passed": true,
+      "reference": "filtered minus raw RMSE",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "signed_le",
+      "observed": -0.11581702956075676,
+      "passed": true,
+      "reference": "smoothed minus filtered RMSE",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "dt_s": 0.1,
+     "name": "constant-velocity track",
+     "p0_diag": [
+      1.0,
+      0.25
+     ],
+     "q": 0.5,
+     "r": 0.25,
+     "runs": 300,
+     "seed": 57,
+     "steps": 200,
+     "x0": [
+      0.0,
+      1.0
+     ]
+    }
+   },
+   "claim": "Ensemble position RMSE orders smoothed <= filtered <= raw",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "95 % half-widths from per-run mean squared errors over 300 independent runs",
+    "kind": "monte_carlo_95ci",
+    "value": {
+     "filtered": 0.003035886697470875,
+     "raw": 0.002551856337674036,
+     "smoothed": 0.0025551208020505155
+    }
+   },
+   "unit": null,
+   "value": {
+    "filtered": 0.257382445647129,
+    "raw": 0.5032946276997368,
+    "smoothed": 0.14156541608637221
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 0.97,
+      "passed": true,
+      "reference": "filtered fraction of steps inside the 95 % bounds",
+      "reference_kind": "analytic",
+      "tolerance": 0.9
+     },
+     {
+      "comparison": "ge",
+      "observed": 0.97,
+      "passed": true,
+      "reference": "smoothed fraction of steps inside the 95 % bounds",
+      "reference_kind": "analytic",
+      "tolerance": 0.9
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.005051908183069109,
+      "passed": true,
+      "reference": "filtered time-averaged NEES minus 2",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.015190017682523482,
+      "passed": true,
+      "reference": "smoothed time-averaged NEES minus 2",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     }
+    ]
+   },
+   "claim": "Filtered and smoothed NEES are chi-square consistent across the ensemble",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "95 % half-width of the time-averaged NEES from per-run averages over 300 runs",
+    "kind": "monte_carlo_95ci",
+    "value": {
+     "filtered": {
+      "mean_nees": 0.03932505260509974
+     },
+     "smoothed": {
+      "mean_nees": 0.05091669607967179
+     }
+    }
+   },
+   "unit": null,
+   "value": {
+    "bounds_95": [
+     1.7800551468030539,
+     2.2325688815650064
+    ],
+    "filtered": {
+     "inside_fraction": 0.97,
+     "mean_nees": 2.005051908183069
+    },
+    "smoothed": {
+     "inside_fraction": 0.97,
+     "mean_nees": 2.0151900176825235
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 1.69326995159931e-15,
+      "passed": true,
+      "reference": "filter final predicted covariance against the Riccati fixed point (relative)",
+      "reference_kind": "self_convergence",
+      "tolerance": 1e-10
+     }
+    ],
+    "independent_check": {
+     "checker": {
+      "implementation": "scipy.linalg",
+      "revision": "1.16.2"
+     },
+     "comparison": "abs_le",
+     "observed": 4.0022744310528984e-15,
+     "passed": true,
+     "producer": {
+      "implementation": "ciw.lab.observation",
+      "revision": "0.1.0"
+     },
+     "reference": "ciw Riccati iteration against scipy.linalg.solve_discrete_are (relative)",
+     "reference_kind": "analytic",
+     "tolerance": 1e-10
+    }
+   },
+   "claim": "The filter's predicted covariance reaches the discrete Riccati fixed point",
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 1e-09
+   },
+   "uncertainty": {
+    "basis": "relative rounding of the fixed-point iteration and the 200-step filter recursion",
+    "kind": "roundoff",
+    "value": 1e-15
+   },
+   "unit": null,
+   "value": {
+    "relative_gap": 1.69326995159931e-15,
+    "steady_state": [
+     [
+      0.08715085266562408,
+      0.12983659974476072
+     ],
+     [
+      0.12983659974476075,
+      0.3606174331311419
+     ]
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": -3.659386053157798e-06,
+      "passed": true,
+      "reference": "chi-square CDF (incomplete-gamma series) at the lower bound minus 0.025",
+      "reference_kind": "high_precision",
+      "tolerance": 0.0001
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 2.3714835245547405e-06,
+      "passed": true,
+      "reference": "chi-square CDF (incomplete-gamma series) at the upper bound minus 0.975",
+      "reference_kind": "high_precision",
+      "tolerance": 0.0001
+     }
+    ],
+    "derivation": "docs/lab/OBSERVATION.md#t057-raw-filtered-and-smoothed-estimates (Wilson-Hilferty chi-square quantile)",
+    "independent_check": {
+     "checker": {
+      "implementation": "scipy.stats",
+      "revision": "1.16.2"
+     },
+     "comparison": "abs_le",
+     "observed": 3.7572196972957386e-06,
+     "passed": true,
+     "producer": {
+      "implementation": "ciw.lab.observation",
+      "revision": "0.1.0"
+     },
+     "reference": "Wilson-Hilferty NEES bounds against scipy.stats.chi2.ppf (relative)",
+     "reference_kind": "analytic",
+     "tolerance": 0.0001
+    }
+   },
+   "claim": "Wilson-Hilferty chi-square quantiles give the NEES consistency bounds",
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 1e-09
+   },
+   "uncertainty": {
+    "basis": "coverage error of the Wilson-Hilferty bounds at 600 degrees of freedom, measured with the incomplete-gamma series CDF",
+    "kind": "reference_error",
+    "value": 3.659386053157798e-06
+   },
+   "unit": null,
+   "value": {
+    "bounds_95": [
+     1.7800551468030539,
+     2.2325688815650064
+    ],
+    "cdf_at_bounds": [
+     0.024996340613946844,
+     0.9750023714835245
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 0.28528333333333333,
+      "passed": true,
+      "reference": "fraction of (run, step) samples where |smoothed error| > |filtered error|",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     }
+    ]
+   },
+   "claim": "Smoothing does not reduce the error of every individual sample",
+   "counterexample": {
+    "statement": "The smoothed estimate is closer to truth than the filtered estimate at every sample",
+    "witness": {
+     "fraction_worse": 0.28528333333333333,
+     "seed": 57
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "95 % half-width from per-run fractions over 300 runs",
+    "kind": "monte_carlo_95ci",
+    "value": 0.006572374671029657
+   },
+   "unit": null,
+   "value": {
+    "smoothed_worse_fraction": 0.28528333333333333
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": "No tracker data were acquired; the model and noise are declared."
+   },
+   "claim": "A real tracker's measurement noise and target motion match the constant-velocity model",
+   "domain": "sensor_performance",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 7220,
+   "path": "artifacts/T057/filter-study.json",
+   "sha256": "01e9011909bde12c8acca91106f1717565bdbf0eed4c239c585924d014b53ca9"
+  },
+  {
+   "bytes": 4171,
+   "path": "artifacts/T057/rmse-by-step.svg",
+   "sha256": "5cac58c6579807740c1bbea45ed179fc1e45cfb2f456c5b4877842e7c44263ac"
+  },
+  {
+   "bytes": 3596,
+   "path": "artifacts/T057/nees-by-step.svg",
+   "sha256": "814a0c8c45e994c995deb10a142afdcee22dff8a3daebad87c7e61990de954de"
+  }
+ ],
+ "hypothesis": "For a linear-Gaussian constant-velocity track, the RTS smoother's covariance is below the filter's in matrix order and the ensemble RMSE orders smoothed <= filtered <= raw, with NEES consistent with chi-square bounds; the ordering holds in the ensemble, not per sample.",
+ "input_data": [
+  "Declared track {'dt_s': 0.1, 'q': 0.5, 'r': 0.25, 'runs': 300, 'steps': 200, 'x0': [0.0, 1.0], 'p0_diag': [1.0, 0.25]}",
+  "Seed 57"
+ ],
+ "mathematical_model": "x_{k+1} = F x_k + w, F = [[1, dt], [0, 1]], Q = q [[dt^3/3, dt^2/2], [dt^2/2, dt]]; z_k = x_k[0] + v, R = r. Kalman filter (Joseph form) and RTS: P_s = P_f + C (P_s' - P_p') C^T with P_s' <= P_p', so P_s <= P_f. NEES averaged over N runs ~ chi2(2N)/N.",
+ "number": 57,
+ "numerical_result": "min eig(P_f - P_s) = 0.0e+00 (semidefinite; exactly 0 at the final step where P_s = P_f), min trace reduction before the last step 6.445e-02; RMSE raw 0.5033, filtered 0.2574, smoothed 0.1416; NEES inside bounds 0.97 / 0.97; smoothed worse at 28.5% of samples.",
+ "observation_model": "Synthetic position measurements (raw), causal filter estimates and non-causal smoothed estimates of the same track.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "requirement_probes": {
+   "module:scipy": true
+  },
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/observation.py": "9ebedc1a1693aaa28965ba0c97837ad2d2c45bf0fd360857cf7b32c0993ed5fc",
+   "src/ciw/lab/observation_signals.py": "19e94cb28160a07e5a285b5a4acd76e3820deb37ee5ed180f5c7bf1975a56793"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T066: verify that filtered residuals use filter covariance, not raw sensor covariance",
+ "report_id": "sha256:cd3af92c4407c7090da591782264f16fcb62fd4c74c10a3aaf1d7df22ded59ac",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "observation",
+ "state": "completed",
+ "task_id": "T057",
+ "tests_passed": [
+  "check: The RTS smoothed covariance never exceeds the filtered covariance in matrix order vs min eigenvalue of P_filt - P_smooth over all steps (>= -1e-12: semidefinite up to rounding)",
+  "check: The RTS smoothed covariance never exceeds the filtered covariance in matrix order vs min trace(P_filt - P_smooth) before the final step (strict reduction)",
+  "check: Ensemble position RMSE orders smoothed <= filtered <= raw vs filtered minus raw RMSE",
+  "check: Ensemble position RMSE orders smoothed <= filtered <= raw vs smoothed minus filtered RMSE",
+  "check: Filtered and smoothed NEES are chi-square consistent across the ensemble vs filtered fraction of steps inside the 95 % bounds",
+  "check: Filtered and smoothed NEES are chi-square consistent across the ensemble vs smoothed fraction of steps inside the 95 % bounds",
+  "check: Filtered and smoothed NEES are chi-square consistent across the ensemble vs filtered time-averaged NEES minus 2",
+  "check: Filtered and smoothed NEES are chi-square consistent across the ensemble vs smoothed time-averaged NEES minus 2",
+  "check: The filter's predicted covariance reaches the discrete Riccati fixed point vs filter final predicted covariance against the Riccati fixed point (relative)",
+  "independent: The filter's predicted covariance reaches the discrete Riccati fixed point vs scipy.linalg",
+  "check: Wilson-Hilferty chi-square quantiles give the NEES consistency bounds vs chi-square CDF (incomplete-gamma series) at the lower bound minus 0.025",
+  "check: Wilson-Hilferty chi-square quantiles give the NEES consistency bounds vs chi-square CDF (incomplete-gamma series) at the upper bound minus 0.975",
+  "independent: Wilson-Hilferty chi-square quantiles give the NEES consistency bounds vs scipy.stats",
+  "check: Smoothing does not reduce the error of every individual sample vs fraction of (run, step) samples where |smoothed error| > |filtered error|",
+  "pytest: tests/test_lab_observation.py::test_t057_filter_and_smoother"
+ ],
+ "tests_skipped": [],
+ "title": "Compare raw, filtered, and smoothed measurements.",
+ "uncertainty": "NEES bounds are 95 % two-sided per step (about 5 % of steps expected outside); RMSE values carry Monte Carlo error of order 1 % for 300 runs.",
+ "unresolved_assumptions": [
+  "Model matches the generator exactly (no mismatch)",
+  "Measurements are synchronous and none are dropped"
+ ]
+}

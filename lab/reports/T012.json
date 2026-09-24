@@ -1,0 +1,448 @@
+{
+ "changed_files": [
+  "src/ciw/lab/geodesic_jacobi_limits.py",
+  "src/ciw/lab/geodesic_jacobi_limits_core.py",
+  "docs/lab/GEODESIC_JACOBI_LIMITS.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 0,
+   "numerically_verified": 8,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Differences at roundoff level; exact rotation of X(L); separation ratio -1 when a left-handed '+eps' is measured along N on the unit sphere; along its own normal -N the ratio is +1 on the unit sphere and 1 + O(eps) on a non-symmetric surface.",
+ "experiment": "Integrate each path in the base and rotated surfaces and with rotated reference bases; compare node by node; integrate +eps heading perturbations in right- and left-handed bases and project each onto N and -N, on the unit sphere and, for three eps, on a generic torus path.",
+ "failure_modes_checked": [
+  "bitwise equality is not assumed (rotation changes rounding of dot products)",
+  "improper rotation refused by the core",
+  "curvature recomputed from the rotated embedding, not reused",
+  "orientation conventions separated: sign flip under mixed conventions, invariance under consistent ones",
+  "right-handed separation compared with its closed form sin(L) sin(eps)",
+  "orientation invariance not generalized from the sphere, whose separation is odd in eps: a non-symmetric torus path shows the first-order-only agreement, checked against a doubled step count"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 1.7763568394002505e-15,
+      "passed": true,
+      "reference": "max |rotated state - base state| over all nodes",
+      "reference_kind": "invariant",
+      "tolerance": 1e-11
+     }
+    ],
+    "derivation": "docs/lab/GEODESIC_JACOBI_LIMITS.md#t012-frame-change-invariance",
+    "generator": {
+     "deterministic": true,
+     "name": "ciw.lab.geodesic_jacobi_limits:frame-study",
+     "rotations": 3,
+     "seed": null,
+     "steps": 64
+    }
+   },
+   "claim": "Ambient rotations leave chart trajectories and Jacobi fields unchanged to roundoff",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-11,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "the observed difference is itself the roundoff of rotated dot products",
+    "kind": "roundoff",
+    "value": 1.7763568394002505e-15
+   },
+   "unit": null,
+   "value": 1.7763568394002505e-15
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 1.3732700395566711e-15,
+      "passed": true,
+      "reference": "max |X_rotated(L) - R X(L)|",
+      "reference_kind": "invariant",
+      "tolerance": 1e-12
+     }
+    ],
+    "generator": {
+     "deterministic": true,
+     "name": "ciw.lab.geodesic_jacobi_limits:frame-study",
+     "seed": null
+    }
+   },
+   "claim": "Embedded endpoints rotate exactly with the ambient frame",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "the observed difference is itself roundoff",
+    "kind": "roundoff",
+    "value": 1.3732700395566711e-15
+   },
+   "unit": null,
+   "value": 1.3732700395566711e-15
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 1.9984014443252818e-15,
+      "passed": true,
+      "reference": "max |K_rotated - K| along every path",
+      "reference_kind": "invariant",
+      "tolerance": 1e-12
+     }
+    ],
+    "generator": {
+     "deterministic": true,
+     "name": "ciw.lab.geodesic_jacobi_limits:frame-study",
+     "seed": null
+    }
+   },
+   "claim": "Gaussian curvature from the rotated second fundamental form is unchanged",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "the observed difference is itself roundoff",
+    "kind": "roundoff",
+    "value": 1.9984014443252818e-15
+   },
+   "unit": null,
+   "value": 1.9984014443252818e-15
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 1.7763568394002505e-15,
+      "passed": true,
+      "reference": "max |state(beta) - state(0)|",
+      "reference_kind": "invariant",
+      "tolerance": 1e-11
+     }
+    ],
+    "generator": {
+     "basis_angles": [
+      0.3,
+      1.1,
+      2.5,
+      -2.0
+     ],
+     "deterministic": true,
+     "name": "ciw.lab.geodesic_jacobi_limits:frame-study",
+     "seed": null
+    }
+   },
+   "claim": "Rotating the reference tangent basis (heading measured from e1') leaves every result unchanged",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-11,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "initial tangents differ by roundoff only",
+    "kind": "roundoff",
+    "value": 2.220446049250313e-16
+   },
+   "unit": null,
+   "value": {
+    "max_state_difference": 1.7763568394002505e-15,
+    "max_tangent_difference": 2.220446049250313e-16
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 8.431105640027692e-12,
+      "passed": true,
+      "reference": "right-handed signed separation at L minus sin(L) sin(eps)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-10
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -2.4560353750757713e-12,
+      "passed": true,
+      "reference": "left-handed / right-handed separation along N on the unit sphere, plus 1",
+      "reference_kind": "invariant",
+      "tolerance": 1e-09
+     }
+    ],
+    "derivation": "docs/lab/GEODESIC_JACOBI_LIMITS.md#t012-frame-change-invariance",
+    "generator": {
+     "deterministic": true,
+     "eps": 0.001,
+     "length": 2.0,
+     "name": "ciw.lab.geodesic_jacobi_limits:frame-study",
+     "seed": null
+    }
+   },
+   "claim": "A heading change +eps stated in a left-handed basis (e1, -e2) is the geometric perturbation -eps: along the right-handed normal its separation has the opposite sign",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "RK4 truncation (N = 64) of the difference between the +eps and -eps runs; the exact sphere separation sin(s) sin(eps) is odd in eps, so no eps^2 term enters the ratio",
+    "kind": "truncation_bound",
+    "value": 2.4560353750757713e-12
+   },
+   "unit": null,
+   "value": {
+    "ratio_along_right_handed_normal": -1.000000000002456,
+    "right_handed_minus_exact": 8.431105640027692e-12
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 2.4560353750757713e-12,
+      "passed": true,
+      "reference": "left-handed separation along -N / right-handed along N, minus 1",
+      "reference_kind": "invariant",
+      "tolerance": 1e-09
+     }
+    ],
+    "derivation": "docs/lab/GEODESIC_JACOBI_LIMITS.md#t012-frame-change-invariance",
+    "generator": {
+     "deterministic": true,
+     "eps": 0.001,
+     "length": 2.0,
+     "name": "ciw.lab.geodesic_jacobi_limits:frame-study",
+     "seed": null
+    }
+   },
+   "claim": "On the unit sphere, where the separation sin(s) sin(eps) is odd in eps, signed separations are invariant under an orientation-reversing basis change when the perturbation and the normal are both expressed in the new basis",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "RK4 truncation (N = 64) of the difference between the +eps and -eps runs; the exact sphere separation sin(s) sin(eps) is odd in eps, so no eps^2 term enters the ratio",
+    "kind": "truncation_bound",
+    "value": 2.4560353750757713e-12
+   },
+   "unit": null,
+   "value": 1.000000000002456
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": -0.00276409438495262,
+      "passed": true,
+      "reference": "log-log slope of |own/right - 1| against eps minus 1",
+      "reference_kind": "analytic",
+      "tolerance": 0.05
+     },
+     {
+      "comparison": "ge",
+      "observed": 0.00047633809261071747,
+      "passed": true,
+      "reference": "|own/right - 1| at eps = 1e-3",
+      "reference_kind": "invariant",
+      "tolerance": 1e-05
+     },
+     {
+      "comparison": "le",
+      "observed": 9.910477904995219e-08,
+      "passed": true,
+      "reference": "max relative change of own/right - 1 from N = 64 to 128 (the gap is not truncation)",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.0001
+     }
+    ],
+    "derivation": "docs/lab/GEODESIC_JACOBI_LIMITS.md#t012-frame-change-invariance",
+    "generator": {
+     "deterministic": true,
+     "eps": [
+      0.001,
+      0.01,
+      0.04
+     ],
+     "heading": 0.5,
+     "length": 3.0,
+     "name": "ciw.lab.geodesic_jacobi_limits:frame-study",
+     "seed": null,
+     "start": [
+      0.0,
+      0.3
+     ],
+     "steps": 64,
+     "surface": "Torus(2, 1)"
+    }
+   },
+   "claim": "On a non-symmetric surface the orientation-reversed separation agrees only to first order: own/right - 1 is proportional to eps (Torus(2, 1) generic path)",
+   "counterexample": {
+    "statement": "Finite-eps signed separations are invariant under an orientation-reversing basis change expressed consistently",
+    "witness": {
+     "eps": [
+      0.001,
+      0.01,
+      0.04
+     ],
+     "own_over_right_minus_1": [
+      -0.00047633809261071747,
+      -0.004752691591994318,
+      -0.018846216359292622
+     ],
+     "path": "Torus(2, 1) from (0, 0.3), heading 0.5, L = 3"
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-06,
+    "rel": 0.001
+   },
+   "uncertainty": {
+    "basis": "largest gap between the fitted slope and consecutive-eps slopes (eps^3 terms of the separation)",
+    "kind": "fit_spread",
+    "value": 0.0035067956720381543
+   },
+   "unit": null,
+   "value": {
+    "eps": [
+     0.001,
+     0.01,
+     0.04
+    ],
+    "loglog_slope": 0.9972359056150474,
+    "own_over_right_minus_1": [
+     -0.00047633809261071747,
+     -0.004752691591994318,
+     -0.018846216359292622
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "Frame change requires a proper rotation matrix",
+      "observed_refusal": "Frame change requires a proper rotation matrix",
+      "passed": true,
+      "reference": "Rotated(sphere, diag(1, 1, -1))",
+      "reference_kind": "refusal"
+     }
+    ]
+   },
+   "claim": "An improper rotation (reflection) is refused as a frame change",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "uncertainty": null,
+   "unit": null,
+   "value": "Frame change requires a proper rotation matrix"
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 12823,
+   "path": "artifacts/T012/frame-invariance.json",
+   "sha256": "87e390cbb9fe917fd7b728df4c718403e93f0f5ac6883a359cdd9e31489053c8"
+  },
+  {
+   "bytes": 5049,
+   "path": "artifacts/T012/frame-invariance.svg",
+   "sha256": "90b3702b3e867ee0c5ed88b0d324c9ca830bcafcccb573ef0fba7fd1c29228cc"
+  },
+  {
+   "bytes": 6277,
+   "path": "artifacts/T012/orientation-separation.svg",
+   "sha256": "29e7b13ec07993e06ec93735f34048fb3979c86011eb9bb2d2e786528ad4e70c"
+  }
+ ],
+ "hypothesis": "Geodesics and Jacobi fields are intrinsic: an ambient rotation changes only the embedded coordinates (which rotate exactly), and the choice of reference basis for headings is a relabeling; an orientation-reversing basis changes the meaning of '+eps' and of the normal together, so a consistently expressed first-order (Jacobi) separation is unchanged; the finite-eps separation is unchanged exactly only where it is odd in eps.",
+ "input_data": [
+  "Sphere, Torus(2, 1), Saddle(1), GaussianBump(0.5, 1) on declared paths; HyperbolicPlane(1) for basis changes",
+  "Rotations: axis (1, 2, 3) angle 0.7; axis (0, 0, 1) angle 1.0472; axis (1, -1, 0) angle 2.5",
+  "Basis angles beta = 0.3, 1.1, 2.5, -2; RK4 with N = 64; orientation test on the unit sphere with eps = 0.001, L = 2, and on Torus(2, 1) from (0, 0.3), heading 0.5, L = 3 with eps = 0.001, 0.01, 0.04 (RK4 N = 64, checked at 128)"
+ ],
+ "mathematical_model": "Rotated(base, R): X' = R X, so X'_i . X'_j = X_i . X_j and the second fundamental form is unchanged; in exact arithmetic the chart ODE is identical. A basis (e1', e2') rotated by beta with heading h - beta yields the same unit tangent. In the left-handed basis (e1, -e2) the heading -h + eps is the right-handed heading h - eps, and its +90 degree normal is -N. With d(eps) = J_eps . N = eps j + C2 eps^2 + ..., the left-handed run measured along -N is -d(-eps) = eps j - C2 eps^2 + ..., so (J_eps . (-N)) equals the right-handed J_eps . N to first order in eps; the eps^2 parts have opposite signs, so the finite separations agree exactly only where the separation is odd in eps, as on the unit sphere (sin(s) sin(eps)), and otherwise own/right - 1 = -2 C2 eps / j + O(eps^2).",
+ "number": 12,
+ "numerical_result": "Rotation: max state difference 1.8e-15, endpoint rotation error 1.4e-15, curvature difference 2e-15; basis rotation: max state difference 1.8e-15; unit sphere: left-handed '+eps' along N: ratio -1.000000000002; along its own normal: ratio 1.000000000002; right-handed separation minus sin(L) sin(eps) 8.4e-12; torus: own/right - 1 = -0.0004763, -0.004753, -0.01885 for eps = 0.001, 0.01, 0.04 (log-log slope 0.9972); reflection refused: 'Frame change requires a proper rotation matrix'.",
+ "observation_model": "Chart states (u, v, Jacobi columns) at every node, embedded endpoints, curvature along the path, and the signed embedded separation along the base geodesic's in-surface normal (N, or -N for the left-handed basis).",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/geodesic_jacobi_limits.py": "29c8472e91cdf4deb2e1f526ab40e57f703f41e20ef14edd8fb1cc2fc6ede661",
+   "src/ciw/lab/geodesic_jacobi_limits_core.py": "8aa707ec2a190208bf07cd3b1f94a40f191a7a9c4be277714ed8b627e2c5fcb9"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T013 (flat/developable limit) and an isometry test for HyperbolicPlane under Mobius maps",
+ "report_id": "sha256:84483eaf043c8035e9c553f7fc3b681c3611174824fb339101140f0afc351882",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "geodesic-jacobi",
+ "state": "completed",
+ "task_id": "T012",
+ "tests_passed": [
+  "check: Ambient rotations leave chart trajectories and Jacobi fields unchanged to roundoff vs max |rotated state - base state| over all nodes",
+  "check: Embedded endpoints rotate exactly with the ambient frame vs max |X_rotated(L) - R X(L)|",
+  "check: Gaussian curvature from the rotated second fundamental form is unchanged vs max |K_rotated - K| along every path",
+  "check: Rotating the reference tangent basis (heading measured from e1') leaves every result unchanged vs max |state(beta) - state(0)|",
+  "check: A heading change +eps stated in a left-handed basis (e1, -e2) is the geometric perturbation -eps: along the right-handed normal its separation has the opposite sign vs right-handed signed separation at L minus sin(L) sin(eps)",
+  "check: A heading change +eps stated in a left-handed basis (e1, -e2) is the geometric perturbation -eps: along the right-handed normal its separation has the opposite sign vs left-handed / right-handed separation along N on the unit sphere, plus 1",
+  "check: On the unit sphere, where the separation sin(s) sin(eps) is odd in eps, signed separations are invariant under an orientation-reversing basis change when the perturbation and the normal are both expressed in the new basis vs left-handed separation along -N / right-handed along N, minus 1",
+  "check: On a non-symmetric surface the orientation-reversed separation agrees only to first order: own/right - 1 is proportional to eps (Torus(2, 1) generic path) vs log-log slope of |own/right - 1| against eps minus 1",
+  "check: On a non-symmetric surface the orientation-reversed separation agrees only to first order: own/right - 1 is proportional to eps (Torus(2, 1) generic path) vs |own/right - 1| at eps = 1e-3",
+  "check: On a non-symmetric surface the orientation-reversed separation agrees only to first order: own/right - 1 is proportional to eps (Torus(2, 1) generic path) vs max relative change of own/right - 1 from N = 64 to 128 (the gap is not truncation)",
+  "check: An improper rotation (reflection) is refused as a frame change vs Rotated(sphere, diag(1, 1, -1))",
+  "pytest: tests/test_lab_geodesic_jacobi_limits.py::test_t012_frame_invariance_and_refusal"
+ ],
+ "tests_skipped": [],
+ "title": "Test frame-change invariance under rotations and tangent-basis changes.",
+ "uncertainty": "Roundoff differences depend on platform arithmetic (observed up to 1.8e-15); the regression tolerances allow 1e-11. On the unit sphere the orientation ratios differ from -1 and +1 by at most 2.5e-12: RK4 truncation of the +eps and -eps runs, not a second-order eps term, because the exact sphere separation is odd in eps. On the torus the gap own/right - 1 is a second-order term of the separation, not truncation: it changes by 9.9e-08 relative from N = 64 to 128, and its slope in eps is within 0.0035 of the consecutive-eps slopes.",
+ "unresolved_assumptions": [
+  "Rotations only; translations and reflections of the embedding are not exercised",
+  "Hyperbolic-plane isometries (Mobius maps) are not tested, only basis changes",
+  "The orientation test uses one sphere path and one torus path; saddle and bump are covered only by the basis-rotation test, and the coefficient C2 of the torus gap is measured, not derived"
+ ]
+}

@@ -1,0 +1,593 @@
+{
+ "changed_files": [
+  "src/ciw/lab/surfaces_discrete_mesh.py",
+  "src/ciw/lab/surfaces_discrete_mesh_geometry.py",
+  "src/ciw/lab/surfaces_discrete_mesh_studies.py",
+  "docs/lab/MESH_GEODESICS.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 2,
+   "numerically_verified": 7,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Exact ANOVA identity; totals within sampling error of sigma_s^2 + sigma_g^2 |grad d|^2; floor at the geometry variance; exact normal/tangential split of |grad d|^2.",
+ "experiment": "Nested and fresh seeded Monte Carlo per scenario; normal-only fresh Monte Carlo; z-scores use the Gaussian variance standard error.",
+ "failure_modes_checked": [
+  "unidentifiable geometry share when sigma_s^2 / inner >> geometry variance (handled by z-scores)",
+  "nonlinearity of the distance (checked in T043)",
+  "strip validity (declared strip only; T043)",
+  "noise-model dependence of the dominant component (isotropic versus normal-only)"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 3.1907705800688217e-16,
+      "passed": true,
+      "reference": "max relative ANOVA residual (SST - SSB - SSW) / SST",
+      "reference_kind": "invariant",
+      "tolerance": 1e-10
+     }
+    ],
+    "generator": {
+     "inner": 16,
+     "name": "ciw.lab.surfaces_discrete_mesh_studies.variance_split_study",
+     "outer": 1000,
+     "seed": 20261038
+    }
+   },
+   "claim": "Nested Monte Carlo sums of squares decompose exactly into between and within parts",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-10,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "accumulated rounding of the sums of squares",
+    "kind": "roundoff",
+    "value": 3.1907705800688217e-16
+   },
+   "unit": null,
+   "value": 3.1907705800688217e-16
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 1.3999425898546765,
+      "passed": true,
+      "reference": "max |z| of fresh total variance against sigma_s^2 + sigma_g^2 |grad d|^2",
+      "reference_kind": "self_convergence",
+      "tolerance": 4.0
+     },
+     {
+      "comparison": "le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "largest fraction of samples leaving the fixed corridor (declared strip 5 (largest margin; best case, T043))",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.001
+     }
+    ],
+    "derivation": "Law of total variance: Var(r) = E[Var(r | eta)] + Var(E[r | eta]) = sigma_s^2 + Var_eta(d)"
+   },
+   "claim": "Residual variance equals geometry variance plus sensor variance in every scenario",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "relative 95% half-width of a Gaussian sample variance from 20000 seeded samples",
+    "kind": "monte_carlo_95ci",
+    "value": 0.019600490018375764
+   },
+   "unit": null,
+   "value": {
+    "corridor_left_fraction": 0.0,
+    "fresh_ratio": [
+     0.9950280512988768,
+     1.006972816193483,
+     0.9908944486612336,
+     0.9980880619771525,
+     0.9948864248740475,
+     0.9860002241026807
+    ],
+    "z": [
+     -0.49718244008518514,
+     0.6972641870899093,
+     -0.9105323697137451,
+     -0.1911890223799477,
+     -0.5113447284976277,
+     -1.3999425898546765
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 1.8980283348222142,
+      "passed": true,
+      "reference": "max |z| within-group variance vs sigma_s^2",
+      "reference_kind": "self_convergence",
+      "tolerance": 4.0
+     },
+     {
+      "comparison": "le",
+      "observed": 1.6235310152355067,
+      "passed": true,
+      "reference": "max |z| corrected between-group variance vs geometry variance",
+      "reference_kind": "self_convergence",
+      "tolerance": 4.0
+     }
+    ],
+    "generator": {
+     "inner": 16,
+     "name": "ciw.lab.surfaces_discrete_mesh_studies.variance_split_study",
+     "outer": 1000,
+     "seed": 20261038
+    }
+   },
+   "claim": "Nested variance components are consistent with the declared sensor variance and the linearized geometry variance within sampling error",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "relative 95% half-width of a Gaussian sample variance from 1000 seeded samples",
+    "kind": "monte_carlo_95ci",
+    "value": 0.08769772454796584
+   },
+   "unit": null,
+   "value": {
+    "between_ratio": [
+     1.0489297857740798,
+     0.8875594450358201,
+     -0.3309768590036692,
+     0.9661441782995915,
+     1.0143726355516618,
+     1.0890678895050585
+    ],
+    "within_ratio": [
+     1.0090836787673594,
+     1.0161181656812004,
+     1.0203573620531736,
+     0.9780834565992171,
+     0.9912169951974154,
+     1.004969587982069
+    ],
+    "z_between": [
+     1.035048210372391,
+     -1.0413655443587402,
+     -1.2598814045888065,
+     -0.7562330995833736,
+     0.3167450311449801,
+     1.6235310152355067
+    ],
+    "z_within": [
+     0.7866696572350579,
+     1.395874094232614,
+     1.7629992692085603,
+     -1.8980283348222142,
+     -0.7606305280599058,
+     0.4303789438813702
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 0.8155896045575417,
+      "passed": true,
+      "reference": "baseline geometry share of the total variance",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.5
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.004077269141887774,
+      "passed": true,
+      "reference": "nested geometry share - linearized share at baseline",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.05
+     }
+    ],
+    "generator": {
+     "level": 3,
+     "name": "ciw.lab.surfaces_discrete_mesh_studies.variance_split_study",
+     "noise": "isotropic",
+     "seed": 20261038,
+     "strip": 5
+    }
+   },
+   "claim": "Under isotropic vertex noise with barycentric markers, geometry uncertainty dominates the baseline marker-distance residual",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "95% half-width of the nested geometry share from 1000 geometry samples",
+    "kind": "monte_carlo_95ci",
+    "value": 0.07152535248467168
+   },
+   "unit": null,
+   "value": {
+    "baseline": {
+     "crossover_sensor_sigma": 0.0010515093665234346,
+     "geometry_share": 0.8155896045575417,
+     "sigma_geometry": 0.001,
+     "sigma_sensor": 0.0005
+    },
+    "gain": 1.0515093665234345,
+    "scenarios": [
+     {
+      "dominant": "geometry",
+      "geometry_share": 0.5250922153359593,
+      "sigma_geometry": 0.0001,
+      "sigma_sensor": 0.0001
+     },
+     {
+      "dominant": "sensor",
+      "geometry_share": 0.04235370574232734,
+      "sigma_geometry": 0.0001,
+      "sigma_sensor": 0.0005
+     },
+     {
+      "dominant": "sensor",
+      "geometry_share": 0.002756560241387384,
+      "sigma_geometry": 0.0001,
+      "sigma_sensor": 0.002
+     },
+     {
+      "dominant": "geometry",
+      "geometry_share": 0.9910367917568031,
+      "sigma_geometry": 0.001,
+      "sigma_sensor": 0.0001
+     },
+     {
+      "dominant": "geometry",
+      "geometry_share": 0.8155896045575417,
+      "sigma_geometry": 0.001,
+      "sigma_sensor": 0.0005
+     },
+     {
+      "dominant": "sensor",
+      "geometry_share": 0.2165575773712226,
+      "sigma_geometry": 0.001,
+      "sigma_sensor": 0.002
+     }
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 2.0082322369620419e-16,
+      "passed": true,
+      "reference": "|tangential^2 + normal^2 - total^2| / total^2",
+      "reference_kind": "invariant",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "ge",
+      "observed": 0.9121248755438055,
+      "passed": true,
+      "reference": "tangential fraction of |grad d|^2",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.5
+     },
+     {
+      "comparison": "ge",
+      "observed": 0.9270970105582156,
+      "passed": true,
+      "reference": "marker-face fraction of |grad d|^2",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.5
+     }
+    ],
+    "derivation": "Isotropic noise splits exactly into normal and tangential parts: |grad d|^2 = |grad_n d|^2 + |grad_t d|^2. On a smooth surface tangential noise only re-parameterises the mesh to first order, except that it drags barycentric markers"
+   },
+   "claim": "Tangential vertex displacement, mostly of the marker-face vertices, carries most of the marker-distance gain |grad d|^2",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "central differences with step 1e-6: O(tau^2) truncation plus about 1e-10 rounding per entry",
+    "kind": "truncation_bound",
+    "value": 1e-09
+   },
+   "unit": null,
+   "value": {
+    "gain_split": {
+     "interior": 0.28391335006097834,
+     "interior_normal": 0.2834028088486743,
+     "interior_vertices": 13,
+     "marker": 1.0124550150716163,
+     "marker_vertices": 6,
+     "normal": 0.31170668909770055,
+     "tangential": 1.0042464278543708,
+     "total": 1.0515093665234345
+    },
+    "marker_fraction": 0.9270970105582156,
+    "tangential_fraction": 0.9121248755438055
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 0.27987315173062316,
+      "passed": true,
+      "reference": "normal-only geometry share at sigma_g = 1e-3, sigma_s = 5e-4",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.5
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.743398274471097,
+      "passed": true,
+      "reference": "z of MC normal-only geometry variance against sigma_g^2 |grad_n d|^2",
+      "reference_kind": "self_convergence",
+      "tolerance": 4.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -1.170113170828075,
+      "passed": true,
+      "reference": "z of MC total against sigma_g^2 |grad_n d|^2 + sigma_s^2",
+      "reference_kind": "self_convergence",
+      "tolerance": 4.0
+     }
+    ],
+    "generator": {
+     "level": 3,
+     "name": "ciw.lab.surfaces_discrete_mesh_studies.variance_split_study",
+     "noise": "normal-only",
+     "samples": 20000,
+     "seed": 20261038
+    }
+   },
+   "claim": "Under normal-only (shape) vertex noise of the same sigma the sensor dominates the baseline residual",
+   "counterexample": {
+    "statement": "Whether geometry or sensor noise dominates the marker-distance residual is fixed by sigma_g and sigma_s alone",
+    "witness": {
+     "isotropic_geometry_share": 0.8155896045575417,
+     "normal_only_geometry_share": 0.27987315173062316,
+     "sigma_geometry": 0.001,
+     "sigma_sensor": 0.0005
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "relative 95% half-width of a Gaussian sample variance from 20000 seeded samples",
+    "kind": "monte_carlo_95ci",
+    "value": 0.019600490018375764
+   },
+   "unit": null,
+   "value": {
+    "crossover_sensor_sigma": 0.00031170668909770053,
+    "gain": 0.31170668909770055,
+    "geometry_share": 0.27987315173062316,
+    "geometry_variance_linear": 9.716106002825055e-08,
+    "geometry_variance_mc": 9.643874832652443e-08,
+    "predicted_total": 3.4716106002825053e-07,
+    "sigma_geometry": 0.001,
+    "sigma_sensor": 0.0005,
+    "total_mc": 3.43098781182633e-07
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 1.0630411919077494,
+      "passed": true,
+      "reference": "variance at the largest K / geometry floor",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.9
+     },
+     {
+      "comparison": "le",
+      "observed": 1.6984680626128112,
+      "passed": true,
+      "reference": "max |z| against geometry + sensor / K",
+      "reference_kind": "self_convergence",
+      "tolerance": 4.0
+     }
+    ],
+    "generator": {
+     "name": "ciw.lab.surfaces_discrete_mesh_studies.variance_split_study",
+     "seed": 20261038,
+     "sigma_geometry": 0.001,
+     "sigma_sensor": 0.002
+    }
+   },
+   "claim": "Averaging repeated sensor readings leaves the geometry variance as a floor",
+   "counterexample": {
+    "statement": "Averaging repeated measurements drives the observation error to zero",
+    "witness": {
+     "geometry_floor": 1.1056719478865147e-06,
+     "repeats": 64,
+     "variance": 1.1753748253402434e-06
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "relative 95% half-width of a Gaussian sample variance from 20000 seeded samples",
+    "kind": "monte_carlo_95ci",
+    "value": 0.019600490018375764
+   },
+   "unit": null,
+   "value": {
+    "geometry_floor": 1.1056719478865147e-06,
+    "geometry_share": [
+     0.2165575773712226,
+     0.5250922153359593,
+     0.8155896045575417,
+     0.9464976024179689
+    ],
+    "repeats": [
+     1,
+     4,
+     16,
+     64
+    ],
+    "variance": [
+     5.065235119761693e-06,
+     2.1355347423258732e-06,
+     1.332645717154897e-06,
+     1.1753748253402434e-06
+    ],
+    "z": [
+     -0.7919783645367102,
+     1.4181718994802532,
+     -1.6984680626128112,
+     0.6165785261812463
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": "No scanned surface, device or calibration was acquired; the computation is synthetic."
+   },
+   "claim": "A real marker-distance sensor on a real scanned part has this geometry and sensor variance split",
+   "domain": "sensor_performance",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": "No scanned surface, device or calibration was acquired; the computation is synthetic."
+   },
+   "claim": "The geometry sigma of 1e-3 is the accuracy of a real scanned surface",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 6282,
+   "path": "artifacts/T044/variance-split.json",
+   "sha256": "2b7e39d8c3901e14309c50132a43b3e50829eab563895c9a0b24ed351188ce8f"
+  },
+  {
+   "bytes": 2182,
+   "path": "artifacts/T044/averaging.svg",
+   "sha256": "82ab72b99bdaf26d508a2448eec055ea8a1065cfc20d215418b901123abe04c6"
+  }
+ ],
+ "hypothesis": "For a marker-distance observation on an uncertain surface, geometry and sensor variances add (law of total variance), can be separated by a nested design, and averaging sensor readings cannot remove the geometry part; which part dominates depends on the geometry noise model as well as on the sigmas.",
+ "input_data": [
+  "icosphere level 3, fixed marker strip 5 from T043 (the declared geodesic with the largest vertex margin, the best case for a fixed corridor)",
+  "sigma_g in {1e-4, 1e-3}, sigma_s in {1e-4, 5e-4, 2e-3}",
+  "nested 1000 x 16 and fresh 20000 samples",
+  "averaging K = 1, 4, 16, 64 at sigma_g=1e-3, sigma_s=2e-3",
+  "normal-only noise at sigma_g=1e-3, sigma_s=5e-4"
+ ],
+ "mathematical_model": "Residual r = y - d(V_nominal), y = d(V_nominal + eta) + eps, eta ~ N(0, sigma_g^2 I) per vertex coordinate (or sigma_g along each vertex normal), eps ~ N(0, sigma_s^2) independent. Var(r) = sigma_s^2 + Var_eta(d) ~ sigma_s^2 + sigma_g^2 |grad d|^2, with |grad_n d|^2 in place of |grad d|^2 for normal-only noise. Nested design: within-group variance estimates sigma_s^2, corrected between-group variance estimates the geometry part.",
+ "number": 44,
+ "numerical_result": "Distance gain |grad d| = 1.0515 (nominal distance 1.000000; tangential 1.0042, normal 0.3117; marker-face vertices 1.0125, interior 0.2839); ANOVA residual 3.2e-16; fresh total/predicted ratios 0.995, 1.007, 0.991, 0.998, 0.995, 0.986 (max |z| 1.40); isotropic baseline (sigma_g=1e-3, sigma_s=5e-4) geometry share 0.816, crossover sensor sigma 1.05e-03; normal-only noise: share 0.280, crossover 3.12e-04, MC/linear geometry variance 0.993; averaging K=1: share 0.22, 4: share 0.53, 16: share 0.82, 64: share 0.95; floor 1.106e-06.",
+ "observation_model": "Synthetic: the as-built surface differs from the nominal mesh by Gaussian vertex noise (isotropic, or along the normals) and a synthetic sensor adds Gaussian noise to the distance; markers are barycentric in their faces, so tangential vertex noise moves them.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/surfaces_discrete_mesh.py": "60ba6ad84646cb8fff5dfa94cc609eb405b633ef3e75a535333dadd77e5bf592",
+   "src/ciw/lab/surfaces_discrete_mesh_geometry.py": "8788d479e31b40eaaa93aca1ff5aa293aa03fa681dfef7d9d5fe225f83994e7d",
+   "src/ciw/lab/surfaces_discrete_mesh_studies.py": "afac8f09b471f4d995289ed69e37f5a240b7d79c65392e35015a830f67d757b1"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T045: carry this split into typed observation modes (intrinsic geodesic distance, camera chord distance).",
+ "report_id": "sha256:6ac07a8e4d53c9cf597eeb991da8dcbae31710caedb95b882f619250c424ef49",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "surfaces-discrete",
+ "state": "completed",
+ "task_id": "T044",
+ "tests_passed": [
+  "check: Nested Monte Carlo sums of squares decompose exactly into between and within parts vs max relative ANOVA residual (SST - SSB - SSW) / SST",
+  "check: Residual variance equals geometry variance plus sensor variance in every scenario vs max |z| of fresh total variance against sigma_s^2 + sigma_g^2 |grad d|^2",
+  "check: Residual variance equals geometry variance plus sensor variance in every scenario vs largest fraction of samples leaving the fixed corridor (declared strip 5 (largest margin; best case, T043))",
+  "check: Nested variance components are consistent with the declared sensor variance and the linearized geometry variance within sampling error vs max |z| within-group variance vs sigma_s^2",
+  "check: Nested variance components are consistent with the declared sensor variance and the linearized geometry variance within sampling error vs max |z| corrected between-group variance vs geometry variance",
+  "check: Under isotropic vertex noise with barycentric markers, geometry uncertainty dominates the baseline marker-distance residual vs baseline geometry share of the total variance",
+  "check: Under isotropic vertex noise with barycentric markers, geometry uncertainty dominates the baseline marker-distance residual vs nested geometry share - linearized share at baseline",
+  "check: Tangential vertex displacement, mostly of the marker-face vertices, carries most of the marker-distance gain |grad d|^2 vs |tangential^2 + normal^2 - total^2| / total^2",
+  "check: Tangential vertex displacement, mostly of the marker-face vertices, carries most of the marker-distance gain |grad d|^2 vs tangential fraction of |grad d|^2",
+  "check: Tangential vertex displacement, mostly of the marker-face vertices, carries most of the marker-distance gain |grad d|^2 vs marker-face fraction of |grad d|^2",
+  "check: Under normal-only (shape) vertex noise of the same sigma the sensor dominates the baseline residual vs normal-only geometry share at sigma_g = 1e-3, sigma_s = 5e-4",
+  "check: Under normal-only (shape) vertex noise of the same sigma the sensor dominates the baseline residual vs z of MC normal-only geometry variance against sigma_g^2 |grad_n d|^2",
+  "check: Under normal-only (shape) vertex noise of the same sigma the sensor dominates the baseline residual vs z of MC total against sigma_g^2 |grad_n d|^2 + sigma_s^2",
+  "check: Averaging repeated sensor readings leaves the geometry variance as a floor vs variance at the largest K / geometry floor",
+  "check: Averaging repeated sensor readings leaves the geometry variance as a floor vs max |z| against geometry + sensor / K",
+  "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_law_of_total_variance_split",
+  "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_variance_split_task_report"
+ ],
+ "tests_skipped": [],
+ "title": "Test geometry uncertainty separately from sensor uncertainty.",
+ "uncertainty": "z-scores use sqrt(2/(N-1)) relative standard errors of Gaussian variances; the geometry variance uses the T043 linearization, which holds for this declared strip at these sigma (no sample left its corridor), not for every strip (T043 reports up to 38% leaving at sigma_g = 1e-3 for the smallest-margin strip). When sigma_s^2 / inner greatly exceeds the geometry variance the corrected between-group estimate is dominated by sensor noise (it can be negative, as at sigma_g = 1e-4, sigma_s = 2e-3); consistency there is not a useful estimate of the geometry part.",
+ "unresolved_assumptions": [
+  "Geometry and sensor noise are independent; a sensor that touches the same surface patch could correlate them.",
+  "Most of the isotropic geometry variance is tangential marker displacement; if physical markers were fixed on the surface independently of the mesh vertices, the normal-only share (about 0.28 at baseline) is the relevant one.",
+  "Which part dominates is a property of the declared sigmas and noise model, not of any real scanner or sensor."
+ ]
+}

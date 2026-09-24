@@ -1,0 +1,342 @@
+{
+ "changed_files": [
+  "src/ciw/lab/exchange_provenance.py",
+  "src/ciw/lab/exchange_provenance_common.py",
+  "tests/test_lab_exchange_provenance.py",
+  "docs/lab/EXCHANGE_PROVENANCE.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 2,
+   "numerically_verified": 3,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "All binding equalities hold for every retained receipt; transplanted receipts and false numerical matches are refused; a receipt can be removed without changing any digest (receipt.deleted reopens).",
+ "experiment": "Check the binding equalities for three receipts (replay, replay after reopen, replay of a replay); reopen receipt transplant, false numerical match and deletion forgeries. Digest re-derivations use a local canonical-JSON/SHA-256 implementation in ciw.lab, the same implementation origin as CIW, so they are cross_implementation checks (numerically_verified, never independently_verified); every other check compares CIW's own outputs or refusal messages. Retained receipt-binding.json and receipt-mutations.json/.md.",
+ "failure_modes_checked": [
+  "receipt moved to another bundle",
+  "receipt moved and resealed",
+  "false numerical_match",
+  "receipt deleted"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "B1 receipt binding: re-derived digest properties that did not hold",
+      "reference_kind": "cross_implementation",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "B1 receipt binding: observed properties that did not hold",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "B2 receipt binding: re-derived digest properties that did not hold",
+      "reference_kind": "cross_implementation",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "B2 receipt binding: observed properties that did not hold",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "B3 receipt binding: re-derived digest properties that did not hold",
+      "reference_kind": "cross_implementation",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "B3 receipt binding: observed properties that did not hold",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Every retained replay receipt binds its source and replayed bundle digests, verification subject, fresh reproduction step, runtime digest and limited authority",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "binding_properties": 30,
+    "held": 30,
+    "receipts": 3
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "Invalid retained energy replay receipt",
+      "observed_refusal": "Invalid retained energy replay receipt",
+      "passed": true,
+      "reference": "receipt.numerical-match-false (local recompute): refusal on reopen",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "Invalid retained energy replay receipt",
+      "observed_refusal": "Invalid retained energy replay receipt",
+      "passed": true,
+      "reference": "receipt.transplanted (none recompute): refusal on reopen",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "Retained energy analysis binding differs",
+      "observed_refusal": "Retained energy analysis binding differs",
+      "passed": true,
+      "reference": "receipt.transplanted-resealed (local recompute): refusal on reopen",
+      "reference_kind": "refusal"
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "harness control: the forger's recomputation of the unedited workspace reproduces every CIW digest",
+      "reference_kind": "cross_implementation",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "harness control: the unedited saved workspace reopens",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Transplanted receipts and false numerical-match claims are refused on reopen",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": [
+    {
+     "kind": "workspace",
+     "mutant": "receipt.numerical-match-false",
+     "observed": "Invalid retained energy replay receipt",
+     "recompute": "local"
+    },
+    {
+     "kind": "workspace",
+     "mutant": "receipt.transplanted",
+     "observed": "Invalid retained energy replay receipt",
+     "recompute": "none"
+    },
+    {
+     "kind": "workspace",
+     "mutant": "receipt.transplanted-resealed",
+     "observed": "Retained energy analysis binding differs",
+     "recompute": "local"
+    }
+   ]
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "receipt.deleted: accepted (1 = accepted)",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     }
+    ]
+   },
+   "claim": "Surviving mutant receipt.deleted: a replay bundle reopens without its replay receipt, indistinguishable from an original execution",
+   "counterexample": {
+    "statement": "A replay bundle cannot be retained without its replay receipt",
+    "witness": {
+     "description": "replay_receipts removed from the replay bundle",
+     "name": "receipt.deleted",
+     "observed": "accepted",
+     "post_reopen": {
+      "bundles_with_receipts": 0,
+      "replay_bundle_listed": true
+     },
+     "recompute": "none",
+     "target": "energy replay bundle"
+    }
+   },
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "mutant": "receipt.deleted",
+    "observed": "accepted"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": "Every receipt records independent: false and the same analysis runtime; replay is same-code reproduction, which the evidence boundary separates from independent verification by another party."
+   },
+   "claim": "Replay agreement establishes verification by an independent party",
+   "domain": "provenance",
+   "evidence_status": "not_established",
+   "expected_not_established": true,
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": null,
+   "unit": null,
+   "value": {
+    "method": "fresh_analysis_of_same_retained_measurement",
+    "receipt_independent_flags": [
+     false,
+     false,
+     false
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": "Every CIW seal and identity on these paths (record_digest, log_digest, bundle_digest, verification_id, replay_id, result_id, source_id) is an unkeyed SHA-256 over public canonical JSON or raw bytes, and no keyed signature or MAC is retained. Authentication is therefore not established; the listed surviving mutants are concrete forgeries accepted on reopen."
+   },
+   "claim": "Retained workspace records are authenticated: a holder without a secret cannot produce a forged record that reopens",
+   "domain": "provenance",
+   "evidence_status": "not_established",
+   "expected_not_established": true,
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": null,
+   "unit": null,
+   "value": {
+    "surviving_mutants_in_this_task": [
+     "receipt.deleted"
+    ]
+   }
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 2210,
+   "path": "artifacts/T083/receipt-mutations.json",
+   "sha256": "af3ac175ad9d761db60e63e070dc706f5c9c9954660a5ea9c1f5a6e4f5afb372"
+  },
+  {
+   "bytes": 798,
+   "path": "artifacts/T083/receipt-mutations.md",
+   "sha256": "bc4406910b4609e46d353471adf1935071f9fa45d281f763b32492db6500deb9"
+  },
+  {
+   "bytes": 1200,
+   "path": "artifacts/T083/receipt-binding.json",
+   "sha256": "969e9e901b9842a44a8b2eead8e8b1920e3fb6dd104adb856aab3af68cfc1413"
+  }
+ ],
+ "hypothesis": "A replay receipt binds the source bundle digest, the replayed bundle digest, the verification subject, the fresh reproduction step, the runtime digest and a not_performed admission, but the replay bundle's own identity does not bind the receipt.",
+ "input_data": [
+  "make_demo_run() damped-oscillator recording; statistics.v1 on channel v over [1, 2] s, twice, plus one legacy analysis.stats result",
+  "examples/energy-accuracy/{baseline,reset}.json (origin synthetic_fixture): two original executions of baseline, one of reset, replays, and a separate session in the same process",
+  "Workspaces saved by Session.save_workspace and reopened by Session.from_workspace in temporary directories"
+ ],
+ "mathematical_model": "replay_id = sha256(receipt \\ replay_id); receipt.verification.subject_ref = source_bundle_digest; bundle_digest = sha256(bundle \\ {bundle_digest, verification, replay_receipts}).",
+ "number": 83,
+ "numerical_result": "30/30 receipt binding properties held over 3 receipts; mutants: 4 rows (4 workspace mutants, 0 pure-validator rows): 3 refused; 1 surviving forgery (receipt.deleted); kill/survive predictions matched 4/4; refusal messages matched their regression pins 3/3",
+ "observation_model": "No physical observation. The observed objects are CIW records (sessions, executions, results, bundles, receipts, saved workspace JSON) produced offline by the unmodified CIW code; the energy logs are synthetic fixtures and no hardware was sampled.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/exchange_provenance.py": "5cc267c7777c9b434b8747b0cc841ac85313e1cfb6ff4c429ee93aa5ddbb645b",
+   "src/ciw/lab/exchange_provenance_common.py": "22028c4008079fba23c5e807de0104ba1a0014027e1d40a9209881cdf232f486"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T084 (mutate replay receipt source digest); CIW change: bind receipts into the replay bundle identity or a catalog-level seal so deletion is detected",
+ "report_id": "sha256:c075074308bff8eedd6cdf73795e9f446235b2a85bd06d91f28a88ebd9b4b7d5",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "exchange-provenance",
+ "state": "completed",
+ "task_id": "T083",
+ "tests_passed": [
+  "check: Every retained replay receipt binds its source and replayed bundle digests, verification subject, fresh reproduction step, runtime digest and limited authority vs B1 receipt binding: re-derived digest properties that did not hold",
+  "check: Every retained replay receipt binds its source and replayed bundle digests, verification subject, fresh reproduction step, runtime digest and limited authority vs B1 receipt binding: observed properties that did not hold",
+  "check: Every retained replay receipt binds its source and replayed bundle digests, verification subject, fresh reproduction step, runtime digest and limited authority vs B2 receipt binding: re-derived digest properties that did not hold",
+  "check: Every retained replay receipt binds its source and replayed bundle digests, verification subject, fresh reproduction step, runtime digest and limited authority vs B2 receipt binding: observed properties that did not hold",
+  "check: Every retained replay receipt binds its source and replayed bundle digests, verification subject, fresh reproduction step, runtime digest and limited authority vs B3 receipt binding: re-derived digest properties that did not hold",
+  "check: Every retained replay receipt binds its source and replayed bundle digests, verification subject, fresh reproduction step, runtime digest and limited authority vs B3 receipt binding: observed properties that did not hold",
+  "check: Transplanted receipts and false numerical-match claims are refused on reopen vs receipt.numerical-match-false (local recompute): refusal on reopen",
+  "check: Transplanted receipts and false numerical-match claims are refused on reopen vs receipt.transplanted (none recompute): refusal on reopen",
+  "check: Transplanted receipts and false numerical-match claims are refused on reopen vs receipt.transplanted-resealed (local recompute): refusal on reopen",
+  "check: Transplanted receipts and false numerical-match claims are refused on reopen vs harness control: the forger's recomputation of the unedited workspace reproduces every CIW digest",
+  "check: Transplanted receipts and false numerical-match claims are refused on reopen vs harness control: the unedited saved workspace reopens",
+  "check: Surviving mutant receipt.deleted: a replay bundle reopens without its replay receipt, indistinguishable from an original execution vs receipt.deleted: accepted (1 = accepted)",
+  "pytest: tests/test_lab_exchange_provenance.py::test_replay_receipt_binding"
+ ],
+ "tests_skipped": [],
+ "title": "Test replay receipt binding.",
+ "uncertainty": "Exact equalities. Receipt deletion is accepted because bundle_digest excludes replay_receipts (src/ciw/telemetry.py:_bundle_digest); nothing else records that a replay happened.",
+ "unresolved_assumptions": [
+  "Only energy-accuracy receipts were exercised; provider-backed receipts share workbench._validate_receipts but have workflow-specific checks."
+ ]
+}

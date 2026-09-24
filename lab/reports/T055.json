@@ -1,0 +1,440 @@
+{
+ "changed_files": [
+  "src/ciw/lab/observation.py",
+  "src/ciw/lab/observation_modes.py",
+  "src/ciw/lab/observation_signals.py",
+  "docs/lab/OBSERVATION.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 5,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Gap positions preserved; zero fill refused; moments within 99.9 % Monte Carlo intervals.",
+ "experiment": "Retain a stream with Bernoulli drops, attempt zero fill, run a value-only detector on a signal far from zero, construct a quantized stationary-axis stream whose zero-filled version equals a complete acquired stream, then Monte Carlo the mean estimator and a sample-and-hold tracker through Bernoulli and burst channels.",
+ "failure_modes_checked": [
+  "zero-filled gaps",
+  "value without raw reference",
+  "value-based detection when genuine zero readings occur",
+  "burst versus independent loss",
+  "start-up before the first received sample (burn-in)"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "gap positions differing from the drop mask",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "present plus dropped minus samples",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Dropped observations are retained as explicit gaps at their sequence positions",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact: integer counts, refusal codes or dyadic arithmetic; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "dropped": 46,
+    "position_mismatch": 0,
+    "present": 154
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "zero_filled_missing",
+      "observed_refusal": "zero_filled_missing",
+      "passed": true,
+      "reference": "admit a zero-filled stream",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "unbacked_value",
+      "observed_refusal": "unbacked_value",
+      "passed": true,
+      "reference": "admit a value whose raw reference was removed",
+      "reference_kind": "refusal"
+     }
+    ]
+   },
+   "claim": "A zero-filled stream and a value without a raw reference are refused",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact: integer counts, refusal codes or dyadic arithmetic; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "unbacked": "unbacked_value",
+    "zero_fill": "zero_filled_missing"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": -0.7915123313135733,
+      "passed": true,
+      "reference": "explicit-gap mean against mu (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -1.2805546123769742,
+      "passed": true,
+      "reference": "zero-filled mean against (1 - p) mu (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.6223909511271275,
+      "passed": true,
+      "reference": "explicit-gap variance against sigma^2 E[1/N] (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     }
+    ],
+    "generator": {
+     "mean": 0.5,
+     "name": "Bernoulli drops of a constant plus Gaussian noise",
+     "probability": 0.2,
+     "runs": 400,
+     "samples": 200,
+     "seed": 55,
+     "sigma": 0.01
+    }
+   },
+   "claim": "Zero-filling biases the mean by -p mu while explicit gaps leave it unbiased with variance sigma^2 E[1/N]",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "95 % half-widths over 400 independent runs",
+    "kind": "monte_carlo_95ci",
+    "value": {
+     "explicit_mean": 7.934128249138591e-05,
+     "explicit_variance": 8.946409363474746e-08,
+     "zero_filled_bias": 0.001341049118010581
+    }
+   },
+   "unit": null,
+   "value": {
+    "explicit_bias_z": -0.7915123313135733,
+    "predicted_bias": -0.1,
+    "variance_inflation": 1.3109684421899774,
+    "zero_filled_bias": -0.1008761827498047
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "detector flags differing from true fills (signal at 50 sigma)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 26.0,
+      "passed": true,
+      "reference": "dropped samples whose genuine reading is 0 counts (stationary axis)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "max |stream with those gaps zero-filled - complete acquired stream| (m)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 107.0,
+      "passed": true,
+      "reference": "genuine zero readings an exact-zero rule would flag as fills",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 46.0,
+      "passed": true,
+      "reference": "fills the neighbour-median detector misses on the stationary axis",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     }
+    ]
+   },
+   "claim": "Values alone recognize zero fills only in favourable signals: a neighbour-median detector finds every fill 50 sigma from zero, but on a stationary quantized encoder axis a fill equals a genuine zero-count reading",
+   "counterexample": {
+    "statement": "Zero-filled gaps can be recognized from the values alone",
+    "witness": {
+     "dropped": 46,
+     "fills_equal_to_genuine_readings": 26,
+     "identical_stream_gap_m": 0.0,
+     "seed": 55,
+     "signal": "stationary encoder axis, 0.5 um vibration quantized to 1 um counts"
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "integer counts and exact zeros of quantized readings",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "dropped": 46,
+    "exact_zero_rule_false_positives": 107,
+    "far_from_zero_mismatch": 0,
+    "fills_equal_to_genuine_readings": 26,
+    "genuine_zero_readings": 107,
+    "identical_stream_gap_m": 0.0,
+    "neighbour_rule_missed": 46
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 1.9855505269547875,
+      "passed": true,
+      "reference": "bernoulli mean age against the analytic E[age] (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.8979001112579977,
+      "passed": true,
+      "reference": "gilbert_elliott mean age against the analytic E[age] (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 1.2685312136971332,
+      "passed": true,
+      "reference": "bernoulli hold MSE against q E[age] + r (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -2.381211958659666,
+      "passed": true,
+      "reference": "gilbert_elliott hold MSE against q E[age] + r (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     },
+     {
+      "comparison": "ge",
+      "observed": 3.5559230865112377,
+      "passed": true,
+      "reference": "burst over Bernoulli MSE ratio at equal drop rate",
+      "reference_kind": "analytic",
+      "tolerance": 2.0
+     }
+    ],
+    "generator": {
+     "bad_to_good": 0.2,
+     "burn_in": 100,
+     "good_to_bad": 0.05,
+     "name": "random walk through Bernoulli and Gilbert-Elliott channels",
+     "noise_variance": 1e-06,
+     "probability": 0.2,
+     "runs": 400,
+     "samples": 600,
+     "seed": 55,
+     "walk_variance": 0.0001
+    }
+   },
+   "claim": "Hold-estimate error follows q E[age] + r; bursts at the same drop rate raise it",
+   "counterexample": {
+    "statement": "The drop rate alone determines how much estimates degrade",
+    "witness": {
+     "bernoulli_mse": 2.6377978571622868e-05,
+     "burst_mse": 9.379806297833248e-05,
+     "drop_rate": 0.2
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "95 % half-widths over 400 independent runs",
+    "kind": "monte_carlo_95ci",
+    "value": {
+     "bernoulli": {
+      "mean_age": 0.0028725006579202886,
+      "mse": 5.840017015817681e-07
+     },
+     "gilbert_elliott": {
+      "mean_age": 0.04029505587644751,
+      "mse": 5.927879343147318e-06
+     }
+    }
+   },
+   "unit": null,
+   "value": {
+    "bernoulli": {
+     "mean_age": 0.25291,
+     "mse": 2.6377978571622868e-05,
+     "predicted_mse": 2.6000000000000002e-05
+    },
+    "burst_to_bernoulli_mse_ratio": 3.5559230865112377,
+    "gilbert_elliott": {
+     "mean_age": 0.98154,
+     "mse": 9.379806297833248e-05,
+     "predicted_mse": 0.000101
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": "No link was monitored; real loss depends on load, interference and buffering."
+   },
+   "claim": "Real links drop observations as Bernoulli or two-state burst processes with these rates",
+   "domain": "sensor_performance",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 1902,
+   "path": "artifacts/T055/drop-study.json",
+   "sha256": "4254725bc4dbc44c4ad5dd94188f3d4795acfb089828d5f00a2abef16513f2e0"
+  },
+  {
+   "bytes": 2135,
+   "path": "artifacts/T055/hold-error-by-channel.svg",
+   "sha256": "014604b1c628e4af767c851ea8ac564fadb915166ef2a6f761b6a7624953f71e"
+  }
+ ],
+ "hypothesis": "Dropped observations must stay explicit gaps: zero-filling biases estimates and cannot be detected reliably from values, while explicit gaps keep estimates unbiased; burst losses degrade hold estimates more than independent losses at the same rate.",
+ "input_data": [
+  "Declared drops {'probability': 0.2, 'good_to_bad': 0.05, 'bad_to_good': 0.2, 'runs': 400, 'samples': 600, 'burn_in': 100, 'walk_variance': 0.0001, 'noise_variance': 1e-06}",
+  "Mean experiment {'mean': 0.5, 'sigma': 0.01, 'runs': 400, 'samples': 200}",
+  "Stationary encoder axis: vibration sigma 5e-07 m quantized to the declared 1e-06 m resolution",
+  "Seed 55"
+ ],
+ "mathematical_model": "Mean of received samples is unbiased with variance sigma^2 E[1/N]; zero-filled mean has expectation (1 - p) mu. Hold error of a random walk: E e^2 = q E[age] + r with E[age] = p/(1 - p) (Bernoulli) or pi_B / P(bad -> good) (Gilbert-Elliott, all samples lost in the bad state).",
+ "number": 55,
+ "numerical_result": "46 of 200 dropped, positions exact; zero fill refused (zero_filled_missing); far-from-zero detector mismatches 0; stationary axis: 26 of 46 fills equal genuine 0-count readings (stream identical to a complete one), exact-zero rule 107 false positives, neighbour detector misses 46; zero-fill bias -0.1009 vs -0.1000; hold MSE 2.638e-05 (Bernoulli) vs 9.380e-05 (burst), ratio 3.56.",
+ "observation_model": "Synthetic encoder_displacement records with raw references; drops become None; a zero-filled copy fabricates values without raw references.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/observation.py": "9ebedc1a1693aaa28965ba0c97837ad2d2c45bf0fd360857cf7b32c0993ed5fc",
+   "src/ciw/lab/observation_modes.py": "bfd6aa4471cc876a7ac2fb8790a4a5c4f478c547350b059311f5e6d53702c83e",
+   "src/ciw/lab/observation_signals.py": "19e94cb28160a07e5a285b5a4acd76e3820deb37ee5ed180f5c7bf1975a56793"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T056: add stale-state observations",
+ "report_id": "sha256:881341edbc6852f959fa73381b08ba5f06f70bda94ce055e7280b529bec2e01a",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "observation",
+ "state": "completed",
+ "task_id": "T055",
+ "tests_passed": [
+  "check: Dropped observations are retained as explicit gaps at their sequence positions vs gap positions differing from the drop mask",
+  "check: Dropped observations are retained as explicit gaps at their sequence positions vs present plus dropped minus samples",
+  "check: A zero-filled stream and a value without a raw reference are refused vs admit a zero-filled stream",
+  "check: A zero-filled stream and a value without a raw reference are refused vs admit a value whose raw reference was removed",
+  "check: Zero-filling biases the mean by -p mu while explicit gaps leave it unbiased with variance sigma^2 E[1/N] vs explicit-gap mean against mu (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: Zero-filling biases the mean by -p mu while explicit gaps leave it unbiased with variance sigma^2 E[1/N] vs zero-filled mean against (1 - p) mu (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: Zero-filling biases the mean by -p mu while explicit gaps leave it unbiased with variance sigma^2 E[1/N] vs explicit-gap variance against sigma^2 E[1/N] (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: Values alone recognize zero fills only in favourable signals: a neighbour-median detector finds every fill 50 sigma from zero, but on a stationary quantized encoder axis a fill equals a genuine zero-count reading vs detector flags differing from true fills (signal at 50 sigma)",
+  "check: Values alone recognize zero fills only in favourable signals: a neighbour-median detector finds every fill 50 sigma from zero, but on a stationary quantized encoder axis a fill equals a genuine zero-count reading vs dropped samples whose genuine reading is 0 counts (stationary axis)",
+  "check: Values alone recognize zero fills only in favourable signals: a neighbour-median detector finds every fill 50 sigma from zero, but on a stationary quantized encoder axis a fill equals a genuine zero-count reading vs max |stream with those gaps zero-filled - complete acquired stream| (m)",
+  "check: Values alone recognize zero fills only in favourable signals: a neighbour-median detector finds every fill 50 sigma from zero, but on a stationary quantized encoder axis a fill equals a genuine zero-count reading vs genuine zero readings an exact-zero rule would flag as fills",
+  "check: Values alone recognize zero fills only in favourable signals: a neighbour-median detector finds every fill 50 sigma from zero, but on a stationary quantized encoder axis a fill equals a genuine zero-count reading vs fills the neighbour-median detector misses on the stationary axis",
+  "check: Hold-estimate error follows q E[age] + r; bursts at the same drop rate raise it vs bernoulli mean age against the analytic E[age] (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: Hold-estimate error follows q E[age] + r; bursts at the same drop rate raise it vs gilbert_elliott mean age against the analytic E[age] (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: Hold-estimate error follows q E[age] + r; bursts at the same drop rate raise it vs bernoulli hold MSE against q E[age] + r (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: Hold-estimate error follows q E[age] + r; bursts at the same drop rate raise it vs gilbert_elliott hold MSE against q E[age] + r (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: Hold-estimate error follows q E[age] + r; bursts at the same drop rate raise it vs burst over Bernoulli MSE ratio at equal drop rate",
+  "pytest: tests/test_lab_observation.py::test_t055_dropped_observations"
+ ],
+ "tests_skipped": [],
+ "title": "Add dropped observations.",
+ "uncertainty": "Monte Carlo z-scores use per-run statistics (runs are independent; samples within a run are not).",
+ "unresolved_assumptions": [
+  "Drops are independent of the signal value",
+  "Received samples are not delayed (delay is T056)"
+ ]
+}

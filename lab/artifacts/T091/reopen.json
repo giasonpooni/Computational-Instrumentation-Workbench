@@ -1,0 +1,64 @@
+{
+ "binding_keys_in_saved_workspace": 0,
+ "guard_control": "intercepted",
+ "guarded_paths": [
+  "subprocess.Popen",
+  "ciw.adapters.subprocess._bounded_process",
+  "ciw.adapters.subprocess.PinnedSubprocessAdapter.__init__",
+  "ciw.candidate_evidence._bounded_process",
+  "ciw.session.execute_operation",
+  "ciw.adapters.registry.AdapterRegistry.execute",
+  "ciw.instruments.compute_statistics",
+  "ciw.instruments.compute_spectrum",
+  "ciw.workbench.Workbench.execute",
+  "ciw.workbench.Workbench.replay",
+  "ciw.workbench.Workbench.bind_workflow",
+  "ciw.workbench.Workbench.bind_candidate_adapter",
+  "ciw.workbench.Workbench.execute_candidate",
+  "ciw.energy_workflow.EnergyAccuracyWorkflow._execute",
+  "ciw.energy_workflow.EnergyAccuracyWorkflow._step",
+  "ciw.energy_workflow.EnergyAccuracyWorkflow.create_session",
+  "ciw.energy_workflow.EnergyAccuracyWorkflow.replay_session",
+  "ciw.declared_workload.DeclaredWorkflow._adapters",
+  "ciw.declared_workload.DeclaredWorkflow._step",
+  "ciw.declared_workload.DeclaredWorkflow._execute",
+  "ciw.declared_workload.DeclaredWorkflow.create_session",
+  "ciw.declared_workload.DeclaredWorkflow.replay_session"
+ ],
+ "mismatches": {
+  "catalog": 0,
+  "executions": 0,
+  "results": 0,
+  "selection": 0
+ },
+ "observed": {
+  "available_operations": [
+   "ciw.energy-accuracy.v1"
+  ],
+  "bundles": 2,
+  "execution_path_calls": 0,
+  "executions": 1,
+  "provider_bindings": [],
+  "read_requests": 10,
+  "read_requests_answered": 10,
+  "results": 3,
+  "workspace_version": 3
+ },
+ "reads": {
+  "bundle.list": "response",
+  "execution.list": "response",
+  "experiment.inspect": "response",
+  "operation.list": "response",
+  "result.get result-79a1b64ae69541e2a1c6b952613ce3b3": "response",
+  "result.get result-920d415679d04fc9b253a61a61d8e69b": "response",
+  "result.get result-cd91422a54f84c1a843c53ba53941654": "response",
+  "result.list": "response",
+  "session.get": "response",
+  "source.list": "response"
+ },
+ "recomputations": {
+  "ciw.energy_records.analyze": 7
+ },
+ "reopen_attempts": [],
+ "saved_workspace_sha256": "aa1cabf504ecf53db669a87466f5e0984a2e8416d7dd0ef0634c9b8bdac76f79"
+}

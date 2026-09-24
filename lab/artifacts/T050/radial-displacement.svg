@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420" font-family="sans-serif" font-size="11">
+<rect width="640" height="420" fill="#ffffff"/>
+<text x="78" y="22" font-size="13" font-weight="bold">Radial distortion displacement f k1 r^3</text>
+<rect x="78" y="40" width="392" height="322" fill="none" stroke="#333"/>
+<line x1="288.60" y1="40" x2="288.60" y2="362" stroke="#e5e7eb"/>
+<text x="288.60" y="378" text-anchor="middle">1e-1</text>
+<line x1="78" y1="313.88" x2="470" y2="313.88" stroke="#e5e7eb"/>
+<text x="72" y="317.88" text-anchor="end">1e-4</text>
+<line x1="78" y1="263.37" x2="470" y2="263.37" stroke="#e5e7eb"/>
+<text x="72" y="267.37" text-anchor="end">1e-3</text>
+<line x1="78" y1="212.86" x2="470" y2="212.86" stroke="#e5e7eb"/>
+<text x="72" y="216.86" text-anchor="end">1e-2</text>
+<line x1="78" y1="162.35" x2="470" y2="162.35" stroke="#e5e7eb"/>
+<text x="72" y="166.35" text-anchor="end">1e-1</text>
+<line x1="78" y1="111.85" x2="470" y2="111.85" stroke="#e5e7eb"/>
+<text x="72" y="115.85" text-anchor="end">1e0</text>
+<line x1="78" y1="61.34" x2="470" y2="61.34" stroke="#e5e7eb"/>
+<text x="72" y="65.34" text-anchor="end">1e1</text>
+<text x="274.00" y="406" text-anchor="middle">normalized image radius r</text>
+<text x="16" y="201.00" text-anchor="middle" transform="rotate(-90 16 201.00)">displacement (px)</text>
+<path d="M78.00,350.07 L113.64,332.15 L149.27,314.23 L184.91,296.31 L220.55,278.39 L256.18,260.47 L291.82,242.55 L327.45,224.63 L363.09,206.70 L398.73,188.78 L434.36,170.86 L470.00,152.94" fill="none" stroke="#1f5fa8" stroke-width="1.8"/>
+<circle cx="78.00" cy="350.07" r="2.6" fill="#1f5fa8"/>
+<circle cx="113.64" cy="332.15" r="2.6" fill="#1f5fa8"/>
+<circle cx="149.27" cy="314.23" r="2.6" fill="#1f5fa8"/>
+<circle cx="184.91" cy="296.31" r="2.6" fill="#1f5fa8"/>
+<circle cx="220.55" cy="278.39" r="2.6" fill="#1f5fa8"/>
+<circle cx="256.18" cy="260.47" r="2.6" fill="#1f5fa8"/>
+<circle cx="291.82" cy="242.55" r="2.6" fill="#1f5fa8"/>
+<circle cx="327.45" cy="224.63" r="2.6" fill="#1f5fa8"/>
+<circle cx="363.09" cy="206.70" r="2.6" fill="#1f5fa8"/>
+<circle cx="398.73" cy="188.78" r="2.6" fill="#1f5fa8"/>
+<circle cx="434.36" cy="170.86" r="2.6" fill="#1f5fa8"/>
+<circle cx="470.00" cy="152.94" r="2.6" fill="#1f5fa8"/>
+<line x1="482" y1="52" x2="502" y2="52" stroke="#1f5fa8" stroke-width="2"/>
+<text x="508" y="56">k1 = 0.001</text>
+<path d="M78.00,299.57 L113.64,281.65 L149.27,263.72 L184.91,245.80 L220.55,227.88 L256.18,209.96 L291.82,192.04 L327.45,174.12 L363.09,156.20 L398.73,138.28 L434.36,120.35 L470.00,102.43" fill="none" stroke="#c2410c" stroke-width="1.8"/>
+<circle cx="78.00" cy="299.57" r="2.6" fill="#c2410c"/>
+<circle cx="113.64" cy="281.65" r="2.6" fill="#c2410c"/>
+<circle cx="149.27" cy="263.72" r="2.6" fill="#c2410c"/>
+<circle cx="184.91" cy="245.80" r="2.6" fill="#c2410c"/>
+<circle cx="220.55" cy="227.88" r="2.6" fill="#c2410c"/>
+<circle cx="256.18" cy="209.96" r="2.6" fill="#c2410c"/>
+<circle cx="291.82" cy="192.04" r="2.6" fill="#c2410c"/>
+<circle cx="327.45" cy="174.12" r="2.6" fill="#c2410c"/>
+<circle cx="363.09" cy="156.20" r="2.6" fill="#c2410c"/>
+<circle cx="398.73" cy="138.28" r="2.6" fill="#c2410c"/>
+<circle cx="434.36" cy="120.35" r="2.6" fill="#c2410c"/>
+<circle cx="470.00" cy="102.43" r="2.6" fill="#c2410c"/>
+<line x1="482" y1="70" x2="502" y2="70" stroke="#c2410c" stroke-width="2"/>
+<text x="508" y="74">k1 = 0.01</text>
+<path d="M78.00,249.06 L113.64,231.14 L149.27,213.22 L184.91,195.30 L220.55,177.37 L256.18,159.45 L291.82,141.53 L327.45,123.61 L363.09,105.69 L398.73,87.77 L434.36,69.85 L470.00,51.93" fill="none" stroke="#15803d" stroke-width="1.8"/>
+<circle cx="78.00" cy="249.06" r="2.6" fill="#15803d"/>
+<circle cx="113.64" cy="231.14" r="2.6" fill="#15803d"/>
+<circle cx="149.27" cy="213.22" r="2.6" fill="#15803d"/>
+<circle cx="184.91" cy="195.30" r="2.6" fill="#15803d"/>
+<circle cx="220.55" cy="177.37" r="2.6" fill="#15803d"/>
+<circle cx="256.18" cy="159.45" r="2.6" fill="#15803d"/>
+<circle cx="291.82" cy="141.53" r="2.6" fill="#15803d"/>
+<circle cx="327.45" cy="123.61" r="2.6" fill="#15803d"/>
+<circle cx="363.09" cy="105.69" r="2.6" fill="#15803d"/>
+<circle cx="398.73" cy="87.77" r="2.6" fill="#15803d"/>
+<circle cx="434.36" cy="69.85" r="2.6" fill="#15803d"/>
+<circle cx="470.00" cy="51.93" r="2.6" fill="#15803d"/>
+<line x1="482" y1="88" x2="502" y2="88" stroke="#15803d" stroke-width="2"/>
+<text x="508" y="92">k1 = 0.1</text>
+</svg>

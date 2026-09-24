@@ -1,0 +1,316 @@
+{
+ "changed_files": [
+  "src/ciw/lab/sensor_fusion_admission.py",
+  "src/ciw/lab/sensor_fusion_common.py",
+  "src/ciw/lab/sensor_fusion_bench.py",
+  "src/ciw/lab/sensor_fusion_objects.py"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 3,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Kalman = batch to roundoff; rational filter = rational batch exactly; ANEES inside chi2(4N)/N.",
+ "experiment": "Solve the normal equations for each prefix (block elimination, whose forward pass is an information filter, and a dense LU) and compare the last block with the covariance-form filter; run the exact Fraction filter and elimination; Monte Carlo NEES against the simulated truth.",
+ "failure_modes_checked": [
+  "recursion vs batch disagreement",
+  "covariance vs information inverse",
+  "roundoff hiding a discrepancy (exact arithmetic)",
+  "NEES inconsistency"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 1.018119047824677e-13,
+      "passed": true,
+      "reference": "max relative mean difference against the block-eliminated batch posterior",
+      "reference_kind": "analytic",
+      "tolerance": 1e-09
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 3.820291279574931e-14,
+      "passed": true,
+      "reference": "max relative covariance difference against the block-eliminated batch posterior",
+      "reference_kind": "analytic",
+      "tolerance": 1e-09
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 6.616482489215767e-14,
+      "passed": true,
+      "reference": "dense normal equations against the filter at K = 10 and 40",
+      "reference_kind": "analytic",
+      "tolerance": 1e-09
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 9.725367176738375e-14,
+      "passed": true,
+      "reference": "dense normal equations against block elimination at K = 10 and 40",
+      "reference_kind": "invariant",
+      "tolerance": 1e-09
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "seed": 742026
+    }
+   },
+   "claim": "The recursive covariance-form Kalman estimate and covariance equal the batch information-form posterior marginal at K = 10, 40 and 100 ticks to near roundoff, by block elimination and, at K = 10 and 40, by a dense solve with no recursion over time",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "largest relative difference between the filter and the batch posteriors",
+    "kind": "roundoff",
+    "value": 1.018119047824677e-13
+   },
+   "unit": null,
+   "value": {
+    "comparisons": [
+     {
+      "K": 10,
+      "batch_unknowns": 44,
+      "max_relative_covariance_difference": 2.9909050131509136e-14,
+      "max_relative_mean_difference": 1.018119047824677e-13
+     },
+     {
+      "K": 40,
+      "batch_unknowns": 164,
+      "max_relative_covariance_difference": 3.820291279574931e-14,
+      "max_relative_mean_difference": 8.232887006125156e-14
+     },
+     {
+      "K": 100,
+      "batch_unknowns": 404,
+      "max_relative_covariance_difference": 1.9194671167300393e-14,
+      "max_relative_mean_difference": 7.623076552170829e-14
+     }
+    ],
+    "dense": [
+     {
+      "K": 10,
+      "batch_unknowns": 44,
+      "dense_vs_banded": 3.370100136831206e-14,
+      "dense_vs_filter_covariance": 4.926196492248564e-14,
+      "dense_vs_filter_mean": 4.552428085387841e-14
+     },
+     {
+      "K": 40,
+      "batch_unknowns": 164,
+      "dense_vs_banded": 9.725367176738375e-14,
+      "dense_vs_filter_covariance": 6.1497371817547676e-15,
+      "dense_vs_filter_mean": 6.616482489215767e-14
+     }
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "filter minus batch (mean and variance, exact)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "derivation": "tridiagonal normal equations solved exactly in Fractions"
+   },
+   "claim": "In exact rational arithmetic the scalar filter's final mean and variance are identical to the batch posterior",
+   "domain": "mathematical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "rational arithmetic",
+    "kind": "reference_error",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "batch_mean": "131187322690969/78388097130050",
+    "batch_variance": "181595932309/1567761942601",
+    "filter_mean": "131187322690969/78388097130050",
+    "filter_variance": "181595932309/1567761942601",
+    "identical": true,
+    "readings": [
+     "207/100",
+     "297/100",
+     "7/100",
+     "-59/50",
+     "11/5",
+     "-18/25",
+     "-5/2",
+     "189/100",
+     "17/10",
+     "-171/100",
+     "187/100",
+     "139/50"
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 0.99,
+      "passed": true,
+      "reference": "fraction of ticks with ANEES in the 99% interval",
+      "reference_kind": "analytic",
+      "tolerance": 0.9
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.7765966067436942,
+      "passed": true,
+      "reference": "grand mean NEES against 4 (run-level z)",
+      "reference_kind": "analytic",
+      "tolerance": 3.4807564043462422
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "runs": 200,
+     "seed": 742026,
+     "ticks": 100
+    }
+   },
+   "claim": "The fused estimate's error against the simulated truth is NEES-consistent: run-averaged NEES lies inside its per-tick 99% interval at 90% or more of ticks and the grand mean matches 4",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "run-level standard error of the grand-mean NEES",
+    "kind": "monte_carlo_95ci",
+    "value": 0.09250445017411199
+   },
+   "unit": null,
+   "value": {
+    "grand_z": 0.7765966067436942,
+    "nees": {
+     "fraction_above": 0.01,
+     "fraction_below": 0.0,
+     "fraction_inside": 0.99,
+     "grand_mean": 4.036652368425462,
+     "interval": [
+      3.5036250326357607,
+      4.533930905960961
+     ],
+     "runs": 200,
+     "ticks": 100
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "seed": 742026
+    },
+    "notes": "synthetic draws only; no acquisition"
+   },
+   "claim": "The fused estimate equals the physical state of a real target within its covariance",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": "not established: agreement is with the declared model's exact posterior and simulated truth"
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 4024,
+   "path": "artifacts/T074/batch_reference.json",
+   "sha256": "4ab220a7c3cd526c570c9a39a676b93017259c87b7d6cbc57b685e1ea441f7c5"
+  },
+  {
+   "bytes": 3559,
+   "path": "artifacts/T074/anees_fused.svg",
+   "sha256": "2dff62b64b8c565ea50e28a7c7f4c35cddada3872cc8287a0a076bf5c1dc5be9"
+  }
+ ],
+ "hypothesis": "For the linear-Gaussian bench the Kalman recursion is the exact posterior: its estimate and covariance equal the batch information-form posterior (by block elimination, and by a dense solve without recursion over time), and its errors against the simulated truth are NEES-consistent.",
+ "input_data": [
+  "seed 742026 (PCG64)",
+  "200 runs x 100 ticks",
+  "3 runs compared with the block-eliminated batch posterior at K = 10, 40, 100; run 0 also with the dense solve at K = 10 and 40 (44 and 164 unknowns)",
+  "12 rational readings (seed 742027) for the exact scalar check"
+ ],
+ "mathematical_model": "Batch posterior over x_0..x_K minimizes |x_0 - mu0|^2_P0 + sum |x_k - F x_{k-1}|^2_Q + sum |z_k - H x_k|^2_R (normal equations, information matrix of size 4(K+1)); its marginal at K is the filtering posterior. Camera every tick, tracker every 5 ticks (stacked, R = blockdiag(R_camera, 0.0025 I)).",
+ "number": 74,
+ "numerical_result": "max relative mean difference 1.0e-13, covariance 3.8e-14; dense solve against the filter 6.6e-14; exact rational identity True; ANEES inside 0.99 of ticks, grand NEES 4.037.",
+ "observation_model": "Linear position readings with the declared covariances; the filter model is the truth model.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/sensor_fusion_admission.py": "db737df809fa23fd26fb21a196b6efa2bda6326aba21a8ff0288a99a95746c2c",
+   "src/ciw/lab/sensor_fusion_bench.py": "f373849a4c6836fa20685c59ce7a6fe6bf732f6df9d6a49646cdc017262dd656",
+   "src/ciw/lab/sensor_fusion_common.py": "6787aa47d199d50d0b4de4d7e53714ce7b8b5aad37d647cfc1a954414e90209f",
+   "src/ciw/lab/sensor_fusion_objects.py": "a795ffc235e0a4118cb7b9ac7800191a90984372d79e59f1a934442d98d7a1f1"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T075: keep the fused estimate a candidate until an explicit admission gate.",
+ "report_id": "sha256:d4776e6daa689952f34e3d11999b7241fe89920e1f30490acca553c0ce7ff3e2",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "sensor-fusion",
+ "state": "completed",
+ "task_id": "T074",
+ "tests_passed": [
+  "check: The recursive covariance-form Kalman estimate and covariance equal the batch information-form posterior marginal at K = 10, 40 and 100 ticks to near roundoff, by block elimination and, at K = 10 and 40, by a dense solve with no recursion over time vs max relative mean difference against the block-eliminated batch posterior",
+  "check: The recursive covariance-form Kalman estimate and covariance equal the batch information-form posterior marginal at K = 10, 40 and 100 ticks to near roundoff, by block elimination and, at K = 10 and 40, by a dense solve with no recursion over time vs max relative covariance difference against the block-eliminated batch posterior",
+  "check: The recursive covariance-form Kalman estimate and covariance equal the batch information-form posterior marginal at K = 10, 40 and 100 ticks to near roundoff, by block elimination and, at K = 10 and 40, by a dense solve with no recursion over time vs dense normal equations against the filter at K = 10 and 40",
+  "check: The recursive covariance-form Kalman estimate and covariance equal the batch information-form posterior marginal at K = 10, 40 and 100 ticks to near roundoff, by block elimination and, at K = 10 and 40, by a dense solve with no recursion over time vs dense normal equations against block elimination at K = 10 and 40",
+  "check: In exact rational arithmetic the scalar filter's final mean and variance are identical to the batch posterior vs filter minus batch (mean and variance, exact)",
+  "check: The fused estimate's error against the simulated truth is NEES-consistent: run-averaged NEES lies inside its per-tick 99% interval at 90% or more of ticks and the grand mean matches 4 vs fraction of ticks with ANEES in the 99% interval",
+  "check: The fused estimate's error against the simulated truth is NEES-consistent: run-averaged NEES lies inside its per-tick 99% interval at 90% or more of ticks and the grand mean matches 4 vs grand mean NEES against 4 (run-level z)",
+  "pytest: tests/test_lab_sensor_fusion.py::test_fused_state_equals_batch_posterior",
+  "pytest: tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T074]"
+ ],
+ "tests_skipped": [],
+ "title": "Compare fused state against analytic ground truth.",
+ "uncertainty": "Floating-point agreement is limited by the conditioning of the information matrix; the rational comparison has no roundoff; NEES consistency carries Monte Carlo error.",
+ "unresolved_assumptions": [
+  "Equality with the batch posterior validates the algebra for the declared model, not the model against reality.",
+  "Nonlinear sensors (encoder speed, IMU heading rate) are not fused here."
+ ]
+}

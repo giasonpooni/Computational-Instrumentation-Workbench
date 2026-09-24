@@ -1,0 +1,157 @@
+{
+ "codes": {
+  "interior 0": {
+   "2^-10 m, 2^-7 s, 2^10 N/m": "CERTIFIED_WITH_MARGIN",
+   "m, ms, N/m": "CERTIFIED_WITH_MARGIN",
+   "m, s, N/m": "CERTIFIED_WITH_MARGIN",
+   "mm, s, N/mm": "CERTIFIED_WITH_MARGIN",
+   "um, ms, N/um": "CERTIFIED_WITH_MARGIN"
+  },
+  "interior 1": {
+   "2^-10 m, 2^-7 s, 2^10 N/m": "CERTIFIED_WITH_MARGIN",
+   "m, ms, N/m": "CERTIFIED_WITH_MARGIN",
+   "m, s, N/m": "CERTIFIED_WITH_MARGIN",
+   "mm, s, N/mm": "CERTIFIED_WITH_MARGIN",
+   "um, ms, N/um": "CERTIFIED_WITH_MARGIN"
+  },
+  "interior 2": {
+   "2^-10 m, 2^-7 s, 2^10 N/m": "CERTIFIED_WITH_MARGIN",
+   "m, ms, N/m": "CERTIFIED_WITH_MARGIN",
+   "m, s, N/m": "CERTIFIED_WITH_MARGIN",
+   "mm, s, N/mm": "CERTIFIED_WITH_MARGIN",
+   "um, ms, N/um": "CERTIFIED_WITH_MARGIN"
+  },
+  "interior 3": {
+   "2^-10 m, 2^-7 s, 2^10 N/m": "CERTIFIED_WITH_MARGIN",
+   "m, ms, N/m": "CERTIFIED_WITH_MARGIN",
+   "m, s, N/m": "CERTIFIED_WITH_MARGIN",
+   "mm, s, N/mm": "CERTIFIED_WITH_MARGIN",
+   "um, ms, N/um": "CERTIFIED_WITH_MARGIN"
+  },
+  "interior 4": {
+   "2^-10 m, 2^-7 s, 2^10 N/m": "CERTIFIED_WITH_MARGIN",
+   "m, ms, N/m": "CERTIFIED_WITH_MARGIN",
+   "m, s, N/m": "CERTIFIED_WITH_MARGIN",
+   "mm, s, N/mm": "CERTIFIED_WITH_MARGIN",
+   "um, ms, N/um": "CERTIFIED_WITH_MARGIN"
+  },
+  "interior 5": {
+   "2^-10 m, 2^-7 s, 2^10 N/m": "CERTIFIED_WITH_MARGIN",
+   "m, ms, N/m": "CERTIFIED_WITH_MARGIN",
+   "m, s, N/m": "CERTIFIED_WITH_MARGIN",
+   "mm, s, N/mm": "CERTIFIED_WITH_MARGIN",
+   "um, ms, N/um": "CERTIFIED_WITH_MARGIN"
+  },
+  "interior 6": {
+   "2^-10 m, 2^-7 s, 2^10 N/m": "CERTIFIED_WITH_MARGIN",
+   "m, ms, N/m": "CERTIFIED_WITH_MARGIN",
+   "m, s, N/m": "CERTIFIED_WITH_MARGIN",
+   "mm, s, N/mm": "CERTIFIED_WITH_MARGIN",
+   "um, ms, N/um": "CERTIFIED_WITH_MARGIN"
+  },
+  "interior 7": {
+   "2^-10 m, 2^-7 s, 2^10 N/m": "CERTIFIED_WITH_MARGIN",
+   "m, ms, N/m": "CERTIFIED_WITH_MARGIN",
+   "m, s, N/m": "CERTIFIED_WITH_MARGIN",
+   "mm, s, N/mm": "CERTIFIED_WITH_MARGIN",
+   "um, ms, N/um": "CERTIFIED_WITH_MARGIN"
+  },
+  "k just above 12": {
+   "2^-10 m, 2^-7 s, 2^10 N/m": "OUTSIDE_PARAMETER_BOX",
+   "m, ms, N/m": "OUTSIDE_PARAMETER_BOX",
+   "m, s, N/m": "OUTSIDE_PARAMETER_BOX",
+   "mm, s, N/mm": "OUTSIDE_PARAMETER_BOX",
+   "um, ms, N/um": "OUTSIDE_PARAMETER_BOX"
+  },
+  "k just below 8": {
+   "2^-10 m, 2^-7 s, 2^10 N/m": "OUTSIDE_PARAMETER_BOX",
+   "m, ms, N/m": "OUTSIDE_PARAMETER_BOX",
+   "m, s, N/m": "OUTSIDE_PARAMETER_BOX",
+   "mm, s, N/mm": "OUTSIDE_PARAMETER_BOX",
+   "um, ms, N/um": "OUTSIDE_PARAMETER_BOX"
+  },
+  "k=12 (bound)": {
+   "2^-10 m, 2^-7 s, 2^10 N/m": "CERTIFIED_WITH_MARGIN",
+   "m, ms, N/m": "CERTIFIED_WITH_MARGIN",
+   "m, s, N/m": "CERTIFIED_WITH_MARGIN",
+   "mm, s, N/mm": "CERTIFIED_WITH_MARGIN",
+   "um, ms, N/um": "CERTIFIED_WITH_MARGIN"
+  },
+  "k=8 (bound)": {
+   "2^-10 m, 2^-7 s, 2^10 N/m": "CERTIFIED_WITH_MARGIN",
+   "m, ms, N/m": "CERTIFIED_WITH_MARGIN",
+   "m, s, N/m": "CERTIFIED_WITH_MARGIN",
+   "mm, s, N/mm": "CERTIFIED_WITH_MARGIN",
+   "um, ms, N/um": "CERTIFIED_WITH_MARGIN"
+  }
+ },
+ "conversion_scan": {
+  "draws": 2000,
+  "formula_disagreements": {
+   "0.001": 282,
+   "1e-06": 612
+  },
+  "neighbour_collisions": {
+   "0.001": 32,
+   "1e-06": 78
+  },
+  "witnesses": {
+   "collision 0.001": {
+    "bound": 64576.90184335635,
+    "hex": "0x1.f881cdbe69934p+15"
+   },
+   "collision 1e-06": {
+    "bound": 0.0615263952935501,
+    "hex": "0x1.f80633f40cd42p-5"
+   },
+   "formula 0.001": {
+    "bound": 2787.074437234679,
+    "hex": "0x1.5c6261ca3211ap+11"
+   },
+   "formula 1e-06": {
+    "bound": 8704.655926243193,
+    "hex": "0x1.10053f564218dp+13"
+   }
+  }
+ },
+ "divided_bounds": {
+  "2^-10 m, 2^-7 s, 2^10 N/m|k=12 (bound)": "CERTIFIED_WITH_MARGIN",
+  "2^-10 m, 2^-7 s, 2^10 N/m|k=8 (bound)": "CERTIFIED_WITH_MARGIN",
+  "m, ms, N/m|k=12 (bound)": "CERTIFIED_WITH_MARGIN",
+  "m, ms, N/m|k=8 (bound)": "CERTIFIED_WITH_MARGIN",
+  "m, s, N/m|k=12 (bound)": "CERTIFIED_WITH_MARGIN",
+  "m, s, N/m|k=8 (bound)": "CERTIFIED_WITH_MARGIN",
+  "mm, s, N/mm|k=12 (bound)": "CERTIFIED_WITH_MARGIN",
+  "mm, s, N/mm|k=8 (bound)": "CERTIFIED_WITH_MARGIN",
+  "um, ms, N/um|k=12 (bound)": "CERTIFIED_WITH_MARGIN",
+  "um, ms, N/um|k=8 (bound)": "CERTIFIED_WITH_MARGIN"
+ },
+ "interior0_margin_ratio": {
+  "2^-10 m, 2^-7 s, 2^10 N/m": 726328852.5334417,
+  "m, ms, N/m": 1526338.1129140563,
+  "m, s, N/m": 11606987448310.445,
+  "mm, s, N/mm": 11606987448310.441,
+  "um, ms, N/um": 1526338.1129140568
+ },
+ "light_damping": {
+  "2^-10 m, 2^-7 s, 2^10 N/m": "CERTIFIED_WITH_MARGIN",
+  "m, ms, N/m": "NUMERICAL_INCONCLUSIVE",
+  "m, s, N/m": "CERTIFIED_WITH_MARGIN",
+  "mm, s, N/mm": "CERTIFIED_WITH_MARGIN",
+  "um, ms, N/um": "NUMERICAL_INCONCLUSIVE"
+ },
+ "light_damping_margin_ratio": {
+  "2^-10 m, 2^-7 s, 2^10 N/m": 2.684354559979027,
+  "m, ms, N/m": 0.005629499534207488,
+  "m, s, N/m": 45035.99626469774,
+  "mm, s, N/mm": 45035.99626469741,
+  "um, ms, N/um": 0.00562949953420746
+ },
+ "vertices": {
+  "2^-10 m, 2^-7 s, 2^10 N/m": true,
+  "m, ms, N/m": true,
+  "m, s, N/m": true,
+  "mm, s, N/mm": true,
+  "um, ms, N/um": true
+ }
+}

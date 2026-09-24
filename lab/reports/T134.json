@@ -1,0 +1,285 @@
+{
+ "changed_files": [
+  "src/ciw/lab/manufacturing.py",
+  "src/ciw/lab/manufacturing_geometry.py",
+  "src/ciw/lab/manufacturing_metrology.py",
+  "src/ciw/lab/manufacturing_records.py",
+  "docs/lab/MANUFACTURING.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 2,
+   "numerically_verified": 4,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Envelope equals the sup over box vertices to second order; standoff series within 0.1% (+ 1e-9 mm); TCP length element matches the polyline length; no cusp while H < concave radius.",
+ "experiment": "Integrate the route with Jacobi fields, perturb at the box vertices exactly, ray-cast standoff at nine stations, build the TCP path for both tools and count reversals.",
+ "failure_modes_checked": [
+  "box-vertex nonlinear check",
+  "ray casting vs series",
+  "TCP length element vs polyline",
+  "cusp detection by two routes (sign of 1 - H kappa_n and reversed segments)"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": -3.642555379546053e-06,
+      "passed": true,
+      "reference": "max over box vertices of the exactly perturbed separation / linear envelope - 1",
+      "reference_kind": "analytic",
+      "tolerance": 0.02
+     }
+    ],
+    "derivation": "sup over the box of |delta j_lat + dtheta j_head| = delta |j_lat| + dtheta |j_head|"
+   },
+   "claim": "Lateral-error envelope of the coupon trajectory under the declared registration box",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-08,
+    "rel": 1e-07
+   },
+   "uncertainty": {
+    "basis": "second-order remainder at the box vertices (mm)",
+    "kind": "reference_error",
+    "value": 1.5303034392455395e-06
+   },
+   "unit": "mm",
+   "value": {
+    "at_s_mm": 60.265098257503546,
+    "max_mm": 0.4201180983610448
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "signed_le",
+      "observed": -9.999997021570455e-10,
+      "passed": true,
+      "reference": "max over stations of abs(ray-cast - series) - 1e-3 abs(series) - 1e-9 mm",
+      "reference_kind": "analytic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 8.881784197001252e-15,
+      "passed": true,
+      "reference": "Monge-form cylinder: ray-cast standoff error vs R - sqrt(R^2 - e^2) at y = 0, 30, 60 mm and e = 1, 5 mm (mm)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     }
+    ]
+   },
+   "claim": "Standoff error from a lateral tool offset follows -kappa_lateral e^2 / 2",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-10,
+    "rel": 1e-07
+   },
+   "uncertainty": {
+    "basis": "Newton ray casting converged to 1e-14 relative",
+    "kind": "roundoff",
+    "value": 1e-14
+   },
+   "unit": "mm",
+   "value": {
+    "cylinder_exact_mm_at_1mm": 0.005000125006247913,
+    "max_abs_standoff_error_mm": 0.0017879092735348934,
+    "max_tilt_rad": 0.008721157241887005
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": -5.0475351897061316e-06,
+      "passed": true,
+      "reference": "welding TCP polyline length vs integral (relative)",
+      "reference_kind": "analytic",
+      "tolerance": 0.001
+     }
+    ]
+   },
+   "claim": "Tool-centre-point path length element is sqrt((1 - H kappa_n)^2 + (H tau_g)^2)",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-07
+   },
+   "uncertainty": {
+    "basis": "polyline vs trapezoid discretization at the route nodes (relative)",
+    "kind": "truncation_bound",
+    "value": 5.0475351897061316e-06
+   },
+   "unit": null,
+   "value": {
+    "spray_speed_factor_range": [
+     0.005216164801718826,
+     3.9996939968028538
+    ],
+    "welding_speed_factor_range": [
+     0.8412672742693686,
+     1.3749617496003568
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 4.0,
+      "passed": true,
+      "reference": "sign changes of 1 - H kappa_n along the route",
+      "reference_kind": "analytic",
+      "tolerance": 2.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 33.0,
+      "passed": true,
+      "reference": "TCP segments running backwards along the route",
+      "reference_kind": "analytic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "welding torch keeps 1 - H kappa_n > 0 (sign changes)",
+      "reference_kind": "analytic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "A spray standoff beyond the concave radius of curvature folds the tool-centre-point path",
+   "counterexample": {
+    "statement": "The standoff (offset) tool path of a smooth surface path is itself a smooth path the robot can follow at constant speed",
+    "witness": {
+     "min_concave_radius_mm": 94.49847176098345,
+     "route": "coupon nominal route across the dome rim",
+     "standoff_mm": 120.0
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-09
+   },
+   "uncertainty": {
+    "basis": "exact logic or integer count",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "min_concave_radius_mm": 94.49847176098345,
+    "reversed_segments": 33,
+    "spray_standoff_mm": 120.0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "The torch or gun on a real cell stays within the predicted lateral and standoff band",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "The trajectory is safe to execute on a welding or coating robot cell",
+   "domain": "machine_safety",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 3900,
+   "path": "artifacts/T134/trajectory.json",
+   "sha256": "9191724fccfbbda091e79cb252625bc43fa595f7ff2fb9f8785f31207f7c1ac6"
+  },
+  {
+   "bytes": 3671,
+   "path": "artifacts/T134/tcp-speed-factor.svg",
+   "sha256": "caf65807f06b0833be9bdaeac6d84c6311a559f1ef3e4acdc58eda271befc18a"
+  }
+ ],
+ "hypothesis": "Along a trajectory across the dome, lateral registration errors propagate by the Jacobi transfer, produce a second-order standoff error -kappa e^2 / 2 and a first-order tilt kappa e, and the tool-centre-point path X + H n has speed factor |1 - H kappa_n| that vanishes where the standoff equals the concave radius.",
+ "input_data": [
+  "Coupon nominal route (T128)",
+  "Declared registration box |delta| <= 0.3 mm, |dtheta| <= 2 mrad",
+  "Declared standoffs: welding torch 15 mm, spray gun 120 mm"
+ ],
+ "mathematical_model": "e(s) = delta j_lat + dtheta j_head; standoff error by ray casting along the programmed axis; TCP path P = X + H n with |P'| = sqrt((1 - H kappa_n)^2 + (H tau_g)^2).",
+ "number": 134,
+ "numerical_result": "max lateral error 0.420 mm at s = 60.3 mm; max standoff error 1.79e-03 mm; welding TCP speed factor [0.841, 1.375]; spray path folds (33 reversed segments; concave radius 94.5 mm < 120 mm).",
+ "observation_model": "No observation: trajectories are modelled, not executed.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/manufacturing.py": "088763a0bcc42bf085c1e228797a5dc0d702b994f2a49e053cbe2b0a5622e25d",
+   "src/ciw/lab/manufacturing_geometry.py": "1db6df2ddf778668da2ffd53a66bcddbff4fc933d6f299e8f283cedc60a9332f",
+   "src/ciw/lab/manufacturing_metrology.py": "afbb6fccf146ca4f47850805c118d2f1bf6186872f381b298ab924a9214257ec",
+   "src/ciw/lab/manufacturing_records.py": "66970104ea454e836c5cbafc3013c90e721c3e96ad7f16780c32250112cac921"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T135: generate inspection scan paths over the coupon and measure coverage versus path length.",
+ "report_id": "sha256:5d8c1b51a239adf2543c708091d32eab09c95a2e9b3dda0f693cf3b45e28779d",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "manufacturing",
+ "state": "completed",
+ "task_id": "T134",
+ "tests_passed": [
+  "check: Lateral-error envelope of the coupon trajectory under the declared registration box vs max over box vertices of the exactly perturbed separation / linear envelope - 1",
+  "check: Standoff error from a lateral tool offset follows -kappa_lateral e^2 / 2 vs max over stations of abs(ray-cast - series) - 1e-3 abs(series) - 1e-9 mm",
+  "check: Standoff error from a lateral tool offset follows -kappa_lateral e^2 / 2 vs Monge-form cylinder: ray-cast standoff error vs R - sqrt(R^2 - e^2) at y = 0, 30, 60 mm and e = 1, 5 mm (mm)",
+  "check: Tool-centre-point path length element is sqrt((1 - H kappa_n)^2 + (H tau_g)^2) vs welding TCP polyline length vs integral (relative)",
+  "check: A spray standoff beyond the concave radius of curvature folds the tool-centre-point path vs sign changes of 1 - H kappa_n along the route",
+  "check: A spray standoff beyond the concave radius of curvature folds the tool-centre-point path vs TCP segments running backwards along the route",
+  "check: A spray standoff beyond the concave radius of curvature folds the tool-centre-point path vs welding torch keeps 1 - H kappa_n > 0 (sign changes)",
+  "pytest: tests/test_lab_manufacturing.py::test_coating_standoff_and_offset_cusp",
+  "pytest: tests/test_lab_manufacturing.py::test_every_task_is_registered_and_reports_honestly"
+ ],
+ "tests_skipped": [],
+ "title": "Model coating or welding trajectory sensitivity.",
+ "uncertainty": "Linear-envelope accuracy is second order in the box size; ray casting converges to 1e-14.",
+ "unresolved_assumptions": [
+  "Deposition footprint, spray cone and heat input are not modelled; the speed factor is a kinematic proxy.",
+  "Robot joint limits and singularities are not checked."
+ ]
+}

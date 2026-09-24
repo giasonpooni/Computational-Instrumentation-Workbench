@@ -1,0 +1,271 @@
+{
+ "changed_files": [
+  "src/ciw/lab/flat_torus_topology.py",
+  "src/ciw/lab/flat_torus_topology_surfaces.py",
+  "docs/lab/FLAT_TORUS_TOPOLOGY.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 0,
+   "numerically_verified": 3,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Gauss-Bonnet defect 0 against the independent chi; V - E + F equals it; commutator prediction equals union-find angles for origamis.",
+ "experiment": "Compute vertex classes and cone angles, compare with predictions, the commutator cycle type and the independent chi, and check Gauss-Bonnet exactly.",
+ "failure_modes_checked": [
+  "regular vertices (angle 2 pi) not reported as singular",
+  "half-translation cone angle pi",
+  "two cone points (H(1,1)) versus one (L-shape)",
+  "Gauss-Bonnet tautology avoided (chi independent of the vertex classes)"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "mismatches against predicted cone angles",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "origami commutator-cycle prediction mismatches",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 1.1102230246251565e-16,
+      "passed": true,
+      "reference": "angle recognition residual",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     }
+    ]
+   },
+   "claim": "Cone angles: octagon and L-shape one 6 pi point, H(1,1) two 4 pi points, pillowcase four pi points, square and hexagon tori none",
+   "domain": "mathematical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "float residual of corner-angle recognition before exact rounding to multiples of pi/24",
+    "kind": "roundoff",
+    "value": 1.1102230246251565e-16
+   },
+   "unit": null,
+   "value": {
+    "H(1,1) origami": [
+     "4",
+     "4"
+    ],
+    "L-shape": [
+     "6"
+    ],
+    "hexagon": [
+     "2",
+     "2"
+    ],
+    "octagon": [
+     "6"
+    ],
+    "pillowcase": [
+     "1",
+     "1",
+     "1",
+     "1"
+    ],
+    "square torus": [
+     "2"
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "surfaces with nonzero defect against the independent chi",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "V - E + F or Riemann-Hurwitz chi differing from the declared chi",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "surfaces violating the V - E + F identity (consistency only)",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     }
+    ],
+    "derivation": "With chi = V - E + F from the same vertex classes the identity holds for any partition of the corners, so the test uses an independent chi"
+   },
+   "claim": "Gauss-Bonnet sum (2 pi - theta_v) = 2 pi chi holds exactly on every surface with chi known independently of the vertex classes (declared topology; Riemann-Hurwitz for origamis)",
+   "domain": "mathematical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "integer, Fraction or Q(sqrt d) arithmetic; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "H(1,1) origami": {
+     "chi": -2,
+     "defect_over_pi": "0"
+    },
+    "L-shape": {
+     "chi": -2,
+     "defect_over_pi": "0"
+    },
+    "hexagon": {
+     "chi": 0,
+     "defect_over_pi": "0"
+    },
+    "octagon": {
+     "chi": -2,
+     "defect_over_pi": "0"
+    },
+    "pillowcase": {
+     "chi": 2,
+     "defect_over_pi": "0"
+    },
+    "square torus": {
+     "chi": 0,
+     "defect_over_pi": "0"
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "singular vertex classes on the hexagon torus",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Polygon vertices need not be cone singularities: the glued hexagon's vertices are regular points",
+   "counterexample": {
+    "statement": "Every polygon vertex of a glued surface is a cone singularity",
+    "witness": {
+     "cone_angles_over_pi": [
+      "2",
+      "2"
+     ],
+     "surface": "regular hexagon, opposite sides glued",
+     "vertex_classes": 2
+    }
+   },
+   "domain": "mathematical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "integer, Fraction or Q(sqrt d) arithmetic; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": [
+    "2",
+    "2"
+   ]
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 2196,
+   "path": "artifacts/T029/cone-angles.json",
+   "sha256": "c1a7fdbccbe6592f3665ebb2565289c0b6fb966600967d4f80d0d64d3d4a7d9d"
+  }
+ ],
+ "hypothesis": "Vertex classes after gluing carry cone angles that sum corner angles; translation surfaces have angles 2 pi (k + 1); the octagon has one 6 pi point; Gauss-Bonnet sum (2 pi - theta_v) = 2 pi chi holds with chi known independently of the vertex classes.",
+ "input_data": [
+  "surfaces ['square torus', 'L-shape', 'H(1,1) origami', 'octagon', 'hexagon', 'pillowcase']",
+  "declared Euler characteristics {'square torus': 0, 'L-shape': -2, 'H(1,1) origami': -2, 'octagon': -2, 'hexagon': 0, 'pillowcase': 2}"
+ ],
+ "mathematical_model": "Union-find on corners (b ~ a', a ~ b' per glued pair), corner angles as exact rational multiples of pi; origami cone points = cycles of the commutator r u r^-1 u^-1 (angle 2 pi times length) and chi = -sum (c - 1) (Riemann-Hurwitz); declared chi for the polygon gluings (genus-2 octagon, tori, sphere). With chi = V - E + F from the same union-find, Gauss-Bonnet holds for every partition of the corners (sum theta_v = pi sum_f (n_f - 2)), so only the comparison with an independent chi tests the classes.",
+ "number": 29,
+ "numerical_result": "{'square torus': ['2'], 'L-shape': ['6'], 'H(1,1) origami': ['4', '4'], 'octagon': ['6'], 'hexagon': ['2', '2'], 'pillowcase': ['1', '1', '1', '1']} (units of pi); Gauss-Bonnet defects against the independent chi 0; V - E + F mismatches 0; commutator mismatches 0.",
+ "observation_model": "No physical observation: exact or floating-point computation on declared mathematical objects.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/flat_torus_topology.py": "4d8cf2437759501a1b9fa5ee0d8abfac43345ebee378c6ad08233e9155d4b184",
+   "src/ciw/lab/flat_torus_topology_surfaces.py": "654ca2094a5742a0e397ced722161068aab79ec9cd8bca9947b98db5a1f5e4e7"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T030: compare smooth and discrete geodesic approximations",
+ "report_id": "sha256:87fb82bc6a7ad33a7727073c94608440db5849d8b81c1999759c3be73937c38b",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "flat-torus-topology",
+ "state": "completed",
+ "task_id": "T029",
+ "tests_passed": [
+  "check: Cone angles: octagon and L-shape one 6 pi point, H(1,1) two 4 pi points, pillowcase four pi points, square and hexagon tori none vs mismatches against predicted cone angles",
+  "check: Cone angles: octagon and L-shape one 6 pi point, H(1,1) two 4 pi points, pillowcase four pi points, square and hexagon tori none vs origami commutator-cycle prediction mismatches",
+  "check: Cone angles: octagon and L-shape one 6 pi point, H(1,1) two 4 pi points, pillowcase four pi points, square and hexagon tori none vs angle recognition residual",
+  "check: Gauss-Bonnet sum (2 pi - theta_v) = 2 pi chi holds exactly on every surface with chi known independently of the vertex classes (declared topology; Riemann-Hurwitz for origamis) vs surfaces with nonzero defect against the independent chi",
+  "check: Gauss-Bonnet sum (2 pi - theta_v) = 2 pi chi holds exactly on every surface with chi known independently of the vertex classes (declared topology; Riemann-Hurwitz for origamis) vs V - E + F or Riemann-Hurwitz chi differing from the declared chi",
+  "check: Gauss-Bonnet sum (2 pi - theta_v) = 2 pi chi holds exactly on every surface with chi known independently of the vertex classes (declared topology; Riemann-Hurwitz for origamis) vs surfaces violating the V - E + F identity (consistency only)",
+  "check: Polygon vertices need not be cone singularities: the glued hexagon's vertices are regular points vs singular vertex classes on the hexagon torus",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_t027_t029_surfaces_and_cones",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_gauss_bonnet_check_detects_wrong_vertex_classes",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_regeneration_is_within_tolerance",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+ ],
+ "tests_skipped": [],
+ "title": "Detect cone singularities.",
+ "uncertainty": "Exact after angle recognition (float residual <= 1.1e-16 against multiples of pi/24).",
+ "unresolved_assumptions": [
+  "Angle recognition assumes corner angles are multiples of pi/24, true for every declared polygon."
+ ]
+}

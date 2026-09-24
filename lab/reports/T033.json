@@ -1,0 +1,460 @@
+{
+ "changed_files": [
+  "src/ciw/lab/surfaces_discrete.py",
+  "src/ciw/lab/surfaces_discrete_geometry.py",
+  "docs/lab/SURFACE_INTERFACE.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 10,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Algebraic identities at rounding level; stencil-based identities at <= 1e-8 (dg) and <= 1e-7 (mixed partials, Gauss).",
+ "experiment": "Run the conformance suite on every surface and every mutant; record worst residuals, failed identities and whether the core Surface.check refuses any sampled point.",
+ "failure_modes_checked": [
+  "asymmetric metric matrix (seeded mutant)",
+  "indefinite metric (seeded mutant)",
+  "transposed derivative index order (seeded mutant)",
+  "sign-flipped metric derivatives (seeded mutant)",
+  "dropped mixed height derivative (seeded mutant)",
+  "curvature misscaled by a factor R (seeded mutant)",
+  "NaN metric derivatives on part of the domain (seeded mutant)",
+  "points refused by the core Surface.check inside a declared domain"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 7.569957621233518e-11,
+      "passed": true,
+      "reference": "Brioschi K (fourth-order differences of exact dg) vs supplied K, worst normalized",
+      "reference_kind": "invariant",
+      "tolerance": 1e-07
+     }
+    ],
+    "derivation": "Theorema Egregium, Brioschi form; docs/lab/SURFACE_INTERFACE.md#conformance-suite"
+   },
+   "claim": "Brioschi curvature from the metric alone equals the supplied Gaussian curvature at every sampled point",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-07,
+    "rel": 0.0
+   },
+   "uncertainty": null,
+   "unit": "normalized residual",
+   "value": 7.569957621233518e-11
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "|g_12 - g_21| / max|g|",
+      "reference_kind": "invariant",
+      "tolerance": 1e-13
+     },
+     {
+      "comparison": "ge",
+      "observed": 0.1076492566503344,
+      "passed": true,
+      "reference": "min lambda_min / lambda_max over samples",
+      "reference_kind": "invariant",
+      "tolerance": 0.001
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "sampled points refused by core Surface.check",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Metrics are symmetric positive definite at every sampled point of the declared domains",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-13,
+    "rel": 1e-09
+   },
+   "uncertainty": null,
+   "unit": null,
+   "value": {
+    "max_asymmetry": 0.0,
+    "min_eigenvalue_ratio": 0.1076492566503344,
+    "points_refused_by_core_check": 0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "max |Gamma^k_ij - Gamma^k_ji|, normalized",
+      "reference_kind": "invariant",
+      "tolerance": 1e-12
+     }
+    ]
+   },
+   "claim": "Christoffel symbols are symmetric in their lower indices at every sampled point",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 0.0
+   },
+   "uncertainty": null,
+   "unit": null,
+   "value": 0.0
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 1.6035737915386125e-16,
+      "passed": true,
+      "reference": "max compatibility residual, normalized",
+      "reference_kind": "invariant",
+      "tolerance": 1e-12
+     }
+    ]
+   },
+   "claim": "The connection is metric compatible at every sampled point: d_k g_ij = Gamma^l_ki g_lj + Gamma^l_kj g_il",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 0.0
+   },
+   "uncertainty": null,
+   "unit": null,
+   "value": 1.6035737915386125e-16
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 8.102692869746462e-12,
+      "passed": true,
+      "reference": "max |D4 g - dg|, normalized (h = 1e-3 l)",
+      "reference_kind": "self_convergence",
+      "tolerance": 1e-08
+     }
+    ]
+   },
+   "claim": "Supplied metric derivatives agree with fourth-order differences of the metric at every sampled point",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-08,
+    "rel": 0.0
+   },
+   "uncertainty": null,
+   "unit": null,
+   "value": 8.102692869746462e-12
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 5.882921077369268e-13,
+      "passed": true,
+      "reference": "max |d_u d_v g - d_v d_u g|, normalized",
+      "reference_kind": "invariant",
+      "tolerance": 1e-07
+     }
+    ]
+   },
+   "claim": "Differences of the exact metric derivatives have symmetric mixed partials (dg is a gradient field)",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-07,
+    "rel": 0.0
+   },
+   "uncertainty": null,
+   "unit": null,
+   "value": 5.882921077369268e-13
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 3.665815015959401e-16,
+      "passed": true,
+      "reference": "max |g_rotated - g_torus| / max|g|",
+      "reference_kind": "invariant",
+      "tolerance": 1e-14
+     }
+    ]
+   },
+   "claim": "A rigid rotation leaves the torus metric unchanged at every sampled point",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-14,
+    "rel": 0.0
+   },
+   "uncertainty": null,
+   "unit": null,
+   "value": 3.665815015959401e-16
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "mutants passing every identity",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 6.0,
+      "passed": true,
+      "reference": "identities flagged nonfinite for the NaN-derivative mutant",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     }
+    ]
+   },
+   "claim": "The conformance suite rejects every seeded defect mutant",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": null,
+   "unit": null,
+   "value": {
+    "mutants": 7,
+    "undetected": 0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "identities other than the Gauss equation failed by the misscaled mutant",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "Gauss equation failed by the misscaled mutant (1 = yes)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 0.1666666666667811,
+      "passed": true,
+      "reference": "misscaled mutant Gauss residual",
+      "reference_kind": "invariant",
+      "tolerance": 0.1
+     }
+    ]
+   },
+   "claim": "A curvature-misscaled sphere passes every identity except the Gauss equation",
+   "counterexample": {
+    "statement": "Metric symmetry, positive definiteness, Christoffel symmetry, metric compatibility and derivative consistency together certify a surface implementation",
+    "witness": {
+     "failed": [
+      "gauss_equation"
+     ],
+     "gauss_residual": 0.167,
+     "mutant": "misscaled-curvature (sphere R = 2 returning K = 1/R)"
+    }
+   },
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-06,
+    "rel": 1e-06
+   },
+   "uncertainty": null,
+   "unit": null,
+   "value": {
+    "failed": [
+     "gauss_equation"
+    ],
+    "gauss_residual": 0.167
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 1.6035737915386125e-16,
+      "passed": true,
+      "reference": "sign-flipped mutant compatibility residual",
+      "reference_kind": "invariant",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "ge",
+      "observed": 0.9998471973746694,
+      "passed": true,
+      "reference": "sign-flipped mutant derivative-consistency residual",
+      "reference_kind": "invariant",
+      "tolerance": 0.5
+     }
+    ],
+    "derivation": "Gamma^l_ki g_lj + Gamma^l_kj g_il = D_kij for any D symmetric in ij"
+   },
+   "claim": "Metric compatibility cannot detect wrong metric derivatives",
+   "counterexample": {
+    "statement": "A metric-compatible connection certifies the metric derivatives",
+    "witness": {
+     "failed": [
+      "derivative_consistency",
+      "gauss_equation"
+     ],
+     "mutant": "saddle with dg negated"
+    }
+   },
+   "domain": "mathematical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-06,
+    "rel": 1e-06
+   },
+   "uncertainty": null,
+   "unit": null,
+   "value": {
+    "compatibility_residual_passes": true,
+    "derivative_consistency_residual": 1.0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "The conformance suite certifies surfaces reconstructed from physical measurements",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 7928,
+   "path": "artifacts/T033/conformance.json",
+   "sha256": "ccdbbac5fe89f1d3c4ec9261fc4af61029965c38eb6b3ef81f636d256be7e840"
+  },
+  {
+   "bytes": 3908,
+   "path": "artifacts/T033/mutants.json",
+   "sha256": "a244a6da2f2c66d02d93a895e6ef454b4695d2f2c47719f5f941682dad98742d"
+  },
+  {
+   "bytes": 5793,
+   "path": "artifacts/T033/conformance-residuals.svg",
+   "sha256": "8293bef3e7b6676055246470f4491c3ee3a1dfbc13e1b047b06663c2b92ffc2b"
+  }
+ ],
+ "hypothesis": "Every catalogue surface, the reparametrized charts plane-polar and gaussian-bump-shear and a rigidly rotated torus satisfy the interface identities on their declared domains, and the Gauss equation holds: curvature recomputed from the metric alone equals the supplied K.",
+ "input_data": [
+  "10 surfaces (catalogue + plane-polar, gaussian-bump-shear, rotated-torus)",
+  "32 seeded points per surface (PCG64 seed 3301) in declared domains (docs/lab/SURFACE_INTERFACE.md)",
+  "7 seeded defect mutants"
+ ],
+ "mathematical_model": "g symmetric positive definite; Gamma^k_ij = 1/2 g^kl (d_i g_jl + d_j g_il - d_l g_ij) symmetric in ij; d_k g_ij = Gamma^l_ki g_lj + Gamma^l_kj g_il; d_l d_k g_ij symmetric in kl; Brioschi K(E, F, G and their first and second derivatives) = supplied K.",
+ "number": 33,
+ "numerical_result": "All 10 surfaces conform (0 nonconforming). Worst: Gauss 7.57e-11, dg consistency 8.1e-12, mixed partials 5.88e-13, compatibility 1.6e-16, Christoffel asymmetry 0, min eigenvalue ratio 0.108. 7/7 mutants rejected; the misscaled-curvature mutant fails only the Gauss equation (0.167); the sign-flipped mutant passes compatibility (1.6e-16).",
+ "observation_model": "Normalized residuals: metric terms by max|g|, derivative terms by max|dg| + max|g|/l, Christoffel terms by max|Gamma| + 1/l, curvature by |K| + 1/l^2, with l the local length scale (y on the hyperbolic plane, 1 elsewhere). Second metric derivatives come from fourth-order central differences (step 1e-3 l) of the exact first derivatives.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/surfaces_discrete.py": "65515cd7d7440c047bb6cba986dbcd2b496978ebb32ed15939e371828e755eef",
+   "src/ciw/lab/surfaces_discrete_geometry.py": "d4445a253778e1dff32b68a903a9caf560affa08ca5a7110207e54c8e1baa60e"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T042: turn the conformance suite into the admission gate for invalid or incomplete surface data, reusing its refusal of the seeded defects.",
+ "report_id": "sha256:f4c75df5c628ff07ce701a5d61c810bb0561182c197371169105a1eedcf08a72",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "surfaces-discrete",
+ "state": "completed",
+ "task_id": "T033",
+ "tests_passed": [
+  "check: Brioschi curvature from the metric alone equals the supplied Gaussian curvature at every sampled point vs Brioschi K (fourth-order differences of exact dg) vs supplied K, worst normalized",
+  "check: Metrics are symmetric positive definite at every sampled point of the declared domains vs |g_12 - g_21| / max|g|",
+  "check: Metrics are symmetric positive definite at every sampled point of the declared domains vs min lambda_min / lambda_max over samples",
+  "check: Metrics are symmetric positive definite at every sampled point of the declared domains vs sampled points refused by core Surface.check",
+  "check: Christoffel symbols are symmetric in their lower indices at every sampled point vs max |Gamma^k_ij - Gamma^k_ji|, normalized",
+  "check: The connection is metric compatible at every sampled point: d_k g_ij = Gamma^l_ki g_lj + Gamma^l_kj g_il vs max compatibility residual, normalized",
+  "check: Supplied metric derivatives agree with fourth-order differences of the metric at every sampled point vs max |D4 g - dg|, normalized (h = 1e-3 l)",
+  "check: Differences of the exact metric derivatives have symmetric mixed partials (dg is a gradient field) vs max |d_u d_v g - d_v d_u g|, normalized",
+  "check: A rigid rotation leaves the torus metric unchanged at every sampled point vs max |g_rotated - g_torus| / max|g|",
+  "check: The conformance suite rejects every seeded defect mutant vs mutants passing every identity",
+  "check: The conformance suite rejects every seeded defect mutant vs identities flagged nonfinite for the NaN-derivative mutant",
+  "check: A curvature-misscaled sphere passes every identity except the Gauss equation vs identities other than the Gauss equation failed by the misscaled mutant",
+  "check: A curvature-misscaled sphere passes every identity except the Gauss equation vs Gauss equation failed by the misscaled mutant (1 = yes)",
+  "check: A curvature-misscaled sphere passes every identity except the Gauss equation vs misscaled mutant Gauss residual",
+  "check: Metric compatibility cannot detect wrong metric derivatives vs sign-flipped mutant compatibility residual",
+  "check: Metric compatibility cannot detect wrong metric derivatives vs sign-flipped mutant derivative-consistency residual",
+  "pytest: tests/test_lab_surfaces_discrete.py::test_conformance_suite_accepts_every_surface",
+  "pytest: tests/test_lab_surfaces_discrete.py::test_conformance_suite_rejects_seeded_mutants",
+  "pytest: tests/test_lab_surfaces_discrete.py::test_conformance_reports_nonfinite_residuals",
+  "pytest: tests/test_lab_surfaces_discrete.py::test_brioschi_recovers_supplied_curvature",
+  "pytest: tests/test_lab_surfaces_discrete.py::test_t033_report"
+ ],
+ "tests_skipped": [],
+ "title": "Implement a reusable metric/Christoffel/curvature surface interface.",
+ "uncertainty": "Residuals are worst cases over 32 seeded points per surface; a defect confined between samples or outside the declared domains would not be seen. The Gauss residual includes the fourth-order stencil error (~h^4) of the second derivatives.",
+ "unresolved_assumptions": [
+  "Declared domains avoid coordinate singularities; behaviour near them is T037's subject.",
+  "Metric compatibility is an algebraic consequence of the Christoffel formula for any symmetric dg; it checks index conventions, not that dg is the derivative of g (derivative consistency does that).",
+  "Christoffel symmetry is exact whenever dg is symmetric in its last two indices, because the core einsum is then symmetric term by term; the check adds evidence only for surfaces that override christoffel().",
+  "Conformance on sampled points is evidence, not proof, of correctness on the whole domain."
+ ]
+}

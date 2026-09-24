@@ -1,0 +1,50 @@
+{
+ "computed": {
+  "cone apex r = 0 (guard)": {
+   "expected": "degenerate_metric",
+   "observed": "degenerate_metric"
+  },
+  "hyperbolic y = -1 (guard, core outside_chart propagated)": {
+   "expected": "outside_chart",
+   "observed": "outside_chart"
+  },
+  "nonfinite coordinates (guard)": {
+   "expected": "nonfinite_point",
+   "observed": "nonfinite_point"
+  },
+  "power graph p = 1.8 at rho = 1e-8, |K| below the bound (guard)": {
+   "expected": "accepted",
+   "observed": "accepted"
+  },
+  "power graph rho = 1e-6 (guard)": {
+   "expected": "curvature_blowup",
+   "observed": "curvature_blowup"
+  },
+  "sphere equator (guard)": {
+   "expected": "accepted",
+   "observed": "accepted"
+  },
+  "sphere theta = 1e-7 (core Surface.check)": {
+   "expected": "degenerate_metric",
+   "observed": "degenerate_metric"
+  },
+  "sphere theta = 3e-5 (guard)": {
+   "expected": "degenerate_metric",
+   "observed": "degenerate_metric"
+  }
+ },
+ "core_check_leniency": {
+  "at_theta": 1.778279410038923e-06,
+  "max_accepted_condition": 316227766017.1712
+ },
+ "declared_by_surface": {
+  "cone curvature at r = 0": {
+   "expected": "conical_singularity",
+   "observed": "conical_singularity"
+  },
+  "power graph apex through the guard": {
+   "expected": "curvature_singularity",
+   "observed": "curvature_singularity"
+  }
+ }
+}

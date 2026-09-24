@@ -1,0 +1,429 @@
+{
+ "changed_files": [
+  "src/ciw/lab/geodesic_jacobi_limits.py",
+  "src/ciw/lab/geodesic_jacobi_limits_core.py",
+  "docs/lab/GEODESIC_JACOBI_LIMITS.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 6,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Cylinder K = 0 from the embedding and j_head = s; exponent of L - j_head(L) in R + 1 equal to -1 up to the K L^2/20 correction, chord-deficit exponent -2.",
+ "experiment": "Integrate both flat surfaces on identical grids and compare Jacobi columns bit for bit; integrate the cylinder again with K from its second fundamental form; integrate the torus equator for each R, compare with cancellation-free closed forms and fit log-log exponents in R and in R + 1.",
+ "failure_modes_checked": [
+  "cylinder flatness tested with K recomputed from its second fundamental form, not the closed-form K = 0 that both core classes return",
+  "numerical deviation compared with its closed form, not only with K L^3/6",
+  "closed forms evaluated without cancellation (series for x - sin x below 0.1)",
+  "exponent offset attributed quantitatively (R + 1 versus K L^2/20)"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "max |Jacobi(cylinder) - Jacobi(plane)|",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "deterministic": true,
+     "name": "ciw.lab.geodesic_jacobi_limits:plane-cylinder",
+     "seed": null,
+     "steps": 60
+    }
+   },
+   "claim": "Plane and cylinder runs give bitwise identical Jacobi columns (both supply K = 0 to the same Jacobi arithmetic)",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "bitwise comparison; both core classes return a closed-form K = 0, so this is a pipeline consistency check, not evidence of flatness",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": 0.0
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "max |K| from the second fundamental form along the path",
+      "reference_kind": "analytic",
+      "tolerance": 1e-14
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 2.6645352591003757e-15,
+      "passed": true,
+      "reference": "max |j_head(s) - s| with the second-form K",
+      "reference_kind": "analytic",
+      "tolerance": 1e-13
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 1.3322676295501878e-15,
+      "passed": true,
+      "reference": "max chart distance to the exact helix (straight line in (phi, z))",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     }
+    ],
+    "derivation": "docs/lab/GEODESIC_JACOBI_LIMITS.md#t013-flat-and-developable-limit",
+    "generator": {
+     "deterministic": true,
+     "name": "ciw.lab.geodesic_jacobi_limits:cylinder-second-form",
+     "seed": null,
+     "steps": 60
+    }
+   },
+   "claim": "The cylinder is intrinsically flat: K from its second fundamental form vanishes along the helix and the Jacobi field integrated with that K is j_head(s) = s",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-13,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "accumulated rounding of j_head = s over 60 RK4 steps",
+    "kind": "roundoff",
+    "value": 2.6645352591003757e-15
+   },
+   "unit": null,
+   "value": {
+    "helix_chart_error": 1.3322676295501878e-15,
+    "j_head_minus_s_max": 2.6645352591003757e-15,
+    "second_form_max_abs_curvature": 0.0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 8.881784197001252e-16,
+      "passed": true,
+      "reference": "cylinder chord minus helix closed form",
+      "reference_kind": "analytic",
+      "tolerance": 1e-09
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 1.7763568394002505e-15,
+      "passed": true,
+      "reference": "plane chord minus L",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "signed_ge",
+      "observed": 0.4617918825103744,
+      "passed": true,
+      "reference": "plane chord minus cylinder chord",
+      "reference_kind": "invariant",
+      "tolerance": 0.1
+     }
+    ],
+    "generator": {
+     "deterministic": true,
+     "length": 3.0,
+     "name": "ciw.lab.geodesic_jacobi_limits:plane-cylinder",
+     "seed": null
+    }
+   },
+   "claim": "Equal Jacobi fields do not imply equal chords: the helix chord is shorter than the plane chord",
+   "counterexample": {
+    "statement": "Surfaces with identical Jacobi fields (intrinsic geometry) have identical chords between corresponding points",
+    "witness": {
+     "chord_cylinder": 2.5382081174896274,
+     "chord_plane": 3.0000000000000018,
+     "heading": 0.6,
+     "length": 3.0,
+     "start": [
+      0.2,
+      0.1
+     ],
+     "surfaces": [
+      "Plane",
+      "Cylinder(1)"
+     ]
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-09
+   },
+   "uncertainty": {
+    "basis": "numerical helix chord against its closed form",
+    "kind": "reference_error",
+    "value": 8.881784197001252e-16
+   },
+   "unit": null,
+   "value": {
+    "chord_cylinder": 2.5382081174896274,
+    "chord_plane": 3.0000000000000018
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 1.7752341818777495e-09,
+      "passed": true,
+      "reference": "max relative error of L - j_head(L) against (wL - sin wL)/w",
+      "reference_kind": "analytic",
+      "tolerance": 1e-07
+     }
+    ],
+    "generator": {
+     "deterministic": true,
+     "name": "ciw.lab.geodesic_jacobi_limits:torus-flat-limit",
+     "radii": [
+      2.0,
+      4.0,
+      8.0,
+      16.0,
+      32.0,
+      64.0,
+      128.0,
+      256.0,
+      512.0,
+      1024.0
+     ],
+     "seed": null,
+     "steps": 64
+    }
+   },
+   "claim": "Torus outer-equator Jacobi deviation L - j_head(L) matches the closed form for every major radius",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 0.5
+   },
+   "uncertainty": {
+    "basis": "the RK4 relative error itself bounds the deviation error",
+    "kind": "truncation_bound",
+    "value": 1.7752341818777495e-09
+   },
+   "unit": null,
+   "value": 1.7752341818777495e-09
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": -1.352232770202022e-10,
+      "passed": true,
+      "reference": "fitted minus closed-form exponent over the same radii",
+      "reference_kind": "analytic",
+      "tolerance": 0.0001
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0025146622576646127,
+      "passed": true,
+      "reference": "exponent in R + 1 plus 1 (leaves only the K L^2/20 correction)",
+      "reference_kind": "analytic",
+      "tolerance": 0.01
+     },
+     {
+      "comparison": "le",
+      "observed": 0.011699011471468235,
+      "passed": true,
+      "reference": "|dev / (K L^3/6) - 1| <= K L^2/20 at the smallest fitted R",
+      "reference_kind": "analytic",
+      "tolerance": 0.012352941176470589
+     }
+    ],
+    "derivation": "docs/lab/GEODESIC_JACOBI_LIMITS.md#t013-flat-and-developable-limit",
+    "generator": {
+     "deterministic": true,
+     "fit_radii_from": 16.0,
+     "name": "ciw.lab.geodesic_jacobi_limits:torus-flat-limit",
+     "seed": null
+    }
+   },
+   "claim": "The Jacobi deviation from flat decays like 1/R: exponent -1 in R + 1 = 1/K, with the finite-R offset explained",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-06,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "largest gap between the fitted exponent in R and consecutive-radius slopes (R >= 16)",
+    "kind": "fit_spread",
+    "value": 0.03602164073030345
+   },
+   "unit": null,
+   "value": {
+    "closed_form_exponent": -0.9847201715660304,
+    "fitted_exponent": -0.9847201717012537,
+    "fitted_exponent_in_R_plus_1": -0.9974853377423354,
+    "max_gap_to_K_L3_over_6": 0.011699011471468235,
+    "offset_from_K_L2_over_20": 0.0025146622576646127,
+    "offset_from_K_equals_1_over_R_plus_1": 0.012788050425356356
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 5.136381098225229e-09,
+      "passed": true,
+      "reference": "numerical chord deficit against 2 rho (x - sin x), max relative",
+      "reference_kind": "analytic",
+      "tolerance": 1e-07
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 3.22378749053609e-05,
+      "passed": true,
+      "reference": "chord-deficit exponent in R + 1 plus 2",
+      "reference_kind": "analytic",
+      "tolerance": 0.001
+     }
+    ],
+    "derivation": "docs/lab/GEODESIC_JACOBI_LIMITS.md#t013-flat-and-developable-limit",
+    "generator": {
+     "deterministic": true,
+     "name": "ciw.lab.geodesic_jacobi_limits:torus-flat-limit",
+     "seed": null
+    }
+   },
+   "claim": "The chord deficit vanishes faster (exponent -2 in R + 1) than the Jacobi deviation (-1)",
+   "counterexample": {
+    "statement": "Intrinsic (Jacobi) and extrinsic (chord) signatures of curvature vanish at the same rate in the flat limit",
+    "witness": {
+     "chord_exponent_in_R_plus_1": -1.9999677621250946,
+     "jacobi_exponent_in_R_plus_1": -0.9974853377423354
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0001,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "largest relative deviation of the numerical deficit from its closed form: rounding of embedded coordinates of size R + 1 against a deficit of order L^3/(24 (R + 1)^2)",
+    "kind": "roundoff",
+    "value": 5.136381098225229e-09
+   },
+   "unit": null,
+   "value": {
+    "exponent_in_R": -1.9743918815966817,
+    "exponent_in_R_plus_1": -1.9999677621250946,
+    "max_relative_error_vs_closed_form": 5.136381098225229e-09
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "A physical cylinder or large-radius torus workpiece shows these separations",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 4015,
+   "path": "artifacts/T013/flat-limit.json",
+   "sha256": "c793503b43fef854c3a60926fd616806b3f03dcfc891dede24ebac819046c268"
+  },
+  {
+   "bytes": 4309,
+   "path": "artifacts/T013/flat-limit.svg",
+   "sha256": "08e4a87c5dd7a179c23b2aed2b92d542992d0fb4c9923f3d776c3c38a7a79995"
+  }
+ ],
+ "hypothesis": "Intrinsic flatness (K = 0) makes Jacobi fields identical to the plane's even when the surface is curved in space, while chords (extrinsic) differ; along the outer equator of a torus with growing major radius the Jacobi deviation from flat vanishes like K L^3/6 ~ 1/R.",
+ "input_data": [
+  "Plane and Cylinder(1): start (0.2, 0.1), heading 0.6, L = 3, RK4 N = 60; the cylinder also with K recomputed from its second fundamental form",
+  "Torus(R, 1), R in 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, outer equator start (0, 0) heading 0, L = 2.0, RK4 N = 64; exponents fitted for R >= 16"
+ ],
+ "mathematical_model": "Cylinder: the second fundamental form has only the phi-phi entry, so K = 0 and j_head = s exactly, but a helix of angle alpha has chord sqrt((2R sin(L cos(alpha)/(2R)))^2 + (L sin(alpha))^2). Torus(R, 1) outer equator: K = 1/(R + 1), j_head = sin(wL)/w, w = sqrt(K), L - j_head = K L^3/6 - K^2 L^5/120 + ...; the equator is a circle of radius R + 1 with chord deficit 2 (R + 1)(x - sin x), x = L/(2 (R + 1)), = L^3/(24 (R + 1)^2) + ...",
+ "number": 13,
+ "numerical_result": "Plane/cylinder Jacobi difference 0; second-form cylinder max |K| 0, max |j_head - s| 2.7e-15; chords 3 (plane) versus 2.5382081 (cylinder); torus deviation exponent -0.98472 in R (closed form -0.98472), -0.99749 in R + 1; chord-deficit exponent -1.9744 in R, -1.99997 in R + 1; max relative error versus closed form 1.8e-09 (deviation), 5.1e-09 (chord deficit).",
+ "observation_model": "Jacobi columns at every node; embedded chord |X(L) - X(0)|; no renormalization.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/geodesic_jacobi_limits.py": "29c8472e91cdf4deb2e1f526ab40e57f703f41e20ef14edd8fb1cc2fc6ede661",
+   "src/ciw/lab/geodesic_jacobi_limits_core.py": "8aa707ec2a190208bf07cd3b1f94a40f191a7a9c4be277714ed8b627e2c5fcb9"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T046 (chord versus geodesic distance) and T018 (resolvability of weak curvature)",
+ "report_id": "sha256:c4df3021c1be36ac593316ada6ec085be8343bb3deddb0cb7ea0a6fbe5d4727d",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "geodesic-jacobi",
+ "state": "completed",
+ "task_id": "T013",
+ "tests_passed": [
+  "check: Plane and cylinder runs give bitwise identical Jacobi columns (both supply K = 0 to the same Jacobi arithmetic) vs max |Jacobi(cylinder) - Jacobi(plane)|",
+  "check: The cylinder is intrinsically flat: K from its second fundamental form vanishes along the helix and the Jacobi field integrated with that K is j_head(s) = s vs max |K| from the second fundamental form along the path",
+  "check: The cylinder is intrinsically flat: K from its second fundamental form vanishes along the helix and the Jacobi field integrated with that K is j_head(s) = s vs max |j_head(s) - s| with the second-form K",
+  "check: The cylinder is intrinsically flat: K from its second fundamental form vanishes along the helix and the Jacobi field integrated with that K is j_head(s) = s vs max chart distance to the exact helix (straight line in (phi, z))",
+  "check: Equal Jacobi fields do not imply equal chords: the helix chord is shorter than the plane chord vs cylinder chord minus helix closed form",
+  "check: Equal Jacobi fields do not imply equal chords: the helix chord is shorter than the plane chord vs plane chord minus L",
+  "check: Equal Jacobi fields do not imply equal chords: the helix chord is shorter than the plane chord vs plane chord minus cylinder chord",
+  "check: Torus outer-equator Jacobi deviation L - j_head(L) matches the closed form for every major radius vs max relative error of L - j_head(L) against (wL - sin wL)/w",
+  "check: The Jacobi deviation from flat decays like 1/R: exponent -1 in R + 1 = 1/K, with the finite-R offset explained vs fitted minus closed-form exponent over the same radii",
+  "check: The Jacobi deviation from flat decays like 1/R: exponent -1 in R + 1 = 1/K, with the finite-R offset explained vs exponent in R + 1 plus 1 (leaves only the K L^2/20 correction)",
+  "check: The Jacobi deviation from flat decays like 1/R: exponent -1 in R + 1 = 1/K, with the finite-R offset explained vs |dev / (K L^3/6) - 1| <= K L^2/20 at the smallest fitted R",
+  "check: The chord deficit vanishes faster (exponent -2 in R + 1) than the Jacobi deviation (-1) vs numerical chord deficit against 2 rho (x - sin x), max relative",
+  "check: The chord deficit vanishes faster (exponent -2 in R + 1) than the Jacobi deviation (-1) vs chord-deficit exponent in R + 1 plus 2",
+  "pytest: tests/test_lab_geodesic_jacobi_limits.py::test_t013_flat_limit"
+ ],
+ "tests_skipped": [],
+ "title": "Quantify the flat-cylinder/developable-surface limit.",
+ "uncertainty": "RK4 relative error of j_head(L) at h = 0.0312 is at most 4.7e-10 (largest at R = 2). The finite-R exponent in R, -0.98472, sits 0.015 above -1: 0.013 of that comes from K = 1/(R + 1) rather than 1/R (the fit of K L^3/6 alone) and 0.0025 from the K L^2/20 correction; the chord-deficit offset from -2 in R is the same R/(R + 1) effect. The numerical chord deficit is limited by rounding of embedded coordinates of size R + 1.",
+ "unresolved_assumptions": [
+  "Other developable surfaces (cones, tangent developables) are not in the core catalogue",
+  "Only the outer equator (constant K) is fitted; inclined torus geodesics average K and are not studied",
+  "Physical workpieces are not measured: the physical finding is not established"
+ ]
+}

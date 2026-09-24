@@ -1,0 +1,23 @@
+{
+ "canonical_encoding": "ciw.canonical-json.v1",
+ "fields": [
+  "schema",
+  "bitstream_sha256",
+  "bitstream_bytes",
+  "toolchain",
+  "part",
+  "constraints",
+  "constraints_sha256",
+  "source_tree",
+  "synthesis_options",
+  "synthetic",
+  "record_sha256"
+ ],
+ "schema": "ciw.fpga-bitstream-identity.v1",
+ "toolchain_fields": [
+  "name",
+  "version",
+  "installation_sha256"
+ ],
+ "toolchain_version_pattern": "[0-9]+(\\.[0-9]+){1,3}([-_.](rc|beta|alpha)[0-9]+)?\\Z"
+}

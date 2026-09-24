@@ -1,0 +1,378 @@
+{
+ "changed_files": [
+  "src/ciw/lab/surfaces_discrete.py",
+  "src/ciw/lab/surfaces_discrete_charts.py",
+  "docs/lab/SURFACE_INTERFACE.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 7,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Atlas error independent of delta and fourth order in the step; transitions exact to rounding; single-chart error grows or the integration fails for small delta > 0.",
+ "experiment": "Integrate each great circle with chart switching and in chart A alone; verify transitions by round trip, speed preservation and difference Jacobians; convergence at delta = 0.",
+ "failure_modes_checked": [
+  "geodesic exactly through a pole",
+  "geodesics 1e-1..1e-12 from a pole",
+  "chattering between charts (bound 1/2 > threshold 1/4)",
+  "longitude wrap-around in transition differences",
+  "nonfinite single-chart states and math domain errors (recorded with their message; any other exception propagates instead of counting as a failure)"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 4.858035155377104e-08,
+      "passed": true,
+      "reference": "max |X - X_exact| over 2 pi, RK4 400 steps",
+      "reference_kind": "analytic",
+      "tolerance": 1e-06
+     },
+     {
+      "comparison": "ge",
+      "observed": 4.0,
+      "passed": true,
+      "reference": "chart switches along the path",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     }
+    ]
+   },
+   "claim": "Atlas integration of the great circle through the north pole matches the exact great circle",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-08,
+    "rel": 0.05
+   },
+   "uncertainty": null,
+   "unit": "length",
+   "value": 4.86e-08
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 1.206051093738956,
+      "passed": true,
+      "reference": "max / min atlas error over delta",
+      "reference_kind": "analytic",
+      "tolerance": 1.5
+     }
+    ]
+   },
+   "claim": "Atlas accuracy is independent of the distance of closest approach to a pole",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.1,
+    "rel": 0.0
+   },
+   "uncertainty": null,
+   "unit": null,
+   "value": 1.21
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.1595527265146952,
+      "passed": true,
+      "reference": "max |order - 4| (200/400/800 steps)",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.25
+     }
+    ]
+   },
+   "claim": "Atlas integration keeps fourth-order convergence across chart switches",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.05,
+    "rel": 0.0
+   },
+   "uncertainty": null,
+   "unit": null,
+   "value": [
+    4.16,
+    3.962
+   ]
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 6.497413668604471e-16,
+      "passed": true,
+      "reference": "A -> B -> A round trip, max |X' - X| / R",
+      "reference_kind": "invariant",
+      "tolerance": 1e-13
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 5.248858339920839e-16,
+      "passed": true,
+      "reference": "|g_B(v_B, v_B) - g_A(v_A, v_A)| / g_A(v_A, v_A)",
+      "reference_kind": "invariant",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 3.7175822615951626e-10,
+      "passed": true,
+      "reference": "pushforward vs central difference of the point transition (h = 1e-6)",
+      "reference_kind": "self_convergence",
+      "tolerance": 1e-07
+     }
+    ]
+   },
+   "claim": "Chart transitions are exact: round trip, speed preservation and difference Jacobian",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-07,
+    "rel": 0.0
+   },
+   "uncertainty": null,
+   "unit": null,
+   "value": {
+    "jacobian": 3.7175822615951626e-10,
+    "roundtrip": 6.497413668604471e-16,
+    "speed": 5.248858339920839e-16
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 0.5016141944817782,
+      "passed": true,
+      "reference": "min over 4352 sphere points of max(det_A, det_B) / R^4",
+      "reference_kind": "analytic",
+      "tolerance": 0.499999999999
+     },
+     {
+      "comparison": "ge",
+      "observed": 0.7537661908770925,
+      "passed": true,
+      "reference": "min det g / R^4 right after a switch",
+      "reference_kind": "analytic",
+      "tolerance": 0.499999999999
+     }
+    ],
+    "derivation": "sin^2 theta_A + sin^2 theta_B = 1 + y^2 / R^2 >= 1"
+   },
+   "claim": "The better chart of the atlas always has det g / R^4 >= 1/2, so switching never chatters",
+   "domain": "mathematical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.001,
+    "rel": 0.0
+   },
+   "uncertainty": null,
+   "unit": null,
+   "value": {
+    "covering_min": 0.501614,
+    "min_active_det": 0.254484,
+    "min_det_after_switch": 0.753766
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 7.0,
+      "passed": true,
+      "reference": "delta > 0 cases where chart A alone fails or errs > 10x the atlas",
+      "reference_kind": "analytic",
+      "tolerance": 5.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 4.0,
+      "passed": true,
+      "reference": "delta > 0 cases where chart A alone fails outright",
+      "reference_kind": "analytic",
+      "tolerance": 1.0
+     }
+    ]
+   },
+   "claim": "A single polar chart fails or loses accuracy on great circles passing near its pole",
+   "counterexample": {
+    "statement": "Fixed-step RK4 in a single polar chart integrates every great circle as accurately as a chart-switching atlas at the same step count",
+    "witness": {
+     "delta_0.1_atlas_error": 5.68e-08,
+     "delta_0.1_single_error": 7.23e-06,
+     "delta_failed": [
+      0.01,
+      0.001,
+      0.0001,
+      1e-06
+     ]
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1,
+    "rel": 0.0
+   },
+   "uncertainty": null,
+   "unit": null,
+   "value": {
+    "cases": 8,
+    "degraded": 7,
+    "failed": 4
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 7.419744198533214e-14,
+      "passed": true,
+      "reference": "chart A alone, delta = 0: max |X - X_exact|",
+      "reference_kind": "analytic",
+      "tolerance": 1e-10
+     }
+    ]
+   },
+   "claim": "Along the exact meridian (v_phi = 0 exactly) chart A alone crosses the pole accurately",
+   "counterexample": {
+    "statement": "Single-chart integration exactly through a coordinate pole always fails",
+    "witness": {
+     "delta": 0.0,
+     "single_chart_error": 7.4e-14,
+     "single_chart_error_by_delta": {
+      "1e-08": 0.1,
+      "1e-10": 1.1e-05,
+      "1e-12": 1e-07
+     }
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-10,
+    "rel": 0.0
+   },
+   "uncertainty": null,
+   "unit": "length",
+   "value": 7.4e-14
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "Chart-switching geodesic integration is ready for tool paths over physical parts",
+   "domain": "industrial_readiness",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 11018,
+   "path": "artifacts/T036/atlas-runs.json",
+   "sha256": "13eec902595f2a14f387381f5cfd1baba1c4c9324145129c45c98599fba93c28"
+  },
+  {
+   "bytes": 207,
+   "path": "artifacts/T036/transitions.json",
+   "sha256": "fed66ea25c5e24bbe8cb1359d8e1a532237df94dd93fae3d51e24756137c0aa1"
+  },
+  {
+   "bytes": 4875,
+   "path": "artifacts/T036/atlas-vs-single-chart.svg",
+   "sha256": "37d6a4fe61ac6d939232b6096d0eb6ee1ce3699a259b65c4dac73848576b9bb9"
+  },
+  {
+   "bytes": 4837,
+   "path": "artifacts/T036/regularity-profile.svg",
+   "sha256": "4d346e09d010d9de4c323d5325eb3bbeca497a86101465ab889c626a16ae7d84"
+  }
+ ],
+ "hypothesis": "A two-chart polar atlas of the sphere with exact transitions integrates great circles through or near a pole with an accuracy that does not depend on how close they pass, while a single polar chart loses accuracy or fails near its poles.",
+ "input_data": [
+  "unit sphere; great circles with closest approach delta in [0.0, 0.1, 0.01, 0.001, 0.0001, 1e-06, 1e-08, 1e-10, 1e-12] to the north pole, azimuth 1.3, full length 2 pi",
+  "RK4, 400 steps (convergence: 200/400/800)",
+  "switch threshold det g / R^4 < 0.25",
+  "256 seeded sphere points for transitions (seed 3337)"
+ ],
+ "mathematical_model": "Chart A: X = R(sin t cos p, sin t sin p, cos t); chart B = R_y(pi/2) X_A, poles on A's equator. det g / R^4 = sin^2 theta in each chart and sin^2 theta_A + sin^2 theta_B = 1 + y^2/R^2 >= 1, so the better chart always has det g / R^4 >= 1/2. Transitions: u_B = X_B^{-1}(X_A(u_A)), v_B = g_B^{-1} J_B^T J_A v_A.",
+ "number": 36,
+ "numerical_result": "atlas through the pole: error 4.86e-08, 4 switches (A->B, B->A, A->B, B->A); atlas error spread over delta 1.21x; orders 4.16, 3.96; single chart failed for 4 and degraded (>10x atlas) for 7 of 8 delta > 0; exact meridian in chart A alone: error 7.42e-14; transitions round trip 6.5e-16, speed 5.25e-16, Jacobian 3.72e-10; covering bound 0.502.",
+ "observation_model": "Ambient error max_s |X_num(s) - X_exact(s)|; exact great circle cos(s) X0 + sin(s) T0.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/surfaces_discrete.py": "65515cd7d7440c047bb6cba986dbcd2b496978ebb32ed15939e371828e755eef",
+   "src/ciw/lab/surfaces_discrete_charts.py": "0e8ccfb050b8600a65e434970c3d7957327d8a03b8a47ae09457f3ad423c2f47"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "Queue extension after T168: locate the chart-switch crossing with event detection in the adaptive integrator, and drive switching from the T037 require_regular refusal codes instead of a fixed det g threshold.",
+ "report_id": "sha256:76249f968a6d53af09104858368de87d988a4c0fed1e3cf0853a2a099d05d4ad",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "surfaces-discrete",
+ "state": "completed",
+ "task_id": "T036",
+ "tests_passed": [
+  "check: Atlas integration of the great circle through the north pole matches the exact great circle vs max |X - X_exact| over 2 pi, RK4 400 steps",
+  "check: Atlas integration of the great circle through the north pole matches the exact great circle vs chart switches along the path",
+  "check: Atlas accuracy is independent of the distance of closest approach to a pole vs max / min atlas error over delta",
+  "check: Atlas integration keeps fourth-order convergence across chart switches vs max |order - 4| (200/400/800 steps)",
+  "check: Chart transitions are exact: round trip, speed preservation and difference Jacobian vs A -> B -> A round trip, max |X' - X| / R",
+  "check: Chart transitions are exact: round trip, speed preservation and difference Jacobian vs |g_B(v_B, v_B) - g_A(v_A, v_A)| / g_A(v_A, v_A)",
+  "check: Chart transitions are exact: round trip, speed preservation and difference Jacobian vs pushforward vs central difference of the point transition (h = 1e-6)",
+  "check: The better chart of the atlas always has det g / R^4 >= 1/2, so switching never chatters vs min over 4352 sphere points of max(det_A, det_B) / R^4",
+  "check: The better chart of the atlas always has det g / R^4 >= 1/2, so switching never chatters vs min det g / R^4 right after a switch",
+  "check: A single polar chart fails or loses accuracy on great circles passing near its pole vs delta > 0 cases where chart A alone fails or errs > 10x the atlas",
+  "check: A single polar chart fails or loses accuracy on great circles passing near its pole vs delta > 0 cases where chart A alone fails outright",
+  "check: Along the exact meridian (v_phi = 0 exactly) chart A alone crosses the pole accurately vs chart A alone, delta = 0: max |X - X_exact|",
+  "pytest: tests/test_lab_surfaces_discrete.py::test_atlas_transitions_are_exact",
+  "pytest: tests/test_lab_surfaces_discrete.py::test_atlas_geodesic_through_pole_matches_great_circle",
+  "pytest: tests/test_lab_surfaces_discrete.py::test_single_chart_near_pole_counterexample",
+  "pytest: tests/test_lab_surfaces_discrete.py::test_t036_report"
+ ],
+ "tests_skipped": [],
+ "title": "Add chart-transition support.",
+ "uncertainty": "Atlas errors are RK4 truncation errors (order 4). Single-chart errors for small delta come from the unresolved azimuthal rate 1/sin(delta) at a fixed step; the failure steps and the errors for delta <= 1e-8 depend on rounding and may differ across platforms.",
+ "unresolved_assumptions": [
+  "Only the sphere has an atlas here; other surfaces need their own charts and transitions.",
+  "Switching happens between steps; an adaptive integrator would need event location at the threshold.",
+  "The recorded minimum det g / R^4 of the active chart restates the switch threshold and the covering bound; it is reported, not checked."
+ ]
+}

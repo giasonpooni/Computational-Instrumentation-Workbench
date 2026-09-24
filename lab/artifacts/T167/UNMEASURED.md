@@ -1,0 +1,154 @@
+# What remains unmeasured
+
+Hardware-measured findings in this run: 0.
+
+## Physical and authority claims not established
+
+- T005 [physical]: Nearby real trajectories on a physical curved surface separate according to this Jacobi law
+- T009 [physical]: Which starting error dominates the endpoint error of real tool or vehicle paths on physical curved parts
+- T013 [physical]: A physical cylinder or large-radius torus workpiece shows these separations
+- T017 [machine_safety]: These validity domains certify first-order path corrections as safe on real machines
+- T018 [sensor_performance]: Curvature signals resolvable here would be resolvable in measured sensor data
+- T021 [machine_safety]: The shortest route on a physical flat workpiece is the safest route to execute
+- T023 [sensor_performance]: A physical heading sensor closes the shortest loop within the computed heading tolerance
+- T024 [machine_safety]: Ranking routes by focus margin selects a route that is safe to execute on a physical part
+- T025 [machine_safety]: A Pareto-optimal route is safe to execute on a physical part
+- T030 [physical]: Grid-planned path lengths predict distances travelled by a physical vehicle or tool
+- T031 [calibration]: A metric calibrated from physical measurements is accurate enough to decide between near-tied routes
+- T032 [machine_safety]: A route from this library is safe (or unsafe) to execute on a physical part or vehicle
+- T033 [physical]: The conformance suite certifies surfaces reconstructed from physical measurements
+- T034 [physical]: Symbolic and dual-number derivative agreement certifies derivatives of surfaces reconstructed from physical measurements
+- T035 [physical]: The optimal-step law derived here applies to derivatives of measured surface samples
+- T036 [industrial_readiness]: Chart-switching geodesic integration is ready for tool paths over physical parts
+- T037 [physical]: The singularity classification applies to scanned physical parts
+- T038 [physical]: Straightest geodesics on a mesh reconstructed from a real scan reproduce the geodesics of the scanned physical surface
+- T039 [physical]: The observed convergence orders transfer to meshes reconstructed from real scans
+- T040 [physical]: Angle-defect curvature of a scanned mesh estimates the Gaussian curvature of the physical part
+- T041 [production_acceptance]: A minimum-angle or radius-ratio threshold certifies a scanned mesh for production metrology
+- T042 [physical]: The refusal catalogue covers every defect present in real scanned surface data
+- T043 [calibration]: Isotropic Gaussian vertex noise of the tested sigma describes the error of a real scanner
+- T044 [sensor_performance]: A real marker-distance sensor on a real scanned part has this geometry and sensor variance split
+- T044 [physical]: The geometry sigma of 1e-3 is the accuracy of a real scanned surface
+- T045 [sensor_performance]: The declared noise-model parameters describe real instruments of these modes
+- T046 [physical]: The chord correction computed from nominal curvature holds for chords measured on a physical part
+- T047 [physical]: Chords measured between physical markers on a cylindrical part follow the cos^4(alpha)/(24 R^2) coefficient
+- T048 [sensor_performance]: A physical stereo rig with this geometry achieves the synthetic chord accuracy
+- T049 [calibration]: The declared perturbation magnitudes bound the calibration error of a real stereo rig
+- T050 [calibration]: A two-term radial plus tangential Brown-Conrady model describes a real lens to the required accuracy
+- T051 [sensor_performance]: Real image noise is Gaussian with sigma = 0.25 px and marker localization rounds to whole pixels
+- T052 [physical]: A real encoder drive train behaves as a constant-width play operator with constant scale and bias
+- T053 [sensor_performance]: Real gyroscopes have constant bias and white rate noise with the declared densities
+- T054 [physical]: Real sensor clocks have the declared constant offset and white jitter
+- T055 [sensor_performance]: Real links drop observations as Bernoulli or two-state burst processes with these rates
+- T056 [physical]: Real tracker latencies and target speeds match the declared values
+- T057 [sensor_performance]: A real tracker's measurement noise and target motion match the constant-velocity model
+- T058 [calibration]: The declared frame and clock mappings equal the real extrinsic calibration and clock synchronization
+- T059 [actuator_authority]: Admission as workbench state confers authority to act on a machine
+- T060 [sensor_performance]: The bench's noise levels, rates and motion describe real camera, encoder, IMU or tracker hardware
+- T061 [sensor_performance]: Real sensors' noise covariance equals the covariance declared for this bench
+- T062 [sensor_performance]: Real camera and tracker noises share the common-mode covariance assumed here
+- T063 [calibration]: The declared 35 degree rotation, translation and body covariance describe a real sensor mounting or extrinsic calibration
+- T064 [physical]: The declared [lateral, heading] covariance and these surfaces predict the path uncertainty of a real vehicle or tool on a real curved part
+- T065 [sensor_performance]: A real sensor's internally filtered output can be fused downstream as white noise
+- T066 [sensor_performance]: A real residual monitor normalized by datasheet sensor covariance is correctly calibrated
+- T067 [sensor_performance]: A real gate at the 99% quantile rejects 1% of valid real readings
+- T068 [sensor_performance]: Real outliers are rare, isolated and of fixed magnitude as in this contamination model
+- T069 [sensor_performance]: Real sensor dropouts are independent of the state and of the noise, as assumed here
+- T070 [calibration]: The recovered offset calibrates the clock of a real camera
+- T071 [calibration]: A 2 degree rotation is the size of a real extrinsic calibration error
+- T072 [calibration]: The validity interval [0, 60) reflects how long a real camera calibration stays valid
+- T073 [machine_safety]: A 1 m, 99% track-loss radius is a safe operating threshold
+- T074 [physical]: The fused estimate equals the physical state of a real target within its covariance
+- T075 [actuator_authority]: An admitted synthetic state may command actuators
+- T076 [production_acceptance]: Synthetic fusion output is admissible as production state
+- T077 [physical]: The retained log's device and kernel identities identify the producing GPU and code
+- T078 [physical]: The retained energy logs are real GPU energy measurements
+- T089 [production_acceptance]: A retained replay receipt or verification authorizes admission of the replayed result into canonical state
+- T092 [production_acceptance]: A content-consistent reopened bundle is acceptable as a verified production result
+- T096 [production_acceptance]: Passing provider-free conformance admits a candidate into canonical state
+- T097 [physical]: The integer heat field describes physical heat diffusion in a material
+- T099 [production_acceptance]: A successful locked build makes the engine acceptable for production use
+- T100 [physical]: The relabelled energy log is a physical GPU energy measurement
+- T100 [sensor_performance]: The synthetic energy fixture characterizes real NVML counter accuracy
+- T105 [physical]: The declared stiffness box contains the stiffness of a real axis
+- T106 [actuator_authority]: A CERTIFIED_WITH_MARGIN verdict (operationally_acceptable) authorizes actuation
+- T112 [physical]: The disturbance bound w_bar = 0.5 holds for a physical plant
+- T112 [machine_safety]: The ISS bound defines a safe operating envelope for a machine
+- T113 [sensor_performance]: The synthetic residual statistics describe a real encoder's performance
+- T113 [sensor_performance]: The EKF standard error of theta covers the true parameter of a real axis at the stated rate
+- T113 [calibration]: The calibration referenced in the host envelope is valid
+- T114 [machine_safety]: The servo-axis pilot is safe to operate
+- T114 [actuator_authority]: The Lyapunov monitor may command, gate or release the axis
+- T114 [production_acceptance]: The pilot configuration is acceptable for production use
+- T114 [industrial_readiness]: The monitor is ready for industrial deployment
+- T114 [physical]: The placeholder inertia interval contains the real axis inertia
+- T114 [calibration]: Encoder and current-sensor calibrations of the bench are valid
+- T115 [physical]: Gross CPU package energy (background-inclusive, idle not subtracted) per geodesic trajectory
+- T115 [physical]: Idle-subtracted CPU package energy per geodesic trajectory (equal-length idle bracket after the workload)
+- T116 [physical]: GPU-domain gross energy per measured batch
+- T116 [sensor_performance]: The NVML total-energy counter of the RTX 2080 has a characterized accuracy and resolution
+- T117 [physical]: The Rust kernel uses less energy per trajectory than the Python kernel on real hardware
+- T118 [physical]: RTX 2080 power draw during the measurement phase (NVML)
+- T118 [physical]: RTX 2080 temperature during the measurement phase (NVML)
+- T118 [physical]: RTX 2080 graphics clock during the measurement phase (NVML)
+- T118 [physical]: Host-bracketed batch solve duration (launch, sync and copy included)
+- T118 [physical]: RTX 2080 GPU utilization during the measurement phase (nvidia-smi rows inside the measurement window)
+- T118 [physical]: RTX 2080 power draw is steady over the measurement phase (coefficient of variation <= 0.10)
+- T118 [physical]: RTX 2080 temperature drifts by at most 5 C over the measurement phase
+- T118 [physical]: RTX 2080 kernel-only duration of the Gaussian VI kernel
+- T119 [physical]: Physical GPU energy per accepted numerical result
+- T120 [physical]: float32 lowers the energy per accepted trajectory relative to float64 on real CPU or GPU hardware
+- T121 [physical]: Reductions on the RTX 2080 (CUB, cuBLAS or atomicAdd) reproduce these emulated spreads and sign flips
+- T122 [physical]: The variational free energy of this model equals a thermodynamic free energy of a physical system
+- T123 [physical]: A decrease of variational free energy corresponds to a decrease of physical energy consumed by the computation
+- T124 [physical]: The fixtures' counter readings were produced by a physical GPU and NVML counter
+- T125 [physical]: Replayed energy values are physically valid measurements
+- T126 [physical]: Measured marker chords on the physical plate equal the predicted geodesic distances within instrument uncertainty
+- T126 [calibration]: The declared instrument uncertainties (camera 0.02 mm, tracker 0.015 mm, CMM 0.002 mm) hold for the instruments that will be used
+- T127 [physical]: Measured chords and surface distances on the physical tube match the predicted gaps
+- T127 [calibration]: The physical tube radius and roundness lie within the declared +/- 0.1 mm
+- T128 [physical]: Measured separations of offset routes on the physical coupon follow the Jacobi prediction and cross at the predicted focal point
+- T128 [calibration]: The formed coupon matches the declared dome (height 10 mm, sigma 20 mm) within tolerance
+- T128 [physical]: An unsteered 3 mm tape laid on the coupon follows a geodesic of the as-built surface (no in-plane bending, lift-off or slip)
+- T128 [calibration]: The start jig and tape laying realize the relative start pose of the offset tape within the declared 0.05 mm and 0.5 mrad
+- T129 [sensor_performance]: A real laser line scanner achieves the declared 0.01 mm point noise on the coupon surface (finish, incidence angle, speckle)
+- T130 [calibration]: The physical gauge sphere, step gauge and scale bar have their certified dimensions, and the lab frame chain has the declared covariances
+- T131 [sensor_performance]: The real gage (instrument, fixture and operators) has %GRR below 10% on the coupon features
+- T131 [production_acceptance]: The measurement system is approved for production use
+- T132 [physical]: Tows placed by a real AFP head follow the programmed course within the stack, with gaps and overlaps inside 0.5 mm
+- T132 [physical]: The declared 635 mm minimum steering radius avoids tow wrinkling for the placed material
+- T133 [physical]: Fibre does not slip on a real mandrel wherever abs(kappa_g / kappa_n) <= 0.2 (the friction coefficient is declared, not measured)
+- T134 [physical]: The torch or gun on a real cell stays within the predicted lateral and standoff band
+- T134 [machine_safety]: The trajectory is safe to execute on a welding or coating robot cell
+- T135 [sensor_performance]: The real scanner footprint is a 20 mm swath on this surface at the planned standoff
+- T136 [calibration]: The robot, fixture and frame calibration achieves the required heading and lateral tolerances
+- T137 [physical]: Physical paths near a predicted focus show the predicted loss of lateral-error ordering
+- T138 [physical]: Measured separation on the coupon agrees with the prediction (E_n <= 1 at every station)
+- T138 [calibration]: The start jig and tape laying realize the relative start pose of the offset tape within the declared 0.05 mm and 0.5 mrad
+- T139 [physical]: A real measurement with raw bytes, calibration and frame metadata has been retained
+- T140 [calibration]: The declared instrument uncertainties are the uncertainties of the instruments used
+- T140 [calibration]: The start jig and tape laying realize the relative start pose of the offset tape within the declared 0.05 mm and 0.5 mrad
+- T140 [physical]: The budget contains every significant physical error source (thermal, fixturing, tape bending along the route, target centring)
+- T141 [production_acceptance]: Production acceptance of the coupon, cylinder or plate process
+- T141 [industrial_readiness]: The manufacturing protocols and models are ready for industrial use
+- T142 [industrial_readiness]: Rust ports of the ranked kernels are ready for industrial deployment
+- T143 [industrial_readiness]: The listed interfaces are qualified for plant integration
+- T143 [sensor_performance]: Vendor camera SDK acquisition meets its timing on real cameras
+- T144 [machine_safety]: Keeping native code behind subprocess boundaries makes machine interfaces safe
+- T147 [industrial_readiness]: GPU/CPU agreement establishes industrial readiness
+- T149 [physical]: The frame format works on real FPGA links
+- T149 [machine_safety]: A telemetry-only interface guarantees the FPGA cannot actuate the machine
+- T150 [physical]: A real bitstream with this identity exists and is loaded on hardware
+- T150 [production_acceptance]: The bitstream is approved for production deployment
+- T151 [machine_safety]: The rollback procedure is safe to execute on a production machine
+- T151 [production_acceptance]: Rollback records are accepted for production change control
+- T152 [physical]: Simulated loss, latency and staleness represent the real FPGA telemetry link
+- T153 [actuator_authority]: The lab holds actuator write authority
+- T153 [machine_safety]: Disabled-by-default software writes make the machine safe
+- T154 [actuator_authority]: Heading proposals are authorized for execution as actuator commands
+- T154 [machine_safety]: Applying the proposed heading corrections on a machine is safe
+
+## Blocked or deferred tasks
+
+- T116 (blocked): Blocked: unavailable requirement(s) hardware:nvidia-gpu. Planned: On the RTX 2080 host: (0) `mkdir -p runs/rtx2080-<date>`; (1) `ciw energy probe --gpu-index 0` must return a reading with status ok; (2) `ciw energy record --problem examples/energy-accuracy/problem.json --output-dir runs/rtx2080-<dat
+- T118 (blocked): Blocked: unavailable requirement(s) hardware:nvidia-gpu. Planned: On the RTX 2080 host: (0) `mkdir -p runs/rtx2080-<date>`; (1) start `TZ=UTC nvidia-smi --query-gpu=timestamp,uuid,name,utilization.gpu,utilization.memory,temperature.gpu,power.draw,clocks.sm,clocks.mem,pstate --format=csv,nounits -lms

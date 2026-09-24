@@ -1,0 +1,736 @@
+{
+ "changed_files": [
+  "src/ciw/lab/geodesic_jacobi.py",
+  "src/ciw/lab/geodesic_jacobi_common.py",
+  "tests/test_lab_geodesic_jacobi.py",
+  "docs/lab/GEODESIC_JACOBI.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 1,
+   "not_established": 1,
+   "numerically_verified": 5,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Integrated columns equal sn_K and cn_K to RK4 accuracy with K from the surface parameters; K stays constant along the path; closed-form separations approach eps |sn_K| and eps |cn_K|.",
+ "experiment": "Integrate geodesic and Jacobi columns jointly on each surface, compare with the model-space closed forms at h and 2h; measure the separation of closed-form perturbed geodesics on the sphere and hyperbolic plane; compare (when bound) with the pinned CSG provider in a subprocess.",
+ "failure_modes_checked": [
+  "sign of K (oscillation versus exponential growth)",
+  "curvature reference taken from the surface parameters, not from gaussian_curvature",
+  "separation law on actual geodesics, not only on the scalar equation",
+  "torus equator stays on the equator (theta drift)",
+  "flat charts where the columns are exactly 1 and s",
+  "provider checkout identity verified before and after execution"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 2.6582168133337802e-09,
+      "passed": true,
+      "reference": "sn_K with K = 1 on sphere-great-circle",
+      "reference_kind": "analytic",
+      "tolerance": 1e-07
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 2.0441663628976168e-15,
+      "passed": true,
+      "reference": "sn_K with K = 0 on plane",
+      "reference_kind": "analytic",
+      "tolerance": 1e-07
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 2.803593496528173e-15,
+      "passed": true,
+      "reference": "sn_K with K = 0 on cylinder",
+      "reference_kind": "analytic",
+      "tolerance": 1e-07
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 1.2561964420119912e-09,
+      "passed": true,
+      "reference": "sn_K with K = -1 on hyperbolic-long",
+      "reference_kind": "analytic",
+      "tolerance": 1e-07
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 5.134411784624149e-10,
+      "passed": true,
+      "reference": "sn_K with K = 0.333333 on torus-outer-equator",
+      "reference_kind": "analytic",
+      "tolerance": 1e-07
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 2.6915911645163793e-09,
+      "passed": true,
+      "reference": "sn_K with K = -1 on torus-inner-equator",
+      "reference_kind": "analytic",
+      "tolerance": 1e-07
+     }
+    ],
+    "generator": {
+     "name": "declared constant-curvature geodesics",
+     "paths": [
+      "sphere-great-circle",
+      "plane",
+      "cylinder",
+      "hyperbolic-long",
+      "torus-outer-equator",
+      "torus-inner-equator"
+     ],
+     "steps": {
+      "cylinder": 200,
+      "hyperbolic-long": 200,
+      "plane": 134,
+      "sphere-great-circle": 468,
+      "torus-inner-equator": 434,
+      "torus-outer-equator": 768
+     }
+    }
+   },
+   "claim": "The heading Jacobi column follows sin(sqrt(K)s)/sqrt(K), s and sinh(sqrt(-K)s)/sqrt(-K) on positive, zero and negative curvature",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "RK4 step halving: |error(h) - error(h/2)| / 15, largest over the paths; curvature references come from the surface parameters",
+    "kind": "truncation_bound",
+    "value": 2.6636904200868136e-09
+   },
+   "unit": null,
+   "value": {
+    "cylinder": 2.803593496528173e-15,
+    "hyperbolic-long": 1.2561964420119912e-09,
+    "plane": 2.0441663628976168e-15,
+    "sphere-great-circle": 2.6582168133337802e-09,
+    "torus-inner-equator": 2.6915911645163793e-09,
+    "torus-outer-equator": 5.134411784624149e-10
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 2.6582168133337802e-09,
+      "passed": true,
+      "reference": "cn_K, -K sn_K, sn_K, cn_K on sphere-great-circle",
+      "reference_kind": "analytic",
+      "tolerance": 1e-07
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 2.0441663628976168e-15,
+      "passed": true,
+      "reference": "cn_K, -K sn_K, sn_K, cn_K on plane",
+      "reference_kind": "analytic",
+      "tolerance": 1e-07
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 2.803593496528173e-15,
+      "passed": true,
+      "reference": "cn_K, -K sn_K, sn_K, cn_K on cylinder",
+      "reference_kind": "analytic",
+      "tolerance": 1e-07
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 1.2561964420119912e-09,
+      "passed": true,
+      "reference": "cn_K, -K sn_K, sn_K, cn_K on hyperbolic-long",
+      "reference_kind": "analytic",
+      "tolerance": 1e-07
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 5.134411784624149e-10,
+      "passed": true,
+      "reference": "cn_K, -K sn_K, sn_K, cn_K on torus-outer-equator",
+      "reference_kind": "analytic",
+      "tolerance": 1e-07
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 2.6915911645163793e-09,
+      "passed": true,
+      "reference": "cn_K, -K sn_K, sn_K, cn_K on torus-inner-equator",
+      "reference_kind": "analytic",
+      "tolerance": 1e-07
+     }
+    ],
+    "generator": {
+     "name": "declared constant-curvature geodesics",
+     "paths": [
+      "sphere-great-circle",
+      "plane",
+      "cylinder",
+      "hyperbolic-long",
+      "torus-outer-equator",
+      "torus-inner-equator"
+     ],
+     "steps": {
+      "cylinder": 200,
+      "hyperbolic-long": 200,
+      "plane": 134,
+      "sphere-great-circle": 468,
+      "torus-inner-equator": 434,
+      "torus-outer-equator": 768
+     }
+    }
+   },
+   "claim": "The full integrated transfer matrix (lateral column and both rates) follows the model-space law cn_K, sn_K",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "RK4 step halving: |error(h) - error(h/2)| / 15, largest over the paths; curvature references come from the surface parameters",
+    "kind": "truncation_bound",
+    "value": 2.6636904200868136e-09
+   },
+   "unit": null,
+   "value": {
+    "cylinder": 2.803593496528173e-15,
+    "hyperbolic-long": 1.2561964420119912e-09,
+    "plane": 2.0441663628976168e-15,
+    "sphere-great-circle": 2.6582168133337802e-09,
+    "torus-inner-equator": 2.6915911645163793e-09,
+    "torus-outer-equator": 5.134411784624149e-10
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 2.6687947454195893e-05,
+      "passed": true,
+      "reference": "lateral d(gamma_eps, gamma_0)/eps against |cn_K| on sphere-great-circle: remainder order 2 in eps",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.15
+     },
+     {
+      "comparison": "le",
+      "observed": 1.6037087269271666e-06,
+      "passed": true,
+      "reference": "lateral d(gamma_eps, gamma_0)/eps against |cn_K| on sphere-great-circle at eps = 0.01",
+      "reference_kind": "analytic",
+      "tolerance": 0.005
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 2.72029375278926e-05,
+      "passed": true,
+      "reference": "heading d(gamma_eps, gamma_0)/eps against |sn_K| on sphere-great-circle: remainder order 2 in eps",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.15
+     },
+     {
+      "comparison": "le",
+      "observed": 1.6037462076123887e-06,
+      "passed": true,
+      "reference": "heading d(gamma_eps, gamma_0)/eps against |sn_K| on sphere-great-circle at eps = 0.01",
+      "reference_kind": "analytic",
+      "tolerance": 0.005
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.012132985466016821,
+      "passed": true,
+      "reference": "lateral d(gamma_eps, gamma_0)/eps against |cn_K| on hyperbolic-long: remainder order 2 in eps",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.15
+     },
+     {
+      "comparison": "le",
+      "observed": 0.00041768199824695123,
+      "passed": true,
+      "reference": "lateral d(gamma_eps, gamma_0)/eps against |cn_K| on hyperbolic-long at eps = 0.01",
+      "reference_kind": "analytic",
+      "tolerance": 0.005
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.012040155296386912,
+      "passed": true,
+      "reference": "heading d(gamma_eps, gamma_0)/eps against |sn_K| on hyperbolic-long: remainder order 2 in eps",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.15
+     },
+     {
+      "comparison": "le",
+      "observed": 0.0004218476128911917,
+      "passed": true,
+      "reference": "heading d(gamma_eps, gamma_0)/eps against |sn_K| on hyperbolic-long at eps = 0.01",
+      "reference_kind": "analytic",
+      "tolerance": 0.005
+     }
+    ],
+    "generator": {
+     "eps": [
+      0.04,
+      0.02,
+      0.01
+     ],
+     "name": "closed-form perturbed geodesics",
+     "nodes": 141,
+     "paths": [
+      "sphere-great-circle",
+      "hyperbolic-long"
+     ]
+    }
+   },
+   "claim": "Neighbouring closed-form geodesics on the sphere and hyperbolic plane separate as |sn_K| (heading) and |cn_K| (lateral) per unit perturbation",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-06,
+    "rel": 0.0001
+   },
+   "uncertainty": {
+    "basis": "O(eps^2) remainder of the separation ratio at eps = 0.01",
+    "kind": "truncation_bound",
+    "value": 0.0004218476128911917
+   },
+   "unit": null,
+   "value": {
+    "hyperbolic-long": {
+     "heading": {
+      "error_at_smallest_eps": 0.0004218476128911917,
+      "order": 1.987959844703613
+     },
+     "lateral": {
+      "error_at_smallest_eps": 0.00041768199824695123,
+      "order": 1.9878670145339832
+     }
+    },
+    "sphere-great-circle": {
+     "heading": {
+      "error_at_smallest_eps": 1.6037462076123887e-06,
+      "order": 2.000027202937528
+     },
+     "lateral": {
+      "error_at_smallest_eps": 1.6037087269271666e-06,
+      "order": 2.000026687947454
+     }
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "K(gamma(s)) - K0 along torus-outer-equator",
+      "reference_kind": "invariant",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "theta stays on torus-outer-equator",
+      "reference_kind": "invariant",
+      "tolerance": 1e-09
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 5.134411784624149e-10,
+      "passed": true,
+      "reference": "transfer matrix against cn_K, sn_K on torus-outer-equator",
+      "reference_kind": "analytic",
+      "tolerance": 1e-07
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "K(gamma(s)) - K0 along torus-inner-equator",
+      "reference_kind": "invariant",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "theta stays on torus-inner-equator",
+      "reference_kind": "invariant",
+      "tolerance": 1e-09
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 2.6915911645163793e-09,
+      "passed": true,
+      "reference": "transfer matrix against cn_K, sn_K on torus-inner-equator",
+      "reference_kind": "analytic",
+      "tolerance": 1e-07
+     }
+    ],
+    "generator": {
+     "name": "declared constant-curvature geodesics",
+     "paths": [
+      "sphere-great-circle",
+      "plane",
+      "cylinder",
+      "hyperbolic-long",
+      "torus-outer-equator",
+      "torus-inner-equator"
+     ],
+     "steps": {
+      "cylinder": 200,
+      "hyperbolic-long": 200,
+      "plane": 134,
+      "sphere-great-circle": 468,
+      "torus-inner-equator": 434,
+      "torus-outer-equator": 768
+     },
+     "torus": {
+      "major": 2.0,
+      "minor": 1.0
+     }
+    }
+   },
+   "claim": "The torus equators are geodesics of constant curvature 1/(r(R+r)) and -1/(r(R-r)) whose Jacobi columns obey the model-space laws",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-07
+   },
+   "uncertainty": {
+    "basis": "RK4 step halving: |error(h) - error(h/2)| / 15, largest over the paths; curvature references come from the surface parameters",
+    "kind": "truncation_bound",
+    "value": 2.6636904200868136e-09
+   },
+   "unit": null,
+   "value": {
+    "torus-inner-equator": {
+     "curvature": -1.0,
+     "curvature_drift": 0.0,
+     "max_error": 2.6915911645163793e-09,
+     "theta_drift": 0.0
+    },
+    "torus-outer-equator": {
+     "curvature": 0.3333333333333333,
+     "curvature_drift": 0.0,
+     "max_error": 5.134411784624149e-10,
+     "theta_drift": 0.0
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.002782339723584215,
+      "passed": true,
+      "reference": "error ratio at h and 2h on sphere-great-circle",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.3
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.017931453840645872,
+      "passed": true,
+      "reference": "error ratio at h and 2h on hyperbolic-long",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.3
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0016180589118581779,
+      "passed": true,
+      "reference": "error ratio at h and 2h on torus-outer-equator",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.3
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.017995819092094134,
+      "passed": true,
+      "reference": "error ratio at h and 2h on torus-inner-equator",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.3
+     }
+    ],
+    "generator": {
+     "name": "declared constant-curvature geodesics",
+     "paths": [
+      "sphere-great-circle",
+      "plane",
+      "cylinder",
+      "hyperbolic-long",
+      "torus-outer-equator",
+      "torus-inner-equator"
+     ],
+     "steps": {
+      "cylinder": 200,
+      "hyperbolic-long": 200,
+      "plane": 134,
+      "sphere-great-circle": 468,
+      "torus-inner-equator": 434,
+      "torus-outer-equator": 768
+     }
+    }
+   },
+   "claim": "Residuals against the model-space law are fourth-order RK4 discretization error",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.02,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "spread of the two-point step-halving orders across the curved paths",
+    "kind": "fit",
+    "value": 0.02077815881567835
+   },
+   "unit": null,
+   "value": {
+    "hyperbolic-long": 3.982068546159354,
+    "sphere-great-circle": 4.002782339723584,
+    "torus-inner-equator": 3.982004180907906,
+    "torus-outer-equator": 4.001618058911858
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 1.1102230246251565e-16,
+      "passed": true,
+      "reference": "CSG constant_curvature_transfer against ciw.lab.jacobi.constant_curvature",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 4.072120660106376e-15,
+      "passed": true,
+      "reference": "CSG integrate_jacobi RK4 trace against the ciw RK4 transfer on the same grid (same method, different origin; not a same-origin comparison)",
+      "reference_kind": "cross_implementation",
+      "tolerance": 1e-09
+     }
+    ],
+    "independent_check": {
+     "checker": {
+      "implementation": "Curved-Surface-Geodesic-Sensitivity-Runtime@bbc535af29c30997e56fd120320c570830676462",
+      "revision": "bbc535af29c30997e56fd120320c570830676462"
+     },
+     "comparison": "abs_le",
+     "observed": 2.6915911645163793e-09,
+     "passed": true,
+     "producer": {
+      "implementation": "ciw.lab.jacobi",
+      "revision": "ciw 0.1.0"
+     },
+     "reference": "CSG closed-form constant_curvature_transfer at the ciw nodes",
+     "reference_kind": "analytic",
+     "tolerance": 1e-07
+    },
+    "provider": {
+     "executed": true,
+     "repository": "giasonpooni/Curved-Surface-Geodesic-Sensitivity-Runtime",
+     "revision": "bbc535af29c30997e56fd120320c570830676462",
+     "source_tree": "181b6eb73288d001f45c39bb149b1a80a431f34b"
+    }
+   },
+   "claim": "ciw joint geodesic + Jacobi transfer matrices match the pinned CSG provider on six constant-curvature paths",
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "ciw RK4 truncation at the fine step; the provider closed form is exact to rounding",
+    "kind": "truncation_bound",
+    "value": 2.6915911645163793e-09
+   },
+   "unit": null,
+   "value": {
+    "cylinder": {
+     "ciw_rk4_vs_csg_closed_form": 2.803593496528173e-15,
+     "ciw_rk4_vs_csg_rk4": 2.803593496528173e-15
+    },
+    "hyperbolic-long": {
+     "ciw_rk4_vs_csg_closed_form": 1.2561964420119912e-09,
+     "ciw_rk4_vs_csg_rk4": 9.276187254982186e-16
+    },
+    "plane": {
+     "ciw_rk4_vs_csg_closed_form": 2.0441663628976168e-15,
+     "ciw_rk4_vs_csg_rk4": 2.0441663628976168e-15
+    },
+    "sphere-great-circle": {
+     "ciw_rk4_vs_csg_closed_form": 2.6582168133337802e-09,
+     "ciw_rk4_vs_csg_rk4": 1.0547118733938987e-15
+    },
+    "torus-inner-equator": {
+     "ciw_rk4_vs_csg_closed_form": 2.6915911645163793e-09,
+     "ciw_rk4_vs_csg_rk4": 2.274642834943155e-15
+    },
+    "torus-outer-equator": {
+     "ciw_rk4_vs_csg_closed_form": 5.134411784624149e-10,
+     "ciw_rk4_vs_csg_rk4": 4.072120660106376e-15
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "Nearby real trajectories on a physical curved surface separate according to this Jacobi law",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 7278,
+   "path": "artifacts/T005/separation-law.json",
+   "sha256": "914b5fa9a8363a369eee690f2bfe120c4182555ef5b33a226e7d7326c66b0aa3"
+  },
+  {
+   "bytes": 8298,
+   "path": "artifacts/T005/heading-column.svg",
+   "sha256": "b5f2693002252e50f5d4f3958555cce71cbab1a359de9e6c021e92520116b3b4"
+  },
+  {
+   "bytes": 8331,
+   "path": "artifacts/T005/heading-error.svg",
+   "sha256": "08fde4c54e7750e6546f54b0082aa1dad76aee520a3397873caddf730bd3c914"
+  }
+ ],
+ "hypothesis": "Along a unit-speed geodesic of constant curvature K the heading Jacobi column is sn_K(s) and the lateral column cn_K(s), so separation oscillates (K > 0), grows linearly (K = 0) or exponentially (K < 0); the torus equators realize K = 1/(r(R+r)) and K = -1/(r(R-r)).",
+ "input_data": [
+  "sphere-great-circle: K = 1, L = 7.0, 468 RK4 steps",
+  "plane: K = 0, L = 2.0, 134 RK4 steps",
+  "cylinder: K = 0, L = 3.0, 200 RK4 steps",
+  "hyperbolic-long: K = -1, L = 3.0, 200 RK4 steps",
+  "torus-outer-equator: K = 0.333333, L = 11.5, 768 RK4 steps",
+  "torus-inner-equator: K = -1, L = 6.5, 434 RK4 steps",
+  "Closed-form perturbed geodesics on sphere-great-circle, hyperbolic-long with eps in [0.04, 0.02, 0.01]"
+ ],
+ "mathematical_model": "j'' + K j = 0 with j(0) = 0, j'(0) = 1 (heading) and j(0) = 1, j'(0) = 0 (lateral); on a torus of radii R > r the equators theta = 0 and theta = pi are geodesics with K = cos(theta)/(r(R + r cos(theta))); on constant curvature d(gamma_eps(s), gamma_0(s)) = |eps| |j(s)| (1 + O(eps^2)), e.g. sin(d/2) = sin(eps/2) |sin s| on the unit sphere.",
+ "number": 5,
+ "numerical_result": "Largest model-space error 2.69e-09; observed orders sphere-great-circle 4, hyperbolic-long 3.98, torus-outer-equator 4, torus-inner-equator 3.98; closed-form separation error at eps = 0.01 sphere-great-circle 1.6e-06, hyperbolic-long 0.000422; ciw vs CSG closed form 2.69e-09, ciw vs CSG RK4 4.07e-15.",
+ "observation_model": "Relative error max |j - model| / max(1, |model|) over all nodes, per column and rate; exact intrinsic distance of matched points of closed-form geodesics.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw": {
+   "ciw_version": "0.1.0",
+   "implementation": "ciw.lab",
+   "mpmath": "1.3.0",
+   "numpy": "2.4.3",
+   "python": "3.12.3",
+   "scipy": "1.16.2",
+   "sources": {
+    "src/ciw/lab/geodesic_jacobi.py": "7f7307ebfb5c0a38ca1e7b9365fd7df627d9ae001791d99b823122873040d3c1",
+    "src/ciw/lab/geodesic_jacobi_common.py": "8616e9157492f0cd2aeebd695b3501215420c73af2cfbcb8c1b8cd5ab8d23a52"
+   },
+   "sympy": "1.14.0"
+  },
+  "provider": {
+   "dirty": false,
+   "entry": "geodesic_testbed.jacobi.integrate_jacobi",
+   "implementation": "Curved-Surface-Geodesic-Sensitivity-Runtime",
+   "numpy": "2.4.3",
+   "python": "3.12.3",
+   "repository": "giasonpooni/Curved-Surface-Geodesic-Sensitivity-Runtime",
+   "revision": "bbc535af29c30997e56fd120320c570830676462",
+   "source_tree": "181b6eb73288d001f45c39bb149b1a80a431f34b",
+   "subprocess": true
+  },
+  "requirement_probes": {
+   "provider:csg": true
+  }
+ },
+ "recommended_next_task": "T006: compare the integrated columns with finite-difference flow perturbations",
+ "report_id": "sha256:67bfd975889c01c7250187d012b5a8d9da0bf5596e7493d15541c55d106058fa",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "geodesic-jacobi",
+ "state": "completed",
+ "task_id": "T005",
+ "tests_passed": [
+  "check: The heading Jacobi column follows sin(sqrt(K)s)/sqrt(K), s and sinh(sqrt(-K)s)/sqrt(-K) on positive, zero and negative curvature vs sn_K with K = 1 on sphere-great-circle",
+  "check: The heading Jacobi column follows sin(sqrt(K)s)/sqrt(K), s and sinh(sqrt(-K)s)/sqrt(-K) on positive, zero and negative curvature vs sn_K with K = 0 on plane",
+  "check: The heading Jacobi column follows sin(sqrt(K)s)/sqrt(K), s and sinh(sqrt(-K)s)/sqrt(-K) on positive, zero and negative curvature vs sn_K with K = 0 on cylinder",
+  "check: The heading Jacobi column follows sin(sqrt(K)s)/sqrt(K), s and sinh(sqrt(-K)s)/sqrt(-K) on positive, zero and negative curvature vs sn_K with K = -1 on hyperbolic-long",
+  "check: The heading Jacobi column follows sin(sqrt(K)s)/sqrt(K), s and sinh(sqrt(-K)s)/sqrt(-K) on positive, zero and negative curvature vs sn_K with K = 0.333333 on torus-outer-equator",
+  "check: The heading Jacobi column follows sin(sqrt(K)s)/sqrt(K), s and sinh(sqrt(-K)s)/sqrt(-K) on positive, zero and negative curvature vs sn_K with K = -1 on torus-inner-equator",
+  "check: The full integrated transfer matrix (lateral column and both rates) follows the model-space law cn_K, sn_K vs cn_K, -K sn_K, sn_K, cn_K on sphere-great-circle",
+  "check: The full integrated transfer matrix (lateral column and both rates) follows the model-space law cn_K, sn_K vs cn_K, -K sn_K, sn_K, cn_K on plane",
+  "check: The full integrated transfer matrix (lateral column and both rates) follows the model-space law cn_K, sn_K vs cn_K, -K sn_K, sn_K, cn_K on cylinder",
+  "check: The full integrated transfer matrix (lateral column and both rates) follows the model-space law cn_K, sn_K vs cn_K, -K sn_K, sn_K, cn_K on hyperbolic-long",
+  "check: The full integrated transfer matrix (lateral column and both rates) follows the model-space law cn_K, sn_K vs cn_K, -K sn_K, sn_K, cn_K on torus-outer-equator",
+  "check: The full integrated transfer matrix (lateral column and both rates) follows the model-space law cn_K, sn_K vs cn_K, -K sn_K, sn_K, cn_K on torus-inner-equator",
+  "check: Neighbouring closed-form geodesics on the sphere and hyperbolic plane separate as |sn_K| (heading) and |cn_K| (lateral) per unit perturbation vs lateral d(gamma_eps, gamma_0)/eps against |cn_K| on sphere-great-circle: remainder order 2 in eps",
+  "check: Neighbouring closed-form geodesics on the sphere and hyperbolic plane separate as |sn_K| (heading) and |cn_K| (lateral) per unit perturbation vs lateral d(gamma_eps, gamma_0)/eps against |cn_K| on sphere-great-circle at eps = 0.01",
+  "check: Neighbouring closed-form geodesics on the sphere and hyperbolic plane separate as |sn_K| (heading) and |cn_K| (lateral) per unit perturbation vs heading d(gamma_eps, gamma_0)/eps against |sn_K| on sphere-great-circle: remainder order 2 in eps",
+  "check: Neighbouring closed-form geodesics on the sphere and hyperbolic plane separate as |sn_K| (heading) and |cn_K| (lateral) per unit perturbation vs heading d(gamma_eps, gamma_0)/eps against |sn_K| on sphere-great-circle at eps = 0.01",
+  "check: Neighbouring closed-form geodesics on the sphere and hyperbolic plane separate as |sn_K| (heading) and |cn_K| (lateral) per unit perturbation vs lateral d(gamma_eps, gamma_0)/eps against |cn_K| on hyperbolic-long: remainder order 2 in eps",
+  "check: Neighbouring closed-form geodesics on the sphere and hyperbolic plane separate as |sn_K| (heading) and |cn_K| (lateral) per unit perturbation vs lateral d(gamma_eps, gamma_0)/eps against |cn_K| on hyperbolic-long at eps = 0.01",
+  "check: Neighbouring closed-form geodesics on the sphere and hyperbolic plane separate as |sn_K| (heading) and |cn_K| (lateral) per unit perturbation vs heading d(gamma_eps, gamma_0)/eps against |sn_K| on hyperbolic-long: remainder order 2 in eps",
+  "check: Neighbouring closed-form geodesics on the sphere and hyperbolic plane separate as |sn_K| (heading) and |cn_K| (lateral) per unit perturbation vs heading d(gamma_eps, gamma_0)/eps against |sn_K| on hyperbolic-long at eps = 0.01",
+  "check: The torus equators are geodesics of constant curvature 1/(r(R+r)) and -1/(r(R-r)) whose Jacobi columns obey the model-space laws vs K(gamma(s)) - K0 along torus-outer-equator",
+  "check: The torus equators are geodesics of constant curvature 1/(r(R+r)) and -1/(r(R-r)) whose Jacobi columns obey the model-space laws vs theta stays on torus-outer-equator",
+  "check: The torus equators are geodesics of constant curvature 1/(r(R+r)) and -1/(r(R-r)) whose Jacobi columns obey the model-space laws vs transfer matrix against cn_K, sn_K on torus-outer-equator",
+  "check: The torus equators are geodesics of constant curvature 1/(r(R+r)) and -1/(r(R-r)) whose Jacobi columns obey the model-space laws vs K(gamma(s)) - K0 along torus-inner-equator",
+  "check: The torus equators are geodesics of constant curvature 1/(r(R+r)) and -1/(r(R-r)) whose Jacobi columns obey the model-space laws vs theta stays on torus-inner-equator",
+  "check: The torus equators are geodesics of constant curvature 1/(r(R+r)) and -1/(r(R-r)) whose Jacobi columns obey the model-space laws vs transfer matrix against cn_K, sn_K on torus-inner-equator",
+  "check: Residuals against the model-space law are fourth-order RK4 discretization error vs error ratio at h and 2h on sphere-great-circle",
+  "check: Residuals against the model-space law are fourth-order RK4 discretization error vs error ratio at h and 2h on hyperbolic-long",
+  "check: Residuals against the model-space law are fourth-order RK4 discretization error vs error ratio at h and 2h on torus-outer-equator",
+  "check: Residuals against the model-space law are fourth-order RK4 discretization error vs error ratio at h and 2h on torus-inner-equator",
+  "check: ciw joint geodesic + Jacobi transfer matrices match the pinned CSG provider on six constant-curvature paths vs CSG constant_curvature_transfer against ciw.lab.jacobi.constant_curvature",
+  "check: ciw joint geodesic + Jacobi transfer matrices match the pinned CSG provider on six constant-curvature paths vs CSG integrate_jacobi RK4 trace against the ciw RK4 transfer on the same grid (same method, different origin; not a same-origin comparison)",
+  "independent: ciw joint geodesic + Jacobi transfer matrices match the pinned CSG provider on six constant-curvature paths vs Curved-Surface-Geodesic-Sensitivity-Runtime@bbc535af29c30997e56fd120320c570830676462",
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_t005_separation_law",
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_t005_csg_provider_agreement",
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_csg_checkout_refusals",
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_csg_output_is_refused_unless_complete",
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_csg_execution_refusals_are_expected_from_their_stage",
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_every_numerical_finding_declares_uncertainty_and_tolerance",
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space"
+ ],
+ "tests_skipped": [],
+ "title": "Verify the Jacobi separation law across positive, zero, and negative curvature.",
+ "uncertainty": "RK4 discretization error (about 1e-8 relative at the fine step), confirmed by step halving.",
+ "unresolved_assumptions": [
+  "Paths of constant curvature only; variable curvature is covered by T006-T009",
+  "No physical trajectories were measured; the physical-domain claim is recorded as not established"
+ ]
+}

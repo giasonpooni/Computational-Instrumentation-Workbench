@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420" font-family="sans-serif" font-size="11">
+<rect width="640" height="420" fill="#ffffff"/>
+<text x="78" y="22" font-size="13" font-weight="bold">T064 sphere: first-order variance error at s = 2.827</text>
+<rect x="78" y="40" width="392" height="322" fill="none" stroke="#333"/>
+<line x1="180.48" y1="40" x2="180.48" y2="362" stroke="#e5e7eb"/>
+<text x="180.48" y="378" text-anchor="middle">1e-2</text>
+<line x1="376.48" y1="40" x2="376.48" y2="362" stroke="#e5e7eb"/>
+<text x="376.48" y="378" text-anchor="middle">1e-1</text>
+<line x1="78" y1="343.56" x2="470" y2="343.56" stroke="#e5e7eb"/>
+<text x="72" y="347.56" text-anchor="end">1e-5</text>
+<line x1="78" y1="270.65" x2="470" y2="270.65" stroke="#e5e7eb"/>
+<text x="72" y="274.65" text-anchor="end">1e-4</text>
+<line x1="78" y1="197.74" x2="470" y2="197.74" stroke="#e5e7eb"/>
+<text x="72" y="201.74" text-anchor="end">1e-3</text>
+<line x1="78" y1="124.83" x2="470" y2="124.83" stroke="#e5e7eb"/>
+<text x="72" y="128.83" text-anchor="end">1e-2</text>
+<line x1="78" y1="51.93" x2="470" y2="51.93" stroke="#e5e7eb"/>
+<text x="72" y="55.93" text-anchor="end">1e-1</text>
+<text x="274.00" y="406" text-anchor="middle">heading std (rad)</text>
+<text x="16" y="201.00" text-anchor="middle" transform="rotate(-90 16 201.00)">relative variance error</text>
+<path d="M78.00,350.07 L180.48,273.83 L274.00,204.24 L376.48,127.86 L470.00,57.10" fill="none" stroke="#1f5fa8" stroke-width="1.8"/>
+<circle cx="78.00" cy="350.07" r="2.6" fill="#1f5fa8"/>
+<circle cx="180.48" cy="273.83" r="2.6" fill="#1f5fa8"/>
+<circle cx="274.00" cy="204.24" r="2.6" fill="#1f5fa8"/>
+<circle cx="376.48" cy="127.86" r="2.6" fill="#1f5fa8"/>
+<circle cx="470.00" cy="57.10" r="2.6" fill="#1f5fa8"/>
+<line x1="482" y1="52" x2="502" y2="52" stroke="#1f5fa8" stroke-width="2"/>
+<text x="508" y="56">|linear/exact - 1|</text>
+<path d="M78.00,51.93 L470.00,51.93" fill="none" stroke="#c2410c" stroke-width="1.8"/>
+<circle cx="78.00" cy="51.93" r="2.6" fill="#c2410c"/>
+<circle cx="470.00" cy="51.93" r="2.6" fill="#c2410c"/>
+<line x1="482" y1="70" x2="502" y2="70" stroke="#c2410c" stroke-width="2"/>
+<text x="508" y="74">10% level</text>
+</svg>

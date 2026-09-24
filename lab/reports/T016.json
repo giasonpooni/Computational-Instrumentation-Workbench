@@ -1,0 +1,659 @@
+{
+ "changed_files": [
+  "src/ciw/lab/geodesic_jacobi_limits.py",
+  "src/ciw/lab/geodesic_jacobi_limits_core.py",
+  "docs/lab/GEODESIC_JACOBI_LIMITS.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 0,
+   "numerically_verified": 6,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Exponents 5 (error), 5/4 (RK4 and Gauss-Legendre steps), 3/2 (implicit midpoint), ~1 (DP45 steps); Gauss-Legendre/RK4 step ratio (120/720)^(1/4) = 0.639 at every k; saddle local exponents approaching sqrt(2).",
+ "experiment": "Integrate the joint geodesic/Jacobi system per k (adaptive and RK4), compute the Jacobi generator's eigenvalues at the path curvature, search the minimal step counts, compare with stability limits, iterate implicit midpoint beyond its pole, and integrate the saddle ridge geodesic for c up to 16384.",
+ "failure_modes_checked": [
+  "matrix-power step search checked against the scalar stability functions on the eigenmodes and, for RK4, against the full geodesic/Jacobi integration",
+  "implicit-midpoint singular step (kh = 2) refused rather than divided by zero",
+  "saddle ridge symmetry x(L) = -x0 checked (y = 0 holds by construction of the start)",
+  "adaptive saddle results checked by tightening rtol",
+  "exponential growth fitted from the integrated Jacobi field, not the closed form",
+  "implicit methods of order 2 and 4 both compared, so the step growth is not an order artefact"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 2.61206217014763e-10,
+      "passed": true,
+      "reference": "max relative error of j_head(L) against sinh(kL)/k",
+      "reference_kind": "analytic",
+      "tolerance": 1e-08
+     }
+    ],
+    "derivation": "docs/lab/GEODESIC_JACOBI_LIMITS.md#t016-strongly-negative-curvature",
+    "generator": {
+     "deterministic": true,
+     "k": [
+      1.0,
+      2.0,
+      4.0,
+      8.0
+     ],
+     "length": 2.0,
+     "name": "ciw.lab.geodesic_jacobi_limits:hyperbolic-k",
+     "rtol": 1e-10,
+     "seed": null
+    }
+   },
+   "claim": "Jacobi fields on HyperbolicPlane(k) grow like sinh(kL)/k and adaptive integration resolves them",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-08,
+    "rel": 1e-09
+   },
+   "uncertainty": {
+    "basis": "closed-form reference; the adaptive relative error is the whole uncertainty",
+    "kind": "reference_error",
+    "value": 2.61206217014763e-10
+   },
+   "unit": null,
+   "value": {
+    "j_head_at_k_8": 555381.9076768042,
+    "max_adaptive_relative_error": 2.61206217014763e-10
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": -0.059302146263244815,
+      "passed": true,
+      "reference": "fitted exponent minus 5",
+      "reference_kind": "analytic",
+      "tolerance": 0.2
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.09879734924196715,
+      "passed": true,
+      "reference": "max |measured / predicted - 1|",
+      "reference_kind": "analytic",
+      "tolerance": 0.2
+     }
+    ],
+    "derivation": "docs/lab/GEODESIC_JACOBI_LIMITS.md#t016-strongly-negative-curvature",
+    "generator": {
+     "deterministic": true,
+     "name": "ciw.lab.geodesic_jacobi_limits:hyperbolic-k",
+     "seed": null,
+     "steps": 128
+    }
+   },
+   "claim": "Fixed-step RK4 relative error grows like k^5 and matches L k^5 h^4 / 120",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.001,
+    "rel": 0.0001
+   },
+   "uncertainty": {
+    "basis": "largest gap between the fitted exponent and consecutive-k slopes (higher powers of kh)",
+    "kind": "fit_spread",
+    "value": 0.020779946827844675
+   },
+   "unit": null,
+   "value": {
+    "exponent": 4.940697853736755,
+    "ratio_to_prediction": [
+     1.024383946988133,
+     0.9749753080569532,
+     0.949286444844628,
+     0.9012026507580329
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": -0.010736673314349243,
+      "passed": true,
+      "reference": "RK4 step exponent minus 5/4",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.012128497312402509,
+      "passed": true,
+      "reference": "max |required / predicted - 1|",
+      "reference_kind": "analytic",
+      "tolerance": 0.2
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.11901625881251554,
+      "passed": true,
+      "reference": "DP45 step exponent minus 1 (local-error model h ~ 1/k)",
+      "reference_kind": "invariant",
+      "tolerance": 0.2
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 3.8130888751178943e-13,
+      "passed": true,
+      "reference": "max relative difference of j_head between matrix powers and the scalar stability function on the eigenmodes (RK4, implicit midpoint, Gauss-Legendre, at the required N)",
+      "reference_kind": "cross_implementation",
+      "tolerance": 1e-10
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 1.3408963694289461e-14,
+      "passed": true,
+      "reference": "max |RK4 matrix-power j_head - integrated j_head| / j_head (full geodesic/Jacobi system, N = 128)",
+      "reference_kind": "cross_implementation",
+      "tolerance": 1e-12
+     }
+    ],
+    "derivation": "docs/lab/GEODESIC_JACOBI_LIMITS.md#t016-strongly-negative-curvature",
+    "generator": {
+     "deterministic": true,
+     "name": "ciw.lab.geodesic_jacobi_limits:hyperbolic-k",
+     "seed": null,
+     "tau": 1e-06
+    }
+   },
+   "claim": "RK4 steps for relative accuracy 1e-6 grow like k^(5/4); DP45 accepted steps grow about linearly in k",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.03,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "largest gap between the fitted exponent and consecutive-k slopes of integer step counts",
+    "kind": "fit_spread",
+    "value": 0.01522597001513426
+   },
+   "unit": null,
+   "value": {
+    "adaptive_exponent": 0.8809837411874845,
+    "rk4_exponent": 1.2392633266856508,
+    "rk4_required_over_predicted": [
+     1.0121284973124025,
+     0.9991117860645851,
+     0.9879536014454594,
+     0.9910326476118999
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 2.220446049250313e-16,
+      "passed": true,
+      "reference": "max |eigenvalue -/+ k| / k of the Jacobi generator at the path curvature",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 4.440892098500626e-16,
+      "passed": true,
+      "reference": "max |lambda_max / lambda_min + 1| (eigenvalue ratio 1)",
+      "reference_kind": "invariant",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "ge",
+      "observed": 23.0,
+      "passed": true,
+      "reference": "min over k of accuracy steps / RK4 stability steps",
+      "reference_kind": "invariant",
+      "tolerance": 5.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0008942975618970728,
+      "passed": true,
+      "reference": "slope of log(2k j_head) from the adaptive runs in kL, minus 1",
+      "reference_kind": "analytic",
+      "tolerance": 0.01
+     }
+    ],
+    "derivation": "docs/lab/GEODESIC_JACOBI_LIMITS.md#t016-strongly-negative-curvature",
+    "generator": {
+     "deterministic": true,
+     "name": "ciw.lab.geodesic_jacobi_limits:hyperbolic-k",
+     "seed": null
+    }
+   },
+   "claim": "This is intrinsic exponential instability, not stiffness: the Jacobi eigenvalues are +k and -k and accuracy, not stability, sets the step",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-08,
+    "rel": 0.05
+   },
+   "uncertainty": {
+    "basis": "integer stability step counts (ceil) limit the ratio to one step",
+    "kind": "quantization",
+    "value": 1.0
+   },
+   "unit": null,
+   "value": {
+    "jacobian_eigenvalues": {
+     "1": [
+      -1.0,
+      1.0
+     ],
+     "2": [
+      -1.9999999999999996,
+      2.0000000000000004
+     ],
+     "4": [
+      -4.0,
+      4.0
+     ],
+     "8": [
+      -7.999999999999998,
+      8.000000000000002
+     ]
+    },
+    "log_growth_slope_in_kL": 1.000894297561897,
+    "steps_required_over_stability_limit": [
+     23.0,
+     27.0,
+     42.333333333333336,
+     50.5
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": -0.008221713078212067,
+      "passed": true,
+      "reference": "implicit-midpoint step exponent minus 3/2",
+      "reference_kind": "analytic",
+      "tolerance": 0.15
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.0130785840077976,
+      "passed": true,
+      "reference": "Gauss-Legendre step exponent minus 5/4",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.033086980997644844,
+      "passed": true,
+      "reference": "max |required / predicted - 1| over both implicit methods",
+      "reference_kind": "analytic",
+      "tolerance": 0.2
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.022850552331360907,
+      "passed": true,
+      "reference": "max |GL/RK4 steps / (120/720)^(1/4) - 1| (same order p = 4, error constants 1/720 and 1/120)",
+      "reference_kind": "analytic",
+      "tolerance": 0.05
+     },
+     {
+      "comparison": "ge",
+      "observed": 6.0,
+      "passed": true,
+      "reference": "sign changes of the implicit-midpoint j at kh > 2",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 3.8130888751178943e-13,
+      "passed": true,
+      "reference": "max relative difference of j_head between matrix powers and the scalar stability function on the eigenmodes (RK4, implicit midpoint, Gauss-Legendre, at the required N)",
+      "reference_kind": "cross_implementation",
+      "tolerance": 1e-10
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 1.3408963694289461e-14,
+      "passed": true,
+      "reference": "max |RK4 matrix-power j_head - integrated j_head| / j_head (full geodesic/Jacobi system, N = 128)",
+      "reference_kind": "cross_implementation",
+      "tolerance": 1e-12
+     }
+    ],
+    "derivation": "docs/lab/GEODESIC_JACOBI_LIMITS.md#t016-strongly-negative-curvature",
+    "generator": {
+     "deterministic": true,
+     "k": [
+      1.0,
+      2.0,
+      4.0,
+      8.0
+     ],
+     "methods": [
+      "implicit-midpoint",
+      "gauss-legendre-2"
+     ],
+     "name": "ciw.lab.geodesic_jacobi_limits:implicit-methods",
+     "seed": null,
+     "tau": 1e-06
+    }
+   },
+   "claim": "A-stable implicit methods do not remove the growth of the required steps with k (implicit midpoint ~ k^(3/2), 2-stage Gauss-Legendre ~ k^(5/4)); implicit midpoint is qualitatively wrong beyond kh = 2",
+   "counterexample": {
+    "statement": "An implicit (A-stable) integrator removes the growth of the step count with k on strongly negatively curved surfaces",
+    "witness": {
+     "beyond_pole_kh": 2.2857142857142856,
+     "gauss_legendre_2_steps": [
+      15,
+      35,
+      83,
+      196
+     ],
+     "implicit_midpoint_steps": [
+      832,
+      2311,
+      6532,
+      18476
+     ],
+     "j_exact": [
+      0.0,
+      0.608187855385345,
+      6.041986582362029,
+      59.4153748287347,
+      584.2146164104307,
+      5744.411259189011,
+      56483.11325648633,
+      555381.907531735
+     ],
+     "j_implicit_midpoint": [
+      0.0,
+      -0.9333333333333336,
+      14.062222222222228,
+      -210.93748148148163,
+      3164.062498765435,
+      -47460.93749991775,
+      711914.0624999955,
+      -10678710.937500017
+     ],
+     "k": [
+      1.0,
+      2.0,
+      4.0,
+      8.0
+     ],
+     "rk4_steps": [
+      23,
+      54,
+      127,
+      303
+     ]
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.05
+   },
+   "uncertainty": {
+    "basis": "largest gap between a fitted implicit step exponent and its consecutive-k slopes",
+    "kind": "fit_spread",
+    "value": 0.017916460595249095
+   },
+   "unit": null,
+   "value": {
+    "gauss_legendre_2": {
+     "exponent": 1.2369214159922024,
+     "over_rk4_steps": [
+      0.6521739130434783,
+      0.6481481481481481,
+      0.6535433070866141,
+      0.6468646864686468
+     ],
+     "steps_required": [
+      15,
+      35,
+      83,
+      196
+     ]
+    },
+    "implicit_midpoint": {
+     "exponent": 1.491778286921788,
+     "steps_required": [
+      832,
+      2311,
+      6532,
+      18476
+     ]
+    },
+    "sign_changes_at_kh": [
+     2.2857142857142856,
+     6
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 3.511799534635855e-09,
+      "passed": true,
+      "reference": "max relative change of j_head(L), rtol 1e-9 -> 1e-11",
+      "reference_kind": "self_convergence",
+      "tolerance": 1e-06
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 7.060507734024668e-11,
+      "passed": true,
+      "reference": "max |x(L) + x0| on the ridge geodesic (mirror symmetry)",
+      "reference_kind": "invariant",
+      "tolerance": 1e-09
+     },
+     {
+      "comparison": "le",
+      "observed": 0.0004441748814196275,
+      "passed": true,
+      "reference": "log j_head(L) / (sqrt(peak |K|) L) at the largest c (exponential growth would give about 1)",
+      "reference_kind": "invariant",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "signed_le",
+      "observed": -0.0013577084960259,
+      "passed": true,
+      "reference": "largest change of consecutive local exponents from c = 16 on (nonpositive: decreasing)",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.000599686618810269,
+      "passed": true,
+      "reference": "last local exponent (c = 4096 -> 16384) minus the matched-asymptotics value sqrt(2)",
+      "reference_kind": "analytic",
+      "tolerance": 0.01
+     }
+    ],
+    "derivation": "docs/lab/GEODESIC_JACOBI_LIMITS.md#t016-strongly-negative-curvature",
+    "generator": {
+     "c": [
+      1.0,
+      4.0,
+      16.0,
+      64.0,
+      256.0,
+      1024.0,
+      4096.0,
+      16384.0
+     ],
+     "deterministic": true,
+     "name": "ciw.lab.geodesic_jacobi_limits:saddle-ridge",
+     "rtol": 1e-09,
+     "seed": null
+    }
+   },
+   "claim": "Saddle(c): peak |K| = c^2 but Jacobi growth is polynomial in c; the local exponent of j_head(L) decreases toward sqrt(2)",
+   "counterexample": {
+    "statement": "Jacobi growth is exponential in sqrt(peak |K|) times the length",
+    "witness": {
+     "c": 16384.0,
+     "log_j_head": 14.554722514358353,
+     "peak_abs_curvature": 268435456.0,
+     "sqrt_peak_times_L": 32768.0
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0001
+   },
+   "uncertainty": {
+    "basis": "relative change of j_head(L) when rtol is tightened from 1e-9 to 1e-11; local exponents inherit about twice this",
+    "kind": "truncation_bound",
+    "value": 3.511799534635855e-09
+   },
+   "unit": null,
+   "value": {
+    "fitted_exponent_c_16_to_16384": 1.4258879402441527,
+    "heuristic_exponent": 1.4142135623730951,
+    "j_head": [
+     3.167908032458897,
+     14.26337708828688,
+     105.79430824018128,
+     793.8448733803385,
+     5774.575931482742,
+     41363.12541673149,
+     294600.3247178724,
+     2094284.4765441383
+    ],
+    "local_exponents": [
+     1.0853566228319271,
+     1.4454372515790268,
+     1.453797551574438,
+     1.4313929912619952,
+     1.4202791461904682,
+     1.4161709574879313,
+     1.4148132489919054
+    ]
+   }
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 6412,
+   "path": "artifacts/T016/negative-curvature.json",
+   "sha256": "4ca86f2f20ad344d54af85bc5ccaeca4c8dc2cde8bb2c3dfec0bc68ed709ba60"
+  },
+  {
+   "bytes": 3617,
+   "path": "artifacts/T016/steps-versus-k.svg",
+   "sha256": "bbcc3fcbc6da2c6ad9b350b200110ed63fdfac34b368eb17aeb01acad7c073da"
+  },
+  {
+   "bytes": 4451,
+   "path": "artifacts/T016/saddle-growth.svg",
+   "sha256": "2310d5114d263a4ec0bd5779a1f709708159ea272db0448e30fbb336bf9c0660"
+  }
+ ],
+ "hypothesis": "On K = -k^2 the Jacobi fields grow like e^(kL), so absolute errors are amplified by e^(kL) and a fixed relative accuracy needs steps growing with k; this is intrinsic instability of the flow (eigenvalues +k and -k of the Jacobi linearization), not classical stiffness, so A-stable implicit methods do not remove it. Concentrated negative curvature (Saddle with large c) does not produce exponential growth.",
+ "input_data": [
+  "HyperbolicPlane(k), k in 1, 2, 4, 8, start (0, 1), heading 0.6, L = 2.0",
+  "RK4 N = 128; DP45 rtol 1e-10; relative accuracy target 1e-06; implicit midpoint and 2-stage Gauss-Legendre as exact step matrices",
+  "Saddle(c), c in 1, 4, 16, 64, 256, 1024, 4096, 16384, ridge geodesic y = 0 from arclength 1 before the saddle point, L = 2, DP45 rtol 1e-9 (checked at 1e-11)"
+ ],
+ "mathematical_model": "j'' = k^2 j, j_head = sinh(kL)/k. A one-step method of order p with R(z) = e^z (1 + c z^(p+1) + ...) on the growing mode has relative error N |c| (kh)^(p+1), so N(tau) = L (L |c| k^(p+1) / tau)^(1/p) ~ k^((p+1)/p): RK4 c = -1/120 (k^(5/4)), implicit midpoint c = 1/12 (k^(3/2), pole at kh = 2 and negative factor beyond), 2-stage Gauss-Legendre (the (2, 2) Pade approximant) c = -1/720 (k^(5/4), no real pole). RK4 stability for the decaying mode needs kh <= 2.785. Saddle ridge y = 0: K = -c^2/(1 + c^2 x^2)^2 ~ -1/(4 s^2) away from the saddle point, where j'' = j/(4 s^2) has solutions |s|^((1 +/- sqrt(2))/2); matching the inbound and outbound power laws through the core of width 1/c gives j_head(L) ~ c^sqrt(2) (matched asymptotics, not a proof).",
+ "number": 16,
+ "numerical_result": "RK4 error exponent 4.941 (measured/predicted 0.901-1.02); required steps for k = 1, 2, 4, 8: RK4 23, 54, 127, 303 (exponent 1.24), implicit midpoint 832, 2311, 6532, 18476 (exponent 1.49), 2-stage Gauss-Legendre 15, 35, 83, 196 (exponent 1.24, 0.647 to 0.654 times the RK4 steps, predicted (120/720)^(1/4) = 0.639), DP45 81, 162, 300, 505 (exponent 0.881); accuracy/stability step ratio 23-50.5; Jacobi eigenvalues +/-k to 2.2e-16; RK4 geodesic endpoint error 2.2e-09 (k = 1) to 0.461 (k = 8); implicit midpoint at kh = 2.29 changes sign 6 times; saddle j_head(L) 3.168, 14.26, 105.8, 793.8, 5775, 4.136e+04, 2.946e+05, 2.094e+06 for c = 1, 4, 16, 64, 256, 1024, 4096, 16384 (fitted exponent 1.43 for c >= 16, local exponents 1.454, 1.431, 1.42, 1.416, 1.415 from c = 16), DP45 steps grow by 47, 52, 48, 48, 47, 46, 46 per factor 4 in c.",
+ "observation_model": "Relative error of j_head(L); required steps by doubling and bisection on the exact step matrices of RK4, implicit midpoint and 2-stage Gauss-Legendre (matrix powers, checked against the scalar stability function on the eigenmodes, and for RK4 against the full geodesic/Jacobi integration); hyperbolic distance of the geodesic endpoint to the exact semicircle.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/geodesic_jacobi_limits.py": "29c8472e91cdf4deb2e1f526ab40e57f703f41e20ef14edd8fb1cc2fc6ede661",
+   "src/ciw/lab/geodesic_jacobi_limits_core.py": "8aa707ec2a190208bf07cd3b1f94a40f191a7a9c4be277714ed8b627e2c5fcb9"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T017 (validity domains, which shrink like 1/cosh(ks) on the hyperbolic plane) and T018",
+ "report_id": "sha256:62484ad079cb5a8dfc8b25525d6a519ceb0e7278125df9b7e965ff8095d9191b",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "geodesic-jacobi",
+ "state": "completed",
+ "task_id": "T016",
+ "tests_passed": [
+  "check: Jacobi fields on HyperbolicPlane(k) grow like sinh(kL)/k and adaptive integration resolves them vs max relative error of j_head(L) against sinh(kL)/k",
+  "check: Fixed-step RK4 relative error grows like k^5 and matches L k^5 h^4 / 120 vs fitted exponent minus 5",
+  "check: Fixed-step RK4 relative error grows like k^5 and matches L k^5 h^4 / 120 vs max |measured / predicted - 1|",
+  "check: RK4 steps for relative accuracy 1e-6 grow like k^(5/4); DP45 accepted steps grow about linearly in k vs RK4 step exponent minus 5/4",
+  "check: RK4 steps for relative accuracy 1e-6 grow like k^(5/4); DP45 accepted steps grow about linearly in k vs max |required / predicted - 1|",
+  "check: RK4 steps for relative accuracy 1e-6 grow like k^(5/4); DP45 accepted steps grow about linearly in k vs DP45 step exponent minus 1 (local-error model h ~ 1/k)",
+  "check: RK4 steps for relative accuracy 1e-6 grow like k^(5/4); DP45 accepted steps grow about linearly in k vs max relative difference of j_head between matrix powers and the scalar stability function on the eigenmodes (RK4, implicit midpoint, Gauss-Legendre, at the required N)",
+  "check: RK4 steps for relative accuracy 1e-6 grow like k^(5/4); DP45 accepted steps grow about linearly in k vs max |RK4 matrix-power j_head - integrated j_head| / j_head (full geodesic/Jacobi system, N = 128)",
+  "check: This is intrinsic exponential instability, not stiffness: the Jacobi eigenvalues are +k and -k and accuracy, not stability, sets the step vs max |eigenvalue -/+ k| / k of the Jacobi generator at the path curvature",
+  "check: This is intrinsic exponential instability, not stiffness: the Jacobi eigenvalues are +k and -k and accuracy, not stability, sets the step vs max |lambda_max / lambda_min + 1| (eigenvalue ratio 1)",
+  "check: This is intrinsic exponential instability, not stiffness: the Jacobi eigenvalues are +k and -k and accuracy, not stability, sets the step vs min over k of accuracy steps / RK4 stability steps",
+  "check: This is intrinsic exponential instability, not stiffness: the Jacobi eigenvalues are +k and -k and accuracy, not stability, sets the step vs slope of log(2k j_head) from the adaptive runs in kL, minus 1",
+  "check: A-stable implicit methods do not remove the growth of the required steps with k (implicit midpoint ~ k^(3/2), 2-stage Gauss-Legendre ~ k^(5/4)); implicit midpoint is qualitatively wrong beyond kh = 2 vs implicit-midpoint step exponent minus 3/2",
+  "check: A-stable implicit methods do not remove the growth of the required steps with k (implicit midpoint ~ k^(3/2), 2-stage Gauss-Legendre ~ k^(5/4)); implicit midpoint is qualitatively wrong beyond kh = 2 vs Gauss-Legendre step exponent minus 5/4",
+  "check: A-stable implicit methods do not remove the growth of the required steps with k (implicit midpoint ~ k^(3/2), 2-stage Gauss-Legendre ~ k^(5/4)); implicit midpoint is qualitatively wrong beyond kh = 2 vs max |required / predicted - 1| over both implicit methods",
+  "check: A-stable implicit methods do not remove the growth of the required steps with k (implicit midpoint ~ k^(3/2), 2-stage Gauss-Legendre ~ k^(5/4)); implicit midpoint is qualitatively wrong beyond kh = 2 vs max |GL/RK4 steps / (120/720)^(1/4) - 1| (same order p = 4, error constants 1/720 and 1/120)",
+  "check: A-stable implicit methods do not remove the growth of the required steps with k (implicit midpoint ~ k^(3/2), 2-stage Gauss-Legendre ~ k^(5/4)); implicit midpoint is qualitatively wrong beyond kh = 2 vs sign changes of the implicit-midpoint j at kh > 2",
+  "check: A-stable implicit methods do not remove the growth of the required steps with k (implicit midpoint ~ k^(3/2), 2-stage Gauss-Legendre ~ k^(5/4)); implicit midpoint is qualitatively wrong beyond kh = 2 vs max relative difference of j_head between matrix powers and the scalar stability function on the eigenmodes (RK4, implicit midpoint, Gauss-Legendre, at the required N)",
+  "check: A-stable implicit methods do not remove the growth of the required steps with k (implicit midpoint ~ k^(3/2), 2-stage Gauss-Legendre ~ k^(5/4)); implicit midpoint is qualitatively wrong beyond kh = 2 vs max |RK4 matrix-power j_head - integrated j_head| / j_head (full geodesic/Jacobi system, N = 128)",
+  "check: Saddle(c): peak |K| = c^2 but Jacobi growth is polynomial in c; the local exponent of j_head(L) decreases toward sqrt(2) vs max relative change of j_head(L), rtol 1e-9 -> 1e-11",
+  "check: Saddle(c): peak |K| = c^2 but Jacobi growth is polynomial in c; the local exponent of j_head(L) decreases toward sqrt(2) vs max |x(L) + x0| on the ridge geodesic (mirror symmetry)",
+  "check: Saddle(c): peak |K| = c^2 but Jacobi growth is polynomial in c; the local exponent of j_head(L) decreases toward sqrt(2) vs log j_head(L) / (sqrt(peak |K|) L) at the largest c (exponential growth would give about 1)",
+  "check: Saddle(c): peak |K| = c^2 but Jacobi growth is polynomial in c; the local exponent of j_head(L) decreases toward sqrt(2) vs largest change of consecutive local exponents from c = 16 on (nonpositive: decreasing)",
+  "check: Saddle(c): peak |K| = c^2 but Jacobi growth is polynomial in c; the local exponent of j_head(L) decreases toward sqrt(2) vs last local exponent (c = 4096 -> 16384) minus the matched-asymptotics value sqrt(2)",
+  "pytest: tests/test_lab_geodesic_jacobi_limits.py::test_t016_negative_curvature_is_not_stiffness"
+ ],
+ "tests_skipped": [],
+ "title": "Study stiff behavior on strongly negative-curvature surfaces.",
+ "uncertainty": "Step counts are integers found by bisection assuming monotone error in N; the saddle local exponents (1.454, 1.431, 1.42, 1.416, 1.415 for c = 16 ... 16384) come from adaptive runs self-consistent to 3.5e-09 relative, so each local exponent is accurate to about 1e-8; the sqrt(2) limit is a matched-asymptotics argument supported by these slopes, not a proof.",
+ "unresolved_assumptions": [
+  "The sqrt(2) saddle exponent is a matched-asymptotics argument, not a proof",
+  "Only the ridge geodesic of the saddle is studied; oblique geodesics sample other K",
+  "Implicit methods are evaluated on the constant-curvature Jacobi system through their exact step matrices; no nonlinear implicit geodesic integrator is in the core",
+  "Error amplification of the geodesic in the half-plane chart mixes chart compression near y = 0 with intrinsic instability"
+ ]
+}

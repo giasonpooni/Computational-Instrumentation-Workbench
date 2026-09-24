@@ -1,0 +1,26 @@
+{
+ "corrected_order": 2.015879532447984,
+ "sphere_analytic": -0.0027761564654112513,
+ "sphere_proposal": -0.0027761564654242656,
+ "torus": [
+  {
+   "corrected": 2.2267039074086393e-05,
+   "heading_proposal": -0.005668707779675676,
+   "lateral": 0.02,
+   "uncorrected": 0.009412672467241543
+  },
+  {
+   "corrected": 5.485995592564807e-06,
+   "heading_proposal": -0.002834353889837838,
+   "lateral": 0.01,
+   "uncorrected": 0.004697265337269426
+  },
+  {
+   "corrected": 1.3613884363956506e-06,
+   "heading_proposal": -0.001417176944918919,
+   "lateral": 0.005,
+   "uncorrected": 0.002346379496159781
+  }
+ ],
+ "uncorrected_order": 1.0020840125403259
+}

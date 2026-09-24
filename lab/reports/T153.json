@@ -1,0 +1,284 @@
+{
+ "changed_files": [
+  "src/ciw/lab/implementation_targets.py",
+  "src/ciw/lab/implementation_targets_authority.py",
+  "docs/lab/IMPLEMENTATION_TARGETS.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 2,
+   "numerically_verified": 3,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Zero accepted writes; each route stops at its expected check; mutation of the frozen object does not open the gate.",
+ "experiment": "Attempt random writes on the default policy, try each enabling route, then bypass the frozen dataclass.",
+ "failure_modes_checked": [
+  "missing, wrong-type, self-issued, expired, out-of-scope, unsigned and unanchored authorizations",
+  "lab issuing authority",
+  "frozen-object mutation"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "accepted writes",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "expected_refusal": "writes_disabled_by_default",
+      "observed_refusal": "writes_disabled_by_default",
+      "passed": true,
+      "reference": "default write",
+      "reference_kind": "refusal"
+     }
+    ],
+    "generator": {
+     "name": "PCG64 write attempts over five channels",
+     "seed": 153
+    }
+   },
+   "claim": "Default policy refuses every write attempt",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "accepted": 0,
+    "attempts": 1000
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "authorization_missing",
+      "observed_refusal": "authorization_missing",
+      "passed": true,
+      "reference": "enable without a record",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "authorization_wrong_type",
+      "observed_refusal": "authorization_wrong_type",
+      "passed": true,
+      "reference": "enable with a plain dict",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "self_issued_authority",
+      "observed_refusal": "self_issued_authority",
+      "passed": true,
+      "reference": "enable with a lab-issued record",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "authorization_expired",
+      "observed_refusal": "authorization_expired",
+      "passed": true,
+      "reference": "enable with an expired record",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "out_of_scope",
+      "observed_refusal": "out_of_scope",
+      "passed": true,
+      "reference": "enable for a channel outside scope",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "unsigned_authorization",
+      "observed_refusal": "unsigned_authorization",
+      "passed": true,
+      "reference": "enable with an unsigned record",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "no_trust_anchor",
+      "observed_refusal": "no_trust_anchor",
+      "passed": true,
+      "reference": "enable with a well-formed external record",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "lab_cannot_issue_authority",
+      "observed_refusal": "lab_cannot_issue_authority",
+      "passed": true,
+      "reference": "lab issues an authorization record",
+      "reference_kind": "refusal"
+     }
+    ]
+   },
+   "claim": "Enabling writes is refused on every route, including a well-formed external record",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": "refused routes",
+   "value": 8
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "object.__setattr__ changed enabled to True",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     },
+     {
+      "expected_refusal": "writes_disabled_by_default",
+      "observed_refusal": "writes_disabled_by_default",
+      "passed": true,
+      "reference": "write after forcing enabled=True in memory",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "no_trust_anchor",
+      "observed_refusal": "no_trust_anchor",
+      "passed": true,
+      "reference": "write after also forcing an external record in memory",
+      "reference_kind": "refusal"
+     }
+    ]
+   },
+   "claim": "A frozen in-process policy object can be mutated",
+   "counterexample": {
+    "statement": "An in-process Python flag is an actuator authority boundary",
+    "witness": {
+     "mutation": "object.__setattr__(policy, 'enabled', True)",
+     "outcome": "flag changed; the gate still refused because it re-verifies the authorization on every write"
+    }
+   },
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "flag_mutated": true,
+    "writes_still_refused": true
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "The lab holds actuator write authority",
+   "domain": "actuator_authority",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "Disabled-by-default software writes make the machine safe",
+   "domain": "machine_safety",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 1630,
+   "path": "artifacts/T153/write-policy.json",
+   "sha256": "f7784cbaed2dd8eba0cef9f5f7d1d782917c92561cc695cf438f17dc8aae5b3e"
+  }
+ ],
+ "hypothesis": "A deny-by-default write policy refuses every write; enabling needs an externally issued, signed, in-scope, unexpired authorization verified against a trust anchor the lab does not hold, so no route opens it here.",
+ "input_data": [
+  "1000 PCG64(153) write attempts on five channels",
+  "eight enabling routes",
+  "fixed instant 2026-09-23T00:00:00Z"
+ ],
+ "mathematical_model": "Gate(channel) = refuse unless enabled and verify(authorization, channel, now) passes; verify checks type, issuer, validity window, scope, signature, trust anchor in that order; the lab build has no trust anchor and no actuator transport.",
+ "number": 153,
+ "numerical_result": "0/1000 writes accepted; 8/8 enabling routes refused with their expected codes; in-memory mutation succeeded but writes stayed refused.",
+ "observation_model": "Refusal codes raised by the policy; no actuator exists.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/implementation_targets.py": "4e27c12d31365590b7fb82d98b8d02e1668c7b8e73b03f71ef270eca9fcf6eea",
+   "src/ciw/lab/implementation_targets_authority.py": "d6bed9b77e929252173070b28d8ce0f30b6b3bc1ff544100379515e999ec017a"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T154 (treat control outputs as proposals behind the same authorization)",
+ "report_id": "sha256:9d2a51b212eae05f664e89c49d418eafdaa444651bb1684c8f25fe65dcedf21f",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "implementation-targets",
+ "state": "completed",
+ "task_id": "T153",
+ "tests_passed": [
+  "check: Default policy refuses every write attempt vs accepted writes",
+  "check: Default policy refuses every write attempt vs default write",
+  "check: Enabling writes is refused on every route, including a well-formed external record vs enable without a record",
+  "check: Enabling writes is refused on every route, including a well-formed external record vs enable with a plain dict",
+  "check: Enabling writes is refused on every route, including a well-formed external record vs enable with a lab-issued record",
+  "check: Enabling writes is refused on every route, including a well-formed external record vs enable with an expired record",
+  "check: Enabling writes is refused on every route, including a well-formed external record vs enable for a channel outside scope",
+  "check: Enabling writes is refused on every route, including a well-formed external record vs enable with an unsigned record",
+  "check: Enabling writes is refused on every route, including a well-formed external record vs enable with a well-formed external record",
+  "check: Enabling writes is refused on every route, including a well-formed external record vs lab issues an authorization record",
+  "check: A frozen in-process policy object can be mutated vs object.__setattr__ changed enabled to True",
+  "check: A frozen in-process policy object can be mutated vs write after forcing enabled=True in memory",
+  "check: A frozen in-process policy object can be mutated vs write after also forcing an external record in memory",
+  "pytest: tests/test_lab_implementation_targets.py::test_t153_writes_disabled_by_default"
+ ],
+ "tests_skipped": [],
+ "title": "Keep actuator writes disabled by default.",
+ "uncertainty": "Exhaustive over the declared routes; software refusals inside one process can be bypassed by code with the same privileges (the counterexample shows the mutation itself succeeds).",
+ "unresolved_assumptions": [
+  "Real enforcement belongs in hardware interlocks and a separate controller process",
+  "Authorization record format and signature scheme are placeholders"
+ ]
+}

@@ -1,0 +1,5 @@
+{
+ "capture_supplied": false,
+ "note": "no RAPL capture was supplied; the lab runner reads no energy counter (capture with `python -m ciw.lab.energy_gpu_telemetry rapl-capture` and set CIW_LAB_RAPL_LOG)",
+ "package_domains_present": []
+}

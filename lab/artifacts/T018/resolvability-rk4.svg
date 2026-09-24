@@ -1,0 +1,131 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420" font-family="sans-serif" font-size="11">
+<rect width="640" height="420" fill="#ffffff"/>
+<text x="78" y="22" font-size="13" font-weight="bold">RK4 resolvability ratio (signal / error), L = 2</text>
+<rect x="78" y="40" width="392" height="322" fill="none" stroke="#333"/>
+<line x1="181.64" y1="40" x2="181.64" y2="362" stroke="#e5e7eb"/>
+<text x="181.64" y="378" text-anchor="middle">1e1</text>
+<line x1="442.08" y1="40" x2="442.08" y2="362" stroke="#e5e7eb"/>
+<text x="442.08" y="378" text-anchor="middle">1e2</text>
+<line x1="78" y1="324.10" x2="470" y2="324.10" stroke="#e5e7eb"/>
+<text x="72" y="328.10" text-anchor="end">1e1</text>
+<line x1="78" y1="272.14" x2="470" y2="272.14" stroke="#e5e7eb"/>
+<text x="72" y="276.14" text-anchor="end">1e3</text>
+<line x1="78" y1="220.19" x2="470" y2="220.19" stroke="#e5e7eb"/>
+<text x="72" y="224.19" text-anchor="end">1e5</text>
+<line x1="78" y1="168.24" x2="470" y2="168.24" stroke="#e5e7eb"/>
+<text x="72" y="172.24" text-anchor="end">1e7</text>
+<line x1="78" y1="116.28" x2="470" y2="116.28" stroke="#e5e7eb"/>
+<text x="72" y="120.28" text-anchor="end">1e9</text>
+<line x1="78" y1="64.33" x2="470" y2="64.33" stroke="#e5e7eb"/>
+<text x="72" y="68.33" text-anchor="end">1e11</text>
+<text x="274.00" y="406" text-anchor="middle">steps N (h = 2/N)</text>
+<text x="16" y="201.00" text-anchor="middle" transform="rotate(-90 16 201.00)">signal / error</text>
+<path d="M78.00,221.80 L156.40,223.21 L234.80,196.19 L313.20,166.52 L391.60,135.95 L470.00,105.01" fill="none" stroke="#1f5fa8" stroke-width="1.8"/>
+<circle cx="78.00" cy="221.80" r="2.6" fill="#1f5fa8"/>
+<circle cx="156.40" cy="223.21" r="2.6" fill="#1f5fa8"/>
+<circle cx="234.80" cy="196.19" r="2.6" fill="#1f5fa8"/>
+<circle cx="313.20" cy="166.52" r="2.6" fill="#1f5fa8"/>
+<circle cx="391.60" cy="135.95" r="2.6" fill="#1f5fa8"/>
+<circle cx="470.00" cy="105.01" r="2.6" fill="#1f5fa8"/>
+<line x1="482" y1="52" x2="502" y2="52" stroke="#1f5fa8" stroke-width="2"/>
+<text x="508" y="56">sphere R=1</text>
+<path d="M78.00,217.29 L156.40,185.97 L234.80,154.67 L313.20,123.37 L391.60,92.09 L470.00,60.89" fill="none" stroke="#c2410c" stroke-width="1.8"/>
+<circle cx="78.00" cy="217.29" r="2.6" fill="#c2410c"/>
+<circle cx="156.40" cy="185.97" r="2.6" fill="#c2410c"/>
+<circle cx="234.80" cy="154.67" r="2.6" fill="#c2410c"/>
+<circle cx="313.20" cy="123.37" r="2.6" fill="#c2410c"/>
+<circle cx="391.60" cy="92.09" r="2.6" fill="#c2410c"/>
+<circle cx="470.00" cy="60.89" r="2.6" fill="#c2410c"/>
+<line x1="482" y1="70" x2="502" y2="70" stroke="#c2410c" stroke-width="2"/>
+<text x="508" y="74">sphere R=10</text>
+<path d="M78.00,165.45 L156.40,134.18 L234.80,102.94 L313.20,70.08 L391.60,51.93 L470.00,51.93" fill="none" stroke="#15803d" stroke-width="1.8"/>
+<circle cx="78.00" cy="165.45" r="2.6" fill="#15803d"/>
+<circle cx="156.40" cy="134.18" r="2.6" fill="#15803d"/>
+<circle cx="234.80" cy="102.94" r="2.6" fill="#15803d"/>
+<circle cx="313.20" cy="70.08" r="2.6" fill="#15803d"/>
+<circle cx="391.60" cy="51.93" r="2.6" fill="#15803d"/>
+<circle cx="470.00" cy="51.93" r="2.6" fill="#15803d"/>
+<line x1="482" y1="88" x2="502" y2="88" stroke="#15803d" stroke-width="2"/>
+<text x="508" y="92">sphere R=100</text>
+<path d="M78.00,120.66 L156.40,148.97 L234.80,146.97 L313.20,146.97 L391.60,148.97 L470.00,163.40" fill="none" stroke="#7e22ce" stroke-width="1.8"/>
+<circle cx="78.00" cy="120.66" r="2.6" fill="#7e22ce"/>
+<circle cx="156.40" cy="148.97" r="2.6" fill="#7e22ce"/>
+<circle cx="234.80" cy="146.97" r="2.6" fill="#7e22ce"/>
+<circle cx="313.20" cy="146.97" r="2.6" fill="#7e22ce"/>
+<circle cx="391.60" cy="148.97" r="2.6" fill="#7e22ce"/>
+<circle cx="470.00" cy="163.40" r="2.6" fill="#7e22ce"/>
+<line x1="482" y1="106" x2="502" y2="106" stroke="#7e22ce" stroke-width="2"/>
+<text x="508" y="110">sphere R=1e4</text>
+<path d="M78.00,303.32 L156.40,303.32 L234.80,303.32 L313.20,311.42 L391.60,304.40 L470.00,324.18" fill="none" stroke="#b91c1c" stroke-width="1.8"/>
+<circle cx="78.00" cy="303.32" r="2.6" fill="#b91c1c"/>
+<circle cx="156.40" cy="303.32" r="2.6" fill="#b91c1c"/>
+<circle cx="234.80" cy="303.32" r="2.6" fill="#b91c1c"/>
+<circle cx="313.20" cy="311.42" r="2.6" fill="#b91c1c"/>
+<circle cx="391.60" cy="304.40" r="2.6" fill="#b91c1c"/>
+<circle cx="470.00" cy="324.18" r="2.6" fill="#b91c1c"/>
+<line x1="482" y1="124" x2="502" y2="124" stroke="#b91c1c" stroke-width="2"/>
+<text x="508" y="128">sphere R=1e7</text>
+<path d="M78.00,350.07 L156.40,350.07 L234.80,350.07 L313.20,350.07 L391.60,350.07 L470.00,350.07" fill="none" stroke="#0f766e" stroke-width="1.8"/>
+<circle cx="78.00" cy="350.07" r="2.6" fill="#0f766e"/>
+<circle cx="156.40" cy="350.07" r="2.6" fill="#0f766e"/>
+<circle cx="234.80" cy="350.07" r="2.6" fill="#0f766e"/>
+<circle cx="313.20" cy="350.07" r="2.6" fill="#0f766e"/>
+<circle cx="391.60" cy="350.07" r="2.6" fill="#0f766e"/>
+<circle cx="470.00" cy="350.07" r="2.6" fill="#0f766e"/>
+<line x1="482" y1="142" x2="502" y2="142" stroke="#0f766e" stroke-width="2"/>
+<text x="508" y="146">sphere R=1e8</text>
+<path d="M78.00,235.23 L156.40,213.86 L234.80,185.60 L313.20,155.57 L391.60,124.86 L470.00,93.90" fill="none" stroke="#a16207" stroke-width="1.8"/>
+<circle cx="78.00" cy="235.23" r="2.6" fill="#a16207"/>
+<circle cx="156.40" cy="213.86" r="2.6" fill="#a16207"/>
+<circle cx="234.80" cy="185.60" r="2.6" fill="#a16207"/>
+<circle cx="313.20" cy="155.57" r="2.6" fill="#a16207"/>
+<circle cx="391.60" cy="124.86" r="2.6" fill="#a16207"/>
+<circle cx="470.00" cy="93.90" r="2.6" fill="#a16207"/>
+<line x1="482" y1="160" x2="502" y2="160" stroke="#a16207" stroke-width="2"/>
+<text x="508" y="164">torus R=2</text>
+<path d="M78.00,222.08 L156.40,190.74 L234.80,159.43 L313.20,128.13 L391.60,96.84 L470.00,65.55" fill="none" stroke="#475569" stroke-width="1.8"/>
+<circle cx="78.00" cy="222.08" r="2.6" fill="#475569"/>
+<circle cx="156.40" cy="190.74" r="2.6" fill="#475569"/>
+<circle cx="234.80" cy="159.43" r="2.6" fill="#475569"/>
+<circle cx="313.20" cy="128.13" r="2.6" fill="#475569"/>
+<circle cx="391.60" cy="96.84" r="2.6" fill="#475569"/>
+<circle cx="470.00" cy="65.55" r="2.6" fill="#475569"/>
+<line x1="482" y1="178" x2="502" y2="178" stroke="#475569" stroke-width="2"/>
+<text x="508" y="182">torus R=64 equator</text>
+<path d="M78.00,254.12 L156.40,210.56 L234.80,178.21 L313.20,148.00 L391.60,117.54 L470.00,86.64" fill="none" stroke="#1f5fa8" stroke-width="1.8"/>
+<circle cx="78.00" cy="254.12" r="2.6" fill="#1f5fa8"/>
+<circle cx="156.40" cy="210.56" r="2.6" fill="#1f5fa8"/>
+<circle cx="234.80" cy="178.21" r="2.6" fill="#1f5fa8"/>
+<circle cx="313.20" cy="148.00" r="2.6" fill="#1f5fa8"/>
+<circle cx="391.60" cy="117.54" r="2.6" fill="#1f5fa8"/>
+<circle cx="470.00" cy="86.64" r="2.6" fill="#1f5fa8"/>
+<line x1="482" y1="196" x2="502" y2="196" stroke="#1f5fa8" stroke-width="2"/>
+<text x="508" y="200">saddle c=1</text>
+<path d="M78.00,243.75 L156.40,208.11 L234.80,182.46 L313.20,151.85 L391.60,120.52 L470.00,89.12" fill="none" stroke="#c2410c" stroke-width="1.8"/>
+<circle cx="78.00" cy="243.75" r="2.6" fill="#c2410c"/>
+<circle cx="156.40" cy="208.11" r="2.6" fill="#c2410c"/>
+<circle cx="234.80" cy="182.46" r="2.6" fill="#c2410c"/>
+<circle cx="313.20" cy="151.85" r="2.6" fill="#c2410c"/>
+<circle cx="391.60" cy="120.52" r="2.6" fill="#c2410c"/>
+<circle cx="470.00" cy="89.12" r="2.6" fill="#c2410c"/>
+<line x1="482" y1="214" x2="502" y2="214" stroke="#c2410c" stroke-width="2"/>
+<text x="508" y="218">bump h=0.5</text>
+<path d="M78.00,267.75 L156.40,234.97 L234.80,203.33 L313.20,171.97 L391.60,140.67 L470.00,109.45" fill="none" stroke="#15803d" stroke-width="1.8"/>
+<circle cx="78.00" cy="267.75" r="2.6" fill="#15803d"/>
+<circle cx="156.40" cy="234.97" r="2.6" fill="#15803d"/>
+<circle cx="234.80" cy="203.33" r="2.6" fill="#15803d"/>
+<circle cx="313.20" cy="171.97" r="2.6" fill="#15803d"/>
+<circle cx="391.60" cy="140.67" r="2.6" fill="#15803d"/>
+<circle cx="470.00" cy="109.45" r="2.6" fill="#15803d"/>
+<line x1="482" y1="232" x2="502" y2="232" stroke="#15803d" stroke-width="2"/>
+<text x="508" y="236">bump h=0.05</text>
+<path d="M78.00,277.65 L156.40,248.54 L234.80,218.38 L313.20,187.66 L391.60,156.66 L470.00,125.52" fill="none" stroke="#7e22ce" stroke-width="1.8"/>
+<circle cx="78.00" cy="277.65" r="2.6" fill="#7e22ce"/>
+<circle cx="156.40" cy="248.54" r="2.6" fill="#7e22ce"/>
+<circle cx="234.80" cy="218.38" r="2.6" fill="#7e22ce"/>
+<circle cx="313.20" cy="187.66" r="2.6" fill="#7e22ce"/>
+<circle cx="391.60" cy="156.66" r="2.6" fill="#7e22ce"/>
+<circle cx="470.00" cy="125.52" r="2.6" fill="#7e22ce"/>
+<line x1="482" y1="250" x2="502" y2="250" stroke="#7e22ce" stroke-width="2"/>
+<text x="508" y="254">hyperbolic k=1</text>
+</svg>

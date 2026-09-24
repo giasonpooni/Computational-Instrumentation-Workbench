@@ -1,0 +1,294 @@
+{
+ "closed_form_separation": {
+  "hyperbolic-long": {
+   "curvature": -1.0,
+   "heading": {
+    "errors": [
+     0.00663783851597799,
+     0.0016817049280305324,
+     0.0004218476128911917
+    ],
+    "order": 1.987959844703613
+   },
+   "lateral": {
+    "errors": [
+     0.006571446181154031,
+     0.0016650551600323625,
+     0.00041768199824695123
+    ],
+    "order": 1.9878670145339832
+   }
+  },
+  "sphere-great-circle": {
+   "curvature": 1.0,
+   "heading": {
+    "errors": [
+     2.5660907009172895e-05,
+     6.41503321696657e-06,
+     1.6037462076123887e-06
+    ],
+    "order": 2.000027202937528
+   },
+   "lateral": {
+    "errors": [
+     2.5660288975992707e-05,
+     6.414882326444271e-06,
+     1.6037087269271666e-06
+    ],
+    "order": 2.000026687947454
+   }
+  }
+ },
+ "paths": {
+  "cylinder": {
+   "heading": 0.6,
+   "key": "cylinder",
+   "length": 3.0,
+   "note": "helix",
+   "surface": "cylinder",
+   "u0": [
+    0.2,
+    0.1
+   ]
+  },
+  "hyperbolic-long": {
+   "heading": 0.6,
+   "key": "hyperbolic-long",
+   "length": 3.0,
+   "note": "semicircle arc; K = -1",
+   "surface": "hyperbolic-plane",
+   "u0": [
+    0.0,
+    1.0
+   ]
+  },
+  "plane": {
+   "heading": 0.7,
+   "key": "plane",
+   "length": 2.0,
+   "note": "",
+   "surface": "plane",
+   "u0": [
+    0.3,
+    -0.2
+   ]
+  },
+  "sphere-great-circle": {
+   "heading": 1.0,
+   "key": "sphere-great-circle",
+   "length": 7.0,
+   "note": "inclined great circle through (pi/2, 0); theta stays in [1.0, 2.14]",
+   "surface": "sphere",
+   "u0": [
+    1.5707963267948966,
+    0.0
+   ]
+  },
+  "torus-inner-equator": {
+   "heading": 0.0,
+   "key": "torus-inner-equator",
+   "length": 6.5,
+   "note": "theta = pi parallel; K = -1/(r(R-r))",
+   "surface": "torus",
+   "u0": [
+    0.0,
+    3.141592653589793
+   ]
+  },
+  "torus-outer-equator": {
+   "heading": 0.0,
+   "key": "torus-outer-equator",
+   "length": 11.5,
+   "note": "theta = 0 parallel; K = 1/(r(R+r))",
+   "surface": "torus",
+   "u0": [
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "provider": {
+  "cylinder": {
+   "ciw_closed_form_vs_csg_closed_form": 0.0,
+   "ciw_rk4_vs_csg_closed_form": 2.803593496528173e-15,
+   "ciw_rk4_vs_csg_rk4": 2.803593496528173e-15,
+   "csg_determinant_drift": 0.0
+  },
+  "hyperbolic-long": {
+   "ciw_closed_form_vs_csg_closed_form": 0.0,
+   "ciw_rk4_vs_csg_closed_form": 1.2561964420119912e-09,
+   "ciw_rk4_vs_csg_rk4": 9.276187254982186e-16,
+   "csg_determinant_drift": 3.1590730031894054e-11
+  },
+  "plane": {
+   "ciw_closed_form_vs_csg_closed_form": 0.0,
+   "ciw_rk4_vs_csg_closed_form": 2.0441663628976168e-15,
+   "ciw_rk4_vs_csg_rk4": 2.0441663628976168e-15,
+   "csg_determinant_drift": 0.0
+  },
+  "sphere-great-circle": {
+   "ciw_closed_form_vs_csg_closed_form": 0.0,
+   "ciw_rk4_vs_csg_closed_form": 2.6582168133337802e-09,
+   "ciw_rk4_vs_csg_rk4": 1.0547118733938987e-15,
+   "csg_determinant_drift": 7.277911606706766e-11
+  },
+  "torus-inner-equator": {
+   "ciw_closed_form_vs_csg_closed_form": 0.0,
+   "ciw_rk4_vs_csg_closed_form": 2.6915911645163793e-09,
+   "ciw_rk4_vs_csg_rk4": 2.274642834943155e-15,
+   "csg_determinant_drift": 1.0186340659856796e-10
+  },
+  "torus-outer-equator": {
+   "ciw_closed_form_vs_csg_closed_form": 1.1102230246251565e-16,
+   "ciw_rk4_vs_csg_closed_form": 5.134411784624149e-10,
+   "ciw_rk4_vs_csg_rk4": 4.072120660106376e-15,
+   "csg_determinant_drift": 4.452882507166578e-12
+  }
+ },
+ "provider_status": "compared",
+ "rows": {
+  "cylinder": {
+   "coarse_errors": {
+    "heading": 1.6283271027835629e-15,
+    "heading_rate": 0.0,
+    "lateral": 0.0,
+    "lateral_rate": 0.0
+   },
+   "curvature": 0.0,
+   "curvature_drift": 0.0,
+   "errors": {
+    "heading": 2.803593496528173e-15,
+    "heading_rate": 0.0,
+    "lateral": 0.0,
+    "lateral_rate": 0.0
+   },
+   "halving_estimate": 7.835109291630735e-17,
+   "j_head_end": 3.0000000000000027,
+   "j_lat_end": 1.0,
+   "length": 3.0,
+   "max_error": 2.803593496528173e-15,
+   "steps": 200
+  },
+  "hyperbolic-long": {
+   "coarse_errors": {
+    "heading": 1.985087415619344e-08,
+    "heading_rate": 1.9650029186367895e-08,
+    "lateral": 1.9650029186367895e-08,
+    "lateral_rate": 1.985087415619344e-08
+   },
+   "curvature": -1.0,
+   "curvature_drift": 0.0,
+   "errors": {
+    "heading": 1.2561964420119912e-09,
+    "heading_rate": 1.2436464501801079e-09,
+    "lateral": 1.2436464501801079e-09,
+    "lateral_rate": 1.2561964420119912e-09
+   },
+   "halving_estimate": 1.23964518094543e-09,
+   "j_head_end": 10.017874914825484,
+   "j_lat_end": 10.067661983257153,
+   "length": 3.0,
+   "max_error": 1.2561964420119912e-09,
+   "observed_order": 3.982068546159354,
+   "steps": 200
+  },
+  "plane": {
+   "coarse_errors": {
+    "heading": 1.1270445856043257e-15,
+    "heading_rate": 0.0,
+    "lateral": 0.0,
+    "lateral_rate": 0.0
+   },
+   "curvature": 0.0,
+   "curvature_drift": 0.0,
+   "errors": {
+    "heading": 2.0441663628976168e-15,
+    "heading_rate": 0.0,
+    "lateral": 0.0,
+    "lateral_rate": 0.0
+   },
+   "halving_estimate": 6.114145181955275e-17,
+   "j_head_end": 2.000000000000004,
+   "j_lat_end": 1.0,
+   "length": 2.0,
+   "max_error": 2.0441663628976168e-15,
+   "steps": 134
+  },
+  "sphere-great-circle": {
+   "coarse_errors": {
+    "heading": 4.261357311463598e-08,
+    "heading_rate": 3.2291626816949304e-08,
+    "lateral": 3.2291626816949304e-08,
+    "lateral_rate": 4.261357311463598e-08
+   },
+   "curvature": 1.0,
+   "curvature_drift": 0.0,
+   "errors": {
+    "heading": 2.6582168133337802e-09,
+    "heading_rate": 2.0131277755908172e-09,
+    "lateral": 2.0131277755908172e-09,
+    "lateral_rate": 2.6582168133337802e-09
+   },
+   "halving_estimate": 2.6636904200868136e-09,
+   "j_head_end": 0.6569865964939534,
+   "j_lat_end": 0.7539022562338643,
+   "length": 7.0,
+   "max_error": 2.6582168133337802e-09,
+   "observed_order": 4.002782339723584,
+   "steps": 468
+  },
+  "torus-inner-equator": {
+   "coarse_errors": {
+    "heading": 4.253160729952335e-08,
+    "heading_rate": 4.253121334245629e-08,
+    "lateral": 4.253121334245629e-08,
+    "lateral_rate": 4.253160729952335e-08
+   },
+   "curvature": -1.0,
+   "curvature_drift": 0.0,
+   "errors": {
+    "heading": 2.6915911645163793e-09,
+    "heading_rate": 2.6915670323182757e-09,
+    "lateral": 2.6915670323182757e-09,
+    "lateral_rate": 2.6915911645163793e-09
+   },
+   "halving_estimate": 2.6560010756671314e-09,
+   "j_head_end": 332.5700639074418,
+   "j_lat_end": 332.57156734663874,
+   "length": 6.5,
+   "max_error": 2.6915911645163793e-09,
+   "observed_order": 3.982004180907906,
+   "steps": 434,
+   "theta_drift": 0.0
+  },
+  "torus-outer-equator": {
+   "coarse_errors": {
+    "heading": 8.224277647794764e-09,
+    "heading_rate": 3.5963459710242063e-09,
+    "lateral": 3.5963464706245674e-09,
+    "lateral_rate": 2.7414263220615354e-09
+   },
+   "curvature": 0.3333333333333333,
+   "curvature_drift": 0.0,
+   "errors": {
+    "heading": 5.134411784624149e-10,
+    "heading_rate": 2.2444449077063666e-10,
+    "lateral": 2.2444479608196843e-10,
+    "lateral_rate": 1.711473046617229e-10
+   },
+   "halving_estimate": 5.140557646221567e-10,
+   "j_head_end": 0.6042243863732792,
+   "j_lat_end": 0.937178903393667,
+   "length": 11.5,
+   "max_error": 5.134411784624149e-10,
+   "observed_order": 4.001618058911858,
+   "steps": 768,
+   "theta_drift": 0.0
+  }
+ },
+ "separation_eps": [
+  0.04,
+  0.02,
+  0.01
+ ]
+}

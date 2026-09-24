@@ -1,0 +1,276 @@
+{
+ "changed_files": [
+  "src/ciw/lab/flat_torus_topology.py",
+  "src/ciw/lab/flat_torus_topology_surfaces.py",
+  "docs/lab/FLAT_TORUS_TOPOLOGY.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 0,
+   "numerically_verified": 4,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Exact outcome for every rational L-shape trajectory; float octagon crossings identical to exact ones.",
+ "experiment": "Exact Fraction flow per direction and start; exact surd vs float flow on the octagon; tolerance-aware termination near vertices.",
+ "failure_modes_checked": [
+  "saddle connection from an exact vertex hit refused",
+  "float pass within tolerance of a vertex refused",
+  "closure at a return inside the start polygon",
+  "half-translation surfaces refused for flow"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "undecided trajectories",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "closure multipliers outside {1, 2, 3}",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "closed plus saddle connections minus trajectories traced",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "trajectories traced minus primitive directions x starts",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "derivation": "Veech dichotomy for square-tiled surfaces: rational directions are completely periodic"
+   },
+   "claim": "All 96 tested rational trajectories on the L-shape close (multiplier 1-3) or end in a saddle connection",
+   "domain": "mathematical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "integer, Fraction or Q(sqrt d) arithmetic; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "closed": 90,
+    "saddle_connections": 6,
+    "undecided": 0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "SADDLE_CONNECTION",
+      "observed_refusal": "SADDLE_CONNECTION",
+      "passed": true,
+      "reference": "L-shape (1/2, 1/2) direction (1, 1)",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "SADDLE_CONNECTION",
+      "observed_refusal": "SADDLE_CONNECTION",
+      "passed": true,
+      "reference": "octagon exact centre-to-vertex",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "NEAR_VERTEX_WITHIN_TOLERANCE",
+      "observed_refusal": "NEAR_VERTEX_WITHIN_TOLERANCE",
+      "passed": true,
+      "reference": "octagon float pass 1e-12 from a vertex",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "START_NOT_INTERIOR",
+      "observed_refusal": "START_NOT_INTERIOR",
+      "passed": true,
+      "reference": "float start 1e-12 from an edge",
+      "reference_kind": "refusal"
+     }
+    ]
+   },
+   "claim": "Trajectories hitting a cone point are terminated as saddle connections, exactly or within the declared float tolerance",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "integer, Fraction or Q(sqrt d) arithmetic; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "exact_l_shape": "SADDLE_CONNECTION",
+    "exact_octagon": "SADDLE_CONNECTION",
+    "float_octagon": "NEAR_VERTEX_WITHIN_TOLERANCE",
+    "float_start": "START_NOT_INTERIOR"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "crossing sequences differ",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 1.7763568394002505e-15,
+      "passed": true,
+      "reference": "|float - exact| closure time",
+      "reference_kind": "cross_implementation",
+      "tolerance": 1e-09
+     }
+    ]
+   },
+   "claim": "Float octagon flow reproduces the exact Q(sqrt 2) trajectory (same crossings, closure time)",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "binary64 accumulation over the crossings against the exact Q(sqrt 2) trajectory",
+    "kind": "roundoff",
+    "value": 1.7763568394002505e-15
+   },
+   "unit": null,
+   "value": {
+    "crossings": 20,
+    "time_difference": 1.7763568394002505e-15
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 0.00027425327282185557,
+      "passed": true,
+      "reference": "minimum vertex clearance",
+      "reference_kind": "invariant",
+      "tolerance": 1e-09
+     }
+    ]
+   },
+   "claim": "A generic float octagon trajectory stays farther than the tolerance from every vertex for 400 crossings",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "declared float tolerance bounding accumulated position error over 400 crossings",
+    "kind": "roundoff",
+    "value": 1e-09
+   },
+   "unit": null,
+   "value": {
+    "crossings": 400,
+    "min_clearance": 0.00027425327282185557
+   }
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 13684,
+   "path": "artifacts/T028/glued-edge-flows.json",
+   "sha256": "a59600bce07a83cb9494f481fe6ae8c310952d51ad5ffad3ce632804aa63d485"
+  }
+ ],
+ "hypothesis": "Straight-line flow crosses glued edges by the edge translations: on the square-tiled L every rational direction is completely periodic or ends in a saddle connection (exactly decided), and on the octagon a float trajectory reproduces the exact Q(sqrt 2) trajectory within a declared tolerance.",
+ "input_data": [
+  "L-shape primitive directions |p|, |q| <= 3 from starts [(0, ('1/3', '1/7')), (1, ('6/5', '2/3')), (2, ('3/4', '5/4'))]",
+  "octagon direction (3, 1 + sqrt 2) exact and float; generic float direction theta = 0.3 rad",
+  "float tolerance 1e-09"
+ ],
+ "mathematical_model": "Flow x + t d inside a polygon; exit edge by exact segment intersection; re-entry at x + (a' - b) on the partner edge; a hit on a cone point terminates (saddle connection); closure multiplier k with displacement k (p, q) in Z^2 and 1 <= k <= 3 on the 3-square surface (Veech dichotomy).",
+ "number": 28,
+ "numerical_result": "L-shape: 90 closed, 6 saddle connections, 0 undecided, 0 bad multipliers; octagon (3, 1 + sqrt 2): exact closure time 5+7/2*sqrt(2) (units of the direction vector; length 38.314185869879) after 20 crossings, float difference 1.8e-15; generic theta: 400 crossings, min vertex clearance 2.743e-04.",
+ "observation_model": "No physical observation: exact or floating-point computation on declared mathematical objects.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/flat_torus_topology.py": "4d8cf2437759501a1b9fa5ee0d8abfac43345ebee378c6ad08233e9155d4b184",
+   "src/ciw/lab/flat_torus_topology_surfaces.py": "654ca2094a5742a0e397ced722161068aab79ec9cd8bca9947b98db5a1f5e4e7"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T029: detect cone singularities",
+ "report_id": "sha256:479a23855e94bc543346fd2f325b08a779e674d8b474fb6f9703907470b0ad40",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "flat-torus-topology",
+ "state": "completed",
+ "task_id": "T028",
+ "tests_passed": [
+  "check: All 96 tested rational trajectories on the L-shape close (multiplier 1-3) or end in a saddle connection vs undecided trajectories",
+  "check: All 96 tested rational trajectories on the L-shape close (multiplier 1-3) or end in a saddle connection vs closure multipliers outside {1, 2, 3}",
+  "check: All 96 tested rational trajectories on the L-shape close (multiplier 1-3) or end in a saddle connection vs closed plus saddle connections minus trajectories traced",
+  "check: All 96 tested rational trajectories on the L-shape close (multiplier 1-3) or end in a saddle connection vs trajectories traced minus primitive directions x starts",
+  "check: Trajectories hitting a cone point are terminated as saddle connections, exactly or within the declared float tolerance vs L-shape (1/2, 1/2) direction (1, 1)",
+  "check: Trajectories hitting a cone point are terminated as saddle connections, exactly or within the declared float tolerance vs octagon exact centre-to-vertex",
+  "check: Trajectories hitting a cone point are terminated as saddle connections, exactly or within the declared float tolerance vs octagon float pass 1e-12 from a vertex",
+  "check: Trajectories hitting a cone point are terminated as saddle connections, exactly or within the declared float tolerance vs float start 1e-12 from an edge",
+  "check: Float octagon flow reproduces the exact Q(sqrt 2) trajectory (same crossings, closure time) vs crossing sequences differ",
+  "check: Float octagon flow reproduces the exact Q(sqrt 2) trajectory (same crossings, closure time) vs |float - exact| closure time",
+  "check: A generic float octagon trajectory stays farther than the tolerance from every vertex for 400 crossings vs minimum vertex clearance",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_t028_glued_edge_flow",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_surface_helpers_exact",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+ ],
+ "tests_skipped": [],
+ "title": "Trace geodesics across glued edges.",
+ "uncertainty": "Exact for rational and Q(sqrt 2) data; float trajectories carry rounding growing with crossings (declared tolerance 1e-9).",
+ "unresolved_assumptions": [
+  "A generic float direction is never certified non-periodic; only its first 400 crossings are traced."
+ ]
+}

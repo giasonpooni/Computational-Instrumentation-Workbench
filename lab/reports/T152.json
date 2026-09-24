@@ -1,0 +1,422 @@
+{
+ "changed_files": [
+  "src/ciw/lab/implementation_targets.py",
+  "src/ciw/lab/implementation_targets_fpga.py",
+  "docs/lab/IMPLEMENTATION_TARGETS.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 6,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Detected losses = true losses between the first and last received sequence; zero missed stale frames with the declared offset; false alarms and estimated-offset misses within 4 sigma of their expectations; long-run loss rate and mean latency within 4 sigma of the model.",
+ "experiment": "Simulate the link, run receivers with the declared and an estimated offset, compare with ground truth and predicted rates, run naive detectors, and check a long run against the model moments.",
+ "failure_modes_checked": [
+  "32-bit sequence wrap",
+  "reordering",
+  "duplicates",
+  "burst loss",
+  "timestamp quantization",
+  "clock drift",
+  "clock offset estimation bias",
+  "naive gap arithmetic in arrival order",
+  "non-modular differencing at the wrap",
+  "simulator/model mismatch"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "|detected set symmetric difference true lost set|",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "duplicates detected minus duplicates sent",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "forced loss at sequence 2^32-1 detected",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "frames refused by the decoder",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "name": "Gilbert-Elliott loss, gamma latency, duplicates, quantized timestamps, drift",
+     "seed": 152
+    }
+   },
+   "claim": "Sequence-number gap detection recovers every lost frame across the 32-bit wrap",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "detected": 120,
+    "duplicates": 13,
+    "lost": 120,
+    "reordered": 522
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "missed stale frames (age = latency + excess, excess >= 0)",
+      "reference_kind": "analytic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.005071824682994809,
+      "passed": true,
+      "reference": "(false alarms - expected) / (4 sigma), expected = sum of P(limit - excess < L <= limit)",
+      "reference_kind": "analytic",
+      "tolerance": 1.0
+     }
+    ]
+   },
+   "claim": "With the declared clock offset no stale frame is missed and false alarms match the timestamp quantization and drift prediction",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-06,
+    "rel": 1e-09
+   },
+   "uncertainty": {
+    "basis": "false-alarm count is a sum of independent Bernoulli trials given each frame's quantization and drift excess",
+    "kind": "monte_carlo_95ci",
+    "value": 12.435154081444804
+   },
+   "unit": null,
+   "value": {
+    "expected_false_alarms": 39.12613784281423,
+    "false_alarms": 39,
+    "flagged": 392,
+    "missed": 0,
+    "stale": 353
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "signed_ge",
+      "observed": 1915938.0,
+      "passed": true,
+      "reference": "bias minus the largest excess (no false alarm possible when positive)",
+      "reference_kind": "analytic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "false alarms after the calibration window",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.06603570151907896,
+      "passed": true,
+      "reference": "(missed - expected) / (4 sigma), expected = sum of P(limit < L <= limit + bias - excess)",
+      "reference_kind": "analytic",
+      "tolerance": 1.0
+     }
+    ]
+   },
+   "claim": "An offset estimated from minimum delay misses stale frames at the rate its bias predicts",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-06,
+    "rel": 1e-09
+   },
+   "uncertainty": {
+    "basis": "missed-frame count is a sum of independent Bernoulli trials given the bias",
+    "kind": "monte_carlo_95ci",
+    "value": 34.50687565446183
+   },
+   "unit": null,
+   "value": {
+    "bias_ns": 2043166,
+    "evaluated": 3693,
+    "expected_missed": 326.557371482148,
+    "false_alarms": 0,
+    "missed": 322,
+    "stale": 333
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.7187275158608404,
+      "passed": true,
+      "reference": "(loss rate - stationary loss) / (4 sigma), exact Gilbert-Elliott variance",
+      "reference_kind": "analytic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.16841167418914996,
+      "passed": true,
+      "reference": "(mean latency - (base + shape*scale - 1/2)) / (4 sigma)",
+      "reference_kind": "analytic",
+      "tolerance": 1.0
+     }
+    ],
+    "generator": {
+     "frames": 200000,
+     "name": "link_draws",
+     "seed": 1520
+    }
+   },
+   "claim": "Loss rate and mean latency of a long run match the declared link model",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-06,
+    "rel": 1e-09
+   },
+   "uncertainty": {
+    "basis": "loss rate over 200000 frames; sigma^2 = [p(1-p) + 2(l_b-l_g)^2 pi_g pi_b lambda/(1-lambda)]/N",
+    "kind": "monte_carlo_95ci",
+    "value": 0.0011470136118484956
+   },
+   "unit": null,
+   "value": {
+    "frames": 200000,
+    "loss_rate": 0.0236,
+    "mean_latency_ns": 3001064.62895,
+    "stationary_loss": 0.02195121951219512
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 1138.0,
+      "passed": true,
+      "reference": "|arrival-order count - true lost|",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 522.0,
+      "passed": true,
+      "reference": "reordered deliveries in the stream",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     }
+    ]
+   },
+   "claim": "Differencing sequence numbers in arrival order miscounts losses under reordering",
+   "counterexample": {
+    "statement": "Summing seq - previous - 1 in arrival order counts lost frames",
+    "witness": {
+     "arrival_order": 1258,
+     "in_order": 119,
+     "true": 120
+    }
+   },
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "arrival_order": 1258,
+    "in_order": 119,
+    "true": 120
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "true lost minus the in-order non-modular count",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "losses at the wrap (2^32 - 3 .. 2)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     }
+    ]
+   },
+   "claim": "Non-modular differencing misses the loss at the 32-bit wrap",
+   "counterexample": {
+    "statement": "Sequence differences without modular arithmetic count every loss in a sequence-ordered stream",
+    "witness": {
+     "in_order": 119,
+     "missed_at_wrap": [
+      4294967295
+     ],
+     "true": 120
+    }
+   },
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "in_order": 119,
+    "true": 120,
+    "wrap_gap": [
+     4294967295
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "Simulated loss, latency and staleness represent the real FPGA telemetry link",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 1498,
+   "path": "artifacts/T152/link-simulation.json",
+   "sha256": "9da645c2b741d41289404c8ef6b648cd54eaa22dbbfc93af456f63733ef1715b"
+  },
+  {
+   "bytes": 58756,
+   "path": "artifacts/T152/age-distribution.svg",
+   "sha256": "0cc71a803b0529cb6c4e447c7a8c0e921b7b77c53a9317a54be4004f9bace8ef"
+  }
+ ],
+ "hypothesis": "Sequence numbers with modulo-2^32 serial arithmetic detect every loss, duplicate and reordering; timestamps with a declared clock offset never miss a stale frame, and their false alarms, like the misses of an offset estimated from minimum delay, occur at the rates the quantization, drift and bias predict.",
+ "input_data": [
+  "4000 frames encoded with the T149 codec, PCG64(152) link draws and PCG64(153) payloads",
+  "200000-frame loss/latency run, PCG64(1520)"
+ ],
+ "mathematical_model": "Gilbert-Elliott loss (p_gb=0.005, p_bg=0.2, loss 0.01/0.5), latency L = 2 ms + Gamma(2, 0.5 ms), duplicates p=0.002, period 1 ms, sampling phase U(0, 0.25 ms), timestamps quantized to 50 us, device/host drift 20 ppm, start sequence 2^32-1500, forced loss at 2^32-1. Truly stale iff L > 4 ms; receiver age = L + excess, excess = quantization + drift >= 0. P(L <= x) = 1 - exp(-g/s)(1 + g/s), g = x - 2 ms, s = 0.5 ms. Loss-count variance per frame p(1-p) + 2(l_b-l_g)^2 pi_g pi_b lambda/(1-lambda).",
+ "number": 152,
+ "numerical_result": "120 losses detected exactly (522 reordered, 13 duplicates); declared offset: 0 of 353 stale frames missed, 39 false alarms (expected 39.1 +/- 6.2); estimated offset (bias 2.043 ms) misses 322 of 333 (expected 326.6 +/- 17.3); naive counts 1258 (arrival order) and 119 (in order) against 120; long-run loss rate 0.02360 vs 0.02195 (z = 2.87), latency z = 0.67.",
+ "observation_model": "Receiver outputs (pending gaps, reorders, duplicates, stale flags) compared with the simulation ground truth and with expected counts computed from the closed-form latency distribution.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/implementation_targets.py": "4e27c12d31365590b7fb82d98b8d02e1668c7b8e73b03f71ef270eca9fcf6eea",
+   "src/ciw/lab/implementation_targets_fpga.py": "d546fbe93f98a17bb6a94d6e1e887da44edfb783f37684b9689d47adb1a9f477"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T153 (keep any response to telemetry gaps from reaching actuators)",
+ "report_id": "sha256:2f486c6d84d23ee902606431460d1e97cbfe8e8c68be152720cfe7073dd0907d",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "implementation-targets",
+ "state": "completed",
+ "task_id": "T152",
+ "tests_passed": [
+  "check: Sequence-number gap detection recovers every lost frame across the 32-bit wrap vs |detected set symmetric difference true lost set|",
+  "check: Sequence-number gap detection recovers every lost frame across the 32-bit wrap vs duplicates detected minus duplicates sent",
+  "check: Sequence-number gap detection recovers every lost frame across the 32-bit wrap vs forced loss at sequence 2^32-1 detected",
+  "check: Sequence-number gap detection recovers every lost frame across the 32-bit wrap vs frames refused by the decoder",
+  "check: With the declared clock offset no stale frame is missed and false alarms match the timestamp quantization and drift prediction vs missed stale frames (age = latency + excess, excess >= 0)",
+  "check: With the declared clock offset no stale frame is missed and false alarms match the timestamp quantization and drift prediction vs (false alarms - expected) / (4 sigma), expected = sum of P(limit - excess < L <= limit)",
+  "check: An offset estimated from minimum delay misses stale frames at the rate its bias predicts vs bias minus the largest excess (no false alarm possible when positive)",
+  "check: An offset estimated from minimum delay misses stale frames at the rate its bias predicts vs false alarms after the calibration window",
+  "check: An offset estimated from minimum delay misses stale frames at the rate its bias predicts vs (missed - expected) / (4 sigma), expected = sum of P(limit < L <= limit + bias - excess)",
+  "check: Loss rate and mean latency of a long run match the declared link model vs (loss rate - stationary loss) / (4 sigma), exact Gilbert-Elliott variance",
+  "check: Loss rate and mean latency of a long run match the declared link model vs (mean latency - (base + shape*scale - 1/2)) / (4 sigma)",
+  "check: Differencing sequence numbers in arrival order miscounts losses under reordering vs |arrival-order count - true lost|",
+  "check: Differencing sequence numbers in arrival order miscounts losses under reordering vs reordered deliveries in the stream",
+  "check: Non-modular differencing misses the loss at the 32-bit wrap vs true lost minus the in-order non-modular count",
+  "check: Non-modular differencing misses the loss at the 32-bit wrap vs losses at the wrap (2^32 - 3 .. 2)",
+  "pytest: tests/test_lab_implementation_targets.py::test_t152_loss_latency_staleness"
+ ],
+ "tests_skipped": [],
+ "title": "Simulate packet loss, latency, and stale telemetry.",
+ "uncertainty": "Counts are exact given the seed; rate checks use exact variances and a 4-sigma threshold. At 200000 frames the loss check detects a stationary-loss error above about 0.0023 (4 sigma) with probability at least one half; a loss_bad change from 0.5 to 0.1 (a shift of 0.0098) would be detected almost surely, but at the 4000 frames of the detection stream it would not (2.4 sigma).",
+ "unresolved_assumptions": [
+  "Gaps of 2^31 or more are unsupported by serial arithmetic",
+  "Losses before the first and after the last received frame are undetectable",
+  "Drift is constant and positive (device clock slow against the host); a negative drift would turn false alarms into misses",
+  "Latency is independent of the loss state"
+ ]
+}

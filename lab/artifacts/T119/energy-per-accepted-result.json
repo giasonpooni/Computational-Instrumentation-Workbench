@@ -1,0 +1,62 @@
+{
+ "definition": "E_acc = (counter(last measurement read) - counter(first measurement read)) / accepted replica solves; a replica solve is accepted when its batch output has KL <= target_kl_nats; undefined when the analysis is ineligible or no solve is accepted. The denominator counts replica solves (identical thread work on one declared problem), not distinct numerical results: every replica of a batch is a bitwise copy of one output. E per distinct accepted result divides by accepted batch outputs instead.",
+ "fixtures": {
+  "baseline": {
+   "accepted": 4,
+   "accepted_batches": 1,
+   "analysis_value": 0.05,
+   "delta_j": 0.2,
+   "executed": 4,
+   "gross_energy_j": 0.2,
+   "max_kl_difference_to_analysis": 1.1102230246251573e-16,
+   "reasons": [],
+   "replicas_per_batch": 4,
+   "span_j": 1.4
+  },
+  "missing": {
+   "accepted": 4,
+   "accepted_batches": 1,
+   "analysis_value": null,
+   "delta_j": 0.1,
+   "executed": 4,
+   "gross_energy_j": null,
+   "max_kl_difference_to_analysis": 1.1102230246251573e-16,
+   "reasons": [
+    "missing_endpoint_brackets",
+    "missing_or_misaligned_batch_counter_read"
+   ],
+   "replicas_per_batch": 4,
+   "span_j": 1.4
+  },
+  "reset": {
+   "accepted": 4,
+   "accepted_batches": 1,
+   "analysis_value": null,
+   "delta_j": 0.2,
+   "executed": 4,
+   "gross_energy_j": null,
+   "max_kl_difference_to_analysis": 1.1102230246251573e-16,
+   "reasons": [
+    "reset_or_wrap_ambiguous",
+    "observed_counter_continuity_loss"
+   ],
+   "replicas_per_batch": 4,
+   "span_j": 1.4
+  },
+  "under-target": {
+   "accepted": 0,
+   "accepted_batches": 0,
+   "analysis_value": null,
+   "delta_j": 0.2,
+   "executed": 4,
+   "gross_energy_j": 0.2,
+   "max_kl_difference_to_analysis": 4.440892098500626e-16,
+   "reasons": [
+    "accuracy_target_not_met_by_every_batch"
+   ],
+   "replicas_per_batch": 4,
+   "span_j": 1.4
+  }
+ },
+ "origin": "synthetic_fixture"
+}

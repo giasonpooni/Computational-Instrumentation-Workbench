@@ -1,0 +1,619 @@
+{
+ "changed_files": [
+  "src/ciw/lab/geodesic_jacobi_limits.py",
+  "src/ciw/lab/geodesic_jacobi_limits_core.py",
+  "docs/lab/GEODESIC_JACOBI_LIMITS.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 0,
+   "numerically_verified": 8,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "d(s*) = O(eps^2) generically and O(eps^3) on the symmetric equator; relative error ~ 1/|s - s*|; sign(d) = sign(j) away from s*; sphere relative chord error 2 sin(eps/2)/eps - 1 at every s.",
+ "experiment": "Integrate base transfer and perturbed geodesics on common grids (RK4), locate s* from j_head, fit exponents of d(s*) against eps, fit the divergence slope over s* - m h (m = 1, 2, 4, 8), check sign inversion after s*, and compare sphere runs with closed-form great circles.",
+ "failure_modes_checked": [
+  "numerical conjugate point versus pi sqrt(3) on the equator",
+  "first-order prediction at s* is at integrator noise level, not zero by construction",
+  "sphere numerical separations versus exact great circles at every node",
+  "exact-refocusing (sphere) and symmetric (equator) cases that do not show eps^2",
+  "sign inversion checked with the first-order field itself, not assumed"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 1.7253576345410693e-10,
+      "passed": true,
+      "reference": "numerical conjugate point minus pi sqrt(r (R + r))",
+      "reference_kind": "analytic",
+      "tolerance": 1e-07
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 6.9014380321696936e-12,
+      "passed": true,
+      "reference": "first-order prediction |eps j(s*)| (vanishes at s*)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-09
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.00031268998028144424,
+      "passed": true,
+      "reference": "fitted chord exponent minus 3 (reflection symmetry)",
+      "reference_kind": "analytic",
+      "tolerance": 0.05
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.00015218413314643797,
+      "passed": true,
+      "reference": "smallest chord at s*: 200- versus 400-step grid (relative)",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.001
+     }
+    ],
+    "derivation": "docs/lab/GEODESIC_JACOBI_LIMITS.md#t010-near-focus-and-post-focus-counterexamples",
+    "generator": {
+     "deterministic": true,
+     "eps": [
+      0.005,
+      0.01,
+      0.02,
+      0.04
+     ],
+     "name": "ciw.lab.geodesic_jacobi_limits:torus-equator-family",
+     "seed": null,
+     "steps": 580
+    }
+   },
+   "claim": "On the torus outer equator the separation at the conjugate point scales as eps^3, not eps^2",
+   "counterexample": {
+    "statement": "The separation at a conjugate point is of exact order eps^2",
+    "witness": {
+     "chord_exponent": 3.0003126899802814,
+     "eps": [
+      0.005,
+      0.01,
+      0.02,
+      0.04
+     ],
+     "path": "outer equator, heading 0",
+     "s_star": 5.441398092702653,
+     "surface": "Torus(2, 1)"
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-10,
+    "rel": 0.0001
+   },
+   "uncertainty": {
+    "basis": "relative change of the smallest separation (eps = 0.005) at s* when the grid is halved; the 400-step error is about a sixteenth of it",
+    "kind": "truncation_bound",
+    "value": 0.00015218413314643797
+   },
+   "unit": null,
+   "value": {
+    "chord_at_s_star": [
+     8.502363791585313e-08,
+     6.802062461924056e-07,
+     5.442353964720842e-06,
+     4.356168602764855e-05
+    ],
+    "chord_exponent": 3.0003126899802814,
+    "grid_relative_difference": 0.00015218413314643797,
+    "signed_exponent": 3.000108734140718
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 5.217371951138361e-12,
+      "passed": true,
+      "reference": "first-order prediction |eps j(s*)| (vanishes at s*)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-08
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.023175167643266104,
+      "passed": true,
+      "reference": "fitted chord exponent minus 2 (generic remainder)",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     }
+    ],
+    "derivation": "docs/lab/GEODESIC_JACOBI_LIMITS.md#t010-near-focus-and-post-focus-counterexamples",
+    "generator": {
+     "deterministic": true,
+     "eps": [
+      0.005,
+      0.01,
+      0.02,
+      0.04
+     ],
+     "name": "ciw.lab.geodesic_jacobi_limits:torus-generic-family",
+     "seed": null,
+     "steps": 580
+    }
+   },
+   "claim": "On a generic torus geodesic the separation at the conjugate point is O(eps^2) while eps j vanishes",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-06,
+    "rel": 1e-05
+   },
+   "uncertainty": {
+    "basis": "largest gap between the fitted exponent and the slopes of consecutive eps pairs",
+    "kind": "fit_spread",
+    "value": 0.017382837918682892
+   },
+   "unit": null,
+   "value": {
+    "chord_at_s_star": [
+     3.82648454732879e-05,
+     0.00015412037682610428,
+     0.0006251066839373086,
+     0.0025717177961891153
+    ],
+    "chord_exponent": 2.023175167643266,
+    "s_star": 6.051400589139297
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.008799311925345,
+      "passed": true,
+      "reference": "generic log-log slope plus 1",
+      "reference_kind": "analytic",
+      "tolerance": 0.15
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.011941948494336163,
+      "passed": true,
+      "reference": "equator log-log slope plus 1",
+      "reference_kind": "analytic",
+      "tolerance": 0.2
+     },
+     {
+      "comparison": "ge",
+      "observed": 3.7958513020004787,
+      "passed": true,
+      "reference": "relative first-order error one step before s* (eps = 0.04)",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     }
+    ],
+    "derivation": "docs/lab/GEODESIC_JACOBI_LIMITS.md#t010-near-focus-and-post-focus-counterexamples",
+    "generator": {
+     "deterministic": true,
+     "name": "ciw.lab.geodesic_jacobi_limits:torus-divergence",
+     "offsets": [
+      1,
+      2,
+      4,
+      8
+     ],
+     "seed": null
+    }
+   },
+   "claim": "The relative first-order error diverges like 1/|s - s*| approaching the conjugate point",
+   "counterexample": {
+    "statement": "The first-order separation eps j is accurate along the whole path once eps is small",
+    "witness": {
+     "eps": 0.04,
+     "invalid_window_half_width_by_eps": {
+      "0.005": 0.006820113209327356,
+      "0.01": 0.013734488574677014,
+      "0.02": 0.027850914979647465,
+      "0.04": 0.057270023587832335
+     },
+     "path": "start (0, 0.3), heading 0.5",
+     "relative_error": 3.7958513020004787,
+     "s": 6.036272087666448,
+     "surface": "Torus(2, 1)",
+     "window_exponent": 1.0229659350471423
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.001,
+    "rel": 0.0001
+   },
+   "uncertainty": {
+    "basis": "largest gap between the fitted slope and consecutive-offset slopes (generic path)",
+    "kind": "fit_spread",
+    "value": 0.005997854944930325
+   },
+   "unit": null,
+   "value": {
+    "relative_error_at_s_star_minus_h_eps_0.04": 3.7958513020004787,
+    "slope_equator_eps_0.04": -1.0119419484943362,
+    "slope_generic_eps_0.01": -0.991200688074655
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": -0.004116173134901646,
+      "passed": true,
+      "reference": "generic: signed / (eps j) after s* minus 1",
+      "reference_kind": "invariant",
+      "tolerance": 0.05
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -7.200304248600187e-05,
+      "passed": true,
+      "reference": "equator: signed / (eps j) after s* minus 1",
+      "reference_kind": "invariant",
+      "tolerance": 0.05
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "sign product of separations before and after s* plus 1 (generic)",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "sign product of separations before and after s* plus 1 (equator)",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "deterministic": true,
+     "eps": 0.01,
+     "name": "ciw.lab.geodesic_jacobi_limits:torus-inversion",
+     "seed": null
+    }
+   },
+   "claim": "After the conjugate point the separation inverts sign and still follows eps j",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-05
+   },
+   "uncertainty": {
+    "basis": "absolute separation change when the grid is halved (smallest separation at s*); the separations compared here are at least 0.012",
+    "kind": "truncation_bound",
+    "value": 1.293924863318612e-11
+   },
+   "unit": null,
+   "value": {
+    "equator": {
+     "j_after": -1.224744871238089,
+     "j_before": 1.7320508075683134,
+     "ratio_after": 0.999927996957514,
+     "s_after": 6.801747615878317,
+     "s_before": 2.7206990463513265,
+     "signed_after": -0.012246566858810908,
+     "signed_before": 0.017319786380538448
+    },
+    "generic": {
+     "j_after": -1.5309051360434138,
+     "j_before": 1.9781492726155632,
+     "ratio_after": 0.9958838268650984,
+     "s_after": 7.56425073642412,
+     "s_before": 3.0257002945696483,
+     "signed_after": -0.015246036654503489,
+     "signed_before": 0.019829138356896436
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 0.00015710984529684768,
+      "passed": true,
+      "reference": "chord(s*) / chord(s*/2) on the outer equator",
+      "reference_kind": "invariant",
+      "tolerance": 0.001
+     }
+    ],
+    "generator": {
+     "deterministic": true,
+     "eps": 0.02,
+     "name": "ciw.lab.geodesic_jacobi_limits:torus-equator-family",
+     "seed": null
+    }
+   },
+   "claim": "Separation does not grow monotonically with length: it nearly vanishes at the conjugate point",
+   "counterexample": {
+    "statement": "The separation of neighbouring geodesics grows monotonically with length",
+    "witness": {
+     "chord_ratio": 0.00015710984529684768,
+     "eps": 0.02,
+     "path": "outer equator",
+     "s_half": 2.7206990463513265,
+     "s_star": 5.441398092702653,
+     "surface": "Torus(2, 1)"
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 0.0001
+   },
+   "uncertainty": {
+    "basis": "grid-halving separation change relative to chord(s*/2)",
+    "kind": "truncation_bound",
+    "value": 3.7353016069795323e-10
+   },
+   "unit": null,
+   "value": 0.00015710984529684768
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 3.6547803845821125e-11,
+      "passed": true,
+      "reference": "numerical chord and signed separation versus great circles",
+      "reference_kind": "analytic",
+      "tolerance": 1e-09
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 7.656014666679312e-08,
+      "passed": true,
+      "reference": "relative error minus 2 sin(eps/2)/eps - 1 at every node",
+      "reference_kind": "analytic",
+      "tolerance": 1e-06
+     }
+    ],
+    "derivation": "docs/lab/GEODESIC_JACOBI_LIMITS.md#t010-near-focus-and-post-focus-counterexamples",
+    "generator": {
+     "deterministic": true,
+     "eps": 0.02,
+     "name": "ciw.lab.geodesic_jacobi_limits:sphere-great-circles",
+     "seed": null,
+     "steps": 384
+    }
+   },
+   "claim": "On the unit sphere a pure heading perturbation refocuses exactly: the relative first-order error is uniform and does not diverge at the conjugate point",
+   "counterexample": {
+    "statement": "The relative first-order error diverges at every conjugate point",
+    "witness": {
+     "eps": 0.02,
+     "perturbation": "pure heading",
+     "relative_error": -1.6590023186879854e-05,
+     "s": 3.129320807286708,
+     "surface": "unit sphere"
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 0.0001
+   },
+   "uncertainty": {
+    "basis": "max deviation of the numerical separations from exact great circles",
+    "kind": "reference_error",
+    "value": 3.6547803845821125e-11
+   },
+   "unit": null,
+   "value": {
+    "max_deviation_from_uniform": 7.656014666679312e-08,
+    "relative_error_at_pi_minus_h": -1.6590023186879854e-05,
+    "uniform_relative_error": -1.6666583333546647e-05
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 3.0553150009993146e-09,
+      "passed": true,
+      "reference": "signed separation at 5pi/4 over 3pi/4 plus 1",
+      "reference_kind": "analytic",
+      "tolerance": 1e-08
+     }
+    ],
+    "generator": {
+     "deterministic": true,
+     "eps": 0.02,
+     "name": "ciw.lab.geodesic_jacobi_limits:sphere-great-circles",
+     "seed": null
+    }
+   },
+   "claim": "On the unit sphere the image inverts after the conjugate point (signed ratio -1)",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-08,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "numerical-versus-great-circle deviation relative to the signed separation at 3pi/4",
+    "kind": "reference_error",
+    "value": 2.584492286117983e-09
+   },
+   "unit": null,
+   "value": -0.999999996944685
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": -6.041364181164077e-05,
+      "passed": true,
+      "reference": "closed-form exponent minus 2",
+      "reference_kind": "analytic",
+      "tolerance": 0.01
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -1.0416627744258555e-06,
+      "passed": true,
+      "reference": "chord / eps^2 at s0 = 3pi/4 minus 1/2",
+      "reference_kind": "analytic",
+      "tolerance": 0.001
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 5.2837012922465204e-12,
+      "passed": true,
+      "reference": "numerical chord at s0 minus closed form (eps = 0.02)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-09
+     }
+    ],
+    "derivation": "docs/lab/GEODESIC_JACOBI_LIMITS.md#t010-near-focus-and-post-focus-counterexamples",
+    "generator": {
+     "deterministic": true,
+     "eps": [
+      0.005,
+      0.01,
+      0.02,
+      0.04
+     ],
+     "lateral_ratio": 1.0,
+     "name": "ciw.lab.geodesic_jacobi_limits:sphere-lateral-heading",
+     "seed": null
+    }
+   },
+   "claim": "A combined lateral+heading perturbation on the sphere has true separation eps^2/2 where eps j vanishes",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-06,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "largest gap between the fitted exponent and consecutive-pair slopes of the closed form",
+    "kind": "fit_spread",
+    "value": 8.385826655366024e-05
+   },
+   "unit": null,
+   "value": {
+    "coefficient": 0.4999989583372256,
+    "exponent": 1.9999395863581884,
+    "s0": 2.356194490192345
+   }
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 3281,
+   "path": "artifacts/T010/near-focus.json",
+   "sha256": "2acdac0174e8ae9224edba1d6d0deadd16e9a1cb6da56bb64c06c6b008e19766"
+  },
+  {
+   "bytes": 19483,
+   "path": "artifacts/T010/relative-first-order-error.svg",
+   "sha256": "cafe594c07e6f197af1722e8569586c7a7cfc206ee59a4e4b7a9707a9983fc92"
+  },
+  {
+   "bytes": 2660,
+   "path": "artifacts/T010/separation-at-conjugate-point.svg",
+   "sha256": "1218af1ce4af9b1ed49870096c5119d38e6876719fe10fa73e03f71fed66fe9e"
+  }
+ ],
+ "hypothesis": "Where the first-order separation eps j(s) vanishes (conjugate or focal points) the true separation is of higher order in eps, so the relative first-order error diverges there; past the zero the separation changes sign (image inversion); symmetric configurations raise the order of the true separation.",
+ "input_data": [
+  "Torus(2, 1): outer equator start (0, 0) heading 0; generic start (0, 0.3) heading 0.5",
+  "eps = [0.005, 0.01, 0.02, 0.04] rad; RK4 grid with node 400 at s*, 580 steps",
+  "Unit sphere: start (pi/2, 0) heading 1.0; grid h = pi/256 to 1.5 pi; eps = 0.02"
+ ],
+ "mathematical_model": "Unit-speed geodesics with j'' + K j = 0; d(s; eps) = eps j(s) + r(eps, s). At s* with j(s*) = 0, d(s*) = r(eps, s*). Torus(2, 1) outer equator: K = 1/3, s* = pi sqrt(3); a reflection theta -> -theta makes the normal offset odd in eps and the O(eps^2) along-track lag -eps^2 sin(2 w s)/(4 w) vanish at s*, so d(s*) = O(eps^3). Unit sphere: all great circles through a point refocus exactly at s = pi; the combined perturbation (lateral eps, heading eps) has j = eps (cos s + sin s) with zero at 3pi/4 where the exact chord is eps^2/2 + O(eps^3).",
+ "number": 10,
+ "numerical_result": "Equator: s* = 5.4414, chord(s*) exponent 3; generic: s* = 6.0514, exponent 2.023; divergence slope -0.9912 (generic), -1.012 (equator); relative error 3.796 one step before s* at eps = 0.04; after s* signed/(eps j) = 0.99588 with j < 0; chord(s*)/chord(s*/2) = 0.000157; sphere relative error uniform -1.667e-05 (max deviation 7.7e-08); sphere combined perturbation chord(3pi/4) = 0.5 eps^2.",
+ "observation_model": "Embedded chord |X_eps(s) - X(s)| and its signed component along the base geodesic's embedded in-surface normal, compared at matched arclength nodes; no renormalization.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/geodesic_jacobi_limits.py": "29c8472e91cdf4deb2e1f526ab40e57f703f41e20ef14edd8fb1cc2fc6ede661",
+   "src/ciw/lab/geodesic_jacobi_limits_core.py": "8aa707ec2a190208bf07cd3b1f94a40f191a7a9c4be277714ed8b627e2c5fcb9"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T017 (validity domains, which tabulates C(s) for these families) and T008 (conjugate-point location accuracy)",
+ "report_id": "sha256:1fd19f9ceb832ad76b7ee15dbb0f54afeb17234a9250e18b7a2dccb9a7b9c1e8",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "geodesic-jacobi",
+ "state": "completed",
+ "task_id": "T010",
+ "tests_passed": [
+  "check: On the torus outer equator the separation at the conjugate point scales as eps^3, not eps^2 vs numerical conjugate point minus pi sqrt(r (R + r))",
+  "check: On the torus outer equator the separation at the conjugate point scales as eps^3, not eps^2 vs first-order prediction |eps j(s*)| (vanishes at s*)",
+  "check: On the torus outer equator the separation at the conjugate point scales as eps^3, not eps^2 vs fitted chord exponent minus 3 (reflection symmetry)",
+  "check: On the torus outer equator the separation at the conjugate point scales as eps^3, not eps^2 vs smallest chord at s*: 200- versus 400-step grid (relative)",
+  "check: On a generic torus geodesic the separation at the conjugate point is O(eps^2) while eps j vanishes vs first-order prediction |eps j(s*)| (vanishes at s*)",
+  "check: On a generic torus geodesic the separation at the conjugate point is O(eps^2) while eps j vanishes vs fitted chord exponent minus 2 (generic remainder)",
+  "check: The relative first-order error diverges like 1/|s - s*| approaching the conjugate point vs generic log-log slope plus 1",
+  "check: The relative first-order error diverges like 1/|s - s*| approaching the conjugate point vs equator log-log slope plus 1",
+  "check: The relative first-order error diverges like 1/|s - s*| approaching the conjugate point vs relative first-order error one step before s* (eps = 0.04)",
+  "check: After the conjugate point the separation inverts sign and still follows eps j vs generic: signed / (eps j) after s* minus 1",
+  "check: After the conjugate point the separation inverts sign and still follows eps j vs equator: signed / (eps j) after s* minus 1",
+  "check: After the conjugate point the separation inverts sign and still follows eps j vs sign product of separations before and after s* plus 1 (generic)",
+  "check: After the conjugate point the separation inverts sign and still follows eps j vs sign product of separations before and after s* plus 1 (equator)",
+  "check: Separation does not grow monotonically with length: it nearly vanishes at the conjugate point vs chord(s*) / chord(s*/2) on the outer equator",
+  "check: On the unit sphere a pure heading perturbation refocuses exactly: the relative first-order error is uniform and does not diverge at the conjugate point vs numerical chord and signed separation versus great circles",
+  "check: On the unit sphere a pure heading perturbation refocuses exactly: the relative first-order error is uniform and does not diverge at the conjugate point vs relative error minus 2 sin(eps/2)/eps - 1 at every node",
+  "check: On the unit sphere the image inverts after the conjugate point (signed ratio -1) vs signed separation at 5pi/4 over 3pi/4 plus 1",
+  "check: A combined lateral+heading perturbation on the sphere has true separation eps^2/2 where eps j vanishes vs closed-form exponent minus 2",
+  "check: A combined lateral+heading perturbation on the sphere has true separation eps^2/2 where eps j vanishes vs chord / eps^2 at s0 = 3pi/4 minus 1/2",
+  "check: A combined lateral+heading perturbation on the sphere has true separation eps^2/2 where eps j vanishes vs numerical chord at s0 minus closed form (eps = 0.02)",
+  "pytest: tests/test_lab_geodesic_jacobi_limits.py::test_t010_near_focus_and_post_focus_counterexamples"
+ ],
+ "tests_skipped": [],
+ "title": "Generate near-focus and post-focus counterexamples.",
+ "uncertainty": "Halving the grid changes the smallest separation (equator, eps = 0.005, chord 8.5e-08) by a relative 0.00015, so the 400-step values are accurate to about a sixteenth of that; exponents are least-squares fits over eps in [0.005, 0.04] and include higher-order terms (largest gap to consecutive-pair slopes 0.017 for the generic path).",
+ "unresolved_assumptions": [
+  "Chord separation is extrinsic; intrinsic distance differs at O(d^3) and would change only third-order coefficients",
+  "The generic torus path is one geodesic; genericity is argued, not sampled",
+  "Heading perturbations only for the torus; lateral families are not fitted there"
+ ]
+}

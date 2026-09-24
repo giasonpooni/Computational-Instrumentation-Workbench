@@ -1,0 +1,58 @@
+{
+ "metadata_variant": {
+  "data_keys_differing_from_baseline": [
+   "log_digest"
+  ],
+  "experiment_id": "energy-run-11111111111111111111111111111111"
+ },
+ "occurrences": [
+  {
+   "bundle": "B0",
+   "numerical_result_id_equal_to_B0": true,
+   "step": "execution:B0.step"
+  },
+  {
+   "bundle": "B0b",
+   "numerical_result_id_equal_to_B0": true,
+   "step": "execution:B0b.step"
+  },
+  {
+   "bundle": "B1",
+   "numerical_result_id_equal_to_B0": true,
+   "step": "execution:B1.step"
+  },
+  {
+   "bundle": "B2",
+   "numerical_result_id_equal_to_B0": true,
+   "step": "execution:B2.step"
+  },
+  {
+   "bundle": "B3",
+   "numerical_result_id_equal_to_B0": true,
+   "step": "execution:B3.step"
+  },
+  {
+   "bundle": "B4",
+   "numerical_result_id_equal_to_B0": true,
+   "step": "execution:B4.step"
+  }
+ ],
+ "statistics": {
+  "computed": {
+   "maximum": 4.119458751885594,
+   "mean": -0.8382494719867797,
+   "minimum": -3.978074288668829,
+   "rms": 2.6498250842399806,
+   "sample_count": 64,
+   "unit": "m/s"
+  },
+  "direct": {
+   "maximum": 4.119458751885594,
+   "mean": -0.8382494719867797,
+   "minimum": -3.978074288668829,
+   "rms": 2.6498250842399806,
+   "sample_count": 64
+  },
+  "max_relative_difference": 0.0
+ }
+}

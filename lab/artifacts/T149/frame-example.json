@@ -1,0 +1,18 @@
+{
+ "crc_byte_order": "little",
+ "crc_bytes": 4,
+ "decoded": {
+  "channels": [
+   1,
+   -2,
+   3,
+   2147483647
+  ],
+  "clock_id": 7,
+  "flags": 0,
+  "sequence": 123456,
+  "timestamp_ns": 987654321
+ },
+ "header_bytes": 28,
+ "hex": "43495754010100000001e240000000003ade68b1000000070004001000000001fffffffe000000037fffffff41455b23"
+}

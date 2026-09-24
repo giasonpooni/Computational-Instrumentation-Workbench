@@ -1,0 +1,30 @@
+{
+ "builds": [
+  {
+   "binary_sha256": "b9f40b3094ecf4b793676c766ffd559dc69abc4fada564c1bde94e79c6f0b201",
+   "byte_count": 509160,
+   "log_tail": [
+    "   Compiling execution-core v0.1.0 (<scr>/crates/execution-core)",
+    "   Compiling execution-cli v0.1.0 (<scr>/crates/execution-cli)",
+    "    Finished `release` profile [optimized] target(s) in 0.74s"
+   ],
+   "returncode": 0
+  },
+  {
+   "binary_sha256": "b9f40b3094ecf4b793676c766ffd559dc69abc4fada564c1bde94e79c6f0b201",
+   "byte_count": 509160,
+   "log_tail": [
+    "   Compiling execution-core v0.1.0 (<scr>/crates/execution-core)",
+    "   Compiling execution-cli v0.1.0 (<scr>/crates/execution-cli)",
+    "    Finished `release` profile [optimized] target(s) in 0.70s"
+   ],
+   "returncode": 0
+  }
+ ],
+ "cargo": "cargo 1.94.1 (29ea6fb6a 2026-03-24)",
+ "cargo_lock_sha256_after": "24b1db68d762d3457eb40465dae6c3edc8a2da2925d42f3f794d090d18a5f2bc",
+ "cargo_lock_sha256_before": "24b1db68d762d3457eb40465dae6c3edc8a2da2925d42f3f794d090d18a5f2bc",
+ "cargo_target_dir": "fresh temporary directory per build",
+ "command": "cargo build --release --locked --offline --manifest-path <scr>/crates/Cargo.toml -p execution-cli",
+ "rustc": "rustc 1.94.1 (e408947bf 2026-03-25)"
+}

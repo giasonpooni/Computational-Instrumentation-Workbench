@@ -1,0 +1,366 @@
+{
+ "changed_files": [
+  "src/ciw/lab/exchange_provenance.py",
+  "src/ciw/lab/exchange_provenance_common.py",
+  "tests/test_lab_exchange_provenance.py",
+  "docs/lab/EXCHANGE_PROVENANCE.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 0,
+   "numerically_verified": 5,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Eight variants under one label: 8 distinct evidence_id and source_id; one experiment_digest, log_digest and numerical_result_id. A consistent int-for-float rewrite is refused by the log seal unless resealed, and a resealed one is distinct evidence, never aliased.",
+ "experiment": "Retain and analyse eight variants of baseline.json under one shared label; compare identities; submit a partial and a consistent (unsealed) int-for-float rewrite and a byte-order-mark variant; retain a consistent resealed int-for-float rewrite. Identity levels retained as identity-levels.json/.md.",
+ "failure_modes_checked": [
+  "whitespace normalization before hashing",
+  "key-order sensitivity of content identities",
+  "float lexical spelling",
+  "int/float type aliasing (consistent, resealed and unsealed)",
+  "cross-field solver consistency",
+  "byte-order mark",
+  "label-driven rather than byte-driven source identity"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "labels shared by the variants (observed 1, predicted 1)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "variants retained byte-exactly (live, bundle, reopen) (observed 8, predicted 8)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "variants canonically equal to baseline (CIW canonical JSON) (observed 8, predicted 8)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "variants whose bundle artifact_ref is not their evidence_id",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "distinct input_sha256 (observed 8, predicted 8)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "distinct evidence_id (observed 8, predicted 8)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "distinct source_id (observed 8, predicted 8)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Whitespace, key-order and float-spelling variants under one label retain distinct exact bytes and distinct evidence and source identities while their parsed content is canonically equal",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "artifact_ref_not_equal_to_evidence_id": 0,
+    "canonically_equal": 8,
+    "distinct_evidence_id": 8,
+    "distinct_input_sha256": 8,
+    "distinct_source_id": 8,
+    "exactly_retained": 8,
+    "labels": 1,
+    "variants": 8
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "distinct experiment_digest (observed 1, predicted 1)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "distinct log_digest (observed 1, predicted 1)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "distinct numerical_result_id (observed 1, predicted 1)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Content-level identities coincide across the byte variants: one experiment_digest, log_digest and numerical_result_id",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "experiment_digest": 1,
+    "log_digest": 1,
+    "numerical_result_id": 1
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "Retained log digest differs",
+      "observed_refusal": "Retained log digest differs",
+      "passed": true,
+      "reference": "consistent rewrite of both initial_covariance copies, log_digest not resealed: source.add refusal",
+      "reference_kind": "refusal"
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "Python equality holds while CIW canonical equality fails (0 = observed)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "content identities of the resealed rewrite equal to baseline (experiment_digest, log_digest, numerical_result_id)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "CIW canonical comparison is type-sensitive (1 != 1.0): a consistent int-for-float rewrite is refused by the stale log seal and, once resealed, retained as distinct evidence rather than aliased",
+   "counterexample": {
+    "statement": "Canonical-content identity treats numerically equal JSON numbers as equal content",
+    "witness": {
+     "ciw_canonical_equal": false,
+     "edit": "unit diagonal of runtime.workload.solver_settings and plan.solver initial_covariance written as 1 instead of 1.0",
+     "python_equal": true,
+     "resealed_identities_differ_from_baseline": {
+      "experiment_digest": true,
+      "log_digest": true,
+      "numerical_result_id": true
+     },
+     "unsealed": "Retained log digest differs"
+    }
+   },
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "ciw_canonical_equal": false,
+    "python_equal": true,
+    "resealed_identities_differ_from_baseline": {
+     "experiment_digest": true,
+     "log_digest": true,
+     "numerical_result_id": true
+    },
+    "resealed_retained": true,
+    "unsealed_observed": "Retained log digest differs"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "Workload solver differs from plan",
+      "observed_refusal": "Workload solver differs from plan",
+      "passed": true,
+      "reference": "first '1.0,' (runtime.workload.solver_settings) rewritten as '1,': source.add refusal",
+      "reference_kind": "refusal"
+     }
+    ]
+   },
+   "claim": "A partial int-for-float rewrite of one copy of the solver settings is refused by CIW's cross-field solver check",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "observed": "Workload solver differs from plan"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "The bound runtime did not return finite, unambiguous JSON",
+      "observed_refusal": "The bound runtime did not return finite, unambiguous JSON",
+      "passed": true,
+      "reference": "BOM-prefixed baseline: source.add refusal",
+      "reference_kind": "refusal"
+     }
+    ]
+   },
+   "claim": "A UTF-8 byte-order-mark variant with equal content is refused",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "canonical_equal_after_bom_strip": true,
+    "code": "MALFORMED_RESPONSE",
+    "observed": "The bound runtime did not return finite, unambiguous JSON"
+   }
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 10000,
+   "path": "artifacts/T079/identity-levels.json",
+   "sha256": "21d4ff990a05a361a1684b555bbb78d0f04445f32c76e5eafa85a53fa2d86fb8"
+  },
+  {
+   "bytes": 637,
+   "path": "artifacts/T079/identity-levels.md",
+   "sha256": "7ac665779dab836cebf8964d6d3650fb566d30bc16c1596937e96a3a4aaecd87"
+  }
+ ],
+ "hypothesis": "Byte variants of one log that differ only in whitespace, key order or float spelling are retained as distinct evidence with distinct byte-level identities, while every content-level identity is equal; CIW's canonical comparison is type-sensitive, so rewriting 1.0 as 1 is a content change.",
+ "input_data": [
+  "examples/energy-accuracy/{baseline,reset,missing,under-target}.json, eight byte variants of baseline under one shared label (original, crlf, minified, tab-indented, sorted-keys, reversed-keys, trailing-whitespace, float-spelling 1e-09 -> 0.000000001) and two resealed content variants (sensor name renamed; initial_covariance diagonal written as integers)"
+ ],
+ "mathematical_model": "Byte-level identities are functions of the bytes b (sha256(b)); content-level identities are functions of canon(parse(b)) with CIW's canonical JSON, which prints 1 and 1.0 differently. For variants with canon(parse(b_i)) equal and b_i distinct, byte-level identities are pairwise distinct and content-level identities coincide.",
+ "number": 79,
+ "numerical_result": "8 variants under 1 label: byte-level distinct counts {'input_sha256': 8, 'evidence_id': 8, 'source_id': 8}; content-level distinct counts {'experiment_digest': 1, 'log_digest': 1, 'numerical_result_id': 1}; consistent int-for-float rewrite refused unsealed (Retained log digest differs), distinct evidence when resealed; partial rewrite and BOM refused",
+ "observation_model": "No physical observation. The observed objects are CIW records (sessions, executions, results, bundles, receipts, saved workspace JSON) produced offline by the unmodified CIW code; the energy logs are synthetic fixtures and no hardware was sampled.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/exchange_provenance.py": "5cc267c7777c9b434b8747b0cc841ac85313e1cfb6ff4c429ee93aa5ddbb645b",
+   "src/ciw/lab/exchange_provenance_common.py": "22028c4008079fba23c5e807de0104ba1a0014027e1d40a9209881cdf232f486"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T080 (operation/execution/result identity separation)",
+ "report_id": "sha256:f2bad39f4656da60281aa1941995ac8c8828ef3c531c2d8d746fcccd4f584959",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "exchange-provenance",
+ "state": "completed",
+ "task_id": "T079",
+ "tests_passed": [
+  "check: Whitespace, key-order and float-spelling variants under one label retain distinct exact bytes and distinct evidence and source identities while their parsed content is canonically equal vs labels shared by the variants (observed 1, predicted 1)",
+  "check: Whitespace, key-order and float-spelling variants under one label retain distinct exact bytes and distinct evidence and source identities while their parsed content is canonically equal vs variants retained byte-exactly (live, bundle, reopen) (observed 8, predicted 8)",
+  "check: Whitespace, key-order and float-spelling variants under one label retain distinct exact bytes and distinct evidence and source identities while their parsed content is canonically equal vs variants canonically equal to baseline (CIW canonical JSON) (observed 8, predicted 8)",
+  "check: Whitespace, key-order and float-spelling variants under one label retain distinct exact bytes and distinct evidence and source identities while their parsed content is canonically equal vs variants whose bundle artifact_ref is not their evidence_id",
+  "check: Whitespace, key-order and float-spelling variants under one label retain distinct exact bytes and distinct evidence and source identities while their parsed content is canonically equal vs distinct input_sha256 (observed 8, predicted 8)",
+  "check: Whitespace, key-order and float-spelling variants under one label retain distinct exact bytes and distinct evidence and source identities while their parsed content is canonically equal vs distinct evidence_id (observed 8, predicted 8)",
+  "check: Whitespace, key-order and float-spelling variants under one label retain distinct exact bytes and distinct evidence and source identities while their parsed content is canonically equal vs distinct source_id (observed 8, predicted 8)",
+  "check: Content-level identities coincide across the byte variants: one experiment_digest, log_digest and numerical_result_id vs distinct experiment_digest (observed 1, predicted 1)",
+  "check: Content-level identities coincide across the byte variants: one experiment_digest, log_digest and numerical_result_id vs distinct log_digest (observed 1, predicted 1)",
+  "check: Content-level identities coincide across the byte variants: one experiment_digest, log_digest and numerical_result_id vs distinct numerical_result_id (observed 1, predicted 1)",
+  "check: CIW canonical comparison is type-sensitive (1 != 1.0): a consistent int-for-float rewrite is refused by the stale log seal and, once resealed, retained as distinct evidence rather than aliased vs consistent rewrite of both initial_covariance copies, log_digest not resealed: source.add refusal",
+  "check: CIW canonical comparison is type-sensitive (1 != 1.0): a consistent int-for-float rewrite is refused by the stale log seal and, once resealed, retained as distinct evidence rather than aliased vs Python equality holds while CIW canonical equality fails (0 = observed)",
+  "check: CIW canonical comparison is type-sensitive (1 != 1.0): a consistent int-for-float rewrite is refused by the stale log seal and, once resealed, retained as distinct evidence rather than aliased vs content identities of the resealed rewrite equal to baseline (experiment_digest, log_digest, numerical_result_id)",
+  "check: A partial int-for-float rewrite of one copy of the solver settings is refused by CIW's cross-field solver check vs first '1.0,' (runtime.workload.solver_settings) rewritten as '1,': source.add refusal",
+  "check: A UTF-8 byte-order-mark variant with equal content is refused vs BOM-prefixed baseline: source.add refusal",
+  "pytest: tests/test_lab_exchange_provenance.py::test_whitespace_variants"
+ ],
+ "tests_skipped": [],
+ "title": "Test whitespace-preserving evidence retention.",
+ "uncertainty": "Exact equality of digests; the variant set samples whitespace, order and float spelling but not every lexical freedom JSON allows (for example escaped string characters).",
+ "unresolved_assumptions": [
+  "The BOM refusal message names a 'bound runtime' although the defect is in source bytes; the refusal is correct but its wording is misleading (reported, not changed).",
+  "Unicode escape variants (\\u0041 vs A) were not exercised."
+ ]
+}

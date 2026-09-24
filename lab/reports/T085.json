@@ -1,0 +1,261 @@
+{
+ "changed_files": [
+  "src/ciw/lab/exchange_provenance.py",
+  "src/ciw/lab/exchange_provenance_common.py",
+  "tests/test_lab_exchange_provenance.py",
+  "docs/lab/EXCHANGE_PROVENANCE.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 2,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Every predicted refusal is observed; the re-identified replay reopens dated before its source; the harness controls hold.",
+ "experiment": "Edit the saved workspace (replay receipt replayed digest), recompute none, local or all unkeyed digests, write it and reopen with Session.from_workspace. Rows retained as receipt-replayed-mutations.json/.md.",
+ "failure_modes_checked": [
+  "receipt-replayed.naive: replayed_bundle_digest set to a forged digest",
+  "receipt-replayed.replay-id: forged replayed digest; replay_id recomputed",
+  "receipt-replayed.source: replayed digest set to the source bundle digest; replay_id recomputed",
+  "receipt-replayed.sibling: replayed digest set to a sibling execution digest; replay_id recomputed",
+  "receipt-replayed.reidentified-bundle: replay bundle dated 2001, before its source, with a new session id; bundle, verification and receipt digests recomputed"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "Invalid retained energy replay receipt",
+      "observed_refusal": "Invalid retained energy replay receipt",
+      "passed": true,
+      "reference": "receipt-replayed.naive (none recompute): refusal on reopen",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "Invalid retained energy replay receipt",
+      "observed_refusal": "Invalid retained energy replay receipt",
+      "passed": true,
+      "reference": "receipt-replayed.replay-id (local recompute): refusal on reopen",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "Invalid retained energy replay receipt",
+      "observed_refusal": "Invalid retained energy replay receipt",
+      "passed": true,
+      "reference": "receipt-replayed.source (local recompute): refusal on reopen",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "Invalid retained energy replay receipt",
+      "observed_refusal": "Invalid retained energy replay receipt",
+      "passed": true,
+      "reference": "receipt-replayed.sibling (local recompute): refusal on reopen",
+      "reference_kind": "refusal"
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "harness control: the forger's recomputation of the unedited workspace reproduces every CIW digest",
+      "reference_kind": "cross_implementation",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "harness control: the unedited saved workspace reopens",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Replay receipt replayed digest forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": [
+    {
+     "kind": "workspace",
+     "mutant": "receipt-replayed.naive",
+     "observed": "Invalid retained energy replay receipt",
+     "recompute": "none"
+    },
+    {
+     "kind": "workspace",
+     "mutant": "receipt-replayed.replay-id",
+     "observed": "Invalid retained energy replay receipt",
+     "recompute": "local"
+    },
+    {
+     "kind": "workspace",
+     "mutant": "receipt-replayed.source",
+     "observed": "Invalid retained energy replay receipt",
+     "recompute": "local"
+    },
+    {
+     "kind": "workspace",
+     "mutant": "receipt-replayed.sibling",
+     "observed": "Invalid retained energy replay receipt",
+     "recompute": "local"
+    }
+   ]
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "receipt-replayed.reidentified-bundle: accepted (1 = accepted)",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "reopened replay not dated before its source bundle",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Surviving mutant receipt-replayed.reidentified-bundle: a replay re-sessioned and dated before its source, with recomputed digests, reopens",
+   "counterexample": {
+    "statement": "A retained replay cannot be dated before its source bundle",
+    "witness": {
+     "description": "replay bundle dated 2001, before its source, with a new session id; bundle, verification and receipt digests recomputed",
+     "name": "receipt-replayed.reidentified-bundle",
+     "observed": "accepted",
+     "post_reopen": {
+      "created_at": "2001-01-01T00:00:00Z",
+      "receipt_source": "bundle:B0",
+      "replay_predates_source": true,
+      "session_id": "session:<forged-constant>"
+     },
+     "recompute": "full",
+     "target": "energy replay bundle"
+    }
+   },
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "mutant": "receipt-replayed.reidentified-bundle",
+    "observed": "accepted"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": "Every CIW seal and identity on these paths (record_digest, log_digest, bundle_digest, verification_id, replay_id, result_id, source_id) is an unkeyed SHA-256 over public canonical JSON or raw bytes, and no keyed signature or MAC is retained. Authentication is therefore not established; the listed surviving mutants are concrete forgeries accepted on reopen."
+   },
+   "claim": "Retained workspace records are authenticated: a holder without a secret cannot produce a forged record that reopens",
+   "domain": "provenance",
+   "evidence_status": "not_established",
+   "expected_not_established": true,
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": null,
+   "unit": null,
+   "value": {
+    "surviving_mutants_in_this_task": [
+     "receipt-replayed.reidentified-bundle"
+    ]
+   }
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 2926,
+   "path": "artifacts/T085/receipt-replayed-mutations.json",
+   "sha256": "646956f9698511fb17e75808a761550bb44171ff345a34eb38de783457100582"
+  },
+  {
+   "bytes": 1004,
+   "path": "artifacts/T085/receipt-replayed-mutations.md",
+   "sha256": "00dfd95f296a7dfc3794e28a4a2bbdb249c43658b3dcf4d641a6423f7f1ac803"
+  }
+ ],
+ "hypothesis": "Predicted kills: the four replayed_bundle_digest edits, resealed or not, because reopen requires it to equal the containing bundle's own digest. Predicted survivor: receipt-replayed.reidentified-bundle, because created_at and session_id sit inside the unkeyed bundle_digest, the forger recomputes that digest, the verification and the receipt together, and no check compares a replay's creation time with its source's.",
+ "input_data": [
+  "make_demo_run() damped-oscillator recording; statistics.v1 on channel v over [1, 2] s, twice, plus one legacy analysis.stats result",
+  "examples/energy-accuracy/{baseline,reset}.json (origin synthetic_fixture): two original executions of baseline, one of reset, replays, and a separate session in the same process",
+  "Workspaces saved by Session.save_workspace and reopened by Session.from_workspace in temporary directories"
+ ],
+ "mathematical_model": "Each record seal or identity d = sha256(canon(record \\ d)) is unkeyed, so any holder can recompute d after an edit. Reopen kills a mutant only if some check compares the edited field with an independently recomputed, fixed or cross-referenced value; otherwise a consistent recomputation survives.",
+ "number": 85,
+ "numerical_result": "5 rows (5 workspace mutants, 0 pure-validator rows): 4 refused; 1 surviving forgery (receipt-replayed.reidentified-bundle); kill/survive predictions matched 5/5; refusal messages matched their regression pins 4/4",
+ "observation_model": "No physical observation. The observed objects are CIW records (sessions, executions, results, bundles, receipts, saved workspace JSON) produced offline by the unmodified CIW code; the energy logs are synthetic fixtures and no hardware was sampled.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/exchange_provenance.py": "5cc267c7777c9b434b8747b0cc841ac85313e1cfb6ff4c429ee93aa5ddbb645b",
+   "src/ciw/lab/exchange_provenance_common.py": "22028c4008079fba23c5e807de0104ba1a0014027e1d40a9209881cdf232f486"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T086 (mutate verification subject)",
+ "report_id": "sha256:1fd3e83700657857b60e781353b278dc5f366d9583274e143a74cc341815cc15",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "exchange-provenance",
+ "state": "completed",
+ "task_id": "T085",
+ "tests_passed": [
+  "check: Replay receipt replayed digest forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs receipt-replayed.naive (none recompute): refusal on reopen",
+  "check: Replay receipt replayed digest forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs receipt-replayed.replay-id (local recompute): refusal on reopen",
+  "check: Replay receipt replayed digest forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs receipt-replayed.source (local recompute): refusal on reopen",
+  "check: Replay receipt replayed digest forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs receipt-replayed.sibling (local recompute): refusal on reopen",
+  "check: Replay receipt replayed digest forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs harness control: the forger's recomputation of the unedited workspace reproduces every CIW digest",
+  "check: Replay receipt replayed digest forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs harness control: the unedited saved workspace reopens",
+  "check: Surviving mutant receipt-replayed.reidentified-bundle: a replay re-sessioned and dated before its source, with recomputed digests, reopens vs receipt-replayed.reidentified-bundle: accepted (1 = accepted)",
+  "check: Surviving mutant receipt-replayed.reidentified-bundle: a replay re-sessioned and dated before its source, with recomputed digests, reopens vs reopened replay not dated before its source bundle",
+  "pytest: tests/test_lab_exchange_provenance.py::test_receipt_digest_mutations"
+ ],
+ "tests_skipped": [],
+ "title": "Mutate replay receipt replayed digest.",
+ "uncertainty": "Outcomes are exact (accepted or a refusal message). Only kill/survive is a prediction; refusal messages are regression pins recorded from observed runs. Survivors are demonstrated forgeries; kills show only that these particular edits are detected, not that every edit of this field is.",
+ "unresolved_assumptions": [
+  "The forger model recomputes only unkeyed SHA-256 digests with CIW's public canonicalization; no key exists to steal.",
+  "Whether a reader of a forged workspace would be misled depends on how the record is displayed; not assessed."
+ ]
+}

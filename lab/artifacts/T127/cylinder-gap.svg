@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420" font-family="sans-serif" font-size="11">
+<rect width="640" height="420" fill="#ffffff"/>
+<text x="78" y="22" font-size="13" font-weight="bold">Rolled cylinder R = 100 mm: chord-geodesic gap</text>
+<rect x="78" y="40" width="392" height="322" fill="none" stroke="#333"/>
+<line x1="149.33" y1="40" x2="149.33" y2="362" stroke="#e5e7eb"/>
+<text x="149.33" y="378" text-anchor="middle">100</text>
+<line x1="299.07" y1="40" x2="299.07" y2="362" stroke="#e5e7eb"/>
+<text x="299.07" y="378" text-anchor="middle">200</text>
+<line x1="448.80" y1="40" x2="448.80" y2="362" stroke="#e5e7eb"/>
+<text x="448.80" y="378" text-anchor="middle">300</text>
+<line x1="78" y1="351.64" x2="470" y2="351.64" stroke="#e5e7eb"/>
+<text x="72" y="355.64" text-anchor="end">0</text>
+<line x1="78" y1="220.37" x2="470" y2="220.37" stroke="#e5e7eb"/>
+<text x="72" y="224.37" text-anchor="end">50</text>
+<line x1="78" y1="89.10" x2="470" y2="89.10" stroke="#e5e7eb"/>
+<text x="72" y="93.10" text-anchor="end">100</text>
+<text x="274.00" y="406" text-anchor="middle">arc length (mm)</text>
+<text x="16" y="201.00" text-anchor="middle" transform="rotate(-90 16 201.00)">gap (mm)</text>
+<path d="M78.00,350.07 L156.40,339.25 L234.80,310.53 L313.20,256.51 L391.60,171.50 L470.00,51.93" fill="none" stroke="#1f5fa8" stroke-width="1.8"/>
+<circle cx="78.00" cy="350.07" r="2.6" fill="#1f5fa8"/>
+<circle cx="156.40" cy="339.25" r="2.6" fill="#1f5fa8"/>
+<circle cx="234.80" cy="310.53" r="2.6" fill="#1f5fa8"/>
+<circle cx="313.20" cy="256.51" r="2.6" fill="#1f5fa8"/>
+<circle cx="391.60" cy="171.50" r="2.6" fill="#1f5fa8"/>
+<circle cx="470.00" cy="51.93" r="2.6" fill="#1f5fa8"/>
+<line x1="482" y1="52" x2="502" y2="52" stroke="#1f5fa8" stroke-width="2"/>
+<text x="508" y="56">exact gap</text>
+<path d="M78.00,350.07 L156.40,339.25 L234.80,310.55 L313.20,256.65 L391.60,172.17 L470.00,54.30" fill="none" stroke="#c2410c" stroke-width="1.8"/>
+<circle cx="78.00" cy="350.07" r="2.6" fill="#c2410c"/>
+<circle cx="156.40" cy="339.25" r="2.6" fill="#c2410c"/>
+<circle cx="234.80" cy="310.55" r="2.6" fill="#c2410c"/>
+<circle cx="313.20" cy="256.65" r="2.6" fill="#c2410c"/>
+<circle cx="391.60" cy="172.17" r="2.6" fill="#c2410c"/>
+<circle cx="470.00" cy="54.30" r="2.6" fill="#c2410c"/>
+<line x1="482" y1="70" x2="502" y2="70" stroke="#c2410c" stroke-width="2"/>
+<text x="508" y="74">d^3/24R^2 - d^5/1920R^4</text>
+</svg>

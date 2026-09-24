@@ -1,0 +1,316 @@
+{
+ "changed_files": [
+  "src/ciw/lab/sensor_fusion_filtering.py",
+  "src/ciw/lab/sensor_fusion_common.py",
+  "src/ciw/lab/sensor_fusion_bench.py",
+  "src/ciw/lab/sensor_fusion_objects.py"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 4,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "ANIS inside chi2(2N)/N intervals with S; post-fit NIS with R - H P+ H^T identical to the innovation NIS; outside above (innovation / R) and below (post-fit / R), with grand means equal to the exact traces.",
+ "experiment": "One seeded Monte Carlo; four normalizations of the same residuals; per-tick ANIS against 99% intervals; grand means against the exact traces with run-level standard errors.",
+ "failure_modes_checked": [
+  "raw R for innovations",
+  "raw R for post-fit residuals",
+  "post-fit covariance identity R - H P+ H^T = R S^-1 R",
+  "counting the post-fit test as independent evidence (it is the same statistic)"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 0.98,
+      "passed": true,
+      "reference": "fraction of ticks with ANIS in the chi2(2N)/N 99% interval",
+      "reference_kind": "analytic",
+      "tolerance": 0.9
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.16531247571833813,
+      "passed": true,
+      "reference": "grand mean against 2 (run-level z)",
+      "reference_kind": "analytic",
+      "tolerance": 3.5879146722879613
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "runs": 300,
+     "seed": 662026,
+     "ticks": 100
+    }
+   },
+   "claim": "Innovations normalized by S = H P- H^T + R are chi-square(2) consistent: run-averaged NIS lies inside its per-tick 99% interval at 90% or more of ticks and the grand mean matches 2",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "run-level standard error of the grand mean",
+    "kind": "monte_carlo_95ci",
+    "value": 0.022688644283569207
+   },
+   "unit": null,
+   "value": {
+    "fraction_above": 0.01,
+    "fraction_below": 0.01,
+    "fraction_inside": 0.98,
+    "grand_mean": 1.9980863694095867,
+    "predicted_grand_mean": 2.0,
+    "z_vs_predicted": -0.16531247571833813
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 1.0408340855860843e-17,
+      "passed": true,
+      "reference": "R - H P+ H^T against R S^-1 R",
+      "reference_kind": "invariant",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 3.930189507173054e-14,
+      "passed": true,
+      "reference": "post-fit NIS against innovation NIS over all runs and ticks (relative)",
+      "reference_kind": "invariant",
+      "tolerance": 1e-09
+     }
+    ],
+    "derivation": "r = (I - H K) nu = R S^-1 nu, Cov r = R S^-1 R, so r^T (R S^-1 R)^-1 r = nu^T S^-1 nu"
+   },
+   "claim": "Post-fit residuals z - H x+ have covariance R - H P+ H^T = R S^-1 R, and normalizing them by it reproduces the innovation NIS exactly, so the post-fit test carries no information beyond the innovation test",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "observed floating-point residual of an exact identity",
+    "kind": "roundoff",
+    "value": 3.930189507173054e-14
+   },
+   "unit": null,
+   "value": {
+    "identity_error": 1.0408340855860843e-17,
+    "max_relative_difference_from_innovation_nis": 3.930189507173054e-14
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "fraction of ticks above the 99% upper bound",
+      "reference_kind": "analytic",
+      "tolerance": 0.9
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.1265164420290209,
+      "passed": true,
+      "reference": "grand mean against the exact tr(R^-1 S) (run-level z)",
+      "reference_kind": "analytic",
+      "tolerance": 3.5879146722879613
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "seed": 662026
+    }
+   },
+   "claim": "Normalizing innovations by the raw sensor covariance R inflates NIS to tr(R^-1 S) and fails the chi-square test at nearly every tick",
+   "counterexample": {
+    "statement": "Innovations can be tested against the raw sensor covariance",
+    "witness": {
+     "grand_mean_nis": 3.3625270796684887,
+     "nominal": 2.0
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "run-level standard error of the grand mean",
+    "kind": "monte_carlo_95ci",
+    "value": 0.04293013085717341
+   },
+   "unit": null,
+   "value": {
+    "fraction_above": 1.0,
+    "fraction_below": 0.0,
+    "fraction_inside": 0.0,
+    "grand_mean": 3.3625270796684887,
+    "predicted_grand_mean": 3.359755973846096,
+    "z_vs_predicted": 0.1265164420290209
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "fraction of ticks below the 99% lower bound",
+      "reference_kind": "analytic",
+      "tolerance": 0.9
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.26810404178678504,
+      "passed": true,
+      "reference": "grand mean against the exact tr(S^-1 R) (run-level z)",
+      "reference_kind": "analytic",
+      "tolerance": 3.5879146722879613
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "seed": 662026
+    }
+   },
+   "claim": "Normalizing post-fit residuals by the raw R deflates them to tr(S^-1 R) < 2, which would hide an inconsistent filter",
+   "counterexample": {
+    "statement": "Post-fit residuals have the sensor covariance R",
+    "witness": {
+     "grand_mean": 1.2273555630758988,
+     "nominal": 2.0
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "run-level standard error of the grand mean",
+    "kind": "monte_carlo_95ci",
+    "value": 0.013866434336800723
+   },
+   "unit": null,
+   "value": {
+    "fraction_above": 0.0,
+    "fraction_below": 1.0,
+    "fraction_inside": 0.0,
+    "grand_mean": 1.2273555630758988,
+    "predicted_grand_mean": 1.229252321795729,
+    "z_vs_predicted": -0.26810404178678504
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "seed": 662026
+    },
+    "notes": "synthetic draws only; no acquisition"
+   },
+   "claim": "A real residual monitor normalized by datasheet sensor covariance is correctly calibrated",
+   "domain": "sensor_performance",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": "not established: synthetic Gaussian bench only"
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 18250,
+   "path": "artifacts/T066/residual_normalization.json",
+   "sha256": "090bcd44e1976207b67f59a2fffee20e474b67e583ac9382d080c1886cdc439f"
+  },
+  {
+   "bytes": 8481,
+   "path": "artifacts/T066/anis_normalizers.svg",
+   "sha256": "8056ef8143776f092c43872ed7b152e8223d6cf829f02b277d30930754a09aa0"
+  }
+ ],
+ "hypothesis": "Filter residuals must be normalized by the filter's own covariance: S for innovations and R - H P+ H^T for post-fit residuals (the two normalized statistics coincide). The raw sensor covariance R over-states the first and under-states the second by predictable amounts.",
+ "input_data": [
+  "seed 662026 (PCG64)",
+  "300 runs x 100 ticks"
+ ],
+ "mathematical_model": "nu = z - H x-, Cov nu = S = H P- H^T + R; r = z - H x+ = (I - H K) nu, Cov r = R S^-1 R = R - H P+ H^T. E[nu^T R^-1 nu] = tr(R^-1 S) > m; E[r^T R^-1 r] = tr(S^-1 R) < m. Planar CV, dt = 0.1 s, q = 0.5, camera R = [[0.04, 0.012], [0.012, 0.04]].",
+ "number": 66,
+ "numerical_result": "innovation/S inside 0.98 of ticks; post-fit/(R - HP+H^T) equals it to 4e-14 relative; innovation/R grand mean 3.363 (exact 3.360); post-fit/R grand mean 1.227 (exact 1.229).",
+ "observation_model": "Camera position at every tick; filter model equals the truth model.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/sensor_fusion_bench.py": "f373849a4c6836fa20685c59ce7a6fe6bf732f6df9d6a49646cdc017262dd656",
+   "src/ciw/lab/sensor_fusion_common.py": "6787aa47d199d50d0b4de4d7e53714ce7b8b5aad37d647cfc1a954414e90209f",
+   "src/ciw/lab/sensor_fusion_filtering.py": "6b886646d4fb49b584d7e02c13cd96d604e800bfd0defc717489a010de26bb58",
+   "src/ciw/lab/sensor_fusion_objects.py": "a795ffc235e0a4118cb7b9ac7800191a90984372d79e59f1a934442d98d7a1f1"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T067: gate with a chi-square quantile of the correctly normalized NIS.",
+ "report_id": "sha256:9927c71324a89a5696df39f51b8a338514964b302de933281034d0174a712b26",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "sensor-fusion",
+ "state": "completed",
+ "task_id": "T066",
+ "tests_passed": [
+  "check: Innovations normalized by S = H P- H^T + R are chi-square(2) consistent: run-averaged NIS lies inside its per-tick 99% interval at 90% or more of ticks and the grand mean matches 2 vs fraction of ticks with ANIS in the chi2(2N)/N 99% interval",
+  "check: Innovations normalized by S = H P- H^T + R are chi-square(2) consistent: run-averaged NIS lies inside its per-tick 99% interval at 90% or more of ticks and the grand mean matches 2 vs grand mean against 2 (run-level z)",
+  "check: Post-fit residuals z - H x+ have covariance R - H P+ H^T = R S^-1 R, and normalizing them by it reproduces the innovation NIS exactly, so the post-fit test carries no information beyond the innovation test vs R - H P+ H^T against R S^-1 R",
+  "check: Post-fit residuals z - H x+ have covariance R - H P+ H^T = R S^-1 R, and normalizing them by it reproduces the innovation NIS exactly, so the post-fit test carries no information beyond the innovation test vs post-fit NIS against innovation NIS over all runs and ticks (relative)",
+  "check: Normalizing innovations by the raw sensor covariance R inflates NIS to tr(R^-1 S) and fails the chi-square test at nearly every tick vs fraction of ticks above the 99% upper bound",
+  "check: Normalizing innovations by the raw sensor covariance R inflates NIS to tr(R^-1 S) and fails the chi-square test at nearly every tick vs grand mean against the exact tr(R^-1 S) (run-level z)",
+  "check: Normalizing post-fit residuals by the raw R deflates them to tr(S^-1 R) < 2, which would hide an inconsistent filter vs fraction of ticks below the 99% lower bound",
+  "check: Normalizing post-fit residuals by the raw R deflates them to tr(S^-1 R) < 2, which would hide an inconsistent filter vs grand mean against the exact tr(S^-1 R) (run-level z)",
+  "pytest: tests/test_lab_sensor_fusion.py::test_residuals_need_filter_covariance",
+  "pytest: tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T066]"
+ ],
+ "tests_skipped": [],
+ "title": "Verify that filtered residuals use filter covariance, not raw sensor covariance.",
+ "uncertainty": "Per-tick 99% intervals and run-level z-scores (family-corrected); the trace predictions are exact for the declared model.",
+ "unresolved_assumptions": [
+  "A deployed monitor has no truth; it sees only these residual statistics.",
+  "q = 0.5 was chosen so the raw-R bias is visible per tick; smaller q shrinks tr(R^-1 H P- H^T) but never removes it."
+ ]
+}

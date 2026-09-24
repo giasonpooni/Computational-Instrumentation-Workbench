@@ -1,0 +1,332 @@
+{
+ "changed_files": [
+  "src/ciw/lab/geodesic_jacobi_limits.py",
+  "src/ciw/lab/geodesic_jacobi_limits_core.py",
+  "docs/lab/GEODESIC_JACOBI_LIMITS.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 0,
+   "numerically_verified": 4,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "All charts agree to the reference within the integrator tolerance; asymptotic RK4 order 4 in every chart (near-fold charts reach it only at steps finer than those used here); the error constant is chart dependent.",
+ "experiment": "Integrate the joint geodesic/Jacobi system in each chart with identical geometric initial data; compare with exact (plane, sphere) or rtol 1e-13 (torus) references; fit orders; form error ratios chart/base at N = 256.",
+ "failure_modes_checked": [
+  "chart inverse reproduces the start point (refused otherwise)",
+  "exponential chart domain (refused outside u > c - 1/lam)",
+  "near-fold kept strictly regular (mu > 0; mu = 0 refused)",
+  "orientation preserved (det J > 0) so signed Jacobi fields are comparable",
+  "pre-asymptotic orders at coarse steps reported, not hidden"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 1.3217071881399534e-10,
+      "passed": true,
+      "reference": "adaptive error against exact plane and sphere geodesics",
+      "reference_kind": "analytic",
+      "tolerance": 1e-08
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 1.3090595274434236e-10,
+      "passed": true,
+      "reference": "adaptive error (rtol 1e-10) against the same DP45 at rtol 1e-13 (torus)",
+      "reference_kind": "self_convergence",
+      "tolerance": 1e-08
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 1.925495318744197e-10,
+      "passed": true,
+      "reference": "|integral of speed - L| in every chart",
+      "reference_kind": "invariant",
+      "tolerance": 1e-08
+     }
+    ],
+    "derivation": "docs/lab/GEODESIC_JACOBI_LIMITS.md#t011-coordinate-change-invariance",
+    "generator": {
+     "charts": [
+      "base",
+      "polynomial-warp",
+      "quadratic-shear",
+      "exponential-stretch",
+      "near-fold mu=0.2",
+      "near-fold mu=0.1"
+     ],
+     "deterministic": true,
+     "name": "ciw.lab.geodesic_jacobi_limits:chart-study",
+     "rtol": 1e-10,
+     "seed": null
+    }
+   },
+   "claim": "Converged geodesic endpoints, lengths and Jacobi transfer matrices agree in every chart",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 0.5
+   },
+   "uncertainty": {
+    "basis": "torus reference spread (rtol 1e-13 against 1e-12); plane and sphere references are exact",
+    "kind": "reference_error",
+    "value": 2.607081217576024e-13
+   },
+   "unit": null,
+   "value": {
+    "by_reference": {
+     "analytic": 1.3217071881399534e-10,
+     "self_convergence": 1.3090595274434236e-10
+    },
+    "max_adaptive_error": 1.3217071881399534e-10,
+    "max_length_error": 1.925495318744197e-10
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 3.9497846937534242,
+      "passed": true,
+      "reference": "smallest observed order between N = 128 and 256 (all charts)",
+      "reference_kind": "invariant",
+      "tolerance": 3.7
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.050215306246575775,
+      "passed": true,
+      "reference": "max |order - 4| over the smooth charts (N = 128/256)",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "ge",
+      "observed": 4.430712529325345,
+      "passed": true,
+      "reference": "smallest near-fold order between N = 128 and 256 (pre-asymptotic from above)",
+      "reference_kind": "invariant",
+      "tolerance": 4.0
+     }
+    ],
+    "generator": {
+     "deterministic": true,
+     "name": "ciw.lab.geodesic_jacobi_limits:chart-study",
+     "seed": null,
+     "steps": [
+      64,
+      128,
+      256
+     ]
+    }
+   },
+   "claim": "RK4 error falls at least like h^3.7 in every chart; smooth charts show order 4, near-fold charts are still pre-asymptotic (order above 4) at N = 256",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.05,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "largest difference between the smooth-chart orders from N = 64/128 and N = 128/256; near-fold orders are not asymptotic and carry no order estimate",
+    "kind": "fit_spread",
+    "value": 0.056458744930441895
+   },
+   "unit": null,
+   "value": {
+    "min_fold_order": 4.430712529325345,
+    "min_order": 3.9497846937534242,
+    "orders": {
+     "plane: exponential-stretch": 4.014960782844365,
+     "plane: near-fold mu=0.1": 4.573165776157114,
+     "plane: near-fold mu=0.2": 4.64176281166407,
+     "plane: polynomial-warp": 4.02759436645566,
+     "sphere: base": 4.0041772200978745,
+     "sphere: exponential-stretch": 4.022213469248627,
+     "sphere: near-fold mu=0.1": 5.534007640243252,
+     "sphere: near-fold mu=0.2": 4.75424684396422,
+     "sphere: polynomial-warp": 4.02877033409211,
+     "sphere: quadratic-shear": 3.9497846937534242,
+     "torus: base": 3.993075278832963,
+     "torus: exponential-stretch": 4.037775331011919,
+     "torus: near-fold mu=0.1": 4.820654899121145,
+     "torus: near-fold mu=0.2": 4.430712529325345,
+     "torus: polynomial-warp": 3.9945359658205595,
+     "torus: quadratic-shear": 3.996356155546806
+    },
+    "smooth_max_gap_to_4": 0.050215306246575775
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 98109.38296653116,
+      "passed": true,
+      "reference": "min over sphere and torus of error(fold 0.1)/error(base)",
+      "reference_kind": "invariant",
+      "tolerance": 100.0
+     }
+    ],
+    "generator": {
+     "deterministic": true,
+     "name": "ciw.lab.geodesic_jacobi_limits:chart-study",
+     "seed": null,
+     "steps": 256
+    }
+   },
+   "claim": "A geometry-preserving near-fold chart multiplies the fixed-step error by a large factor",
+   "counterexample": {
+    "statement": "A change of chart that preserves the geometry leaves the fixed-step integration error unchanged",
+    "witness": {
+     "adaptive_step_ratio": {
+      "plane": 59.0,
+      "sphere": 3.9571428571428573,
+      "torus": 3.953125
+     },
+     "chart": "u_axis = c + mu a + a^3/3, mu = 0.1 (det J >= 0.1)",
+     "factor_sphere": 1069563.9789352638,
+     "factor_torus": 98109.38296653116,
+     "plane_error_base": 1.1102230246251565e-14,
+     "plane_error_fold": 1.1860356830650787e-05,
+     "steps": 256
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-06,
+    "rel": 0.02
+   },
+   "uncertainty": {
+    "basis": "torus reference spread relative to the torus base-chart error at N = 256 (relative uncertainty of the torus factor)",
+    "kind": "reference_error",
+    "value": 0.0035042440413301577
+   },
+   "unit": null,
+   "value": {
+    "error_factor_mu_0.1_at_N_256": {
+     "sphere": 1069563.9789352638,
+     "torus": 98109.38296653116
+    },
+    "error_factor_mu_0.2_at_N_256": {
+     "sphere": 8097.748798583593,
+     "torus": 1245.2423102865773
+    },
+    "smooth_chart_factor_range": [
+     1.4480149705424135,
+     17.44094455288338
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "max |identity-chart state - base state|",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "The identity chart reproduces the base-chart integration bit for bit",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "bitwise comparison of identical floating-point operations",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": 0.0
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 8301,
+   "path": "artifacts/T011/chart-invariance.json",
+   "sha256": "565a19121a78036a877f08964c4306e53168c8ea5054ebe487930b509d941fe2"
+  },
+  {
+   "bytes": 4233,
+   "path": "artifacts/T011/chart-error.svg",
+   "sha256": "0dd9ca17084431b24439d28bd3ed78120f21589878bddcff9c52f710d158548f"
+  }
+ ],
+ "hypothesis": "A geodesic and its Jacobi fields are geometric: the same initial point and unit tangent give the same embedded endpoint, length and transfer matrix in any chart, up to integration error; the size of that error, however, depends on the chart.",
+ "input_data": [
+  "Plane start (0.3, -0.2) heading 0.7, L = 2; unit sphere start (pi/2, 0) heading 1.0, L = 2; Torus(2, 1) start (0, 0.5) heading 0.7, L = 3",
+  "Charts centered at the rounded chart midpoint of the base path: polynomial warp beta = 0.3, quadratic shear sigma = 0.8, exponential stretch lam = 0.6, near-fold mu = 0.2 and 0.1 on the coordinate with the largest excursion, identity",
+  "RK4 with N = [64, 128, 256]; adaptive DP45 rtol 1e-10"
+ ],
+ "mathematical_model": "Pullback metric g'(a) = J^T g(phi(a)) J with exact Hessian terms (Reparametrized); the initial tangent is t_a = J^{-1} t_u, so the geometric initial data coincide. RK4 local error ~ h^5 y^(5); a near fold u = c + mu a + a^3/3 makes the chart velocity ~ 1/mu over an arclength window ~ mu^(3/2), so the derivatives entering the error grow as mu decreases.",
+ "number": 11,
+ "numerical_result": "Adaptive max error 1.32e-10 over all charts; RK4 orders at N = 128/256: min 3.95 over all charts, smooth charts within 0.05 of 4, near-fold charts 4.43-5.53 (pre-asymptotic); fold mu = 0.1 multiplies the N = 256 error by 1.07e+06 (sphere) and 9.81e+04 (torus); smooth charts change it by 1.45-17.4x; the plane is exact to 1.1e-14 in its base chart but has error 1.19e-05 in the fold chart; the adaptive integrator spends 3.95x the torus base steps in the fold chart; identity chart max difference 0.",
+ "observation_model": "Embedded endpoint X(L) = base embedding of phi(a(L)), transfer matrix entries at L, and the trapezoid length of sqrt(g(v, v)); error = max absolute deviation from the reference.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/geodesic_jacobi_limits.py": "29c8472e91cdf4deb2e1f526ab40e57f703f41e20ef14edd8fb1cc2fc6ede661",
+   "src/ciw/lab/geodesic_jacobi_limits_core.py": "8aa707ec2a190208bf07cd3b1f94a40f191a7a9c4be277714ed8b627e2c5fcb9"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T012 (frame-change invariance) and a fold-scaling study of error versus mu",
+ "report_id": "sha256:c12e4c2a1f7617e705f0d9e3e13940696fa33514751968b00a22db2f6616e2dd",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "geodesic-jacobi",
+ "state": "completed",
+ "task_id": "T011",
+ "tests_passed": [
+  "check: Converged geodesic endpoints, lengths and Jacobi transfer matrices agree in every chart vs adaptive error against exact plane and sphere geodesics",
+  "check: Converged geodesic endpoints, lengths and Jacobi transfer matrices agree in every chart vs adaptive error (rtol 1e-10) against the same DP45 at rtol 1e-13 (torus)",
+  "check: Converged geodesic endpoints, lengths and Jacobi transfer matrices agree in every chart vs |integral of speed - L| in every chart",
+  "check: RK4 error falls at least like h^3.7 in every chart; smooth charts show order 4, near-fold charts are still pre-asymptotic (order above 4) at N = 256 vs smallest observed order between N = 128 and 256 (all charts)",
+  "check: RK4 error falls at least like h^3.7 in every chart; smooth charts show order 4, near-fold charts are still pre-asymptotic (order above 4) at N = 256 vs max |order - 4| over the smooth charts (N = 128/256)",
+  "check: RK4 error falls at least like h^3.7 in every chart; smooth charts show order 4, near-fold charts are still pre-asymptotic (order above 4) at N = 256 vs smallest near-fold order between N = 128 and 256 (pre-asymptotic from above)",
+  "check: A geometry-preserving near-fold chart multiplies the fixed-step error by a large factor vs min over sphere and torus of error(fold 0.1)/error(base)",
+  "check: The identity chart reproduces the base-chart integration bit for bit vs max |identity-chart state - base state|",
+  "pytest: tests/test_lab_geodesic_jacobi_limits.py::test_t011_chart_invariance_and_fold_amplification",
+  "pytest: tests/test_lab_geodesic_jacobi_limits.py::test_chart_maps_have_exact_derivatives"
+ ],
+ "tests_skipped": [],
+ "title": "Test coordinate-change invariance under nonlinear parameterizations.",
+ "uncertainty": "Torus reference spread (rtol 1e-13 vs 1e-12) 2.6e-13; torus base error at N = 256 is 7.4e-11, so torus factors are reliable to a few percent; orders are two-point estimates.",
+ "unresolved_assumptions": [
+  "Chart centers are rounded midpoints of one path; other placements change the factors",
+  "The fold amplification is measured, not derived; its scaling in mu is not fitted",
+  "Embedded observables only; the intrinsic hyperbolic chart is not reparametrized here"
+ ]
+}

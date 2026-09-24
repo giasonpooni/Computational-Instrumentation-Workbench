@@ -1,0 +1,67 @@
+{
+ "model": {
+  "base_latency_ns": 2000000,
+  "clock_offset_ns": 3700000,
+  "drift_ppm": 20.0,
+  "duplicate_probability": 0.002,
+  "forced_losses": [
+   4294967295
+  ],
+  "jitter_scale_ns": 500000.0,
+  "jitter_shape": 2.0,
+  "loss_bad": 0.5,
+  "loss_good": 0.01,
+  "p_bad_to_good": 0.2,
+  "p_good_to_bad": 0.005,
+  "period_ns": 1000000,
+  "sample_jitter_ns": 250000,
+  "tick_ns": 50000
+ },
+ "stale_after_ns": 4000000,
+ "start_sequence": 4294965796,
+ "summary": {
+  "declared_offset": {
+   "expected_false_alarms": 39.12613784281423,
+   "false_alarms": 39,
+   "flagged": 392,
+   "missed": 0,
+   "sigma": 6.217577040722402,
+   "stale": 353
+  },
+  "deliveries": 3893,
+  "detected_lost": 120,
+  "duplicates_detected": 13,
+  "duplicates_sent": 13,
+  "estimated_offset": {
+   "bias_ns": 2043166,
+   "evaluated": 3693,
+   "expected_missed": 326.557371482148,
+   "false_alarms": 0,
+   "max_excess_ns": 127228,
+   "missed": 322,
+   "sigma": 17.253437827230915,
+   "stale": 333
+  },
+  "frames": 4000,
+  "lost_between_first_and_last": 120,
+  "lost_total": 120,
+  "model_run": {
+   "expected_latency_ns": 2999999.5,
+   "frames": 200000,
+   "latency_z": 0.6736466967565998,
+   "loss_rate": 0.0236,
+   "loss_sigma": 0.0005735068059242478,
+   "loss_z": 2.8749100634433615,
+   "mean_latency_ns": 3001064.62895,
+   "seed": 1520,
+   "stationary_loss": 0.02195121951219512
+  },
+  "naive_arrival_order": 1258,
+  "naive_in_order": 119,
+  "refused_frames": {},
+  "reordered": 522,
+  "wrap_gap": [
+   4294967295
+  ]
+ }
+}

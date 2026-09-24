@@ -1,0 +1,150 @@
+{
+ "camera_chord_distance": {
+  "cannot_observe": [
+   "intrinsic geodesic distance unless a surface model is declared",
+   "the surface between the markers",
+   "occluded or unmatched markers"
+  ],
+  "clock_basis": "acquisition",
+  "components": 1,
+  "frame_kind": "camera_rig",
+  "geometry": "extrinsic",
+  "name": "camera_chord_distance",
+  "noise_model": {
+   "model": "gaussian_pixel_noise_then_integer_rounding",
+   "pixel_sigma_px": 0.25,
+   "quantization_variance_px2": 0.08333333333333333,
+   "status": "declared_placeholder"
+  },
+  "quantity": "straight-line distance between two triangulated markers",
+  "requires_surface_model": false,
+  "unit": "m"
+ },
+ "encoder_displacement": {
+  "cannot_observe": [
+   "tool or load position without a kinematic model",
+   "surface geometry",
+   "backlash engagement without the direction history"
+  ],
+  "clock_basis": "acquisition",
+  "components": 1,
+  "frame_kind": "axis",
+  "geometry": "none",
+  "name": "encoder_displacement",
+  "noise_model": {
+   "backlash_m": 2e-05,
+   "bias_m": 0.0,
+   "model": "scale_bias_backlash",
+   "resolution_m": 1e-06,
+   "scale": 0.0,
+   "status": "declared_placeholder"
+  },
+  "quantity": "actuator axis displacement",
+  "requires_surface_model": false,
+  "unit": "m"
+ },
+ "image_residual": {
+  "cannot_observe": [
+   "depth along the viewing ray",
+   "metric scale without calibration",
+   "surface geometry"
+  ],
+  "clock_basis": "acquisition",
+  "components": 2,
+  "frame_kind": "image",
+  "geometry": "none",
+  "name": "image_residual",
+  "noise_model": {
+   "model": "gaussian_pixel_noise_then_integer_rounding",
+   "pixel_sigma_px": 0.25,
+   "quantization_variance_px2": 0.08333333333333333,
+   "status": "declared_placeholder"
+  },
+  "quantity": "reprojection residual",
+  "requires_surface_model": false,
+  "unit": "px"
+ },
+ "imu_orientation": {
+  "cannot_observe": [
+   "absolute heading without an external reference",
+   "position",
+   "surface geometry"
+  ],
+  "clock_basis": "acquisition",
+  "components": 3,
+  "frame_kind": "body",
+  "geometry": "none",
+  "name": "imu_orientation",
+  "noise_model": {
+   "arw_rad_per_sqrt_s": 0.001,
+   "bias_rad_per_s": 0.001,
+   "model": "gyro_bias_plus_angle_random_walk",
+   "status": "declared_placeholder"
+  },
+  "quantity": "body orientation as a rotation vector",
+  "requires_surface_model": false,
+  "unit": "rad"
+ },
+ "intrinsic_geodesic_distance": {
+  "cannot_observe": [
+   "chord length or any other extrinsic embedding quantity",
+   "which path joined the endpoints unless the geodesic is declared",
+   "the pose of the part in any sensor frame"
+  ],
+  "clock_basis": "acquisition",
+  "components": 1,
+  "frame_kind": "surface_chart",
+  "geometry": "intrinsic",
+  "name": "intrinsic_geodesic_distance",
+  "noise_model": {
+   "model": "additive_gaussian",
+   "sigma_m": 0.0001,
+   "status": "declared_placeholder"
+  },
+  "quantity": "arc length of a declared geodesic measured along the surface",
+  "requires_surface_model": false,
+  "unit": "m"
+ },
+ "reconstructed_surface_distance": {
+  "cannot_observe": [
+   "the true surface where it departs from the model",
+   "curvature below the model resolution",
+   "the physical path actually followed"
+  ],
+  "clock_basis": "acquisition",
+  "components": 1,
+  "frame_kind": "reconstruction",
+  "geometry": "intrinsic",
+  "name": "reconstructed_surface_distance",
+  "noise_model": {
+   "model": "input_noise_propagated_through_surface_model",
+   "model_form_error_m": "undeclared",
+   "point_sigma_m": 0.0002,
+   "status": "declared_placeholder"
+  },
+  "quantity": "geodesic length on a declared or reconstructed surface model",
+  "requires_surface_model": true,
+  "unit": "m"
+ },
+ "tracker_measurement": {
+  "cannot_observe": [
+   "distance along the surface",
+   "acquisition time unless a latency is declared",
+   "orientation of the marked body"
+  ],
+  "clock_basis": "arrival",
+  "components": 3,
+  "frame_kind": "tracker",
+  "geometry": "extrinsic",
+  "name": "tracker_measurement",
+  "noise_model": {
+   "latency_s": 0.008,
+   "model": "isotropic_gaussian_with_latency",
+   "sigma_m": 0.0005,
+   "status": "declared_placeholder"
+  },
+  "quantity": "marker position",
+  "requires_surface_model": false,
+  "unit": "m"
+ }
+}

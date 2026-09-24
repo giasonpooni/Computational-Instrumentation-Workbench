@@ -1,0 +1,514 @@
+{
+ "changed_files": [
+  "src/ciw/lab/geodesic_jacobi.py",
+  "src/ciw/lab/geodesic_jacobi_common.py",
+  "tests/test_lab_geodesic_jacobi.py",
+  "docs/lab/GEODESIC_JACOBI.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 4,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "det Phi(L) = 1; model-space ratios; first-order kernels; reversal reciprocity; a ranking reversal on the witness pair.",
+ "experiment": "Integrate both columns on every path, rank paths by each column, count discordant pairs (Kendall tau), confirm the witness numbers by finite differences, measure the response to a curvature bump at three positions, and integrate reversed paths.",
+ "failure_modes_checked": [
+  "sign of the columns (magnitudes ranked)",
+  "equal-length comparison for the witness",
+  "finite-difference confirmation of the endpoint sensitivities",
+  "mechanism: heading is not late-weighted (bump symmetry and exact reversal reciprocity)"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 7.278000424548736e-11,
+      "passed": true,
+      "reference": "max |det Phi(L) - 1| over paths",
+      "reference_kind": "invariant",
+      "tolerance": 1e-07
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 3.9968028886505635e-15,
+      "passed": true,
+      "reference": "j_head/j_lat at L against sn_K/cn_K on plane",
+      "reference_kind": "analytic",
+      "tolerance": 1e-06
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -1.2487899603286223e-11,
+      "passed": true,
+      "reference": "j_head/j_lat at L against sn_K/cn_K on hyperbolic-long",
+      "reference_kind": "analytic",
+      "tolerance": 1e-06
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -5.136421954432535e-09,
+      "passed": true,
+      "reference": "j_head/j_lat at L against sn_K/cn_K on sphere-great-circle",
+      "reference_kind": "analytic",
+      "tolerance": 1e-06
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 1.8716274437315052e-06,
+      "passed": true,
+      "reference": "central-difference endpoint separation (eps 1e-3) against the columns",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.0001
+     }
+    ],
+    "generator": {
+     "name": "declared geodesics",
+     "paths": [
+      "plane",
+      "sphere",
+      "cylinder",
+      "saddle",
+      "torus",
+      "gaussian-bump",
+      "hyperbolic-plane",
+      "plane-polar",
+      "cylinder-polar",
+      "sphere-great-circle",
+      "hyperbolic-long",
+      "torus-outer-equator",
+      "torus-inner-equator",
+      "bump-radial",
+      "torus-outer-to-inner",
+      "torus-inner-to-outer"
+     ]
+    }
+   },
+   "claim": "Endpoint sensitivities to lateral offset (|j_lat(L)|) and heading error (|j_head(L)|) per path",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-07
+   },
+   "uncertainty": {
+    "basis": "central-difference confirmation (eps 1e-3) of the witness sensitivities; columns carry RK4 error near 1e-8",
+    "kind": "truncation_bound",
+    "value": 1.8716274437315052e-06
+   },
+   "unit": null,
+   "value": {
+    "bump-radial": {
+     "heading": 2.9455288379948854,
+     "lateral": 0.6771972872846138
+    },
+    "cylinder": {
+     "heading": 3.0000000000000027,
+     "lateral": 1.0
+    },
+    "cylinder-polar": {
+     "heading": 2.000000000000004,
+     "lateral": 1.0
+    },
+    "gaussian-bump": {
+     "heading": 2.327813238157718,
+     "lateral": 0.8457031056482209
+    },
+    "hyperbolic-long": {
+     "heading": 10.017874914825484,
+     "lateral": 10.067661983257153
+    },
+    "hyperbolic-plane": {
+     "heading": 2.1292794536229085,
+     "lateral": 2.3524096139143134
+    },
+    "plane": {
+     "heading": 2.000000000000004,
+     "lateral": 1.0
+    },
+    "plane-polar": {
+     "heading": 2.000000000000004,
+     "lateral": 1.0
+    },
+    "saddle": {
+     "heading": 1.788734039147909,
+     "lateral": 1.8093787434266118
+    },
+    "sphere": {
+     "heading": 0.9092974271604886,
+     "lateral": 0.41614683579085615
+    },
+    "sphere-great-circle": {
+     "heading": 0.6569865964939534,
+     "lateral": 0.7539022562338643
+    },
+    "torus": {
+     "heading": 2.3577866105816576,
+     "lateral": 0.1955236823615065
+    },
+    "torus-inner-equator": {
+     "heading": 332.5700639074418,
+     "lateral": 332.57156734663874
+    },
+    "torus-inner-to-outer": {
+     "heading": 2.8459238929397412,
+     "lateral": 1.8031835771642162
+    },
+    "torus-outer-equator": {
+     "heading": 0.6042243863732792,
+     "lateral": 0.937178903393667
+    },
+    "torus-outer-to-inner": {
+     "heading": 3.907448965394896,
+     "lateral": 0.8568122251671532
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "signed_ge",
+      "observed": 0.946371351997063,
+      "passed": true,
+      "reference": "reversal margin for the equal-length pair torus-outer-to-inner / torus-inner-to-outer",
+      "reference_kind": "invariant",
+      "tolerance": 0.5
+     },
+     {
+      "comparison": "ge",
+      "observed": 43.0,
+      "passed": true,
+      "reference": "discordant path pairs",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     }
+    ],
+    "generator": {
+     "name": "declared geodesics",
+     "paths": [
+      "plane",
+      "sphere",
+      "cylinder",
+      "saddle",
+      "torus",
+      "gaussian-bump",
+      "hyperbolic-plane",
+      "plane-polar",
+      "cylinder-polar",
+      "sphere-great-circle",
+      "hyperbolic-long",
+      "torus-outer-equator",
+      "torus-inner-equator",
+      "bump-radial",
+      "torus-outer-to-inner",
+      "torus-inner-to-outer"
+     ]
+    }
+   },
+   "claim": "Lateral and heading sensitivities rank paths differently",
+   "counterexample": {
+    "statement": "Ranking paths by sensitivity to heading error gives the same order as ranking by sensitivity to lateral offset",
+    "witness": {
+     "heading": {
+      "torus-inner-to-outer": 2.8459238929397412,
+      "torus-outer-to-inner": 3.907448965394896
+     },
+     "lateral": {
+      "torus-inner-to-outer": 1.8031835771642162,
+      "torus-outer-to-inner": 0.8568122251671532
+     },
+     "length": 3.0,
+     "paths": [
+      "torus-outer-to-inner",
+      "torus-inner-to-outer"
+     ]
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-06,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "central-difference confirmation (eps 1e-3) of the witness sensitivities; columns carry RK4 error near 1e-8",
+    "kind": "truncation_bound",
+    "value": 1.8716274437315052e-06
+   },
+   "unit": null,
+   "value": {
+    "discordant_pairs": 43,
+    "kendall_tau": 0.23333333333333334,
+    "witness_reversal_margin": 0.946371351997063
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 5.6656251856357365e-05,
+      "passed": true,
+      "reference": "direct RK4 response against the first-order kernel integral (relative)",
+      "reference_kind": "analytic",
+      "tolerance": 0.001
+     },
+     {
+      "comparison": "le",
+      "observed": 1.742387244899522e-11,
+      "passed": true,
+      "reference": "heading response to a bump at s = 0.5 versus s = 2.5, over the mid-path response",
+      "reference_kind": "analytic",
+      "tolerance": 1e-06
+     },
+     {
+      "comparison": "ge",
+      "observed": 4.936857582505496,
+      "passed": true,
+      "reference": "lateral response to a bump at s = 0.5 over s = 2.5 (first order about 4.9)",
+      "reference_kind": "analytic",
+      "tolerance": 3.0
+     }
+    ],
+    "derivation": "docs/lab/GEODESIC_JACOBI.md, section T009 (variation of j'' + K j = 0 with its Green function)",
+    "generator": {
+     "amplitude": 0.001,
+     "centers": [
+      0.5,
+      1.5,
+      2.5
+     ],
+     "length": 3.0,
+     "name": "curvature bump on a flat background",
+     "steps": 600,
+     "width": 0.3
+    }
+   },
+   "claim": "On a flat background, to first order, curvature at arclength s moves j_lat(L) with weight L - s (early-weighted) and j_head(L) with weight s(L - s) (symmetric about mid-path)",
+   "domain": "mathematical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "second-order terms in the bump amplitude 1e-3",
+    "kind": "truncation_bound",
+    "value": 5.6656251856357365e-05
+   },
+   "unit": null,
+   "value": {
+    "first_order_relative_error": 5.6656251856357365e-05,
+    "heading_early_late_asymmetry": 1.742387244899522e-11,
+    "lateral_early_over_late": 4.936857582505496,
+    "responses": {
+     "0.5": {
+      "heading": -0.0006418107507686344,
+      "lateral": -0.0013142231761879009
+     },
+     "1.5": {
+      "heading": -0.0011724204084311296,
+      "lateral": -0.0007975598363121339
+     },
+     "2.5": {
+      "heading": -0.0006418107507482063,
+      "lateral": -0.0002662064186021995
+     }
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 1.2277734384724681e-11,
+      "passed": true,
+      "reference": "reversed transfer matrix against D Phi^-1 D on torus-outer-to-inner",
+      "reference_kind": "analytic",
+      "tolerance": 1e-08
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 5.489830812166474e-12,
+      "passed": true,
+      "reference": "reversed transfer matrix against D Phi^-1 D on torus-inner-to-outer",
+      "reference_kind": "analytic",
+      "tolerance": 1e-08
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 1.8096635301390052e-12,
+      "passed": true,
+      "reference": "reversed transfer matrix against D Phi^-1 D on gaussian-bump",
+      "reference_kind": "analytic",
+      "tolerance": 1e-08
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 1.9320101074526974e-12,
+      "passed": true,
+      "reference": "reversed transfer matrix against D Phi^-1 D on saddle",
+      "reference_kind": "analytic",
+      "tolerance": 1e-08
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 3.1978160641390393e-12,
+      "passed": true,
+      "reference": "reversed path returns to the start",
+      "reference_kind": "invariant",
+      "tolerance": 1e-08
+     }
+    ],
+    "derivation": "docs/lab/GEODESIC_JACOBI.md, section T009 (reciprocity of j'' + K(s) j = 0 under s -> L - s)",
+    "generator": {
+     "name": "declared geodesics and their reversals",
+     "paths": [
+      "torus-outer-to-inner",
+      "torus-inner-to-outer",
+      "gaussian-bump",
+      "saddle"
+     ]
+    }
+   },
+   "claim": "Reversing a geodesic leaves j_head(L) unchanged and exchanges j_lat(L) with j_head'(L) (transfer matrix D Phi(L)^-1 D)",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "RK4 error of forward and reversed integrations",
+    "kind": "truncation_bound",
+    "value": 1.2277734384724681e-11
+   },
+   "unit": null,
+   "value": {
+    "gaussian-bump": {
+     "heading_change": 2.078337502098293e-13,
+     "prediction_error": 1.8096635301390052e-12
+    },
+    "saddle": {
+     "heading_change": 3.441691376337985e-14,
+     "prediction_error": 1.9320101074526974e-12
+    },
+    "torus-inner-to-outer": {
+     "heading_change": 9.907630271754897e-13,
+     "prediction_error": 5.489830812166474e-12
+    },
+    "torus-outer-to-inner": {
+     "heading_change": 3.6206593279075605e-12,
+     "prediction_error": 1.2277734384724681e-11
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "Which starting error dominates the endpoint error of real tool or vehicle paths on physical curved parts",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 19977,
+   "path": "artifacts/T009/columns.json",
+   "sha256": "dbabecc598f9976683f85101e0ebb450c4958f452543ff1f0b96189e059755a0"
+  },
+  {
+   "bytes": 3939,
+   "path": "artifacts/T009/ranking.svg",
+   "sha256": "89511d5fb209395156e08fd724898acbcca2e97b9531b4fc889a6b5468c8e7eb"
+  },
+  {
+   "bytes": 14312,
+   "path": "artifacts/T009/witness-columns.svg",
+   "sha256": "a19cc1bf13991e2793690afb72598b29fd546327b8918d99b43167b97c636a3e"
+  },
+  {
+   "bytes": 7534,
+   "path": "artifacts/T009/kernels.svg",
+   "sha256": "20d509a89a01c92f1e971d67ec8e21c96899c239e2234cd80a85846863034503"
+  }
+ ],
+ "hypothesis": "On a constant-K background a curvature change at arclength s moves j_lat(L) with weight sn(L-s) cn(s), which decreases along the path when K <= 0 or sqrt(K) L <= pi/2 (before the first focal distance), and j_head(L) with weight sn(L-s) sn(s), which is symmetric about mid-path for every K and vanishes at both ends; exactly, reversing the curvature profile leaves j_head(L) unchanged. The two columns therefore respond differently to where curvature sits along a path and can order paths differently.",
+ "input_data": [
+  "16 declared paths: plane, sphere, cylinder, saddle, torus, gaussian-bump, hyperbolic-plane, plane-polar, cylinder-polar, sphere-great-circle, hyperbolic-long, torus-outer-equator, torus-inner-equator, bump-radial, torus-outer-to-inner, torus-inner-to-outer",
+  "Witness pair torus-outer-to-inner / torus-inner-to-outer: same torus, same length 3, curvature order reversed but not mirror profiles",
+  "Curvature bump of amplitude 0.001, width 0.3 at s in [0.5, 1.5, 2.5] on a flat path of length 3.0"
+ ],
+ "mathematical_model": "Endpoint normal displacement = j_lat(L) delta_perp + j_head(L) delta_alpha; delta j(L) = -int G(L, s) j(s) delta K(s) ds with G(L, s) = j_lat(s) j_head(L) - j_head(s) j_lat(L); reversal maps Phi(L) to D Phi(L)^-1 D; model spaces give j_head/j_lat = tan(sqrt(K)L)/sqrt(K), L, tanh(sqrt(-K)L)/sqrt(-K).",
+ "number": 9,
+ "numerical_result": "Kendall tau 0.233 with 43 discordant pairs; witness lateral 0.8568 vs 1.803, heading 3.907 vs 2.846; finite-difference confirmation error 1.87e-06; bump response lateral early/late 4.94, heading early/late asymmetry 1.74e-11; reversal reciprocity error 1.23e-11.",
+ "observation_model": "|j(L)| per unit perturbation; confirmed on the witness pair by central differences of perturbed geodesics (eps = 0.001); reversed paths start at the end point with negated velocity.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/geodesic_jacobi.py": "7f7307ebfb5c0a38ca1e7b9365fd7df627d9ae001791d99b823122873040d3c1",
+   "src/ciw/lab/geodesic_jacobi_common.py": "8616e9157492f0cd2aeebd695b3501215420c73af2cfbcb8c1b8cd5ab8d23a52"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T010: generate near-focus and post-focus counterexamples",
+ "report_id": "sha256:9097e67f06757006ee025d1b1a549c2b191c223998b4253396996b814f23d01a",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "geodesic-jacobi",
+ "state": "completed",
+ "task_id": "T009",
+ "tests_passed": [
+  "check: Endpoint sensitivities to lateral offset (|j_lat(L)|) and heading error (|j_head(L)|) per path vs max |det Phi(L) - 1| over paths",
+  "check: Endpoint sensitivities to lateral offset (|j_lat(L)|) and heading error (|j_head(L)|) per path vs j_head/j_lat at L against sn_K/cn_K on plane",
+  "check: Endpoint sensitivities to lateral offset (|j_lat(L)|) and heading error (|j_head(L)|) per path vs j_head/j_lat at L against sn_K/cn_K on hyperbolic-long",
+  "check: Endpoint sensitivities to lateral offset (|j_lat(L)|) and heading error (|j_head(L)|) per path vs j_head/j_lat at L against sn_K/cn_K on sphere-great-circle",
+  "check: Endpoint sensitivities to lateral offset (|j_lat(L)|) and heading error (|j_head(L)|) per path vs central-difference endpoint separation (eps 1e-3) against the columns",
+  "check: Lateral and heading sensitivities rank paths differently vs reversal margin for the equal-length pair torus-outer-to-inner / torus-inner-to-outer",
+  "check: Lateral and heading sensitivities rank paths differently vs discordant path pairs",
+  "check: On a flat background, to first order, curvature at arclength s moves j_lat(L) with weight L - s (early-weighted) and j_head(L) with weight s(L - s) (symmetric about mid-path) vs direct RK4 response against the first-order kernel integral (relative)",
+  "check: On a flat background, to first order, curvature at arclength s moves j_lat(L) with weight L - s (early-weighted) and j_head(L) with weight s(L - s) (symmetric about mid-path) vs heading response to a bump at s = 0.5 versus s = 2.5, over the mid-path response",
+  "check: On a flat background, to first order, curvature at arclength s moves j_lat(L) with weight L - s (early-weighted) and j_head(L) with weight s(L - s) (symmetric about mid-path) vs lateral response to a bump at s = 0.5 over s = 2.5 (first order about 4.9)",
+  "check: Reversing a geodesic leaves j_head(L) unchanged and exchanges j_lat(L) with j_head'(L) (transfer matrix D Phi(L)^-1 D) vs reversed transfer matrix against D Phi^-1 D on torus-outer-to-inner",
+  "check: Reversing a geodesic leaves j_head(L) unchanged and exchanges j_lat(L) with j_head'(L) (transfer matrix D Phi(L)^-1 D) vs reversed transfer matrix against D Phi^-1 D on torus-inner-to-outer",
+  "check: Reversing a geodesic leaves j_head(L) unchanged and exchanges j_lat(L) with j_head'(L) (transfer matrix D Phi(L)^-1 D) vs reversed transfer matrix against D Phi^-1 D on gaussian-bump",
+  "check: Reversing a geodesic leaves j_head(L) unchanged and exchanges j_lat(L) with j_head'(L) (transfer matrix D Phi(L)^-1 D) vs reversed transfer matrix against D Phi^-1 D on saddle",
+  "check: Reversing a geodesic leaves j_head(L) unchanged and exchanges j_lat(L) with j_head'(L) (transfer matrix D Phi(L)^-1 D) vs reversed path returns to the start",
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_t009_columns_rank_paths_differently",
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_every_numerical_finding_declares_uncertainty_and_tolerance",
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space"
+ ],
+ "tests_skipped": [],
+ "title": "Compare lateral-displacement and heading-perturbation columns separately.",
+ "uncertainty": "Column values carry RK4 error near 1e-8; the reversal margin exceeds it by eight orders.",
+ "unresolved_assumptions": [
+  "Rankings are over declared paths of unequal lengths except the witness pair",
+  "The witness heading difference comes from the two curvature profiles not being mirror images; the first-order kernels explain it only qualitatively",
+  "No physical platform, tool or perturbation statistics were measured"
+ ]
+}

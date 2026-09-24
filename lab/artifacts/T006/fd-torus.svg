@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420" font-family="sans-serif" font-size="11">
+<rect width="640" height="420" fill="#ffffff"/>
+<text x="78" y="22" font-size="13" font-weight="bold">Finite differences vs Jacobi columns on torus</text>
+<rect x="78" y="40" width="392" height="322" fill="none" stroke="#333"/>
+<line x1="78.00" y1="40" x2="78.00" y2="362" stroke="#e5e7eb"/>
+<text x="78.00" y="378" text-anchor="middle">1e-2</text>
+<line x1="78" y1="284.07" x2="470" y2="284.07" stroke="#e5e7eb"/>
+<text x="72" y="288.07" text-anchor="end">1e-4</text>
+<line x1="78" y1="204.95" x2="470" y2="204.95" stroke="#e5e7eb"/>
+<text x="72" y="208.95" text-anchor="end">1e-3</text>
+<line x1="78" y1="125.83" x2="470" y2="125.83" stroke="#e5e7eb"/>
+<text x="72" y="129.83" text-anchor="end">1e-2</text>
+<line x1="78" y1="46.71" x2="470" y2="46.71" stroke="#e5e7eb"/>
+<text x="72" y="50.71" text-anchor="end">1e-1</text>
+<text x="274.00" y="406" text-anchor="middle">perturbation eps</text>
+<text x="16" y="201.00" text-anchor="middle" transform="rotate(-90 16 201.00)">max |FD - column|</text>
+<path d="M470.00,94.00 L339.33,118.49 L208.67,142.64 L78.00,166.63" fill="none" stroke="#1f5fa8" stroke-width="1.8"/>
+<circle cx="470.00" cy="94.00" r="2.6" fill="#1f5fa8"/>
+<circle cx="339.33" cy="118.49" r="2.6" fill="#1f5fa8"/>
+<circle cx="208.67" cy="142.64" r="2.6" fill="#1f5fa8"/>
+<circle cx="78.00" cy="166.63" r="2.6" fill="#1f5fa8"/>
+<line x1="482" y1="52" x2="502" y2="52" stroke="#1f5fa8" stroke-width="2"/>
+<text x="508" y="56">lateral one-sided</text>
+<path d="M470.00,207.13 L339.33,254.80 L208.67,302.44 L78.00,350.07" fill="none" stroke="#c2410c" stroke-width="1.8"/>
+<circle cx="470.00" cy="207.13" r="2.6" fill="#c2410c"/>
+<circle cx="339.33" cy="254.80" r="2.6" fill="#c2410c"/>
+<circle cx="208.67" cy="302.44" r="2.6" fill="#c2410c"/>
+<circle cx="78.00" cy="350.07" r="2.6" fill="#c2410c"/>
+<line x1="482" y1="70" x2="502" y2="70" stroke="#c2410c" stroke-width="2"/>
+<text x="508" y="74">lateral central</text>
+<path d="M470.00,51.93 L339.33,76.81 L208.67,101.17 L78.00,125.25" fill="none" stroke="#15803d" stroke-width="1.8"/>
+<circle cx="470.00" cy="51.93" r="2.6" fill="#15803d"/>
+<circle cx="339.33" cy="76.81" r="2.6" fill="#15803d"/>
+<circle cx="208.67" cy="101.17" r="2.6" fill="#15803d"/>
+<circle cx="78.00" cy="125.25" r="2.6" fill="#15803d"/>
+<line x1="482" y1="88" x2="502" y2="88" stroke="#15803d" stroke-width="2"/>
+<text x="508" y="92">heading one-sided</text>
+<path d="M470.00,149.21 L339.33,196.74 L208.67,244.35 L78.00,291.98" fill="none" stroke="#7e22ce" stroke-width="1.8"/>
+<circle cx="470.00" cy="149.21" r="2.6" fill="#7e22ce"/>
+<circle cx="339.33" cy="196.74" r="2.6" fill="#7e22ce"/>
+<circle cx="208.67" cy="244.35" r="2.6" fill="#7e22ce"/>
+<circle cx="78.00" cy="291.98" r="2.6" fill="#7e22ce"/>
+<line x1="482" y1="106" x2="502" y2="106" stroke="#7e22ce" stroke-width="2"/>
+<text x="508" y="110">heading central</text>
+</svg>

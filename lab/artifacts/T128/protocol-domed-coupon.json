@@ -1,0 +1,431 @@
+{
+ "acceptance_criteria": [
+  {
+   "id": "H1",
+   "statement": "The 2 mm offset tape crosses the nominal tape where the geodesic re-integrated from its measured start pose crosses (near the focal point F0)",
+   "status": "hypothesis",
+   "test": "crossing arclength within the T140 expanded uncertainty of the focal distance (conditioned row)"
+  },
+  {
+   "id": "H2",
+   "statement": "Conditioned on the measured start pose, the measured separations follow the Jacobi prediction, not the flat-plate one",
+   "status": "hypothesis",
+   "test": "E_n <= 1 at stations 1..8 against the prediction re-integrated from the CMM start pose, with U_p from dome tolerances, the start-pose estimate and solver error (T138) and U_m from the camera pair; E_n > 1 against the flat-plate prediction at the last two stations"
+  }
+ ],
+ "calibration_artifacts": [
+  {
+   "id": "SB-1000",
+   "kind": "carbon scale bar",
+   "nominal_mm": 1000.0,
+   "use": "photogrammetry scale"
+  },
+  {
+   "id": "GS-25.4",
+   "kind": "ceramic gauge sphere",
+   "nominal_diameter_mm": 25.4,
+   "use": "probe and tracker SMR check"
+  },
+  {
+   "id": "SG-200",
+   "kind": "step gauge",
+   "steps_mm": [
+    10.0,
+    20.0,
+    30.0,
+    40.0,
+    50.0,
+    60.0,
+    70.0,
+    80.0,
+    90.0,
+    100.0,
+    110.0,
+    120.0,
+    130.0,
+    140.0,
+    150.0,
+    160.0,
+    170.0,
+    180.0,
+    190.0,
+    200.0
+   ],
+   "use": "scale error"
+  }
+ ],
+ "datum_frames": [
+  {
+   "constrains": "z translation, rotations about x and y",
+   "feature": "specimen back face (or mandrel axis for the cylinder)",
+   "id": "A",
+   "points": 3,
+   "role": "primary"
+  },
+  {
+   "constrains": "y translation, rotation about z",
+   "feature": "long reference edge (or axial scribe line)",
+   "id": "B",
+   "points": 2,
+   "role": "secondary"
+  },
+  {
+   "constrains": "x translation",
+   "feature": "end stop (or circumferential scribe)",
+   "id": "C",
+   "points": 1,
+   "role": "tertiary"
+  },
+  {
+   "definition": "z normal of A; x = B direction projected into A; origin on A, B plane and C plane (ciw.lab.manufacturing_metrology.datum_frame_321)",
+   "feature": "3-2-1 construction",
+   "id": "PART",
+   "role": "datum reference frame"
+  }
+ ],
+ "environment": {
+  "soak_time_h": 4,
+  "temperature_C": "20 +/- 1 (declared)",
+  "thermal_expansion_note": "aluminium 23e-6/K: 1 K over 300 mm is 7 um; log part temperature"
+ },
+ "fixtures": [
+  {
+   "clamping": "normal to A, over the rests, torque declared per specimen",
+   "contacts": "three spherical rests on A, two on B, one on C",
+   "id": "FX-321",
+   "kind": "3-2-1 kinematic nest"
+  }
+ ],
+ "frame_chain": [
+  {
+   "child": "WORLD",
+   "parent": "INSTRUMENT",
+   "source": "instrument registration to the reference network"
+  },
+  {
+   "child": "FIXTURE",
+   "parent": "WORLD",
+   "source": "fixture datum targets measured by the tracker"
+  },
+  {
+   "child": "PART",
+   "parent": "FIXTURE",
+   "source": "3-2-1 datum frame from probed A/B/C features"
+  },
+  {
+   "child": "CAD",
+   "parent": "PART",
+   "source": "nominal model placement in the datum frame (declared)"
+  }
+ ],
+ "hardware_measured": {
+  "records": [],
+  "status": "not_acquired"
+ },
+ "instruments": [
+  {
+   "declared_standard_uncertainty_mm": 0.02,
+   "id": "camera",
+   "kind": "photogrammetry camera system with coded targets",
+   "status": "declared_not_verified"
+  },
+  {
+   "declared_standard_uncertainty_mm": 0.015,
+   "id": "tracker",
+   "kind": "laser tracker with 1.5 in SMR",
+   "length_dependent_um_per_m": 6.0,
+   "status": "declared_not_verified"
+  },
+  {
+   "declared_standard_uncertainty_mm": 0.002,
+   "id": "cmm",
+   "kind": "bridge CMM with touch-trigger probe",
+   "status": "declared_not_verified"
+  },
+  {
+   "declared_standard_uncertainty_mm": 0.01,
+   "id": "scanner",
+   "kind": "laser line scanner",
+   "native_point_spacing_mm": 0.05,
+   "status": "declared_not_verified"
+  }
+ ],
+ "markers": [
+  {
+   "id": "N0",
+   "route": "nominal",
+   "s_mm": 0.0
+  },
+  {
+   "id": "N1",
+   "route": "nominal",
+   "s_mm": 25.272461
+  },
+  {
+   "id": "N2",
+   "route": "nominal",
+   "s_mm": 50.544921
+  },
+  {
+   "id": "N3",
+   "route": "nominal",
+   "s_mm": 75.817382
+  },
+  {
+   "id": "N4",
+   "route": "nominal",
+   "s_mm": 101.089842
+  },
+  {
+   "id": "N5",
+   "route": "nominal",
+   "s_mm": 126.362303
+  },
+  {
+   "id": "N6",
+   "route": "nominal",
+   "s_mm": 151.634763
+  },
+  {
+   "id": "N7",
+   "route": "nominal",
+   "s_mm": 176.907224
+  },
+  {
+   "id": "N8",
+   "route": "nominal",
+   "s_mm": 202.179684
+  },
+  {
+   "id": "L0",
+   "route": "lateral 2 mm",
+   "s_mm": 0.0
+  },
+  {
+   "id": "L1",
+   "route": "lateral 2 mm",
+   "s_mm": 25.272461
+  },
+  {
+   "id": "L2",
+   "route": "lateral 2 mm",
+   "s_mm": 50.544921
+  },
+  {
+   "id": "L3",
+   "route": "lateral 2 mm",
+   "s_mm": 75.817382
+  },
+  {
+   "id": "L4",
+   "route": "lateral 2 mm",
+   "s_mm": 101.089842
+  },
+  {
+   "id": "L5",
+   "route": "lateral 2 mm",
+   "s_mm": 126.362303
+  },
+  {
+   "id": "L6",
+   "route": "lateral 2 mm",
+   "s_mm": 151.634763
+  },
+  {
+   "id": "L7",
+   "route": "lateral 2 mm",
+   "s_mm": 176.907224
+  },
+  {
+   "id": "L8",
+   "route": "lateral 2 mm",
+   "s_mm": 202.179684
+  },
+  {
+   "id": "H0",
+   "route": "heading 5 mrad",
+   "s_mm": 0.0
+  },
+  {
+   "id": "H1",
+   "route": "heading 5 mrad",
+   "s_mm": 25.272461
+  },
+  {
+   "id": "H2",
+   "route": "heading 5 mrad",
+   "s_mm": 50.544921
+  },
+  {
+   "id": "H3",
+   "route": "heading 5 mrad",
+   "s_mm": 75.817382
+  },
+  {
+   "id": "H4",
+   "route": "heading 5 mrad",
+   "s_mm": 101.089842
+  },
+  {
+   "id": "H5",
+   "route": "heading 5 mrad",
+   "s_mm": 126.362303
+  },
+  {
+   "id": "H6",
+   "route": "heading 5 mrad",
+   "s_mm": 151.634763
+  },
+  {
+   "id": "H7",
+   "route": "heading 5 mrad",
+   "s_mm": 176.907224
+  },
+  {
+   "id": "H8",
+   "route": "heading 5 mrad",
+   "s_mm": 202.179684
+  }
+ ],
+ "paths": [
+  {
+   "end": "x = 140 mm",
+   "heading_rad": 0.0,
+   "id": "N",
+   "length_mm": 202.1796844767861,
+   "realization": "centreline of a 3 mm unsteered adhesive tape laid from a start jig that sets the start point and heading; with no in-plane steering the tape follows a geodesic",
+   "start_u_mm": [
+    -60.0,
+    0.0
+   ]
+  },
+  {
+   "construction": "exp map along the start normal",
+   "id": "L",
+   "lateral_offset_mm": 2.0,
+   "of": "N"
+  },
+  {
+   "heading_offset_rad": 0.005,
+   "id": "H",
+   "of": "N"
+  }
+ ],
+ "predicted_quantities": [
+  {
+   "evidence_status": "numerically_verified",
+   "finding_claim": "Curvature signature relative to the flat-plate control at the route end",
+   "id": "S1",
+   "quantity": "separation of the 2 mm laterally offset route at stations k L / 8 (nonlinear)",
+   "unit": "mm",
+   "value": [
+    1.9999998978,
+    2.0050978125,
+    2.05149787127,
+    1.73302919831,
+    1.15681593546,
+    0.607379534357,
+    0.0591318137309,
+    -0.489114947736,
+    -1.03736170921
+   ]
+  },
+  {
+   "evidence_status": "numerically_verified",
+   "finding_claim": "Curvature signature relative to the flat-plate control at the route end",
+   "id": "S2",
+   "quantity": "separation of the 5 mrad heading-offset route at stations k L / 8",
+   "unit": "mm",
+   "value": [
+    0.0,
+    0.12655837042,
+    0.255620177917,
+    0.332035788985,
+    0.367104908697,
+    0.409895031746,
+    0.453165970081,
+    0.496437754881,
+    0.539709539739
+   ]
+  },
+  {
+   "evidence_status": "numerically_verified",
+   "finding_claim": "Laterally offset routes cross the nominal route at the first focal point (small-offset limit)",
+   "id": "F1",
+   "quantity": "arclength where the 2 mm laterally offset route crosses the nominal route (nonlinear)",
+   "unit": "mm",
+   "value": 154.360554982
+  },
+  {
+   "evidence_status": "numerically_verified",
+   "finding_claim": "Laterally offset routes cross the nominal route at the first focal point (small-offset limit)",
+   "id": "F0",
+   "quantity": "first focal point (offset -> 0 limit of the crossing)",
+   "unit": "mm",
+   "value": 153.407155341
+  },
+  {
+   "evidence_status": "numerically_verified",
+   "finding_claim": "Domed-coupon Jacobi transfer at the end of the nominal route",
+   "id": "J1",
+   "quantity": "Jacobi transfer at the route end",
+   "unit": "1, mm",
+   "value": [
+    [
+     -0.534551253784,
+     107.941907948
+    ],
+    [
+     -0.0109600888936,
+     0.342442199132
+    ]
+   ]
+  }
+ ],
+ "procedure": [
+  "Soak specimen and fixture; log temperatures.",
+  "Verify instruments on GS-25.4 and SB-1000 before and after; retain both checks.",
+  "Locate the specimen in FX-321; probe datums A, B, C and build the PART frame.",
+  "Scan the coupon surface (T129 design) to identify the as-built dome before laying the tapes.",
+  "Lay the nominal and offset tapes from the start jig without in-plane steering (a robot may carry the tape head but must not steer it); never draw a path traced from the model.",
+  "Probe each tape centreline with the CMM at s = 0 and s = 20 mm; the relative start offset and heading of the offset tape condition the prediction (T138).",
+  "Place coded targets on the tape centrelines at the stations; measure them by photogrammetry; fit the crossing arclength of the lateral offset tape.",
+  "Repeat the full acquisition three times with re-fixturing (T131 design) and retain every raw file through the T139 retention record."
+ ],
+ "production_acceptance": "outside_system",
+ "protocol_id": "MFG-COUPON-01",
+ "purpose": "Measure the separation of exactly offset robot paths across a dome, where positive curvature focuses laterally offset paths so that they cross the nominal path inside the coupon.",
+ "required_raw_data": [
+  "raw camera images (lossless) with exposure metadata and SHA-256 digests",
+  "tracker/CMM native point files with instrument serial and firmware",
+  "calibration certificates of scale bars, gauge sphere and step gauge (digest and validity window)",
+  "frame-chain transforms with covariances as computed at the time of measurement",
+  "environment log: air and part temperature, humidity, time-stamped with an explicit UTC offset",
+  "operator, fixture and specimen identities; clock source and synchronization method"
+ ],
+ "schema": "ciw.lab-measurement-protocol.v1",
+ "specimen": {
+  "chart_extent_mm": {
+   "x": [
+    -60.0,
+    140.0
+   ],
+   "y": [
+    -100.0,
+    100.0
+   ]
+  },
+  "crest_principal_radius_mm": 40.0,
+  "declared_height_tolerance_mm": 0.2,
+  "declared_sigma_tolerance_mm": 0.5,
+  "kind": "domed coupon",
+  "material": "formed 2 mm aluminium sheet (declared)",
+  "surface_model": {
+   "height": 10.0,
+   "name": "gaussian-bump",
+   "sigma": 20.0
+  }
+ },
+ "task_id": "T128",
+ "title": "Domed coupon: Jacobi focusing of offset paths"
+}

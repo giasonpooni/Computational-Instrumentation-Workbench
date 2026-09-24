@@ -1,0 +1,26 @@
+{
+ "closed_form": {
+  "c1": "1",
+  "c2": "0",
+  "c3": "-kappa0**2/24",
+  "c4": "-kappa0*kappa1/24",
+  "c5": "kappa0**4/1920 + kappa0**2*tau0**2/720 - kappa0*kappa2/80 - kappa1**2/90"
+ },
+ "constant_curvature_c5_residual": "0",
+ "expressions": {
+  "c1": "1",
+  "c2": "0",
+  "c3": "-kappa0**2/24",
+  "c4": "-kappa0*kappa1/24",
+  "c5": "(3*kappa0**4 + 8*kappa0**2*tau0**2 - 72*kappa0*kappa2 - 64*kappa1**2)/5760"
+ },
+ "nonzero_residuals": 0,
+ "residuals": {
+  "c1": "0",
+  "c2": "0",
+  "c3": "0",
+  "c4": "0",
+  "c5": "0"
+ },
+ "sympy": "1.14.0"
+}

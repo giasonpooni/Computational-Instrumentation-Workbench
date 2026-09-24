@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420" font-family="sans-serif" font-size="11">
+<rect width="640" height="420" fill="#ffffff"/>
+<text x="78" y="22" font-size="13" font-weight="bold">Absolute summation error, uniform[-1,1)</text>
+<rect x="78" y="40" width="392" height="322" fill="none" stroke="#333"/>
+<line x1="207.55" y1="40" x2="207.55" y2="362" stroke="#e5e7eb"/>
+<text x="207.55" y="378" text-anchor="middle">1e2</text>
+<line x1="370.32" y1="40" x2="370.32" y2="362" stroke="#e5e7eb"/>
+<text x="370.32" y="378" text-anchor="middle">1e3</text>
+<line x1="78" y1="320.65" x2="470" y2="320.65" stroke="#e5e7eb"/>
+<text x="72" y="324.65" text-anchor="end">1e-15</text>
+<line x1="78" y1="275.63" x2="470" y2="275.63" stroke="#e5e7eb"/>
+<text x="72" y="279.63" text-anchor="end">1e-14</text>
+<line x1="78" y1="230.61" x2="470" y2="230.61" stroke="#e5e7eb"/>
+<text x="72" y="234.61" text-anchor="end">1e-13</text>
+<line x1="78" y1="185.59" x2="470" y2="185.59" stroke="#e5e7eb"/>
+<text x="72" y="189.59" text-anchor="end">1e-12</text>
+<line x1="78" y1="140.57" x2="470" y2="140.57" stroke="#e5e7eb"/>
+<text x="72" y="144.57" text-anchor="end">1e-11</text>
+<line x1="78" y1="95.55" x2="470" y2="95.55" stroke="#e5e7eb"/>
+<text x="72" y="99.55" text-anchor="end">1e-10</text>
+<line x1="78" y1="50.53" x2="470" y2="50.53" stroke="#e5e7eb"/>
+<text x="72" y="54.53" text-anchor="end">1e-9</text>
+<text x="274.00" y="406" text-anchor="middle">n</text>
+<text x="16" y="201.00" text-anchor="middle" transform="rotate(-90 16 201.00)">|computed - exact|</text>
+<path d="M78.00,350.07 L127.00,322.97 L176.00,315.04 L225.00,350.07 L274.00,301.49 L323.00,290.55 L372.00,272.82 L421.00,292.50 L470.00,288.77" fill="none" stroke="#1f5fa8" stroke-width="1.8"/>
+<circle cx="78.00" cy="350.07" r="2.6" fill="#1f5fa8"/>
+<circle cx="127.00" cy="322.97" r="2.6" fill="#1f5fa8"/>
+<circle cx="176.00" cy="315.04" r="2.6" fill="#1f5fa8"/>
+<circle cx="225.00" cy="350.07" r="2.6" fill="#1f5fa8"/>
+<circle cx="274.00" cy="301.49" r="2.6" fill="#1f5fa8"/>
+<circle cx="323.00" cy="290.55" r="2.6" fill="#1f5fa8"/>
+<circle cx="372.00" cy="272.82" r="2.6" fill="#1f5fa8"/>
+<circle cx="421.00" cy="292.50" r="2.6" fill="#1f5fa8"/>
+<circle cx="470.00" cy="288.77" r="2.6" fill="#1f5fa8"/>
+<line x1="482" y1="52" x2="502" y2="52" stroke="#1f5fa8" stroke-width="2"/>
+<text x="508" y="56">sequential</text>
+<path d="M78.00,350.07 L176.00,336.52 L225.00,322.97 L274.00,309.42 L323.00,307.11 L372.00,322.97 L421.00,328.59 L470.00,288.77" fill="none" stroke="#c2410c" stroke-width="1.8"/>
+<circle cx="78.00" cy="350.07" r="2.6" fill="#c2410c"/>
+<circle cx="176.00" cy="336.52" r="2.6" fill="#c2410c"/>
+<circle cx="225.00" cy="322.97" r="2.6" fill="#c2410c"/>
+<circle cx="274.00" cy="309.42" r="2.6" fill="#c2410c"/>
+<circle cx="323.00" cy="307.11" r="2.6" fill="#c2410c"/>
+<circle cx="372.00" cy="322.97" r="2.6" fill="#c2410c"/>
+<circle cx="421.00" cy="328.59" r="2.6" fill="#c2410c"/>
+<circle cx="470.00" cy="288.77" r="2.6" fill="#c2410c"/>
+<line x1="482" y1="70" x2="502" y2="70" stroke="#c2410c" stroke-width="2"/>
+<text x="508" y="74">pairwise</text>
+<path d="M78.00,350.07 L176.00,336.52 L323.00,350.07 L372.00,322.97 L421.00,328.59 L470.00,307.11" fill="none" stroke="#15803d" stroke-width="1.8"/>
+<circle cx="78.00" cy="350.07" r="2.6" fill="#15803d"/>
+<circle cx="176.00" cy="336.52" r="2.6" fill="#15803d"/>
+<circle cx="323.00" cy="350.07" r="2.6" fill="#15803d"/>
+<circle cx="372.00" cy="322.97" r="2.6" fill="#15803d"/>
+<circle cx="421.00" cy="328.59" r="2.6" fill="#15803d"/>
+<circle cx="470.00" cy="307.11" r="2.6" fill="#15803d"/>
+<line x1="482" y1="88" x2="502" y2="88" stroke="#15803d" stroke-width="2"/>
+<text x="508" y="92">kahan</text>
+<path d="M78.00,350.07 L176.00,336.52 L323.00,350.07 L372.00,322.97 L421.00,328.59 L470.00,307.11" fill="none" stroke="#7e22ce" stroke-width="1.8"/>
+<circle cx="78.00" cy="350.07" r="2.6" fill="#7e22ce"/>
+<circle cx="176.00" cy="336.52" r="2.6" fill="#7e22ce"/>
+<circle cx="323.00" cy="350.07" r="2.6" fill="#7e22ce"/>
+<circle cx="372.00" cy="322.97" r="2.6" fill="#7e22ce"/>
+<circle cx="421.00" cy="328.59" r="2.6" fill="#7e22ce"/>
+<circle cx="470.00" cy="307.11" r="2.6" fill="#7e22ce"/>
+<line x1="482" y1="106" x2="502" y2="106" stroke="#7e22ce" stroke-width="2"/>
+<text x="508" y="110">neumaier</text>
+<path d="M78.00,350.07 L176.00,336.52 L323.00,350.07 L372.00,322.97 L421.00,328.59 L470.00,307.11" fill="none" stroke="#b91c1c" stroke-width="1.8"/>
+<circle cx="78.00" cy="350.07" r="2.6" fill="#b91c1c"/>
+<circle cx="176.00" cy="336.52" r="2.6" fill="#b91c1c"/>
+<circle cx="323.00" cy="350.07" r="2.6" fill="#b91c1c"/>
+<circle cx="372.00" cy="322.97" r="2.6" fill="#b91c1c"/>
+<circle cx="421.00" cy="328.59" r="2.6" fill="#b91c1c"/>
+<circle cx="470.00" cy="307.11" r="2.6" fill="#b91c1c"/>
+<line x1="482" y1="124" x2="502" y2="124" stroke="#b91c1c" stroke-width="2"/>
+<text x="508" y="128">exact</text>
+<path d="M78.00,270.02 L127.00,242.28 L176.00,214.86 L225.00,187.60 L274.00,160.42 L323.00,133.27 L372.00,106.15 L421.00,79.04 L470.00,51.93" fill="none" stroke="#0f766e" stroke-width="1.8"/>
+<circle cx="78.00" cy="270.02" r="2.6" fill="#0f766e"/>
+<circle cx="127.00" cy="242.28" r="2.6" fill="#0f766e"/>
+<circle cx="176.00" cy="214.86" r="2.6" fill="#0f766e"/>
+<circle cx="225.00" cy="187.60" r="2.6" fill="#0f766e"/>
+<circle cx="274.00" cy="160.42" r="2.6" fill="#0f766e"/>
+<circle cx="323.00" cy="133.27" r="2.6" fill="#0f766e"/>
+<circle cx="372.00" cy="106.15" r="2.6" fill="#0f766e"/>
+<circle cx="421.00" cy="79.04" r="2.6" fill="#0f766e"/>
+<circle cx="470.00" cy="51.93" r="2.6" fill="#0f766e"/>
+<line x1="482" y1="142" x2="502" y2="142" stroke="#0f766e" stroke-width="2"/>
+<text x="508" y="146">sequential bound, sum|x| ~ n/2</text>
+</svg>

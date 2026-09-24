@@ -1,0 +1,344 @@
+{
+ "changed_files": [
+  "src/ciw/lab/manufacturing.py",
+  "src/ciw/lab/manufacturing_geometry.py",
+  "src/ciw/lab/manufacturing_metrology.py",
+  "src/ciw/lab/manufacturing_records.py",
+  "docs/lab/MANUFACTURING.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 4,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Datum frame orthonormal and equivariant; MC covariances equal first-order covariances within sampling error.",
+ "experiment": "Build each artifact model, fit noise-free and noisy synthetic data, propagate covariances analytically and by Monte Carlo, and attribute the corner-point uncertainty to chain links.",
+ "failure_modes_checked": [
+  "collinear primary datum and B normal to A (refused)",
+  "rigid-motion equivariance",
+  "cap-only sphere probing",
+  "linearization of the chain vs exact SE(3) sampling"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.029124839413793582,
+      "passed": true,
+      "reference": "relative Frobenius difference MC vs first order, cad_origin",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.03320394405744062,
+      "passed": true,
+      "reference": "relative Frobenius difference MC vs first order, coupon_far_corner",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     }
+    ],
+    "generator": {
+     "name": "left-perturbed SE(3) frame chain",
+     "samples": 3000,
+     "seed": 20260926
+    }
+   },
+   "claim": "First-order covariance of the INSTRUMENT->CAD frame chain predicts the Monte Carlo spread of coupon points",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 1e-09
+   },
+   "uncertainty": {
+    "basis": "relative 95% half-width of MC covariance entries",
+    "kind": "monte_carlo_95ci",
+    "value": 0.05060698239044358
+   },
+   "unit": "mm",
+   "value": {
+    "cad_origin": [
+     0.04194164156659862,
+     0.03828946693134838,
+     0.03990978915662219
+    ],
+    "coupon_far_corner": [
+     0.04491644090233507,
+     0.03967400685084455,
+     0.045203882633599514
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 2.220446049250313e-16,
+      "passed": true,
+      "reference": "max |R^T R - I|",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 5.684341886080802e-14,
+      "passed": true,
+      "reference": "max |frame(M points) - M frame(points)|",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1e-09
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 1.1102230246251565e-16,
+      "passed": true,
+      "reference": "noise-free recovery of the part pose",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1e-09
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.017407509303131067,
+      "passed": true,
+      "reference": "relative Frobenius difference MC vs Jacobian covariance",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     }
+    ]
+   },
+   "claim": "The 3-2-1 datum frame is orthonormal, equivariant under rigid motion and has the propagated covariance",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "relative 95% half-width of MC covariance entries",
+    "kind": "monte_carlo_95ci",
+    "value": 0.05060698239044358
+   },
+   "unit": null,
+   "value": {
+    "std_rotation_urad": [
+     102.57371484452337,
+     117.40608407024568,
+     132.58252154488193
+    ],
+    "std_translation_mm": [
+     0.024578975126344292,
+     0.020607295386613437,
+     0.02218816444006228
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.020952528442752083,
+      "passed": true,
+      "reference": "max relative std difference (MC vs linearized)",
+      "reference_kind": "analytic",
+      "tolerance": 0.12
+     },
+     {
+      "comparison": "le",
+      "observed": 0.9323116648283098,
+      "passed": true,
+      "reference": "max |MC mean - truth| in standard errors",
+      "reference_kind": "analytic",
+      "tolerance": 4.0
+     }
+    ],
+    "generator": {
+     "name": "CMM probing noise",
+     "noise_mm": 0.002,
+     "points": 25,
+     "seed": 20260926,
+     "trials": 1000
+    }
+   },
+   "claim": "Gauge-sphere fit on a 75 degree cap recovers centre and radius with the linearized covariance",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "relative 95% half-width of MC standard deviations",
+    "kind": "monte_carlo_95ci",
+    "value": 0.04384886227398292
+   },
+   "unit": "mm",
+   "value": {
+    "linear_std_mm": [
+     0.0007780440647743839,
+     0.0007399049488888543,
+     0.001874418753169645,
+     0.0012468652531944218
+    ],
+    "mc_std_mm": [
+     0.0007943460551712836,
+     0.0007533942701673648,
+     0.001910140389794513,
+     0.0012411324842371346
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 1.5592860119414964e-16,
+      "passed": true,
+      "reference": "noise-free recovery of scale error",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -2.517300604076844e-15,
+      "passed": true,
+      "reference": "noise-free recovery of offset (mm)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.03214611640112908,
+      "passed": true,
+      "reference": "max relative std difference (MC vs linearized)",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     }
+    ],
+    "generator": {
+     "name": "step gauge noise",
+     "noise_mm": 0.0005,
+     "seed": 20260926,
+     "trials": 2000
+    }
+   },
+   "claim": "Step-gauge fit recovers a declared 50 ppm scale error and 1 um offset",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "relative 95% half-width of MC standard deviations",
+    "kind": "monte_carlo_95ci",
+    "value": 0.030998071556471222
+   },
+   "unit": null,
+   "value": {
+    "linear_std": [
+     1.938916835823703e-06,
+     0.00023226572803806557
+    ],
+    "mc_std": [
+     1.8765881895272054e-06,
+     0.00022507347974348463
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "The physical gauge sphere, step gauge and scale bar have their certified dimensions, and the lab frame chain has the declared covariances",
+   "domain": "calibration",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 4525,
+   "path": "artifacts/T130/frame-chain.json",
+   "sha256": "88fe2cf210920e059d700cfbbc81714b2f18183f8c3a8c1e7addc9f506aa8e12"
+  },
+  {
+   "bytes": 1251,
+   "path": "artifacts/T130/artifacts.json",
+   "sha256": "2bfa541724280260ebe064f139ab75f090dcbba8651120160e82de5d5212cf3a"
+  }
+ ],
+ "hypothesis": "A frame chain INSTRUMENT -> WORLD -> FIXTURE -> PART -> CAD with left-perturbation covariances propagates to point uncertainty by first-order adjoints, and the 3-2-1 datum and artifact fits have the linearized covariances their Jacobians predict.",
+ "input_data": [
+  "Declared link covariances (tracker registration 0.010 mm / 5 urad, fixture 0.020 mm / 20 urad, CAD 0.005 mm / 10 urad)",
+  "Datum points probed with the tracker (0.015 mm); gauge sphere probed with the CMM (0.002 mm)",
+  "Seeded synthetic noise (seed 20260927)"
+ ],
+ "mathematical_model": "T_true = exp(xi) T; composition C = sum Ad(T_1..T_k-1) C_k Ad^T; point covariance [I, -(Tp)^] C [I, -(Tp)^]^T; 3-2-1 datum: A plane normal z, B direction x, origin on the A, B and C planes; geometric sphere fit; step gauge m = (1 + e) L + b.",
+ "number": 130,
+ "numerical_result": "Coupon far-corner std (linear) [0.0449, 0.0397, 0.0452] mm; largest link contribution WORLD->FIXTURE (0.0622 mm RSS); datum rotation std [102.6, 117.4, 132.6] urad.",
+ "observation_model": "Synthetic probing only; no artifact was measured.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/manufacturing.py": "088763a0bcc42bf085c1e228797a5dc0d702b994f2a49e053cbe2b0a5622e25d",
+   "src/ciw/lab/manufacturing_geometry.py": "1db6df2ddf778668da2ffd53a66bcddbff4fc933d6f299e8f283cedc60a9332f",
+   "src/ciw/lab/manufacturing_metrology.py": "afbb6fccf146ca4f47850805c118d2f1bf6186872f381b298ab924a9214257ec",
+   "src/ciw/lab/manufacturing_records.py": "66970104ea454e836c5cbafc3013c90e721c3e96ad7f16780c32250112cac921"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T131: define the repeatability and Gage R&R study that measures the datum and marker repeatability.",
+ "report_id": "sha256:db83fe1e3239c4e1b4e7835963ab1ab2201c512284c4694e61d33fd63879b155",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "manufacturing",
+ "state": "completed",
+ "task_id": "T130",
+ "tests_passed": [
+  "check: First-order covariance of the INSTRUMENT->CAD frame chain predicts the Monte Carlo spread of coupon points vs relative Frobenius difference MC vs first order, cad_origin",
+  "check: First-order covariance of the INSTRUMENT->CAD frame chain predicts the Monte Carlo spread of coupon points vs relative Frobenius difference MC vs first order, coupon_far_corner",
+  "check: The 3-2-1 datum frame is orthonormal, equivariant under rigid motion and has the propagated covariance vs max |R^T R - I|",
+  "check: The 3-2-1 datum frame is orthonormal, equivariant under rigid motion and has the propagated covariance vs max |frame(M points) - M frame(points)|",
+  "check: The 3-2-1 datum frame is orthonormal, equivariant under rigid motion and has the propagated covariance vs noise-free recovery of the part pose",
+  "check: The 3-2-1 datum frame is orthonormal, equivariant under rigid motion and has the propagated covariance vs relative Frobenius difference MC vs Jacobian covariance",
+  "check: Gauge-sphere fit on a 75 degree cap recovers centre and radius with the linearized covariance vs max relative std difference (MC vs linearized)",
+  "check: Gauge-sphere fit on a 75 degree cap recovers centre and radius with the linearized covariance vs max |MC mean - truth| in standard errors",
+  "check: Step-gauge fit recovers a declared 50 ppm scale error and 1 um offset vs noise-free recovery of scale error",
+  "check: Step-gauge fit recovers a declared 50 ppm scale error and 1 um offset vs noise-free recovery of offset (mm)",
+  "check: Step-gauge fit recovers a declared 50 ppm scale error and 1 um offset vs max relative std difference (MC vs linearized)",
+  "pytest: tests/test_lab_manufacturing.py::test_artifacts_datum_frames_and_chain_covariance",
+  "pytest: tests/test_lab_manufacturing.py::test_every_task_is_registered_and_reports_honestly"
+ ],
+ "tests_skipped": [],
+ "title": "Define calibration artifacts and datum frames.",
+ "uncertainty": "Monte Carlo sampling error of covariances is about sqrt(2 / N); first-order neglects O(sigma^2) terms.",
+ "unresolved_assumptions": [
+  "All link covariances are declared; real ones come from the instrument and fixture calibration records (T139).",
+  "Thermal drift and probe lobing are not modelled."
+ ]
+}

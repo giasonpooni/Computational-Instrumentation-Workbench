@@ -1,0 +1,197 @@
+{
+ "identity_codes": {
+  "0": "CERTIFIED_WITH_MARGIN",
+  "1": "DECREASE_NOT_DEFINITE",
+  "10": "CERTIFIED_WITH_MARGIN",
+  "11": "DECREASE_NOT_DEFINITE",
+  "12": "CERTIFIED_WITH_MARGIN",
+  "13": "DECREASE_NOT_DEFINITE",
+  "14": "DECREASE_NOT_DEFINITE",
+  "15": "NOT_CERTIFIED",
+  "16": "CERTIFIED_WITH_MARGIN",
+  "17": "CERTIFIED_WITH_MARGIN",
+  "18": "DECREASE_NOT_DEFINITE",
+  "19": "DECREASE_NOT_DEFINITE",
+  "2": "NOT_CERTIFIED",
+  "20": "DECREASE_NOT_DEFINITE",
+  "21": "CERTIFIED_WITH_MARGIN",
+  "22": "DECREASE_NOT_DEFINITE",
+  "23": "DECREASE_NOT_DEFINITE",
+  "24": "NOT_CERTIFIED",
+  "25": "NOT_CERTIFIED",
+  "26": "DECREASE_NOT_DEFINITE",
+  "27": "DECREASE_NOT_DEFINITE",
+  "28": "CERTIFIED_WITH_MARGIN",
+  "29": "CERTIFIED_WITH_MARGIN",
+  "3": "DECREASE_NOT_DEFINITE",
+  "30": "CERTIFIED_WITH_MARGIN",
+  "31": "CERTIFIED_WITH_MARGIN",
+  "32": "DECREASE_NOT_DEFINITE",
+  "33": "NOT_CERTIFIED",
+  "34": "NOT_CERTIFIED",
+  "35": "CERTIFIED_WITH_MARGIN",
+  "36": "CERTIFIED_WITH_MARGIN",
+  "37": "CERTIFIED_WITH_MARGIN",
+  "38": "DECREASE_NOT_DEFINITE",
+  "39": "CERTIFIED_WITH_MARGIN",
+  "4": "CERTIFIED_WITH_MARGIN",
+  "40": "NOT_CERTIFIED",
+  "41": "CERTIFIED_WITH_MARGIN",
+  "42": "CERTIFIED_WITH_MARGIN",
+  "43": "CERTIFIED_WITH_MARGIN",
+  "44": "DECREASE_NOT_DEFINITE",
+  "45": "CERTIFIED_WITH_MARGIN",
+  "46": "CERTIFIED_WITH_MARGIN",
+  "47": "DECREASE_NOT_DEFINITE",
+  "48": "NOT_CERTIFIED",
+  "49": "CERTIFIED_WITH_MARGIN",
+  "5": "DECREASE_NOT_DEFINITE",
+  "6": "DECREASE_NOT_DEFINITE",
+  "7": "DECREASE_NOT_DEFINITE",
+  "8": "DECREASE_NOT_DEFINITE",
+  "9": "DECREASE_NOT_DEFINITE"
+ },
+ "independent_solvers": [
+  [
+   "continuous",
+   "scipy.linalg.solve_continuous_lyapunov@1.16.2",
+   "1.16.2"
+  ],
+  [
+   "discrete",
+   "scipy.linalg.solve_discrete_lyapunov@1.16.2",
+   "1.16.2"
+  ]
+ ],
+ "relative_difference": {
+  "continuous": [
+   3.353352929871436e-16,
+   1.7301902624474186e-14,
+   7.695490334615032e-16,
+   7.25808858112863e-16,
+   2.852725069873636e-15,
+   3.380301691920938e-16,
+   9.329739415001331e-16,
+   9.615302946032146e-17,
+   5.834313246369256e-16,
+   3.9908555418475094e-15,
+   9.59311141412372e-16,
+   3.704716559712196e-15,
+   2.4443554387586467e-15,
+   1.9110862760003714e-15,
+   1.0384626167205447e-15
+  ],
+  "discrete": [
+   1.320226018360705e-16,
+   2.280398215918832e-16,
+   2.8663031722321866e-16,
+   0.0,
+   2.6437186333894007e-16,
+   2.9898227940704216e-16,
+   1.1662617162498882e-17,
+   4.496319237175107e-16,
+   0.0,
+   2.458385778777847e-16,
+   4.0213054189147905e-16,
+   1.0340902373657359e-16,
+   2.406796449523035e-16,
+   3.2595589084158297e-16,
+   4.117636983757915e-17
+  ]
+ },
+ "scalar_codes": {
+  "-1": "CERTIFIED_WITH_MARGIN",
+  "-1e-10": "CERTIFIED_WITH_MARGIN",
+  "-1e-300": "CERTIFIED_WITH_MARGIN",
+  "-4.94066e-324": "CERTIFIED_WITH_MARGIN",
+  "0": "NUMERICAL_INCONCLUSIVE",
+  "1": "NOT_CERTIFIED",
+  "1e-300": "NOT_CERTIFIED",
+  "4.94066e-324": "NOT_CERTIFIED"
+ },
+ "solve_errors": {
+  "11": {
+   "message": "solved P must be positive definite; min eigenvalue=-8.430e-01",
+   "type": "ValueError"
+  },
+  "13": {
+   "message": "solved P must be positive definite; min eigenvalue=-1.559e+00",
+   "type": "ValueError"
+  },
+  "15": {
+   "message": "solved P must be positive definite; min eigenvalue=-7.177e-01",
+   "type": "ValueError"
+  },
+  "18": {
+   "message": "solved P must be positive definite; min eigenvalue=-7.421e-01",
+   "type": "ValueError"
+  },
+  "2": {
+   "message": "solved P must be positive definite; min eigenvalue=-1.318e+00",
+   "type": "ValueError"
+  },
+  "20": {
+   "message": "solved P must be positive definite; min eigenvalue=-4.410e+00",
+   "type": "ValueError"
+  },
+  "23": {
+   "message": "solved P must be positive definite; min eigenvalue=-3.758e+00",
+   "type": "ValueError"
+  },
+  "24": {
+   "message": "solved P must be positive definite; min eigenvalue=-9.988e+00",
+   "type": "ValueError"
+  },
+  "25": {
+   "message": "solved P must be positive definite; min eigenvalue=-6.568e-01",
+   "type": "ValueError"
+  },
+  "27": {
+   "message": "solved P must be positive definite; min eigenvalue=-2.070e+00",
+   "type": "ValueError"
+  },
+  "3": {
+   "message": "solved P must be positive definite; min eigenvalue=-3.486e+00",
+   "type": "ValueError"
+  },
+  "32": {
+   "message": "solved P must be positive definite; min eigenvalue=-3.279e+00",
+   "type": "ValueError"
+  },
+  "33": {
+   "message": "solved P must be positive definite; min eigenvalue=-4.347e+00",
+   "type": "ValueError"
+  },
+  "34": {
+   "message": "solved P must be positive definite; min eigenvalue=-7.042e+00",
+   "type": "ValueError"
+  },
+  "40": {
+   "message": "solved P must be positive definite; min eigenvalue=-3.621e+01",
+   "type": "ValueError"
+  },
+  "48": {
+   "message": "solved P must be positive definite; min eigenvalue=-3.591e+00",
+   "type": "ValueError"
+  },
+  "5": {
+   "message": "solved P must be positive definite; min eigenvalue=-1.717e+00",
+   "type": "ValueError"
+  },
+  "6": {
+   "message": "solved P must be positive definite; min eigenvalue=-2.595e+02",
+   "type": "ValueError"
+  },
+  "7": {
+   "message": "solved P must be positive definite; min eigenvalue=-1.091e+02",
+   "type": "ValueError"
+  },
+  "8": {
+   "message": "solved P must be positive definite; min eigenvalue=-1.944e+00",
+   "type": "ValueError"
+  }
+ },
+ "thin_cone_codes": {
+  "DECREASE_NOT_DEFINITE": 64
+ }
+}

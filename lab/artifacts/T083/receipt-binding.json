@@ -1,0 +1,47 @@
+[
+ {
+  "properties": {
+   "limited_authority": true,
+   "numerical_match_holds": true,
+   "recomputed_replay_id": true,
+   "recomputed_runtime_digest_binds_both": true,
+   "recomputed_verification_id": true,
+   "replayed_is_containing_bundle": true,
+   "reproduction_is_fresh_step": true,
+   "schema": true,
+   "source_is_retained_bundle": true,
+   "subject_is_source": true
+  },
+  "replay": "B1"
+ },
+ {
+  "properties": {
+   "limited_authority": true,
+   "numerical_match_holds": true,
+   "recomputed_replay_id": true,
+   "recomputed_runtime_digest_binds_both": true,
+   "recomputed_verification_id": true,
+   "replayed_is_containing_bundle": true,
+   "reproduction_is_fresh_step": true,
+   "schema": true,
+   "source_is_retained_bundle": true,
+   "subject_is_source": true
+  },
+  "replay": "B2"
+ },
+ {
+  "properties": {
+   "limited_authority": true,
+   "numerical_match_holds": true,
+   "recomputed_replay_id": true,
+   "recomputed_runtime_digest_binds_both": true,
+   "recomputed_verification_id": true,
+   "replayed_is_containing_bundle": true,
+   "reproduction_is_fresh_step": true,
+   "schema": true,
+   "source_is_retained_bundle": true,
+   "subject_is_source": true
+  },
+  "replay": "B3"
+ }
+]

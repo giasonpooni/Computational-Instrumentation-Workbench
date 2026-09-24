@@ -1,0 +1,522 @@
+{
+ "changed_files": [
+  "src/ciw/lab/sensor_fusion_geometry.py",
+  "src/ciw/lab/sensor_fusion_common.py",
+  "src/ciw/lab/sensor_fusion_bench.py",
+  "src/ciw/lab/sensor_fusion_objects.py"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 6,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Covariance of (offset, rate) ~ Phi P Phi^T for small P; lateral variance at s = pi on the sphere equals sigma_lateral^2; Monte Carlo equals the Gauss-Hermite exact variance at every sigma.",
+ "experiment": "Integrate Phi with jacobi.transfer (RK4); draw starts with jacobi.perturbed_start; integrate all perturbed geodesics with integrators.integrate_fixed on a batched RHS checked against Surface.geodesic_rhs; compare covariances at 13 nodes; sweep the heading std and compare linear, Monte Carlo and quadrature variances.",
+ "failure_modes_checked": [
+  "transfer matrix vs closed form",
+  "Wronskian drift",
+  "batched RHS vs Christoffel RHS",
+  "chart singularity (sweep limited to sigma <= 0.3 on the sphere)",
+  "linearization breakdown",
+  "matched-arclength vs closest-point lateral offset (equal to first order)"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 2.4961348543683926e-09,
+      "passed": true,
+      "reference": "max |Phi - closed form| over both surfaces",
+      "reference_kind": "analytic",
+      "tolerance": 1e-07
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 4.234834705130197e-12,
+      "passed": true,
+      "reference": "max |det Phi - 1|",
+      "reference_kind": "invariant",
+      "tolerance": 1e-07
+     }
+    ],
+    "derivation": "j'' + K j = 0 with constant K (ciw.lab.jacobi.constant_curvature)"
+   },
+   "claim": "The Jacobi transfer matrix integrated by ciw.lab.jacobi.transfer matches the constant-curvature closed forms (cos s, sin s; cosh s, sinh s) with unit Wronskian on both surfaces",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 0.001
+   },
+   "uncertainty": {
+    "basis": "observed RK4 global error of Phi against the closed forms",
+    "kind": "truncation_bound",
+    "value": 2.4961348543683926e-09
+   },
+   "unit": null,
+   "value": {
+    "hyperbolic": {
+     "max_det_error": 4.234834705130197e-12,
+     "max_phi_error": 2.4961348543683926e-09
+    },
+    "sphere": {
+     "max_det_error": 1.5655254870239332e-12,
+     "max_phi_error": 1.0446887799275828e-10
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 2.316950757428374,
+      "passed": true,
+      "reference": "sampling law of the 2x2 covariance at 13 arclength nodes per surface",
+      "reference_kind": "analytic",
+      "tolerance": 4.363146328176402
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 8.881784197001252e-16,
+      "passed": true,
+      "reference": "batched geodesic RHS against Surface.geodesic_rhs",
+      "reference_kind": "invariant",
+      "tolerance": 1e-12
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "geodesics": 600,
+     "name": "ciw.lab.sensor_fusion_bench",
+     "seed": 642026
+    }
+   },
+   "claim": "Phi P Phi^T predicts the Monte Carlo covariance of (lateral offset, lateral rate) over perturbed geodesics on the sphere and the hyperbolic plane within a Bonferroni 99.9% bound",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "each standardized covariance entry has unit sampling standard deviation",
+    "kind": "monte_carlo_95ci",
+    "value": 1.96
+   },
+   "unit": null,
+   "value": {
+    "batched_rhs_vs_christoffel": 8.881784197001252e-16,
+    "max_abs_z": 2.316950757428374,
+    "moments_tested": 78,
+    "z_critical": 4.363146328176402
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 9.961365066146755e-11,
+      "passed": true,
+      "reference": "first conjugate point minus pi",
+      "reference_kind": "analytic",
+      "tolerance": 1e-06
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -4.993712110490378e-10,
+      "passed": true,
+      "reference": "predicted variance at pi relative to sigma_lateral^2 minus one",
+      "reference_kind": "analytic",
+      "tolerance": 1e-06
+     },
+     {
+      "comparison": "le",
+      "observed": 0.009048433205893418,
+      "passed": true,
+      "reference": "Monte Carlo ratio of variance at pi to its peak",
+      "reference_kind": "analytic",
+      "tolerance": 0.05
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "seed": 642026
+    }
+   },
+   "claim": "Lateral variance collapses at the sphere's conjugate point s = pi: the heading contribution vanishes because j_head(pi) = 0, leaving only the initial lateral variance",
+   "counterexample": {
+    "statement": "Lateral position uncertainty grows monotonically with distance travelled",
+    "witness": {
+     "s": 3.141592653589793,
+     "surface": "unit sphere",
+     "variance_ratio_to_peak": 0.009048433205893418
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "Gaussian relative standard error sqrt(2/(N-1)) of a sample variance, applied to the Monte Carlo ratio",
+    "kind": "monte_carlo_95ci",
+    "value": 0.0010247809482918414
+   },
+   "unit": null,
+   "value": {
+    "conjugate_point": 3.1415926536894068,
+    "hyperbolic_conjugate_points": [],
+    "initial_lateral_variance": 4e-06,
+    "monte_carlo_ratio_to_peak": 0.009048433205893418,
+    "monte_carlo_variance_at_pi": 4.057119462748996e-06,
+    "predicted_ratio_to_peak": 0.009993722444514472,
+    "predicted_variance_at_pi": 3.999999998002515e-06
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "number of conjugate points on [0, 3]",
+      "reference_kind": "analytic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 4.981715040486279e-10,
+      "passed": true,
+      "reference": "integrated growth factor over 3 units of arclength against the closed form (relative)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-06
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "seed": 642026
+    }
+   },
+   "claim": "On the hyperbolic plane (K = -1) there is no conjugate point and the lateral variance grows as the closed form cosh^2 s sigma_l^2 + 2 cosh s sinh s c + sinh^2 s sigma_h^2",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "relative RK4 error of the integrated growth factor",
+    "kind": "truncation_bound",
+    "value": 4.981715040486279e-10
+   },
+   "unit": null,
+   "value": {
+    "closed_form_growth_factor": 10641.422517609722,
+    "growth_factor_s0_to_s3": 10641.422512308469,
+    "monte_carlo_final_lateral_variance": 0.04177529631790024,
+    "predicted_final_lateral_variance": 0.04256569004923388
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.001496135254942188,
+      "passed": true,
+      "reference": "second-order coefficient from Gauss-Hermite against cos^2 s / cosh^2 s",
+      "reference_kind": "analytic",
+      "tolerance": 0.02
+     },
+     {
+      "comparison": "le",
+      "observed": 0.9585409979505136,
+      "passed": true,
+      "reference": "Monte Carlo variance against the Gauss-Hermite exact variance (max |z|)",
+      "reference_kind": "analytic",
+      "tolerance": 3.89059188641312
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 2.227007245281243e-09,
+      "passed": true,
+      "reference": "integrated lateral against asin(sin a sin s) / asinh(sin a sinh s)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-06
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "samples": 1500,
+     "seed": 642026
+    }
+   },
+   "claim": "The first-order variance sigma^2 j_head^2 overestimates the exact lateral variance by a relative error that grows like cos^2(s) sigma^2 on the sphere and cosh^2(s) sigma^2 on the hyperbolic plane; integrated geodesics agree with the exact nonlinear expectation",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "largest relative change of the Gauss-Hermite exact variance from 64 to 96 nodes",
+    "kind": "reference_error",
+    "value": 0.000284271490469723
+   },
+   "unit": null,
+   "value": {
+    "closed_form_integration_error": 2.227007245281243e-09,
+    "leading_coefficient_relative_error": 0.001496135254942188,
+    "max_abs_z_monte_carlo_vs_exact": 0.9585409979505136,
+    "table": {
+     "hyperbolic": [
+      {
+       "linear_relative_error": 0.0009108555575063626,
+       "monte_carlo_relative_error": -0.030660660064990464,
+       "sigma_heading": 0.003
+      },
+      {
+       "linear_relative_error": 0.009973933113993416,
+       "monte_carlo_relative_error": -0.0218253250580972,
+       "sigma_heading": 0.01
+      },
+      {
+       "linear_relative_error": 0.08118510743002028,
+       "monte_carlo_relative_error": 0.04796489133235027,
+       "sigma_heading": 0.03
+      },
+      {
+       "linear_relative_error": 0.5892623400956292,
+       "monte_carlo_relative_error": 0.5485690773439569,
+       "sigma_heading": 0.1
+      },
+      {
+       "linear_relative_error": 2.7773423019810424,
+       "monte_carlo_relative_error": 2.7088175481091636,
+       "sigma_heading": 0.3
+      }
+     ],
+     "sphere": [
+      {
+       "linear_relative_error": 8.140612556717386e-06,
+       "monte_carlo_relative_error": -0.008715640828768079,
+       "sigma_heading": 0.003
+      },
+      {
+       "linear_relative_error": 9.045530418561043e-05,
+       "monte_carlo_relative_error": -0.008634105151202331,
+       "sigma_heading": 0.01
+      },
+      {
+       "linear_relative_error": 0.0008144183882647926,
+       "monte_carlo_relative_error": -0.007917000197789958,
+       "sigma_heading": 0.03
+      },
+      {
+       "linear_relative_error": 0.009089520549075303,
+       "monte_carlo_relative_error": 0.00027883544306672725,
+       "sigma_heading": 0.1
+      },
+      {
+       "linear_relative_error": 0.08493128734341626,
+       "monte_carlo_relative_error": 0.07530517747908405,
+       "sigma_heading": 0.3
+      }
+     ]
+    },
+    "z_critical": 3.89059188641312
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "10% breakdown found on both surfaces",
+      "reference_kind": "analytic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "le",
+      "observed": 0.033686698423569666,
+      "passed": true,
+      "reference": "hyperbolic breakdown sigma at the 10% level",
+      "reference_kind": "analytic",
+      "tolerance": 0.05
+     },
+     {
+      "comparison": "ge",
+      "observed": 0.3244201224630762,
+      "passed": true,
+      "reference": "sphere breakdown sigma at the 10% level",
+      "reference_kind": "analytic",
+      "tolerance": 0.2
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "seed": 642026
+    }
+   },
+   "claim": "The heading standard deviation at which the first-order variance is 10% too large is about ten times smaller on the hyperbolic plane at s = 3 than on the sphere near its conjugate point (s = 0.9 pi)",
+   "counterexample": {
+    "statement": "A first-order (Phi P Phi^T) covariance is accurate for any heading uncertainty below 0.1 rad",
+    "witness": {
+     "relative_variance_error": 0.5892623400956292,
+     "s": 3.0,
+     "sigma_heading": 0.1,
+     "surface": "hyperbolic plane"
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "final bisection bracket width on sigma (quadrature error below the linearization finding's reference error)",
+    "kind": "truncation_bound",
+    "value": 5.551115123125783e-17
+   },
+   "unit": "rad",
+   "value": {
+    "hyperbolic": 0.033686698423569666,
+    "sphere": 0.3244201224630762
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "seed": 642026
+    },
+    "notes": "synthetic draws only; no acquisition"
+   },
+   "claim": "The declared [lateral, heading] covariance and these surfaces predict the path uncertainty of a real vehicle or tool on a real curved part",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": "not established: normalized synthetic surfaces and declared perturbations only"
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 15974,
+   "path": "artifacts/T064/jacobi_covariance.json",
+   "sha256": "26daf2a4086e876f5adf806cdfcd9372e081da11d45158bdbcae47870cede69a"
+  },
+  {
+   "bytes": 36715,
+   "path": "artifacts/T064/sphere_lateral_variance.svg",
+   "sha256": "9a81e9da0af9d80c679907e5f4972b653fa1fb139ee94aa92d6d89fee61b4e08"
+  },
+  {
+   "bytes": 2247,
+   "path": "artifacts/T064/sphere_linearization.svg",
+   "sha256": "cdc38fcbf6f9d3e3edf9554a4a0c55bff55b710d275391ed50b2d29887f77b1a"
+  },
+  {
+   "bytes": 24267,
+   "path": "artifacts/T064/hyperbolic_lateral_variance.svg",
+   "sha256": "b97b6a93356e5839c7ef8addbcfe5b670c26737f2cbe9dc16d2a78acfeadf565"
+  },
+  {
+   "bytes": 2134,
+   "path": "artifacts/T064/hyperbolic_linearization.svg",
+   "sha256": "fcc8c5d2df9daae3150b7b8cec86b021d57aa7ba81d45617bc34429293348deb"
+  }
+ ],
+ "hypothesis": "A declared [lateral, heading] covariance propagates along a geodesic as Phi(s) P Phi(s)^T, collapses in the heading direction at a conjugate point, and the first-order propagation fails in a curvature-dependent way as the perturbation grows.",
+ "input_data": [
+  "seed 642026 (PCG64)",
+  "600 perturbed geodesics per surface",
+  "heading sweep sigma in [0.003, 0.01, 0.03, 0.1, 0.3] with 1500 common random numbers"
+ ],
+ "mathematical_model": "Normal Jacobi field j'' + K j = 0; Phi(s) = [[j_lat, j_head], [j_lat', j_head']]. Unit sphere (K = 1) along the equator from (theta, phi) = (pi/2, 0); hyperbolic plane (K = -1, g = I/y^2) along x = 0 from (0, 1). P0: lateral std 0.002, heading std 0.02 rad, correlation 0.25. Exact heading-only laterals: asin(sin a sin s) (sphere), asinh(sin a sinh s) (hyperbolic); second-order relative variance error cos^2 s sigma^2 and cosh^2 s sigma^2.",
+ "number": 64,
+ "numerical_result": "max |z| 2.32 vs 4.36; conjugate point 3.141592654; variance at pi / peak 0.0090 (predicted 0.0100); hyperbolic growth 10641x (closed form 10641x); 10% breakdown sigma: sphere 0.324 rad, hyperbolic 0.0337 rad.",
+ "observation_model": "Lateral offset = signed geodesic distance from the perturbed geodesic's point at arclength s to the base geodesic (latitude, or asinh(-x/y)); lateral rate = its arclength derivative. First order, these equal j and j'.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/integrators.py": "a8cd5b2c5042c70970ae27975ef9387c4492ac981132cd9096bf8eafa8dc6084",
+   "src/ciw/lab/jacobi.py": "87b7d23f17cac61b513ab96bd56fb9f58a50c19de463055c2278097c8c623e42",
+   "src/ciw/lab/sensor_fusion_bench.py": "f373849a4c6836fa20685c59ce7a6fe6bf732f6df9d6a49646cdc017262dd656",
+   "src/ciw/lab/sensor_fusion_common.py": "6787aa47d199d50d0b4de4d7e53714ce7b8b5aad37d647cfc1a954414e90209f",
+   "src/ciw/lab/sensor_fusion_geometry.py": "f32baa091afd99ee4652c64a1d319755f676357fc0bfa06823999a276d7dfd07",
+   "src/ciw/lab/sensor_fusion_objects.py": "a795ffc235e0a4118cb7b9ac7800191a90984372d79e59f1a934442d98d7a1f1",
+   "src/ciw/lab/surfaces.py": "e8f264c182743d0177d93b961a49d7ddf78f30d79a7a75b9fea4018b10d4eef0"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T065: model the correlation that a filter itself induces between successive estimates.",
+ "report_id": "sha256:f816bbb8283fc56bed247bcc07d77b9b2a229a68ed8da621fa94f9b9ef62e441",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "sensor-fusion",
+ "state": "completed",
+ "task_id": "T064",
+ "tests_passed": [
+  "check: The Jacobi transfer matrix integrated by ciw.lab.jacobi.transfer matches the constant-curvature closed forms (cos s, sin s; cosh s, sinh s) with unit Wronskian on both surfaces vs max |Phi - closed form| over both surfaces",
+  "check: The Jacobi transfer matrix integrated by ciw.lab.jacobi.transfer matches the constant-curvature closed forms (cos s, sin s; cosh s, sinh s) with unit Wronskian on both surfaces vs max |det Phi - 1|",
+  "check: Phi P Phi^T predicts the Monte Carlo covariance of (lateral offset, lateral rate) over perturbed geodesics on the sphere and the hyperbolic plane within a Bonferroni 99.9% bound vs sampling law of the 2x2 covariance at 13 arclength nodes per surface",
+  "check: Phi P Phi^T predicts the Monte Carlo covariance of (lateral offset, lateral rate) over perturbed geodesics on the sphere and the hyperbolic plane within a Bonferroni 99.9% bound vs batched geodesic RHS against Surface.geodesic_rhs",
+  "check: Lateral variance collapses at the sphere's conjugate point s = pi: the heading contribution vanishes because j_head(pi) = 0, leaving only the initial lateral variance vs first conjugate point minus pi",
+  "check: Lateral variance collapses at the sphere's conjugate point s = pi: the heading contribution vanishes because j_head(pi) = 0, leaving only the initial lateral variance vs predicted variance at pi relative to sigma_lateral^2 minus one",
+  "check: Lateral variance collapses at the sphere's conjugate point s = pi: the heading contribution vanishes because j_head(pi) = 0, leaving only the initial lateral variance vs Monte Carlo ratio of variance at pi to its peak",
+  "check: On the hyperbolic plane (K = -1) there is no conjugate point and the lateral variance grows as the closed form cosh^2 s sigma_l^2 + 2 cosh s sinh s c + sinh^2 s sigma_h^2 vs number of conjugate points on [0, 3]",
+  "check: On the hyperbolic plane (K = -1) there is no conjugate point and the lateral variance grows as the closed form cosh^2 s sigma_l^2 + 2 cosh s sinh s c + sinh^2 s sigma_h^2 vs integrated growth factor over 3 units of arclength against the closed form (relative)",
+  "check: The first-order variance sigma^2 j_head^2 overestimates the exact lateral variance by a relative error that grows like cos^2(s) sigma^2 on the sphere and cosh^2(s) sigma^2 on the hyperbolic plane; integrated geodesics agree with the exact nonlinear expectation vs second-order coefficient from Gauss-Hermite against cos^2 s / cosh^2 s",
+  "check: The first-order variance sigma^2 j_head^2 overestimates the exact lateral variance by a relative error that grows like cos^2(s) sigma^2 on the sphere and cosh^2(s) sigma^2 on the hyperbolic plane; integrated geodesics agree with the exact nonlinear expectation vs Monte Carlo variance against the Gauss-Hermite exact variance (max |z|)",
+  "check: The first-order variance sigma^2 j_head^2 overestimates the exact lateral variance by a relative error that grows like cos^2(s) sigma^2 on the sphere and cosh^2(s) sigma^2 on the hyperbolic plane; integrated geodesics agree with the exact nonlinear expectation vs integrated lateral against asin(sin a sin s) / asinh(sin a sinh s)",
+  "check: The heading standard deviation at which the first-order variance is 10% too large is about ten times smaller on the hyperbolic plane at s = 3 than on the sphere near its conjugate point (s = 0.9 pi) vs 10% breakdown found on both surfaces",
+  "check: The heading standard deviation at which the first-order variance is 10% too large is about ten times smaller on the hyperbolic plane at s = 3 than on the sphere near its conjugate point (s = 0.9 pi) vs hyperbolic breakdown sigma at the 10% level",
+  "check: The heading standard deviation at which the first-order variance is 10% too large is about ten times smaller on the hyperbolic plane at s = 3 than on the sphere near its conjugate point (s = 0.9 pi) vs sphere breakdown sigma at the 10% level",
+  "pytest: tests/test_lab_sensor_fusion.py::test_jacobi_transfer_covariance_collapse_and_breakdown",
+  "pytest: tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T064]"
+ ],
+ "tests_skipped": [],
+ "title": "Propagate covariance through the Jacobi transfer matrix.",
+ "uncertainty": "Monte Carlo sampling error (600 geodesics) is covered by the Bonferroni bound; the linearization errors come from 96-node Gauss-Hermite quadrature of closed forms and are deterministic (64 against 96 nodes changes them by at most 3e-04 relative); RK4 integration error is below 1e-6 against the closed forms.",
+ "unresolved_assumptions": [
+  "Only constant-curvature surfaces were used, where exact nonlinear references exist; variable-curvature surfaces need a numerical reference.",
+  "The perturbation is Gaussian in (lateral, heading); real path errors may have other shapes and correlations with speed."
+ ]
+}

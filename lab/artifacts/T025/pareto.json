@@ -1,0 +1,142 @@
+{
+ "front": [
+  0,
+  1,
+  2,
+  3,
+  4
+ ],
+ "front_members_past_conjugate_point": [
+  2
+ ],
+ "fronts_2d": {
+  "length_amplification": [
+   0,
+   1,
+   2
+  ],
+  "length_margin": [
+   0,
+   3
+  ]
+ },
+ "routes": [
+  {
+   "amplification": 1.8341504196036555,
+   "focus_margin": 1.2453092693335792,
+   "heading": 0.7663176018658682,
+   "length": 5.846451377518235,
+   "lift": [
+    0,
+    0
+   ],
+   "margin_lower_bound": 8.03389917182778,
+   "passes_conjugate_point": false,
+   "targeting_condition": 0.5452115537045711
+  },
+  {
+   "amplification": 0.7874800587071611,
+   "focus_margin": 0.8596303653606387,
+   "heading": -0.6454341111971411,
+   "length": 5.978587028513689,
+   "lift": [
+    0,
+    0
+   ],
+   "margin_lower_bound": 8.011306618208344,
+   "passes_conjugate_point": false,
+   "targeting_condition": 1.2698734259274347
+  },
+  {
+   "amplification": 0.43742318141707476,
+   "focus_margin": -0.4571252038359548,
+   "heading": -0.17109411247473272,
+   "length": 5.9986429397023775,
+   "lift": [
+    0,
+    0
+   ],
+   "margin_lower_bound": 8.038181539201187,
+   "passes_conjugate_point": true,
+   "targeting_condition": 2.2861156940983403
+  },
+  {
+   "amplification": 35.84781929262236,
+   "focus_margin": null,
+   "heading": 1.328869465787598,
+   "length": 6.354490781532511,
+   "lift": [
+    0,
+    1
+   ],
+   "margin_lower_bound": 8.033035516276946,
+   "passes_conjugate_point": false,
+   "targeting_condition": 0.027895699647364724
+  },
+  {
+   "amplification": 35.211046168245595,
+   "focus_margin": null,
+   "heading": -1.3378920559001015,
+   "length": 7.716734395481508,
+   "lift": [
+    0,
+    -1
+   ],
+   "margin_lower_bound": 8.036599033636183,
+   "passes_conjugate_point": false,
+   "targeting_condition": 0.02840017860366304
+  },
+  {
+   "amplification": 197.17050094523458,
+   "focus_margin": null,
+   "heading": 1.9051503319669738,
+   "length": 8.328856292010393,
+   "lift": [
+    -1,
+    1
+   ],
+   "margin_lower_bound": 8.010048395665496,
+   "passes_conjugate_point": false,
+   "targeting_condition": 0.005071752595880236
+  },
+  {
+   "amplification": 134.4565701924939,
+   "focus_margin": 3.7491901176414206,
+   "heading": 1.939193626225253,
+   "length": 8.801556073972552,
+   "lift": [
+    -1,
+    0
+   ],
+   "margin_lower_bound": 8.005035162300828,
+   "passes_conjugate_point": false,
+   "targeting_condition": 0.007437345743449772
+  },
+  {
+   "amplification": 130.2187687552813,
+   "focus_margin": 4.3738486499286005,
+   "heading": 4.343446817194708,
+   "length": 8.988286391536853,
+   "lift": [
+    -1,
+    0
+   ],
+   "margin_lower_bound": 8.029535843106252,
+   "passes_conjugate_point": false,
+   "targeting_condition": 0.007679384543093699
+  },
+  {
+   "amplification": 172.8216754683515,
+   "focus_margin": null,
+   "heading": 4.380449694384374,
+   "length": 9.654880144749919,
+   "lift": [
+    -1,
+    -1
+   ],
+   "margin_lower_bound": 8.019135987994767,
+   "passes_conjugate_point": false,
+   "targeting_condition": 0.005786311221031578
+  }
+ ]
+}

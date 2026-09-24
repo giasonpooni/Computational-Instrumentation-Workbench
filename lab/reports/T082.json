@@ -1,0 +1,364 @@
+{
+ "changed_files": [
+  "src/ciw/lab/exchange_provenance.py",
+  "src/ciw/lab/exchange_provenance_common.py",
+  "tests/test_lab_exchange_provenance.py",
+  "docs/lab/EXCHANGE_PROVENANCE.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 3,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "distinct count == occurrence count for every occurrence kind; reuse forgeries refused; a creation time moved in only one record is refused, moved in both it reopens (fresh.created-at-shift).",
+ "experiment": "Count identities over oscillator executions and every energy bundle (original, sibling, other log, replays, separate session); reopen four reuse forgeries and two creation-time forgeries. Mutation rows retained as freshness-mutations.json/.md.",
+ "failure_modes_checked": [
+  "replay reusing the original execution",
+  "replay reusing the original reproduction",
+  "energy step colliding with an oscillator execution",
+  "oscillator execution duplicate",
+  "creation time moved in one record",
+  "creation time moved in both records"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "distinct execution identities (observed 17, predicted 17)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "distinct result identities (observed 17, predicted 17)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "distinct verification identities (observed 10, predicted 10)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "distinct bundle identities (observed 7, predicted 7)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "distinct bundle_session identities (observed 7, predicted 7)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "distinct replay identities (observed 3, predicted 3)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Every execution, result, verification, bundle, session and replay occurrence has a fresh identity",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "uuid4 carries 122 random bits; P(any collision among 61 draws) <= n(n-1)/2^123",
+    "kind": "collision_bound",
+    "value": 3.441847459207658e-34
+   },
+   "unit": null,
+   "value": {
+    "bundle": {
+     "distinct": 7,
+     "occurrences": 7
+    },
+    "bundle_session": {
+     "distinct": 7,
+     "occurrences": 7
+    },
+    "execution": {
+     "distinct": 17,
+     "occurrences": 17
+    },
+    "replay": {
+     "distinct": 3,
+     "occurrences": 3
+    },
+    "result": {
+     "distinct": 17,
+     "occurrences": 17
+    },
+    "verification": {
+     "distinct": 10,
+     "occurrences": 10
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "Declared workload bundles must have distinct execution and reproduction occurrences",
+      "observed_refusal": "Declared workload bundles must have distinct execution and reproduction occurrences",
+      "passed": true,
+      "reference": "fresh.energy-replay-reuse (full recompute): refusal on reopen",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "Declared workload bundles must have distinct execution and reproduction occurrences",
+      "observed_refusal": "Declared workload bundles must have distinct execution and reproduction occurrences",
+      "passed": true,
+      "reference": "fresh.energy-reproduction-reuse (full recompute): refusal on reopen",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "Identity collision between recording operations and retained workflows",
+      "observed_refusal": "Identity collision between recording operations and retained workflows",
+      "passed": true,
+      "reference": "fresh.cross-namespace (full recompute): refusal on reopen",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "Saved result identity mismatch or duplication",
+      "observed_refusal": "Saved result identity mismatch or duplication",
+      "passed": true,
+      "reference": "fresh.oscillator-duplicate (local recompute): refusal on reopen",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "Execution/result created_at binding mismatch",
+      "observed_refusal": "Execution/result created_at binding mismatch",
+      "passed": true,
+      "reference": "fresh.created-at-one (local recompute): refusal on reopen",
+      "reference_kind": "refusal"
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "harness control: the forger's recomputation of the unedited workspace reproduces every CIW digest",
+      "reference_kind": "cross_implementation",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "harness control: the unedited saved workspace reopens",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Reused or colliding occurrence identities are refused on reopen with the pinned message",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": [
+    {
+     "kind": "workspace",
+     "mutant": "fresh.energy-replay-reuse",
+     "observed": "Declared workload bundles must have distinct execution and reproduction occurrences",
+     "recompute": "full"
+    },
+    {
+     "kind": "workspace",
+     "mutant": "fresh.energy-reproduction-reuse",
+     "observed": "Declared workload bundles must have distinct execution and reproduction occurrences",
+     "recompute": "full"
+    },
+    {
+     "kind": "workspace",
+     "mutant": "fresh.cross-namespace",
+     "observed": "Identity collision between recording operations and retained workflows",
+     "recompute": "full"
+    },
+    {
+     "kind": "workspace",
+     "mutant": "fresh.oscillator-duplicate",
+     "observed": "Saved result identity mismatch or duplication",
+     "recompute": "local"
+    },
+    {
+     "kind": "workspace",
+     "mutant": "fresh.created-at-one",
+     "observed": "Execution/result created_at binding mismatch",
+     "recompute": "local"
+    }
+   ]
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "fresh.created-at-shift: accepted (1 = accepted)",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     }
+    ]
+   },
+   "claim": "Surviving mutant fresh.created-at-shift: a backdated execution and result pair reopens",
+   "counterexample": {
+    "statement": "A retained execution occurrence binds its creation time",
+    "witness": {
+     "description": "created_at backdated identically in execution and result; resealed",
+     "name": "fresh.created-at-shift",
+     "observed": "accepted",
+     "post_reopen": {
+      "execution_created_at": "2001-01-01T00:00:00+00:00"
+     },
+     "recompute": "local",
+     "target": "oscillator execution and result"
+    }
+   },
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "mutant": "fresh.created-at-shift",
+    "observed": "accepted"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": "Every CIW seal and identity on these paths (record_digest, log_digest, bundle_digest, verification_id, replay_id, result_id, source_id) is an unkeyed SHA-256 over public canonical JSON or raw bytes, and no keyed signature or MAC is retained. Authentication is therefore not established; the listed surviving mutants are concrete forgeries accepted on reopen."
+   },
+   "claim": "Retained workspace records are authenticated: a holder without a secret cannot produce a forged record that reopens",
+   "domain": "provenance",
+   "evidence_status": "not_established",
+   "expected_not_established": true,
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": null,
+   "unit": null,
+   "value": {
+    "surviving_mutants_in_this_task": [
+     "fresh.created-at-shift"
+    ]
+   }
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 3663,
+   "path": "artifacts/T082/freshness-mutations.json",
+   "sha256": "2f6ee061f144938e580888185d8cfcce73e67f07abcfe99fe2d52ee5503ea500"
+  },
+  {
+   "bytes": 1460,
+   "path": "artifacts/T082/freshness-mutations.md",
+   "sha256": "1408d251459ac15efa523cc3e4803bb86b52b52dc06ccf87f823886890862e92"
+  }
+ ],
+ "hypothesis": "Every execution, result, verification, bundle and replay occurrence receives a fresh identity, and a retained workspace that reuses an occurrence is refused; creation times are bound only between the two records of one occurrence.",
+ "input_data": [
+  "make_demo_run() damped-oscillator recording; statistics.v1 on channel v over [1, 2] s, twice, plus one legacy analysis.stats result",
+  "examples/energy-accuracy/{baseline,reset}.json (origin synthetic_fixture): two original executions of baseline, one of reset, replays, and a separate session in the same process",
+  "Workspaces saved by Session.save_workspace and reopened by Session.from_workspace in temporary directories"
+ ],
+ "mathematical_model": "Occurrence identities are uuid4 draws or digests over records containing them; for n occurrences the probability of any uuid4 collision is at most n(n-1) / 2^123.",
+ "number": 82,
+ "numerical_result": "occurrence table {'execution': {'occurrences': 17, 'distinct': 17}, 'result': {'occurrences': 17, 'distinct': 17}, 'verification': {'occurrences': 10, 'distinct': 10}, 'bundle': {'occurrences': 7, 'distinct': 7}, 'bundle_session': {'occurrences': 7, 'distinct': 7}, 'replay': {'occurrences': 3, 'distinct': 3}}; mutants: 6 rows (6 workspace mutants, 0 pure-validator rows): 5 refused; 1 surviving forgery (fresh.created-at-shift); kill/survive predictions matched 6/6; refusal messages matched their regression pins 5/5",
+ "observation_model": "No physical observation. The observed objects are CIW records (sessions, executions, results, bundles, receipts, saved workspace JSON) produced offline by the unmodified CIW code; the energy logs are synthetic fixtures and no hardware was sampled.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/exchange_provenance.py": "5cc267c7777c9b434b8747b0cc841ac85313e1cfb6ff4c429ee93aa5ddbb645b",
+   "src/ciw/lab/exchange_provenance_common.py": "22028c4008079fba23c5e807de0104ba1a0014027e1d40a9209881cdf232f486"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T083 (replay receipt binding); CIW change: keyed or externally timestamped execution records if creation time is to carry evidential weight",
+ "report_id": "sha256:43391e4d5601804cf7d8af227b48855a91778eff387f8175fcb8ce1fbf7b49ed",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "exchange-provenance",
+ "state": "completed",
+ "task_id": "T082",
+ "tests_passed": [
+  "check: Every execution, result, verification, bundle, session and replay occurrence has a fresh identity vs distinct execution identities (observed 17, predicted 17)",
+  "check: Every execution, result, verification, bundle, session and replay occurrence has a fresh identity vs distinct result identities (observed 17, predicted 17)",
+  "check: Every execution, result, verification, bundle, session and replay occurrence has a fresh identity vs distinct verification identities (observed 10, predicted 10)",
+  "check: Every execution, result, verification, bundle, session and replay occurrence has a fresh identity vs distinct bundle identities (observed 7, predicted 7)",
+  "check: Every execution, result, verification, bundle, session and replay occurrence has a fresh identity vs distinct bundle_session identities (observed 7, predicted 7)",
+  "check: Every execution, result, verification, bundle, session and replay occurrence has a fresh identity vs distinct replay identities (observed 3, predicted 3)",
+  "check: Reused or colliding occurrence identities are refused on reopen with the pinned message vs fresh.energy-replay-reuse (full recompute): refusal on reopen",
+  "check: Reused or colliding occurrence identities are refused on reopen with the pinned message vs fresh.energy-reproduction-reuse (full recompute): refusal on reopen",
+  "check: Reused or colliding occurrence identities are refused on reopen with the pinned message vs fresh.cross-namespace (full recompute): refusal on reopen",
+  "check: Reused or colliding occurrence identities are refused on reopen with the pinned message vs fresh.oscillator-duplicate (local recompute): refusal on reopen",
+  "check: Reused or colliding occurrence identities are refused on reopen with the pinned message vs fresh.created-at-one (local recompute): refusal on reopen",
+  "check: Reused or colliding occurrence identities are refused on reopen with the pinned message vs harness control: the forger's recomputation of the unedited workspace reproduces every CIW digest",
+  "check: Reused or colliding occurrence identities are refused on reopen with the pinned message vs harness control: the unedited saved workspace reopens",
+  "check: Surviving mutant fresh.created-at-shift: a backdated execution and result pair reopens vs fresh.created-at-shift: accepted (1 = accepted)",
+  "pytest: tests/test_lab_exchange_provenance.py::test_fresh_occurrences"
+ ],
+ "tests_skipped": [],
+ "title": "Test fresh replay execution and result identities.",
+ "uncertainty": "uuid4 collisions among these 61 identities have probability below 3.4e-34; freshness is checked within one workspace, not globally across workspaces.",
+ "unresolved_assumptions": [
+  "No global registry of occurrences exists, so two workspaces can reuse an occurrence identity without detection.",
+  "created_at is a declared timestamp, not a trusted time."
+ ]
+}

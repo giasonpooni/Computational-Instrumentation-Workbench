@@ -1,0 +1,271 @@
+{
+ "changed_files": [
+  "src/ciw/lab/flat_torus_topology.py",
+  "src/ciw/lab/flat_torus_topology_discrete.py",
+  "docs/lab/FLAT_TORUS_TOPOLOGY.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 1,
+   "not_established": 1,
+   "numerically_verified": 2,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Graph distances equal the stencil norm at every N; ratios constant in N; fast-marching error decreasing.",
+ "experiment": "Dijkstra (heapq) for 4/8 stencils, fast marching, closed-form worst directions over 36001 angles, and optional scipy.sparse.csgraph.dijkstra on the same graphs.",
+ "failure_modes_checked": [
+  "refinement drift of graph ratios",
+  "stencil-norm closed form",
+  "dense worst-direction search",
+  "periodic wrap within half a period"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 7.771561172376096e-16,
+      "passed": true,
+      "reference": "graph distance minus stencil norm",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 2.220446049250313e-15,
+      "passed": true,
+      "reference": "ratio change under refinement",
+      "reference_kind": "self_convergence",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -2.220446049250313e-16,
+      "passed": true,
+      "reference": "4-nbr error at 45 deg minus (sqrt 2 - 1)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     }
+    ],
+    "independent_check": {
+     "checker": {
+      "implementation": "scipy.sparse.csgraph.dijkstra",
+      "revision": "1.16.2"
+     },
+     "comparison": "abs_le",
+     "observed": 0.0,
+     "passed": true,
+     "producer": {
+      "implementation": "ciw.lab.flat_torus_topology",
+      "revision": "ciw 0.1.0"
+     },
+     "reference": "scipy.sparse.csgraph.dijkstra graph distances",
+     "reference_kind": "high_precision",
+     "tolerance": 1e-12
+    }
+   },
+   "claim": "4- and 8-neighbour grid shortest paths do not converge to Euclidean length under refinement",
+   "counterexample": {
+    "statement": "Grid shortest-path lengths converge to geodesic length as the grid is refined",
+    "witness": {
+     "direction": "45 deg",
+     "grids": [
+      30,
+      60,
+      120
+     ],
+     "ratio": 1.414213562373095,
+     "stencil": "4-neighbour"
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 1e-09
+   },
+   "uncertainty": {
+    "basis": "graph distance against the closed-form stencil norm",
+    "kind": "roundoff",
+    "value": 7.771561172376096e-16
+   },
+   "unit": null,
+   "value": {
+    "ratio4_45deg": [
+     1.414213562373095,
+     1.4142135623730965,
+     1.4142135623730943
+    ],
+    "ratio8_22_62deg": [
+     1.0823898316819596,
+     1.0823898316819591,
+     1.08238983168196
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 2.220446049250313e-16,
+      "passed": true,
+      "reference": "dense maximum minus closed form",
+      "reference_kind": "analytic",
+      "tolerance": 1e-08
+     }
+    ],
+    "derivation": "maximize cos a + sin a and cos a + (sqrt 2 - 1) sin a on [0, pi/4]"
+   },
+   "claim": "Worst-direction metrication error is sqrt 2 - 1 (4-nbr, 45 deg) and sqrt(4 - 2 sqrt 2) - 1 (8-nbr, 22.5 deg)",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-08,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "36001-angle dense search against the closed form",
+    "kind": "truncation_bound",
+    "value": 2.220446049250313e-16
+   },
+   "unit": null,
+   "value": {
+    "4": 0.4142135623730949,
+    "8": 0.08239220029239402
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "errors against Euclidean length decrease with N (0 = monotone)",
+      "reference_kind": "analytic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 0.7120027708331585,
+      "passed": true,
+      "reference": "observed order of the error against Euclidean length",
+      "reference_kind": "analytic",
+      "tolerance": 0.5
+     }
+    ]
+   },
+   "claim": "Fast marching converges to Euclidean length under refinement",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "first-order discretization error on the finest grid (N = 120)",
+    "kind": "truncation_bound",
+    "value": 0.0191733644126737
+   },
+   "unit": null,
+   "value": {
+    "max_relative_error": {
+     "120": 0.0191733644126737,
+     "30": 0.05144778819856555,
+     "60": 0.03184500861733186
+    },
+    "observed_order": 0.7120027708331585
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "Grid-planned path lengths predict distances travelled by a physical vehicle or tool",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 6359,
+   "path": "artifacts/T030/grid-refinement.json",
+   "sha256": "02df561627190013acd7c551a035ef73c5683e56e8a3d7a99ee17b10df3b4a54"
+  },
+  {
+   "bytes": 2817,
+   "path": "artifacts/T030/metrication.svg",
+   "sha256": "6e9f52cf09ccacb4940fca3b4b6d6d393edbfcb938def528163bcaba7b8a556f"
+  },
+  {
+   "bytes": 3153,
+   "path": "artifacts/T030/fast-marching-error.svg",
+   "sha256": "75d0d7483ab4cc9efa8c758f1a3d1b7f5690dbdb8e131c79d7ffe424fa48c5d2"
+  }
+ ],
+ "hypothesis": "Grid graph shortest paths do not converge to the Euclidean geodesic length under refinement: the relative error is set by direction (sqrt 2 - 1 = 41.4% at 45 deg for 4 neighbours, sqrt(4 - 2 sqrt 2) - 1 = 8.24% near 22.5 deg for 8 neighbours) and is independent of the spacing, whereas fast marching converges.",
+ "input_data": [
+  "periodic unit-square torus grids N = (30, 60, 120)",
+  "targets [('0 deg', (1, 0), 12), ('22.62 deg (tan 5/12)', (12, 5), 1), ('26.57 deg (tan 1/2)', (2, 1), 6), ('45 deg', (1, 1), 12)] (displacement k (p, q) / 30)"
+ ],
+ "mathematical_model": "Graph distance -> stencil norm |dx| + |dy| (4-nbr) or max + (sqrt 2 - 1) min (8-nbr); eikonal |grad T| = 1 solved by first-order fast marching (error O(h log 1/h) for a point source).",
+ "number": 30,
+ "numerical_result": "4-nbr ratio at 45 deg 1.414214 for every N; 8-nbr ratio at 22.62 deg 1.082390; worst dense ratios {4: 1.414214, 8: 1.082392}; fast-marching max relative error {30: 0.05145, 60: 0.03185, 120: 0.01917} (observed order 0.71).",
+ "observation_model": "No physical observation: exact or floating-point computation on declared mathematical objects.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "requirement_probes": {
+   "module:scipy": true
+  },
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/flat_torus_topology.py": "4d8cf2437759501a1b9fa5ee0d8abfac43345ebee378c6ad08233e9155d4b184",
+   "src/ciw/lab/flat_torus_topology_discrete.py": "6c2ed09d3b8968a96dc8e576d2281ccac18af9b48a0a3bc1660f11f630aef72f"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T031: study route changes under small metric perturbations",
+ "report_id": "sha256:d594f334f1b93885dd9897c899c0d7a9ea89645ac7b3c2cc06a4a163e7e8151d",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "flat-torus-topology",
+ "state": "completed",
+ "task_id": "T030",
+ "tests_passed": [
+  "check: 4- and 8-neighbour grid shortest paths do not converge to Euclidean length under refinement vs graph distance minus stencil norm",
+  "check: 4- and 8-neighbour grid shortest paths do not converge to Euclidean length under refinement vs ratio change under refinement",
+  "check: 4- and 8-neighbour grid shortest paths do not converge to Euclidean length under refinement vs 4-nbr error at 45 deg minus (sqrt 2 - 1)",
+  "independent: 4- and 8-neighbour grid shortest paths do not converge to Euclidean length under refinement vs scipy.sparse.csgraph.dijkstra",
+  "check: Worst-direction metrication error is sqrt 2 - 1 (4-nbr, 45 deg) and sqrt(4 - 2 sqrt 2) - 1 (8-nbr, 22.5 deg) vs dense maximum minus closed form",
+  "check: Fast marching converges to Euclidean length under refinement vs errors against Euclidean length decrease with N (0 = monotone)",
+  "check: Fast marching converges to Euclidean length under refinement vs observed order of the error against Euclidean length",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_t030_grid_metrication",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+ ],
+ "tests_skipped": [],
+ "title": "Compare smooth and discrete geodesic approximations.",
+ "uncertainty": "Graph distances exact to rounding (<= 1e-12); fast-marching order is an empirical fit over three grids.",
+ "unresolved_assumptions": [
+  "Fast-marching convergence is shown on three grids, not proven here (standard result)."
+ ]
+}

@@ -1,0 +1,308 @@
+{
+ "changed_files": [
+  "src/ciw/lab/manufacturing.py",
+  "src/ciw/lab/manufacturing_geometry.py",
+  "src/ciw/lab/manufacturing_metrology.py",
+  "src/ciw/lab/manufacturing_records.py",
+  "docs/lab/MANUFACTURING.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 2,
+   "numerically_verified": 3,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "chord - geodesic = 0; det Phi = 1; separation of offset paths linear in s.",
+ "experiment": "For 47 marker pairs, find the geodesic distance by shooting (RK4 geodesic from one marker, arclength where it passes the other) and compare it with the chord; integrate the control path and its exact offset paths; assemble and validate the ciw.lab-measurement-protocol.v1 record; mutate it nine ways and confirm each mutation is refused.",
+ "failure_modes_checked": [
+  "RK4 closure onto the target marker",
+  "Wronskian drift",
+  "nonlinear vs linear offset separation",
+  "protocol with filled hardware slot but no acquisition",
+  "acceptance criterion marked as a decision",
+  "prediction labelled hardware_measured",
+  "instrument uncertainty claimed verified"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 2.842170943040401e-14,
+      "passed": true,
+      "reference": "max |shooting geodesic arclength - chord| over 47 marker pairs (mm)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-09
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 2.0097183471152322e-14,
+      "passed": true,
+      "reference": "RK4 geodesic of that arclength closes onto the target marker (mm)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-09
+     }
+    ],
+    "derivation": "Plane geodesics are straight segments, so chord = geodesic (docs/lab/MANUFACTURING.md#t126)"
+   },
+   "claim": "Flat-plate control: chord and geodesic marker distances coincide",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "shooting arclength vs chord and RK4 closure onto the target marker (mm)",
+    "kind": "roundoff",
+    "value": 2.842170943040401e-14
+   },
+   "unit": "mm",
+   "value": 2.842170943040401e-14
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "max |Phi(240) - [[1, 240], [0, 1]]|",
+      "reference_kind": "analytic",
+      "tolerance": 1e-09
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "Wronskian det Phi - 1",
+      "reference_kind": "invariant",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 1.0969003483296547e-13,
+      "passed": true,
+      "reference": "exactly offset path minus delta + s sin(dtheta) (mm)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-09
+     }
+    ]
+   },
+   "claim": "Flat-plate Jacobi transfer is [[1, s], [0, 1]] along the 240 mm control path",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-12
+   },
+   "uncertainty": {
+    "basis": "deviation of Phi from the closed form",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": [
+    [
+     1.0,
+     240.0
+    ],
+    [
+     0.0,
+     1.0
+    ]
+   ]
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "acceptance_inside_system",
+      "observed_refusal": "acceptance_inside_system",
+      "passed": true,
+      "reference": "protocol mutation acceptance_inside_system",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "criterion_is_decision",
+      "observed_refusal": "criterion_is_decision",
+      "passed": true,
+      "reference": "protocol mutation criterion_marked_accepted",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "measurement_without_acquisition",
+      "observed_refusal": "measurement_without_acquisition",
+      "passed": true,
+      "reference": "protocol mutation filled_slot_without_acquisition",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "instrument_claimed_verified",
+      "observed_refusal": "instrument_claimed_verified",
+      "passed": true,
+      "reference": "protocol mutation instrument_claimed_verified",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "missing_field",
+      "observed_refusal": "missing_field",
+      "passed": true,
+      "reference": "protocol mutation missing_markers",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "prediction_labelled_measured",
+      "observed_refusal": "prediction_labelled_measured",
+      "passed": true,
+      "reference": "protocol mutation prediction_labelled_measured",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "measurement_without_acquisition",
+      "observed_refusal": "measurement_without_acquisition",
+      "passed": true,
+      "reference": "protocol mutation records_in_empty_slot",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "acquisition_malformed",
+      "observed_refusal": "acquisition_malformed",
+      "passed": true,
+      "reference": "protocol mutation slot_with_malformed_acquisition",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "retention_record_missing",
+      "observed_refusal": "retention_record_missing",
+      "passed": true,
+      "reference": "protocol mutation slot_without_retention_record",
+      "reference_kind": "refusal"
+     }
+    ]
+   },
+   "claim": "Flat-plate protocol record validates and refuses malformed variants",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact logic or integer count",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": "refused mutations",
+   "value": 9
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "Measured marker chords on the physical plate equal the predicted geodesic distances within instrument uncertainty",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "The declared instrument uncertainties (camera 0.02 mm, tracker 0.015 mm, CMM 0.002 mm) hold for the instruments that will be used",
+   "domain": "calibration",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 8444,
+   "path": "artifacts/T126/protocol-flat-plate.json",
+   "sha256": "b77eb11763c1b55b884aa04e1dfabb7a41d25d4778e71a02ffdc4af5a9507d37"
+  },
+  {
+   "bytes": 6112,
+   "path": "artifacts/T126/plate-pairs.json",
+   "sha256": "6855683f8c83d6888db677de6f338fdaef3d0068152cc069752a00dd33dcd665"
+  },
+  {
+   "bytes": 2805,
+   "path": "artifacts/T126/plate-separation.svg",
+   "sha256": "0fc7743533365780e0e4b294f80723497bbe4ff30907b277161b05d59ac39d57"
+  }
+ ],
+ "hypothesis": "On a flat plate the chord between markers equals their geodesic distance and the Jacobi transfer is [[1, s], [0, 1]], so the plate isolates instrument, frame and procedure error from curvature.",
+ "input_data": [
+  "Declared 300 x 300 x 6 mm plate, 5 x 5 marker grid at 60 mm pitch",
+  "Offset perturbations: 2 mm lateral, 5 mrad heading",
+  "Declared instruments (camera, tracker, CMM)"
+ ],
+ "mathematical_model": "Plane z = 0; geodesics are straight lines; j'' = 0 gives j_lat = 1, j_head = s; offset-path separation e(s) = delta + s dtheta.",
+ "number": 126,
+ "numerical_result": "max |chord - geodesic| = 2.84e-14 mm; max |Phi(240) - exact| = 0; heading-offset separation at 240 mm = 1.2 mm.",
+ "observation_model": "No observation. The protocol specifies camera/CMM observation of the markers, the tape start poses and the offset tapes; its hardware-evidence slot is empty.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/manufacturing.py": "088763a0bcc42bf085c1e228797a5dc0d702b994f2a49e053cbe2b0a5622e25d",
+   "src/ciw/lab/manufacturing_geometry.py": "1db6df2ddf778668da2ffd53a66bcddbff4fc933d6f299e8f283cedc60a9332f",
+   "src/ciw/lab/manufacturing_metrology.py": "afbb6fccf146ca4f47850805c118d2f1bf6186872f381b298ab924a9214257ec",
+   "src/ciw/lab/manufacturing_records.py": "66970104ea454e836c5cbafc3013c90e721c3e96ad7f16780c32250112cac921"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "Execute MFG-FLAT-PLATE-01 on hardware, retain it through the T139 record, then compare with T138.",
+ "report_id": "sha256:1448810e0f8a86a61c924bfd209985b562c783b9fe2f62bff7ba22ad6a752c93",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "manufacturing",
+ "state": "completed",
+ "task_id": "T126",
+ "tests_passed": [
+  "check: Flat-plate control: chord and geodesic marker distances coincide vs max |shooting geodesic arclength - chord| over 47 marker pairs (mm)",
+  "check: Flat-plate control: chord and geodesic marker distances coincide vs RK4 geodesic of that arclength closes onto the target marker (mm)",
+  "check: Flat-plate Jacobi transfer is [[1, s], [0, 1]] along the 240 mm control path vs max |Phi(240) - [[1, 240], [0, 1]]|",
+  "check: Flat-plate Jacobi transfer is [[1, s], [0, 1]] along the 240 mm control path vs Wronskian det Phi - 1",
+  "check: Flat-plate Jacobi transfer is [[1, s], [0, 1]] along the 240 mm control path vs exactly offset path minus delta + s sin(dtheta) (mm)",
+  "check: Flat-plate protocol record validates and refuses malformed variants vs protocol mutation acceptance_inside_system",
+  "check: Flat-plate protocol record validates and refuses malformed variants vs protocol mutation criterion_marked_accepted",
+  "check: Flat-plate protocol record validates and refuses malformed variants vs protocol mutation filled_slot_without_acquisition",
+  "check: Flat-plate protocol record validates and refuses malformed variants vs protocol mutation instrument_claimed_verified",
+  "check: Flat-plate protocol record validates and refuses malformed variants vs protocol mutation missing_markers",
+  "check: Flat-plate protocol record validates and refuses malformed variants vs protocol mutation prediction_labelled_measured",
+  "check: Flat-plate protocol record validates and refuses malformed variants vs protocol mutation records_in_empty_slot",
+  "check: Flat-plate protocol record validates and refuses malformed variants vs protocol mutation slot_with_malformed_acquisition",
+  "check: Flat-plate protocol record validates and refuses malformed variants vs protocol mutation slot_without_retention_record",
+  "pytest: tests/test_lab_manufacturing.py::test_flat_plate_protocol_is_a_zero_curvature_control",
+  "pytest: tests/test_lab_manufacturing.py::test_protocols_refuse_filled_slots_and_decisions",
+  "pytest: tests/test_lab_manufacturing.py::test_every_task_is_registered_and_reports_honestly"
+ ],
+ "tests_skipped": [],
+ "title": "Design a flat-plate control experiment.",
+ "uncertainty": "Rounding only (flat metric, zero Christoffel symbols). Measurement uncertainty is declared, not known.",
+ "unresolved_assumptions": [
+  "Real plate flatness (declared 0.05 mm) and thermal state are not measured; their effect is bounded only by the declared tolerance.",
+  "Instrument uncertainties are declared planning values, not calibrated values."
+ ]
+}

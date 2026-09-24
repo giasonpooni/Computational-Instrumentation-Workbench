@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420" font-family="sans-serif" font-size="11">
+<rect width="640" height="420" fill="#ffffff"/>
+<text x="78" y="22" font-size="13" font-weight="bold">Global endpoint error on gaussian-bump</text>
+<rect x="78" y="40" width="392" height="322" fill="none" stroke="#333"/>
+<line x1="169.83" y1="40" x2="169.83" y2="362" stroke="#e5e7eb"/>
+<text x="169.83" y="378" text-anchor="middle">1e-2</text>
+<line x1="464.77" y1="40" x2="464.77" y2="362" stroke="#e5e7eb"/>
+<text x="464.77" y="378" text-anchor="middle">1e-1</text>
+<line x1="78" y1="327.32" x2="470" y2="327.32" stroke="#e5e7eb"/>
+<text x="72" y="331.32" text-anchor="end">1e-10</text>
+<line x1="78" y1="291.23" x2="470" y2="291.23" stroke="#e5e7eb"/>
+<text x="72" y="295.23" text-anchor="end">1e-9</text>
+<line x1="78" y1="255.14" x2="470" y2="255.14" stroke="#e5e7eb"/>
+<text x="72" y="259.14" text-anchor="end">1e-8</text>
+<line x1="78" y1="219.05" x2="470" y2="219.05" stroke="#e5e7eb"/>
+<text x="72" y="223.05" text-anchor="end">1e-7</text>
+<line x1="78" y1="182.96" x2="470" y2="182.96" stroke="#e5e7eb"/>
+<text x="72" y="186.96" text-anchor="end">1e-6</text>
+<line x1="78" y1="146.87" x2="470" y2="146.87" stroke="#e5e7eb"/>
+<text x="72" y="150.87" text-anchor="end">1e-5</text>
+<line x1="78" y1="110.78" x2="470" y2="110.78" stroke="#e5e7eb"/>
+<text x="72" y="114.78" text-anchor="end">1e-4</text>
+<line x1="78" y1="74.69" x2="470" y2="74.69" stroke="#e5e7eb"/>
+<text x="72" y="78.69" text-anchor="end">1e-3</text>
+<text x="274.00" y="406" text-anchor="middle">step h</text>
+<text x="16" y="201.00" text-anchor="middle" transform="rotate(-90 16 201.00)">endpoint error</text>
+<path d="M344.36,51.93 L255.57,62.84 L166.79,73.73 L78.00,84.61" fill="none" stroke="#1f5fa8" stroke-width="1.8"/>
+<circle cx="344.36" cy="51.93" r="2.6" fill="#1f5fa8"/>
+<circle cx="255.57" cy="62.84" r="2.6" fill="#1f5fa8"/>
+<circle cx="166.79" cy="73.73" r="2.6" fill="#1f5fa8"/>
+<circle cx="78.00" cy="84.61" r="2.6" fill="#1f5fa8"/>
+<line x1="482" y1="52" x2="502" y2="52" stroke="#1f5fa8" stroke-width="2"/>
+<text x="508" y="56">euler</text>
+<path d="M433.15,119.47 L344.36,140.85 L255.57,162.40 L166.79,184.04" fill="none" stroke="#c2410c" stroke-width="1.8"/>
+<circle cx="433.15" cy="119.47" r="2.6" fill="#c2410c"/>
+<circle cx="344.36" cy="140.85" r="2.6" fill="#c2410c"/>
+<circle cx="255.57" cy="162.40" r="2.6" fill="#c2410c"/>
+<circle cx="166.79" cy="184.04" r="2.6" fill="#c2410c"/>
+<line x1="482" y1="70" x2="502" y2="70" stroke="#c2410c" stroke-width="2"/>
+<text x="508" y="74">midpoint</text>
+<path d="M470.00,223.42 L381.21,264.71 L292.43,307.13 L203.64,350.07" fill="none" stroke="#15803d" stroke-width="1.8"/>
+<circle cx="470.00" cy="223.42" r="2.6" fill="#15803d"/>
+<circle cx="381.21" cy="264.71" r="2.6" fill="#15803d"/>
+<circle cx="292.43" cy="307.13" r="2.6" fill="#15803d"/>
+<circle cx="203.64" cy="350.07" r="2.6" fill="#15803d"/>
+<line x1="482" y1="88" x2="502" y2="88" stroke="#15803d" stroke-width="2"/>
+<text x="508" y="92">rk4</text>
+</svg>

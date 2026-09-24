@@ -1,0 +1,20 @@
+{
+ "clock": "time.perf_counter / time.process_time",
+ "cpu_s_per_trajectory": [
+  0.055417062000003625,
+  0.0548609880000015,
+  0.05510830100000419,
+  0.055515791999994235,
+  0.055733466000006615,
+  0.056507210999996005
+ ],
+ "note": "Elapsed and process CPU time of this run only; not reproducible and not an energy measurement.",
+ "wall_s_per_trajectory": [
+  0.05541705599898705,
+  0.05485954300092999,
+  0.05510669599971152,
+  0.05551296300109243,
+  0.05573130100310664,
+  0.05650559900095686
+ ]
+}

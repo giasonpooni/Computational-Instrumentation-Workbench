@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420" font-family="sans-serif" font-size="11">
+<rect width="640" height="420" fill="#ffffff"/>
+<text x="78" y="22" font-size="13" font-weight="bold">HyperbolicPlane(k), L = 2: steps versus k</text>
+<rect x="78" y="40" width="392" height="322" fill="none" stroke="#333"/>
+<line x1="78.00" y1="40" x2="78.00" y2="362" stroke="#e5e7eb"/>
+<text x="78.00" y="378" text-anchor="middle">1e0</text>
+<line x1="78" y1="350.07" x2="470" y2="350.07" stroke="#e5e7eb"/>
+<text x="72" y="354.07" text-anchor="end">1e0</text>
+<line x1="78" y1="280.19" x2="470" y2="280.19" stroke="#e5e7eb"/>
+<text x="72" y="284.19" text-anchor="end">1e1</text>
+<line x1="78" y1="210.32" x2="470" y2="210.32" stroke="#e5e7eb"/>
+<text x="72" y="214.32" text-anchor="end">1e2</text>
+<line x1="78" y1="140.44" x2="470" y2="140.44" stroke="#e5e7eb"/>
+<text x="72" y="144.44" text-anchor="end">1e3</text>
+<line x1="78" y1="70.56" x2="470" y2="70.56" stroke="#e5e7eb"/>
+<text x="72" y="74.56" text-anchor="end">1e4</text>
+<text x="274.00" y="406" text-anchor="middle">k (K = -k^2)</text>
+<text x="16" y="201.00" text-anchor="middle" transform="rotate(-90 16 201.00)">steps</text>
+<path d="M78.00,254.92 L208.67,229.02 L339.33,203.06 L470.00,176.67" fill="none" stroke="#1f5fa8" stroke-width="1.8"/>
+<circle cx="78.00" cy="254.92" r="2.6" fill="#1f5fa8"/>
+<circle cx="208.67" cy="229.02" r="2.6" fill="#1f5fa8"/>
+<circle cx="339.33" cy="203.06" r="2.6" fill="#1f5fa8"/>
+<circle cx="470.00" cy="176.67" r="2.6" fill="#1f5fa8"/>
+<line x1="482" y1="52" x2="502" y2="52" stroke="#1f5fa8" stroke-width="2"/>
+<text x="508" y="56">RK4 steps for rel. error 1e-6</text>
+<path d="M78.00,146.02 L208.67,115.01 L339.33,83.48 L470.00,51.93" fill="none" stroke="#c2410c" stroke-width="1.8"/>
+<circle cx="78.00" cy="146.02" r="2.6" fill="#c2410c"/>
+<circle cx="208.67" cy="115.01" r="2.6" fill="#c2410c"/>
+<circle cx="339.33" cy="83.48" r="2.6" fill="#c2410c"/>
+<circle cx="470.00" cy="51.93" r="2.6" fill="#c2410c"/>
+<line x1="482" y1="70" x2="502" y2="70" stroke="#c2410c" stroke-width="2"/>
+<text x="508" y="74">implicit midpoint steps</text>
+<path d="M78.00,267.89 L208.67,242.18 L339.33,215.97 L470.00,189.89" fill="none" stroke="#15803d" stroke-width="1.8"/>
+<circle cx="78.00" cy="267.89" r="2.6" fill="#15803d"/>
+<circle cx="208.67" cy="242.18" r="2.6" fill="#15803d"/>
+<circle cx="339.33" cy="215.97" r="2.6" fill="#15803d"/>
+<circle cx="470.00" cy="189.89" r="2.6" fill="#15803d"/>
+<line x1="482" y1="88" x2="502" y2="88" stroke="#15803d" stroke-width="2"/>
+<text x="508" y="92">2-stage Gauss-Legendre steps</text>
+<path d="M78.00,216.71 L208.67,195.67 L339.33,176.97 L470.00,161.17" fill="none" stroke="#7e22ce" stroke-width="1.8"/>
+<circle cx="78.00" cy="216.71" r="2.6" fill="#7e22ce"/>
+<circle cx="208.67" cy="195.67" r="2.6" fill="#7e22ce"/>
+<circle cx="339.33" cy="176.97" r="2.6" fill="#7e22ce"/>
+<circle cx="470.00" cy="161.17" r="2.6" fill="#7e22ce"/>
+<line x1="482" y1="106" x2="502" y2="106" stroke="#7e22ce" stroke-width="2"/>
+<text x="508" y="110">DP45 accepted steps (rtol 1e-10)</text>
+<path d="M78.00,350.07 L208.67,329.04 L339.33,316.73 L470.00,295.70" fill="none" stroke="#b91c1c" stroke-width="1.8"/>
+<circle cx="78.00" cy="350.07" r="2.6" fill="#b91c1c"/>
+<circle cx="208.67" cy="329.04" r="2.6" fill="#b91c1c"/>
+<circle cx="339.33" cy="316.73" r="2.6" fill="#b91c1c"/>
+<circle cx="470.00" cy="295.70" r="2.6" fill="#b91c1c"/>
+<line x1="482" y1="124" x2="502" y2="124" stroke="#b91c1c" stroke-width="2"/>
+<text x="508" y="128">RK4 stability limit</text>
+</svg>

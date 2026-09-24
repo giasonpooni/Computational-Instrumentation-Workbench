@@ -1,0 +1,205 @@
+{
+ "binary64_undercounts": 4,
+ "census": {
+  "1": 121,
+  "2": 22,
+  "4": 1
+ },
+ "cut_locus": {
+  "arc-boundary": {
+   "sum_k_minus_2": 2,
+   "vertices": [
+    [
+     "3/8",
+     "3/8",
+     3
+    ],
+    [
+     "5/8",
+     "5/8",
+     3
+    ]
+   ]
+  },
+  "generic": {
+   "sum_k_minus_2": 2,
+   "vertices": [
+    [
+     "21/62",
+     "25/62",
+     3
+    ],
+    [
+     "41/62",
+     "37/62",
+     3
+    ]
+   ]
+  },
+  "hexagonal": {
+   "sum_k_minus_2": 2,
+   "vertices": [
+    [
+     "1/3",
+     "1/3",
+     3
+    ],
+    [
+     "2/3",
+     "2/3",
+     3
+    ]
+   ]
+  },
+  "rectangular": {
+   "sum_k_minus_2": 2,
+   "vertices": [
+    [
+     "1/2",
+     "1/2",
+     4
+    ]
+   ]
+  },
+  "square": {
+   "sum_k_minus_2": 2,
+   "vertices": [
+    [
+     "1/2",
+     "1/2",
+     4
+    ]
+   ]
+  },
+  "vertical-boundary": {
+   "sum_k_minus_2": 2,
+   "vertices": [
+    [
+     "5/18",
+     "4/9",
+     3
+    ],
+    [
+     "13/18",
+     "5/9",
+     3
+    ]
+   ]
+  }
+ },
+ "float_counterexample": {
+  "binary64": 2,
+  "epsilon": "2^-60",
+  "exact": 1,
+  "exact_of_rounded_target": 2
+ },
+ "grid": 12,
+ "half_periods": {
+  "(0, 1/2)": 2,
+  "(1/2, 0)": 2,
+  "(1/2, 1/2)": 4,
+  "(1/3, 1/5)": 1
+ },
+ "non_representable_ties": [
+  {
+   "binary64": 2,
+   "exact": 3,
+   "lattice": "generic",
+   "target": [
+    "21/62",
+    "25/62"
+   ],
+   "tolerance": 3
+  },
+  {
+   "binary64": 2,
+   "exact": 3,
+   "lattice": "generic",
+   "target": [
+    "41/62",
+    "37/62"
+   ],
+   "tolerance": 3
+  },
+  {
+   "binary64": 3,
+   "exact": 3,
+   "lattice": "vertical-boundary",
+   "target": [
+    "5/18",
+    "4/9"
+   ],
+   "tolerance": 3
+  },
+  {
+   "binary64": 3,
+   "exact": 3,
+   "lattice": "vertical-boundary",
+   "target": [
+    "13/18",
+    "5/9"
+   ],
+   "tolerance": 3
+  },
+  {
+   "binary64": 1,
+   "exact": 3,
+   "lattice": "hexagonal",
+   "target": [
+    "1/3",
+    "1/3"
+   ],
+   "tolerance": 3
+  },
+  {
+   "binary64": 2,
+   "exact": 3,
+   "lattice": "hexagonal",
+   "target": [
+    "2/3",
+    "2/3"
+   ],
+   "tolerance": 3
+  }
+ ],
+ "rel_tol": 1e-09,
+ "tolerance_band": [
+  {
+   "epsilon": 1e-06,
+   "exact_multiplicity": 1,
+   "tolerance_multiplicity": 1,
+   "verdict": "unique"
+  },
+  {
+   "epsilon": 1e-08,
+   "exact_multiplicity": 1,
+   "tolerance_multiplicity": 1,
+   "verdict": "unique"
+  },
+  {
+   "epsilon": 1e-10,
+   "exact_multiplicity": 1,
+   "tolerance_multiplicity": 2,
+   "verdict": "ambiguous within tolerance"
+  },
+  {
+   "epsilon": 1e-12,
+   "exact_multiplicity": 1,
+   "tolerance_multiplicity": 2,
+   "verdict": "ambiguous within tolerance"
+  },
+  {
+   "epsilon": 8.673617379884035e-19,
+   "exact_multiplicity": 1,
+   "tolerance_multiplicity": 2,
+   "verdict": "ambiguous within tolerance"
+  },
+  {
+   "epsilon": 0.0,
+   "exact_multiplicity": 2,
+   "tolerance_multiplicity": 2,
+   "verdict": "tie"
+  }
+ ],
+ "tolerance_undercounts": 0
+}

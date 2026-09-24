@@ -1,0 +1,362 @@
+{
+ "changed_files": [
+  "src/ciw/lab/flat_torus_topology.py",
+  "src/ciw/lab/flat_torus_topology_lattice.py",
+  "src/ciw/lab/flat_torus_topology_provider.py",
+  "docs/lab/FLAT_TORUS_TOPOLOGY.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 2,
+   "not_established": 0,
+   "numerically_verified": 2,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Canonical form, det G (squared area) and the automorphism group are invariant under SL(2,Z).",
+ "experiment": "Transform each lattice by every enumerated matrix and every random word, reduce exactly, compare with the canonical form; count closed-domain reduced bases; exercise refusals; optionally compare float folds with the pinned FTR provider.",
+ "failure_modes_checked": [
+  "non-unimodular basis change (det 2) refused",
+  "orientation reversal (det -1) refused",
+  "non-integer basis change refused",
+  "boundary conventions (b >= 0 on |2b| = a or a = c)",
+  "large-entry words (exact integers, no overflow)"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "exact reduction failures (inverse, area, canonical form, reducer, automorphism)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "independent_check": {
+     "checker": {
+      "implementation": "sympy",
+      "revision": "1.14.0"
+     },
+     "comparison": "abs_le",
+     "observed": 0.0,
+     "passed": true,
+     "producer": {
+      "implementation": "ciw.lab.flat_torus_topology",
+      "revision": "ciw 0.1.0"
+     },
+     "reference": "sympy vector-form Lagrange reduction of all 3048 bases and words: canonical form, equality with canonical(G) and ciw's form, boundary rule, det 1",
+     "reference_kind": "exact_arithmetic",
+     "tolerance": 0.0
+    }
+   },
+   "claim": "Every enumerated SL(2,Z) basis and every random word reduces exactly to the same canonical Gram form",
+   "domain": "mathematical",
+   "evidence_status": "independently_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "integer, Fraction or Q(sqrt d) arithmetic; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "failures": {
+     "area": 0,
+     "automorphism": 0,
+     "inverse": 0,
+     "reducer": 0,
+     "reduction": 0
+    },
+    "reductions": 3048
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "count mismatches against prediction",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "derivation": "Stabilizers in SL(2,Z): +-I generically, order 4 at i, order 6 at exp(i pi/3); boundary points have two representatives in the closed domain"
+   },
+   "claim": "Number of reduced bases equals the predicted stabilizer count (2 generic, 4 boundary or square, 12 hexagonal)",
+   "domain": "mathematical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "integer, Fraction or Q(sqrt d) arithmetic; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "arc-boundary": 4,
+    "generic": 2,
+    "hexagonal": 12,
+    "rectangular": 2,
+    "square": 4,
+    "vertical-boundary": 4
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "BASIS_CHANGE_NOT_UNIMODULAR",
+      "observed_refusal": "BASIS_CHANGE_NOT_UNIMODULAR",
+      "passed": true,
+      "reference": "lat.transform with det 2",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "BASIS_CHANGE_REVERSES_ORIENTATION",
+      "observed_refusal": "BASIS_CHANGE_REVERSES_ORIENTATION",
+      "passed": true,
+      "reference": "lat.transform with det -1",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "BASIS_CHANGE_NOT_INTEGER",
+      "observed_refusal": "BASIS_CHANGE_NOT_INTEGER",
+      "passed": true,
+      "reference": "lat.transform with a non-integer entry",
+      "reference_kind": "refusal"
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "det of the det-2 image over det G (index-2 sublattice has 4x squared area)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Integer matrices with det != 1 are refused as SL(2,Z) basis changes",
+   "counterexample": {
+    "statement": "Any integer change of basis generates the same lattice",
+    "witness": {
+     "canonical": [
+      "5",
+      "2",
+      "7"
+     ],
+     "gram": [
+      5,
+      2,
+      7
+     ],
+     "image_canonical": [
+      "7",
+      "3",
+      "19"
+     ],
+     "matrix": [
+      [
+       2,
+       0
+      ],
+      [
+       0,
+       1
+      ]
+     ]
+    }
+   },
+   "domain": "mathematical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "integer, Fraction or Q(sqrt d) arithmetic; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "det -1 (orientation reversal)": "BASIS_CHANGE_REVERSES_ORIENTATION",
+    "det 2 (index-2 sublattice)": "BASIS_CHANGE_NOT_UNIMODULAR",
+    "non-integer": "BASIS_CHANGE_NOT_INTEGER"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "matrix mismatches up to -I",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 1.1276768955341516e-12,
+      "passed": true,
+      "reference": "reduction recovers the declared reduced tau",
+      "reference_kind": "invariant",
+      "tolerance": 1e-09
+     }
+    ],
+    "independent_check": {
+     "checker": {
+      "implementation": "Flat-Torus-Geodesic-Reference@dc918562cd9e",
+      "revision": "dc918562cd9e351a65475d29f46963c9f2fd7db8"
+     },
+     "comparison": "abs_le",
+     "observed": 1.1304854779871473e-12,
+     "passed": true,
+     "producer": {
+      "implementation": "ciw.lab.flat_torus_topology",
+      "revision": "ciw 0.1.0"
+     },
+     "reference": "FTR reduced tau",
+     "reference_kind": "high_precision",
+     "tolerance": 1e-09
+    },
+    "provider": {
+     "executed": true,
+     "repository": "giasonpooni/Flat-Torus-Geodesic-Reference",
+     "revision": "dc918562cd9e351a65475d29f46963c9f2fd7db8",
+     "source_tree": "1f082c6b443f2e301ac5889122912f26968ae756"
+    }
+   },
+   "claim": "Float Gauss reduction agrees with the pinned FTR fold_to_fundamental_domain on reduced tau and the reducing SL(2,Z) matrix (up to -I)",
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "binary64 Mobius images of seeded words reduced by two float implementations",
+    "kind": "roundoff",
+    "value": 1.1304854779871473e-12
+   },
+   "unit": null,
+   "value": {
+    "cases": 12,
+    "matrix_mismatches": 0,
+    "max_tau_difference": 1.1304854779871473e-12
+   }
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 6823,
+   "path": "artifacts/T019/lattice-reduction.json",
+   "sha256": "dd9a3ec6ba7f8524357c8697f13427d3838866e7c724799e7a42861437b95119"
+  },
+  {
+   "bytes": 10046,
+   "path": "artifacts/T019/ftr-folds.json",
+   "sha256": "720eff8d7882ba200682c0f63056021ce073b236002dd4c54afd4bfb57c1911a"
+  }
+ ],
+ "hypothesis": "Every SL(2,Z) change of basis of a lattice reduces, by exact Gauss/Lagrange reduction, to one canonical Gram form; the number of reduced bases equals the stabilizer count predicted by the position of tau in the closed fundamental domain; non-unimodular or orientation-reversing matrices are refused.",
+ "input_data": [
+  "Integer Gram matrices {'generic': (5, 2, 7), 'vertical-boundary': (2, 1, 5), 'arc-boundary': (3, 1, 3), 'square': (1, 0, 1), 'hexagonal': (2, 1, 2), 'rectangular': (1, 0, 3)}",
+  "All 308 SL(2,Z) matrices with entries in [-5, 5]",
+  "200 seeded random S/T^k words of length 12 (PCG64 seed 19)"
+ ],
+ "mathematical_model": "Lattice Lambda = Z w1 + Z w2 carried by its Gram matrix G = B^T B; basis change B' = B M acts as G' = M^T G M; canonical form |2b| <= a <= c with b >= 0 on the boundary; tau = (b + i sqrt(det G)) / a.",
+ "number": 19,
+ "numerical_result": "0 failures over 3048 exact reductions; reduced-basis counts {'generic': 2, 'vertical-boundary': 4, 'arc-boundary': 4, 'square': 4, 'hexagonal': 12, 'rectangular': 2} match predictions {'generic': 2, 'vertical-boundary': 4, 'arc-boundary': 4, 'square': 4, 'hexagonal': 12, 'rectangular': 2}.",
+ "observation_model": "No physical observation: exact or floating-point computation on declared mathematical objects.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "producer": "ciw.lab.flat_torus_topology",
+  "provider": {
+   "dirty": false,
+   "entry_points": [
+    "flat_torus.fold.fold_to_fundamental_domain",
+    "flat_torus.lengths.loop_length",
+    "flat_torus.trajectories.trace_closed_geodesic",
+    "flat_torus.lattice.normalized_lattice"
+   ],
+   "executed": true,
+   "interpreter": "<ftr-python>",
+   "numpy": "2.4.3",
+   "python": "3.12.3",
+   "repository": "giasonpooni/Flat-Torus-Geodesic-Reference",
+   "revision": "dc918562cd9e351a65475d29f46963c9f2fd7db8",
+   "source_tree": "1f082c6b443f2e301ac5889122912f26968ae756"
+  },
+  "python": "3.12.3",
+  "requirement_probes": {
+   "module:sympy": true
+  },
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/flat_torus_topology.py": "4d8cf2437759501a1b9fa5ee0d8abfac43345ebee378c6ad08233e9155d4b184",
+   "src/ciw/lab/flat_torus_topology_lattice.py": "15a33fcd29591e43dec16fa3b9ad26d6b6b86846872e9e6bf815508fb0dade63",
+   "src/ciw/lab/flat_torus_topology_provider.py": "30fa38e51a20bc8d01beea0e5c44da69f22d7059c04c92c1fea520e5cf6f8806"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T026: test modular-reduction invariance of length spectrum, area and systole",
+ "report_id": "sha256:7962325e01bdf135320ceaf258860c017e671405ca501a0b563e93f453f9540c",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "flat-torus-topology",
+ "state": "completed",
+ "task_id": "T019",
+ "tests_passed": [
+  "check: Every enumerated SL(2,Z) basis and every random word reduces exactly to the same canonical Gram form vs exact reduction failures (inverse, area, canonical form, reducer, automorphism)",
+  "independent: Every enumerated SL(2,Z) basis and every random word reduces exactly to the same canonical Gram form vs sympy",
+  "check: Number of reduced bases equals the predicted stabilizer count (2 generic, 4 boundary or square, 12 hexagonal) vs count mismatches against prediction",
+  "check: Integer matrices with det != 1 are refused as SL(2,Z) basis changes vs lat.transform with det 2",
+  "check: Integer matrices with det != 1 are refused as SL(2,Z) basis changes vs lat.transform with det -1",
+  "check: Integer matrices with det != 1 are refused as SL(2,Z) basis changes vs lat.transform with a non-integer entry",
+  "check: Integer matrices with det != 1 are refused as SL(2,Z) basis changes vs det of the det-2 image over det G (index-2 sublattice has 4x squared area)",
+  "check: Float Gauss reduction agrees with the pinned FTR fold_to_fundamental_domain on reduced tau and the reducing SL(2,Z) matrix (up to -I) vs matrix mismatches up to -I",
+  "check: Float Gauss reduction agrees with the pinned FTR fold_to_fundamental_domain on reduced tau and the reducing SL(2,Z) matrix (up to -I) vs reduction recovers the declared reduced tau",
+  "independent: Float Gauss reduction agrees with the pinned FTR fold_to_fundamental_domain on reduced tau and the reducing SL(2,Z) matrix (up to -I) vs Flat-Torus-Geodesic-Reference@dc918562cd9e",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_t019_reduction_and_refusals",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_gauss_reduction_is_exact",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_sympy_reduction_check_detects_a_wrong_boundary_rule",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_ftr_refusal_makes_task_partial",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_provider_output_is_refused_when_unreadable_or_incomplete",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_ftr_provider_agreement",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+ ],
+ "tests_skipped": [],
+ "title": "Enumerate equivalent lattice representatives.",
+ "uncertainty": "Exact integer/rational arithmetic: no rounding. Provider comparisons are float with tolerance 1e-9.",
+ "unresolved_assumptions": [
+  "Automorphism counts are checked for six declared lattices, not proven for all lattices here (the general statement is the classical stabilizer theorem).",
+  "The pinned FTR comparison is optional (bind --provider ftr=<checkout> --provider ftr-python=<Python 3.12 interpreter>); its finding records whether it ran."
+ ]
+}

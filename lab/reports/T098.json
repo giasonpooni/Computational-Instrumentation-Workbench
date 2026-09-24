@@ -1,0 +1,463 @@
+{
+ "changed_files": [
+  "src/ciw/lab/exchange_provenance_bundles.py",
+  "src/ciw/lab/exchange_provenance_bundles_providers.py"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 1,
+   "not_established": 1,
+   "numerically_verified": 4,
+   "provider_backed": 1,
+   "synthetic": 0
+  },
+  "primary": "provider_backed"
+ },
+ "expected_invariant": "HEAD equals a CIW pin; pinned trees equal; recomputed tree equals Git's; digests stable.",
+ "experiment": "For each bound role read HEAD and tree, hash every tracked file, recompute the tree independently of Git, compare with every CIW pin for that role (refusing mismatches with their reasons), and let CIW's own adapter accept or refuse each module pin; execute the SCR engine once on the survey input when available.",
+ "failure_modes_checked": [
+  "dirty or untracked files",
+  "wrong revision",
+  "pinned tree drift",
+  "modified tracked bytes",
+  "executable-bit drift",
+  "one checkout serving several different CIW pins",
+  "adapter accepting a wrong pin"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "declared-workload and proved-heat SCR pins that differ",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 2.0,
+      "passed": true,
+      "reference": "distinct SCR revisions declared across CIW",
+      "reference_kind": "invariant",
+      "tolerance": 2.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 4.0,
+      "passed": true,
+      "reference": "distinct SET revisions declared across CIW",
+      "reference_kind": "invariant",
+      "tolerance": 2.0
+     }
+    ]
+   },
+   "claim": "The declared-workload and proved-heat workflows pin one SCR revision, while CIW declares more than one revision of SCR and of SET across its workflows",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact counts, digests and string comparisons; no rounding is involved",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": {
+    "scr_revisions": {
+     "5f0409743e0098a0691a88302a9b3dcdcbcf25fd": [
+      ".github/workflows/exchange.yml"
+     ],
+     "a59aba283b0304faeeb3e5d305087e7709e171ca": [
+      "ciw.declared_workload.PINS[numerical-heat]",
+      "ciw.proved_heat.PIN"
+     ]
+    },
+    "set_revisions": {
+     "1467ec5058b3e7ebd6ba4a45f2d9b49148a2560d": [
+      "ciw/telemetry-runtimes.json[set]"
+     ],
+     "2f838f4e196f453efc3a59045b0b3ec4b5680296": [
+      "ciw/calibrated-window-runtimes.json[set]"
+     ],
+     "542e672be512bf43b61253f2b2a43cd967cb3062": [
+      ".github/workflows/exchange.yml",
+      "ciw/exchange-runtime.json"
+     ],
+     "5e7bda36f521a5c1b0082b512f35e29803bffafc": [
+      "ciw/calibrated-observable-runtimes.json[set]"
+     ]
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "bound checkouts refused against CIW pins",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "bound paths that are not readable Git repository roots",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Every bound provider checkout is clean and at a CIW pin and, where CIW pins one, the pinned tree",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact counts, digests and string comparisons; no rounding is involved",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": {
+    "accepted": {
+     "csg": {
+      "head": "bbc535af29c30997e56fd120320c570830676462",
+      "pins": [
+       "ciw.geodesic_reference.PINS[curved-path-transfer]"
+      ],
+      "tree": "181b6eb73288d001f45c39bb149b1a80a431f34b"
+     },
+     "ftr": {
+      "head": "dc918562cd9e351a65475d29f46963c9f2fd7db8",
+      "pins": [
+       "ciw.geodesic_reference.PINS[flat-torus-reference]"
+      ],
+      "tree": "1f082c6b443f2e301ac5889122912f26968ae756"
+     },
+     "scr": {
+      "head": "a59aba283b0304faeeb3e5d305087e7709e171ca",
+      "pins": [
+       "ciw.declared_workload.PINS[numerical-heat]",
+       "ciw.proved_heat.PIN"
+      ],
+      "tree": "4068a711534932e8d89bb0d87d373376dafdf6cd"
+     }
+    },
+    "refused": [],
+    "unreadable": []
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "independent_check": {
+     "checker": {
+      "implementation": "git rev-parse HEAD^{tree}",
+      "revision": "git version 2.43.0"
+     },
+     "comparison": "abs_le",
+     "observed": 0.0,
+     "passed": true,
+     "producer": {
+      "implementation": "ciw.lab.exchange_provenance_bundles_providers.checkout_identity",
+      "revision": "0.1.0"
+     },
+     "reference": "clean checkouts whose recomputed tree differs from git rev-parse HEAD^{tree}",
+     "reference_kind": "exact_arithmetic",
+     "tolerance": 0.0
+    }
+   },
+   "claim": "The working bytes of every clean bound checkout reproduce Git's HEAD tree id",
+   "domain": "provenance",
+   "evidence_status": "independently_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact counts, digests and string comparisons; no rounding is involved",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": {
+    "csg": "181b6eb73288d001f45c39bb149b1a80a431f34b",
+    "ftr": "1f082c6b443f2e301ac5889122912f26968ae756",
+    "scr": "4068a711534932e8d89bb0d87d373376dafdf6cd"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "digests that change on an immediate second read",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Tracked-source and Cargo.lock digests of every readable bound checkout",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact counts, digests and string comparisons; no rounding is involved",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": {
+    "csg": {
+     "cargo_locks": {},
+     "tracked_files": 96,
+     "tracked_sha256": "9a2a9839c6913a4cc23b2f0870da79523915ee7ad0a8a465f28a31049d6e99d7"
+    },
+    "ftr": {
+     "cargo_locks": {},
+     "tracked_files": 50,
+     "tracked_sha256": "57f05deef7dc59dc42989bf438cf8f53a66c3d788d8583c806855864e71d7dac"
+    },
+    "scr": {
+     "cargo_locks": {
+      "crates/Cargo.lock": "24b1db68d762d3457eb40465dae6c3edc8a2da2925d42f3f794d090d18a5f2bc",
+      "zk/Cargo.lock": "d306d736c6212b081f441057318041f6b82e64e46348e81ec0f2a36529308613",
+      "zk/guest-heat-nexus/Cargo.lock": "21009e13c513af590adb03b25d67b779af5e5c67c25da19f08787e0134416345",
+      "zk/guest-heat-risc0/Cargo.lock": "d98241e518f939795dbaef44c5430db005a7c30f26ac0db99163ab66bfa8a81d",
+      "zk/guest-heat/Cargo.lock": "a3a91548ec428e26e69445b84d6215b85ec416f84cb160e810cde5fd9a075eea",
+      "zk/guest-pairwise-nexus/Cargo.lock": "314ae7ce66a002ae9c7067acaa1453405469f17383f19bfff8af286c608d37fb",
+      "zk/guest-pairwise/Cargo.lock": "1257bd33d7f18a625b33c4367c782824e5bf3e76a21d49a989c987fcf7a434a8",
+      "zk/nexus/Cargo.lock": "5231c9bfb2f4f93e985fcee0e534a98069f0f5a5ad3c6b0ed357418f6dcf4201",
+      "zk/risc0/Cargo.lock": "589ae1270f71de9e745efac59a6cb6d822c5825d8386ada8e342b242237e2054"
+     },
+     "tracked_files": 511,
+     "tracked_sha256": "b1c1ef22c6de60ecf1d348eff896b9e10ca62e9cff3af06e59b269dda7e455ea"
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "accepted",
+      "observed_refusal": "accepted",
+      "passed": true,
+      "reference": "csg against ciw.geodesic_reference.PINS[curved-path-transfer]",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "accepted",
+      "observed_refusal": "accepted",
+      "passed": true,
+      "reference": "ftr against ciw.geodesic_reference.PINS[flat-torus-reference]",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "accepted",
+      "observed_refusal": "accepted",
+      "passed": true,
+      "reference": "scr against ciw.declared_workload.PINS[numerical-heat]",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "accepted",
+      "observed_refusal": "accepted",
+      "passed": true,
+      "reference": "scr against ciw.proved_heat.PIN",
+      "reference_kind": "refusal"
+     }
+    ]
+   },
+   "claim": "CIW's pinned subprocess adapter accepts each clean bound checkout for the module pins at its HEAD and refuses it for every other module pin",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact counts, digests and string comparisons; no rounding is involved",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": {
+    "csg": {
+     "at_head": [
+      "ciw.geodesic_reference.PINS[curved-path-transfer]"
+     ],
+     "refused": []
+    },
+    "ftr": {
+     "at_head": [
+      "ciw.geodesic_reference.PINS[flat-torus-reference]"
+     ],
+     "refused": []
+    },
+    "scr": {
+     "at_head": [
+      "ciw.declared_workload.PINS[numerical-heat]",
+      "ciw.proved_heat.PIN"
+     ],
+     "refused": []
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": {
+     "engine_origin": "cargo_build_locked_offline_in_this_run",
+     "engine_sha256": "b9f40b3094ecf4b793676c766ffd559dc69abc4fada564c1bde94e79c6f0b201",
+     "engine_source_binding": "built_from_the_bound_checkout_in_this_run"
+    },
+    "provider": {
+     "executed": true,
+     "repository": "giasonpooni/Scientific-Computation-Runtime",
+     "revision": "a59aba283b0304faeeb3e5d305087e7709e171ca",
+     "runtime_digest": "sha256:b9f40b3094ecf4b793676c766ffd559dc69abc4fada564c1bde94e79c6f0b201",
+     "source_tree": "4068a711534932e8d89bb0d87d373376dafdf6cd"
+    }
+   },
+   "claim": "The SCR engine recorded for this run executes the SCR heat descriptor on the survey input",
+   "domain": "numerical",
+   "evidence_status": "provider_backed",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact int64 arithmetic compared cell by cell",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": {
+    "cargo_lock_sha256": "24b1db68d762d3457eb40465dae6c3edc8a2da2925d42f3f794d090d18a5f2bc",
+    "descriptor_sha256": "223827f3570c6a265a172ddd08d4f6eb7ab5e73c87398087410fad988893d234",
+    "engine_origin": "cargo_build_locked_offline_in_this_run",
+    "survey_output": [
+     0,
+     219,
+     313,
+     219,
+     0
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "A matching HEAD, tree and lock digest authenticates the upstream repository, toolchain and built engine",
+   "domain": "provenance",
+   "evidence_status": "not_established",
+   "expected_not_established": true,
+   "uncertainty": null,
+   "unit": null,
+   "value": "not established: digests are not signatures"
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 12843,
+   "path": "artifacts/T098/provider-identities.json",
+   "sha256": "0dafa6649d019d314e21e5509cb0665635a4e02e7f893d7e0edd8c3993acea08"
+  }
+ ],
+ "hypothesis": "Every bound provider checkout is clean and at a CIW pin; its working bytes reproduce its Git tree; its lockfiles and the engine used in this run are recorded.",
+ "input_data": [
+  "csg: giasonpooni/Curved-Surface-Geodesic-Sensitivity-Runtime at bbc535af29c30997e56fd120320c570830676462",
+  "ftr: giasonpooni/Flat-Torus-Geodesic-Reference at dc918562cd9e351a65475d29f46963c9f2fd7db8",
+  "scr: giasonpooni/Scientific-Computation-Runtime at a59aba283b0304faeeb3e5d305087e7709e171ca"
+ ],
+ "mathematical_model": "Git object ids: blob = H('blob' len NUL bytes), tree = H('tree' len NUL sorted(mode name NUL id)); tracked digest = SHA-256 over 'mode kind sha256(bytes) path' lines in ls-tree order.",
+ "number": 98,
+ "numerical_result": "accepted ['csg', 'ftr', 'scr'], refused [], unreadable []; 0 tree recomputation mismatches among clean checkouts; adapter refusals for []; engine cargo_build_locked_offline_in_this_run.",
+ "observation_model": "git rev-parse, git ls-tree, working-tree bytes, CIW pin tables, PinnedSubprocessAdapter outcomes.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw": {
+   "ciw_version": "0.1.0",
+   "implementation": "ciw.lab",
+   "mpmath": "1.3.0",
+   "numpy": "2.4.3",
+   "python": "3.12.3",
+   "scipy": "1.16.2",
+   "sources": {
+    "src/ciw/lab/exchange_provenance_bundles.py": "a505b35560263c1b473912f79e61b15b7e474f8eb1807e691847e4c69791c2d3",
+    "src/ciw/lab/exchange_provenance_bundles_providers.py": "c9a30c9dc0751a22ff578a8c9a01abf06df582a1f1e835c1f1c0c33ed176f94b"
+   },
+   "sympy": "1.14.0"
+  },
+  "csg": {
+   "head": "bbc535af29c30997e56fd120320c570830676462",
+   "tree": "181b6eb73288d001f45c39bb149b1a80a431f34b"
+  },
+  "ftr": {
+   "head": "dc918562cd9e351a65475d29f46963c9f2fd7db8",
+   "tree": "1f082c6b443f2e301ac5889122912f26968ae756"
+  },
+  "requirement_probes": {
+   "tool:cargo": true
+  },
+  "scr": {
+   "engine_sha256": "b9f40b3094ecf4b793676c766ffd559dc69abc4fada564c1bde94e79c6f0b201",
+   "head": "a59aba283b0304faeeb3e5d305087e7709e171ca",
+   "tree": "4068a711534932e8d89bb0d87d373376dafdf6cd"
+  }
+ },
+ "recommended_next_task": "T099: verify the locked offline SCR build and record the SP1 build requirements.",
+ "report_id": "sha256:d754c46df8bd0b0e25e8ad6882d06fbc97b8850d541bc89bedd763af985f0ac6",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "exchange-provenance",
+ "state": "completed",
+ "task_id": "T098",
+ "tests_passed": [
+  "check: The declared-workload and proved-heat workflows pin one SCR revision, while CIW declares more than one revision of SCR and of SET across its workflows vs declared-workload and proved-heat SCR pins that differ",
+  "check: The declared-workload and proved-heat workflows pin one SCR revision, while CIW declares more than one revision of SCR and of SET across its workflows vs distinct SCR revisions declared across CIW",
+  "check: The declared-workload and proved-heat workflows pin one SCR revision, while CIW declares more than one revision of SCR and of SET across its workflows vs distinct SET revisions declared across CIW",
+  "check: Every bound provider checkout is clean and at a CIW pin and, where CIW pins one, the pinned tree vs bound checkouts refused against CIW pins",
+  "check: Every bound provider checkout is clean and at a CIW pin and, where CIW pins one, the pinned tree vs bound paths that are not readable Git repository roots",
+  "independent: The working bytes of every clean bound checkout reproduce Git's HEAD tree id vs git rev-parse HEAD^{tree}",
+  "check: Tracked-source and Cargo.lock digests of every readable bound checkout vs digests that change on an immediate second read",
+  "check: CIW's pinned subprocess adapter accepts each clean bound checkout for the module pins at its HEAD and refuses it for every other module pin vs csg against ciw.geodesic_reference.PINS[curved-path-transfer]",
+  "check: CIW's pinned subprocess adapter accepts each clean bound checkout for the module pins at its HEAD and refuses it for every other module pin vs ftr against ciw.geodesic_reference.PINS[flat-torus-reference]",
+  "check: CIW's pinned subprocess adapter accepts each clean bound checkout for the module pins at its HEAD and refuses it for every other module pin vs scr against ciw.declared_workload.PINS[numerical-heat]",
+  "check: CIW's pinned subprocess adapter accepts each clean bound checkout for the module pins at its HEAD and refuses it for every other module pin vs scr against ciw.proved_heat.PIN",
+  "pytest: tests/test_lab_exchange_provenance_bundles.py::test_t098_provider_identities",
+  "pytest: tests/test_lab_exchange_provenance_bundles.py::test_t098_refuses_an_unpinned_checkout_and_is_location_independent",
+  "pytest: tests/test_lab_exchange_provenance_bundles.py::test_tree_recomputation_matches_git_on_a_synthetic_repository"
+ ],
+ "tests_skipped": [],
+ "title": "Record provider HEAD, tree, source hash, lockfile, and engine digest.",
+ "uncertainty": "Exact digests.",
+ "unresolved_assumptions": [
+  "Engine and interpreter digests depend on the toolchain; they are retained as provenance in the artifact and the basis notes, not compared as regression values.",
+  "Pins declared only in .github/workflows/exchange.yml are mirrored in EXCHANGE_WORKFLOW_PINS.",
+  "Checkout paths are kept in provider-identities.json only; report prose names repositories and revisions."
+ ]
+}

@@ -1,0 +1,163 @@
+{
+ "blocked": [],
+ "engine": {
+  "origin": "cargo_build_locked_offline_in_this_run",
+  "sha256": "b9f40b3094ecf4b793676c766ffd559dc69abc4fada564c1bde94e79c6f0b201"
+ },
+ "optional_providers": {
+  "ppda": {
+   "reason": "no ppda checkout bound (needs Provenance-Preserving-Data-Acquisition at a29845e13e55de30b24ae752b896058041d653e6)",
+   "state": "not_bound"
+  },
+  "scr-exchange": {
+   "reason": "no scr-exchange checkout bound (needs Scientific-Computation-Runtime at 5f0409743e0098a0691a88302a9b3dcdcbcf25fd)",
+   "state": "not_bound"
+  },
+  "set": {
+   "reason": "no set checkout bound (needs State-Estimation-Evaluation-Testbed at 542e672be512bf43b61253f2b2a43cd967cb3062)",
+   "state": "not_bound"
+  }
+ },
+ "parts": {
+  "api": {
+   "cases": [
+    {
+     "exit_code": 0,
+     "status": "completed",
+     "values": [
+      0,
+      219,
+      313,
+      219,
+      0
+     ]
+    },
+    {
+     "exit_code": 0,
+     "status": "completed",
+     "values": [
+      0,
+      16,
+      24,
+      16,
+      0
+     ]
+    },
+    {
+     "exit_code": 0,
+     "status": "completed",
+     "values": [
+      0,
+      -2,
+      0
+     ]
+    },
+    {
+     "exit_code": 0,
+     "status": "completed",
+     "values": [
+      7,
+      1,
+      5
+     ]
+    }
+   ],
+   "descriptor_sha256": "223827f3570c6a265a172ddd08d4f6eb7ab5e73c87398087410fad988893d234"
+  },
+  "workbench": {
+   "reopen_attempts": [],
+   "reopened_available": [
+    "ciw.energy-accuracy.v1"
+   ],
+   "reopened_bindings": [],
+   "runs": [
+    {
+     "bundle_id": "sha256:4bf5df3290fd34a45c63b2dd1f91f9556420614faaa099d003e8ed7222a19ebd",
+     "fresh_occurrences": 4,
+     "initial_values": [
+      0,
+      0,
+      64,
+      0,
+      0
+     ],
+     "label": "Declared integer heat workload (example)",
+     "numerical_identity_equal": true,
+     "replay_numerical_match": true,
+     "replay_values": [
+      0,
+      16,
+      24,
+      16,
+      0
+     ],
+     "runtime": {
+      "adapter_version": "ciw-pinned-subprocess-v1",
+      "dependencies": {
+       "numpy": "2.4.3",
+       "scipy": "1.16.2"
+      },
+      "engine": {
+       "byte_count": 509160,
+       "sha256": "sha256:b9f40b3094ecf4b793676c766ffd559dc69abc4fada564c1bde94e79c6f0b201",
+       "source_binding": "operator_asserted_not_attested"
+      },
+      "module": "execution.engine",
+      "python_executable": "<plsr-python>",
+      "python_sha256": "8295ee25cfdb239f3e165afceda7f46de73e2b606ff0e2e3d8623e3facd30acc",
+      "python_version": "3.12.3",
+      "repository_root": "<scr>",
+      "revision": "a59aba283b0304faeeb3e5d305087e7709e171ca",
+      "schema": "ciw.subprocess-runtime.v1",
+      "source_root": ".",
+      "source_tree": "4068a711534932e8d89bb0d87d373376dafdf6cd"
+     },
+     "steps": 2,
+     "values": [
+      0,
+      16,
+      24,
+      16,
+      0
+     ],
+     "verification_independent": false
+    }
+   ],
+   "unbound_replay": {
+    "code": "operation_unavailable",
+    "message": "No trusted repositories bound for this workbench workflow"
+   },
+   "workspace_mentions_engine_path": false
+  }
+ },
+ "roundtrip_reason": "no ppda checkout bound (needs Provenance-Preserving-Data-Acquisition at a29845e13e55de30b24ae752b896058041d653e6); no scr-exchange checkout bound (needs Scientific-Computation-Runtime at 5f0409743e0098a0691a88302a9b3dcdcbcf25fd); no set checkout bound (needs State-Estimation-Evaluation-Testbed at 542e672be512bf43b61253f2b2a43cd967cb3062)",
+ "scr_identity": {
+  "cargo_locks": {
+   "crates/Cargo.lock": "24b1db68d762d3457eb40465dae6c3edc8a2da2925d42f3f794d090d18a5f2bc",
+   "zk/Cargo.lock": "d306d736c6212b081f441057318041f6b82e64e46348e81ec0f2a36529308613",
+   "zk/guest-heat-nexus/Cargo.lock": "21009e13c513af590adb03b25d67b779af5e5c67c25da19f08787e0134416345",
+   "zk/guest-heat-risc0/Cargo.lock": "d98241e518f939795dbaef44c5430db005a7c30f26ac0db99163ab66bfa8a81d",
+   "zk/guest-heat/Cargo.lock": "a3a91548ec428e26e69445b84d6215b85ec416f84cb160e810cde5fd9a075eea",
+   "zk/guest-pairwise-nexus/Cargo.lock": "314ae7ce66a002ae9c7067acaa1453405469f17383f19bfff8af286c608d37fb",
+   "zk/guest-pairwise/Cargo.lock": "1257bd33d7f18a625b33c4367c782824e5bf3e76a21d49a989c987fcf7a434a8",
+   "zk/nexus/Cargo.lock": "5231c9bfb2f4f93e985fcee0e534a98069f0f5a5ad3c6b0ed357418f6dcf4201",
+   "zk/risc0/Cargo.lock": "589ae1270f71de9e745efac59a6cb6d822c5825d8386ada8e342b242237e2054"
+  },
+  "head": "a59aba283b0304faeeb3e5d305087e7709e171ca",
+  "tracked_files": 511,
+  "tracked_sha256": "b1c1ef22c6de60ecf1d348eff896b9e10ca62e9cff3af06e59b269dda7e455ea",
+  "tree": "4068a711534932e8d89bb0d87d373376dafdf6cd"
+ },
+ "scr_pins": {
+  "accepted": true,
+  "clean": true,
+  "matched": [
+   "ciw.declared_workload.PINS[numerical-heat]",
+   "ciw.proved_heat.PIN"
+  ],
+  "role": "scr",
+  "tree_refusals": [],
+  "unmatched": []
+ },
+ "set_reason": "no set checkout bound (needs State-Estimation-Evaluation-Testbed at 542e672be512bf43b61253f2b2a43cd967cb3062)"
+}

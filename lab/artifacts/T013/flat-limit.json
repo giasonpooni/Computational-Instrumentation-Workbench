@@ -1,0 +1,137 @@
+{
+ "chord_deficit_exponent": -1.9743918816,
+ "chord_deficit_exponent_in_rho": -1.99996776213,
+ "chord_deficit_spread": 0.0607126881154,
+ "deviation_exponent": -0.984720171701,
+ "deviation_exponent_exact": -0.984720171566,
+ "deviation_exponent_in_rho": -0.997485337742,
+ "deviation_spread": 0.0360216407303,
+ "leading_order_exponent": -0.987211949575,
+ "max_chord_deficit_relative_error": 5.13638109823e-09,
+ "max_j_head_relative_error": 4.6585277714e-10,
+ "max_leading_order_relative_gap": 0.0116990114715,
+ "max_relative_error_vs_closed_form": 1.77523418188e-09,
+ "plane_cylinder": {
+  "chord_cylinder": 2.53820811749,
+  "chord_cylinder_exact": 2.53820811749,
+  "chord_plane": 3.0,
+  "heading": 0.6,
+  "helix_chart_error": 1.33226762955e-15,
+  "j_head_minus_s_max": 2.6645352591e-15,
+  "jacobi_max_difference": 0.0,
+  "length": 3.0,
+  "second_form_max_abs_curvature": 0.0
+ },
+ "tori": [
+  {
+   "chord_deficit": 0.0368318192231,
+   "curvature": 0.333333333333,
+   "deviation": 0.415738229114,
+   "exact_chord_deficit": 0.0368318192231,
+   "exact_deviation": 0.415738228376,
+   "j_head_relative_error": 4.6585277714e-10,
+   "leading_order": 0.444444444444,
+   "major": 2.0,
+   "rho": 3.0
+  },
+  {
+   "chord_deficit": 0.0133066920494,
+   "curvature": 0.2,
+   "deviation": 0.256200933846,
+   "exact_chord_deficit": 0.0133066920494,
+   "exact_deviation": 0.256200933442,
+   "j_head_relative_error": 2.31520143027e-10,
+   "leading_order": 0.266666666667,
+   "major": 4.0,
+   "rho": 5.0
+  },
+  {
+   "chord_deficit": 0.00411268682085,
+   "curvature": 0.111111111111,
+   "deviation": 0.144890590946,
+   "exact_chord_deficit": 0.00411268682085,
+   "exact_deviation": 0.144890590791,
+   "j_head_relative_error": 8.36940293648e-11,
+   "leading_order": 0.148148148148,
+   "major": 8.0,
+   "rho": 9.0
+  },
+  {
+   "chord_deficit": 0.00115320300332,
+   "curvature": 0.0588235294118,
+   "deviation": 0.0775138030218,
+   "exact_chord_deficit": 0.00115320300331,
+   "exact_deviation": 0.077513802973,
+   "j_head_relative_error": 2.53915748035e-11,
+   "leading_order": 0.078431372549,
+   "major": 16.0,
+   "rho": 17.0
+  },
+  {
+   "chord_deficit": 0.000306077161716,
+   "curvature": 0.030303030303,
+   "deviation": 0.0401598729613,
+   "exact_chord_deficit": 0.000306077161715,
+   "exact_deviation": 0.0401598729476,
+   "j_head_relative_error": 7.01185691859e-12,
+   "leading_order": 0.040404040404,
+   "major": 32.0,
+   "rho": 33.0
+  },
+  {
+   "chord_deficit": 7.88945298456e-05,
+   "curvature": 0.0153846153846,
+   "deviation": 0.0204497965449,
+   "exact_chord_deficit": 7.8894529842e-05,
+   "exact_deviation": 0.0204497965412,
+   "j_head_relative_error": 1.84394982961e-12,
+   "leading_order": 0.0205128205128,
+   "major": 64.0,
+   "rho": 65.0
+  },
+  {
+   "chord_deficit": 2.00307873175e-05,
+   "curvature": 0.0077519379845,
+   "deviation": 0.0103199044612,
+   "exact_chord_deficit": 2.003078732e-05,
+   "exact_deviation": 0.0103199044603,
+   "j_head_relative_error": 4.72729736087e-13,
+   "leading_order": 0.0103359173127,
+   "major": 128.0,
+   "rho": 129.0
+  },
+  {
+   "chord_deficit": 5.04675439794e-06,
+   "curvature": 0.00389105058366,
+   "deviation": 0.00518403153439,
+   "exact_chord_deficit": 5.0467543944e-06,
+   "exact_deviation": 0.00518403153415,
+   "j_head_relative_error": 1.20215687617e-13,
+   "leading_order": 0.00518806744488,
+   "major": 256.0,
+   "rho": 257.0
+  },
+  {
+   "chord_deficit": 1.26661297495e-06,
+   "curvature": 0.00194931773879,
+   "deviation": 0.00259807721597,
+   "exact_chord_deficit": 1.26661297494e-06,
+   "exact_deviation": 0.00259807721591,
+   "j_head_relative_error": 2.97926789001e-14,
+   "leading_order": 0.00259909031839,
+   "major": 512.0,
+   "rho": 513.0
+  },
+  {
+   "chord_deficit": 3.17271448669e-07,
+   "curvature": 0.000975609756098,
+   "deviation": 0.00130055921456,
+   "exact_chord_deficit": 3.17271450298e-07,
+   "exact_deviation": 0.00130055921454,
+   "j_head_relative_error": 7.77661814857e-15,
+   "leading_order": 0.00130081300813,
+   "major": 1024.0,
+   "rho": 1025.0
+  }
+ ]
+}

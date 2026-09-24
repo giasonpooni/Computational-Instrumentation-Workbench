@@ -1,0 +1,552 @@
+{
+ "acceptance_criteria": [
+  {
+   "id": "H1",
+   "statement": "Measured chord equals the predicted chord for every pair and the surface (tape-measure or unrolled-film) distance equals the predicted geodesic",
+   "status": "hypothesis",
+   "test": "E_n <= 1 with U = 2 u_pair = 0.0566 mm plus the radius term of T140"
+  },
+  {
+   "id": "H2",
+   "statement": "Separation of offset helices is the flat-plate separation",
+   "status": "hypothesis",
+   "test": "fit slope and intercept; compare with the flat-plate control T126"
+  }
+ ],
+ "calibration_artifacts": [
+  {
+   "id": "SB-1000",
+   "kind": "carbon scale bar",
+   "nominal_mm": 1000.0,
+   "use": "photogrammetry scale"
+  },
+  {
+   "id": "GS-25.4",
+   "kind": "ceramic gauge sphere",
+   "nominal_diameter_mm": 25.4,
+   "use": "probe and tracker SMR check"
+  },
+  {
+   "id": "SG-200",
+   "kind": "step gauge",
+   "steps_mm": [
+    10.0,
+    20.0,
+    30.0,
+    40.0,
+    50.0,
+    60.0,
+    70.0,
+    80.0,
+    90.0,
+    100.0,
+    110.0,
+    120.0,
+    130.0,
+    140.0,
+    150.0,
+    160.0,
+    170.0,
+    180.0,
+    190.0,
+    200.0
+   ],
+   "use": "scale error"
+  }
+ ],
+ "datum_frames": [
+  {
+   "constrains": "z translation, rotations about x and y",
+   "feature": "specimen back face (or mandrel axis for the cylinder)",
+   "id": "A",
+   "points": 3,
+   "role": "primary"
+  },
+  {
+   "constrains": "y translation, rotation about z",
+   "feature": "long reference edge (or axial scribe line)",
+   "id": "B",
+   "points": 2,
+   "role": "secondary"
+  },
+  {
+   "constrains": "x translation",
+   "feature": "end stop (or circumferential scribe)",
+   "id": "C",
+   "points": 1,
+   "role": "tertiary"
+  },
+  {
+   "definition": "z normal of A; x = B direction projected into A; origin on A, B plane and C plane (ciw.lab.manufacturing_metrology.datum_frame_321)",
+   "feature": "3-2-1 construction",
+   "id": "PART",
+   "role": "datum reference frame"
+  }
+ ],
+ "environment": {
+  "soak_time_h": 4,
+  "temperature_C": "20 +/- 1 (declared)",
+  "thermal_expansion_note": "aluminium 23e-6/K: 1 K over 300 mm is 7 um; log part temperature"
+ },
+ "fixtures": [
+  {
+   "clamping": "normal to A, over the rests, torque declared per specimen",
+   "contacts": "three spherical rests on A, two on B, one on C",
+   "id": "FX-321",
+   "kind": "3-2-1 kinematic nest"
+  }
+ ],
+ "frame_chain": [
+  {
+   "child": "WORLD",
+   "parent": "INSTRUMENT",
+   "source": "instrument registration to the reference network"
+  },
+  {
+   "child": "FIXTURE",
+   "parent": "WORLD",
+   "source": "fixture datum targets measured by the tracker"
+  },
+  {
+   "child": "PART",
+   "parent": "FIXTURE",
+   "source": "3-2-1 datum frame from probed A/B/C features"
+  },
+  {
+   "child": "CAD",
+   "parent": "PART",
+   "source": "nominal model placement in the datum frame (declared)"
+  }
+ ],
+ "hardware_measured": {
+  "records": [],
+  "status": "not_acquired"
+ },
+ "instruments": [
+  {
+   "declared_standard_uncertainty_mm": 0.02,
+   "id": "camera",
+   "kind": "photogrammetry camera system with coded targets",
+   "status": "declared_not_verified"
+  },
+  {
+   "declared_standard_uncertainty_mm": 0.015,
+   "id": "tracker",
+   "kind": "laser tracker with 1.5 in SMR",
+   "length_dependent_um_per_m": 6.0,
+   "status": "declared_not_verified"
+  },
+  {
+   "declared_standard_uncertainty_mm": 0.002,
+   "id": "cmm",
+   "kind": "bridge CMM with touch-trigger probe",
+   "status": "declared_not_verified"
+  }
+ ],
+ "markers": [
+  {
+   "id": "C0-00",
+   "u": [
+    0.0,
+    50.0
+   ]
+  },
+  {
+   "id": "C0-01",
+   "u": [
+    0.5235987755982988,
+    50.0
+   ]
+  },
+  {
+   "id": "C0-02",
+   "u": [
+    1.0471975511965976,
+    50.0
+   ]
+  },
+  {
+   "id": "C0-03",
+   "u": [
+    1.5707963267948966,
+    50.0
+   ]
+  },
+  {
+   "id": "C0-04",
+   "u": [
+    2.0943951023931953,
+    50.0
+   ]
+  },
+  {
+   "id": "C0-05",
+   "u": [
+    2.6179938779914944,
+    50.0
+   ]
+  },
+  {
+   "id": "C0-06",
+   "u": [
+    3.141592653589793,
+    50.0
+   ]
+  },
+  {
+   "id": "C0-07",
+   "u": [
+    3.6651914291880923,
+    50.0
+   ]
+  },
+  {
+   "id": "C0-08",
+   "u": [
+    4.1887902047863905,
+    50.0
+   ]
+  },
+  {
+   "id": "C0-09",
+   "u": [
+    4.71238898038469,
+    50.0
+   ]
+  },
+  {
+   "id": "C0-10",
+   "u": [
+    5.235987755982989,
+    50.0
+   ]
+  },
+  {
+   "id": "C0-11",
+   "u": [
+    5.759586531581287,
+    50.0
+   ]
+  },
+  {
+   "id": "C1-00",
+   "u": [
+    0.0,
+    150.0
+   ]
+  },
+  {
+   "id": "C1-01",
+   "u": [
+    0.5235987755982988,
+    150.0
+   ]
+  },
+  {
+   "id": "C1-02",
+   "u": [
+    1.0471975511965976,
+    150.0
+   ]
+  },
+  {
+   "id": "C1-03",
+   "u": [
+    1.5707963267948966,
+    150.0
+   ]
+  },
+  {
+   "id": "C1-04",
+   "u": [
+    2.0943951023931953,
+    150.0
+   ]
+  },
+  {
+   "id": "C1-05",
+   "u": [
+    2.6179938779914944,
+    150.0
+   ]
+  },
+  {
+   "id": "C1-06",
+   "u": [
+    3.141592653589793,
+    150.0
+   ]
+  },
+  {
+   "id": "C1-07",
+   "u": [
+    3.6651914291880923,
+    150.0
+   ]
+  },
+  {
+   "id": "C1-08",
+   "u": [
+    4.1887902047863905,
+    150.0
+   ]
+  },
+  {
+   "id": "C1-09",
+   "u": [
+    4.71238898038469,
+    150.0
+   ]
+  },
+  {
+   "id": "C1-10",
+   "u": [
+    5.235987755982989,
+    150.0
+   ]
+  },
+  {
+   "id": "C1-11",
+   "u": [
+    5.759586531581287,
+    150.0
+   ]
+  },
+  {
+   "id": "C2-00",
+   "u": [
+    0.0,
+    250.0
+   ]
+  },
+  {
+   "id": "C2-01",
+   "u": [
+    0.5235987755982988,
+    250.0
+   ]
+  },
+  {
+   "id": "C2-02",
+   "u": [
+    1.0471975511965976,
+    250.0
+   ]
+  },
+  {
+   "id": "C2-03",
+   "u": [
+    1.5707963267948966,
+    250.0
+   ]
+  },
+  {
+   "id": "C2-04",
+   "u": [
+    2.0943951023931953,
+    250.0
+   ]
+  },
+  {
+   "id": "C2-05",
+   "u": [
+    2.6179938779914944,
+    250.0
+   ]
+  },
+  {
+   "id": "C2-06",
+   "u": [
+    3.141592653589793,
+    250.0
+   ]
+  },
+  {
+   "id": "C2-07",
+   "u": [
+    3.6651914291880923,
+    250.0
+   ]
+  },
+  {
+   "id": "C2-08",
+   "u": [
+    4.1887902047863905,
+    250.0
+   ]
+  },
+  {
+   "id": "C2-09",
+   "u": [
+    4.71238898038469,
+    250.0
+   ]
+  },
+  {
+   "id": "C2-10",
+   "u": [
+    5.235987755982989,
+    250.0
+   ]
+  },
+  {
+   "id": "C2-11",
+   "u": [
+    5.759586531581287,
+    250.0
+   ]
+  }
+ ],
+ "paths": [
+  {
+   "heading_rad": 0.7853981633974483,
+   "id": "HX45",
+   "length_mm": 300.0,
+   "realization": "centreline of a 3 mm unsteered adhesive tape laid from a start jig that sets the start point and heading; with no in-plane steering the tape follows a geodesic",
+   "start_u": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "id": "HX45-L2",
+   "lateral_offset_mm": 2.0,
+   "of": "HX45"
+  }
+ ],
+ "predicted_quantities": [
+  {
+   "evidence_status": "numerically_verified",
+   "finding_claim": "Rolled-cylinder chord-geodesic gaps for the protocol marker pairs",
+   "id": "G0",
+   "quantity": "chord-geodesic gap, circumferential 30 deg",
+   "unit": "mm",
+   "value": 0.596068539326
+  },
+  {
+   "evidence_status": "numerically_verified",
+   "finding_claim": "Rolled-cylinder chord-geodesic gaps for the protocol marker pairs",
+   "id": "G1",
+   "quantity": "chord-geodesic gap, circumferential 60 deg",
+   "unit": "mm",
+   "value": 4.71975511966
+  },
+  {
+   "evidence_status": "numerically_verified",
+   "finding_claim": "Rolled-cylinder chord-geodesic gaps for the protocol marker pairs",
+   "id": "G2",
+   "quantity": "chord-geodesic gap, circumferential 90 deg",
+   "unit": "mm",
+   "value": 15.6582764422
+  },
+  {
+   "evidence_status": "numerically_verified",
+   "finding_claim": "Rolled-cylinder chord-geodesic gaps for the protocol marker pairs",
+   "id": "G3",
+   "quantity": "chord-geodesic gap, circumferential 120 deg",
+   "unit": "mm",
+   "value": 36.2344294824
+  },
+  {
+   "evidence_status": "numerically_verified",
+   "finding_claim": "Rolled-cylinder chord-geodesic gaps for the protocol marker pairs",
+   "id": "G4",
+   "quantity": "chord-geodesic gap, circumferential 150 deg",
+   "unit": "mm",
+   "value": 68.6142225413
+  },
+  {
+   "evidence_status": "numerically_verified",
+   "finding_claim": "Rolled-cylinder chord-geodesic gaps for the protocol marker pairs",
+   "id": "G5",
+   "quantity": "chord-geodesic gap, circumferential 180 deg",
+   "unit": "mm",
+   "value": 114.159265359
+  },
+  {
+   "evidence_status": "numerically_verified",
+   "finding_claim": "Rolled-cylinder chord-geodesic gaps for the protocol marker pairs",
+   "id": "G6",
+   "quantity": "chord-geodesic gap, axial 100 mm",
+   "unit": "mm",
+   "value": 0.0
+  },
+  {
+   "evidence_status": "numerically_verified",
+   "finding_claim": "Rolled-cylinder chord-geodesic gaps for the protocol marker pairs",
+   "id": "G7",
+   "quantity": "chord-geodesic gap, axial 200 mm",
+   "unit": "mm",
+   "value": 0.0
+  },
+  {
+   "evidence_status": "numerically_verified",
+   "finding_claim": "Rolled-cylinder chord-geodesic gaps for the protocol marker pairs",
+   "id": "G8",
+   "quantity": "chord-geodesic gap, helical 60 deg / 100 mm",
+   "unit": "mm",
+   "value": 3.37583680289
+  },
+  {
+   "evidence_status": "numerically_verified",
+   "finding_claim": "Rolled-cylinder chord-geodesic gaps for the protocol marker pairs",
+   "id": "G9",
+   "quantity": "chord-geodesic gap, helical 90 deg / 200 mm",
+   "unit": "mm",
+   "value": 9.36188078439
+  },
+  {
+   "evidence_status": "numerically_verified",
+   "finding_claim": "Rolled-cylinder Jacobi transfer equals the flat-plate transfer (K = 0)",
+   "id": "J1",
+   "quantity": "Jacobi transfer along a 45 deg helix of 300 mm",
+   "unit": "1, mm",
+   "value": [
+    [
+     1.0,
+     300.0
+    ],
+    [
+     0.0,
+     1.0
+    ]
+   ]
+  }
+ ],
+ "procedure": [
+  "Soak specimen and fixture; log temperatures.",
+  "Verify instruments on GS-25.4 and SB-1000 before and after; retain both checks.",
+  "Locate the specimen in FX-321; probe datums A, B, C and build the PART frame.",
+  "Measure the three marker rings with the camera and tracker; probe the tube radius at the three rings with the CMM (radius enters T140).",
+  "Lay the nominal and offset tapes from the start jig without in-plane steering (a robot may carry the tape head but must not steer it); never draw a path traced from the model.",
+  "Probe each tape centreline with the CMM at s = 0 and s = 20 mm; the relative start offset and heading of the offset tape condition the prediction (T138).",
+  "Measure both tape centrelines every 30 mm of arclength.",
+  "Repeat the full acquisition three times with re-fixturing (T131 design) and retain every raw file through the T139 retention record."
+ ],
+ "production_acceptance": "outside_system",
+ "protocol_id": "MFG-CYLINDER-01",
+ "purpose": "Separate extrinsic effects (chord vs geodesic) from intrinsic ones (Jacobi separation), which must match the flat plate.",
+ "required_raw_data": [
+  "raw camera images (lossless) with exposure metadata and SHA-256 digests",
+  "tracker/CMM native point files with instrument serial and firmware",
+  "calibration certificates of scale bars, gauge sphere and step gauge (digest and validity window)",
+  "frame-chain transforms with covariances as computed at the time of measurement",
+  "environment log: air and part temperature, humidity, time-stamped with an explicit UTC offset",
+  "operator, fixture and specimen identities; clock source and synchronization method"
+ ],
+ "schema": "ciw.lab-measurement-protocol.v1",
+ "specimen": {
+  "declared_radius_tolerance_mm": 0.1,
+  "kind": "rolled tube",
+  "length_mm": 300.0,
+  "material": "rolled and seam-welded 3 mm aluminium (declared)",
+  "nominal_radius_mm": 100.0,
+  "surface_model": {
+   "chart": "(phi, z)",
+   "name": "cylinder",
+   "radius": 100.0
+  }
+ },
+ "task_id": "T127",
+ "title": "Rolled-cylinder control: extrinsic curvature without intrinsic curvature"
+}

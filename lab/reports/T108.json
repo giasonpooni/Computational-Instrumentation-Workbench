@@ -1,0 +1,338 @@
+{
+ "changed_files": [
+  "src/ciw/lab/lyapunov.py",
+  "src/ciw/lab/lyapunov_reference.py",
+  "src/ciw/lab/lyapunov_provider.py",
+  "docs/lab/LYAPUNOV.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 1,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 0,
+   "numerically_verified": 4,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "analytic"
+ },
+ "expected_invariant": "Zero violations of monotonicity or invariance; MARGIN_LOW at r = margin and CERTIFIED_WITH_MARGIN at r = nextafter(margin, 0); refusal of invalid margins.",
+ "experiment": "Two PLSR passes: base verdicts give margin and resolution, then each case is re-evaluated on its sorted margin grid; properties are checked along each sequence.",
+ "failure_modes_checked": [
+  "passing verdict regained at a larger margin",
+  "meets_required_margin regained",
+  "non-certifying code changed by the margin",
+  "inequality_certified changed by the margin",
+  "threshold not at margin",
+  "invalid margin accepted"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "violations: passing_regained",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "violations: meets_regained",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "violations: noncertifying_code_changed",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "violations: inequality_changed",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     }
+    ],
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "Increasing required_margin never turns a failing PLSR verdict into a passing one",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact rational, integer or bitwise comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "cases": 36,
+    "evaluations": 280,
+    "inequality_changed": 0,
+    "meets_regained": 0,
+    "noncertifying_code_changed": 0,
+    "passing_regained": 0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "codes at nextafter(margin, 0) and margin differing from CERTIFIED_WITH_MARGIN / MARGIN_LOW",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     }
+    ],
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "The switch from CERTIFIED_WITH_MARGIN to MARGIN_LOW happens exactly at required_margin = margin",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact rational, integer or bitwise comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "mismatches": 0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "raises ValueError",
+      "observed_refusal": "raises ValueError",
+      "passed": true,
+      "reference": "required_margin = -1e-300",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "raises ValueError",
+      "observed_refusal": "raises ValueError",
+      "passed": true,
+      "reference": "required_margin = -1",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "raises ValueError",
+      "observed_refusal": "raises ValueError",
+      "passed": true,
+      "reference": "required_margin = nan",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "raises ValueError",
+      "observed_refusal": "raises ValueError",
+      "passed": true,
+      "reference": "required_margin = inf",
+      "reference_kind": "refusal"
+     }
+    ],
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "Negative and non-finite required margins are refused",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact rational, integer or bitwise comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "-1": "raises ValueError",
+    "-1e-300": "raises ValueError",
+    "inf": "raises ValueError",
+    "nan": "raises ValueError"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "derivation": "runtime.verdict at the pinned commit: required_margin is compared only after the resolution test; both comparisons are monotone in r (docs/lab/LYAPUNOV.md, T108)"
+   },
+   "claim": "Monotonicity of the verdict in the declared margin follows from the decision order",
+   "domain": "mathematical",
+   "evidence_status": "analytic",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "closed-form argument; nothing was approximated",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": "margin enters only as MARGIN_LOW iff margin <= r and meets = margin > max(r, res)"
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "property violations in the re-derived rule",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "name": "near_threshold_family + razor_family",
+     "seed": 108
+    }
+   },
+   "claim": "The documented rule re-derived in CIW is monotone on the same margin grids",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact rational, integer or bitwise comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "inequality_changed": 0,
+    "meets_regained": 0,
+    "noncertifying_code_changed": 0,
+    "passing_regained": 0
+   }
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 14578,
+   "path": "artifacts/T108/margin-sequences.json",
+   "sha256": "2040862b520995e69eaba6801032635c8f52461ce95e4f891a68616fc10ac4bb"
+  }
+ ],
+ "hypothesis": "Increasing required_margin never turns a failing verdict into a passing one: CERTIFIED_WITH_MARGIN and meets_required_margin are nonincreasing in the declared margin, non-certifying codes and inequality_certified do not depend on it, and the switch to MARGIN_LOW happens exactly at required_margin = margin.",
+ "input_data": [
+  "24 near-threshold cases (PCG64 seed 108) plus four robust cases and 8 razor-edge cases (seed 1081)",
+  "Per case: required margins {0, res/2, res, 2 res, 1e300} and, when the margin is positive, {margin/2, nextafter(margin, 0), margin, nextafter(margin, inf), 2 margin}",
+  "Invalid margins -1e-300, -1, nan, inf"
+ ],
+ "mathematical_model": "The declared margin r enters the decision order only in the branch margin > res, as MARGIN_LOW iff margin <= r; meets_required_margin = margin > max(r, res). Both are monotone in r by construction; negative or non-finite r must be refused.",
+ "number": 108,
+ "numerical_result": "280 verdicts over 36 cases: violations {'passing_regained': 0, 'meets_regained': 0, 'noncertifying_code_changed': 0, 'inequality_changed': 0}; threshold mismatches 0; invalid margins {'-1e-300': 'raises ValueError', '-1': 'raises ValueError', 'nan': 'raises ValueError', 'inf': 'raises ValueError'}. No counterexample to monotonicity was found (a finite search, not a proof).",
+ "observation_model": "PLSR code, meets_required_margin and inequality_certified per (case, required margin).",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "provider": {
+   "commit": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+   "entry": "lyapunov.verdict / lyapunov.solve_lyapunov / lyapunov.decrease_resolution",
+   "files_pinned": 20,
+   "files_verified": 20,
+   "implementation": "Parameterized-Lyapunov-Stability-Runtime",
+   "numpy_version": "2.4.3",
+   "package_version": "0.1.0rc1",
+   "python_version": "3.12.3",
+   "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+   "role": "plsr-python",
+   "source_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7",
+   "verification": "package version and per-file sha256 checked in the subprocess before use"
+  },
+  "python": "3.12.3",
+  "requirement_probes": {
+   "provider:plsr-python": true
+  },
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/lyapunov.py": "58d6c7473f0a42002b57888de0ccfbbf73b571bbbabbf9ee81e0a05c734f2320",
+   "src/ciw/lab/lyapunov_provider.py": "da3465b48b5f5efc47bfe6ab8379cf2cf2bc23e4835dc7ff047252e77fa6ef17",
+   "src/ciw/lab/lyapunov_reference.py": "fa37ef453c23ad2bed2eab41132e72670e166b93eebd5fc9d67a4a89a7c92cca"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T109: adversarial eigenvalue cases; extend the property test to affine plants with parameter-dependent P.",
+ "report_id": "sha256:44934c28791e4fe0f620519bf9175f2f8beef2d571ef8749db16596156f4bd07",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "lyapunov",
+ "state": "completed",
+ "task_id": "T108",
+ "tests_passed": [
+  "check: Increasing required_margin never turns a failing PLSR verdict into a passing one vs violations: passing_regained",
+  "check: Increasing required_margin never turns a failing PLSR verdict into a passing one vs violations: meets_regained",
+  "check: Increasing required_margin never turns a failing PLSR verdict into a passing one vs violations: noncertifying_code_changed",
+  "check: Increasing required_margin never turns a failing PLSR verdict into a passing one vs violations: inequality_changed",
+  "check: The switch from CERTIFIED_WITH_MARGIN to MARGIN_LOW happens exactly at required_margin = margin vs codes at nextafter(margin, 0) and margin differing from CERTIFIED_WITH_MARGIN / MARGIN_LOW",
+  "check: Negative and non-finite required margins are refused vs required_margin = -1e-300",
+  "check: Negative and non-finite required margins are refused vs required_margin = -1",
+  "check: Negative and non-finite required margins are refused vs required_margin = nan",
+  "check: Negative and non-finite required margins are refused vs required_margin = inf",
+  "check: The documented rule re-derived in CIW is monotone on the same margin grids vs property violations in the re-derived rule",
+  "pytest: tests/test_lab_lyapunov.py::test_t108_margin_monotonicity",
+  "pytest: tests/test_lab_lyapunov.py::test_documented_rule_is_monotone",
+  "pytest: tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider"
+ ],
+ "tests_skipped": [],
+ "title": "Verify required-margin monotonicity.",
+ "uncertainty": "Exact comparisons on the runtime's own margins; no tolerance enters the property.",
+ "unresolved_assumptions": [
+  "A finite family cannot prove the property; the proof is the decision-order argument (analytic finding)."
+ ]
+}

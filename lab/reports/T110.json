@@ -1,0 +1,380 @@
+{
+ "changed_files": [
+  "src/ciw/lab/lyapunov.py",
+  "src/ciw/lab/lyapunov_reference.py",
+  "src/ciw/lab/lyapunov_provider.py",
+  "docs/lab/LYAPUNOV.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 2,
+   "not_established": 0,
+   "numerically_verified": 4,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Codes follow the exact class of each convention's decrease form; certified-by-own-P iff stable in that convention; theta_dot refused for discrete plants.",
+ "experiment": "Phase 1: P = I verdicts and solves in both conventions; phase 2: verdicts with each returned P in both conventions; compare with numpy's spectral abscissa and radius.",
+ "failure_modes_checked": [
+  "same verdict in both conventions for quadrant-differing matrices",
+  "certified but unstable",
+  "stable but never certified",
+  "discrete theta_dot accepted",
+  "resolution formula not time-specific"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "solver refusals not raised as ValueError by a documented gate",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     }
+    ],
+    "independent_check": {
+     "checker": {
+      "implementation": "numpy.linalg.eigvals@2.4.3",
+      "revision": "2.4.3"
+     },
+     "comparison": "abs_le",
+     "observed": 0.0,
+     "passed": true,
+     "producer": {
+      "implementation": "Parameterized-Lyapunov-Stability-Runtime@19ea69670601",
+      "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196"
+     },
+     "reference": "certified-by-own-P against numpy spectral abscissa (continuous) and radius (discrete)",
+     "reference_kind": "analytic",
+     "tolerance": 0.0
+    },
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "PLSR certifies each matrix with its own Lyapunov P exactly in the time convention where numpy finds it stable, and its solver refuses the other convention at a documented gate",
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "stability margins of at least 0.1",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "matrices": 40,
+    "mismatches": 0,
+    "solver_refusals": 40
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "independent_check": {
+     "checker": {
+      "implementation": "numpy.linalg.eigvals@2.4.3",
+      "revision": "2.4.3"
+     },
+     "comparison": "abs_le",
+     "observed": 0.0,
+     "passed": true,
+     "producer": {
+      "implementation": "Parameterized-Lyapunov-Stability-Runtime@19ea69670601",
+      "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196"
+     },
+     "reference": "cross-applied certifying verdicts in a convention where numpy finds the matrix unstable",
+     "reference_kind": "analytic",
+     "tolerance": 0.0
+    },
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "No Lyapunov P solved for one convention certifies a matrix in the other convention where numpy finds it unstable",
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "stability margins of at least 0.1",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "cross_verdicts": 40,
+    "unsound": 0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "matrices where (outcomes differ) differs from (stable in one convention only)",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     }
+    ],
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "The two time interpretations give different PLSR outcomes exactly for the matrices whose stability differs between conventions",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact rational, integer or bitwise comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "differing": 20,
+    "off_quadrant_matrices": 20,
+    "pattern_mismatches": 0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "codes differing from the documented order or exact class",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "PLSR resolution minus CIW resolution (per convention)",
+      "reference_kind": "analytic",
+      "tolerance": 0.0
+     }
+    ],
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "Diagonal plants with P = I receive the code of each convention's exact decrease form",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact rational, integer or bitwise comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "diag(-0.5, -0.25) continuous": "CERTIFIED_WITH_MARGIN",
+    "diag(-0.5, -0.25) discrete": "CERTIFIED_WITH_MARGIN",
+    "diag(-1.5, -0.25) continuous": "CERTIFIED_WITH_MARGIN",
+    "diag(-1.5, -0.25) discrete": "NOT_CERTIFIED",
+    "diag(0.5, 0.25) continuous": "NOT_CERTIFIED",
+    "diag(0.5, 0.25) discrete": "CERTIFIED_WITH_MARGIN",
+    "diag(1.5, 2) continuous": "NOT_CERTIFIED",
+    "diag(1.5, 2) discrete": "NOT_CERTIFIED"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "raises ValueError",
+      "observed_refusal": "raises ValueError",
+      "passed": true,
+      "reference": "discrete affine plant with theta_dot = 0",
+      "reference_kind": "refusal"
+     }
+    ],
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "A discrete plant refuses a theta_dot",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact rational, integer or bitwise comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "code": "raises ValueError"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "solves whose definiteness disagrees with the eigenvalue classification",
+      "reference_kind": "analytic",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "name": "quadrant_family",
+     "seed": 110
+    }
+   },
+   "claim": "A CIW Kronecker Lyapunov solution is positive definite exactly when numpy calls the matrix stable in that time convention",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "stability margins of at least 0.1 keep definiteness decisions far from rounding",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "agreeing": 80,
+    "solves": 80
+   }
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 18965,
+   "path": "artifacts/T110/time-interpretation.json",
+   "sha256": "01fa52f67545a846b6ec03b0259ab43855eb7c0850c24860cc642597c616e6cf"
+  }
+ ],
+ "hypothesis": "PLSR distinguishes x' = A x from x+ = A x: the same matrix is certified in a time convention exactly when it is stable in that convention (Hurwitz versus Schur), and the two interpretations give different verdicts whenever the stability quadrants differ.",
+ "input_data": [
+  "Diagonal plants diag(-0.5, -0.25), diag(-1.5, -0.25), diag(0.5, 0.25), diag(1.5, 2) with P = I, x = (1, 1)",
+  "40 matrices V diag(lambda) V^-1 (PCG64 seed 110), 10 per quadrant: both stable, continuous only, discrete only, neither; eigenvalue margins >= 0.1",
+  "A discrete affine plant evaluated with a theta_dot"
+ ],
+ "mathematical_model": "Continuous decrease A^T P + P A, resolution 2 gamma n^2 a p + n^3 u |M|; discrete decrease A^T P A - P, resolution n(2 gamma n^2 a^2 p + u p) + n^3 u |M|. Lyapunov: a positive definite solution of the respective equation with Q = I exists iff A is Hurwitz, respectively Schur.",
+ "number": 110,
+ "numerical_result": "Diagonal plants: {'diag(-0.5, -0.25) continuous': 'CERTIFIED_WITH_MARGIN', 'diag(-0.5, -0.25) discrete': 'CERTIFIED_WITH_MARGIN', 'diag(-1.5, -0.25) continuous': 'CERTIFIED_WITH_MARGIN', 'diag(-1.5, -0.25) discrete': 'NOT_CERTIFIED', 'diag(0.5, 0.25) continuous': 'NOT_CERTIFIED', 'diag(0.5, 0.25) discrete': 'CERTIFIED_WITH_MARGIN', 'diag(1.5, 2) continuous': 'NOT_CERTIFIED', 'diag(1.5, 2) discrete': 'NOT_CERTIFIED'}. Family: 0 disagreements with numpy over 40 matrices x 2 conventions (40 solver refusals, 0 outside the documented gates); outcomes differ between conventions for 20 matrices (20 lie in the continuous-only or discrete-only quadrant; 0 per-matrix mismatches). Cross-applied P: 0 of 40 verdicts certify where numpy finds instability. Discrete theta_dot: raises ValueError.",
+ "observation_model": "PLSR codes with P = I; PLSR solve_lyapunov in each convention and the verdict with the returned P, also cross-applied to the other convention; numpy eigenvalues as the independent stability reference.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "provider": {
+   "commit": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+   "entry": "lyapunov.verdict / lyapunov.solve_lyapunov / lyapunov.decrease_resolution",
+   "files_pinned": 20,
+   "files_verified": 20,
+   "implementation": "Parameterized-Lyapunov-Stability-Runtime",
+   "numpy_version": "2.4.3",
+   "package_version": "0.1.0rc1",
+   "python_version": "3.12.3",
+   "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+   "role": "plsr-python",
+   "source_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7",
+   "verification": "package version and per-file sha256 checked in the subprocess before use"
+  },
+  "python": "3.12.3",
+  "requirement_probes": {
+   "provider:plsr-python": true
+  },
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/lyapunov.py": "58d6c7473f0a42002b57888de0ccfbbf73b571bbbabbf9ee81e0a05c734f2320",
+   "src/ciw/lab/lyapunov_provider.py": "da3465b48b5f5efc47bfe6ab8379cf2cf2bc23e4835dc7ff047252e77fa6ef17",
+   "src/ciw/lab/lyapunov_reference.py": "fa37ef453c23ad2bed2eab41132e72670e166b93eebd5fc9d67a4a89a7c92cca"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T111: scalar quadratic versus matrix-eigenvalue routes; add a sampled-data check that a continuous certificate is not silently reused for exp(A h).",
+ "report_id": "sha256:08466cf6cf1b8196508e340b581bbf1b3249a7dd3e6efc938b3e8859509ba996",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "lyapunov",
+ "state": "completed",
+ "task_id": "T110",
+ "tests_passed": [
+  "check: PLSR certifies each matrix with its own Lyapunov P exactly in the time convention where numpy finds it stable, and its solver refuses the other convention at a documented gate vs solver refusals not raised as ValueError by a documented gate",
+  "independent: PLSR certifies each matrix with its own Lyapunov P exactly in the time convention where numpy finds it stable, and its solver refuses the other convention at a documented gate vs numpy.linalg.eigvals@2.4.3",
+  "independent: No Lyapunov P solved for one convention certifies a matrix in the other convention where numpy finds it unstable vs numpy.linalg.eigvals@2.4.3",
+  "check: The two time interpretations give different PLSR outcomes exactly for the matrices whose stability differs between conventions vs matrices where (outcomes differ) differs from (stable in one convention only)",
+  "check: Diagonal plants with P = I receive the code of each convention's exact decrease form vs codes differing from the documented order or exact class",
+  "check: Diagonal plants with P = I receive the code of each convention's exact decrease form vs PLSR resolution minus CIW resolution (per convention)",
+  "check: A discrete plant refuses a theta_dot vs discrete affine plant with theta_dot = 0",
+  "check: A CIW Kronecker Lyapunov solution is positive definite exactly when numpy calls the matrix stable in that time convention vs solves whose definiteness disagrees with the eigenvalue classification",
+  "pytest: tests/test_lab_lyapunov.py::test_t110_time_interpretation",
+  "pytest: tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider"
+ ],
+ "tests_skipped": [],
+ "title": "Test discrete-time versus continuous-time interpretation.",
+ "uncertainty": "Margins of at least 0.1 in every quadrant; codes are far from the resolution.",
+ "unresolved_assumptions": [
+  "Stability margins of at least 0.1 keep numpy's eigenvalue reference reliable for these matrices.",
+  "No sampling period is modelled: the discrete matrices are declared one-step maps, as PLSR requires."
+ ]
+}

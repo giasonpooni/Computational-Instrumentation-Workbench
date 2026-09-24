@@ -1,0 +1,456 @@
+{
+ "changed_files": [
+  "src/ciw/lab/lyapunov.py",
+  "src/ciw/lab/lyapunov_reference.py",
+  "src/ciw/lab/lyapunov_provider.py",
+  "docs/lab/LYAPUNOV.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 3,
+   "not_established": 0,
+   "numerically_verified": 3,
+   "provider_backed": 1,
+   "synthetic": 0
+  },
+  "primary": "provider_backed"
+ },
+ "expected_invariant": "No certifying code unless the exact form is negative definite; certified beyond -2 res; resolved beyond +2 res; with the declared margin no CERTIFIED_WITH_MARGIN within the band. Without a declared margin, exactly negative definite band cases may be certified (soundly) or left inconclusive.",
+ "experiment": "Generate cases, bin their exact spectra, evaluate with PLSR at both margins and tabulate codes per bin.",
+ "failure_modes_checked": [
+  "certifying code on a form that is not exactly negative definite",
+  "unresolved sign beyond two resolutions",
+  "CERTIFIED_WITH_MARGIN inside the band under a declared margin",
+  "MARGIN_LOW inconsistent with the declared margin",
+  "CERTIFIED_WITH_MARGIN inside the band at required_margin 0 (searched as counterexample)"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "independent_check": {
+     "checker": {
+      "implementation": "ciw.lab.lyapunov_reference",
+      "revision": "0.1.0"
+     },
+     "comparison": "abs_le",
+     "observed": 0.0,
+     "passed": true,
+     "producer": {
+      "implementation": "Parameterized-Lyapunov-Stability-Runtime@19ea69670601",
+      "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196"
+     },
+     "reference": "exact bins and classes of the declared forms",
+     "reference_kind": "exact_arithmetic",
+     "tolerance": 0.0
+    },
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "No near-boundary case receives a certifying code unless its exact decrease form is negative definite",
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact rational, integer or bitwise comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "cases": 102,
+    "violations": 0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "independent_check": {
+     "checker": {
+      "implementation": "ciw.lab.lyapunov_reference",
+      "revision": "0.1.0"
+     },
+     "comparison": "abs_le",
+     "observed": 0.0,
+     "passed": true,
+     "producer": {
+      "implementation": "Parameterized-Lyapunov-Stability-Runtime@19ea69670601",
+      "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196"
+     },
+     "reference": "cases beyond two resolutions not resolved to the exact sign",
+     "reference_kind": "exact_arithmetic",
+     "tolerance": 0.0
+    },
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "Beyond two resolutions from zero PLSR always resolves the sign",
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "regression_tolerance": {
+    "abs": 2.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "counts near two resolutions may shift between BLAS builds",
+    "kind": "reference_error",
+    "value": 2.0
+   },
+   "unit": null,
+   "value": {
+    "resolved_cases": 36,
+    "unresolved": 0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "independent_check": {
+     "checker": {
+      "implementation": "ciw.lab.lyapunov_reference",
+      "revision": "0.1.0"
+     },
+     "comparison": "abs_le",
+     "observed": 0.0,
+     "passed": true,
+     "producer": {
+      "implementation": "Parameterized-Lyapunov-Stability-Runtime@19ea69670601",
+      "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196"
+     },
+     "reference": "CERTIFIED_WITH_MARGIN in the exact band under required_margin = 3 res",
+     "reference_kind": "exact_arithmetic",
+     "tolerance": 0.0
+    },
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "With a declared margin of three resolutions no case within two resolutions of zero is CERTIFIED_WITH_MARGIN",
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "regression_tolerance": {
+    "abs": 2.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "counts near the band edge may shift between BLAS builds",
+    "kind": "reference_error",
+    "value": 2.0
+   },
+   "unit": null,
+   "value": {
+    "band_cases": 66,
+    "certified": 0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 18.0,
+      "passed": true,
+      "reference": "band cases certified at required_margin 0",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "band certificates whose exact decrease form is not negative definite",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "At required_margin 0 near-boundary spectra within two resolutions of zero receive CERTIFIED_WITH_MARGIN, and every such certificate is exactly sound",
+   "counterexample": {
+    "statement": "Near-boundary spectra yield NUMERICAL_INCONCLUSIVE or MARGIN_LOW rather than CERTIFIED_WITH_MARGIN (T107 specification)",
+    "witness": {
+     "A_hex": [
+      [
+       "-0x1.7875609decd6bp-1",
+       "0x1.28ce156988ceap-4"
+      ],
+      [
+       "-0x1.cf4408a8d99ffp-1",
+       "-0x1.96f6b68fe9f5dp-7"
+      ]
+     ],
+     "P_hex": [
+      [
+       "0x1.7fcc240b72fe6p+2",
+       "-0x1.1e3d4143d88d0p+2"
+      ],
+      [
+       "-0x1.1e3d4143d88d0p+2",
+       "0x1.4033dbf48d019p+2"
+      ]
+     ],
+     "case": 96,
+     "code_at_required_margin_0": "CERTIFIED_WITH_MARGIN",
+     "exact_bin": "[-1, 0) res",
+     "exact_class": "negative_definite",
+     "margin_ratio": 1.0012506116492788,
+     "n": 2,
+     "x": [
+      -1.5629534764558126,
+      0.24078627034999178
+     ]
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 4.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "which band cases resolve depends on last-bit rounding; the [-2, -1) res certifications are robust",
+    "kind": "reference_error",
+    "value": 4.0
+   },
+   "unit": null,
+   "value": {
+    "band_cases": 66,
+    "certified": 18,
+    "certified_within_one_resolution": 2,
+    "unsound": 0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "codes differing from the declared-margin rule",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 27.0,
+      "passed": true,
+      "reference": "MARGIN_LOW verdicts observed",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     }
+    ],
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "MARGIN_LOW appears exactly when the resolvable margin does not exceed the declared margin",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact rational, integer or bitwise comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "margin_low_observed": true,
+    "mismatches": 0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "Share of exactly negative definite band cases answered NUMERICAL_INCONCLUSIVE without a declared margin",
+   "domain": "numerical",
+   "evidence_status": "provider_backed",
+   "regression_tolerance": {
+    "abs": 0.2,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "the share of resolved band cases depends on last-bit rounding",
+    "kind": "reference_error",
+    "value": 0.2
+   },
+   "unit": null,
+   "value": {
+    "inconclusive_share": 0.4375
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "exact bins without a case (six bins from below -2 res to above 2 res)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "name": "boundary_family",
+     "seed": 107
+    }
+   },
+   "claim": "The near-boundary family populates every exact resolution bin of max eig(M)",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 2.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "bins of razor-edge cases may shift between BLAS builds",
+    "kind": "reference_error",
+    "value": 2.0
+   },
+   "unit": null,
+   "value": {
+    "bins": {
+     "[-1, 0) res": 16,
+     "[-2, -1) res": 16,
+     "[0, 1) res": 16,
+     "[1, 2) res": 18,
+     "at or above 2 res": 18,
+     "below -2 res": 18
+    },
+    "cases": 102
+   }
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 7540,
+   "path": "artifacts/T107/inconclusive-band.json",
+   "sha256": "3e344e7a189c4b76e95226037570fb3964e322e3a24afb0fd1d5c300eb9133e0"
+  },
+  {
+   "bytes": 9144,
+   "path": "artifacts/T107/ratio-vs-target.svg",
+   "sha256": "3092b772595956edf1329ba1d4d3cb701458c7af082e426cdcd9772d3c33a900"
+  }
+ ],
+ "hypothesis": "PLSR never gives a certifying code to a near-boundary decrease form that is not exactly negative definite; beyond two resolutions from zero it always resolves the sign; under a declared margin of three resolutions no case within two resolutions is CERTIFIED_WITH_MARGIN. The specification's stronger statement -- that near-boundary spectra yield NUMERICAL_INCONCLUSIVE or MARGIN_LOW rather than CERTIFIED_WITH_MARGIN -- is tested at required_margin 0 as a candidate counterexample.",
+ "input_data": [
+  "90 continuous cases (PCG64 seed 107): n in {2, 3, 4}, P = I or SPD, kappa in [-8.0, -3.0, -2.2, -1.8, -1.2, -0.8, -0.4, 0.0, 0.4, 0.8, 1.2, 1.8, 2.2, 3.0, 8.0] (target max eig = kappa * resolution)",
+  "12 razor-edge cases (seed 1071) with computed |max eig| / resolution just above 1",
+  "Each case evaluated with required_margin 0 and 3 * resolution"
+ ],
+ "mathematical_model": "If the resolution bounds the float64 error e of max eig(M) (|e| <= res), then exact lambda < -2 res gives margin > res (certified), exact lambda >= 2 res gives max eig > res (not definite), and exact lambda >= 0 can never give margin > res. With required margin 3 res, certification needs margin > 3 res, impossible for exact lambda >= -2 res.",
+ "number": 107,
+ "numerical_result": "102 cases; codes by exact bin at required_margin 0: {'below -2 res': {'CERTIFIED_WITH_MARGIN': 18}, '[-2, -1) res': {'CERTIFIED_WITH_MARGIN': 16}, '[-1, 0) res': {'NUMERICAL_INCONCLUSIVE': 14, 'CERTIFIED_WITH_MARGIN': 2}, '[0, 1) res': {'NUMERICAL_INCONCLUSIVE': 16}, '[1, 2) res': {'DECREASE_NOT_DEFINITE': 18}, 'at or above 2 res': {'DECREASE_NOT_DEFINITE': 18}}. Unsound certifications: 0. Unresolved beyond two resolutions: 0. Certified within the band under the declared margin: 0. At required_margin 0, 18 of 66 band cases were CERTIFIED_WITH_MARGIN (2 within one resolution), 0 of them unsound. Exactly negative definite band cases: 32, of which 14 inconclusive (44%) and 18 certified. MARGIN_LOW rule mismatches: 0. Conclusion: every certificate is exactly sound and the sign is resolved beyond two resolutions; the declared margin of three resolutions keeps the band out of CERTIFIED_WITH_MARGIN; without a declared margin the band is not uniformly inconclusive, which refutes the specification's stronger statement (the certifications are sound).",
+ "observation_model": "PLSR code and margin; exact bin of max eig(M) from Sylvester tests on M - t I at t = -2, -1, 0, 1, 2 resolutions in exact dyadic arithmetic.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "provider": {
+   "commit": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+   "entry": "lyapunov.verdict / lyapunov.solve_lyapunov / lyapunov.decrease_resolution",
+   "files_pinned": 20,
+   "files_verified": 20,
+   "implementation": "Parameterized-Lyapunov-Stability-Runtime",
+   "numpy_version": "2.4.3",
+   "package_version": "0.1.0rc1",
+   "python_version": "3.12.3",
+   "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+   "role": "plsr-python",
+   "source_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7",
+   "verification": "package version and per-file sha256 checked in the subprocess before use"
+  },
+  "python": "3.12.3",
+  "requirement_probes": {
+   "provider:plsr-python": true
+  },
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/lyapunov.py": "58d6c7473f0a42002b57888de0ccfbbf73b571bbbabbf9ee81e0a05c734f2320",
+   "src/ciw/lab/lyapunov_provider.py": "da3465b48b5f5efc47bfe6ab8379cf2cf2bc23e4835dc7ff047252e77fa6ef17",
+   "src/ciw/lab/lyapunov_reference.py": "fa37ef453c23ad2bed2eab41132e72670e166b93eebd5fc9d67a4a89a7c92cca"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T108: required-margin monotonicity; measure how much of the [-2, 0) res band a less conservative eigensolver term (p(n) = n instead of n^2) would recover without losing soundness against exact bins.",
+ "report_id": "sha256:552d1db340380ecaec7cbdd41824a0a34ecf7fc4334dc00697c7f1f4158faa24",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "lyapunov",
+ "state": "completed",
+ "task_id": "T107",
+ "tests_passed": [
+  "independent: No near-boundary case receives a certifying code unless its exact decrease form is negative definite vs ciw.lab.lyapunov_reference",
+  "independent: Beyond two resolutions from zero PLSR always resolves the sign vs ciw.lab.lyapunov_reference",
+  "independent: With a declared margin of three resolutions no case within two resolutions of zero is CERTIFIED_WITH_MARGIN vs ciw.lab.lyapunov_reference",
+  "check: At required_margin 0 near-boundary spectra within two resolutions of zero receive CERTIFIED_WITH_MARGIN, and every such certificate is exactly sound vs band cases certified at required_margin 0",
+  "check: At required_margin 0 near-boundary spectra within two resolutions of zero receive CERTIFIED_WITH_MARGIN, and every such certificate is exactly sound vs band certificates whose exact decrease form is not negative definite",
+  "check: MARGIN_LOW appears exactly when the resolvable margin does not exceed the declared margin vs codes differing from the declared-margin rule",
+  "check: MARGIN_LOW appears exactly when the resolvable margin does not exceed the declared margin vs MARGIN_LOW verdicts observed",
+  "check: The near-boundary family populates every exact resolution bin of max eig(M) vs exact bins without a case (six bins from below -2 res to above 2 res)",
+  "pytest: tests/test_lab_lyapunov.py::test_t107_inconclusive_band",
+  "pytest: tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider"
+ ],
+ "tests_skipped": [],
+ "title": "Verify numerical inconclusive behavior.",
+ "uncertainty": "Exact bins are exact; which band cases resolve depends on last-bit rounding and may differ between BLAS builds (share tolerance 0.2, count tolerance 4).",
+ "unresolved_assumptions": [
+  "Exact bins describe the declared binary64 matrices; the targets kappa are only approximately realised because A is rounded.",
+  "The band refusal rate depends on the generator and is not a property of plants in general."
+ ]
+}

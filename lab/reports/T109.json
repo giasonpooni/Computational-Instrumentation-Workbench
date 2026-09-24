@@ -1,0 +1,505 @@
+{
+ "changed_files": [
+  "src/ciw/lab/lyapunov.py",
+  "src/ciw/lab/lyapunov_reference.py",
+  "src/ciw/lab/lyapunov_provider.py",
+  "docs/lab/LYAPUNOV.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 3,
+   "not_established": 0,
+   "numerically_verified": 4,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "No certifying verdict without an exactly valid certificate; PLSR and independent P agree to within 10 n^2 u cond(P); certified transients respect sqrt(cond P); every solver refusal comes from a documented gate.",
+ "experiment": "Phase 1: PLSR solves and verdicts with P = I and the independent P; phase 2: verdicts with PLSR's P. CIW checks certificates exactly, computes transient peaks in closed form and compares numpy's spectral abscissa with the exact spectrum.",
+ "failure_modes_checked": [
+  "certificate without exact validity",
+  "solver disagreement beyond conditioning",
+  "transient bound violated",
+  "eigenvalue sign wrong for an exactly Hurwitz matrix",
+  "P = I threshold misplaced",
+  "solver refusal outside the documented gates",
+  "solver refuses a plant with a valid certificate (searched as counterexample)"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "independent_check": {
+     "checker": {
+      "implementation": "ciw.lab.lyapunov_reference",
+      "revision": "0.1.0"
+     },
+     "comparison": "abs_le",
+     "observed": 0.0,
+     "passed": true,
+     "producer": {
+      "implementation": "Parameterized-Lyapunov-Stability-Runtime@19ea69670601",
+      "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196"
+     },
+     "reference": "exact positive definiteness of P and negative definiteness of A^T P + P A",
+     "reference_kind": "exact_arithmetic",
+     "tolerance": 0.0
+    },
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "Every certifying PLSR verdict on the adversarial plants uses an exactly valid certificate",
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "regression_tolerance": {
+    "abs": 2.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "the violation count is exact; the number of certifying verdicts may move by one or two near the resolution",
+    "kind": "reference_error",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "certifying_verdicts": 30,
+    "violations": 0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "independent_check": {
+     "checker": {
+      "implementation": "scipy.linalg.solve_continuous_lyapunov@1.16.2",
+      "revision": "1.16.2"
+     },
+     "comparison": "le",
+     "observed": 1.6683571401477033,
+     "passed": true,
+     "producer": {
+      "implementation": "Parameterized-Lyapunov-Stability-Runtime@19ea69670601",
+      "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196"
+     },
+     "reference": "max over solved cases of the relative Frobenius difference divided by n^2 u cond(P)",
+     "reference_kind": "exact_arithmetic",
+     "tolerance": 10.0
+    },
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "PLSR Lyapunov solutions agree with an independent solver to within 10 n^2 u cond(P) on every solved adversarial case",
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 1.0
+   },
+   "uncertainty": {
+    "basis": "largest observed relative difference; the normalised value may vary by a small factor between BLAS builds",
+    "kind": "roundoff",
+    "value": 1.797306547226615e-15
+   },
+   "unit": null,
+   "value": {
+    "cases": 14,
+    "max_normalised_difference": 1.6683571401477033,
+    "max_relative_difference": 1.797306547226615e-15
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 0.6180339887498949,
+      "passed": true,
+      "reference": "max over K of peak ||exp(At)|| / sqrt(cond P)",
+      "reference_kind": "analytic",
+      "tolerance": 1.0
+     }
+    ],
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "Certified non-normal plants respect the Lyapunov transient bound ||exp(At)|| <= sqrt(cond P)",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "peak sampled every 5e-3 s; second-order estimate of the missed peak, far below the margin to 1",
+    "kind": "truncation_bound",
+    "value": 0.0001
+   },
+   "unit": null,
+   "value": {
+    "cases": 8,
+    "max_ratio": 0.6180339887498949
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "codes against the analytic threshold",
+      "reference_kind": "analytic",
+      "tolerance": 0.0
+     }
+    ],
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "With P = I the non-normal plants are certified exactly when K < 2 sqrt 2, including K = 2.82 and 2.83 on either side",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact rational, integer or bitwise comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "codes": {
+     "non-normal K=1": "CERTIFIED_WITH_MARGIN",
+     "non-normal K=10": "NOT_CERTIFIED",
+     "non-normal K=100": "NOT_CERTIFIED",
+     "non-normal K=1000": "NOT_CERTIFIED",
+     "non-normal K=10000": "NOT_CERTIFIED",
+     "non-normal K=100000": "NOT_CERTIFIED",
+     "non-normal K=1e+06": "NOT_CERTIFIED",
+     "non-normal K=1e+08": "NOT_CERTIFIED",
+     "non-normal K=2.82": "CERTIFIED_WITH_MARGIN",
+     "non-normal K=2.83": "DECREASE_NOT_DEFINITE"
+    },
+    "mismatches": 0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "refusals not raised as ValueError by the positive-definiteness, residual or singularity gate",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     }
+    ],
+    "independent_check": {
+     "checker": {
+      "implementation": "ciw.lab.lyapunov_reference",
+      "revision": "0.1.0"
+     },
+     "comparison": "abs_le",
+     "observed": 0.0,
+     "passed": true,
+     "producer": {
+      "implementation": "Parameterized-Lyapunov-Stability-Runtime@19ea69670601",
+      "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196"
+     },
+     "reference": "returned P that are not exactly valid certificates",
+     "reference_kind": "exact_arithmetic",
+     "tolerance": 0.0
+    },
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "PLSR's solve_lyapunov returns only exactly valid certificates on the exactly Hurwitz Jordan plants and otherwise raises ValueError at a documented gate",
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact rational, integer or bitwise comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "Jordan n=3, lambda=2^-0": "P returned",
+    "Jordan n=4, lambda=2^-6": "raises ValueError",
+    "Jordan n=5, lambda=2^-12": "raises ValueError",
+    "Jordan n=6, lambda=2^-10": "raises ValueError",
+    "Jordan n=6, lambda=2^-12": "raises ValueError",
+    "Jordan n=8, lambda=2^-10": "raises ValueError",
+    "Jordan n=8, lambda=2^-8": "raises ValueError"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "refused plants whose independent P is exactly valid and certified by PLSR's verdict",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     }
+    ],
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "solve_lyapunov refuses an exactly Hurwitz plant for which an exactly valid quadratic certificate exists and PLSR's own verdict certifies it",
+   "counterexample": {
+    "statement": "PLSR's solve_lyapunov refuses only plants for which no valid quadratic certificate is available in float64",
+    "witness": {
+     "certificate": "scipy.linalg.solve_continuous_lyapunov@1.16.2",
+     "certificate_condition": 496874100465.51154,
+     "name": "Jordan n=4, lambda=2^-6",
+     "solver_error": "Lyapunov residual 5.875e-04 exceeds tolerance 1.000e-06; the equation is not resolvable in float64 at this scale",
+     "verdict_with_certificate": "CERTIFIED_WITH_MARGIN"
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "depends on the independent solver's P for a cond ~5e11 plant; exact validity of that P is decided in rational arithmetic",
+    "kind": "reference_error",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "plants": [
+     "Jordan n=4, lambda=2^-6"
+    ],
+    "refused_with_valid_certificate": 1
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "exactly defective cases whose numpy abscissa lies within 1e3 eps max|A| of the exact eigenvalue -lambda (A = T J T^-1 verified exactly)",
+      "reference_kind": "analytic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 5.0,
+      "passed": true,
+      "reference": "exactly Hurwitz defective cases with numpy abscissa >= 0",
+      "reference_kind": "analytic",
+      "tolerance": 1.0
+     }
+    ],
+    "generator": {
+     "name": "adversarial_cases",
+     "seed": 109
+    }
+   },
+   "claim": "numpy.linalg.eigvals misplaces the exact eigenvalue -lambda of every defective test matrix by far more than machine precision; whether the sign flips is recorded",
+   "counterexample": {
+    "statement": "The sign of the floating-point spectral abscissa decides Hurwitz stability",
+    "witness": {
+     "A": [
+      [
+       -1.000244140625,
+       1.0,
+       0.0,
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       0.999755859375,
+       1.0,
+       0.0,
+       0.0
+      ],
+      [
+       1.0,
+       -1.0,
+       0.999755859375,
+       1.0,
+       0.0
+      ],
+      [
+       -2.0,
+       1.0,
+       -3.0,
+       -2.000244140625,
+       1.0
+      ],
+      [
+       -1.0,
+       0.0,
+       -1.0,
+       0.0,
+       0.999755859375
+      ]
+     ],
+     "exact_spectrum": -0.000244140625,
+     "name": "Jordan n=5, lambda=2^-12",
+     "numpy_abscissa": 0.00018266938715315225
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 7.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "numpy eigenvalues of defective matrices vary at the eps^(1/n) level between builds; the misplacement exceeds 1e3 eps by orders of magnitude, the sign count may change",
+    "kind": "reference_error",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "cases": 7,
+    "misplaced_beyond_1e3_eps": 7,
+    "wrong_sign": 5
+   }
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 10537,
+   "path": "artifacts/T109/adversarial.json",
+   "sha256": "1b9cc6ba634ab04403d73760becbb322c07524374f4184194691aeaaf34f062b"
+  },
+  {
+   "bytes": 4504,
+   "path": "artifacts/T109/solver-agreement.svg",
+   "sha256": "9d9722cbad9ad27bc9b0a695856483692fc276af08a0ff2268549396fb97784d"
+  }
+ ],
+ "hypothesis": "On highly non-normal, exactly defective and clustered Hurwitz plants PLSR either certifies soundly (the exact decrease form of its P is negative definite and P is exactly positive definite) or refuses; its Lyapunov solutions agree with an independent solver to within conditioning; its solver may refuse plants that do have a valid quadratic certificate; floating-point eigenvalues may misjudge stability where the exact certificate route does not.",
+ "input_data": [
+  "Non-normal K in {1, 2.82, 2.83, 10, ..., 1e8} (2.82 and 2.83 bracket 2 sqrt 2)",
+  "Exactly defective A = T J T^-1 (PCG64 seed 109): (n, lambda) in {(3, 1), (4, 2^-6), (5, 2^-12), (6, 2^-10), (6, 2^-12), (8, 2^-8), (8, 2^-10)}",
+  "Clustered spectra n = 3..5 with spacing 1e-8..1e-12 plus a 1e-3 non-normal part",
+  "Q = I, x = ones"
+ ],
+ "mathematical_model": "Lyapunov: A Hurwitz iff A^T P + P A = -Q has P > 0 for Q > 0; a certified P bounds transients by ||exp(At)|| <= sqrt(cond P). Non-normal A = [[-1, K], [0, -2]]: P = I certifies iff K < 2 sqrt 2. Defective A = T J T^-1 with integer unimodular T (T Ti = I checked exactly) has exact spectrum {-lambda}; eigenvalue perturbation of an n-Jordan block is O(eps^(1/n)). A backward-stable solve has forward error of order n^2 u cond(P).",
+ "number": 109,
+ "numerical_result": "30 certifying verdicts, 0 without an exactly valid certificate. Solver agreement on 14 solved cases: max relative difference 1.80e-15, max normalised by n^2 u cond(P) 1.67 (scipy.linalg.solve_continuous_lyapunov@1.16.2). Transient peak / sqrt(cond P): max 0.618 over 8 certified K. P = I threshold mismatches: 0. Jordan: numpy abscissa >= 0 in 5 of 7 exactly Hurwitz cases; PLSR's solver returned P for 1 and refused 6 (0 refusals outside the documented gates, 0 returned P invalid); refused plants with an exactly valid independent certificate that PLSR's verdict certifies: 1. Conclusion: every PLSR certificate on these plants is exactly valid; the solver's refusals are conservative, including plants that do have a valid certificate; the floating-point eigenvalue sign misjudges exactly Hurwitz defective matrices.",
+ "observation_model": "PLSR solve_lyapunov outcome and verdicts with P = I, with the independent P and with PLSR's own P; numpy eigenvalues; exact rational checks of every certifying verdict and of every candidate P.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "provider": {
+   "commit": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+   "entry": "lyapunov.verdict / lyapunov.solve_lyapunov / lyapunov.decrease_resolution",
+   "files_pinned": 20,
+   "files_verified": 20,
+   "implementation": "Parameterized-Lyapunov-Stability-Runtime",
+   "numpy_version": "2.4.3",
+   "package_version": "0.1.0rc1",
+   "python_version": "3.12.3",
+   "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+   "role": "plsr-python",
+   "source_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7",
+   "verification": "package version and per-file sha256 checked in the subprocess before use"
+  },
+  "python": "3.12.3",
+  "requirement_probes": {
+   "provider:plsr-python": true
+  },
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/lyapunov.py": "58d6c7473f0a42002b57888de0ccfbbf73b571bbbabbf9ee81e0a05c734f2320",
+   "src/ciw/lab/lyapunov_provider.py": "da3465b48b5f5efc47bfe6ab8379cf2cf2bc23e4835dc7ff047252e77fa6ef17",
+   "src/ciw/lab/lyapunov_reference.py": "fa37ef453c23ad2bed2eab41132e72670e166b93eebd5fc9d67a4a89a7c92cca"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T110: discrete versus continuous interpretation; add an exact-arithmetic Lyapunov solve (rational Bartels-Stewart) to decide defective cases that PLSR's residual gate refuses, and propose that solve_lyapunov report the residual gate separately from definiteness.",
+ "report_id": "sha256:cb3db4bd712dcbf1ef4b2713d19371e621c8a7542060dd3e487009c0c028e53b",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "lyapunov",
+ "state": "completed",
+ "task_id": "T109",
+ "tests_passed": [
+  "independent: Every certifying PLSR verdict on the adversarial plants uses an exactly valid certificate vs ciw.lab.lyapunov_reference",
+  "independent: PLSR Lyapunov solutions agree with an independent solver to within 10 n^2 u cond(P) on every solved adversarial case vs scipy.linalg.solve_continuous_lyapunov@1.16.2",
+  "check: Certified non-normal plants respect the Lyapunov transient bound ||exp(At)|| <= sqrt(cond P) vs max over K of peak ||exp(At)|| / sqrt(cond P)",
+  "check: With P = I the non-normal plants are certified exactly when K < 2 sqrt 2, including K = 2.82 and 2.83 on either side vs codes against the analytic threshold",
+  "check: PLSR's solve_lyapunov returns only exactly valid certificates on the exactly Hurwitz Jordan plants and otherwise raises ValueError at a documented gate vs refusals not raised as ValueError by the positive-definiteness, residual or singularity gate",
+  "independent: PLSR's solve_lyapunov returns only exactly valid certificates on the exactly Hurwitz Jordan plants and otherwise raises ValueError at a documented gate vs ciw.lab.lyapunov_reference",
+  "check: solve_lyapunov refuses an exactly Hurwitz plant for which an exactly valid quadratic certificate exists and PLSR's own verdict certifies it vs refused plants whose independent P is exactly valid and certified by PLSR's verdict",
+  "check: numpy.linalg.eigvals misplaces the exact eigenvalue -lambda of every defective test matrix by far more than machine precision; whether the sign flips is recorded vs exactly defective cases whose numpy abscissa lies within 1e3 eps max|A| of the exact eigenvalue -lambda (A = T J T^-1 verified exactly)",
+  "check: numpy.linalg.eigvals misplaces the exact eigenvalue -lambda of every defective test matrix by far more than machine precision; whether the sign flips is recorded vs exactly Hurwitz defective cases with numpy abscissa >= 0",
+  "pytest: tests/test_lab_lyapunov.py::test_t109_adversarial_eigenvalues",
+  "pytest: tests/test_lab_lyapunov.py::test_numpy_misreads_exact_jordan_block",
+  "pytest: tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider"
+ ],
+ "tests_skipped": [],
+ "title": "Add adversarial eigenvalue cases.",
+ "uncertainty": "Exact checks are exact. Solver agreement scales with cond(P) (retained per case). numpy eigenvalues of defective matrices vary at the eps^(1/n) level between builds, so the count of wrong signs may change; the misplacement beyond 1e3 eps does not.",
+ "unresolved_assumptions": [
+  "Jordan and clustered plants are synthetic stress cases, not identified plant models.",
+  "The independent solver is SciPy when installed, otherwise the CIW Kronecker solve."
+ ]
+}

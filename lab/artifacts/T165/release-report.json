@@ -1,0 +1,26 @@
+{
+ "ciw_version": "0.1.0",
+ "labels": {
+  "analytic": 9,
+  "hardware_measured": 0,
+  "independently_verified": 55,
+  "not_established": 168,
+  "numerically_verified": 693,
+  "provider_backed": 3,
+  "synthetic": 0
+ },
+ "physical_validation": "not_established",
+ "providers": [
+  "{\"commit\": \"19ea6967060166ba09db6cd4563bd87bd6b3d196\", \"entry\": \"lyapunov.verdict / lyapunov.solve_lyapunov / lyapunov.decrease_resolution\", \"files_pinned\": 20, \"files_verified\": 20, \"implementation\": \"Parameterized-Lyapunov-Stability-Runtime\", \"numpy_version\": \"2.4.3\", \"package_version\": \"0.1.0rc1\", \"python_version\": \"3.12.3\", \"repository\": \"https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime\", \"role\": \"plsr-python\", \"source_digest\": \"a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7\", \"verification\": \"package version and per-file sha256 checked in the subprocess before use\"}",
+  "{\"dirty\": false, \"entry\": \"geodesic_testbed.jacobi.integrate_jacobi\", \"implementation\": \"Curved-Surface-Geodesic-Sensitivity-Runtime\", \"numpy\": \"2.4.3\", \"python\": \"3.12.3\", \"repository\": \"giasonpooni/Curved-Surface-Geodesic-Sensitivity-Runtime\", \"revision\": \"bbc535af29c30997e56fd120320c570830676462\", \"source_tree\": \"181b6eb73288d001f45c39bb149b1a80a431f34b\", \"subprocess\": true}",
+  "{\"dirty\": false, \"entry_points\": [\"flat_torus.fold.fold_to_fundamental_domain\", \"flat_torus.lengths.loop_length\", \"flat_torus.trajectories.trace_closed_geodesic\", \"flat_torus.lattice.normalized_lattice\"], \"executed\": true, \"interpreter\": \"<ftr-python>\", \"numpy\": \"2.4.3\", \"python\": \"3.12.3\", \"repository\": \"giasonpooni/Flat-Torus-Geodesic-Reference\", \"revision\": \"dc918562cd9e351a65475d29f46963c9f2fd7db8\", \"source_tree\": \"1f082c6b443f2e301ac5889122912f26968ae756\"}"
+ ],
+ "release_digest": "sha256:0e2338213ac01633a5f0491b4c8eae477491f72604db7011f5bb08536e974cb0",
+ "schema": "ciw.lab-release-report.v1",
+ "states": {
+  "blocked": 2,
+  "completed": 142,
+  "partial": 10
+ },
+ "tasks": 154
+}

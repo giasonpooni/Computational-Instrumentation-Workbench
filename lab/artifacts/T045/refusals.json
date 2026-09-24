@@ -1,0 +1,215 @@
+{
+ "chord_conversions": [
+  {
+   "alpha_deg": 0.0,
+   "arc_m": 0.015,
+   "chord_m": 0.01498594145454847,
+   "derived_from": [
+    "sha256:86b0ffbbff86f648be7b524c76f10a0ea2debf4e0f5fc8f940f7a0c8ae74bd78"
+   ],
+   "mode": "reconstructed_surface_distance",
+   "recovered_arc_m": 0.015
+  },
+  {
+   "alpha_deg": 0.0,
+   "arc_m": 0.06,
+   "chord_m": 0.05910404133226792,
+   "derived_from": [
+    "sha256:59b472db63729a554b693654d54f2b7b5357b98971797fdb9e3f6511697e5d60"
+   ],
+   "mode": "reconstructed_surface_distance",
+   "recovered_arc_m": 0.06000000000000001
+  },
+  {
+   "alpha_deg": 0.0,
+   "arc_m": 0.12,
+   "chord_m": 0.11292849467900706,
+   "derived_from": [
+    "sha256:a2c568c7499f1a710d9c1ccd324f6cc64f9533d6f28f9b263cae4bf71d771ad9"
+   ],
+   "mode": "reconstructed_surface_distance",
+   "recovered_arc_m": 0.11999999999999997
+  },
+  {
+   "alpha_deg": 30.0,
+   "arc_m": 0.015,
+   "chord_m": 0.01499209220743291,
+   "derived_from": [
+    "sha256:a07477cf05a8aa2a0199b81f114559ed7b72c2db6d6d7676bfa9f4bc43fa9509"
+   ],
+   "mode": "reconstructed_surface_distance",
+   "recovered_arc_m": 0.01500000000000001
+  },
+  {
+   "alpha_deg": 30.0,
+   "arc_m": 0.06,
+   "chord_m": 0.05949616896722112,
+   "derived_from": [
+    "sha256:056d27d29cdfd181e2b7437bc34b0b5ec1bea39fabd9fb7ba1dcfb60bb069b7f"
+   ],
+   "mode": "reconstructed_surface_distance",
+   "recovered_arc_m": 0.06
+  },
+  {
+   "alpha_deg": 30.0,
+   "arc_m": 0.12,
+   "chord_m": 0.11602726053203241,
+   "derived_from": [
+    "sha256:f7c27a640f222bba29a471acdeef1e2fb647ac2e1735636cba1e33ddfad0dbad"
+   ],
+   "mode": "reconstructed_surface_distance",
+   "recovered_arc_m": 0.12000000000000002
+  },
+  {
+   "alpha_deg": 60.0,
+   "arc_m": 0.015,
+   "chord_m": 0.01499912123278732,
+   "derived_from": [
+    "sha256:7c148c6d037487657f16b95738e5cb6418275bd258e70c432cef471d8738ac5e"
+   ],
+   "mode": "reconstructed_surface_distance",
+   "recovered_arc_m": 0.01500000000000001
+  },
+  {
+   "alpha_deg": 60.0,
+   "arc_m": 0.06,
+   "chord_m": 0.05994389224506431,
+   "derived_from": [
+    "sha256:2d746b64f97189e263cfe0fd300731e3d5a1a5dc3aa348d113c75a5a091eec87"
+   ],
+   "mode": "reconstructed_surface_distance",
+   "recovered_arc_m": 0.06
+  },
+  {
+   "alpha_deg": 60.0,
+   "arc_m": 0.12,
+   "chord_m": 0.11955453860814501,
+   "derived_from": [
+    "sha256:344286046ef70206145670be5c01367138c95b504db58b7e4eaf010fd9dbc143"
+   ],
+   "mode": "reconstructed_surface_distance",
+   "recovered_arc_m": 0.12
+  },
+  {
+   "alpha_deg": 90.0,
+   "arc_m": 0.015,
+   "chord_m": 0.015000000000000013,
+   "derived_from": [
+    "sha256:628063c2c6ad816de5efba6c2f97ead0a2a49c4f2d8b68ba03857a39a6498787"
+   ],
+   "mode": "reconstructed_surface_distance",
+   "recovered_arc_m": 0.015000000000000013
+  },
+  {
+   "alpha_deg": 90.0,
+   "arc_m": 0.06,
+   "chord_m": 0.06,
+   "derived_from": [
+    "sha256:0db647d173787f054c47488f3da5d3ff204b7339674b50f04299ca18c199bdef"
+   ],
+   "mode": "reconstructed_surface_distance",
+   "recovered_arc_m": 0.06
+  },
+  {
+   "alpha_deg": 90.0,
+   "arc_m": 0.12,
+   "chord_m": 0.12,
+   "derived_from": [
+    "sha256:02e733355a808d438cba01cf5d34483e7c55c5f845ddc0c476ade7b39b4d1c9f"
+   ],
+   "mode": "reconstructed_surface_distance",
+   "recovered_arc_m": 0.12
+  }
+ ],
+ "records": [
+  {
+   "case": "frame id removed",
+   "expected": "missing_frame",
+   "observed": "missing_frame"
+  },
+  {
+   "case": "clock id removed",
+   "expected": "missing_clock",
+   "observed": "missing_clock"
+  },
+  {
+   "case": "clock epoch removed",
+   "expected": "missing_epoch",
+   "observed": "missing_epoch"
+  },
+  {
+   "case": "calibration reference removed",
+   "expected": "missing_calibration",
+   "observed": "missing_calibration"
+  },
+  {
+   "case": "clock basis removed",
+   "expected": "missing_clock_basis",
+   "observed": "missing_clock_basis"
+  },
+  {
+   "case": "arrival stamp on an acquisition-stamped mode",
+   "expected": "clock_basis_mismatch",
+   "observed": "clock_basis_mismatch"
+  },
+  {
+   "case": "tracker frame on a camera-rig mode",
+   "expected": "frame_kind_mismatch",
+   "observed": "frame_kind_mismatch"
+  },
+  {
+   "case": "pixel unit on a metric mode",
+   "expected": "unit_mismatch",
+   "observed": "unit_mismatch"
+  },
+  {
+   "case": "surface distance without a surface model",
+   "expected": "surface_model_required",
+   "observed": "surface_model_required"
+  }
+ ],
+ "substitutions": {
+  "camera_chord_distance->encoder_displacement": "mode_substitution",
+  "camera_chord_distance->image_residual": "mode_substitution",
+  "camera_chord_distance->imu_orientation": "mode_substitution",
+  "camera_chord_distance->intrinsic_geodesic_distance": "mode_substitution",
+  "camera_chord_distance->reconstructed_surface_distance": "mode_substitution",
+  "camera_chord_distance->tracker_measurement": "mode_substitution",
+  "encoder_displacement->camera_chord_distance": "mode_substitution",
+  "encoder_displacement->image_residual": "mode_substitution",
+  "encoder_displacement->imu_orientation": "mode_substitution",
+  "encoder_displacement->intrinsic_geodesic_distance": "mode_substitution",
+  "encoder_displacement->reconstructed_surface_distance": "mode_substitution",
+  "encoder_displacement->tracker_measurement": "mode_substitution",
+  "image_residual->camera_chord_distance": "mode_substitution",
+  "image_residual->encoder_displacement": "mode_substitution",
+  "image_residual->imu_orientation": "mode_substitution",
+  "image_residual->intrinsic_geodesic_distance": "mode_substitution",
+  "image_residual->reconstructed_surface_distance": "mode_substitution",
+  "image_residual->tracker_measurement": "mode_substitution",
+  "imu_orientation->camera_chord_distance": "mode_substitution",
+  "imu_orientation->encoder_displacement": "mode_substitution",
+  "imu_orientation->image_residual": "mode_substitution",
+  "imu_orientation->intrinsic_geodesic_distance": "mode_substitution",
+  "imu_orientation->reconstructed_surface_distance": "mode_substitution",
+  "imu_orientation->tracker_measurement": "mode_substitution",
+  "intrinsic_geodesic_distance->camera_chord_distance": "mode_substitution",
+  "intrinsic_geodesic_distance->encoder_displacement": "mode_substitution",
+  "intrinsic_geodesic_distance->image_residual": "mode_substitution",
+  "intrinsic_geodesic_distance->imu_orientation": "mode_substitution",
+  "intrinsic_geodesic_distance->reconstructed_surface_distance": "mode_substitution",
+  "intrinsic_geodesic_distance->tracker_measurement": "mode_substitution",
+  "reconstructed_surface_distance->camera_chord_distance": "mode_substitution",
+  "reconstructed_surface_distance->encoder_displacement": "mode_substitution",
+  "reconstructed_surface_distance->image_residual": "mode_substitution",
+  "reconstructed_surface_distance->imu_orientation": "mode_substitution",
+  "reconstructed_surface_distance->intrinsic_geodesic_distance": "mode_substitution",
+  "reconstructed_surface_distance->tracker_measurement": "mode_substitution",
+  "tracker_measurement->camera_chord_distance": "mode_substitution",
+  "tracker_measurement->encoder_displacement": "mode_substitution",
+  "tracker_measurement->image_residual": "mode_substitution",
+  "tracker_measurement->imu_orientation": "mode_substitution",
+  "tracker_measurement->intrinsic_geodesic_distance": "mode_substitution",
+  "tracker_measurement->reconstructed_surface_distance": "mode_substitution"
+ }
+}

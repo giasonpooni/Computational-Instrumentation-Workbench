@@ -480,10 +480,12 @@ a wheel and installs it in a clean environment with the `dev`, `lab` and `mcp`
 extras. It binds pinned CSG, FTR and SCR checkouts; on Python 3.12 or newer, as
 in CI, it also installs the `plsr` extra and binds that interpreter for PLSR
 and FTR. It runs the lab tests and the whole queue and compares the fresh
-reports with a reviewed run retained in `lab/`. `lab/` does not yet hold a
-retained run, so the gate currently refuses before provisioning providers;
-`scripts/refresh_lab.py` regenerates one from a clean-room run for review
-before it is committed. Hardware-dependent tasks remain blocked in the gate.
+reports with the reviewed run retained in [`lab/`](lab/README.md): every
+report, artifact and figure, the report book (`lab/REPORTS.md`) and a
+self-contained dashboard (`lab/index.html`). `scripts/refresh_lab.py`
+regenerates that run from a clean-room gate run for review before it is
+committed. Hardware-dependent tasks remain blocked in the gate, and no retained
+report claims a physical result.
 
 See the [development guide](docs/DEVELOPMENT.md#validation-commands) for commands
 and environment requirements. The candidate-evidence gate runs in Ubuntu CI;

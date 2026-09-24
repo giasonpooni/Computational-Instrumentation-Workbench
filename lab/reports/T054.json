@@ -1,0 +1,285 @@
+{
+ "changed_files": [
+  "src/ciw/lab/observation.py",
+  "src/ciw/lab/observation_signals.py",
+  "src/ciw/lab/observation_modes.py",
+  "docs/lab/OBSERVATION.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 4,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Residual O(delta^2); exact secant law; jitter MSE within the Monte Carlo interval; mapped stamps reproduce the true-stamp interpolation.",
+ "experiment": "Offset scan over delta; exact comparison with the interpolant slope; seeded jitter ensemble; typed records mapped with a declared ClockMapping and combined.",
+ "failure_modes_checked": [
+  "offset crossing an interpolation knot (excluded and counted)",
+  "combining clocks without a mapping",
+  "mapping applied to the wrong epoch"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0004987614543296992,
+      "passed": true,
+      "reference": "log-log slope of max |e + v delta| minus 2",
+      "reference_kind": "analytic",
+      "tolerance": 0.02
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "samples exceeding a_max delta^2 / 2",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "A clock offset delta produces error -v delta + O(delta^2) at the sample times",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-09
+   },
+   "uncertainty": {
+    "basis": "the O(delta^3) term tilts the fitted residual slope away from 2",
+    "kind": "truncation_bound",
+    "value": {
+     "residual_slope": 0.0004987614543296992
+    }
+   },
+   "unit": null,
+   "value": {
+    "bound_violations": 0,
+    "residual_slope": 2.0004987614543297
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 9.118140270603092e-17,
+      "passed": true,
+      "reference": "|error + S delta| away from knots (m)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.00017325058082651168,
+      "passed": true,
+      "reference": "regression coefficient on -v delta minus the velocity-weighted sinc^2(omega h/2)",
+      "reference_kind": "analytic",
+      "tolerance": 0.0005
+     }
+    ]
+   },
+   "claim": "After linear interpolation to a common time the offset error is exactly -S delta (S the interpolant slope); its regression on -v delta is the velocity-weighted sinc^2(omega h/2)",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 1e-09
+   },
+   "uncertainty": {
+    "basis": "the finite set of interval positions (10 per cycle of 100 Hz against 30 Hz) and samples near knots depart from the uniform-position average",
+    "kind": "truncation_bound",
+    "value": {
+     "velocity_regression": 0.0005
+    }
+   },
+   "unit": null,
+   "value": {
+    "exact_residual_m": 9.118140270603092e-17,
+    "predicted_regression": 0.9920766752469412,
+    "velocity_regression": 0.9919034246661147
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": -0.6794132051133122,
+      "passed": true,
+      "reference": "per-run mean squared jitter error against the first-order prediction (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     }
+    ],
+    "generator": {
+     "jitter_s": 0.0005,
+     "name": "Gaussian timestamp jitter",
+     "runs": 300,
+     "seed": 54
+    }
+   },
+   "claim": "Timestamp jitter adds mean squared error S^2 sigma_j^2 ((1 - w)^2 + w^2)",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-18,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "95 % half-width over 300 independent runs (m^2)",
+    "kind": "monte_carlo_95ci",
+    "value": {
+     "sample_mse": 1.9585385179860218e-10
+    }
+   },
+   "unit": "m^2",
+   "value": {
+    "predicted_mse": 8.254376789701232e-09,
+    "sample_mse": 8.186484882383608e-09,
+    "z": -0.6794132051133122
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "clock_mismatch",
+      "observed_refusal": "clock_mismatch",
+      "passed": true,
+      "reference": "combining clock A and clock B records without a mapping",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "accepted",
+      "observed_refusal": "accepted",
+      "passed": true,
+      "reference": "combining after the declared mapping",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "epoch_mismatch",
+      "observed_refusal": "epoch_mismatch",
+      "passed": true,
+      "reference": "applying the mapping to a record of another epoch",
+      "reference_kind": "refusal"
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "interpolation with mapped stamps against true stamps (m)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-15
+     }
+    ]
+   },
+   "claim": "A declared clock mapping removes the offset error; combining clocks without one is refused",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-15,
+    "rel": 1e-09
+   },
+   "uncertainty": {
+    "basis": "dyadic offset 1/256 s; mapped stamps equal the true stamps up to rounding of t + offset",
+    "kind": "roundoff",
+    "value": 1e-16
+   },
+   "unit": null,
+   "value": {
+    "mapped_gap_m": 0.0,
+    "unmapped_gap_m": 0.0017606614163031076
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": "No clocks were measured; drift, rate error and non-Gaussian latency are not modelled."
+   },
+   "claim": "Real sensor clocks have the declared constant offset and white jitter",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 1303,
+   "path": "artifacts/T054/timing-study.json",
+   "sha256": "e489eef0e25fa30314a120223cedba9dc6aa2ed7c28b03ca40e258a87f64087c"
+  },
+  {
+   "bytes": 2740,
+   "path": "artifacts/T054/offset-residual.svg",
+   "sha256": "132c2947b3f399dafa50243b7df76c6c485eac03afdc9a87a7577266b8d766de"
+  }
+ ],
+ "hypothesis": "An uncorrected clock offset delta between two sensors produces an error -v delta to first order at the sample times and exactly -S delta after linear interpolation to a common time, where the interpolant slope S equals the velocity up to a sinc(omega h/2) factor; jitter adds a predictable variance; a declared clock mapping removes the offset.",
+ "input_data": [
+  "Declared timing {'rate_a_hz': 100.0, 'rate_b_hz': 30.0, 'offset_s': 0.00390625, 'jitter_s': 0.0005, 'runs': 300}",
+  "Signal 50 mm sin(2 pi 0.7 t) + 20 mm sin(2 pi 1.9 t + 0.3)",
+  "Seed 54"
+ ],
+ "mathematical_model": "x(t) attributed to t + delta: e = x(t) - x(t + delta) = -v delta - a delta^2/2 + ...; linear interpolation I(t - delta) - I(t) = -S delta off the knots, with S = v(t_mid) sinc(omega h/2) per tone, so regressing on -v delta gives sinc^2(omega h/2) weighted by (A omega)^2; jitter j_i: e = -S((1 - w) j_i + w j_{i+1}) to first order.",
+ "number": 54,
+ "numerical_result": "residual slope 2.0005; exact residual 9.1e-17 m; velocity regression 0.99190 vs sinc^2 prediction 0.99208; jitter MSE 8.186e-09 vs 8.254e-09 (z = -0.68); mapped gap 0.0e+00 m vs unmapped 1.76e-03 m.",
+ "observation_model": "Synthetic encoder_displacement records on clock B (30 Hz) interpolated to clock A times (100 Hz), acquisition-stamped.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/observation.py": "9ebedc1a1693aaa28965ba0c97837ad2d2c45bf0fd360857cf7b32c0993ed5fc",
+   "src/ciw/lab/observation_modes.py": "bfd6aa4471cc876a7ac2fb8790a4a5c4f478c547350b059311f5e6d53702c83e",
+   "src/ciw/lab/observation_signals.py": "19e94cb28160a07e5a285b5a4acd76e3820deb37ee5ed180f5c7bf1975a56793"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T055: add dropped observations",
+ "report_id": "sha256:c6ec1f6480b87ba163a0cf1abd1371b60e060cb690c52f3e31acbec681db399d",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "observation",
+ "state": "completed",
+ "task_id": "T054",
+ "tests_passed": [
+  "check: A clock offset delta produces error -v delta + O(delta^2) at the sample times vs log-log slope of max |e + v delta| minus 2",
+  "check: A clock offset delta produces error -v delta + O(delta^2) at the sample times vs samples exceeding a_max delta^2 / 2",
+  "check: After linear interpolation to a common time the offset error is exactly -S delta (S the interpolant slope); its regression on -v delta is the velocity-weighted sinc^2(omega h/2) vs |error + S delta| away from knots (m)",
+  "check: After linear interpolation to a common time the offset error is exactly -S delta (S the interpolant slope); its regression on -v delta is the velocity-weighted sinc^2(omega h/2) vs regression coefficient on -v delta minus the velocity-weighted sinc^2(omega h/2)",
+  "check: Timestamp jitter adds mean squared error S^2 sigma_j^2 ((1 - w)^2 + w^2) vs per-run mean squared jitter error against the first-order prediction (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: A declared clock mapping removes the offset error; combining clocks without one is refused vs combining clock A and clock B records without a mapping",
+  "check: A declared clock mapping removes the offset error; combining clocks without one is refused vs combining after the declared mapping",
+  "check: A declared clock mapping removes the offset error; combining clocks without one is refused vs applying the mapping to a record of another epoch",
+  "check: A declared clock mapping removes the offset error; combining clocks without one is refused vs interpolation with mapped stamps against true stamps (m)",
+  "pytest: tests/test_lab_observation.py::test_t054_asynchronous_timestamps"
+ ],
+ "tests_skipped": [],
+ "title": "Add asynchronous timestamps.",
+ "uncertainty": "The velocity regression departs from 1 by the product of the secant-slope factor and the position-within-interval factor, sinc^2(omega h/2), about 1 - (omega h)^2/12; jitter z uses 300 independent runs.",
+ "unresolved_assumptions": [
+  "Clock offset is constant (no drift)",
+  "Jitter is white and much smaller than the sample interval"
+ ]
+}

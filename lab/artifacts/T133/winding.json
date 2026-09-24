@@ -1,0 +1,95 @@
+{
+ "friction_mu_declared": 0.2,
+ "regimes": {
+  "psi50": {
+   "azimuth_advance_rad": 4.14372146408,
+   "clairaut_drift_rel": 7.91117480989e-10,
+   "clairaut_mm": 128.557521937,
+   "conjugate_points_mm": [
+    537.549345138,
+    949.627921767,
+    1349.3601383
+   ],
+   "det_drift": 5.77272452063e-10,
+   "heading_from_parallel_deg": 50.0,
+   "m01_clairaut_mm": -815.322347266,
+   "m01_mm": -815.322455315,
+   "max_abs_j_head_mm": 1375.34781816,
+   "monodromy": [
+    [
+     0.999999965488,
+     -815.322455315
+    ],
+    [
+     9.3650037459e-11,
+     0.999999957852
+    ]
+   ],
+   "monodromy_richardson": 1.08755306276e-05,
+   "monodromy_trace_minus_2": -7.66595880108e-08,
+   "period_integrated_mm": 782.687282966,
+   "period_mm": 782.687282851,
+   "regime": "librating",
+   "remainder_order": 2.0023335329,
+   "secular_rate": 1.04169631113,
+   "theta_range_rad": [
+    -2.0140090176,
+    2.0140076587
+   ],
+   "three_period_ratio": 0.999999912196,
+   "turn_arclength_mm": 195.671828682,
+   "turn_clairaut_rad": 2.01401522982,
+   "turn_numeric_rad": 2.0140152263,
+   "turn_shift_clairaut_rad": 0.00339608540362,
+   "turn_shift_linear_rad": 0.00339191880457,
+   "turn_shift_numeric_rad": 0.00339608586491
+  },
+  "psi70": {
+   "azimuth_advance_rad": 1.38535034042,
+   "clairaut_drift_rel": 3.94297973274e-09,
+   "clairaut_mm": 68.4040286651,
+   "conjugate_points_mm": [],
+   "det_drift": 7.66602781255e-10,
+   "heading_from_parallel_deg": 70.0,
+   "m01_clairaut_mm": 1081.86458983,
+   "m01_mm": 1081.86458327,
+   "max_abs_j_head_mm": 4328.49221244,
+   "monodromy": [
+    [
+     1.00000002331,
+     1081.86458327
+    ],
+    [
+     2.0346013123e-11,
+     0.999999998524
+    ]
+   ],
+   "monodromy_richardson": 6.70331366261e-06,
+   "monodromy_trace_minus_2": 2.18307758537e-08,
+   "period_integrated_mm": 366.234444464,
+   "period_mm": 366.234444701,
+   "regime": "circulating",
+   "remainder_order": 1.99946084293,
+   "secular_rate": 2.95402193573,
+   "theta_range_rad": [
+    0.0,
+    25.7900741968
+   ],
+   "three_period_ratio": 1.00000006351
+  }
+ },
+ "slippage": {
+  "psi50": {
+   "clairaut_variation_mm": 64.2787609687,
+   "fraction_above_mu": 0.65,
+   "max_abs_kappa_g_per_mm": 0.00454502234661,
+   "max_ratio": 0.443628472814
+  },
+  "psi70": {
+   "clairaut_variation_mm": 34.2020143326,
+   "fraction_above_mu": 0.0,
+   "max_abs_kappa_g_per_mm": 0.00241835587833,
+   "max_ratio": 0.139424542481
+  }
+ }
+}

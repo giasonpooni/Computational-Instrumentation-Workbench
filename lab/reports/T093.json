@@ -1,0 +1,356 @@
+{
+ "changed_files": [
+  "src/ciw/lab/exchange_provenance_bundles.py",
+  "src/ciw/lab/exchange_provenance_bundles_fixtures.py"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 0,
+   "numerically_verified": 3,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Each request refused with its expected text; all digests equal; re-saving reproduces the workspace content except its saved_at timestamp.",
+ "experiment": "Send 16 refused requests (unbound execution, forged bindings, malformed sources, stale revision, unknown identities, out-of-range analysis, save redirection, unsupported version), then compare; reopen a corrupted copy; finally send one refused recording operation separately.",
+ "failure_modes_checked": [
+  "reservation or pending counters leaked by a refusal",
+  "partial source retained after refusal",
+  "selection revision advanced by a refused update",
+  "save path redirected by a client",
+  "refused reopen writing into its target directory",
+  "refusal for an unintended reason (text compared)"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+      "observed_refusal": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+      "passed": true,
+      "reference": "execute unbound numerical-heat",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "invalid_payload: Unknown retained workbench bundle",
+      "observed_refusal": "invalid_payload: Unknown retained workbench bundle",
+      "passed": true,
+      "reference": "replay an unknown bundle",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "unknown_command: Unknown request type: workflow.bind",
+      "observed_refusal": "unknown_command: Unknown request type: workflow.bind",
+      "passed": true,
+      "reference": "client binding request",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "invalid_payload: Unexpected or missing workbench fields",
+      "observed_refusal": "invalid_payload: Unexpected or missing workbench fields",
+      "passed": true,
+      "reference": "replay with client-supplied repositories",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "MALFORMED_RESPONSE: The bound runtime did not return finite, unambiguous JSON",
+      "observed_refusal": "MALFORMED_RESPONSE: The bound runtime did not return finite, unambiguous JSON",
+      "passed": true,
+      "reference": "malformed source JSON",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "invalid_payload: Source bytes must use bounded canonical base64",
+      "observed_refusal": "invalid_payload: Source bytes must use bounded canonical base64",
+      "passed": true,
+      "reference": "non-canonical base64 source",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "invalid_payload: Unknown workbench source kind",
+      "observed_refusal": "invalid_payload: Unknown workbench source kind",
+      "passed": true,
+      "reference": "unknown source kind",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "revision_conflict: Selection changed; refresh session.get before retrying",
+      "observed_refusal": "revision_conflict: Selection changed; refresh session.get before retrying",
+      "passed": true,
+      "reference": "stale selection revision",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "invalid_payload: Unknown channel",
+      "observed_refusal": "invalid_payload: Unknown channel",
+      "passed": true,
+      "reference": "unknown selection channel",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "not_found: Result not found in this session",
+      "observed_refusal": "not_found: Result not found in this session",
+      "passed": true,
+      "reference": "unknown result",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "invalid_payload: Unknown retained workbench bundle",
+      "observed_refusal": "invalid_payload: Unknown retained workbench bundle",
+      "passed": true,
+      "reference": "unknown bundle read",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "invalid_payload: This workflow does not accept an upstream bundle",
+      "observed_refusal": "invalid_payload: This workflow does not accept an upstream bundle",
+      "passed": true,
+      "reference": "energy execute with an upstream bundle",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "invalid_payload: ESM requires an explicitly selected calibrated or telemetry bundle",
+      "observed_refusal": "invalid_payload: ESM requires an explicitly selected calibrated or telemetry bundle",
+      "passed": true,
+      "reference": "ESM candidate inspection of a non-telemetry bundle",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "invalid_payload: Require 0 <= start < end <= recording duration",
+      "observed_refusal": "invalid_payload: Require 0 <= start < end <= recording duration",
+      "passed": true,
+      "reference": "analysis outside the recording",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "invalid_payload: Unknown payload fields: path",
+      "observed_refusal": "invalid_payload: Unknown payload fields: path",
+      "passed": true,
+      "reference": "workspace save to a client path",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "unsupported_version: Supported protocol_version is 1",
+      "observed_refusal": "unsupported_version: Supported protocol_version is 1",
+      "passed": true,
+      "reference": "unsupported protocol version",
+      "reference_kind": "refusal"
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "in-memory state parts changed",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "session directory listing changed",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "re-saved content differs apart from saved_at",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Refused requests leave the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact counts, digests and string comparisons; no rounding is involved",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": {
+    "directory_changed": false,
+    "refused_as_expected": 16,
+    "requests": 16,
+    "resaved_content_equal": true,
+    "state_parts_changed": []
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "Saved result does not refer to this evidence",
+      "observed_refusal": "Saved result does not refer to this evidence",
+      "passed": true,
+      "reference": "Session.from_workspace on a result bound to another run",
+      "reference_kind": "refusal"
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "refused reopen created its output directory",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "A refused reopen of a corrupted workspace creates no output directory",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact counts, digests and string comparisons; no rounding is involved",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": {
+    "output_directory_created": false,
+    "refusal": "Saved result does not refer to this evidence"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "operation_unavailable: No trusted provider bound for ciw.lab-unregistered.v1",
+      "observed_refusal": "operation_unavailable: No trusted provider bound for ciw.lab-unregistered.v1",
+      "passed": true,
+      "reference": "operation.execute of an unregistered recording operation",
+      "reference_kind": "refusal"
+     },
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "state parts changed by the refused operation",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     }
+    ]
+   },
+   "claim": "A refused recording operation is retained as a refused execution record",
+   "counterexample": {
+    "statement": "Every refused request leaves the session's in-memory state unchanged",
+    "witness": {
+     "changed": [
+      "executions"
+     ],
+     "new_files": 1,
+     "request": "operation.execute ciw.lab-unregistered.v1"
+    }
+   },
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact counts, digests and string comparisons; no rounding is involved",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": {
+    "new_files": 1,
+    "outcome": "operation_unavailable: No trusted provider bound for ciw.lab-unregistered.v1",
+    "resaved_workspace_changed": true,
+    "state_parts_changed": [
+     "executions"
+    ]
+   }
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 3784,
+   "path": "artifacts/T093/unchanged.json",
+   "sha256": "e24f30a0aa769e4cd4a38575e9b811ca922bbe87c7cea08b4d782922c8ec8cf5"
+  }
+ ],
+ "hypothesis": "A request that CIW refuses changes neither the session state a save would write nor the session directory.",
+ "input_data": [
+  "energy-accuracy session (synthetic baseline) with oscillator results and one unbound numerical-heat source"
+ ],
+ "mathematical_model": "State = digests of selection, results, executions, retained catalog, catalog revision, byte and reservation counters, identity claims, candidates and bindings; plus the session directory listing and the re-saved workspace content without its saved_at timestamp.",
+ "number": 93,
+ "numerical_result": "16/16 refused with the expected text; changed state parts: none; corrupted reopen refused with 'Saved result does not refer to this evidence'; a refused recording operation changed ['executions'].",
+ "observation_model": "Exact 'code: message' of each refusal; SHA-256 digests before and after the refused requests.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/exchange_provenance_bundles.py": "a505b35560263c1b473912f79e61b15b7e474f8eb1807e691847e4c69791c2d3",
+   "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "f30205e8305a225f24d94b06cba8b519ecea4680ca723aaca3591ff707d04e1c"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T094: reopen golden retained bundles with the current code.",
+ "report_id": "sha256:8f5748936b2a38cf29f5f655823923f66c5503494070196cc416103b5f805f2d",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "exchange-provenance",
+ "state": "completed",
+ "task_id": "T093",
+ "tests_passed": [
+  "check: Refused requests leave the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content vs execute unbound numerical-heat",
+  "check: Refused requests leave the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content vs replay an unknown bundle",
+  "check: Refused requests leave the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content vs client binding request",
+  "check: Refused requests leave the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content vs replay with client-supplied repositories",
+  "check: Refused requests leave the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content vs malformed source JSON",
+  "check: Refused requests leave the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content vs non-canonical base64 source",
+  "check: Refused requests leave the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content vs unknown source kind",
+  "check: Refused requests leave the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content vs stale selection revision",
+  "check: Refused requests leave the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content vs unknown selection channel",
+  "check: Refused requests leave the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content vs unknown result",
+  "check: Refused requests leave the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content vs unknown bundle read",
+  "check: Refused requests leave the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content vs energy execute with an upstream bundle",
+  "check: Refused requests leave the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content vs ESM candidate inspection of a non-telemetry bundle",
+  "check: Refused requests leave the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content vs analysis outside the recording",
+  "check: Refused requests leave the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content vs workspace save to a client path",
+  "check: Refused requests leave the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content vs unsupported protocol version",
+  "check: Refused requests leave the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content vs in-memory state parts changed",
+  "check: Refused requests leave the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content vs session directory listing changed",
+  "check: Refused requests leave the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content vs re-saved content differs apart from saved_at",
+  "check: A refused reopen of a corrupted workspace creates no output directory vs Session.from_workspace on a result bound to another run",
+  "check: A refused reopen of a corrupted workspace creates no output directory vs refused reopen created its output directory",
+  "check: A refused recording operation is retained as a refused execution record vs operation.execute of an unregistered recording operation",
+  "check: A refused recording operation is retained as a refused execution record vs state parts changed by the refused operation",
+  "pytest: tests/test_lab_exchange_provenance_bundles.py::test_t093_refusals_leave_workspace_and_state_unchanged"
+ ],
+ "tests_skipped": [],
+ "title": "Test unchanged workspace after refusal.",
+ "uncertainty": "Exact digest and string equality.",
+ "unresolved_assumptions": [
+  "Refused recording operations are retained by design as auditable execution records; this is a documented exception, not a leak.",
+  "The saved workspace file is not rewritten by requests (no request can target it); the evidence is the state digests and the re-save comparison."
+ ]
+}

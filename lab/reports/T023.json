@@ -1,0 +1,240 @@
+{
+ "changed_files": [
+  "src/ciw/lab/flat_torus_topology.py",
+  "src/ciw/lab/flat_torus_topology_lattice.py",
+  "docs/lab/FLAT_TORUS_TOPOLOGY.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 3,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Zero set = primitive directions with |v| <= L; V-slope = |v|; basin width decreasing in |v|.",
+ "experiment": "Vectorized closed-form segment-to-lattice distance on the heading grid; grid local minima refined at the exact direction arg v; slopes probed at +-1e-4 rad; basins measured on the grid and ordered by their measured widths.",
+ "failure_modes_checked": [
+  "near-miss minima (segment endpoints) separated from true closures",
+  "non-primitive multiples on the same ray",
+  "grid resolution against the narrowest basin"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "missing plus extra closure directions",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Zeros of the return distance (tau = 0.31 + 1.07i, L = 3) are exactly the primitive lattice directions with |v| <= L",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "heading grid spacing (rad); each zero refined at the exact direction arg v",
+    "kind": "truncation_bound",
+    "value": 0.0008726646259971648
+   },
+   "unit": null,
+   "value": {
+    "found": 18,
+    "predicted": 18
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 5.891816425508636e-12,
+      "passed": true,
+      "reference": "|r / sin(delta) - |v|| / |v| at delta = 1e-4",
+      "reference_kind": "analytic",
+      "tolerance": 1e-09
+     }
+    ],
+    "derivation": "r = |v| sin|theta - theta_v| near theta_v"
+   },
+   "claim": "Near each closing heading the closing error grows at rate |v| (the loop length) per radian",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "relative error of r / sin(delta) against |v| at delta = 1e-4",
+    "kind": "roundoff",
+    "value": 5.891816425508636e-12
+   },
+   "unit": null,
+   "value": {
+    "max_relative_slope_error": 5.891816425508636e-12
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "pairs of distinct lengths whose shorter class has a measured basin narrower by at least one grid step",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0005428165631473185,
+      "passed": true,
+      "reference": "measured minus analytic basin width (rad)",
+      "reference_kind": "analytic",
+      "tolerance": 0.0017453292529943296
+     }
+    ]
+   },
+   "claim": "Closure basins are widest for the shortest (lowest-order) primitive classes",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 1e-09
+   },
+   "uncertainty": {
+    "basis": "grid quantization of measured basin widths (rad)",
+    "kind": "truncation_bound",
+    "value": 0.0017453292519943296
+   },
+   "unit": null,
+   "value": {
+    "discordant_pairs": 0,
+    "unresolved_pairs": 0,
+    "widest": [
+     {
+      "basin_width": 0.04137927381071043,
+      "length": 0.9667364890456636,
+      "measured_width": 0.041015237421866746,
+      "winding": [
+       -1,
+       0
+      ]
+     },
+     {
+      "basin_width": 0.04137927381071043,
+      "length": 0.9667364890456636,
+      "measured_width": 0.041015237421866746,
+      "winding": [
+       1,
+       0
+      ]
+     },
+     {
+      "basin_width": 0.03714419546407829,
+      "length": 1.0769461844085568,
+      "measured_width": 0.03752457891787809,
+      "winding": [
+       0,
+       -1
+      ]
+     },
+     {
+      "basin_width": 0.03714419546407829,
+      "length": 1.0769461844085568,
+      "measured_width": 0.03752457891787809,
+      "winding": [
+       0,
+       1
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "A physical heading sensor closes the shortest loop within the computed heading tolerance",
+   "domain": "sensor_performance",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 34775,
+   "path": "artifacts/T023/heading-sensitivity.json",
+   "sha256": "db6885bc39ebf61bc03959811a83ddba7fcf7cbef2005d901d253d20ab0d5f3a"
+  },
+  {
+   "bytes": 7020,
+   "path": "artifacts/T023/return-distance.svg",
+   "sha256": "8e02bfd32939722f902b4fa4293e3502a798559d4aaeaf38c41778d3484ae3d6"
+  }
+ ],
+ "hypothesis": "The return distance r(theta; L) vanishes exactly at headings of primitive lattice vectors with |v| <= L, each zero is a V of slope |v| (closing error per unit heading error = loop length), so low-order (short) closed geodesics have the widest closure basins.",
+ "input_data": [
+  "area-one lattice tau = (0.31+1.07j)",
+  "7200 headings on [0, 2 pi)",
+  "L = 3.0, s_min = 0.05, eps = 0.02"
+ ],
+ "mathematical_model": "r(theta; L) = min over lattice points lambda != 0 of dist(lambda, {s u(theta): s_min <= s <= L}); near theta_v = arg v, r = |v| sin|theta - theta_v|, basin {r < eps} has width 2 arcsin(eps/|v|).",
+ "number": 23,
+ "numerical_result": "18 zero minima found, 18 predicted, missing [], extra []; 6 positive (near-miss) minima; slope relative error 5.89e-12; widest measured basins [[-1, 0], [1, 0], [0, -1], [0, 1]]; 0 discordant and 0 unresolved (same grid count) pairs of distinct lengths.",
+ "observation_model": "No physical observation: exact or floating-point computation on declared mathematical objects.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/flat_torus_topology.py": "4d8cf2437759501a1b9fa5ee0d8abfac43345ebee378c6ad08233e9155d4b184",
+   "src/ciw/lab/flat_torus_topology_lattice.py": "15a33fcd29591e43dec16fa3b9ad26d6b6b86846872e9e6bf815508fb0dade63"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T024: add focus-margin-aware route ranking on curved surfaces",
+ "report_id": "sha256:b842bcb4d6fb555c7a07fc8c47dec99af1934fbf70c2f0f9ba25bad32df67b1a",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "flat-torus-topology",
+ "state": "completed",
+ "task_id": "T023",
+ "tests_passed": [
+  "check: Zeros of the return distance (tau = 0.31 + 1.07i, L = 3) are exactly the primitive lattice directions with |v| <= L vs missing plus extra closure directions",
+  "check: Near each closing heading the closing error grows at rate |v| (the loop length) per radian vs |r / sin(delta) - |v|| / |v| at delta = 1e-4",
+  "check: Closure basins are widest for the shortest (lowest-order) primitive classes vs pairs of distinct lengths whose shorter class has a measured basin narrower by at least one grid step",
+  "check: Closure basins are widest for the shortest (lowest-order) primitive classes vs measured minus analytic basin width (rad)",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_t023_heading_sensitivity",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+ ],
+ "tests_skipped": [],
+ "title": "Compute sensitivity across all starting headings.",
+ "uncertainty": "Grid spacing 8.73e-04 rad bounds measured basin widths (max deviation 5.43e-04 rad); refined zeros are exact to rounding.",
+ "unresolved_assumptions": [
+  "Heading sensitivity is defined through the closest return within L; other definitions (e.g. Lyapunov exponents, zero here) would rank headings differently."
+ ]
+}

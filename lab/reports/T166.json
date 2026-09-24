@@ -1,0 +1,100 @@
+{
+ "changed_files": [
+  "src/ciw/lab/research_portfolio.py"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 0,
+   "numerically_verified": 1,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Aggregates are exact functions of retained reports and never change a label.",
+ "experiment": "Collect, deduplicate and count assumptions; write JSON and Markdown ledgers.",
+ "failure_modes_checked": [
+  "missing reports",
+  "report identity mismatch (validate_report)",
+  "aggregate differs from its re-read bytes"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "observed": 0.0,
+      "passed": true,
+      "reference": "unresolved-assumptions.json recomputed from a fresh read of the retained reports",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Unresolved-assumption ledger reproduces from retained reports",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": null,
+   "unit": "assumptions",
+   "value": 351
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 57784,
+   "path": "artifacts/T166/unresolved-assumptions.json",
+   "sha256": "a1d1078c84d511f368931606928fd3e711b7d59d9353cae2861deaaa8d3a9ae6"
+  },
+  {
+   "bytes": 42276,
+   "path": "artifacts/T166/UNRESOLVED_ASSUMPTIONS.md",
+   "sha256": "92d55587db60da1db918d62026199b3276ab7bca4f723d38fc380573d7b28e6a"
+  }
+ ],
+ "hypothesis": "Every unresolved assumption stated by any task can be listed in one ledger with its source task.",
+ "input_data": [
+  "Retained reports T001-T154 in the same output directory"
+ ],
+ "mathematical_model": "Ledger = union over reports of unresolved_assumptions, deduplicated with task references.",
+ "number": 166,
+ "numerical_result": "351 distinct unresolved assumptions from 154 reports; 0 reports state none.",
+ "observation_model": "No physical observation; reads retained computational records only.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/research_portfolio.py": "6cd37207af02c6d64dc88b22c7ff2148e85f1eeebaa5445cd894879bc3043ba3"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "Attach each assumption to the experiment that would resolve it and track closure.",
+ "report_id": "sha256:1eb8c5b953982da6d46f16a527a92e11853021bb9e4f833b7f14ecfba2c96301",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "research-portfolio",
+ "state": "completed",
+ "task_id": "T166",
+ "tests_passed": [
+  "check: Unresolved-assumption ledger reproduces from retained reports vs unresolved-assumptions.json recomputed from a fresh read of the retained reports",
+  "pytest: tests/test_lab_research_portfolio.py::test_catalogue_tasks_aggregate_retained_reports"
+ ],
+ "tests_skipped": [],
+ "title": "Record every unresolved assumption.",
+ "uncertainty": "Exact aggregation; completeness depends on each task's honesty.",
+ "unresolved_assumptions": []
+}

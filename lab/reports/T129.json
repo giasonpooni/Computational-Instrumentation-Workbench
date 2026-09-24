@@ -1,0 +1,441 @@
+{
+ "changed_files": [
+  "src/ciw/lab/manufacturing.py",
+  "src/ciw/lab/manufacturing_geometry.py",
+  "src/ciw/lab/manufacturing_metrology.py",
+  "src/ciw/lab/manufacturing_records.py",
+  "docs/lab/MANUFACTURING.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 6,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Exact design error <= tolerance; MC mean and spread equal the exact bias and noise; registration residual has 3N - 6 degrees of freedom.",
+ "experiment": "Derive the design, evaluate it exactly (discrete normal equations), verify by Monte Carlo, sweep the window at fixed spacing, compare the circle rule with the actual profile, simulate repeat-scan registration.",
+ "failure_modes_checked": [
+  "circle-rule window on a non-circular crest",
+  "window too small (noise) and too large (bias)",
+  "continuum vs discrete noise formula",
+  "repeat averaging",
+  "registration residual degrees of freedom"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "signed_le",
+      "observed": -3.3120641647858525e-05,
+      "passed": true,
+      "reference": "exact |bias| + 2 std minus tolerance, coupon crest (1/mm)",
+      "reference_kind": "analytic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "signed_le",
+      "observed": -0.00018870246276362994,
+      "passed": true,
+      "reference": "exact |bias| + 2 std minus tolerance, cylinder circumference (1/mm)",
+      "reference_kind": "analytic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "signed_le",
+      "observed": -8.931733692749494e-05,
+      "passed": true,
+      "reference": "exact |bias| + 2 std minus tolerance, flat plate (1/mm)",
+      "reference_kind": "analytic",
+      "tolerance": 0.0
+     }
+    ],
+    "derivation": "bias (3/7) q W^2 and noise sigma sqrt(720 d) W^(-5/2) of a quadratic fit (docs/lab/MANUFACTURING.md#t129)"
+   },
+   "claim": "Sampling design resolving profile curvature to tolerance at k = 2",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-09
+   },
+   "uncertainty": {
+    "basis": "exact discrete normal equations for each design",
+    "kind": "roundoff",
+    "value": 1e-15
+   },
+   "unit": null,
+   "value": {
+    "coupon crest": {
+     "repeats": 1,
+     "samples": 23,
+     "spacing_mm": 0.6457054880813021,
+     "tolerance_per_mm": 0.00125,
+     "window_mm": 13.662601021279466
+    },
+    "cylinder circumference": {
+     "repeats": 1,
+     "samples": 21,
+     "spacing_mm": 3.4156502553198664,
+     "tolerance_per_mm": 0.0005,
+     "window_mm": 68.31300510639733
+    },
+    "flat plate": {
+     "repeats": 1,
+     "samples": 21,
+     "spacing_mm": 5.0,
+     "tolerance_per_mm": 0.0001,
+     "window_mm": 100.0
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.08763093537849183,
+      "passed": true,
+      "reference": "(MC mean - exact bias) / (4 std / sqrt(n))",
+      "reference_kind": "analytic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.026385776497392044,
+      "passed": true,
+      "reference": "(MC std - exact std) / (4 standard errors)",
+      "reference_kind": "analytic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.01728964824787857,
+      "passed": true,
+      "reference": "exact noise-free bias vs leading quartic bias on the sample set (relative)",
+      "reference_kind": "analytic",
+      "tolerance": 0.05
+     },
+     {
+      "comparison": "ge",
+      "observed": 0.9795,
+      "passed": true,
+      "reference": "fraction of trials within tolerance",
+      "reference_kind": "analytic",
+      "tolerance": 0.95
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.35126591264277973,
+      "passed": true,
+      "reference": "(averaged-repeat std ratio - 1/sqrt(4)) / 0.05",
+      "reference_kind": "analytic",
+      "tolerance": 1.0
+     }
+    ],
+    "generator": {
+     "name": "gaussian scanner noise",
+     "noise_mm": 0.01,
+     "seed": 20260926,
+     "trials": 4000
+    }
+   },
+   "claim": "Monte Carlo curvature error on the coupon crest matches the derived bias and noise",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "95% half-width of the MC mean error (1/mm)",
+    "kind": "monte_carlo_95ci",
+    "value": 8.539066235479909e-06
+   },
+   "unit": "1/mm",
+   "value": {
+    "exact_bias": 0.0006657997992673206,
+    "exact_std": 0.0002755397795424104,
+    "fraction_within_tolerance": 0.9795,
+    "mc_mean_error": 0.000667326914290737,
+    "mc_std": 0.00027586495928086764
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 1.9606615754433288,
+      "passed": true,
+      "reference": "actual noise-free bias at the circle-rule window / tolerance",
+      "reference_kind": "analytic",
+      "tolerance": 1.0
+     }
+    ]
+   },
+   "claim": "The osculating-circle window rule under-predicts the coupon-crest curvature bias",
+   "counterexample": {
+    "statement": "A window chosen from the osculating circle keeps the quadratic-fit curvature bias within tolerance on any convex profile",
+    "witness": {
+     "bias_per_mm": 0.002450826969304161,
+     "profile": "Gaussian crest h = 10 mm, sigma = 20 mm",
+     "quartic_ratio_gauss_over_circle": 3.999999999999999,
+     "window_mm": 27.325202042558928
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-07
+   },
+   "uncertainty": {
+    "basis": "noise-free exact least-squares fit",
+    "kind": "roundoff",
+    "value": 1e-12
+   },
+   "unit": null,
+   "value": 1.9606615754433288
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 4.821184611289528,
+      "passed": true,
+      "reference": "MC RMS error ratio (W/3 over W)",
+      "reference_kind": "analytic",
+      "tolerance": 2.0
+     }
+    ],
+    "generator": {
+     "name": "gaussian scanner noise",
+     "noise_mm": 0.01,
+     "seed": 20260926
+    }
+   },
+   "claim": "A smaller fitting window at fixed spacing can make the curvature estimate worse",
+   "counterexample": {
+    "statement": "Sampling a smaller neighbourhood (more local fit) always improves the curvature estimate",
+    "witness": {
+     "rms_error_per_mm": 0.0034813081403234844,
+     "spacing_mm": 0.6457054880813021,
+     "window_mm": 4.554200340426489
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "95% half-width of the MC RMS at W/3 (1/mm)",
+    "kind": "monte_carlo_95ci",
+    "value": 7.628752819338954e-05
+   },
+   "unit": "1/mm",
+   "value": {
+    "rms_at_design_window": 0.0007220856326827806,
+    "rms_at_one_third_window": 0.0034813081403234844
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": -0.024597975834473658,
+      "passed": true,
+      "reference": "(mean SSR / sigma^2 (3N - 6) - 1) / (4 SE)",
+      "reference_kind": "analytic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.038070871651719504,
+      "passed": true,
+      "reference": "relative Frobenius difference of rotation covariance (MC vs inertia formula)",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     }
+    ],
+    "generator": {
+     "name": "kabsch registration trials",
+     "seed": 20260926,
+     "targets": 6,
+     "trials": 2000
+    }
+   },
+   "claim": "Registration residual and rotation covariance of repeat scans follow chi-square(3N - 6) and the inertia formula",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "95% half-width of the mean SSR ratio",
+    "kind": "monte_carlo_95ci",
+    "value": 0.017892270211835426
+   },
+   "unit": null,
+   "value": {
+    "lever_arm_error_mm": 0.009879207643925322,
+    "rotation_std_urad": [
+     66.18279322228858,
+     62.62786235753385,
+     45.077565409667265
+    ],
+    "ssr_ratio": 0.9991018089177661
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "signed_le",
+      "observed": -0.00045850073534508683,
+      "passed": true,
+      "reference": "exact |bias| + 2 std with m averaged scans minus tolerance, 5% (1/mm)",
+      "reference_kind": "analytic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "signed_le",
+      "observed": -8.57527638548159e-06,
+      "passed": true,
+      "reference": "exact |bias| + 2 std with m averaged scans minus tolerance, 2% (1/mm)",
+      "reference_kind": "analytic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "signed_le",
+      "observed": -2.22198875316908e-06,
+      "passed": true,
+      "reference": "exact |bias| + 2 std with m averaged scans minus tolerance, 1% (1/mm)",
+      "reference_kind": "analytic",
+      "tolerance": 0.0
+     }
+    ],
+    "derivation": "m = ceil(native spacing / required spacing): averaging m scans divides noise by sqrt(m)"
+   },
+   "claim": "Repeat scans needed at the native 0.05 mm spacing versus curvature tolerance (coupon crest)",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact logic or integer count",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": "scans",
+   "value": {
+    "1%": 109,
+    "2%": 5,
+    "5%": 1
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "A real laser line scanner achieves the declared 0.01 mm point noise on the coupon surface (finish, incidence angle, speckle)",
+   "domain": "sensor_performance",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 4321,
+   "path": "artifacts/T129/metrology-design.json",
+   "sha256": "086cd5590f48c44bf2279e4433370d9059a72897f51d3fd7f2ce0d99bd965504"
+  },
+  {
+   "bytes": 2679,
+   "path": "artifacts/T129/curvature-window-sweep.svg",
+   "sha256": "bf6ce252a06d8ede2abfe12db626990e77adba46d2c901a15c20e018d7722490"
+  }
+ ],
+ "hypothesis": "The sampling needed to resolve curvature follows from two terms of a local quadratic fit: a bias set by the quartic profile term and a noise term that grows as the window shrinks; the window must be chosen from the actual profile, not from its osculating circle.",
+ "input_data": [
+  "Declared scanner noise 0.01 mm per point, native spacing 0.05 mm",
+  "Profiles: coupon crest (Gaussian), cylinder circumference (R = 100 mm), flat plate",
+  "Seeded synthetic noise (PCG64 seed 20260926), 4000 fits per window, 2000 registrations"
+ ],
+ "mathematical_model": "Least-squares z = a + b x + c x^2 over a centred window W with spacing d: bias(2c) = (3/7) q W^2, std(2c) = sigma sqrt(720 d) W^(-5/2) (large-n); tolerance split half bias, half k = 2 noise. Registration: Kabsch; E[SSR] = sigma^2 (3N - 6); rotation covariance sigma^2 (sum |p|^2 I - p p^T)^-1.",
+ "number": 129,
+ "numerical_result": "Coupon crest at 5%: window 13.66 mm, spacing 0.646 mm; repeats at 0.05 mm native spacing: 5% -> 1, 2% -> 5, 1% -> 109; circle rule gives bias 1.96 x tolerance.",
+ "observation_model": "Synthetic scans only; no scanner was used.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/manufacturing.py": "088763a0bcc42bf085c1e228797a5dc0d702b994f2a49e053cbe2b0a5622e25d",
+   "src/ciw/lab/manufacturing_geometry.py": "1db6df2ddf778668da2ffd53a66bcddbff4fc933d6f299e8f283cedc60a9332f",
+   "src/ciw/lab/manufacturing_metrology.py": "afbb6fccf146ca4f47850805c118d2f1bf6186872f381b298ab924a9214257ec",
+   "src/ciw/lab/manufacturing_records.py": "66970104ea454e836c5cbafc3013c90e721c3e96ad7f16780c32250112cac921"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T130: calibrate the scanner scale and frames on artifacts before executing the T128 coupon scan.",
+ "report_id": "sha256:93df097d55056813c75982979b995b2a5d7eadac5ba0a969cce90dd9dde4498b",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "manufacturing",
+ "state": "completed",
+ "task_id": "T129",
+ "tests_passed": [
+  "check: Sampling design resolving profile curvature to tolerance at k = 2 vs exact |bias| + 2 std minus tolerance, coupon crest (1/mm)",
+  "check: Sampling design resolving profile curvature to tolerance at k = 2 vs exact |bias| + 2 std minus tolerance, cylinder circumference (1/mm)",
+  "check: Sampling design resolving profile curvature to tolerance at k = 2 vs exact |bias| + 2 std minus tolerance, flat plate (1/mm)",
+  "check: Monte Carlo curvature error on the coupon crest matches the derived bias and noise vs (MC mean - exact bias) / (4 std / sqrt(n))",
+  "check: Monte Carlo curvature error on the coupon crest matches the derived bias and noise vs (MC std - exact std) / (4 standard errors)",
+  "check: Monte Carlo curvature error on the coupon crest matches the derived bias and noise vs exact noise-free bias vs leading quartic bias on the sample set (relative)",
+  "check: Monte Carlo curvature error on the coupon crest matches the derived bias and noise vs fraction of trials within tolerance",
+  "check: Monte Carlo curvature error on the coupon crest matches the derived bias and noise vs (averaged-repeat std ratio - 1/sqrt(4)) / 0.05",
+  "check: The osculating-circle window rule under-predicts the coupon-crest curvature bias vs actual noise-free bias at the circle-rule window / tolerance",
+  "check: A smaller fitting window at fixed spacing can make the curvature estimate worse vs MC RMS error ratio (W/3 over W)",
+  "check: Registration residual and rotation covariance of repeat scans follow chi-square(3N - 6) and the inertia formula vs (mean SSR / sigma^2 (3N - 6) - 1) / (4 SE)",
+  "check: Registration residual and rotation covariance of repeat scans follow chi-square(3N - 6) and the inertia formula vs relative Frobenius difference of rotation covariance (MC vs inertia formula)",
+  "check: Repeat scans needed at the native 0.05 mm spacing versus curvature tolerance (coupon crest) vs exact |bias| + 2 std with m averaged scans minus tolerance, 5% (1/mm)",
+  "check: Repeat scans needed at the native 0.05 mm spacing versus curvature tolerance (coupon crest) vs exact |bias| + 2 std with m averaged scans minus tolerance, 2% (1/mm)",
+  "check: Repeat scans needed at the native 0.05 mm spacing versus curvature tolerance (coupon crest) vs exact |bias| + 2 std with m averaged scans minus tolerance, 1% (1/mm)",
+  "pytest: tests/test_lab_manufacturing.py::test_metrology_sampling_design_and_counterexamples",
+  "pytest: tests/test_lab_manufacturing.py::test_every_task_is_registered_and_reports_honestly"
+ ],
+ "tests_skipped": [],
+ "title": "Define a surface metrology protocol.",
+ "uncertainty": "Monte Carlo standard errors are stated in the checks; the design rules are exact for the declared profiles.",
+ "unresolved_assumptions": [
+  "Surface finish, incidence angle and scanner nonlinearity are not modelled; noise is white and Gaussian.",
+  "Profiles are taken through the principal direction at the vertex; slope correction is neglected.",
+  "At 1% tolerance a quadratic fit needs about 100 repeat scans: a higher-order local fit is a deferred research question."
+ ]
+}

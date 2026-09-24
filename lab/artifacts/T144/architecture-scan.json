@@ -1,0 +1,139 @@
+{
+ "compiled_extensions": [],
+ "evidence_closure": [
+  "ciw.core.identities",
+  "ciw.lab.evidence",
+  "ciw.lab.report"
+ ],
+ "files": 141,
+ "mention_subprocess_without_spawn": [
+  "ciw.acquired_dataset",
+  "ciw.acquired_window",
+  "ciw.adapters.ppda_acquisition",
+  "ciw.bim_quantity",
+  "ciw.calibrated_observable",
+  "ciw.calibrated_window",
+  "ciw.candidate_evidence",
+  "ciw.cli",
+  "ciw.declared_workload",
+  "ciw.energy_workflow",
+  "ciw.free_energy_native",
+  "ciw.free_energy_profile",
+  "ciw.geodesic_reference",
+  "ciw.geometric_circle",
+  "ciw.geometry_research",
+  "ciw.identified_design",
+  "ciw.identified_stability",
+  "ciw.investigation",
+  "ciw.lab.exchange_provenance_bundles_fixtures",
+  "ciw.lab.geodesic_jacobi",
+  "ciw.lab.implementation_targets",
+  "ciw.lab.implementation_targets_architecture",
+  "ciw.lab.lyapunov",
+  "ciw.lab.registry",
+  "ciw.measurement_chain",
+  "ciw.proved_heat",
+  "ciw.residual_monitor",
+  "ciw.schematic_companions",
+  "ciw.session",
+  "ciw.spatial_view",
+  "ciw.telemetry",
+  "ciw.workbench"
+ ],
+ "modules_scanned": 141,
+ "native_loading": {
+  "ciw.energy_cuda": [
+   "ctypes"
+  ],
+  "ciw.energy_nvml": [
+   "ctypes",
+   "ctypes.util"
+  ]
+ },
+ "package_sha256": "174aaed8ad336470183d93f2e65b7f0496bfa7bef5b66f792ca1813fb5fe3672",
+ "path_resolved_spawners": {
+  "ciw.lab.energy_gpu_kernels": {
+   "spawn_lines": [
+    315,
+    316,
+    331
+   ],
+   "which_lines": [
+    303
+   ]
+  },
+  "ciw.lab.exchange_provenance_bundles_providers": {
+   "spawn_lines": [
+    110,
+    218,
+    242,
+    291,
+    416
+   ],
+   "which_lines": [
+    440
+   ]
+  },
+  "ciw.lab.implementation_targets_serial": {
+   "spawn_lines": [
+    689,
+    710,
+    740
+   ],
+   "which_lines": [
+    703
+   ]
+  },
+  "ciw.lab.runner": {
+   "spawn_lines": [
+    117,
+    217
+   ],
+   "which_lines": [
+    177,
+    214
+   ]
+  }
+ },
+ "spawning_modules": {
+  "ciw.adapters.subprocess": [
+   83
+  ],
+  "ciw.lab.energy_gpu_kernels": [
+   315,
+   316,
+   331
+  ],
+  "ciw.lab.exchange_provenance_bundles": [
+   1980
+  ],
+  "ciw.lab.exchange_provenance_bundles_providers": [
+   110,
+   218,
+   242,
+   291,
+   416
+  ],
+  "ciw.lab.flat_torus_topology_provider": [
+   140
+  ],
+  "ciw.lab.geodesic_jacobi_common": [
+   523,
+   653
+  ],
+  "ciw.lab.implementation_targets_serial": [
+   689,
+   710,
+   740
+  ],
+  "ciw.lab.lyapunov_provider": [
+   187
+  ],
+  "ciw.lab.runner": [
+   117,
+   217
+  ]
+ },
+ "unparsed_modules": [],
+ "violations": []
+}

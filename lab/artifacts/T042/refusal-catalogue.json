@@ -1,0 +1,175 @@
+{
+ "boundary_analytic_length": 0.5700000000000001,
+ "boundary_partial_length": 0.5700000000000001,
+ "cases": [
+  {
+   "case": "nan-vertex",
+   "expected": "nonfinite_vertex",
+   "observed": "nonfinite_vertex",
+   "stage": "validation"
+  },
+  {
+   "case": "index-out-of-range",
+   "expected": "invalid_face_index",
+   "observed": "invalid_face_index",
+   "stage": "validation"
+  },
+  {
+   "case": "zero-area-face",
+   "expected": "degenerate_face",
+   "observed": "degenerate_face",
+   "stage": "validation"
+  },
+  {
+   "case": "repeated-index",
+   "expected": "degenerate_face",
+   "observed": "degenerate_face",
+   "stage": "validation"
+  },
+  {
+   "case": "three-faces-on-one-edge",
+   "expected": "non_manifold_edge",
+   "observed": "non_manifold_edge",
+   "stage": "validation"
+  },
+  {
+   "case": "flipped-face",
+   "expected": "inconsistent_orientation",
+   "observed": "inconsistent_orientation",
+   "stage": "validation"
+  },
+  {
+   "case": "bowtie-vertex",
+   "expected": "non_manifold_vertex",
+   "observed": "non_manifold_vertex",
+   "stage": "validation"
+  },
+  {
+   "case": "fold-over",
+   "expected": "folded_face",
+   "observed": "folded_face",
+   "stage": "validation"
+  },
+  {
+   "case": "unreferenced-vertex",
+   "expected": "unreferenced_vertex",
+   "observed": "unreferenced_vertex",
+   "stage": "validation"
+  },
+  {
+   "case": "two-components",
+   "expected": "disconnected_components",
+   "observed": "disconnected_components",
+   "stage": "validation"
+  },
+  {
+   "case": "hole-when-closed-required",
+   "expected": "open_boundary",
+   "observed": "open_boundary",
+   "stage": "validation"
+  },
+  {
+   "case": "empty",
+   "expected": "empty_mesh",
+   "observed": "empty_mesh",
+   "stage": "validation"
+  },
+  {
+   "case": "planar-coordinates",
+   "expected": "invalid_shape",
+   "observed": "invalid_shape",
+   "stage": "validation"
+  },
+  {
+   "case": "leave-planar-patch",
+   "expected": "boundary_reached",
+   "observed": "boundary_reached",
+   "partial_length": 0.5700000000000001,
+   "stage": "tracing"
+  },
+  {
+   "case": "aimed-at-vertex",
+   "expected": "vertex_hit",
+   "observed": "vertex_hit",
+   "partial_length": 0.3492849839314595,
+   "stage": "tracing"
+  },
+  {
+   "case": "point-off-face",
+   "expected": "point_outside_face",
+   "observed": "point_outside_face",
+   "partial_length": 0.0,
+   "stage": "tracing"
+  },
+  {
+   "case": "normal-direction",
+   "expected": "invalid_direction",
+   "observed": "invalid_direction",
+   "partial_length": 0.0,
+   "stage": "tracing"
+  },
+  {
+   "case": "step-budget",
+   "expected": "step_budget_exceeded",
+   "observed": "step_budget_exceeded",
+   "partial_length": 0.18,
+   "stage": "tracing"
+  },
+  {
+   "case": "trace-into-hole",
+   "expected": "boundary_reached",
+   "observed": "boundary_reached",
+   "partial_length": 0.08706476231342747,
+   "stage": "tracing"
+  },
+  {
+   "case": "distance-across-components",
+   "expected": "unreachable_target",
+   "observed": "unreachable_target",
+   "stage": "query"
+  },
+  {
+   "case": "curvature-at-boundary-vertex",
+   "expected": "boundary_vertex_curvature",
+   "observed": "boundary_vertex_curvature",
+   "stage": "query"
+  },
+  {
+   "case": "heat-method-above-size-limit",
+   "expected": "mesh_too_large",
+   "observed": "mesh_too_large",
+   "stage": "query"
+  },
+  {
+   "case": "strip-faces-not-adjacent",
+   "expected": "invalid_strip",
+   "observed": "invalid_strip",
+   "stage": "query"
+  }
+ ],
+ "controls": [
+  {
+   "issues": [],
+   "mesh": "icosphere-2"
+  },
+  {
+   "issues": [],
+   "mesh": "prism-cylinder-12x6"
+  },
+  {
+   "issues": [],
+   "mesh": "plane-5x5"
+  },
+  {
+   "issues": [],
+   "mesh": "torus-16x8"
+  }
+ ],
+ "multiple_defects": [
+  "nonfinite_vertex",
+  "inconsistent_orientation",
+  "unreferenced_vertex"
+ ],
+ "unguarded_nonfinite_curvatures": 1,
+ "unguarded_nonfinite_normals": 3
+}

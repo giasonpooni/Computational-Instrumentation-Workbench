@@ -1,0 +1,148 @@
+{
+ "active_ticks": 30,
+ "clock_after_refusals": 41,
+ "codes": {
+  "admit_after_reacquisition": "none",
+  "admit_lost": "track_lost",
+  "fuse_lost": "track_lost_requires_reacquisition",
+  "reacquire_gap": "reacquisition_needs_consecutive_readings",
+  "reacquire_older_than_clock": "out_of_order",
+  "reacquire_while_tracking": "reacquisition_not_needed"
+ },
+ "dispositions": {
+  "fused": 1,
+  "reacquired": 2,
+  "recorded": 3,
+  "refused:out_of_order": 1,
+  "refused:reacquisition_needs_consecutive_readings": 1,
+  "refused:reacquisition_not_needed": 1,
+  "refused:track_lost_requires_reacquisition": 1
+ },
+ "formula_vs_error_map": 2.2199835526768386e-16,
+ "observed_lost_tick": 41,
+ "predicted_lost_tick": 41,
+ "radius_at_loss": 1.009661364098545,
+ "radius_m": 1.0,
+ "reacquire_covariance_error": 2.2199835526768386e-16,
+ "refused_fuse_left_state_unchanged": true,
+ "seed": 732026,
+ "track_probability": 0.99,
+ "turn": {
+  "first_inconsistent_gap_ticks": 44,
+  "gap_ticks_before_track_loss": 11,
+  "monte_carlo": {
+   "expected_nees": 13.401899932629272,
+   "mean_nees": 13.295464064793647,
+   "random_part": 4.594804619393447,
+   "runs": 4000,
+   "standard_error": 0.12127212193452322,
+   "z_vs_expected": -0.8776614619895199
+  },
+  "omega_rad_s": 0.2,
+  "radius_at_inconsistency_m": 4.590603032028965,
+  "speed_m_s": 1.6691446678371058,
+  "table": [
+   {
+    "expected_nees": 4.825322832877591,
+    "gap_ticks": 5,
+    "random_part": 4.016162765576285
+   },
+   {
+    "expected_nees": 5.947755068531199,
+    "gap_ticks": 10,
+    "random_part": 4.053389156169116
+   },
+   {
+    "expected_nees": 7.019910140086944,
+    "gap_ticks": 15,
+    "random_part": 4.102865843803485
+   },
+   {
+    "expected_nees": 8.08427129818599,
+    "gap_ticks": 20,
+    "random_part": 4.163044974101177
+   },
+   {
+    "expected_nees": 9.16142214759195,
+    "gap_ticks": 25,
+    "random_part": 4.233741303549342
+   },
+   {
+    "expected_nees": 10.255860420408474,
+    "gap_ticks": 30,
+    "random_part": 4.314826447233355
+   },
+   {
+    "expected_nees": 11.366913447872754,
+    "gap_ticks": 35,
+    "random_part": 4.406069528549286
+   },
+   {
+    "expected_nees": 12.492512420592913,
+    "gap_ticks": 40,
+    "random_part": 4.507141695732068
+   }
+  ],
+  "threshold_chi2_4_99": 13.276704135987641,
+  "z_critical": 3.2905267314919255
+ },
+ "two_point": {
+  "formula": [
+   [
+    0.04,
+    0.012,
+    0.39999999999999997,
+    0.12
+   ],
+   [
+    0.012,
+    0.04,
+    0.12,
+    0.39999999999999997
+   ],
+   [
+    0.39999999999999997,
+    0.12,
+    8.001666666666665,
+    2.3999999999999995
+   ],
+   [
+    0.12,
+    0.39999999999999997,
+    2.3999999999999995,
+    8.001666666666665
+   ]
+  ],
+  "max_abs_z": 2.387245667789383,
+  "nees_mean": 4.010713195622558,
+  "nees_z": 0.5356597811279062,
+  "runs": 20000,
+  "sample": [
+   [
+    0.04024252463019288,
+    0.012395057589717887,
+    0.4028558368027335,
+    0.12976244358136976
+   ],
+   [
+    0.012395057589717887,
+    0.040425447045065066,
+    0.11932607006950216,
+    0.4078023827120295
+   ],
+   [
+    0.4028558368027335,
+    0.11932607006950216,
+    8.064939639841178,
+    2.4846025744058977
+   ],
+   [
+    0.12976244358136976,
+    0.4078023827120295,
+    2.4846025744058977,
+    8.10058680694918
+   ]
+  ],
+  "z_critical": 3.9136560829349545
+ }
+}

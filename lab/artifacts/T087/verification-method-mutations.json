@@ -1,0 +1,75 @@
+{
+ "rows": [
+  {
+   "description": "method set to independent_reimplementation",
+   "error": "ValueError",
+   "killed": true,
+   "kind": "workspace",
+   "message_matches_pin": true,
+   "name": "receipt-method.naive",
+   "observed": "Invalid retained energy replay receipt",
+   "observed_outcome": "killed",
+   "outcome_matches_prediction": true,
+   "pinned_message": "Invalid retained energy replay receipt",
+   "predicted_outcome": "killed",
+   "recompute": "none",
+   "target": "energy replay receipt verification",
+   "task": "T087"
+  },
+  {
+   "description": "forged method; verification_id and replay_id recomputed",
+   "error": "ValueError",
+   "killed": true,
+   "kind": "workspace",
+   "message_matches_pin": true,
+   "name": "receipt-method.resealed",
+   "observed": "Retained energy analysis binding differs",
+   "observed_outcome": "killed",
+   "outcome_matches_prediction": true,
+   "pinned_message": "Retained energy analysis binding differs",
+   "predicted_outcome": "killed",
+   "recompute": "local",
+   "target": "energy replay receipt verification",
+   "task": "T087"
+  },
+  {
+   "description": "replay bundle's own verification method forged; verification_id recomputed",
+   "error": "ValueError",
+   "killed": true,
+   "kind": "workspace",
+   "message_matches_pin": true,
+   "name": "bundle-method.resealed",
+   "observed": "Retained energy analysis binding differs",
+   "observed_outcome": "killed",
+   "outcome_matches_prediction": true,
+   "pinned_message": "Retained energy analysis binding differs",
+   "predicted_outcome": "killed",
+   "recompute": "local",
+   "target": "energy bundle verification",
+   "task": "T087"
+  },
+  {
+   "description": "verification_method field injected into a sealed result; resealed",
+   "error": null,
+   "killed": false,
+   "kind": "workspace",
+   "message_matches_pin": true,
+   "name": "oscillator-method.injected",
+   "observed": "accepted",
+   "observed_outcome": "accepted",
+   "outcome_matches_prediction": true,
+   "pinned_message": "accepted",
+   "post_reopen": {
+    "result.get": {
+     "verification_method": "independent_reimplementation",
+     "verification_status": "not_verified"
+    }
+   },
+   "predicted_outcome": "accepted",
+   "recompute": "local",
+   "target": "oscillator result",
+   "task": "T087"
+  }
+ ],
+ "schema": "ciw.lab-mutation-matrix.v2"
+}

@@ -1,0 +1,279 @@
+{
+ "changed_files": [
+  "src/ciw/lab/implementation_targets.py",
+  "src/ciw/lab/implementation_targets_fpga.py",
+  "docs/lab/IMPLEMENTATION_TARGETS.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 2,
+   "numerically_verified": 3,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Rule and set forms agree; every forged rollback is refused with its code; execution is always refused.",
+ "experiment": "Enumerate the matrix two ways, search previous-version rollbacks for incompatibility, validate forged records.",
+ "failure_modes_checked": [
+  "incompatible frame format",
+  "unsupported board",
+  "unregistered target",
+  "digest substitution",
+  "no-op",
+  "forward 'rollback'",
+  "missing reason",
+  "stale matrix",
+  "execution without authority"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "rule/set disagreements over bitstream x host x board",
+      "reference_kind": "cross_implementation",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Compatibility rules and the set construction agree on every combination",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "combinations": 36,
+    "compatible": 15,
+    "disagreements": 0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "incompatible_target",
+      "observed_refusal": "incompatible_target",
+      "passed": true,
+      "reference": "rollback to an older version in an incompatible state",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "unregistered_target",
+      "observed_refusal": "unregistered_target",
+      "passed": true,
+      "reference": "rollback to an unregistered bitstream",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "unregistered_target",
+      "observed_refusal": "unregistered_target",
+      "passed": true,
+      "reference": "rollback citing a different identity digest",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "no_op_rollback",
+      "observed_refusal": "no_op_rollback",
+      "passed": true,
+      "reference": "rollback to the current bitstream",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "not_a_rollback",
+      "observed_refusal": "not_a_rollback",
+      "passed": true,
+      "reference": "'rollback' to a newer bitstream",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "missing_reason",
+      "observed_refusal": "missing_reason",
+      "passed": true,
+      "reference": "rollback without a reason",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "matrix_mismatch",
+      "observed_refusal": "matrix_mismatch",
+      "passed": true,
+      "reference": "rollback checked against another matrix version",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "rollback_requires_machine_authority",
+      "observed_refusal": "rollback_requires_machine_authority",
+      "passed": true,
+      "reference": "execute a validated rollback",
+      "reference_kind": "refusal"
+     }
+    ]
+   },
+   "claim": "Rollback validation refuses incompatible, unregistered, no-op, forward and unexplained rollbacks",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": "refusals",
+   "value": 8
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 4.0,
+      "passed": true,
+      "reference": "(host, board) states where the previous version is incompatible",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     }
+    ]
+   },
+   "claim": "Rolling back to the previous bitstream version can be incompatible",
+   "counterexample": {
+    "statement": "Rolling back to the immediately previous bitstream is always compatible",
+    "witness": {
+     "board": "revC",
+     "from": "1.4.1",
+     "host": "1.0",
+     "to": "1.2.0"
+    }
+   },
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "cases": 4,
+    "witness": {
+     "board": "revC",
+     "from": "1.4.1",
+     "host": "1.0",
+     "to": "1.2.0"
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "The rollback procedure is safe to execute on a production machine",
+   "domain": "machine_safety",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "Rollback records are accepted for production change control",
+   "domain": "production_acceptance",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 1441,
+   "path": "artifacts/T151/compatibility-matrix.json",
+   "sha256": "56163ede14db5c6921de01d256e43f5ea2b98cafddaa8682307855154e65905c"
+  },
+  {
+   "bytes": 509,
+   "path": "artifacts/T151/rollback-record.json",
+   "sha256": "117e8b38b4ccf1594b0109222aaa8e8b3c609835ce85e25e0a32dc661c540277"
+  },
+  {
+   "bytes": 315,
+   "path": "artifacts/T151/identity-registry.json",
+   "sha256": "ada1e3b49f86204856f574631176446dd846b890c519ff6f8e9d8d1bbc659073"
+  }
+ ],
+ "hypothesis": "A versioned compatibility matrix (bitstream frame format, supported boards, minimum host decoder) and a rollback record bound to retained identities let validation refuse every incompatible or unregistered rollback; 'previous version' is not a safe default.",
+ "input_data": [
+  "4 bitstreams x 3 host decoders x 3 boards (declared matrix v3)",
+  "synthetic identity records from T150's builder"
+ ],
+ "mathematical_model": "compatible(b, h, r) <=> format(b) in formats(h) and r in boards(b) and h >= min_host(b); a rollback is valid iff both identities are registered with matching digests, target < current, a reason is given, the matrix digest matches and compatible(target, host, board).",
+ "number": 151,
+ "numerical_result": "15/36 combinations compatible, 0 disagreements; 4 previous-version rollbacks incompatible (witness {'host': '1.0', 'board': 'revC', 'from': '1.4.1', 'to': '1.2.0'}); 8/8 refusals.",
+ "observation_model": "Validator outcomes; nothing was flashed or executed.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/implementation_targets.py": "4e27c12d31365590b7fb82d98b8d02e1668c7b8e73b03f71ef270eca9fcf6eea",
+   "src/ciw/lab/implementation_targets_fpga.py": "d546fbe93f98a17bb6a94d6e1e887da44edfb783f37684b9689d47adb1a9f477"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T152 (link behaviour after a rollback changes the frame format)",
+ "report_id": "sha256:387f7ebef3ef30ce4116d14e9ec38611f7e6898eac53f86ed25b0856cce6f81c",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "implementation-targets",
+ "state": "completed",
+ "task_id": "T151",
+ "tests_passed": [
+  "check: Compatibility rules and the set construction agree on every combination vs rule/set disagreements over bitstream x host x board",
+  "check: Rollback validation refuses incompatible, unregistered, no-op, forward and unexplained rollbacks vs rollback to an older version in an incompatible state",
+  "check: Rollback validation refuses incompatible, unregistered, no-op, forward and unexplained rollbacks vs rollback to an unregistered bitstream",
+  "check: Rollback validation refuses incompatible, unregistered, no-op, forward and unexplained rollbacks vs rollback citing a different identity digest",
+  "check: Rollback validation refuses incompatible, unregistered, no-op, forward and unexplained rollbacks vs rollback to the current bitstream",
+  "check: Rollback validation refuses incompatible, unregistered, no-op, forward and unexplained rollbacks vs 'rollback' to a newer bitstream",
+  "check: Rollback validation refuses incompatible, unregistered, no-op, forward and unexplained rollbacks vs rollback without a reason",
+  "check: Rollback validation refuses incompatible, unregistered, no-op, forward and unexplained rollbacks vs rollback checked against another matrix version",
+  "check: Rollback validation refuses incompatible, unregistered, no-op, forward and unexplained rollbacks vs execute a validated rollback",
+  "check: Rolling back to the previous bitstream version can be incompatible vs (host, board) states where the previous version is incompatible",
+  "pytest: tests/test_lab_implementation_targets.py::test_t151_compatibility_and_rollback"
+ ],
+ "tests_skipped": [],
+ "title": "Add FPGA rollback and compatibility metadata.",
+ "uncertainty": "Exact enumeration over a declared, synthetic matrix.",
+ "unresolved_assumptions": [
+  "The matrix is illustrative; real compatibility needs hardware qualification",
+  "Board revision detection and host decoder version reporting are assumed trustworthy"
+ ]
+}

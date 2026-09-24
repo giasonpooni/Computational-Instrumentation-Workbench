@@ -1,0 +1,350 @@
+{
+ "changed_files": [
+  "src/ciw/lab/lyapunov.py",
+  "src/ciw/lab/lyapunov_reference.py",
+  "src/ciw/lab/lyapunov_research.py",
+  "docs/lab/LYAPUNOV.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 2,
+   "hardware_measured": 0,
+   "independently_verified": 1,
+   "not_established": 2,
+   "numerically_verified": 3,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "analytic"
+ },
+ "expected_invariant": "Every simulated sup sqrt(V) is at most the sharp supremum, which is at most the ISS bound; the worst-case switching disturbance comes within 2 % of the sharp supremum; the scalar sup approaches the bound to 1e-9 at 30 s.",
+ "experiment": "Derive the bound, compute the sharp reachable-set supremum, simulate four disturbance classes with the exact discretisation, compare, check the matrix exponential against its closed form and an independent implementation, and retain the written branch specification.",
+ "failure_modes_checked": [
+  "simulated trajectory exceeds the sharp supremum",
+  "worst-case switching far below the sharp supremum",
+  "sharp supremum not converged in the step",
+  "bound not approached in one dimension",
+  "matrix exponential inaccurate",
+  "ISS claims leaking into runtime statuses"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 0.9941148849743952,
+      "passed": true,
+      "reference": "max over scenarios of sup sqrt(V) / sharp supremum",
+      "reference_kind": "analytic",
+      "tolerance": 1.00001
+     },
+     {
+      "comparison": "ge",
+      "observed": 0.9941148849743952,
+      "passed": true,
+      "reference": "worst-case switching sup sqrt(V) / sharp supremum",
+      "reference_kind": "analytic",
+      "tolerance": 0.98
+     }
+    ],
+    "generator": {
+     "name": "simulate_iss",
+     "seed": 112
+    }
+   },
+   "claim": "For the four simulated disturbance classes sup sqrt(V) stays below the sharp reachable-set supremum, and worst-case switching comes within 2 % of it",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "trapezoid error of the sharp supremum (h versus h/2 agree to 2.1e-06 relative); the simulation is exact ZOH",
+    "kind": "roundoff",
+    "value": 1e-05
+   },
+   "unit": null,
+   "value": {
+    "to_iss_bound": {
+     "constant": 0.15879607047685765,
+     "random held": 0.11521866811663344,
+     "resonant sinusoid": 0.20023718120966036,
+     "worst-case switching": 0.2529358526826656
+    },
+    "to_sharp_supremum": {
+     "constant": 0.6241168883817394,
+     "random held": 0.4528444338232001,
+     "resonant sinusoid": 0.786993066639622,
+     "worst-case switching": 0.9941148849743952
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 2.062430440230863e-06,
+      "passed": true,
+      "reference": "relative change of the supremum when the step is halved",
+      "reference_kind": "self_convergence",
+      "tolerance": 1e-05
+     },
+     {
+      "comparison": "le",
+      "observed": 0.25443322145727687,
+      "passed": true,
+      "reference": "sharp supremum / ISS bound",
+      "reference_kind": "analytic",
+      "tolerance": 1.0
+     }
+    ],
+    "generator": {
+     "name": "reachable_sup",
+     "seed": null
+    }
+   },
+   "claim": "The sharp reachable-set supremum of sqrt(V) is converged in the quadrature step and lies below the quadratic ISS bound",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-08,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "relative change under step halving",
+    "kind": "roundoff",
+    "value": 2.062430440230863e-06
+   },
+   "unit": null,
+   "value": {
+    "sharp_supremum": 0.41175425146104444,
+    "step_refinement_relative_change": 2.062430440230863e-06,
+    "to_iss_bound": 0.25443322145727687
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "derivation": "W = sqrt(V), W' <= -(c/2) W + beta with c = min eig(P^-1 Q) and beta = ||P^(1/2) B|| w_bar; lyapunov_research.iss_bound and docs/lab/LYAPUNOV.md (T112)"
+   },
+   "claim": "Quadratic ISS-Lyapunov bound for the synthetic oscillator",
+   "domain": "mathematical",
+   "evidence_status": "analytic",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 1e-09
+   },
+   "uncertainty": {
+    "basis": "float64 evaluation of the closed form",
+    "kind": "roundoff",
+    "value": 1e-15
+   },
+   "unit": null,
+   "value": {
+    "beta": 0.36084391824351614,
+    "c": 0.4459489136356866,
+    "sqrt_V_bound": 1.618319530376988,
+    "state_bound": 2.2622064284977506
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 9.381384558082573e-14,
+      "passed": true,
+      "reference": "1 - exact sup / bound for x' = -x + 0.5 over 30 s",
+      "reference_kind": "analytic",
+      "tolerance": 1e-09
+     }
+    ]
+   },
+   "claim": "In one dimension the quadratic ISS bound w_bar / a is approached: sup |x| over 30 s is (1 - e^-30) of it",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 1e-09
+   },
+   "uncertainty": {
+    "basis": "float64 evaluation of the exponential and the closed form",
+    "kind": "roundoff",
+    "value": 1e-13
+   },
+   "unit": null,
+   "value": {
+    "exact_sup": 0.4999999999999532,
+    "ratio": 0.9999999999999062,
+    "state_bound": 0.5000000000000001
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 1.0491350084691764e-17,
+      "passed": true,
+      "reference": "max abs entry difference from the closed form of exp([[A, B], [0, 0]] h)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     }
+    ],
+    "independent_check": {
+     "checker": {
+      "implementation": "scipy.linalg.expm@1.16.2",
+      "revision": "1.16.2"
+     },
+     "comparison": "abs_le",
+     "observed": 1.1102230246251565e-16,
+     "passed": true,
+     "producer": {
+      "implementation": "ciw.lab.lyapunov_research.expm_series",
+      "revision": "0.1.0"
+     },
+     "reference": "max abs entry difference of exp([[A, B], [0, 0]] h)",
+     "reference_kind": "analytic",
+     "tolerance": 1e-12
+    }
+   },
+   "claim": "The series matrix exponential behind the exact ZOH simulation agrees with its closed form and, where available, an independent exponential",
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "observed maximum entry difference",
+    "kind": "roundoff",
+    "value": 1.1102230246251565e-16
+   },
+   "unit": null,
+   "value": {
+    "max_abs_difference_closed_form": 1.0491350084691764e-17,
+    "max_abs_difference_independent": 1.1102230246251565e-16
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "derivation": "retained iss-branch-spec.md: 'plsr_must_not_claim'; the runtime vocabulary is fixed by runtime-status-v1 at the pinned commit (T106 constants)"
+   },
+   "claim": "The ISS branch adds no runtime-status-v1 code, sample field or verdict to PLSR",
+   "domain": "computational_pipeline",
+   "evidence_status": "analytic",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "closed-form argument; nothing was approximated",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": "research branch only"
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "The disturbance bound w_bar = 0.5 holds for a physical plant",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "derivation": "an analytic bound on a declared model; safety requires a safety case outside the workbench"
+   },
+   "claim": "The ISS bound defines a safe operating envelope for a machine",
+   "domain": "machine_safety",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 2730,
+   "path": "artifacts/T112/iss-branch-spec.md",
+   "sha256": "22444fb11d74a01effb5bbce01c943686c520ed623c45e09244d6c15099b0e44"
+  },
+  {
+   "bytes": 3394,
+   "path": "artifacts/T112/iss-branch-spec.json",
+   "sha256": "15ec95c6640d45cc5425a0b1bca2a59d93e9773c5aa7c3c227b2d050119f8304"
+  },
+  {
+   "bytes": 2781,
+   "path": "artifacts/T112/iss-ratios.svg",
+   "sha256": "75b954926ee559cff0ab39a04cc59727e58df4c14d2d87adc0dac3d79e1f12d5"
+  }
+ ],
+ "hypothesis": "For x' = A x + B w with |w| <= w_bar, the quadratic ISS-Lyapunov bound sqrt(V(t)) <= max(sqrt(V(0)), 2 ||P^(1/2) B|| w_bar / c) holds on every bounded disturbance; it is conservative against the sharp reachable-set supremum in two dimensions and approached in one dimension; this belongs to a separate research branch, not to the PLSR runtime.",
+ "input_data": [
+  "A = [[0, 1], [-4, -1.2]], B = [0, 1]^T, w_bar = 0.5, Q = I (synthetic)",
+  "Disturbances: constant w_bar; worst-case switching w_bar sign(B^T P x); resonant sinusoid at 2 rad/s; random levels held for 0.2 s (PCG64 seed 112)",
+  "Scalar x' = -x + w, w = w_bar",
+  "Exact ZOH simulation, h = 0.005 s, 30 s from x(0) = 0; reachable-set integral by the trapezoid rule on the exact sampled impulse response (h and h/2, 60 s, 361-direction grid refined by 60 golden-section steps)"
+ ],
+ "mathematical_model": "V = x^T P x, A^T P + P A = -Q: V' <= -c V + 2 sqrt(V) beta with c = min eig(P^-1 Q), beta = ||P^(1/2) B|| w_bar (Cauchy-Schwarz in the P inner product), so W = sqrt(V) obeys W' <= -(c/2) W + beta. The sharp supremum from x(0) = 0 is max over unit u of w_bar int_0^inf |u^T L^T e^(A s) B| ds with P = L L^T (support function of the reachable set).",
+ "number": 112,
+ "numerical_result": "ISS bound sqrt(V) <= 1.61832 (|x| <= 2.26221); sharp reachable-set supremum 0.411754 (0.2544 of the bound, step-halving change 2.1e-06); simulated sup sqrt(V) / sharp supremum {'constant': 0.6241, 'worst-case switching': 0.9941, 'resonant sinusoid': 0.787, 'random held': 0.4528}; scalar sup/bound = 0.99999999999991 (1 - e^-30); series expm agrees with its closed form and scipy.linalg.expm@1.16.2 to 1.11e-16.",
+ "observation_model": "sup_t sqrt(V(x(t))) and sup_t |x(t)| of the synthetic simulations against the analytic bound and the sharp reachable-set supremum.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/lyapunov.py": "58d6c7473f0a42002b57888de0ccfbbf73b571bbbabbf9ee81e0a05c734f2320",
+   "src/ciw/lab/lyapunov_reference.py": "fa37ef453c23ad2bed2eab41132e72670e166b93eebd5fc9d67a4a89a7c92cca",
+   "src/ciw/lab/lyapunov_research.py": "528422e4137222e00fd93c63ac22a4bb326fe469030d347418427bac34907d0f"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "Specify a resolution-aware float64 ISS inequality (open question 1 in the retained spec) before any runtime integration; acquiring an evidenced disturbance bound is hardware-gated.",
+ "report_id": "sha256:a9518b241b1cbfd76e156824a2d34e189c482a02d399a977822ea05058e780b6",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "lyapunov",
+ "state": "completed",
+ "task_id": "T112",
+ "tests_passed": [
+  "check: For the four simulated disturbance classes sup sqrt(V) stays below the sharp reachable-set supremum, and worst-case switching comes within 2 % of it vs max over scenarios of sup sqrt(V) / sharp supremum",
+  "check: For the four simulated disturbance classes sup sqrt(V) stays below the sharp reachable-set supremum, and worst-case switching comes within 2 % of it vs worst-case switching sup sqrt(V) / sharp supremum",
+  "check: The sharp reachable-set supremum of sqrt(V) is converged in the quadrature step and lies below the quadratic ISS bound vs relative change of the supremum when the step is halved",
+  "check: The sharp reachable-set supremum of sqrt(V) is converged in the quadrature step and lies below the quadratic ISS bound vs sharp supremum / ISS bound",
+  "check: In one dimension the quadratic ISS bound w_bar / a is approached: sup |x| over 30 s is (1 - e^-30) of it vs 1 - exact sup / bound for x' = -x + 0.5 over 30 s",
+  "check: The series matrix exponential behind the exact ZOH simulation agrees with its closed form and, where available, an independent exponential vs max abs entry difference from the closed form of exp([[A, B], [0, 0]] h)",
+  "independent: The series matrix exponential behind the exact ZOH simulation agrees with its closed form and, where available, an independent exponential vs scipy.linalg.expm@1.16.2",
+  "pytest: tests/test_lab_lyapunov.py::test_t112_iss_branch",
+  "pytest: tests/test_lab_lyapunov.py::test_research_tasks_without_optional_modules"
+ ],
+ "tests_skipped": [],
+ "title": "Define a separate disturbance-aware/ISS research branch.",
+ "uncertainty": "Simulation is exact ZOH (exponential accurate to 1e-12); the sharp supremum carries a trapezoid error below 1e-5 relative; the 2-D ISS bound is conservative by about a factor four because of the Cauchy-Schwarz step.",
+ "unresolved_assumptions": [
+  "w_bar and B are declared synthetic values; no physical disturbance was measured.",
+  "Sample-held disturbances are one admissible class; inter-sample peaks are not sampled.",
+  "Only four disturbance classes were simulated; the sharp supremum, not the simulations, covers every bounded disturbance."
+ ]
+}

@@ -1,0 +1,193 @@
+{
+ "changed_files": [
+  "src/ciw/lab/energy_gpu.py",
+  "src/ciw/lab/energy_gpu_kernels.py",
+  "src/ciw/lab/energy_gpu_telemetry.py",
+  "docs/lab/ENERGY_GPU.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 8,
+   "numerically_verified": 0,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "not_established"
+ },
+ "expected_invariant": "Device name contains RTX 2080; the same UUID appears in log.json, every in-window smi.csv row and this host's NVML identity; power and temperature readings are present for every sample.",
+ "experiment": "Blocked: unavailable requirement(s) hardware:nvidia-gpu. Planned: On the RTX 2080 host: (0) `mkdir -p runs/rtx2080-<date>`; (1) start `TZ=UTC nvidia-smi --query-gpu=timestamp,uuid,name,utilization.gpu,utilization.memory,temperature.gpu,power.draw,clocks.sm,clocks.mem,pstate --format=csv,nounits -lms 100 -f runs/rtx2080-<date>/smi.csv` in the background; (2) `ciw energy record --problem examples/energy-accuracy/problem.json --output-dir runs/rtx2080-<date>/capture --duration 10 --replicas 4096 --warmup-batches 2 --idle-duration 2 --gpu-index 0`; (3) stop the sidecar; (4) in a separate profiling pass `nsys profile --trace=cuda -o runs/rtx2080-<date>/nsys python -m ciw energy record --problem examples/energy-accuracy/problem.json --output-dir runs/rtx2080-<date>/capture-nsys --duration 10 --gpu-index 0` and `nsys stats --report cuda_gpu_kern_sum runs/rtx2080-<date>/nsys.nsys-rep`; (5) `CIW_LAB_ENERGY_LOG=runs/rtx2080-<date>/capture/log.json CIW_LAB_NVIDIA_SMI_CSV=runs/rtx2080-<date>/smi.csv CIW_LAB_NVIDIA_SMI_UTC_OFFSET=+00:00 ciw lab run T118 --output-dir <dir>`.",
+ "failure_modes_checked": [
+  "hardware:nvidia-gpu probe (nvidia-smi -L): no device here",
+  "acquisition gate exercised by regression tests on synthetic logs: device is not an RTX 2080, synthetic origin, sidecar rows outside the window or without a declared UTC offset",
+  "planned on a captured log: context readings unavailable (retained error codes), sidecar missing or naming another UUID"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": [
+     "no NVIDIA GPU or NVML in this environment"
+    ]
+   },
+   "claim": "RTX 2080 power draw during the measurement phase (NVML)",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": "W",
+   "value": null
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": [
+     "no NVIDIA GPU or NVML in this environment"
+    ]
+   },
+   "claim": "RTX 2080 temperature during the measurement phase (NVML)",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": "C",
+   "value": null
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": [
+     "no NVIDIA GPU or NVML in this environment"
+    ]
+   },
+   "claim": "RTX 2080 graphics clock during the measurement phase (NVML)",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": "MHz",
+   "value": null
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": [
+     "no NVIDIA GPU or NVML in this environment"
+    ]
+   },
+   "claim": "Host-bracketed batch solve duration (launch, sync and copy included)",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": "ms",
+   "value": null
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": [
+     "no NVIDIA GPU or NVML in this environment"
+    ]
+   },
+   "claim": "RTX 2080 GPU utilization during the measurement phase (nvidia-smi rows inside the measurement window)",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": "%",
+   "value": null
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": [
+     "no NVIDIA GPU or NVML in this environment"
+    ]
+   },
+   "claim": "RTX 2080 power draw is steady over the measurement phase (coefficient of variation <= 0.10)",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": "ratio",
+   "value": null
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": [
+     "no NVIDIA GPU or NVML in this environment"
+    ]
+   },
+   "claim": "RTX 2080 temperature drifts by at most 5 C over the measurement phase",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": "C",
+   "value": null
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": [
+     "log.json brackets launch, synchronization and copy; kernel spans need an Nsight Systems report, which this section does not ingest"
+    ]
+   },
+   "claim": "RTX 2080 kernel-only duration of the Gaussian VI kernel",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": "ms",
+   "value": null
+  }
+ ],
+ "generated_artifacts": [],
+ "hypothesis": "During the T116 workload the RTX 2080 power draw is steady (coefficient of variation <= 0.10 over the measurement phase) and its temperature drifts by at most 5 C; kernel-only time is out of scope until an Nsight Systems report is ingested.",
+ "input_data": [
+  "log.json from `ciw energy record`",
+  "smi.csv from the nvidia-smi sidecar (run with TZ=UTC)",
+  "nsys report from a separate profiling pass (retained by the operator, not ingested)"
+ ],
+ "mathematical_model": "Measurement-phase min/mean/max of NVML power, temperature and graphics clock; power CV = population standard deviation / mean; temperature drift = max - min; utilization from nvidia-smi rows whose UTC timestamps fall inside the measurement window.",
+ "number": 118,
+ "numerical_result": "none: no NVIDIA GPU or NVML in this environment",
+ "observation_model": "NVML context readings sampled after each energy read (not simultaneous with it); nvidia-smi sampling every 100 ms in local wall time, converted with the declared UTC offset; CUDA kernel spans from nsys.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "requirement_probes": {
+   "hardware:nvidia-gpu": false
+  },
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/energy_gpu.py": "fca900557e7fac2261a168afe0ee81efc48508a874a5045bf4f6b74937165bb1",
+   "src/ciw/lab/energy_gpu_kernels.py": "03f3d92f8407f476cb74536911d476929843ee74232a7d7017c00f43c785a2b4",
+   "src/ciw/lab/energy_gpu_telemetry.py": "21cac5f654ce4a120887ff40da62fda47bd38a3c383bbad6cc3cb13b4168fa2d"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T147: compare CPU and GPU outputs of the same workload on the RTX 2080 host",
+ "report_id": "sha256:94392e83a4be56cae7420301cc3cb2043e44c5bf20198558883b86b8856951f4",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "energy-gpu",
+ "state": "blocked",
+ "task_id": "T118",
+ "tests_passed": [
+  "pytest: tests/test_lab_energy_gpu.py::test_gpu_tasks_are_blocked_with_the_recording_protocol",
+  "pytest: tests/test_lab_energy_gpu.py::test_operator_log_gate_withholds_physical_labels_from_synthetic_logs",
+  "pytest: tests/test_lab_energy_gpu.py::test_t118_sidecar_rows_are_restricted_to_the_measurement_window",
+  "pytest: tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance"
+ ],
+ "tests_skipped": [],
+ "title": "Record RTX 2080 utilization, temperature, power, and kernel duration.",
+ "uncertainty": "NVML power is a vendor estimate with undeclared averaging; 100 ms sidecar sampling aliases short batches; profiling perturbs timing and energy, so it is a separate pass.",
+ "unresolved_assumptions": [
+  "Blocked here: no NVIDIA GPU",
+  "Batch windows in log.json include launch, synchronization and copy; they are not kernel durations",
+  "The steady-state limits (CV 0.10, 5 C) are declared protocol criteria, not derived"
+ ]
+}

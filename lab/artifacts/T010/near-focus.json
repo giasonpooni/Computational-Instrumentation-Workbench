@@ -1,0 +1,139 @@
+{
+ "divergence_equator_eps_0.04": [
+  {
+   "distance": 0.0136034952318,
+   "offset_steps": 1,
+   "relative_error": 0.0797514822589
+  },
+  {
+   "distance": 0.0272069904635,
+   "offset_steps": 2,
+   "relative_error": 0.0397397246809
+  },
+  {
+   "distance": 0.054413980927,
+   "offset_steps": 4,
+   "relative_error": 0.0197310205282
+  },
+  {
+   "distance": 0.108827961854,
+   "offset_steps": 8,
+   "relative_error": 0.00972032824613
+  }
+ ],
+ "divergence_generic_eps_0.01": [
+  {
+   "distance": 0.0151285014728,
+   "offset_steps": 1,
+   "relative_error": 0.91045682957
+  },
+  {
+   "distance": 0.0302570029457,
+   "offset_steps": 2,
+   "relative_error": 0.456507949472
+  },
+  {
+   "distance": 0.0605140058914,
+   "offset_steps": 4,
+   "relative_error": 0.229501464395
+  },
+  {
+   "distance": 0.121028011783,
+   "offset_steps": 8,
+   "relative_error": 0.115933742691
+  }
+ ],
+ "equator_chord_ratio_s_star_over_half": 0.000157109845297,
+ "inversion": {
+  "equator": {
+   "j_after": -1.22474487124,
+   "j_before": 1.73205080757,
+   "ratio_after": 0.999927996958,
+   "s_after": 6.80174761588,
+   "s_before": 2.72069904635,
+   "signed_after": -0.0122465668588,
+   "signed_before": 0.0173197863805
+  },
+  "generic": {
+   "j_after": -1.53090513604,
+   "j_before": 1.97814927262,
+   "ratio_after": 0.995883826865,
+   "s_after": 7.56425073642,
+   "s_before": 3.02570029457,
+   "signed_after": -0.0152460366545,
+   "signed_before": 0.0198291383569
+  }
+ },
+ "sphere": {
+  "closed_form_max_error": 3.65478038458e-11,
+  "max_deviation_from_uniform": 7.65601466668e-08,
+  "mixed_chord_at_3pi4": [
+   1.24999739584e-05,
+   4.99995833347e-05,
+   0.000199993333422,
+   0.000799893339022
+  ],
+  "mixed_coefficient": 0.499998958337,
+  "mixed_exponent": 1.99993958636,
+  "mixed_numeric_eps_0.02": 0.000199993338706,
+  "relative_error_at_pi_minus_h": -1.65900231869e-05,
+  "signed_ratio_5pi4_over_3pi4": -0.999999996945,
+  "uniform_relative_error": -1.66665833335e-05
+ },
+ "torus_equator": {
+  "chord_at_s_star": [
+   8.50236379159e-08,
+   6.80206246192e-07,
+   5.44235396472e-06,
+   4.35616860276e-05
+  ],
+  "chord_exponent": 3.00031268998,
+  "dj_at_s_star": -0.999999999999,
+  "first_order_at_s_star": 6.90143803217e-12,
+  "invalid_window_half_width": [
+   1.70046079965e-05,
+   6.80187114931e-05,
+   0.000272087084219,
+   0.00108855203639
+  ],
+  "j_at_s_star": 1.72535950804e-10,
+  "located_conjugate_point": 5.44139809288,
+  "s_star": 5.4413980927,
+  "signed_at_s_star": [
+   8.50230399824e-08,
+   6.8018711493e-07,
+   5.44174168439e-06,
+   4.35420814555e-05
+  ],
+  "signed_exponent": 3.00010873414,
+  "window_exponent": 2.00010873414
+ },
+ "torus_generic": {
+  "chord_at_s_star": [
+   3.82648454733e-05,
+   0.000154120376826,
+   0.000625106683937,
+   0.00257171779619
+  ],
+  "chord_exponent": 2.02317516764,
+  "dj_at_s_star": -1.12210972551,
+  "first_order_at_s_star": 5.21737195114e-12,
+  "invalid_window_half_width": [
+   0.00682011320933,
+   0.0137344885747,
+   0.0278509149796,
+   0.0572700235878
+  ],
+  "j_at_s_star": 1.30434298778e-10,
+  "located_conjugate_point": 6.05140058926,
+  "s_star": 6.05140058914,
+  "signed_at_s_star": [
+   3.82645768063e-05,
+   0.000154116032045,
+   0.000625035651259,
+   0.00257053001792
+  ],
+  "signed_exponent": 2.02296593505,
+  "window_exponent": 1.02296593505
+ }
+}

@@ -1,0 +1,107 @@
+{
+ "H(1,1) origami": {
+  "angle_recognition_residual": 0.0,
+  "commutator_prediction_over_pi": [
+   "4",
+   "4"
+  ],
+  "cone_angles_over_pi": [
+   "4",
+   "4"
+  ],
+  "declared_euler_characteristic": -2,
+  "euler_characteristic_independent": -2,
+  "euler_characteristic_v_e_f": -2,
+  "gauss_bonnet_defect_over_pi": "0",
+  "gluing": "translation",
+  "singular": [
+   "4",
+   "4"
+  ],
+  "vertex_classes": 2
+ },
+ "L-shape": {
+  "angle_recognition_residual": 0.0,
+  "commutator_prediction_over_pi": [
+   "6"
+  ],
+  "cone_angles_over_pi": [
+   "6"
+  ],
+  "declared_euler_characteristic": -2,
+  "euler_characteristic_independent": -2,
+  "euler_characteristic_v_e_f": -2,
+  "gauss_bonnet_defect_over_pi": "0",
+  "gluing": "translation",
+  "singular": [
+   "6"
+  ],
+  "vertex_classes": 1
+ },
+ "hexagon": {
+  "angle_recognition_residual": 1.1102230246251565e-16,
+  "cone_angles_over_pi": [
+   "2",
+   "2"
+  ],
+  "declared_euler_characteristic": 0,
+  "euler_characteristic_independent": 0,
+  "euler_characteristic_v_e_f": 0,
+  "gauss_bonnet_defect_over_pi": "0",
+  "gluing": "translation",
+  "singular": [],
+  "vertex_classes": 2
+ },
+ "octagon": {
+  "angle_recognition_residual": 0.0,
+  "cone_angles_over_pi": [
+   "6"
+  ],
+  "declared_euler_characteristic": -2,
+  "euler_characteristic_independent": -2,
+  "euler_characteristic_v_e_f": -2,
+  "gauss_bonnet_defect_over_pi": "0",
+  "gluing": "translation",
+  "singular": [
+   "6"
+  ],
+  "vertex_classes": 1
+ },
+ "pillowcase": {
+  "angle_recognition_residual": 0.0,
+  "cone_angles_over_pi": [
+   "1",
+   "1",
+   "1",
+   "1"
+  ],
+  "declared_euler_characteristic": 2,
+  "euler_characteristic_independent": 2,
+  "euler_characteristic_v_e_f": 2,
+  "gauss_bonnet_defect_over_pi": "0",
+  "gluing": "half-translation",
+  "singular": [
+   "1",
+   "1",
+   "1",
+   "1"
+  ],
+  "vertex_classes": 4
+ },
+ "square torus": {
+  "angle_recognition_residual": 0.0,
+  "commutator_prediction_over_pi": [
+   "2"
+  ],
+  "cone_angles_over_pi": [
+   "2"
+  ],
+  "declared_euler_characteristic": 0,
+  "euler_characteristic_independent": 0,
+  "euler_characteristic_v_e_f": 0,
+  "gauss_bonnet_defect_over_pi": "0",
+  "gluing": "translation",
+  "singular": [],
+  "vertex_classes": 1
+ }
+}

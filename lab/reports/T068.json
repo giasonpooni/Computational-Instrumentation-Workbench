@@ -1,0 +1,536 @@
+{
+ "changed_files": [
+  "src/ciw/lab/sensor_fusion_filtering.py",
+  "src/ciw/lab/sensor_fusion_common.py",
+  "src/ciw/lab/sensor_fusion_bench.py",
+  "src/ciw/lab/sensor_fusion_objects.py"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 7,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Detection count matches the Poisson-binomial expectation; gated RMSE approaches the oracle for gross outliers except after a cold-start lock-out, which can cancel the mean benefit; false alarms ~1%.",
+ "experiment": "Run ungated, gated (p = 0.99) and oracle filters (the oracle skips exactly the contaminated readings) on the same readings; count detections and false alarms; per-run MSE after a 20-tick burn-in; paired per-run MSE tests and a sign test over all runs; identify lock-out runs (>= 5 consecutive valid readings rejected) and, separately and post hoc, compare RMSE without them.",
+ "failure_modes_checked": [
+  "missed small outliers",
+  "false alarms on clean data",
+  "estimate corruption without gating",
+  "cold-start lock-out",
+  "oracle comparison",
+  "outcome-conditioned selection (reported separately from the all-run test)"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.9041642803100759,
+      "passed": true,
+      "reference": "detections against the Poisson-binomial prediction (z)",
+      "reference_kind": "analytic",
+      "tolerance": 3.4807564043462422
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "contamination": 0.05,
+     "name": "ciw.lab.sensor_fusion_bench",
+     "runs": 400,
+     "seed": 682026
+    }
+   },
+   "claim": "Gross 1.5 m outliers are detected at the rate predicted by the noncentral chi-square(2) law with lambda = b^T S^-1 b at each outlier's own prior covariance",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "Poisson-binomial standard deviation of the detection rate",
+    "kind": "monte_carlo_95ci",
+    "value": 0.0030063188592162294
+   },
+   "unit": null,
+   "value": {
+    "detection_rate": 0.9926315789473684,
+    "detection_z": 0.9041642803100759,
+    "first_reading_detection_predicted": 0.4708166614834159,
+    "outliers": 1900,
+    "predicted": 0.9912447390862839
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": -0.7022936860857409,
+      "passed": true,
+      "reference": "paired per-run MSE difference gated - ungated (z, not significant)",
+      "reference_kind": "analytic",
+      "tolerance": 3.4807564043462422
+     },
+     {
+      "comparison": "ge",
+      "observed": 0.8904947576520857,
+      "passed": true,
+      "reference": "Wilson 99.9% lower bound of the fraction of runs where gating wins",
+      "reference_kind": "analytic",
+      "tolerance": 0.5
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "seed": 682026
+    }
+   },
+   "claim": "Over all runs with gross outliers, gating lowers the mean squared error in most runs (sign test) but its mean improvement over fusing every reading is not statistically significant, because the cold-start lock-out runs lose heavily",
+   "counterexample": {
+    "statement": "Gating that wins in most runs improves the mean error",
+    "witness": {
+     "gated_better_runs": 374,
+     "paired_z": -0.7022936860857409,
+     "rmse_gated": 0.17795991041645262,
+     "rmse_ungated": 0.1964153397312212,
+     "runs": 400
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "run-level standard error of the mean per-run MSE difference (m^2)",
+    "kind": "monte_carlo_95ci",
+    "value": 0.01928273308197322
+   },
+   "unit": null,
+   "value": {
+    "paired_mse_difference": {
+     "mean": -0.0069092559662992,
+     "median": -0.016819429476439093,
+     "standard_error": 0.009838129123455724
+    },
+    "paired_mse_z_gated_minus_ungated": -0.7022936860857409,
+    "rmse_all_runs": {
+     "gated": 0.17795991041645262,
+     "oracle": 0.13794394236831456,
+     "ungated": 0.1964153397312212
+    },
+    "sign_test": {
+     "gated_better": 374,
+     "runs": 400,
+     "ties": 3,
+     "wins": {
+      "confidence": 0.999,
+      "count": 374,
+      "rate": 0.9420654911838791,
+      "trials": 397,
+      "wilson": [
+       0.8904947576520857,
+       0.970163101491054
+      ]
+     }
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.02508523464605239,
+      "passed": true,
+      "reference": "gated / oracle RMSE minus one",
+      "reference_kind": "analytic",
+      "tolerance": 0.05
+     },
+     {
+      "comparison": "ge",
+      "observed": 1.4241520651819304,
+      "passed": true,
+      "reference": "ungated / oracle RMSE",
+      "reference_kind": "analytic",
+      "tolerance": 1.3
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "seed": 682026
+    }
+   },
+   "claim": "Post hoc, conditioning on the outcome: after removing the lock-out runs (selected by the gated filter's own failure, which favours gating by construction) the gated RMSE is within 5% of the oracle that knows which readings are bad, while fusing every reading is at least 30% worse",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "delta-method standard error of the conditioned gated RMSE (m); the selection bias of the conditioning is not included",
+    "kind": "monte_carlo_95ci",
+    "value": 0.001958902028355682
+   },
+   "unit": null,
+   "value": {
+    "lockout_runs_removed": 10,
+    "rmse_all_runs": {
+     "gated": 0.17795991041645262,
+     "oracle": 0.13794394236831456,
+     "ungated": 0.1964153397312212
+    },
+    "rmse_without_lockout_runs": {
+     "gated": 0.14123228348840525,
+     "oracle": 0.13777613676893002,
+     "ungated": 0.1962141697122598
+    },
+    "selection": "post hoc, outcome-conditioned"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 10.0,
+      "passed": true,
+      "reference": "number of lock-out runs",
+      "reference_kind": "analytic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "lock-out runs not explained by an accepted first-reading outlier",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "seed": 682026
+    }
+   },
+   "claim": "Cold-start lock-out: a gross outlier in the first reading passes the gate under the broad prior, and the corrupted state then rejects runs of valid readings; every lock-out run starts this way",
+   "counterexample": {
+    "statement": "A chi-square gate protects a filter from gross outliers",
+    "witness": {
+     "longest_valid_rejection_streak": 36,
+     "rmse_gated": 1.9753980773555264,
+     "rmse_oracle": 0.13815641328637332,
+     "run": 150
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "Poisson approximation of the lock-out count across seeds; the attribution to accepted first-reading outliers is exact in this realization",
+    "kind": "monte_carlo_95ci",
+    "value": 6.1980642139300235
+   },
+   "unit": null,
+   "value": {
+    "accepted_first_reading_outliers": 11,
+    "first_reading_outliers": 24,
+    "lockout_runs": 10,
+    "lockout_runs_with_accepted_first_outlier": 10,
+    "worst_run": {
+     "longest_valid_rejection_streak": 36,
+     "rmse_gated": 1.9753980773555264,
+     "rmse_oracle": 0.13815641328637332,
+     "run": 150
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 0.008789335216934691,
+      "passed": true,
+      "reference": "Wilson lower bound of the clean false-alarm rate",
+      "reference_kind": "analytic",
+      "tolerance": 0.015
+     },
+     {
+      "comparison": "ge",
+      "observed": 0.012125692466176882,
+      "passed": true,
+      "reference": "Wilson upper bound of the clean false-alarm rate",
+      "reference_kind": "analytic",
+      "tolerance": 0.005
+     },
+     {
+      "comparison": "ge",
+      "observed": 9.577530243653909,
+      "passed": true,
+      "reference": "paired per-run MSE difference gated - ungated (z)",
+      "reference_kind": "analytic",
+      "tolerance": 3.0
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "seed": 682026
+    }
+   },
+   "claim": "On clean data the 99% gate raises false alarms at about 1% and increases the mean squared error: the rejected valid readings are the ones that would have corrected a large prior error",
+   "counterexample": {
+    "statement": "Gating never degrades the estimate when the data are clean",
+    "witness": {
+     "paired_z": 9.577530243653909,
+     "rmse_gated": 0.13882950665782604,
+     "rmse_ungated": 0.13535119430297377
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "run-level standard error of the mean per-run MSE difference (m^2)",
+    "kind": "monte_carlo_95ci",
+    "value": 0.00019516772559209593
+   },
+   "unit": null,
+   "value": {
+    "false_alarm": {
+     "confidence": 0.999,
+     "count": 413,
+     "rate": 0.010325,
+     "trials": 40000,
+     "wilson": [
+      0.008789335216934691,
+      0.012125692466176882
+     ]
+    },
+    "longest_valid_rejection_streak": 3,
+    "paired_mse_se": 9.957537020004894e-05,
+    "paired_mse_z_gated_minus_ungated": 9.577530243653909,
+    "rmse_gated": 0.13882950665782604,
+    "rmse_ungated": 0.13535119430297377
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.5700408287906554,
+      "passed": true,
+      "reference": "detections against the Poisson-binomial prediction (z)",
+      "reference_kind": "analytic",
+      "tolerance": 3.4807564043462422
+     },
+     {
+      "comparison": "le",
+      "observed": 0.08105263157894736,
+      "passed": true,
+      "reference": "detection rate",
+      "reference_kind": "analytic",
+      "tolerance": 0.5
+     },
+     {
+      "comparison": "ge",
+      "observed": 10.103632439810655,
+      "passed": true,
+      "reference": "paired per-run MSE difference gated - ungated (z)",
+      "reference_kind": "analytic",
+      "tolerance": 3.0
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "seed": 682026
+    }
+   },
+   "claim": "Subtle 0.3 m outliers pass the gate at the predicted low detection rate; for them gating costs more accuracy than the outliers do",
+   "counterexample": {
+    "statement": "A Mahalanobis gate removes injected outliers and so improves the estimate",
+    "witness": {
+     "detection_rate": 0.08105263157894736,
+     "magnitude_m": 0.3,
+     "rmse": {
+      "gated": 0.1426001142269842,
+      "oracle": 0.13794394236831456,
+      "ungated": 0.1384335410857886
+     }
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "Poisson-binomial standard deviation of the detection rate",
+    "kind": "monte_carlo_95ci",
+    "value": 0.011996521439495427
+   },
+   "unit": null,
+   "value": {
+    "detection_rate": 0.08105263157894736,
+    "detection_z": 0.5700408287906554,
+    "paired_mse_z_gated_minus_ungated": 10.103632439810655,
+    "predicted": 0.07756359738304183,
+    "rmse": {
+     "gated": 0.1426001142269842,
+     "oracle": 0.13794394236831456,
+     "ungated": 0.1384335410857886
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 1.1102230246251565e-16,
+      "passed": true,
+      "reference": "scalar vs vectorized at lambda = 4",
+      "reference_kind": "invariant",
+      "tolerance": 1e-12
+     }
+    ],
+    "derivation": "Poisson mixture of central chi-square CDFs"
+   },
+   "claim": "The vectorized and scalar noncentral chi-square CDFs agree",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "observed floating-point residual of an exact identity",
+    "kind": "roundoff",
+    "value": 1.1102230246251565e-16
+   },
+   "unit": null,
+   "value": 1.1102230246251565e-16
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "seed": 682026
+    },
+    "notes": "synthetic draws only; no acquisition"
+   },
+   "claim": "Real outliers are rare, isolated and of fixed magnitude as in this contamination model",
+   "domain": "sensor_performance",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": "not established: the contamination model is declared, not measured"
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 4290,
+   "path": "artifacts/T068/outliers.json",
+   "sha256": "058439c427201b5521c785ab6435dde95bebb7409a8199cd25cd92a76ddaf63c"
+  },
+  {
+   "bytes": 2150,
+   "path": "artifacts/T068/rmse.svg",
+   "sha256": "c85d56ba13e7632703aa818cf2c831104f4cabe6a92aa0d7b182f72ad0324e92"
+  }
+ ],
+ "hypothesis": "A 99% chi-square gate on the correctly normalized NIS detects an outlier with probability 1 - F_ncx2(gate; b^T S^-1 b), removes gross outliers at ~1% false-alarm cost, cannot remove outliers comparable to sqrt(S), and can lock out valid data after an undetected outlier.",
+ "input_data": [
+  "seed 682026 (PCG64)",
+  "400 runs x 100 ticks",
+  "1900 contaminated readings (rate 0.05), 24 of them first readings",
+  "magnitudes 1.5 m (gross) and 0.3 m (subtle)"
+ ],
+ "mathematical_model": "Readings z = H x + v + o with o = b u (u uniform on the unit circle) at 5% of ticks; an outlier's NIS is noncentral chi2(2) with lambda = b^T S^-1 b when the prior error is N(0, P-). Under the broad prior P0 (0.5 m std) a 1.5 m first-reading outlier has small lambda and often passes.",
+ "number": 68,
+ "numerical_result": "gross: detection 0.993 (predicted 0.991); all runs RMSE ungated/gated/oracle 0.196/0.178/0.138 m, paired MSE z -0.70 (not significant), gating better in 374 of 400 runs; post hoc without 10 lock-out runs 0.196/0.141/0.138 m; worst lock-out run RMSE 1.98 m. subtle: detection 0.081 (predicted 0.078). clean: false alarms 0.0103, RMSE 0.1354 -> 0.1388 m with gating.",
+ "observation_model": "Camera position every tick, correlated R, CV motion dt = 0.1 s, q = 0.05.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/sensor_fusion_bench.py": "f373849a4c6836fa20685c59ce7a6fe6bf732f6df9d6a49646cdc017262dd656",
+   "src/ciw/lab/sensor_fusion_common.py": "6787aa47d199d50d0b4de4d7e53714ce7b8b5aad37d647cfc1a954414e90209f",
+   "src/ciw/lab/sensor_fusion_filtering.py": "6b886646d4fb49b584d7e02c13cd96d604e800bfd0defc717489a010de26bb58",
+   "src/ciw/lab/sensor_fusion_objects.py": "a795ffc235e0a4118cb7b9ac7800191a90984372d79e59f1a934442d98d7a1f1"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T069: missing data must be handled by prediction only, never by zero-filling.",
+ "report_id": "sha256:9fd9ce631ce3ec5994320f0917607a30bf872b6c05ba769a1b4d55fc932aa134",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "sensor-fusion",
+ "state": "completed",
+ "task_id": "T068",
+ "tests_passed": [
+  "check: Gross 1.5 m outliers are detected at the rate predicted by the noncentral chi-square(2) law with lambda = b^T S^-1 b at each outlier's own prior covariance vs detections against the Poisson-binomial prediction (z)",
+  "check: Over all runs with gross outliers, gating lowers the mean squared error in most runs (sign test) but its mean improvement over fusing every reading is not statistically significant, because the cold-start lock-out runs lose heavily vs paired per-run MSE difference gated - ungated (z, not significant)",
+  "check: Over all runs with gross outliers, gating lowers the mean squared error in most runs (sign test) but its mean improvement over fusing every reading is not statistically significant, because the cold-start lock-out runs lose heavily vs Wilson 99.9% lower bound of the fraction of runs where gating wins",
+  "check: Post hoc, conditioning on the outcome: after removing the lock-out runs (selected by the gated filter's own failure, which favours gating by construction) the gated RMSE is within 5% of the oracle that knows which readings are bad, while fusing every reading is at least 30% worse vs gated / oracle RMSE minus one",
+  "check: Post hoc, conditioning on the outcome: after removing the lock-out runs (selected by the gated filter's own failure, which favours gating by construction) the gated RMSE is within 5% of the oracle that knows which readings are bad, while fusing every reading is at least 30% worse vs ungated / oracle RMSE",
+  "check: Cold-start lock-out: a gross outlier in the first reading passes the gate under the broad prior, and the corrupted state then rejects runs of valid readings; every lock-out run starts this way vs number of lock-out runs",
+  "check: Cold-start lock-out: a gross outlier in the first reading passes the gate under the broad prior, and the corrupted state then rejects runs of valid readings; every lock-out run starts this way vs lock-out runs not explained by an accepted first-reading outlier",
+  "check: On clean data the 99% gate raises false alarms at about 1% and increases the mean squared error: the rejected valid readings are the ones that would have corrected a large prior error vs Wilson lower bound of the clean false-alarm rate",
+  "check: On clean data the 99% gate raises false alarms at about 1% and increases the mean squared error: the rejected valid readings are the ones that would have corrected a large prior error vs Wilson upper bound of the clean false-alarm rate",
+  "check: On clean data the 99% gate raises false alarms at about 1% and increases the mean squared error: the rejected valid readings are the ones that would have corrected a large prior error vs paired per-run MSE difference gated - ungated (z)",
+  "check: Subtle 0.3 m outliers pass the gate at the predicted low detection rate; for them gating costs more accuracy than the outliers do vs detections against the Poisson-binomial prediction (z)",
+  "check: Subtle 0.3 m outliers pass the gate at the predicted low detection rate; for them gating costs more accuracy than the outliers do vs detection rate",
+  "check: Subtle 0.3 m outliers pass the gate at the predicted low detection rate; for them gating costs more accuracy than the outliers do vs paired per-run MSE difference gated - ungated (z)",
+  "check: The vectorized and scalar noncentral chi-square CDFs agree vs scalar vs vectorized at lambda = 4",
+  "pytest: tests/test_lab_sensor_fusion.py::test_outlier_rejection_detection_lockout_and_cost",
+  "pytest: tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T068]"
+ ],
+ "tests_skipped": [],
+ "title": "Add outlier rejection.",
+ "uncertainty": "Detection prediction uses each outlier's own prior covariance from the gated run and assumes the prior error is still N(0, P-); lock-out runs violate that assumption. Paired and sign tests use run-level independence. The lock-out-free comparison is conditioned on the gated filter's outcome and is descriptive, not a test.",
+ "unresolved_assumptions": [
+  "Outliers are independent across ticks; bursts and persistent biases defeat a per-reading gate and need T070-style bias states.",
+  "Lock-out recovery (covariance inflation or reacquisition) is not implemented in the gated filter; T073 handles reacquisition explicitly in the session API."
+ ]
+}

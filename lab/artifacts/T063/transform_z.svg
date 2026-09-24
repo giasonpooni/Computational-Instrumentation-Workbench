@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420" font-family="sans-serif" font-size="11">
+<rect width="640" height="420" fill="#ffffff"/>
+<text x="78" y="22" font-size="13" font-weight="bold">T063 Monte Carlo J P J^T check (0 rot, 1 trans, 2 unit, 3 composite)</text>
+<rect x="78" y="40" width="392" height="322" fill="none" stroke="#333"/>
+<line x1="78.00" y1="40" x2="78.00" y2="362" stroke="#e5e7eb"/>
+<text x="78.00" y="378" text-anchor="middle">0</text>
+<line x1="208.67" y1="40" x2="208.67" y2="362" stroke="#e5e7eb"/>
+<text x="208.67" y="378" text-anchor="middle">1</text>
+<line x1="339.33" y1="40" x2="339.33" y2="362" stroke="#e5e7eb"/>
+<text x="339.33" y="378" text-anchor="middle">2</text>
+<line x1="470.00" y1="40" x2="470.00" y2="362" stroke="#e5e7eb"/>
+<text x="470.00" y="378" text-anchor="middle">3</text>
+<line x1="78" y1="287.39" x2="470" y2="287.39" stroke="#e5e7eb"/>
+<text x="72" y="291.39" text-anchor="end">2</text>
+<line x1="78" y1="181.07" x2="470" y2="181.07" stroke="#e5e7eb"/>
+<text x="72" y="185.07" text-anchor="end">3</text>
+<line x1="78" y1="74.76" x2="470" y2="74.76" stroke="#e5e7eb"/>
+<text x="72" y="78.76" text-anchor="end">4</text>
+<text x="274.00" y="406" text-anchor="middle">transform index</text>
+<text x="16" y="201.00" text-anchor="middle" transform="rotate(-90 16 201.00)">max |z|</text>
+<path d="M78.00,350.07 L208.67,331.11 L339.33,331.11 L470.00,350.07" fill="none" stroke="#1f5fa8" stroke-width="1.8"/>
+<circle cx="78.00" cy="350.07" r="2.6" fill="#1f5fa8"/>
+<circle cx="208.67" cy="331.11" r="2.6" fill="#1f5fa8"/>
+<circle cx="339.33" cy="331.11" r="2.6" fill="#1f5fa8"/>
+<circle cx="470.00" cy="350.07" r="2.6" fill="#1f5fa8"/>
+<line x1="482" y1="52" x2="502" y2="52" stroke="#1f5fa8" stroke-width="2"/>
+<text x="508" y="56">max |z| per transform</text>
+<path d="M78.00,51.93 L470.00,51.93" fill="none" stroke="#c2410c" stroke-width="1.8"/>
+<circle cx="78.00" cy="51.93" r="2.6" fill="#c2410c"/>
+<circle cx="470.00" cy="51.93" r="2.6" fill="#c2410c"/>
+<line x1="482" y1="70" x2="502" y2="70" stroke="#c2410c" stroke-width="2"/>
+<text x="508" y="74">Bonferroni bound</text>
+</svg>

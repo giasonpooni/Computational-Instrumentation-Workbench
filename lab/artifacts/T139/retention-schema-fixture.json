@@ -1,0 +1,341 @@
+{
+ "calibration": {
+  "reference": "CERT-FIXTURE",
+  "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "status": "applied",
+  "valid_from": "2026-01-01T00:00:00Z",
+  "valid_until": "2027-01-01T00:00:00Z"
+ },
+ "clock": {
+  "acquired_at": "2026-09-23T00:00:00Z",
+  "source": "fixture",
+  "synchronization": "none",
+  "uncertainty_s": 1.0
+ },
+ "frame_chain": [
+  {
+   "child": "WORLD",
+   "covariance": [
+    [
+     0.0001,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0001,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0001,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1e-10,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     1e-10,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     1e-10
+    ]
+   ],
+   "parent": "INSTRUMENT",
+   "rotation": [
+    [
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "source": "instrument registration to the reference network",
+   "translation_mm": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "child": "FIXTURE",
+   "covariance": [
+    [
+     0.0001,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0001,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0001,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1e-10,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     1e-10,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     1e-10
+    ]
+   ],
+   "parent": "WORLD",
+   "rotation": [
+    [
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "source": "fixture datum targets measured by the tracker",
+   "translation_mm": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "child": "PART",
+   "covariance": [
+    [
+     0.0001,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0001,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0001,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1e-10,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     1e-10,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     1e-10
+    ]
+   ],
+   "parent": "FIXTURE",
+   "rotation": [
+    [
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "source": "3-2-1 datum frame from probed A/B/C features",
+   "translation_mm": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "child": "CAD",
+   "covariance": [
+    [
+     0.0001,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0001,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0001,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1e-10,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     1e-10,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     1e-10
+    ]
+   ],
+   "parent": "PART",
+   "rotation": [
+    [
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "source": "nominal model placement in the datum frame (declared)",
+   "translation_mm": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ ],
+ "instrument": {
+  "id": "camera",
+  "kind": "photogrammetry camera system",
+  "serial": "FIXTURE-0000"
+ },
+ "protocol_id": "MFG-COUPON-01",
+ "raw": [
+  {
+   "bytes": 35,
+   "media_type": "text/plain",
+   "name": "fixture.txt",
+   "sha256": "ce9c8880ae45555c99346f8f1b0cac8b24ce8a919bbc74b9220e0ae7eedd4ce9"
+  }
+ ],
+ "record_kind": "schema_fixture",
+ "schema": "ciw.lab-measurement-retention.v1"
+}

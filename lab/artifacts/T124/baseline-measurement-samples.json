@@ -1,0 +1,41 @@
+[
+ {
+  "context_errors": {},
+  "energy_mj": "1900",
+  "error_code": null,
+  "graphics_clock_mhz": 1000,
+  "power_mw": 1000,
+  "read_end_ns": 600000390,
+  "read_start_ns": 600000380,
+  "status": "ok",
+  "temperature_c": 40,
+  "utc_end_ns": "1000000000600000390",
+  "utc_start_ns": "1000000000600000380"
+ },
+ {
+  "context_errors": {},
+  "energy_mj": "2000",
+  "error_code": null,
+  "graphics_clock_mhz": 1000,
+  "power_mw": 1000,
+  "read_end_ns": 1600000380,
+  "read_start_ns": 1600000370,
+  "status": "ok",
+  "temperature_c": 40,
+  "utc_end_ns": "1000000001600000380",
+  "utc_start_ns": "1000000001600000370"
+ },
+ {
+  "context_errors": {},
+  "energy_mj": "2100",
+  "error_code": null,
+  "graphics_clock_mhz": 1000,
+  "power_mw": 1000,
+  "read_end_ns": 1600000420,
+  "read_start_ns": 1600000410,
+  "status": "ok",
+  "temperature_c": 40,
+  "utc_end_ns": "1000000001600000420",
+  "utc_start_ns": "1000000001600000410"
+ }
+]

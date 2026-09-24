@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420" font-family="sans-serif" font-size="11">
+<rect width="640" height="420" fill="#ffffff"/>
+<text x="78" y="22" font-size="13" font-weight="bold">T065 scalar filter: error autocovariance vs innovation whiteness</text>
+<rect x="78" y="40" width="392" height="322" fill="none" stroke="#333"/>
+<line x1="78.00" y1="40" x2="78.00" y2="362" stroke="#e5e7eb"/>
+<text x="78.00" y="378" text-anchor="middle">0</text>
+<line x1="176.00" y1="40" x2="176.00" y2="362" stroke="#e5e7eb"/>
+<text x="176.00" y="378" text-anchor="middle">2</text>
+<line x1="274.00" y1="40" x2="274.00" y2="362" stroke="#e5e7eb"/>
+<text x="274.00" y="378" text-anchor="middle">4</text>
+<line x1="372.00" y1="40" x2="372.00" y2="362" stroke="#e5e7eb"/>
+<text x="372.00" y="378" text-anchor="middle">6</text>
+<line x1="470.00" y1="40" x2="470.00" y2="362" stroke="#e5e7eb"/>
+<text x="470.00" y="378" text-anchor="middle">8</text>
+<line x1="78" y1="346.84" x2="470" y2="346.84" stroke="#e5e7eb"/>
+<text x="72" y="350.84" text-anchor="end">0</text>
+<line x1="78" y1="230.54" x2="470" y2="230.54" stroke="#e5e7eb"/>
+<text x="72" y="234.54" text-anchor="end">2</text>
+<line x1="78" y1="114.23" x2="470" y2="114.23" stroke="#e5e7eb"/>
+<text x="72" y="118.23" text-anchor="end">4</text>
+<text x="274.00" y="406" text-anchor="middle">lag (ticks)</text>
+<text x="16" y="201.00" text-anchor="middle" transform="rotate(-90 16 201.00)">covariance</text>
+<path d="M78.00,51.93 L127.00,101.85 L176.00,144.10 L225.00,177.75 L274.00,205.77 L323.00,227.57 L372.00,248.28 L421.00,264.31 L470.00,276.63" fill="none" stroke="#1f5fa8" stroke-width="1.8"/>
+<circle cx="78.00" cy="51.93" r="2.6" fill="#1f5fa8"/>
+<circle cx="127.00" cy="101.85" r="2.6" fill="#1f5fa8"/>
+<circle cx="176.00" cy="144.10" r="2.6" fill="#1f5fa8"/>
+<circle cx="225.00" cy="177.75" r="2.6" fill="#1f5fa8"/>
+<circle cx="274.00" cy="205.77" r="2.6" fill="#1f5fa8"/>
+<circle cx="323.00" cy="227.57" r="2.6" fill="#1f5fa8"/>
+<circle cx="372.00" cy="248.28" r="2.6" fill="#1f5fa8"/>
+<circle cx="421.00" cy="264.31" r="2.6" fill="#1f5fa8"/>
+<circle cx="470.00" cy="276.63" r="2.6" fill="#1f5fa8"/>
+<line x1="482" y1="52" x2="502" y2="52" stroke="#1f5fa8" stroke-width="2"/>
+<text x="508" y="56">Monte Carlo</text>
+<path d="M78.00,56.08 L127.00,104.54 L176.00,144.92 L225.00,178.58 L274.00,206.62 L323.00,229.99 L372.00,249.47 L421.00,265.69 L470.00,279.22" fill="none" stroke="#c2410c" stroke-width="1.8"/>
+<circle cx="78.00" cy="56.08" r="2.6" fill="#c2410c"/>
+<circle cx="127.00" cy="104.54" r="2.6" fill="#c2410c"/>
+<circle cx="176.00" cy="144.92" r="2.6" fill="#c2410c"/>
+<circle cx="225.00" cy="178.58" r="2.6" fill="#c2410c"/>
+<circle cx="274.00" cy="206.62" r="2.6" fill="#c2410c"/>
+<circle cx="323.00" cy="229.99" r="2.6" fill="#c2410c"/>
+<circle cx="372.00" cy="249.47" r="2.6" fill="#c2410c"/>
+<circle cx="421.00" cy="265.69" r="2.6" fill="#c2410c"/>
+<circle cx="470.00" cy="279.22" r="2.6" fill="#c2410c"/>
+<line x1="482" y1="70" x2="502" y2="70" stroke="#c2410c" stroke-width="2"/>
+<text x="508" y="74">a^j P (exact)</text>
+<path d="M127.00,345.96 L176.00,347.30 L225.00,344.44 L274.00,350.07 L323.00,344.76" fill="none" stroke="#15803d" stroke-width="1.8"/>
+<circle cx="127.00" cy="345.96" r="2.6" fill="#15803d"/>
+<circle cx="176.00" cy="347.30" r="2.6" fill="#15803d"/>
+<circle cx="225.00" cy="344.44" r="2.6" fill="#15803d"/>
+<circle cx="274.00" cy="350.07" r="2.6" fill="#15803d"/>
+<circle cx="323.00" cy="344.76" r="2.6" fill="#15803d"/>
+<line x1="482" y1="88" x2="502" y2="88" stroke="#15803d" stroke-width="2"/>
+<text x="508" y="92">innovation autocorrelation x P</text>
+</svg>

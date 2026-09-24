@@ -1,0 +1,62 @@
+{
+ "accepted": 0,
+ "default_policy": {
+  "authorization": null,
+  "enabled": false
+ },
+ "enable_routes": [
+  {
+   "expected_refusal": "authorization_missing",
+   "observed_refusal": "authorization_missing",
+   "reference": "enable without a record"
+  },
+  {
+   "expected_refusal": "authorization_wrong_type",
+   "observed_refusal": "authorization_wrong_type",
+   "reference": "enable with a plain dict"
+  },
+  {
+   "expected_refusal": "self_issued_authority",
+   "observed_refusal": "self_issued_authority",
+   "reference": "enable with a lab-issued record"
+  },
+  {
+   "expected_refusal": "authorization_expired",
+   "observed_refusal": "authorization_expired",
+   "reference": "enable with an expired record"
+  },
+  {
+   "expected_refusal": "out_of_scope",
+   "observed_refusal": "out_of_scope",
+   "reference": "enable for a channel outside scope"
+  },
+  {
+   "expected_refusal": "unsigned_authorization",
+   "observed_refusal": "unsigned_authorization",
+   "reference": "enable with an unsigned record"
+  },
+  {
+   "expected_refusal": "no_trust_anchor",
+   "observed_refusal": "no_trust_anchor",
+   "reference": "enable with a well-formed external record"
+  },
+  {
+   "expected_refusal": "lab_cannot_issue_authority",
+   "observed_refusal": "lab_cannot_issue_authority",
+   "reference": "lab issues an authorization record"
+  }
+ ],
+ "random_attempts": 1000,
+ "refusal_codes": {
+  "writes_disabled_by_default": 1000
+ },
+ "verification_order": [
+  "authorization_missing",
+  "authorization_wrong_type",
+  "self_issued_authority",
+  "authorization_expired",
+  "out_of_scope",
+  "unsigned_authorization",
+  "no_trust_anchor"
+ ]
+}

@@ -1,0 +1,499 @@
+{
+ "changed_files": [
+  "src/ciw/lab/surfaces_discrete_mesh.py",
+  "src/ciw/lab/surfaces_discrete_mesh_geometry.py",
+  "src/ciw/lab/surfaces_discrete_mesh_studies.py",
+  "docs/lab/MESH_GEODESICS.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 6,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Length defect order 2; cylinder error equal to its closed form; edge-graph floor sqrt(5) - 2.",
+ "experiment": "Refine, trace, fit log-log slopes over levels 2-7 (the coarsest level is preasymptotic) and report pairwise local orders; compare graph and heat-method distances against great-circle distances.",
+ "failure_modes_checked": [
+  "preasymptotic coarse levels (level 1 excluded from fits)",
+  "vertex hits during refinement (none)",
+  "sign of the length defect (inscribed polyhedron is shorter)",
+  "graph metrication plateau",
+  "per-trace non-monotone endpoint errors (reported; consistent with the vertex-discrepancy mechanism)",
+  "signed versus absolute relative errors (inscribed meshes can be shorter than the sphere)"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0021819892606909086,
+      "passed": true,
+      "reference": "fitted order minus the inscribed-metric prediction 2",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.2
+     },
+     {
+      "comparison": "le",
+      "observed": 0.06296798931290715,
+      "passed": true,
+      "reference": "largest |pairwise local order - 2|",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.2
+     }
+    ],
+    "derivation": "Inscribed icosphere: chords are shorter than arcs by O(h^2) relative, so the intrinsic metric of the mesh differs from the sphere's by O(h^2)"
+   },
+   "claim": "Traced-geodesic length defect on icospheres converges at second order",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-06,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "largest deviation of a pairwise local order from the least-squares order",
+    "kind": "reference_error",
+    "value": 0.06078600005221624
+   },
+   "unit": null,
+   "value": {
+    "local_orders": [
+     2.062967989312907,
+     1.9898549346031695,
+     1.983955634901557,
+     2.00909915612667,
+     1.983540593169115
+    ],
+    "order": 2.002181989260691
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 1.6288067358430567,
+      "passed": true,
+      "reference": "fitted endpoint order",
+      "reference_kind": "self_convergence",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 2.1117396538291344,
+      "passed": true,
+      "reference": "finest-pair local endpoint order",
+      "reference_kind": "self_convergence",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 1.0816926636722823,
+      "passed": true,
+      "reference": "smallest pairwise local endpoint order",
+      "reference_kind": "self_convergence",
+      "tolerance": 1.0
+     }
+    ],
+    "generator": {
+     "levels": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "name": "ciw.lab.surfaces_discrete_mesh_geometry.icosphere"
+    }
+   },
+   "claim": "Traced-geodesic endpoint error on icospheres decreases at least at first order, with irregular pairwise local orders",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-06,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "largest deviation of a pairwise local order from the least-squares order",
+    "kind": "reference_error",
+    "value": 0.5471140721707743
+   },
+   "unit": null,
+   "value": {
+    "cross_track_local_orders": [
+     1.3698994063012953,
+     2.063116146491487,
+     1.401258004703463,
+     1.0233396189720247,
+     2.118871750225837
+    ],
+    "cross_track_order": 1.5642050157521836,
+    "endpoint_local_orders": [
+     1.5867531793461638,
+     2.0202499349204195,
+     1.52301067650846,
+     1.0816926636722823,
+     2.1117396538291344
+    ],
+    "endpoint_order": 1.6288067358430567,
+    "finest_mean_endpoint": 0.00011617510426007931,
+    "per_trace_increases": [
+     {
+      "from_level": 5,
+      "to_level": 6,
+      "trace": 5
+     }
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 4.0653244659516474e-15,
+      "passed": true,
+      "reference": "max over n of |helix error - exact closed form|",
+      "reference_kind": "analytic",
+      "tolerance": 1e-09
+     },
+     {
+      "comparison": "signed_le",
+      "observed": -0.000866474004036201,
+      "passed": true,
+      "reference": "max over n of |n^2 error / C - 1| minus its derived bound",
+      "reference_kind": "analytic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.02371758580118355,
+      "passed": true,
+      "reference": "fitted order - 2",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.05
+     }
+    ],
+    "derivation": "Development circumference 2 n R sin(pi/n); an endpoint at fraction t of chord i has azimuth 2 a i + a + atan((2t - 1) tan a), a = pi/n, so the error is R |(L cos(alpha)/R)(a / sin a - 1) + atan(s tan a) - s a| with s = 2t - 1; the chord-position term is at most 2 a^3 / (9 sqrt 3) R, an O(1/n) relative oscillation of n^2 error / C"
+   },
+   "claim": "Prism-cylinder helix endpoint error equals the closed-form development and chord-position prediction, and n^2 error tends to L cos(alpha) pi^2 / 6",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-06,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "difference from the closed form",
+    "kind": "roundoff",
+    "value": 4.0653244659516474e-15
+   },
+   "unit": null,
+   "value": {
+    "local_orders": [
+     2.229405542631075,
+     1.9097179986891355,
+     2.010667218414838,
+     2.01276196981979
+    ],
+    "max_abs_minus_exact": 4.0653244659516474e-15,
+    "order": 2.0237175858011835,
+    "scaled_to_leading_constant": [
+     1.0770093882892886,
+     0.9478632564657953,
+     1.0178134255090574,
+     0.9889490400141815,
+     0.9936197550940751
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": -0.001631234163775419,
+      "passed": true,
+      "reference": "finest max relative error - (sqrt(5) - 2)",
+      "reference_kind": "analytic",
+      "tolerance": 0.005
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 5.714308264195833e-05,
+      "passed": true,
+      "reference": "Aitken extrapolation of the last three levels - (sqrt(5) - 2)",
+      "reference_kind": "analytic",
+      "tolerance": 0.001
+     },
+     {
+      "comparison": "signed_ge",
+      "observed": 0.02365192197759991,
+      "passed": true,
+      "reference": "finest minus second-level error (no decrease)",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.0
+     }
+    ],
+    "derivation": "In the limit the star of a valence-5 vertex is a regular 5-star with rows 72 degrees apart; the vertex two hops away between two rows sits at e1 + e2, so edge path / geodesic -> 2 / (2 cos(pi/5)) = sqrt(5) - 1"
+   },
+   "claim": "Edge-graph Dijkstra distance from a valence-5 vertex keeps a relative-error floor that tends to sqrt(5) - 2",
+   "counterexample": {
+    "statement": "Edge-graph shortest paths converge to the geodesic distance under mesh refinement",
+    "witness": {
+     "max_signed_relative_error": [
+      0.1448504685578944,
+      0.21078482135841448,
+      0.22958417381401675,
+      0.23443674333601439
+     ],
+     "mesh": "icosphere levels 1-4, source vertex 0 (valence 5)"
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "distance of the finest level from the Aitken extrapolation",
+    "kind": "truncation_bound",
+    "value": 0.0016883772464173774
+   },
+   "unit": null,
+   "value": {
+    "aitken_extrapolation": 0.23612512058243176,
+    "levels": [
+     1,
+     2,
+     3,
+     4
+    ],
+    "max_signed_relative_error": [
+     0.1448504685578944,
+     0.21078482135841448,
+     0.22958417381401675,
+     0.23443674333601439
+    ],
+    "prediction": 0.2360679774997898
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 0.013758700097505683,
+      "passed": true,
+      "reference": "k=3 max |relative error| at the finest level",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.005
+     },
+     {
+      "comparison": "signed_ge",
+      "observed": 0.005530994348594609,
+      "passed": true,
+      "reference": "k=3 finest minus second-level |relative error|",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "ks": [
+      1,
+      3
+     ],
+     "levels": [
+      1,
+      2,
+      3,
+      4
+     ],
+     "name": "ciw.lab.surfaces_discrete_mesh_geometry.steiner_graph"
+    }
+   },
+   "claim": "Steiner graphs with a fixed number of points per edge keep a relative-error floor",
+   "counterexample": {
+    "statement": "Refining the mesh alone makes a Steiner-graph distance with fixed k converge to the geodesic distance",
+    "witness": {
+     "k": 3,
+     "max_abs_relative_error": [
+      0.030675797123964732,
+      0.008227705748911074,
+      0.011039725230062247,
+      0.013758700097505683
+     ]
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "deterministic graph distances",
+    "kind": "roundoff",
+    "value": 1e-15
+   },
+   "unit": null,
+   "value": {
+    "k1_max_abs_relative_error": [
+     0.030675797123964732,
+     0.02781558056741229,
+     0.044510672419889596,
+     0.04920837664486166
+    ],
+    "k3_max_abs_relative_error": [
+     0.030675797123964732,
+     0.008227705748911074,
+     0.011039725230062247,
+     0.013758700097505683
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.007854791540571338,
+      "passed": true,
+      "reference": "fitted order of the max abs error - 1",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.25
+     }
+    ],
+    "generator": {
+     "levels": [
+      1,
+      2,
+      3
+     ],
+     "name": "ciw.lab.surfaces_discrete_mesh_geometry.heat_distance",
+     "t": "h^2"
+    }
+   },
+   "claim": "Heat-method distance error decreases under refinement at first order",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-06,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "largest deviation of a pairwise local order from the least-squares order",
+    "kind": "reference_error",
+    "value": 0.07078804009928885
+   },
+   "unit": null,
+   "value": {
+    "local_orders": [
+     1.0786428316398602,
+     0.939894799461312
+    ],
+    "order": 1.0078547915405713
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": "No scanned surface, device or calibration was acquired; the computation is synthetic."
+   },
+   "claim": "The observed convergence orders transfer to meshes reconstructed from real scans",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 9203,
+   "path": "artifacts/T039/convergence.json",
+   "sha256": "eef395bf88f51f33df73a5dd8e54712db46fe80693201bd57e4a2935e0cc6114"
+  },
+  {
+   "bytes": 5149,
+   "path": "artifacts/T039/convergence.svg",
+   "sha256": "6364cf912053480488911892b885dad169ab99143babe75d334ae94504ed7634"
+  }
+ ],
+ "hypothesis": "Straightest mesh geodesics converge to smooth geodesics; the length (metric) error is O(h^2) on inscribed meshes, the lateral error decreases at least like O(h) but not as a clean power law, and edge-graph distances do not converge.",
+ "input_data": [
+  "icosphere levels 1-7",
+  "prism cylinder n=8..128, alpha=0.5, L=3",
+  "six declared sphere geodesics, L=2",
+  "graph distances from vertex 0 on icosphere levels 1-4; heat-method distances on levels 1-3"
+ ],
+ "mathematical_model": "Inscribed icosphere: chord/arc metric error O(h^2). Lateral error of a straightest geodesic is driven by the imbalance of vertex curvature point masses on either side of the path (a discrepancy sum), so its order is not a single power law. Prism cylinder: development circumference 2nR sin(pi/n) gives L cos(alpha) (a / sin a - 1) ~ L cos(alpha) pi^2 / (6 n^2), plus a chord-position term atan(s tan a) - s a of relative size O(1/n). Edge graph at a valence-5 source: floor sqrt(5) - 2.",
+ "number": 39,
+ "numerical_result": "Sphere (levels 2-7): length-defect order 2.00, endpoint order 1.63 (pairwise 1.59, 2.02, 1.52, 1.08, 2.11), cross-track 1.56 (pairwise 1.37, 2.06, 1.40, 1.02, 2.12), finest mean endpoint error 1.16e-04 rad; 1 of 36 per-trace level steps increase the endpoint error. Cylinder: order 2.024, helix error equals the closed form to 4.1e-15, n^2 error / C = 1.0770, 0.9479, 1.0178, 0.9889, 0.9936. Edge Dijkstra max signed relative error 0.1449, 0.2108, 0.2296, 0.2344 (levels 1-4), Aitken 0.23613 vs sqrt(5) - 2 = 0.23607; Steiner k=3 max |relative error| 0.0307, 0.0082, 0.0110, 0.0138; heat-method order 1.01.",
+ "observation_model": "Endpoint angle on the unit sphere after radial projection; helix error on the cylinder surface; relative distance error against the great-circle distance.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/surfaces_discrete_mesh.py": "60ba6ad84646cb8fff5dfa94cc609eb405b633ef3e75a535333dadd77e5bf592",
+   "src/ciw/lab/surfaces_discrete_mesh_geometry.py": "8788d479e31b40eaaa93aca1ff5aa293aa03fa681dfef7d9d5fe225f83994e7d",
+   "src/ciw/lab/surfaces_discrete_mesh_studies.py": "afac8f09b471f4d995289ed69e37f5a240b7d79c65392e35015a830f67d757b1"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T040: compare finite-difference mesh Jacobi fields with the smooth transfer and locate where curvature estimates fail.",
+ "report_id": "sha256:59cff6c7f1696d7ba7c1ee5cc99c26d7789957fdcb837c9846197f50bbcd5d4f",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "surfaces-discrete",
+ "state": "completed",
+ "task_id": "T039",
+ "tests_passed": [
+  "check: Traced-geodesic length defect on icospheres converges at second order vs fitted order minus the inscribed-metric prediction 2",
+  "check: Traced-geodesic length defect on icospheres converges at second order vs largest |pairwise local order - 2|",
+  "check: Traced-geodesic endpoint error on icospheres decreases at least at first order, with irregular pairwise local orders vs fitted endpoint order",
+  "check: Traced-geodesic endpoint error on icospheres decreases at least at first order, with irregular pairwise local orders vs finest-pair local endpoint order",
+  "check: Traced-geodesic endpoint error on icospheres decreases at least at first order, with irregular pairwise local orders vs smallest pairwise local endpoint order",
+  "check: Prism-cylinder helix endpoint error equals the closed-form development and chord-position prediction, and n^2 error tends to L cos(alpha) pi^2 / 6 vs max over n of |helix error - exact closed form|",
+  "check: Prism-cylinder helix endpoint error equals the closed-form development and chord-position prediction, and n^2 error tends to L cos(alpha) pi^2 / 6 vs max over n of |n^2 error / C - 1| minus its derived bound",
+  "check: Prism-cylinder helix endpoint error equals the closed-form development and chord-position prediction, and n^2 error tends to L cos(alpha) pi^2 / 6 vs fitted order - 2",
+  "check: Edge-graph Dijkstra distance from a valence-5 vertex keeps a relative-error floor that tends to sqrt(5) - 2 vs finest max relative error - (sqrt(5) - 2)",
+  "check: Edge-graph Dijkstra distance from a valence-5 vertex keeps a relative-error floor that tends to sqrt(5) - 2 vs Aitken extrapolation of the last three levels - (sqrt(5) - 2)",
+  "check: Edge-graph Dijkstra distance from a valence-5 vertex keeps a relative-error floor that tends to sqrt(5) - 2 vs finest minus second-level error (no decrease)",
+  "check: Steiner graphs with a fixed number of points per edge keep a relative-error floor vs k=3 max |relative error| at the finest level",
+  "check: Steiner graphs with a fixed number of points per edge keep a relative-error floor vs k=3 finest minus second-level |relative error|",
+  "check: Heat-method distance error decreases under refinement at first order vs fitted order of the max abs error - 1",
+  "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_convergence_orders_on_small_levels",
+  "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_convergence_task_report"
+ ],
+ "tests_skipped": [],
+ "title": "Measure convergence under mesh refinement.",
+ "uncertainty": "Deterministic; fitted orders depend on the chosen levels and geodesics (six directions), and the pairwise local orders of the endpoint error range over about 1 to 2. The lateral-error order is an empirical slope, not a proved rate.",
+ "unresolved_assumptions": [
+  "Endpoint-error order is empirical and depends on how geodesic directions align with lattice rows.",
+  "Heat-method time step t = h^2 as recommended by Crane et al.; other choices change the rate.",
+  "The edge-graph floor is derived for the valence-5 source used here; other sources have other floors (1/cos(pi/6) - 1 at regular valence 6)."
+ ]
+}

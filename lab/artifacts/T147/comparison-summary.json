@@ -1,0 +1,102 @@
+{
+ "against_exact_max_ratio": {
+  "f32-blocked": 0.008739922660850084,
+  "f64-blocked": 0.006947431236295988,
+  "f64-pairwise": 0.012959321146328157,
+  "f64-sequential": 0.001817126130545391
+ },
+ "comparisons": {
+  "bitwise f64 sequential vs blocked": {
+   "bitwise_differences": 123,
+   "elements": 128,
+   "max_abs": 4.796163466380676e-14,
+   "max_ratio": null,
+   "max_ulp": 188.0,
+   "passed": false,
+   "violations": 123
+  },
+  "bound f64 sequential vs blocked": {
+   "bitwise_differences": 123,
+   "elements": 128,
+   "max_abs": 4.796163466380676e-14,
+   "max_ratio": 0.001691123712714392,
+   "max_ulp": 188.0,
+   "passed": true,
+   "violations": 0
+  },
+  "bound f64 sequential vs pairwise": {
+   "bitwise_differences": 122,
+   "elements": 128,
+   "max_abs": 4.796163466380676e-14,
+   "max_ratio": 0.0017336060475265365,
+   "max_ulp": 180.0,
+   "passed": true,
+   "violations": 0
+  },
+  "f32 blocked under f32 policy": {
+   "bitwise_differences": 128,
+   "elements": 128,
+   "max_abs": 5.113907496578918e-06,
+   "max_ratio": 0.008739922233413161,
+   "max_ulp": 48230906740.0,
+   "passed": true,
+   "violations": 0
+  },
+  "f32 blocked under f64 policy": {
+   "bitwise_differences": 128,
+   "elements": 128,
+   "max_abs": 5.113907496578918e-06,
+   "max_ratio": 172475.6127524472,
+   "max_ulp": 48230906740.0,
+   "passed": false,
+   "violations": 128
+  }
+ },
+ "depths": {
+  "f32-blocked": 39,
+  "f64-blocked": 37,
+  "f64-pairwise": 11,
+  "f64-sequential": 1024
+ },
+ "dropped_product_power": {
+  "float32 policy": {
+   "above_bound_witness": {
+    "column": 538,
+    "magnitude": 0.0005776939797215164,
+    "ratio": 1.0001610045362923,
+    "row": 14,
+    "row_tolerance": 0.0005776009833430312
+   },
+   "faults": 131072,
+   "guarantee_violations": 0,
+   "largest_undetected": {
+    "column": 117,
+    "magnitude": 0.000589098664931953,
+    "ratio": 0.992232575276228,
+    "row": 109,
+    "row_tolerance": 0.0005937102647209033
+   },
+   "max_tolerance": 0.0006007214234890853,
+   "max_undetected_ratio": 1.0001610045362923,
+   "min_tolerance": 0.0005480791420226171,
+   "undetected": 708,
+   "undetected_above_bound": 1
+  },
+  "float64 policy": {
+   "above_bound_witness": null,
+   "faults": 131072,
+   "guarantee_violations": 0,
+   "largest_undetected": null,
+   "max_tolerance": 3.04405848540194e-11,
+   "max_undetected_ratio": 0.0,
+   "min_tolerance": 2.7773022531068026e-11,
+   "undetected": 0,
+   "undetected_above_bound": 0
+  }
+ },
+ "gpu_present": false,
+ "lane_width": 32,
+ "max_ulp_f64_reorder": 188.0,
+ "n": 1024,
+ "rows": 128
+}

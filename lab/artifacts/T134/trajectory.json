@@ -1,0 +1,144 @@
+{
+ "cylinder_control": {
+  "cases": [
+   {
+    "closed_form_mm": 0.00500012500625,
+    "lateral_mm": 1.0,
+    "ray_cast_mm": 0.00500012500625,
+    "y_mm": 0.0
+   },
+   {
+    "closed_form_mm": 0.125078222809,
+    "lateral_mm": 5.0,
+    "ray_cast_mm": 0.125078222809,
+    "y_mm": 0.0
+   },
+   {
+    "closed_form_mm": 0.00500012500625,
+    "lateral_mm": 1.0,
+    "ray_cast_mm": 0.00500012500626,
+    "y_mm": 30.0
+   },
+   {
+    "closed_form_mm": 0.125078222809,
+    "lateral_mm": 5.0,
+    "ray_cast_mm": 0.125078222809,
+    "y_mm": 30.0
+   },
+   {
+    "closed_form_mm": 0.00500012500625,
+    "lateral_mm": 1.0,
+    "ray_cast_mm": 0.00500012500624,
+    "y_mm": 60.0
+   },
+   {
+    "closed_form_mm": 0.125078222809,
+    "lateral_mm": 5.0,
+    "ray_cast_mm": 0.125078222809,
+    "y_mm": 60.0
+   }
+  ],
+  "exact_mm_at_1mm": 0.00500012500625,
+  "max_difference_mm": 8.881784197e-15
+ },
+ "envelope_argmax_mm": 60.2650982575,
+ "envelope_max_mm": 0.420118098361,
+ "length_mm": 202.179684477,
+ "min_concave_radius_mm": 94.498471761,
+ "standoff": [
+  {
+   "kappa_lateral_per_mm": -0.00027768636326,
+   "lateral_error_mm": 0.3,
+   "s_mm": 0.0,
+   "standoff_error_exact_mm": 1.24951838689e-05,
+   "standoff_error_series_mm": 1.24958863467e-05,
+   "tilt_rad": 8.33059089779e-05
+  },
+  {
+   "kappa_lateral_per_mm": -0.00538242260693,
+   "lateral_error_mm": 0.35139569343,
+   "s_mm": 25.2724605596,
+   "standoff_error_exact_mm": 0.000332284039654,
+   "standoff_error_series_mm": 0.000332307901202,
+   "tilt_rad": 0.0018913601243
+  },
+  {
+   "kappa_lateral_per_mm": -0.0212682580757,
+   "lateral_error_mm": 0.410055078834,
+   "s_mm": 50.5449211192,
+   "standoff_error_exact_mm": 0.00178790927353,
+   "standoff_error_series_mm": 0.00178807741017,
+   "tilt_rad": 0.00872115724189
+  },
+  {
+   "kappa_lateral_per_mm": -0.0185185613549,
+   "lateral_error_mm": 0.3923193069,
+   "s_mm": 75.8173816788,
+   "standoff_error_exact_mm": 0.00142502030328,
+   "standoff_error_series_mm": 0.001425136987,
+   "tilt_rad": 0.00726518915552
+  },
+  {
+   "kappa_lateral_per_mm": -0.00370580599007,
+   "lateral_error_mm": 0.319040262453,
+   "s_mm": 101.089842238,
+   "standoff_error_exact_mm": 0.000188589359956,
+   "standoff_error_series_mm": 0.000188600861025,
+   "tilt_rad": 0.00118230131567
+  },
+  {
+   "kappa_lateral_per_mm": -0.00014508277329,
+   "lateral_error_mm": 0.252882348956,
+   "s_mm": 126.362302798,
+   "standoff_error_exact_mm": 4.63879875312e-06,
+   "standoff_error_series_mm": 4.63898412949e-06,
+   "tilt_rad": 3.66888725026e-05
+  },
+  {
+   "kappa_lateral_per_mm": -1.13186550485e-06,
+   "lateral_error_mm": 0.187094060472,
+   "s_mm": 151.634763358,
+   "standoff_error_exact_mm": 1.98095815307e-08,
+   "standoff_error_series_mm": 1.98100161578e-08,
+   "tilt_rad": 2.11765313211e-07
+  },
+  {
+   "kappa_lateral_per_mm": -1.78849769047e-09,
+   "lateral_error_mm": 0.2758439538,
+   "s_mm": 176.907223917,
+   "standoff_error_exact_mm": 6.80415723764e-11,
+   "standoff_error_series_mm": 6.80432934478e-11,
+   "tilt_rad": 4.93346274301e-10
+  },
+  {
+   "kappa_lateral_per_mm": -5.72433706807e-13,
+   "lateral_error_mm": 0.376249192031,
+   "s_mm": 202.179684477,
+   "standoff_error_exact_mm": 4.08562073062e-14,
+   "standoff_error_series_mm": 4.0517846505e-14,
+   "tilt_rad": 2.15377719677e-13
+  }
+ ],
+ "standoff_excess": -9.99999702157e-10,
+ "tools": {
+  "spray gun": {
+   "integral_length_mm": 215.622696847,
+   "polyline_length_mm": 215.603444209,
+   "reversed_segments": 33,
+   "sign_changes_of_1_minus_H_kn": 4,
+   "speed_factor_max": 3.9996939968,
+   "speed_factor_min": 0.00521616480172,
+   "standoff_mm": 120.0
+  },
+  "welding torch": {
+   "integral_length_mm": 202.429908537,
+   "polyline_length_mm": 202.428886765,
+   "reversed_segments": 0,
+   "sign_changes_of_1_minus_H_kn": 0,
+   "speed_factor_max": 1.3749617496,
+   "speed_factor_min": 0.841267274269,
+   "standoff_mm": 15.0
+  }
+ },
+ "vertex_max_mm": 0.420116568058
+}

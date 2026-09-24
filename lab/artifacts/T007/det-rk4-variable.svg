@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420" font-family="sans-serif" font-size="11">
+<rect width="640" height="420" fill="#ffffff"/>
+<text x="78" y="22" font-size="13" font-weight="bold">max |det Phi - 1|, rk4, variable curvature</text>
+<rect x="78" y="40" width="392" height="322" fill="none" stroke="#333"/>
+<line x1="381.12" y1="40" x2="381.12" y2="362" stroke="#e5e7eb"/>
+<text x="381.12" y="378" text-anchor="middle">1e-1</text>
+<line x1="78" y1="326.52" x2="470" y2="326.52" stroke="#e5e7eb"/>
+<text x="72" y="330.52" text-anchor="end">1e-12</text>
+<line x1="78" y1="278.89" x2="470" y2="278.89" stroke="#e5e7eb"/>
+<text x="72" y="282.89" text-anchor="end">1e-11</text>
+<line x1="78" y1="231.26" x2="470" y2="231.26" stroke="#e5e7eb"/>
+<text x="72" y="235.26" text-anchor="end">1e-10</text>
+<line x1="78" y1="183.63" x2="470" y2="183.63" stroke="#e5e7eb"/>
+<text x="72" y="187.63" text-anchor="end">1e-9</text>
+<line x1="78" y1="136.00" x2="470" y2="136.00" stroke="#e5e7eb"/>
+<text x="72" y="140.00" text-anchor="end">1e-8</text>
+<line x1="78" y1="88.37" x2="470" y2="88.37" stroke="#e5e7eb"/>
+<text x="72" y="92.37" text-anchor="end">1e-7</text>
+<line x1="78" y1="40.75" x2="470" y2="40.75" stroke="#e5e7eb"/>
+<text x="72" y="44.75" text-anchor="end">1e-6</text>
+<text x="274.00" y="406" text-anchor="middle">step h</text>
+<text x="16" y="201.00" text-anchor="middle" transform="rotate(-90 16 201.00)">max |det Phi - 1|</text>
+<path d="M470.00,86.82 L372.00,158.58 L274.00,230.34 L176.00,302.07" fill="none" stroke="#1f5fa8" stroke-width="1.8"/>
+<circle cx="470.00" cy="86.82" r="2.6" fill="#1f5fa8"/>
+<circle cx="372.00" cy="158.58" r="2.6" fill="#1f5fa8"/>
+<circle cx="274.00" cy="230.34" r="2.6" fill="#1f5fa8"/>
+<circle cx="176.00" cy="302.07" r="2.6" fill="#1f5fa8"/>
+<line x1="482" y1="52" x2="502" y2="52" stroke="#1f5fa8" stroke-width="2"/>
+<text x="508" y="56">torus</text>
+<path d="M444.22,105.47 L346.22,176.92 L248.22,248.55 L150.22,320.22" fill="none" stroke="#c2410c" stroke-width="1.8"/>
+<circle cx="444.22" cy="105.47" r="2.6" fill="#c2410c"/>
+<circle cx="346.22" cy="176.92" r="2.6" fill="#c2410c"/>
+<circle cx="248.22" cy="248.55" r="2.6" fill="#c2410c"/>
+<circle cx="150.22" cy="320.22" r="2.6" fill="#c2410c"/>
+<line x1="482" y1="70" x2="502" y2="70" stroke="#c2410c" stroke-width="2"/>
+<text x="508" y="74">gaussian-bump</text>
+<path d="M372.00,135.12 L274.00,206.74 L176.00,278.41 L78.00,350.07" fill="none" stroke="#15803d" stroke-width="1.8"/>
+<circle cx="372.00" cy="135.12" r="2.6" fill="#15803d"/>
+<circle cx="274.00" cy="206.74" r="2.6" fill="#15803d"/>
+<circle cx="176.00" cy="278.41" r="2.6" fill="#15803d"/>
+<circle cx="78.00" cy="350.07" r="2.6" fill="#15803d"/>
+<line x1="482" y1="88" x2="502" y2="88" stroke="#15803d" stroke-width="2"/>
+<text x="508" y="92">saddle</text>
+<path d="M470.00,75.52 L372.00,146.85 L274.00,218.45 L176.00,290.13" fill="none" stroke="#7e22ce" stroke-width="1.8"/>
+<circle cx="470.00" cy="75.52" r="2.6" fill="#7e22ce"/>
+<circle cx="372.00" cy="146.85" r="2.6" fill="#7e22ce"/>
+<circle cx="274.00" cy="218.45" r="2.6" fill="#7e22ce"/>
+<circle cx="176.00" cy="290.13" r="2.6" fill="#7e22ce"/>
+<line x1="482" y1="106" x2="502" y2="106" stroke="#7e22ce" stroke-width="2"/>
+<text x="508" y="110">bump-radial</text>
+<path d="M470.00,51.93 L372.00,124.12 L274.00,196.05 L176.00,267.86" fill="none" stroke="#b91c1c" stroke-width="1.8"/>
+<circle cx="470.00" cy="51.93" r="2.6" fill="#b91c1c"/>
+<circle cx="372.00" cy="124.12" r="2.6" fill="#b91c1c"/>
+<circle cx="274.00" cy="196.05" r="2.6" fill="#b91c1c"/>
+<circle cx="176.00" cy="267.86" r="2.6" fill="#b91c1c"/>
+<line x1="482" y1="124" x2="502" y2="124" stroke="#b91c1c" stroke-width="2"/>
+<text x="508" y="128">torus-outer-to-inner</text>
+</svg>

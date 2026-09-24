@@ -1,0 +1,22 @@
+{
+ "adaptive_restart": {
+  "difference": 1.0709114151019605e-11,
+  "rtol": 1e-09
+ },
+ "dyadic_max_difference": {
+  "euler": 0.0,
+  "midpoint": 0.0,
+  "rk4": 0.0
+ },
+ "non_dyadic_witness": {
+  "L1": 1.13,
+  "L2": 3.0,
+  "N1": 113,
+  "N2": 300,
+  "differing_final_components": 6,
+  "h_direct": 0.01,
+  "h_first": 0.009999999999999998,
+  "h_rest": 0.01,
+  "max_abs_difference": 4.440892098500626e-16
+ }
+}

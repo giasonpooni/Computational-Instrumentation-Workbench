@@ -1,0 +1,336 @@
+{
+ "changed_files": [
+  "src/ciw/lab/exchange_provenance_bundles.py",
+  "src/ciw/lab/exchange_provenance_bundles_fixtures.py",
+  "tests/fixtures/lab/golden"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 5,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "All digests match, all reopen, zero execution attempts, replay numerical identity preserved, retained heat values equal the integer reference.",
+ "experiment": "Hash each golden file, reopen it into a temporary directory under the guard, inspect its bundles, compare the retained heat field with the integer reference and its runtime identity with CIW's pins, and attempt an unbound replay.",
+ "failure_modes_checked": [
+  "fixture drift (digest)",
+  "schema or validator drift breaking reopen",
+  "execution during reopen",
+  "replay identity drift",
+  "unbound replay of a provider-backed golden bundle",
+  "retained runtime identity differing from CIW's pins",
+  "floating-point recomputation drift"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "golden files differing from GOLDEN_MANIFEST",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "golden workspaces refused or missing",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "execution entry points reached while reopening",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "replays whose numerical identity differs from their original",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "The golden retained workspaces reopen and validate with the current code without execution",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact counts, digests and string comparisons; no rounding is involved",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": {
+    "golden/energy-accuracy-workspace.json": {
+     "bundles": 2,
+     "executions": 0,
+     "kinds": [
+      "energy-accuracy"
+     ],
+     "results": 0,
+     "sha256": "cd08fa0a122b27db4d76d27f66e881c58c4bd3b0930f8b3a67d55da7b6ea6ada"
+    },
+    "golden/numerical-heat-workspace.json": {
+     "bundles": 2,
+     "executions": 0,
+     "kinds": [
+      "numerical-heat"
+     ],
+     "results": 0,
+     "sha256": "98ba55e5be14213e6787024576b424cba6d4ba4da0a8cc905ddf652452490fec"
+    },
+    "golden/oscillator-workspace.json": {
+     "bundles": 0,
+     "executions": 1,
+     "kinds": [],
+     "results": 3,
+     "sha256": "68e63248edcb7bb6660734cbf0efe751c53ede53c5029873b4e21fb598a1586d"
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "digests differing from the recorded manifest",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Golden fixture SHA-256 digests",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact counts, digests and string comparisons; no rounding is involved",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": {
+    "golden/energy-accuracy-workspace.json": "cd08fa0a122b27db4d76d27f66e881c58c4bd3b0930f8b3a67d55da7b6ea6ada",
+    "golden/numerical-heat-workspace.json": "98ba55e5be14213e6787024576b424cba6d4ba4da0a8cc905ddf652452490fec",
+    "golden/oscillator-workspace.json": "68e63248edcb7bb6660734cbf0efe751c53ede53c5029873b4e21fb598a1586d"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "golden workspaces refused with 'Retained energy analysis binding differs'",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Reopening recomputes the golden energy analysis bit for bit on this platform",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "bit-exact canonical JSON comparison of a LAPACK-backed recomputation; depends on the NumPy/LAPACK build and CPU kernels (fingerprint in golden.json)",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": {
+    "refused_as_platform_dependent": []
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "retained SCR revision differs from ciw.declared_workload.PINS[numerical-heat]",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "retained SCR source tree differs from ciw.proved_heat.PIN",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "retained engine digest differs from the digest recorded with the golden fixtures",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "cells differing from the integer Jacobi reference",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "The retained golden numerical-heat bundle names the pinned SCR revision, tree and recorded engine digest, and its values equal the integer Jacobi reference",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact int64 arithmetic compared cell by cell",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": [
+    0,
+    16,
+    24,
+    16,
+    0
+   ]
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "The retained golden numerical-heat values were computed by the pinned SCR engine",
+   "domain": "provenance",
+   "evidence_status": "not_established",
+   "expected_not_established": true,
+   "uncertainty": null,
+   "unit": null,
+   "value": "not established by reopen: a fabricated content-consistent bundle also reopens (T092); only a bound replay re-executes (T097)"
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+      "observed_refusal": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+      "passed": true,
+      "reference": "bundle.replay in the reopened golden workspace",
+      "reference_kind": "refusal"
+     }
+    ]
+   },
+   "claim": "Replay of the golden SCR bundle without a binding is refused",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact counts, digests and string comparisons; no rounding is involved",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": "operation_unavailable: No trusted repositories bound for this workbench workflow"
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 1782,
+   "path": "artifacts/T094/golden.json",
+   "sha256": "7f015859a8a974afa7b74cf8b68836a362224cc658be59454338e81b876332da"
+  }
+ ],
+ "hypothesis": "Workspaces saved by CIW earlier (golden fixtures) still reopen and validate with the current code, with no provider binding and no execution.",
+ "input_data": [
+  "tests/fixtures/lab/golden/energy-accuracy-workspace.json",
+  "tests/fixtures/lab/golden/numerical-heat-workspace.json",
+  "tests/fixtures/lab/golden/oscillator-workspace.json"
+ ],
+ "mathematical_model": "Golden = exact saved bytes recorded in GOLDEN_MANIFEST; validation = Session.from_workspace (structure, identities, commitments, energy-analysis recomputation) under the execution guard.",
+ "number": 94,
+ "numerical_result": "3 golden workspaces reopened, 0 failures (0 platform-dependent energy recomputations), 0 digest mismatches; retained heat values [0, 16, 24, 16, 0].",
+ "observation_model": "SHA-256 of each file; reopen outcome; retained replay receipts; retained SCR values and runtime identity.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/exchange_provenance_bundles.py": "a505b35560263c1b473912f79e61b15b7e474f8eb1807e691847e4c69791c2d3",
+   "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "f30205e8305a225f24d94b06cba8b519ecea4680ca723aaca3591ff707d04e1c"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T095: refuse malformed exchange fixtures with retained error text.",
+ "report_id": "sha256:c6c04a854883a67e9d76926556e9b8996fc60c97a5a954a8df958bbde747fe47",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "exchange-provenance",
+ "state": "completed",
+ "task_id": "T094",
+ "tests_passed": [
+  "check: The golden retained workspaces reopen and validate with the current code without execution vs golden files differing from GOLDEN_MANIFEST",
+  "check: The golden retained workspaces reopen and validate with the current code without execution vs golden workspaces refused or missing",
+  "check: The golden retained workspaces reopen and validate with the current code without execution vs execution entry points reached while reopening",
+  "check: The golden retained workspaces reopen and validate with the current code without execution vs replays whose numerical identity differs from their original",
+  "check: Golden fixture SHA-256 digests vs digests differing from the recorded manifest",
+  "check: Reopening recomputes the golden energy analysis bit for bit on this platform vs golden workspaces refused with 'Retained energy analysis binding differs'",
+  "check: The retained golden numerical-heat bundle names the pinned SCR revision, tree and recorded engine digest, and its values equal the integer Jacobi reference vs retained SCR revision differs from ciw.declared_workload.PINS[numerical-heat]",
+  "check: The retained golden numerical-heat bundle names the pinned SCR revision, tree and recorded engine digest, and its values equal the integer Jacobi reference vs retained SCR source tree differs from ciw.proved_heat.PIN",
+  "check: The retained golden numerical-heat bundle names the pinned SCR revision, tree and recorded engine digest, and its values equal the integer Jacobi reference vs retained engine digest differs from the digest recorded with the golden fixtures",
+  "check: The retained golden numerical-heat bundle names the pinned SCR revision, tree and recorded engine digest, and its values equal the integer Jacobi reference vs cells differing from the integer Jacobi reference",
+  "check: Replay of the golden SCR bundle without a binding is refused vs bundle.replay in the reopened golden workspace",
+  "pytest: tests/test_lab_exchange_provenance_bundles.py::test_t094_golden_workspaces_reopen_with_current_code",
+  "pytest: tests/test_lab_exchange_provenance_bundles.py::test_golden_manifest_matches_committed_fixtures"
+ ],
+ "tests_skipped": [],
+ "title": "Add golden retained bundles.",
+ "uncertainty": "Exact.",
+ "unresolved_assumptions": [
+  "Reopen recomputes the retained energy analysis in floating point and compares it bit for bit; a platform whose NumPy/LAPACK rounds differently refuses the golden energy workspace. The platform fingerprint of this run and of the golden's origin are retained in golden.json.",
+  "The retained runtime identity is metadata written by the saving run: it is compared with CIW's pins, but reopen cannot show that the named engine produced the values.",
+  "The golden numerical-heat workspace records host paths of the machine that produced it; they are identity metadata, never bindings."
+ ]
+}

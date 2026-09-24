@@ -1,0 +1,139 @@
+{
+ "bitstreams": {
+  "1.2.0": {
+   "boards": [
+    "revA",
+    "revB"
+   ],
+   "frame_format": 1,
+   "min_host": "1.0"
+  },
+  "1.4.1": {
+   "boards": [
+    "revA",
+    "revB",
+    "revC"
+   ],
+   "frame_format": 1,
+   "min_host": "1.0"
+  },
+  "2.0.0": {
+   "boards": [
+    "revB",
+    "revC"
+   ],
+   "frame_format": 2,
+   "min_host": "1.5"
+  },
+  "2.1.0": {
+   "boards": [
+    "revC"
+   ],
+   "frame_format": 2,
+   "min_host": "2.0"
+  }
+ },
+ "boards": [
+  "revA",
+  "revB",
+  "revC"
+ ],
+ "compatible": [
+  [
+   "1.2.0",
+   "1.0",
+   "revA"
+  ],
+  [
+   "1.2.0",
+   "1.0",
+   "revB"
+  ],
+  [
+   "1.2.0",
+   "1.5",
+   "revA"
+  ],
+  [
+   "1.2.0",
+   "1.5",
+   "revB"
+  ],
+  [
+   "1.4.1",
+   "1.0",
+   "revA"
+  ],
+  [
+   "1.4.1",
+   "1.0",
+   "revB"
+  ],
+  [
+   "1.4.1",
+   "1.0",
+   "revC"
+  ],
+  [
+   "1.4.1",
+   "1.5",
+   "revA"
+  ],
+  [
+   "1.4.1",
+   "1.5",
+   "revB"
+  ],
+  [
+   "1.4.1",
+   "1.5",
+   "revC"
+  ],
+  [
+   "2.0.0",
+   "1.5",
+   "revB"
+  ],
+  [
+   "2.0.0",
+   "1.5",
+   "revC"
+  ],
+  [
+   "2.0.0",
+   "2.0",
+   "revB"
+  ],
+  [
+   "2.0.0",
+   "2.0",
+   "revC"
+  ],
+  [
+   "2.1.0",
+   "2.0",
+   "revC"
+  ]
+ ],
+ "hosts": {
+  "1.0": {
+   "frame_formats": [
+    1
+   ]
+  },
+  "1.5": {
+   "frame_formats": [
+    1,
+    2
+   ]
+  },
+  "2.0": {
+   "frame_formats": [
+    2
+   ]
+  }
+ },
+ "matrix_sha256": "8c04099c441d7c37aca8f8b0e6b9b88d2da49496b998d93dcc2f8a4e43d1b58d",
+ "matrix_version": 3,
+ "schema": "ciw.fpga-compatibility.v1"
+}

@@ -1,0 +1,333 @@
+{
+ "changed_files": [
+  "src/ciw/lab/observation.py",
+  "src/ciw/lab/observation_camera.py",
+  "docs/lab/OBSERVATION.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 4,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Direct error - J delta = O(|delta|^2); exact closed forms on the rectified rig.",
+ "experiment": "Central-difference Jacobian, step-halving convergence, comparison with analytic derivatives, direct recomputation over five perturbation scales, and a counterexample search for uniform focal scaling.",
+ "failure_modes_checked": [
+  "nonlinearity at large perturbations (residual slope)",
+  "finite-difference step size",
+  "rotation about the camera centre versus about the world origin",
+  "uniform-scaling assumption for focal errors"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 1.0553356164047979e-08,
+      "passed": true,
+      "reference": "max |numeric - analytic| / max |analytic| per column",
+      "reference_kind": "analytic",
+      "tolerance": 1e-06
+     }
+    ]
+   },
+   "claim": "The finite-difference chord Jacobian matches the analytic focal-length and principal-point derivatives on a rectified rig",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-06,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "closed-form derivatives evaluated in double precision; the recorded gap is the finite-difference error itself",
+    "kind": "reference_error",
+    "value": 1e-15
+   },
+   "unit": null,
+   "value": 1.0553356164047979e-08
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0011997829899611243,
+      "passed": true,
+      "reference": "relative first-order residual at the declared perturbation",
+      "reference_kind": "analytic",
+      "tolerance": 0.01
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.0009719935760250653,
+      "passed": true,
+      "reference": "log-log slope of the residual against scale minus 2",
+      "reference_kind": "analytic",
+      "tolerance": 0.05
+     }
+    ],
+    "generator": {
+     "direction": {
+      "focal_px": 2.0,
+      "right_cx_px": 0.5,
+      "right_cy_px": -0.4,
+      "right_rx_rad": 0.0002,
+      "right_ry_rad": -0.0001,
+      "right_rz_rad": 0.0003
+     },
+     "name": "declared calibration perturbation direction",
+     "seed": null
+    }
+   },
+   "claim": "First-order calibration-error prediction agrees with direct recomputation with a second-order residual",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-05
+   },
+   "uncertainty": {
+    "basis": "Jacobian change when the finite-difference steps are halved, relative",
+    "kind": "truncation_bound",
+    "value": {
+     "relative_residual_at_declared": 2.765647770324312e-07
+    }
+   },
+   "unit": null,
+   "value": {
+    "max_direct_error_m_at_declared": 0.0001463830573799757,
+    "relative_residual_at_declared": 0.0011997829899611243,
+    "residual_slope": 1.999028006423975
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 2.765647770324312e-07,
+      "passed": true,
+      "reference": "Jacobian change when finite-difference steps are halved (relative)",
+      "reference_kind": "self_convergence",
+      "tolerance": 1e-05
+     },
+     {
+      "comparison": "ge",
+      "observed": 68.22309568401596,
+      "passed": true,
+      "reference": "0.12 m chord: |d/d cx| over |d/d cy| (both m per px)",
+      "reference_kind": "invariant",
+      "tolerance": 10.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 60.46651640332136,
+      "passed": true,
+      "reference": "0.12 m chord: |d/d yaw| over |d/d pitch| (both m per mrad)",
+      "reference_kind": "invariant",
+      "tolerance": 10.0
+     }
+    ]
+   },
+   "claim": "Chord sensitivity to each calibration parameter (m per px, m per mrad); disparity-changing errors dominate",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 1e-05
+   },
+   "uncertainty": {
+    "basis": "relative Jacobian change when the finite-difference steps are halved",
+    "kind": "truncation_bound",
+    "value": 2.765647770324312e-07
+   },
+   "unit": null,
+   "value": {
+    "focal_px": [
+     -6.272986304099032e-06,
+     -1.8713657252630855e-05,
+     -3.110312259274606e-05,
+     -4.963770775801013e-05
+    ],
+    "right_cx_px": [
+     -2.0586845578089707e-05,
+     -5.878458168503964e-05,
+     -9.439206009181911e-05,
+     -0.0001470753688698201
+    ],
+    "right_cy_px": [
+     7.81767604644823e-07,
+     1.938530891365531e-06,
+     2.505406646036157e-06,
+     2.1558002813448773e-06
+    ],
+    "right_rx_rad": [
+     -4.518285155741264e-06,
+     -9.642756801375718e-06,
+     -1.0286727511465976e-05,
+     -5.929006452465302e-06
+    ],
+    "right_ry_rad": [
+     -5.302754472504001e-05,
+     -0.0001489310858665549,
+     -0.00023500163821854603,
+     -0.00035850636591339136
+    ],
+    "right_rz_rad": [
+     -1.5921200737997743e-05,
+     -3.732792384220085e-05,
+     -4.4048799607843137e-05,
+     -2.5160335065388395e-05
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 1.5543122344752192e-15,
+      "passed": true,
+      "reference": "relative change of the ruling chord under a 5 px focal error",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "ge",
+      "observed": 0.00018211500785203505,
+      "passed": true,
+      "reference": "relative change of the circumferential chord (resolved)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-05
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 2.914335439641036e-16,
+      "passed": true,
+      "reference": "chords against sqrt(dX^2 + dY^2 + (dZ f_b/f)^2) (m)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     }
+    ]
+   },
+   "claim": "A common focal-length error leaves same-depth chords unchanged and scales only the depth component",
+   "counterexample": {
+    "statement": "A common focal-length error rescales every measured distance by one factor",
+    "witness": {
+     "circumferential_relative_change": 0.00018211500785203505,
+     "focal_error_px": 5.0,
+     "rig": "rectified",
+     "ruling_relative_change": 1.5543122344752192e-15
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "rectified-rig triangulation rounding relative to the chord (a few ulp of 0.6 m coordinates over a 0.02-0.12 m chord)",
+    "kind": "roundoff",
+    "value": 1e-14
+   },
+   "unit": null,
+   "value": {
+    "circumferential_relative_change": 0.00018211500785203505,
+    "exact_model_gap_m": 2.914335439641036e-16,
+    "ruling_relative_change": 1.5543122344752192e-15
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": "No calibration procedure was run; real calibration uncertainty is unknown."
+   },
+   "claim": "The declared perturbation magnitudes bound the calibration error of a real stereo rig",
+   "domain": "calibration",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 2754,
+   "path": "artifacts/T049/calibration-jacobian.json",
+   "sha256": "f5f99aaf98342f100b90a185ce1a85f17afc6e0b4014d15b885fe4e06b1d5416"
+  },
+  {
+   "bytes": 2709,
+   "path": "artifacts/T049/linearization-residual.svg",
+   "sha256": "4bf4b4e0136bb6c5637ebf1d1d940b7d4e3337f7835962c901a4d3a82a154784"
+  }
+ ],
+ "hypothesis": "Chord errors caused by small calibration errors are linear in the errors, with a Jacobian that matches closed forms where they exist; errors that change horizontal disparity (right-camera yaw, horizontal principal point) dominate, while vertical principal-point and pitch errors barely move chords.",
+ "input_data": [
+  "Stereo rig {'focal_px': 2400.0, 'principal_point_px': (1024.0, 768.0), 'image_size_px': (2048, 1536), 'baseline_m': 0.2, 'convergence_distance_m': 0.6}",
+  "Cylinder {'radius_m': 0.1, 'axis': 'world +y', 'front_point_m': (0.1, 0.0, 0.6), 'chart_origin_direction': 'toward the cameras (world -z)'}",
+  "Markers at s = [0.0, 0.015, 0.03, 0.045, 0.06, 0.075, 0.09, 0.105, 0.12] m along helices alpha = [0.0, 45.0, 90.0] deg (27/27 visible in both images)",
+  "Declared direction {'focal_px': 2.0, 'right_cx_px': 0.5, 'right_cy_px': -0.4, 'right_rx_rad': 0.0002, 'right_ry_rad': -0.0001, 'right_rz_rad': 0.0003}",
+  "Scales [0.03, 0.1, 0.3, 1.0, 3.0]",
+  "Finite-difference steps [0.01, 0.001, 0.001, 1e-07, 1e-07, 1e-07]",
+  "Rectified rig markers visible: True"
+ ],
+ "mathematical_model": "Pixels from the true rig are triangulated with a believed rig (focal f + df on both cameras, right principal point + (dcx, dcy), right rotation exp([w]) about its centre). Rectified rig: Z_b = Z f_b/f and X_b = X, so c_b^2 = dX^2 + dY^2 + (dZ f_b/f)^2 and dZ/dcx = -Z^2/(b f).",
+ "number": 49,
+ "numerical_result": "analytic gap 1.1e-08; relative first-order residual 1.20e-03 at the declared perturbation (direct error 1.46e-04 m); residual slope 1.999; ruling change 1.6e-15 vs circumferential 1.82e-04 for df = 5 px; 0.12 m chord ratios cx/cy 68 and yaw/pitch 60.",
+ "observation_model": "Noise-free synthetic pixels; only the calibration used for triangulation is wrong.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/observation.py": "9ebedc1a1693aaa28965ba0c97837ad2d2c45bf0fd360857cf7b32c0993ed5fc",
+   "src/ciw/lab/observation_camera.py": "dbf305a988b5ad39796c8220477dd065671a490a26a9ff03738510296087ab68"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T050: add perspective and lens-distortion perturbations",
+ "report_id": "sha256:39d013e7e64221b8dce149e877522cad58c229db460c6b65f66c20d781fbc4d4",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "observation",
+ "state": "completed",
+ "task_id": "T049",
+ "tests_passed": [
+  "check: The finite-difference chord Jacobian matches the analytic focal-length and principal-point derivatives on a rectified rig vs max |numeric - analytic| / max |analytic| per column",
+  "check: First-order calibration-error prediction agrees with direct recomputation with a second-order residual vs relative first-order residual at the declared perturbation",
+  "check: First-order calibration-error prediction agrees with direct recomputation with a second-order residual vs log-log slope of the residual against scale minus 2",
+  "check: Chord sensitivity to each calibration parameter (m per px, m per mrad); disparity-changing errors dominate vs Jacobian change when finite-difference steps are halved (relative)",
+  "check: Chord sensitivity to each calibration parameter (m per px, m per mrad); disparity-changing errors dominate vs 0.12 m chord: |d/d cx| over |d/d cy| (both m per px)",
+  "check: Chord sensitivity to each calibration parameter (m per px, m per mrad); disparity-changing errors dominate vs 0.12 m chord: |d/d yaw| over |d/d pitch| (both m per mrad)",
+  "check: A common focal-length error leaves same-depth chords unchanged and scales only the depth component vs relative change of the ruling chord under a 5 px focal error",
+  "check: A common focal-length error leaves same-depth chords unchanged and scales only the depth component vs relative change of the circumferential chord (resolved)",
+  "check: A common focal-length error leaves same-depth chords unchanged and scales only the depth component vs chords against sqrt(dX^2 + dY^2 + (dZ f_b/f)^2) (m)",
+  "pytest: tests/test_lab_observation.py::test_t049_calibration_perturbations"
+ ],
+ "tests_skipped": [],
+ "title": "Add camera calibration perturbations.",
+ "uncertainty": "Finite-difference truncation below 1e-5 relative (step halving); no stochastic component.",
+ "unresolved_assumptions": [
+  "Calibration errors are static and small",
+  "Distortion is absent (see T050)"
+ ]
+}

@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420" font-family="sans-serif" font-size="11">
+<rect width="640" height="420" fill="#ffffff"/>
+<text x="78" y="22" font-size="13" font-weight="bold">Monte Carlo / linearized variance</text>
+<rect x="78" y="40" width="392" height="322" fill="none" stroke="#333"/>
+<line x1="78.00" y1="40" x2="78.00" y2="362" stroke="#e5e7eb"/>
+<text x="78.00" y="378" text-anchor="middle">1e-4</text>
+<line x1="274.00" y1="40" x2="274.00" y2="362" stroke="#e5e7eb"/>
+<text x="274.00" y="378" text-anchor="middle">1e-3</text>
+<line x1="470.00" y1="40" x2="470.00" y2="362" stroke="#e5e7eb"/>
+<text x="470.00" y="378" text-anchor="middle">1e-2</text>
+<line x1="78" y1="338.90" x2="470" y2="338.90" stroke="#e5e7eb"/>
+<text x="72" y="342.90" text-anchor="end">1</text>
+<line x1="78" y1="248.30" x2="470" y2="248.30" stroke="#e5e7eb"/>
+<text x="72" y="252.30" text-anchor="end">1.2</text>
+<line x1="78" y1="157.69" x2="470" y2="157.69" stroke="#e5e7eb"/>
+<text x="72" y="161.69" text-anchor="end">1.4</text>
+<line x1="78" y1="67.09" x2="470" y2="67.09" stroke="#e5e7eb"/>
+<text x="72" y="71.09" text-anchor="end">1.6</text>
+<text x="274.00" y="406" text-anchor="middle">vertex noise sigma</text>
+<text x="16" y="201.00" text-anchor="middle" transform="rotate(-90 16 201.00)">ratio</text>
+<path d="M78.00,336.66 L274.00,337.77 L367.52,350.07 L470.00,329.04" fill="none" stroke="#1f5fa8" stroke-width="1.8"/>
+<circle cx="78.00" cy="336.66" r="2.6" fill="#1f5fa8"/>
+<circle cx="274.00" cy="337.77" r="2.6" fill="#1f5fa8"/>
+<circle cx="367.52" cy="350.07" r="2.6" fill="#1f5fa8"/>
+<circle cx="470.00" cy="329.04" r="2.6" fill="#1f5fa8"/>
+<line x1="482" y1="52" x2="502" y2="52" stroke="#1f5fa8" stroke-width="2"/>
+<text x="508" y="56">marker distance</text>
+<path d="M78.00,342.63 L274.00,344.78 L367.52,328.53 L470.00,349.40" fill="none" stroke="#c2410c" stroke-width="1.8"/>
+<circle cx="78.00" cy="342.63" r="2.6" fill="#c2410c"/>
+<circle cx="274.00" cy="344.78" r="2.6" fill="#c2410c"/>
+<circle cx="367.52" cy="328.53" r="2.6" fill="#c2410c"/>
+<circle cx="470.00" cy="349.40" r="2.6" fill="#c2410c"/>
+<line x1="482" y1="70" x2="502" y2="70" stroke="#c2410c" stroke-width="2"/>
+<text x="508" y="74">normal v5</text>
+<path d="M78.00,329.26 L274.00,329.26 L367.52,305.98 L470.00,51.93" fill="none" stroke="#15803d" stroke-width="1.8"/>
+<circle cx="78.00" cy="329.26" r="2.6" fill="#15803d"/>
+<circle cx="274.00" cy="329.26" r="2.6" fill="#15803d"/>
+<circle cx="367.52" cy="305.98" r="2.6" fill="#15803d"/>
+<circle cx="470.00" cy="51.93" r="2.6" fill="#15803d"/>
+<line x1="482" y1="88" x2="502" y2="88" stroke="#15803d" stroke-width="2"/>
+<text x="508" y="92">K v5</text>
+<path d="M78.00,343.14 L274.00,338.30 L367.52,344.09 L470.00,331.64" fill="none" stroke="#7e22ce" stroke-width="1.8"/>
+<circle cx="78.00" cy="343.14" r="2.6" fill="#7e22ce"/>
+<circle cx="274.00" cy="338.30" r="2.6" fill="#7e22ce"/>
+<circle cx="367.52" cy="344.09" r="2.6" fill="#7e22ce"/>
+<circle cx="470.00" cy="331.64" r="2.6" fill="#7e22ce"/>
+<line x1="482" y1="106" x2="502" y2="106" stroke="#7e22ce" stroke-width="2"/>
+<text x="508" y="110">normal v6</text>
+<path d="M78.00,343.27 L274.00,329.94 L367.52,320.49 L470.00,164.04" fill="none" stroke="#b91c1c" stroke-width="1.8"/>
+<circle cx="78.00" cy="343.27" r="2.6" fill="#b91c1c"/>
+<circle cx="274.00" cy="329.94" r="2.6" fill="#b91c1c"/>
+<circle cx="367.52" cy="320.49" r="2.6" fill="#b91c1c"/>
+<circle cx="470.00" cy="164.04" r="2.6" fill="#b91c1c"/>
+<line x1="482" y1="124" x2="502" y2="124" stroke="#b91c1c" stroke-width="2"/>
+<text x="508" y="128">K v6</text>
+</svg>

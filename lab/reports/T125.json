@@ -1,0 +1,331 @@
+{
+ "changed_files": [
+  "src/ciw/lab/energy_gpu.py",
+  "src/ciw/lab/energy_gpu_kernels.py",
+  "src/ciw/lab/energy_gpu_telemetry.py",
+  "docs/lab/ENERGY_GPU.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 5,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "One numerical_result_id per fixture; four execution ids, two result ids and two bundle digests per fixture; restored workspace equal; edited bundles refused.",
+ "experiment": "Run every fixture through one Session, replay it, compare identities, save and restore the workspace, and replay an edited copy of the baseline bundle with stale and with recomputed digests.",
+ "failure_modes_checked": [
+  "numerical id drift between original and replay",
+  "reused execution identity",
+  "receipt claims independence or admission",
+  "edited retained result",
+  "workspace restore mismatch"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "distinct numerical_result_id per fixture minus one",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "ids differing from digest(operation, energy_records.analyze(log))",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "name": "examples/energy-accuracy synthetic fixtures",
+     "origin": "synthetic_fixture",
+     "seed": null
+    }
+   },
+   "claim": "Session replay keeps numerical_result_id identical across original, reproduction and replay for every fixture",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "integer counts, refusal codes or exact comparisons",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "baseline": 1,
+    "missing": 1,
+    "reset": 1,
+    "under-target": 1
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "missing fresh identities",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "name": "examples/energy-accuracy synthetic fixtures",
+     "origin": "synthetic_fixture",
+     "seed": null
+    }
+   },
+   "claim": "Each replay is a fresh analysis occurrence with new execution, result and bundle identities",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "integer counts, refusal codes or exact comparisons",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "baseline": {
+     "bundle_digests": 2,
+     "execution_ids": 4,
+     "result_ids": 2
+    },
+    "missing": {
+     "bundle_digests": 2,
+     "execution_ids": 4,
+     "result_ids": 2
+    },
+    "reset": {
+     "bundle_digests": 2,
+     "execution_ids": 4,
+     "result_ids": 2
+    },
+    "under-target": {
+     "bundle_digests": 2,
+     "execution_ids": 4,
+     "result_ids": 2
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "fixtures with a receipt or view outside policy",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "name": "examples/energy-accuracy synthetic fixtures",
+     "origin": "synthetic_fixture",
+     "seed": null
+    }
+   },
+   "claim": "Replay receipts record a numerical match, no state admission, a non-independent method and no fresh hardware measurement",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "integer counts, refusal codes or exact comparisons",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": [
+    "fresh_analysis_of_same_retained_measurement"
+   ]
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "restored workbench differs (1 = yes)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "bundles retained minus 2 per fixture",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "name": "examples/energy-accuracy synthetic fixtures",
+     "origin": "synthetic_fixture",
+     "seed": null
+    }
+   },
+   "claim": "Saving and restoring the Session workspace reproduces the retained workbench exactly",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "integer counts, refusal codes or exact comparisons",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "bundles": 8,
+    "restored_equal": true
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "Energy analysis bundle identity, schema or size differs",
+      "observed_refusal": "Energy analysis bundle identity, schema or size differs",
+      "passed": true,
+      "reference": "replay_session on an edited bundle (stale digests)",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "Retained energy analysis binding differs",
+      "observed_refusal": "Retained energy analysis binding differs",
+      "passed": true,
+      "reference": "replay_session on an edited bundle with recomputed digests",
+      "reference_kind": "refusal"
+     }
+    ],
+    "generator": {
+     "name": "examples/energy-accuracy synthetic fixtures",
+     "origin": "synthetic_fixture",
+     "seed": null
+    }
+   },
+   "claim": "Replaying a retained bundle whose numerical result was edited is refused, with or without resealed envelopes",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "integer counts, refusal codes or exact comparisons",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "edited_and_resealed_bundle": "Retained energy analysis binding differs",
+    "edited_bundle": "Energy analysis bundle identity, schema or size differs"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": [
+     "replay recomputes the same retained synthetic readings; it acquires nothing"
+    ]
+   },
+   "claim": "Replayed energy values are physically valid measurements",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 5530,
+   "path": "artifacts/T125/session-replay.json",
+   "sha256": "9fa8121177cbd8274585e5c0a6c041d1ff907894ca2e71420eb19e3d66786895"
+  }
+ ],
+ "hypothesis": "Replaying a retained energy analysis through a ciw Session recomputes the same numerical result (stable numerical_result_id) under fresh execution and result identities.",
+ "input_data": [
+  "examples/energy-accuracy/{baseline,reset,missing,under-target}.json: synthetic fixtures (origin synthetic_fixture) constructed on the CPU, not hardware captures"
+ ],
+ "mathematical_model": "numerical_result_id = digest({operation_id, data = energy_records.analyze(log)}); execution and result identities include a fresh occurrence UUID.",
+ "number": 125,
+ "numerical_result": "distinct numerical ids {'baseline': 1, 'reset': 1, 'missing': 1, 'under-target': 1}; fresh identities {'baseline': {'execution_ids': 4, 'result_ids': 2, 'bundle_digests': 2}, 'reset': {'execution_ids': 4, 'result_ids': 2, 'bundle_digests': 2}, 'missing': {'execution_ids': 4, 'result_ids': 2, 'bundle_digests': 2}, 'under-target': {'execution_ids': 4, 'result_ids': 2, 'bundle_digests': 2}}; restored equal True; edited replays refused: {'edited_bundle': 'Energy analysis bundle identity, schema or size differs', 'edited_and_resealed_bundle': 'Retained energy analysis binding differs'}.",
+ "observation_model": "Session protocol: source.add, operation.execute, bundle.replay, bundle.get, experiment.inspect, workspace.save and Session.from_workspace.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/energy_gpu.py": "fca900557e7fac2261a168afe0ee81efc48508a874a5045bf4f6b74937165bb1",
+   "src/ciw/lab/energy_gpu_kernels.py": "03f3d92f8407f476cb74536911d476929843ee74232a7d7017c00f43c785a2b4",
+   "src/ciw/lab/energy_gpu_telemetry.py": "21cac5f654ce4a120887ff40da62fda47bd38a3c383bbad6cc3cb13b4168fa2d"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T146: canonical serialization so numerical ids agree across platforms and languages",
+ "report_id": "sha256:63e1e29735a34fb57345ee59b4d6ace94e70bf83642d06f8591f101b9024b457",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "energy-gpu",
+ "state": "completed",
+ "task_id": "T125",
+ "tests_passed": [
+  "check: Session replay keeps numerical_result_id identical across original, reproduction and replay for every fixture vs distinct numerical_result_id per fixture minus one",
+  "check: Session replay keeps numerical_result_id identical across original, reproduction and replay for every fixture vs ids differing from digest(operation, energy_records.analyze(log))",
+  "check: Each replay is a fresh analysis occurrence with new execution, result and bundle identities vs missing fresh identities",
+  "check: Replay receipts record a numerical match, no state admission, a non-independent method and no fresh hardware measurement vs fixtures with a receipt or view outside policy",
+  "check: Saving and restoring the Session workspace reproduces the retained workbench exactly vs restored workbench differs (1 = yes)",
+  "check: Saving and restoring the Session workspace reproduces the retained workbench exactly vs bundles retained minus 2 per fixture",
+  "check: Replaying a retained bundle whose numerical result was edited is refused, with or without resealed envelopes vs replay_session on an edited bundle (stale digests)",
+  "check: Replaying a retained bundle whose numerical result was edited is refused, with or without resealed envelopes vs replay_session on an edited bundle with recomputed digests",
+  "pytest: tests/test_lab_energy_gpu.py::test_session_replay_keeps_numerical_result_id",
+  "pytest: tests/test_lab_energy_gpu.py::test_fixture_tasks_without_repository_files",
+  "pytest: tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance"
+ ],
+ "tests_skipped": [],
+ "title": "Test replay of energy telemetry reports.",
+ "uncertainty": "Exact; the numerical ids themselves may differ across platforms if float results differ in the last bit, so only their stability within a run is asserted.",
+ "unresolved_assumptions": [
+  "Replay determinism is not independent verification by another party",
+  "The retained readings are synthetic",
+  "Resealing an edited bundle uses ciw.telemetry._bundle_digest (internal; pinned by the regression test)"
+ ]
+}

@@ -1,0 +1,25 @@
+{
+ "outcomes": {
+  "UTC timestamp of a reading removed": "Require exactly the declared energy-log fields",
+  "calibration metadata invented for the sensor": "Unsupported sensor scope or invented calibration metadata",
+  "failed counter read keeps a fabricated energy": "Failed counter reading cannot contain fabricated energy",
+  "monotonic read bracket reversed": "Reversed monotonic hardware call bracket",
+  "prepared device input identity replaced": "Prepared device input differs from declared initial problem",
+  "raw counter reading edited without resealing": "Retained log digest differs",
+  "retained batch output edited": "Expanded result bytes differ from their digest",
+  "runtime executable identity removed": "Require exactly the declared energy-log fields",
+  "sensor device UUID replaced by a non-UUID": "Require a physical GPU UUID"
+ },
+ "relabelled_analysis_comparison": {
+  "accuracy_basis": "all_retained_fixed_iteration_batch_outputs_meet_same_declared_KL_target",
+  "claim": "amortized_background_inclusive_energy_not_first_attainment_or_minimum_energy",
+  "classification": "physical_domain_measurement",
+  "eligible": true,
+  "reasons": []
+ },
+ "resealed_doubled_digest": "sha256:d93ef3111f855922cfa1fd87f8fe04d6b18b63b70836e93b48a4776ef8054688",
+ "resealed_doubled_validation": "accepted",
+ "uuid_mismatch_reasons": [
+  "workload_sensor_device_mismatch"
+ ]
+}

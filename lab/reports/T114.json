@@ -1,0 +1,405 @@
+{
+ "changed_files": [
+  "src/ciw/lab/lyapunov.py",
+  "src/ciw/lab/lyapunov_reference.py",
+  "src/ciw/lab/lyapunov_research.py",
+  "docs/lab/LYAPUNOV.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 1,
+   "not_established": 6,
+   "numerically_verified": 4,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "The unit-balanced P is exactly valid at every grid inertia; the monitor's code is constant without a level set and follows exact V > c with it; every abort code is produced by the scan; authority and physical claims remain not_established.",
+ "experiment": "Build the sampled-data models, choose P, check each grid point exactly, verify the exponential, derive the level set, scan the monitor configuration, and retain the specification (JSON and Markdown).",
+ "failure_modes_checked": [
+  "certificate invalid on part of the interval",
+  "exponential inaccurate",
+  "monitor code independent of the state even with a level set",
+  "abort trigger that the configuration cannot produce",
+  "level set outside the envelope",
+  "authority or safety claimed"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "grid inertias without an exactly negative definite decrease",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "name": "servo_models",
+     "seed": null
+    }
+   },
+   "claim": "The unit-balanced nominal P gives an exactly negative definite discrete decrease at every grid inertia",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact rational, integer or bitwise comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "grid_points": 9,
+    "not_negative_definite": 0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 4.0,
+      "passed": true,
+      "reference": "grid inertias failing with Q = I",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     }
+    ]
+   },
+   "claim": "With Q = I the nominal-model P does not cover the declared inertia interval",
+   "counterexample": {
+    "statement": "A Lyapunov P solved at the nominal model with Q = I certifies the declared +-30 % inertia interval",
+    "witness": {
+     "J": [
+      0.0014,
+      0.00155,
+      0.0017000000000000001,
+      0.00185
+     ]
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact rational, integer or bitwise comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "failing_grid_points": 4,
+    "grid_points": 9
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 6.938893903907228e-18,
+      "passed": true,
+      "reference": "max abs entry difference from the closed form of exp([[A, B], [0, 0]] Ts)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     }
+    ],
+    "independent_check": {
+     "checker": {
+      "implementation": "scipy.linalg.expm@1.16.2",
+      "revision": "1.16.2"
+     },
+     "comparison": "abs_le",
+     "observed": 2.168404344971009e-19,
+     "passed": true,
+     "producer": {
+      "implementation": "ciw.lab.lyapunov_research.expm_series",
+      "revision": "0.1.0"
+     },
+     "reference": "max abs entry difference of exp([[A, B], [0, 0]] Ts)",
+     "reference_kind": "analytic",
+     "tolerance": 1e-12
+    }
+   },
+   "claim": "The ZOH exponential agrees with its closed form and, where available, an independent exponential",
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "observed maximum entry difference",
+    "kind": "roundoff",
+    "value": 6.938893903907228e-18
+   },
+   "unit": null,
+   "value": {
+    "max_abs_difference_closed_form": 6.938893903907228e-18,
+    "max_abs_difference_independent": 2.168404344971009e-19
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "distinct codes over the scan without a level set",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "states whose OUTSIDE_LEVEL_SET decision differs from exact V(x) > c",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "le",
+      "observed": 0.999999499999875,
+      "passed": true,
+      "reference": "largest ratio of the level set's extent to the envelope bound",
+      "reference_kind": "analytic",
+      "tolerance": 1.0
+     }
+    ],
+    "generator": {
+     "name": "monitor_scan",
+     "seed": 1141
+    }
+   },
+   "claim": "Without a level set the monitor's code is the same at every state; with the declared level it follows the exact V(x) > c decision",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact rationals decide V > c; states lie between 1e-8 and 1e8 of the level radius",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "codes_with_level": [
+     "CERTIFIED_WITH_MARGIN",
+     "OUTSIDE_LEVEL_SET"
+    ],
+    "codes_without_level": [
+     "CERTIFIED_WITH_MARGIN"
+    ],
+    "exceeding_states": 90,
+    "level_mismatches": 0,
+    "states": 200
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "abort codes never produced by the monitor scan",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "produced codes outside the expected set",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Every runtime code named as an abort trigger is produced by the declared monitor configuration, and the configuration produces no code outside the expected set",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact rational, integer or bitwise comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "abort_codes": [
+     "OUTSIDE_LEVEL_SET"
+    ],
+    "expected_codes": [
+     "CERTIFIED_WITH_MARGIN",
+     "OUTSIDE_LEVEL_SET"
+    ],
+    "produced": [
+     "CERTIFIED_WITH_MARGIN",
+     "OUTSIDE_LEVEL_SET"
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "derivation": "requires a safety case and an independent safety function outside the workbench"
+   },
+   "claim": "The servo-axis pilot is safe to operate",
+   "domain": "machine_safety",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "derivation": "the specification grants no actuator authority; aborts are stop requests to an independent safety function"
+   },
+   "claim": "The Lyapunov monitor may command, gate or release the axis",
+   "domain": "actuator_authority",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "The pilot configuration is acceptable for production use",
+   "domain": "production_acceptance",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "The monitor is ready for industrial deployment",
+   "domain": "industrial_readiness",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "The placeholder inertia interval contains the real axis inertia",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "Encoder and current-sensor calibrations of the bench are valid",
+   "domain": "calibration",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 5709,
+   "path": "artifacts/T114/servo-pilot-spec.json",
+   "sha256": "3d4e5f4e5f56d013fbe937f81925d1c8898d389d08ce8b601c6aa742fed16294"
+  },
+  {
+   "bytes": 5813,
+   "path": "artifacts/T114/servo-pilot-spec.md",
+   "sha256": "1416ea75c9808ac118290695523b6bb92bcbd99e10ccea5c38300aaf429e74b4"
+  },
+  {
+   "bytes": 47500,
+   "path": "artifacts/T114/monitor-scan.json",
+   "sha256": "905750db88c402d38eb3bd68d9d6456c24c88bae7ff0bf3644749ffe6bc2bb16"
+  }
+ ],
+ "hypothesis": "A non-production servo-axis pilot can be specified so that the Lyapunov monitor's scope, data, abort criteria and lack of authority are explicit, every runtime abort trigger can actually fire for the declared monitor configuration, and the offline certificate check passes at every grid inertia before any powered test.",
+ "input_data": [
+  "Placeholder parameters (not identified): J = 2e-3 kg m^2 +- 30 %, b = 1e-3 N m s, Kt = 0.1 N m/A, Ts = 1 ms",
+  "Weightings Q = I and unit-balanced Q = diag(omega^2, 1), omega = 2 pi 20 rad/s",
+  "Operating envelope |angle error| <= 0.05 rad, |rate| <= 2 rad/s (placeholder)",
+  "Monitor scan: 200 seeded states (PCG64 seed 1141) with V(x) = r^2 c, r = 10^U(-8, 8)"
+ ],
+ "mathematical_model": "Axis J theta'' = -b theta' + Kt u with PD state feedback designed for 20 Hz, damping 0.7 at nominal J; exact ZOH at Ts = 1 ms; closed loop A_cl(J) = Phi(J) - Gamma(J) K on a 9-point grid over J +- 30 %; common P from the discrete Lyapunov equation at nominal J. Online: PLSR on the nominal model with a declared level c such that {V <= c} lies inside the operating envelope; for a fixed model the decrease form's sign is state-independent, so the code depends on the state only through the level gate.",
+ "number": 114,
+ "numerical_result": "K = [[315.827341, 3.508584]]; balanced-Q grid classes {'negative_definite': 9}; Q = I grid classes {'has_positive_eigenvalue': 4, 'negative_definite': 5}; ZOH exponential differs from its closed form by 6.94e-18 and from scipy.linalg.expm@1.16.2 by 2.17e-19; level c = 18.3337 (extent/envelope 0.999999); monitor codes without level ['CERTIFIED_WITH_MARGIN'], with level ['CERTIFIED_WITH_MARGIN', 'OUTSIDE_LEVEL_SET'], 0 level decisions differing from exact V > c; abort codes not produced: [].",
+ "observation_model": "Exact rational class of A_cl(J)^T P A_cl(J) - P at each grid inertia; ZOH exponential against its closed form and an independent exponential; monitor codes over the scan by the documented decision order, against the exact V(x) > c decision.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/lyapunov.py": "58d6c7473f0a42002b57888de0ccfbbf73b571bbbabbf9ee81e0a05c734f2320",
+   "src/ciw/lab/lyapunov_reference.py": "fa37ef453c23ad2bed2eab41132e72670e166b93eebd5fc9d67a4a89a7c92cca",
+   "src/ciw/lab/lyapunov_research.py": "528422e4137222e00fd93c63ac22a4bb326fe469030d347418427bac34907d0f"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "Hardware-gated: identify J, friction and delay on the bench, replace the placeholder interval, re-run this check with an affine over-approximation suitable for PLSR's box semantics, then run T113's adapter on acquired encoder data.",
+ "report_id": "sha256:9591a17130b24b987ea920da601654ee6bb176d73c9f6be157446b522e98c687",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "lyapunov",
+ "state": "completed",
+ "task_id": "T114",
+ "tests_passed": [
+  "check: The unit-balanced nominal P gives an exactly negative definite discrete decrease at every grid inertia vs grid inertias without an exactly negative definite decrease",
+  "check: With Q = I the nominal-model P does not cover the declared inertia interval vs grid inertias failing with Q = I",
+  "check: The ZOH exponential agrees with its closed form and, where available, an independent exponential vs max abs entry difference from the closed form of exp([[A, B], [0, 0]] Ts)",
+  "independent: The ZOH exponential agrees with its closed form and, where available, an independent exponential vs scipy.linalg.expm@1.16.2",
+  "check: Without a level set the monitor's code is the same at every state; with the declared level it follows the exact V(x) > c decision vs distinct codes over the scan without a level set",
+  "check: Without a level set the monitor's code is the same at every state; with the declared level it follows the exact V(x) > c decision vs states whose OUTSIDE_LEVEL_SET decision differs from exact V(x) > c",
+  "check: Without a level set the monitor's code is the same at every state; with the declared level it follows the exact V(x) > c decision vs largest ratio of the level set's extent to the envelope bound",
+  "check: Every runtime code named as an abort trigger is produced by the declared monitor configuration, and the configuration produces no code outside the expected set vs abort codes never produced by the monitor scan",
+  "check: Every runtime code named as an abort trigger is produced by the declared monitor configuration, and the configuration produces no code outside the expected set vs produced codes outside the expected set",
+  "pytest: tests/test_lab_lyapunov.py::test_t114_servo_pilot_spec",
+  "pytest: tests/test_lab_lyapunov.py::test_research_tasks_without_optional_modules"
+ ],
+ "tests_skipped": [],
+ "title": "Prepare a non-production servo-axis pilot specification.",
+ "uncertainty": "Exact rational classes on the declared float matrices; the interval between grid points is not covered by a proof; the level-set scan decides V > c exactly.",
+ "unresolved_assumptions": [
+  "All parameters are placeholders; the grid is evidence on 9 inertias, not a proof over the interval.",
+  "The monitor scan uses CIW's transcription of the documented decision order, not the pinned runtime; T113 exercises the runtime on the analogous adapter.",
+  "The current loop, friction nonlinearity, saturation and delay are not modelled; specification sections are guarded by the regression test, not by a finding."
+ ]
+}

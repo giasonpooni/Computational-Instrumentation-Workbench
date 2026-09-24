@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420" font-family="sans-serif" font-size="11">
+<rect width="640" height="420" fill="#ffffff"/>
+<text x="78" y="22" font-size="13" font-weight="bold">Truncation versus cancellation (sphere)</text>
+<rect x="78" y="40" width="392" height="322" fill="none" stroke="#333"/>
+<line x1="78.00" y1="40" x2="78.00" y2="362" stroke="#e5e7eb"/>
+<text x="78.00" y="378" text-anchor="middle">1e-11</text>
+<line x1="117.20" y1="40" x2="117.20" y2="362" stroke="#e5e7eb"/>
+<text x="117.20" y="378" text-anchor="middle">1e-10</text>
+<line x1="156.40" y1="40" x2="156.40" y2="362" stroke="#e5e7eb"/>
+<text x="156.40" y="378" text-anchor="middle">1e-9</text>
+<line x1="195.60" y1="40" x2="195.60" y2="362" stroke="#e5e7eb"/>
+<text x="195.60" y="378" text-anchor="middle">1e-8</text>
+<line x1="234.80" y1="40" x2="234.80" y2="362" stroke="#e5e7eb"/>
+<text x="234.80" y="378" text-anchor="middle">1e-7</text>
+<line x1="274.00" y1="40" x2="274.00" y2="362" stroke="#e5e7eb"/>
+<text x="274.00" y="378" text-anchor="middle">1e-6</text>
+<line x1="313.20" y1="40" x2="313.20" y2="362" stroke="#e5e7eb"/>
+<text x="313.20" y="378" text-anchor="middle">1e-5</text>
+<line x1="352.40" y1="40" x2="352.40" y2="362" stroke="#e5e7eb"/>
+<text x="352.40" y="378" text-anchor="middle">1e-4</text>
+<line x1="391.60" y1="40" x2="391.60" y2="362" stroke="#e5e7eb"/>
+<text x="391.60" y="378" text-anchor="middle">1e-3</text>
+<line x1="430.80" y1="40" x2="430.80" y2="362" stroke="#e5e7eb"/>
+<text x="430.80" y="378" text-anchor="middle">1e-2</text>
+<line x1="470.00" y1="40" x2="470.00" y2="362" stroke="#e5e7eb"/>
+<text x="470.00" y="378" text-anchor="middle">1e-1</text>
+<line x1="78" y1="355.66" x2="470" y2="355.66" stroke="#e5e7eb"/>
+<text x="72" y="359.66" text-anchor="end">1e-8</text>
+<line x1="78" y1="304.05" x2="470" y2="304.05" stroke="#e5e7eb"/>
+<text x="72" y="308.05" text-anchor="end">1e-7</text>
+<line x1="78" y1="252.44" x2="470" y2="252.44" stroke="#e5e7eb"/>
+<text x="72" y="256.44" text-anchor="end">1e-6</text>
+<line x1="78" y1="200.83" x2="470" y2="200.83" stroke="#e5e7eb"/>
+<text x="72" y="204.83" text-anchor="end">1e-5</text>
+<line x1="78" y1="149.21" x2="470" y2="149.21" stroke="#e5e7eb"/>
+<text x="72" y="153.21" text-anchor="end">1e-4</text>
+<line x1="78" y1="97.60" x2="470" y2="97.60" stroke="#e5e7eb"/>
+<text x="72" y="101.60" text-anchor="end">1e-3</text>
+<line x1="78" y1="45.99" x2="470" y2="45.99" stroke="#e5e7eb"/>
+<text x="72" y="49.99" text-anchor="end">1e-2</text>
+<text x="274.00" y="406" text-anchor="middle">perturbation eps</text>
+<text x="16" y="201.00" text-anchor="middle" transform="rotate(-90 16 201.00)">max |FD - column|</text>
+<path d="M470.00,51.93 L430.80,101.96 L391.60,153.42 L352.40,205.01 L313.20,256.61 L274.00,308.26 L234.80,350.07 L195.60,305.64 L156.40,243.04 L117.20,196.37 L78.00,146.62" fill="none" stroke="#1f5fa8" stroke-width="1.8"/>
+<circle cx="470.00" cy="51.93" r="2.6" fill="#1f5fa8"/>
+<circle cx="430.80" cy="101.96" r="2.6" fill="#1f5fa8"/>
+<circle cx="391.60" cy="153.42" r="2.6" fill="#1f5fa8"/>
+<circle cx="352.40" cy="205.01" r="2.6" fill="#1f5fa8"/>
+<circle cx="313.20" cy="256.61" r="2.6" fill="#1f5fa8"/>
+<circle cx="274.00" cy="308.26" r="2.6" fill="#1f5fa8"/>
+<circle cx="234.80" cy="350.07" r="2.6" fill="#1f5fa8"/>
+<circle cx="195.60" cy="305.64" r="2.6" fill="#1f5fa8"/>
+<circle cx="156.40" cy="243.04" r="2.6" fill="#1f5fa8"/>
+<circle cx="117.20" cy="196.37" r="2.6" fill="#1f5fa8"/>
+<circle cx="78.00" cy="146.62" r="2.6" fill="#1f5fa8"/>
+<line x1="482" y1="52" x2="502" y2="52" stroke="#1f5fa8" stroke-width="2"/>
+<text x="508" y="56">heading one-sided</text>
+</svg>

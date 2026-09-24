@@ -1,0 +1,89 @@
+{
+ "rows": [
+  {
+   "description": "second result's execution_id set to the first execution; resealed",
+   "error": "ValueError",
+   "killed": true,
+   "kind": "workspace",
+   "message_matches_pin": true,
+   "name": "alias.result-execution",
+   "observed": "Saved result identity mismatch or duplication",
+   "observed_outcome": "killed",
+   "outcome_matches_prediction": true,
+   "pinned_message": "Saved result identity mismatch or duplication",
+   "predicted_outcome": "killed",
+   "recompute": "local",
+   "target": "oscillator result",
+   "task": "T080"
+  },
+  {
+   "description": "second execution's result_id set to the first result; resealed",
+   "error": "ValueError",
+   "killed": true,
+   "kind": "workspace",
+   "message_matches_pin": true,
+   "name": "alias.execution-result",
+   "observed": "Execution/result execution_id binding mismatch",
+   "observed_outcome": "killed",
+   "outcome_matches_prediction": true,
+   "pinned_message": "Execution/result execution_id binding mismatch",
+   "predicted_outcome": "killed",
+   "recompute": "local",
+   "target": "oscillator execution",
+   "task": "T080"
+  },
+  {
+   "description": "result identity given the execution- prefix in result and execution; resealed",
+   "error": "ValueError",
+   "killed": true,
+   "kind": "workspace",
+   "message_matches_pin": true,
+   "name": "alias.result-prefix",
+   "observed": "Invalid saved result identity",
+   "observed_outcome": "killed",
+   "outcome_matches_prediction": true,
+   "pinned_message": "Invalid saved result identity",
+   "predicted_outcome": "killed",
+   "recompute": "local",
+   "target": "oscillator execution and result",
+   "task": "T080"
+  },
+  {
+   "description": "operation_id changed to spectrum.periodogram.v1 in both records; resealed (killed by payload-shape validation, not by an identity binding)",
+   "error": "ValueError",
+   "killed": true,
+   "kind": "workspace",
+   "message_matches_pin": true,
+   "name": "alias.operation",
+   "observed": "Invalid saved spectrum data fields or sample count",
+   "observed_outcome": "killed",
+   "outcome_matches_prediction": true,
+   "pinned_message": "Invalid saved spectrum data fields or sample count",
+   "predicted_outcome": "killed",
+   "recompute": "local",
+   "target": "oscillator execution and result",
+   "task": "T080"
+  },
+  {
+   "description": "selection revision 1000 with execution and result claiming revision 999; resealed",
+   "error": null,
+   "killed": false,
+   "kind": "workspace",
+   "message_matches_pin": true,
+   "name": "revision.gap",
+   "observed": "accepted",
+   "observed_outcome": "accepted",
+   "outcome_matches_prediction": true,
+   "pinned_message": "accepted",
+   "post_reopen": {
+    "execution_selection_revision": 999,
+    "selection_revision": 1000
+   },
+   "predicted_outcome": "accepted",
+   "recompute": "local",
+   "target": "oscillator selection history",
+   "task": "T080"
+  }
+ ],
+ "schema": "ciw.lab-mutation-matrix.v2"
+}

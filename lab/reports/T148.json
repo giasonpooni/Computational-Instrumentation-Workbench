@@ -1,0 +1,499 @@
+{
+ "changed_files": [
+  "src/ciw/lab/implementation_targets.py",
+  "src/ciw/lab/implementation_targets_kernels.py",
+  "docs/lab/IMPLEMENTATION_TARGETS.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 1,
+   "hardware_measured": 0,
+   "independently_verified": 1,
+   "not_established": 0,
+   "numerically_verified": 6,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "analytic"
+ },
+ "expected_invariant": "Exact accumulation: one result per dataset and equal to math.fsum; every error within its bound; the earlier O(n u^2) Neumaier bound fails where the second-order term grows like n^2.",
+ "experiment": "Sum each permutation with five algorithms; compare with exact rationals and math.fsum; test the earlier Neumaier bound on absorbed tiny terms; retain the policy.",
+ "failure_modes_checked": [
+  "order dependence",
+  "catastrophic cancellation",
+  "Kahan large-term failure",
+  "second-order growth of compensated error (absorbed tiny terms)",
+  "bound violation",
+  "exact/fsum disagreement"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "distinct results across permutations minus one",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "name": "PCG64 datasets and 24 permutations",
+     "seed": 148
+    },
+    "independent_check": {
+     "checker": {
+      "implementation": "cpython.math.fsum",
+      "revision": "3.12.3"
+     },
+     "comparison": "abs_le",
+     "observed": 0.0,
+     "passed": true,
+     "producer": {
+      "implementation": "ciw.lab.implementation_targets_kernels.sum_exact"
+     },
+     "reference": "mismatches against math.fsum over every order and dataset",
+     "reference_kind": "exact_arithmetic",
+     "tolerance": 0.0
+    }
+   },
+   "claim": "Correctly rounded exact accumulation is permutation-invariant",
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": "distinct results",
+   "value": 1
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "replay of the same order differs",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 4.0,
+      "passed": true,
+      "reference": "distinct pairwise results across permutations (uniform)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 2.0
+     }
+    ]
+   },
+   "claim": "Fixed-order pairwise summation is reproducible for one order but not permutation-invariant",
+   "counterexample": {
+    "statement": "Pairwise summation is order-independent",
+    "witness": {
+     "dataset": "uniform n=1024 PCG64(148)",
+     "distinct_results": 4
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": "distinct results",
+   "value": 4
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 2.0,
+      "passed": true,
+      "reference": "Kahan error",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 2.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "Neumaier error",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Kahan summation loses the sum [1, 1e100, 1, -1e100] that Neumaier summation keeps",
+   "counterexample": {
+    "statement": "Kahan compensated summation is accurate whenever Neumaier's is",
+    "witness": {
+     "input": [
+      1.0,
+      1e+100,
+      1.0,
+      -1e+100
+     ],
+     "kahan": 0.0,
+     "neumaier": 2.0
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "exact": 2.0,
+    "kahan": 0.0,
+    "neumaier": 2.0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 0.41061384407648716,
+      "passed": true,
+      "reference": "exact: max |error|/bound over datasets and permutations",
+      "reference_kind": "analytic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "le",
+      "observed": 0.41061384284980085,
+      "passed": true,
+      "reference": "neumaier: max |error|/bound over datasets and permutations",
+      "reference_kind": "analytic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "le",
+      "observed": 0.21575304081315524,
+      "passed": true,
+      "reference": "pairwise: max |error|/bound over datasets and permutations",
+      "reference_kind": "analytic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "le",
+      "observed": 0.34965068310285535,
+      "passed": true,
+      "reference": "sequential: max |error|/bound over datasets and permutations",
+      "reference_kind": "analytic",
+      "tolerance": 1.0
+     }
+    ]
+   },
+   "claim": "Observed errors of the sequential, pairwise, Neumaier and exact sums lie within their rigorous bounds",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "rigorous worst-case bounds (Higham 2002 ch. 4; Ogita, Rump and Oishi 2005); errors are exact rationals",
+    "kind": "truncation_bound",
+    "value": 1.0
+   },
+   "unit": "fraction of the bound",
+   "value": {
+    "exact": 0.41061384407648716,
+    "neumaier": 0.41061384284980085,
+    "pairwise": 0.21575304081315524,
+    "sequential": 0.34965068310285535
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 0.34983344078055906,
+      "passed": true,
+      "reference": "kahan: max |error| / (2u + 4 n u^2) sum|x|",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     }
+    ]
+   },
+   "claim": "Observed Kahan errors lie within 2u sum|x| plus the declared second-order allowance",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "first-order bound 2u sum|x| (Higham eq. 4.8) plus a declared, unproven second-order constant",
+    "kind": "truncation_bound",
+    "value": 1.0
+   },
+   "unit": "fraction of the allowance",
+   "value": 0.34983344078055906
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 12.312657557436786,
+      "passed": true,
+      "reference": "Neumaier error / (2u|S| + 4n u^2 sum|x|) on absorbed tiny terms",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "le",
+      "observed": 0.05783203686201874,
+      "passed": true,
+      "reference": "Neumaier error / (u|S| + gamma_{n-1}^2 sum|x|) on the same input",
+      "reference_kind": "analytic",
+      "tolerance": 1.0
+     }
+    ]
+   },
+   "claim": "The bound 2u|S| + 4n u^2 sum|x| does not bound Neumaier summation",
+   "counterexample": {
+    "statement": "Neumaier summation error is at most 2u|S| + 4n u^2 sum|x|",
+    "witness": {
+     "input": "[1] + 1000 x [0.7u(1 + 2^-20)] + [-1]",
+     "n": 1002,
+     "ratio": 12.312657557436786
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "exact rational error; ratios rounded once to binary64",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": "error over bound",
+   "value": {
+    "n": 1002,
+    "ratio_to_rigorous_bound": 0.05783203686201874,
+    "ratio_to_superseded_bound": 12.312657557436786
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "exact accumulation: distinct results minus one, worst dataset",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 25.0,
+      "passed": true,
+      "reference": "sequential summation: distinct results on the cancelling dataset",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 2.0
+     }
+    ],
+    "generator": {
+     "name": "PCG64 permutations",
+     "orders": 25,
+     "seed": 1480
+    }
+   },
+   "claim": "Distinct results under permutation for each algorithm and dataset",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": "distinct results",
+   "value": {
+    "absorbed-tiny-terms": {
+     "exact": 1,
+     "kahan": 24,
+     "neumaier": 23,
+     "pairwise": 13,
+     "sequential": 25
+    },
+    "cancelling": {
+     "exact": 1,
+     "kahan": 25,
+     "neumaier": 9,
+     "pairwise": 10,
+     "sequential": 25
+    },
+    "kahan-counterexample": {
+     "exact": 1,
+     "kahan": 3,
+     "neumaier": 1,
+     "pairwise": 2,
+     "sequential": 3
+    },
+    "positive-wide-range": {
+     "exact": 1,
+     "kahan": 1,
+     "neumaier": 1,
+     "pairwise": 3,
+     "sequential": 9
+    },
+    "uniform": {
+     "exact": 1,
+     "kahan": 1,
+     "neumaier": 1,
+     "pairwise": 4,
+     "sequential": 16
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "derivation": "docs/lab/IMPLEMENTATION_TARGETS.md#reduction-policies (Higham 2002, ch. 4; Ogita, Rump and Oishi 2005)"
+   },
+   "claim": "Deterministic reduction policy record",
+   "domain": "provenance",
+   "evidence_status": "analytic",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "declared design record; the value is a list of names or rules, not a measurement",
+    "kind": "reference_error",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "fixed_layout_arrays": "pairwise: fixed binary tree split at n//2 over the stored order (bitwise reproducible only for the same order and length); error <= gamma_{ceil(log2 n)} sum|x|",
+    "forbidden_for_identity": [
+     "sequential float accumulation in unspecified order",
+     "BLAS/numpy.sum (order is implementation-defined)",
+     "Kahan without the Neumaier branch (fails on large cancelling terms)"
+    ],
+    "identity_bearing_sums": "exact: integer accumulation at scale 2^1074 with one final rounding (bitwise order-independent; cross-checked with math.fsum)",
+    "schema": "ciw.reduction-policy.v1",
+    "streaming_accumulators": "neumaier: compensated, error <= u|S| + gamma_{n-1}^2 sum|x| = u|S| + O(n^2 u^2) sum|x| (Ogita, Rump and Oishi 2005, Prop. 4.5); not order-invariant"
+   }
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 6372,
+   "path": "artifacts/T148/permutation-study.json",
+   "sha256": "6daf592de82b85386ce4b81aa121bedd78c64de647efaaea1bb16fb37e3f0c42"
+  },
+  {
+   "bytes": 776,
+   "path": "artifacts/T148/reduction-policy.json",
+   "sha256": "36ccec04ca225c9fcc2d2ad52f38d7803ae7e1d48419fad2aefa1010ed924d6a"
+  },
+  {
+   "bytes": 5820,
+   "path": "artifacts/T148/error-scaling.svg",
+   "sha256": "a7e36164ccde15a1b9c8a78f2861a5f5833394a7ac5a2398eccb8a2117d93dc4"
+  }
+ ],
+ "hypothesis": "Only a correctly rounded (exact-accumulation) sum is bitwise independent of summation order; fixed-tree pairwise sums are reproducible only for a fixed order; compensated sums are accurate but not order-invariant, and plain Kahan fails on large cancelling terms.",
+ "input_data": [
+  "uniform[-1,1) n=1024",
+  "positive values 10^U(-8,8) n=1024",
+  "cancelling +/-10^U(0,16) pairs plus noise n=1024",
+  "[1, 1e100, 1, -1e100]",
+  "absorbed tiny terms [1] + 1000 x [0.7u(1 + 2^-20)] + [-1]",
+  "24 PCG64(1480) permutations of each"
+ ],
+ "mathematical_model": "Rigorous bounds (u = 2^-53, S = sum|x|, s = exact sum): sequential gamma_{n-1} S; pairwise gamma_{ceil(log2 n)} S; Neumaier u|s| + gamma_{n-1}^2 S (its compensation terms are those of Sum2); exact rounding u|s|. Kahan: 2u S + O(n u^2) S, checked with a declared allowance 4 n u^2 S. Exact sums by integer accumulation at scale 2^1074.",
+ "number": 148,
+ "numerical_result": "Distinct results across 25 orders: exact 1, pairwise (uniform) 4; exact vs math.fsum mismatches 0; Kahan on [1, 1e100, 1, -1e100] = 0.0, Neumaier = 2.0; worst error/bound exact 0.411, kahan 0.35, neumaier 0.411, pairwise 0.216, sequential 0.35; Neumaier error is 12.3 times the earlier bound 2u|S| + 4n u^2 S at n = 1002 and 0.0578 of the rigorous one.",
+ "observation_model": "Exact rational errors of each floating-point result; count of distinct bit patterns across orders.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/implementation_targets.py": "4e27c12d31365590b7fb82d98b8d02e1668c7b8e73b03f71ef270eca9fcf6eea",
+   "src/ciw/lab/implementation_targets_kernels.py": "7da2c27fa79171f72aa553b7bfcb62041c5a13dd146735979820f410a3a7c3cd"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T147 (use the policy to set GPU comparison tolerances), then T155 (formal specification of the policy)",
+ "report_id": "sha256:3b95ad4aa494d23ade8f451eca6deac2acc805aacd28b14f4fafd8fe392aade8",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "implementation-targets",
+ "state": "completed",
+ "task_id": "T148",
+ "tests_passed": [
+  "check: Correctly rounded exact accumulation is permutation-invariant vs distinct results across permutations minus one",
+  "independent: Correctly rounded exact accumulation is permutation-invariant vs cpython.math.fsum",
+  "check: Fixed-order pairwise summation is reproducible for one order but not permutation-invariant vs replay of the same order differs",
+  "check: Fixed-order pairwise summation is reproducible for one order but not permutation-invariant vs distinct pairwise results across permutations (uniform)",
+  "check: Kahan summation loses the sum [1, 1e100, 1, -1e100] that Neumaier summation keeps vs Kahan error",
+  "check: Kahan summation loses the sum [1, 1e100, 1, -1e100] that Neumaier summation keeps vs Neumaier error",
+  "check: Observed errors of the sequential, pairwise, Neumaier and exact sums lie within their rigorous bounds vs exact: max |error|/bound over datasets and permutations",
+  "check: Observed errors of the sequential, pairwise, Neumaier and exact sums lie within their rigorous bounds vs neumaier: max |error|/bound over datasets and permutations",
+  "check: Observed errors of the sequential, pairwise, Neumaier and exact sums lie within their rigorous bounds vs pairwise: max |error|/bound over datasets and permutations",
+  "check: Observed errors of the sequential, pairwise, Neumaier and exact sums lie within their rigorous bounds vs sequential: max |error|/bound over datasets and permutations",
+  "check: Observed Kahan errors lie within 2u sum|x| plus the declared second-order allowance vs kahan: max |error| / (2u + 4 n u^2) sum|x|",
+  "check: The bound 2u|S| + 4n u^2 sum|x| does not bound Neumaier summation vs Neumaier error / (2u|S| + 4n u^2 sum|x|) on absorbed tiny terms",
+  "check: The bound 2u|S| + 4n u^2 sum|x| does not bound Neumaier summation vs Neumaier error / (u|S| + gamma_{n-1}^2 sum|x|) on the same input",
+  "check: Distinct results under permutation for each algorithm and dataset vs exact accumulation: distinct results minus one, worst dataset",
+  "check: Distinct results under permutation for each algorithm and dataset vs sequential summation: distinct results on the cancelling dataset",
+  "pytest: tests/test_lab_implementation_targets.py::test_t148_reduction_policies"
+ ],
+ "tests_skipped": [],
+ "title": "Add deterministic reduction policies.",
+ "uncertainty": "Exact arithmetic; permutation counts are samples (25 orders), so invariance of non-exact algorithms is only refuted, never proven, and the exact algorithm's invariance is a theorem sampled here. The Kahan allowance constant is declared, not proven.",
+ "unresolved_assumptions": [
+  "The Kahan second-order constant (4) is a policy allowance without proof",
+  "Parallel (multi-thread) reductions are not exercised"
+ ]
+}

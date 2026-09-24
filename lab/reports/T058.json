@@ -1,0 +1,306 @@
+{
+ "changed_files": [
+  "src/ciw/lab/observation.py",
+  "src/ciw/lab/observation_modes.py",
+  "docs/lab/OBSERVATION.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 4,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Exact agreement with hand-written maps on dyadic inputs; inverse round trip to rounding; refusal of every undeclared combination.",
+ "experiment": "Combine mismatched records; apply declared frame and clock mappings; compare with independent hand-written formulas; attempt mappings with the wrong source frame, kind or epoch.",
+ "failure_modes_checked": [
+  "frame, clock, epoch and basis mismatches",
+  "mapping for another source frame",
+  "mapping across frame kinds",
+  "clock mapping for another epoch",
+  "mapping identity recorded on the result"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "frame_mismatch",
+      "observed_refusal": "frame_mismatch",
+      "passed": true,
+      "reference": "frame mismatch",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "clock_mismatch",
+      "observed_refusal": "clock_mismatch",
+      "passed": true,
+      "reference": "clock mismatch",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "epoch_mismatch",
+      "observed_refusal": "epoch_mismatch",
+      "passed": true,
+      "reference": "epoch mismatch",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "clock_basis_mismatch",
+      "observed_refusal": "clock_basis_mismatch",
+      "passed": true,
+      "reference": "clock basis mismatch",
+      "reference_kind": "refusal"
+     }
+    ]
+   },
+   "claim": "Combining observations across frames, clocks, epochs or time bases without a declared mapping is refused",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact: integer counts, refusal codes or dyadic arithmetic; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "clock_basis_mismatch": "clock_basis_mismatch",
+    "clock_mismatch": "clock_mismatch",
+    "epoch_mismatch": "epoch_mismatch",
+    "frame_mismatch": "frame_mismatch"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "quarter-turn mapping against the hand-written formula (dyadic values)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 4.440892098500626e-16,
+      "passed": true,
+      "reference": "general rotation mapping followed by its inverse (m; bound 16 eps max|p|)",
+      "reference_kind": "invariant",
+      "tolerance": 1.0658141036401503e-14
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 8.881784197001252e-16,
+      "passed": true,
+      "reference": "change of pairwise distances between tracker records under the general rotation (m; bound 16 eps max|p|)",
+      "reference_kind": "invariant",
+      "tolerance": 1.0658141036401503e-14
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "mapping identity missing from mapped records",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "A declared rigid frame mapping is applied exactly on dyadic inputs, preserves distances to rounding and is recorded on the observation",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-14,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "16 eps times the largest coordinate (3 m) for the general rotation; the dyadic quarter turn is exact",
+    "kind": "roundoff",
+    "value": 1.0658141036401503e-14
+   },
+   "unit": null,
+   "value": {
+    "chord_records_carried_unchanged": true,
+    "distance_change_m": 8.881784197001252e-16,
+    "exact_gap_m": 0.0,
+    "identity_recorded": true,
+    "round_trip_error_m": 4.440892098500626e-16
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "mapped time against the declared affine map (dyadic values, s)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "time difference after mapping both records to one basis (s)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Declared clock mappings (arrival to acquisition, then clock to clock) are applied exactly",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "dyadic times and offsets; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "combined_dt_gap_s": 0.0,
+    "final_basis": "acquisition",
+    "final_clock": "clock:tracker",
+    "time_gap_s": 0.0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "mapping_not_applicable",
+      "observed_refusal": "mapping_not_applicable",
+      "passed": true,
+      "reference": "mapping not applicable",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "frame_kind_mismatch",
+      "observed_refusal": "frame_kind_mismatch",
+      "passed": true,
+      "reference": "frame kind mismatch",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "epoch_mismatch",
+      "observed_refusal": "epoch_mismatch",
+      "passed": true,
+      "reference": "epoch mismatch mapping",
+      "reference_kind": "refusal"
+     }
+    ]
+   },
+   "claim": "A mapping declared for another frame, frame kind or epoch is refused",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact: integer counts, refusal codes or dyadic arithmetic; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "epoch_mismatch_mapping": "epoch_mismatch",
+    "frame_kind_mismatch": "frame_kind_mismatch",
+    "mapping_not_applicable": "mapping_not_applicable"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": "Mappings are declared synthetic values; no calibration or synchronization procedure was run."
+   },
+   "claim": "The declared frame and clock mappings equal the real extrinsic calibration and clock synchronization",
+   "domain": "calibration",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 4717,
+   "path": "artifacts/T058/frame-clock-study.json",
+   "sha256": "ffb8223831b33ccdf64ed216f221bbdb1b96d5ebd067cf7ad8cd32a61d36c7f2"
+  }
+ ],
+ "hypothesis": "Observations that carry frame id, clock id, epoch and time basis can be combined only after an explicit declared mapping, which is then applied exactly and recorded.",
+ "input_data": [
+  "Tracker records at dyadic positions",
+  "Quarter-turn and general rotations",
+  "Clock mappings with dyadic offsets (latency 1/128 s, offset -1.5 s)"
+ ],
+ "mathematical_model": "Frame mapping p' = R p + t between frames of one kind (distances invariant, checked on tracker positions; distance-mode records are carried unchanged by design); clock mapping t' = rate t + offset from (clock, epoch, basis) to another; arrival -> acquisition by the declared latency.",
+ "number": 58,
+ "numerical_result": "exact gap 0.0, round trip 4.4e-16 m and distance change 8.9e-16 m (bound 1.1e-14 m), time gap 0.0 s; refusals ['clock_basis_mismatch', 'clock_mismatch', 'epoch_mismatch', 'frame_kind_mismatch', 'frame_mismatch', 'mapping_not_applicable'].",
+ "observation_model": "Synthetic tracker_measurement and camera_chord_distance records.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/observation.py": "9ebedc1a1693aaa28965ba0c97837ad2d2c45bf0fd360857cf7b32c0993ed5fc",
+   "src/ciw/lab/observation_modes.py": "bfd6aa4471cc876a7ac2fb8790a4a5c4f478c547350b059311f5e6d53702c83e"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T059: retain observations without admitting them as state",
+ "report_id": "sha256:b3c02be99f2eb4d10adce07bd59bbbbad73e3336b2f77963fc02c21319a091db",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "observation",
+ "state": "completed",
+ "task_id": "T058",
+ "tests_passed": [
+  "check: Combining observations across frames, clocks, epochs or time bases without a declared mapping is refused vs frame mismatch",
+  "check: Combining observations across frames, clocks, epochs or time bases without a declared mapping is refused vs clock mismatch",
+  "check: Combining observations across frames, clocks, epochs or time bases without a declared mapping is refused vs epoch mismatch",
+  "check: Combining observations across frames, clocks, epochs or time bases without a declared mapping is refused vs clock basis mismatch",
+  "check: A declared rigid frame mapping is applied exactly on dyadic inputs, preserves distances to rounding and is recorded on the observation vs quarter-turn mapping against the hand-written formula (dyadic values)",
+  "check: A declared rigid frame mapping is applied exactly on dyadic inputs, preserves distances to rounding and is recorded on the observation vs general rotation mapping followed by its inverse (m; bound 16 eps max|p|)",
+  "check: A declared rigid frame mapping is applied exactly on dyadic inputs, preserves distances to rounding and is recorded on the observation vs change of pairwise distances between tracker records under the general rotation (m; bound 16 eps max|p|)",
+  "check: A declared rigid frame mapping is applied exactly on dyadic inputs, preserves distances to rounding and is recorded on the observation vs mapping identity missing from mapped records",
+  "check: Declared clock mappings (arrival to acquisition, then clock to clock) are applied exactly vs mapped time against the declared affine map (dyadic values, s)",
+  "check: Declared clock mappings (arrival to acquisition, then clock to clock) are applied exactly vs time difference after mapping both records to one basis (s)",
+  "check: A mapping declared for another frame, frame kind or epoch is refused vs mapping not applicable",
+  "check: A mapping declared for another frame, frame kind or epoch is refused vs frame kind mismatch",
+  "check: A mapping declared for another frame, frame kind or epoch is refused vs epoch mismatch mapping",
+  "pytest: tests/test_lab_observation.py::test_t058_frame_and_clock_basis"
+ ],
+ "tests_skipped": [],
+ "title": "Track the exact observation frame and clock basis.",
+ "uncertainty": "Exact arithmetic for dyadic inputs; general rotations within 16 eps of the largest coordinate (about 1e-14 m), since each mapped coordinate is rounded.",
+ "unresolved_assumptions": [
+  "Clock rates are exactly 1 (drift not modelled)",
+  "Mappings are static"
+ ]
+}

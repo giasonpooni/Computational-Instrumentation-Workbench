@@ -1,0 +1,276 @@
+{
+ "bundles": [
+  {
+   "bundle_id": "sha256:954c39d69990ad4cce8c3bc853d4a79ac19d2dc4a756c4c484beca68652b2e43",
+   "kind": "numerical-heat",
+   "native": {
+    "bundle_digest": "sha256:954c39d69990ad4cce8c3bc853d4a79ac19d2dc4a756c4c484beca68652b2e43",
+    "configuration": {
+     "alpha": "1/4",
+     "arithmetic": "signed_integer_truncation_toward_zero",
+     "boundary": "fixed_endpoints",
+     "covariance_status": "not_applicable",
+     "unit": "1"
+    },
+    "created_at": "2026-01-01T00:00:00+00:00",
+    "runtimes": {
+     "scr": {
+      "adapter_version": "fabricated-by-ciw-lab",
+      "dependencies": {},
+      "engine": {
+       "byte_count": 1,
+       "sha256": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+       "source_binding": "operator_asserted_not_attested"
+      },
+      "module": "execution.engine",
+      "python_executable": "/fabricated/python",
+      "python_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "python_version": "0.0.0",
+      "repository_root": "/fabricated/not-a-provider-checkout",
+      "revision": "a59aba283b0304faeeb3e5d305087e7709e171ca",
+      "schema": "ciw.subprocess-runtime.v1",
+      "source_root": ".",
+      "source_tree": "0000000000000000000000000000000000000000"
+     }
+    },
+    "schema": "ciw.numerical-heat-session.v1",
+    "session_id": "session-dc75dc040dc1d1274f231cc3f26b78ad",
+    "source": {
+     "evidence": [
+      {
+       "artifact_ref": "sha256:5e7ac6511154cac7e926590c8a839892637e5227298cddd33217f31ce804a5fc",
+       "bytes_b64": "eyJjb25maWd1cmF0aW9uIjp7ImFscGhhIjoiMS80IiwiYXJpdGhtZXRpYyI6InNpZ25lZF9pbnRlZ2VyX3RydW5jYXRpb25fdG93YXJkX3plcm8iLCJib3VuZGFyeSI6ImZpeGVkX2VuZHBvaW50cyIsImNvdmFyaWFuY2Vfc3RhdHVzIjoibm90X2FwcGxpY2FibGUiLCJ1bml0IjoiMSJ9LCJleHBlcmltZW50X2lkIjoiY2l3LWxhYi1mYWJyaWNhdGVkLWhlYXQtY2xhaW0iLCJpbml0aWFsX3ZhbHVlcyI6WzAsMCw2NCwwLDBdLCJzY2hlbWEiOiJjaXcubnVtZXJpY2FsLWhlYXQtc291cmNlLnYxIiwic3RlcHMiOjJ9",
+       "sha256": "sha256:5e7ac6511154cac7e926590c8a839892637e5227298cddd33217f31ce804a5fc"
+      }
+     ],
+     "experiment_digest": "sha256:5e7ac6511154cac7e926590c8a839892637e5227298cddd33217f31ce804a5fc",
+     "experiment_id": "ciw-lab-fabricated-heat-claim"
+    },
+    "steps": [
+     {
+      "execution_id": "execution-3639a730128edf13bda4be35195cf8b7",
+      "input_refs": [
+       "sha256:5e7ac6511154cac7e926590c8a839892637e5227298cddd33217f31ce804a5fc"
+      ],
+      "numerical_result": {
+       "data": {
+        "computation_identity": "4bcab2eeafa392484425ba2087577d59fba928d92e129739c0f1daf9d48a7753",
+        "detail": null,
+        "engine_occurrence": 0,
+        "exit_code": 0,
+        "input_identity": "c64664e247b99090cd0e8e53e55f4af9b750d188a0503ac899d66ecd712f1357",
+        "output": "00000000000000000100000000000000020000000000000003000000000000000000000000000000",
+        "output_identity": "935df9a36bdffbcb25cd37352a90e5ff07a501ab41e14c1a3863f4695a118ceb",
+        "program_identity": "68c9233461778c07f752629c7249b11841ed14c76be46621b99dab9e96b18e28",
+        "specification": {
+         "configuration": "",
+         "input_payload": "020000000500000000000000000000000000000000000000400000000000000000000000000000000000000000000000",
+         "program": "73636f75742e6e61746976652e686561742d646966667573696f6e2d6b65726e656c2e76310a696e7075743a205b737465707320753332204c455d5b6e20753332204c455d5b6e207820693634204c455d3b20333c3d6e3c3d343039363b2073746570733c3d3130303030303b207c757c3c3d325e34300a70657220737465702c204a61636f62692c204469726963686c657420656e64732066697865643a2075275f69203d20755f69202b2028755f7b692d317d202d2032755f69202b20755f7b692b317d292f340a28696e7465676572206469766973696f6e2c207472756e636174696f6e20746f77617264207a65726f3b20616c7068613d312f342077697468696e2073746162696c69747920626f756e6420312f32290a6f75747075743a206e207820693634204c452066696e616c2076616c7565733b206578697420300a6661756c74733a20323d6d616c666f726d65642c20333d6e3c332c20343d6e2f737465707320626f756e642c20353d76616c756520626f756e64"
+        },
+        "specification_identity": "64aa2cd83d00ca17b8bd997b7451cacfcd8fb249f89048f4bac13361410089e1",
+        "status": "completed",
+        "values": [
+         0,
+         1,
+         2,
+         3,
+         0
+        ]
+       },
+       "operation_id": "ciw.numerical-heat.v1"
+      },
+      "numerical_result_id": "sha256:10df0b82b06d725ed46f819ef216a1d8a24935be0739d51dd47452272bbd51a3",
+      "operation_id": "ciw.numerical-heat.v1",
+      "request": {
+       "configuration": {
+        "alpha": "1/4",
+        "arithmetic": "signed_integer_truncation_toward_zero",
+        "boundary": "fixed_endpoints",
+        "covariance_status": "not_applicable",
+        "unit": "1"
+       },
+       "experiment_id": "ciw-lab-fabricated-heat-claim",
+       "initial_values": [
+        0,
+        0,
+        64,
+        0,
+        0
+       ],
+       "schema": "ciw.numerical-heat-source.v1",
+       "steps": 2
+      },
+      "request_sha256": "sha256:5e7ac6511154cac7e926590c8a839892637e5227298cddd33217f31ce804a5fc",
+      "result": {
+       "authority": {
+        "physical_truth": "not_established",
+        "sensor_fusion": "not_performed",
+        "state_admission": "not_performed"
+       },
+       "data": {
+        "computation_identity": "4bcab2eeafa392484425ba2087577d59fba928d92e129739c0f1daf9d48a7753",
+        "detail": null,
+        "engine_occurrence": 0,
+        "exit_code": 0,
+        "input_identity": "c64664e247b99090cd0e8e53e55f4af9b750d188a0503ac899d66ecd712f1357",
+        "output": "00000000000000000100000000000000020000000000000003000000000000000000000000000000",
+        "output_identity": "935df9a36bdffbcb25cd37352a90e5ff07a501ab41e14c1a3863f4695a118ceb",
+        "program_identity": "68c9233461778c07f752629c7249b11841ed14c76be46621b99dab9e96b18e28",
+        "specification": {
+         "configuration": "",
+         "input_payload": "020000000500000000000000000000000000000000000000400000000000000000000000000000000000000000000000",
+         "program": "73636f75742e6e61746976652e686561742d646966667573696f6e2d6b65726e656c2e76310a696e7075743a205b737465707320753332204c455d5b6e20753332204c455d5b6e207820693634204c455d3b20333c3d6e3c3d343039363b2073746570733c3d3130303030303b207c757c3c3d325e34300a70657220737465702c204a61636f62692c204469726963686c657420656e64732066697865643a2075275f69203d20755f69202b2028755f7b692d317d202d2032755f69202b20755f7b692b317d292f340a28696e7465676572206469766973696f6e2c207472756e636174696f6e20746f77617264207a65726f3b20616c7068613d312f342077697468696e2073746162696c69747920626f756e6420312f32290a6f75747075743a206e207820693634204c452066696e616c2076616c7565733b206578697420300a6661756c74733a20323d6d616c666f726d65642c20333d6e3c332c20343d6e2f737465707320626f756e642c20353d76616c756520626f756e64"
+        },
+        "specification_identity": "64aa2cd83d00ca17b8bd997b7451cacfcd8fb249f89048f4bac13361410089e1",
+        "status": "completed",
+        "values": [
+         0,
+         1,
+         2,
+         3,
+         0
+        ]
+       },
+       "execution_ref": "execution-3639a730128edf13bda4be35195cf8b7",
+       "input_refs": [
+        "sha256:5e7ac6511154cac7e926590c8a839892637e5227298cddd33217f31ce804a5fc"
+       ],
+       "operation_id": "ciw.numerical-heat.v1",
+       "result_id": "sha256:9376dae8896da4efed21b504d4132de9dfac71fdf67961dc2cf4240d14b3b4f2",
+       "schema": "ciw.declared-workload-result.v1"
+      },
+      "result_id": "sha256:9376dae8896da4efed21b504d4132de9dfac71fdf67961dc2cf4240d14b3b4f2",
+      "result_sha256": "sha256:681f8ad420d0590cd242759ab7f2be626e7892292b20aa1ab0419219cd6e160e",
+      "runtime_ref": "scr"
+     }
+    ],
+    "verification": {
+     "authority": {
+      "physical_truth": "not_established",
+      "sensor_fusion": "not_performed",
+      "state_admission": "not_performed"
+     },
+     "independent": false,
+     "method": "same_runtime_fresh_occurrence_reproduction",
+     "outcome": "passed",
+     "reproduction": {
+      "execution_id": "execution-b9a5217a4398f397f8607c4ba7962468",
+      "input_refs": [
+       "sha256:5e7ac6511154cac7e926590c8a839892637e5227298cddd33217f31ce804a5fc"
+      ],
+      "numerical_result": {
+       "data": {
+        "computation_identity": "4bcab2eeafa392484425ba2087577d59fba928d92e129739c0f1daf9d48a7753",
+        "detail": null,
+        "engine_occurrence": 0,
+        "exit_code": 0,
+        "input_identity": "c64664e247b99090cd0e8e53e55f4af9b750d188a0503ac899d66ecd712f1357",
+        "output": "00000000000000000100000000000000020000000000000003000000000000000000000000000000",
+        "output_identity": "935df9a36bdffbcb25cd37352a90e5ff07a501ab41e14c1a3863f4695a118ceb",
+        "program_identity": "68c9233461778c07f752629c7249b11841ed14c76be46621b99dab9e96b18e28",
+        "specification": {
+         "configuration": "",
+         "input_payload": "020000000500000000000000000000000000000000000000400000000000000000000000000000000000000000000000",
+         "program": "73636f75742e6e61746976652e686561742d646966667573696f6e2d6b65726e656c2e76310a696e7075743a205b737465707320753332204c455d5b6e20753332204c455d5b6e207820693634204c455d3b20333c3d6e3c3d343039363b2073746570733c3d3130303030303b207c757c3c3d325e34300a70657220737465702c204a61636f62692c204469726963686c657420656e64732066697865643a2075275f69203d20755f69202b2028755f7b692d317d202d2032755f69202b20755f7b692b317d292f340a28696e7465676572206469766973696f6e2c207472756e636174696f6e20746f77617264207a65726f3b20616c7068613d312f342077697468696e2073746162696c69747920626f756e6420312f32290a6f75747075743a206e207820693634204c452066696e616c2076616c7565733b206578697420300a6661756c74733a20323d6d616c666f726d65642c20333d6e3c332c20343d6e2f737465707320626f756e642c20353d76616c756520626f756e64"
+        },
+        "specification_identity": "64aa2cd83d00ca17b8bd997b7451cacfcd8fb249f89048f4bac13361410089e1",
+        "status": "completed",
+        "values": [
+         0,
+         1,
+         2,
+         3,
+         0
+        ]
+       },
+       "operation_id": "ciw.numerical-heat.v1"
+      },
+      "numerical_result_id": "sha256:10df0b82b06d725ed46f819ef216a1d8a24935be0739d51dd47452272bbd51a3",
+      "operation_id": "ciw.numerical-heat.v1",
+      "request": {
+       "configuration": {
+        "alpha": "1/4",
+        "arithmetic": "signed_integer_truncation_toward_zero",
+        "boundary": "fixed_endpoints",
+        "covariance_status": "not_applicable",
+        "unit": "1"
+       },
+       "experiment_id": "ciw-lab-fabricated-heat-claim",
+       "initial_values": [
+        0,
+        0,
+        64,
+        0,
+        0
+       ],
+       "schema": "ciw.numerical-heat-source.v1",
+       "steps": 2
+      },
+      "request_sha256": "sha256:5e7ac6511154cac7e926590c8a839892637e5227298cddd33217f31ce804a5fc",
+      "result": {
+       "authority": {
+        "physical_truth": "not_established",
+        "sensor_fusion": "not_performed",
+        "state_admission": "not_performed"
+       },
+       "data": {
+        "computation_identity": "4bcab2eeafa392484425ba2087577d59fba928d92e129739c0f1daf9d48a7753",
+        "detail": null,
+        "engine_occurrence": 0,
+        "exit_code": 0,
+        "input_identity": "c64664e247b99090cd0e8e53e55f4af9b750d188a0503ac899d66ecd712f1357",
+        "output": "00000000000000000100000000000000020000000000000003000000000000000000000000000000",
+        "output_identity": "935df9a36bdffbcb25cd37352a90e5ff07a501ab41e14c1a3863f4695a118ceb",
+        "program_identity": "68c9233461778c07f752629c7249b11841ed14c76be46621b99dab9e96b18e28",
+        "specification": {
+         "configuration": "",
+         "input_payload": "020000000500000000000000000000000000000000000000400000000000000000000000000000000000000000000000",
+         "program": "73636f75742e6e61746976652e686561742d646966667573696f6e2d6b65726e656c2e76310a696e7075743a205b737465707320753332204c455d5b6e20753332204c455d5b6e207820693634204c455d3b20333c3d6e3c3d343039363b2073746570733c3d3130303030303b207c757c3c3d325e34300a70657220737465702c204a61636f62692c204469726963686c657420656e64732066697865643a2075275f69203d20755f69202b2028755f7b692d317d202d2032755f69202b20755f7b692b317d292f340a28696e7465676572206469766973696f6e2c207472756e636174696f6e20746f77617264207a65726f3b20616c7068613d312f342077697468696e2073746162696c69747920626f756e6420312f32290a6f75747075743a206e207820693634204c452066696e616c2076616c7565733b206578697420300a6661756c74733a20323d6d616c666f726d65642c20333d6e3c332c20343d6e2f737465707320626f756e642c20353d76616c756520626f756e64"
+        },
+        "specification_identity": "64aa2cd83d00ca17b8bd997b7451cacfcd8fb249f89048f4bac13361410089e1",
+        "status": "completed",
+        "values": [
+         0,
+         1,
+         2,
+         3,
+         0
+        ]
+       },
+       "execution_ref": "execution-b9a5217a4398f397f8607c4ba7962468",
+       "input_refs": [
+        "sha256:5e7ac6511154cac7e926590c8a839892637e5227298cddd33217f31ce804a5fc"
+       ],
+       "operation_id": "ciw.numerical-heat.v1",
+       "result_id": "sha256:d9b9ce03bb6d7337ca6c55f13201dd82dbbde900fc667370b9bc481753b201c7",
+       "schema": "ciw.declared-workload-result.v1"
+      },
+      "result_id": "sha256:d9b9ce03bb6d7337ca6c55f13201dd82dbbde900fc667370b9bc481753b201c7",
+      "result_sha256": "sha256:03423b6848c58dfa9bfe3157d6b21b8456e47cdc79af47bc4f216158a812d28a",
+      "runtime_ref": "scr"
+     },
+     "runtime_digest": "sha256:76d8575ea1f2031291ef3ee7f5bc7d1668d2521184254c7e7db0519fe22b2086",
+     "schema": "ciw.declared-workload-verification.v1",
+     "subject_ref": "sha256:954c39d69990ad4cce8c3bc853d4a79ac19d2dc4a756c4c484beca68652b2e43",
+     "verification_id": "sha256:6ceb31c805d5a3fef507ec319552fc2871e27dce20d60d9a2e208b0fdee42c5f"
+    }
+   },
+   "source_id": "source:sha256:98e2167765a7fe4e7e7084c23a5d3c7820a58484c39601b46b106b7cc70344ec",
+   "upstream_bundle_id": null
+  }
+ ],
+ "revision": 2,
+ "schema": "ciw.retained-workbench.v1",
+ "sources": [
+  {
+   "byte_count": 291,
+   "bytes_b64": "eyJjb25maWd1cmF0aW9uIjp7ImFscGhhIjoiMS80IiwiYXJpdGhtZXRpYyI6InNpZ25lZF9pbnRlZ2VyX3RydW5jYXRpb25fdG93YXJkX3plcm8iLCJib3VuZGFyeSI6ImZpeGVkX2VuZHBvaW50cyIsImNvdmFyaWFuY2Vfc3RhdHVzIjoibm90X2FwcGxpY2FibGUiLCJ1bml0IjoiMSJ9LCJleHBlcmltZW50X2lkIjoiY2l3LWxhYi1mYWJyaWNhdGVkLWhlYXQtY2xhaW0iLCJpbml0aWFsX3ZhbHVlcyI6WzAsMCw2NCwwLDBdLCJzY2hlbWEiOiJjaXcubnVtZXJpY2FsLWhlYXQtc291cmNlLnYxIiwic3RlcHMiOjJ9",
+   "evidence_id": "sha256:5e7ac6511154cac7e926590c8a839892637e5227298cddd33217f31ce804a5fc",
+   "kind": "numerical-heat",
+   "label": "Fabricated heat claim (ciw.lab counterexample)",
+   "schema": "ciw.workbench-source.v1",
+   "source_id": "source:sha256:98e2167765a7fe4e7e7084c23a5d3c7820a58484c39601b46b106b7cc70344ec",
+   "source_schema": "ciw.numerical-heat-source.v1"
+  }
+ ]
+}

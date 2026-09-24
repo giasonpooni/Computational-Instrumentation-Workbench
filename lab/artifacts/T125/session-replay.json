@@ -1,0 +1,134 @@
+{
+ "bundle_count": 8,
+ "fixtures": {
+  "baseline": {
+   "bundle_digests": [
+    "sha256:be174e73a9057720e71c4828d66aba208def3ba75d45f908dc09155a8ec65f4b",
+    "sha256:0e823aa0326b48d99285ac598fdf5c6a1ad324aba0f70463342adee7389ba7a9"
+   ],
+   "direct_numerical_result_id": "sha256:a928a6f8a5b5c1318e61b0a716ce4887c4d2d0fe5e86ec451a148efd023a8199",
+   "execution_ids": [
+    "execution-8c58c2ecd2414552b4828aa518fe084b",
+    "execution-25bc9a7d552a48a4a3cd6d5e0cf5f9a5",
+    "execution-e45281b29f95492f8c599e365c4826f8",
+    "execution-f35a2008064c43d2848c250b89182360"
+   ],
+   "fresh_hardware_measurement": false,
+   "numerical_result_ids": [
+    "sha256:a928a6f8a5b5c1318e61b0a716ce4887c4d2d0fe5e86ec451a148efd023a8199",
+    "sha256:a928a6f8a5b5c1318e61b0a716ce4887c4d2d0fe5e86ec451a148efd023a8199",
+    "sha256:a928a6f8a5b5c1318e61b0a716ce4887c4d2d0fe5e86ec451a148efd023a8199",
+    "sha256:a928a6f8a5b5c1318e61b0a716ce4887c4d2d0fe5e86ec451a148efd023a8199"
+   ],
+   "receipt_admission": "not_performed",
+   "receipt_numerical_match": true,
+   "result_ids": [
+    "sha256:c7292d4d5998459b4bae888a3495a36276ec0de5ba63a4ee626519d1f4c02192",
+    "sha256:7a8f092f9a47a4abcdac222f9e8eda145a93e88e4adff6da48403c4868042288"
+   ],
+   "verification_independent": [
+    false,
+    false
+   ],
+   "verification_method": "fresh_analysis_of_same_retained_measurement"
+  },
+  "missing": {
+   "bundle_digests": [
+    "sha256:83ec56b5e25b4956c7a83719108fae06d4c0dd256032ff70f1fce84007cc2084",
+    "sha256:8ba22f4a72ba0509e443f2e56a056476650ab5e2cdc90912038d26bdb8b31683"
+   ],
+   "direct_numerical_result_id": "sha256:a266555ab180c46d9f1ec9ed97ea7a868dc8dc5f9ade8108d536f097854268a3",
+   "execution_ids": [
+    "execution-cab1b9759d174e13b86259c60f8c655d",
+    "execution-79cea35e0ccf43309da577feb44925eb",
+    "execution-daa25bf4f2e44826a5cc0c31bed15af2",
+    "execution-85f98eba3bb84f15aae61a1964c1e733"
+   ],
+   "fresh_hardware_measurement": false,
+   "numerical_result_ids": [
+    "sha256:a266555ab180c46d9f1ec9ed97ea7a868dc8dc5f9ade8108d536f097854268a3",
+    "sha256:a266555ab180c46d9f1ec9ed97ea7a868dc8dc5f9ade8108d536f097854268a3",
+    "sha256:a266555ab180c46d9f1ec9ed97ea7a868dc8dc5f9ade8108d536f097854268a3",
+    "sha256:a266555ab180c46d9f1ec9ed97ea7a868dc8dc5f9ade8108d536f097854268a3"
+   ],
+   "receipt_admission": "not_performed",
+   "receipt_numerical_match": true,
+   "result_ids": [
+    "sha256:78836a3c37843d95ad89105057393e12bf9b792dbfd53aa244e9886ae3338117",
+    "sha256:04ec463bd6feee57107089dc7c1c254348c5f75a29dfe4ab90ce92f6db01d233"
+   ],
+   "verification_independent": [
+    false,
+    false
+   ],
+   "verification_method": "fresh_analysis_of_same_retained_measurement"
+  },
+  "reset": {
+   "bundle_digests": [
+    "sha256:d17c37959452fb09a6d007670b6a63d545567e58a2303646169a5869b213cb7a",
+    "sha256:5ee96464941694a629930fba345b7bfd569f0f1736fa255678a60a4e33ddc58e"
+   ],
+   "direct_numerical_result_id": "sha256:33154a18a9f28822dfc7723a5cbcbdb0bda6bfeacbba43010ea34e3b8956f15d",
+   "execution_ids": [
+    "execution-1ccb9728626342fb861b721f6993f317",
+    "execution-415e30128de74fc29825f4d9bd38bb9b",
+    "execution-d4d7d03f431244e398cdb6ac630badc9",
+    "execution-a21f78910ecb4ff4a7b3e158220bfbed"
+   ],
+   "fresh_hardware_measurement": false,
+   "numerical_result_ids": [
+    "sha256:33154a18a9f28822dfc7723a5cbcbdb0bda6bfeacbba43010ea34e3b8956f15d",
+    "sha256:33154a18a9f28822dfc7723a5cbcbdb0bda6bfeacbba43010ea34e3b8956f15d",
+    "sha256:33154a18a9f28822dfc7723a5cbcbdb0bda6bfeacbba43010ea34e3b8956f15d",
+    "sha256:33154a18a9f28822dfc7723a5cbcbdb0bda6bfeacbba43010ea34e3b8956f15d"
+   ],
+   "receipt_admission": "not_performed",
+   "receipt_numerical_match": true,
+   "result_ids": [
+    "sha256:3d6f2f444aeee04d8fbc056d2ce90b49a8eb0ec70e2d8e8d552531a05cc79a1b",
+    "sha256:17f1902aa92b7aeb181ea5dd502bc168669bdc3af73eaf2088cb4fbb36825f14"
+   ],
+   "verification_independent": [
+    false,
+    false
+   ],
+   "verification_method": "fresh_analysis_of_same_retained_measurement"
+  },
+  "under-target": {
+   "bundle_digests": [
+    "sha256:e2cad51c44f8b44e630dde228037ed805c558b1a0d9c96e533924e541274bc95",
+    "sha256:5f8c0ea27e9962fef1948d873575844d6cf752f080f863494bef6a5bc7ea8e37"
+   ],
+   "direct_numerical_result_id": "sha256:d4beb3ce3d83674fb48df6810faee5a386b29efbebda43891f8b7a7d0fa6d8d0",
+   "execution_ids": [
+    "execution-9bb9fa475c014917a133bf5dab734dc5",
+    "execution-d595973fa6734566913dc9f3cb461680",
+    "execution-2916fe78b4f349f6b94ab604bf9c2d0a",
+    "execution-3dffcfa16f2341c98913af2a383147e8"
+   ],
+   "fresh_hardware_measurement": false,
+   "numerical_result_ids": [
+    "sha256:d4beb3ce3d83674fb48df6810faee5a386b29efbebda43891f8b7a7d0fa6d8d0",
+    "sha256:d4beb3ce3d83674fb48df6810faee5a386b29efbebda43891f8b7a7d0fa6d8d0",
+    "sha256:d4beb3ce3d83674fb48df6810faee5a386b29efbebda43891f8b7a7d0fa6d8d0",
+    "sha256:d4beb3ce3d83674fb48df6810faee5a386b29efbebda43891f8b7a7d0fa6d8d0"
+   ],
+   "receipt_admission": "not_performed",
+   "receipt_numerical_match": true,
+   "result_ids": [
+    "sha256:8727ae8beb1ca106a84628157a31ef0f49bc782a1dfed138352b8e84ac5ec9d6",
+    "sha256:648d2c9209c95f26ac2bc572aa8712c16cf836949c364a2ad18480cb4b5f0dc4"
+   ],
+   "verification_independent": [
+    false,
+    false
+   ],
+   "verification_method": "fresh_analysis_of_same_retained_measurement"
+  }
+ },
+ "refusals": {
+  "edited_and_resealed_bundle": "Retained energy analysis binding differs",
+  "edited_bundle": "Energy analysis bundle identity, schema or size differs"
+ },
+ "restored_equal": true
+}

@@ -1,0 +1,324 @@
+{
+ "changed_files": [
+  "src/ciw/lab/exchange_provenance_bundles.py",
+  "src/ciw/lab/exchange_provenance_bundles_fixtures.py",
+  "src/ciw/lab/exchange_provenance_bundles_providers.py"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 1,
+   "not_established": 2,
+   "numerically_verified": 2,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Exit 0; lock unchanged; clean checkout; equal digests; output equals the integer reference.",
+ "experiment": "Bind --provider scr=<checkout> with cargo on PATH; command: CARGO_TARGET_DIR=<tmp> cargo build --release --locked --offline --manifest-path <scr>/crates/Cargo.toml -p execution-cli. The SP1 proved-heat build is recorded as blocked with its requirements and never attempted.",
+ "failure_modes_checked": [
+  "lockfile rewrite",
+  "network access (--offline)",
+  "writes into the checkout",
+  "non-deterministic build output",
+  "engine output drift",
+  "build timeout"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "builds with a nonzero or missing exit code",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "builds without an execution-cli binary",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "notes": {
+     "provider": {
+      "binary_sha256": [
+       "b9f40b3094ecf4b793676c766ffd559dc69abc4fada564c1bde94e79c6f0b201"
+      ],
+      "repository": "giasonpooni/Scientific-Computation-Runtime",
+      "revision": "a59aba283b0304faeeb3e5d305087e7709e171ca",
+      "source_tree": "4068a711534932e8d89bb0d87d373376dafdf6cd"
+     }
+    }
+   },
+   "claim": "cargo build --release --locked --offline of SCR execution-cli succeeds at the pinned revision",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact counts, digests and string comparisons; no rounding is involved",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": {
+    "builds": 2,
+    "cargo_lock_sha256": "24b1db68d762d3457eb40465dae6c3edc8a2da2925d42f3f794d090d18a5f2bc",
+    "exit_codes": [
+     0,
+     0
+    ],
+    "flags": [
+     "--release",
+     "--locked",
+     "--offline"
+    ],
+    "package": "execution-cli"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "Cargo.lock changed by the build",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "checkout dirty, modified or with new untracked files after the build",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "builds that failed",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "distinct binary digests beyond one",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "The locked build leaves Cargo.lock and the checkout unchanged and is bit-reproducible across fresh target directories",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact counts, digests and string comparisons; no rounding is involved",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": {
+    "cargo_lock_unchanged": true,
+    "checkout_clean": true,
+    "distinct_binary_digests": 1
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "independent_check": {
+     "checker": {
+      "implementation": "ciw.lab.exchange_provenance_bundles_fixtures.heat_reference",
+      "revision": "0.1.0"
+     },
+     "comparison": "abs_le",
+     "observed": 0.0,
+     "passed": true,
+     "producer": {
+      "implementation": "Scientific-Computation-Runtime execution-cli (locked build)",
+      "revision": "a59aba283b0304faeeb3e5d305087e7709e171ca"
+     },
+     "reference": "cells differing from the integer Jacobi reference",
+     "reference_kind": "exact_arithmetic",
+     "tolerance": 0.0
+    }
+   },
+   "claim": "The freshly built engine's heat output equals an independent integer reference",
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact int64 arithmetic compared cell by cell",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": [
+    0,
+    219,
+    313,
+    219,
+    0
+   ]
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "The SP1 proved-heat locked build was not attempted",
+   "domain": "computational_pipeline",
+   "evidence_status": "not_established",
+   "expected_not_established": true,
+   "uncertainty": null,
+   "unit": null,
+   "value": {
+    "attempted": false,
+    "requirements": {
+     "command": "cargo +1.94.0 build --release --locked --manifest-path <scr>/zk/Cargo.toml --target-dir <proof-target> -p sp1-adapter --bin sp1-host",
+     "gate": "scripts/check_proved_heat.py via .github/workflows/proved-heat.yml",
+     "guest_recipe": {
+      "identity": "6e5d1687bcc55243d712553a2b7768b6c587a76418bb48a7a2c44224470d423d",
+      "path": "zk/recipes/sp1-heat.recipe",
+      "verify": "execution.build.verify_build(recipe, <guest sha256>, repo_root=<scr>)"
+     },
+     "guest_sha256": "a14e3750da7e221d31842bd6cf983fcc8c0f530b2811537e2a9a9fe803dacf82",
+     "network": "crates.io and git dependencies (the zk workspace is not --offline), github.com clones of SCR and SP1, and the github.com release download of the Succinct compiler archive",
+     "resources": {
+      "available_memory_bytes_at_least": 7516192768,
+      "free_disk_bytes_at_least": 21474836480
+     },
+     "source": ".github/workflows/proved-heat.yml",
+     "sp1_checkout": {
+      "path": "<scr>/../notationsystems/SP1-zero-knowledge-virtual-machine",
+      "repository": "https://github.com/succinctlabs/sp1.git",
+      "revision": "b38b61209e45e969289e70d5cf79dc763460bc41",
+      "tree": "7deca3aced8d8eb84dfcede98285a192c862ea4c"
+     },
+     "succinct_compiler_archive": {
+      "install": "tar -xzf <archive> -C <dir>; rustup toolchain link succinct <dir>; rustc +succinct -vV",
+      "sha256": "12c94435d41bfe4e20131bbcce40b35abd32270ad792befc653af4e3fabc192f",
+      "url": "https://github.com/succinctlabs/rust/releases/download/succinct-1.94.0-64bit/rust-toolchain-x86_64-unknown-linux-gnu.tar.gz"
+     },
+     "system_packages": [
+      "build-essential",
+      "clang",
+      "libclang-dev",
+      "libssl-dev",
+      "pkg-config",
+      "protobuf-compiler"
+     ],
+     "toolchain": "rustup toolchain 1.94.0 (minimal profile) plus the linked succinct toolchain"
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "A successful locked build makes the engine acceptable for production use",
+   "domain": "production_acceptance",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": "not decided by the workbench"
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 1231,
+   "path": "artifacts/T099/cargo-build.json",
+   "sha256": "3ead025fc141d18164ff40c947c52a0af9c80cfedf41d3c89e07f78f20f24e62"
+  },
+  {
+   "bytes": 1890,
+   "path": "artifacts/T099/sp1-requirements.json",
+   "sha256": "daf1c53c6cf7e195b93b8ba6b1de63bb91b1cd1c0b21e46265ffec41883b552b"
+  }
+ ],
+ "hypothesis": "The pinned SCR execution engine builds with cargo build --release --locked --offline, leaves the checkout and Cargo.lock unchanged, is reproducible across target directories and executes the heat kernel correctly.",
+ "input_data": [
+  "SCR checkout at a59aba283b0304faeeb3e5d305087e7709e171ca",
+  "Rust toolchain (cargo, rustc)"
+ ],
+ "mathematical_model": "Cargo resolution fixed by crates/Cargo.lock (no external crates); determinism = equal binary digests.",
+ "number": 99,
+ "numerical_result": "2/2 locked offline builds succeeded; distinct binary digests 1; Cargo.lock 24b1db68d762d3457eb40465dae6c3edc8a2da2925d42f3f794d090d18a5f2bc; survey output [0, 219, 313, 219, 0]; SP1 build not attempted.",
+ "observation_model": "cargo exit codes, Cargo.lock digests, binary digests, checkout cleanliness, engine output.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw": {
+   "ciw_version": "0.1.0",
+   "implementation": "ciw.lab",
+   "mpmath": "1.3.0",
+   "numpy": "2.4.3",
+   "python": "3.12.3",
+   "scipy": "1.16.2",
+   "sources": {
+    "src/ciw/lab/exchange_provenance_bundles.py": "a505b35560263c1b473912f79e61b15b7e474f8eb1807e691847e4c69791c2d3",
+    "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "f30205e8305a225f24d94b06cba8b519ecea4680ca723aaca3591ff707d04e1c",
+    "src/ciw/lab/exchange_provenance_bundles_providers.py": "c9a30c9dc0751a22ff578a8c9a01abf06df582a1f1e835c1f1c0c33ed176f94b"
+   },
+   "sympy": "1.14.0"
+  },
+  "requirement_probes": {
+   "provider:scr": true,
+   "tool:cargo": true
+  },
+  "scr": {
+   "cargo": "cargo 1.94.1 (29ea6fb6a 2026-03-24)",
+   "engine_sha256": "b9f40b3094ecf4b793676c766ffd559dc69abc4fada564c1bde94e79c6f0b201",
+   "head": "a59aba283b0304faeeb3e5d305087e7709e171ca",
+   "rustc": "rustc 1.94.1 (e408947bf 2026-03-25)",
+   "tree": "4068a711534932e8d89bb0d87d373376dafdf6cd"
+  }
+ },
+ "recommended_next_task": "Run the SP1 proved-heat gate (scripts/check_proved_heat.py) on a provisioned machine; then T100.",
+ "report_id": "sha256:e298a463597d2315ef336413a8a8730ccf99a91d8b60a939a6172f5ecba650a7",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "exchange-provenance",
+ "state": "partial",
+ "task_id": "T099",
+ "tests_passed": [
+  "check: cargo build --release --locked --offline of SCR execution-cli succeeds at the pinned revision vs builds with a nonzero or missing exit code",
+  "check: cargo build --release --locked --offline of SCR execution-cli succeeds at the pinned revision vs builds without an execution-cli binary",
+  "check: The locked build leaves Cargo.lock and the checkout unchanged and is bit-reproducible across fresh target directories vs Cargo.lock changed by the build",
+  "check: The locked build leaves Cargo.lock and the checkout unchanged and is bit-reproducible across fresh target directories vs checkout dirty, modified or with new untracked files after the build",
+  "check: The locked build leaves Cargo.lock and the checkout unchanged and is bit-reproducible across fresh target directories vs builds that failed",
+  "check: The locked build leaves Cargo.lock and the checkout unchanged and is bit-reproducible across fresh target directories vs distinct binary digests beyond one",
+  "independent: The freshly built engine's heat output equals an independent integer reference vs ciw.lab.exchange_provenance_bundles_fixtures.heat_reference",
+  "pytest: tests/test_lab_exchange_provenance_bundles.py::test_t099_locked_offline_scr_build",
+  "pytest: tests/test_lab_exchange_provenance_bundles.py::test_t097_t099_refuse_a_non_repository_scr_binding"
+ ],
+ "tests_skipped": [],
+ "title": "Verify `cargo build --locked`.",
+ "uncertainty": "Exact digests and integers; the binary digest depends on the Rust toolchain and is recorded as provenance.",
+ "unresolved_assumptions": [
+  "The binary digest depends on the Rust toolchain recorded in provider_runtime_identity; CI pins rustc 1.94.0 for the proved-heat gate, and other toolchains may produce different digests.",
+  "The SP1 proved-heat build needs crates.io and GitHub release downloads, the SP1 checkout, the Succinct compiler archive, protoc and >= 7 GiB RAM / 20 GiB disk (.github/workflows/proved-heat.yml); host probes are in sp1-requirements.json."
+ ]
+}

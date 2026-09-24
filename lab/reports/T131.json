@@ -1,0 +1,328 @@
+{
+ "changed_files": [
+  "src/ciw/lab/manufacturing.py",
+  "src/ciw/lab/manufacturing_geometry.py",
+  "src/ciw/lab/manufacturing_metrology.py",
+  "src/ciw/lab/manufacturing_records.py",
+  "docs/lab/MANUFACTURING.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 2,
+   "numerically_verified": 4,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "SS_total = SS_P + SS_O + SS_PO + SS_E exactly; raw component estimators are unbiased.",
+ "experiment": "Simulate studies, estimate components, compare means with truth in standard errors, record the %GRR sampling distribution and the truncation frequency, and check refusals of unbalanced data.",
+ "failure_modes_checked": [
+  "SS decomposition",
+  "negative variance estimates (truncation)",
+  "unbalanced or missing data (refused)",
+  "wide single-study interval"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.03525026090474009,
+      "passed": true,
+      "reference": "(mean raw estimate - true) / (4 SE), part",
+      "reference_kind": "analytic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.1063032094613094,
+      "passed": true,
+      "reference": "(mean raw estimate - true) / (4 SE), operator",
+      "reference_kind": "analytic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.13506547647164055,
+      "passed": true,
+      "reference": "(mean raw estimate - true) / (4 SE), interaction",
+      "reference_kind": "analytic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.1622966402032601,
+      "passed": true,
+      "reference": "(mean raw estimate - true) / (4 SE), repeatability",
+      "reference_kind": "analytic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 5.1179993929464675e-14,
+      "passed": true,
+      "reference": "max relative SS decomposition residual",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1e-12
+     }
+    ],
+    "generator": {
+     "design": [
+      10,
+      3,
+      3
+     ],
+     "name": "crossed random-effects study",
+     "seed": 20260926,
+     "sigma_mm": {
+      "interaction": 0.004,
+      "operator": 0.006,
+      "part": 0.05,
+      "repeatability": 0.01
+     },
+     "studies": 2000
+    }
+   },
+   "claim": "ANOVA Gage R&R recovers the declared variance components on synthetic studies",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-15,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "95% half-widths of the mean component estimates (mm^2)",
+    "kind": "monte_carlo_95ci",
+    "value": {
+     "interaction": 7.671426652178327e-07,
+     "operator": 1.741624408413621e-06,
+     "part": 5.2310966234209314e-05,
+     "repeatability": 7.786399454076466e-07
+    }
+   },
+   "unit": "mm^2",
+   "value": {
+    "interaction": 1.5788541857960467e-05,
+    "operator": 3.562216272593771e-05,
+    "part": 0.0025037632147100718,
+    "repeatability": 9.974210072026998e-05
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": -0.21302187156244962,
+      "passed": true,
+      "reference": "(MC mean of the raw GRR variance - truth) / (4 SE)",
+      "reference_kind": "analytic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.1518831374819499,
+      "passed": true,
+      "reference": "(MC variance of the raw GRR estimate - exact sum c^2 2 E[MS]^2 / df) / (4 SE)",
+      "reference_kind": "analytic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "signed_ge",
+      "observed": 7.45835199314158,
+      "passed": true,
+      "reference": "true %GRR inside the MC 5-95% interval (distance to the nearer end)",
+      "reference_kind": "analytic",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "name": "crossed random-effects study",
+     "seed": 20260926,
+     "studies": 2000
+    }
+   },
+   "claim": "Sampling spread of %GRR from a single 10 x 3 x 3 study",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "95% half-width of the 5% and 95% quantile levels (probability)",
+    "kind": "monte_carlo_95ci",
+    "value": 0.009551858457912784
+   },
+   "unit": "%",
+   "value": {
+    "0.05": 16.48224820522897,
+    "0.5": 24.456209604376856,
+    "0.95": 38.926069261852476,
+    "true": 23.94060019837055
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": -0.18843276957533908,
+      "passed": true,
+      "reference": "(MC fraction - F(2, 18) probability) / (4 binomial SE)",
+      "reference_kind": "analytic",
+      "tolerance": 1.0
+     }
+    ],
+    "generator": {
+     "name": "crossed random-effects study",
+     "seed": 20260926,
+     "studies": 2000
+    }
+   },
+   "claim": "Fraction of 10 x 3 x 3 studies whose raw operator component is negative (truncated to zero)",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 1e-09
+   },
+   "uncertainty": {
+    "basis": "binomial 95% half-width",
+    "kind": "monte_carlo_95ci",
+    "value": 0.013866306330090181
+   },
+   "unit": null,
+   "value": {
+    "f_distribution": 0.11283238062358969,
+    "monte_carlo": 0.1075
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "unbalanced_design",
+      "observed_refusal": "unbalanced_design",
+      "passed": true,
+      "reference": "two-way array without replicates",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "unbalanced_design",
+      "observed_refusal": "unbalanced_design",
+      "passed": true,
+      "reference": "missing reading",
+      "reference_kind": "refusal"
+     }
+    ]
+   },
+   "claim": "Gage R&R refuses unbalanced or incomplete designs",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact logic or integer count",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": "refusals",
+   "value": 2
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "The real gage (instrument, fixture and operators) has %GRR below 10% on the coupon features",
+   "domain": "sensor_performance",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "The measurement system is approved for production use",
+   "domain": "production_acceptance",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": "not_performed"
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 1935,
+   "path": "artifacts/T131/gage-rr.json",
+   "sha256": "f9859ec7eaa18084ab5a46495660767049b41bc1bfae52884349f308811cc82b"
+  }
+ ],
+ "hypothesis": "The ANOVA method recovers the variance components of a balanced crossed study without bias (before truncation), and a single 10 x 3 x 3 study estimates %GRR only within a wide sampling interval.",
+ "input_data": [
+  "Declared synthetic truth (mm): part 0.050, operator 0.006, interaction 0.004, repeatability 0.010",
+  "Design 10 parts x 3 operators x 3 replicates; 2000 simulated studies (seed 20260928)"
+ ],
+ "mathematical_model": "y_ijk = mu + P_i + O_j + (PO)_ij + e_ijk; expected mean squares give s_e^2 = MS_E, s_po^2 = (MS_PO - MS_E)/r, s_o^2 = (MS_O - MS_PO)/(p r), s_p^2 = (MS_P - MS_PO)/(o r); %GRR = 100 sqrt(GRR / total); ndc = 1.41 s_p / s_GRR.",
+ "number": 131,
+ "numerical_result": "True %GRR 23.94% (ndc 5.72); single-study 90% interval [16.5%, 38.9%]; operator component truncated in 10.8% of studies (F-distribution: 11.3%).",
+ "observation_model": "Synthetic readings only; no gage, operator or part was involved.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/manufacturing.py": "088763a0bcc42bf085c1e228797a5dc0d702b994f2a49e053cbe2b0a5622e25d",
+   "src/ciw/lab/manufacturing_geometry.py": "1db6df2ddf778668da2ffd53a66bcddbff4fc933d6f299e8f283cedc60a9332f",
+   "src/ciw/lab/manufacturing_metrology.py": "afbb6fccf146ca4f47850805c118d2f1bf6186872f381b298ab924a9214257ec",
+   "src/ciw/lab/manufacturing_records.py": "66970104ea454e836c5cbafc3013c90e721c3e96ad7f16780c32250112cac921"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T140: feed measured repeatability into the uncertainty budget once a real study exists (retained via T139).",
+ "report_id": "sha256:54202d4bf05e27bca8e20137db4dabbec3f643ee35c5fd9385754ecdc641817e",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "manufacturing",
+ "state": "completed",
+ "task_id": "T131",
+ "tests_passed": [
+  "check: ANOVA Gage R&R recovers the declared variance components on synthetic studies vs (mean raw estimate - true) / (4 SE), part",
+  "check: ANOVA Gage R&R recovers the declared variance components on synthetic studies vs (mean raw estimate - true) / (4 SE), operator",
+  "check: ANOVA Gage R&R recovers the declared variance components on synthetic studies vs (mean raw estimate - true) / (4 SE), interaction",
+  "check: ANOVA Gage R&R recovers the declared variance components on synthetic studies vs (mean raw estimate - true) / (4 SE), repeatability",
+  "check: ANOVA Gage R&R recovers the declared variance components on synthetic studies vs max relative SS decomposition residual",
+  "check: Sampling spread of %GRR from a single 10 x 3 x 3 study vs (MC mean of the raw GRR variance - truth) / (4 SE)",
+  "check: Sampling spread of %GRR from a single 10 x 3 x 3 study vs (MC variance of the raw GRR estimate - exact sum c^2 2 E[MS]^2 / df) / (4 SE)",
+  "check: Sampling spread of %GRR from a single 10 x 3 x 3 study vs true %GRR inside the MC 5-95% interval (distance to the nearer end)",
+  "check: Fraction of 10 x 3 x 3 studies whose raw operator component is negative (truncated to zero) vs (MC fraction - F(2, 18) probability) / (4 binomial SE)",
+  "check: Gage R&R refuses unbalanced or incomplete designs vs two-way array without replicates",
+  "check: Gage R&R refuses unbalanced or incomplete designs vs missing reading",
+  "pytest: tests/test_lab_manufacturing.py::test_gage_rr_recovers_components_and_refuses_unbalanced",
+  "pytest: tests/test_lab_manufacturing.py::test_every_task_is_registered_and_reports_honestly"
+ ],
+ "tests_skipped": [],
+ "title": "Define repeatability and Gage R&R procedures.",
+ "uncertainty": "Monte Carlo standard errors are in the checks; quantiles are sample quantiles of 2000 studies.",
+ "unresolved_assumptions": [
+  "AIAG interaction pooling (p > 0.25) is not applied; components are reported unpooled.",
+  "Normal random effects; real operator effects may be systematic or drift in time."
+ ]
+}

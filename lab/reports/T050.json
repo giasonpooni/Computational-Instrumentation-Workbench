@@ -1,0 +1,391 @@
+{
+ "changed_files": [
+  "src/ciw/lab/observation.py",
+  "src/ciw/lab/observation_camera.py",
+  "docs/lab/OBSERVATION.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 4,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Implemented displacement equals f(k1 r^3 + k2 r^5); first-order bias law with slopes 2 (radius) and 1 (k1); zero bias after correct undistortion inside the fold radius.",
+ "experiment": "Implementation consistency scan of the displacement; chord bias against the pixel-Jacobian prediction and log-log slopes across image radius and k1; correction with the generating model; fold counterexample with converged undistortion.",
+ "failure_modes_checked": [
+  "sign of k1 (odd symmetry)",
+  "markers leaving the image at large shifts",
+  "tangential terms",
+  "non-invertible distortion inside the image",
+  "undistorted versus distorted radius when locating the fold",
+  "fixed-point undistortion stopped before convergence"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 9.763423403086335e-11,
+      "passed": true,
+      "reference": "|displacement / f(k1 r^3 + k2 r^5) - 1| on the image x-axis (consistency of observation_camera.distort with its defining formula)",
+      "reference_kind": "invariant",
+      "tolerance": 1e-09
+     }
+    ]
+   },
+   "claim": "The implemented radial term displaces an on-axis image point by f (k1 r^3 + k2 r^5), as the Brown-Conrady model defines (implementation consistency check)",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "cancellation in x (1 + k1 r^2) - x at r = 0.02, k1 = 1e-3 (about eps / (k1 r^2))",
+    "kind": "roundoff",
+    "value": 1e-09
+   },
+   "unit": null,
+   "value": {
+    "formula_relative_error": 9.763423403086335e-11
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0030165229150497593,
+      "passed": true,
+      "reference": "max |direct - J_pix delta_pix| / |direct| for |k1| <= 0.1",
+      "reference_kind": "analytic",
+      "tolerance": 0.03
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0005607748971077611,
+      "passed": true,
+      "reference": "|bias(k1) + bias(-k1)| / |bias(k1)| at k1 = 0.01",
+      "reference_kind": "analytic",
+      "tolerance": 0.01
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.036797932462282024,
+      "passed": true,
+      "reference": "log-log slope of mean |bias| (k1 = 0.01) against mean image radius minus the predicted 2 (bias ~ J_pix 3 f k1 r^2 dr)",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 8.015442625597391e-05,
+      "passed": true,
+      "reference": "max over shifts of |log-log slope of mean |bias| against |k1| - 1|",
+      "reference_kind": "analytic",
+      "tolerance": 0.01
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "all shifted markers visible in both images",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "k1": [
+      -0.1,
+      -0.01,
+      0.01,
+      0.1
+     ],
+     "name": "declared rig, 45 deg helix markers shifted across the image",
+     "seed": null,
+     "shifts_m": [
+      [
+       0.0,
+       0.0,
+       0.0
+      ],
+      [
+       0.04,
+       -0.03,
+       0.0
+      ],
+      [
+       0.08,
+       -0.06,
+       0.0
+      ],
+      [
+       0.12,
+       -0.09,
+       0.0
+      ],
+      [
+       0.16,
+       -0.12,
+       0.0
+      ]
+     ]
+    }
+   },
+   "claim": "Uncorrected radial distortion biases chords as J_pix delta_pix to first order: odd and linear in k1 and growing as r^2 with mean image radius",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "radius slope: largest departure of a pairwise slope from the fitted one (r^4 and perspective terms); first order: the O(k1 r^2) residual itself",
+    "kind": "truncation_bound",
+    "value": {
+     "first_order_relative_residual": 0.0030165229150497593,
+     "radius_slope": 0.14487506402273898
+    }
+   },
+   "unit": null,
+   "value": {
+    "first_order_relative_residual": 0.0030165229150497593,
+    "k1_slope_max_error": 8.015442625597391e-05,
+    "mean_abs_bias_k1_0.01_m": [
+     5.911715593521587e-06,
+     2.704263744374505e-05,
+     6.707709457919621e-05,
+     0.0001292508070905076,
+     0.00021767436565220977
+    ],
+    "mean_normalized_radius": [
+     0.06500282509899886,
+     0.13925668420034293,
+     0.2186757477571189,
+     0.29892045493960073,
+     0.37959221775916785
+    ],
+    "odd_symmetry_residual_k1_0.01": 0.0005607748971077611,
+    "pairwise_radius_slopes": [
+     1.9956718253169452,
+     2.0130421340619225,
+     2.098331484278853,
+     2.181672996485021
+    ],
+    "radius_slope": 2.036797932462282
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 5.689893001203927e-16,
+      "passed": true,
+      "reference": "chord error after undistortion with the generating model (m)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     }
+    ]
+   },
+   "claim": "Undistorting with the true Brown-Conrady model (radial and tangential) removes the chord bias",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "fixed-point undistortion converged to rounding (60 iterations at contraction below 0.1)",
+    "kind": "roundoff",
+    "value": 1e-15
+   },
+   "unit": "m",
+   "value": {
+    "corrected_error_m": 5.689893001203927e-16,
+    "uncorrected_bias_m": 0.0015832707250317893
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "signed_le",
+      "observed": -0.036429338333380024,
+      "passed": true,
+      "reference": "distorted radius at the fold, (2/3)/sqrt(-3 k1), minus the image-corner radius (pixel coordinates are distorted coordinates; negative: fold inside the image)",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 0.010487874348958334,
+      "passed": true,
+      "reference": "image fraction beyond the fold circle (pixels without a preimage)",
+      "reference_kind": "invariant",
+      "tolerance": 0.001
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "|r_d(r_other) - r_d(r_true)| (two radii, one distorted radius)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "ge",
+      "observed": 514.6513009019769,
+      "passed": true,
+      "reference": "non-injectivity gap |r_other - r_true| f (px)",
+      "reference_kind": "analytic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "converged fixed-point undistortion (400 iterations) against the monotone-branch preimage r_other",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     }
+    ]
+   },
+   "claim": "Strong barrel distortion (k1 = -0.6) folds inside the image, so the radial model is not invertible there",
+   "counterexample": {
+    "statement": "The Brown-Conrady radial model can be inverted everywhere in the image",
+    "witness": {
+     "distorted_radius": 0.481525,
+     "fold_radius_distorted": 0.4969039949999533,
+     "image_corner_radius": 0.5333333333333333,
+     "k1": -0.6,
+     "r_other": 0.6355619579575096,
+     "r_true": 0.85
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-09
+   },
+   "uncertainty": {
+    "basis": "fraction: change between 2 px and 4 px pixel sampling; r_other: bisection to adjacent doubles",
+    "kind": "truncation_bound",
+    "value": {
+     "image_fraction_beyond_fold": 5.086263020832177e-06,
+     "r_other": 1e-16
+    }
+   },
+   "unit": null,
+   "value": {
+    "fold_radius_distorted": 0.4969039949999533,
+    "image_corner_radius": 0.5333333333333333,
+    "image_fraction_beyond_fold": 0.010487874348958334,
+    "non_injectivity_gap_px": 514.6513009019769,
+    "r_other": 0.6355619579575096,
+    "r_true": 0.85,
+    "undistort_to_other_root": 0.0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": "No lens was measured; higher-order, decentring and temperature effects of real optics are unknown."
+   },
+   "claim": "A two-term radial plus tangential Brown-Conrady model describes a real lens to the required accuracy",
+   "domain": "calibration",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 5570,
+   "path": "artifacts/T050/distortion-study.json",
+   "sha256": "1980ffae15c73ac15a852d221d481d93db114f90b1c5fa055e4f34db08febb53"
+  },
+  {
+   "bytes": 4481,
+   "path": "artifacts/T050/radial-displacement.svg",
+   "sha256": "a055517ec6befc0d7cf379b8f8e4070d4afdf5157d887ac70a3b455b5acc7008"
+  },
+  {
+   "bytes": 1998,
+   "path": "artifacts/T050/chord-bias-vs-radius.svg",
+   "sha256": "d20f003cdfd2a695d94900e62740203dd88bd3afd05ce7bb54ef88edb0287cc1"
+  }
+ ],
+ "hypothesis": "Uncorrected radial distortion displaces pixels by f(k1 r^3 + k2 r^5), producing chord biases that are first order and linear in k1, grow as r^2 with image radius for chords of fixed image extent and vanish when the generating model is inverted; strong barrel distortion makes the model non-invertible inside the image.",
+ "input_data": [
+  "Stereo rig {'focal_px': 2400.0, 'principal_point_px': (1024.0, 768.0), 'image_size_px': (2048, 1536), 'baseline_m': 0.2, 'convergence_distance_m': 0.6}",
+  "Cylinder {'radius_m': 0.1, 'axis': 'world +y', 'front_point_m': (0.1, 0.0, 0.6), 'chart_origin_direction': 'toward the cameras (world -z)'}",
+  "5 markers at s = [0.0, 0.015, 0.03, 0.045, 0.06] m on the 45 deg helix, chord pairs [[0, 2], [0, 4], [1, 3]], cylinder shifted by [[0.0, 0.0, 0.0], [0.04, -0.03, 0.0], [0.08, -0.06, 0.0], [0.12, -0.09, 0.0], [0.16, -0.12, 0.0]] m",
+  "Radial k1 in [-0.1, -0.01, 0.01, 0.1] (k2 = p1 = p2 = 0) for the bias law",
+  "Brown-Conrady model (k1, k2, p1, p2) = [0.05, 0.01, 0.0005, -0.0005] for the correction",
+  "Displacement scan: 12 radii in [0.02, 0.4], k1 in {1e-3, 1e-2, 1e-1} and (k1, k2) = (0.05, 0.02)",
+  "Fold at k1 = -0.6, point at undistorted radius 0.85 on the image diagonal"
+ ],
+ "mathematical_model": "x_d = x (1 + k1 r^2 + k2 r^4) + [2 p1 x y + p2 (r^2 + 2x^2), p1 (r^2 + 2y^2) + 2 p2 x y]; chord bias ~ J_pix delta_pix with J_pix = d chord / d pixels; only displacement differences (between endpoints, and between cameras through disparity) matter, and for radii differing by dr they are f k1 ((r + dr)^3 - r^3) ~ 3 f k1 r^2 dr (slope 2 in r, 1 in k1). r (1 + k1 r^2) peaks at r = 1/sqrt(-3 k1) with distorted radius (2/3)/sqrt(-3 k1); the fold enters an image of corner radius rho when k1 < -4/(27 rho^2).",
+ "number": 50,
+ "numerical_result": "formula consistency 9.8e-11; first-order residual 0.30%; bias at k1 = 0.01 grows from 5.91e-06 to 2.18e-04 m, radius slope 2.037 (pairwise 1.996-2.182), k1 slope within 8.0e-05 of 1; corrected error 5.7e-16 m; fold at distorted r = 0.497 < corner 0.533 (1.05% of the image has no preimage); two preimages 514.7 px apart.",
+ "observation_model": "Noise-free synthetic pixels from distorted cameras triangulated as if undistorted (uncorrected) or after fixed-point undistortion with the true model.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/observation.py": "9ebedc1a1693aaa28965ba0c97837ad2d2c45bf0fd360857cf7b32c0993ed5fc",
+   "src/ciw/lab/observation_camera.py": "dbf305a988b5ad39796c8220477dd065671a490a26a9ff03738510296087ab68"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T051: add quantization and pixel noise",
+ "report_id": "sha256:de16adc0d1954ba186574cadb1f377cb590c0321846d0b72bb10cd82453aeaa7",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "observation",
+ "state": "completed",
+ "task_id": "T050",
+ "tests_passed": [
+  "check: The implemented radial term displaces an on-axis image point by f (k1 r^3 + k2 r^5), as the Brown-Conrady model defines (implementation consistency check) vs |displacement / f(k1 r^3 + k2 r^5) - 1| on the image x-axis (consistency of observation_camera.distort with its defining formula)",
+  "check: Uncorrected radial distortion biases chords as J_pix delta_pix to first order: odd and linear in k1 and growing as r^2 with mean image radius vs max |direct - J_pix delta_pix| / |direct| for |k1| <= 0.1",
+  "check: Uncorrected radial distortion biases chords as J_pix delta_pix to first order: odd and linear in k1 and growing as r^2 with mean image radius vs |bias(k1) + bias(-k1)| / |bias(k1)| at k1 = 0.01",
+  "check: Uncorrected radial distortion biases chords as J_pix delta_pix to first order: odd and linear in k1 and growing as r^2 with mean image radius vs log-log slope of mean |bias| (k1 = 0.01) against mean image radius minus the predicted 2 (bias ~ J_pix 3 f k1 r^2 dr)",
+  "check: Uncorrected radial distortion biases chords as J_pix delta_pix to first order: odd and linear in k1 and growing as r^2 with mean image radius vs max over shifts of |log-log slope of mean |bias| against |k1| - 1|",
+  "check: Uncorrected radial distortion biases chords as J_pix delta_pix to first order: odd and linear in k1 and growing as r^2 with mean image radius vs all shifted markers visible in both images",
+  "check: Undistorting with the true Brown-Conrady model (radial and tangential) removes the chord bias vs chord error after undistortion with the generating model (m)",
+  "check: Strong barrel distortion (k1 = -0.6) folds inside the image, so the radial model is not invertible there vs distorted radius at the fold, (2/3)/sqrt(-3 k1), minus the image-corner radius (pixel coordinates are distorted coordinates; negative: fold inside the image)",
+  "check: Strong barrel distortion (k1 = -0.6) folds inside the image, so the radial model is not invertible there vs image fraction beyond the fold circle (pixels without a preimage)",
+  "check: Strong barrel distortion (k1 = -0.6) folds inside the image, so the radial model is not invertible there vs |r_d(r_other) - r_d(r_true)| (two radii, one distorted radius)",
+  "check: Strong barrel distortion (k1 = -0.6) folds inside the image, so the radial model is not invertible there vs non-injectivity gap |r_other - r_true| f (px)",
+  "check: Strong barrel distortion (k1 = -0.6) folds inside the image, so the radial model is not invertible there vs converged fixed-point undistortion (400 iterations) against the monotone-branch preimage r_other",
+  "pytest: tests/test_lab_observation.py::test_t050_lens_distortion"
+ ],
+ "tests_skipped": [],
+ "title": "Add perspective and lens-distortion perturbations.",
+ "uncertainty": "Deterministic; the first-order residual is O(k1 r^2) and bounded by the stated tolerance; the radius slope departs from 2 by the r^4 and perspective terms (pairwise slopes up to 2.18 at the largest radius).",
+ "unresolved_assumptions": [
+  "Both cameras share one distortion model",
+  "Principal point equals distortion centre"
+ ]
+}

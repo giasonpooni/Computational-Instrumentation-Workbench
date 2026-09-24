@@ -1,0 +1,547 @@
+{
+ "changed_files": [
+  "src/ciw/lab/lyapunov.py",
+  "src/ciw/lab/lyapunov_reference.py",
+  "src/ciw/lab/lyapunov_provider.py",
+  "docs/lab/LYAPUNOV.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 1,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 0,
+   "numerically_verified": 7,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "analytic"
+ },
+ "expected_invariant": "resolution_PLSR = resolution_CIW; in the normal range the code is CERTIFIED_WITH_MARGIN iff eps > eps* at every scale; NUMERICAL_OVERFLOW exactly where the decrease form overflows; exactly-indefinite declared forms are never certified.",
+ "experiment": "Evaluate every case with PLSR, recompute the documented resolution and the exact rational class of the declared form in CIW, compare codes with the analytic threshold and the exact class, and locate where the prediction stops holding.",
+ "failure_modes_checked": [
+  "resolution differs from the documented formula",
+  "normalised resolution drifts with scale",
+  "code differs from the analytic threshold eps*",
+  "code differs from the unit-scale code",
+  "NUMERICAL_OVERFLOW before the decrease form overflows",
+  "no NUMERICAL_OVERFLOW once it overflows",
+  "false certificate below the normal range (exact rational class)"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "CIW transcription of the documented resolution formula (same specification)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     }
+    ],
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "PLSR decrease_resolution equals the documented bound transcribed in CIW at every evaluated matrix scale",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "largest relative difference between two float64 evaluations of one formula",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "cases": 288,
+    "max_relative_difference": 0.0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "normal-range codes (k = 0 included) differing from the analytic threshold: CERTIFIED_WITH_MARGIN iff eps > eps*",
+      "reference_kind": "analytic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "normal-range codes differing from PLSR's own unit-scale (k = 0) code",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "res(2^k A) 2^-k versus res(A), bitwise",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     }
+    ],
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "Inside the binary64 normal range the resolution scales exactly with 2^k and PLSR certifies exactly when eps > eps*",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "bitwise comparisons; the eps* cases sit 1e-6 relative from the threshold",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "analytic_mismatches": 0,
+    "max_normalised_resolution_deviation": 0.0,
+    "normal_range_cases": 112,
+    "unit_scale_codes": [
+     "CERTIFIED_WITH_MARGIN",
+     "CERTIFIED_WITH_MARGIN",
+     "CERTIFIED_WITH_MARGIN",
+     "CERTIFIED_WITH_MARGIN",
+     "CERTIFIED_WITH_MARGIN",
+     "NUMERICAL_INCONCLUSIVE",
+     "NUMERICAL_INCONCLUSIVE",
+     "NUMERICAL_INCONCLUSIVE"
+    ],
+    "unit_scale_mismatches": 0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "seeds whose first overflowing scale is not NUMERICAL_OVERFLOW",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "F3 rows reported NUMERICAL_OVERFLOW while the recomputed form and scaled values are finite",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "seeds that never overflow on the exponent grid",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     }
+    ],
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "NUMERICAL_OVERFLOW first appears exactly where the CIW-recomputed decrease form overflows",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "the first overflowing exponent may move by one if a BLAS reorders products",
+    "kind": "reference_error",
+    "value": 1.0
+   },
+   "unit": null,
+   "value": {
+    "0": {
+     "code": "NUMERICAL_OVERFLOW",
+     "k": 512
+    },
+    "1": {
+     "code": "NUMERICAL_OVERFLOW",
+     "k": 512
+    },
+    "2": {
+     "code": "NUMERICAL_OVERFLOW",
+     "k": 512
+    },
+    "3": {
+     "code": "NUMERICAL_OVERFLOW",
+     "k": 512
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "negated exact determinant of the declared 2x2 decrease form, units (2^-1074)^2 (at least 1 means indefinite)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "PLSR resolution of the witness (underflows to zero)",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "PLSR code on the witness is certifying (1 if so)",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     }
+    ],
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "A subnormal plant whose declared decrease form is exactly indefinite drives the PLSR resolution to zero; PLSR's code on it is recorded",
+   "counterexample": {
+    "statement": "The float64 resolution floor bounds the rounding error of the decrease form at every matrix scale, so an exactly indefinite declared form is never certified",
+    "witness": {
+     "A_hex": [
+      [
+       "-0x0.0000000000002p-1022",
+       "0x0.0000000000005p-1022"
+      ],
+      [
+       "0x0.0p+0",
+       "-0x0.0000000000003p-1022"
+      ]
+     ],
+     "P_hex": [
+      [
+       "0x1.0000000000000p+0",
+       "0x0.0p+0"
+      ],
+      [
+       "0x0.0p+0",
+       "0x1.0000000000000p+0"
+      ]
+     ],
+     "binary64_form_units_of_2^-1074": [
+      [
+       -4.0,
+       4.0
+      ],
+      [
+       4.0,
+       -6.0
+      ]
+     ],
+     "code": "CERTIFIED_WITH_MARGIN",
+     "exact_form_units_of_2^-1074": [
+      [
+       -4.0,
+       5.0
+      ],
+      [
+       5.0,
+       -6.0
+      ]
+     ],
+     "plsr_details": "V=1.000e+00, decrease=-1.976e-323, max eig(M)=-4.941e-324 at infx resolution",
+     "x": [
+      1.0,
+      0.0
+     ]
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "the exact class and the zero resolution are exact; whether PLSR certifies depends on LAPACK's subnormal handling",
+    "kind": "reference_error",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "certified": true,
+    "code": "CERTIFIED_WITH_MARGIN",
+    "exact_class": "has_positive_eigenvalue",
+    "exact_det_units2": -1.0,
+    "resolution": 0.0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "derivation": "n = 2, max|A| = s, max|P| = 1, M = -2 eps s I exactly: resolution = s(8 gamma_5 + 16 u eps) against margin 2 eps s (docs/lab/LYAPUNOV.md, T101)"
+   },
+   "claim": "Inconclusive threshold of the family A = s[[-eps, 1], [-1, -eps]], P = I: certified iff eps > 4 gamma_5 / (1 - 8u), independent of s",
+   "domain": "mathematical",
+   "evidence_status": "analytic",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 1e-12
+   },
+   "uncertainty": {
+    "basis": "one rounding of the closed form",
+    "kind": "roundoff",
+    "value": 2.4651903288156654e-31
+   },
+   "unit": null,
+   "value": 2.2204460492503162e-15
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "codes of the transcribed order differing from the analytic threshold eps*",
+      "reference_kind": "analytic",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "name": "T101 F1 family",
+     "seed": null
+    }
+   },
+   "claim": "The documented decision order, transcribed in CIW, places the family's threshold at eps* in the normal range",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "the eps* cases sit 1e-6 relative from the threshold, far beyond rounding",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "mismatches": 0,
+    "normal_range_cases": 112
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "res(2^k A) 2^-k versus res(A), bitwise",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "name": "power-of-two scales of [[-0.1, 1], [-1, -0.1]]",
+     "seed": null
+    }
+   },
+   "claim": "CIW's re-derived resolution scales exactly with a power-of-two matrix scale in the normal range",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact rational, integer or bitwise comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "max_relative_deviation": 0.0,
+    "scales": 14
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "negated exact determinant of [[-4, 5], [5, -6]] (units 2^-2148; at least 1 means indefinite)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 8.0,
+      "passed": true,
+      "reference": "determinant of the rounded form [[-4, 4], [4, -6]] (units 2^-2148)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     }
+    ]
+   },
+   "claim": "The subnormal witness's exact decrease form is indefinite while its binary64 evaluation is negative definite",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact rational, integer or bitwise comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "exact_class": "has_positive_eigenvalue",
+    "exact_det_units2": -1.0,
+    "float_class": "negative_definite",
+    "float_det_units2": 8.0
+   }
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 70774,
+   "path": "artifacts/T101/resolution-floor.json",
+   "sha256": "8d8c3ab9be4275eef611f5e404dcc14fc3fe9178de50999256309a243c498b3e"
+  },
+  {
+   "bytes": 9279,
+   "path": "artifacts/T101/codes-vs-scale.svg",
+   "sha256": "224df686ee95704979b15b2ec0c203340bb52d0678c993f64125671192743e60"
+  }
+ ],
+ "hypothesis": "For the family A = s[[-eps, 1], [-1, -eps]], P = I, PLSR's resolution floor is the documented Higham/Weyl/LAPACK bound and scales exactly with s, so the inconclusive threshold stays at eps* wherever every quantity is a normal binary64 number (this family has a diagonal decrease form, where eigvalsh is exact; T102 tests general near-threshold forms); the bound is not derived for subnormal arithmetic, where it can underflow below the actual rounding error.",
+ "input_data": [
+  "F1: 8 eps values x 25 exponents k in [-1074, 1023], A = 2^k [[-eps, 1], [-1, -eps]], P = I, x = (1, 0.5)",
+  "F2: 4 seeded Hurwitz 3x3 A0 (PCG64 seeds 101-104) with P0 from a CIW Kronecker Lyapunov solve, A = 2^k A0 for 16 exponents in [-1074, 1020], x = ones",
+  "F3: the same plants with A = 2^k A0 and P = 2^k P0 for k in [500, 512] (overflow boundary)",
+  "Subnormal witness A = [[-2, 5], [0, -3]] 2^-1074, P = I, x = (1, 0), and its unit-scale twin"
+ ],
+ "mathematical_model": "Continuous decrease form M = A^T P + P A (symmetrised); resolution = n*(2 gamma_{n+3} n max|A| max|P|) + n^3 u max|M|; certified iff -max eig(M) > resolution. For A = s[[-eps, 1], [-1, -eps]], P = I the threshold is eps* = 4 gamma_5/(1 - 8u) = 2.2204e-15 for every s with normal arithmetic.",
+ "number": 101,
+ "numerical_result": "Resolution matches the documented formula (max relative difference 0.00e+00 over 288 cases). In 112 normal-range threshold cases 0 codes differ from the analytic threshold eps* = 2.220446e-15 and 0 from the unit-scale code. Outside the normal range 36 threshold cases depart from the unit-scale code; F2 has 0 certifying verdicts whose exact form is not negative definite. The witness returns CERTIFIED_WITH_MARGIN with resolution 0 (unit-scale twin: DECREASE_NOT_DEFINITE). First overflow exponents: {0: 512, 1: 512, 2: 512, 3: 512}; 0 early overflow reports in 28 F3 rows. Conclusion: the floor is exactly the documented bound and the threshold stays at eps* while every quantity is a normal number; no F2 certificate contradicts its exact class; below that range it underflows and the subnormal witness, whose exact decrease form is indefinite, is certified (CERTIFIED_WITH_MARGIN).",
+ "observation_model": "Runtime verdict code, resolution and margin per case, returned by the pinned PLSR in a subprocess.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "provider": {
+   "commit": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+   "entry": "lyapunov.verdict / lyapunov.solve_lyapunov / lyapunov.decrease_resolution",
+   "files_pinned": 20,
+   "files_verified": 20,
+   "implementation": "Parameterized-Lyapunov-Stability-Runtime",
+   "numpy_version": "2.4.3",
+   "package_version": "0.1.0rc1",
+   "python_version": "3.12.3",
+   "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+   "role": "plsr-python",
+   "source_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7",
+   "verification": "package version and per-file sha256 checked in the subprocess before use"
+  },
+  "python": "3.12.3",
+  "requirement_probes": {
+   "provider:plsr-python": true
+  },
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/lyapunov.py": "58d6c7473f0a42002b57888de0ccfbbf73b571bbbabbf9ee81e0a05c734f2320",
+   "src/ciw/lab/lyapunov_provider.py": "da3465b48b5f5efc47bfe6ab8379cf2cf2bc23e4835dc7ff047252e77fa6ef17",
+   "src/ciw/lab/lyapunov_reference.py": "fa37ef453c23ad2bed2eab41132e72670e166b93eebd5fc9d67a4a89a7c92cca"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T102: test power-of-two homogeneous scaling of A, P and x together; then propose a subnormal-aware resolution term (an absolute n^2 * 2^-1074 floor) upstream and re-run T101.",
+ "report_id": "sha256:db5496e9511aa91b2b2e89e2a545b769db8fe8aaa84576d5c5a03345e695bc78",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "lyapunov",
+ "state": "completed",
+ "task_id": "T101",
+ "tests_passed": [
+  "check: PLSR decrease_resolution equals the documented bound transcribed in CIW at every evaluated matrix scale vs CIW transcription of the documented resolution formula (same specification)",
+  "check: Inside the binary64 normal range the resolution scales exactly with 2^k and PLSR certifies exactly when eps > eps* vs normal-range codes (k = 0 included) differing from the analytic threshold: CERTIFIED_WITH_MARGIN iff eps > eps*",
+  "check: Inside the binary64 normal range the resolution scales exactly with 2^k and PLSR certifies exactly when eps > eps* vs normal-range codes differing from PLSR's own unit-scale (k = 0) code",
+  "check: Inside the binary64 normal range the resolution scales exactly with 2^k and PLSR certifies exactly when eps > eps* vs res(2^k A) 2^-k versus res(A), bitwise",
+  "check: NUMERICAL_OVERFLOW first appears exactly where the CIW-recomputed decrease form overflows vs seeds whose first overflowing scale is not NUMERICAL_OVERFLOW",
+  "check: NUMERICAL_OVERFLOW first appears exactly where the CIW-recomputed decrease form overflows vs F3 rows reported NUMERICAL_OVERFLOW while the recomputed form and scaled values are finite",
+  "check: NUMERICAL_OVERFLOW first appears exactly where the CIW-recomputed decrease form overflows vs seeds that never overflow on the exponent grid",
+  "check: A subnormal plant whose declared decrease form is exactly indefinite drives the PLSR resolution to zero; PLSR's code on it is recorded vs negated exact determinant of the declared 2x2 decrease form, units (2^-1074)^2 (at least 1 means indefinite)",
+  "check: A subnormal plant whose declared decrease form is exactly indefinite drives the PLSR resolution to zero; PLSR's code on it is recorded vs PLSR resolution of the witness (underflows to zero)",
+  "check: A subnormal plant whose declared decrease form is exactly indefinite drives the PLSR resolution to zero; PLSR's code on it is recorded vs PLSR code on the witness is certifying (1 if so)",
+  "check: The documented decision order, transcribed in CIW, places the family's threshold at eps* in the normal range vs codes of the transcribed order differing from the analytic threshold eps*",
+  "check: CIW's re-derived resolution scales exactly with a power-of-two matrix scale in the normal range vs res(2^k A) 2^-k versus res(A), bitwise",
+  "check: The subnormal witness's exact decrease form is indefinite while its binary64 evaluation is negative definite vs negated exact determinant of [[-4, 5], [5, -6]] (units 2^-2148; at least 1 means indefinite)",
+  "check: The subnormal witness's exact decrease form is indefinite while its binary64 evaluation is negative definite vs determinant of the rounded form [[-4, 4], [4, -6]] (units 2^-2148)",
+  "pytest: tests/test_lab_lyapunov.py::test_t101_resolution_floor",
+  "pytest: tests/test_lab_lyapunov.py::test_reference_witness_is_exactly_indefinite",
+  "pytest: tests/test_lab_lyapunov.py::test_t101_threshold_is_analytic",
+  "pytest: tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider"
+ ],
+ "tests_skipped": [],
+ "title": "Test the resolution floor over many matrix scales.",
+ "uncertainty": "Resolution comparison is deterministic float arithmetic (relative 1e-12 allowed). Subnormal-range codes depend on LAPACK's handling of tiny matrices and may differ between BLAS builds; the witness's exact class is exact rational arithmetic.",
+ "unresolved_assumptions": [
+  "The exact class concerns the declared binary64 numbers; they are synthetic, not measured plants.",
+  "The resolution comparison is against CIW's transcription of the documented formula: a same-specification check, not an independent one.",
+  "Subnormal behaviour of numpy.linalg.eigvalsh (LAPACK dsyevd) may differ between BLAS builds."
+ ]
+}

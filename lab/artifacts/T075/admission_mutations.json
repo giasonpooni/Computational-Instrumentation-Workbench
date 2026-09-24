@@ -1,0 +1,156 @@
+{
+ "admitted_after_gate": 1,
+ "admitted_authority": {
+  "physical_truth": "not_established",
+  "sensor_fusion": "synthetic_only",
+  "state_admission": "synthetic_only"
+ },
+ "admitted_checks": [
+  "declared",
+  "writable",
+  "typed",
+  "finite",
+  "covariance",
+  "integrity",
+  "provenance",
+  "frame",
+  "fresh",
+  "track",
+  "uncertainty",
+  "innovation",
+  "calibration"
+ ],
+ "admitted_digest_matches_candidate": true,
+ "auto_admitted_before_gate": 0,
+ "backed_up_scenarios": [
+  "declared",
+  "provenance"
+ ],
+ "checks": [
+  "declared",
+  "writable",
+  "typed",
+  "finite",
+  "covariance",
+  "integrity",
+  "provenance",
+  "frame",
+  "fresh",
+  "track",
+  "uncertainty",
+  "innovation",
+  "calibration"
+ ],
+ "killed": 14,
+ "mutations": {
+  "construct_admitted_directly": "admission_requires_gate",
+  "mutate_admitted": "admitted_state_immutable",
+  "mutate_candidate": "frozen_instance",
+  "mutate_observation": "frozen_instance"
+ },
+ "refused_as_expected": 14,
+ "rows": {
+  "calibration": {
+   "check": "calibration",
+   "expected": "calibration_revoked",
+   "full_gate": "calibration_revoked",
+   "killed": true,
+   "without_this_check": "admitted"
+  },
+  "covariance": {
+   "check": "covariance",
+   "expected": "covariance_not_positive_definite",
+   "full_gate": "covariance_not_positive_definite",
+   "killed": true,
+   "without_this_check": "admitted"
+  },
+  "declared": {
+   "check": "declared",
+   "expected": "admission_checks_not_declared",
+   "full_gate": "admission_checks_not_declared",
+   "killed": true,
+   "without_this_check": "inconsistent_innovation"
+  },
+  "finite": {
+   "check": "finite",
+   "expected": "nonfinite_state",
+   "full_gate": "nonfinite_state",
+   "killed": true,
+   "without_this_check": "admitted"
+  },
+  "frame": {
+   "check": "frame",
+   "expected": "frame_mismatch",
+   "full_gate": "frame_mismatch",
+   "killed": true,
+   "without_this_check": "admitted"
+  },
+  "innovation": {
+   "check": "innovation",
+   "expected": "inconsistent_innovation",
+   "full_gate": "inconsistent_innovation",
+   "killed": true,
+   "without_this_check": "admitted"
+  },
+  "integrity": {
+   "check": "integrity",
+   "expected": "digest_mismatch",
+   "full_gate": "digest_mismatch",
+   "killed": true,
+   "without_this_check": "admitted"
+  },
+  "provenance": {
+   "check": "provenance",
+   "expected": "unknown_candidate",
+   "full_gate": "unknown_candidate",
+   "killed": true,
+   "without_this_check": "stale_candidate"
+  },
+  "stale_tick": {
+   "check": "fresh",
+   "expected": "stale_candidate",
+   "full_gate": "stale_candidate",
+   "killed": true,
+   "without_this_check": "admitted"
+  },
+  "superseded_same_tick": {
+   "check": "fresh",
+   "expected": "stale_candidate",
+   "full_gate": "stale_candidate",
+   "killed": true,
+   "without_this_check": "admitted"
+  },
+  "track": {
+   "check": "track",
+   "expected": "track_lost",
+   "full_gate": "track_lost",
+   "killed": true,
+   "without_this_check": "admitted"
+  },
+  "typed": {
+   "check": "typed",
+   "expected": "not_a_candidate",
+   "full_gate": "not_a_candidate",
+   "killed": true,
+   "without_this_check": "admitted"
+  },
+  "uncertainty": {
+   "check": "uncertainty",
+   "expected": "uncertainty_exceeds_limit",
+   "full_gate": "uncertainty_exceeds_limit",
+   "killed": true,
+   "without_this_check": "admitted"
+  },
+  "writable": {
+   "check": "writable",
+   "expected": "read_only_session",
+   "full_gate": "read_only_session",
+   "killed": true,
+   "without_this_check": "admitted"
+  }
+ },
+ "scenarios": 14,
+ "sole_guard": 12,
+ "type_relations_true": 0,
+ "uncovered_checks": []
+}

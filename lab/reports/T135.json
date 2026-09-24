@@ -1,0 +1,357 @@
+{
+ "changed_files": [
+  "src/ciw/lab/manufacturing.py",
+  "src/ciw/lab/manufacturing_geometry.py",
+  "src/ciw/lab/manufacturing_metrology.py",
+  "src/ciw/lab/manufacturing_records.py",
+  "docs/lab/MANUFACTURING.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 4,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Flat-plate coverage = 1 at the swath spacing; a 4x larger sample changes coverage by < 0.005.",
+ "experiment": "Generate rows for each plan, compute coverage and length, compare with the flat-plate control and with a first-order Jacobi-tightened spacing.",
+ "failure_modes_checked": [
+  "knife-edge ties (minimum distance of any sample from a footprint boundary)",
+  "sample refinement",
+  "flat-plate control",
+  "row mirror symmetry (one negative offset integrated)"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "flat-plate control: 1 - coverage at the swath spacing",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "flat-plate row length error (mm)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1e-09
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.0008815342657851888,
+      "passed": true,
+      "reference": "coverage change of the nominal geodesic plan on a 4x larger sample",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.005
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "integrated row at a negative offset vs the mirrored positive row (mm)",
+      "reference_kind": "invariant",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "ge",
+      "observed": 0.00035954111751124174,
+      "passed": true,
+      "reference": "min |sample distance - swath / 2| over all evaluated plans (no knife-edge tie within 1e-6 mm)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-06
+     }
+    ]
+   },
+   "claim": "Coverage and path length of candidate inspection scan plans on the domed coupon",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-07
+   },
+   "uncertainty": {
+    "basis": "coverage change between 6400 and 25600 Halton samples",
+    "kind": "reference_error",
+    "value": 0.0008815342657851888
+   },
+   "unit": null,
+   "value": {
+    "chart-parallel x0.6": {
+     "coverage": 1.0,
+     "length_mm": 3598.4612954458516,
+     "rows": 17
+    },
+    "chart-parallel x0.7": {
+     "coverage": 1.0,
+     "length_mm": 3201.538268098062,
+     "rows": 15
+    },
+    "chart-parallel x0.8": {
+     "coverage": 1.0,
+     "length_mm": 2796.8459681107306,
+     "rows": 13
+    },
+    "chart-parallel x0.9": {
+     "coverage": 1.0,
+     "length_mm": 2602.3076520769973,
+     "rows": 12
+    },
+    "chart-parallel x1": {
+     "coverage": 0.9983907972612612,
+     "length_mm": 2183.877050381646,
+     "rows": 10
+    },
+    "geodesic Jacobi-tightened": {
+     "coverage": 0.9998443518623129,
+     "length_mm": 3398.415589572964,
+     "rows": 16
+    },
+    "geodesic x0.6": {
+     "coverage": 1.0,
+     "length_mm": 3599.48203542245,
+     "rows": 17
+    },
+    "geodesic x0.7": {
+     "coverage": 0.9993774074492517,
+     "length_mm": 3198.9963939783065,
+     "rows": 15
+    },
+    "geodesic x0.8": {
+     "coverage": 0.9908167598357313,
+     "length_mm": 2794.380545764672,
+     "rows": 13
+    },
+    "geodesic x0.9": {
+     "coverage": 0.9877037614647572,
+     "length_mm": 2612.0226884530252,
+     "rows": 12
+    },
+    "geodesic x1": {
+     "coverage": 0.9603546538097882,
+     "length_mm": 2177.059266202057,
+     "rows": 10
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 0.03964534619021176,
+      "passed": true,
+      "reference": "uncovered area fraction of the nominal geodesic plan",
+      "reference_kind": "analytic",
+      "tolerance": 0.01
+     },
+     {
+      "comparison": "ge",
+      "observed": 1.5555839572007397,
+      "passed": true,
+      "reference": "maximum lateral spreading j_lat of its rows",
+      "reference_kind": "analytic",
+      "tolerance": 1.2
+     }
+    ]
+   },
+   "claim": "Geodesic rows at the swath spacing leave gaps on the domed coupon",
+   "counterexample": {
+    "statement": "Geodesic scan rows launched at the swath spacing cover a curved coupon as completely as they cover a flat plate",
+    "witness": {
+     "coverage": 0.9603546538097882,
+     "max_j_lat": 1.5555839572007397,
+     "plan": "geodesic x1",
+     "plate_coverage": 1.0
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-07
+   },
+   "uncertainty": {
+    "basis": "coverage change between 6400 and 25600 Halton samples",
+    "kind": "reference_error",
+    "value": 0.0008815342657851888
+   },
+   "unit": null,
+   "value": 0.03964534619021176
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "1 - coverage of the selected plan (6400 samples)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "1 - coverage of the selected plan (25600 further samples)",
+      "reference_kind": "self_convergence",
+      "tolerance": 1e-12
+     }
+    ]
+   },
+   "claim": "Shortest evaluated scan plan with no uncovered sample among 32000 area samples",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-07
+   },
+   "uncertainty": {
+    "basis": "uncovered area fraction that 32000 samples would likely miss (rule of three)",
+    "kind": "reference_error",
+    "value": 9.375e-05
+   },
+   "unit": null,
+   "value": {
+    "length_mm": 2602.3076520769973,
+    "plan": "chart-parallel x0.9"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.00015564813768709218,
+      "passed": true,
+      "reference": "1 - coverage (6400 samples)",
+      "reference_kind": "analytic",
+      "tolerance": 0.001
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0002334720186132344,
+      "passed": true,
+      "reference": "1 - coverage (25600 further samples)",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.001
+     }
+    ],
+    "derivation": "row separation ~ spacing j_lat(s); keep spacing max j_lat <= swath"
+   },
+   "claim": "Geodesic rows at spacing swath / max j_lat (first-order Jacobi tightening) leave under 0.1% uncovered",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-07
+   },
+   "uncertainty": {
+    "basis": "coverage change between 6400 and 25600 Halton samples",
+    "kind": "reference_error",
+    "value": 0.0008815342657851888
+   },
+   "unit": null,
+   "value": {
+    "coverage": 0.9998443518623129,
+    "coverage_refined": 0.9997665279813868,
+    "length_mm": 3398.415589572964,
+    "spacing_mm": 12.856908113137031
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "The real scanner footprint is a 20 mm swath on this surface at the planned standoff",
+   "domain": "sensor_performance",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 2458,
+   "path": "artifacts/T135/scan-plans.json",
+   "sha256": "19a0f8eecd9ff94b85a50e02bc41c40bbf53bd2baaeaadf536fd2fd265b53dc3"
+  },
+  {
+   "bytes": 2573,
+   "path": "artifacts/T135/coverage-vs-length.svg",
+   "sha256": "6a613bb1ce49fa355fddac11e69e504665c0162c7ccd957154c8e046d9d22d57"
+  }
+ ],
+ "hypothesis": "Positive curvature focuses geodesic scan rows, so rows launched at the swath spacing cross near the dome and leave gaps; coverage must be bought with path length, and constant-y (chart-parallel) rows reach full coverage sooner on this coupon.",
+ "input_data": [
+  "Declared domed coupon (T128) and 20 mm scanner swath",
+  "Spacing factors [1.0, 0.9, 0.8, 0.7, 0.6] of the swath; 6400 and 25600 area-weighted Halton sample points"
+ ],
+ "mathematical_model": "Rows: geodesics launched along +x from the edge x = -60 mm at offsets k * spacing, or chart lines y = const; footprint = points within 10 mm (3D) of a row polyline; coverage = covered area / area estimated on Halton (2, 3) chart points weighted by sqrt(det g); path length = rows + edge transitions.",
+ "number": 135,
+ "numerical_result": "nominal geodesic plan coverage 0.9604 (plate 1.0); shortest plan with no uncovered sample: chart-parallel x0.9 at 2602.3 mm; Jacobi-tightened spacing 12.86 mm -> coverage 0.99984 (6400 samples), 0.99977 (25600 samples).",
+ "observation_model": "No observation: coverage of modelled footprints on the declared surface.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/manufacturing.py": "088763a0bcc42bf085c1e228797a5dc0d702b994f2a49e053cbe2b0a5622e25d",
+   "src/ciw/lab/manufacturing_geometry.py": "1db6df2ddf778668da2ffd53a66bcddbff4fc933d6f299e8f283cedc60a9332f",
+   "src/ciw/lab/manufacturing_metrology.py": "afbb6fccf146ca4f47850805c118d2f1bf6186872f381b298ab924a9214257ec",
+   "src/ciw/lab/manufacturing_records.py": "66970104ea454e836c5cbafc3013c90e721c3e96ad7f16780c32250112cac921"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T136: rank candidate paths by the calibration tolerance they require.",
+ "report_id": "sha256:468deff05cee673b624462d3a23d83362ec3c62407dccf97ba43af6ed1fa32e9",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "manufacturing",
+ "state": "completed",
+ "task_id": "T135",
+ "tests_passed": [
+  "check: Coverage and path length of candidate inspection scan plans on the domed coupon vs flat-plate control: 1 - coverage at the swath spacing",
+  "check: Coverage and path length of candidate inspection scan plans on the domed coupon vs flat-plate row length error (mm)",
+  "check: Coverage and path length of candidate inspection scan plans on the domed coupon vs coverage change of the nominal geodesic plan on a 4x larger sample",
+  "check: Coverage and path length of candidate inspection scan plans on the domed coupon vs integrated row at a negative offset vs the mirrored positive row (mm)",
+  "check: Coverage and path length of candidate inspection scan plans on the domed coupon vs min |sample distance - swath / 2| over all evaluated plans (no knife-edge tie within 1e-6 mm)",
+  "check: Geodesic rows at the swath spacing leave gaps on the domed coupon vs uncovered area fraction of the nominal geodesic plan",
+  "check: Geodesic rows at the swath spacing leave gaps on the domed coupon vs maximum lateral spreading j_lat of its rows",
+  "check: Shortest evaluated scan plan with no uncovered sample among 32000 area samples vs 1 - coverage of the selected plan (6400 samples)",
+  "check: Shortest evaluated scan plan with no uncovered sample among 32000 area samples vs 1 - coverage of the selected plan (25600 further samples)",
+  "check: Geodesic rows at spacing swath / max j_lat (first-order Jacobi tightening) leave under 0.1% uncovered vs 1 - coverage (6400 samples)",
+  "check: Geodesic rows at spacing swath / max j_lat (first-order Jacobi tightening) leave under 0.1% uncovered vs 1 - coverage (25600 further samples)",
+  "pytest: tests/test_lab_manufacturing.py::test_scan_plans_coverage_and_counterexample",
+  "pytest: tests/test_lab_manufacturing.py::test_every_task_is_registered_and_reports_honestly"
+ ],
+ "tests_skipped": [],
+ "title": "Model robotic inspection scan paths.",
+ "uncertainty": "Area sampling: coverage changes by 0.0009 between the two samples; 'complete' means no uncovered sample among 32000 points (uncovered area below about 1e-4 of the coupon).",
+ "unresolved_assumptions": [
+  "The footprint is a 3D distance band; occlusion, incidence limits and scanner depth of field are not modelled.",
+  "Edge transitions are straight 3D chords.",
+  "First-order Jacobi tightening does not guarantee complete coverage where rows cross beyond a focal point.",
+  "Slivers with area below about 1e-4 of the coupon can escape 32000 sample points."
+ ]
+}

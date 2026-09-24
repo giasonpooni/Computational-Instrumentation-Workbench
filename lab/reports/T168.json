@@ -1,0 +1,130 @@
+{
+ "changed_files": [
+  "src/ciw/lab/research_portfolio.py"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 0,
+   "numerically_verified": 2,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Aggregates are exact functions of retained reports and never change a label.",
+ "experiment": "Resolve every registered node id against test function definitions; count passed/failed outcomes from the JUnit record when supplied.",
+ "failure_modes_checked": [
+  "missing reports",
+  "report identity mismatch (validate_report)",
+  "aggregate differs from its re-read bytes"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "observed": 0.0,
+      "passed": true,
+      "reference": "regression-coverage.json recomputed from a fresh read of the retained reports",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "tasks without regression tests",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Completed or partial tasks lacking a regression test",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": null,
+   "unit": null,
+   "value": 0
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "dangling node ids",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Registered regression node ids that do not resolve to a test function",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": null,
+   "unit": null,
+   "value": 0
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 85713,
+   "path": "artifacts/T168/regression-coverage.json",
+   "sha256": "ed92d20d9c06a580756b69da4d6f805389f595f86eb5a2e20049fefa4b415232"
+  }
+ ],
+ "hypothesis": "Every completed or partial experiment is backed by at least one existing pytest regression test, and the whole queue is guarded by a tolerance-aware comparison with retained reports.",
+ "input_data": [
+  "Retained reports T001-T154 in the same output directory"
+ ],
+ "mathematical_model": "Coverage = tasks whose registered regression_tests all resolve to test functions in tests/.",
+ "number": 168,
+ "numerical_result": "154 reports; 0 completed/partial tasks without regression tests; 0 dangling node ids; 0 failed test records.",
+ "observation_model": "No physical observation; reads retained computational records only.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/research_portfolio.py": "6cd37207af02c6d64dc88b22c7ff2148e85f1eeebaa5445cd894879bc3043ba3"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "Run scripts/check_lab.py in CI so ciw lab verify guards every retained finding.",
+ "report_id": "sha256:3646875c96d13d8f845c56d28d5daa31dd4c5ebc245ab0924bc8ce9eb1e0fb83",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "research-portfolio",
+ "state": "completed",
+ "task_id": "T168",
+ "tests_passed": [
+  "check: Completed or partial tasks lacking a regression test vs regression-coverage.json recomputed from a fresh read of the retained reports",
+  "check: Completed or partial tasks lacking a regression test vs tasks without regression tests",
+  "check: Registered regression node ids that do not resolve to a test function vs dangling node ids",
+  "pytest: tests/test_lab_research_portfolio.py::test_regression_coverage_is_checked"
+ ],
+ "tests_skipped": [],
+ "title": "Convert successful experiments into permanent regression tests.",
+ "uncertainty": "Static resolution of node ids; pass/fail only where a JUnit record was supplied.",
+ "unresolved_assumptions": []
+}

@@ -1,0 +1,427 @@
+{
+ "changed_files": [
+  "src/ciw/lab/sensor_fusion_admission.py",
+  "src/ciw/lab/sensor_fusion_common.py",
+  "src/ciw/lab/sensor_fusion_bench.py",
+  "src/ciw/lab/sensor_fusion_objects.py"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 4,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "59 fused, 41 refused, all 100 retained with matching digests; state bitwise equal to the shadow session; renewed readings fused.",
+ "experiment": "Submit every reading to a FusionSession, compare with a shadow session fed only in-interval readings, register a renewal and exercise revoked/unknown/other-sensor/other-frame records; Monte Carlo NEES of refusing and fusing filters under the declared drift, compared with the exact joint-moment prediction.",
+ "failure_modes_checked": [
+  "boundary tick off-by-one",
+  "refused reading changing the state",
+  "loss of the refused reading",
+  "revoked record",
+  "unknown record",
+  "record for another sensor",
+  "record declared for another frame",
+  "expired record reused after renewal"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "fused count minus 59",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "refused count minus 41",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "reading at tick 59 (inside the interval) refused",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     },
+     {
+      "expected_refusal": "calibration_expired",
+      "observed_refusal": "calibration_expired",
+      "passed": true,
+      "reference": "reading at tick 60 (first tick outside)",
+      "reference_kind": "refusal"
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "readings under the renewed record refused",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "derivation": "CalibrationRecord.covers and FusionSession._admissible_source"
+   },
+   "claim": "Readings inside the half-open validity interval [0, 60) are fused and every later reading is refused with calibration_expired, exactly at the boundary",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "integer counts and refusal codes",
+    "kind": "reference_error",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "boundary": {
+     "tick_at_expiry": "calibration_expired",
+     "tick_before_expiry": "none"
+    },
+    "first_refused": 60,
+    "fused": 59,
+    "refused_expired": 41,
+    "renewed": [
+     "none",
+     "none",
+     "none",
+     "none",
+     "none"
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "retained entries minus submitted readings",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "retained digests differ from submitted digests",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "state differs from the prediction-only shadow",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     }
+    ],
+    "derivation": "FusionSession.record before any refusal"
+   },
+   "claim": "Refused readings are retained with their digests and dispositions, and they do not change the state: the session equals a shadow session that never saw them, bit for bit",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "integer counts and bitwise state comparison",
+    "kind": "reference_error",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "dispositions": {
+     "fused": 59,
+     "refused:calibration_expired": 41
+    },
+    "retained": 100,
+    "retained_digests_match": true,
+    "state_equals_prediction_only_shadow": true
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "calibration_revoked",
+      "observed_refusal": "calibration_revoked",
+      "passed": true,
+      "reference": "revoked calibration",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "calibration_unknown",
+      "observed_refusal": "calibration_unknown",
+      "passed": true,
+      "reference": "unregistered calibration id",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "calibration_unknown",
+      "observed_refusal": "calibration_unknown",
+      "passed": true,
+      "reference": "calibration registered for another sensor",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "calibration_frame_mismatch",
+      "observed_refusal": "calibration_frame_mismatch",
+      "passed": true,
+      "reference": "calibration declared for the body frame, reading from the world frame",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "calibration_expired",
+      "observed_refusal": "calibration_expired",
+      "passed": true,
+      "reference": "expired record after renewal",
+      "reference_kind": "refusal"
+     }
+    ],
+    "derivation": "FusionSession._admissible_source"
+   },
+   "claim": "Revoked, unknown, other-sensor and other-frame calibrations are refused, and the expired record stays expired after a renewal is registered",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "refusal codes",
+    "kind": "reference_error",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "other_frame": "calibration_frame_mismatch",
+    "other_sensor": "calibration_unknown",
+    "revoked": "calibration_revoked",
+    "stale_record_after_renewal": "calibration_expired",
+    "unknown": "calibration_unknown"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "refusing filter: fraction of post-expiry ticks inside the 99% interval",
+      "reference_kind": "analytic",
+      "tolerance": 0.9
+     },
+     {
+      "comparison": "ge",
+      "observed": 0.8292682926829268,
+      "passed": true,
+      "reference": "fusing filter: fraction of post-expiry ticks above the 99% interval",
+      "reference_kind": "analytic",
+      "tolerance": 0.5
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 1.2756691933940072,
+      "passed": true,
+      "reference": "fusing filter: post-expiry grand NEES against the mismatch_moments prediction (run-level z)",
+      "reference_kind": "analytic",
+      "tolerance": 3.4807564043462422
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.26874987598387773,
+      "passed": true,
+      "reference": "refusing filter: post-expiry grand NEES against the prediction (run-level z)",
+      "reference_kind": "analytic",
+      "tolerance": 3.4807564043462422
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "runs": 200,
+     "seed": 722027
+    }
+   },
+   "claim": "Under a declared post-expiry drift of 1 cm per tick, refusing expired readings keeps NEES consistent (with a growing covariance) while fusing them makes the filter overconfident by the amount the exact joint moments predict",
+   "counterexample": {
+    "statement": "Readings taken after calibration expiry can be fused like the others",
+    "witness": {
+     "drift_m_per_tick": 0.01,
+     "nominal": 4.0,
+     "post_expiry_grand_nees": 14.024327327919162
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "run-level standard error of the fusing filter's post-expiry grand NEES",
+    "kind": "monte_carlo_95ci",
+    "value": 0.4209372413976287
+   },
+   "unit": null,
+   "value": {
+    "drift_m_per_tick": 0.01,
+    "final_position_std_fusing": 0.09624647812254881,
+    "final_position_std_refusing": 1.358216970561659,
+    "fusing": {
+     "fraction_above": 0.8292682926829268,
+     "fraction_below": 0.0,
+     "fraction_inside": 0.17073170731707318,
+     "grand_mean": 14.024327327919162,
+     "interval": [
+      3.5036250326357607,
+      4.533930905960961
+     ],
+     "runs": 200,
+     "ticks": 41
+    },
+    "prediction": {
+     "fusing": {
+      "predicted_grand_nees": 13.750359638529769,
+      "standard_error": 0.21476389867225956,
+      "z_vs_predicted": 1.2756691933940072
+     },
+     "refusing": {
+      "predicted_grand_nees": 3.9999999999998233,
+      "standard_error": 0.14745441121548167,
+      "z_vs_predicted": -0.26874987598387773
+     }
+    },
+    "refusing": {
+     "fraction_above": 0.0,
+     "fraction_below": 0.0,
+     "fraction_inside": 1.0,
+     "grand_mean": 3.9603716452723865,
+     "interval": [
+      3.5036250326357607,
+      4.533930905960961
+     ],
+     "runs": 200,
+     "ticks": 41
+    },
+    "runs": 200,
+    "z_critical": 3.4807564043462422
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "seed": 722026
+    },
+    "notes": "synthetic draws only; no acquisition"
+   },
+   "claim": "The validity interval [0, 60) reflects how long a real camera calibration stays valid",
+   "domain": "calibration",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": "not established: the record and the post-expiry drift are declared"
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 6045,
+   "path": "artifacts/T072/calibration_expiry.json",
+   "sha256": "8908fe939f6b53a5b06477450141d2b08e55e7e4d7924ffe3f853688b4ebbed4"
+  },
+  {
+   "bytes": 4802,
+   "path": "artifacts/T072/anees_expiry.svg",
+   "sha256": "ce2d64ad390764226a6fb1eab2a1cabf1561a73b5b3066612cb97c27a5da7d7c"
+  }
+ ],
+ "hypothesis": "A calibration record with a validity interval must gate fusion: readings outside it are retained for audit but never fused, and the refusal leaves the state exactly as if they had not arrived.",
+ "input_data": [
+  "seed 722026 (PCG64) for one synthetic camera run of 110 ticks",
+  "seed 722027: 200 Monte Carlo runs with a declared drift of 0.01 m/tick after tick 59"
+ ],
+ "mathematical_model": "CalibrationRecord covers ticks in [valid_from, valid_until); fuse() records first, then refuses with calibration_expired before any arithmetic. After expiry the state is predicted only, P(k + n) = F(n dt) P F(n dt)^T + Q(n dt).",
+ "number": 72,
+ "numerical_result": "fused 59, refused 41 (first at tick 60), retained 100; shadow equality True; post-expiry ANEES inside: refusing 1.00, fusing grand NEES 14.0 (exact prediction 13.8); final position std refusing 1.358 m vs fusing 0.096 m.",
+ "observation_model": "Camera positions in the world frame citing cam-cal-1 (valid to tick 60), then cam-cal-2 (valid from tick 100).",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/sensor_fusion_admission.py": "db737df809fa23fd26fb21a196b6efa2bda6326aba21a8ff0288a99a95746c2c",
+   "src/ciw/lab/sensor_fusion_bench.py": "f373849a4c6836fa20685c59ce7a6fe6bf732f6df9d6a49646cdc017262dd656",
+   "src/ciw/lab/sensor_fusion_common.py": "6787aa47d199d50d0b4de4d7e53714ce7b8b5aad37d647cfc1a954414e90209f",
+   "src/ciw/lab/sensor_fusion_objects.py": "a795ffc235e0a4118cb7b9ac7800191a90984372d79e59f1a934442d98d7a1f1"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T073: a sensor that stops altogether, and the explicit track-lost state.",
+ "report_id": "sha256:7bcf9627865aa38cbb585759a32e1db2015923c736d4517bcb6e0a508aeda9b8",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "sensor-fusion",
+ "state": "completed",
+ "task_id": "T072",
+ "tests_passed": [
+  "check: Readings inside the half-open validity interval [0, 60) are fused and every later reading is refused with calibration_expired, exactly at the boundary vs fused count minus 59",
+  "check: Readings inside the half-open validity interval [0, 60) are fused and every later reading is refused with calibration_expired, exactly at the boundary vs refused count minus 41",
+  "check: Readings inside the half-open validity interval [0, 60) are fused and every later reading is refused with calibration_expired, exactly at the boundary vs reading at tick 59 (inside the interval) refused",
+  "check: Readings inside the half-open validity interval [0, 60) are fused and every later reading is refused with calibration_expired, exactly at the boundary vs reading at tick 60 (first tick outside)",
+  "check: Readings inside the half-open validity interval [0, 60) are fused and every later reading is refused with calibration_expired, exactly at the boundary vs readings under the renewed record refused",
+  "check: Refused readings are retained with their digests and dispositions, and they do not change the state: the session equals a shadow session that never saw them, bit for bit vs retained entries minus submitted readings",
+  "check: Refused readings are retained with their digests and dispositions, and they do not change the state: the session equals a shadow session that never saw them, bit for bit vs retained digests differ from submitted digests",
+  "check: Refused readings are retained with their digests and dispositions, and they do not change the state: the session equals a shadow session that never saw them, bit for bit vs state differs from the prediction-only shadow",
+  "check: Revoked, unknown, other-sensor and other-frame calibrations are refused, and the expired record stays expired after a renewal is registered vs revoked calibration",
+  "check: Revoked, unknown, other-sensor and other-frame calibrations are refused, and the expired record stays expired after a renewal is registered vs unregistered calibration id",
+  "check: Revoked, unknown, other-sensor and other-frame calibrations are refused, and the expired record stays expired after a renewal is registered vs calibration registered for another sensor",
+  "check: Revoked, unknown, other-sensor and other-frame calibrations are refused, and the expired record stays expired after a renewal is registered vs calibration declared for the body frame, reading from the world frame",
+  "check: Revoked, unknown, other-sensor and other-frame calibrations are refused, and the expired record stays expired after a renewal is registered vs expired record after renewal",
+  "check: Under a declared post-expiry drift of 1 cm per tick, refusing expired readings keeps NEES consistent (with a growing covariance) while fusing them makes the filter overconfident by the amount the exact joint moments predict vs refusing filter: fraction of post-expiry ticks inside the 99% interval",
+  "check: Under a declared post-expiry drift of 1 cm per tick, refusing expired readings keeps NEES consistent (with a growing covariance) while fusing them makes the filter overconfident by the amount the exact joint moments predict vs fusing filter: fraction of post-expiry ticks above the 99% interval",
+  "check: Under a declared post-expiry drift of 1 cm per tick, refusing expired readings keeps NEES consistent (with a growing covariance) while fusing them makes the filter overconfident by the amount the exact joint moments predict vs fusing filter: post-expiry grand NEES against the mismatch_moments prediction (run-level z)",
+  "check: Under a declared post-expiry drift of 1 cm per tick, refusing expired readings keeps NEES consistent (with a growing covariance) while fusing them makes the filter overconfident by the amount the exact joint moments predict vs refusing filter: post-expiry grand NEES against the prediction (run-level z)",
+  "pytest: tests/test_lab_sensor_fusion.py::test_calibration_expiry_retains_but_refuses",
+  "pytest: tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T072]"
+ ],
+ "tests_skipped": [],
+ "title": "Add calibration-expiry behavior.",
+ "uncertainty": "The API statements are exact; the Monte Carlo statement depends on the declared drift, which is an assumption, not a measurement.",
+ "unresolved_assumptions": [
+  "Expiry is a hard tick boundary; real calibrations degrade gradually and their validity depends on temperature, shocks and use.",
+  "Readings are not re-labelled retroactively under a renewed calibration."
+ ]
+}

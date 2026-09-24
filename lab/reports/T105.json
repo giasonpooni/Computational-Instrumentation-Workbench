@@ -1,0 +1,558 @@
+{
+ "changed_files": [
+  "src/ciw/lab/lyapunov.py",
+  "src/ciw/lab/lyapunov_reference.py",
+  "src/ciw/lab/lyapunov_provider.py",
+  "docs/lab/LYAPUNOV.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 9,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Identical codes across unit systems for every sample; identical box decisions for bounds and neighbours; check_vertices passes in every unit system.",
+ "experiment": "Convert the SI declaration into each unit system the way a host would (float arithmetic), evaluate all samples with PLSR, compare codes per sample, then search the conversion arithmetic for counterexamples.",
+ "failure_modes_checked": [
+  "code differs across unit systems",
+  "box decision differs at a bound",
+  "just-outside sample admitted",
+  "bound conversion formulas disagree",
+  "vertex check fails in some units",
+  "near-threshold verdict depends on units"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "samples whose code differs between unit systems",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     }
+    ],
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "Interior and boundary stiffness samples give the same PLSR code in all five unit systems",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "margins are 1e6 to 1e13 resolutions; conversions round at 1e-16 relative",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "mismatches": 0,
+    "samples": 10,
+    "systems": 5
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "unit systems whose vertex check fails",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     }
+    ],
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "check_vertices passes for the converted box in every unit system",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "vertex margins are far above the resolution in every unit system",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "2^-10 m, 2^-7 s, 2^10 N/m": true,
+    "m, ms, N/m": true,
+    "m, s, N/m": true,
+    "mm, s, N/mm": true,
+    "um, ms, N/um": true
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 7604466.762708691,
+      "passed": true,
+      "reference": "max/min margin ratio across unit systems",
+      "reference_kind": "invariant",
+      "tolerance": 10.0
+     }
+    ],
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "Margin ratios are not invariant under non-uniform unit changes",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "relative rounding of float64 margin ratios",
+    "kind": "roundoff",
+    "value": 1e-12
+   },
+   "unit": null,
+   "value": {
+    "interior0_ratio_spread": 7604466.762708691
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "just-outside samples admitted after conversion",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "bound samples refused when converted as k / (1 / c)",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     }
+    ],
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "The declared box bounds 8 and 12 N/m and their binary64 neighbours keep their SI box decision in all five unit systems and under both conversion formulas",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "scalar IEEE products and quotients; identical on every conforming platform",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "bound_refused_by_second_formula": {},
+    "just_outside_admitted": {
+     "k just above 12": [],
+     "k just below 8": []
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "SI and converted box decisions match the witness pattern (1 if so)",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     }
+    ],
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "A parameter just above the SI bound is admitted after multiplying bound and sample by 1e-3",
+   "counterexample": {
+    "statement": "Converting the box and the sample with the same formula preserves box membership",
+    "witness": {
+     "bound": 64576.90184335635,
+     "codes": {
+      "SI": "OUTSIDE_PARAMETER_BOX",
+      "x1e-3": "CERTIFIED_WITH_MARGIN"
+     },
+     "hex": "0x1.f881cdbe69934p+15"
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact rational, integer or bitwise comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "SI": "OUTSIDE_PARAMETER_BOX",
+    "x1e-3": "CERTIFIED_WITH_MARGIN"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "SI and converted box decisions match the witness pattern (1 if so)",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     }
+    ],
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "A parameter exactly on the SI bound is refused when bound and sample are converted by the two mathematically equal formulas k * 0.001 and k / 1000",
+   "counterexample": {
+    "statement": "Mathematically equal unit conversions give the same box decision",
+    "witness": {
+     "bound": 2787.074437234679,
+     "codes": {
+      "SI": "CERTIFIED_WITH_MARGIN",
+      "x1e-3": "OUTSIDE_PARAMETER_BOX"
+     },
+     "hex": "0x1.5c6261ca3211ap+11"
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact rational, integer or bitwise comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "SI": "CERTIFIED_WITH_MARGIN",
+    "x1e-3": "OUTSIDE_PARAMETER_BOX"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 2.0,
+      "passed": true,
+      "reference": "distinct codes across unit systems",
+      "reference_kind": "invariant",
+      "tolerance": 2.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "unit systems whose exact decrease form is not negative definite",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "The light-damping plant's verdict depends on the unit system although its exact decrease form is negative definite in all of them",
+   "counterexample": {
+    "statement": "The same physical plant in different units gets the same PLSR verdict",
+    "witness": {
+     "codes": {
+      "2^-10 m, 2^-7 s, 2^10 N/m": "CERTIFIED_WITH_MARGIN",
+      "m, ms, N/m": "NUMERICAL_INCONCLUSIVE",
+      "m, s, N/m": "CERTIFIED_WITH_MARGIN",
+      "mm, s, N/mm": "CERTIFIED_WITH_MARGIN",
+      "um, ms, N/um": "NUMERICAL_INCONCLUSIVE"
+     },
+     "margin_ratio": {
+      "2^-10 m, 2^-7 s, 2^10 N/m": 2.684354559979027,
+      "m, ms, N/m": 0.005629499534207488,
+      "m, s, N/m": 45035.99626469774,
+      "mm, s, N/mm": 45035.99626469741,
+      "um, ms, N/um": 0.00562949953420746
+     }
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "margin ratios differ by orders of magnitude between unit systems (0.0056 to 45000), far from the threshold 1",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "2^-10 m, 2^-7 s, 2^10 N/m": "CERTIFIED_WITH_MARGIN",
+    "m, ms, N/m": "NUMERICAL_INCONCLUSIVE",
+    "m, s, N/m": "CERTIFIED_WITH_MARGIN",
+    "mm, s, N/mm": "CERTIFIED_WITH_MARGIN",
+    "um, ms, N/um": "NUMERICAL_INCONCLUSIVE"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "vertices whose exact decrease form is not negative definite",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "derivation": "continuous-time decrease form is affine in k, so its largest eigenvalue is convex and maximal at a vertex; both vertices checked in exact rational arithmetic"
+   },
+   "claim": "P = [[6, 0.75], [0.75, 1]] is an exact common quadratic certificate for the SI stiffness box [8, 12]",
+   "domain": "mathematical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact rational, integer or bitwise comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "vertex_classes": [
+     "negative_definite",
+     "negative_definite"
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 32.0,
+      "passed": true,
+      "reference": "neighbour collisions under x 1e-3",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 282.0,
+      "passed": true,
+      "reference": "b / 1000 versus b * 0.001 disagreements",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     }
+    ],
+    "generator": {
+     "name": "conversion_scan",
+     "seed": 1051
+    }
+   },
+   "claim": "Converting box bounds in binary64 collapses neighbours and depends on the formula used",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact rational, integer or bitwise comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "draws": 2000,
+    "formula_disagreements": {
+     "0.001": 282,
+     "1e-06": 612
+    },
+    "neighbour_collisions": {
+     "0.001": 32,
+     "1e-06": 78
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "The declared stiffness box contains the stiffness of a real axis",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "expected_not_established": true,
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 5042,
+   "path": "artifacts/T105/unit-scales.json",
+   "sha256": "891c23aae3d0c5a7d67ccb38caef062f72bdc3b61b65e8f2fa831dc5fcc10579"
+  }
+ ],
+ "hypothesis": "The same physical parameter box and plant expressed in different units give the same PLSR verdicts: box membership is preserved by a monotone conversion and the sign of the decrease form is congruence-invariant.",
+ "input_data": [
+  "Unit systems (T, tau, c_theta): {'m, s, N/m': ((1.0, 1.0), 1.0, 1.0), 'mm, s, N/mm': ((1000.0, 1000.0), 1.0, 0.001), 'm, ms, N/m': ((1.0, 0.001), 0.001, 1.0), 'um, ms, N/um': ((1000000.0, 1000.0), 0.001, 1e-06), '2^-10 m, 2^-7 s, 2^10 N/m': ((1024.0, 8.0), 0.0078125, 0.0009765625)}",
+  "Samples: k = 8 and 12 (bounds), nextafter(8, 0) and nextafter(12, inf) (just outside), 8 interior k (PCG64 seed 1052), states from a normal draw",
+  "Light-damping twin: k = 10, c = 1e-8, SI margin 5e-9",
+  "Conversion scan: 2000 bounds 10^U(-3, 6) (seed 1051) with factors 1e-3 and 1e-6"
+ ],
+ "mathematical_model": "Mass-spring-damper m = 2 kg, c = 3 N s/m, stiffness k in [8, 12] N/m: A(k) = A0 + k A1, common P = [[6, 0.75], [0.75, 1]] (exactly negative definite decrease at both vertices, hence on the box). A unit change is x' = T x, t' = t/tau, k' = c k: A' = tau T A T^-1, P' = T^-1 P T^-1. Inertia is invariant; eigenvalues, max|A| and max|P| (hence margin and resolution) are not.",
+ "number": 105,
+ "numerical_result": "Interior/bound samples: 0 code mismatches across 5 unit systems; vertex check passed in 5/5. Just-outside MSD samples admitted: 0; MSD bound samples refused when converted as k/(1/c): 0. Interior margin ratio spread 7.6e+06x. Light damping codes {'m, s, N/m': 'CERTIFIED_WITH_MARGIN', 'mm, s, N/mm': 'CERTIFIED_WITH_MARGIN', 'm, ms, N/m': 'NUMERICAL_INCONCLUSIVE', 'um, ms, N/um': 'NUMERICAL_INCONCLUSIVE', '2^-10 m, 2^-7 s, 2^10 N/m': 'CERTIFIED_WITH_MARGIN'} (ratios {'m, s, N/m': 45000.0, 'mm, s, N/mm': 45000.0, 'm, ms, N/m': 0.00563, 'um, ms, N/um': 0.00563, '2^-10 m, 2^-7 s, 2^10 N/m': 2.68}; exact classes {'m, s, N/m': 'negative_definite', 'mm, s, N/mm': 'negative_definite', 'm, ms, N/m': 'negative_definite', 'um, ms, N/um': 'negative_definite', '2^-10 m, 2^-7 s, 2^10 N/m': 'negative_definite'}). Isolated box witnesses: {'collision 0.001|SI': 'OUTSIDE_PARAMETER_BOX', 'collision 0.001|x1e-3': 'CERTIFIED_WITH_MARGIN', 'formula 0.001|SI': 'CERTIFIED_WITH_MARGIN', 'formula 0.001|x1e-3': 'OUTSIDE_PARAMETER_BOX'}. Conversion scan: {'0.001': 32, '1e-06': 78} neighbour collisions and {'0.001': 282, '1e-06': 612} formula disagreements in 2000 draws. Conclusion: well-inside samples agree in every unit system; boundary decisions for the declared MSD box survive every conversion, but isolated bounds collide or depend on the conversion formula; near-threshold verdicts depend on the units because the resolution is not congruence-invariant.",
+ "observation_model": "PLSR code, margin ratio and check_vertices result per unit system; IEEE conversion outcomes.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "provider": {
+   "commit": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+   "entry": "lyapunov.verdict / lyapunov.solve_lyapunov / lyapunov.decrease_resolution",
+   "files_pinned": 20,
+   "files_verified": 20,
+   "implementation": "Parameterized-Lyapunov-Stability-Runtime",
+   "numpy_version": "2.4.3",
+   "package_version": "0.1.0rc1",
+   "python_version": "3.12.3",
+   "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+   "role": "plsr-python",
+   "source_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7",
+   "verification": "package version and per-file sha256 checked in the subprocess before use"
+  },
+  "python": "3.12.3",
+  "requirement_probes": {
+   "provider:plsr-python": true
+  },
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/lyapunov.py": "58d6c7473f0a42002b57888de0ccfbbf73b571bbbabbf9ee81e0a05c734f2320",
+   "src/ciw/lab/lyapunov_provider.py": "da3465b48b5f5efc47bfe6ab8379cf2cf2bc23e4835dc7ff047252e77fa6ef17",
+   "src/ciw/lab/lyapunov_reference.py": "fa37ef453c23ad2bed2eab41132e72670e166b93eebd5fc9d67a4a89a7c92cca"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T106: drive every runtime status; propose that hosts declare boxes with an outward-rounded guard band and that PLSR document that margin ratios are unit-dependent for non-uniform unit changes.",
+ "report_id": "sha256:4f21d6957a8d2b8efc7685b94cadc740a9b71ff21f5a873c3670678a84438cfb",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "lyapunov",
+ "state": "completed",
+ "task_id": "T105",
+ "tests_passed": [
+  "check: Interior and boundary stiffness samples give the same PLSR code in all five unit systems vs samples whose code differs between unit systems",
+  "check: check_vertices passes for the converted box in every unit system vs unit systems whose vertex check fails",
+  "check: Margin ratios are not invariant under non-uniform unit changes vs max/min margin ratio across unit systems",
+  "check: The declared box bounds 8 and 12 N/m and their binary64 neighbours keep their SI box decision in all five unit systems and under both conversion formulas vs just-outside samples admitted after conversion",
+  "check: The declared box bounds 8 and 12 N/m and their binary64 neighbours keep their SI box decision in all five unit systems and under both conversion formulas vs bound samples refused when converted as k / (1 / c)",
+  "check: A parameter just above the SI bound is admitted after multiplying bound and sample by 1e-3 vs SI and converted box decisions match the witness pattern (1 if so)",
+  "check: A parameter exactly on the SI bound is refused when bound and sample are converted by the two mathematically equal formulas k * 0.001 and k / 1000 vs SI and converted box decisions match the witness pattern (1 if so)",
+  "check: The light-damping plant's verdict depends on the unit system although its exact decrease form is negative definite in all of them vs distinct codes across unit systems",
+  "check: The light-damping plant's verdict depends on the unit system although its exact decrease form is negative definite in all of them vs unit systems whose exact decrease form is not negative definite",
+  "check: P = [[6, 0.75], [0.75, 1]] is an exact common quadratic certificate for the SI stiffness box [8, 12] vs vertices whose exact decrease form is not negative definite",
+  "check: Converting box bounds in binary64 collapses neighbours and depends on the formula used vs neighbour collisions under x 1e-3",
+  "check: Converting box bounds in binary64 collapses neighbours and depends on the formula used vs b / 1000 versus b * 0.001 disagreements",
+  "pytest: tests/test_lab_lyapunov.py::test_t105_unit_scales",
+  "pytest: tests/test_lab_lyapunov.py::test_conversion_scan",
+  "pytest: tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider"
+ ],
+ "tests_skipped": [],
+ "title": "Test parameter-box comparisons across unit scales.",
+ "uncertainty": "Box decisions and conversions are exact IEEE arithmetic (platform-independent). Margin ratios carry float64 rounding of the converted matrices (relative ~1e-15).",
+ "unresolved_assumptions": [
+  "Unit conversion follows one host convention (multiply by the factor); other conventions change which boundary samples collide.",
+  "The stiffness box and damping are illustrative values, not identified ones."
+ ]
+}

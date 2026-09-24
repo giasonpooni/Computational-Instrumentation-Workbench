@@ -1,0 +1,270 @@
+{
+ "changed_files": [
+  "src/ciw/lab/energy_gpu.py",
+  "src/ciw/lab/energy_gpu_kernels.py",
+  "src/ciw/lab/energy_gpu_telemetry.py",
+  "docs/lab/ENERGY_GPU.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 2,
+   "numerically_verified": 3,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Counted RK4 evaluations equal 4 N per trajectory; endpoints match the great circle; a capture must name this workload and this host's CPU model and RAPL zones.",
+ "experiment": "Integrate each geodesic with RK4 (N = 256) and adaptive DP5(4); count evaluations; when CIW_LAB_RAPL_LOG names a capture from `python -m ciw.lab.energy_gpu_telemetry rapl-capture` (repeated fixed-step batches, three by default, then an idle interval of equal length), gate and analyze it.",
+ "failure_modes_checked": [
+  "evaluation count differs from 4N",
+  "endpoint error exceeds 1e-8",
+  "capture absent, malformed, for another workload or another host (regression tests)",
+  "RAPL counter wrap (one wrap allowed; regression test)"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "counted evaluations minus 4 N T",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "headings_rad": [
+      0.7,
+      0.85,
+      1.0,
+      1.15,
+      1.3,
+      1.45
+     ],
+     "length": 3.0,
+     "name": "equatorial unit-sphere geodesics",
+     "seed": null,
+     "steps": 256
+    }
+   },
+   "claim": "Fixed-step RK4 spends exactly 4N = 1024 right-hand-side evaluations per trajectory (N = 256)",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "integer counts, refusal codes or exact comparisons",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": "evaluations/trajectory",
+   "value": [
+    1024,
+    1024,
+    1024,
+    1024,
+    1024,
+    1024
+   ]
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 1.087370094109951e-09,
+      "passed": true,
+      "reference": "great circle cos(L) X0 + sin(L) T0",
+      "reference_kind": "analytic",
+      "tolerance": 1e-08
+     }
+    ],
+    "generator": {
+     "headings_rad": [
+      0.7,
+      0.85,
+      1.0,
+      1.15,
+      1.3,
+      1.45
+     ],
+     "length": 3.0,
+     "name": "equatorial unit-sphere geodesics",
+     "seed": null,
+     "steps": 256
+    }
+   },
+   "claim": "The fixed-step trajectories are accepted results: embedded endpoint error against the exact great circle is below 1e-8",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 0.001
+   },
+   "uncertainty": {
+    "basis": "closed-form great-circle endpoint evaluated in binary64 (a few ulp)",
+    "kind": "reference_error",
+    "value": 1e-15
+   },
+   "unit": "normalized length",
+   "value": 1.087370094109951e-09
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 4.93522363568445e-10,
+      "passed": true,
+      "reference": "great circle endpoint",
+      "reference_kind": "analytic",
+      "tolerance": 1e-07
+     }
+    ],
+    "generator": {
+     "atol": 1e-12,
+     "headings_rad": [
+      0.7,
+      0.85,
+      1.0,
+      1.15,
+      1.3,
+      1.45
+     ],
+     "length": 3.0,
+     "name": "equatorial unit-sphere geodesics",
+     "rtol": 1e-09,
+     "seed": null
+    }
+   },
+   "claim": "Adaptive Dormand-Prince 5(4) (rtol 1e-9) reaches every great-circle endpoint within 1e-7 with these right-hand-side evaluation counts per trajectory",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 14.0,
+    "rel": 0.05
+   },
+   "uncertainty": {
+    "basis": "integer counts; step acceptance near the tolerance may shift a count by a few stages across platforms",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": "evaluations/trajectory",
+   "value": [
+    487,
+    427,
+    361,
+    337,
+    313,
+    295
+   ]
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": [
+     "no RAPL capture was supplied; the lab runner reads no energy counter (capture with `python -m ciw.lab.energy_gpu_telemetry rapl-capture` and set CIW_LAB_RAPL_LOG)"
+    ]
+   },
+   "claim": "Gross CPU package energy (background-inclusive, idle not subtracted) per geodesic trajectory",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": "J/trajectory",
+   "value": null
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": [
+     "no RAPL capture was supplied; the lab runner reads no energy counter (capture with `python -m ciw.lab.energy_gpu_telemetry rapl-capture` and set CIW_LAB_RAPL_LOG)"
+    ]
+   },
+   "claim": "Idle-subtracted CPU package energy per geodesic trajectory (equal-length idle bracket after the workload)",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": "J/trajectory",
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 238,
+   "path": "artifacts/T115/rapl-probe.json",
+   "sha256": "d20a4cdccf8dd14749b81430f30cbda2d8f27c4f75b6b1429fdd28ada2a62d1e"
+  },
+  {
+   "bytes": 1046,
+   "path": "artifacts/T115/work-proxies.json",
+   "sha256": "a08707d044819ef6a2b9ae6a13bb08b8791bbd092b2656d20fa9a5c3daf5c7a0"
+  },
+  {
+   "bytes": 501,
+   "path": "artifacts/T115/timing.json",
+   "sha256": "70e829203a1783c0a9bf18fa6db93ebbca8464f62ea5ab1b27241b37864b8a10"
+  }
+ ],
+ "hypothesis": "The deterministic work of a fixed-step RK4 geodesic trajectory is exactly 4N right-hand-side evaluations; its CPU energy can be read only from package counters bracketing a batch, which an operator captures outside the lab runner.",
+ "input_data": [
+  "6 unit-speed geodesics on the unit sphere from the equator, headings [0.7, 0.85, 1.0, 1.15, 1.3, 1.45] rad, length 3.0",
+  "optional operator capture named by CIW_LAB_RAPL_LOG"
+ ],
+ "mathematical_model": "E_gross = sum over package domains of (E(after) - E(before)) / (repeats * trajectories), one wrap allowed; E_idle-subtracted = (E_gross_total - E_idle * t_work / t_idle) / (repeats * trajectories); work proxy W = 4N evaluations (RK4) or the Dormand-Prince count.",
+ "number": 115,
+ "numerical_result": "1024 evaluations per RK4 trajectory; max endpoint error 1.09e-09; adaptive evaluations [487, 427, 361, 337, 313, 295]; energy: not measured (no accepted RAPL capture; the runner reads no counters)",
+ "observation_model": "Evaluations counted by wrapping Surface.geodesic_rhs; a supplied capture is read-only input whose raw bytes are retained; wall/CPU time retained only as an artifact.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/energy_gpu.py": "fca900557e7fac2261a168afe0ee81efc48508a874a5045bf4f6b74937165bb1",
+   "src/ciw/lab/energy_gpu_kernels.py": "03f3d92f8407f476cb74536911d476929843ee74232a7d7017c00f43c785a2b4",
+   "src/ciw/lab/energy_gpu_telemetry.py": "21cac5f654ce4a120887ff40da62fda47bd38a3c383bbad6cc3cb13b4168fa2d"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "Capture T115 on a Linux host with readable intel-rapl counters, then T120 to relate precision to measured energy",
+ "report_id": "sha256:72167253de8810ebff7d9d51c889848cc6f3a92dcc19dc7da91b8705dc977030",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "energy-gpu",
+ "state": "partial",
+ "task_id": "T115",
+ "tests_passed": [
+  "check: Fixed-step RK4 spends exactly 4N = 1024 right-hand-side evaluations per trajectory (N = 256) vs counted evaluations minus 4 N T",
+  "check: The fixed-step trajectories are accepted results: embedded endpoint error against the exact great circle is below 1e-8 vs great circle cos(L) X0 + sin(L) T0",
+  "check: Adaptive Dormand-Prince 5(4) (rtol 1e-9) reaches every great-circle endpoint within 1e-7 with these right-hand-side evaluation counts per trajectory vs great circle endpoint",
+  "pytest: tests/test_lab_energy_gpu.py::test_cpu_energy_task_counts_work_and_leaves_energy_unestablished",
+  "pytest: tests/test_lab_energy_gpu.py::test_rapl_helpers_read_counters_and_one_wrap",
+  "pytest: tests/test_lab_energy_gpu.py::test_rapl_capture_is_analyzed_read_only_and_gated",
+  "pytest: tests/test_lab_energy_gpu.py::test_lab_run_never_reads_energy_counters",
+  "pytest: tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance"
+ ],
+ "tests_skipped": [],
+ "title": "Measure CPU energy per geodesic trajectory.",
+ "uncertainty": "Work counts are exact; a RAPL energy would carry model error, background load and a model-dependent counter unit (commonly 2^-16 J), none characterized here.",
+ "unresolved_assumptions": [
+  "Evaluation counts are a work proxy, not an energy measurement",
+  "Package energy is not attributed to this process; idle subtraction assumes the idle interval after the workload represents the background during it",
+  "A capture is an operator record: identity binding is checked, authenticity is not"
+ ]
+}

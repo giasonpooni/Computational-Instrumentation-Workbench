@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420" font-family="sans-serif" font-size="11">
+<rect width="640" height="420" fill="#ffffff"/>
+<text x="78" y="22" font-size="13" font-weight="bold">Heading calibration tolerance for 0.5 mm lateral error</text>
+<rect x="78" y="40" width="392" height="322" fill="none" stroke="#333"/>
+<line x1="78.00" y1="40" x2="78.00" y2="362" stroke="#e5e7eb"/>
+<text x="78.00" y="378" text-anchor="middle">0</text>
+<line x1="156.40" y1="40" x2="156.40" y2="362" stroke="#e5e7eb"/>
+<text x="156.40" y="378" text-anchor="middle">5</text>
+<line x1="234.80" y1="40" x2="234.80" y2="362" stroke="#e5e7eb"/>
+<text x="234.80" y="378" text-anchor="middle">10</text>
+<line x1="313.20" y1="40" x2="313.20" y2="362" stroke="#e5e7eb"/>
+<text x="313.20" y="378" text-anchor="middle">15</text>
+<line x1="391.60" y1="40" x2="391.60" y2="362" stroke="#e5e7eb"/>
+<text x="391.60" y="378" text-anchor="middle">20</text>
+<line x1="470.00" y1="40" x2="470.00" y2="362" stroke="#e5e7eb"/>
+<text x="470.00" y="378" text-anchor="middle">25</text>
+<line x1="78" y1="343.74" x2="470" y2="343.74" stroke="#e5e7eb"/>
+<text x="72" y="347.74" text-anchor="end">1</text>
+<line x1="78" y1="232.88" x2="470" y2="232.88" stroke="#e5e7eb"/>
+<text x="72" y="236.88" text-anchor="end">1.5</text>
+<line x1="78" y1="122.01" x2="470" y2="122.01" stroke="#e5e7eb"/>
+<text x="72" y="126.01" text-anchor="end">2</text>
+<text x="274.00" y="406" text-anchor="middle">route heading (deg)</text>
+<text x="16" y="201.00" text-anchor="middle" transform="rotate(-90 16 201.00)">tolerance (mrad)</text>
+<path d="M78.00,51.93 L156.40,127.03 L234.80,238.25 L313.20,307.74 L391.60,337.71 L470.00,350.07" fill="none" stroke="#1f5fa8" stroke-width="1.8"/>
+<circle cx="78.00" cy="51.93" r="2.6" fill="#1f5fa8"/>
+<circle cx="156.40" cy="127.03" r="2.6" fill="#1f5fa8"/>
+<circle cx="234.80" cy="238.25" r="2.6" fill="#1f5fa8"/>
+<circle cx="313.20" cy="307.74" r="2.6" fill="#1f5fa8"/>
+<circle cx="391.60" cy="337.71" r="2.6" fill="#1f5fa8"/>
+<circle cx="470.00" cy="350.07" r="2.6" fill="#1f5fa8"/>
+<line x1="482" y1="52" x2="502" y2="52" stroke="#1f5fa8" stroke-width="2"/>
+<text x="508" y="56">coupon (derated)</text>
+<path d="M78.00,51.93 L156.40,127.03 L234.80,238.25 L313.20,305.35 L391.60,337.16 L470.00,350.00" fill="none" stroke="#c2410c" stroke-width="1.8"/>
+<circle cx="78.00" cy="51.93" r="2.6" fill="#c2410c"/>
+<circle cx="156.40" cy="127.03" r="2.6" fill="#c2410c"/>
+<circle cx="234.80" cy="238.25" r="2.6" fill="#c2410c"/>
+<circle cx="313.20" cy="305.35" r="2.6" fill="#c2410c"/>
+<circle cx="391.60" cy="337.16" r="2.6" fill="#c2410c"/>
+<circle cx="470.00" cy="350.00" r="2.6" fill="#c2410c"/>
+<line x1="482" y1="70" x2="502" y2="70" stroke="#c2410c" stroke-width="2"/>
+<text x="508" y="74">coupon (first order)</text>
+<path d="M78.00,291.30 L156.40,291.52 L234.80,292.56 L313.20,295.43 L391.60,301.21 L470.00,310.24" fill="none" stroke="#15803d" stroke-width="1.8"/>
+<circle cx="78.00" cy="291.30" r="2.6" fill="#15803d"/>
+<circle cx="156.40" cy="291.52" r="2.6" fill="#15803d"/>
+<circle cx="234.80" cy="292.56" r="2.6" fill="#15803d"/>
+<circle cx="313.20" cy="295.43" r="2.6" fill="#15803d"/>
+<circle cx="391.60" cy="301.21" r="2.6" fill="#15803d"/>
+<circle cx="470.00" cy="310.24" r="2.6" fill="#15803d"/>
+<line x1="482" y1="88" x2="502" y2="88" stroke="#15803d" stroke-width="2"/>
+<text x="508" y="92">flat plate, same length</text>
+</svg>

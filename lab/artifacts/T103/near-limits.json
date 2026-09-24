@@ -1,0 +1,747 @@
+{
+ "level_scan": [
+  {
+   "documented_exceeded": true,
+   "e": 0,
+   "exact_exceeded": true,
+   "log2_V": -1060,
+   "log2_level": -1061,
+   "p": -1060,
+   "plsr_code": "OUTSIDE_LEVEL_SET",
+   "plsr_exceeded": true
+  },
+  {
+   "documented_exceeded": false,
+   "e": 0,
+   "exact_exceeded": false,
+   "log2_V": -1060,
+   "log2_level": -1059,
+   "p": -1060,
+   "plsr_code": "CERTIFIED_WITH_MARGIN",
+   "plsr_exceeded": false
+  },
+  {
+   "documented_exceeded": true,
+   "e": 300,
+   "exact_exceeded": true,
+   "log2_V": -460,
+   "log2_level": -461,
+   "p": -1060,
+   "plsr_code": "OUTSIDE_LEVEL_SET",
+   "plsr_exceeded": true
+  },
+  {
+   "documented_exceeded": false,
+   "e": 300,
+   "exact_exceeded": false,
+   "log2_V": -460,
+   "log2_level": -459,
+   "p": -1060,
+   "plsr_code": "CERTIFIED_WITH_MARGIN",
+   "plsr_exceeded": false
+  },
+  {
+   "documented_exceeded": true,
+   "e": 511,
+   "exact_exceeded": true,
+   "log2_V": -38,
+   "log2_level": -39,
+   "p": -1060,
+   "plsr_code": "OUTSIDE_LEVEL_SET",
+   "plsr_exceeded": true
+  },
+  {
+   "documented_exceeded": false,
+   "e": 511,
+   "exact_exceeded": false,
+   "log2_V": -38,
+   "log2_level": -37,
+   "p": -1060,
+   "plsr_code": "CERTIFIED_WITH_MARGIN",
+   "plsr_exceeded": false
+  },
+  {
+   "documented_exceeded": true,
+   "e": 512,
+   "exact_exceeded": true,
+   "log2_V": -36,
+   "log2_level": -37,
+   "p": -1060,
+   "plsr_code": "OUTSIDE_LEVEL_SET",
+   "plsr_exceeded": true
+  },
+  {
+   "documented_exceeded": true,
+   "e": 512,
+   "exact_exceeded": false,
+   "log2_V": -36,
+   "log2_level": -35,
+   "p": -1060,
+   "plsr_code": "OUTSIDE_LEVEL_SET",
+   "plsr_exceeded": true
+  },
+  {
+   "documented_exceeded": true,
+   "e": 540,
+   "exact_exceeded": true,
+   "log2_V": 20,
+   "log2_level": 19,
+   "p": -1060,
+   "plsr_code": "OUTSIDE_LEVEL_SET",
+   "plsr_exceeded": true
+  },
+  {
+   "documented_exceeded": true,
+   "e": 540,
+   "exact_exceeded": false,
+   "log2_V": 20,
+   "log2_level": 21,
+   "p": -1060,
+   "plsr_code": "OUTSIDE_LEVEL_SET",
+   "plsr_exceeded": true
+  },
+  {
+   "documented_exceeded": true,
+   "e": 1000,
+   "exact_exceeded": true,
+   "log2_V": 940,
+   "log2_level": 939,
+   "p": -1060,
+   "plsr_code": "OUTSIDE_LEVEL_SET",
+   "plsr_exceeded": true
+  },
+  {
+   "documented_exceeded": true,
+   "e": 1000,
+   "exact_exceeded": false,
+   "log2_V": 940,
+   "log2_level": 941,
+   "p": -1060,
+   "plsr_code": "OUTSIDE_LEVEL_SET",
+   "plsr_exceeded": true
+  },
+  {
+   "documented_exceeded": true,
+   "e": 1023,
+   "exact_exceeded": true,
+   "log2_V": 986,
+   "log2_level": 985,
+   "p": -1060,
+   "plsr_code": "OUTSIDE_LEVEL_SET",
+   "plsr_exceeded": true
+  },
+  {
+   "documented_exceeded": true,
+   "e": 1023,
+   "exact_exceeded": false,
+   "log2_V": 986,
+   "log2_level": 987,
+   "p": -1060,
+   "plsr_code": "OUTSIDE_LEVEL_SET",
+   "plsr_exceeded": true
+  },
+  {
+   "documented_exceeded": true,
+   "e": 0,
+   "exact_exceeded": true,
+   "log2_V": -1000,
+   "log2_level": -1001,
+   "p": -1000,
+   "plsr_code": "OUTSIDE_LEVEL_SET",
+   "plsr_exceeded": true
+  },
+  {
+   "documented_exceeded": false,
+   "e": 0,
+   "exact_exceeded": false,
+   "log2_V": -1000,
+   "log2_level": -999,
+   "p": -1000,
+   "plsr_code": "CERTIFIED_WITH_MARGIN",
+   "plsr_exceeded": false
+  },
+  {
+   "documented_exceeded": true,
+   "e": 300,
+   "exact_exceeded": true,
+   "log2_V": -400,
+   "log2_level": -401,
+   "p": -1000,
+   "plsr_code": "OUTSIDE_LEVEL_SET",
+   "plsr_exceeded": true
+  },
+  {
+   "documented_exceeded": false,
+   "e": 300,
+   "exact_exceeded": false,
+   "log2_V": -400,
+   "log2_level": -399,
+   "p": -1000,
+   "plsr_code": "CERTIFIED_WITH_MARGIN",
+   "plsr_exceeded": false
+  },
+  {
+   "documented_exceeded": true,
+   "e": 511,
+   "exact_exceeded": true,
+   "log2_V": 22,
+   "log2_level": 21,
+   "p": -1000,
+   "plsr_code": "OUTSIDE_LEVEL_SET",
+   "plsr_exceeded": true
+  },
+  {
+   "documented_exceeded": false,
+   "e": 511,
+   "exact_exceeded": false,
+   "log2_V": 22,
+   "log2_level": 23,
+   "p": -1000,
+   "plsr_code": "CERTIFIED_WITH_MARGIN",
+   "plsr_exceeded": false
+  },
+  {
+   "documented_exceeded": true,
+   "e": 512,
+   "exact_exceeded": true,
+   "log2_V": 24,
+   "log2_level": 23,
+   "p": -1000,
+   "plsr_code": "OUTSIDE_LEVEL_SET",
+   "plsr_exceeded": true
+  },
+  {
+   "documented_exceeded": true,
+   "e": 512,
+   "exact_exceeded": false,
+   "log2_V": 24,
+   "log2_level": 25,
+   "p": -1000,
+   "plsr_code": "OUTSIDE_LEVEL_SET",
+   "plsr_exceeded": true
+  },
+  {
+   "documented_exceeded": true,
+   "e": 540,
+   "exact_exceeded": true,
+   "log2_V": 80,
+   "log2_level": 79,
+   "p": -1000,
+   "plsr_code": "OUTSIDE_LEVEL_SET",
+   "plsr_exceeded": true
+  },
+  {
+   "documented_exceeded": true,
+   "e": 540,
+   "exact_exceeded": false,
+   "log2_V": 80,
+   "log2_level": 81,
+   "p": -1000,
+   "plsr_code": "OUTSIDE_LEVEL_SET",
+   "plsr_exceeded": true
+  },
+  {
+   "documented_exceeded": true,
+   "e": 1000,
+   "exact_exceeded": true,
+   "log2_V": 1000,
+   "log2_level": 999,
+   "p": -1000,
+   "plsr_code": "OUTSIDE_LEVEL_SET",
+   "plsr_exceeded": true
+  },
+  {
+   "documented_exceeded": true,
+   "e": 1000,
+   "exact_exceeded": false,
+   "log2_V": 1000,
+   "log2_level": 1001,
+   "p": -1000,
+   "plsr_code": "OUTSIDE_LEVEL_SET",
+   "plsr_exceeded": true
+  },
+  {
+   "documented_exceeded": true,
+   "e": 0,
+   "exact_exceeded": true,
+   "log2_V": -500,
+   "log2_level": -501,
+   "p": -500,
+   "plsr_code": "OUTSIDE_LEVEL_SET",
+   "plsr_exceeded": true
+  },
+  {
+   "documented_exceeded": false,
+   "e": 0,
+   "exact_exceeded": false,
+   "log2_V": -500,
+   "log2_level": -499,
+   "p": -500,
+   "plsr_code": "CERTIFIED_WITH_MARGIN",
+   "plsr_exceeded": false
+  },
+  {
+   "documented_exceeded": true,
+   "e": 300,
+   "exact_exceeded": true,
+   "log2_V": 100,
+   "log2_level": 99,
+   "p": -500,
+   "plsr_code": "OUTSIDE_LEVEL_SET",
+   "plsr_exceeded": true
+  },
+  {
+   "documented_exceeded": false,
+   "e": 300,
+   "exact_exceeded": false,
+   "log2_V": 100,
+   "log2_level": 101,
+   "p": -500,
+   "plsr_code": "CERTIFIED_WITH_MARGIN",
+   "plsr_exceeded": false
+  },
+  {
+   "documented_exceeded": true,
+   "e": 511,
+   "exact_exceeded": true,
+   "log2_V": 522,
+   "log2_level": 521,
+   "p": -500,
+   "plsr_code": "OUTSIDE_LEVEL_SET",
+   "plsr_exceeded": true
+  },
+  {
+   "documented_exceeded": false,
+   "e": 511,
+   "exact_exceeded": false,
+   "log2_V": 522,
+   "log2_level": 523,
+   "p": -500,
+   "plsr_code": "CERTIFIED_WITH_MARGIN",
+   "plsr_exceeded": false
+  },
+  {
+   "documented_exceeded": true,
+   "e": 512,
+   "exact_exceeded": true,
+   "log2_V": 524,
+   "log2_level": 523,
+   "p": -500,
+   "plsr_code": "OUTSIDE_LEVEL_SET",
+   "plsr_exceeded": true
+  },
+  {
+   "documented_exceeded": true,
+   "e": 512,
+   "exact_exceeded": false,
+   "log2_V": 524,
+   "log2_level": 525,
+   "p": -500,
+   "plsr_code": "OUTSIDE_LEVEL_SET",
+   "plsr_exceeded": true
+  },
+  {
+   "documented_exceeded": true,
+   "e": 540,
+   "exact_exceeded": true,
+   "log2_V": 580,
+   "log2_level": 579,
+   "p": -500,
+   "plsr_code": "OUTSIDE_LEVEL_SET",
+   "plsr_exceeded": true
+  },
+  {
+   "documented_exceeded": true,
+   "e": 540,
+   "exact_exceeded": false,
+   "log2_V": 580,
+   "log2_level": 581,
+   "p": -500,
+   "plsr_code": "OUTSIDE_LEVEL_SET",
+   "plsr_exceeded": true
+  },
+  {
+   "documented_exceeded": false,
+   "e": -537,
+   "exact_exceeded": false,
+   "log2_V": -1074,
+   "log2_level": -1073,
+   "p": 0,
+   "plsr_code": "CERTIFIED_WITH_MARGIN",
+   "plsr_exceeded": false
+  },
+  {
+   "documented_exceeded": true,
+   "e": -300,
+   "exact_exceeded": true,
+   "log2_V": -600,
+   "log2_level": -601,
+   "p": 0,
+   "plsr_code": "OUTSIDE_LEVEL_SET",
+   "plsr_exceeded": true
+  },
+  {
+   "documented_exceeded": false,
+   "e": -300,
+   "exact_exceeded": false,
+   "log2_V": -600,
+   "log2_level": -599,
+   "p": 0,
+   "plsr_code": "CERTIFIED_WITH_MARGIN",
+   "plsr_exceeded": false
+  },
+  {
+   "documented_exceeded": true,
+   "e": 0,
+   "exact_exceeded": true,
+   "log2_V": 0,
+   "log2_level": -1,
+   "p": 0,
+   "plsr_code": "OUTSIDE_LEVEL_SET",
+   "plsr_exceeded": true
+  },
+  {
+   "documented_exceeded": false,
+   "e": 0,
+   "exact_exceeded": false,
+   "log2_V": 0,
+   "log2_level": 1,
+   "p": 0,
+   "plsr_code": "CERTIFIED_WITH_MARGIN",
+   "plsr_exceeded": false
+  },
+  {
+   "documented_exceeded": true,
+   "e": 300,
+   "exact_exceeded": true,
+   "log2_V": 600,
+   "log2_level": 599,
+   "p": 0,
+   "plsr_code": "OUTSIDE_LEVEL_SET",
+   "plsr_exceeded": true
+  },
+  {
+   "documented_exceeded": false,
+   "e": 300,
+   "exact_exceeded": false,
+   "log2_V": 600,
+   "log2_level": 601,
+   "p": 0,
+   "plsr_code": "CERTIFIED_WITH_MARGIN",
+   "plsr_exceeded": false
+  },
+  {
+   "documented_exceeded": true,
+   "e": 511,
+   "exact_exceeded": true,
+   "log2_V": 1022,
+   "log2_level": 1021,
+   "p": 0,
+   "plsr_code": "OUTSIDE_LEVEL_SET",
+   "plsr_exceeded": true
+  },
+  {
+   "documented_exceeded": false,
+   "e": 511,
+   "exact_exceeded": false,
+   "log2_V": 1022,
+   "log2_level": 1023,
+   "p": 0,
+   "plsr_code": "CERTIFIED_WITH_MARGIN",
+   "plsr_exceeded": false
+  },
+  {
+   "documented_exceeded": true,
+   "e": 512,
+   "exact_exceeded": true,
+   "log2_V": 1024,
+   "log2_level": 1023,
+   "p": 0,
+   "plsr_code": "OUTSIDE_LEVEL_SET",
+   "plsr_exceeded": true
+  },
+  {
+   "documented_exceeded": false,
+   "e": -700,
+   "exact_exceeded": true,
+   "log2_V": -900,
+   "log2_level": -901,
+   "p": 500,
+   "plsr_code": "CERTIFIED_WITH_MARGIN",
+   "plsr_exceeded": false
+  },
+  {
+   "documented_exceeded": false,
+   "e": -700,
+   "exact_exceeded": false,
+   "log2_V": -900,
+   "log2_level": -899,
+   "p": 500,
+   "plsr_code": "CERTIFIED_WITH_MARGIN",
+   "plsr_exceeded": false
+  },
+  {
+   "documented_exceeded": false,
+   "e": -540,
+   "exact_exceeded": true,
+   "log2_V": -580,
+   "log2_level": -581,
+   "p": 500,
+   "plsr_code": "CERTIFIED_WITH_MARGIN",
+   "plsr_exceeded": false
+  },
+  {
+   "documented_exceeded": false,
+   "e": -540,
+   "exact_exceeded": false,
+   "log2_V": -580,
+   "log2_level": -579,
+   "p": 500,
+   "plsr_code": "CERTIFIED_WITH_MARGIN",
+   "plsr_exceeded": false
+  },
+  {
+   "documented_exceeded": true,
+   "e": -537,
+   "exact_exceeded": true,
+   "log2_V": -574,
+   "log2_level": -575,
+   "p": 500,
+   "plsr_code": "OUTSIDE_LEVEL_SET",
+   "plsr_exceeded": true
+  },
+  {
+   "documented_exceeded": false,
+   "e": -537,
+   "exact_exceeded": false,
+   "log2_V": -574,
+   "log2_level": -573,
+   "p": 500,
+   "plsr_code": "CERTIFIED_WITH_MARGIN",
+   "plsr_exceeded": false
+  },
+  {
+   "documented_exceeded": true,
+   "e": -300,
+   "exact_exceeded": true,
+   "log2_V": -100,
+   "log2_level": -101,
+   "p": 500,
+   "plsr_code": "OUTSIDE_LEVEL_SET",
+   "plsr_exceeded": true
+  },
+  {
+   "documented_exceeded": false,
+   "e": -300,
+   "exact_exceeded": false,
+   "log2_V": -100,
+   "log2_level": -99,
+   "p": 500,
+   "plsr_code": "CERTIFIED_WITH_MARGIN",
+   "plsr_exceeded": false
+  },
+  {
+   "documented_exceeded": true,
+   "e": 0,
+   "exact_exceeded": true,
+   "log2_V": 500,
+   "log2_level": 499,
+   "p": 500,
+   "plsr_code": "OUTSIDE_LEVEL_SET",
+   "plsr_exceeded": true
+  },
+  {
+   "documented_exceeded": false,
+   "e": 0,
+   "exact_exceeded": false,
+   "log2_V": 500,
+   "log2_level": 501,
+   "p": 500,
+   "plsr_code": "CERTIFIED_WITH_MARGIN",
+   "plsr_exceeded": false
+  },
+  {
+   "documented_exceeded": false,
+   "e": -1000,
+   "exact_exceeded": true,
+   "log2_V": -1000,
+   "log2_level": -1001,
+   "p": 1000,
+   "plsr_code": "CERTIFIED_WITH_MARGIN",
+   "plsr_exceeded": false
+  },
+  {
+   "documented_exceeded": false,
+   "e": -1000,
+   "exact_exceeded": false,
+   "log2_V": -1000,
+   "log2_level": -999,
+   "p": 1000,
+   "plsr_code": "CERTIFIED_WITH_MARGIN",
+   "plsr_exceeded": false
+  },
+  {
+   "documented_exceeded": false,
+   "e": -700,
+   "exact_exceeded": true,
+   "log2_V": -400,
+   "log2_level": -401,
+   "p": 1000,
+   "plsr_code": "CERTIFIED_WITH_MARGIN",
+   "plsr_exceeded": false
+  },
+  {
+   "documented_exceeded": false,
+   "e": -700,
+   "exact_exceeded": false,
+   "log2_V": -400,
+   "log2_level": -399,
+   "p": 1000,
+   "plsr_code": "CERTIFIED_WITH_MARGIN",
+   "plsr_exceeded": false
+  },
+  {
+   "documented_exceeded": false,
+   "e": -540,
+   "exact_exceeded": true,
+   "log2_V": -80,
+   "log2_level": -81,
+   "p": 1000,
+   "plsr_code": "CERTIFIED_WITH_MARGIN",
+   "plsr_exceeded": false
+  },
+  {
+   "documented_exceeded": false,
+   "e": -540,
+   "exact_exceeded": false,
+   "log2_V": -80,
+   "log2_level": -79,
+   "p": 1000,
+   "plsr_code": "CERTIFIED_WITH_MARGIN",
+   "plsr_exceeded": false
+  },
+  {
+   "documented_exceeded": true,
+   "e": -537,
+   "exact_exceeded": true,
+   "log2_V": -74,
+   "log2_level": -75,
+   "p": 1000,
+   "plsr_code": "OUTSIDE_LEVEL_SET",
+   "plsr_exceeded": true
+  },
+  {
+   "documented_exceeded": false,
+   "e": -537,
+   "exact_exceeded": false,
+   "log2_V": -74,
+   "log2_level": -73,
+   "p": 1000,
+   "plsr_code": "CERTIFIED_WITH_MARGIN",
+   "plsr_exceeded": false
+  },
+  {
+   "documented_exceeded": true,
+   "e": -300,
+   "exact_exceeded": true,
+   "log2_V": 400,
+   "log2_level": 399,
+   "p": 1000,
+   "plsr_code": "OUTSIDE_LEVEL_SET",
+   "plsr_exceeded": true
+  },
+  {
+   "documented_exceeded": false,
+   "e": -300,
+   "exact_exceeded": false,
+   "log2_V": 400,
+   "log2_level": 401,
+   "p": 1000,
+   "plsr_code": "CERTIFIED_WITH_MARGIN",
+   "plsr_exceeded": false
+  },
+  {
+   "documented_exceeded": true,
+   "e": 0,
+   "exact_exceeded": true,
+   "log2_V": 1000,
+   "log2_level": 999,
+   "p": 1000,
+   "plsr_code": "OUTSIDE_LEVEL_SET",
+   "plsr_exceeded": true
+  },
+  {
+   "documented_exceeded": false,
+   "e": 0,
+   "exact_exceeded": false,
+   "log2_V": 1000,
+   "log2_level": 1001,
+   "p": 1000,
+   "plsr_code": "CERTIFIED_WITH_MARGIN",
+   "plsr_exceeded": false
+  }
+ ],
+ "limits": {
+  "A=-2^1000 I, P=2^30 I": "NUMERICAL_OVERFLOW",
+  "A=-2^511 I, P=2^511 I": "CERTIFIED_WITH_MARGIN",
+  "A=-2^512 I, P=2^511 I": "NUMERICAL_OVERFLOW",
+  "P=2^1022 I, x=(1.5, 1.5)": "NUMERICAL_OVERFLOW"
+ },
+ "limits_predicted": {
+  "A=-2^1000 I, P=2^30 I": "NUMERICAL_OVERFLOW",
+  "A=-2^511 I, P=2^511 I": "CERTIFIED_WITH_MARGIN",
+  "A=-2^512 I, P=2^511 I": "NUMERICAL_OVERFLOW",
+  "P=2^1022 I, x=(1.5, 1.5)": "NUMERICAL_OVERFLOW"
+ },
+ "states": {
+  "[-5e-324, 1.5e-323]": "CERTIFIED_WITH_MARGIN",
+  "[0.0, 0.0]": "CERTIFIED_WITH_MARGIN",
+  "[1.0, 1.0]": "CERTIFIED_WITH_MARGIN",
+  "[1.0715086071862673e+301, 3.1391853726160175e+298]": "CERTIFIED_WITH_MARGIN",
+  "[1.7976931348623157e+308, -1.7976931348623157e+308]": "CERTIFIED_WITH_MARGIN",
+  "[1.7976931348623157e+308, 5e-324]": "CERTIFIED_WITH_MARGIN",
+  "[1e-300, -1e-300]": "CERTIFIED_WITH_MARGIN",
+  "[2.2250738585072014e-308, 2.2250738585072014e-308]": "CERTIFIED_WITH_MARGIN",
+  "[5e-324, 0.0]": "CERTIFIED_WITH_MARGIN",
+  "[5e-324, 5e-324]": "CERTIFIED_WITH_MARGIN"
+ },
+ "theta": {
+  "theta:+1e308,c=1": "NUMERICAL_OVERFLOW",
+  "theta:+1e308,c=2": "raises ValueError",
+  "theta:-1e308,c=1": "NUMERICAL_OVERFLOW"
+ },
+ "theta_details": {
+  "theta:+1e308,c=1": null,
+  "theta:+1e308,c=2": {
+   "message": "A must be finite",
+   "type": "ValueError"
+  },
+  "theta:-1e308,c=1": null
+ },
+ "witness": {
+  "code": "CERTIFIED_WITH_MARGIN",
+  "details": "V=1.000e+00, decrease=-1.976e-323, max eig(M)=-4.941e-324 at infx resolution",
+  "id": "witness",
+  "inequality_certified": true,
+  "margin": 5e-324,
+  "margin_ratio": "inf",
+  "meets_required_margin": true,
+  "ok": true,
+  "operationally_acceptable": true,
+  "required_margin": 0.0,
+  "resolution": 0.0,
+  "sample": {
+   "decrease": -2e-323,
+   "max_decrease": -5e-324,
+   "min_P": 1.0,
+   "resolution": 0.0,
+   "scaled_decrease": -2e-323,
+   "scaled_value": 1.0,
+   "state_scale": 1.0,
+   "state_scale_exponent": 0,
+   "value": 1.0,
+   "value_out_of_range": false
+  },
+  "warnings": []
+ }
+}

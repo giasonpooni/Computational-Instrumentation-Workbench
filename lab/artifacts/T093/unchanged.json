@@ -1,0 +1,106 @@
+{
+ "cases": [
+  {
+   "case": "execute unbound numerical-heat",
+   "expected": "operation_unavailable: No trusted repositories bound for this workbench workflow",
+   "observed": "operation_unavailable: No trusted repositories bound for this workbench workflow"
+  },
+  {
+   "case": "replay an unknown bundle",
+   "expected": "invalid_payload: Unknown retained workbench bundle",
+   "observed": "invalid_payload: Unknown retained workbench bundle"
+  },
+  {
+   "case": "client binding request",
+   "expected": "unknown_command: Unknown request type: workflow.bind",
+   "observed": "unknown_command: Unknown request type: workflow.bind"
+  },
+  {
+   "case": "replay with client-supplied repositories",
+   "expected": "invalid_payload: Unexpected or missing workbench fields",
+   "observed": "invalid_payload: Unexpected or missing workbench fields"
+  },
+  {
+   "case": "malformed source JSON",
+   "expected": "MALFORMED_RESPONSE: The bound runtime did not return finite, unambiguous JSON",
+   "observed": "MALFORMED_RESPONSE: The bound runtime did not return finite, unambiguous JSON"
+  },
+  {
+   "case": "non-canonical base64 source",
+   "expected": "invalid_payload: Source bytes must use bounded canonical base64",
+   "observed": "invalid_payload: Source bytes must use bounded canonical base64"
+  },
+  {
+   "case": "unknown source kind",
+   "expected": "invalid_payload: Unknown workbench source kind",
+   "observed": "invalid_payload: Unknown workbench source kind"
+  },
+  {
+   "case": "stale selection revision",
+   "expected": "revision_conflict: Selection changed; refresh session.get before retrying",
+   "observed": "revision_conflict: Selection changed; refresh session.get before retrying"
+  },
+  {
+   "case": "unknown selection channel",
+   "expected": "invalid_payload: Unknown channel",
+   "observed": "invalid_payload: Unknown channel"
+  },
+  {
+   "case": "unknown result",
+   "expected": "not_found: Result not found in this session",
+   "observed": "not_found: Result not found in this session"
+  },
+  {
+   "case": "unknown bundle read",
+   "expected": "invalid_payload: Unknown retained workbench bundle",
+   "observed": "invalid_payload: Unknown retained workbench bundle"
+  },
+  {
+   "case": "energy execute with an upstream bundle",
+   "expected": "invalid_payload: This workflow does not accept an upstream bundle",
+   "observed": "invalid_payload: This workflow does not accept an upstream bundle"
+  },
+  {
+   "case": "ESM candidate inspection of a non-telemetry bundle",
+   "expected": "invalid_payload: ESM requires an explicitly selected calibrated or telemetry bundle",
+   "observed": "invalid_payload: ESM requires an explicitly selected calibrated or telemetry bundle"
+  },
+  {
+   "case": "analysis outside the recording",
+   "expected": "invalid_payload: Require 0 <= start < end <= recording duration",
+   "observed": "invalid_payload: Require 0 <= start < end <= recording duration"
+  },
+  {
+   "case": "workspace save to a client path",
+   "expected": "invalid_payload: Unknown payload fields: path",
+   "observed": "invalid_payload: Unknown payload fields: path"
+  },
+  {
+   "case": "unsupported protocol version",
+   "expected": "unsupported_version: Supported protocol_version is 1",
+   "observed": "unsupported_version: Supported protocol_version is 1"
+  }
+ ],
+ "changed_parts": [],
+ "new_files": [
+  "execution-437e6f6e75174f89a046ab526da1557b.json"
+ ],
+ "recorded_parts": [
+  "executions"
+ ],
+ "refused_operation": "operation_unavailable: No trusted provider bound for ciw.lab-unregistered.v1",
+ "reopen_refusal": "Saved result does not refer to this evidence",
+ "state_parts": [
+  "bindings",
+  "candidates",
+  "catalog",
+  "executions",
+  "identities",
+  "pending",
+  "reserved_bytes",
+  "results",
+  "revision",
+  "selection",
+  "used_bytes"
+ ]
+}

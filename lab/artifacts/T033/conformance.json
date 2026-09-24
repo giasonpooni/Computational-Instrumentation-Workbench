@@ -1,0 +1,383 @@
+{
+ "domains": {
+  "cylinder": {
+   "high": [
+    3.141592653589793,
+    2.0
+   ],
+   "low": [
+    -3.141592653589793,
+    -2.0
+   ]
+  },
+  "gaussian-bump": {
+   "high": [
+    2.5,
+    2.5
+   ],
+   "low": [
+    -2.5,
+    -2.5
+   ]
+  },
+  "gaussian-bump-shear": {
+   "high": [
+    2.0,
+    2.0
+   ],
+   "low": [
+    -2.0,
+    -2.0
+   ]
+  },
+  "hyperbolic-plane": {
+   "high": [
+    2.0,
+    3.0
+   ],
+   "low": [
+    -2.0,
+    0.3
+   ]
+  },
+  "plane": {
+   "high": [
+    2.0,
+    2.0
+   ],
+   "low": [
+    -2.0,
+    -2.0
+   ]
+  },
+  "plane-polar": {
+   "high": [
+    2.0,
+    3.141592653589793
+   ],
+   "low": [
+    0.3,
+    -3.141592653589793
+   ]
+  },
+  "rotated-torus": {
+   "high": [
+    3.141592653589793,
+    3.141592653589793
+   ],
+   "low": [
+    -3.141592653589793,
+    -3.141592653589793
+   ]
+  },
+  "saddle": {
+   "high": [
+    1.5,
+    1.5
+   ],
+   "low": [
+    -1.5,
+    -1.5
+   ]
+  },
+  "sphere": {
+   "high": [
+    2.8415926535897933,
+    3.141592653589793
+   ],
+   "low": [
+    0.3,
+    -3.141592653589793
+   ]
+  },
+  "torus": {
+   "high": [
+    3.141592653589793,
+    3.141592653589793
+   ],
+   "low": [
+    -3.141592653589793,
+    -3.141592653589793
+   ]
+  }
+ },
+ "order": [
+  "plane",
+  "sphere",
+  "cylinder",
+  "saddle",
+  "torus",
+  "gaussian-bump",
+  "hyperbolic-plane",
+  "plane-polar",
+  "gaussian-bump-shear",
+  "rotated-torus"
+ ],
+ "points_per_surface": 32,
+ "seed": 3301,
+ "surfaces": {
+  "cylinder": {
+   "conforms": true,
+   "describe": {
+    "chart": "(phi, z)",
+    "name": "cylinder",
+    "radius": 1.0
+   },
+   "errors": [],
+   "failed": [],
+   "nonfinite": [],
+   "not_evaluated": [],
+   "points": 32,
+   "refused_by_core_check": 0,
+   "seed": 3301,
+   "worst": {
+    "christoffel_asymmetry": 0.0,
+    "compatibility": 6.162975822039155e-33,
+    "derivative_asymmetry": 0.0,
+    "derivative_consistency": 1.526928158823135e-13,
+    "gauss_equation": 0.0,
+    "metric_asymmetry": 0.0,
+    "min_eigenvalue_ratio": 0.9999999999999998,
+    "mixed_partials": 2.311115933264649e-30
+   }
+  },
+  "gaussian-bump": {
+   "conforms": true,
+   "describe": {
+    "height": 0.5,
+    "name": "gaussian-bump",
+    "sigma": 1.0
+   },
+   "errors": [],
+   "failed": [],
+   "nonfinite": [],
+   "not_evaluated": [],
+   "points": 32,
+   "refused_by_core_check": 0,
+   "seed": 3301,
+   "worst": {
+    "christoffel_asymmetry": 0.0,
+    "compatibility": 2.3766840084597953e-17,
+    "derivative_asymmetry": 0.0,
+    "derivative_consistency": 6.048185464728488e-13,
+    "gauss_equation": 3.280324657871902e-13,
+    "metric_asymmetry": 0.0,
+    "min_eigenvalue_ratio": 0.9157965150779961,
+    "mixed_partials": 3.4646677895370613e-13
+   }
+  },
+  "gaussian-bump-shear": {
+   "conforms": true,
+   "describe": {
+    "base": {
+     "height": 0.5,
+     "name": "gaussian-bump",
+     "sigma": 1.0
+    },
+    "chart": "shear",
+    "name": "gaussian-bump∘shear"
+   },
+   "errors": [],
+   "failed": [],
+   "nonfinite": [],
+   "not_evaluated": [],
+   "points": 32,
+   "refused_by_core_check": 0,
+   "seed": 3301,
+   "worst": {
+    "christoffel_asymmetry": 0.0,
+    "compatibility": 1.461557452723792e-16,
+    "derivative_asymmetry": 0.0,
+    "derivative_consistency": 5.429995016488459e-13,
+    "gauss_equation": 1.5255091661568378e-13,
+    "metric_asymmetry": 0.0,
+    "min_eigenvalue_ratio": 0.1076492566503344,
+    "mixed_partials": 5.882921077369268e-13
+   }
+  },
+  "hyperbolic-plane": {
+   "conforms": true,
+   "describe": {
+    "chart": "upper half-plane (x, y > 0)",
+    "k": 1.0,
+    "name": "hyperbolic-plane"
+   },
+   "errors": [],
+   "failed": [],
+   "nonfinite": [],
+   "not_evaluated": [],
+   "points": 32,
+   "refused_by_core_check": 0,
+   "seed": 3301,
+   "worst": {
+    "christoffel_asymmetry": 0.0,
+    "compatibility": 1.3742127254528125e-16,
+    "derivative_asymmetry": 0.0,
+    "derivative_consistency": 8.102692869746462e-12,
+    "gauss_equation": 7.569957621233518e-11,
+    "metric_asymmetry": 0.0,
+    "min_eigenvalue_ratio": 1.0,
+    "mixed_partials": 1.3830780825530503e-14
+   }
+  },
+  "plane": {
+   "conforms": true,
+   "describe": {
+    "name": "plane"
+   },
+   "errors": [],
+   "failed": [],
+   "nonfinite": [],
+   "not_evaluated": [],
+   "points": 32,
+   "refused_by_core_check": 0,
+   "seed": 3301,
+   "worst": {
+    "christoffel_asymmetry": 0.0,
+    "compatibility": 0.0,
+    "derivative_asymmetry": 0.0,
+    "derivative_consistency": 4.163336342344337e-14,
+    "gauss_equation": 0.0,
+    "metric_asymmetry": 0.0,
+    "min_eigenvalue_ratio": 1.0,
+    "mixed_partials": 0.0
+   }
+  },
+  "plane-polar": {
+   "conforms": true,
+   "describe": {
+    "base": {
+     "name": "plane"
+    },
+    "chart": "polar",
+    "name": "plane∘polar"
+   },
+   "errors": [],
+   "failed": [],
+   "nonfinite": [],
+   "not_evaluated": [],
+   "points": 32,
+   "refused_by_core_check": 0,
+   "seed": 3301,
+   "worst": {
+    "christoffel_asymmetry": 0.0,
+    "compatibility": 1.5022138500647739e-16,
+    "derivative_asymmetry": 0.0,
+    "derivative_consistency": 1.7572740308470099e-13,
+    "gauss_equation": 2.712730717384571e-13,
+    "metric_asymmetry": 0.0,
+    "min_eigenvalue_ratio": 0.23083009697832843,
+    "mixed_partials": 9.727001434110584e-14
+   }
+  },
+  "rotated-torus": {
+   "conforms": true,
+   "describe": {
+    "name": "rotated-torus"
+   },
+   "errors": [],
+   "failed": [],
+   "nonfinite": [],
+   "not_evaluated": [],
+   "points": 32,
+   "refused_by_core_check": 0,
+   "seed": 3301,
+   "worst": {
+    "christoffel_asymmetry": 0.0,
+    "compatibility": 1.481431826502899e-16,
+    "derivative_asymmetry": 0.0,
+    "derivative_consistency": 3.611380385715281e-13,
+    "gauss_equation": 2.441263480975335e-13,
+    "metric_asymmetry": 0.0,
+    "min_eigenvalue_ratio": 0.11139804003291637,
+    "mixed_partials": 1.5864917889755684e-13
+   }
+  },
+  "saddle": {
+   "conforms": true,
+   "describe": {
+    "c": 1.0,
+    "graph": "z = c (x^2 - y^2) / 2",
+    "name": "saddle"
+   },
+   "errors": [],
+   "failed": [],
+   "nonfinite": [],
+   "not_evaluated": [],
+   "points": 32,
+   "refused_by_core_check": 0,
+   "seed": 3301,
+   "worst": {
+    "christoffel_asymmetry": 0.0,
+    "compatibility": 1.6035737915386125e-16,
+    "derivative_asymmetry": 0.0,
+    "derivative_consistency": 1.565064877541001e-13,
+    "gauss_equation": 4.3273853030798684e-14,
+    "metric_asymmetry": 0.0,
+    "min_eigenvalue_ratio": 0.21083754713372882,
+    "mixed_partials": 3.368311131992806e-14
+   }
+  },
+  "sphere": {
+   "conforms": true,
+   "describe": {
+    "chart": "polar (theta, phi)",
+    "name": "sphere",
+    "radius": 1.0
+   },
+   "errors": [],
+   "failed": [],
+   "nonfinite": [],
+   "not_evaluated": [],
+   "points": 32,
+   "refused_by_core_check": 0,
+   "seed": 3301,
+   "worst": {
+    "christoffel_asymmetry": 0.0,
+    "compatibility": 6.100317569249007e-17,
+    "derivative_asymmetry": 0.0,
+    "derivative_consistency": 3.7703325595445476e-13,
+    "gauss_equation": 1.862621168413625e-12,
+    "metric_asymmetry": 0.0,
+    "min_eigenvalue_ratio": 0.12400651317262909,
+    "mixed_partials": 9.673334750606494e-14
+   }
+  },
+  "torus": {
+   "conforms": true,
+   "describe": {
+    "chart": "(phi, theta)",
+    "major": 2.0,
+    "minor": 1.0,
+    "name": "torus"
+   },
+   "errors": [],
+   "failed": [],
+   "nonfinite": [],
+   "not_evaluated": [],
+   "points": 32,
+   "refused_by_core_check": 0,
+   "seed": 3301,
+   "worst": {
+    "christoffel_asymmetry": 0.0,
+    "compatibility": 8.257757577094602e-17,
+    "derivative_asymmetry": 0.0,
+    "derivative_consistency": 2.94749050206205e-13,
+    "gauss_equation": 2.5173049064616385e-13,
+    "metric_asymmetry": 0.0,
+    "min_eigenvalue_ratio": 0.11139804003291641,
+    "mixed_partials": 1.070105843028389e-13
+   }
+  }
+ },
+ "thresholds": {
+  "christoffel_asymmetry": 1e-12,
+  "compatibility": 1e-12,
+  "derivative_asymmetry": 1e-13,
+  "derivative_consistency": 1e-08,
+  "gauss_equation": 1e-07,
+  "metric_asymmetry": 1e-13,
+  "min_eigenvalue_ratio": 0.001,
+  "mixed_partials": 1e-07
+ }
+}

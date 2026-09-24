@@ -1,0 +1,738 @@
+{
+ "changed_files": [
+  "src/ciw/lab/implementation_targets.py",
+  "src/ciw/lab/implementation_targets_serial.py",
+  "docs/lab/IMPLEMENTATION_TARGETS.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 1,
+   "not_established": 1,
+   "numerically_verified": 9,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "The reference encoder reproduces the hand-written examples; ciw.telemetry.canonical and the Rust probe agree with it on UTF-8 bytes; ciw.core.identities agrees with the ASCII variant only; refused inputs are refused by the reference and Rust; CPython and NumPy digits equal the exact rule.",
+ "experiment": "Encode every vector and float with the reference encoder, both CIW encoders and the Rust probe compiled at run time; compare digits with CPython repr and NumPy Dragon4; run Rust's own {:e} on decimal ties; contrast with JCS formatting.",
+ "failure_modes_checked": [
+  "NaN/Infinity",
+  "unsafe integers",
+  "non-string keys (identity collision)",
+  "lone surrogates",
+  "nesting depth",
+  "ensure_ascii divergence",
+  "U+007F and U+2028",
+  "Unicode normalization",
+  "-0.0",
+  "subnormals and binary64 limits",
+  "exponent-switch boundaries",
+  "decimal ties (Rust {:e} rounds them up)",
+  "reference encoder true by construction",
+  "JCS divergence",
+  "rustc absent (not established) versus probe broken (refuted)"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "hand-written specification examples the reference encoder does not reproduce",
+      "reference_kind": "analytic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "re-encoding a decoded vector changes its bytes",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "expected_refusal": "nonfinite_number",
+      "observed_refusal": "nonfinite_number",
+      "passed": true,
+      "reference": "specification on nan",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "nonfinite_number",
+      "observed_refusal": "nonfinite_number",
+      "passed": true,
+      "reference": "specification on positive-infinity",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "nonfinite_number",
+      "observed_refusal": "nonfinite_number",
+      "passed": true,
+      "reference": "specification on negative-infinity",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "unsafe_integer",
+      "observed_refusal": "unsafe_integer",
+      "passed": true,
+      "reference": "specification on integer-2^53",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "unsafe_integer",
+      "observed_refusal": "unsafe_integer",
+      "passed": true,
+      "reference": "specification on integer-minus-2^53",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "unsafe_integer",
+      "observed_refusal": "unsafe_integer",
+      "passed": true,
+      "reference": "specification on integer-10^30",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "non_string_key",
+      "observed_refusal": "non_string_key",
+      "passed": true,
+      "reference": "specification on non-string-key",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "invalid_unicode",
+      "observed_refusal": "invalid_unicode",
+      "passed": true,
+      "reference": "specification on lone-surrogate",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "nesting_too_deep",
+      "observed_refusal": "nesting_too_deep",
+      "passed": true,
+      "reference": "specification on depth-65",
+      "reference_kind": "refusal"
+     }
+    ]
+   },
+   "claim": "Canonical JSON v1 test vectors (bytes and sha256)",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "invalid_vectors": 9,
+    "spec": "ciw.canonical-json.v1",
+    "vector_set_sha256": "63f7261753b3bf936967b73c5b36d1efb378b0b31815fedb083717aad34813aa",
+    "vectors": 19
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "ciw.telemetry.canonical against the reference encoder, vectors (CIW encoders call json.dumps; the reference encoder escapes from its own table and formats floats by an exact digit search, so agreement is not true by construction)",
+      "reference_kind": "cross_implementation",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "ciw.telemetry.canonical against the reference encoder, single floats",
+      "reference_kind": "cross_implementation",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "ciw.telemetry.canonical reproduces the specification bytes on every accepted vector and tested float",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": "mismatches",
+   "value": {
+    "float_mismatches": 0,
+    "floats": 2164,
+    "vector_mismatches": 0,
+    "vectors": 19
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "ciw.core.identities.canonical_json against the reference ASCII variant, vectors",
+      "reference_kind": "cross_implementation",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "ciw.core.identities.canonical_json against the reference ASCII variant, floats",
+      "reference_kind": "cross_implementation",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 5.0,
+      "passed": true,
+      "reference": "vectors whose ciw.core.identities bytes differ from the specification bytes",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     }
+    ]
+   },
+   "claim": "ciw.core.identities.canonical_json reproduces the ASCII-escaped variant, not the specification bytes",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "ascii_variant_mismatches": 0,
+    "differs_from_specification": [
+     "unicode-bmp",
+     "unicode-supplementary",
+     "escapes-and-controls",
+     "no-normalization",
+     "key-order-code-points"
+    ],
+    "float_ascii_variant_mismatches": 0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 5.0,
+      "passed": true,
+      "reference": "vectors on which the two CIW encoders differ",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "differing vectors that are printable ASCII only",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "ciw.core.identities.canonical_json and ciw.telemetry.canonical produce different bytes for non-ASCII text",
+   "counterexample": {
+    "statement": "CIW already has one canonical JSON byte encoding",
+    "witness": {
+     "identities_sha256": "4e2c3d77419efa08ed3f0637d7db5152bd5b0196396a90b37d4c177a0b525362",
+     "telemetry_sha256": "e28c9c5bcbf4f143f4aa9c0a207150257ba4ebb473f776aa735b58367ef62061",
+     "vector": "unicode-bmp"
+    }
+   },
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "differing_vectors": [
+     "unicode-bmp",
+     "unicode-supplementary",
+     "escapes-and-controls",
+     "no-normalization",
+     "key-order-code-points"
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "int-key and str-key canonical texts are equal",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     },
+     {
+      "expected_refusal": "non_string_key",
+      "observed_refusal": "non_string_key",
+      "passed": true,
+      "reference": "specification on {1: 'x'}",
+      "reference_kind": "refusal"
+     }
+    ]
+   },
+   "claim": "ciw.core.identities.canonical_json gives {1: 'x'} and {'1': 'x'} the same content identity",
+   "counterexample": {
+    "statement": "Distinct Python values have distinct CIW content identities",
+    "witness": {
+     "canonical": "{\"1\":\"x\"}",
+     "values": [
+      "{1: 'x'}",
+      "{'1': 'x'}"
+     ]
+    }
+   },
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": "50258d013c04133cf55f8dc9d9f096c7681c91045eaf870ead85f88b5c05e3ec"
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 9.0,
+      "passed": true,
+      "reference": "refused-by-spec vectors accepted by a CIW encoder",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     }
+    ]
+   },
+   "claim": "Python canonicalizers accept values the specification refuses",
+   "counterexample": {
+    "statement": "Existing CIW canonicalizers enforce the cross-language specification",
+    "witness": {
+     "accepted_by": [
+      "ciw.core.identities.canonical_json",
+      "ciw.telemetry.canonical"
+     ],
+     "vector": "integer-2^53"
+    }
+   },
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "ciw.core.identities.canonical_json": [
+     "integer-2^53",
+     "integer-minus-2^53",
+     "integer-10^30",
+     "non-string-key",
+     "lone-surrogate",
+     "depth-65"
+    ],
+    "ciw.telemetry.canonical": [
+     "integer-2^53",
+     "integer-minus-2^53",
+     "integer-10^30"
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "round-trip failures of the specification text (value or sign)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "CPython repr digit/exponent mismatches against the exact rule",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 96.0,
+      "passed": true,
+      "reference": "constructed decimal ties in the corpus",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     }
+    ],
+    "independent_check": {
+     "checker": {
+      "implementation": "numpy.format_float_scientific(unique=True)",
+      "revision": "2.4.3"
+     },
+     "comparison": "abs_le",
+     "observed": 0.0,
+     "passed": true,
+     "producer": {
+      "implementation": "ciw.lab.implementation_targets_serial.shortest_digits"
+     },
+     "reference": "NumPy digit/exponent mismatches against the exact rule",
+     "reference_kind": "exact_arithmetic",
+     "tolerance": 0.0
+    }
+   },
+   "claim": "The exact shortest-digit rule agrees with CPython repr and NumPy Dragon4 on vector, random and decimal-tie binary64 values",
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "cpython_mismatches": 0,
+    "decimal_ties": 96,
+    "numpy_mismatches": 0,
+    "values": 2164
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 12.0,
+      "passed": true,
+      "reference": "vector floats formatted differently",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "key order differs (UTF-16 units against code points)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     }
+    ],
+    "derivation": "ECMA-262 Number::toString and UTF-16 code-unit key order (RFC 8785 section 3.2)"
+   },
+   "claim": "CIW canonical JSON differs from RFC 8785 (JCS) numbers and key order",
+   "counterexample": {
+    "statement": "CIW canonical JSON bytes equal RFC 8785 JCS bytes",
+    "witness": {
+     "1.0": [
+      "1.0",
+      "1"
+     ],
+     "1e+16": [
+      "1e+16",
+      "10000000000000000"
+     ],
+     "keys": [
+      "Ａ",
+      "😀"
+     ]
+    }
+   },
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "key_order_differs": true,
+    "number_differences": 12
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "Rust byte mismatches on vectors (UTF-8 and ASCII forms)",
+      "reference_kind": "cross_implementation",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "Rust byte mismatches on single floats, including decimal ties",
+      "reference_kind": "cross_implementation",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "Rust refusal-code mismatches",
+      "reference_kind": "cross_implementation",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Rust canonical JSON is byte-identical to the specification and refuses the same inputs",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "byte_mismatches": 0,
+    "decimal_ties": 96,
+    "float_mismatches": 0,
+    "floats": 2164,
+    "refusal_mismatches": 0,
+    "vectors": 28
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 42.0,
+      "passed": true,
+      "reference": "decimal ties on which Rust's format!(\"{:e}\") digits differ from the specification",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     }
+    ]
+   },
+   "claim": "Rust's own shortest float formatting breaks exact decimal ties away from the specification",
+   "counterexample": {
+    "statement": "Rust's shortest float formatting yields the CPython repr digits",
+    "witness": {
+     "rust_shortest": "1.0000000000000003e15",
+     "specification": "1000000000000000.2",
+     "value": "1e15 + 0.25"
+    }
+   },
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "decimal_ties": 96,
+    "rust_shortest_differs": 42
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "Byte-identical canonical JSON holds for Julia, C++ and GPU-host implementations",
+   "domain": "computational_pipeline",
+   "evidence_status": "not_established",
+   "expected_not_established": true,
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 2541,
+   "path": "artifacts/T146/canonical-json-spec.json",
+   "sha256": "6ba3b8a6c6873df683038b69d5a1859eecfa5fdcc29227e9294214cfef9b3ad1"
+  },
+  {
+   "bytes": 15115,
+   "path": "artifacts/T146/test-vectors.json",
+   "sha256": "fb294d7eb9f8510d83dfb1c15967289432ea75d50a25e1dbd1865d8b43a785d3"
+  },
+  {
+   "bytes": 9599,
+   "path": "artifacts/T146/ciw_targets.rs",
+   "sha256": "e98705beb878e01a13f0383d51b21ee35476936e05af7df47ecbc7e6b158c2f1"
+  },
+  {
+   "bytes": 5764,
+   "path": "artifacts/T146/float-corpus.json",
+   "sha256": "20a16cc3a5d2fa49c323588f612476fe087c82b6010eaf89ca721cfcc86b28e5"
+  },
+  {
+   "bytes": 1845,
+   "path": "artifacts/T146/cross-language.json",
+   "sha256": "88a3a944651e432f63043ff60fb459a273e490b7a20e5fe0383f5753a2f245ba"
+  }
+ ],
+ "hypothesis": "One canonical JSON encoding (sorted keys, no whitespace, UTF-8, shortest round-trip binary64 with decimal ties to even in CPython repr layout, safe integers, refusals) is reproducible byte for byte by a separately written implementation in another language (Rust), and CIW's existing Python encoders can be measured against it.",
+ "input_data": [
+  "19 accepted and 9 refused vectors (binary64 limits, subnormals, -0.0, Unicode, controls, nested keys, depth 64/65, decimal ties)",
+  "2164 binary64 values: every vector float, 2000 random bit patterns (PCG64(1460)) and 96 constructed decimal ties (PCG64(1461))",
+  "5 hand-written specification examples"
+ ],
+ "mathematical_model": "Encoding E: JSON values -> bytes per ciw.canonical-json.v1; identity = sha256(E(v)). Floats: the fewest digits k for which a k-digit decimal round-trips (monotone in k, found by bisection with exact integers); the nearer of the two k-digit neighbours, even digit on a tie; fixed form iff -4 < decpt <= 16.",
+ "number": 146,
+ "numerical_result": "19 vectors, set digest 63f7261753b3bf93...; telemetry mismatches 0 (vectors) and 0 (floats); identities differs from the specification on 5 vectors and from the ASCII variant on 0; the two CIW encoders differ on 5 vectors; Rust byte mismatches 0 (vectors) and 0/2164 (floats), refusal mismatches 0, own {:e} differs on 42/96 ties; CPython/NumPy digit mismatches 0/0 of 2164.",
+ "observation_model": "Bytes and sha256 digests of each encoder's output; refusal codes; digit strings.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "rust_probe": {
+   "available": true,
+   "binary_sha256": "014343936914720e0dab50e5e34a1396f59c0ca5d4ac262cc553b5fbd869ce1c",
+   "flags": [
+    "-O",
+    "--edition",
+    "2021",
+    "--remap-path-prefix=<build dir>=ciw-lab-rust"
+   ],
+   "host": "x86_64-unknown-linux-gnu",
+   "rustc_commit": "e408947bfd200af42db322daf0fadfe7e26d3bd1",
+   "rustc_release": "1.94.1",
+   "source_sha256": "e98705beb878e01a13f0383d51b21ee35476936e05af7df47ecbc7e6b158c2f1"
+  },
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/implementation_targets.py": "4e27c12d31365590b7fb82d98b8d02e1668c7b8e73b03f71ef270eca9fcf6eea",
+   "src/ciw/lab/implementation_targets_serial.py": "7978adc19db2c04e37532de2a5dbff32738b3c286c40e19ab8ec1d78361ef3e6"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T150 (bind FPGA identity records to this encoding), then migrate ciw.core.identities with a versioned hash change",
+ "report_id": "sha256:864796249c39a1a485c11aa28504fb070e7c2d5919444db2cc435eb2de4e6711",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "implementation-targets",
+ "state": "completed",
+ "task_id": "T146",
+ "tests_passed": [
+  "check: Canonical JSON v1 test vectors (bytes and sha256) vs hand-written specification examples the reference encoder does not reproduce",
+  "check: Canonical JSON v1 test vectors (bytes and sha256) vs re-encoding a decoded vector changes its bytes",
+  "check: Canonical JSON v1 test vectors (bytes and sha256) vs specification on nan",
+  "check: Canonical JSON v1 test vectors (bytes and sha256) vs specification on positive-infinity",
+  "check: Canonical JSON v1 test vectors (bytes and sha256) vs specification on negative-infinity",
+  "check: Canonical JSON v1 test vectors (bytes and sha256) vs specification on integer-2^53",
+  "check: Canonical JSON v1 test vectors (bytes and sha256) vs specification on integer-minus-2^53",
+  "check: Canonical JSON v1 test vectors (bytes and sha256) vs specification on integer-10^30",
+  "check: Canonical JSON v1 test vectors (bytes and sha256) vs specification on non-string-key",
+  "check: Canonical JSON v1 test vectors (bytes and sha256) vs specification on lone-surrogate",
+  "check: Canonical JSON v1 test vectors (bytes and sha256) vs specification on depth-65",
+  "check: ciw.telemetry.canonical reproduces the specification bytes on every accepted vector and tested float vs ciw.telemetry.canonical against the reference encoder, vectors (CIW encoders call json.dumps; the reference encoder escapes from its own table and formats floats by an exact digit search, so agreement is not true by construction)",
+  "check: ciw.telemetry.canonical reproduces the specification bytes on every accepted vector and tested float vs ciw.telemetry.canonical against the reference encoder, single floats",
+  "check: ciw.core.identities.canonical_json reproduces the ASCII-escaped variant, not the specification bytes vs ciw.core.identities.canonical_json against the reference ASCII variant, vectors",
+  "check: ciw.core.identities.canonical_json reproduces the ASCII-escaped variant, not the specification bytes vs ciw.core.identities.canonical_json against the reference ASCII variant, floats",
+  "check: ciw.core.identities.canonical_json reproduces the ASCII-escaped variant, not the specification bytes vs vectors whose ciw.core.identities bytes differ from the specification bytes",
+  "check: ciw.core.identities.canonical_json and ciw.telemetry.canonical produce different bytes for non-ASCII text vs vectors on which the two CIW encoders differ",
+  "check: ciw.core.identities.canonical_json and ciw.telemetry.canonical produce different bytes for non-ASCII text vs differing vectors that are printable ASCII only",
+  "check: ciw.core.identities.canonical_json gives {1: 'x'} and {'1': 'x'} the same content identity vs int-key and str-key canonical texts are equal",
+  "check: ciw.core.identities.canonical_json gives {1: 'x'} and {'1': 'x'} the same content identity vs specification on {1: 'x'}",
+  "check: Python canonicalizers accept values the specification refuses vs refused-by-spec vectors accepted by a CIW encoder",
+  "check: The exact shortest-digit rule agrees with CPython repr and NumPy Dragon4 on vector, random and decimal-tie binary64 values vs round-trip failures of the specification text (value or sign)",
+  "check: The exact shortest-digit rule agrees with CPython repr and NumPy Dragon4 on vector, random and decimal-tie binary64 values vs CPython repr digit/exponent mismatches against the exact rule",
+  "check: The exact shortest-digit rule agrees with CPython repr and NumPy Dragon4 on vector, random and decimal-tie binary64 values vs constructed decimal ties in the corpus",
+  "independent: The exact shortest-digit rule agrees with CPython repr and NumPy Dragon4 on vector, random and decimal-tie binary64 values vs numpy.format_float_scientific(unique=True)",
+  "check: CIW canonical JSON differs from RFC 8785 (JCS) numbers and key order vs vector floats formatted differently",
+  "check: CIW canonical JSON differs from RFC 8785 (JCS) numbers and key order vs key order differs (UTF-16 units against code points)",
+  "check: Rust canonical JSON is byte-identical to the specification and refuses the same inputs vs Rust byte mismatches on vectors (UTF-8 and ASCII forms)",
+  "check: Rust canonical JSON is byte-identical to the specification and refuses the same inputs vs Rust byte mismatches on single floats, including decimal ties",
+  "check: Rust canonical JSON is byte-identical to the specification and refuses the same inputs vs Rust refusal-code mismatches",
+  "check: Rust's own shortest float formatting breaks exact decimal ties away from the specification vs decimal ties on which Rust's format!(\"{:e}\") digits differ from the specification",
+  "pytest: tests/test_lab_implementation_targets.py::test_t146_python_canonicalizers_and_vectors",
+  "pytest: tests/test_lab_implementation_targets.py::test_t146_rust_byte_identity",
+  "pytest: tests/test_lab_implementation_targets.py::test_t146_reference_float_rule"
+ ],
+ "tests_skipped": [],
+ "title": "Define one canonical serialization across languages.",
+ "uncertainty": "Exact byte comparison. The reference encoder, the Rust probe and the CIW encoders are all CIW-authored, so their agreement is same-origin; digit agreement with NumPy is independent but covers only the tested values (random bit patterns contain almost no decimal ties, hence the constructed ones).",
+ "unresolved_assumptions": [
+  "ciw.core.identities.canonical_json remains the ASCII variant because changing it would change every retained identity",
+  "Julia, C++ and GPU-host encoders were not run",
+  "JCS formatting was implemented here from ECMA-262, not from an external JCS library"
+ ]
+}

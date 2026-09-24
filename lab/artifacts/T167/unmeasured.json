@@ -1,0 +1,732 @@
+{
+ "blocked_or_deferred_tasks": [
+  {
+   "reason": "Blocked: unavailable requirement(s) hardware:nvidia-gpu. Planned: On the RTX 2080 host: (0) `mkdir -p runs/rtx2080-<date>`; (1) `ciw energy probe --gpu-index 0` must return a reading with status ok; (2) `ciw energy record --problem examples/energy-accuracy/problem.json --output-dir runs/rtx2080-<dat",
+   "state": "blocked",
+   "task_id": "T116"
+  },
+  {
+   "reason": "Blocked: unavailable requirement(s) hardware:nvidia-gpu. Planned: On the RTX 2080 host: (0) `mkdir -p runs/rtx2080-<date>`; (1) start `TZ=UTC nvidia-smi --query-gpu=timestamp,uuid,name,utilization.gpu,utilization.memory,temperature.gpu,power.draw,clocks.sm,clocks.mem,pstate --format=csv,nounits -lms",
+   "state": "blocked",
+   "task_id": "T118"
+  }
+ ],
+ "hardware_measured_findings": [],
+ "not_established_claims": [
+  {
+   "claim": "Nearby real trajectories on a physical curved surface separate according to this Jacobi law",
+   "domain": "physical",
+   "task_id": "T005"
+  },
+  {
+   "claim": "Which starting error dominates the endpoint error of real tool or vehicle paths on physical curved parts",
+   "domain": "physical",
+   "task_id": "T009"
+  },
+  {
+   "claim": "A physical cylinder or large-radius torus workpiece shows these separations",
+   "domain": "physical",
+   "task_id": "T013"
+  },
+  {
+   "claim": "These validity domains certify first-order path corrections as safe on real machines",
+   "domain": "machine_safety",
+   "task_id": "T017"
+  },
+  {
+   "claim": "Curvature signals resolvable here would be resolvable in measured sensor data",
+   "domain": "sensor_performance",
+   "task_id": "T018"
+  },
+  {
+   "claim": "The shortest route on a physical flat workpiece is the safest route to execute",
+   "domain": "machine_safety",
+   "task_id": "T021"
+  },
+  {
+   "claim": "A physical heading sensor closes the shortest loop within the computed heading tolerance",
+   "domain": "sensor_performance",
+   "task_id": "T023"
+  },
+  {
+   "claim": "Ranking routes by focus margin selects a route that is safe to execute on a physical part",
+   "domain": "machine_safety",
+   "task_id": "T024"
+  },
+  {
+   "claim": "A Pareto-optimal route is safe to execute on a physical part",
+   "domain": "machine_safety",
+   "task_id": "T025"
+  },
+  {
+   "claim": "Grid-planned path lengths predict distances travelled by a physical vehicle or tool",
+   "domain": "physical",
+   "task_id": "T030"
+  },
+  {
+   "claim": "A metric calibrated from physical measurements is accurate enough to decide between near-tied routes",
+   "domain": "calibration",
+   "task_id": "T031"
+  },
+  {
+   "claim": "A route from this library is safe (or unsafe) to execute on a physical part or vehicle",
+   "domain": "machine_safety",
+   "task_id": "T032"
+  },
+  {
+   "claim": "The conformance suite certifies surfaces reconstructed from physical measurements",
+   "domain": "physical",
+   "task_id": "T033"
+  },
+  {
+   "claim": "Symbolic and dual-number derivative agreement certifies derivatives of surfaces reconstructed from physical measurements",
+   "domain": "physical",
+   "task_id": "T034"
+  },
+  {
+   "claim": "The optimal-step law derived here applies to derivatives of measured surface samples",
+   "domain": "physical",
+   "task_id": "T035"
+  },
+  {
+   "claim": "Chart-switching geodesic integration is ready for tool paths over physical parts",
+   "domain": "industrial_readiness",
+   "task_id": "T036"
+  },
+  {
+   "claim": "The singularity classification applies to scanned physical parts",
+   "domain": "physical",
+   "task_id": "T037"
+  },
+  {
+   "claim": "Straightest geodesics on a mesh reconstructed from a real scan reproduce the geodesics of the scanned physical surface",
+   "domain": "physical",
+   "task_id": "T038"
+  },
+  {
+   "claim": "The observed convergence orders transfer to meshes reconstructed from real scans",
+   "domain": "physical",
+   "task_id": "T039"
+  },
+  {
+   "claim": "Angle-defect curvature of a scanned mesh estimates the Gaussian curvature of the physical part",
+   "domain": "physical",
+   "task_id": "T040"
+  },
+  {
+   "claim": "A minimum-angle or radius-ratio threshold certifies a scanned mesh for production metrology",
+   "domain": "production_acceptance",
+   "task_id": "T041"
+  },
+  {
+   "claim": "The refusal catalogue covers every defect present in real scanned surface data",
+   "domain": "physical",
+   "task_id": "T042"
+  },
+  {
+   "claim": "Isotropic Gaussian vertex noise of the tested sigma describes the error of a real scanner",
+   "domain": "calibration",
+   "task_id": "T043"
+  },
+  {
+   "claim": "A real marker-distance sensor on a real scanned part has this geometry and sensor variance split",
+   "domain": "sensor_performance",
+   "task_id": "T044"
+  },
+  {
+   "claim": "The geometry sigma of 1e-3 is the accuracy of a real scanned surface",
+   "domain": "physical",
+   "task_id": "T044"
+  },
+  {
+   "claim": "The declared noise-model parameters describe real instruments of these modes",
+   "domain": "sensor_performance",
+   "task_id": "T045"
+  },
+  {
+   "claim": "The chord correction computed from nominal curvature holds for chords measured on a physical part",
+   "domain": "physical",
+   "task_id": "T046"
+  },
+  {
+   "claim": "Chords measured between physical markers on a cylindrical part follow the cos^4(alpha)/(24 R^2) coefficient",
+   "domain": "physical",
+   "task_id": "T047"
+  },
+  {
+   "claim": "A physical stereo rig with this geometry achieves the synthetic chord accuracy",
+   "domain": "sensor_performance",
+   "task_id": "T048"
+  },
+  {
+   "claim": "The declared perturbation magnitudes bound the calibration error of a real stereo rig",
+   "domain": "calibration",
+   "task_id": "T049"
+  },
+  {
+   "claim": "A two-term radial plus tangential Brown-Conrady model describes a real lens to the required accuracy",
+   "domain": "calibration",
+   "task_id": "T050"
+  },
+  {
+   "claim": "Real image noise is Gaussian with sigma = 0.25 px and marker localization rounds to whole pixels",
+   "domain": "sensor_performance",
+   "task_id": "T051"
+  },
+  {
+   "claim": "A real encoder drive train behaves as a constant-width play operator with constant scale and bias",
+   "domain": "physical",
+   "task_id": "T052"
+  },
+  {
+   "claim": "Real gyroscopes have constant bias and white rate noise with the declared densities",
+   "domain": "sensor_performance",
+   "task_id": "T053"
+  },
+  {
+   "claim": "Real sensor clocks have the declared constant offset and white jitter",
+   "domain": "physical",
+   "task_id": "T054"
+  },
+  {
+   "claim": "Real links drop observations as Bernoulli or two-state burst processes with these rates",
+   "domain": "sensor_performance",
+   "task_id": "T055"
+  },
+  {
+   "claim": "Real tracker latencies and target speeds match the declared values",
+   "domain": "physical",
+   "task_id": "T056"
+  },
+  {
+   "claim": "A real tracker's measurement noise and target motion match the constant-velocity model",
+   "domain": "sensor_performance",
+   "task_id": "T057"
+  },
+  {
+   "claim": "The declared frame and clock mappings equal the real extrinsic calibration and clock synchronization",
+   "domain": "calibration",
+   "task_id": "T058"
+  },
+  {
+   "claim": "Admission as workbench state confers authority to act on a machine",
+   "domain": "actuator_authority",
+   "task_id": "T059"
+  },
+  {
+   "claim": "The bench's noise levels, rates and motion describe real camera, encoder, IMU or tracker hardware",
+   "domain": "sensor_performance",
+   "task_id": "T060"
+  },
+  {
+   "claim": "Real sensors' noise covariance equals the covariance declared for this bench",
+   "domain": "sensor_performance",
+   "task_id": "T061"
+  },
+  {
+   "claim": "Real camera and tracker noises share the common-mode covariance assumed here",
+   "domain": "sensor_performance",
+   "task_id": "T062"
+  },
+  {
+   "claim": "The declared 35 degree rotation, translation and body covariance describe a real sensor mounting or extrinsic calibration",
+   "domain": "calibration",
+   "task_id": "T063"
+  },
+  {
+   "claim": "The declared [lateral, heading] covariance and these surfaces predict the path uncertainty of a real vehicle or tool on a real curved part",
+   "domain": "physical",
+   "task_id": "T064"
+  },
+  {
+   "claim": "A real sensor's internally filtered output can be fused downstream as white noise",
+   "domain": "sensor_performance",
+   "task_id": "T065"
+  },
+  {
+   "claim": "A real residual monitor normalized by datasheet sensor covariance is correctly calibrated",
+   "domain": "sensor_performance",
+   "task_id": "T066"
+  },
+  {
+   "claim": "A real gate at the 99% quantile rejects 1% of valid real readings",
+   "domain": "sensor_performance",
+   "task_id": "T067"
+  },
+  {
+   "claim": "Real outliers are rare, isolated and of fixed magnitude as in this contamination model",
+   "domain": "sensor_performance",
+   "task_id": "T068"
+  },
+  {
+   "claim": "Real sensor dropouts are independent of the state and of the noise, as assumed here",
+   "domain": "sensor_performance",
+   "task_id": "T069"
+  },
+  {
+   "claim": "The recovered offset calibrates the clock of a real camera",
+   "domain": "calibration",
+   "task_id": "T070"
+  },
+  {
+   "claim": "A 2 degree rotation is the size of a real extrinsic calibration error",
+   "domain": "calibration",
+   "task_id": "T071"
+  },
+  {
+   "claim": "The validity interval [0, 60) reflects how long a real camera calibration stays valid",
+   "domain": "calibration",
+   "task_id": "T072"
+  },
+  {
+   "claim": "A 1 m, 99% track-loss radius is a safe operating threshold",
+   "domain": "machine_safety",
+   "task_id": "T073"
+  },
+  {
+   "claim": "The fused estimate equals the physical state of a real target within its covariance",
+   "domain": "physical",
+   "task_id": "T074"
+  },
+  {
+   "claim": "An admitted synthetic state may command actuators",
+   "domain": "actuator_authority",
+   "task_id": "T075"
+  },
+  {
+   "claim": "Synthetic fusion output is admissible as production state",
+   "domain": "production_acceptance",
+   "task_id": "T076"
+  },
+  {
+   "claim": "The retained log's device and kernel identities identify the producing GPU and code",
+   "domain": "physical",
+   "task_id": "T077"
+  },
+  {
+   "claim": "The retained energy logs are real GPU energy measurements",
+   "domain": "physical",
+   "task_id": "T078"
+  },
+  {
+   "claim": "A retained replay receipt or verification authorizes admission of the replayed result into canonical state",
+   "domain": "production_acceptance",
+   "task_id": "T089"
+  },
+  {
+   "claim": "A content-consistent reopened bundle is acceptable as a verified production result",
+   "domain": "production_acceptance",
+   "task_id": "T092"
+  },
+  {
+   "claim": "Passing provider-free conformance admits a candidate into canonical state",
+   "domain": "production_acceptance",
+   "task_id": "T096"
+  },
+  {
+   "claim": "The integer heat field describes physical heat diffusion in a material",
+   "domain": "physical",
+   "task_id": "T097"
+  },
+  {
+   "claim": "A successful locked build makes the engine acceptable for production use",
+   "domain": "production_acceptance",
+   "task_id": "T099"
+  },
+  {
+   "claim": "The relabelled energy log is a physical GPU energy measurement",
+   "domain": "physical",
+   "task_id": "T100"
+  },
+  {
+   "claim": "The synthetic energy fixture characterizes real NVML counter accuracy",
+   "domain": "sensor_performance",
+   "task_id": "T100"
+  },
+  {
+   "claim": "The declared stiffness box contains the stiffness of a real axis",
+   "domain": "physical",
+   "task_id": "T105"
+  },
+  {
+   "claim": "A CERTIFIED_WITH_MARGIN verdict (operationally_acceptable) authorizes actuation",
+   "domain": "actuator_authority",
+   "task_id": "T106"
+  },
+  {
+   "claim": "The disturbance bound w_bar = 0.5 holds for a physical plant",
+   "domain": "physical",
+   "task_id": "T112"
+  },
+  {
+   "claim": "The ISS bound defines a safe operating envelope for a machine",
+   "domain": "machine_safety",
+   "task_id": "T112"
+  },
+  {
+   "claim": "The synthetic residual statistics describe a real encoder's performance",
+   "domain": "sensor_performance",
+   "task_id": "T113"
+  },
+  {
+   "claim": "The EKF standard error of theta covers the true parameter of a real axis at the stated rate",
+   "domain": "sensor_performance",
+   "task_id": "T113"
+  },
+  {
+   "claim": "The calibration referenced in the host envelope is valid",
+   "domain": "calibration",
+   "task_id": "T113"
+  },
+  {
+   "claim": "The servo-axis pilot is safe to operate",
+   "domain": "machine_safety",
+   "task_id": "T114"
+  },
+  {
+   "claim": "The Lyapunov monitor may command, gate or release the axis",
+   "domain": "actuator_authority",
+   "task_id": "T114"
+  },
+  {
+   "claim": "The pilot configuration is acceptable for production use",
+   "domain": "production_acceptance",
+   "task_id": "T114"
+  },
+  {
+   "claim": "The monitor is ready for industrial deployment",
+   "domain": "industrial_readiness",
+   "task_id": "T114"
+  },
+  {
+   "claim": "The placeholder inertia interval contains the real axis inertia",
+   "domain": "physical",
+   "task_id": "T114"
+  },
+  {
+   "claim": "Encoder and current-sensor calibrations of the bench are valid",
+   "domain": "calibration",
+   "task_id": "T114"
+  },
+  {
+   "claim": "Gross CPU package energy (background-inclusive, idle not subtracted) per geodesic trajectory",
+   "domain": "physical",
+   "task_id": "T115"
+  },
+  {
+   "claim": "Idle-subtracted CPU package energy per geodesic trajectory (equal-length idle bracket after the workload)",
+   "domain": "physical",
+   "task_id": "T115"
+  },
+  {
+   "claim": "GPU-domain gross energy per measured batch",
+   "domain": "physical",
+   "task_id": "T116"
+  },
+  {
+   "claim": "The NVML total-energy counter of the RTX 2080 has a characterized accuracy and resolution",
+   "domain": "sensor_performance",
+   "task_id": "T116"
+  },
+  {
+   "claim": "The Rust kernel uses less energy per trajectory than the Python kernel on real hardware",
+   "domain": "physical",
+   "task_id": "T117"
+  },
+  {
+   "claim": "RTX 2080 power draw during the measurement phase (NVML)",
+   "domain": "physical",
+   "task_id": "T118"
+  },
+  {
+   "claim": "RTX 2080 temperature during the measurement phase (NVML)",
+   "domain": "physical",
+   "task_id": "T118"
+  },
+  {
+   "claim": "RTX 2080 graphics clock during the measurement phase (NVML)",
+   "domain": "physical",
+   "task_id": "T118"
+  },
+  {
+   "claim": "Host-bracketed batch solve duration (launch, sync and copy included)",
+   "domain": "physical",
+   "task_id": "T118"
+  },
+  {
+   "claim": "RTX 2080 GPU utilization during the measurement phase (nvidia-smi rows inside the measurement window)",
+   "domain": "physical",
+   "task_id": "T118"
+  },
+  {
+   "claim": "RTX 2080 power draw is steady over the measurement phase (coefficient of variation <= 0.10)",
+   "domain": "physical",
+   "task_id": "T118"
+  },
+  {
+   "claim": "RTX 2080 temperature drifts by at most 5 C over the measurement phase",
+   "domain": "physical",
+   "task_id": "T118"
+  },
+  {
+   "claim": "RTX 2080 kernel-only duration of the Gaussian VI kernel",
+   "domain": "physical",
+   "task_id": "T118"
+  },
+  {
+   "claim": "Physical GPU energy per accepted numerical result",
+   "domain": "physical",
+   "task_id": "T119"
+  },
+  {
+   "claim": "float32 lowers the energy per accepted trajectory relative to float64 on real CPU or GPU hardware",
+   "domain": "physical",
+   "task_id": "T120"
+  },
+  {
+   "claim": "Reductions on the RTX 2080 (CUB, cuBLAS or atomicAdd) reproduce these emulated spreads and sign flips",
+   "domain": "physical",
+   "task_id": "T121"
+  },
+  {
+   "claim": "The variational free energy of this model equals a thermodynamic free energy of a physical system",
+   "domain": "physical",
+   "task_id": "T122"
+  },
+  {
+   "claim": "A decrease of variational free energy corresponds to a decrease of physical energy consumed by the computation",
+   "domain": "physical",
+   "task_id": "T123"
+  },
+  {
+   "claim": "The fixtures' counter readings were produced by a physical GPU and NVML counter",
+   "domain": "physical",
+   "task_id": "T124"
+  },
+  {
+   "claim": "Replayed energy values are physically valid measurements",
+   "domain": "physical",
+   "task_id": "T125"
+  },
+  {
+   "claim": "Measured marker chords on the physical plate equal the predicted geodesic distances within instrument uncertainty",
+   "domain": "physical",
+   "task_id": "T126"
+  },
+  {
+   "claim": "The declared instrument uncertainties (camera 0.02 mm, tracker 0.015 mm, CMM 0.002 mm) hold for the instruments that will be used",
+   "domain": "calibration",
+   "task_id": "T126"
+  },
+  {
+   "claim": "Measured chords and surface distances on the physical tube match the predicted gaps",
+   "domain": "physical",
+   "task_id": "T127"
+  },
+  {
+   "claim": "The physical tube radius and roundness lie within the declared +/- 0.1 mm",
+   "domain": "calibration",
+   "task_id": "T127"
+  },
+  {
+   "claim": "Measured separations of offset routes on the physical coupon follow the Jacobi prediction and cross at the predicted focal point",
+   "domain": "physical",
+   "task_id": "T128"
+  },
+  {
+   "claim": "The formed coupon matches the declared dome (height 10 mm, sigma 20 mm) within tolerance",
+   "domain": "calibration",
+   "task_id": "T128"
+  },
+  {
+   "claim": "An unsteered 3 mm tape laid on the coupon follows a geodesic of the as-built surface (no in-plane bending, lift-off or slip)",
+   "domain": "physical",
+   "task_id": "T128"
+  },
+  {
+   "claim": "The start jig and tape laying realize the relative start pose of the offset tape within the declared 0.05 mm and 0.5 mrad",
+   "domain": "calibration",
+   "task_id": "T128"
+  },
+  {
+   "claim": "A real laser line scanner achieves the declared 0.01 mm point noise on the coupon surface (finish, incidence angle, speckle)",
+   "domain": "sensor_performance",
+   "task_id": "T129"
+  },
+  {
+   "claim": "The physical gauge sphere, step gauge and scale bar have their certified dimensions, and the lab frame chain has the declared covariances",
+   "domain": "calibration",
+   "task_id": "T130"
+  },
+  {
+   "claim": "The real gage (instrument, fixture and operators) has %GRR below 10% on the coupon features",
+   "domain": "sensor_performance",
+   "task_id": "T131"
+  },
+  {
+   "claim": "The measurement system is approved for production use",
+   "domain": "production_acceptance",
+   "task_id": "T131"
+  },
+  {
+   "claim": "Tows placed by a real AFP head follow the programmed course within the stack, with gaps and overlaps inside 0.5 mm",
+   "domain": "physical",
+   "task_id": "T132"
+  },
+  {
+   "claim": "The declared 635 mm minimum steering radius avoids tow wrinkling for the placed material",
+   "domain": "physical",
+   "task_id": "T132"
+  },
+  {
+   "claim": "Fibre does not slip on a real mandrel wherever abs(kappa_g / kappa_n) <= 0.2 (the friction coefficient is declared, not measured)",
+   "domain": "physical",
+   "task_id": "T133"
+  },
+  {
+   "claim": "The torch or gun on a real cell stays within the predicted lateral and standoff band",
+   "domain": "physical",
+   "task_id": "T134"
+  },
+  {
+   "claim": "The trajectory is safe to execute on a welding or coating robot cell",
+   "domain": "machine_safety",
+   "task_id": "T134"
+  },
+  {
+   "claim": "The real scanner footprint is a 20 mm swath on this surface at the planned standoff",
+   "domain": "sensor_performance",
+   "task_id": "T135"
+  },
+  {
+   "claim": "The robot, fixture and frame calibration achieves the required heading and lateral tolerances",
+   "domain": "calibration",
+   "task_id": "T136"
+  },
+  {
+   "claim": "Physical paths near a predicted focus show the predicted loss of lateral-error ordering",
+   "domain": "physical",
+   "task_id": "T137"
+  },
+  {
+   "claim": "Measured separation on the coupon agrees with the prediction (E_n <= 1 at every station)",
+   "domain": "physical",
+   "task_id": "T138"
+  },
+  {
+   "claim": "The start jig and tape laying realize the relative start pose of the offset tape within the declared 0.05 mm and 0.5 mrad",
+   "domain": "calibration",
+   "task_id": "T138"
+  },
+  {
+   "claim": "A real measurement with raw bytes, calibration and frame metadata has been retained",
+   "domain": "physical",
+   "task_id": "T139"
+  },
+  {
+   "claim": "The declared instrument uncertainties are the uncertainties of the instruments used",
+   "domain": "calibration",
+   "task_id": "T140"
+  },
+  {
+   "claim": "The start jig and tape laying realize the relative start pose of the offset tape within the declared 0.05 mm and 0.5 mrad",
+   "domain": "calibration",
+   "task_id": "T140"
+  },
+  {
+   "claim": "The budget contains every significant physical error source (thermal, fixturing, tape bending along the route, target centring)",
+   "domain": "physical",
+   "task_id": "T140"
+  },
+  {
+   "claim": "Production acceptance of the coupon, cylinder or plate process",
+   "domain": "production_acceptance",
+   "task_id": "T141"
+  },
+  {
+   "claim": "The manufacturing protocols and models are ready for industrial use",
+   "domain": "industrial_readiness",
+   "task_id": "T141"
+  },
+  {
+   "claim": "Rust ports of the ranked kernels are ready for industrial deployment",
+   "domain": "industrial_readiness",
+   "task_id": "T142"
+  },
+  {
+   "claim": "The listed interfaces are qualified for plant integration",
+   "domain": "industrial_readiness",
+   "task_id": "T143"
+  },
+  {
+   "claim": "Vendor camera SDK acquisition meets its timing on real cameras",
+   "domain": "sensor_performance",
+   "task_id": "T143"
+  },
+  {
+   "claim": "Keeping native code behind subprocess boundaries makes machine interfaces safe",
+   "domain": "machine_safety",
+   "task_id": "T144"
+  },
+  {
+   "claim": "GPU/CPU agreement establishes industrial readiness",
+   "domain": "industrial_readiness",
+   "task_id": "T147"
+  },
+  {
+   "claim": "The frame format works on real FPGA links",
+   "domain": "physical",
+   "task_id": "T149"
+  },
+  {
+   "claim": "A telemetry-only interface guarantees the FPGA cannot actuate the machine",
+   "domain": "machine_safety",
+   "task_id": "T149"
+  },
+  {
+   "claim": "A real bitstream with this identity exists and is loaded on hardware",
+   "domain": "physical",
+   "task_id": "T150"
+  },
+  {
+   "claim": "The bitstream is approved for production deployment",
+   "domain": "production_acceptance",
+   "task_id": "T150"
+  },
+  {
+   "claim": "The rollback procedure is safe to execute on a production machine",
+   "domain": "machine_safety",
+   "task_id": "T151"
+  },
+  {
+   "claim": "Rollback records are accepted for production change control",
+   "domain": "production_acceptance",
+   "task_id": "T151"
+  },
+  {
+   "claim": "Simulated loss, latency and staleness represent the real FPGA telemetry link",
+   "domain": "physical",
+   "task_id": "T152"
+  },
+  {
+   "claim": "The lab holds actuator write authority",
+   "domain": "actuator_authority",
+   "task_id": "T153"
+  },
+  {
+   "claim": "Disabled-by-default software writes make the machine safe",
+   "domain": "machine_safety",
+   "task_id": "T153"
+  },
+  {
+   "claim": "Heading proposals are authorized for execution as actuator commands",
+   "domain": "actuator_authority",
+   "task_id": "T154"
+  },
+  {
+   "claim": "Applying the proposed heading corrections on a machine is safe",
+   "domain": "machine_safety",
+   "task_id": "T154"
+  }
+ ]
+}

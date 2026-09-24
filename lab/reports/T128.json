@@ -1,0 +1,563 @@
+{
+ "changed_files": [
+  "src/ciw/lab/manufacturing.py",
+  "src/ciw/lab/manufacturing_geometry.py",
+  "src/ciw/lab/manufacturing_metrology.py",
+  "src/ciw/lab/manufacturing_records.py",
+  "docs/lab/MANUFACTURING.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 2,
+   "not_established": 4,
+   "numerically_verified": 7,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "det Phi = 1; focal point independent of step size; linear remainder O(eps^2) (O(eps^3) on the symmetry axis).",
+ "experiment": "RK4 transfer at h = 1 and 2 mm, Richardson estimate, exactly perturbed routes (exp-map lateral start) at three sizes on and off the symmetry axis, crossing of the nonlinear 2 mm offset route, comparison with ciw's adaptive Dormand-Prince integrator and finite-difference geometry (always), and with scipy DOP853 and a sympy derivation (separate findings, established only when those modules are installed), protocol validation.",
+ "failure_modes_checked": [
+  "step refinement of Phi and of the focal point",
+  "Wronskian",
+  "second- vs third-order remainder (symmetry)",
+  "nonlinear crossing vs linear focal point",
+  "plate signature vs combined uncertainty",
+  "protocol refusal matrix",
+  "circular test (a path drawn from its own program): paths are realized as unsteered tapes instead"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 1.3853091331839096e-05,
+      "passed": true,
+      "reference": "focal point at h = 1 mm vs h = 2 mm (mm)",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.001
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.0010819915777915412,
+      "passed": true,
+      "reference": "offset crossings (2 and 1 mm) extrapolated in offset^2 minus the focal point (mm)",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.02
+     },
+     {
+      "comparison": "le",
+      "observed": 0.7587664197692487,
+      "passed": true,
+      "reference": "focal point lies inside the route (s_f / L)",
+      "reference_kind": "analytic",
+      "tolerance": 1.0
+     }
+    ]
+   },
+   "claim": "Laterally offset routes cross the nominal route at the first focal point (small-offset limit)",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0001,
+    "rel": 1e-07
+   },
+   "uncertainty": {
+    "basis": "RK4 Richardson estimate of the focal location (mm)",
+    "kind": "truncation_bound",
+    "value": 9.235394221226064e-07
+   },
+   "unit": "mm",
+   "value": 153.40715534052734
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 4.446126800061734e-10,
+      "passed": true,
+      "reference": "Wronskian det Phi - 1 along the route",
+      "reference_kind": "invariant",
+      "tolerance": 1e-08
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 1.0519944917556737e-06,
+      "passed": true,
+      "reference": "Richardson estimate |Phi(h) - Phi(2h)| / 15",
+      "reference_kind": "self_convergence",
+      "tolerance": 1e-05
+     }
+    ]
+   },
+   "claim": "Domed-coupon Jacobi transfer at the end of the nominal route",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-06,
+    "rel": 1e-07
+   },
+   "uncertainty": {
+    "basis": "RK4 Richardson estimate |Phi(h) - Phi(2h)| / 15",
+    "kind": "truncation_bound",
+    "value": 1.0519944917556737e-06
+   },
+   "unit": null,
+   "value": {
+    "length_mm": 202.1796844767861,
+    "phi_end": [
+     [
+      -0.5345512537841435,
+      107.94190794770816
+     ],
+     [
+      -0.010960088893584432,
+      0.3424421991319822
+     ]
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 1.9990522412723226,
+      "passed": true,
+      "reference": "off-axis remainder order",
+      "reference_kind": "self_convergence",
+      "tolerance": 1.8
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.00019585902392904586,
+      "passed": true,
+      "reference": "on-axis remainder order - 3 (odd symmetry)",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.3
+     }
+    ]
+   },
+   "claim": "Linearized separation remainder is at least second order (third order on the symmetry axis)",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0001,
+    "rel": 1e-05
+   },
+   "uncertainty": {
+    "basis": "half-spread of pairwise orders from three perturbation sizes",
+    "kind": "reference_error",
+    "value": 0.0004345898294892958
+   },
+   "unit": null,
+   "value": {
+    "off_axis": 1.9990522412723226,
+    "on_axis": 2.999804140976071
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 9.337411879777704,
+      "passed": true,
+      "reference": "(plate - coupon separation of the 2 mm offset route at L) / combined k = 2 uncertainty (open-loop prediction and camera pair)",
+      "reference_kind": "analytic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 2.842212826574079e-08,
+      "passed": true,
+      "reference": "Richardson solver estimate of the end separation, 2 |j_lat(h) - j_lat(2h)| / 15 (mm)",
+      "reference_kind": "self_convergence",
+      "tolerance": 1e-05
+     }
+    ]
+   },
+   "claim": "Curvature signature relative to the flat-plate control at the route end",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-06,
+    "rel": 1e-07
+   },
+   "uncertainty": {
+    "basis": "k = 2 open-loop prediction uncertainty at the end (mm)",
+    "kind": "reference_error",
+    "value": 0.32033300742553683
+   },
+   "unit": "mm",
+   "value": {
+    "coupon_heading_5mrad": 0.5397095397385409,
+    "coupon_lateral_2mm": -1.0373617092070082,
+    "expanded_uncertainty_mm": 0.325289464394851,
+    "plate_heading_5mrad": 1.0108984223839306,
+    "plate_lateral_2mm": 2.0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 9.824155142723612e-07,
+      "passed": true,
+      "reference": "max |state(L)| difference, RK4 (h ~ 1 mm) vs ciw Dormand-Prince 5(4) at rtol 1e-11",
+      "reference_kind": "cross_implementation",
+      "tolerance": 1e-05
+     }
+    ]
+   },
+   "claim": "The RK4 coupon transfer agrees with ciw's adaptive Dormand-Prince 5(4) integration of the same equations",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-05,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "difference between the two integrations",
+    "kind": "truncation_bound",
+    "value": 9.824155142723612e-07
+   },
+   "unit": null,
+   "value": 9.824155142723612e-07
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 4.245544887870878e-13,
+      "passed": true,
+      "reference": "max |Gamma - central differences of the metric| at six points (1/mm)",
+      "reference_kind": "cross_implementation",
+      "tolerance": 1e-10
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 7.776293161915887e-11,
+      "passed": true,
+      "reference": "max |K - Monge formula on central differences of the height (step 0.01 mm)| at six points (1/mm^2)",
+      "reference_kind": "cross_implementation",
+      "tolerance": 1e-09
+     }
+    ]
+   },
+   "claim": "Coupon Christoffel symbols and Gaussian curvature agree with finite-difference derivations from the metric and from the height values",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "O(h^2) error of the finite-difference curvature (1/mm^2)",
+    "kind": "truncation_bound",
+    "value": 7.776293161915887e-11
+   },
+   "unit": null,
+   "value": {
+    "christoffel": 4.245544887870878e-13,
+    "curvature": 7.776293161915887e-11
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "independent_check": {
+     "checker": {
+      "implementation": "scipy.integrate.solve_ivp DOP853",
+      "revision": "1.16.2"
+     },
+     "comparison": "abs_le",
+     "observed": 9.82036297614286e-07,
+     "passed": true,
+     "producer": {
+      "implementation": "ciw.lab",
+      "revision": "ciw.lab.jacobi RK4 / surfaces"
+     },
+     "reference": "max |state(L)| difference, RK4 (h ~ 1 mm) vs scipy DOP853 at rtol 1e-12",
+     "reference_kind": "high_precision",
+     "tolerance": 1e-05
+    }
+   },
+   "claim": "scipy DOP853 integrating the ciw right-hand side agrees with the RK4 coupon transfer (independent time stepping; the geometry code is shared)",
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "regression_tolerance": {
+    "abs": 1e-05,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "difference between the two integrations",
+    "kind": "truncation_bound",
+    "value": 9.82036297614286e-07
+   },
+   "unit": null,
+   "value": 9.82036297614286e-07
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "independent_check": {
+     "checker": {
+      "implementation": "sympy symbolic differentiation",
+      "revision": "1.14.0"
+     },
+     "comparison": "abs_le",
+     "observed": 8.673617379884035e-19,
+     "passed": true,
+     "producer": {
+      "implementation": "ciw.lab",
+      "revision": "ciw.lab.jacobi RK4 / surfaces"
+     },
+     "reference": "max |Gamma| (1/mm) and |K| (1/mm^2) differences at six points",
+     "reference_kind": "high_precision",
+     "tolerance": 1e-12
+    }
+   },
+   "claim": "A sympy derivation of the coupon Christoffel symbols and Gaussian curvature from the height formula agrees with ciw at six points",
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "double-precision evaluation of both derivations",
+    "kind": "roundoff",
+    "value": 1e-15
+   },
+   "unit": null,
+   "value": 8.673617379884035e-19
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "acceptance_inside_system",
+      "observed_refusal": "acceptance_inside_system",
+      "passed": true,
+      "reference": "protocol mutation acceptance_inside_system",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "criterion_is_decision",
+      "observed_refusal": "criterion_is_decision",
+      "passed": true,
+      "reference": "protocol mutation criterion_marked_accepted",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "measurement_without_acquisition",
+      "observed_refusal": "measurement_without_acquisition",
+      "passed": true,
+      "reference": "protocol mutation filled_slot_without_acquisition",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "instrument_claimed_verified",
+      "observed_refusal": "instrument_claimed_verified",
+      "passed": true,
+      "reference": "protocol mutation instrument_claimed_verified",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "missing_field",
+      "observed_refusal": "missing_field",
+      "passed": true,
+      "reference": "protocol mutation missing_markers",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "prediction_labelled_measured",
+      "observed_refusal": "prediction_labelled_measured",
+      "passed": true,
+      "reference": "protocol mutation prediction_labelled_measured",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "measurement_without_acquisition",
+      "observed_refusal": "measurement_without_acquisition",
+      "passed": true,
+      "reference": "protocol mutation records_in_empty_slot",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "acquisition_malformed",
+      "observed_refusal": "acquisition_malformed",
+      "passed": true,
+      "reference": "protocol mutation slot_with_malformed_acquisition",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "retention_record_missing",
+      "observed_refusal": "retention_record_missing",
+      "passed": true,
+      "reference": "protocol mutation slot_without_retention_record",
+      "reference_kind": "refusal"
+     }
+    ]
+   },
+   "claim": "Domed-coupon protocol record validates and refuses malformed variants",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact logic or integer count",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": "refused mutations",
+   "value": 9
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "Measured separations of offset routes on the physical coupon follow the Jacobi prediction and cross at the predicted focal point",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "The formed coupon matches the declared dome (height 10 mm, sigma 20 mm) within tolerance",
+   "domain": "calibration",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "An unsteered 3 mm tape laid on the coupon follows a geodesic of the as-built surface (no in-plane bending, lift-off or slip)",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "The start jig and tape laying realize the relative start pose of the offset tape within the declared 0.05 mm and 0.5 mrad",
+   "domain": "calibration",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 10628,
+   "path": "artifacts/T128/protocol-domed-coupon.json",
+   "sha256": "b7a464ac98c95eca03461086967315eafeacd9560e603d12d3b1cf81f5564d3e"
+  },
+  {
+   "bytes": 1565,
+   "path": "artifacts/T128/coupon-predictions.json",
+   "sha256": "216b023b900ef7d34a820a7fc30384c58ae501dd98c06d4191eb8afe96a53618"
+  },
+  {
+   "bytes": 8581,
+   "path": "artifacts/T128/coupon-separation.svg",
+   "sha256": "213cb86146afdd84e31a7e94b39eed3c8806b76cd6adbb426a3d8e17f73880d9"
+  }
+ ],
+ "hypothesis": "Across the dome, positive Gaussian curvature focuses laterally offset geodesic routes: the 2 mm offset route crosses the nominal route inside the coupon, a signature absent on the flat plate and on the cylinder.",
+ "input_data": [
+  "Declared domed coupon and chart extent x in [-60, 140], y in [-100, 100] mm",
+  "Perturbations: 2 mm lateral, 5 mrad heading; remainder study eps = 0.4, 0.2, 0.1 mm",
+  "Declared start-pose error of the offset tape 0.05 mm / 0.5 mrad (1 sigma) for the open-loop uncertainty"
+ ],
+ "mathematical_model": "Coupon z = h exp(-(x^2 + y^2) / (2 sigma^2)), h = 10 mm, sigma = 20 mm; nominal route from (-60, 0) along +x to x = 140; separation = delta j_lat + dtheta j_head with j'' + K j = 0.",
+ "number": 128,
+ "numerical_result": "L = 202.1797 mm; first focal point s_f = 153.407 mm (s_f / L = 0.759); the 2 mm offset route crosses at 154.361 mm and ends -1.0374 mm from the nominal route (plate: +2 mm; difference 9.3 x the combined k = 2 uncertainty); remainder orders 3.00 on axis, 2.00 off axis; RK4 vs the ciw adaptive integrator: 9.8e-07; Christoffel symbols vs finite differences: 4.2e-13; curvature vs finite differences: 7.8e-11.",
+ "observation_model": "No observation. The protocol specifies CMM probing of the tape start poses and photogrammetry of coded targets on the tape centrelines at the stations; its hardware slot is empty.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/manufacturing.py": "088763a0bcc42bf085c1e228797a5dc0d702b994f2a49e053cbe2b0a5622e25d",
+   "src/ciw/lab/manufacturing_geometry.py": "1db6df2ddf778668da2ffd53a66bcddbff4fc933d6f299e8f283cedc60a9332f",
+   "src/ciw/lab/manufacturing_metrology.py": "afbb6fccf146ca4f47850805c118d2f1bf6186872f381b298ab924a9214257ec",
+   "src/ciw/lab/manufacturing_records.py": "66970104ea454e836c5cbafc3013c90e721c3e96ad7f16780c32250112cac921"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T138: compare predicted and measured separation once MFG-COUPON-01 has been executed and retained (T139).",
+ "report_id": "sha256:9aa91cae77ac62533552998dfa7d91da23403f3be345d57115edde1b6d18f59e",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "manufacturing",
+ "state": "completed",
+ "task_id": "T128",
+ "tests_passed": [
+  "check: Laterally offset routes cross the nominal route at the first focal point (small-offset limit) vs focal point at h = 1 mm vs h = 2 mm (mm)",
+  "check: Laterally offset routes cross the nominal route at the first focal point (small-offset limit) vs offset crossings (2 and 1 mm) extrapolated in offset^2 minus the focal point (mm)",
+  "check: Laterally offset routes cross the nominal route at the first focal point (small-offset limit) vs focal point lies inside the route (s_f / L)",
+  "check: Domed-coupon Jacobi transfer at the end of the nominal route vs Wronskian det Phi - 1 along the route",
+  "check: Domed-coupon Jacobi transfer at the end of the nominal route vs Richardson estimate |Phi(h) - Phi(2h)| / 15",
+  "check: Linearized separation remainder is at least second order (third order on the symmetry axis) vs off-axis remainder order",
+  "check: Linearized separation remainder is at least second order (third order on the symmetry axis) vs on-axis remainder order - 3 (odd symmetry)",
+  "check: Curvature signature relative to the flat-plate control at the route end vs (plate - coupon separation of the 2 mm offset route at L) / combined k = 2 uncertainty (open-loop prediction and camera pair)",
+  "check: Curvature signature relative to the flat-plate control at the route end vs Richardson solver estimate of the end separation, 2 |j_lat(h) - j_lat(2h)| / 15 (mm)",
+  "check: The RK4 coupon transfer agrees with ciw's adaptive Dormand-Prince 5(4) integration of the same equations vs max |state(L)| difference, RK4 (h ~ 1 mm) vs ciw Dormand-Prince 5(4) at rtol 1e-11",
+  "check: Coupon Christoffel symbols and Gaussian curvature agree with finite-difference derivations from the metric and from the height values vs max |Gamma - central differences of the metric| at six points (1/mm)",
+  "check: Coupon Christoffel symbols and Gaussian curvature agree with finite-difference derivations from the metric and from the height values vs max |K - Monge formula on central differences of the height (step 0.01 mm)| at six points (1/mm^2)",
+  "independent: scipy DOP853 integrating the ciw right-hand side agrees with the RK4 coupon transfer (independent time stepping; the geometry code is shared) vs scipy.integrate.solve_ivp DOP853",
+  "independent: A sympy derivation of the coupon Christoffel symbols and Gaussian curvature from the height formula agrees with ciw at six points vs sympy symbolic differentiation",
+  "check: Domed-coupon protocol record validates and refuses malformed variants vs protocol mutation acceptance_inside_system",
+  "check: Domed-coupon protocol record validates and refuses malformed variants vs protocol mutation criterion_marked_accepted",
+  "check: Domed-coupon protocol record validates and refuses malformed variants vs protocol mutation filled_slot_without_acquisition",
+  "check: Domed-coupon protocol record validates and refuses malformed variants vs protocol mutation instrument_claimed_verified",
+  "check: Domed-coupon protocol record validates and refuses malformed variants vs protocol mutation missing_markers",
+  "check: Domed-coupon protocol record validates and refuses malformed variants vs protocol mutation prediction_labelled_measured",
+  "check: Domed-coupon protocol record validates and refuses malformed variants vs protocol mutation records_in_empty_slot",
+  "check: Domed-coupon protocol record validates and refuses malformed variants vs protocol mutation slot_with_malformed_acquisition",
+  "check: Domed-coupon protocol record validates and refuses malformed variants vs protocol mutation slot_without_retention_record",
+  "pytest: tests/test_lab_manufacturing.py::test_coupon_protocol_predicts_focal_crossing",
+  "pytest: tests/test_lab_manufacturing.py::test_coupon_report_wording_does_not_depend_on_optional_modules",
+  "pytest: tests/test_lab_manufacturing.py::test_protocols_refuse_filled_slots_and_decisions",
+  "pytest: tests/test_lab_manufacturing.py::test_every_task_is_registered_and_reports_honestly"
+ ],
+ "tests_skipped": [],
+ "title": "Design a curved coupon experiment.",
+ "uncertainty": "Solver error ~1e-6 (Richardson); geometry, start-pose and instrument terms are budgeted in T138 and T140.",
+ "unresolved_assumptions": [
+  "The formed coupon will not be an exact Gaussian; T129 scanning identifies the as-built surface.",
+  "The tapes are assumed to follow geodesics; their realized start pose is measured and conditioned on (T138), while in-plane tape bending along the route is not modelled.",
+  "Geometry independence (sympy) covers six points; elsewhere the geometry is checked against ciw finite differences only."
+ ]
+}

@@ -1,0 +1,391 @@
+{
+ "changed_files": [
+  "src/ciw/lab/implementation_targets.py",
+  "src/ciw/lab/implementation_targets_architecture.py",
+  "src/ciw/lab/implementation_targets_serial.py",
+  "docs/lab/IMPLEMENTATION_TARGETS.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 2,
+   "numerically_verified": 6,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Zero structural and heuristic violations on the real package; every forged mutation violates its intended rule; PATH-resolved spawners exist, so pinning is not established.",
+ "experiment": "Scan the package, compute the evidence closure, evaluate the rules, replay 8 forged mutations and list spawners that resolve executables on PATH.",
+ "failure_modes_checked": [
+  "third-party import in evidence closure",
+  "native loading",
+  "process spawn in evidence",
+  "shell=True",
+  "asyncio shell spawn",
+  "os.posix_spawn imported by name",
+  "spawn without identity",
+  "identity token only in a comment",
+  "PATH-resolved executables",
+  "compiled extension",
+  "unparseable module"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "evidence-closure rule violations",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Evidence and identity closure is standard-library Python with no native loading or process spawns",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": [
+    "ciw.core.identities",
+    "ciw.lab.evidence",
+    "ciw.lab.report"
+   ]
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "structural rule violations across the scanned package",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "modules that failed to parse",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Package-wide structural rules hold (no shell spawns, native loading only in declared hardware probes, no compiled extensions)",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": "violations",
+   "value": 0
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "spawning modules without revision, source_tree, runtime_identity, sha256 or digest in identifiers or non-docstring strings",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Every process-spawning module names an identity in its code (heuristic, not a pin)",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": "violations",
+   "value": 0
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "evidence_native_loading",
+      "observed_refusal": "evidence_native_loading",
+      "passed": true,
+      "reference": "forged ciw.lab.evidence (evidence_native_loading)",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "evidence_closure_not_stdlib",
+      "observed_refusal": "evidence_closure_not_stdlib",
+      "passed": true,
+      "reference": "forged ciw.lab.report (evidence_closure_not_stdlib)",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "evidence_spawns_process",
+      "observed_refusal": "evidence_spawns_process",
+      "passed": true,
+      "reference": "forged ciw.lab.evidence (evidence_spawns_process)",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "shell_invocation",
+      "observed_refusal": "shell_invocation",
+      "passed": true,
+      "reference": "forged ciw.lab.forged_provider (shell_invocation)",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "shell_invocation",
+      "observed_refusal": "shell_invocation",
+      "passed": true,
+      "reference": "forged ciw.lab.forged_provider (shell_invocation)",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "spawn_without_runtime_identity",
+      "observed_refusal": "spawn_without_runtime_identity",
+      "passed": true,
+      "reference": "forged ciw.lab.forged_provider (spawn_without_runtime_identity)",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "spawn_without_runtime_identity",
+      "observed_refusal": "spawn_without_runtime_identity",
+      "passed": true,
+      "reference": "forged ciw.lab.forged_provider (spawn_without_runtime_identity)",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "spawn_without_runtime_identity",
+      "observed_refusal": "spawn_without_runtime_identity",
+      "passed": true,
+      "reference": "forged ciw.lab.forged_provider (spawn_without_runtime_identity)",
+      "reference_kind": "refusal"
+     }
+    ]
+   },
+   "claim": "Scanner flags forged modules that cross the boundary",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": "detected mutations",
+   "value": 8
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 4.0,
+      "passed": true,
+      "reference": "modules that resolve an executable with shutil.which and spawn it",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "ciw.lab.implementation_targets_serial is among them",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     }
+    ]
+   },
+   "claim": "Some process spawns run a PATH-resolved executable without comparing it to a pinned identity",
+   "counterexample": {
+    "statement": "Numerical providers are invoked only through pinned executables",
+    "witness": {
+     "executable": "rustc from shutil.which('rustc')",
+     "module": "ciw.lab.implementation_targets_serial",
+     "recorded": "rustc -vV release and commit (provenance, compared with nothing)"
+    }
+   },
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "witness": "ciw.lab.implementation_targets_serial"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": "A source scan cannot show that a spawned binary equals an expected identity; see the PATH-resolved counterexample"
+   },
+   "claim": "Numerical providers are invoked only through pinned executables",
+   "domain": "computational_pipeline",
+   "evidence_status": "not_established",
+   "expected_not_established": true,
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 26.0,
+      "passed": true,
+      "reference": "modules outside ciw.lab mentioning subprocess without a spawn call",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     }
+    ]
+   },
+   "claim": "Text search for 'subprocess' finds modules that spawn no process",
+   "counterexample": {
+    "statement": "A text search for 'subprocess' identifies the process-spawning modules",
+    "witness": {
+     "module": "ciw.acquired_dataset",
+     "reason": "mentions ciw.adapters.subprocess or quotes subprocess in text but has no spawn call"
+    }
+   },
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "witness": "ciw.acquired_dataset"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "Keeping native code behind subprocess boundaries makes machine interfaces safe",
+   "domain": "machine_safety",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 72081,
+   "path": "artifacts/T144/import-graph.json",
+   "sha256": "db0765ee6d642c3512c4ccd69bd4ee63ed13e822bc2210ec3396438806dfb7cd"
+  },
+  {
+   "bytes": 2446,
+   "path": "artifacts/T144/architecture-scan.json",
+   "sha256": "fcedbfa0041a0b293ebc18b88f47fd5cb877eed74dbf1264cfd2c7ec61f119ba"
+  }
+ ],
+ "hypothesis": "The evidence and identity layer (ciw.lab.evidence, ciw.lab.report, ciw.core.identities and their ciw imports) is pure standard-library Python; process spawns use argument vectors without a shell; native loading is confined to declared hardware probes. Whether spawned providers are pinned is not decidable from source and is tested only by a heuristic plus counterexample search.",
+ "input_data": [
+  "141 parsed modules of the installed ciw package (source text only, not imported); package digest in the provider/runtime identity"
+ ],
+ "mathematical_model": "Directed import graph over parsed modules; transitive closure from the evidence roots; structural rules {closure stdlib-only, no native/spawn in closure, native loading within allowlist, no shell (shell=True, os.system/popen, asyncio.create_subprocess_shell), no compiled extensions}; heuristic rule: a spawning module names an identity token in identifiers or non-docstring strings.",
+ "number": 144,
+ "numerical_result": "Evidence closure ['ciw.core.identities', 'ciw.lab.evidence', 'ciw.lab.report']; 0 structural and 0 heuristic violations over 141 modules; 9 spawning modules, 4 of them PATH-resolved; 8/8 forged mutations detected.",
+ "observation_model": "Static source analysis with ast; nothing from the scanned modules is imported or executed.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scanned_files": 141,
+  "scanned_package_sha256": "174aaed8ad336470183d93f2e65b7f0496bfa7bef5b66f792ca1813fb5fe3672",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/implementation_targets.py": "4e27c12d31365590b7fb82d98b8d02e1668c7b8e73b03f71ef270eca9fcf6eea",
+   "src/ciw/lab/implementation_targets_architecture.py": "ca8740919708c84da241982b390b513ef15b3a465d0295386fb7525927e7e701"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T146 (fix one canonical serialization for identities crossing the language boundary); pin the Rust probe and other PATH-resolved tools against expected identities",
+ "report_id": "sha256:a91a942ff7a390d7fdd11f4516a7bdc45169a89bda19d9e854b9dd946f8bd9e7",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "implementation-targets",
+ "state": "completed",
+ "task_id": "T144",
+ "tests_passed": [
+  "check: Evidence and identity closure is standard-library Python with no native loading or process spawns vs evidence-closure rule violations",
+  "check: Package-wide structural rules hold (no shell spawns, native loading only in declared hardware probes, no compiled extensions) vs structural rule violations across the scanned package",
+  "check: Package-wide structural rules hold (no shell spawns, native loading only in declared hardware probes, no compiled extensions) vs modules that failed to parse",
+  "check: Every process-spawning module names an identity in its code (heuristic, not a pin) vs spawning modules without revision, source_tree, runtime_identity, sha256 or digest in identifiers or non-docstring strings",
+  "check: Scanner flags forged modules that cross the boundary vs forged ciw.lab.evidence (evidence_native_loading)",
+  "check: Scanner flags forged modules that cross the boundary vs forged ciw.lab.report (evidence_closure_not_stdlib)",
+  "check: Scanner flags forged modules that cross the boundary vs forged ciw.lab.evidence (evidence_spawns_process)",
+  "check: Scanner flags forged modules that cross the boundary vs forged ciw.lab.forged_provider (shell_invocation)",
+  "check: Scanner flags forged modules that cross the boundary vs forged ciw.lab.forged_provider (shell_invocation)",
+  "check: Scanner flags forged modules that cross the boundary vs forged ciw.lab.forged_provider (spawn_without_runtime_identity)",
+  "check: Scanner flags forged modules that cross the boundary vs forged ciw.lab.forged_provider (spawn_without_runtime_identity)",
+  "check: Scanner flags forged modules that cross the boundary vs forged ciw.lab.forged_provider (spawn_without_runtime_identity)",
+  "check: Some process spawns run a PATH-resolved executable without comparing it to a pinned identity vs modules that resolve an executable with shutil.which and spawn it",
+  "check: Some process spawns run a PATH-resolved executable without comparing it to a pinned identity vs ciw.lab.implementation_targets_serial is among them",
+  "check: Text search for 'subprocess' finds modules that spawn no process vs modules outside ciw.lab mentioning subprocess without a spawn call",
+  "pytest: tests/test_lab_implementation_targets.py::test_t144_architecture_scan"
+ ],
+ "tests_skipped": [],
+ "title": "Keep Python as orchestration and evidence layer.",
+ "uncertainty": "Static scan: dynamic imports, exec, importlib and spawns through third-party libraries are not seen; the identity-token rule shows that a name appears in code, not that the spawned binary is pinned.",
+ "unresolved_assumptions": [
+  "Modules added concurrently by other sections are scanned as found at run time (identified by the package digest)",
+  "Hardware energy probes (ciw.energy_cuda, ciw.energy_nvml) load drivers in-process by declared exception"
+ ]
+}

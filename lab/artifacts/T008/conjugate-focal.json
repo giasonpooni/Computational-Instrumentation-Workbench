@@ -1,0 +1,579 @@
+{
+ "located": {
+  "sphere-great-circle": {
+   "curvature": 1.0,
+   "entries": [
+    {
+     "conjugate": [
+      3.141616990510249,
+      6.2832339581606735
+     ],
+     "counts_match": true,
+     "expected_conjugate": [
+      3.141592653589793,
+      6.283185307179586
+     ],
+     "expected_focal": [
+      1.5707963267948966,
+      4.71238898038469
+     ],
+     "focal": [
+      1.5708084985765185,
+      4.712425476753023
+     ],
+     "h": 0.175,
+     "max_error": 4.865098108730592e-05,
+     "steps": 40
+    },
+    {
+     "conjugate": [
+      3.1415941864911567,
+      6.283188370854247
+     ],
+     "counts_match": true,
+     "expected_conjugate": [
+      3.141592653589793,
+      6.283185307179586
+     ],
+     "expected_focal": [
+      1.5707963267948966,
+      4.71238898038469
+     ],
+     "focal": [
+      1.5707970936099631,
+      4.712391278851316
+     ],
+     "h": 0.0875,
+     "max_error": 3.063674660630511e-06,
+     "steps": 80
+    },
+    {
+     "conjugate": [
+      3.1415927495260463,
+      6.283185498914691
+     ],
+     "counts_match": true,
+     "expected_conjugate": [
+      3.141592653589793,
+      6.283185307179586
+     ],
+     "expected_focal": [
+      1.5707963267948966,
+      4.71238898038469
+     ],
+     "focal": [
+      1.5707963747964055,
+      4.712389124225537
+     ],
+     "h": 0.04375,
+     "max_error": 1.9173510512615621e-07,
+     "steps": 160
+    },
+    {
+     "conjugate": [
+      3.1415926595845836,
+      6.283185319164188
+     ],
+     "counts_match": true,
+     "expected_conjugate": [
+      3.141592653589793,
+      6.283185307179586
+     ],
+     "expected_focal": [
+      1.5707963267948966,
+      4.71238898038469
+     ],
+     "focal": [
+      1.57079632979444,
+      4.712388989374272
+     ],
+     "h": 0.021875,
+     "max_error": 1.1984601755443691e-08,
+     "steps": 320
+    }
+   ],
+   "order": 3.995929033088247
+  },
+  "torus-outer-equator": {
+   "curvature": 0.3333333333333333,
+   "entries": [
+    {
+     "conjugate": [
+      5.441432267525318,
+      10.88286447455754
+     ],
+     "counts_match": true,
+     "expected_conjugate": [
+      5.441398092702654,
+      10.882796185405308
+     ],
+     "expected_focal": [
+      2.720699046351327,
+      8.16209713905398
+     ],
+     "focal": [
+      2.720716077183568,
+      8.162148220913437
+     ],
+     "h": 0.2875,
+     "max_error": 6.828915223167087e-05,
+     "steps": 40
+    },
+    {
+     "conjugate": [
+      5.441400242567701,
+      10.88280048046496
+     ],
+     "counts_match": true,
+     "expected_conjugate": [
+      5.441398092702654,
+      10.882796185405308
+     ],
+     "expected_focal": [
+      2.720699046351327,
+      8.16209713905398
+     ],
+     "focal": [
+      2.7207001222442693,
+      8.162100361793144
+     ],
+     "h": 0.14375,
+     "max_error": 4.2950596519375495e-06,
+     "steps": 80
+    },
+    {
+     "conjugate": [
+      5.441398227170685,
+      10.882796454124737
+     ],
+     "counts_match": true,
+     "expected_conjugate": [
+      5.441398092702654,
+      10.882796185405308
+     ],
+     "expected_focal": [
+      2.720699046351327,
+      8.16209713905398
+     ],
+     "focal": [
+      2.7206991136585503,
+      8.162097340649067
+     ],
+     "h": 0.071875,
+     "max_error": 2.6871942893080814e-07,
+     "steps": 160
+    },
+    {
+     "conjugate": [
+      5.441398101104003,
+      10.882796202214125
+     ],
+     "counts_match": true,
+     "expected_conjugate": [
+      5.441398092702654,
+      10.882796185405308
+     ],
+     "expected_focal": [
+      2.720699046351327,
+      8.16209713905398
+     ],
+     "focal": [
+      2.720699050555387,
+      8.162097151654308
+     ],
+     "h": 0.0359375,
+     "max_error": 1.6808817449032176e-08,
+     "steps": 320
+    }
+   ],
+   "order": 3.9963173063414548
+  }
+ },
+ "negative_curvature": {
+  "hyperbolic-long": {
+   "conjugate": [],
+   "focal": [],
+   "max_1_minus_j_lat": -0.00011250210937507887,
+   "max_s_minus_j_head": -5.625000000022973e-07,
+   "model_error": 1.2561964420119912e-09
+  },
+  "torus-inner-equator": {
+   "conjugate": [],
+   "focal": [],
+   "max_1_minus_j_lat": -0.00011215673977904572,
+   "max_s_minus_j_head": -5.599118138854831e-07,
+   "model_error": 2.6915911645163793e-09
+  }
+ },
+ "provider": {
+  "hyperbolic-long": {
+   "ciw_conjugate": [],
+   "ciw_focal": [],
+   "closed_form_count_mismatch": 0,
+   "closed_form_gap": 0.0,
+   "csg_closed_form": {
+    "a": [],
+    "b": []
+   },
+   "csg_numeric": {
+    "a": [],
+    "b": []
+   },
+   "numeric_count_mismatch": 0,
+   "numeric_gap": 0.0
+  },
+  "sphere-great-circle": {
+   "ciw_conjugate": [
+    3.1415926548998137,
+    6.283185309799698
+   ],
+   "ciw_focal": [
+    1.5707963274498968,
+    4.712388982349748
+   ],
+   "closed_form_count_mismatch": 0,
+   "closed_form_gap": 2.620059724733892e-09,
+   "csg_closed_form": {
+    "a": [
+     1.5707963267949008,
+     4.712388980384722
+    ],
+    "b": [
+     3.1415926535898087,
+     6.283185307179639
+    ]
+   },
+   "csg_numeric": {
+    "a": [
+     1.5707963274498966,
+     4.712388982349748
+    ],
+    "b": [
+     3.1415926548998137,
+     6.283185309799698
+    ]
+   },
+   "numeric_count_mismatch": 0,
+   "numeric_gap": 2.220446049250313e-16
+  },
+  "torus-inner-equator": {
+   "ciw_conjugate": [],
+   "ciw_focal": [],
+   "closed_form_count_mismatch": 0,
+   "closed_form_gap": 0.0,
+   "csg_closed_form": {
+    "a": [],
+    "b": []
+   },
+   "csg_numeric": {
+    "a": [],
+    "b": []
+   },
+   "numeric_count_mismatch": 0,
+   "numeric_gap": 0.0
+  },
+  "torus-outer-equator": {
+   "ciw_conjugate": [
+    5.441398092955927,
+    10.882796185911936
+   ],
+   "ciw_focal": [
+    2.720699046478006,
+    8.162097139433882
+   ],
+   "closed_form_count_mismatch": 0,
+   "closed_form_gap": 5.066507213769e-10,
+   "csg_closed_form": {
+    "a": [
+     2.7206990463513026,
+     8.162097139053987
+    ],
+    "b": [
+     5.441398092702671,
+     10.882796185405285
+    ]
+   },
+   "csg_numeric": {
+    "a": [
+     2.7206990464780065,
+     8.16209713943388
+    ],
+    "b": [
+     5.441398092955926,
+     10.882796185911936
+    ]
+   },
+   "numeric_count_mismatch": 0,
+   "numeric_gap": 1.7763568394002505e-15
+  }
+ },
+ "sphere_radius_2": {
+  "conjugate": [
+   6.283185307344753,
+   12.566370614689546
+  ],
+  "counts_match": true,
+  "expected_conjugate": [
+   6.283185307179586,
+   12.566370614359172
+  ],
+  "expected_focal": [
+   3.141592653589793,
+   9.42477796076938
+  ],
+  "focal": [
+   3.1415926536723986,
+   9.424777961017194
+  ],
+  "max_error": 3.303739504190162e-10
+ },
+ "sturm": {
+  "bounds": {
+   "gaussian-bump": 6.283185307179586,
+   "torus": 5.441398092702654
+  },
+  "k_max": {
+   "gaussian-bump": 0.25,
+   "torus": 0.3333333333333333
+  },
+  "k_max_bump_grid": 0.25,
+  "paths": [
+   {
+    "conjugate": [],
+    "count_change": 0,
+    "focal": [
+     2.9098952658326325
+    ],
+    "heading": 1.6685414593419754,
+    "length": 12.0,
+    "location_change": 2.521321285087197e-08,
+    "max_curvature_on_path": 0.33333188538420094,
+    "origin": "seeded",
+    "surface": "torus",
+    "u0": [
+     2.6661397681257943,
+     -0.8293304522253746
+    ]
+   },
+   {
+    "conjugate": [],
+    "focal": [],
+    "heading": -1.7185202212408828,
+    "length": 12.0,
+    "max_curvature_on_path": 0.3332756238002472,
+    "origin": "seeded",
+    "surface": "torus",
+    "u0": [
+     4.892128824441105,
+     -2.4246882979724016
+    ]
+   },
+   {
+    "conjugate": [],
+    "count_change": 0,
+    "focal": [
+     3.3680335976274445
+    ],
+    "heading": -1.1045989013425177,
+    "length": 12.0,
+    "location_change": 1.76099819171327e-08,
+    "max_curvature_on_path": 0.33333187877192455,
+    "origin": "seeded",
+    "surface": "torus",
+    "u0": [
+     5.858184169813827,
+     1.6533443017480733
+    ]
+   },
+   {
+    "conjugate": [
+     7.785018442790264
+    ],
+    "count_change": 0,
+    "focal": [
+     3.465336236529439,
+     10.068635613865004
+    ],
+    "heading": 0.8753827096614808,
+    "length": 12.0,
+    "location_change": 2.118449238253106e-08,
+    "max_curvature_on_path": 0.33329814522335693,
+    "origin": "seeded",
+    "surface": "torus",
+    "u0": [
+     3.316172108544377,
+     0.24686558661589375
+    ]
+   },
+   {
+    "conjugate": [],
+    "focal": [],
+    "heading": 2.473402073486949,
+    "length": 12.0,
+    "max_curvature_on_path": 0.3333304401161316,
+    "origin": "seeded",
+    "surface": "torus",
+    "u0": [
+     5.582759309406262,
+     2.6148678827636793
+    ]
+   },
+   {
+    "conjugate": [
+     10.81370613927163
+    ],
+    "count_change": 0,
+    "focal": [
+     2.962835665282191,
+     11.014532625248476
+    ],
+    "heading": -0.9231167423903996,
+    "length": 12.0,
+    "location_change": 3.0363290548507393e-08,
+    "max_curvature_on_path": 0.33333222634469933,
+    "origin": "seeded",
+    "surface": "torus",
+    "u0": [
+     5.576926800081725,
+     1.1563775460947818
+    ]
+   },
+   {
+    "conjugate": [],
+    "focal": [],
+    "heading": 1.055105772188977,
+    "length": 10.0,
+    "max_curvature_on_path": 0.13736560359352964,
+    "origin": "seeded",
+    "surface": "gaussian-bump",
+    "u0": [
+     0.35057816171041023,
+     0.3377462480282585
+    ]
+   },
+   {
+    "conjugate": [],
+    "focal": [],
+    "heading": -2.6597614983096953,
+    "length": 10.0,
+    "max_curvature_on_path": 0.05632418920235342,
+    "origin": "seeded",
+    "surface": "gaussian-bump",
+    "u0": [
+     -0.6996793875042611,
+     0.23915400799832276
+    ]
+   },
+   {
+    "conjugate": [],
+    "count_change": 0,
+    "focal": [
+     9.406157566798049
+    ],
+    "heading": 0.9634877291071158,
+    "length": 10.0,
+    "location_change": 8.689141850481974e-09,
+    "max_curvature_on_path": 0.13678481125810454,
+    "origin": "seeded",
+    "surface": "gaussian-bump",
+    "u0": [
+     -0.04531861030703088,
+     -0.9240547163419539
+    ]
+   },
+   {
+    "conjugate": [],
+    "focal": [],
+    "heading": 0.5058338015470452,
+    "length": 10.0,
+    "max_curvature_on_path": -1.4555934982180404e-52,
+    "origin": "seeded",
+    "surface": "gaussian-bump",
+    "u0": [
+     0.8949365136514293,
+     0.6612567030042795
+    ]
+   },
+   {
+    "conjugate": [
+     18.726029681583313
+    ],
+    "count_change": 0,
+    "focal": [
+     12.671294260775598
+    ],
+    "heading": 0.0,
+    "length": 30.0,
+    "location_change": 4.342098236520542e-09,
+    "max_curvature_on_path": 0.24981723688680088,
+    "origin": "declared chord",
+    "surface": "gaussian-bump",
+    "u0": [
+     -8.0,
+     0.0
+    ]
+   },
+   {
+    "conjugate": [
+     22.817665022922984
+    ],
+    "count_change": 0,
+    "focal": [
+     13.294307512096928
+    ],
+    "heading": 0.0,
+    "length": 30.0,
+    "location_change": 7.823924619287936e-09,
+    "max_curvature_on_path": 0.22608554933296782,
+    "origin": "declared chord",
+    "surface": "gaussian-bump",
+    "u0": [
+     -8.0,
+     0.2
+    ]
+   },
+   {
+    "conjugate": [
+     18.499088336011233
+    ],
+    "count_change": 0,
+    "focal": [
+     14.671294259566796
+    ],
+    "heading": 0.0,
+    "length": 30.0,
+    "location_change": 3.895543443377392e-09,
+    "max_curvature_on_path": 0.249985935643548,
+    "origin": "declared chord",
+    "surface": "gaussian-bump",
+    "u0": [
+     -10.0,
+     0.0
+    ]
+   },
+   {
+    "conjugate": [
+     20.865096574238
+    ],
+    "count_change": 0,
+    "focal": [
+     15.294307511007494
+    ],
+    "heading": 0.0,
+    "length": 30.0,
+    "location_change": 7.2046546506499e-09,
+    "max_curvature_on_path": 0.2262213628900369,
+    "origin": "declared chord",
+    "surface": "gaussian-bump",
+    "u0": [
+     -10.0,
+     0.2
+    ]
+   }
+  ],
+  "rtol": [
+   1e-09,
+   1e-10
+  ]
+ }
+}

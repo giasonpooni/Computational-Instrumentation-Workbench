@@ -1,0 +1,752 @@
+{
+ "changed_files": [
+  "src/ciw/lab/flat_torus_topology.py",
+  "src/ciw/lab/flat_torus_topology_routes.py",
+  "docs/lab/FLAT_TORUS_TOPOLOGY.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 3,
+   "not_established": 1,
+   "numerically_verified": 4,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Each witness violates the refuted statement by a margin far above numerical error; analytic anchors reproduce closed forms; route sets do not change when the fan density doubles.",
+ "experiment": "Fan search + Newton + ciw.lab.jacobi verification per configuration (as T024), repeated at double fan density; sphere margins from ciw.lab.jacobi for a sequence of separations; optional scipy DOP853 integration of the witness routes on a field derived by sympy from the embedding.",
+ "failure_modes_checked": [
+  "analytic anchors (sinh 2.5, pi sqrt 3 - 4.5, sin delta)",
+  "censored margins use the horizon lower bound",
+  "negative margins (route past a conjugate point) kept, not discarded",
+  "symmetric duplicate routes",
+  "fan density (route sets unchanged at double density)"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "signed_ge",
+      "observed": 3.8077542102772286,
+      "passed": true,
+      "reference": "shortest minus alternative amplification",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 5.06819297264285e-08,
+      "passed": true,
+      "reference": "shortest amplification vs sinh 2.5 (relative)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-06
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "routes where exactly one of ciw.lab.jacobi and scipy/sympy finds a conjugate point within the horizon",
+      "reference_kind": "high_precision",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "scipy solve_ivp runs that stopped before L + horizon",
+      "reference_kind": "high_precision",
+      "tolerance": 0.0
+     }
+    ],
+    "independent_check": {
+     "checker": {
+      "implementation": "scipy.integrate.solve_ivp (sympy-derived field)",
+      "revision": "scipy 1.16.2, sympy 1.14.0"
+     },
+     "comparison": "abs_le",
+     "observed": 1.6055848958030553e-07,
+     "passed": true,
+     "producer": {
+      "implementation": "ciw.lab.flat_torus_topology",
+      "revision": "ciw 0.1.0"
+     },
+     "reference": "scipy DOP853 on a sympy-derived field (metric, Christoffel symbols, K and heading frame from the embedding): max of relative j_head(L) difference, conjugate-point difference and endpoint distance to the lift of q",
+     "reference_kind": "high_precision",
+     "tolerance": 1e-05
+    }
+   },
+   "claim": "Torus inner equator: the shortest route has larger heading amplification than a longer route",
+   "counterexample": {
+    "statement": "The shortest geodesic between two points has the least heading amplification",
+    "witness": {
+     "alternative": {
+      "amplification": 2.2424499641265205,
+      "focus_margin": null,
+      "heading": -0.6654954777289914,
+      "length": 7.4048964512362,
+      "margin_lower_bound": 8.00206551988428,
+      "targeting_condition": 0.44594083078661695
+     },
+     "p": [
+      0.0,
+      3.141592653589793
+     ],
+     "q": [
+      2.5,
+      3.141592653589793
+     ],
+     "shortest": {
+      "amplification": 6.050204174403749,
+      "focus_margin": null,
+      "heading": 0.0,
+      "length": 2.499999999999994,
+      "margin_lower_bound": 8.015873015872995,
+      "targeting_condition": 0.16528367823199133
+     },
+     "surface": {
+      "chart": "(phi, theta)",
+      "major": 2.0,
+      "minor": 1.0,
+      "name": "torus"
+     }
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "regression_tolerance": {
+    "abs": 1e-06,
+    "rel": 1e-05
+   },
+   "uncertainty": {
+    "basis": "relative deviation of the shortest amplification from sinh 2.5 (RK4 step about 0.04)",
+    "kind": "reference_error",
+    "value": 5.06819297264285e-08
+   },
+   "unit": null,
+   "value": {
+    "alternative": {
+     "amplification": 2.2424499641265205,
+     "focus_margin": null,
+     "heading": -0.6654954777289914,
+     "length": 7.4048964512362,
+     "margin_lower_bound": 8.00206551988428,
+     "targeting_condition": 0.44594083078661695
+    },
+    "shortest": {
+     "amplification": 6.050204174403749,
+     "focus_margin": null,
+     "heading": 0.0,
+     "length": 2.499999999999994,
+     "margin_lower_bound": 8.015873015872995,
+     "targeting_condition": 0.16528367823199133
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "signed_ge",
+      "observed": 7.094633148035423,
+      "passed": true,
+      "reference": "alternative minus shortest focus margin",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 1.2672158433701952e-08,
+      "passed": true,
+      "reference": "shortest margin vs pi sqrt 3 - 4.5",
+      "reference_kind": "analytic",
+      "tolerance": 1e-06
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "routes where exactly one of ciw.lab.jacobi and scipy/sympy finds a conjugate point within the horizon",
+      "reference_kind": "high_precision",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "scipy solve_ivp runs that stopped before L + horizon",
+      "reference_kind": "high_precision",
+      "tolerance": 0.0
+     }
+    ],
+    "independent_check": {
+     "checker": {
+      "implementation": "scipy.integrate.solve_ivp (sympy-derived field)",
+      "revision": "scipy 1.16.2, sympy 1.14.0"
+     },
+     "comparison": "abs_le",
+     "observed": 3.644225847600781e-08,
+     "passed": true,
+     "producer": {
+      "implementation": "ciw.lab.flat_torus_topology",
+      "revision": "ciw 0.1.0"
+     },
+     "reference": "scipy DOP853 on a sympy-derived field (metric, Christoffel symbols, K and heading frame from the embedding): max of relative j_head(L) difference, conjugate-point difference and endpoint distance to the lift of q",
+     "reference_kind": "high_precision",
+     "tolerance": 1e-05
+    }
+   },
+   "claim": "Torus outer equator: the shortest route has a smaller focus margin than a longer route",
+   "counterexample": {
+    "statement": "The shortest geodesic has the largest focus margin (farthest from conjugate points)",
+    "witness": {
+     "alternative": {
+      "amplification": 29.49806945310811,
+      "focus_margin": null,
+      "heading": -1.3844466400297355,
+      "length": 6.723214266466979,
+      "margin_lower_bound": 8.036031253410234,
+      "targeting_condition": 0.033900523611881096
+     },
+     "p": [
+      0.0,
+      0.0
+     ],
+     "q": [
+      1.5,
+      0.0
+     ],
+     "shortest": {
+      "amplification": 0.895728160961398,
+      "focus_margin": 0.9413981053748115,
+      "heading": 0.0,
+      "length": 4.500000000000023,
+      "margin_lower_bound": 8.004424778761104,
+      "targeting_condition": 1.1164101382351155
+     },
+     "surface": {
+      "chart": "(phi, theta)",
+      "major": 2.0,
+      "minor": 1.0,
+      "name": "torus"
+     }
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "regression_tolerance": {
+    "abs": 1e-06,
+    "rel": 1e-05
+   },
+   "uncertainty": {
+    "basis": "deviation of the shortest focus margin from pi sqrt 3 - 4.5",
+    "kind": "reference_error",
+    "value": 1.2672158433701952e-08
+   },
+   "unit": null,
+   "value": {
+    "alternative": {
+     "amplification": 29.49806945310811,
+     "focus_margin": null,
+     "heading": -1.3844466400297355,
+     "length": 6.723214266466979,
+     "margin_lower_bound": 8.036031253410234,
+     "targeting_condition": 0.033900523611881096
+    },
+    "shortest": {
+     "amplification": 0.895728160961398,
+     "focus_margin": 0.9413981053748115,
+     "heading": 0.0,
+     "length": 4.500000000000023,
+     "margin_lower_bound": 8.004424778761104,
+     "targeting_condition": 1.1164101382351155
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 1.7763568394002505e-15,
+      "passed": true,
+      "reference": "length difference of the two shortest routes",
+      "reference_kind": "invariant",
+      "tolerance": 1e-09
+     },
+     {
+      "comparison": "ge",
+      "observed": 1.865919178746994,
+      "passed": true,
+      "reference": "heading separation (rad)",
+      "reference_kind": "invariant",
+      "tolerance": 0.1
+     }
+    ]
+   },
+   "claim": "Torus (0, 0) -> (2.2, 0): two mirror-image shortest routes tie, so 'the' shortest route is not unique",
+   "counterexample": {
+    "statement": "The shortest route between two points is unique",
+    "witness": {
+     "first": {
+      "amplification": 3.893697160114145,
+      "focus_margin": 2.0712536359131057,
+      "heading": -0.932959589373497,
+      "length": 6.30866770803647,
+      "margin_lower_bound": 8.025583603261586,
+      "targeting_condition": 0.2568253150870841
+     },
+     "p": [
+      0.0,
+      0.0
+     ],
+     "q": [
+      2.2,
+      0.0
+     ],
+     "second": {
+      "amplification": 3.8936971601141432,
+      "focus_margin": 2.0712536359131057,
+      "heading": 0.932959589373497,
+      "length": 6.308667708036468,
+      "margin_lower_bound": 8.025583603261582,
+      "targeting_condition": 0.2568253150870843
+     },
+     "surface": {
+      "chart": "(phi, theta)",
+      "major": 2.0,
+      "minor": 1.0,
+      "name": "torus"
+     }
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-06,
+    "rel": 1e-05
+   },
+   "uncertainty": {
+    "basis": "length difference of the mirror-image routes",
+    "kind": "roundoff",
+    "value": 1.7763568394002505e-15
+   },
+   "unit": null,
+   "value": {
+    "headings": [
+     -0.932959589373497,
+     0.932959589373497
+    ],
+    "lengths": [
+     6.30866770803647,
+     6.308667708036468
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "signed_ge",
+      "observed": 0.3919737348946377,
+      "passed": true,
+      "reference": "shortest minus top-route amplification",
+      "reference_kind": "invariant",
+      "tolerance": 0.2
+     },
+     {
+      "comparison": "signed_ge",
+      "observed": 1.9973831828910869,
+      "passed": true,
+      "reference": "depth of the top route past its conjugate point (-margin)",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "top-route heading (the symmetric straight route)",
+      "reference_kind": "invariant",
+      "tolerance": 1e-09
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "routes where exactly one of ciw.lab.jacobi and scipy/sympy finds a conjugate point within the horizon",
+      "reference_kind": "high_precision",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "scipy solve_ivp runs that stopped before L + horizon",
+      "reference_kind": "high_precision",
+      "tolerance": 0.0
+     }
+    ],
+    "independent_check": {
+     "checker": {
+      "implementation": "scipy.integrate.solve_ivp (sympy-derived field)",
+      "revision": "scipy 1.16.2, sympy 1.14.0"
+     },
+     "comparison": "abs_le",
+     "observed": 5.825320985298427e-08,
+     "passed": true,
+     "producer": {
+      "implementation": "ciw.lab.flat_torus_topology",
+      "revision": "ciw 0.1.0"
+     },
+     "reference": "scipy DOP853 on a sympy-derived field (metric, Christoffel symbols, K and heading frame from the embedding): max of relative j_head(L) difference, conjugate-point difference and endpoint distance to the lift of q",
+     "reference_kind": "high_precision",
+     "tolerance": 1e-05
+    }
+   },
+   "claim": "Gaussian bump: a longer route over the top has smaller amplification but passes a conjugate point",
+   "counterexample": {
+    "statement": "Low heading amplification certifies a robust (locally minimizing) route",
+    "witness": {
+     "alternative": {
+      "amplification": 6.488420201199406,
+      "focus_margin": -1.9973831828910869,
+      "heading": 0.0,
+      "length": 5.8779306681414605,
+      "margin_lower_bound": 8.037170505417915,
+      "targeting_condition": 0.15412072106784125
+     },
+     "p": [
+      -2.5,
+      0.0
+     ],
+     "q": [
+      2.5,
+      0.0
+     ],
+     "shortest": {
+      "amplification": 6.880393936094044,
+      "focus_margin": null,
+      "heading": -0.3519515842780283,
+      "length": 5.717740092656205,
+      "margin_lower_bound": 8.036823486880401,
+      "targeting_condition": 0.14534051527981168
+     },
+     "surface": {
+      "height": 1.5,
+      "name": "gaussian-bump",
+      "sigma": 1.0
+     }
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "regression_tolerance": {
+    "abs": 1e-06,
+    "rel": 1e-05
+   },
+   "uncertainty": {
+    "basis": "RK4 step estimate for ciw.lab.jacobi route quantities (step about 0.04)",
+    "kind": "reference_error",
+    "value": 1e-06
+   },
+   "unit": null,
+   "value": {
+    "alternative": {
+     "amplification": 6.488420201199406,
+     "focus_margin": -1.9973831828910869,
+     "heading": 0.0,
+     "length": 5.8779306681414605,
+     "margin_lower_bound": 8.037170505417915,
+     "targeting_condition": 0.15412072106784125
+    },
+    "shortest": {
+     "amplification": 6.880393936094044,
+     "focus_margin": null,
+     "heading": -0.3519515842780283,
+     "length": 5.717740092656205,
+     "margin_lower_bound": 8.036823486880401,
+     "targeting_condition": 0.14534051527981168
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 9.94705437809551e-08,
+      "passed": true,
+      "reference": "ciw.lab.jacobi focus margin relative to delta (max over delta)",
+      "reference_kind": "analytic",
+      "tolerance": 0.001
+     },
+     {
+      "comparison": "le",
+      "observed": 9.945432628485906e-11,
+      "passed": true,
+      "reference": "ciw.lab.jacobi j_head(L) - sin delta (max over delta)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-08
+     }
+    ],
+    "derivation": "j_head = sin s on the unit sphere; the first conjugate point is at pi, so the minor arc of length pi - delta has margin delta and targeting condition 1/sin delta"
+   },
+   "claim": "On the unit sphere the minimizing arc between points at separation pi - delta ends delta before its conjugate point, so minimizing geodesics have no positive lower bound on focus margin",
+   "counterexample": {
+    "statement": "Minimizing geodesics on the unit sphere have focus margin bounded below by a positive constant",
+    "witness": {
+     "delta": [
+      0.1,
+      0.01,
+      0.001
+     ],
+     "focus_margin": [
+      0.1000000000875092,
+      0.010000000098338013,
+      0.0010000000994705438
+     ],
+     "kind": "near-conjugate conditioning",
+     "surface": "unit sphere",
+     "targeting_condition": [
+      10.016686123180598,
+      100.00166570580501,
+      1000.0000672123366
+     ]
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-06,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "absolute deviation of the ciw.lab.jacobi margin from delta (Hermite zero location)",
+    "kind": "reference_error",
+    "value": 9.94705437809551e-11
+   },
+   "unit": null,
+   "value": {
+    "delta": [
+     0.1,
+     0.01,
+     0.001
+    ],
+    "focus_margin": [
+     0.1000000000875092,
+     0.010000000098338013,
+     0.0010000000994705438
+    ],
+    "j_head": [
+     0.0998334167310885,
+     0.009999833432194028,
+     0.000999999932787668
+    ],
+    "targeting_condition": [
+     10.016686123180598,
+     100.00166570580501,
+     1000.0000672123366
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "routes found minus 1",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "derivation": "Cartan-Hadamard: exp is a diffeomorphism on complete simply connected K <= 0 surfaces"
+   },
+   "claim": "Search on the saddle (K < 0, simply connected) finds exactly one route, consistent with Cartan-Hadamard uniqueness, so this surface admits no witness",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "integer, Fraction or Q(sqrt d) arithmetic; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "routes": 1
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "routes found at only one of the two densities (all configurations)",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Every T032 route search gives the same route set at twice the fan density (720 to 1440 headings)",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "route sets compared by length and heading to 1e-6",
+    "kind": "truncation_bound",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "bump": {
+     "differences": 0,
+     "routes": [
+      3,
+      3
+     ]
+    },
+    "saddle": {
+     "differences": 0,
+     "routes": [
+      1,
+      1
+     ]
+    },
+    "torus-inner": {
+     "differences": 0,
+     "routes": [
+      7,
+      7
+     ]
+    },
+    "torus-outer": {
+     "differences": 0,
+     "routes": [
+      3,
+      3
+     ]
+    },
+    "torus-tie": {
+     "differences": 0,
+     "routes": [
+      9,
+      9
+     ]
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "A route from this library is safe (or unsafe) to execute on a physical part or vehicle",
+   "domain": "machine_safety",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 36483,
+   "path": "artifacts/T032/counterexample-library.json",
+   "sha256": "4dee0d87df012ee54c8c2daed1dc9cfdd2cd9e484786c43d5b1d79c31ba2cfae"
+  }
+ ],
+ "hypothesis": "'Shortest means safest' fails on curved surfaces: a shortest geodesic can have larger heading amplification, a smaller focus margin, a tie with another route, or a near-conjugate endpoint, while the flat torus (T021) and simply connected negatively curved surfaces admit no such witness.",
+ "input_data": [
+  "Torus(2, 1): inner-equator pair (0, pi) -> (2.5, pi); outer-equator pair (0, 0) -> (1.5, 0); (0, 0) -> (2.2, 0)",
+  "GaussianBump(h = 1.5, sigma = 1): (-2.5, 0) -> (2.5, 0)",
+  "unit sphere, separations pi - delta for delta in [0.1, 0.01, 0.001]",
+  "Saddle(c = 1): (-1.5, -0.5) -> (1.5, 0.8)",
+  "720-heading fans (convergence reruns at 1440)"
+ ],
+ "mathematical_model": "Heading amplification |j_head(L)|, targeting condition 1/|j_head(L)| and focus margin s_c - L from j'' + K j = 0 along each route; exact anchors: inner equator K = -1 (j_head = sinh s), outer equator K = 1/3 (conjugate at pi sqrt 3), unit sphere (j_head = sin s, conjugate at pi).",
+ "number": 32,
+ "numerical_result": "inner: shortest L = 2.5000 amp 6.0502 vs L = 7.4049 amp 2.2424; outer: shortest margin 0.9414 vs alternative >= 8.0360; tie: lengths 6.3086677080 and 6.3086677080; bump: shortest amp 6.8804 vs top route amp 6.4884 with margin -1.9974 (targeting condition 0.154); sphere minor-arc margins [0.1, 0.01, 0.001] for delta [0.1, 0.01, 0.001] (targeting condition up to 1000); saddle routes found 1; route counts at base/double density {'torus-inner': [7, 7], 'torus-outer': [3, 3], 'torus-tie': [9, 9], 'bump': [3, 3], 'saddle': [1, 1]}; Newton drops (singular, diverged, residual, over length) {'torus-inner': [0, 0, 0, 0], 'torus-outer': [0, 0, 0, 0], 'torus-tie': [0, 0, 0, 0], 'bump': [0, 0, 0, 0], 'saddle': [0, 0, 0, 0]}.",
+ "observation_model": "No physical observation: exact or floating-point computation on declared mathematical objects.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "requirement_probes": {
+   "module:scipy": true,
+   "module:sympy": true
+  },
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/flat_torus_topology.py": "4d8cf2437759501a1b9fa5ee0d8abfac43345ebee378c6ad08233e9155d4b184",
+   "src/ciw/lab/flat_torus_topology_routes.py": "cc2f3a7ce7a919c0aa83509104816ba8f4fedb15e14f5004c5982f8fff4de17a"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "Extend the library to variable-curvature meshes (surfaces-discrete section) and to manufacturing paths",
+ "report_id": "sha256:47dd2fb2c0042d02c4af5b71454e7ee75347ea7636872e54501e217082577669",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "flat-torus-topology",
+ "state": "completed",
+ "task_id": "T032",
+ "tests_passed": [
+  "check: Torus inner equator: the shortest route has larger heading amplification than a longer route vs shortest minus alternative amplification",
+  "check: Torus inner equator: the shortest route has larger heading amplification than a longer route vs shortest amplification vs sinh 2.5 (relative)",
+  "check: Torus inner equator: the shortest route has larger heading amplification than a longer route vs routes where exactly one of ciw.lab.jacobi and scipy/sympy finds a conjugate point within the horizon",
+  "check: Torus inner equator: the shortest route has larger heading amplification than a longer route vs scipy solve_ivp runs that stopped before L + horizon",
+  "independent: Torus inner equator: the shortest route has larger heading amplification than a longer route vs scipy.integrate.solve_ivp (sympy-derived field)",
+  "check: Torus outer equator: the shortest route has a smaller focus margin than a longer route vs alternative minus shortest focus margin",
+  "check: Torus outer equator: the shortest route has a smaller focus margin than a longer route vs shortest margin vs pi sqrt 3 - 4.5",
+  "check: Torus outer equator: the shortest route has a smaller focus margin than a longer route vs routes where exactly one of ciw.lab.jacobi and scipy/sympy finds a conjugate point within the horizon",
+  "check: Torus outer equator: the shortest route has a smaller focus margin than a longer route vs scipy solve_ivp runs that stopped before L + horizon",
+  "independent: Torus outer equator: the shortest route has a smaller focus margin than a longer route vs scipy.integrate.solve_ivp (sympy-derived field)",
+  "check: Torus (0, 0) -> (2.2, 0): two mirror-image shortest routes tie, so 'the' shortest route is not unique vs length difference of the two shortest routes",
+  "check: Torus (0, 0) -> (2.2, 0): two mirror-image shortest routes tie, so 'the' shortest route is not unique vs heading separation (rad)",
+  "check: Gaussian bump: a longer route over the top has smaller amplification but passes a conjugate point vs shortest minus top-route amplification",
+  "check: Gaussian bump: a longer route over the top has smaller amplification but passes a conjugate point vs depth of the top route past its conjugate point (-margin)",
+  "check: Gaussian bump: a longer route over the top has smaller amplification but passes a conjugate point vs top-route heading (the symmetric straight route)",
+  "check: Gaussian bump: a longer route over the top has smaller amplification but passes a conjugate point vs routes where exactly one of ciw.lab.jacobi and scipy/sympy finds a conjugate point within the horizon",
+  "check: Gaussian bump: a longer route over the top has smaller amplification but passes a conjugate point vs scipy solve_ivp runs that stopped before L + horizon",
+  "independent: Gaussian bump: a longer route over the top has smaller amplification but passes a conjugate point vs scipy.integrate.solve_ivp (sympy-derived field)",
+  "check: On the unit sphere the minimizing arc between points at separation pi - delta ends delta before its conjugate point, so minimizing geodesics have no positive lower bound on focus margin vs ciw.lab.jacobi focus margin relative to delta (max over delta)",
+  "check: On the unit sphere the minimizing arc between points at separation pi - delta ends delta before its conjugate point, so minimizing geodesics have no positive lower bound on focus margin vs ciw.lab.jacobi j_head(L) - sin delta (max over delta)",
+  "check: Search on the saddle (K < 0, simply connected) finds exactly one route, consistent with Cartan-Hadamard uniqueness, so this surface admits no witness vs routes found minus 1",
+  "check: Every T032 route search gives the same route set at twice the fan density (720 to 1440 headings) vs routes found at only one of the two densities (all configurations)",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_t032_counterexample_library",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_route_helpers",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_sympy_field_matches_the_closed_form_batch_field",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+ ],
+ "tests_skipped": [],
+ "title": "Create a counterexample library for “shortest means safest.”",
+ "uncertainty": "Route quantities to about 1e-6 relative (RK4 step 0.04; scipy/sympy agreement when available); witness gaps are O(0.1-4); sphere margins within 1e-10 of delta (checked to 1e-3 relative).",
+ "unresolved_assumptions": [
+  "Witnesses show the statements are false in general; they do not rank routes for any application.",
+  "Route sets are fan-search results, stable under doubling the density but not proven complete (the saddle's uniqueness is the Cartan-Hadamard theorem, not the search).",
+  "Small |j_head(L)| is not robustness: the targeting condition number 1/|j_head(L)| grows as q approaches a conjugate point, and a route with negative focus margin is not locally minimizing."
+ ]
+}

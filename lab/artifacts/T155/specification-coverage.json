@@ -1,0 +1,40 @@
+{
+ "Chord versus geodesic distance": {
+  "T046": 5,
+  "T047": 5
+ },
+ "Deterministic serialization and reduction": {
+  "T146": 10,
+  "T148": 8
+ },
+ "Evidence labels": {
+  "T100": 7
+ },
+ "Filter consistency (NEES/NIS)": {
+  "T062": 4,
+  "T066": 4,
+  "T074": 3
+ },
+ "First-order validity and focal counterexamples": {
+  "T010": 8,
+  "T017": 6
+ },
+ "Flat torus lattices and winding": {
+  "T019": 4,
+  "T020": 6,
+  "T026": 6
+ },
+ "Geodesic equation and references": {
+  "T001": 8,
+  "T002": 5,
+  "T003": 7,
+  "T004": 5
+ },
+ "Jacobi equation, transfer matrix and Wronskian": {
+  "T005": 6,
+  "T006": 3,
+  "T007": 5,
+  "T008": 6,
+  "T009": 4
+ }
+}

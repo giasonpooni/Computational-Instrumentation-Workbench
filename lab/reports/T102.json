@@ -1,0 +1,431 @@
+{
+ "changed_files": [
+  "src/ciw/lab/lyapunov.py",
+  "src/ciw/lab/lyapunov_reference.py",
+  "src/ciw/lab/lyapunov_provider.py",
+  "docs/lab/LYAPUNOV.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 1,
+   "not_established": 0,
+   "numerically_verified": 5,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Inside the window: identical codes and bitwise-identical margin ratios, continuous and discrete. Everywhere: no certifying code on a form whose exact class is not negative definite.",
+ "experiment": "Evaluate base and scaled cases with PLSR in one subprocess; count code flips and ratio changes per window; classify every declared form exactly; independently test numpy.linalg.eigvalsh against exact power-of-two scaling inside and outside the window.",
+ "failure_modes_checked": [
+  "code flip inside the window",
+  "margin ratio changes inside the window",
+  "x scaling alters the sample",
+  "discrete near-threshold code flip under (P, x) scaling",
+  "code moved against the exact class outside the window (searched as counterexample)",
+  "subnormal flip"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "code flips against the unscaled verdict",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "margin ratios not bitwise equal",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     }
+    ],
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "Power-of-two scaling of (A, P, x) inside LAPACK's window never changes the PLSR code or margin ratio",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact rational, integer or bitwise comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "code_flips": 0,
+    "evaluations": 550,
+    "ratio_changes": 0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "code flips against the unscaled verdict",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     }
+    ],
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "Scaling P and x by powers of two never changes a discrete-time PLSR code, near the threshold included",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact rational, integer or bitwise comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "code_flips": 0,
+    "evaluations": 36
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "scaled verdicts with a certifying code on a form whose exact class is not negative definite",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 35.0,
+      "passed": true,
+      "reference": "outside-window code flips observed",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     }
+    ],
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "Outside LAPACK's scaling window power-of-two rescaling of A and P never moves a PLSR code to a certificate that the exact class contradicts",
+   "counterexample": {
+    "statement": "Power-of-two scaling of A and P never changes a PLSR verdict code while all quantities stay in the binary64 normal range",
+    "witness": {
+     "abc": [
+      300,
+      300,
+      0
+     ],
+     "base": "CERTIFIED_WITH_MARGIN",
+     "base_ratio": 1.0000000051989002,
+     "exact_class": "negative_definite",
+     "kappa": -1.0000000051989002,
+     "scaled": "NUMERICAL_INCONCLUSIVE",
+     "scaled_ratio": 0.9999999999999996,
+     "window": "outside"
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "which near-threshold codes flip depends on LAPACK/BLAS rounding; the soundness count does not",
+    "kind": "reference_error",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "evaluations": 250,
+    "unsound": 0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "unit-scale code is DECREASE_NOT_DEFINITE (1 if so)",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "PLSR resolution of the witness scaled by 2^-1074 (underflows to zero)",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "scaled code differs from the unit-scale code (1 if so)",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     }
+    ],
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "Scaling the witness by 2^-1074 drives its resolution to zero while its unit-scale code is DECREASE_NOT_DEFINITE; the scaled code is recorded",
+   "counterexample": {
+    "statement": "Power-of-two scaling of A never changes a PLSR verdict code",
+    "witness": {
+     "A_unit": [
+      [
+       -2.0,
+       5.0
+      ],
+      [
+       0.0,
+       -3.0
+      ]
+     ],
+     "P": "I",
+     "scale": "2^-1074",
+     "scaled_code": "CERTIFIED_WITH_MARGIN",
+     "unit_code": "DECREASE_NOT_DEFINITE",
+     "x": [
+      1.0,
+      0.0
+     ]
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "the scaled code depends on LAPACK's subnormal handling",
+    "kind": "reference_error",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "scaled_code": "CERTIFIED_WITH_MARGIN",
+    "unit_code": "DECREASE_NOT_DEFINITE"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "independent_check": {
+     "checker": {
+      "implementation": "ciw.lab.lyapunov_reference",
+      "revision": "0.1.0"
+     },
+     "comparison": "abs_le",
+     "observed": 0.0,
+     "passed": true,
+     "producer": {
+      "implementation": "Parameterized-Lyapunov-Stability-Runtime@19ea69670601",
+      "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196"
+     },
+     "reference": "exact rational class of each declared continuous and discrete form",
+     "reference_kind": "exact_arithmetic",
+     "tolerance": 0.0
+    },
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "No unscaled PLSR verdict certifies a form whose exact class is not negative definite",
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact rational, integer or bitwise comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "unsound": 0,
+    "verdicts": 62
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "eigenvalues of 2^j M rescaled by 2^-j versus eigenvalues of M, bitwise",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "name": "near_threshold_family",
+     "seed": 1020
+    }
+   },
+   "claim": "numpy.linalg.eigvalsh commutes exactly with power-of-two scaling while max|M| stays in [2^-485, 2^485]",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact rational, integer or bitwise comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "inside_bitwise_equal": 72,
+    "inside_total": 72
+   }
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 10946,
+   "path": "artifacts/T102/scaling-invariance.json",
+   "sha256": "97cfb6905b5ce57c545b07d397323b230298936deafb3a82796138c15ed53af0"
+  }
+ ],
+ "hypothesis": "Replacing (A, P, x) by (2^a A, 2^b P, 2^c x) multiplies M, max eig(M) and the resolution by 2^(a+b) exactly, so no verdict code and no margin ratio changes while every quantity stays normal and LAPACK does not rescale internally; outside that window rounding differs and near-threshold codes may move, but never against the exact class of the declared form.",
+ "input_data": [
+  "34 seeded continuous cases (PCG64 seed 102): n = 2..4, P = I or SPD (condition 10), kappa in {+-0.5, +-0.9, +-1.1, +-1.5, +-3} plus four robust cases (kappa = +-1e6)",
+  "16 razor-edge cases (seed 1022, skew 1): computed |max eig(M)|/resolution tuned by bisection to just above 1 on the certified and the indefinite side",
+  "Inside-window exponent triples (a, b, c): [(1, 0, 0), (-7, 0, 0), (0, 13, 0), (0, -13, 0), (0, 0, 300), (0, 0, -300), (0, 0, 1000), (0, 0, -1000), (20, -20, 5), (100, -60, -40), (-150, 30, 700)]",
+  "Outside-window triples: [(300, 300, 0), (-300, -300, 0), (0, 520, 0), (-520, 0, 0), (480, 40, 0)]",
+  "12 discrete-time cases under (0, b, c) scaling: 6 contractions (seed 1021) and 6 razor-edge cases A = Q diag(s, r), P = I (seed 1023) with computed |max eig(A^T A - I)|/resolution just above 1",
+  "The subnormal witness scaled by 2^-1074"
+ ],
+ "mathematical_model": "Continuous time: M(2^a A, 2^b P) = 2^(a+b) M(A, P) and resolution likewise (homogeneous of degree one in each of max|A|, max|P|, max|M|); PLSR divides x by a power of two before evaluating, so c never enters. Discrete time admits only (P, x) scaling. LAPACK dsyevd rescales by a non-power-of-two factor when max|M| lies outside [2^-485, 2^485]. Exact power-of-two scaling preserves the exact class of M.",
+ "number": 102,
+ "numerical_result": "Inside the window: 550 scaled evaluations, 0 code flips, 0 ratio changes. Outside the window: 250 evaluations, 35 flips, 250 ratio changes, 0 certificates contradicting the exact class. Discrete (P, x) scaling: 0 flips in 36 (half of the cases within about one resolution of the threshold). Subnormal witness: DECREASE_NOT_DEFINITE -> CERTIFIED_WITH_MARGIN. eigvalsh bitwise homogeneous in 72/72 inside and 0/48 outside scalings. Conclusion: verdicts are exactly power-of-two invariant inside LAPACK's unscaled window and the normal range; outside it 35 near-threshold codes move, never against the exact class; the subnormal witness flips from DECREASE_NOT_DEFINITE to a false certificate.",
+ "observation_model": "PLSR code and margin ratio (margin/resolution) for each scaled case versus the unscaled case; exact rational class of each declared form.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "provider": {
+   "commit": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+   "entry": "lyapunov.verdict / lyapunov.solve_lyapunov / lyapunov.decrease_resolution",
+   "files_pinned": 20,
+   "files_verified": 20,
+   "implementation": "Parameterized-Lyapunov-Stability-Runtime",
+   "numpy_version": "2.4.3",
+   "package_version": "0.1.0rc1",
+   "python_version": "3.12.3",
+   "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+   "role": "plsr-python",
+   "source_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7",
+   "verification": "package version and per-file sha256 checked in the subprocess before use"
+  },
+  "python": "3.12.3",
+  "requirement_probes": {
+   "provider:plsr-python": true
+  },
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/lyapunov.py": "58d6c7473f0a42002b57888de0ccfbbf73b571bbbabbf9ee81e0a05c734f2320",
+   "src/ciw/lab/lyapunov_provider.py": "da3465b48b5f5efc47bfe6ab8379cf2cf2bc23e4835dc7ff047252e77fa6ef17",
+   "src/ciw/lab/lyapunov_reference.py": "fa37ef453c23ad2bed2eab41132e72670e166b93eebd5fc9d67a4a89a7c92cca"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T103: overflow and underflow of states and parameters; propose that PLSR pre-scale M by a power of two into LAPACK's window before eigvalsh so verdicts are exactly scale-invariant.",
+ "report_id": "sha256:e6dab6845372cad7b00ca1979de458c4fb0ffcea6ccfdbd829ae5da4db1a5fe4",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "lyapunov",
+ "state": "completed",
+ "task_id": "T102",
+ "tests_passed": [
+  "check: Power-of-two scaling of (A, P, x) inside LAPACK's window never changes the PLSR code or margin ratio vs code flips against the unscaled verdict",
+  "check: Power-of-two scaling of (A, P, x) inside LAPACK's window never changes the PLSR code or margin ratio vs margin ratios not bitwise equal",
+  "check: Scaling P and x by powers of two never changes a discrete-time PLSR code, near the threshold included vs code flips against the unscaled verdict",
+  "check: Outside LAPACK's scaling window power-of-two rescaling of A and P never moves a PLSR code to a certificate that the exact class contradicts vs scaled verdicts with a certifying code on a form whose exact class is not negative definite",
+  "check: Outside LAPACK's scaling window power-of-two rescaling of A and P never moves a PLSR code to a certificate that the exact class contradicts vs outside-window code flips observed",
+  "check: Scaling the witness by 2^-1074 drives its resolution to zero while its unit-scale code is DECREASE_NOT_DEFINITE; the scaled code is recorded vs unit-scale code is DECREASE_NOT_DEFINITE (1 if so)",
+  "check: Scaling the witness by 2^-1074 drives its resolution to zero while its unit-scale code is DECREASE_NOT_DEFINITE; the scaled code is recorded vs PLSR resolution of the witness scaled by 2^-1074 (underflows to zero)",
+  "check: Scaling the witness by 2^-1074 drives its resolution to zero while its unit-scale code is DECREASE_NOT_DEFINITE; the scaled code is recorded vs scaled code differs from the unit-scale code (1 if so)",
+  "independent: No unscaled PLSR verdict certifies a form whose exact class is not negative definite vs ciw.lab.lyapunov_reference",
+  "check: numpy.linalg.eigvalsh commutes exactly with power-of-two scaling while max|M| stays in [2^-485, 2^485] vs eigenvalues of 2^j M rescaled by 2^-j versus eigenvalues of M, bitwise",
+  "pytest: tests/test_lab_lyapunov.py::test_t102_power_of_two_scaling",
+  "pytest: tests/test_lab_lyapunov.py::test_eigvalsh_scaling_window",
+  "pytest: tests/test_lab_lyapunov.py::test_discrete_razor_edge_sits_at_the_threshold",
+  "pytest: tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider"
+ ],
+ "tests_skipped": [],
+ "title": "Test power-of-two homogeneous scaling.",
+ "uncertainty": "Inside-window results are exact (bitwise). Outside-window flip counts depend on the LAPACK/BLAS build and on how close each case sits to the threshold; they are retained in the artifact, and only the soundness count is a checked finding value.",
+ "unresolved_assumptions": [
+  "The LAPACK window [2^-485, 2^485] is taken from reference dsyevd (RMIN, RMAX); other LAPACK builds may rescale differently.",
+  "Outside-window flip counts depend on the LAPACK/BLAS build; only the soundness property is checked."
+ ]
+}

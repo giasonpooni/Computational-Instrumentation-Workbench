@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420" font-family="sans-serif" font-size="11">
+<rect width="640" height="420" fill="#ffffff"/>
+<text x="78" y="22" font-size="13" font-weight="bold">Conjugate/focal point location error</text>
+<rect x="78" y="40" width="392" height="322" fill="none" stroke="#333"/>
+<line x1="309.29" y1="40" x2="309.29" y2="362" stroke="#e5e7eb"/>
+<text x="309.29" y="378" text-anchor="middle">1e-1</text>
+<line x1="78" y1="356.32" x2="470" y2="356.32" stroke="#e5e7eb"/>
+<text x="72" y="360.32" text-anchor="end">1e-8</text>
+<line x1="78" y1="276.93" x2="470" y2="276.93" stroke="#e5e7eb"/>
+<text x="72" y="280.93" text-anchor="end">1e-7</text>
+<line x1="78" y1="197.55" x2="470" y2="197.55" stroke="#e5e7eb"/>
+<text x="72" y="201.55" text-anchor="end">1e-6</text>
+<line x1="78" y1="118.16" x2="470" y2="118.16" stroke="#e5e7eb"/>
+<text x="72" y="122.16" text-anchor="end">1e-5</text>
+<text x="274.00" y="406" text-anchor="middle">step h</text>
+<text x="16" y="201.00" text-anchor="middle" transform="rotate(-90 16 201.00)">max location error</text>
+<path d="M394.45,63.62 L288.97,158.95 L183.48,254.49 L78.00,350.07" fill="none" stroke="#1f5fa8" stroke-width="1.8"/>
+<circle cx="394.45" cy="63.62" r="2.6" fill="#1f5fa8"/>
+<circle cx="288.97" cy="158.95" r="2.6" fill="#1f5fa8"/>
+<circle cx="183.48" cy="254.49" r="2.6" fill="#1f5fa8"/>
+<circle cx="78.00" cy="350.07" r="2.6" fill="#1f5fa8"/>
+<line x1="482" y1="52" x2="502" y2="52" stroke="#1f5fa8" stroke-width="2"/>
+<text x="508" y="56">sphere-great-circle</text>
+<path d="M470.00,51.93 L364.52,147.30 L259.03,242.85 L153.55,338.41" fill="none" stroke="#c2410c" stroke-width="1.8"/>
+<circle cx="470.00" cy="51.93" r="2.6" fill="#c2410c"/>
+<circle cx="364.52" cy="147.30" r="2.6" fill="#c2410c"/>
+<circle cx="259.03" cy="242.85" r="2.6" fill="#c2410c"/>
+<circle cx="153.55" cy="338.41" r="2.6" fill="#c2410c"/>
+<line x1="482" y1="70" x2="502" y2="70" stroke="#c2410c" stroke-width="2"/>
+<text x="508" y="74">torus-outer-equator</text>
+</svg>

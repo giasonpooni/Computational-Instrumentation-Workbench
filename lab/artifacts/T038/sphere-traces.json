@@ -1,0 +1,597 @@
+{
+ "length": 2.0,
+ "rows": [
+  {
+   "completed": 6,
+   "h": 0.5822835232876192,
+   "level": 1,
+   "max_endpoint": 0.1959558424290463,
+   "max_unfold_minus_trace": 6.661338147750939e-16,
+   "mean_along_track": 0.07553959736102733,
+   "mean_cross_track": 0.050170767464224615,
+   "mean_endpoint": 0.09830672251603619,
+   "mean_length_defect": 0.07388851034308641,
+   "traces": [
+    {
+     "along_track": 0.06559482533745098,
+     "cross_track": 0.02385134894997594,
+     "endpoint": 0.06979077145174988,
+     "faces": 9,
+     "length_defect": 0.06544136248372645,
+     "min_vertex_margin": 0.04799280817940069,
+     "status": "completed",
+     "unfold_margin": 0.04799280817939966,
+     "unfold_minus_trace": 0.0
+    },
+    {
+     "along_track": 0.08471181833672964,
+     "cross_track": 0.1769114390651647,
+     "endpoint": 0.1959558424290463,
+     "faces": 8,
+     "length_defect": 0.07592259575180771,
+     "min_vertex_margin": 0.07138529913691649,
+     "status": "completed",
+     "unfold_margin": 0.07138529913691628,
+     "unfold_minus_trace": 0.0
+    },
+    {
+     "along_track": 0.06501530398846538,
+     "cross_track": -0.004192599986886449,
+     "endpoint": 0.06515015635559047,
+     "faces": 9,
+     "length_defect": 0.06501056834356866,
+     "min_vertex_margin": 0.10236523377580675,
+     "status": "completed",
+     "unfold_margin": 0.10236523377580702,
+     "unfold_minus_trace": -6.661338147750939e-16
+    },
+    {
+     "along_track": 0.07915845841254242,
+     "cross_track": -0.033065268990836394,
+     "endpoint": 0.08577347401224088,
+     "faces": 9,
+     "length_defect": 0.07885390961267857,
+     "min_vertex_margin": 0.15121433495787395,
+     "status": "completed",
+     "unfold_margin": 0.15121433495787517,
+     "unfold_minus_trace": 0.0
+    },
+    {
+     "along_track": 0.07525553238208803,
+     "cross_track": -0.04530255892713414,
+     "endpoint": 0.08781708624391155,
+     "faces": 9,
+     "length_defect": 0.07468916746170917,
+     "min_vertex_margin": 0.1188199658501624,
+     "status": "completed",
+     "unfold_margin": 0.11881996585016263,
+     "unfold_minus_trace": 2.220446049250313e-16
+    },
+    {
+     "along_track": 0.08350164570888752,
+     "cross_track": 0.017701388865350057,
+     "endpoint": 0.08535300460367806,
+     "faces": 9,
+     "length_defect": 0.0834134584050279,
+     "min_vertex_margin": 0.23472330604800695,
+     "status": "completed",
+     "unfold_margin": 0.2347233060480066,
+     "unfold_minus_trace": -2.220446049250313e-16
+    }
+   ],
+   "vertices": 42
+  },
+  {
+   "completed": 6,
+   "h": 0.2993320753185587,
+   "level": 2,
+   "max_endpoint": 0.06586003915854126,
+   "max_unfold_minus_trace": 4.440892098500626e-16,
+   "mean_along_track": 0.019274585013549752,
+   "mean_cross_track": 0.02806566821799701,
+   "mean_endpoint": 0.03663580915129177,
+   "mean_length_defect": 0.018969396758341455,
+   "traces": [
+    {
+     "along_track": 0.018959920085552487,
+     "cross_track": 0.004962165023473152,
+     "endpoint": 0.019598436182642124,
+     "faces": 17,
+     "length_defect": 0.018954000813889316,
+     "min_vertex_margin": 0.06461976291490934,
+     "status": "completed",
+     "unfold_margin": 0.0646197629149079,
+     "unfold_minus_trace": 0.0
+    },
+    {
+     "along_track": 0.018487072476641084,
+     "cross_track": 0.003975023125993922,
+     "endpoint": 0.01890954408427911,
+     "faces": 16,
+     "length_defect": 0.01848327863082977,
+     "min_vertex_margin": 0.04737558684413289,
+     "status": "completed",
+     "unfold_margin": 0.04737558684413523,
+     "unfold_minus_trace": 2.220446049250313e-16
+    },
+    {
+     "along_track": 0.01955213633492776,
+     "cross_track": 0.013849696585206775,
+     "endpoint": 0.023959876610902847,
+     "faces": 17,
+     "length_defect": 0.01950595628354357,
+     "min_vertex_margin": 0.10682301795343502,
+     "status": "completed",
+     "unfold_margin": 0.10682301795343815,
+     "unfold_minus_trace": 4.440892098500626e-16
+    },
+    {
+     "along_track": 0.0202190599221092,
+     "cross_track": -0.04156480736066344,
+     "endpoint": 0.04621913171761224,
+     "faces": 16,
+     "length_defect": 0.019802505590877484,
+     "min_vertex_margin": 0.03897522017556206,
+     "status": "completed",
+     "unfold_margin": 0.0389752201755621,
+     "unfold_minus_trace": 4.440892098500626e-16
+    },
+    {
+     "along_track": 0.01955906567617893,
+     "cross_track": 0.06289270430055875,
+     "endpoint": 0.06586003915854126,
+     "faces": 18,
+     "length_defect": 0.01860725341480629,
+     "min_vertex_margin": 0.003564012660219995,
+     "status": "completed",
+     "unfold_margin": 0.0035640126602196087,
+     "unfold_minus_trace": 4.440892098500626e-16
+    },
+    {
+     "along_track": 0.01887025558588904,
+     "cross_track": -0.04114961291208604,
+     "endpoint": 0.045267827153773026,
+     "faces": 16,
+     "length_defect": 0.018463385816102296,
+     "min_vertex_margin": 0.03355899170586566,
+     "status": "completed",
+     "unfold_margin": 0.033558991705864294,
+     "unfold_minus_trace": 0.0
+    }
+   ],
+   "vertices": 162
+  },
+  {
+   "completed": 6,
+   "h": 0.1507297051948821,
+   "level": 3,
+   "max_endpoint": 0.01922902941871128,
+   "max_unfold_minus_trace": 8.881784197001252e-16,
+   "mean_along_track": 0.004643307092218379,
+   "mean_cross_track": 0.010964979437619324,
+   "mean_endpoint": 0.012334617469521443,
+   "mean_length_defect": 0.004606627716891613,
+   "traces": [
+    {
+     "along_track": 0.004317094755772346,
+     "cross_track": 0.01768466509642257,
+     "endpoint": 0.01820392110884439,
+     "faces": 33,
+     "length_defect": 0.0042447141569832425,
+     "min_vertex_margin": 0.002659028956720544,
+     "status": "completed",
+     "unfold_margin": 0.0026590289567188243,
+     "unfold_minus_trace": 6.661338147750939e-16
+    },
+    {
+     "along_track": 0.004436307566673463,
+     "cross_track": 0.013563765073446598,
+     "endpoint": 0.014270786272874307,
+     "faces": 31,
+     "length_defect": 0.004393715132251508,
+     "min_vertex_margin": 0.001162059378369884,
+     "status": "completed",
+     "unfold_margin": 0.0011620593783673314,
+     "unfold_minus_trace": 0.0
+    },
+    {
+     "along_track": 0.004472641842686075,
+     "cross_track": -0.008416261260613902,
+     "endpoint": 0.00953087122602806,
+     "faces": 32,
+     "length_defect": 0.004456241290342611,
+     "min_vertex_margin": 0.036910569476246415,
+     "status": "completed",
+     "unfold_margin": 0.036910569476243826,
+     "unfold_minus_trace": 4.440892098500626e-16
+    },
+    {
+     "along_track": 0.0049095163625310625,
+     "cross_track": 0.0017313169070115291,
+     "endpoint": 0.005205841436645177,
+     "faces": 31,
+     "length_defect": 0.004908821538823549,
+     "min_vertex_margin": 0.010215547155201676,
+     "status": "completed",
+     "unfold_margin": 0.010215547155199968,
+     "unfold_minus_trace": 4.440892098500626e-16
+    },
+    {
+     "along_track": 0.004877535596324527,
+     "cross_track": 0.005785608485506593,
+     "endpoint": 0.0075672553540254575,
+     "faces": 32,
+     "length_defect": 0.004869777032124212,
+     "min_vertex_margin": 0.010375171147613993,
+     "status": "completed",
+     "unfold_margin": 0.010375171147615088,
+     "unfold_minus_trace": -4.440892098500626e-16
+    },
+    {
+     "along_track": 0.004846746429322804,
+     "cross_track": -0.01860825980271476,
+     "endpoint": 0.01922902941871128,
+     "faces": 32,
+     "length_defect": 0.004766497150824556,
+     "min_vertex_margin": 0.05280540132339888,
+     "status": "completed",
+     "unfold_margin": 0.05280540132339888,
+     "unfold_minus_trace": -8.881784197001252e-16
+    }
+   ],
+   "vertices": 642
+  },
+  {
+   "completed": 6,
+   "h": 0.07549909830150697,
+   "level": 4,
+   "max_endpoint": 0.006511007659584872,
+   "max_unfold_minus_trace": 4.440892098500626e-16,
+   "mean_along_track": 0.001166444740520812,
+   "mean_cross_track": 0.0026335561451956836,
+   "mean_endpoint": 0.0030516261590671175,
+   "mean_length_defect": 0.0011638984081697352,
+   "traces": [
+    {
+     "along_track": 0.0011187275652790383,
+     "cross_track": 0.0002615128337567075,
+     "endpoint": 0.0011488865474901205,
+     "faces": 63,
+     "length_defect": 0.0011187118696263099,
+     "min_vertex_margin": 0.0041686607502216845,
+     "status": "completed",
+     "unfold_margin": 0.004168660750221721,
+     "unfold_minus_trace": 4.440892098500626e-16
+    },
+    {
+     "along_track": 0.0011277356129949353,
+     "cross_track": 0.006412600920296702,
+     "endpoint": 0.006511007659584872,
+     "faces": 61,
+     "length_defect": 0.0011182978364350227,
+     "min_vertex_margin": 0.0015303053528258337,
+     "status": "completed",
+     "unfold_margin": 0.0015303053528413768,
+     "unfold_minus_trace": 0.0
+    },
+    {
+     "along_track": 0.0011233816558488805,
+     "cross_track": 0.0031514852682474675,
+     "endpoint": 0.0033457198870674217,
+     "faces": 62,
+     "length_defect": 0.001121102213132108,
+     "min_vertex_margin": 0.0015058534452228071,
+     "status": "completed",
+     "unfold_margin": 0.0015058534452327965,
+     "unfold_minus_trace": -4.440892098500626e-16
+    },
+    {
+     "along_track": 0.0012499497516833115,
+     "cross_track": -0.002277721881059548,
+     "endpoint": 0.0025981510054873553,
+     "faces": 58,
+     "length_defect": 0.0012487586612004442,
+     "min_vertex_margin": 0.0412223649684328,
+     "status": "completed",
+     "unfold_margin": 0.04122236496843973,
+     "unfold_minus_trace": 2.220446049250313e-16
+    },
+    {
+     "along_track": 0.0012353255982904346,
+     "cross_track": 0.0005416463317473371,
+     "endpoint": 0.0013488550453074546,
+     "faces": 60,
+     "length_defect": 0.0012352582450461114,
+     "min_vertex_margin": 0.015631570902027034,
+     "status": "completed",
+     "unfold_margin": 0.015631570902039982,
+     "unfold_minus_trace": 4.440892098500626e-16
+    },
+    {
+     "along_track": 0.001143548259028272,
+     "cross_track": -0.0031563696360663363,
+     "endpoint": 0.0033571368094654818,
+     "faces": 63,
+     "length_defect": 0.0011412616235784157,
+     "min_vertex_margin": 0.003228968309785807,
+     "status": "completed",
+     "unfold_margin": 0.0032289683098105674,
+     "unfold_minus_trace": 0.0
+    }
+   ],
+   "vertices": 2562
+  },
+  {
+   "completed": 6,
+   "h": 0.03776637041792051,
+   "level": 5,
+   "max_endpoint": 0.0020793360667501083,
+   "max_unfold_minus_trace": 8.881784197001252e-16,
+   "mean_along_track": 0.00029482584932464764,
+   "mean_cross_track": 0.0009976839942345348,
+   "mean_endpoint": 0.0010625615655685836,
+   "mean_length_defect": 0.00029448879325033595,
+   "traces": [
+    {
+     "along_track": 0.0002898764281026736,
+     "cross_track": -0.00024365905808129487,
+     "endpoint": 0.00037867938746611457,
+     "faces": 123,
+     "length_defect": 0.0002898628321901242,
+     "min_vertex_margin": 0.004308810652337569,
+     "status": "completed",
+     "unfold_margin": 0.00430881065219707,
+     "unfold_minus_trace": -4.440892098500626e-16
+    },
+    {
+     "along_track": 0.0002907645900741087,
+     "cross_track": 0.0018386624385390191,
+     "endpoint": 0.0018615110836261073,
+     "faces": 118,
+     "length_defect": 0.0002899903991457897,
+     "min_vertex_margin": 0.003556975998537548,
+     "status": "completed",
+     "unfold_margin": 0.003556975998431541,
+     "unfold_minus_trace": -8.881784197001252e-16
+    },
+    {
+     "along_track": 0.00028424955531665196,
+     "cross_track": 0.0020598157158010113,
+     "endpoint": 0.0020793360667501083,
+     "faces": 124,
+     "length_defect": 0.00028327794239935145,
+     "min_vertex_margin": 0.0003795544315355892,
+     "status": "completed",
+     "unfold_margin": 0.0003795544315887893,
+     "unfold_minus_trace": -8.881784197001252e-16
+    },
+    {
+     "along_track": 0.0003068173815048518,
+     "cross_track": -0.0006275991425105178,
+     "endpoint": 0.0006985825483892179,
+     "faces": 116,
+     "length_defect": 0.00030672717718349674,
+     "min_vertex_margin": 0.0006907031011886305,
+     "status": "completed",
+     "unfold_margin": 0.0006907031011946785,
+     "unfold_minus_trace": 4.440892098500626e-16
+    },
+    {
+     "along_track": 0.0002993589627922838,
+     "cross_track": 0.0005230831217049609,
+     "endpoint": 0.0006026870934767462,
+     "faces": 118,
+     "length_defect": 0.00029929630205138835,
+     "min_vertex_margin": 0.0034865055645516376,
+     "status": "completed",
+     "unfold_margin": 0.0034865055645488807,
+     "unfold_minus_trace": 2.220446049250313e-16
+    },
+    {
+     "along_track": 0.00029788817815731594,
+     "cross_track": -0.000693284488770404,
+     "endpoint": 0.0007545732137032061,
+     "faces": 124,
+     "length_defect": 0.0002977781065318652,
+     "min_vertex_margin": 0.020075414329700465,
+     "status": "completed",
+     "unfold_margin": 0.02007541432972849,
+     "unfold_minus_trace": -4.440892098500626e-16
+    }
+   ],
+   "vertices": 10242
+  },
+  {
+   "completed": 6,
+   "h": 0.01888528913724259,
+   "level": 6,
+   "max_endpoint": 0.0014623453361876653,
+   "max_unfold_minus_trace": 3.1086244689504383e-15,
+   "mean_along_track": 7.32847630038028e-05,
+   "mean_cross_track": 0.0004908927281576916,
+   "mean_endpoint": 0.0005020933891416284,
+   "mean_length_defect": 7.317569796705392e-05,
+   "traces": [
+    {
+     "along_track": 7.274939495597624e-05,
+     "cross_track": -0.00019182321871464024,
+     "endpoint": 0.0002051551160453949,
+     "faces": 246,
+     "length_defect": 7.274097331988472e-05,
+     "min_vertex_margin": 0.000716665636624417,
+     "status": "completed",
+     "unfold_margin": 0.0007166656374970604,
+     "unfold_minus_trace": -3.1086244689504383e-15
+    },
+    {
+     "along_track": 7.311793122614466e-05,
+     "cross_track": 0.0007679093265215972,
+     "endpoint": 0.0007713825021185169,
+     "faces": 236,
+     "length_defect": 7.298296832569662e-05,
+     "min_vertex_margin": 0.0021976962599379313,
+     "status": "completed",
+     "unfold_margin": 0.002197696259134147,
+     "unfold_minus_trace": -1.3322676295501878e-15
+    },
+    {
+     "along_track": 7.104572879465217e-05,
+     "cross_track": 0.0001731820260890052,
+     "endpoint": 0.00018718843364315204,
+     "faces": 246,
+     "length_defect": 7.103886447001884e-05,
+     "min_vertex_margin": 0.0020083913304056455,
+     "status": "completed",
+     "unfold_margin": 0.002008391330372402,
+     "unfold_minus_trace": 1.5543122344752192e-15
+    },
+    {
+     "along_track": 7.593817608701861e-05,
+     "cross_track": 0.00011500047781782109,
+     "endpoint": 0.000137810436688685,
+     "faces": 233,
+     "length_defect": 7.593514919390643e-05,
+     "min_vertex_margin": 0.007415993416119653,
+     "status": "completed",
+     "unfold_margin": 0.007415993415966838,
+     "unfold_minus_trace": -1.3322676295501878e-15
+    },
+    {
+     "along_track": 7.587807213399829e-05,
+     "cross_track": 0.0002368195931407159,
+     "endpoint": 0.00024867851016635616,
+     "faces": 234,
+     "length_defect": 7.58652360373091e-05,
+     "min_vertex_margin": 0.003790091721320724,
+     "status": "completed",
+     "unfold_margin": 0.003790091720987919,
+     "unfold_minus_trace": -1.3322676295501878e-15
+    },
+    {
+     "along_track": 7.09792748250268e-05,
+     "cross_track": -0.00146062172666237,
+     "endpoint": 0.0014623453361876653,
+     "faces": 246,
+     "length_defect": 7.049099645550783e-05,
+     "min_vertex_margin": 0.0002841034597561576,
+     "status": "completed",
+     "unfold_margin": 0.0002841034595080353,
+     "unfold_minus_trace": 8.881784197001252e-16
+    }
+   ],
+   "vertices": 40962
+  },
+  {
+   "completed": 6,
+   "h": 0.009442907599360636,
+   "level": 7,
+   "max_endpoint": 0.00027063241571744715,
+   "max_unfold_minus_trace": 2.4424906541753444e-15,
+   "mean_along_track": 1.850947986940193e-05,
+   "mean_cross_track": 0.00011302337657920615,
+   "mean_endpoint": 0.00011617510426007931,
+   "mean_length_defect": 1.8504853576573055e-05,
+   "traces": [
+    {
+     "along_track": 1.810346300399237e-05,
+     "cross_track": 1.467106687637473e-05,
+     "endpoint": 2.3301836322536946e-05,
+     "faces": 491,
+     "length_defect": 1.8103413748526975e-05,
+     "min_vertex_margin": 0.0005900826160315509,
+     "status": "completed",
+     "unfold_margin": 0.0005900826155762686,
+     "unfold_minus_trace": 1.5543122344752192e-15
+    },
+    {
+     "along_track": 1.8379157479427896e-05,
+     "cross_track": -3.208259810636758e-05,
+     "endpoint": 3.697413326618145e-05,
+     "faces": 474,
+     "length_defect": 1.837892193590207e-05,
+     "min_vertex_margin": 0.00042965510245673855,
+     "status": "completed",
+     "unfold_margin": 0.0004296550919408171,
+     "unfold_minus_trace": 8.881784197001252e-16
+    },
+    {
+     "along_track": 1.785126259185235e-05,
+     "cross_track": 0.00011739585631856343,
+     "endpoint": 0.00011874533529965127,
+     "faces": 490,
+     "length_defect": 1.7848108773588223e-05,
+     "min_vertex_margin": 0.0013184307201843382,
+     "status": "completed",
+     "unfold_margin": 0.0013184307304028751,
+     "unfold_minus_trace": 4.440892098500626e-16
+    },
+    {
+     "along_track": 1.9288100049615198e-05,
+     "cross_track": -7.956015068099283e-05,
+     "endpoint": 8.186481771266936e-05,
+     "faces": 463,
+     "length_defect": 1.928665153139164e-05,
+     "min_vertex_margin": 9.53497763535557e-05,
+     "status": "completed",
+     "unfold_margin": 9.534977088676566e-05,
+     "unfold_minus_trace": -8.881784197001252e-16
+    },
+    {
+     "along_track": 1.9232848741389854e-05,
+     "cross_track": 0.00016441097724683468,
+     "endpoint": 0.00016553208724198973,
+     "faces": 466,
+     "length_defect": 1.922666296350073e-05,
+     "min_vertex_margin": 0.006195323381162354,
+     "status": "completed",
+     "unfold_margin": 0.006195323382041919,
+     "unfold_minus_trace": 1.3322676295501878e-15
+    },
+    {
+     "along_track": 1.820204735013392e-05,
+     "cross_track": -0.00027001961024610374,
+     "endpoint": 0.00027063241571744715,
+     "faces": 491,
+     "length_defect": 1.818536250652869e-05,
+     "min_vertex_margin": 0.00039220376315263206,
+     "status": "completed",
+     "unfold_margin": 0.00039220375904724936,
+     "unfold_minus_trace": 2.4424906541753444e-15
+    }
+   ],
+   "vertices": 163842
+  }
+ ],
+ "starts": [
+  [
+   1.1,
+   0.3,
+   0.7
+  ],
+  [
+   0.8,
+   2.0,
+   2.1
+  ],
+  [
+   1.9,
+   4.0,
+   -1.3
+  ],
+  [
+   1.4,
+   5.5,
+   0.2
+  ],
+  [
+   0.6,
+   1.0,
+   2.9
+  ],
+  [
+   2.3,
+   3.1,
+   -2.4
+  ]
+ ]
+}

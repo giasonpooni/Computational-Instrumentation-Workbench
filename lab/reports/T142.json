@@ -1,0 +1,352 @@
+{
+ "changed_files": [
+  "src/ciw/lab/implementation_targets.py",
+  "src/ciw/lab/implementation_targets_kernels.py",
+  "src/ciw/lab/implementation_targets_serial.py",
+  "docs/lab/IMPLEMENTATION_TARGETS.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 4,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Counts are state-independent and exact; RK4 and transfer counts decompose as predicted; dispatches grow linearly with steps; the rank-1 unit leads by a clear margin; a Rust port of the fused loop matches the core trajectory to rounding level.",
+ "experiment": "Count operations of scalar restatements, compare them with the core kernels, profile dispatches, rank port units by removable dispatches, compile the Rust probe and compare its fused sphere loop.",
+ "failure_modes_checked": [
+  "scalar restatement diverging from the core kernel",
+  "branch-dependent counts",
+  "RK4 decomposition formula error (13n+3)",
+  "nonlinear dispatch growth",
+  "ranking decided by a near tie",
+  "Rust port disagreeing with the core or the exact Jacobi field",
+  "rustc absent (not established) versus probe broken (refuted)"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 4.440892098500626e-16,
+      "passed": true,
+      "reference": "scalar restatements against the core NumPy kernels (geodesic RHS, Jacobi RHS, RK4 step, transfer) and the CIW NumPy Joseph-form Kalman reference (max abs difference)",
+      "reference_kind": "cross_implementation",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "RK4 step count minus 4*RHS - (13n+3), n=8",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "10-step transfer count minus 10*step - 1",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "count differences between two random states (branch-free kernels)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "name": "PCG64 torus states and Kalman case",
+     "seed": 142
+    }
+   },
+   "claim": "Exact floating-point operation counts of the scalar kernel restatements",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": "operations per call",
+   "value": {
+    "geodesic_rhs": {
+     "add": 72,
+     "div": 3,
+     "flops": 173,
+     "mul": 86,
+     "neg": 12,
+     "trig": 4
+    },
+    "jacobi_rhs": {
+     "add": 72,
+     "div": 4,
+     "flops": 178,
+     "mul": 89,
+     "neg": 13,
+     "trig": 4
+    },
+    "jacobi_transfer": {
+     "add": 3440,
+     "div": 171,
+     "flops": 8191,
+     "mul": 4060,
+     "neg": 520,
+     "trig": 160
+    },
+    "kalman_update": {
+     "add": 199,
+     "div": 3,
+     "flops": 453,
+     "mul": 250,
+     "neg": 1,
+     "trig": 0
+    },
+    "rk4_step": {
+     "add": 344,
+     "div": 17,
+     "flops": 819,
+     "mul": 406,
+     "neg": 52,
+     "trig": 16
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "transfer dispatches are linear in steps: D(30)-D(20) - (D(20)-D(10))",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Interpreter calls issued by ciw code per kernel call",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0.25
+   },
+   "uncertainty": {
+    "basis": "exact for one Python/NumPy version; relative drift allowed across versions",
+    "kind": "reference_error",
+    "value": 0.25
+   },
+   "unit": "calls",
+   "value": {
+    "geodesic_rhs": 73,
+    "jacobi_rhs": 79,
+    "jacobi_transfer_fixed": 6,
+    "jacobi_transfer_per_step": 319,
+    "kalman_update": 5,
+    "rk4_step": 317
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 0.09718575873229833,
+      "passed": true,
+      "reference": "rank-1 minus rank-2 removable dispatches, relative to rank 1 (order is not a tie)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.05
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "ties in removable dispatches (tie-breakers unused)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "derivation": "docs/lab/IMPLEMENTATION_TARGETS.md#kernel-ranking: rank by Python dispatches removed per reference experiment (2000 RK4 steps, 2000 Kalman updates); ties broken by arithmetic intensity, then determinism need"
+   },
+   "claim": "Ranked Rust port recommendation",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "order decided by exact dispatch counts; rank-1 margin 0.097 exceeds the 0.05 floor",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": [
+    "jacobi_transfer (fused geodesic + Jacobi RK4 loop)",
+    "geodesic_rhs (generic embedded Christoffel contraction)",
+    "kalman_update (CIW Joseph-form reference, n=4, m=2; not a core kernel)",
+    "rk4_step alone (right-hand side stays in Python)"
+   ]
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 4.440892098500626e-16,
+      "passed": true,
+      "reference": "Rust against ciw.lab.jacobi.transfer final state",
+      "reference_kind": "cross_implementation",
+      "tolerance": 1e-11
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 1.5459494795422302e-11,
+      "passed": true,
+      "reference": "Rust Jacobi columns against cos(s), sin(s)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-08
+     }
+    ],
+    "generator": {
+     "name": "sphere geodesic u0=(1.1, 0.2), heading 0.3, L=3, 600 RK4 steps"
+    }
+   },
+   "claim": "Rust fused RK4 loop reproduces ciw.lab.jacobi.transfer on the unit sphere",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-11,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "largest componentwise difference after 600 steps; different rounding of the same RK4 recurrence",
+    "kind": "roundoff",
+    "value": 4.440892098500626e-16
+   },
+   "unit": null,
+   "value": 4.440892098500626e-16
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "Rust ports of the ranked kernels are ready for industrial deployment",
+   "domain": "industrial_readiness",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 1118,
+   "path": "artifacts/T142/kernel-profile.json",
+   "sha256": "b4ef63f3deaa0089c7ada7b8c13b168531de41ab4496bb14b6f2482f91012b18"
+  },
+  {
+   "bytes": 1811,
+   "path": "artifacts/T142/kernel-ranking.json",
+   "sha256": "499c8c25a02b3fb601c00239dc16722ee73933cd40d825179954f0d9e15a122e"
+  },
+  {
+   "bytes": 1370,
+   "path": "artifacts/T142/kernel-timings.json",
+   "sha256": "d962f1314c857e030edfac83b73eaa493e45258876c692f4d67ccfe7ed87dac4"
+  },
+  {
+   "bytes": 1649,
+   "path": "artifacts/T142/kernel-timings.svg",
+   "sha256": "fbc4c0f1632855878852812e33891bde92ed0d84e75d856087b9a2c56a9070c8"
+  }
+ ],
+ "hypothesis": "Python dispatch overhead, not arithmetic, dominates the geodesic/Jacobi kernels, so the fused transfer loop is the best Rust target; the Kalman update and a standalone RK4 step are poor targets.",
+ "input_data": [
+  "Torus R=2, r=1 (generic embedded path); two PCG64(142) states",
+  "Joseph-form Kalman update n=4, m=2 written in this section as a reference (the core Kalman filters in other sections are vectorized across runs and were not profiled)",
+  "Unit sphere transfer u0=(1.1, 0.2), heading 0.3, L=3, 600 steps for the Rust probe"
+ ],
+ "mathematical_model": "Scalar restatements on a counting number type give exact flop counts; RK4 on an n-vector adds 13n+3 flops to four right-hand sides; interpreter dispatches are calls issued from ciw frames (profile hook); arithmetic intensity = flops per byte of state, stage vectors and matrices read or written per call.",
+ "number": 142,
+ "numerical_result": "Flops per call: geodesic RHS 173, Jacobi RHS 178, RK4 step 819, Kalman update 453; dispatches per call 73, 79, 317, 5. Rank 1: jacobi_transfer (fused geodesic + Jacobi RK4 loop) (638005 removable dispatches per reference experiment, margin 0.097 over rank 2). Rust fused sphere loop differs from the core by 4.44e-16.",
+ "observation_model": "Deterministic counts of arithmetic operations and interpreter calls; wall-clock timings are observed only for the artifact.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "rust_probe": {
+   "available": true,
+   "binary_sha256": "014343936914720e0dab50e5e34a1396f59c0ca5d4ac262cc553b5fbd869ce1c",
+   "flags": [
+    "-O",
+    "--edition",
+    "2021",
+    "--remap-path-prefix=<build dir>=ciw-lab-rust"
+   ],
+   "host": "x86_64-unknown-linux-gnu",
+   "rustc_commit": "e408947bfd200af42db322daf0fadfe7e26d3bd1",
+   "rustc_release": "1.94.1",
+   "source_sha256": "e98705beb878e01a13f0383d51b21ee35476936e05af7df47ecbc7e6b158c2f1"
+  },
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/implementation_targets.py": "4e27c12d31365590b7fb82d98b8d02e1668c7b8e73b03f71ef270eca9fcf6eea",
+   "src/ciw/lab/implementation_targets_kernels.py": "7da2c27fa79171f72aa553b7bfcb62041c5a13dd146735979820f410a3a7c3cd",
+   "src/ciw/lab/implementation_targets_serial.py": "7978adc19db2c04e37532de2a5dbff32738b3c286c40e19ab8ec1d78361ef3e6"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T147 (compare a ported kernel against the CPU reference under the tolerance policy), then T148 for its reductions",
+ "report_id": "sha256:b29419cc2341b3f6867b2f3a9d580a0d017c1da0ce70e5124566b6ca2c15c2a6",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "implementation-targets",
+ "state": "completed",
+ "task_id": "T142",
+ "tests_passed": [
+  "check: Exact floating-point operation counts of the scalar kernel restatements vs scalar restatements against the core NumPy kernels (geodesic RHS, Jacobi RHS, RK4 step, transfer) and the CIW NumPy Joseph-form Kalman reference (max abs difference)",
+  "check: Exact floating-point operation counts of the scalar kernel restatements vs RK4 step count minus 4*RHS - (13n+3), n=8",
+  "check: Exact floating-point operation counts of the scalar kernel restatements vs 10-step transfer count minus 10*step - 1",
+  "check: Exact floating-point operation counts of the scalar kernel restatements vs count differences between two random states (branch-free kernels)",
+  "check: Interpreter calls issued by ciw code per kernel call vs transfer dispatches are linear in steps: D(30)-D(20) - (D(20)-D(10))",
+  "check: Ranked Rust port recommendation vs rank-1 minus rank-2 removable dispatches, relative to rank 1 (order is not a tie)",
+  "check: Ranked Rust port recommendation vs ties in removable dispatches (tie-breakers unused)",
+  "check: Rust fused RK4 loop reproduces ciw.lab.jacobi.transfer on the unit sphere vs Rust against ciw.lab.jacobi.transfer final state",
+  "check: Rust fused RK4 loop reproduces ciw.lab.jacobi.transfer on the unit sphere vs Rust Jacobi columns against cos(s), sin(s)",
+  "pytest: tests/test_lab_implementation_targets.py::test_t142_kernel_counts_and_ranking",
+  "pytest: tests/test_lab_implementation_targets.py::test_rust_fused_sphere_loop"
+ ],
+ "tests_skipped": [],
+ "title": "Identify kernels suitable for Rust.",
+ "uncertainty": "Counts are exact for the scalar restatements, which use common subexpressions the NumPy core does not (the core repeats trigonometry and forms the full metric), so they count the port specification rather than the core's executed operations. Dispatch counts depend on the Python and NumPy versions (regression tolerance 25%); operator applications on arrays are not calls and are not counted. Timings are machine-specific and appear only in artifacts.",
+ "unresolved_assumptions": [
+  "Removable dispatches are a proxy for Python overhead; real speedups need a timed port on the target machine",
+  "The reference experiment sizes (2000 steps, 2000 updates) are declared, not measured workloads",
+  "The Kalman row profiles a CIW reference restatement, not a core kernel",
+  "Only the sphere fused loop was ported, with closed-form sphere Christoffel symbols; the generic embedded path is not, so the retained Python/Rust timing ratio overstates what a generic port would gain"
+ ]
+}

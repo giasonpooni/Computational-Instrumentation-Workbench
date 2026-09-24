@@ -1,0 +1,191 @@
+{
+ "changed_files": [
+  "src/ciw/lab/flat_torus_topology.py",
+  "src/ciw/lab/flat_torus_topology_lattice.py",
+  "docs/lab/FLAT_TORUS_TOPOLOGY.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 2,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 1,
+   "numerically_verified": 1,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "analytic"
+ },
+ "expected_invariant": "j_head(L) = L and j_lat(L) = 1 for every route; the length order and the amplification order coincide.",
+ "experiment": "Enumerate translates exactly; integrate each route with ciw.lab.jacobi.transfer on the plane chart; compare j_head(L) with L and count discordant pairs between the two orderings.",
+ "failure_modes_checked": [
+  "ties in exact length excluded from the discordance count",
+  "endpoint reached (lift consistency)",
+  "lateral column constant (j_lat = 1)"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 4.780060277391527e-16,
+      "passed": true,
+      "reference": "|j_head(L)/L - 1| from ciw.lab.jacobi",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "|j_lat(L) - 1|",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 8.005932084973442e-16,
+      "passed": true,
+      "reference": "endpoint equals p + translate",
+      "reference_kind": "invariant",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "discordant length/amplification pairs",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "derivation": "K = 0: j'' = 0 with j(0) = 0, j'(0) = 1 gives j_head(s) = s (docs/lab/FLAT_TORUS_TOPOLOGY.md)"
+   },
+   "claim": "On the test flat torus every route's heading amplification equals its length (ciw.lab.jacobi), so the length and amplification orders coincide",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "relative deviation of RK4 j_head(L) from L on the linear flat system",
+    "kind": "roundoff",
+    "value": 4.780060277391527e-16
+   },
+   "unit": null,
+   "value": {
+    "discordant_pairs": 0,
+    "max_relative_j_head_error": 4.780060277391527e-16,
+    "routes": 19
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "derivation": "j_head(s) = s is strictly increasing, so ordering routes by |j_head(L)| equals ordering by L (ties included)"
+   },
+   "claim": "For every flat torus and every pair of points the least-sensitive geodesic is a shortest one",
+   "domain": "mathematical",
+   "evidence_status": "analytic",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "closed-form derivation",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": true
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "derivation": "Constant K < 0: j_head(s) = sinh(sqrt(-K) s)/sqrt(-K), strictly increasing, so the orders coincide; constant K > 0: j_head(s) = sin(sqrt K s)/sqrt K is not monotone (sin s on the unit sphere); variable K: routes of different lengths follow different Jacobi equations, so |j_head(L)| need not order like L (T032 torus witnesses) (ciw.lab.jacobi.constant_curvature)"
+   },
+   "claim": "Shortest equals least heading-sensitive whenever j_head(L) is one strictly increasing function of L for all routes (constant K <= 0); with K > 0 somewhere, or curvature that differs between routes, the equivalence can fail",
+   "domain": "mathematical",
+   "evidence_status": "analytic",
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "closed-form derivation",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": true
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "The shortest route on a physical flat workpiece is the safest route to execute",
+   "domain": "machine_safety",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 4415,
+   "path": "artifacts/T021/flat-routes.json",
+   "sha256": "64d128685a68dcedd2a3be8e79dd72a50b5e7b59c1936df8138967bb339c611e"
+  }
+ ],
+ "hypothesis": "On a flat torus the heading amplification of a route equals its length, so among the geodesics joining two points the shortest is exactly the least heading-sensitive.",
+ "input_data": [
+  "basis w1 = (1, 0), w2 = (3/10, 11/10); p = ('1/10', '1/5'), q = ('7/10', '11/20')",
+  "19 lattice translates with length <= 13/5"
+ ],
+ "mathematical_model": "Geodesics p -> q on C / Lambda lift to segments p -> q + lambda; with K = 0 the Jacobi equation j'' = 0 gives j_head(s) = s and j_lat(s) = 1 along every route.",
+ "number": 21,
+ "numerical_result": "19 routes, shortest length 0.531507; max |j_head/L - 1| = 4.78e-16; discordant pairs 0.",
+ "observation_model": "No physical observation: exact or floating-point computation on declared mathematical objects.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/flat_torus_topology.py": "4d8cf2437759501a1b9fa5ee0d8abfac43345ebee378c6ad08233e9155d4b184",
+   "src/ciw/lab/flat_torus_topology_lattice.py": "15a33fcd29591e43dec16fa3b9ad26d6b6b86846872e9e6bf815508fb0dade63"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T022: detect degenerate (tied) shortest representatives",
+ "report_id": "sha256:b3e99b5f1b853366b9b25f497fe350805a95c3ffd66d07b32345cae165ff4e8c",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "flat-torus-topology",
+ "state": "completed",
+ "task_id": "T021",
+ "tests_passed": [
+  "check: On the test flat torus every route's heading amplification equals its length (ciw.lab.jacobi), so the length and amplification orders coincide vs |j_head(L)/L - 1| from ciw.lab.jacobi",
+  "check: On the test flat torus every route's heading amplification equals its length (ciw.lab.jacobi), so the length and amplification orders coincide vs |j_lat(L) - 1|",
+  "check: On the test flat torus every route's heading amplification equals its length (ciw.lab.jacobi), so the length and amplification orders coincide vs endpoint equals p + translate",
+  "check: On the test flat torus every route's heading amplification equals its length (ciw.lab.jacobi), so the length and amplification orders coincide vs discordant length/amplification pairs",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_t021_shortest_is_least_sensitive",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_regeneration_is_within_tolerance",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+ ],
+ "tests_skipped": [],
+ "title": "Compare shortest path against least-sensitive path.",
+ "uncertainty": "RK4 is exact for the linear flat system up to rounding (<= 1e-12 relative).",
+ "unresolved_assumptions": [
+  "The equivalence needs j_head(L) to be one strictly increasing function of L for every route (constant K <= 0, e.g. flat or closed hyperbolic surfaces); it can fail where K > 0 somewhere or where curvature differs between routes. T032 records curved-surface counterexamples."
+ ]
+}

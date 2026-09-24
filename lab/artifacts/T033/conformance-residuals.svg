@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420" font-family="sans-serif" font-size="11">
+<rect width="640" height="420" fill="#ffffff"/>
+<text x="78" y="22" font-size="13" font-weight="bold">Worst residual per surface; values &lt; 1e-17 (and zeros) drawn at 1e-17</text>
+<rect x="78" y="40" width="392" height="322" fill="none" stroke="#333"/>
+<line x1="121.56" y1="40" x2="121.56" y2="362" stroke="#e5e7eb"/>
+<text x="121.56" y="378" text-anchor="middle">2</text>
+<line x1="208.67" y1="40" x2="208.67" y2="362" stroke="#e5e7eb"/>
+<text x="208.67" y="378" text-anchor="middle">4</text>
+<line x1="295.78" y1="40" x2="295.78" y2="362" stroke="#e5e7eb"/>
+<text x="295.78" y="378" text-anchor="middle">6</text>
+<line x1="382.89" y1="40" x2="382.89" y2="362" stroke="#e5e7eb"/>
+<text x="382.89" y="378" text-anchor="middle">8</text>
+<line x1="470.00" y1="40" x2="470.00" y2="362" stroke="#e5e7eb"/>
+<text x="470.00" y="378" text-anchor="middle">10</text>
+<line x1="78" y1="350.07" x2="470" y2="350.07" stroke="#e5e7eb"/>
+<text x="72" y="354.07" text-anchor="end">1e-17</text>
+<line x1="78" y1="306.73" x2="470" y2="306.73" stroke="#e5e7eb"/>
+<text x="72" y="310.73" text-anchor="end">1e-16</text>
+<line x1="78" y1="263.39" x2="470" y2="263.39" stroke="#e5e7eb"/>
+<text x="72" y="267.39" text-anchor="end">1e-15</text>
+<line x1="78" y1="220.05" x2="470" y2="220.05" stroke="#e5e7eb"/>
+<text x="72" y="224.05" text-anchor="end">1e-14</text>
+<line x1="78" y1="176.71" x2="470" y2="176.71" stroke="#e5e7eb"/>
+<text x="72" y="180.71" text-anchor="end">1e-13</text>
+<line x1="78" y1="133.37" x2="470" y2="133.37" stroke="#e5e7eb"/>
+<text x="72" y="137.37" text-anchor="end">1e-12</text>
+<line x1="78" y1="90.03" x2="470" y2="90.03" stroke="#e5e7eb"/>
+<text x="72" y="94.03" text-anchor="end">1e-11</text>
+<line x1="78" y1="46.69" x2="470" y2="46.69" stroke="#e5e7eb"/>
+<text x="72" y="50.69" text-anchor="end">1e-10</text>
+<text x="274.00" y="406" text-anchor="middle">1 plane 2 sphere 3 cyl 4 saddle 5 torus 6 bump 7 hyp 8 polar 9 shear 10 rot-torus</text>
+<text x="16" y="201.00" text-anchor="middle" transform="rotate(-90 16 201.00)">normalized residual</text>
+<path d="M78.00,350.07 L121.56,121.66 L165.11,350.07 L208.67,192.48 L252.22,159.33 L295.78,154.35 L339.33,51.93 L382.89,157.92 L426.44,168.76 L470.00,159.91" fill="none" stroke="#1f5fa8" stroke-width="1.8"/>
+<circle cx="78.00" cy="350.07" r="2.6" fill="#1f5fa8"/>
+<circle cx="121.56" cy="121.66" r="2.6" fill="#1f5fa8"/>
+<circle cx="165.11" cy="350.07" r="2.6" fill="#1f5fa8"/>
+<circle cx="208.67" cy="192.48" r="2.6" fill="#1f5fa8"/>
+<circle cx="252.22" cy="159.33" r="2.6" fill="#1f5fa8"/>
+<circle cx="295.78" cy="154.35" r="2.6" fill="#1f5fa8"/>
+<circle cx="339.33" cy="51.93" r="2.6" fill="#1f5fa8"/>
+<circle cx="382.89" cy="157.92" r="2.6" fill="#1f5fa8"/>
+<circle cx="426.44" cy="168.76" r="2.6" fill="#1f5fa8"/>
+<circle cx="470.00" cy="159.91" r="2.6" fill="#1f5fa8"/>
+<line x1="482" y1="52" x2="502" y2="52" stroke="#1f5fa8" stroke-width="2"/>
+<text x="508" y="56">gauss_equation</text>
+<path d="M78.00,193.20 L121.56,151.73 L165.11,168.74 L208.67,168.28 L252.22,156.36 L295.78,142.83 L339.33,93.99 L382.89,166.10 L426.44,144.86 L470.00,152.54" fill="none" stroke="#c2410c" stroke-width="1.8"/>
+<circle cx="78.00" cy="193.20" r="2.6" fill="#c2410c"/>
+<circle cx="121.56" cy="151.73" r="2.6" fill="#c2410c"/>
+<circle cx="165.11" cy="168.74" r="2.6" fill="#c2410c"/>
+<circle cx="208.67" cy="168.28" r="2.6" fill="#c2410c"/>
+<circle cx="252.22" cy="156.36" r="2.6" fill="#c2410c"/>
+<circle cx="295.78" cy="142.83" r="2.6" fill="#c2410c"/>
+<circle cx="339.33" cy="93.99" r="2.6" fill="#c2410c"/>
+<circle cx="382.89" cy="166.10" r="2.6" fill="#c2410c"/>
+<circle cx="426.44" cy="144.86" r="2.6" fill="#c2410c"/>
+<circle cx="470.00" cy="152.54" r="2.6" fill="#c2410c"/>
+<line x1="482" y1="70" x2="502" y2="70" stroke="#c2410c" stroke-width="2"/>
+<text x="508" y="74">derivative_consistency</text>
+<path d="M78.00,350.07 L121.56,177.33 L165.11,350.07 L208.67,197.19 L252.22,175.43 L295.78,153.32 L339.33,213.95 L382.89,177.23 L426.44,143.35 L470.00,168.02" fill="none" stroke="#15803d" stroke-width="1.8"/>
+<circle cx="78.00" cy="350.07" r="2.6" fill="#15803d"/>
+<circle cx="121.56" cy="177.33" r="2.6" fill="#15803d"/>
+<circle cx="165.11" cy="350.07" r="2.6" fill="#15803d"/>
+<circle cx="208.67" cy="197.19" r="2.6" fill="#15803d"/>
+<circle cx="252.22" cy="175.43" r="2.6" fill="#15803d"/>
+<circle cx="295.78" cy="153.32" r="2.6" fill="#15803d"/>
+<circle cx="339.33" cy="213.95" r="2.6" fill="#15803d"/>
+<circle cx="382.89" cy="177.23" r="2.6" fill="#15803d"/>
+<circle cx="426.44" cy="143.35" r="2.6" fill="#15803d"/>
+<circle cx="470.00" cy="168.02" r="2.6" fill="#15803d"/>
+<line x1="482" y1="88" x2="502" y2="88" stroke="#15803d" stroke-width="2"/>
+<text x="508" y="92">mixed_partials</text>
+<path d="M78.00,350.07 L121.56,316.04 L165.11,350.07 L208.67,297.84 L252.22,310.34 L295.78,333.78 L339.33,300.75 L382.89,299.07 L426.44,299.59 L470.00,299.34" fill="none" stroke="#7e22ce" stroke-width="1.8"/>
+<circle cx="78.00" cy="350.07" r="2.6" fill="#7e22ce"/>
+<circle cx="121.56" cy="316.04" r="2.6" fill="#7e22ce"/>
+<circle cx="165.11" cy="350.07" r="2.6" fill="#7e22ce"/>
+<circle cx="208.67" cy="297.84" r="2.6" fill="#7e22ce"/>
+<circle cx="252.22" cy="310.34" r="2.6" fill="#7e22ce"/>
+<circle cx="295.78" cy="333.78" r="2.6" fill="#7e22ce"/>
+<circle cx="339.33" cy="300.75" r="2.6" fill="#7e22ce"/>
+<circle cx="382.89" cy="299.07" r="2.6" fill="#7e22ce"/>
+<circle cx="426.44" cy="299.59" r="2.6" fill="#7e22ce"/>
+<circle cx="470.00" cy="299.34" r="2.6" fill="#7e22ce"/>
+<line x1="482" y1="106" x2="502" y2="106" stroke="#7e22ce" stroke-width="2"/>
+<text x="508" y="110">compatibility</text>
+</svg>

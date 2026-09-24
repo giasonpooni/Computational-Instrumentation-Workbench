@@ -1,0 +1,367 @@
+{
+ "changed_files": [
+  "src/ciw/lab/energy_gpu.py",
+  "src/ciw/lab/energy_gpu_kernels.py",
+  "src/ciw/lab/energy_gpu_telemetry.py",
+  "docs/lab/ENERGY_GPU.md"
+ ],
+ "evidence_status": {
+  "counts": {
+   "analytic": 0,
+   "hardware_measured": 0,
+   "independently_verified": 0,
+   "not_established": 3,
+   "numerically_verified": 5,
+   "provider_backed": 0,
+   "synthetic": 0
+  },
+  "primary": "numerically_verified"
+ },
+ "expected_invariant": "Python closed-form and Rust endpoints agree to 1e-12 (bitwise where libm agrees); generic Christoffel path agrees to 1e-12; every endpoint within 1e-8 of the great circle.",
+ "experiment": "Integrate the same initial states with the generic Python path, the closed-form Python path and the compiled Rust kernel; compare endpoints, counted evaluations and exact endpoints; send the Rust kernel a malformed and a nonfinite input; probe Julia and GPU availability.",
+ "failure_modes_checked": [
+  "rustc absent or failing (reported, not hidden)",
+  "Rust refuses malformed and nonfinite inputs (run in the task when rustc works)",
+  "evaluation count mismatch (counted inside the Rust rhs)",
+  "independence declaration between ciw implementations"
+ ],
+ "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "Python ciw.lab.integrators.step_rk4 with the same closed-form right-hand side and operation order",
+      "reference_kind": "cross_implementation",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "right-hand-side calls counted inside the Rust rhs() minus 4 N T",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "headings_rad": [
+      0.7,
+      0.85,
+      1.0,
+      1.15,
+      1.3,
+      1.45
+     ],
+     "length": 3.0,
+     "name": "equatorial unit-sphere geodesics",
+     "seed": null,
+     "steps": 256
+    }
+   },
+   "claim": "Rust and Python closed-form RK4 kernels agree on every endpoint to 1e-12",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "libm sin/cos may differ by an ulp across platforms; differences propagate through 256 steps",
+    "kind": "roundoff",
+    "value": 1e-15
+   },
+   "unit": "radians or radians per unit length",
+   "value": 0.0
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 1.0873703982101779e-09,
+      "passed": true,
+      "reference": "great circle cos(L) X0 + sin(L) T0",
+      "reference_kind": "analytic",
+      "tolerance": 1e-08
+     }
+    ],
+    "generator": {
+     "headings_rad": [
+      0.7,
+      0.85,
+      1.0,
+      1.15,
+      1.3,
+      1.45
+     ],
+     "length": 3.0,
+     "name": "equatorial unit-sphere geodesics",
+     "seed": null,
+     "steps": 256
+    }
+   },
+   "claim": "Rust kernel endpoint error against the exact great circle is below 1e-8",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 0.001
+   },
+   "uncertainty": {
+    "basis": "closed-form endpoint in binary64",
+    "kind": "reference_error",
+    "value": 1e-15
+   },
+   "unit": "normalized length",
+   "value": 1.0873703982101779e-09
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "Rust kernel refused its input: states must be a list of 4-vectors",
+      "observed_refusal": "Rust kernel refused its input: states must be a list of 4-vectors",
+      "passed": true,
+      "reference": "Rust kernel on the malformed input [[1.0, 0.0, 1.0]]",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "Rust kernel refused its input: nonfinite state",
+      "observed_refusal": "Rust kernel refused its input: nonfinite state",
+      "passed": true,
+      "reference": "Rust kernel on the nonfinite input [[0.0, 0.0, 1.0, 0.0]]",
+      "reference_kind": "refusal"
+     }
+    ]
+   },
+   "claim": "The compiled Rust kernel refuses malformed and nonfinite inputs",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "integer counts, refusal codes or exact comparisons",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "malformed": "Rust kernel refused its input: states must be a list of 4-vectors",
+    "nonfinite": "Rust kernel refused its input: nonfinite state"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 8.881784197001252e-16,
+      "passed": true,
+      "reference": "closed-form sphere Christoffel symbols",
+      "reference_kind": "cross_implementation",
+      "tolerance": 1e-12
+     }
+    ],
+    "generator": {
+     "headings_rad": [
+      0.7,
+      0.85,
+      1.0,
+      1.15,
+      1.3,
+      1.45
+     ],
+     "length": 3.0,
+     "name": "equatorial unit-sphere geodesics",
+     "seed": null,
+     "steps": 256
+    }
+   },
+   "claim": "Generic Christoffel-symbol RK4 (ciw.lab.surfaces) and the closed-form kernel agree to 1e-12",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "libm sin/cos may differ by an ulp across platforms; differences propagate through 256 steps",
+    "kind": "roundoff",
+    "value": 1e-15
+   },
+   "unit": "radians or radians per unit length",
+   "value": 8.881784197001252e-16
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "independent_check producer and checker share an implementation origin",
+      "observed_refusal": "independent_check producer and checker share an implementation origin",
+      "passed": true,
+      "reference": "ciw.lab.evidence.supported_label with producer ciw.lab.integrators and checker ciw.lab.energy_gpu_kernels.RUST_SOURCE (the origin is read from the declared implementation name, so the declaration must name the kernel's true origin)",
+      "reference_kind": "refusal"
+     }
+    ]
+   },
+   "claim": "Declaring the Rust kernel an independent check of the Python kernel is refused (both are ciw code)",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "integer counts, refusal codes or exact comparisons",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "checker_origin": "ciw",
+    "producer_origin": "ciw"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": [
+     "julia is not on PATH"
+    ]
+   },
+   "claim": "A Julia implementation agrees with the Python kernel",
+   "domain": "numerical",
+   "evidence_status": "not_established",
+   "expected_not_established": true,
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": [
+     "no NVIDIA GPU or CUDA toolchain in this environment"
+    ]
+   },
+   "claim": "A GPU implementation agrees with the Python kernel",
+   "domain": "numerical",
+   "evidence_status": "not_established",
+   "expected_not_established": true,
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": [
+     "no energy counter was read; elapsed time is not energy"
+    ]
+   },
+   "claim": "The Rust kernel uses less energy per trajectory than the Python kernel on real hardware",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  }
+ ],
+ "generated_artifacts": [
+  {
+   "bytes": 3636,
+   "path": "artifacts/T117/implementations.json",
+   "sha256": "d93987d9bdb08832f9281be680c19166c68d942b3fa557380cd58692ef38fb2a"
+  },
+  {
+   "bytes": 4078,
+   "path": "artifacts/T117/sphere_rk4.rs",
+   "sha256": "bbc113ce924d0aa28b438900217b40bd9a96a38083184e0c9b068bf12d41f6d7"
+  },
+  {
+   "bytes": 288,
+   "path": "artifacts/T117/timing.json",
+   "sha256": "11d2a4d93eb718b20dff27646f6dde29eacd3cc679eba9b3ee4faf20b1e1aadd"
+  }
+ ],
+ "hypothesis": "Implementations of the same RK4 geodesic kernel in Python and Rust agree to rounding error, and all agree with the exact great circle to the RK4 truncation error.",
+ "input_data": [
+  "6 equatorial geodesics, headings [0.7, 0.85, 1.0, 1.15, 1.3, 1.45] rad, L = 3.0, N = 256"
+ ],
+ "mathematical_model": "Unit sphere, theta'' = sin cos phi'^2, phi'' = -2 cot(theta) theta' phi'; RK4 with h = L/N and the operation order of ciw.lab.integrators.step_rk4.",
+ "number": 117,
+ "numerical_result": "Rust-Python max difference 0 (bitwise identical: True); Rust refusals ['malformed', 'nonfinite']; generic-closed-form max difference 8.88e-16.",
+ "observation_model": "Endpoints exchanged as JSON with shortest round-trip float text; the Rust source is embedded in energy_gpu_kernels and compiled with rustc -O (one codegen unit, scratch path remapped) into a temporary directory; the Rust rhs() counts its own calls.",
+ "physical_validation_status": {
+  "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
+  "status": "not_established"
+ },
+ "provider_runtime_identity": {
+  "ciw_version": "0.1.0",
+  "implementation": "ciw.lab",
+  "mpmath": "1.3.0",
+  "numpy": "2.4.3",
+  "python": "3.12.3",
+  "requirement_probes": {
+   "hardware:nvidia-gpu": false,
+   "tool:julia": false
+  },
+  "rust": {
+   "binary_sha256": "4073fb9da1955d54a26a7d6da4f71aef0e2310af667cdd245b3cbed9fca4fcb4",
+   "flags": [
+    "-O",
+    "-C",
+    "debuginfo=0",
+    "-C",
+    "codegen-units=1",
+    "--edition",
+    "2021",
+    "--remap-path-prefix=<scratch>=."
+   ],
+   "rustc": "rustc 1.94.1 (e408947bf 2026-03-25)",
+   "source_sha256": "bbc113ce924d0aa28b438900217b40bd9a96a38083184e0c9b068bf12d41f6d7"
+  },
+  "scipy": "1.16.2",
+  "sources": {
+   "src/ciw/lab/energy_gpu.py": "fca900557e7fac2261a168afe0ee81efc48508a874a5045bf4f6b74937165bb1",
+   "src/ciw/lab/energy_gpu_kernels.py": "03f3d92f8407f476cb74536911d476929843ee74232a7d7017c00f43c785a2b4",
+   "src/ciw/lab/energy_gpu_telemetry.py": "21cac5f654ce4a120887ff40da62fda47bd38a3c383bbad6cc3cb13b4168fa2d"
+  },
+  "sympy": "1.14.0"
+ },
+ "recommended_next_task": "T147: compare CPU and GPU outputs of this kernel on the RTX 2080 host; T146 for one canonical float serialization across languages",
+ "report_id": "sha256:c05c0e203f79ebe8fdef092429d238de14911ff36a24f595ab92a7881d463749",
+ "schema": "ciw.lab-task-report.v1",
+ "section": "energy-gpu",
+ "state": "partial",
+ "task_id": "T117",
+ "tests_passed": [
+  "check: Rust and Python closed-form RK4 kernels agree on every endpoint to 1e-12 vs Python ciw.lab.integrators.step_rk4 with the same closed-form right-hand side and operation order",
+  "check: Rust and Python closed-form RK4 kernels agree on every endpoint to 1e-12 vs right-hand-side calls counted inside the Rust rhs() minus 4 N T",
+  "check: Rust kernel endpoint error against the exact great circle is below 1e-8 vs great circle cos(L) X0 + sin(L) T0",
+  "check: The compiled Rust kernel refuses malformed and nonfinite inputs vs Rust kernel on the malformed input [[1.0, 0.0, 1.0]]",
+  "check: The compiled Rust kernel refuses malformed and nonfinite inputs vs Rust kernel on the nonfinite input [[0.0, 0.0, 1.0, 0.0]]",
+  "check: Generic Christoffel-symbol RK4 (ciw.lab.surfaces) and the closed-form kernel agree to 1e-12 vs closed-form sphere Christoffel symbols",
+  "check: Declaring the Rust kernel an independent check of the Python kernel is refused (both are ciw code) vs ciw.lab.evidence.supported_label with producer ciw.lab.integrators and checker ciw.lab.energy_gpu_kernels.RUST_SOURCE (the origin is read from the declared implementation name, so the declaration must name the kernel's true origin)",
+  "pytest: tests/test_lab_energy_gpu.py::test_rust_kernel_matches_python_kernel",
+  "pytest: tests/test_lab_energy_gpu.py::test_cross_language_agreement_is_not_independent",
+  "pytest: tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance"
+ ],
+ "tests_skipped": [],
+ "title": "Compare Python, Rust, Julia, and GPU implementations.",
+ "uncertainty": "Agreement is limited by libm sin/cos differences across platforms; both kernels are ciw code, so shared modelling errors would not be detected.",
+ "unresolved_assumptions": [
+  "Julia and GPU implementations were not run (toolchain/hardware unavailable)",
+  "Cross-platform bitwise identity is not claimed"
+ ]
+}
