@@ -9,14 +9,17 @@ the workbench can make.
 """
 from __future__ import annotations
 
+import ast
 from collections import Counter
 import hashlib
+import io
 from itertools import product
 import json
 import os
 from pathlib import Path
-import re
+import platform
 import tempfile
+import zipfile
 
 from .. import __version__
 from .evidence import (AUTHORITY_DOMAINS, COMPUTATIONAL_DOMAINS, DOMAINS, LABELS, PHYSICAL_DOMAINS,
@@ -478,14 +481,35 @@ def portfolio_demonstration(ctx):
 
 
 # --------------------------------------------------------------- T164
-@task("T164", changed_files=(MODULE, "scripts/reproduce_lab.py"), regression_tests=(f"{TESTS}::test_clean_room_marker_is_recognized",))
+def _installed_from(wheel: bytes, package_dir: Path) -> bool:
+    """Whether the imported package holds exactly the wheel's files, byte for byte (bytecode caches aside).
+
+    The marker names a wheel and its digest; only this ties that file to the
+    code that ran. Anything that is not a wheel with a ``RECORD`` fails.
+    """
+    root = package_dir.parent
+    try:
+        with zipfile.ZipFile(io.BytesIO(wheel)) as archive:
+            names = archive.namelist()
+            members = {name: archive.read(name) for name in names
+                       if name.startswith(f"{package_dir.name}/") and not name.endswith("/")}
+        installed = {path.relative_to(root).as_posix(): path.read_bytes() for path in package_dir.rglob("*")
+                     if path.is_file() and "__pycache__" not in path.relative_to(package_dir).parts}
+    except Exception:  # an unreadable archive or installation ties nothing to the wheel
+        return False
+    return any(name.endswith(".dist-info/RECORD") for name in names) and bool(members) and installed == members
+
+
+@task("T164", changed_files=(MODULE, "scripts/reproduce_lab.py"),
+      regression_tests=(f"{TESTS}::test_clean_room_marker_is_recognized",
+                        f"{TESTS}::test_clean_room_needs_the_installed_package_to_be_the_named_wheel"))
 def clean_room_reproduction(ctx):
     fields = _common(
         "One command builds an isolated wheel, installs it into a fresh virtual environment, runs the lab tests "
         "and the whole queue, and matches the retained reports within their regression tolerances.",
         "scripts/reproduce_lab.py: wheel -> venv -> pytest (JUnit) -> ciw lab run --all -> ciw lab verify.",
         "When the queue runs inside that command, it exports CIW_LAB_CLEAN_ROOM with the wheel digest; this task "
-        "records it. Outside the command the task is partial.",
+        "checks that the imported package is that wheel's files. Outside the command the task is partial.",
         "Run scripts/reproduce_lab.py on Windows and on a second Linux host and retain both gate records.")
     marker = os.environ.get("CIW_LAB_CLEAN_ROOM")
     if not marker:
@@ -500,20 +524,26 @@ def clean_room_reproduction(ctx):
     import ciw as package
     import sys
     wheel_path = Path(str(record.get("wheel_path", "")))
+    data = wheel_path.read_bytes() if wheel_path.is_file() else b""
+    package_dir = Path(package.__file__).resolve().parent
     observed = {
-        "wheel_bytes_match": wheel_path.is_file() and hashlib.sha256(wheel_path.read_bytes()).hexdigest() == wheel,
+        "wheel_bytes_match": wheel_path.is_file() and hashlib.sha256(data).hexdigest() == wheel,
+        # The digest only names a file; the imported code must be that wheel's.
+        "installed_from_wheel": _installed_from(data, package_dir),
         "isolated_interpreter": sys.prefix != sys.base_prefix,
-        "package_inside_environment": Path(package.__file__).resolve().is_relative_to(Path(sys.prefix).resolve()),
+        "package_inside_environment": package_dir.is_relative_to(Path(sys.prefix).resolve()),
     }
     failures = [name for name, ok in observed.items() if not ok]
     fields["numerical_result"] = f"Clean-room evidence for wheel {wheel[:16]}: {observed}."
     fields["uncertainty"] = "Comparison with retained reports is performed by the command after this run."
+    # The interpreter is observed, never taken from the marker.
     fields["provider_runtime_identity"] = {"implementation": "ciw.lab", "wheel_sha256": wheel,
-                                           "python": record.get("python"), "ciw_version": __version__}
+                                           "python": platform.python_version(), "ciw_version": __version__}
     verified = not failures
     return {"state": "completed" if verified else "partial", "fields": fields, "findings": [
         finding("This queue run executed inside the clean-room reproduction", "computational_pipeline", verified,
-                {"checks": [_check("clean-room conditions failing (wheel digest, isolated venv, installed package)",
+                {"checks": [_check("clean-room conditions failing (wheel digest, package files equal to the wheel's, "
+                                   "isolated venv, installed package)",
                                    len(failures))]} if verified else {},
                 expected_not_established=not verified)]}
 
@@ -632,10 +662,21 @@ def unmeasured(ctx):
 
 # --------------------------------------------------------------- T168
 def _test_names(tests_dir: Path) -> set:
+    """pytest node ids of the test functions and test-class methods (sync or async) under ``tests_dir``."""
+    def collect(prefix, body):
+        for node in body:
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name.startswith("test"):
+                names.add(f"{prefix}::{node.name}")
+            elif isinstance(node, ast.ClassDef) and node.name.startswith("Test"):
+                collect(f"{prefix}::{node.name}", node.body)
+
     names = set()
-    for path in tests_dir.glob("test_*.py"):
-        for match in re.finditer(r"^def (test_\w+)", path.read_text(encoding="utf-8"), re.MULTILINE):
-            names.add(f"tests/{path.name}::{match.group(1)}")
+    for path in sorted(tests_dir.rglob("test_*.py")):
+        try:
+            tree = ast.parse(path.read_text(encoding="utf-8"))
+        except (SyntaxError, UnicodeDecodeError):
+            continue  # pytest cannot collect it either; its node ids stay dangling
+        collect(path.relative_to(tests_dir.parent).as_posix(), tree.body)
     return names
 
 
@@ -650,13 +691,17 @@ def permanent_regression_tests(ctx):
         "JUnit record when supplied.",
         "Run scripts/check_lab.py in CI so ciw lab verify guards every retained finding.")
     from .runner import repository_path
-    tests_dir = next((d for d in (repository_path("tests"), Path.cwd() / "tests") if d is not None and d.is_dir()),
-                     Path.cwd() / "tests")
+    tests_dir = repository_path("tests")  # never the current directory: it may hold another project's tests
     if not prior:
         return _no_prior(fields)
-    if not tests_dir.is_dir():
-        fields["unresolved_assumptions"] = ["Test sources are not available beside this installation."]
-        return {"state": "blocked", "fields": fields, "findings": []}
+    if tests_dir is None or not tests_dir.is_dir():
+        fields["numerical_result"] = "Registered regression node ids were not resolved."
+        fields["uncertainty"] = "not applicable"
+        fields["unresolved_assumptions"] = ["No repository tests/ directory is available to this installation "
+                                            "(set CIW_LAB_REPOSITORY_ROOT to a checkout)."]
+        return {"state": "partial", "fields": fields, "findings": [
+            finding("Registered regression node ids that do not resolve to a test function", "computational_pipeline",
+                    None, {}, expected_not_established=True)]}
     known = _test_names(tests_dir)
     implementations, _ = load_implementations()
 

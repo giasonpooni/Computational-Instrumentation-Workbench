@@ -87,6 +87,8 @@ def validate_report(report: dict) -> dict:
         raise EvidenceRefusal("A blocked or deferred task cannot carry established findings")
     if report["state"] == "completed" and not findings:
         raise EvidenceRefusal("A completed task must retain at least one finding")
+    if report["state"] == "completed" and report.get("tests_failed"):
+        raise EvidenceRefusal("A completed task cannot record failed tests; a failure makes it partial")
     if report["state"] == "completed" and any(f["evidence_status"] == "not_established"
                                               and f["domain"] not in PHYSICAL_DOMAINS | AUTHORITY_DOMAINS
                                               and not f.get("expected_not_established") for f in findings):

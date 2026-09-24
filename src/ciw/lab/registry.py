@@ -13,6 +13,7 @@ import json
 import os
 from pathlib import Path
 import re
+import sys
 from typing import Callable
 
 # Section modules are imported in queue order; a section may span several
@@ -37,6 +38,7 @@ class Implementation:
 
 
 _REGISTRY: dict[str, Implementation] = {}
+REQUIREMENT_KINDS = ("module", "provider", "tool", "hardware")
 
 
 def task(task_id: str, *, changed_files=(), regression_tests=(), requires=(), plan=None):
@@ -46,6 +48,12 @@ def task(task_id: str, *, changed_files=(), regression_tests=(), requires=(), pl
     ``tool:<name>`` or ``hardware:<name>``); when one is unavailable the task is
     reported as blocked using the static ``plan`` fields instead of running.
     """
+    for need in requires:
+        kind, _, name = str(need).partition(":")
+        if kind not in REQUIREMENT_KINDS or not name:
+            raise ValueError(f"Unsupported lab requirement for {task_id}: {need!r}; "
+                             f"use {', '.join(k + ':<name>' for k in REQUIREMENT_KINDS)}")
+
     def decorate(function):
         if plan is not None:
             function.plan = dict(plan)
@@ -117,14 +125,46 @@ def load_queue() -> dict:
     return queue
 
 
+def _import(qualified: str) -> None:
+    """Import one module; a failing module leaves no registrations behind.
+
+    Modules whose registrations are undone are forgotten too, so the next
+    import (a long-lived process retries on every load) runs them again: a
+    repaired module and the submodules it imports register afresh, and an
+    unrepaired one fails with its own error, never a duplicate registration.
+    """
+    before = dict(_REGISTRY)
+    try:
+        import_module(qualified)
+    except BaseException:
+        undone = {getattr(implementation.run, "__module__", None) for task_id, implementation in _REGISTRY.items()
+                  if task_id not in before}
+        _REGISTRY.clear()
+        _REGISTRY.update(before)
+        for name in undone - {None}:
+            sys.modules.pop(name, None)
+        raise
+
+
+def configured_modules() -> list:
+    """Implementation modules configured for queue extensions (``configure`` or ``CIW_LAB_MODULES``)."""
+    return _configured("modules", "CIW_LAB_MODULES")
+
+
+def base_section_modules(section_key: str) -> tuple:
+    """The :data:`SECTION_MODULES` implementing one packaged section (its key with underscores, plus suffixes)."""
+    prefix = section_key.replace("-", "_")
+    return tuple(name for name in SECTION_MODULES if name == prefix or name.startswith(prefix + "_"))
+
+
 def load_implementations() -> tuple[dict, dict]:
     """Import section and configured modules; return implementations and per-module import errors."""
     errors = {}
-    names = [f"ciw.lab.{name}" for name in SECTION_MODULES] + _configured("modules", "CIW_LAB_MODULES")
+    names = [f"ciw.lab.{name}" for name in SECTION_MODULES] + configured_modules()
     for qualified in names:
         name = qualified.removeprefix("ciw.lab.")
         try:
-            import_module(qualified)
+            _import(qualified)
         except ModuleNotFoundError as exc:
             if exc.name == qualified:
                 errors[name] = "section module not implemented"
@@ -145,16 +185,14 @@ def section_implementations(section_key: str) -> dict:
     ids = {t["id"] for t in queue["tasks"] if t["section_key"] == section_key}
     if not ids:
         raise ValueError(f"Unknown lab section: {section_key}")
-    prefix = section_key.replace("-", "_")
-    for name in SECTION_MODULES:
-        if name.startswith(prefix):
-            import_module(f"ciw.lab.{name}")
+    for name in base_section_modules(section_key):
+        _import(f"ciw.lab.{name}")
     return {task_id: implementation for task_id, implementation in _REGISTRY.items() if task_id in ids}
 
 
 def module_implementations(module: str) -> dict:
     """Import one lab module (e.g. ``exchange_provenance``) and return only the tasks it registers."""
     name = module if module.startswith("ciw.lab.") else f"ciw.lab.{module}"
-    import_module(name)
+    _import(name)
     return {task_id: implementation for task_id, implementation in _REGISTRY.items()
             if getattr(implementation.run, "__module__", None) == name}

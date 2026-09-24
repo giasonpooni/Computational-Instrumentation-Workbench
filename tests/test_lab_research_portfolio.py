@@ -1,4 +1,6 @@
 import json
+from pathlib import Path
+import platform
 
 import pytest
 
@@ -116,10 +118,71 @@ def test_figures_are_reproducible(tmp_path, monkeypatch):
 def test_clean_room_marker_is_recognized(tmp_path, monkeypatch):
     monkeypatch.delenv("CIW_LAB_CLEAN_ROOM", raising=False)
     assert _run("T164", tmp_path)["state"] == "partial"
-    monkeypatch.setenv("CIW_LAB_CLEAN_ROOM", json.dumps({"wheel_sha256": "a" * 64, "python": "3.12"}))
+    monkeypatch.setenv("CIW_LAB_CLEAN_ROOM", json.dumps({"wheel_sha256": "a" * 64, "python": "2.7.18"}))
     report = _run("T164", tmp_path)
     # An asserted marker without a matching wheel and isolated install is not evidence.
     assert report["state"] == "partial" and report["findings"][0]["evidence_status"] == "not_established"
+    # The interpreter is observed, never copied from the marker.
+    assert report["provider_runtime_identity"]["python"] == platform.python_version()
+
+
+def _wheel(path, package_dir, drop=(), extra=None, record=True):
+    """A wheel-shaped zip of ``package_dir`` (bytecode caches aside), optionally altered."""
+    import zipfile
+    with zipfile.ZipFile(path, "w") as archive:
+        for file in sorted(package_dir.rglob("*")):
+            name = file.relative_to(package_dir.parent).as_posix()
+            if file.is_file() and "__pycache__" not in file.parts and name not in drop:
+                archive.writestr(name, file.read_bytes())
+        for name, data in (extra or {}).items():
+            archive.writestr(name, data)
+        if record:
+            archive.writestr("ciw-0.dist-info/RECORD", "")
+    return path
+
+
+def _clean_room(monkeypatch, wheel_path):
+    import hashlib
+    import sys
+    import ciw
+    # An isolated interpreter whose prefix holds the imported package, as in the clean room.
+    monkeypatch.setattr(sys, "prefix", str(Path(ciw.__file__).resolve().parents[1]))
+    monkeypatch.setattr(sys, "base_prefix", "/nonexistent-base-interpreter")
+    monkeypatch.setenv("CIW_LAB_CLEAN_ROOM", json.dumps({
+        "wheel_sha256": hashlib.sha256(wheel_path.read_bytes()).hexdigest(), "wheel_path": str(wheel_path)}))
+
+
+def test_clean_room_needs_the_installed_package_to_be_the_named_wheel(tmp_path, monkeypatch):
+    import ciw
+    package = Path(ciw.__file__).resolve().parent
+    # A forged marker names any file with its own digest; nothing ties it to the installed code.
+    notes = tmp_path / "notes.txt"
+    notes.write_text("not a wheel at all\n")
+    _clean_room(monkeypatch, notes)
+    report = _run("T164", tmp_path / "forged")
+    assert report["state"] == "partial" and report["findings"][0]["evidence_status"] == "not_established"
+    assert "'installed_from_wheel': False" in report["numerical_result"]
+    # The wheel the installed package came from: every file present with the same bytes.
+    _clean_room(monkeypatch, _wheel(tmp_path / "ciw-0-py3-none-any.whl", package))
+    report = _run("T164", tmp_path / "genuine")
+    assert report["state"] == "completed" and report["findings"][0]["evidence_status"] == "numerically_verified"
+
+
+def test_installed_package_is_compared_file_by_file_with_the_wheel(tmp_path):
+    package = tmp_path / "site" / "ciw"
+    (package / "lab" / "__pycache__").mkdir(parents=True)
+    (package / "__init__.py").write_bytes(b"VALUE = 1\n")
+    (package / "lab" / "task.py").write_bytes(b"def run():\n    pass\n")
+    (package / "lab" / "__pycache__" / "task.cpython-311.pyc").write_bytes(b"bytecode")
+    matches = research_portfolio._installed_from
+    assert matches(_wheel(tmp_path / "same.whl", package).read_bytes(), package)
+    assert not matches(_wheel(tmp_path / "no-record.whl", package, record=False).read_bytes(), package)
+    assert not matches(_wheel(tmp_path / "missing.whl", package, drop=("ciw/lab/task.py",)).read_bytes(), package)
+    assert not matches(_wheel(tmp_path / "extra.whl", package, extra={"ciw/lab/more.py": b""}).read_bytes(), package)
+    assert not matches(b"not a zip", package)
+    wheel = _wheel(tmp_path / "before.whl", package).read_bytes()
+    (package / "lab" / "task.py").write_bytes(b"def run():\n    return 999\n")  # edited after installation
+    assert not matches(wheel, package)
 
 
 def test_regression_coverage_is_checked(retained, monkeypatch):
@@ -142,3 +205,30 @@ def test_regression_coverage_is_checked(retained, monkeypatch):
     report = _run("T168", retained)
     values = {f["claim"]: f["value"] for f in report["findings"]}
     assert values["Completed or partial tasks lacking a regression test"] == 1 and report["state"] == "partial"
+
+
+def test_regression_node_ids_resolve_class_methods_and_async_tests(tmp_path):
+    tests = tmp_path / "tests"
+    tests.mkdir()
+    (tests / "test_demo.py").write_text(
+        "def test_plain():\n    pass\n\n"
+        "async def test_async():\n    pass\n\n"
+        "class TestGroup:\n    def test_method(self):\n        pass\n\n"
+        "    class TestNested:\n        async def test_inner(self):\n            pass\n\n"
+        "def helper():\n    pass\n", encoding="utf-8")
+    assert research_portfolio._test_names(tests) == {
+        "tests/test_demo.py::test_plain", "tests/test_demo.py::test_async",
+        "tests/test_demo.py::TestGroup::test_method", "tests/test_demo.py::TestGroup::TestNested::test_inner"}
+
+
+def test_regression_coverage_never_reads_the_current_directory(retained, tmp_path, monkeypatch):
+    elsewhere = tmp_path / "elsewhere"
+    (elsewhere / "tests").mkdir(parents=True)
+    (elsewhere / "tests" / "test_unrelated.py").write_text("def test_other():\n    pass\n", encoding="utf-8")
+    monkeypatch.chdir(elsewhere)
+    monkeypatch.setenv("CIW_LAB_REPOSITORY_ROOT", str(tmp_path / "installed-without-tests"))
+    monkeypatch.setattr(research_portfolio, "load_implementations", lambda: ({"T010": Implementation(
+        "T010", None, regression_tests=("tests/test_unrelated.py::test_other",))}, {}))
+    report = _run("T168", retained)
+    assert report["state"] == "partial" and report["evidence_status"]["primary"] == "not_established"
+    assert [f["evidence_status"] for f in report["findings"]] == ["not_established"]

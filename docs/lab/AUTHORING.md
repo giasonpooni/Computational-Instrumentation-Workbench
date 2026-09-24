@@ -148,13 +148,18 @@ one of: `hypothesis`, `mathematical_model`, `input_data`, `observation_model`,
 `expected_invariant`, `experiment`, `numerical_result`, `uncertainty`,
 `failure_modes_checked`, `unresolved_assumptions`, `recommended_next_task`, and
 `provider_runtime_identity` when a provider ran (otherwise the runner records
-the built-in identity). `changed_files` defaults to the registration.
+the built-in identity). An executed task's omitted answer is reported as
+`Not stated by the implementation.`, never left empty. `changed_files` defaults
+to the registration. `regression_tests` are pytest node ids
+(`tests/test_x.py::test_f`, `tests/test_x.py::TestC::test_m`); the JUnit
+record matches a node exactly or through its parametrized cases, and any
+failed case fails the node.
 
 States: `completed` (planned computation ran, checks passed), `partial` (some
 planned parts could not run here; say which), `blocked` (a hard requirement is
 unavailable), `deferred` (not attempted). `requires=("module:scipy",)`,
 `("provider:csg",)`, `("tool:cargo",)`, `("hardware:nvidia-gpu",)` are hard
-requirements; pass `plan={...}` with the static report fields so a blocked
+requirements (another kind is refused at registration); pass `plan={...}` with the static report fields so a blocked
 report is still informative; `plan["findings"]` may carry the physical or
 authority claims the blocked task cannot establish (they must validate as
 `not_established`-producing findings). Soft optional checks use
@@ -206,5 +211,10 @@ Extension task identities must follow every existing task, section keys must
 be new, and each task declares exactly an `id` and a `title`. The module
 registers implementations with `@task` exactly as section modules do.
 `CIW_LAB_EXTENSIONS` and `CIW_LAB_MODULES` (`os.pathsep`-separated) select the
-same extensions for subprocesses and the clean-room reproduction. A task
-without an implementation is reported as deferred, never omitted.
+same extensions for subprocesses. The clean-room reproduction runs the packaged
+queue only and removes both variables. A task without an implementation is
+reported as deferred, never omitted. A module that fails to import registers
+nothing, nor do the submodules it imported: its tasks are deferred with its
+import error, and every later load imports it again, so a long-lived process
+(the MCP server) picks up a repaired module. An extension module's error is
+named by every extension task left without an implementation.

@@ -26,7 +26,7 @@ import numpy as np
 
 from .. import __version__
 from .evidence import PHYSICAL_DOMAINS, EvidenceRefusal, validate_finding
-from .registry import load_implementations, load_queue
+from .registry import SECTION_MODULES, base_section_modules, load_implementations, load_queue
 from .report import FIELDS, FIELD_NAMES, build_report, render_markdown, validate_report
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[1]
@@ -79,13 +79,28 @@ def builtin_identity(changed_files) -> dict:
     return identity
 
 
+# Runtime caches a provider run may create inside its checkout; they never shadow tracked sources.
+RUNTIME_CACHES = (".venv", "venv", "__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache")
+
+
 def git_identity(path: Path) -> dict:
-    """HEAD, tree and cleanliness of a provider checkout; refuses non-repositories."""
+    """HEAD, tree and cleanliness of a provider checkout; refuses non-repositories.
+
+    Untracked files make the checkout dirty, ignored ones included: an
+    untracked module can shadow pinned tracked code on import whatever
+    ``.gitignore``, ``.git/info/exclude`` or ``core.excludesFile`` say. So does
+    a tracked file flagged skip-worktree or assume-unchanged, whose bytes
+    ``git status`` never compares (``ls-files -v`` tags it ``S`` or in lower case).
+    """
     def git(*args):
         return subprocess.run(["git", "-C", str(path), *args], check=True, capture_output=True,
                               text=True).stdout.strip()
+    caches = [f":(top,exclude,glob)**/{name}/**" for name in RUNTIME_CACHES]
+    status = git("status", "--porcelain", "--untracked-files=all", "--ignored", "--", ":(top)", *caches)
+    overlooked = [line for line in git("ls-files", "-v", "--", ":(top)").splitlines()
+                  if line[:1] == "S" or line[:1].islower()]
     return {"path": str(path), "revision": git("rev-parse", "HEAD"), "source_tree": git("rev-parse", "HEAD^{tree}"),
-            "dirty": bool(git("status", "--porcelain", "--untracked-files=no"))}
+            "dirty": bool(status or overlooked)}
 
 
 class Context:
@@ -132,6 +147,8 @@ class Context:
         directory.mkdir(parents=True, exist_ok=True)
         (directory / name).write_bytes(data)
         relative = f"artifacts/{self.task_id}/{name}"
+        # A rewrite replaces the earlier entry: one entry per path, matching the bytes on disk.
+        self.artifacts[:] = [a for a in self.artifacts if a["path"] != relative]
         self.artifacts.append({"path": relative, "sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data)})
         return relative
 
@@ -163,21 +180,52 @@ def _probe_hardware(name: str) -> bool:
     return False
 
 
-def read_junit(path: Path | None) -> dict:
-    """Map pytest node ids to passed, skipped or failed."""
+# Outcomes of one node (parametrized cases, repeated records) fold by severity:
+# any failure wins over a pass, and a pass over a skip, whatever the JUnit order.
+SEVERITY = {"skipped": 0, "passed": 1, "failed": 2}
+
+
+def _fold(outcome: str | None, value: str) -> str:
+    return value if outcome is None else max(outcome, value, key=SEVERITY.__getitem__)
+
+
+def _node_id(classname: str, name: str, root: Path | None) -> str:
+    """pytest node id of a JUnit test case.
+
+    The module is the longest dotted prefix of ``classname`` that is a ``.py``
+    file under ``root``; the remaining components are test classes. Without the
+    sources, classes start at the first later component with pytest's ``Test``
+    prefix.
+    """
+    parts = classname.split(".") if classname else []
+    split = None
+    if root is not None:
+        split = next((i for i in range(len(parts), 0, -1)
+                      if root.joinpath(*parts[:i - 1], parts[i - 1] + ".py").is_file()), None)
+    if split is None:
+        split = next((i for i in range(1, len(parts)) if parts[i].startswith("Test")), len(parts))
+    return "::".join(["/".join(parts[:split]) + ".py", *parts[split:], name])
+
+
+def read_junit(path: Path | None, root: Path | None = None) -> dict:
+    """Map pytest node ids to passed, skipped or failed.
+
+    ``root`` is the pytest root directory the class names are relative to
+    (default: :func:`repository_root`).
+    """
     if path is None:
         return {}
+    root = repository_root() if root is None else Path(root)
     outcomes = {}
     for case in ET.parse(path).getroot().iter("testcase"):
-        classname, name = case.get("classname", ""), case.get("name", "")
-        module = classname.replace(".", "/") + ".py"
-        node = f"{module}::{name}"
-        if case.find("skipped") is not None:
-            outcomes[node] = "skipped"
-        elif case.find("failure") is not None or case.find("error") is not None:
-            outcomes[node] = "failed"
+        node = _node_id(case.get("classname", ""), case.get("name", ""), root)
+        if case.find("failure") is not None or case.find("error") is not None:
+            outcome = "failed"
+        elif case.find("skipped") is not None:
+            outcome = "skipped"
         else:
-            outcomes[node] = "passed"
+            outcome = "passed"
+        outcomes[node] = _fold(outcomes.get(node), outcome)
     return outcomes
 
 
@@ -193,8 +241,9 @@ def _test_fields(implementation, findings, junit):
     for node in implementation.regression_tests if implementation else ():
         outcome = None
         for key, value in junit.items():
-            if key == node or key.endswith(node) or (key.split("[")[0] == node):
-                outcome = value if outcome in (None, "passed") else outcome
+            # The registered node itself or its parametrized cases; never a suffix of another path.
+            if key == node or key.startswith(node + "["):
+                outcome = _fold(outcome, value)
         if outcome == "passed":
             passed.append(f"pytest: {node}")
         elif outcome == "failed":
@@ -220,6 +269,15 @@ def _default_fields(task, reason):
     }
 
 
+NOT_STATED = "Not stated by the implementation."
+
+
+def _executed_defaults(task):
+    """Answers an executed task's implementation omitted: said to be unstated, never 'not executed'."""
+    return {name: NOT_STATED if isinstance(value, str) else [NOT_STATED]
+            for name, value in _default_fields(task, "").items()}
+
+
 def _gate_physical(findings, ctx):
     """Refuse physical labels unless hardware answered a probe and the raw bytes were retained."""
     retained = {artifact["sha256"] for artifact in ctx.artifacts}
@@ -238,14 +296,25 @@ def _blocked(task, reason, failure):
     return "blocked", fields, []
 
 
+def _unavailable(requires, ctx) -> list:
+    missing = []
+    for need in requires:
+        try:
+            if not ctx.available(need):
+                missing.append(need)
+        except Exception as exc:  # an unprobeable requirement cannot be met; the task reports blocked
+            missing.append(f"{need} ({type(exc).__name__}: {exc})")
+    return missing
+
+
 def run_task(task, implementation, ctx: Context, junit: dict, import_error: str | None = None) -> dict:
     ctx.begin(task["id"])
-    findings, state = [], "deferred"
+    findings, state, executed = [], "deferred", False
     if implementation is None:
         reason = f"Deferred: {import_error or 'no implementation is registered for this task'}."
         fields = _default_fields(task, reason)
     else:
-        missing = [need for need in implementation.requires if not ctx.available(need)]
+        missing = _unavailable(implementation.requires, ctx)
         if missing:
             reason = "Blocked: unavailable requirement(s) " + ", ".join(missing) + "."
             fields = _default_fields(task, reason)
@@ -264,9 +333,10 @@ def run_task(task, implementation, ctx: Context, junit: dict, import_error: str 
                     state, fields, findings = _blocked(task, reason + f" Plan findings refused: {exc}", str(exc))
         else:
             try:
+                executed = True
                 outcome = implementation.run(ctx)
                 state = outcome.get("state", "completed")
-                fields = _default_fields(task, "")
+                fields = _executed_defaults(task)
                 fields.update(outcome.get("fields", {}))
                 findings = outcome.get("findings", [])
                 for record in findings:
@@ -283,7 +353,8 @@ def run_task(task, implementation, ctx: Context, junit: dict, import_error: str 
     fields["generated_artifacts"] = deepcopy(ctx.artifacts)
     if not fields.get("provider_runtime_identity"):
         fields["provider_runtime_identity"] = builtin_identity(changed)
-    passed, skipped, failed = _test_fields(implementation, findings, junit)
+    # Checks count as tests only when the implementation ran; a blocked plan's checks never executed.
+    passed, skipped, failed = _test_fields(implementation, findings if executed else [], junit)
     fields["tests_passed"], fields["tests_skipped"] = passed, skipped
     if failed and state == "completed":
         state = "partial"
@@ -298,6 +369,20 @@ def run_task(task, implementation, ctx: Context, junit: dict, import_error: str 
         fields.update(changed_files=changed, generated_artifacts=deepcopy(ctx.artifacts),
                       provider_runtime_identity=builtin_identity(changed), tests_passed=[], tests_skipped=[])
         return validate_report(build_report(task, state, {k: v for k, v in fields.items() if k in FIELD_NAMES}, []))
+
+
+def _section_import_error(section, errors) -> str | None:
+    """Import errors that explain a section's unimplemented tasks.
+
+    A packaged section owns exactly its :data:`SECTION_MODULES`; an extension
+    section is implemented by the configured modules, whose errors apply to
+    every extension task left without an implementation.
+    """
+    if section.get("extension"):
+        names = [name for name in errors if name not in SECTION_MODULES]
+    else:
+        names = base_section_modules(section["key"])
+    return "; ".join(f"{name}: {errors[name]}" for name in sorted(names) if name in errors) or None
 
 
 def run_queue(output_dir, task_ids=None, providers=None, junit_path=None, budget_seconds=None) -> dict:
@@ -317,16 +402,14 @@ def run_queue(output_dir, task_ids=None, providers=None, junit_path=None, budget
     ctx = Context(output_dir, providers)
     reports, timings = [], []
     (output_dir / "reports").mkdir(parents=True, exist_ok=True)
-    section_modules = {s["section"]: s["key"] for s in queue["sections"]}
+    import_errors = {s["section"]: _section_import_error(s, errors) for s in queue["sections"]}
     for item in queue["tasks"]:
         if selected is not None and item["id"] not in selected:
             continue
         artifact_dir = output_dir / "artifacts" / item["id"]
         if artifact_dir.exists():
             shutil.rmtree(artifact_dir)
-        prefix = section_modules[item["section"]].replace("-", "_")
-        error = "; ".join(f"{name}: {message}" for name, message in sorted(errors.items())
-                          if name.startswith(prefix)) or None
+        error = import_errors[item["section"]]
         started = time.perf_counter()
         report = run_task(item, implementations.get(item["id"]), ctx, junit, error)
         timings.append({"task_id": item["id"], "state": report["state"],
@@ -392,7 +475,9 @@ def write_index(output_dir, queue=None) -> None:
 
 
 def _close(retained, fresh, tolerance):
-    if isinstance(retained, bool) or isinstance(fresh, bool) or retained is None or fresh is None or isinstance(retained, str):
+    if isinstance(retained, bool) or isinstance(fresh, bool):
+        return type(retained) is type(fresh) and retained == fresh  # True is not the number 1
+    if retained is None or fresh is None or isinstance(retained, str):
         return retained == fresh
     if isinstance(retained, (int, float)) and isinstance(fresh, (int, float)):
         if not (math.isfinite(retained) and math.isfinite(fresh)):
@@ -429,10 +514,17 @@ def _skeleton(value) -> str:
     return NUMBER.sub("#", text)
 
 
-def artifact_problems(directory) -> list:
-    """Retained artifacts must still hash to the digests their reports record."""
+def _witness(counterexample):
+    """A counterexample's witness values, compared within the finding's tolerance; its wording by skeleton."""
+    return counterexample.get("witness") if isinstance(counterexample, dict) else None
+
+
+def artifact_problems(directory, tasks=None) -> list:
+    """Retained artifacts must still hash to the digests their reports record (optionally for ``tasks`` only)."""
     problems = []
     for report in load_reports(directory):
+        if tasks is not None and report["task_id"] not in tasks:
+            continue
         for artifact in report["generated_artifacts"]:
             path = Path(directory) / artifact["path"]
             if not path.is_file():
@@ -442,18 +534,31 @@ def artifact_problems(directory) -> list:
     return problems
 
 
-def compare(retained_dir, fresh_dir) -> dict:
-    """Regression gate: same states, labels, claims, units and wording; values within tolerance."""
-    retained = {r["task_id"]: r for r in load_reports(retained_dir)}
-    fresh = {r["task_id"]: r for r in load_reports(fresh_dir)}
-    problems = artifact_problems(retained_dir) + artifact_problems(fresh_dir)
-    if retained:
-        # New evidence must be reviewed and retained, not slip in through a gate run.
-        problems += [f"{task_id}: not retained" for task_id in sorted(set(fresh) - set(retained))]
+def compare(retained_dir, fresh_dir, tasks=None) -> dict:
+    """Regression gate: same states, labels, claims, units and wording; values within tolerance.
+
+    Every task retained or regenerated is compared, or only ``tasks`` (the
+    identities of a partial run), each of which must then be in both
+    directories. A missing or empty retained directory, or an empty
+    ``tasks``, fails: comparing nothing verifies nothing.
+    """
+    selected = None if tasks is None else set(tasks)
+    retained_reports = load_reports(retained_dir)
+    retained = {r["task_id"]: r for r in retained_reports if selected is None or r["task_id"] in selected}
+    fresh = {r["task_id"]: r for r in load_reports(fresh_dir) if selected is None or r["task_id"] in selected}
+    problems = []
+    if not retained_reports:
+        problems.append(f"no retained reports in {Path(retained_dir) / 'reports'}: nothing to verify against")
+    if selected is not None and not selected:
+        problems.append("no tasks selected: nothing to verify")
+    problems += artifact_problems(retained_dir, selected) + artifact_problems(fresh_dir, selected)
+    expected = set(retained) | set(fresh) if selected is None else selected
+    # New evidence must be reviewed and retained, not slip in through a gate run.
+    problems += [f"{task_id}: not retained" for task_id in sorted(expected - set(retained))]
+    problems += [f"{task_id}: not regenerated" for task_id in sorted(expected - set(fresh))]
     for task_id, old in retained.items():
         new = fresh.get(task_id)
         if new is None:
-            problems.append(f"{task_id}: not regenerated")
             continue
         if old["state"] != new["state"]:
             problems.append(f"{task_id}: state {old['state']} -> {new['state']}")
@@ -479,9 +584,15 @@ def compare(retained_dir, fresh_dir) -> dict:
                                 + (f" (optional modules differ: {note})" if note else ""))
             if record.get("unit") != other.get("unit") or record["domain"] != other["domain"]:
                 problems.append(f"{task_id}: '{claim}' unit or domain differs")
+            if record.get("expected_not_established") != other.get("expected_not_established"):
+                problems.append(f"{task_id}: '{claim}' expected_not_established differs")
             tolerance = record.get("regression_tolerance", {"abs": 0.0, "rel": 1e-9})
             if not _close(record["value"], other["value"], tolerance):
                 problems.append(f"{task_id}: '{claim}' value outside regression tolerance")
+            old_counter, new_counter = record.get("counterexample"), other.get("counterexample")
+            if _skeleton(old_counter) != _skeleton(new_counter) or not _close(
+                    _witness(old_counter), _witness(new_counter), tolerance):
+                problems.append(f"{task_id}: '{claim}' counterexample differs")
     return {"compared": len(retained), "problems": problems, "passed": not problems}
 
 

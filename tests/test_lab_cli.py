@@ -1,4 +1,9 @@
+import importlib.util
 import json
+from pathlib import Path
+import sys
+
+import pytest
 
 from ciw import cli
 from ciw.lab.report import FIELDS
@@ -58,3 +63,40 @@ def test_tampered_retained_report_is_refused(tmp_path, capsys):
     path.write_text(json.dumps(report))
     assert cli.main(["lab", "report", "T156", "--retained", str(out)]) == 2
     assert "refused" in capsys.readouterr().err
+
+
+def test_lab_verify_fails_without_retained_reports(tmp_path, capsys):
+    out = tmp_path / "run"
+    assert cli.main(["lab", "run", "T156", "--output-dir", str(out)]) == 0
+    capsys.readouterr()
+    (tmp_path / "empty").mkdir()
+    for retained in (tmp_path / "empty", tmp_path / "no-such-directory"):
+        assert cli.main(["lab", "verify", "--retained", str(retained), "--fresh", str(out)]) == 3
+        result = json.loads(capsys.readouterr().out)
+        assert result["passed"] is False and result["compared"] == 0
+        assert "T156: not retained" in result["problems"]
+
+
+def _script(name):
+    path = Path(__file__).resolve().parents[1] / "scripts" / f"{name}.py"
+    if not path.is_file():
+        pytest.skip("scripts/ is not part of the clean-room copy of the tests")
+    spec = importlib.util.spec_from_file_location(f"lab_script_{name}", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_clean_room_refuses_an_empty_comparison_and_ignores_extensions(tmp_path, monkeypatch):
+    reproduce = _script("reproduce_lab")
+    (tmp_path / "retained" / "reports").mkdir(parents=True)
+    monkeypatch.setattr(sys, "argv", ["reproduce_lab.py", "--output-dir", str(tmp_path / "out"),
+                                      "--retained", str(tmp_path / "retained")])
+    with pytest.raises(SystemExit, match="No retained reports .*--no-compare"):
+        reproduce.main()
+    assert not (tmp_path / "out").exists()  # refused before building anything
+    monkeypatch.setenv("CIW_LAB_EXTENSIONS", str(tmp_path / "follow-ups.json"))
+    monkeypatch.setenv("CIW_LAB_MODULES", "my_lab_tasks")
+    environment = reproduce.clean_room_environment(tmp_path)
+    assert not {"CIW_LAB_EXTENSIONS", "CIW_LAB_MODULES", "PYTHONPATH"} & set(environment)
+    assert environment["CIW_LAB_REPOSITORY_ROOT"] == str(tmp_path)

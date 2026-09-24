@@ -158,7 +158,12 @@ def test_regression_comparison_flags_unretained_tasks_and_changed_findings(tmp_p
     assert "T002: not retained" in problems
     assert any("finding claims differ" in p and "extra" in p for p in problems)
     assert any("finding count 1 -> 2" in p for p in problems)
-    assert runner.compare(tmp_path / "empty", tmp_path / "new")["passed"]
+    # Comparing against nothing verifies nothing: a missing or empty retained directory fails.
+    (tmp_path / "empty" / "reports").mkdir(parents=True)
+    for retained in (tmp_path / "empty", tmp_path / "missing"):
+        result = runner.compare(retained, tmp_path / "new")
+        assert not result["passed"] and "no retained reports" in result["problems"][0]
+        assert {"T001: not retained", "T002: not retained"} <= set(result["problems"])
 
 
 def test_repository_root_honours_the_clean_room_override(tmp_path, monkeypatch):
@@ -361,3 +366,187 @@ def test_verification_catches_wording_units_and_artifact_edits(tmp_path):
     assert any("unit or domain" in p for p in runner.compare(tmp_path / "old", tmp_path / "units")["problems"])
     (tmp_path / "old" / "artifacts" / "T001" / "table.csv").write_text("edited\n")
     assert any("recorded digest" in p for p in runner.compare(tmp_path / "old", tmp_path / "digits")["problems"])
+
+
+def _retain(directory, findings, task_index=0, **fields):
+    task = load_queue()["tasks"][task_index]
+    (directory / "reports").mkdir(parents=True, exist_ok=True)
+    built = report.build_report(task, "completed", fields, findings)
+    (directory / "reports" / f"{task['id']}.json").write_text(runner.dumps(built))
+    return built
+
+
+def test_verification_of_a_task_subset_needs_each_task_on_both_sides(tmp_path):
+    record = finding("rate", "numerical", 4.0, {"generator": {"name": "g"}, "checks": [CHECK]})
+    for index in (0, 1):
+        _retain(tmp_path / "retained", [record], index)
+    _retain(tmp_path / "fresh", [record], 1)
+    assert runner.compare(tmp_path / "retained", tmp_path / "fresh")["problems"] == ["T001: not regenerated"]
+    subset = runner.compare(tmp_path / "retained", tmp_path / "fresh", tasks=["T002"])
+    assert subset == {"compared": 1, "problems": [], "passed": True}
+    problems = runner.compare(tmp_path / "retained", tmp_path / "fresh", tasks=["T002", "T003"])["problems"]
+    assert problems == ["T003: not retained", "T003: not regenerated"]
+    _retain(tmp_path / "fresh", [dict(record, value=5.0)], 0)
+    assert runner.compare(tmp_path / "retained", tmp_path / "fresh", tasks=["T002"])["passed"]
+    assert not runner.compare(tmp_path / "retained", tmp_path / "fresh", tasks=["T001"])["passed"]
+    # An empty selection compares nothing, so it verifies nothing, even where the directories disagree.
+    for empty in ([], ()):
+        assert runner.compare(tmp_path / "retained", tmp_path / "fresh", tasks=empty) == {
+            "compared": 0, "problems": ["no tasks selected: nothing to verify"], "passed": False}
+
+
+def test_verification_distinguishes_booleans_counterexamples_and_flags(tmp_path):
+    def differs(old, new):
+        _retain(tmp_path / "old", [old])
+        _retain(tmp_path / "new", [new])
+        return runner.compare(tmp_path / "old", tmp_path / "new")["problems"]
+    checked = {"checks": [CHECK]}
+    assert differs(finding("flag", "numerical", True, checked), finding("flag", "numerical", 1, checked)) == [
+        "T001: 'flag' value outside regression tolerance"]
+    refuted = {"statement": "separation grows with length", "witness": {"s": 4.0}}
+    assert differs(finding("c", "numerical", 1.0, checked, counterexample=refuted),
+                   finding("c", "numerical", 1.0, checked, counterexample=dict(refuted, statement="it shrinks"))) == [
+        "T001: 'c' counterexample differs"]
+    assert differs(finding("c", "numerical", 1.0, checked, counterexample=refuted),
+                   finding("c", "numerical", 1.0, checked, counterexample=dict(refuted, witness={"s": 9.0}))) == [
+        "T001: 'c' counterexample differs"]
+    assert differs(finding("c", "numerical", 1.0, checked, counterexample=refuted),
+                   finding("c", "numerical", 1.0, checked)) == ["T001: 'c' counterexample differs"]
+    unmeasured = finding("u", "physical", None, {})
+    assert differs(unmeasured, dict(unmeasured, expected_not_established=True)) == [
+        "T001: 'u' expected_not_established differs"]
+
+
+def _junit(path, *cases):
+    body = "".join(f'<testcase classname="{classname}" name="{name}">{child}</testcase>'
+                   for classname, name, child in cases)
+    path.write_text(f"<testsuites><testsuite>{body}</testsuite></testsuites>", encoding="utf-8")
+    return path
+
+
+def test_junit_outcomes_fold_by_severity_and_map_class_node_ids(tmp_path):
+    from ciw.lab.registry import Implementation
+    (tmp_path / "tests").mkdir()
+    (tmp_path / "tests" / "test_demo.py").write_text("")
+    junit = runner.read_junit(_junit(tmp_path / "junit.xml",
+                                     ("tests.test_demo", "test_p[1]", "<skipped/>"),
+                                     ("tests.test_demo", "test_p[2]", "<failure/>"),
+                                     ("tests.test_demo", "test_q[1]", "<skipped/>"),
+                                     ("tests.test_demo", "test_q[2]", ""),
+                                     ("tests.test_demo.TestC", "test_m", "<failure/>"),
+                                     ("tests.old_test_demo", "test_r", "<failure/>")), root=tmp_path)
+    assert junit["tests/test_demo.py::TestC::test_m"] == "failed"
+    nodes = ("tests/test_demo.py::test_p", "tests/test_demo.py::test_q", "tests/test_demo.py::TestC::test_m",
+             "test_demo.py::test_r")
+    passed, skipped, failed = runner._test_fields(Implementation("T116", None, regression_tests=nodes), [], junit)
+    assert failed == ["pytest: tests/test_demo.py::test_p", "pytest: tests/test_demo.py::TestC::test_m"]
+    assert passed == ["pytest: tests/test_demo.py::test_q"]
+    # A suffix of another file's node id is not the registered test.
+    assert skipped == ["pytest: test_demo.py::test_r (not run in this invocation)"]
+    # Without the sources, classes start at pytest's Test prefix.
+    assert runner._node_id("tests.test_demo.TestC", "test_m", None) == "tests/test_demo.py::TestC::test_m"
+    assert runner._node_id("tests.test_demo", "test_m", tmp_path / "elsewhere") == "tests/test_demo.py::test_m"
+
+
+def test_unsupported_requirements_are_refused_and_never_abort_the_queue(tmp_path):
+    from ciw.lab.registry import task
+    with pytest.raises(ValueError, match="Unsupported lab requirement"):
+        task("T999", requires=("modules:scipy",))
+
+    def run(ctx):
+        raise AssertionError("an unprobeable requirement is never met")
+    item = {t["id"]: t for t in load_queue()["tasks"]}["T116"]
+    built = runner.run_task(item, _implementation(run, ("modules:scipy",)), runner.Context(tmp_path), {})
+    assert built["state"] == "blocked" and "modules:scipy" in built["experiment"]
+
+
+def test_blocked_plan_checks_are_not_reported_as_tests(tmp_path):
+    def run(ctx):
+        raise AssertionError("never runs")
+    run.plan = {"findings": [finding("GPU agrees with CPU", "physical", 1.0, {"generator": {"name": "g"},
+                                                                          "checks": [CHECK]})]}
+    item = {t["id"]: t for t in load_queue()["tasks"]}["T116"]
+    built = runner.run_task(item, _implementation(run, ("hardware:no-such-device",)), runner.Context(tmp_path), {})
+    assert built["state"] == "blocked" and built["findings"][0]["evidence_status"] == "not_established"
+    assert built["tests_passed"] == [] and "tests_failed" not in built
+
+
+def test_executed_task_without_answers_says_they_are_not_stated(tmp_path):
+    def terse(ctx):
+        return {"findings": [finding("rate", "numerical", 4.0, {"checks": [CHECK]})]}
+    item = {t["id"]: t for t in load_queue()["tasks"]}["T116"]
+    built = runner.run_task(item, _implementation(terse), runner.Context(tmp_path), {})
+    assert built["state"] == "completed"
+    for name in ("hypothesis", "experiment", "observation_model", "recommended_next_task"):
+        assert built[name] == runner.NOT_STATED
+    assert built["unresolved_assumptions"] == [runner.NOT_STATED]
+    assert "not been executed" not in json.dumps(built)
+
+
+def test_rewritten_artifact_keeps_one_entry_with_the_bytes_on_disk(tmp_path):
+    ctx = runner.Context(tmp_path)
+    ctx.begin("T001")
+    ctx.artifact_text("t.json", "first")
+    ctx.artifact_text("other.txt", "x")
+    ctx.artifact_text("t.json", "second")
+    entries = [a for a in ctx.artifacts if a["path"] == "artifacts/T001/t.json"]
+    assert len(ctx.artifacts) == 2 and len(entries) == 1
+    assert entries[0]["sha256"] == hashlib.sha256((tmp_path / "artifacts" / "T001" / "t.json").read_bytes()).hexdigest()
+
+
+def test_completed_report_cannot_record_failed_tests():
+    task = load_queue()["tasks"][0]
+    record = finding("rate", "numerical", 4.0, {"checks": [CHECK]})
+    failed = {"tests_failed": ["pytest: tests/test_lab_core.py::test_x"]}
+    with pytest.raises(EvidenceRefusal, match="failed tests"):
+        report.validate_report(report.build_report(task, "completed", {}, [record], extra=failed))
+    report.validate_report(report.build_report(task, "partial", {}, [record], extra=failed))
+
+
+def test_untracked_files_make_a_provider_checkout_dirty(tmp_path):
+    import shutil
+    import subprocess
+    if not shutil.which("git"):
+        pytest.skip("git is not installed")
+    git = ["git", "-C", str(tmp_path), "-c", "user.email=lab@example.invalid", "-c", "user.name=lab"]
+    subprocess.run(git + ["init", "-q"], check=True)
+    (tmp_path / "engine.py").write_text("VALUE = 1\n")
+    subprocess.run(git + ["add", "engine.py"], check=True)
+    subprocess.run(git + ["commit", "-qm", "pinned"], check=True)
+    (tmp_path / "__pycache__").mkdir()
+    (tmp_path / "__pycache__" / "engine.cpython-311.pyc").write_bytes(b"cache")
+    assert runner.git_identity(tmp_path)["dirty"] is False
+    (tmp_path / "engine").mkdir()
+    (tmp_path / "engine" / "__init__.py").write_text("VALUE = 999\n")  # shadows engine.py on import
+    assert runner.git_identity(tmp_path)["dirty"] is True
+
+
+@pytest.mark.parametrize("hide", ["pinned_gitignore", "info_exclude", "skip_worktree", "assume_unchanged"])
+def test_code_git_is_told_to_overlook_makes_a_provider_checkout_dirty(tmp_path, hide):
+    import shutil
+    import subprocess
+    if not shutil.which("git"):
+        pytest.skip("git is not installed")
+    git = ["git", "-C", str(tmp_path), "-c", "user.email=lab@example.invalid", "-c", "user.name=lab",
+           "-c", "commit.gpgsign=false", "-c", f"core.hooksPath={tmp_path / 'no-hooks'}"]
+    subprocess.run(git + ["init", "-q"], check=True)
+    (tmp_path / "engine.py").write_text("VALUE = 1\n")
+    (tmp_path / ".gitignore").write_text("*.pyc\n__pycache__/\n")  # as pinned: ignores bytecode
+    subprocess.run(git + ["add", "engine.py", ".gitignore"], check=True)
+    subprocess.run(git + ["commit", "-qm", "pinned"], check=True)
+    (tmp_path / "__pycache__").mkdir()
+    (tmp_path / "__pycache__" / "engine.cpython-311.pyc").write_bytes(b"cache")
+    assert runner.git_identity(tmp_path)["dirty"] is False
+    if hide == "pinned_gitignore":  # a sourceless package the pinned .gitignore hides shadows engine.py
+        (tmp_path / "engine").mkdir()
+        (tmp_path / "engine" / "__init__.pyc").write_bytes(b"shadow")
+    elif hide == "info_exclude":  # a local, untracked exclude hides a shadowing package
+        (tmp_path / ".git" / "info").mkdir(exist_ok=True)
+        (tmp_path / ".git" / "info" / "exclude").write_text("engine/\n")
+        (tmp_path / "engine").mkdir()
+        (tmp_path / "engine" / "__init__.py").write_text("VALUE = 999\n")
+    else:  # git status never compares the bytes of a tracked file flagged this way
+        flag = "--skip-worktree" if hide == "skip_worktree" else "--assume-unchanged"
+        subprocess.run(git + ["update-index", flag, "engine.py"], check=True)
+        (tmp_path / "engine.py").write_text("VALUE = 999\n")
+    assert runner.git_identity(tmp_path)["dirty"] is True

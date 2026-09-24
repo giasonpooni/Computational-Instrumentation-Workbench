@@ -52,6 +52,12 @@ def main() -> int:
     parser.add_argument("--temporary-root", type=Path)
     parser.add_argument("--no-compare", action="store_true")
     args = parser.parse_args()
+    if not args.no_compare:
+        # Refuse before provisioning providers: reproduce_lab.py would refuse after.
+        reports = ROOT / "lab" / "reports"
+        if not reports.is_dir() or not any(reports.glob("T*.json")):
+            raise SystemExit(f"No retained reports to compare with in {reports}; retain a reviewed run first "
+                             "(scripts/refresh_lab.py) or pass --no-compare")
     revisions = pins()
     with tempfile.TemporaryDirectory(prefix="ciw-lab-providers-", dir=args.temporary_root) as directory:
         providers = {}

@@ -75,3 +75,85 @@ def test_malformed_extensions_are_refused(extension, mutate, message):
     registry.configure([extension])
     with pytest.raises(ValueError, match=message):
         registry.load_queue()
+
+
+BROKEN = '''
+from ciw.lab.evidence import finding
+from ciw.lab.registry import task
+
+CHECK = {"reference_kind": "analytic", "reference": "1 + 1", "observed": 0.0, "tolerance": 0.0, "passed": True}
+
+@task("T169")
+def follow_up(ctx):
+    return {"findings": [finding("Sum", "mathematical", 2.0, {"derivation": "arithmetic", "checks": [CHECK]})]}
+
+raise RuntimeError("broken further down")
+'''
+
+
+def test_a_failing_module_leaves_no_tasks_and_keeps_its_first_error(extension, tmp_path):
+    (tmp_path / "broken_tasks_under_test.py").write_text(BROKEN)
+    registry.configure([extension], ["broken_tasks_under_test"])
+    try:
+        for _ in range(2):  # a long-lived process (the MCP server) loads again on every request
+            implementations, errors = registry.load_implementations()
+            assert "T169" not in implementations
+            assert errors["broken_tasks_under_test"] == ("section module failed to import: RuntimeError: "
+                                                         "broken further down")
+        from ciw.lab import runner
+        runner.run_queue(tmp_path / "run", ["T169", "T170"])
+        for task_id in ("T169", "T170"):
+            report = json.loads((tmp_path / "run" / "reports" / f"{task_id}.json").read_text(encoding="utf-8"))
+            assert report["state"] == "deferred" and "broken further down" in report["experiment"]
+    finally:
+        sys.modules.pop("broken_tasks_under_test", None)
+
+
+INNER = '''
+from ciw.lab.registry import task
+
+@task("T170")
+def inner(ctx):
+    return {}
+'''
+
+
+@pytest.mark.parametrize("broken", [
+    "import definitely_missing_lab_helper\n",  # a dependency installed later
+    "from ciw.lab.registry import task\n@task('T169')\ndef follow_up(ctx)\n    return {}\n",  # a syntax error
+    "import inner_tasks_under_test\n" + BROKEN,  # fails after a submodule registered T170
+], ids=["missing_dependency", "syntax_error", "submodule_registered"])
+def test_a_repaired_module_is_imported_again_by_a_long_lived_process(extension, tmp_path, broken):
+    module = tmp_path / "repaired_tasks_under_test.py"
+    module.write_text(broken)
+    (tmp_path / "inner_tasks_under_test.py").write_text(INNER)
+    registry.configure([extension], ["repaired_tasks_under_test"])
+    try:
+        implementations, errors = registry.load_implementations()
+        assert "T169" not in implementations and "T170" not in implementations
+        assert "repaired_tasks_under_test" in errors
+        # The author repairs the module; the next request (the MCP server loads on every one) picks it up.
+        module.write_text("import inner_tasks_under_test\n" + BROKEN.replace('raise RuntimeError("broken further down")',
+                                                                            ""))
+        implementations, errors = registry.load_implementations()
+        assert "repaired_tasks_under_test" not in errors
+        assert {"T169", "T170"} <= set(implementations)
+    finally:
+        registry._REGISTRY.pop("T170", None)
+        for name in ("repaired_tasks_under_test", "inner_tasks_under_test"):
+            sys.modules.pop(name, None)
+
+
+def test_extension_module_errors_explain_extension_tasks_only(extension, tmp_path):
+    from ciw.lab import runner
+    (tmp_path / "missing_dependency_tasks.py").write_text("import definitely_missing_lab_dependency\n")
+    registry.configure([extension], ["missing_dependency_tasks"])
+    runner.run_queue(tmp_path / "run", ["T169"])
+    report = json.loads((tmp_path / "run" / "reports" / "T169.json").read_text(encoding="utf-8"))
+    assert report["experiment"] == ("Deferred: missing_dependency_tasks: missing dependency: "
+                                    "definitely_missing_lab_dependency.")
+    errors = {"surfaces_discrete_mesh": "boom", "surfaces_discrete": "bang", "my_tasks": "gone"}
+    assert runner._section_import_error({"key": "surfaces", "extension": "x.json"}, errors) == "my_tasks: gone"
+    assert runner._section_import_error({"key": "surfaces-discrete"}, errors) == (
+        "surfaces_discrete: bang; surfaces_discrete_mesh: boom")
+    assert runner._section_import_error({"key": "observation"}, errors) is None

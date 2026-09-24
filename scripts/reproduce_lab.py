@@ -20,11 +20,33 @@ import tempfile
 import venv
 
 ROOT = Path(__file__).resolve().parents[1]
+# The clean room reproduces the packaged queue: interpreter paths, pytest options
+# and queue extensions of the calling shell never reach it.
+INHERITED_EXCLUDED = ("PYTHONPATH", "PYTEST_ADDOPTS", "CIW_LAB_EXTENSIONS", "CIW_LAB_MODULES")
 
 
 def run(command, **kwargs):
     print("+ " + " ".join(map(str, command)), flush=True)
     return subprocess.run([str(part) for part in command], check=True, **kwargs)
+
+
+def retained_problem(retained: Path) -> str | None:
+    """Why ``retained`` cannot be compared with: comparing no reports would verify nothing."""
+    reports = Path(retained) / "reports"
+    if not reports.is_dir() or not any(reports.glob("T*.json")):
+        return (f"No retained reports to compare with in {reports}; retain a reviewed run first "
+                "(scripts/refresh_lab.py) or pass --no-compare")
+    return None
+
+
+def clean_room_environment(work: Path) -> dict:
+    environment = {key: value for key, value in os.environ.items() if key not in INHERITED_EXCLUDED}
+    environment["PYTHONDONTWRITEBYTECODE"] = "1"
+    environment["CIW_LAB_REPOSITORY_ROOT"] = str(work)
+    # Single-threaded BLAS keeps reduction order, and so retained values, stable.
+    for variable in ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS"):
+        environment[variable] = "1"
+    return environment
 
 
 def main() -> int:
@@ -39,6 +61,9 @@ def main() -> int:
                         help="Wheel extras to install, e.g. dev,lab,plsr on Python 3.12+")
     parser.add_argument("--temporary-root", type=Path)
     args = parser.parse_args()
+    problem = None if args.no_compare else retained_problem(args.retained)
+    if problem:
+        raise SystemExit(problem)
     output = args.output_dir.resolve()
     if output.exists() and any(output.iterdir()):
         raise SystemExit(f"Output directory must be new or empty: {output}")
@@ -66,12 +91,7 @@ def main() -> int:
         shutil.copytree(ROOT / "examples", work / "examples")
         for name in ("docs",):
             shutil.copytree(ROOT / name, work / name)
-        environment = {key: value for key, value in os.environ.items() if key not in ("PYTHONPATH", "PYTEST_ADDOPTS")}
-        environment["PYTHONDONTWRITEBYTECODE"] = "1"
-        environment["CIW_LAB_REPOSITORY_ROOT"] = str(work)
-        # Single-threaded BLAS keeps reduction order, and so retained values, stable.
-        for variable in ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS"):
-            environment[variable] = "1"
+        environment = clean_room_environment(work)
         located = subprocess.run([python, "-c", "import ciw, sys; print(ciw.__file__)"], check=True,
                                  capture_output=True, text=True, cwd=work, env=environment).stdout.strip()
         if Path(located).resolve().is_relative_to(ROOT):
