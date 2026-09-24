@@ -304,10 +304,11 @@ validator and the PPDA/SCR/SET producer roundtrip. Run without the bindings
 `check_lab.py` makes, its comparison with `lab/` fails on the provider tasks.
 Paths are made absolute without following symlinks, so a virtual
 environment's interpreter stays bound as itself, and `gate.json` records the
-bindings as passed and the clean-room Python version. It refuses to start
+bindings as passed, the clean-room Python version and the OpenBLAS kernel the
+clean room's NumPy ran (`openblas_core`; the summary line prints it). It refuses to start
 when the retained directory holds no reports unless `--no-compare` is given,
 and it runs the packaged queue only: `CIW_LAB_EXTENSIONS`, `CIW_LAB_MODULES`,
-the calling shell's provider-test variables and its operator hardware
+the calling shell's `OPENBLAS_CORETYPE`, provider-test variables and operator hardware
 captures (`CIW_LAB_RAPL_LOG`, `CIW_LAB_ENERGY_LOG`, `CIW_LAB_NVIDIA_SMI_CSV`,
 `CIW_LAB_NVIDIA_SMI_UTC_OFFSET`) are removed. T164 records a run as a
 clean-room reproduction only when the imported `ciw` package holds exactly the
@@ -315,6 +316,30 @@ named wheel's files, byte for byte, inside an isolated interpreter; a marker
 naming any other file stays `not_established`. The wheel digest stays in
 T164's runtime identity, out of the compared prose, because it changes with
 every build.
+
+NumPy's bundled OpenBLAS picks its kernels for the CPU when it loads, and
+kernels round BLAS and LAPACK results differently: the retained run ran the
+SkylakeX (AVX-512) kernels, and a CI runner often runs Haswell (AVX2). The
+retained evidence must verify on any conforming x86-64 kernel, so a value that
+moves at rounding level declares a regression tolerance justified by the
+spread measured across kernels, and a claim whose truth depends on the kernel
+is redesigned to hold on every kernel (T094's bit-exact reopen, for example,
+is required only where the fingerprint names the kernel that wrote the
+goldens). `--blas-core CORE` runs the clean room on another kernel: it sets
+`OPENBLAS_CORETYPE` there and refuses the run unless the clean-room NumPy then
+reports that kernel (`ciw.lab.blas_probe.openblas_core` reads it from the
+loaded library; NumPy's build configuration names only the build target). Names are OpenBLAS's, matched without case; a name OpenBLAS
+does not know, or maps to another kernel (`Zen` runs `Haswell`), is refused.
+To verify the retained run across kernels on one host:
+
+```sh
+python scripts/check_lab.py --blas-core Haswell --output-dir results/lab-gate-haswell
+python scripts/check_lab.py --blas-core Sandybridge --output-dir results/lab-gate-sandybridge   # no FMA
+```
+
+For a few tasks, run them with the variable set and compare only those:
+`OPENBLAS_CORETYPE=Haswell ciw lab run T094 --output-dir results/haswell`, then
+`python -c "from pathlib import Path; from ciw.lab import runner; print(runner.compare(Path('lab'), Path('results/haswell'), tasks=['T094']))"`.
 
 ## Retained evidence
 

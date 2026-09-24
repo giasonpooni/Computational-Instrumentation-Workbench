@@ -59,7 +59,7 @@ only in artifacts.
 | T091 | Save a session that holds a trusted numerical-heat binding (synthetic, naming no checkout), oscillator results, an energy-accuracy original + replay and a provider-kind numerical-heat bundle (fabricated, content-consistent). Then reopen it under an **execution guard**. The guard replaces 73 CIW entry points with refusing recorders: session analyses, recording operations, the workbench, provider adapters and subprocesses, plus the session, step and adapter entry points of every workbench workflow kind, discovered from `ciw.workbench._workflow`. | 0 execution-path calls. The binding is gone: none after reopen, no binding path in the saved bytes, and replaying the provider-kind bundle is refused unbound. Retained content is identical. Counterexample: reopening recomputes the retained energy analysis 7 times (validation, not execution). Only that analysis is counted as recomputation. |
 | T092 | Execute every unavailable workflow kind that has a reachable example source: 15 unbound, plus 2 that consume an upstream bundle. Replay the one retained provider-kind bundle (numerical-heat). Also send client-supplied `repositories`, a client `workflow.bind`, unknown and unregistered operations, and an ESM request on a non-telemetry bundle. | 25/25 refused with the exact named error; no provider process, adapter or workflow entry point reached. Replay refusal is observed for numerical-heat only; for the other kinds it is inferred from `Workbench.replay` calling `Workbench._reserve`, not observed. Four kinds without an example (`acquired-calibrated-window`, `bim-quantity`, `identified-stability`, `residual-monitor`) are not exercised. Counterexample: a fabricated, content-consistent numerical-heat bundle (values `[0, 1, 2, 3, 0]` where the reference is `[0, 16, 24, 16, 0]`) passes reopen validation. The reopen outcome is observed and checked; if reopen refused the bundle, the counterexample would be refuted and the other cases would still run. |
 | T093 | 16 refused non-recording request classes, each compared with its expected `code: message`. Digests of in-memory state (selection, results, executions, catalog, revision, byte and reservation counters, identities, bindings) and of the session directory are taken before and after, plus a re-save comparison. | 16/16 refused with the expected text; state unchanged; a refused reopen writes nothing. The unchanged-state claim is scoped to those classes. Counterexample: a refused *recording* operation is retained as a refused execution record, by design. |
-| T094 | Golden workspaces saved by CIW itself, reopened with the current code under the guard. The retained heat bundle's runtime identity is compared with CIW's pins. | 3 workspaces reopen and their digests match `GOLDEN_MANIFEST`. The golden heat values equal the integer reference, and the bundle names SCR `a59aba2`, tree `4068a71` and the recorded engine digest (`numerically_verified`). Reopen cannot show which engine produced those values, so that claim is recorded as `not_established`. Unbound replay is refused. |
+| T094 | Golden workspaces saved by CIW itself, reopened with the current code under the guard twice: with the energy recomputation compared to rounding tolerance, and unmodified, where CIW compares it bit for bit. Each energy recomputation is compared with the retained analysis bit for bit and per float. The retained heat bundle's runtime identity is compared with CIW's pins. | 3 workspaces reopen and validate with the energy recomputation compared to 1e-14 absolute plus 1e-14 relative, and their digests match `GOLDEN_MANIFEST`. Every unmodified reopen ends as the bitwise comparison predicts: accepted where every recomputation is bit-identical, as it must be on the platform that wrote the goldens, otherwise refused as `Retained energy analysis binding differs`. The 7 recomputations agree with the retained analysis within the tolerance. The same findings, values and labels result on the SkylakeX, Haswell and Sandybridge kernels. The golden heat values equal the integer reference, and the bundle names SCR `a59aba2`, tree `4068a71` and the recorded engine digest (`numerically_verified`). Reopen cannot show which engine produced those values, so that claim is recorded as `not_established`. Unbound replay is refused. |
 | T095 | 14 committed malformed fixtures and 7 generated ones, each sent to the validator it targets. Wrong-type cases are single-field mutations of a valid input. Only a `ValueError` counts as a refusal; any other exception is retained as a crash. The committed fixtures are compared with their generator. | 19/21 inputs refused with their declared, exact CIW text (the 19 that have one). The other two are counterexamples, and a check requires every input without a declared text to be covered by one. Counterexamples: `session.read_json` accepts `1e999` as `inf` and raises `RecursionError` (not `ValueError`) on deep nesting. `Session.from_workspace` raises `AttributeError` on `{"workspace_version": 3}`, and accepts then silently drops unknown top-level fields. `source.add` words source-parse errors as a runtime response. |
 | T096 | `exchange._identity` over 24 seeded records sealed by a lab-written canonical encoder (written from the producer specification without calling `json.dumps`, and checked to agree byte for byte with the `json.dumps` call `_identity` uses), with 114 single-field mutations. `candidate_evidence.validate_response` over 72 synthetic ESM responses. | All valid records accepted in any member order; all mutations refused. Acceptance follows from the encoder agreement (same-origin code), not from an independent check. Counterexamples: observation-batch identities are caller-declared, and unknown ESM fields are accepted (the boundary checks bindings only). Every finding declares the generator of its synthetic inputs (the seeded records, or the deterministic `_candidate_cases` for the ESM responses), so its Basis column names it; the checks still decide the label. |
 | T097 | SCR through CIW's numerical-heat workflow and through SCR's own Python API; the SET contracts validator; the PPDA/SCR/SET producer roundtrip. Each exchange checkout's head and tree go into `provider_runtime_identity` as T098 records them, so a runtime inventory (T165) lists each checkout once. | SCR output is `provider_backed` and equals the integer reference (`independently_verified`). SET and the roundtrip are *checked*: status, effective rank 2, the exact refusal text `covariance.matrix is not positive-semidefinite`, two matched links, preserved failed verification, `result_id` refusal, and `may_authorize` false. A contrary provider outcome refutes the finding (both parts have mocked as-expected and contrary tests). Every finding that rests on a provider's execution declares it as its `provider`, so the Basis column names it beside the label, which the checks still decide: SCR for the heat, reference and replay findings, and SET for the validator finding and for the roundtrip, whose one provider slot names the checker its checks read (the PPDA and SCR producers are in its basis notes). The reopen finding executes nothing and declares no provider. Parts that cannot run are recorded as `not_established` with the exact reason and commands, and any part that ran keeps the task `partial` rather than `blocked`. |
@@ -95,17 +95,42 @@ through `ciw.lab.runner.repository_path`, or through an explicit
 **Platform dependence of the energy golden.** Reopening recomputes the retained
 energy analysis (LAPACK `solve`/`cholesky` on 2×2 matrices) and compares it bit
 for bit. The goldens were written on Linux x86_64 with NumPy 2.4.3 and
-scipy-openblas 0.3.31.dev, with AVX-512 kernels available (`GOLDEN_PLATFORM`).
-T094 records bit-exact recomputation as its own finding, and `golden.json`
-keeps the fingerprints of the current platform and of the goldens' origin.
+scipy-openblas 0.3.31.dev running its SkylakeX (AVX-512) kernels
+(`GOLDEN_PLATFORM`). A DYNAMIC_ARCH OpenBLAS picks its kernels for the CPU when
+it loads, or as `OPENBLAS_CORETYPE` forces, so `platform_fingerprint()` names
+the kernel NumPy runs (`openblas_core`, read from the loaded library by
+`ciw.lab.blas_probe.openblas_core()`; NumPy's build configuration names only
+the build target, and the key is left out where no bundled OpenBLAS names one). On the same host
+forced to the Haswell or Sandybridge kernels, CIW refuses the energy golden as
+`Retained energy analysis binding differs`: the reference mean and covariance
+move by one or two ulps, and the error fields derived from them by up to
+2.2e-16. Bit-exact reopen of the energy golden is therefore only available on
+the platform that wrote it.
 
-The regression test marks itself `xfail` only when two things are both true:
-the recomputation is refused with exactly `Retained energy analysis binding
-differs`, and the platform fingerprint differs from `GOLDEN_PLATFORM`. On a
-matching platform that refusal is a real failure.
+T094 makes each of its claims hold on every platform instead. It reopens every
+golden twice under the guard. The first reopen replaces CIW's bit-for-bit
+comparison of the energy recomputation, and only that, with a per-float
+comparison within `ENERGY_ROUNDING_TOLERANCE` (1e-14 absolute plus 1e-14
+relative, about 45 and 36 times the measured absolute and relative spread;
+every other field exact; `energy_recomputation_within`), so the rest of
+reopen validation decides on any platform. The second is CIW's reopen,
+unmodified. Its outcome must equal the bitwise prediction (accepted where every
+recomputation is bit-identical, otherwise refused by that name), and where the
+fingerprint equals `GOLDEN_PLATFORM` every recomputation must be bit-identical.
+Findings, values and wording are the same on every kernel; which branch
+applied, both fingerprints and each recomputation's differences are in
+`golden.json`.
 
-Only Linux under Python 3.11 and 3.12 has been run, and both are bit-exact.
-Windows has not been run.
+The regression test passes on the golden kernel and under
+`OPENBLAS_CORETYPE=Haswell` or `Sandybridge`.
+`test_t094_separates_platform_rounding_from_drift` shifts the recomputed
+reference on any kernel: two ulps on another platform keep T094 completed, the
+same shift on the golden platform refutes the bit-exact claim, and 1e-9
+refutes the reopen and the rounding agreement.
+
+Only Linux x86_64 under Python 3.11 and 3.12, with the SkylakeX, Haswell and
+Sandybridge kernels, has been run. Windows, macOS and other LAPACK builds have
+not.
 
 `tests/fixtures/lab/malformed/` is written by `write_malformed_fixtures`, and a
 test checks that the committed files equal the generator's output. Oversized
@@ -207,8 +232,10 @@ a task pointer.
   bundles), and add example sources for the four kinds not exercised.
 - T093: generate refused requests from `Session._dispatch`'s request types, and
   decide whether a refused recording operation belongs in the saved workspace.
-- T094: reopen the goldens on a second platform, and add goldens for other
-  provider kinds.
+- T094: reopen the goldens on Windows, macOS arm64 and another LAPACK build;
+  decide whether CIW's reopen should compare the energy recomputation within a
+  declared tolerance rather than bit for bit; add goldens for other provider
+  kinds.
 - T095: extend the malformed matrix to the other kinds' source parsers, and
   re-run it once CIW makes the changes requested below.
 - T096: combined mutations that restore consistency; content-bound batch

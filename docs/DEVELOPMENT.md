@@ -161,11 +161,16 @@ the Python 3.12 PLSR and FTR interpreter, so reproducing it needs Python 3.12+,
 Git and network access for the pinned providers and packages; on Python 3.11
 the gate refuses to compare and runs only with `--no-compare`. Until `lab/`
 holds a retained run, the comparison refuses and `--no-compare` is required.
+NumPy's OpenBLAS picks its kernels for the CPU, and kernels round differently;
+`--blas-core` runs the clean room on another OpenBLAS kernel, so the retained
+run can be verified on the kernels other hosts pick, and `gate.json` records
+the kernel the clean room ran (see [the lab guide](LAB.md)).
 
 ```sh
 python -m pip install -e '.[dev,lab]'
 python -m pytest -q tests/test_lab_core.py
 python scripts/check_lab.py --output-dir results/lab-gate     # Python 3.12+
+python scripts/check_lab.py --blas-core Haswell --output-dir results/lab-gate-haswell   # also Sandybridge
 ```
 
 New lab tasks follow the [authoring contract](lab/AUTHORING.md). Regenerate

@@ -245,18 +245,35 @@ def test_t094_golden_workspaces_reopen_with_current_code(tmp_path, monkeypatch):
     if fixtures.fixture_root() is None:
         pytest.skip("tests/fixtures/lab is not reachable")
     report = run("T094", tmp_path / "run")
-    bit_exact = claim(report, "Reopening recomputes the golden energy analysis bit for bit")
-    platform = fixtures.platform_fingerprint()
-    if bit_exact["value"]["refused_as_platform_dependent"] and platform != fixtures.GOLDEN_PLATFORM:
-        # Reopen compares a LAPACK-backed recomputation bit for bit; T094 records this as its own finding.
-        pytest.xfail(f"golden energy analysis is not bit-exact on this platform: {platform}")
+    # Every claim holds, with the same values, on the platform that wrote the goldens and on one that rounds
+    # differently (for example OPENBLAS_CORETYPE=Haswell or Sandybridge).
     assert report["state"] == "completed"
-    assert bit_exact["evidence_status"] == "numerically_verified"
     primary = report["findings"][0]
     assert primary["evidence_status"] == "numerically_verified" and checks_pass(primary)
     assert primary["value"]["golden/energy-accuracy-workspace.json"]["bundles"] == 2
     assert primary["value"]["golden/oscillator-workspace.json"]["results"] == 3
     assert claim(report, "Golden fixture SHA-256")["value"] == fixtures.GOLDEN_MANIFEST
+    strict = claim(report, "Unmodified reopen accepts the golden energy analysis only where it recomputes bit")
+    assert strict["evidence_status"] == "numerically_verified" and strict["value"] == {
+        "workspaces_reopened_unmodified": 3, "outcomes_as_predicted": 3,
+        "refusal_where_a_bit_differs": section.ENERGY_PLATFORM_REFUSAL}
+    rounding = claim(report, "The golden energy analysis recomputed with the current code agrees")
+    assert rounding["evidence_status"] == "numerically_verified" and rounding["value"]["outside_tolerance"] == 0
+    assert rounding["value"]["recomputations"] >= 1 and rounding["value"]["float_fields_each"] == 47
+    golden = artifact(tmp_path / "run", "T094", "golden.json")
+    energy = golden["unmodified_reopen"]["golden/energy-accuracy-workspace.json"]
+    assert golden["platform_is_golden"] == (fixtures.platform_fingerprint() == fixtures.GOLDEN_PLATFORM)
+    references = [check["reference"] for check in strict["basis"]["checks"]]
+    if golden["platform_is_golden"]:
+        # Where the goldens were written, CIW's reopen recomputes the energy analysis bit for bit.
+        assert energy["outcome"] is None and all(r["bit_identical"] for r in golden["energy_recomputations"])
+        assert any("GOLDEN_PLATFORM" in reference for reference in references)
+    else:
+        assert not any("GOLDEN_PLATFORM" in reference for reference in references)
+        if not all(r["bit_identical"] for r in golden["energy_recomputations"]):
+            # Elsewhere CIW refuses the bit-exact comparison by name, and T094 shows rounding-level agreement.
+            assert energy["outcome"] == section.ENERGY_PLATFORM_REFUSAL
+            assert golden["platform_refusals"] == ["golden/energy-accuracy-workspace.json"]
     heat = claim(report, "The retained golden numerical-heat bundle")
     assert heat["evidence_status"] == "numerically_verified" and heat["value"] == [0, 16, 24, 16, 0]
     assert "independent_check" not in heat["basis"] and len(heat["basis"]["checks"]) == 4
@@ -267,6 +284,59 @@ def test_t094_golden_workspaces_reopen_with_current_code(tmp_path, monkeypatch):
     monkeypatch.setattr(runner, "repository_path", lambda *parts: None)
     blocked = run("T094", tmp_path / "blocked")
     assert blocked["state"] == "blocked" and blocked["findings"] == []
+
+
+# (fingerprint equals GOLDEN_PLATFORM, shift of the recomputed reference mean) -> T094 state and labels of its
+# tolerant reopen, unmodified reopen and rounding findings. Two ulps is another platform's rounding (Haswell and
+# Sandybridge move this entry by one or two); 1e-9 is drift no platform explains.
+@pytest.mark.parametrize("golden_platform,shift,state,labels", [
+    (False, 2 * 2.0 ** -52, "completed", ("numerically_verified",) * 3),
+    (True, 2 * 2.0 ** -52, "partial", ("numerically_verified", "not_established", "numerically_verified")),
+    (False, 1e-9, "partial", ("not_established", "numerically_verified", "not_established"))])
+def test_t094_separates_platform_rounding_from_drift(tmp_path, monkeypatch, golden_platform, shift, state, labels):
+    if fixtures.fixture_root() is None:
+        pytest.skip("tests/fixtures/lab is not reachable")
+    from ciw import energy_records
+    genuine = energy_records.analyze
+
+    def analyze(log):
+        data = genuine(log)
+        data["reference"]["mean"][1] += shift
+        return data
+
+    monkeypatch.setattr(energy_records, "analyze", analyze)
+    other = dict(fixtures.GOLDEN_PLATFORM, openblas_core="Haswell")
+    monkeypatch.setattr(section, "platform_fingerprint", lambda: dict(fixtures.GOLDEN_PLATFORM if golden_platform
+                                                                      else other))
+    report = run("T094", tmp_path)
+    assert report["state"] == state
+    tolerant, strict, rounding = (report["findings"][0], claim(report, "Unmodified reopen accepts"),
+                                  claim(report, "The golden energy analysis recomputed"))
+    assert (tolerant["evidence_status"], strict["evidence_status"], rounding["evidence_status"]) == labels
+    # CIW refuses every recomputation that differs in any bit, and names the refusal.
+    energy = artifact(tmp_path, "T094", "golden.json")["unmodified_reopen"]["golden/energy-accuracy-workspace.json"]
+    assert energy == {"outcome": section.ENERGY_PLATFORM_REFUSAL, "predicted": section.ENERGY_PLATFORM_REFUSAL}
+    assert strict["value"]["outcomes_as_predicted"] == 3
+
+
+def test_platform_fingerprint_names_the_openblas_kernel_numpy_runs(monkeypatch):
+    core = fixtures.openblas_core()
+    assert fixtures.platform_fingerprint().get("openblas_core") == core
+    assert fixtures.GOLDEN_PLATFORM["openblas_core"] == "SkylakeX"
+    # Where NumPy's BLAS names no kernel (another BLAS, no bundled OpenBLAS) the key is left out.
+    monkeypatch.setattr(fixtures, "openblas_core", lambda: None)
+    assert "openblas_core" not in fixtures.platform_fingerprint()
+    if core is None or platform.machine().lower() not in ("x86_64", "amd64"):
+        pytest.skip("NumPy's BLAS names no x86-64 OpenBLAS kernel here")
+    # The name is the kernel OpenBLAS loaded, which OPENBLAS_CORETYPE forces; NumPy's build configuration cannot
+    # tell (it names the build target).
+    source = str(Path(fixtures.__file__).resolve().parents[2])
+    environment = dict(os.environ, OPENBLAS_CORETYPE="Sandybridge",
+                       PYTHONPATH=os.pathsep.join(filter(None, (source, os.environ.get("PYTHONPATH")))))
+    forced = subprocess.run([sys.executable, "-c", "from ciw.lab.blas_probe import openblas_core; "
+                             "print(openblas_core())"], env=environment, capture_output=True, text=True, check=True,
+                            timeout=120).stdout.strip()
+    assert forced == "Sandybridge"
 
 
 def test_committed_malformed_fixtures_match_their_generator():

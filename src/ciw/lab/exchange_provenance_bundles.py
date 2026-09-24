@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import ast
 import base64
+from contextlib import nullcontext
 from copy import deepcopy
 from hashlib import sha256
 import inspect
@@ -42,10 +43,11 @@ from .svg import line_plot
 from .exchange_provenance_bundles_fixtures import (FABRICATED_SOURCE_TREE, GOLDEN_MANIFEST, GOLDEN_PLATFORM,
                                                    GOLDEN_SCR_ENGINE_SHA256, SYNTHETIC_BINDING, Client,
                                                    ExecutionForbidden, add_provider_content, build_energy_session,
-                                                   example_bytes, execution_guard, execution_paths,
-                                                   fabricated_heat_catalog, fixture_root, heat_reference,
-                                                   malformed_fixtures, merge_catalogs, path_label,
-                                                   platform_fingerprint, repository_example, source_payload,
+                                                   energy_recomputation_within, example_bytes, execution_guard,
+                                                   execution_paths, fabricated_heat_catalog, fixture_root,
+                                                   heat_reference, malformed_fixtures, merge_catalogs, path_label,
+                                                   platform_fingerprint, repository_example,
+                                                   retained_energy_analyses, source_payload,
                                                    workflow_entry_points)
 from . import exchange_provenance_bundles_providers as providers
 
@@ -191,11 +193,13 @@ NEXT_STEPS = {
              "instead of the hand-written classes, and compare the same state digests; and decide, as a CIW design "
              "question, whether a refused recording operation should stay in the saved workspace as an execution "
              "record (the retained counterexample) or be kept out of it."),
-    "T094": ("Deferred research question: reopen the golden workspaces on a second platform (Windows x86-64, macOS "
-             "arm64 or another NumPy/LAPACK build) to learn whether the bit-for-bit energy recomputation refuses the "
-             "energy golden there, as the platform fingerprint in golden.json anticipates; and retain golden "
-             "workspaces for provider kinds other than numerical-heat, produced by their pinned providers, so that "
-             "validator drift in those kinds is caught at reopen."),
+    "T094": ("Deferred research question: reopen the golden workspaces on Windows x86-64, macOS arm64 and a NumPy "
+             "built on another LAPACK to learn whether the energy recomputation stays within the rounding tolerance "
+             "measured across three OpenBLAS kernels on one x86-64 host; decide, as a CIW design question, whether "
+             "reopen should compare the energy recomputation within a declared tolerance instead of bit for bit, so "
+             "that a workspace written on one platform reopens on another; and retain golden workspaces for "
+             "provider kinds other than numerical-heat, produced by their pinned providers, so that validator drift "
+             "in those kinds is caught at reopen."),
     "T095": ("Deferred research question: apply the malformed matrix to the source parsers of the workbench kinds "
              "other than energy-accuracy, which parse after the same canonical-base64 and byte-budget checks; and, "
              "once CIW makes the changes docs/lab/EXCHANGE_BUNDLES.md requests (read_json refusing an overflowing "
@@ -796,18 +800,47 @@ def unchanged_after_refusal(ctx):
 
 # ciw.energy_workflow refuses a retained analysis whose fresh recomputation differs in any bit.
 ENERGY_PLATFORM_REFUSAL = "Retained energy analysis binding differs"
+# T094's own comparison of a recomputed golden energy analysis with the retained one, per float
+# |retained - fresh| <= abs + rel |retained|, every other field exact (energy_recomputation_within).
+ENERGY_ROUNDING_TOLERANCE = {"abs": 1e-14, "rel": 1e-14}
+ENERGY_ROUNDING_BASIS = (
+    "Per-float tolerance 1e-14 absolute plus 1e-14 relative, set from the spread measured with the golden energy "
+    "workspace on one x86-64 host under three OpenBLAS kernels: SkylakeX, which wrote it, recomputes it bit for bit; "
+    "under Haswell and Sandybridge the reference mean and covariance (order-one results of 2x2 LAPACK solves) move "
+    "by at most 2 ulps (2.8e-16 relative) and the error fields derived from them, which cancel to near zero, by at "
+    "most 2.2e-16 absolute. The margin is about 45 times the absolute and 36 times the relative spread; this run's "
+    "differences are in golden.json.")
 
 
-def _reopen_golden(path: Path, target: Path) -> dict:
+def _retained_analyses(raw: bytes) -> dict:
+    try:
+        return retained_energy_analyses(json.loads(raw))
+    except ValueError:  # not JSON: reopen refuses it and the manifest check names it
+        return {}
+
+
+def _reopen_golden(path: Path, target: Path, retained=None) -> dict:
+    """Reopen one golden workspace under the execution guard; a refusal is returned as its text.
+
+    With ``retained`` (retained energy analyses by log digest) the energy recomputation is compared to
+    ENERGY_ROUNDING_TOLERANCE instead of bit for bit; without it CIW's reopen runs unmodified.
+    """
     Session = _session_class()
+    session, outcome, compared = None, None, []
     with execution_guard() as guard:
-        session = Session.from_workspace(path, target)
-    catalog = session.workbench.serialize()
-    return {"session": session, "attempts": list(guard["attempts"]), "bundles": catalog["bundles"],
+        within = nullcontext() if retained is None else energy_recomputation_within(
+            retained, ENERGY_ROUNDING_TOLERANCE, compared)
+        try:
+            with within:
+                session = Session.from_workspace(path, target)
+        except (ValueError, ExecutionForbidden) as exc:
+            outcome = str(exc)
+    return {"outcome": outcome, "session": session, "attempts": list(guard["attempts"]), "compared": compared,
+            "bundles": [] if session is None else session.workbench.serialize()["bundles"],
             "recomputations": dict(guard["recomputations"])}
 
 
-@task("T094", changed_files=(MODULE, FIXTURES, "tests/fixtures/lab/golden"),
+@task("T094", changed_files=(MODULE, FIXTURES, "src/ciw/lab/blas_probe.py", "tests/fixtures/lab/golden"),
       regression_tests=(f"{TESTS}::test_t094_golden_workspaces_reopen_with_current_code",
                         f"{TESTS}::test_golden_manifest_matches_committed_fixtures"))
 def golden_retained_bundles(ctx):
@@ -826,7 +859,7 @@ def golden_retained_bundles(ctx):
         return {"state": "blocked", "fields": fields, "findings": []}
     from ..declared_workload import PINS
     from ..proved_heat import PIN as PROVED_HEAT_PIN
-    rows, attempts, failures, digests, platform_refusals = {}, [], [], {}, []
+    rows, attempts, failures, digests, compared, unmodified = {}, [], [], {}, [], {}
     reference_mismatch, heat_refusal, heat_values, heat_runtime = None, None, None, None
     with tempfile.TemporaryDirectory(prefix="ciw-lab-t094-") as scratch:
         for index, (name, expected) in enumerate(sorted(GOLDEN_MANIFEST.items())):
@@ -834,16 +867,23 @@ def golden_retained_bundles(ctx):
             if not path.is_file():
                 failures.append(f"{name}: missing")
                 continue
-            digests[name] = sha256(path.read_bytes()).hexdigest()
-            try:
-                opened = _reopen_golden(path, Path(scratch) / str(index))
-            except (ValueError, ExecutionForbidden) as exc:
-                failures.append(f"{name}: {exc}")
-                if str(exc) == ENERGY_PLATFORM_REFUSAL:
-                    # Reopen recomputes the energy analysis (LAPACK solves) and compares it bit for bit.
-                    platform_refusals.append(name)
+            raw = path.read_bytes()
+            digests[name] = sha256(raw).hexdigest()
+            # Reopen recomputes the energy analysis (LAPACK solves) and compares it bit for bit, which depends on
+            # the platform. The first reopen compares it to rounding tolerance instead, so every other part of
+            # reopen validation decides on any platform; the second is CIW's, unmodified.
+            opened = _reopen_golden(path, Path(scratch) / f"{index}-rounding", _retained_analyses(raw))
+            strict = _reopen_golden(path, Path(scratch) / f"{index}-unmodified")
+            attempts += opened["attempts"] + strict["attempts"]
+            compared += opened["compared"]
+            # Bitwise prediction: CIW's reopen ends as the first, except that a recomputation differing from the
+            # retained analysis in any bit is refused by name.
+            differs = any(not record["bit_identical"] for record in opened["compared"])
+            unmodified[name] = {"outcome": strict["outcome"],
+                                "predicted": ENERGY_PLATFORM_REFUSAL if differs else opened["outcome"]}
+            if opened["outcome"] is not None:
+                failures.append(f"{name}: {opened['outcome']}")
                 continue
-            attempts += opened["attempts"]
             session, bundles = opened["session"], opened["bundles"]
             row = {"sha256": digests[name], "bundles": len(bundles), "results": len(session.results),
                    "executions": len(session.executions), "kinds": sorted({b["kind"] for b in bundles})}
@@ -870,31 +910,68 @@ def golden_retained_bundles(ctx):
             rows[name] = row
     manifest_mismatch = sum(digests.get(name) != expected for name, expected in GOLDEN_MANIFEST.items())
     fingerprint = platform_fingerprint()
+    golden_platform = fingerprint == GOLDEN_PLATFORM
+    differing = sum(not record["bit_identical"] for record in compared)
+    outside = sum(not record["within_tolerance"] for record in compared)
+    matched = sum(row["outcome"] == row["predicted"] for row in unmodified.values())
     ctx.artifact_json("golden.json", {"root": "tests/fixtures/lab" if root.name == "lab" else str(root),
                                       "manifest": GOLDEN_MANIFEST, "observed": rows, "failures": failures,
-                                      "platform_refusals": platform_refusals, "execution_attempts": attempts,
-                                      "platform": fingerprint, "golden_platform": GOLDEN_PLATFORM})
+                                      "execution_attempts": attempts, "unmodified_reopen": unmodified,
+                                      "platform_refusals": sorted(name for name, row in unmodified.items()
+                                                                  if row["outcome"] == ENERGY_PLATFORM_REFUSAL),
+                                      "energy_recomputations": compared, "tolerance": ENERGY_ROUNDING_TOLERANCE,
+                                      "platform": fingerprint, "golden_platform": GOLDEN_PLATFORM,
+                                      "platform_is_golden": golden_platform})
     value = {name: {key: row[key] for key in ("sha256", "bundles", "results", "executions", "kinds")}
              for name, row in rows.items()}
+    # CIW's unmodified reopen must end as predicted everywhere; on the platform that wrote the goldens every
+    # recomputation must also be bit-identical. Which branch applied is in the check and in golden.json.
+    strict_checks = [_refusal(f"unmodified reopen of {name}, predicted from the bitwise comparison of its energy "
+                              "recomputations with the retained analysis", row["predicted"] or "none", row["outcome"])
+                     for name, row in sorted(unmodified.items())]
+    strict_checks.append(_check("energy recomputations compared with the retained analysis", len(compared), 1, "ge"))
+    if golden_platform:
+        strict_checks.append(_check("energy recomputations differing in any bit on the platform that wrote the "
+                                    "goldens (platform_fingerprint() equal to GOLDEN_PLATFORM)", differing))
+    first = compared[0] if compared else {}
     findings = [
-        finding("The golden retained workspaces reopen and validate with the current code without execution",
+        finding("The golden retained workspaces reopen and validate with the current code without execution, the "
+                "energy recomputation compared to rounding tolerance instead of bit for bit",
                 "computational_pipeline", value,
                 {"checks": [_check("golden files differing from GOLDEN_MANIFEST", manifest_mismatch),
-                            _check("golden workspaces refused or missing", len(failures)),
-                            _check("execution entry points reached while reopening", len(attempts)),
+                            _check("golden workspaces refused or missing, the energy recomputation compared to "
+                                   "ENERGY_ROUNDING_TOLERANCE", len(failures)),
+                            _check("execution entry points reached while reopening (both reopens)", len(attempts)),
                             _check("replays whose numerical identity differs from their original",
                                    sum(not row.get("replay_numerical_identity_equal", True) for row in rows.values()))]},
                 uncertainty=EXACT_COUNT, tolerance=EXACT),
         finding("Golden fixture SHA-256 digests", "provenance", dict(sorted(digests.items())),
                 {"checks": [_check("digests differing from the recorded manifest", manifest_mismatch)]},
                 uncertainty=EXACT_COUNT, tolerance=EXACT),
-        finding("Reopening recomputes the golden energy analysis bit for bit on this platform", "numerical",
-                {"refused_as_platform_dependent": platform_refusals},
-                {"checks": [_check("golden workspaces refused with 'Retained energy analysis binding differs'",
-                                   len(platform_refusals))]},
+        finding("Unmodified reopen accepts the golden energy analysis only where it recomputes bit for bit, as on "
+                "the platform that wrote it, and otherwise refuses it by name as platform-dependent", "numerical",
+                {"workspaces_reopened_unmodified": len(unmodified), "outcomes_as_predicted": matched,
+                 "refusal_where_a_bit_differs": ENERGY_PLATFORM_REFUSAL},
+                {"checks": strict_checks},
                 uncertainty={"kind": "roundoff", "value": 0,
-                             "basis": "bit-exact canonical JSON comparison of a LAPACK-backed recomputation; "
-                                      "depends on the NumPy/LAPACK build and CPU kernels (fingerprint in golden.json)"},
+                             "basis": "bit-exact canonical JSON comparison, as CIW makes it, of LAPACK-backed "
+                                      "recomputations; which of them differ depends on the NumPy/LAPACK build and the "
+                                      "OpenBLAS kernel. The platform fingerprint, whether it equals GOLDEN_PLATFORM "
+                                      "and each unmodified outcome are in golden.json."},
+                tolerance=EXACT),
+        finding("The golden energy analysis recomputed with the current code agrees with the retained analysis to "
+                "1e-14 absolute plus 1e-14 relative in every float and exactly in every other field", "numerical",
+                {"recomputations": len(compared), "float_fields_each": first.get("float_fields", 0),
+                 "other_fields_each": first.get("other_fields", 0), "outside_tolerance": outside},
+                {"checks": [_check("energy recomputations compared with the retained analysis", len(compared), 1, "ge"),
+                            _check("recomputations without a retained analysis of the same log",
+                                   sum(not record["retained"] for record in compared)),
+                            _check("recomputed floats outside ENERGY_ROUNDING_TOLERANCE",
+                                   sum(record.get("floats_outside_tolerance", 0) for record in compared)),
+                            _check("recomputed non-float fields or structure differing",
+                                   sum(record.get("other_fields_differing", 0) for record in compared))]},
+                uncertainty={"kind": "roundoff", "value": ENERGY_ROUNDING_TOLERANCE["abs"],
+                             "basis": ENERGY_ROUNDING_BASIS},
                 tolerance=EXACT),
     ]
     if heat_values is not None:
@@ -922,25 +999,51 @@ def golden_retained_bundles(ctx):
     state = _settle("completed" if not failures and not manifest_mismatch else "partial", findings)
     fields = _fields(
         "Workspaces saved by CIW earlier (golden fixtures) still reopen and validate with the current code, with "
-        "no provider binding and no execution.",
+        "no provider binding and no execution, on any platform; the bit-for-bit recomputation of the energy analysis "
+        "that reopen also requires holds only where the platform rounds as the one that wrote them, and elsewhere "
+        "reopen refuses it by name.",
         "Golden = exact saved bytes recorded in GOLDEN_MANIFEST; validation = Session.from_workspace (structure, "
-        "identities, commitments, energy-analysis recomputation) under the execution guard.",
+        "identities, commitments, energy-analysis recomputation) under the execution guard, run twice: with the "
+        "recomputed energy analysis compared to the retained one per float within |retained - fresh| <= 1e-14 + "
+        "1e-14 |retained| (every other field exactly), and unmodified, where CIW compares it bit for bit. Bitwise "
+        "prediction: the unmodified reopen ends as the first, except that a recomputation differing from the "
+        "retained analysis in any bit is refused as 'Retained energy analysis binding differs'.",
         [f"tests/fixtures/lab/{name}" for name in sorted(GOLDEN_MANIFEST)],
-        "SHA-256 of each file; reopen outcome; retained replay receipts; retained SCR values and runtime identity.",
-        "All digests match, all reopen, zero execution attempts, replay numerical identity preserved, retained heat "
-        "values equal the integer reference.",
-        "Hash each golden file, reopen it into a temporary directory under the guard, inspect its bundles, compare "
-        "the retained heat field with the integer reference and its runtime identity with CIW's pins, and attempt "
-        "an unbound replay.",
-        f"{len(rows)} golden workspaces reopened, {len(failures)} failures ({len(platform_refusals)} platform-dependent "
-        f"energy recomputations), {manifest_mismatch} digest mismatches; retained heat values {heat_values}.",
-        "Exact.",
+        "SHA-256 of each file; both reopen outcomes; retained replay receipts; each energy recomputation compared "
+        "with the retained analysis bit for bit and per float; the platform fingerprint (system, NumPy, BLAS and "
+        "LAPACK builds, the OpenBLAS kernel in use, SIMD) against GOLDEN_PLATFORM; retained SCR values and runtime "
+        "identity.",
+        "All digests match; every workspace reopens with the energy recomputation compared to rounding tolerance, "
+        "with zero execution attempts and replay numerical identity preserved; every recomputed float within the "
+        "tolerance and every other field equal; every unmodified reopen ends as predicted; on the platform that "
+        "wrote the goldens every recomputation is bit-identical; retained heat values equal the integer reference.",
+        "Hash each golden file, reopen it into temporary directories under the guard with the tolerant energy "
+        "comparison and unmodified, inspect its bundles, compare each energy recomputation with the retained "
+        "analysis, compare the retained heat field with the integer reference and its runtime identity with CIW's "
+        "pins, and attempt an unbound replay.",
+        f"{len(rows)} golden workspaces reopen and validate with the energy recomputation compared to rounding "
+        f"tolerance ({len(failures)} failures, {manifest_mismatch} digest mismatches); {len(compared)} energy "
+        f"recomputations, {differing} of them differing from the retained analysis in some bit on this platform and "
+        f"{outside} outside the tolerance; {matched} of {len(unmodified)} unmodified reopens end as predicted; "
+        f"retained heat values {heat_values}.",
+        "Exact counts and digests. The energy recomputation is compared to 1e-14 absolute plus 1e-14 relative per "
+        "float, about 45 times the absolute and 36 times the relative spread measured across three OpenBLAS "
+        "kernels, and bit for bit where CIW compares it.",
         ["fixture drift (digest)", "schema or validator drift breaking reopen", "execution during reopen",
          "replay identity drift", "unbound replay of a provider-backed golden bundle",
-         "retained runtime identity differing from CIW's pins", "floating-point recomputation drift"],
-        ["Reopen recomputes the retained energy analysis in floating point and compares it bit for bit; a "
-         "platform whose NumPy/LAPACK rounds differently refuses the golden energy workspace. The platform "
-         "fingerprint of this run and of the golden's origin are retained in golden.json.",
+         "retained runtime identity differing from CIW's pins", "floating-point recomputation drift beyond rounding",
+         "a platform refusal other than the named one, or one where no bit differs",
+         "bit-exact recomputation lost on the platform that wrote the goldens"],
+        ["Bit-exact reopen of the energy golden is only available on the platform that wrote it (GOLDEN_PLATFORM: "
+         "Linux x86_64, NumPy 2.4.3, scipy-openblas 0.3.31.dev running its SkylakeX kernels). CIW compares the "
+         "recomputed analysis bit for bit, and a platform whose NumPy/LAPACK build or OpenBLAS kernel rounds "
+         "differently refuses the workspace as 'Retained energy analysis binding differs'; forced to the Haswell or "
+         "Sandybridge kernels on the same host it does. T094 then shows that the recomputation agrees to rounding "
+         "tolerance, which CIW's reopen does not accept. The platform fingerprints and which branch applied are "
+         "retained in golden.json.",
+         "The rounding tolerance was measured on one x86-64 host under three OpenBLAS kernels; other LAPACK builds, "
+         "operating systems and architectures have not been measured. An equal platform fingerprint does not "
+         "guarantee equal rounding, and outside NumPy's bundled OpenBLAS the kernel is not named.",
          "The retained runtime identity is metadata written by the saving run: it is compared with CIW's pins, "
          "but reopen cannot show that the named engine produced the values.",
          "The golden numerical-heat workspace records host paths of the machine that produced it; they are "

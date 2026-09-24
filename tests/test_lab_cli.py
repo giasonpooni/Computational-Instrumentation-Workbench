@@ -183,6 +183,60 @@ def test_gate_record_names_the_bindings_the_queue_received(tmp_path, monkeypatch
     assert record["providers"] == passed and record["python"] == sys.version.split()[0]
 
 
+def test_gate_runs_and_records_the_requested_openblas_kernel(tmp_path, monkeypatch, capsys):
+    from types import SimpleNamespace
+    reproduce = _script("reproduce_lab")
+    commands, answers = [], {"core": "Haswell"}
+
+    def run(command, **kwargs):  # the wheel build, installation, tests and queue are recorded, not run
+        command = [str(part) for part in command]
+        commands.append((command, kwargs.get("env") or {}))
+        if command[1:4] == ["-m", "pip", "wheel"]:
+            dist = Path(command[command.index("--wheel-dir") + 1])
+            dist.mkdir(parents=True)
+            (dist / "ciw-0-py3-none-any.whl").write_bytes(b"wheel")
+
+    def ask(command, **kwargs):  # what the clean-room interpreter answers
+        if reproduce.BLAS_CORE_QUERY in [str(part) for part in command]:
+            return SimpleNamespace(stdout=answers["core"] + "\n")
+        return SimpleNamespace(stdout=str(tmp_path / "site" / "ciw" / "__init__.py"))
+
+    def gate(output, *options):
+        commands.clear()
+        monkeypatch.setattr(sys, "argv", ["reproduce_lab.py", "--no-compare", "--output-dir", output,
+                                          "--temporary-root", str(tmp_path), *options])
+        return reproduce.main()
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("OPENBLAS_CORETYPE", "Sandybridge")  # the calling shell's choice never reaches the clean room
+    monkeypatch.setattr(reproduce, "run", run)
+    monkeypatch.setattr(reproduce, "subprocess", SimpleNamespace(run=ask))
+    monkeypatch.setattr(reproduce, "venv", SimpleNamespace(EnvBuilder=lambda **kwargs: SimpleNamespace(
+        create=lambda path: None)))
+    assert gate("haswell", "--blas-core", "haswell") == 0  # OpenBLAS matches kernel names without case
+    queue = next(env for command, env in commands if command[1:5] == ["-m", "ciw", "lab", "run"])
+    assert queue["OPENBLAS_CORETYPE"] == "haswell"
+    record = json.loads((tmp_path / "haswell" / "gate.json").read_text(encoding="utf-8"))
+    assert record["openblas_core"] == "Haswell" and record["openblas_coretype"] == "haswell"
+    assert "on OpenBLAS kernel Haswell" in capsys.readouterr().out
+    # OpenBLAS ignores a kernel name it does not know and picks its own: the run is refused before any test runs.
+    answers["core"] = "SkylakeX"
+    with pytest.raises(SystemExit, match="runs the OpenBLAS kernel SkylakeX, not the requested Zen"):
+        gate("zen", "--blas-core", "Zen")
+    assert not [command for command, _ in commands if "pytest" in command or "lab" in command]
+    # Without the option the kernel OpenBLAS picked for the CPU is recorded.
+    assert gate("default") == 0
+    assert all("OPENBLAS_CORETYPE" not in env for command, env in commands if env)
+    record = json.loads((tmp_path / "default" / "gate.json").read_text(encoding="utf-8"))
+    assert record["openblas_core"] == "SkylakeX" and record["openblas_coretype"] is None
+    # A NumPy whose BLAS names no kernel is recorded as such, and cannot be asked for one.
+    answers["core"] = ""
+    assert gate("unnamed") == 0
+    assert json.loads((tmp_path / "unnamed" / "gate.json").read_text(encoding="utf-8"))["openblas_core"] is None
+    with pytest.raises(SystemExit, match=r"kernel \(none reported\), not the requested Haswell"):
+        gate("unnamed-haswell", "--blas-core", "Haswell")
+
+
 def test_clean_room_tests_see_the_bound_providers(tmp_path, monkeypatch):
     reproduce = _script("reproduce_lab")
     monkeypatch.chdir(tmp_path)
@@ -240,7 +294,13 @@ def test_gate_compares_only_under_python_312_and_resolves_its_temporary_root(tmp
     assert check.main() == 0
     command = commands[-1]
     assert Path(command[command.index("--temporary-root") + 1]) == (tmp_path / "reltmp").resolve()
-    assert "plsr-python=@venv" not in command
+    assert "plsr-python=@venv" not in command and "--blas-core" not in command
+    # A requested OpenBLAS kernel reaches reproduce_lab.py, which sets and checks it in the clean room.
+    monkeypatch.setattr(sys, "argv", ["check_lab.py", "--no-compare", "--stack-root", "stack",
+                                      "--output-dir", "out", "--blas-core", "Sandybridge"])
+    assert check.main() == 0
+    command = commands[-1]
+    assert command[command.index("--blas-core") + 1] == "Sandybridge"
 
 
 def test_refresh_retains_only_a_run_that_bound_every_provider(tmp_path, monkeypatch):
