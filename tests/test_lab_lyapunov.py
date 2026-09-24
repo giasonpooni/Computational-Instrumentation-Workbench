@@ -9,6 +9,7 @@ missing interpreter fails the provider tests instead of skipping them.
 """
 import ast
 from fractions import Fraction
+import hashlib
 import importlib.util
 import json
 import math
@@ -280,6 +281,54 @@ def test_checks_are_unconditional_and_observed_values_are_computed():
                 problems.append(f"line {node.lineno}: check built under 'if {ast.unparse(ancestor.test)}'")
             ancestor = parents.get(ancestor)
     assert problems == []
+
+
+# SHA-256 of T107's declared inputs (kind, kappa, A, P, x and resolution of every member, hex spelled); built
+# without BLAS, they are the same on every OpenBLAS kernel (checked under SkylakeX, Haswell, Sandybridge, Nehalem
+# and Prescott), so a BLAS product or LAPACK call that entered the family would change it on some kernel.
+T107_INPUTS_DIGEST = "0f7b956e7e020ea5acc156395d424553ed6ff43338f15aab91e93217a1010f55"
+
+
+def test_boundary_family_is_exact_and_kernel_free(monkeypatch, tmp_path):
+    """T107's near-boundary family calls no numpy.linalg routine and declares the same inputs on every kernel.
+
+    The monkeypatch catches LAPACK calls; BLAS reached through ``@`` cannot be intercepted, so the declared
+    inputs are pinned by digest, which a run under any other kernel must reproduce. Its windows keep 3/16 res
+    from PLSR's code thresholds and its straddle pairs cross -res and +res exactly; the CIW transcription of the
+    decision order gives every window case the code its exact window predicts.
+    """
+    def refuse(*args, **kwargs):
+        raise AssertionError("LAPACK reached the T107 family")
+
+    for name in ("eigvalsh", "eigh", "eigvals", "eig", "solve", "inv", "qr", "norm", "cholesky"):
+        monkeypatch.setattr(np.linalg, name, refuse)
+    monkeypatch.setattr(R, "decrease_matrix", refuse)
+    family = L.boundary_family()
+    monkeypatch.undo()
+    declared = [[m["kind"], m["kappa"], R.hexed(m["A"]), R.hexed(m["P"]), R.hexed(m["x"]),
+                 float(m["resolution"]).hex()] for m in family]
+    assert hashlib.sha256(json.dumps(declared).encode()).hexdigest() == T107_INPUTS_DIGEST
+    window = [m for m in family if m["kind"] == "window"]
+    straddle = [m for m in family if m["kind"] == "straddle"]
+    assert len(window) == 90 and len(straddle) == 24
+    assert all(L.window_distance(kappa) >= L.T107_DISTANCE for kappa in L.T107_KAPPAS)
+    assert all(m["in_window"] for m in window)
+    for m in window:
+        exact = R.exact_form(m["A"], m["P"])
+        quotient = R.exact_quadratic(m["x"], exact) / sum(Fraction(v) ** 2 for v in m["x"])
+        assert abs(quotient - Fraction(m["resolution"])) >= L.T107_DISTANCE * Fraction(m["resolution"])
+        codes = [R.documented_code(m["A"], m["P"], m["x"], required_margin=r)["code"]
+                 for r in (0.0, 3.0 * m["resolution"])]
+        assert tuple(codes) == m["predicted"], m["kappa"]
+    assert [m["exact_bin"] for m in straddle] == ["[-2, -1) res", "[-1, 0) res"] * 6 + ["[0, 1) res", "[1, 2) res"] * 6
+    assert [m["exact_class"] for m in straddle] == ["negative_definite"] * 12 + ["has_positive_eigenvalue"] * 12
+    # At +res the states keep the scalar gate 3/16 res below its threshold, as the window states do.
+    assert not any(m["scalar_above"] for m in straddle)
+    # Without the provider T107 keeps the exact family finding.
+    report = _run("T107", tmp_path)
+    offline = _finding(report, "The near-boundary family populates every exact resolution bin")
+    assert offline["evidence_status"] == "numerically_verified" and offline["value"]["outside_window"] == 0
+    assert offline["regression_tolerance"] == {"abs": 0.0, "rel": 0.0}
 
 
 @pytest.mark.lab_task("T109")
@@ -655,19 +704,32 @@ def test_t106_status_coverage(reports):
 def test_t107_inconclusive_band(reports):
     report = reports["T107"]
     _completed(report, "provider_backed")
-    for prefix in ("No near-boundary case receives", "Beyond two resolutions", "With a declared margin of three"):
+    for prefix in ("No near-boundary case receives", "Every window case receives", "Beyond two resolutions",
+                   "With a declared margin of three", "Straddle cases within rounding of -res",
+                   "Straddle cases within rounding of +res"):
         assert _label(report, prefix) == "independently_verified"
     assert _finding(report, "No near-boundary case receives")["value"]["violations"] == 0
+    assert _finding(report, "Every window case receives")["value"] == {"window_cases": 90, "mismatches": 0}
     assert _finding(report, "Beyond two resolutions")["value"]["unresolved"] == 0
     assert _finding(report, "With a declared margin of three")["value"]["certified"] == 0
     band = _finding(report, "At required_margin 0 near-boundary spectra")
     assert band["evidence_status"] == "numerically_verified" and band["counterexample"]
-    assert band["value"]["certified"] >= 1 and band["value"]["unsound"] == 0
+    assert band["value"]["certified_window_cases"] >= 1 and band["value"]["unsound"] == 0
     assert "candidate hypothesis" in band["counterexample"]["statement"]
-    assert band["counterexample"]["witness"]["exact_bin"] == "[-2, -1) res"
+    witness = band["counterexample"]["witness"]
+    assert witness["exact_bin"] == "[-2, -1) res" and -2.0 <= witness["exact_window_over_res"][0]
+    assert witness["exact_window_over_res"][1] < -1.0 and witness["margin_ratio"] > 1.0
+    # Which straddle cases resolve is a rounding outcome: only the admissible codes are compared.
+    for side in ("-res", "+res"):
+        straddle = _finding(report, f"Straddle cases within rounding of {side}")
+        assert straddle["value"] == {"cases": 12, "exactly_beyond": 6, "other_codes": 0}
     assert _finding(report, "MARGIN_LOW appears exactly")["value"]["margin_low_observed"] is True
     assert _label(report, "Share of exactly") == "provider_backed"
     assert set(_finding(report, "Share of exactly")["value"]) == {"inconclusive_share"}
+    # Every compared value is exact; only the witness's margin ratio carries rounding (abs 0.03 res, no count change).
+    for record in report["findings"]:
+        expected = {"abs": 0.03, "rel": 0.0} if record is band else {"abs": 0.0, "rel": 0.0}
+        assert record["regression_tolerance"] == expected, record["claim"]
 
 
 @pytest.mark.lab_task("T108")
@@ -711,6 +773,12 @@ def test_t109_adversarial_eigenvalues(reports):
     refused = _finding(report, "solve_lyapunov refuses an exactly Hurwitz plant")
     assert refused["evidence_status"] == "numerically_verified"
     assert "Jordan n=4, lambda=2^-6" in refused["value"]["plants"] and refused["counterexample"]
+    # The witness names the refusing gate, not its kernel-dependent residual, and its condition number is compared
+    # within n^2 u cond(P) (n = 4).
+    witness = refused["counterexample"]["witness"]
+    assert witness["solver_gate"] in L.SOLVER_GATES and "solver_error" not in witness
+    assert refused["regression_tolerance"]["rel"] == pytest.approx(16 * R.U * witness["certificate_condition"],
+                                                                   rel=1e-12)
     assert _label(report, "numpy.linalg.eigvals misplaces") == "numerically_verified"
 
 
@@ -749,6 +817,18 @@ def test_t111_routes(reports):
     assert gate["evidence_status"] == "independently_verified"
     assert set(gate["value"]["violations"].values()) == {0}
     assert gate["value"]["samples"] == {"route family": 400, "near threshold": 408}
+    assert "window and -res straddle forms" in gate["claim"]
+    # Off the coincident crossing every decision keeps far from its threshold: counts and shares are exact.
+    assert gate["regression_tolerance"] == {"abs": 0.0, "rel": 0.0}
+    # Where the scalar gate and the eigenvalue route cross together only the rounding bound is compared; which of
+    # them fires there is a rounding outcome, retained in routes.json.
+    crossing = _finding(report, "At the top eigenvector of T107's forms straddling +res")
+    assert crossing["evidence_status"] == "independently_verified"
+    assert crossing["value"] == {"samples": 12, "violations": {"certified": 0, "excess_beyond_bound": 0,
+                                                               "not_certified_without_exact_increase": 0}}
+    excess = next(c for c in crossing["basis"]["checks"] if c["comparison"] == "signed_le")
+    assert excess["observed"] < 1.0 and excess["tolerance"] == 1.0
+    assert crossing["regression_tolerance"] == {"abs": 0.0, "rel": 0.0}
     assert gate["value"]["not_certified_share"]["route family"] > 0.0
     assert gate["value"]["not_certified_share"]["near threshold"] > 0.0
     assert gate["value"]["agreement"]["route family"]["scalar_vs_exact_sample_sign"] == 1.0
