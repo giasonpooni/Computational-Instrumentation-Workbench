@@ -9,23 +9,28 @@
    "hardware_measured": 0,
    "independently_verified": 0,
    "not_established": 2,
-   "numerically_verified": 8,
+   "numerically_verified": 11,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "Zero violations; relabels refused where detectable; physical claims not established.",
- "experiment": "Audit every retained report below T100 present in the output directory; forge a relabelled physical finding; render a claim containing a pipe character; relabel the energy fixture unsealed, resealed in the same occurrence and resealed in a fresh occurrence (reading the retained bundle's classification); relabel free-energy source policies; inspect the free-energy truth panel basis; save a fabricated numerical-heat bundle and read it through bundle.get and classify_workspace.",
+ "expected_invariant": "Zero label, rendering and basis violations; every generator or executed provider a finding declares named beside its label; relabels refused where detectable; the invented-tree bundle not_established; physical claims not established.",
+ "experiment": "Audit every retained report below T100 present in the output directory (labels, rendered rows, Basis cells, label x basis counts); forge a relabelled physical finding; render a claim containing a pipe character; relabel the energy fixture unsealed, resealed in the same occurrence and resealed in a fresh occurrence (reading the retained bundle's classification); relabel free-energy source policies; inspect the free-energy truth panel basis; save a fabricated numerical-heat bundle with an invented source tree and again with CIW's pinned tree, and read each through bundle.get and classify_workspace.",
  "failure_modes_checked": [
   "unknown label",
   "physical finding with computational label",
   "authority finding established",
   "label missing from rendered row",
+  "rendered row differing from report.finding_row",
+  "declared basis, generator or provider missing from the rendered row",
+  "a component omitted but named inside a declared identity",
+  "an unaccepted acquisition shown as hardware acquisition",
   "origin relabel with and without resealing",
   "occurrence rebinding",
   "free-energy policy relabel",
-  "fabricated provider-kind bundle classified as provider-backed"
+  "fabricated provider-kind bundle classified as provider-backed",
+  "classifier accepting a runtime tree that is not CIW's pin"
  ],
  "findings": [
   {
@@ -45,6 +50,9 @@
    "claim": "Every earlier report present in the output directory when T100 runs keeps labels among the seven and physical and authority findings unestablished without acquisition",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -69,7 +77,7 @@
       "comparison": "abs_le",
       "observed": 0.0,
       "passed": true,
-      "reference": "findings whose rendered label leaves its column",
+      "reference": "findings whose rendered row differs from report.finding_row or whose label leaves its column",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
      }
@@ -78,6 +86,9 @@
    "claim": "Every finding of those reports shows its label in the label column of its rendered Markdown row",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -99,6 +110,80 @@
    "basis": {
     "checks": [
      {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "findings whose rendered Basis column differs from the cell their declared basis prescribes (docs/lab/AUTHORING.md)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Every finding of those reports shows exactly its declared basis in the Basis column of its rendered Markdown row, an acquisition record as hardware acquisition only on a physical finding it establishes",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact counts, digests and string comparisons; no rounding is involved",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": {
+    "basis_violations": 0,
+    "reports_absent_of_T001_T099": 0,
+    "reports_checked": 99
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "findings declaring a generator or an executed provider whose rendered row does not name it",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Every finding of those reports whose basis declares a generator of synthetic inputs or an executed provider names that generator or provider beside its label",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact counts, digests and string comparisons; no rounding is involved",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": {
+    "generator_findings": 245,
+    "not_shown": 0,
+    "provider_findings": 14,
+    "reports_absent_of_T001_T099": 0,
+    "reports_checked": 99
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
       "expected_refusal": "Evidence label refused: basis supports not_established, finding states synthetic",
       "observed_refusal": "Evidence label refused: basis supports not_established, finding states synthetic",
       "passed": true,
@@ -110,6 +195,9 @@
    "claim": "A physical finding relabelled with a computational label is refused by the evidence validator",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -130,7 +218,23 @@
       "comparison": "abs_le",
       "observed": 0.0,
       "passed": true,
-      "reference": "rendered cells beyond three for a claim containing a pipe",
+      "reference": "rendered cells beyond the header's 4 for a claim containing a pipe",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "rendered rows whose third cell is not the finding's label",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "rendered row differing from report.finding_row",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
      }
@@ -139,6 +243,9 @@
    "claim": "render_markdown keeps the label column for a claim containing a pipe character",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -151,7 +258,7 @@
    "unit": null,
    "value": {
     "label_column_shifted": false,
-    "row_cells": 3
+    "row_cells": 4
    }
   },
   {
@@ -193,6 +300,9 @@
    "claim": "CIW keeps the synthetic energy fixture synthetic_only and refuses an unsealed relabel to physical",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -263,6 +373,9 @@
    },
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -322,6 +435,9 @@
    "claim": "CIW refuses free-energy sources that relabel synthetic observations as physical or claim physical validation",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -358,24 +474,103 @@
       "comparison": "abs_le",
       "observed": 0.0,
       "passed": true,
-      "reference": "fabricated bundle numerical findings not labelled provider_backed",
+      "reference": "fabricated bundle numerical findings labelled other than not_established",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "runtime identities of the fabricated bundle compared with CIW's pins",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "runtime identities of the fabricated bundle matched to a CIW pin",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
      }
     ]
    },
-   "claim": "A fabricated, content-consistent numerical-heat bundle reopens and is labelled provider_backed by the workspace classifier, as a provider result is",
+   "claim": "The workspace classifier labels a fabricated, content-consistent numerical-heat bundle whose source tree is not CIW's pinned tree not_established",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact counts, digests and string comparisons; no rounding is involved",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": {
+    "numerical_labels": [
+     "not_established"
+    ],
+    "reader_view": {
+     "adapter_version": "fabricated-by-ciw-lab",
+     "engine_source_binding": "operator_asserted_not_attested",
+     "repository_root": "/fabricated/not-a-provider-checkout",
+     "revision_is_ciw_pin": true,
+     "source_tree_is_ciw_pin": false
+    },
+    "reopen": "accepted",
+    "runtime_pins": [
+     {
+      "matched": null,
+      "problem": "source tree 0000000000000000000000000000000000000000 is not the tree 4068a711534932e8d89bb0d87d373376dafdf6cd CIW records for revision a59aba283b0304faeeb3e5d305087e7709e171ca",
+      "role": "scr",
+      "tree_pinned": null
+     }
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "accepted",
+      "observed_refusal": "accepted",
+      "passed": true,
+      "reference": "classify_workspace (Session.from_workspace validation) of the saved bundle sealed with the pinned tree",
+      "reference_kind": "refusal"
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "copied-pin bundle numerical findings not labelled provider_backed",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "A fabricated numerical-heat bundle sealed with CIW's pinned SCR revision and source tree reopens and is labelled provider_backed by the workspace classifier, as a provider result is",
    "counterexample": {
     "statement": "CIW's retained records and their classification keep provider-backed results visibly distinct from fabricated ones",
     "witness": {
      "adapter_version": "fabricated-by-ciw-lab",
-     "bundle_id": "sha256:9369906b44c440bebfdc3ac93f9442288a392206b0410035773f9af33a87e62c",
+     "bundle_id": "sha256:60f6b1a3bc1e43ffe35c1786663264183e5e3788356702dceb04427e7cd56e77",
      "classified": [
       "provider_backed"
      ],
      "engine_source_binding": "operator_asserted_not_attested",
+     "matched_pins": [
+      "ciw.declared_workload.PINS[numerical-heat]"
+     ],
+     "repository_root": "/fabricated/not-a-provider-checkout",
      "revision_is_ciw_pin": true,
-     "source_tree_is_ciw_pin": false,
+     "source_tree_is_ciw_pin": true,
      "values": [
       0,
       1,
@@ -387,6 +582,9 @@
    },
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -404,10 +602,21 @@
     "reader_view": {
      "adapter_version": "fabricated-by-ciw-lab",
      "engine_source_binding": "operator_asserted_not_attested",
+     "repository_root": "/fabricated/not-a-provider-checkout",
      "revision_is_ciw_pin": true,
-     "source_tree_is_ciw_pin": false
+     "source_tree_is_ciw_pin": true
     },
-    "reopen": "accepted"
+    "reopen": "accepted",
+    "runtime_pins": [
+     {
+      "matched": [
+       "ciw.declared_workload.PINS[numerical-heat]"
+      ],
+      "problem": null,
+      "role": "scr",
+      "tree_pinned": true
+     }
+    ]
    }
   },
   {
@@ -416,6 +625,7 @@
    "claim": "The relabelled energy log is a physical GPU energy measurement",
    "domain": "physical",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": "not established: origin is operator-declared and unauthenticated"
@@ -426,6 +636,7 @@
    "claim": "The synthetic energy fixture characterizes real NVML counter accuracy",
    "domain": "sensor_performance",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": "not established: synthetic fixture"
@@ -433,23 +644,28 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 20061,
+   "bytes": 26103,
    "path": "artifacts/T100/visibility-audit.json",
-   "sha256": "da04b8b62140067ca32bc57a792dd629dc06278f5d102598bc2fd5ea79c763ae"
+   "sha256": "d1f6cca68a8d857605da6afb8365b58bb63c845092f463e1e51dbb11323f3e06"
+  },
+  {
+   "bytes": 2568,
+   "path": "artifacts/T100/label-by-basis.json",
+   "sha256": "8ea5076faa5cb252c66c0dee14b386e3268ce5f8f6ab9eecdb350c5f178e7261"
   }
  ],
- "hypothesis": "Retained lab reports keep synthetic, provider-backed and physical labels visibly distinct; CIW's own records refuse a synthetic-to-physical relabel wherever the record can detect it; and CIW's records are tested for whether they tell a provider result from a fabricated, content-consistent one (T092's counterexample, read here through the workspace classifier).",
+ "hypothesis": "Retained lab reports keep synthetic, provider-backed and physical results visibly distinct: every rendered finding shows its label and, beside it, the basis it declares (the generator of synthetic inputs, the executed provider, an acquisition); CIW's own records refuse a synthetic-to-physical relabel wherever the record can detect it; and the workspace classifier tells a provider result from a fabricated, content-consistent one exactly as far as its comparison with CIW's pins reaches (T092's counterexample).",
  "input_data": [
   "retained reports ctx.output_dir/reports/T001-T099 (only those present when T100 runs)",
   "examples/energy-accuracy/baseline.json (synthetic, embedded)",
   "ciw.free_energy_profile.POLICY",
   "ciw.free_energy_view source text",
-  "fabricated numerical-heat catalog (values [0, 1, 2, 3, 0], fabricated runtime identity at the CIW revision pin)"
+  "fabricated numerical-heat catalog (values [0, 1, 2, 3, 0], fabricated runtime identity at the CIW revision pin), sealed once with an invented source tree and once with ciw.proved_heat.PIN's tree"
  ],
- "mathematical_model": "Allowed labels per domain: physical -> {not_established, hardware_measured, independently_verified with acquisition}; authority -> {not_established}; computational -> never hardware_measured.",
+ "mathematical_model": "Allowed labels per domain: physical -> {not_established, hardware_measured, independently_verified with acquisition}; authority -> {not_established}; computational -> never hardware_measured. Rendered row = report.finding_row: claim | value | label | declared basis. The Basis cell is compared whole with the cell docs/lab/AUTHORING.md prescribes, built here without describe_basis: each declared component in basis order, a generator with its name and seed, a provider as repository@revision, and an acquisition record as hardware acquisition (device) only on a physical finding labelled hardware_measured or independently_verified, as declared acquisition record (not accepted) on every other.",
  "number": 100,
- "numerical_result": "99 of 99 earlier reports present and audited: 0 label violations, 0 rendering violations; the pipe probe kept its label column; fresh-occurrence energy relabel accepted and classified physical_domain_measurement; same-occurrence relabel: invalid_payload: Identity collision across retained workbench artifacts; fabricated heat bundle reopen accepted, classified ['provider_backed'].",
- "observation_model": "validate_report, per-finding label/domain rules, rendered Markdown rows; CIW analysis/refusal outputs and the retained bundle of a fresh-occurrence relabel; the workbench and classify_workspace views of a fabricated provider-kind bundle.",
+ "numerical_result": "99 of 99 earlier reports present and audited (604 findings): 0 label violations, 0 rendering violations, 0 basis violations; findings declaring synthetic inputs: 245, an executed provider: 14, either one not named beside the label: 0; label x basis counts in label-by-basis.json (numerically_verified findings declaring synthetic inputs: 223, a provider run: 5); the pipe probe kept its label column; fresh-occurrence energy relabel accepted and classified physical_domain_measurement; same-occurrence relabel: invalid_payload: Identity collision across retained workbench artifacts; fabricated heat bundle reopen accepted, classified ['not_established'] with an invented tree and ['provider_backed'] with the pinned tree.",
+ "observation_model": "validate_report, per-finding label/domain rules, rendered Markdown rows compared with report.finding_row and their Basis cells with the declared basis; CIW analysis/refusal outputs and the retained bundle of a fresh-occurrence relabel; the workbench and classify_workspace views (labels and runtime_pins rows) of two fabricated provider-kind bundles.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
   "status": "not_established"
@@ -462,22 +678,26 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/exchange_provenance_bundles.py": "3acc6fd6976bb5e6dd8ad3bfc3d09a1d9594ca0a06f4db823581e5b651d4835e",
-   "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "7d6da1148d3744ae1e754b53f697b5b4919aff2666788ae6aec0e48e6e2380c9"
+   "src/ciw/lab/exchange_provenance_bundles.py": "7e841b781d966fe75d5a86bd61e1ef32150c4087393893be788c2b7eff69f3d4",
+   "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "435727947e827d1d601802a5e860f04d578f7b879301c7f5615fb7d6e523500e"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "Compare a retained provider runtime identity (revision and source tree) with CIW's pins when reopening or classifying; authenticate energy-log origin at acquisition (outside the workbench).",
- "report_id": "sha256:cf233a8622b9572957439262d4acbf8d87b73456df7e0cc171bbdbcd71e0cca5",
+ "recommended_next_task": "Deferred research question (CIW change): key the workspace seals, or have the provider sign its runtime identity at execution under a defined key custody, so that a bundle copying CIW's public pins (the retained copied-pin counterexample) is refused or classified not_established; compare a retained runtime identity with CIW's pins on reopen (Session.from_workspace), as ciw lab classify does; record in CIW's pin tables the source tree of every pinned revision that has none (the kinds ciw.lab.bridge.pins_without_tree lists, such as telemetry and calibrated-observable), so that the invented-tree check reaches them; and authenticate energy-log origin at acquisition, outside the workbench, so that a resealed relabel under a fresh occurrence is detected.",
+ "report_id": "sha256:1597530088d6b6e708f1eb1940a01efae6a92eb3127e3628290fc0e98bfc9b06",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "completed",
  "task_id": "T100",
  "tests_passed": [
   "check: Every earlier report present in the output directory when T100 runs keeps labels among the seven and physical and authority findings unestablished without acquisition vs label or domain violations",
-  "check: Every finding of those reports shows its label in the label column of its rendered Markdown row vs findings whose rendered label leaves its column",
+  "check: Every finding of those reports shows its label in the label column of its rendered Markdown row vs findings whose rendered row differs from report.finding_row or whose label leaves its column",
+  "check: Every finding of those reports shows exactly its declared basis in the Basis column of its rendered Markdown row, an acquisition record as hardware acquisition only on a physical finding it establishes vs findings whose rendered Basis column differs from the cell their declared basis prescribes (docs/lab/AUTHORING.md)",
+  "check: Every finding of those reports whose basis declares a generator of synthetic inputs or an executed provider names that generator or provider beside its label vs findings declaring a generator or an executed provider whose rendered row does not name it",
   "check: A physical finding relabelled with a computational label is refused by the evidence validator vs validate_finding on a physical finding relabelled synthetic",
-  "check: render_markdown keeps the label column for a claim containing a pipe character vs rendered cells beyond three for a claim containing a pipe",
+  "check: render_markdown keeps the label column for a claim containing a pipe character vs rendered cells beyond the header's 4 for a claim containing a pipe",
+  "check: render_markdown keeps the label column for a claim containing a pipe character vs rendered rows whose third cell is not the finding's label",
+  "check: render_markdown keeps the label column for a claim containing a pipe character vs rendered row differing from report.finding_row",
   "check: CIW keeps the synthetic energy fixture synthetic_only and refuses an unsealed relabel to physical vs validate_log after changing origin without resealing",
   "check: CIW keeps the synthetic energy fixture synthetic_only and refuses an unsealed relabel to physical vs workbench execute of a resealed relabel of a retained occurrence",
   "check: CIW keeps the synthetic energy fixture synthetic_only and refuses an unsealed relabel to physical vs synthetic fixture classified other than synthetic_only",
@@ -490,18 +710,29 @@
   "check: CIW refuses free-energy sources that relabel synthetic observations as physical or claim physical validation vs physical validation claimed",
   "check: CIW refuses free-energy sources that relabel synthetic observations as physical or claim physical validation vs declared synthetic policy refused at the policy check",
   "check: CIW refuses free-energy sources that relabel synthetic observations as physical or claim physical validation vs view basis literals naming the synthetic reference",
-  "check: A fabricated, content-consistent numerical-heat bundle reopens and is labelled provider_backed by the workspace classifier, as a provider result is vs classify_workspace (Session.from_workspace validation) of the saved fabricated bundle",
-  "check: A fabricated, content-consistent numerical-heat bundle reopens and is labelled provider_backed by the workspace classifier, as a provider result is vs fabricated bundle numerical findings not labelled provider_backed",
+  "check: The workspace classifier labels a fabricated, content-consistent numerical-heat bundle whose source tree is not CIW's pinned tree not_established vs classify_workspace (Session.from_workspace validation) of the saved fabricated bundle",
+  "check: The workspace classifier labels a fabricated, content-consistent numerical-heat bundle whose source tree is not CIW's pinned tree not_established vs fabricated bundle numerical findings labelled other than not_established",
+  "check: The workspace classifier labels a fabricated, content-consistent numerical-heat bundle whose source tree is not CIW's pinned tree not_established vs runtime identities of the fabricated bundle compared with CIW's pins",
+  "check: The workspace classifier labels a fabricated, content-consistent numerical-heat bundle whose source tree is not CIW's pinned tree not_established vs runtime identities of the fabricated bundle matched to a CIW pin",
+  "check: A fabricated numerical-heat bundle sealed with CIW's pinned SCR revision and source tree reopens and is labelled provider_backed by the workspace classifier, as a provider result is vs classify_workspace (Session.from_workspace validation) of the saved bundle sealed with the pinned tree",
+  "check: A fabricated numerical-heat bundle sealed with CIW's pinned SCR revision and source tree reopens and is labelled provider_backed by the workspace classifier, as a provider result is vs copied-pin bundle numerical findings not labelled provider_backed",
   "pytest: tests/test_lab_exchange_provenance_bundles.py::test_t100_labels_and_origins_stay_distinct",
   "pytest: tests/test_lab_exchange_provenance_bundles.py::test_t100_flags_a_retained_report_whose_label_leaves_its_column",
-  "pytest: tests/test_lab_exchange_provenance_bundles.py::test_render_markdown_pipe_probe_matches_the_renderer"
+  "pytest: tests/test_lab_exchange_provenance_bundles.py::test_t100_flags_a_rendered_row_that_hides_its_generator_or_provider",
+  "pytest: tests/test_lab_exchange_provenance_bundles.py::test_t100_classifier_study_separates_an_invented_tree_from_a_copied_pin",
+  "pytest: tests/test_lab_exchange_provenance_bundles.py::test_t100_flags_an_unaccepted_acquisition_shown_as_hardware_acquisition",
+  "pytest: tests/test_lab_exchange_provenance_bundles.py::test_basis_audit_compares_the_whole_cell",
+  "pytest: tests/test_lab_exchange_provenance_bundles.py::test_render_markdown_pipe_probe_matches_the_renderer",
+  "pytest: tests/test_lab_exchange_provenance_bundles.py::test_next_steps_name_forward_work"
  ],
  "tests_skipped": [],
  "title": "Keep synthetic, provider-backed, and physical results visibly distinct.",
  "uncertainty": "Exact.",
  "unresolved_assumptions": [
   "The report audit covers only reports present in the output directory when T100 runs: a section-only run audits its own section, a full run T001-T099; stale reports from earlier runs in the same directory are included if present (task ids in visibility-audit.json).",
-  "Retained claims containing a pipe or newline: 18; the rendering probe uses a synthetic claim.",
-  "The only reader-visible trace of the fabricated bundle is a runtime source tree that differs from CIW's pinned tree; neither reopen nor classify_workspace compares it (reader_view in visibility-audit.json)."
+  "Retained claims containing a pipe or newline: 20; the rendering probe uses a synthetic claim.",
+  "The Basis column shows the components and identities a finding declares; they are as recorded, not authenticated (a generator name or provider repository is text in the basis).",
+  "The audit sees only the components a finding declares: a finding that rests on a generator or an executed provider without declaring it in its basis is counted under the components it does declare, and nothing here detects the omission. One provider slot shows one provider of a result several providers produced (T097's producer roundtrip names the SET checker; the PPDA and SCR producers are in its basis notes).",
+  "classify_workspace compares a retained runtime identity with the pins CIW declares (ciw.lab.bridge.declared_pins), so the invented tree is caught for numerical-heat, whose pinned revision has a tree CIW records (ciw.proved_heat.PIN); for the kinds in ciw.lab.bridge.pins_without_tree (acquired-calibrated-window, bim-quantity, calibrated-observable, calibrated-window, identified-design, residual-monitor, schematic-assessment, schematic-companions, telemetry) any tree is accepted (tree_pinned: false), so an invented tree at a pinned revision is not caught there. Session.from_workspace (reopen) does not compare it. The pins are public constants and workspace seals are unkeyed, so the bundle sealed with the pinned tree is labelled provider_backed: nothing the classifier compares tells it from a provider result. Its adapter_version and repository_root name the fabrication only because this lab wrote them so (reader_view in visibility-audit.json)."
  ]
 }

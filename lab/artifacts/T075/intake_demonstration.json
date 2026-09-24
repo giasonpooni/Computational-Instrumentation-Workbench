@@ -1,0 +1,920 @@
+{
+ "admitted_after_gate": 1,
+ "admitted_candidate_digest_matches": true,
+ "admitted_checks": [
+  "declared",
+  "writable",
+  "typed",
+  "finite",
+  "covariance",
+  "integrity",
+  "provenance",
+  "frame",
+  "fresh",
+  "track",
+  "uncertainty",
+  "innovation",
+  "calibration"
+ ],
+ "authorities": {
+  "admitted": [
+   [
+    "physical_truth",
+    "not_established"
+   ],
+   [
+    "sensor_fusion",
+    "synthetic_only"
+   ],
+   [
+    "state_admission",
+    "synthetic_only"
+   ]
+  ],
+  "candidate": [
+   [
+    "physical_truth",
+    "not_established"
+   ],
+   [
+    "sensor_fusion",
+    "synthetic_only"
+   ],
+   [
+    "state_admission",
+    "synthetic_only"
+   ]
+  ],
+  "intake": {
+   "physical_truth": "not_established",
+   "sensor_fusion": "synthetic_only",
+   "state_admission": "synthetic_only"
+  },
+  "ledger": {
+   "physical_truth": "not_established",
+   "sensor_fusion": "not_performed",
+   "state_admission": "synthetic_only"
+  },
+  "ledger_admissions": [
+   {
+    "decision": "declared synthetic admission for the intake demonstration",
+    "observation_digest": "sha256:75199778b2227efe49b04638f2cb2203b4ac9a9f5801a5399ded99dcf0a8ad5c",
+    "state_admission": "synthetic_only"
+   },
+   {
+    "decision": "declared synthetic admission for the intake demonstration",
+    "observation_digest": "sha256:264de60cccd559826d81fbdbc5286026cef85cc164b201e2c04816035a7211ae",
+    "state_admission": "synthetic_only"
+   },
+   {
+    "decision": "declared synthetic admission for the intake demonstration",
+    "observation_digest": "sha256:0e37f0613cd35f6967d7a9e4a80b4beb6a269c7223686b84989b54e366ff2939",
+    "state_admission": "synthetic_only"
+   },
+   {
+    "decision": "declared synthetic admission for the intake demonstration",
+    "observation_digest": "sha256:ca234344774132c990c90b2a43e8b0c9b5e937e4f80afe5312589878fdb4f4df",
+    "state_admission": "synthetic_only"
+   },
+   {
+    "decision": "declared synthetic admission for the intake demonstration",
+    "observation_digest": "sha256:fa680948a5e790b26455d5e9b100343135128ae91815cf07c07ba88fc6909f50",
+    "state_admission": "synthetic_only"
+   },
+   {
+    "decision": "declared synthetic admission for the intake demonstration",
+    "observation_digest": "sha256:40382d0a176bd3f011cd6ecf267eb263d4db34bb9d6ec1e981ae066bda79c7d1",
+    "state_admission": "synthetic_only"
+   },
+   {
+    "decision": "declared synthetic admission for the intake demonstration",
+    "observation_digest": "sha256:17347fe2f489b4beae16c681fe5e3c1969a64766b234519f0217c183e48d8ca8",
+    "state_admission": "synthetic_only"
+   },
+   {
+    "decision": "declared synthetic admission for the intake demonstration",
+    "observation_digest": "sha256:8ab495514a99194864da862a0ac204dbcdd032e785ec411146a56b0812717783",
+    "state_admission": "synthetic_only"
+   },
+   {
+    "decision": "declared synthetic admission for the intake demonstration",
+    "observation_digest": "sha256:8708ce478af33e7a5e9482f32d343e5e9bd2988ea398e3bd683557da332a94f7",
+    "state_admission": "synthetic_only"
+   },
+   {
+    "decision": "declared synthetic admission for the intake demonstration",
+    "observation_digest": "sha256:62eba3e6aba82636d015f61bf3ce052a621f332306655999b916dfe72084e467",
+    "state_admission": "synthetic_only"
+   },
+   {
+    "decision": "declared synthetic admission for the intake demonstration",
+    "observation_digest": "sha256:2d373daa8aba07246a23719f4bd4871edc45f0f81349253b75b794782b6b1783",
+    "state_admission": "synthetic_only"
+   },
+   {
+    "decision": "declared synthetic admission for the intake demonstration",
+    "observation_digest": "sha256:7dc98d1436f89c3b62f3346dac2fb027b84acc67b06e0e2e3ebd7bd0da4dbd97",
+    "state_admission": "synthetic_only"
+   }
+  ],
+  "lineage": [
+   {
+    "calibration_id": "trk-cal",
+    "calibration_ref": "calibration:tracker-declared-synthetic",
+    "channel": "channel:sha256:d9ccb3f342fe574f172e9bad22e94c5a42be11b5a4440c5657922aa608ecc378",
+    "fusion_digest": "e5fee63b51dcc0071d5a444f49cb9e8de6be912b64c89ddd1afbdac0b7a25520",
+    "mappings": [
+     "frame:sha256:afee1d71aa4ece72230bcf5d783287ae38f0ac1f2bd92f9b813aa9bc71948cb5",
+     "clock:sha256:9fb0d11359f258f20c231b6f8c58b1686dddc2ea9495de2df773abaa4c852cf5",
+     "clock:sha256:899cd17aaeb7a52153a2eadeea876f22ae28d220af82f431cf28c8f813431c01"
+    ],
+    "mode": "tracker_measurement",
+    "observation_digest": "sha256:75199778b2227efe49b04638f2cb2203b4ac9a9f5801a5399ded99dcf0a8ad5c",
+    "raw_ref": "raw:tracker:1",
+    "sensor_id": "tracker",
+    "state_admission": "synthetic_only",
+    "tick": 1
+   },
+   {
+    "calibration_id": "trk-cal",
+    "calibration_ref": "calibration:tracker-declared-synthetic",
+    "channel": "channel:sha256:d9ccb3f342fe574f172e9bad22e94c5a42be11b5a4440c5657922aa608ecc378",
+    "fusion_digest": "c0b93d9e43d9a138a1a154395ca4e7aa657951f07b31e308438f69e3796b7c24",
+    "mappings": [
+     "frame:sha256:afee1d71aa4ece72230bcf5d783287ae38f0ac1f2bd92f9b813aa9bc71948cb5",
+     "clock:sha256:9fb0d11359f258f20c231b6f8c58b1686dddc2ea9495de2df773abaa4c852cf5",
+     "clock:sha256:899cd17aaeb7a52153a2eadeea876f22ae28d220af82f431cf28c8f813431c01"
+    ],
+    "mode": "tracker_measurement",
+    "observation_digest": "sha256:264de60cccd559826d81fbdbc5286026cef85cc164b201e2c04816035a7211ae",
+    "raw_ref": "raw:tracker:2",
+    "sensor_id": "tracker",
+    "state_admission": "synthetic_only",
+    "tick": 2
+   },
+   {
+    "calibration_id": "trk-cal",
+    "calibration_ref": "calibration:tracker-declared-synthetic",
+    "channel": "channel:sha256:d9ccb3f342fe574f172e9bad22e94c5a42be11b5a4440c5657922aa608ecc378",
+    "fusion_digest": "bb6f01305033063ce60a5b206298a44473ecdfb0a6fd57bdb8256fa141136fdc",
+    "mappings": [
+     "frame:sha256:afee1d71aa4ece72230bcf5d783287ae38f0ac1f2bd92f9b813aa9bc71948cb5",
+     "clock:sha256:9fb0d11359f258f20c231b6f8c58b1686dddc2ea9495de2df773abaa4c852cf5",
+     "clock:sha256:899cd17aaeb7a52153a2eadeea876f22ae28d220af82f431cf28c8f813431c01"
+    ],
+    "mode": "tracker_measurement",
+    "observation_digest": "sha256:0e37f0613cd35f6967d7a9e4a80b4beb6a269c7223686b84989b54e366ff2939",
+    "raw_ref": "raw:tracker:3",
+    "sensor_id": "tracker",
+    "state_admission": "synthetic_only",
+    "tick": 3
+   },
+   {
+    "calibration_id": "trk-cal",
+    "calibration_ref": "calibration:tracker-declared-synthetic",
+    "channel": "channel:sha256:d9ccb3f342fe574f172e9bad22e94c5a42be11b5a4440c5657922aa608ecc378",
+    "fusion_digest": "41e223c5d689f161b08a998db003cb2f2fe9d2be1cc7540844c8f9d9674da115",
+    "mappings": [
+     "frame:sha256:afee1d71aa4ece72230bcf5d783287ae38f0ac1f2bd92f9b813aa9bc71948cb5",
+     "clock:sha256:9fb0d11359f258f20c231b6f8c58b1686dddc2ea9495de2df773abaa4c852cf5",
+     "clock:sha256:899cd17aaeb7a52153a2eadeea876f22ae28d220af82f431cf28c8f813431c01"
+    ],
+    "mode": "tracker_measurement",
+    "observation_digest": "sha256:ca234344774132c990c90b2a43e8b0c9b5e937e4f80afe5312589878fdb4f4df",
+    "raw_ref": "raw:tracker:4",
+    "sensor_id": "tracker",
+    "state_admission": "synthetic_only",
+    "tick": 4
+   },
+   {
+    "calibration_id": "trk-cal",
+    "calibration_ref": "calibration:tracker-declared-synthetic",
+    "channel": "channel:sha256:d9ccb3f342fe574f172e9bad22e94c5a42be11b5a4440c5657922aa608ecc378",
+    "fusion_digest": "2e943993f031bfdc2bce6da3887ffe54a06951762a126e433777521672ad7e86",
+    "mappings": [
+     "frame:sha256:afee1d71aa4ece72230bcf5d783287ae38f0ac1f2bd92f9b813aa9bc71948cb5",
+     "clock:sha256:9fb0d11359f258f20c231b6f8c58b1686dddc2ea9495de2df773abaa4c852cf5",
+     "clock:sha256:899cd17aaeb7a52153a2eadeea876f22ae28d220af82f431cf28c8f813431c01"
+    ],
+    "mode": "tracker_measurement",
+    "observation_digest": "sha256:fa680948a5e790b26455d5e9b100343135128ae91815cf07c07ba88fc6909f50",
+    "raw_ref": "raw:tracker:5",
+    "sensor_id": "tracker",
+    "state_admission": "synthetic_only",
+    "tick": 5
+   },
+   {
+    "calibration_id": "trk-cal",
+    "calibration_ref": "calibration:tracker-declared-synthetic",
+    "channel": "channel:sha256:d9ccb3f342fe574f172e9bad22e94c5a42be11b5a4440c5657922aa608ecc378",
+    "fusion_digest": "2899d9d1adebd35c2b292cb86cf5390d28f1e047b1cc6ee3d9642798ee838355",
+    "mappings": [
+     "frame:sha256:afee1d71aa4ece72230bcf5d783287ae38f0ac1f2bd92f9b813aa9bc71948cb5",
+     "clock:sha256:9fb0d11359f258f20c231b6f8c58b1686dddc2ea9495de2df773abaa4c852cf5",
+     "clock:sha256:899cd17aaeb7a52153a2eadeea876f22ae28d220af82f431cf28c8f813431c01"
+    ],
+    "mode": "tracker_measurement",
+    "observation_digest": "sha256:40382d0a176bd3f011cd6ecf267eb263d4db34bb9d6ec1e981ae066bda79c7d1",
+    "raw_ref": "raw:tracker:6",
+    "sensor_id": "tracker",
+    "state_admission": "synthetic_only",
+    "tick": 6
+   },
+   {
+    "calibration_id": "trk-cal",
+    "calibration_ref": "calibration:tracker-declared-synthetic",
+    "channel": "channel:sha256:d9ccb3f342fe574f172e9bad22e94c5a42be11b5a4440c5657922aa608ecc378",
+    "fusion_digest": "f4ab000b008945dced1a81358778111b3469305b397538adb9bf01dcf5dc68c9",
+    "mappings": [
+     "frame:sha256:afee1d71aa4ece72230bcf5d783287ae38f0ac1f2bd92f9b813aa9bc71948cb5",
+     "clock:sha256:9fb0d11359f258f20c231b6f8c58b1686dddc2ea9495de2df773abaa4c852cf5",
+     "clock:sha256:899cd17aaeb7a52153a2eadeea876f22ae28d220af82f431cf28c8f813431c01"
+    ],
+    "mode": "tracker_measurement",
+    "observation_digest": "sha256:17347fe2f489b4beae16c681fe5e3c1969a64766b234519f0217c183e48d8ca8",
+    "raw_ref": "raw:tracker:7",
+    "sensor_id": "tracker",
+    "state_admission": "synthetic_only",
+    "tick": 7
+   },
+   {
+    "calibration_id": "trk-cal",
+    "calibration_ref": "calibration:tracker-declared-synthetic",
+    "channel": "channel:sha256:d9ccb3f342fe574f172e9bad22e94c5a42be11b5a4440c5657922aa608ecc378",
+    "fusion_digest": "0dfb1307375f435e7475e17b3fe95c458ddbd4f816dff170171234c5558c71f2",
+    "mappings": [
+     "frame:sha256:afee1d71aa4ece72230bcf5d783287ae38f0ac1f2bd92f9b813aa9bc71948cb5",
+     "clock:sha256:9fb0d11359f258f20c231b6f8c58b1686dddc2ea9495de2df773abaa4c852cf5",
+     "clock:sha256:899cd17aaeb7a52153a2eadeea876f22ae28d220af82f431cf28c8f813431c01"
+    ],
+    "mode": "tracker_measurement",
+    "observation_digest": "sha256:8ab495514a99194864da862a0ac204dbcdd032e785ec411146a56b0812717783",
+    "raw_ref": "raw:tracker:8",
+    "sensor_id": "tracker",
+    "state_admission": "synthetic_only",
+    "tick": 8
+   },
+   {
+    "calibration_id": "trk-cal",
+    "calibration_ref": "calibration:tracker-declared-synthetic",
+    "channel": "channel:sha256:d9ccb3f342fe574f172e9bad22e94c5a42be11b5a4440c5657922aa608ecc378",
+    "fusion_digest": "cb0db204409b5a6167133305c2fe5f1091b5cea0dfbe337fb46a62aae39c4bc3",
+    "mappings": [
+     "frame:sha256:afee1d71aa4ece72230bcf5d783287ae38f0ac1f2bd92f9b813aa9bc71948cb5",
+     "clock:sha256:9fb0d11359f258f20c231b6f8c58b1686dddc2ea9495de2df773abaa4c852cf5",
+     "clock:sha256:899cd17aaeb7a52153a2eadeea876f22ae28d220af82f431cf28c8f813431c01"
+    ],
+    "mode": "tracker_measurement",
+    "observation_digest": "sha256:8708ce478af33e7a5e9482f32d343e5e9bd2988ea398e3bd683557da332a94f7",
+    "raw_ref": "raw:tracker:9",
+    "sensor_id": "tracker",
+    "state_admission": "synthetic_only",
+    "tick": 9
+   },
+   {
+    "calibration_id": "trk-cal",
+    "calibration_ref": "calibration:tracker-declared-synthetic",
+    "channel": "channel:sha256:d9ccb3f342fe574f172e9bad22e94c5a42be11b5a4440c5657922aa608ecc378",
+    "fusion_digest": "abfdd7ef975f02cf6afcefeea5884469424ae1dc04e17bad019b4f368a5ee854",
+    "mappings": [
+     "frame:sha256:afee1d71aa4ece72230bcf5d783287ae38f0ac1f2bd92f9b813aa9bc71948cb5",
+     "clock:sha256:9fb0d11359f258f20c231b6f8c58b1686dddc2ea9495de2df773abaa4c852cf5",
+     "clock:sha256:899cd17aaeb7a52153a2eadeea876f22ae28d220af82f431cf28c8f813431c01"
+    ],
+    "mode": "tracker_measurement",
+    "observation_digest": "sha256:62eba3e6aba82636d015f61bf3ce052a621f332306655999b916dfe72084e467",
+    "raw_ref": "raw:tracker:10",
+    "sensor_id": "tracker",
+    "state_admission": "synthetic_only",
+    "tick": 10
+   },
+   {
+    "calibration_id": "trk-cal",
+    "calibration_ref": "calibration:tracker-declared-synthetic",
+    "channel": "channel:sha256:d9ccb3f342fe574f172e9bad22e94c5a42be11b5a4440c5657922aa608ecc378",
+    "fusion_digest": "b294582918ab67c46df313412b66e550c4036b86e559128db8a0c25f0319b58d",
+    "mappings": [
+     "frame:sha256:afee1d71aa4ece72230bcf5d783287ae38f0ac1f2bd92f9b813aa9bc71948cb5",
+     "clock:sha256:9fb0d11359f258f20c231b6f8c58b1686dddc2ea9495de2df773abaa4c852cf5",
+     "clock:sha256:899cd17aaeb7a52153a2eadeea876f22ae28d220af82f431cf28c8f813431c01"
+    ],
+    "mode": "tracker_measurement",
+    "observation_digest": "sha256:2d373daa8aba07246a23719f4bd4871edc45f0f81349253b75b794782b6b1783",
+    "raw_ref": "raw:tracker:11",
+    "sensor_id": "tracker",
+    "state_admission": "synthetic_only",
+    "tick": 11
+   },
+   {
+    "calibration_id": "trk-cal",
+    "calibration_ref": "calibration:tracker-declared-synthetic",
+    "channel": "channel:sha256:d9ccb3f342fe574f172e9bad22e94c5a42be11b5a4440c5657922aa608ecc378",
+    "fusion_digest": "7ff8cb42ea9220934d5f6600adf87a92ea090076a8f99a430a251249493d8458",
+    "mappings": [
+     "frame:sha256:afee1d71aa4ece72230bcf5d783287ae38f0ac1f2bd92f9b813aa9bc71948cb5",
+     "clock:sha256:9fb0d11359f258f20c231b6f8c58b1686dddc2ea9495de2df773abaa4c852cf5",
+     "clock:sha256:899cd17aaeb7a52153a2eadeea876f22ae28d220af82f431cf28c8f813431c01"
+    ],
+    "mode": "tracker_measurement",
+    "observation_digest": "sha256:7dc98d1436f89c3b62f3346dac2fb027b84acc67b06e0e2e3ebd7bd0da4dbd97",
+    "raw_ref": "raw:tracker:12",
+    "sensor_id": "tracker",
+    "state_admission": "synthetic_only",
+    "tick": 12
+   }
+  ],
+  "session": {
+   "physical_truth": "not_established",
+   "sensor_fusion": "synthetic_only",
+   "state_admission": "synthetic_only"
+  }
+ },
+ "auto_admitted_before_gate": 0,
+ "candidate_nis": [
+  [
+   2.5162267241499743,
+   2
+  ],
+  [
+   2.5258364397173354,
+   2
+  ],
+  [
+   0.6528550712725616,
+   2
+  ],
+  [
+   1.75005443851901,
+   2
+  ],
+  [
+   2.791400198755833,
+   2
+  ],
+  [
+   2.5678379989636655,
+   2
+  ],
+  [
+   2.490688868639068,
+   2
+  ],
+  [
+   0.28969778396556184,
+   2
+  ],
+  [
+   2.995172294366674,
+   2
+  ],
+  [
+   2.0711426151921626,
+   2
+  ],
+  [
+   1.0152727304891864,
+   2
+  ],
+  [
+   1.286244123385866,
+   2
+  ]
+ ],
+ "channel": {
+  "calibration_id": "trk-cal",
+  "calibration_ref": "calibration:tracker-declared-synthetic",
+  "mode": "tracker_measurement",
+  "offset": [
+   0.0,
+   0.0
+  ],
+  "projection": [
+   [
+    1.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    1.0,
+    0.0
+   ]
+  ],
+  "sensor_id": "tracker",
+  "source_frame": "tracker:cell"
+ },
+ "clock": {
+  "basis": "acquisition",
+  "clock_id": "clock:fusion",
+  "dt": 0.125,
+  "epoch": "epoch:fusion-0",
+  "tolerance_s": 1e-09
+ },
+ "declared_admission": {
+  "expected_frame_id": "world",
+  "max_position_std": 0.01,
+  "nis_probability": 0.999
+ },
+ "declared_sigma_m": 0.0005,
+ "dt": 0.125,
+ "estimate_error_m": [
+  -0.000491201465950275,
+  0.0002463254030287132
+ ],
+ "final_reading": {
+  "calibration_id": "trk-cal",
+  "covariance": [
+   [
+    2.5e-07,
+    0.0
+   ],
+   [
+    0.0,
+    2.5e-07
+   ]
+  ],
+  "covariance_gap_m2": 0.0,
+  "hand_mapped_value": [
+   0.3836913621692701,
+   2.090274788671662
+  ],
+  "origin_frame_id": "tracker:cell",
+  "tick": 12,
+  "value": [
+   0.3836913621692701,
+   2.090274788671662
+  ],
+  "value_gap_m": 0.0
+ },
+ "intake_dispositions": [
+  "fused",
+  "refused:already_fused",
+  "refused:calibration_not_declared",
+  "refused:duplicate_reading",
+  "refused:geometry_mismatch",
+  "refused:latency_mismatch",
+  "refused:no_channel",
+  "refused:not_admitted",
+  "refused:not_retained",
+  "refused:off_tick_grid",
+  "refused:out_of_order",
+  "refused:uncalibrated_record",
+  "refused:unmapped_clock",
+  "refused:unmapped_frame"
+ ],
+ "ledger": {
+  "admission_values": [
+   "synthetic_only"
+  ],
+  "admitted": 12,
+  "retained": 26
+ },
+ "mappings": {
+  "arrival_to_acquisition": {
+   "kind": "clock",
+   "offset_s": -0.0078125,
+   "rate": 1.0,
+   "reference": "declared tracker latency",
+   "source": [
+    "clock:tracker",
+    "epoch:run-0",
+    "arrival"
+   ],
+   "target": [
+    "clock:tracker",
+    "epoch:run-0",
+    "acquisition"
+   ]
+  },
+  "frame": {
+   "calibration_ref": "calibration:tracker-extrinsic-declared",
+   "kind": "frame",
+   "rotation": [
+    [
+     0.0,
+     -1.0,
+     0.0
+    ],
+    [
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "source": "tracker:room",
+   "target": "tracker:cell",
+   "translation": [
+    0.25,
+    -0.5,
+    1.0
+   ]
+  },
+  "tracker_to_fusion": {
+   "kind": "clock",
+   "offset_s": -1.5,
+   "rate": 1.0,
+   "reference": "declared synchronization",
+   "source": [
+    "clock:tracker",
+    "epoch:run-0",
+    "acquisition"
+   ],
+   "target": [
+    "clock:fusion",
+    "epoch:fusion-0",
+    "acquisition"
+   ]
+  }
+ },
+ "q": 0.05,
+ "records": [
+  {
+   "calibration_ref": "calibration:tracker-declared-synthetic",
+   "clock_basis": "arrival",
+   "clock_id": "clock:tracker",
+   "derived_from": [],
+   "epoch": "epoch:run-0",
+   "frame_id": "tracker:room",
+   "latency_s": 0.0078125,
+   "mappings": [],
+   "mode": "tracker_measurement",
+   "raw_ref": "raw:tracker:1",
+   "sequence": 1,
+   "surface_model": null,
+   "time_s": 1.6328125,
+   "unit": "m",
+   "value": [
+    1.1615008123650217,
+    0.6464497933692395,
+    -0.37525139316072464
+   ]
+  },
+  {
+   "calibration_ref": "calibration:tracker-declared-synthetic",
+   "clock_basis": "arrival",
+   "clock_id": "clock:tracker",
+   "derived_from": [],
+   "epoch": "epoch:run-0",
+   "frame_id": "tracker:room",
+   "latency_s": 0.0078125,
+   "mappings": [],
+   "mode": "tracker_measurement",
+   "raw_ref": "raw:tracker:2",
+   "sequence": 2,
+   "surface_model": null,
+   "time_s": 1.7578125,
+   "unit": "m",
+   "value": [
+    1.2473093737249192,
+    0.5607110787344468,
+    -0.3760204180428813
+   ]
+  },
+  {
+   "calibration_ref": "calibration:tracker-declared-synthetic",
+   "clock_basis": "arrival",
+   "clock_id": "clock:tracker",
+   "derived_from": [],
+   "epoch": "epoch:run-0",
+   "frame_id": "tracker:room",
+   "latency_s": 0.0078125,
+   "mappings": [],
+   "mode": "tracker_measurement",
+   "raw_ref": "raw:tracker:3",
+   "sequence": 3,
+   "surface_model": null,
+   "time_s": 1.8828125,
+   "unit": "m",
+   "value": [
+    1.3392066783553533,
+    0.47236877127650084,
+    -0.37548516869813514
+   ]
+  },
+  {
+   "calibration_ref": "calibration:tracker-declared-synthetic",
+   "clock_basis": "arrival",
+   "clock_id": "clock:tracker",
+   "derived_from": [],
+   "epoch": "epoch:run-0",
+   "frame_id": "tracker:room",
+   "latency_s": 0.0078125,
+   "mappings": [],
+   "mode": "tracker_measurement",
+   "raw_ref": "raw:tracker:4",
+   "sequence": 4,
+   "surface_model": null,
+   "time_s": 2.0078125,
+   "unit": "m",
+   "value": [
+    1.4429153578549847,
+    0.3830166575991942,
+    -0.3737267230083864
+   ]
+  },
+  {
+   "calibration_ref": "calibration:tracker-declared-synthetic",
+   "clock_basis": "arrival",
+   "clock_id": "clock:tracker",
+   "derived_from": [],
+   "epoch": "epoch:run-0",
+   "frame_id": "tracker:room",
+   "latency_s": 0.0078125,
+   "mappings": [],
+   "mode": "tracker_measurement",
+   "raw_ref": "raw:tracker:5",
+   "sequence": 5,
+   "surface_model": null,
+   "time_s": 2.1328125,
+   "unit": "m",
+   "value": [
+    1.5590739815858032,
+    0.3024116508674112,
+    -0.37467835596307336
+   ]
+  },
+  {
+   "calibration_ref": "calibration:tracker-declared-synthetic",
+   "clock_basis": "arrival",
+   "clock_id": "clock:tracker",
+   "derived_from": [],
+   "epoch": "epoch:run-0",
+   "frame_id": "tracker:room",
+   "latency_s": 0.0078125,
+   "mappings": [],
+   "mode": "tracker_measurement",
+   "raw_ref": "raw:tracker:6",
+   "sequence": 6,
+   "surface_model": null,
+   "time_s": 2.2578125,
+   "unit": "m",
+   "value": [
+    1.6830208477556452,
+    0.23546651295889398,
+    -0.37470048395554584
+   ]
+  },
+  {
+   "calibration_ref": "calibration:tracker-declared-synthetic",
+   "clock_basis": "arrival",
+   "clock_id": "clock:tracker",
+   "derived_from": [],
+   "epoch": "epoch:run-0",
+   "frame_id": "tracker:room",
+   "latency_s": 0.0078125,
+   "mappings": [],
+   "mode": "tracker_measurement",
+   "raw_ref": "raw:tracker:7",
+   "sequence": 7,
+   "surface_model": null,
+   "time_s": 2.3828125,
+   "unit": "m",
+   "value": [
+    1.8199342811040646,
+    0.16671729712137476,
+    -0.37486093762137335
+   ]
+  },
+  {
+   "calibration_ref": "calibration:tracker-declared-synthetic",
+   "clock_basis": "arrival",
+   "clock_id": "clock:tracker",
+   "derived_from": [],
+   "epoch": "epoch:run-0",
+   "frame_id": "tracker:room",
+   "latency_s": 0.0078125,
+   "mappings": [],
+   "mode": "tracker_measurement",
+   "raw_ref": "raw:tracker:8",
+   "sequence": 8,
+   "surface_model": null,
+   "time_s": 2.5078125,
+   "unit": "m",
+   "value": [
+    1.9576189788477403,
+    0.10063318532927958,
+    -0.3753501742774421
+   ]
+  },
+  {
+   "calibration_ref": "calibration:tracker-declared-synthetic",
+   "clock_basis": "arrival",
+   "clock_id": "clock:tracker",
+   "derived_from": [],
+   "epoch": "epoch:run-0",
+   "frame_id": "tracker:room",
+   "latency_s": 0.0078125,
+   "mappings": [],
+   "mode": "tracker_measurement",
+   "raw_ref": "raw:tracker:9",
+   "sequence": 9,
+   "surface_model": null,
+   "time_s": 2.6328125,
+   "unit": "m",
+   "value": [
+    2.1040341009942494,
+    0.04563949841902161,
+    -0.37464505940999593
+   ]
+  },
+  {
+   "calibration_ref": "calibration:tracker-declared-synthetic",
+   "clock_basis": "arrival",
+   "clock_id": "clock:tracker",
+   "derived_from": [],
+   "epoch": "epoch:run-0",
+   "frame_id": "tracker:room",
+   "latency_s": 0.0078125,
+   "mappings": [],
+   "mode": "tracker_measurement",
+   "raw_ref": "raw:tracker:10",
+   "sequence": 10,
+   "surface_model": null,
+   "time_s": 2.7578125,
+   "unit": "m",
+   "value": [
+    2.2639869905036982,
+    -0.005436700507085157,
+    -0.3743542162300698
+   ]
+  },
+  {
+   "calibration_ref": "calibration:tracker-declared-synthetic",
+   "clock_basis": "arrival",
+   "clock_id": "clock:tracker",
+   "derived_from": [],
+   "epoch": "epoch:run-0",
+   "frame_id": "tracker:room",
+   "latency_s": 0.0078125,
+   "mappings": [],
+   "mode": "tracker_measurement",
+   "raw_ref": "raw:tracker:11",
+   "sequence": 11,
+   "surface_model": null,
+   "time_s": 2.8828125,
+   "unit": "m",
+   "value": [
+    2.42672944889345,
+    -0.06411815040420167,
+    -0.37588080679015884
+   ]
+  },
+  {
+   "calibration_ref": "calibration:tracker-declared-synthetic",
+   "clock_basis": "arrival",
+   "clock_id": "clock:tracker",
+   "derived_from": [],
+   "epoch": "epoch:run-0",
+   "frame_id": "tracker:room",
+   "latency_s": 0.0078125,
+   "mappings": [],
+   "mode": "tracker_measurement",
+   "raw_ref": "raw:tracker:12",
+   "sequence": 12,
+   "surface_model": null,
+   "time_s": 3.0078125,
+   "unit": "m",
+   "value": [
+    2.590274788671662,
+    -0.13369136216927008,
+    -0.3750410071548296
+   ]
+  }
+ ],
+ "reference": {
+  "batch_mean": [
+   0.3836557448157877,
+   2.090271791476824,
+   0.5744667279650717,
+   1.309846487125346
+  ],
+  "candidate_mean": [
+   0.38365574481578774,
+   2.0902717914768245,
+   0.5744667279650729,
+   1.3098464871253546
+  ],
+  "relative_covariance_gap": 3.4750164731166575e-16,
+  "relative_mean_gap": 4.14287731738365e-15
+ },
+ "refusals": {
+  "already_fused": {
+   "admission": "none",
+   "intake": "already_fused"
+  },
+  "arrival_without_latency_mapping": {
+   "admission": "none",
+   "intake": "unmapped_clock"
+  },
+  "calibration_expired": {
+   "admission": "none",
+   "intake": "calibration_expired"
+  },
+  "calibration_not_declared": {
+   "admission": "none",
+   "intake": "calibration_not_declared"
+  },
+  "calibration_revoked": {
+   "admission": "none",
+   "intake": "calibration_revoked"
+  },
+  "combined_latency_and_synchronization": {
+   "admission": "none",
+   "intake": "unmapped_clock"
+  },
+  "double_latency": {
+   "admission": "none",
+   "intake": "double_latency"
+  },
+  "duplicate_reading": {
+   "admission": "none",
+   "intake": "duplicate_reading"
+  },
+  "extrinsic_chord_for_intrinsic": {
+   "admission": "none",
+   "intake": "extrinsic_for_intrinsic"
+  },
+  "extrinsic_for_intrinsic": {
+   "admission": "none",
+   "intake": "extrinsic_for_intrinsic"
+  },
+  "geometry_mismatch": {
+   "admission": "none",
+   "intake": "geometry_mismatch"
+  },
+  "latency_mismatch": {
+   "admission": "none",
+   "intake": "latency_mismatch"
+  },
+  "missing_calibration": {
+   "admission": "missing_calibration",
+   "intake": "not_admitted"
+  },
+  "no_channel": {
+   "admission": "none",
+   "intake": "no_channel"
+  },
+  "not_admitted": {
+   "admission": "not_attempted",
+   "intake": "not_admitted"
+  },
+  "not_retained": {
+   "admission": "not_attempted",
+   "intake": "not_retained"
+  },
+  "off_tick_grid": {
+   "admission": "none",
+   "intake": "off_tick_grid"
+  },
+  "out_of_order": {
+   "admission": "none",
+   "intake": "out_of_order"
+  },
+  "read_only_session": {
+   "admission": "none",
+   "intake": "read_only_session"
+  },
+  "uncalibrated_record": {
+   "admission": "none",
+   "intake": "uncalibrated_record"
+  },
+  "unmapped_clock": {
+   "admission": "none",
+   "intake": "unmapped_clock"
+  },
+  "unmapped_epoch": {
+   "admission": "none",
+   "intake": "unmapped_clock"
+  },
+  "unmapped_frame": {
+   "admission": "none",
+   "intake": "unmapped_frame"
+  }
+ },
+ "seed": 752027,
+ "state_unchanged_by_refusals": true,
+ "ticks": 12,
+ "trace": {
+  "all_ledger_admitted_with_raw_ref": true,
+  "bypass": {
+   "fused_by_session_after_bypass": 2,
+   "trace_after_direct_fusion": "untraced_reading",
+   "traced_before_bypass": 1
+  },
+  "distinct_records": 12,
+  "final_mappings": [
+   "frame:sha256:afee1d71aa4ece72230bcf5d783287ae38f0ac1f2bd92f9b813aa9bc71948cb5",
+   "clock:sha256:9fb0d11359f258f20c231b6f8c58b1686dddc2ea9495de2df773abaa4c852cf5",
+   "clock:sha256:899cd17aaeb7a52153a2eadeea876f22ae28d220af82f431cf28c8f813431c01"
+  ],
+  "final_raw_ref": "raw:tracker:12",
+  "final_source_is_last_record": true,
+  "fused_by_session": 12,
+  "readings": 12
+ }
+}

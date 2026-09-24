@@ -1,6 +1,8 @@
 {
  "changed_files": [
   "src/ciw/lab/sensor_fusion_admission.py",
+  "src/ciw/lab/sensor_fusion_intake.py",
+  "src/ciw/lab/observation_modes.py",
   "src/ciw/lab/sensor_fusion_common.py",
   "src/ciw/lab/sensor_fusion_bench.py",
   "src/ciw/lab/sensor_fusion_objects.py"
@@ -10,15 +12,15 @@
    "analytic": 0,
    "hardware_measured": 0,
    "independently_verified": 0,
-   "not_established": 1,
-   "numerically_verified": 4,
+   "not_established": 2,
+   "numerically_verified": 6,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
  "expected_invariant": "Full gate refuses each scenario with its check's code; the gate without that check gives a different outcome; no admission without an explicit gate call; AdmittedState immutable.",
- "experiment": "Build each violating candidate (private state corruption simulates internal faults), run the full gate and the gate with the targeted check deleted, follow an outlier update with a prediction, a later update and an explicit re-initialization, and exercise construction and mutation of each type.",
+ "experiment": "Build each violating candidate (private state corruption simulates internal faults), run the full gate and the gate with the targeted check deleted, follow an outlier update with a prediction, a later update and an explicit re-initialization, and exercise construction and mutation of each type. Retain tracker records in a writable ledger, admit them, fuse them through the intake, offer the intake records it must refuse, compare the fused state with the batch posterior of the hand-mapped readings, admit the final candidate explicitly and trace every fused reading back to its record.",
  "failure_modes_checked": [
   "subclass imposter",
   "tampered mean with a stale digest",
@@ -35,7 +37,14 @@
   "prediction issued after a revocation",
   "read-only session",
   "missing declaration",
-  "frame mismatch"
+  "frame mismatch",
+  "intake: extrinsic record for an intrinsic state",
+  "intake: undeclared mode or geometry class",
+  "intake: uncalibrated, undeclared, expired or revoked calibration",
+  "intake: latency declared twice",
+  "intake: reading older than the session clock",
+  "intake: a record fused twice or re-sent under a new sequence number and raw reference",
+  "intake: a reading fused directly on the session around the intake"
  ],
  "findings": [
   {
@@ -168,6 +177,10 @@
    "claim": "Every admission check refuses the candidates built to violate it, with that check's own refusal code, including a candidate superseded by a second update at the same tick and predictions issued after an inconsistent update or after a calibration revocation",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -294,6 +307,10 @@
    "claim": "Mutation analysis: deleting the check a scenario targets changes that scenario's outcome for every scenario, and the violating candidate is then admitted except in two scenarios where a later check still refuses it (a missing declaration fails the innovation check closed; a forged candidate is not the latest issue, so the freshness check refuses it)",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -381,6 +398,10 @@
    "claim": "A candidate carries every innovation fused since the last admitted, initialized or reacquired state and every calibration its state was built under since the last initialization or reacquisition: after an inconsistent update a later consistent update is still refused until an explicit re-initialization, a prediction after a revocation cites the revoked calibration, and after an admission the next candidate carries only the innovations fused after it",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -470,6 +491,10 @@
    "claim": "Observations, candidates and admitted states are unrelated types; candidates are never admitted automatically; an admitted state exists only through the gate and is immutable",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -509,6 +534,301 @@
   {
    "assigned_by": "ciw.lab.evidence",
    "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 4.14287731738365e-15,
+      "passed": true,
+      "reference": "fused mean against the block-eliminated batch posterior of the hand-mapped readings (max relative)",
+      "reference_kind": "cross_implementation",
+      "tolerance": 1e-09
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 3.4750164731166575e-16,
+      "passed": true,
+      "reference": "fused covariance against the batch posterior (max relative)",
+      "reference_kind": "cross_implementation",
+      "tolerance": 1e-09
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "states admitted before the explicit gate call",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "admitted states after one gate call minus one",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "admitted state not bound to the final candidate",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "fused readings minus traced readings",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "traced readings minus the tracker records",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "distinct section-4 records behind the traced readings minus the tracker records",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "a traced reading without a ledger admission or raw reference",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "records": "ciw.lab.sensor_fusion_intake.tracker_records",
+     "seed": 752027,
+     "sensor": "tracker_measurement",
+     "ticks": 12
+    }
+   },
+   "claim": "End to end, section-4 tracker records pass through declared frame and clock mappings into a writable fusion session whose candidate equals the batch posterior of the hand-mapped readings; nothing is admitted until one explicit gate call, and every reading the session fused traces to its own retained, ledger-admitted section-4 record with a raw reference",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "largest relative difference between the fused and batch posteriors",
+    "kind": "roundoff",
+    "value": 4.14287731738365e-15
+   },
+   "unit": null,
+   "value": {
+    "admitted_after_gate": 1,
+    "admitted_checks": [
+     "declared",
+     "writable",
+     "typed",
+     "finite",
+     "covariance",
+     "integrity",
+     "provenance",
+     "frame",
+     "fresh",
+     "track",
+     "uncertainty",
+     "innovation",
+     "calibration"
+    ],
+    "auto_admitted_before_gate": 0,
+    "declared_admission": {
+     "expected_frame_id": "world",
+     "max_position_std": 0.01,
+     "nis_probability": 0.999
+    },
+    "reference": {
+     "relative_covariance_gap": 3.4750164731166575e-16,
+     "relative_mean_gap": 4.14287731738365e-15
+    },
+    "trace": {
+     "all_ledger_admitted_with_raw_ref": true,
+     "distinct_records": 12,
+     "final_raw_ref": "raw:tracker:12",
+     "final_source_is_last_record": true,
+     "fused_by_session": 12,
+     "readings": 12
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "extrinsic_for_intrinsic",
+      "observed_refusal": "extrinsic_for_intrinsic",
+      "passed": true,
+      "reference": "intake: extrinsic for intrinsic",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "extrinsic_for_intrinsic",
+      "observed_refusal": "extrinsic_for_intrinsic",
+      "passed": true,
+      "reference": "intake: extrinsic chord for intrinsic",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "geometry_mismatch",
+      "observed_refusal": "geometry_mismatch",
+      "passed": true,
+      "reference": "intake: geometry mismatch",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "no_channel",
+      "observed_refusal": "no_channel",
+      "passed": true,
+      "reference": "intake: no channel",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "uncalibrated_record",
+      "observed_refusal": "uncalibrated_record",
+      "passed": true,
+      "reference": "intake: uncalibrated record",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "calibration_not_declared",
+      "observed_refusal": "calibration_not_declared",
+      "passed": true,
+      "reference": "intake: calibration not declared",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "calibration_expired",
+      "observed_refusal": "calibration_expired",
+      "passed": true,
+      "reference": "intake: calibration expired",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "calibration_revoked",
+      "observed_refusal": "calibration_revoked",
+      "passed": true,
+      "reference": "intake: calibration revoked",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "double_latency",
+      "observed_refusal": "double_latency",
+      "passed": true,
+      "reference": "intake: double latency",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "already_fused",
+      "observed_refusal": "already_fused",
+      "passed": true,
+      "reference": "intake: already fused",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "duplicate_reading",
+      "observed_refusal": "duplicate_reading",
+      "passed": true,
+      "reference": "intake: duplicate reading",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "out_of_order",
+      "observed_refusal": "out_of_order",
+      "passed": true,
+      "reference": "intake: out of order",
+      "reference_kind": "refusal"
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "session state, clock, candidate or admissions changed by the refusals",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     },
+     {
+      "expected_refusal": "untraced_reading",
+      "observed_refusal": "untraced_reading",
+      "passed": true,
+      "reference": "trace after a reading the intake fused is fused again directly on the session",
+      "reference_kind": "refusal"
+     }
+    ],
+    "derivation": "ObservationIntake._convert and FusionSession.fuse",
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "records": "ciw.lab.sensor_fusion_intake.tracker_records",
+     "seed": 752027,
+     "sensor": "tracker_measurement",
+     "ticks": 12
+    }
+   },
+   "claim": "The intake refuses, before fusing and without changing the session, an extrinsic record offered to an intrinsic surface-chart state, a mode of another geometry class, a mode without a declared channel, an uncalibrated record or one citing an undeclared calibration, an expired or revoked fusion calibration, a latency declared twice, a record it already fused and a re-sent copy of one; the session's own out-of-order refusal passes through, and the lineage trace refuses a session that fused a reading around the intake",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks",
+    "synthetic_inputs"
+   ],
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "refusal codes and a state digest",
+    "kind": "reference_error",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "bypass": {
+     "fused_by_session_after_bypass": 2,
+     "trace_after_direct_fusion": "untraced_reading",
+     "traced_before_bypass": 1
+    },
+    "refusals": {
+     "already_fused": "already_fused",
+     "calibration_expired": "calibration_expired",
+     "calibration_not_declared": "calibration_not_declared",
+     "calibration_revoked": "calibration_revoked",
+     "double_latency": "double_latency",
+     "duplicate_reading": "duplicate_reading",
+     "extrinsic_chord_for_intrinsic": "extrinsic_for_intrinsic",
+     "extrinsic_for_intrinsic": "extrinsic_for_intrinsic",
+     "geometry_mismatch": "geometry_mismatch",
+     "no_channel": "no_channel",
+     "out_of_order": "out_of_order",
+     "uncalibrated_record": "uncalibrated_record"
+    },
+    "state_unchanged": true
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
     "generator": {
      "bit_generator": "PCG64",
      "name": "ciw.lab.sensor_fusion_bench",
@@ -519,9 +839,32 @@
    "claim": "An admitted synthetic state may command actuators",
    "domain": "actuator_authority",
    "evidence_status": "not_established",
+   "origin": [
+    "synthetic_inputs"
+   ],
    "uncertainty": null,
    "unit": null,
    "value": "not established: admission is a software gate over synthetic data; authority is decided elsewhere"
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "seed": 752027
+    },
+    "notes": "synthetic draws only; no acquisition"
+   },
+   "claim": "The declared tracker latency, synchronization and room-to-cell mapping are those of a real tracker installation",
+   "domain": "calibration",
+   "evidence_status": "not_established",
+   "origin": [
+    "synthetic_inputs"
+   ],
+   "uncertainty": null,
+   "unit": null,
+   "value": "not established: every mapping, latency and noise value in the intake demonstration is declared"
   }
  ],
  "generated_artifacts": [
@@ -529,16 +872,22 @@
    "bytes": 4438,
    "path": "artifacts/T075/admission_mutations.json",
    "sha256": "7ae899afa9e96356fe77c74612ef1922add50bc392bee587a8eccc88a17ff874"
+  },
+  {
+   "bytes": 26035,
+   "path": "artifacts/T075/intake_demonstration.json",
+   "sha256": "b560e6d2922b54c6507c0af61e6eaa7decf93893704f295c2eff9a7c453291a0"
   }
  ],
- "hypothesis": "Keeping observations, candidate states and admitted states as separate types, with a single explicit gate whose every check is load-bearing and candidates that carry the evidence of every update their state depends on, guards against a candidate becoming state by accident, naive tampering or omission, including a prediction issued after an inconsistent update.",
+ "hypothesis": "Keeping observations, candidate states and admitted states as separate types, with a single explicit gate whose every check is load-bearing and candidates that carry the evidence of every update their state depends on, guards against a candidate becoming state by accident, naive tampering or omission, including a prediction issued after an inconsistent update; the same separation holds end to end from a typed section-4 record through declared mappings, fusion and a candidate to an explicit admission.",
  "input_data": [
   "one synthetic camera run (seed 752026) driving a FusionSession for each scenario and for the inheritance sequence",
-  "16 violation scenarios covering all 13 checks, plus one valid control"
+  "16 violation scenarios covering all 13 checks, plus one valid control",
+  "intake demonstration: 12 room-frame tracker records (seed 752027, declared sigma 0.0005 m), stamped on arrival, 0.125 s fusion tick, 12 refusal cases"
  ],
  "mathematical_model": "Admission = ordered conjunction of declared checks (declared, writable, typed, finite, covariance, integrity, provenance, frame, fresh, track, uncertainty, innovation, calibration); fresh means the most recently issued candidate at the session tick; the innovation check covers every innovation since the last admitted, initialized or reacquired state and the calibration check every calibration since the last initialization or reacquisition; fail closed on any exception. Mutation m_i removes check i.",
  "number": 75,
- "numerical_result": "16/16 scenarios refused with the expected code; 16/16 mutants killed; in 14 scenarios the targeted check is the sole guard; backed up by a later check: declared, provenance (the provenance check adds a specific refusal code, but freshness already implies an issued digest).",
+ "numerical_result": "16/16 scenarios refused with the expected code; 16/16 mutants killed; in 14 scenarios the targeted check is the sole guard; backed up by a later check: declared, provenance (the provenance check adds a specific refusal code, but freshness already implies an issued digest). Intake: fused state within 4.1e-15 (mean) and 3.5e-16 (covariance) of the batch posterior, 12 readings traced, 1 admission after the gate; refusals ['already_fused', 'calibration_expired', 'calibration_not_declared', 'calibration_revoked', 'double_latency', 'duplicate_reading', 'extrinsic_for_intrinsic', 'geometry_mismatch', 'no_channel', 'out_of_order', 'uncalibrated_record'].",
  "observation_model": "Typed Observation objects; candidates issued by the session and sealed by a content digest.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -552,15 +901,17 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/sensor_fusion_admission.py": "a0d36bf665e88d2851b08c6181a8f794e39751a688a04ebd586fbc93164cc3c7",
+   "src/ciw/lab/observation_modes.py": "14fcc803e9543fa4a6891775dfac6633ca15ade648e6125e2f71fde4c4201c90",
+   "src/ciw/lab/sensor_fusion_admission.py": "e0b488855ec251024bfcc9c57dc77430ec45ceee337acfbc6a109fb747a747d0",
    "src/ciw/lab/sensor_fusion_bench.py": "f373849a4c6836fa20685c59ce7a6fe6bf732f6df9d6a49646cdc017262dd656",
    "src/ciw/lab/sensor_fusion_common.py": "db3b0430ad5c13920239cef354da61b64ab1b01f84b2d3d5aff2f78840a5867a",
-   "src/ciw/lab/sensor_fusion_objects.py": "93fc55ddca91f1adfb886d21805ea8f82586548ee84e1f6cc7daed4df1f53bb9"
+   "src/ciw/lab/sensor_fusion_intake.py": "e8919ac1c921ec4c8e21e80924b493bfa4773071492a6c33a17a4c9990d1cde2",
+   "src/ciw/lab/sensor_fusion_objects.py": "50ec8767a90f261f108d6524c7ff55d22604b55cc9853e749ba4c5f71bc76081"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T076: confirm that the session defaults to read-only with sensor fusion and state admission not performed.",
- "report_id": "sha256:646be989e90b8f837ef8d5666f0e3b7d8bbe4e648a2601d3464e5ea1de65e881",
+ "recommended_next_task": "Deferred research question: an intrinsic surface-chart channel, a record mode that delivers a two-component chart position with its geometry/sensor split (for example a pair of tape readings along declared geodesics, or a tracker position unrolled through a declared surface model as T045 does for chords), so the intrinsic session has an admissible input instead of only a refusal; then repeat this pipeline on it.",
+ "report_id": "sha256:170397ee6093ea0b641ee0d13506f0001f7e5bf74b57fe6e26e28ea2c658cd4f",
  "schema": "ciw.lab-task-report.v1",
  "section": "sensor-fusion",
  "state": "completed",
@@ -598,17 +949,45 @@
   "check: Observations, candidates and admitted states are unrelated types; candidates are never admitted automatically; an admitted state exists only through the gate and is immutable vs mutate an admitted state",
   "check: Observations, candidates and admitted states are unrelated types; candidates are never admitted automatically; an admitted state exists only through the gate and is immutable vs a candidate accepted an attribute assignment (frozen dataclass)",
   "check: Observations, candidates and admitted states are unrelated types; candidates are never admitted automatically; an admitted state exists only through the gate and is immutable vs an observation accepted an attribute assignment (frozen dataclass)",
+  "check: End to end, section-4 tracker records pass through declared frame and clock mappings into a writable fusion session whose candidate equals the batch posterior of the hand-mapped readings; nothing is admitted until one explicit gate call, and every reading the session fused traces to its own retained, ledger-admitted section-4 record with a raw reference vs fused mean against the block-eliminated batch posterior of the hand-mapped readings (max relative)",
+  "check: End to end, section-4 tracker records pass through declared frame and clock mappings into a writable fusion session whose candidate equals the batch posterior of the hand-mapped readings; nothing is admitted until one explicit gate call, and every reading the session fused traces to its own retained, ledger-admitted section-4 record with a raw reference vs fused covariance against the batch posterior (max relative)",
+  "check: End to end, section-4 tracker records pass through declared frame and clock mappings into a writable fusion session whose candidate equals the batch posterior of the hand-mapped readings; nothing is admitted until one explicit gate call, and every reading the session fused traces to its own retained, ledger-admitted section-4 record with a raw reference vs states admitted before the explicit gate call",
+  "check: End to end, section-4 tracker records pass through declared frame and clock mappings into a writable fusion session whose candidate equals the batch posterior of the hand-mapped readings; nothing is admitted until one explicit gate call, and every reading the session fused traces to its own retained, ledger-admitted section-4 record with a raw reference vs admitted states after one gate call minus one",
+  "check: End to end, section-4 tracker records pass through declared frame and clock mappings into a writable fusion session whose candidate equals the batch posterior of the hand-mapped readings; nothing is admitted until one explicit gate call, and every reading the session fused traces to its own retained, ledger-admitted section-4 record with a raw reference vs admitted state not bound to the final candidate",
+  "check: End to end, section-4 tracker records pass through declared frame and clock mappings into a writable fusion session whose candidate equals the batch posterior of the hand-mapped readings; nothing is admitted until one explicit gate call, and every reading the session fused traces to its own retained, ledger-admitted section-4 record with a raw reference vs fused readings minus traced readings",
+  "check: End to end, section-4 tracker records pass through declared frame and clock mappings into a writable fusion session whose candidate equals the batch posterior of the hand-mapped readings; nothing is admitted until one explicit gate call, and every reading the session fused traces to its own retained, ledger-admitted section-4 record with a raw reference vs traced readings minus the tracker records",
+  "check: End to end, section-4 tracker records pass through declared frame and clock mappings into a writable fusion session whose candidate equals the batch posterior of the hand-mapped readings; nothing is admitted until one explicit gate call, and every reading the session fused traces to its own retained, ledger-admitted section-4 record with a raw reference vs distinct section-4 records behind the traced readings minus the tracker records",
+  "check: End to end, section-4 tracker records pass through declared frame and clock mappings into a writable fusion session whose candidate equals the batch posterior of the hand-mapped readings; nothing is admitted until one explicit gate call, and every reading the session fused traces to its own retained, ledger-admitted section-4 record with a raw reference vs a traced reading without a ledger admission or raw reference",
+  "check: The intake refuses, before fusing and without changing the session, an extrinsic record offered to an intrinsic surface-chart state, a mode of another geometry class, a mode without a declared channel, an uncalibrated record or one citing an undeclared calibration, an expired or revoked fusion calibration, a latency declared twice, a record it already fused and a re-sent copy of one; the session's own out-of-order refusal passes through, and the lineage trace refuses a session that fused a reading around the intake vs intake: extrinsic for intrinsic",
+  "check: The intake refuses, before fusing and without changing the session, an extrinsic record offered to an intrinsic surface-chart state, a mode of another geometry class, a mode without a declared channel, an uncalibrated record or one citing an undeclared calibration, an expired or revoked fusion calibration, a latency declared twice, a record it already fused and a re-sent copy of one; the session's own out-of-order refusal passes through, and the lineage trace refuses a session that fused a reading around the intake vs intake: extrinsic chord for intrinsic",
+  "check: The intake refuses, before fusing and without changing the session, an extrinsic record offered to an intrinsic surface-chart state, a mode of another geometry class, a mode without a declared channel, an uncalibrated record or one citing an undeclared calibration, an expired or revoked fusion calibration, a latency declared twice, a record it already fused and a re-sent copy of one; the session's own out-of-order refusal passes through, and the lineage trace refuses a session that fused a reading around the intake vs intake: geometry mismatch",
+  "check: The intake refuses, before fusing and without changing the session, an extrinsic record offered to an intrinsic surface-chart state, a mode of another geometry class, a mode without a declared channel, an uncalibrated record or one citing an undeclared calibration, an expired or revoked fusion calibration, a latency declared twice, a record it already fused and a re-sent copy of one; the session's own out-of-order refusal passes through, and the lineage trace refuses a session that fused a reading around the intake vs intake: no channel",
+  "check: The intake refuses, before fusing and without changing the session, an extrinsic record offered to an intrinsic surface-chart state, a mode of another geometry class, a mode without a declared channel, an uncalibrated record or one citing an undeclared calibration, an expired or revoked fusion calibration, a latency declared twice, a record it already fused and a re-sent copy of one; the session's own out-of-order refusal passes through, and the lineage trace refuses a session that fused a reading around the intake vs intake: uncalibrated record",
+  "check: The intake refuses, before fusing and without changing the session, an extrinsic record offered to an intrinsic surface-chart state, a mode of another geometry class, a mode without a declared channel, an uncalibrated record or one citing an undeclared calibration, an expired or revoked fusion calibration, a latency declared twice, a record it already fused and a re-sent copy of one; the session's own out-of-order refusal passes through, and the lineage trace refuses a session that fused a reading around the intake vs intake: calibration not declared",
+  "check: The intake refuses, before fusing and without changing the session, an extrinsic record offered to an intrinsic surface-chart state, a mode of another geometry class, a mode without a declared channel, an uncalibrated record or one citing an undeclared calibration, an expired or revoked fusion calibration, a latency declared twice, a record it already fused and a re-sent copy of one; the session's own out-of-order refusal passes through, and the lineage trace refuses a session that fused a reading around the intake vs intake: calibration expired",
+  "check: The intake refuses, before fusing and without changing the session, an extrinsic record offered to an intrinsic surface-chart state, a mode of another geometry class, a mode without a declared channel, an uncalibrated record or one citing an undeclared calibration, an expired or revoked fusion calibration, a latency declared twice, a record it already fused and a re-sent copy of one; the session's own out-of-order refusal passes through, and the lineage trace refuses a session that fused a reading around the intake vs intake: calibration revoked",
+  "check: The intake refuses, before fusing and without changing the session, an extrinsic record offered to an intrinsic surface-chart state, a mode of another geometry class, a mode without a declared channel, an uncalibrated record or one citing an undeclared calibration, an expired or revoked fusion calibration, a latency declared twice, a record it already fused and a re-sent copy of one; the session's own out-of-order refusal passes through, and the lineage trace refuses a session that fused a reading around the intake vs intake: double latency",
+  "check: The intake refuses, before fusing and without changing the session, an extrinsic record offered to an intrinsic surface-chart state, a mode of another geometry class, a mode without a declared channel, an uncalibrated record or one citing an undeclared calibration, an expired or revoked fusion calibration, a latency declared twice, a record it already fused and a re-sent copy of one; the session's own out-of-order refusal passes through, and the lineage trace refuses a session that fused a reading around the intake vs intake: already fused",
+  "check: The intake refuses, before fusing and without changing the session, an extrinsic record offered to an intrinsic surface-chart state, a mode of another geometry class, a mode without a declared channel, an uncalibrated record or one citing an undeclared calibration, an expired or revoked fusion calibration, a latency declared twice, a record it already fused and a re-sent copy of one; the session's own out-of-order refusal passes through, and the lineage trace refuses a session that fused a reading around the intake vs intake: duplicate reading",
+  "check: The intake refuses, before fusing and without changing the session, an extrinsic record offered to an intrinsic surface-chart state, a mode of another geometry class, a mode without a declared channel, an uncalibrated record or one citing an undeclared calibration, an expired or revoked fusion calibration, a latency declared twice, a record it already fused and a re-sent copy of one; the session's own out-of-order refusal passes through, and the lineage trace refuses a session that fused a reading around the intake vs intake: out of order",
+  "check: The intake refuses, before fusing and without changing the session, an extrinsic record offered to an intrinsic surface-chart state, a mode of another geometry class, a mode without a declared channel, an uncalibrated record or one citing an undeclared calibration, an expired or revoked fusion calibration, a latency declared twice, a record it already fused and a re-sent copy of one; the session's own out-of-order refusal passes through, and the lineage trace refuses a session that fused a reading around the intake vs session state, clock, candidate or admissions changed by the refusals",
+  "check: The intake refuses, before fusing and without changing the session, an extrinsic record offered to an intrinsic surface-chart state, a mode of another geometry class, a mode without a declared channel, an uncalibrated record or one citing an undeclared calibration, an expired or revoked fusion calibration, a latency declared twice, a record it already fused and a re-sent copy of one; the session's own out-of-order refusal passes through, and the lineage trace refuses a session that fused a reading around the intake vs trace after a reading the intake fused is fused again directly on the session",
   "pytest: tests/test_lab_sensor_fusion.py::test_typed_objects_and_admission_mutations",
   "pytest: tests/test_lab_sensor_fusion.py::test_candidates_inherit_inconsistent_innovations_and_revocations",
+  "pytest: tests/test_lab_sensor_fusion.py::test_observation_to_admission_pipeline_end_to_end",
+  "pytest: tests/test_lab_sensor_fusion.py::test_intake_refusals_leave_the_session_unchanged",
+  "pytest: tests/test_lab_sensor_fusion.py::test_intake_counts_each_measurement_once_and_trace_refuses_bypasses",
   "pytest: tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T075]"
  ],
  "tests_skipped": [],
  "title": "Keep observation, candidate state, and admitted state as separate objects.",
- "uncertainty": "None: the outcomes are deterministic.",
+ "uncertainty": "None for the gate outcomes and refusals (deterministic). The intake's agreement with the batch posterior carries roundoff only; both are ciw code, so it is a cross_implementation check.",
  "unresolved_assumptions": [
   "Python objects can be forced (object.__setattr__) by code with that intent; the gate defends against accident and naive tampering, not a hostile process.",
   "The declared thresholds are inputs; choosing them is outside this experiment.",
   "The innovation check applies the declared quantile to each carried innovation, so a consistent track with n innovations since its last admission is refused with probability 1 - p^n; frequent admission keeps n small.",
-  "After an inconsistent innovation the only recovery is explicit: re-initialization, or reacquisition once the track is declared lost."
+  "After an inconsistent innovation the only recovery is explicit: re-initialization, or reacquisition once the track is declared lost.",
+  "No section-4 mode delivers a two-component intrinsic position, so a surface-chart session has no admissible intake channel; the intrinsic case is exercised only as a refusal.",
+  "The intake fuses a record only at the tick its mapped acquisition time lands on; scalar records (distances, encoder displacement) and nonlinear ones (IMU orientation) have no channel into the planar position session."
  ]
 }

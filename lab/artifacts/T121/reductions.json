@@ -27,6 +27,12 @@
   "atomic-6",
   "atomic-7"
  ],
+ "gpu": {
+  "invalid": null,
+  "probed": false,
+  "ran": false,
+  "reason": "no NVIDIA GPU answered the hardware:nvidia-gpu probe in this task; the PTX kernel of the common workload exists (ciw.energy_cuda gaussian_vi), so this comparison runs on a host where the probe succeeds (needs hardware:nvidia-gpu)"
+ },
  "guarded_sign": {
   "cancellation-float32": {
    "decided_orders": 0,
@@ -39,6 +45,65 @@
    "largest_abs_sum": 0.26123046875,
    "orders": 14,
    "smallest_order_bound": 0.9990954694065205
+  }
+ },
+ "kernel_reductions": {
+  "iterations": 38,
+  "kl_reference": 6.851256876989986e-09,
+  "numpy_reference_ulp": 0,
+  "reference": [
+   1.171504942472618,
+   -0.37247843839216854,
+   0.46987934615301363,
+   0.06215352132230255,
+   0.06215352132230255,
+   0.4090259797893383
+  ],
+  "reference_accepted": true,
+  "target_kl_nats": 1e-08,
+  "variants": {
+   "fma-first": {
+    "accepted": true,
+    "kl_nats": 6.851256876989986e-09,
+    "max_ulp": 3,
+    "outputs": [
+     1.171504942472618,
+     -0.37247843839216854,
+     0.4698793461530138,
+     0.06215352132230255,
+     0.06215352132230255,
+     0.4090259797893383
+    ],
+    "rule": "a*b + c*d -> fma(a, b, c*d); m - alpha*g -> fma(-alpha, g, m); det -> fma(Q00, Q11, -(Q01*Q10))"
+   },
+   "fma-second": {
+    "accepted": true,
+    "kl_nats": 6.851256876989986e-09,
+    "max_ulp": 6,
+    "outputs": [
+     1.171504942472618,
+     -0.37247843839216854,
+     0.46987934615301363,
+     0.06215352132230251,
+     0.06215352132230251,
+     0.4090259797893383
+    ],
+    "rule": "a*b + c*d -> fma(c, d, a*b); m - alpha*g -> fma(-alpha, g, m); det -> fma(-Q01, Q10, Q00*Q11)"
+   },
+   "reassociated": {
+    "accepted": true,
+    "kl_nats": 6.851256876989986e-09,
+    "max_ulp": 0,
+    "outputs": [
+     1.171504942472618,
+     -0.37247843839216854,
+     0.46987934615301363,
+     0.06215352132230255,
+     0.06215352132230255,
+     0.4090259797893383
+    ],
+    "rule": "((P_i0 m_0) + (P_i1 m_1)) - b_i -> (P_i0 m_0) + ((P_i1 m_1) - b_i), no fused operations"
+   }
   }
  },
  "n": 16384,

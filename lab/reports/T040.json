@@ -50,6 +50,10 @@
    "claim": "The smooth ciw.lab.jacobi heading column equals sin(L) on the unit sphere",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 0.0
@@ -115,6 +119,10 @@
    "claim": "Finite-difference mesh Jacobi fields with a 0.1 rad heading offset converge to the smooth field",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-06,
     "rel": 1e-06
@@ -201,6 +209,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-08,
     "rel": 1e-06
@@ -273,6 +285,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -339,6 +355,10 @@
    "claim": "With the mixed Voronoi area the valence-5 curvature estimate converges",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -424,6 +444,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -493,6 +517,10 @@
    "claim": "Angle-defect curvature on regular torus grids converges at second order to the sign-changing K",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-06,
     "rel": 1e-06
@@ -526,6 +554,7 @@
    "claim": "Angle-defect curvature of a scanned mesh estimates the Gaussian curvature of the physical part",
    "domain": "physical",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -567,14 +596,14 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/surfaces_discrete_mesh.py": "cc005d2dfb3102b2594e085f9cdcba74ca0e6325edf9865010189ac5f6398500",
+   "src/ciw/lab/surfaces_discrete_mesh.py": "bd83d5f82c82c46a746fe77b3877a010e998d1ef219a90a2dc01bbf7f3c82455",
    "src/ciw/lab/surfaces_discrete_mesh_geometry.py": "b14d56fae8413d78853e96be27a1f11eac369afa0b7a3dbb53bc821511ba4d97",
    "src/ciw/lab/surfaces_discrete_mesh_studies.py": "618ea9848e8b750e333f81a395a7544c8b5127e53f4aae27d59b4f27e9967dfa"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T041: quantify how mesh quality (jitter, slivers, anisotropy) changes geodesic and curvature errors.",
- "report_id": "sha256:c3b92a553066079d377db16954af41ae21b0d74d22791905ca8a205580fad988",
+ "recommended_next_task": "Deferred research question: derive the mechanism of the valence-6 curvature plateau (about 2.6e-3) on the icosahedral mirror planes, for example by testing whether a smooth refinement (Loop subdivision projected to the sphere) instead of the recursive midpoint map removes it, and establish or refute pointwise convergence off the planes beyond level 7 and on irregular torus meshes.",
+ "report_id": "sha256:e393f108225b9b00604a13ad9a89862b405b5f2f2b68a3f9566add29eb5cb60f",
  "schema": "ciw.lab-task-report.v1",
  "section": "surfaces-discrete",
  "state": "completed",
@@ -596,6 +625,7 @@
   "check: Barycentric angle-defect curvature does not converge pointwise at valence-6 icosphere vertices on the icosahedral mirror planes vs finest minus level-4 base-edge max error",
   "check: Barycentric angle-defect curvature does not converge pointwise at valence-6 icosphere vertices on the icosahedral mirror planes vs finest mixed-Voronoi max error on the same mirror-plane vertices",
   "check: Angle-defect curvature on regular torus grids converges at second order to the sign-changing K vs fitted order - 2",
+  "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_next_steps_name_forward_work",
   "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_flat_jacobi_counterexample_and_valence_limit",
   "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_jacobi_task_report"
  ],

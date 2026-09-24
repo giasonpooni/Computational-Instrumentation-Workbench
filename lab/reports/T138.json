@@ -11,22 +11,25 @@
    "analytic": 0,
    "hardware_measured": 0,
    "independently_verified": 0,
-   "not_established": 2,
-   "numerically_verified": 3,
+   "not_established": 3,
+   "numerically_verified": 4,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "The comparators refuse absent measurements, schema fixtures (also when relabelled) and digest mismatches; start-pose and geometry sensitivities are linear over their declared steps.",
- "experiment": "Compute the prediction and its uncertainty components (open loop, conditioned on the start pose, and also on the as-built scan); evaluate a correct model against a tape realized 0.1 mm off its nominal offset with and without the start-pose term, and against the prediction re-integrated from a CMM start-pose estimate at the four 2-sigma corners; attempt the separation and pair comparisons with no measurement, with a schema fixture (as is and relabelled) and with a tampered record, and record the refusals.",
+ "expected_invariant": "The comparators refuse absent measurements, schema fixtures (also when relabelled) and digest mismatches; start-pose and geometry sensitivities are linear over their declared steps; the capture reader recovers synthetic captures exactly and refuses malformed or relabelled ones.",
+ "experiment": "Compute the prediction and its uncertainty components (open loop, conditioned on the start pose, and also on the as-built scan); evaluate a correct model against a tape realized 0.104 mm (2 sigma of the declared open-loop start error) off its nominal offset with and without the start-pose term, and against the prediction re-integrated from a CMM start-pose estimate at the four 2-sigma corners; attempt the separation and pair comparisons with no measurement, with a schema fixture (as is and relabelled) and with a tampered record, and record the refusals; run the capture reader and reductions on noise-free synthetic captures and malformed variants; read, retain and compare any operator capture bound to the run.",
  "failure_modes_checked": [
   "absent measurement (refused)",
   "schema fixture as measurement, also relabelled (refused)",
   "raw digest mismatch (refused)",
   "plate and cylinder pair comparisons without a measurement (refused)",
   "start-pose error outside the prediction uncertainty",
-  "linearity of geometry and start-pose sensitivities"
+  "linearity of geometry and start-pose sensitivities",
+  "malformed, relabelled or foreign-protocol captures (refused)",
+  "synthetic capture offered as a measurement record (refused)",
+  "chord-angle start-heading estimate biased by delta (j_lat(20) - 1) / 20 (replaced by the Jacobi-field solve)"
  ],
  "findings": [
   {
@@ -59,7 +62,7 @@
      },
      {
       "comparison": "abs_le",
-      "observed": 0.0003838384886023505,
+      "observed": 0.00039889652967084466,
       "passed": true,
       "reference": "sensitivity linearity max |forward / central - 1|, start/heading",
       "reference_kind": "self_convergence",
@@ -67,7 +70,7 @@
      },
      {
       "comparison": "abs_le",
-      "observed": 0.01508371514497453,
+      "observed": 0.01567529758389563,
       "passed": true,
       "reference": "sensitivity linearity max |forward / central - 1|, start/lateral",
       "reference_kind": "self_convergence",
@@ -78,6 +81,9 @@
    "claim": "Predicted separation of the 2 mm offset route at the MFG-COUPON-01 stations",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-06,
     "rel": 1e-06
@@ -85,42 +91,42 @@
    "uncertainty": {
     "basis": "k = 2 open-loop expanded uncertainty: dome tolerances, start pose and solver (mm)",
     "kind": "reference_error",
-    "value": 0.32033300742553683
+    "value": 0.3221552548946697
    },
    "unit": "mm",
    "value": {
     "conditioned_expanded_mm": [
-     0.00565685338560051,
-     0.011618211815425375,
-     0.021594997432115452,
-     0.037883504045472256,
-     0.08634305017594016,
-     0.13880587360524438,
-     0.1922831074277405,
-     0.24603490449531729,
-     0.2999133615155349
+     0.005656853385586897,
+     0.011618211781505024,
+     0.021594997295433363,
+     0.03788350442755218,
+     0.08634305082023253,
+     0.13880587433416114,
+     0.19228310822329425,
+     0.2460349053533781,
+     0.29991336243447403
     ],
     "open_loop_expanded_mm": [
-     0.09999998472840499,
-     0.10339701574993883,
-     0.11460896823209223,
-     0.11270147793168625,
-     0.1245563618152636,
-     0.16154665516090277,
-     0.21016793425389638,
-     0.26396199937135395,
-     0.32033300742553683
+     0.10392303258317548,
+     0.10745320856848006,
+     0.11910003757642307,
+     0.11688337462370889,
+     0.12739835992444665,
+     0.16350140462898438,
+     0.21179163209320043,
+     0.26559279826187077,
+     0.3221552548946697
     ],
     "scan_conditioned_expanded_mm": [
-     0.00565685338560051,
-     0.011604095615430509,
-     0.021240931305365904,
-     0.027109656421302173,
-     0.029876264880144412,
-     0.03339254661205189,
-     0.037044218559756405,
-     0.04076676741637622,
-     0.04454237506467937
+     0.005656853385586897,
+     0.011604095581468896,
+     0.021240931166405453,
+     0.027109656955227285,
+     0.029876266742163184,
+     0.03339254964200721,
+     0.03704422268918736,
+     0.04076677259492995,
+     0.044542381252093505
     ],
     "separation_mm": [
      1.9999998978014066,
@@ -141,7 +147,7 @@
     "checks": [
      {
       "comparison": "ge",
-      "observed": 1.8079673521997977,
+      "observed": 1.8788917732749837,
       "passed": true,
       "reference": "max E_n at stations 1..8, U_p without the start-pose term",
       "reference_kind": "analytic",
@@ -149,7 +155,7 @@
      },
      {
       "comparison": "le",
-      "observed": 0.8505815944043508,
+      "observed": 0.8579336693949243,
       "passed": true,
       "reference": "max E_n at stations 1..8, U_p with the declared start-pose term",
       "reference_kind": "analytic",
@@ -157,7 +163,7 @@
      },
      {
       "comparison": "le",
-      "observed": 0.4639852132798529,
+      "observed": 0.46399236585309744,
       "passed": true,
       "reference": "max E_n at stations 1..8, prediction re-integrated from a start pose estimated with 2-sigma CMM error, conditioned U_p",
       "reference_kind": "analytic",
@@ -166,7 +172,7 @@
     ],
     "generator": {
      "name": "exactly re-integrated realized tape (model output as ideal data)",
-     "realized_offset_mm": 2.1,
+     "realized_offset_mm": 2.1039230484541327,
      "seed": 20260926
     }
    },
@@ -174,13 +180,17 @@
    "counterexample": {
     "statement": "A physically correct model passes E_n <= 1 against its open-loop prediction when U covers only the instrument and the dome tolerances",
     "witness": {
-     "declared_jig_sigma_mm": 0.05,
-     "max_en_without_execution": 1.8079673521997977,
-     "realized_offset_mm": 2.1
+     "declared_jig_sigma_mm": 0.05196152422706632,
+     "max_en_without_execution": 1.8788917732749837,
+     "realized_offset_mm": 2.1039230484541327
     }
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-06,
     "rel": 1e-06
@@ -192,10 +202,10 @@
    },
    "unit": null,
    "value": {
-    "max_en_conditioned": 0.4639852132798529,
-    "max_en_open_loop": 0.8505815944043508,
-    "max_en_without_execution": 1.8079673521997977,
-    "realized_offset_mm": 2.1
+    "max_en_conditioned": 0.46399236585309744,
+    "max_en_open_loop": 0.8579336693949243,
+    "max_en_without_execution": 1.8788917732749837,
+    "realized_offset_mm": 2.1039230484541327
    }
   },
   {
@@ -256,6 +266,9 @@
    "claim": "The comparison refuses to run without acquired hardware evidence",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -270,10 +283,160 @@
   },
   {
    "assigned_by": "ciw.lab.evidence",
-   "basis": {},
-   "claim": "Measured separation on the coupon agrees with the prediction (E_n <= 1 at every station)",
-   "domain": "physical",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 1.1823503509589273e-07,
+      "passed": true,
+      "reference": "|estimated - realized| start offset of the lateral tape (mm)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-06
+     },
+     {
+      "comparison": "le",
+      "observed": 1.154474855657138e-06,
+      "passed": true,
+      "reference": "|estimated - realized| start heading of the lateral tape (rad; a twentieth of the CMM heading uncertainty)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-05
+     },
+     {
+      "comparison": "le",
+      "observed": 0.00012819057266177936,
+      "passed": true,
+      "reference": "max over stations 1..8 of |separation reduced from the targets - prediction re-integrated from the estimated start pose| (mm)",
+      "reference_kind": "analytic",
+      "tolerance": 0.001
+     },
+     {
+      "comparison": "le",
+      "observed": 5.684341886080802e-14,
+      "passed": true,
+      "reference": "max |captured - predicted| over the plate chords, cylinder chords and cylinder film-minus-chord gaps (mm)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-09
+     },
+     {
+      "comparison": "ge",
+      "observed": 480.1300285869009,
+      "passed": true,
+      "reference": "largest E_n of the cylinder chords against the geodesic distances (the H3 signature is resolved)",
+      "reference_kind": "analytic",
+      "tolerance": 1.0
+     },
+     {
+      "expected_refusal": "capture_header",
+      "observed_refusal": "capture_header",
+      "passed": true,
+      "reference": "capture variant: banner kept, origin relabelled measurement",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "capture_expected",
+      "observed_refusal": "capture_expected",
+      "passed": true,
+      "reference": "capture variant: capture of another protocol",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "capture_columns",
+      "observed_refusal": "capture_columns",
+      "passed": true,
+      "reference": "capture variant: columns out of order",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "capture_header",
+      "observed_refusal": "capture_header",
+      "passed": true,
+      "reference": "capture variant: origin synthetic without the banner",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "capture_duplicate",
+      "observed_refusal": "capture_duplicate",
+      "passed": true,
+      "reference": "capture variant: row repeated",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "capture_header",
+      "observed_refusal": "capture_header",
+      "passed": true,
+      "reference": "capture variant: schema header missing",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "fixture_is_not_measurement",
+      "observed_refusal": "fixture_is_not_measurement",
+      "passed": true,
+      "reference": "capture variant: synthetic capture offered as a measurement record",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "capture_ids",
+      "observed_refusal": "capture_ids",
+      "passed": true,
+      "reference": "capture variant: target row missing",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "capture_value",
+      "observed_refusal": "capture_value",
+      "passed": true,
+      "reference": "capture variant: value that is not a number",
+      "reference_kind": "refusal"
+     }
+    ],
+    "generator": {
+     "name": "noise-free synthetic captures (manufacturing.synthetic_capture) of MFG-COUPON-01, MFG-FLAT-PLATE-01 and MFG-CYLINDER-01",
+     "realized_heading_rad": 0.0004,
+     "realized_offset_mm": 2.1,
+     "seed": null
+    }
+   },
+   "claim": "The capture reader and its reductions recover the separations, start pose, chords and gaps of noise-free synthetic captures and refuse malformed or relabelled ones",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
+   "regression_tolerance": {
+    "abs": 1e-06,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "second-order remainder of the separation reduction and start-pose estimate on the synthetic captures (mm)",
+    "kind": "truncation_bound",
+    "value": 0.00012819057266177936
+   },
+   "unit": "mm",
+   "value": {
+    "conditioned_separation_error_mm": 0.00012819057266177936,
+    "cylinder_chord_error_mm": 5.684341886080802e-14,
+    "cylinder_gap_error_mm": 5.684341886080802e-14,
+    "cylinder_signature_max_en": 480.1300285869009,
+    "estimated_start": {
+     "heading_rad": 0.0003988455251443429,
+     "lateral_mm": 2.099999881764965
+    },
+    "plate_chord_error_mm": 5.684341886080802e-14,
+    "start_heading_error_rad": 1.154474855657138e-06,
+    "start_lateral_error_mm": 1.1823503509589273e-07
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": "no operator capture was bound (roles photogrammetry, cmm, film)"
+   },
+   "claim": "Normalized errors of the bound metrology captures against the prediction of their protocol, computed from their unauthenticated bytes",
+   "domain": "computational_pipeline",
    "evidence_status": "not_established",
+   "expected_not_established": true,
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -281,9 +444,21 @@
   {
    "assigned_by": "ciw.lab.evidence",
    "basis": {},
-   "claim": "The start jig and tape laying realize the relative start pose of the offset tape within the declared 0.05 mm and 0.5 mrad",
+   "claim": "Measured separation on the coupon agrees with the prediction (E_n <= 1 at every station)",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "origin": [],
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "The start jig realizes the relative start pose of the offset tape within the declared 0.05 mm and 0.5 mrad of its insert and the laying and 0.01 mm and 0.1 mrad per seating of the jig",
    "domain": "calibration",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -291,29 +466,35 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 4892,
+   "bytes": 5634,
    "path": "artifacts/T138/predicted-separation.json",
-   "sha256": "82bc1033d7927d6410cd758f24d42afc447a25e7e8f8afc8a678e9082ee0e83c"
+   "sha256": "2f0cdf5096a7142cba30e337b11c26d8192d8853c7db7567f9a8735fc754cb10"
   },
   {
-   "bytes": 2575,
+   "bytes": 3447,
    "path": "artifacts/T138/pair-predictions.json",
-   "sha256": "62a4c5bd341d50e8f34ce13583908210f71d347b08c76715e79712d7d4017e76"
+   "sha256": "14729635b0d564805f4de99435e2bc870326d75f8e2e5a294a78ed1d0b02a332"
+  },
+  {
+   "bytes": 1492,
+   "path": "artifacts/T138/capture-reduction.json",
+   "sha256": "fcf7d9c76402529188d71fde6208958d20d8baccdee0c3ebdff7305945dd389d"
   }
  ],
- "hypothesis": "The predicted separation of the 2 mm offset tape (and its crossing near s = 154 mm) can be compared with measurement by the normalized error E_n, provided the prediction uncertainty includes the realized start pose of the tape (budgeted open loop, or removed by conditioning on its measured start pose); the comparison is only meaningful against acquired hardware evidence.",
+ "hypothesis": "The predicted separation of the 2 mm offset tape (and its crossing near s = 154 mm) can be compared with measurement by the normalized error E_n, provided the prediction uncertainty includes the realized start pose of the tape (budgeted open loop, or removed by conditioning on its measured start pose); the comparison is only meaningful against acquired hardware evidence, and bytes an operator binds are compared computationally without becoming that evidence.",
  "input_data": [
   "Nominal route and offset stations from T128 (k L / 8)",
   "Declared dome tolerances height +/- 0.2 mm, sigma +/- 0.5 mm",
   "Scan-derived dome covariance of MFG-SCAN-01 (T129, synthetic verification; declared scanner terms)",
-  "Declared relative start-pose error of the offset tape 0.05 mm and 0.5 mrad (1 sigma); CMM 0.002 mm",
+  "Declared relative start-pose error of the offset tape (1 sigma): insert and laying 0.05 mm and 0.5 mrad, two jig seatings of 0.01 mm and 0.1 mrad each; CMM 0.002 mm",
   "Plate and cylinder marker-pair predictions (T126, T127); declared radius tolerance +/- 0.1 mm",
-  "No measured separation, distance or gap (none exists)"
+  "Noise-free synthetic captures of the three control protocols (lateral tape started 2.1 mm and 0.4 mrad off)",
+  "Operator captures bound with --capture photogrammetry=, cmm= or film= (none in the retained clean-room run)"
  ],
- "mathematical_model": "E_n = |m - p| / sqrt(U_m^2 + U_p^2), U = 2 u. Open loop: u_p^2 = u_geometry^2 + u_solver^2 + u_start^2 with u_start from the declared jig error (0.05 mm, 0.5 mrad) times central-difference start sensitivities of the exactly re-integrated offset route. Conditioned: p is re-integrated from the CMM start pose and u_start uses its estimate uncertainty (offset sqrt(2) u_cmm, heading 2 u_cmm / 20 mm). Scan-conditioned: u_geometry^2 = g^T C g with g the dome sensitivities (height, width, centre) and C the MFG-SCAN-01 covariance (T129) instead of the declared tolerances. Pair comparator: E_n per plate marker pair (chord = geodesic) or cylinder pair (chord-geodesic gap, U_p = 2 |d gap / dR| u_R).",
+ "mathematical_model": "E_n = |m - p| / sqrt(U_m^2 + U_p^2), U = 2 u. Open loop: u_p^2 = u_geometry^2 + u_solver^2 + u_start^2 with u_start from the declared start-pose error (insert and laying 0.05 mm, 0.5 mrad; two jig seatings of 0.01 mm, 0.1 mrad each; in quadrature) times central-difference start sensitivities of the exactly re-integrated offset route. Conditioned: p is re-integrated from the CMM start pose and u_start uses its estimate uncertainty (offset sqrt(2) u_cmm, heading 2 u_cmm / 20 mm). Scan-conditioned: u_geometry^2 = g^T C g with g the dome sensitivities (height, width, centre) and C the MFG-SCAN-01 covariance (T129) instead of the declared tolerances. Pair comparator: E_n per plate marker pair (chord = geodesic) or cylinder pair (chord-geodesic gap, U_p = 2 |d gap / dR| u_R). Captures: a separation is the difference of two station targets projected on the model's in-surface normal of the nominal route; the start pose solves e(0) = delta, e(20) = delta j_lat(20) + dtheta j_head(20).",
  "number": 138,
- "numerical_result": "Predicted separation (mm) at stations: 2.000, 2.005, 2.051, 1.733, 1.157, 0.607, 0.059, -0.489, -1.037; k = 2 uncertainty up to 0.320 mm open loop, 0.300 mm conditioned on the measured start pose and 0.045 mm conditioned also on the as-built scan; a 0.1 mm start error gives max E_n 1.81 without the start-pose term, 0.85 with it (open loop) and 0.46 when the prediction is re-integrated from a CMM start-pose estimate 2 sigma off in offset and heading (conditioned U_p). No measured value exists.",
- "observation_model": "No observation: the measurement slot of MFG-COUPON-01 is empty. The planned observation is photogrammetry of coded targets on the tape centrelines at the nine stations plus CMM probing of the start pose.",
+ "numerical_result": "Predicted separation (mm) at stations: 2.000, 2.005, 2.051, 1.733, 1.157, 0.607, 0.059, -0.489, -1.037; k = 2 uncertainty up to 0.322 mm open loop, 0.300 mm conditioned on the measured start pose and 0.045 mm conditioned also on the as-built scan; a 0.104 mm start error gives max E_n 1.88 without the start-pose term, 0.86 with it (open loop) and 0.46 when the prediction is re-integrated from a CMM start-pose estimate 2 sigma off in offset and heading (conditioned U_p); synthetic captures: start pose recovered to 1.2e-07 mm and 1.2e-06 rad, separations to 1.3e-04 mm. No hardware-evidenced measurement exists. No operator capture was bound.",
+ "observation_model": "No observation: the measurement slot of MFG-COUPON-01 is empty. The planned observation is photogrammetry of coded targets on the tape centrelines at the nine stations plus CMM probing of the start pose, exported in the raw formats the protocols define; a bound export is read, retained and compared, but it is not authenticated and no metrology instrument probe exists, so it is never hardware evidence here.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
   "status": "not_established"
@@ -324,17 +505,22 @@
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
   "python": "3.12.3",
+  "requirement_probes": {
+   "capture:cmm": false,
+   "capture:film": false,
+   "capture:photogrammetry": false
+  },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/manufacturing.py": "f4cd90e1df33b910b78daf4b0556a8861e044d83701474f841e85fd9d96f9063",
-   "src/ciw/lab/manufacturing_geometry.py": "1db6df2ddf778668da2ffd53a66bcddbff4fc933d6f299e8f283cedc60a9332f",
-   "src/ciw/lab/manufacturing_metrology.py": "aef4708b0f296fc66087a6382881a0564c5edcb6d7961b5e472aa711e29feb5d",
-   "src/ciw/lab/manufacturing_records.py": "015ea7fccc586f4b95f64e7ffbc1f6c34eec20b8245778ede3c2324006537087"
+   "src/ciw/lab/manufacturing.py": "a489d9a93946a344e2878840d784e8087098775794108a6729d9179102767969",
+   "src/ciw/lab/manufacturing_geometry.py": "44830e8b1e2811dc3ade9eb1bc40691a6ae53f92c0b178dce5e5e111447879a1",
+   "src/ciw/lab/manufacturing_metrology.py": "f5c7694f91ac7b38a1f886b4acdc189d0abda403956e3b34d3f2dc8644c07dba",
+   "src/ciw/lab/manufacturing_records.py": "9d8cd35dc23541e9067fdced631c2a80bff1077b3bcba7fa9ae377c9db67626f"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "Execute MFG-SCAN-01 and MFG-COUPON-01 on hardware, retain them with T139 measurement records, add a raw-file reader, and rerun T138 (the plate and cylinder protocols use its pair comparator).",
- "report_id": "sha256:50d421e349cde8124262a7dee09fc0d5c2c7f83b24cfd2d6fd6be631ce6a6c45",
+ "recommended_next_task": "Deferred research question: define a signed-capture trust anchor (instrument-held signing keys and their verification) or a hardware:metrology probe, without which no capture can support a physical label. Meanwhile acquire MFG-COUPON-01 and bind its exports (ciw lab run T138 --capture photogrammetry=<targets.csv> --capture cmm=<start-pose.csv>), then retain the run with ciw lab hardware retain.",
+ "report_id": "sha256:d8ce81bf805c69b4dfb73f5aabc1e6d75cbc6f434e28772250a1f7da96930108",
  "schema": "ciw.lab-task-report.v1",
  "section": "manufacturing",
  "state": "partial",
@@ -355,16 +541,31 @@
   "check: The comparison refuses to run without acquired hardware evidence vs no measured plate marker-pair distance exists (pair comparator)",
   "check: The comparison refuses to run without acquired hardware evidence vs no measured cylinder chord-geodesic gap exists (pair comparator)",
   "check: The comparison refuses to run without acquired hardware evidence vs schema fixture offered as plate marker-pair measurements",
+  "check: The capture reader and its reductions recover the separations, start pose, chords and gaps of noise-free synthetic captures and refuse malformed or relabelled ones vs |estimated - realized| start offset of the lateral tape (mm)",
+  "check: The capture reader and its reductions recover the separations, start pose, chords and gaps of noise-free synthetic captures and refuse malformed or relabelled ones vs |estimated - realized| start heading of the lateral tape (rad; a twentieth of the CMM heading uncertainty)",
+  "check: The capture reader and its reductions recover the separations, start pose, chords and gaps of noise-free synthetic captures and refuse malformed or relabelled ones vs max over stations 1..8 of |separation reduced from the targets - prediction re-integrated from the estimated start pose| (mm)",
+  "check: The capture reader and its reductions recover the separations, start pose, chords and gaps of noise-free synthetic captures and refuse malformed or relabelled ones vs max |captured - predicted| over the plate chords, cylinder chords and cylinder film-minus-chord gaps (mm)",
+  "check: The capture reader and its reductions recover the separations, start pose, chords and gaps of noise-free synthetic captures and refuse malformed or relabelled ones vs largest E_n of the cylinder chords against the geodesic distances (the H3 signature is resolved)",
+  "check: The capture reader and its reductions recover the separations, start pose, chords and gaps of noise-free synthetic captures and refuse malformed or relabelled ones vs capture variant: banner kept, origin relabelled measurement",
+  "check: The capture reader and its reductions recover the separations, start pose, chords and gaps of noise-free synthetic captures and refuse malformed or relabelled ones vs capture variant: capture of another protocol",
+  "check: The capture reader and its reductions recover the separations, start pose, chords and gaps of noise-free synthetic captures and refuse malformed or relabelled ones vs capture variant: columns out of order",
+  "check: The capture reader and its reductions recover the separations, start pose, chords and gaps of noise-free synthetic captures and refuse malformed or relabelled ones vs capture variant: origin synthetic without the banner",
+  "check: The capture reader and its reductions recover the separations, start pose, chords and gaps of noise-free synthetic captures and refuse malformed or relabelled ones vs capture variant: row repeated",
+  "check: The capture reader and its reductions recover the separations, start pose, chords and gaps of noise-free synthetic captures and refuse malformed or relabelled ones vs capture variant: schema header missing",
+  "check: The capture reader and its reductions recover the separations, start pose, chords and gaps of noise-free synthetic captures and refuse malformed or relabelled ones vs capture variant: synthetic capture offered as a measurement record",
+  "check: The capture reader and its reductions recover the separations, start pose, chords and gaps of noise-free synthetic captures and refuse malformed or relabelled ones vs capture variant: target row missing",
+  "check: The capture reader and its reductions recover the separations, start pose, chords and gaps of noise-free synthetic captures and refuse malformed or relabelled ones vs capture variant: value that is not a number",
   "pytest: tests/test_lab_manufacturing.py::test_predicted_separation_has_no_measured_counterpart",
   "pytest: tests/test_lab_manufacturing.py::test_comparators_compute_normalized_errors_for_a_measurement_record",
   "pytest: tests/test_lab_manufacturing.py::test_every_task_is_registered_and_reports_honestly"
  ],
  "tests_skipped": [],
  "title": "Compare predicted and measured path separation.",
- "uncertainty": "Prediction uncertainty only (under the declared tolerances geometry dominates beyond mid-route; start pose dominates near the start in the open-loop case); the scan-conditioned uncertainty holds only if the as-built coupon passes the MFG-SCAN-01 model test; measurement uncertainty is declared until the protocol is executed.",
+ "uncertainty": "Prediction uncertainty only (under the declared tolerances geometry dominates beyond mid-route; start pose dominates near the start in the open-loop case); the scan-conditioned uncertainty holds only if the as-built coupon passes the MFG-SCAN-01 model test; measurement uncertainty is declared until the protocol is executed, and a capture's u column is the operator's declaration.",
  "unresolved_assumptions": [
   "The physical comparison has not been performed; its outcome is unknown.",
   "The tapes are assumed to follow geodesics after their measured start; in-plane tape bending is not budgeted.",
-  "A registered reader that parses separations or marker coordinates from raw photogrammetry files does not exist yet."
+  "Operator captures are unauthenticated: their origin header and u column are declarations, and no metrology instrument probe exists on any analysing host. Deferred research question: a signed-capture trust anchor (an instrument-held key that signs each export, verified by the workbench) or a hardware:metrology probe of an instrument attached to the analysing host; until one exists, a bound capture yields computational comparisons only and the physical claims stay not_established.",
+  "The plate and cylinder cmm captures (tape start poses) are read and retained but do not yet condition those predictions."
  ]
 }

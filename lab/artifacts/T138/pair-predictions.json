@@ -37,6 +37,56 @@
    9.36188078439
   ]
  },
+ "MFG-CYLINDER-01 chords": {
+  "expanded_uncertainty_mm": [
+   0.0597716981445,
+   0.115470053838,
+   0.163299316186,
+   0.2,
+   0.22307101433,
+   0.230940107676,
+   0.0,
+   0.0,
+   0.0816496580928,
+   0.0942809041582
+  ],
+  "geodesic_mm": [
+   52.3598775598,
+   104.71975512,
+   157.079632679,
+   209.439510239,
+   261.799387799,
+   314.159265359,
+   100.0,
+   200.0,
+   144.79719304,
+   254.310855063
+  ],
+  "pairs": [
+   "circumferential 30 deg",
+   "circumferential 60 deg",
+   "circumferential 90 deg",
+   "circumferential 120 deg",
+   "circumferential 150 deg",
+   "circumferential 180 deg",
+   "axial 100 mm",
+   "axial 200 mm",
+   "helical 60 deg / 100 mm",
+   "helical 90 deg / 200 mm"
+  ],
+  "values_mm": [
+   51.7638090205,
+   100.0,
+   141.421356237,
+   173.205080757,
+   193.185165258,
+   200.0,
+   100.0,
+   200.0,
+   141.421356237,
+   244.948974278
+  ]
+ },
  "MFG-FLAT-PLATE-01": {
   "expanded_uncertainty_mm": [
    0.0,

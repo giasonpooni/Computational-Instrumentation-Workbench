@@ -92,6 +92,10 @@
    "claim": "ANOVA Gage R&R recovers the declared variance components on synthetic studies",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-15,
     "rel": 1e-06
@@ -152,6 +156,10 @@
    "claim": "Sampling spread of %GRR from a single 10 x 3 x 3 study",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -195,6 +203,10 @@
    "claim": "Fraction of 10 x 3 x 3 studies whose raw operator component is negative (truncated to zero)",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-12,
     "rel": 1e-09
@@ -233,6 +245,9 @@
    "claim": "Gage R&R refuses unbalanced or incomplete designs",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -251,6 +266,7 @@
    "claim": "The real gage (instrument, fixture and operators) has %GRR below 10% on the coupon features",
    "domain": "sensor_performance",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -261,6 +277,7 @@
    "claim": "The measurement system is approved for production use",
    "domain": "production_acceptance",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": "not_performed"
@@ -273,16 +290,16 @@
    "sha256": "7ec414e1f6ad28c9031796710c8738ef7695ea25ea1dc3a7c6791c3a54fd008d"
   },
   {
-   "bytes": 15202,
+   "bytes": 20772,
    "path": "artifacts/T131/gage-rr-procedure.json",
-   "sha256": "3c55554fe1d94338a760838d40527e2bd345d3379300a7fa666aadda0bae8751"
+   "sha256": "3202ce3740b52fa11ed6da5cbd024ac94907f92a2817fa399feda506418ba2a7"
   }
  ],
  "hypothesis": "The ANOVA method recovers the variance components of a balanced crossed study without bias (before truncation), and a single 10 x 3 x 3 study estimates %GRR only within a wide sampling interval; the procedure of a real study must therefore fix its parts, run order, blinding, re-fixturing and reference variation in advance.",
  "input_data": [
   "Declared synthetic truth (mm): part 0.050, operator 0.006, interaction 0.004, repeatability 0.010",
   "Design 10 parts x 3 operators x 3 replicates; 2000 simulated studies (seed 20260928)",
-  "Procedure (gage-rr-procedure.json): the ten parts of each protocol are ten features of its specimen (plate marker pairs, cylinder marker pairs, coupon target separations); SHA-256-keyed run order per replicate and operator; re-fixturing before every replicate round; blinded coded features; a type-1 study on the SG-200 100 mm step"
+  "Procedure (gage-rr-procedure.json): the ten parts of each protocol are ten features of its specimen (plate marker pairs, cylinder marker pairs, the offsets of ten gage targets on the coupon's lateral tape, which is laid once and left alone on the coupon for the study); SHA-256-keyed run order per replicate and operator; re-fixturing before every replicate round; blinded coded features; a type-1 study on the SG-200 100 mm step"
  ],
  "mathematical_model": "y_ijk = mu + P_i + O_j + (PO)_ij + e_ijk; expected mean squares give s_e^2 = MS_E, s_po^2 = (MS_PO - MS_E)/r, s_o^2 = (MS_O - MS_PO)/(p r), s_p^2 = (MS_P - MS_PO)/(o r); %GRR = 100 sqrt(GRR / total); ndc = 1.41 s_p / s_GRR; type-1 study Cg = 0.2 T / (6 s), Cgk = (0.1 T - |bias|) / (3 s).",
  "number": 131,
@@ -300,15 +317,15 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/manufacturing.py": "f4cd90e1df33b910b78daf4b0556a8861e044d83701474f841e85fd9d96f9063",
-   "src/ciw/lab/manufacturing_geometry.py": "1db6df2ddf778668da2ffd53a66bcddbff4fc933d6f299e8f283cedc60a9332f",
-   "src/ciw/lab/manufacturing_metrology.py": "aef4708b0f296fc66087a6382881a0564c5edcb6d7961b5e472aa711e29feb5d",
-   "src/ciw/lab/manufacturing_records.py": "015ea7fccc586f4b95f64e7ffbc1f6c34eec20b8245778ede3c2324006537087"
+   "src/ciw/lab/manufacturing.py": "a489d9a93946a344e2878840d784e8087098775794108a6729d9179102767969",
+   "src/ciw/lab/manufacturing_geometry.py": "44830e8b1e2811dc3ade9eb1bc40691a6ae53f92c0b178dce5e5e111447879a1",
+   "src/ciw/lab/manufacturing_metrology.py": "f5c7694f91ac7b38a1f886b4acdc189d0abda403956e3b34d3f2dc8644c07dba",
+   "src/ciw/lab/manufacturing_records.py": "9d8cd35dc23541e9067fdced631c2a80bff1077b3bcba7fa9ae377c9db67626f"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T140: feed measured repeatability into the uncertainty budget once a real study exists (retained via T139).",
- "report_id": "sha256:e08c2922d937b8537f65816f73b326f9faa3195e2b81867aba5cfffee03e82b5",
+ "recommended_next_task": "Open: read the 10 x 3 x 3 readings of a real study run by gage-rr-procedure.json into gage_rr_anova (no reader of study exports exists) and replace T140's declared instrument terms by the measured repeatability; decide whether to apply the AIAG interaction-pooling rule, which is not applied.",
+ "report_id": "sha256:9b606955bc5bebfeddc58a11f6abb6c8ceba8da42a196f74f4de6eb5d393d888",
  "schema": "ciw.lab-task-report.v1",
  "section": "manufacturing",
  "state": "completed",

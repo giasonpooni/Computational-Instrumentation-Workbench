@@ -1,4 +1,12 @@
 {
+ "axis_frame": {
+  "face_parallel_to_axis": "datum_degenerate",
+  "pose_error": 2.93098878501e-14,
+  "radius_error_mm": 1.42108547152e-14,
+  "residual_mm": 1.42108547152e-14,
+  "scribe_on_axis": "datum_degenerate",
+  "too_few_points": "cylinder_underdetermined"
+ },
  "pairs": [
   {
    "chord_mm": 51.7638090205,
@@ -6,6 +14,10 @@
    "dz_mm": 0.0,
    "gap_mm": 0.596068539326,
    "geodesic_mm": 52.3598775598,
+   "markers": [
+    "C1-00",
+    "C1-01"
+   ],
    "pair": "circumferential 30 deg",
    "rk4_closure_mm": 1.58882185808e-14,
    "series_mm": 0.596065197633,
@@ -17,8 +29,12 @@
    "dz_mm": 0.0,
    "gap_mm": 4.71975511966,
    "geodesic_mm": 104.71975512,
+   "markers": [
+    "C1-11",
+    "C1-01"
+   ],
    "pair": "circumferential 60 deg",
-   "rk4_closure_mm": 3.17764371616e-14,
+   "rk4_closure_mm": 1.42108547152e-14,
    "series_mm": 4.7193286019,
    "series_remainder_bound_mm": 0.000428143953847
   },
@@ -28,8 +44,12 @@
    "dz_mm": 0.0,
    "gap_mm": 15.6582764422,
    "geodesic_mm": 157.079632679,
+   "markers": [
+    "C1-11",
+    "C1-02"
+   ],
    "pair": "circumferential 90 deg",
-   "rk4_closure_mm": 6.66133814775e-14,
+   "rk4_closure_mm": 0.0,
    "series_mm": 15.6510235236,
    "series_remainder_bound_mm": 0.00731524083644
   },
@@ -39,8 +59,12 @@
    "dz_mm": 0.0,
    "gap_mm": 36.2344294824,
    "geodesic_mm": 209.439510239,
+   "markers": [
+    "C1-10",
+    "C1-02"
+   ],
    "pair": "circumferential 120 deg",
-   "rk4_closure_mm": 5.12379653438e-14,
+   "rk4_closure_mm": 4.01943669423e-14,
    "series_mm": 36.180453482,
    "series_remainder_bound_mm": 0.0548024260924
   },
@@ -50,8 +74,12 @@
    "dz_mm": 0.0,
    "gap_mm": 68.6142225413,
    "geodesic_mm": 261.799387799,
+   "markers": [
+    "C1-10",
+    "C1-03"
+   ],
    "pair": "circumferential 150 deg",
-   "rk4_closure_mm": 0.0,
+   "rk4_closure_mm": 8.881784197e-14,
    "series_mm": 68.3590273086,
    "series_remainder_bound_mm": 0.261318331206
   },
@@ -61,8 +89,12 @@
    "dz_mm": 0.0,
    "gap_mm": 114.159265359,
    "geodesic_mm": 314.159265359,
+   "markers": [
+    "C1-09",
+    "C1-03"
+   ],
    "pair": "circumferential 180 deg",
-   "rk4_closure_mm": 1.33226762955e-13,
+   "rk4_closure_mm": 2.22044604925e-14,
    "series_mm": 113.254294252,
    "series_remainder_bound_mm": 0.936350827064
   },
@@ -72,6 +104,10 @@
    "dz_mm": 100.0,
    "gap_mm": 0.0,
    "geodesic_mm": 100.0,
+   "markers": [
+    "C0-00",
+    "C1-00"
+   ],
    "pair": "axial 100 mm",
    "rk4_closure_mm": 6.12323399574e-15
   },
@@ -81,6 +117,10 @@
    "dz_mm": 200.0,
    "gap_mm": 0.0,
    "geodesic_mm": 200.0,
+   "markers": [
+    "C0-00",
+    "C2-00"
+   ],
    "pair": "axial 200 mm",
    "rk4_closure_mm": 1.22464679915e-14
   },
@@ -90,6 +130,10 @@
    "dz_mm": 100.0,
    "gap_mm": 3.37583680289,
    "geodesic_mm": 144.79719304,
+   "markers": [
+    "C0-00",
+    "C1-02"
+   ],
    "pair": "helical 60 deg / 100 mm",
    "rk4_closure_mm": 3.17764371616e-14
   },
@@ -99,6 +143,10 @@
    "dz_mm": 200.0,
    "gap_mm": 9.36188078439,
    "geodesic_mm": 254.310855063,
+   "markers": [
+    "C0-00",
+    "C2-03"
+   ],
    "pair": "helical 90 deg / 200 mm",
    "rk4_closure_mm": 7.24233122607e-14
   }

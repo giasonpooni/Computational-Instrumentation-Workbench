@@ -75,6 +75,10 @@
    "claim": "Sphere conjugate points lie at pi R and 2 pi R and focal points at pi R/2 and 3 pi R/2 (R = 1 and R = 2)",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-07
@@ -146,6 +150,10 @@
    "claim": "On the torus outer equator conjugate points lie at pi sqrt(r(R+r)) multiples and focal points half-way",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-07
@@ -232,6 +240,10 @@
    "claim": "No conjugate or focal point occurs on the torus inner equator or the hyperbolic plane (K < 0)",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-07
@@ -298,6 +310,10 @@
    "claim": "Sturm comparison bound holds on every seeded torus geodesic that reaches a conjugate point (none occurs before pi/sqrt(max K)) and rejects a heading column integrated with 2K",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-06,
     "rel": 1e-06
@@ -421,6 +437,10 @@
    "claim": "Two-sided Sturm comparison with piecewise-constant curvature envelopes brackets the heading column on every seeded torus and bump geodesic and declared bump chord, and rejects the column integrated with 2K",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-06,
     "rel": 1e-06
@@ -520,6 +540,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-06,
     "rel": 1e-06
@@ -582,6 +606,11 @@
    "claim": "ciw conjugate and focal points match the pinned CSG provider's focus events on constant-curvature paths",
    "domain": "numerical",
    "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check",
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 0.0
@@ -651,7 +680,7 @@
    "python": "3.12.3",
    "scipy": "1.16.2",
    "sources": {
-    "src/ciw/lab/geodesic_jacobi.py": "70e9794df40fbf882cd117859a112b1301552d2c4faca7979f06e7c287828798",
+    "src/ciw/lab/geodesic_jacobi.py": "a3abaeabd7605e4a100c304efb6066d2b656644122bf602c06cb97691415a419",
     "src/ciw/lab/geodesic_jacobi_common.py": "7cb215a28e357a37f1c42cef6bdcb40e22abf7804ae9d58c4818fa40aa52da53"
    },
    "sympy": "1.14.0"
@@ -671,8 +700,8 @@
    "provider:csg": true
   }
  },
- "recommended_next_task": "T009: compare lateral and heading columns separately; T010: near-focus counterexamples",
- "report_id": "sha256:466ee619217ebab32046596372690eecf68d3f7c6a8960ed5b17b75222f3e26a",
+ "recommended_next_task": "Deferred research question: prove the monotonicity the bump's envelope comparison assumes (K(rho) decreasing up to its flank minimum and increasing beyond; now checked on a grid), for example by a sympy sign analysis of dK/drho, and exercise the global bound pi/sqrt(max K) on a variable-curvature path that meets K > 0 before the bound",
+ "report_id": "sha256:658952d58847f62969f42253deedb6d69fd311a1d88b94375b4d10f2ca6a2253",
  "schema": "ciw.lab-task-report.v1",
  "section": "geodesic-jacobi",
  "state": "completed",
@@ -712,7 +741,8 @@
   "pytest: tests/test_lab_geodesic_jacobi.py::test_csg_checkout_refusals",
   "pytest: tests/test_lab_geodesic_jacobi.py::test_csg_execution_refusals_are_expected_from_their_stage",
   "pytest: tests/test_lab_geodesic_jacobi.py::test_every_numerical_finding_declares_uncertainty_and_tolerance",
-  "pytest: tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space"
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space",
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_every_next_step_is_a_deferred_research_question"
  ],
  "tests_skipped": [],
  "title": "Locate conjugate and focal points numerically.",

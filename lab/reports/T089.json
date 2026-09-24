@@ -104,6 +104,9 @@
    "claim": "Admission status forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -200,6 +203,9 @@
    },
    "domain": "provenance",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -223,6 +229,7 @@
    "claim": "A retained replay receipt or verification authorizes admission of the replayed result into canonical state",
    "domain": "production_acceptance",
    "evidence_status": "not_established",
+   "origin": [],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -246,6 +253,7 @@
    "domain": "provenance",
    "evidence_status": "not_established",
    "expected_not_established": true,
+   "origin": [],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -294,13 +302,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/exchange_provenance.py": "f55593eb90af9ed82e40f0f04987c7f0a06cf1c40e7079b0a371e0506607618b",
-   "src/ciw/lab/exchange_provenance_common.py": "f8e765184af4e893a0c4c6d9e5cb2988b79e6f3dfc3d941444f335ecc894d775"
+   "src/ciw/lab/exchange_provenance.py": "0871a5e3e3a27b365a326036c869338b11e5aa3bc4af3ca60db29e81bedbba36",
+   "src/ciw/lab/exchange_provenance_common.py": "17ab892e3f285ac475b44c240155acf45f8bbdbefca28a345980aba548c6d1a9"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T090 (mutate provider runtime identity)",
- "report_id": "sha256:1a7cb67d8d8976b34c2851d97bc6d122e1f93aa961c4480bef59fe287a324424",
+ "recommended_next_task": "Deferred research question: define a signed admission authorization record (signer, key custody, scope of the admitted result) that CIW would require before any state_admission other than not_performed, and re-run to check that oscillator-admission.injected is refused (admission itself stays an authority decision, a production_acceptance claim never established here).",
+ "report_id": "sha256:f61733fc294b3815deb9089669a64a896c142b09afccfd82da1dc04e910ab4a5",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "completed",
@@ -317,14 +325,19 @@
   "check: Admission status forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs harness control: the unedited saved workspace reopens",
   "check: Surviving mutant oscillator-admission.injected: a sealed result carrying an injected state_admission reopens vs oscillator-admission.injected: accepted (1 = accepted)",
   "check: Surviving mutant oscillator-admission.injected: a sealed result carrying an injected state_admission reopens vs reopened result.get returns the injected state_admission beside verification_status not_verified (0 = shown)",
-  "pytest: tests/test_lab_exchange_provenance.py::test_admission_and_runtime_mutations"
+  "pytest: tests/test_lab_exchange_provenance.py::test_admission_and_runtime_mutations",
+  "pytest: tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work"
  ],
- "tests_skipped": [],
+ "tests_skipped": [
+  "pytest: tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply (skipped)"
+ ],
  "title": "Mutate admission status.",
  "uncertainty": "Outcomes are exact (accepted or a refusal message). Only kill/survive is a prediction; refusal messages are regression pins recorded from observed runs. Survivors are demonstrated forgeries; kills show only that these particular edits are detected, not that every edit of this field is.",
  "unresolved_assumptions": [
   "The forger model recomputes only unkeyed SHA-256 digests with CIW's public canonicalization; no key exists to steal.",
   "Pure-validator rows run candidate_evidence.validate_response on a synthetic telemetry-shaped record (schema, digest, three step occurrences) that no telemetry workflow validated, without an ESM process.",
-  "Whether a reader of a forged workspace would be misled depends on how the record is displayed; not assessed."
+  "Whether a reader of a forged workspace would be misled depends on how the record is displayed; not assessed.",
+  "Deferred research question (telemetry provider stack): provision the telemetry stack pinned in src/ciw/telemetry-runtimes.json (ppda, stfe, gsie, set, cbsr; scripts/check_lab.py provisions only ppda and set of these, and scripts/reproduce_lab.py TEST_VARIABLES has no variable for stfe, gsie or cbsr), bind it to a telemetry or declared-workload workflow, and observe the ESM candidate, candidate execution and ciw.subprocess-runtime.v1 identity rows and telemetry-validated records that are now read from code or replaced by a synthetic telemetry-shaped record.",
+  "Deferred research question (key custody and signatures): which key signs CIW workspace records, replay receipts and execution records, who holds it, how is it provisioned, rotated and revoked, and how does a verifier obtain its public key? Every seal and identity on these paths is an unkeyed SHA-256, so 'Retained workspace records are authenticated' stays not_established until records are signed (for example Ed25519 over the canonical record bytes, with an RFC 3161 timestamp for created_at) and T077 and T080-T090 are re-run against the signed records to check that every surviving forgery is refused."
  ]
 }

@@ -4,7 +4,7 @@
    "id": "H1",
    "statement": "The 2 mm offset tape crosses the nominal tape where the geodesic re-integrated from its measured start pose crosses (near the focal point F0)",
    "status": "hypothesis",
-   "test": "crossing arclength within the T140 expanded uncertainty of the focal distance (conditioned row)"
+   "test": "crossing arclength (linear interpolation between the two stations whose separations change sign, applied alike to the measured and the re-integrated predicted separations) within the T140 expanded uncertainty of the focal distance (conditioned row)"
   },
   {
    "id": "H2",
@@ -57,27 +57,27 @@
  "datum_frames": [
   {
    "constrains": "z translation, rotations about x and y",
-   "feature": "specimen back face (or mandrel axis for the cylinder)",
+   "feature": "specimen back face",
    "id": "A",
    "points": 3,
    "role": "primary"
   },
   {
    "constrains": "y translation, rotation about z",
-   "feature": "long reference edge (or axial scribe line)",
+   "feature": "long reference edge",
    "id": "B",
    "points": 2,
    "role": "secondary"
   },
   {
    "constrains": "x translation",
-   "feature": "end stop (or circumferential scribe)",
+   "feature": "end stop face",
    "id": "C",
    "points": 1,
    "role": "tertiary"
   },
   {
-   "definition": "z normal of A; x = B direction projected into A; origin on A, B plane and C plane (ciw.lab.manufacturing_metrology.datum_frame_321)",
+   "definition": "z normal of plane A; x = B direction projected into A; origin on A, B plane and C plane (ciw.lab.manufacturing_metrology.datum_frame_321)",
    "feature": "3-2-1 construction",
    "id": "PART",
    "role": "datum reference frame"
@@ -91,9 +91,122 @@
  "fixtures": [
   {
    "clamping": "normal to A, over the rests, torque declared per specimen",
-   "contacts": "three spherical rests on A, two on B, one on C",
+   "contacts": "three 12 mm spherical rests on A, two cylindrical side stops on B, one end stop on C",
+   "datum_targets": [
+    {
+     "adapters": [
+      "1.5 in SMR (tracker)",
+      "coded photogrammetry target adapter with the same centre (camera)"
+     ],
+     "frame": "FIXTURE: base plate centre, z up (declared)",
+     "id": "FX-321-T1",
+     "nest": "1.5 in SMR nest",
+     "position_mm": [
+      -200.0,
+      -200.0,
+      0.0
+     ]
+    },
+    {
+     "adapters": [
+      "1.5 in SMR (tracker)",
+      "coded photogrammetry target adapter with the same centre (camera)"
+     ],
+     "frame": "FIXTURE: base plate centre, z up (declared)",
+     "id": "FX-321-T2",
+     "nest": "1.5 in SMR nest",
+     "position_mm": [
+      200.0,
+      -200.0,
+      0.0
+     ]
+    },
+    {
+     "adapters": [
+      "1.5 in SMR (tracker)",
+      "coded photogrammetry target adapter with the same centre (camera)"
+     ],
+     "frame": "FIXTURE: base plate centre, z up (declared)",
+     "id": "FX-321-T3",
+     "nest": "1.5 in SMR nest",
+     "position_mm": [
+      200.0,
+      200.0,
+      0.0
+     ]
+    },
+    {
+     "adapters": [
+      "1.5 in SMR (tracker)",
+      "coded photogrammetry target adapter with the same centre (camera)"
+     ],
+     "frame": "FIXTURE: base plate centre, z up (declared)",
+     "id": "FX-321-T4",
+     "nest": "1.5 in SMR nest",
+     "position_mm": [
+      -200.0,
+      200.0,
+      0.0
+     ]
+    }
+   ],
+   "geometry": "rests at 10% and 90% of the specimen length under A; side stops 200 mm apart along B; a 400 x 400 mm base plate",
    "id": "FX-321",
-   "kind": "3-2-1 kinematic nest"
+   "kind": "3-2-1 kinematic nest",
+   "locates": [
+    "A",
+    "B",
+    "C"
+   ]
+  },
+  {
+   "contacts": "two dowel pins against datum B and a stop face against datum C",
+   "declared_realization_tolerance": {
+    "heading_rad": 0.0005,
+    "lateral_mm": 0.05,
+    "level": "1 sigma, relative pose of an offset insert's tape (insert and laying)",
+    "status": "declared_not_verified"
+   },
+   "declared_reseat_repeatability": {
+    "heading_rad": 0.0001,
+    "lateral_mm": 0.01,
+    "level": "1 sigma per seating against B and C; two seatings enter the relative pose of an offset tape",
+    "status": "declared_not_verified"
+   },
+   "geometry": {
+    "offsets": "each insert's slot centreline is offset laterally and rotated in heading from the nominal slot at the slot exit, where the tape leaves the jig",
+    "slot_length_mm": 20.0,
+    "slot_width_mm": 3.05,
+    "slots": [
+     {
+      "heading_offset_rad": 0.0,
+      "insert": "insert N",
+      "lateral_offset_mm": 0.0,
+      "slot": "N"
+     },
+     {
+      "heading_offset_rad": 0.0,
+      "insert": "insert L",
+      "lateral_offset_mm": 2.0,
+      "slot": "L"
+     },
+     {
+      "heading_offset_rad": 0.005,
+      "insert": "insert H",
+      "lateral_offset_mm": 0.0,
+      "slot": "H"
+     }
+    ],
+    "slots_per_insert": 1
+   },
+   "id": "JIG-START-01",
+   "kind": "tape start jig with one single-slot insert per tape",
+   "locates": [
+    "B",
+    "C"
+   ],
+   "use": "one tape per seating: seat the jig against B and C with the insert of the tape to be laid, lay that tape, remove the jig; re-seat it for the next tape after the previous one is removed",
+   "verification": "no pre-laying check: the start-pose step probes each laid tape with the CMM at s = 0 and 20 mm, and the prediction is budgeted open loop or conditioned on that pose (T138, T140)"
   }
  ],
  "frame_chain": [
@@ -127,6 +240,13 @@
    "declared_standard_uncertainty_mm": 0.02,
    "id": "camera",
    "kind": "photogrammetry camera system with coded targets",
+   "settings": {
+    "exposure": "fixed exposure with ring flash; lossless images",
+    "reference": "the holder's datum targets (coded adapters in their SMR nests) in every image set, so image sets taken while different tapes are on the specimen share the FIXTURE frame; the declared uncertainty covers a target coordinate in that frame, registration of its image set included",
+    "scale": "SB-1000 in every image set",
+    "stations": "12 convergent stations: 4 heights x 3 roll angles",
+    "targets": "6 mm coded retro-reflective targets"
+   },
    "status": "declared_not_verified"
   },
   {
@@ -134,12 +254,23 @@
    "id": "tracker",
    "kind": "laser tracker with 1.5 in SMR",
    "length_dependent_um_per_m": 6.0,
+   "settings": {
+    "mode": "stable point, 2 s averaging",
+    "target": "1.5 in SMR",
+    "warm_up_h": 1
+   },
    "status": "declared_not_verified"
   },
   {
    "declared_standard_uncertainty_mm": 0.002,
    "id": "cmm",
    "kind": "bridge CMM with touch-trigger probe",
+   "settings": {
+    "approach_speed_mm_s": 3.0,
+    "points": "as listed in each procedure step",
+    "probe": "touch-trigger probe, 2 mm ruby stylus",
+    "qualification": "stylus qualified on GS-25.4 at the start of each session"
+   },
    "status": "declared_not_verified"
   },
   {
@@ -147,168 +278,861 @@
    "id": "scanner",
    "kind": "laser line scanner",
    "native_point_spacing_mm": 0.05,
+   "settings": {
+    "exposure": "automatic per pass, logged with the pass",
+    "max_incidence_deg": 30.0,
+    "point_spacing_mm": 0.05,
+    "standoff_mm": 100.0
+   },
    "status": "declared_not_verified"
   }
  ],
  "markers": [
   {
    "id": "N0",
+   "kind": "tape target",
+   "on": "N",
    "route": "nominal",
    "s_mm": 0.0
   },
   {
    "id": "N1",
+   "kind": "tape target",
+   "on": "N",
    "route": "nominal",
    "s_mm": 25.272461
   },
   {
    "id": "N2",
+   "kind": "tape target",
+   "on": "N",
    "route": "nominal",
    "s_mm": 50.544921
   },
   {
    "id": "N3",
+   "kind": "tape target",
+   "on": "N",
    "route": "nominal",
    "s_mm": 75.817382
   },
   {
    "id": "N4",
+   "kind": "tape target",
+   "on": "N",
    "route": "nominal",
    "s_mm": 101.089842
   },
   {
    "id": "N5",
+   "kind": "tape target",
+   "on": "N",
    "route": "nominal",
    "s_mm": 126.362303
   },
   {
    "id": "N6",
+   "kind": "tape target",
+   "on": "N",
    "route": "nominal",
    "s_mm": 151.634763
   },
   {
    "id": "N7",
+   "kind": "tape target",
+   "on": "N",
    "route": "nominal",
    "s_mm": 176.907224
   },
   {
    "id": "N8",
+   "kind": "tape target",
+   "on": "N",
    "route": "nominal",
    "s_mm": 202.179684
   },
   {
    "id": "L0",
+   "kind": "tape target",
+   "on": "L",
    "route": "lateral 2 mm",
    "s_mm": 0.0
   },
   {
    "id": "L1",
+   "kind": "tape target",
+   "on": "L",
    "route": "lateral 2 mm",
    "s_mm": 25.272461
   },
   {
    "id": "L2",
+   "kind": "tape target",
+   "on": "L",
    "route": "lateral 2 mm",
    "s_mm": 50.544921
   },
   {
    "id": "L3",
+   "kind": "tape target",
+   "on": "L",
    "route": "lateral 2 mm",
    "s_mm": 75.817382
   },
   {
    "id": "L4",
+   "kind": "tape target",
+   "on": "L",
    "route": "lateral 2 mm",
    "s_mm": 101.089842
   },
   {
    "id": "L5",
+   "kind": "tape target",
+   "on": "L",
    "route": "lateral 2 mm",
    "s_mm": 126.362303
   },
   {
    "id": "L6",
+   "kind": "tape target",
+   "on": "L",
    "route": "lateral 2 mm",
    "s_mm": 151.634763
   },
   {
    "id": "L7",
+   "kind": "tape target",
+   "on": "L",
    "route": "lateral 2 mm",
    "s_mm": 176.907224
   },
   {
    "id": "L8",
+   "kind": "tape target",
+   "on": "L",
    "route": "lateral 2 mm",
    "s_mm": 202.179684
   },
   {
    "id": "H0",
+   "kind": "tape target",
+   "on": "H",
    "route": "heading 5 mrad",
    "s_mm": 0.0
   },
   {
    "id": "H1",
+   "kind": "tape target",
+   "on": "H",
    "route": "heading 5 mrad",
    "s_mm": 25.272461
   },
   {
    "id": "H2",
+   "kind": "tape target",
+   "on": "H",
    "route": "heading 5 mrad",
    "s_mm": 50.544921
   },
   {
    "id": "H3",
+   "kind": "tape target",
+   "on": "H",
    "route": "heading 5 mrad",
    "s_mm": 75.817382
   },
   {
    "id": "H4",
+   "kind": "tape target",
+   "on": "H",
    "route": "heading 5 mrad",
    "s_mm": 101.089842
   },
   {
    "id": "H5",
+   "kind": "tape target",
+   "on": "H",
    "route": "heading 5 mrad",
    "s_mm": 126.362303
   },
   {
    "id": "H6",
+   "kind": "tape target",
+   "on": "H",
    "route": "heading 5 mrad",
    "s_mm": 151.634763
   },
   {
    "id": "H7",
+   "kind": "tape target",
+   "on": "H",
    "route": "heading 5 mrad",
    "s_mm": 176.907224
   },
   {
    "id": "H8",
+   "kind": "tape target",
+   "on": "H",
    "route": "heading 5 mrad",
    "s_mm": 202.179684
   }
  ],
  "paths": [
   {
+   "centreline_mm": [
+    [
+     -60.0,
+     0.0,
+     0.1111
+    ],
+    [
+     -54.9469,
+     0.0,
+     0.2296
+    ],
+    [
+     -49.8972,
+     0.0,
+     0.445
+    ],
+    [
+     -44.856,
+     0.0,
+     0.8086
+    ],
+    [
+     -39.8339,
+     0.0,
+     1.376
+    ],
+    [
+     -34.8463,
+     0.0,
+     2.1919
+    ],
+    [
+     -29.9085,
+     0.0,
+     3.2689
+    ],
+    [
+     -25.025,
+     0.0,
+     4.5712
+    ],
+    [
+     -20.1799,
+     0.0,
+     6.0108
+    ],
+    [
+     -15.3355,
+     0.0,
+     7.453
+    ],
+    [
+     -10.4445,
+     0.0,
+     8.7253
+    ],
+    [
+     -5.4739,
+     0.0,
+     9.6324
+    ],
+    [
+     -0.4357,
+     0.0,
+     9.9976
+    ],
+    [
+     4.6089,
+     0.0,
+     9.738
+    ],
+    [
+     9.5936,
+     0.0,
+     8.9132
+    ],
+    [
+     14.4969,
+     0.0,
+     7.6897
+    ],
+    [
+     19.346,
+     0.0,
+     6.2636
+    ],
+    [
+     24.1877,
+     0.0,
+     4.8128
+    ],
+    [
+     29.0628,
+     0.0,
+     3.4791
+    ],
+    [
+     33.9911,
+     0.0,
+     2.3592
+    ],
+    [
+     38.9711,
+     0.0,
+     1.498
+    ],
+    [
+     43.9885,
+     0.0,
+     0.8903
+    ],
+    [
+     49.0272,
+     0.0,
+     0.4956
+    ],
+    [
+     54.076,
+     0.0,
+     0.2585
+    ],
+    [
+     59.1287,
+     0.0,
+     0.1265
+    ],
+    [
+     64.1828,
+     0.0,
+     0.058
+    ],
+    [
+     69.2371,
+     0.0,
+     0.025
+    ],
+    [
+     74.2916,
+     0.0,
+     0.0101
+    ],
+    [
+     79.3461,
+     0.0,
+     0.0038
+    ],
+    [
+     84.4006,
+     0.0,
+     0.0014
+    ],
+    [
+     89.4551,
+     0.0,
+     0.0005
+    ],
+    [
+     94.5096,
+     0.0,
+     0.0001
+    ],
+    [
+     99.5641,
+     0.0,
+     0.0
+    ],
+    [
+     104.6186,
+     0.0,
+     0.0
+    ],
+    [
+     109.673,
+     0.0,
+     0.0
+    ],
+    [
+     114.7275,
+     0.0,
+     0.0
+    ],
+    [
+     119.782,
+     0.0,
+     0.0
+    ],
+    [
+     124.8365,
+     0.0,
+     0.0
+    ],
+    [
+     129.891,
+     0.0,
+     0.0
+    ],
+    [
+     134.9455,
+     0.0,
+     0.0
+    ],
+    [
+     140.0,
+     0.0,
+     0.0
+    ]
+   ],
    "end": "x = 140 mm",
    "heading_rad": 0.0,
    "id": "N",
+   "kind": "tape",
    "length_mm": 202.1796844767861,
-   "realization": "centreline of a 3 mm unsteered adhesive tape laid from a start jig that sets the start point and heading; with no in-plane steering the tape follows a geodesic",
+   "realization": "centreline of a 3 mm unsteered adhesive tape laid from the slot of its own insert of the start jig JIG-START-01, which sets the start point and heading; with no in-plane steering the tape follows a geodesic",
    "start_u_mm": [
     -60.0,
     0.0
+   ],
+   "uses": [
+    "JIG-START-01"
    ]
   },
   {
+   "centreline_mm": [
+    [
+     -60.0,
+     2.0,
+     0.1105
+    ],
+    [
+     -54.9469,
+     2.0,
+     0.2285
+    ],
+    [
+     -49.8971,
+     2.0002,
+     0.4428
+    ],
+    [
+     -44.8558,
+     2.0007,
+     0.8045
+    ],
+    [
+     -39.8334,
+     2.002,
+     1.3692
+    ],
+    [
+     -34.8451,
+     2.0051,
+     2.1811
+    ],
+    [
+     -29.9062,
+     2.011,
+     3.2529
+    ],
+    [
+     -25.021,
+     2.0206,
+     4.549
+    ],
+    [
+     -20.1739,
+     2.0332,
+     5.9816
+    ],
+    [
+     -15.3274,
+     2.0457,
+     7.4164
+    ],
+    [
+     -10.4345,
+     2.0515,
+     8.6818
+    ],
+    [
+     -5.463,
+     2.041,
+     9.5838
+    ],
+    [
+     -0.4248,
+     2.0043,
+     9.9477
+    ],
+    [
+     4.6196,
+     1.9369,
+     9.6912
+    ],
+    [
+     9.6045,
+     1.8432,
+     8.8732
+    ],
+    [
+     14.5086,
+     1.733,
+     7.6577
+    ],
+    [
+     19.3585,
+     1.6159,
+     6.2394
+    ],
+    [
+     24.2009,
+     1.4979,
+     4.7955
+    ],
+    [
+     29.0762,
+     1.3819,
+     3.4674
+    ],
+    [
+     34.0042,
+     1.2684,
+     2.3519
+    ],
+    [
+     38.9834,
+     1.1568,
+     1.4937
+    ],
+    [
+     43.9998,
+     1.0464,
+     0.888
+    ],
+    [
+     49.0375,
+     0.9364,
+     0.4944
+    ],
+    [
+     54.0851,
+     0.8267,
+     0.258
+    ],
+    [
+     59.1366,
+     0.717,
+     0.1263
+    ],
+    [
+     64.1895,
+     0.6074,
+     0.0579
+    ],
+    [
+     69.2427,
+     0.4977,
+     0.0249
+    ],
+    [
+     74.2959,
+     0.3881,
+     0.0101
+    ],
+    [
+     79.3492,
+     0.2784,
+     0.0038
+    ],
+    [
+     84.4025,
+     0.1688,
+     0.0014
+    ],
+    [
+     89.4558,
+     0.0591,
+     0.0005
+    ],
+    [
+     94.5091,
+     -0.0505,
+     0.0001
+    ],
+    [
+     99.5624,
+     -0.1602,
+     0.0
+    ],
+    [
+     104.6157,
+     -0.2698,
+     0.0
+    ],
+    [
+     109.669,
+     -0.3795,
+     0.0
+    ],
+    [
+     114.7223,
+     -0.4891,
+     0.0
+    ],
+    [
+     119.7756,
+     -0.5988,
+     0.0
+    ],
+    [
+     124.829,
+     -0.7084,
+     0.0
+    ],
+    [
+     129.8823,
+     -0.8181,
+     0.0
+    ],
+    [
+     134.9356,
+     -0.9277,
+     0.0
+    ],
+    [
+     139.9889,
+     -1.0374,
+     0.0
+    ]
+   ],
    "construction": "exp map along the start normal",
    "id": "L",
+   "kind": "tape",
    "lateral_offset_mm": 2.0,
-   "of": "N"
+   "of": "N",
+   "uses": [
+    "JIG-START-01"
+   ]
   },
   {
+   "centreline_mm": [
+    [
+     -60.0,
+     0.0,
+     0.1111
+    ],
+    [
+     -54.947,
+     0.0253,
+     0.2296
+    ],
+    [
+     -49.8973,
+     0.0505,
+     0.445
+    ],
+    [
+     -44.8562,
+     0.0758,
+     0.8085
+    ],
+    [
+     -39.8342,
+     0.1011,
+     1.3759
+    ],
+    [
+     -34.8466,
+     0.1266,
+     2.1918
+    ],
+    [
+     -29.9088,
+     0.1522,
+     3.2687
+    ],
+    [
+     -25.0253,
+     0.178,
+     4.5709
+    ],
+    [
+     -20.1803,
+     0.2042,
+     6.0103
+    ],
+    [
+     -15.336,
+     0.2303,
+     7.4523
+    ],
+    [
+     -10.4449,
+     0.2556,
+     8.7245
+    ],
+    [
+     -5.4744,
+     0.2789,
+     9.6314
+    ],
+    [
+     -0.4362,
+     0.2985,
+     9.9965
+    ],
+    [
+     4.6084,
+     0.3135,
+     9.7368
+    ],
+    [
+     9.5931,
+     0.3242,
+     8.9122
+    ],
+    [
+     14.4964,
+     0.332,
+     7.6888
+    ],
+    [
+     19.3455,
+     0.3385,
+     6.2628
+    ],
+    [
+     24.1873,
+     0.3449,
+     4.8122
+    ],
+    [
+     29.0624,
+     0.3517,
+     3.4787
+    ],
+    [
+     33.9908,
+     0.3591,
+     2.3589
+    ],
+    [
+     38.9708,
+     0.3671,
+     1.4978
+    ],
+    [
+     43.9882,
+     0.3755,
+     0.8902
+    ],
+    [
+     49.0269,
+     0.384,
+     0.4955
+    ],
+    [
+     54.0757,
+     0.3926,
+     0.2585
+    ],
+    [
+     59.1284,
+     0.4013,
+     0.1265
+    ],
+    [
+     64.1824,
+     0.4099,
+     0.058
+    ],
+    [
+     69.2368,
+     0.4186,
+     0.025
+    ],
+    [
+     74.2912,
+     0.4273,
+     0.0101
+    ],
+    [
+     79.3457,
+     0.4359,
+     0.0038
+    ],
+    [
+     84.4002,
+     0.4446,
+     0.0014
+    ],
+    [
+     89.4547,
+     0.4532,
+     0.0005
+    ],
+    [
+     94.5092,
+     0.4619,
+     0.0001
+    ],
+    [
+     99.5637,
+     0.4706,
+     0.0
+    ],
+    [
+     104.6181,
+     0.4792,
+     0.0
+    ],
+    [
+     109.6726,
+     0.4879,
+     0.0
+    ],
+    [
+     114.7271,
+     0.4965,
+     0.0
+    ],
+    [
+     119.7816,
+     0.5052,
+     0.0
+    ],
+    [
+     124.8361,
+     0.5138,
+     0.0
+    ],
+    [
+     129.8906,
+     0.5225,
+     0.0
+    ],
+    [
+     134.9451,
+     0.5312,
+     0.0
+    ],
+    [
+     139.9995,
+     0.5398,
+     0.0
+    ]
+   ],
    "heading_offset_rad": 0.005,
    "id": "H",
-   "of": "N"
+   "kind": "tape",
+   "of": "N",
+   "uses": [
+    "JIG-START-01"
+   ]
   }
  ],
  "predicted_quantities": [
@@ -383,18 +1207,414 @@
   }
  ],
  "procedure": [
-  "Soak specimen and fixture; log temperatures.",
-  "Verify instruments on GS-25.4 and SB-1000 before and after; retain both checks.",
-  "Locate the specimen in FX-321; probe datums A, B, C and build the PART frame.",
-  "Scan the coupon surface with protocol MFG-SCAN-01 (T129) to identify the as-built dome and its covariance before laying the tapes.",
-  "Lay the nominal and offset tapes from the start jig without in-plane steering (a robot may carry the tape head but must not steer it); never draw a path traced from the model.",
-  "Probe each tape centreline with the CMM at s = 0 and s = 20 mm; the relative start offset and heading of the offset tape condition the prediction (T138).",
-  "Place coded targets on the tape centrelines at the stations; measure them by photogrammetry; fit the crossing arclength of the lateral offset tape.",
-  "Repeat the full acquisition three times, removing and re-seating the specimen in FX-321 between repeats (repeatability replicates); the crossed Gage R&R and type-1 studies follow the separate T131 procedure (gage-rr-procedure.json). Retain every raw file through the T139 retention record."
+  {
+   "action": "Soak the specimen and its holder for 4 h at 20 +/- 1 C; log air and part temperature every 10 min.",
+   "outputs": [
+    "environment log with an explicit UTC offset"
+   ],
+   "step": 1,
+   "uses": [
+    "FX-321"
+   ]
+  },
+  {
+   "action": "Check the instruments before the acquisition: the camera images SB-1000; the tracker measures the SB-1000 end points with its SMR; the CMM probes GS-25.4 at 25 points; the scanner scans GS-25.4. Retain every check.",
+   "check": "each artifact reading lies within 2 U of its certificate value, U from the declared instrument uncertainty; otherwise stop and recalibrate",
+   "outputs": [
+    "instrument checks before the acquisition"
+   ],
+   "step": 2,
+   "uses": [
+    "camera",
+    "tracker",
+    "cmm",
+    "scanner",
+    "GS-25.4",
+    "SB-1000"
+   ]
+  },
+  {
+   "action": "Locate the specimen in FX-321 (3-2-1 nest); clamp; probe datum A (3 points), B (2 points) and C (1 point) with the CMM and build the PART frame (datum_frame_321).",
+   "datums": [
+    "A",
+    "B",
+    "C",
+    "PART"
+   ],
+   "outputs": [
+    "datum point file",
+    "PART frame"
+   ],
+   "step": 3,
+   "uses": [
+    "FX-321",
+    "cmm"
+   ]
+  },
+  {
+   "action": "Measure the four datum targets of FX-321 (a 1.5 in SMR seated on each) with the tracker to register FIXTURE in WORLD (frame chain).",
+   "outputs": [
+    "WORLD -> FIXTURE transform and its covariance"
+   ],
+   "step": 4,
+   "uses": [
+    "FX-321",
+    "tracker"
+   ]
+  },
+  {
+   "action": "Scan the coupon surface with the scanner following protocol MFG-SCAN-01 (T129) to identify the as-built dome and its covariance before laying the tapes.",
+   "outputs": [
+    "MFG-SCAN-01 records"
+   ],
+   "step": 5,
+   "uses": [
+    "scanner"
+   ]
+  },
+  {
+   "action": "Seat the start jig JIG-START-01 against datums B and C with the insert of tape N; lay tape N from its slot without in-plane steering (a robot may carry the tape head but must not steer it; never draw a path traced from the model); remove the jig. No other tape is on the specimen.",
+   "datums": [
+    "B",
+    "C"
+   ],
+   "lays": [
+    "N"
+   ],
+   "outputs": [
+    "tape N: identity and laying time"
+   ],
+   "step": 6,
+   "uses": [
+    "JIG-START-01"
+   ]
+  },
+  {
+   "action": "Probe the centreline of tape N with the CMM at s = 0 and s = 20 mm; export the points as rows N-S0 and N-S20 of the cmm capture.",
+   "outputs": [
+    "cmm capture rows N-S0 and N-S20 (ciw.lab-mfg-target-capture.v1)"
+   ],
+   "step": 7,
+   "uses": [
+    "cmm"
+   ]
+  },
+  {
+   "action": "Place 6 mm coded targets on the centreline of tape N at the nine stations s = k L / 8.",
+   "outputs": [
+    "targets on tape N"
+   ],
+   "places": [
+    "N"
+   ],
+   "step": 8,
+   "uses": []
+  },
+  {
+   "action": "Measure the targets on tape N with the camera, with SB-1000 and the FX-321 datum targets (coded adapters) in every image set; export their coordinates as rows N0-N8 of the photogrammetry capture.",
+   "outputs": [
+    "raw images",
+    "target coordinates of tape N"
+   ],
+   "step": 9,
+   "uses": [
+    "camera",
+    "SB-1000",
+    "FX-321"
+   ]
+  },
+  {
+   "action": "Repeat steps 3, 7 and 9 twice more, removing the specimen from FX-321 and re-seating it between repeats (replicates of tape N; the tape and its targets stay in place).",
+   "outputs": [
+    "two further replicates (replicates of tape N; the tape and its targets stay in place)"
+   ],
+   "repeats": [
+    3,
+    7,
+    9
+   ],
+   "step": 10,
+   "uses": [
+    "FX-321",
+    "cmm",
+    "camera",
+    "SB-1000"
+   ]
+  },
+  {
+   "action": "Remove the targets and tape N.",
+   "outputs": [
+    "tape N removed"
+   ],
+   "removes": [
+    "N"
+   ],
+   "step": 11,
+   "uses": []
+  },
+  {
+   "action": "Seat the start jig JIG-START-01 against datums B and C with the insert of tape L; lay tape L from its slot without in-plane steering (a robot may carry the tape head but must not steer it; never draw a path traced from the model); remove the jig. No other tape is on the specimen.",
+   "datums": [
+    "B",
+    "C"
+   ],
+   "lays": [
+    "L"
+   ],
+   "outputs": [
+    "tape L: identity and laying time"
+   ],
+   "step": 12,
+   "uses": [
+    "JIG-START-01"
+   ]
+  },
+  {
+   "action": "Probe the centreline of tape L with the CMM at s = 0 and s = 20 mm; export the points as rows L-S0 and L-S20 of the cmm capture.",
+   "outputs": [
+    "cmm capture rows L-S0 and L-S20 (ciw.lab-mfg-target-capture.v1)"
+   ],
+   "step": 13,
+   "uses": [
+    "cmm"
+   ]
+  },
+  {
+   "action": "Place 6 mm coded targets on the centreline of tape L at the nine stations s = k L / 8.",
+   "outputs": [
+    "targets on tape L"
+   ],
+   "places": [
+    "L"
+   ],
+   "step": 14,
+   "uses": []
+  },
+  {
+   "action": "Measure the targets on tape L with the camera, with SB-1000 and the FX-321 datum targets (coded adapters) in every image set; export their coordinates as rows L0-L8 of the photogrammetry capture.",
+   "outputs": [
+    "raw images",
+    "target coordinates of tape L"
+   ],
+   "step": 15,
+   "uses": [
+    "camera",
+    "SB-1000",
+    "FX-321"
+   ]
+  },
+  {
+   "action": "Repeat steps 3, 13 and 15 twice more, removing the specimen from FX-321 and re-seating it between repeats (replicates of tape L; the tape and its targets stay in place).",
+   "outputs": [
+    "two further replicates (replicates of tape L; the tape and its targets stay in place)"
+   ],
+   "repeats": [
+    3,
+    13,
+    15
+   ],
+   "step": 16,
+   "uses": [
+    "FX-321",
+    "cmm",
+    "camera",
+    "SB-1000"
+   ]
+  },
+  {
+   "action": "Remove the targets and tape L.",
+   "outputs": [
+    "tape L removed"
+   ],
+   "removes": [
+    "L"
+   ],
+   "step": 17,
+   "uses": []
+  },
+  {
+   "action": "Seat the start jig JIG-START-01 against datums B and C with the insert of tape H; lay tape H from its slot without in-plane steering (a robot may carry the tape head but must not steer it; never draw a path traced from the model); remove the jig. No other tape is on the specimen.",
+   "datums": [
+    "B",
+    "C"
+   ],
+   "lays": [
+    "H"
+   ],
+   "outputs": [
+    "tape H: identity and laying time"
+   ],
+   "step": 18,
+   "uses": [
+    "JIG-START-01"
+   ]
+  },
+  {
+   "action": "Probe the centreline of tape H with the CMM at s = 0 and s = 20 mm; export the points as rows H-S0 and H-S20 of the cmm capture.",
+   "outputs": [
+    "cmm capture rows H-S0 and H-S20 (ciw.lab-mfg-target-capture.v1)"
+   ],
+   "step": 19,
+   "uses": [
+    "cmm"
+   ]
+  },
+  {
+   "action": "Place 6 mm coded targets on the centreline of tape H at the nine stations s = k L / 8.",
+   "outputs": [
+    "targets on tape H"
+   ],
+   "places": [
+    "H"
+   ],
+   "step": 20,
+   "uses": []
+  },
+  {
+   "action": "Measure the targets on tape H with the camera, with SB-1000 and the FX-321 datum targets (coded adapters) in every image set; export their coordinates as rows H0-H8 of the photogrammetry capture.",
+   "outputs": [
+    "raw images",
+    "target coordinates of tape H"
+   ],
+   "step": 21,
+   "uses": [
+    "camera",
+    "SB-1000",
+    "FX-321"
+   ]
+  },
+  {
+   "action": "Repeat steps 3, 19 and 21 twice more, removing the specimen from FX-321 and re-seating it between repeats (replicates of tape H; the tape and its targets stay in place).",
+   "outputs": [
+    "two further replicates (replicates of tape H; the tape and its targets stay in place)"
+   ],
+   "repeats": [
+    3,
+    19,
+    21
+   ],
+   "step": 22,
+   "uses": [
+    "FX-321",
+    "cmm",
+    "camera",
+    "SB-1000"
+   ]
+  },
+  {
+   "action": "Remove the targets and tape H.",
+   "outputs": [
+    "tape H removed"
+   ],
+   "removes": [
+    "H"
+   ],
+   "step": 23,
+   "uses": []
+  },
+  {
+   "action": "Check the instruments after the acquisition: the camera images SB-1000; the tracker measures the SB-1000 end points with its SMR; the CMM probes GS-25.4 at 25 points; the scanner scans GS-25.4. Retain every check.",
+   "check": "each artifact reading lies within 2 U of its certificate value, U from the declared instrument uncertainty; otherwise stop and recalibrate",
+   "outputs": [
+    "instrument checks after the acquisition"
+   ],
+   "step": 24,
+   "uses": [
+    "camera",
+    "tracker",
+    "cmm",
+    "scanner",
+    "GS-25.4",
+    "SB-1000"
+   ]
+  },
+  {
+   "action": "Retain every raw file, replicate and instrument check with its T139 retention record (ciw.lab-measurement-retention.v1).",
+   "outputs": [
+    "retained raw data and retention records"
+   ],
+   "step": 25,
+   "uses": []
+  }
  ],
  "production_acceptance": "outside_system",
  "protocol_id": "MFG-COUPON-01",
  "purpose": "Measure the separation of exactly offset robot paths across a dome, where positive curvature focuses laterally offset paths so that they cross the nominal path inside the coupon.",
+ "raw_formats": [
+  {
+   "columns": [
+    "target",
+    "x_mm",
+    "y_mm",
+    "z_mm",
+    "u_mm"
+   ],
+   "coordinates": "CAD (model) frame through the declared PART -> CAD placement",
+   "frame": "CAD",
+   "header": "lines '# key: value' for schema, protocol, instrument, frame, unit, origin; unit mm; origin measurement or synthetic (a synthetic capture starts with '# SYNTHETIC CAPTURE - NOT A MEASUREMENT')",
+   "ids": [
+    "N0",
+    "N1",
+    "N2",
+    "N3",
+    "N4",
+    "N5",
+    "N6",
+    "N7",
+    "N8",
+    "L0",
+    "L1",
+    "L2",
+    "L3",
+    "L4",
+    "L5",
+    "L6",
+    "L7",
+    "L8",
+    "H0",
+    "H1",
+    "H2",
+    "H3",
+    "H4",
+    "H5",
+    "H6",
+    "H7",
+    "H8"
+   ],
+   "instrument": "camera",
+   "media_type": "text/csv",
+   "reader": "ciw.lab.manufacturing_records.read_capture; T138 reduces the lateral tape targets to separations (projection on the model's in-surface normal of the nominal route) and compares them (H2)",
+   "role": "photogrammetry",
+   "schema": "ciw.lab-mfg-target-capture.v1",
+   "uncertainty": "u_mm is the declared standard uncertainty of each row (positive); for targets, of each coordinate in the common frame, including the registration of its image set"
+  },
+  {
+   "columns": [
+    "target",
+    "x_mm",
+    "y_mm",
+    "z_mm",
+    "u_mm"
+   ],
+   "coordinates": "CAD (model) frame through the declared PART -> CAD placement",
+   "frame": "CAD",
+   "header": "lines '# key: value' for schema, protocol, instrument, frame, unit, origin; unit mm; origin measurement or synthetic (a synthetic capture starts with '# SYNTHETIC CAPTURE - NOT A MEASUREMENT')",
+   "ids": [
+    "N-S0",
+    "N-S20",
+    "L-S0",
+    "L-S20",
+    "H-S0",
+    "H-S20"
+   ],
+   "instrument": "cmm",
+   "media_type": "text/csv",
+   "reader": "ciw.lab.manufacturing_records.read_capture; T138 estimates the realized start pose of the lateral tape and re-integrates the prediction from it (conditioned H2)",
+   "role": "cmm",
+   "schema": "ciw.lab-mfg-target-capture.v1",
+   "uncertainty": "u_mm is the declared standard uncertainty of each row (positive); for targets, of each coordinate in the common frame, including the registration of its image set"
+  }
+ ],
  "required_raw_data": [
   "raw camera images (lossless) with exposure metadata and SHA-256 digests",
   "tracker/CMM native point files with instrument serial and firmware",
@@ -425,6 +1645,13 @@
    "name": "gaussian-bump",
    "sigma": 20.0
   }
+ },
+ "tape_layout": {
+  "marker_diameter_mm": 6.0,
+  "rules": "tapes on the specimen together: centrelines at least a tape width plus a target diameter apart; slots used in one laying: at least one slot width apart; every tape centreline clears each specimen marker and datum probe point by half the wider of tape and target plus half a marker (manufacturing_records._tape_layout, on the predicted centrelines)",
+  "sequence": "one tape on the specimen at a time: seat the start jig with that tape's insert, lay the tape, remove the jig, measure the tape and its targets (with re-seated replicates) and remove them before the next tape is laid; every tape is measured in the PART frame of the specimen's own datums",
+  "tape_width_mm": 3.0,
+  "target_diameter_mm": 6.0
  },
  "task_id": "T128",
  "title": "Domed coupon: Jacobi focusing of offset paths"

@@ -49,6 +49,10 @@
    "claim": "The track is declared lost at exactly the tick at which the 99% position ellipse, grown in closed form from the last update, first exceeds the 1 m radius",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-09
@@ -152,6 +156,10 @@
    "claim": "A lost track is not admissible and cannot be updated, and the refused update leaves the state, covariance and clock unchanged; reacquisition is explicit, needs two consecutive readings no older than the session clock, and is refused while tracking; both readings of a refused reacquisition are retained with its refusal code",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -221,6 +229,10 @@
    "claim": "The two-point reacquisition covariance [[R, R/dt], [R/dt, 2R/dt^2 + q dt/3 I]] is exact for the constant-velocity truth",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -289,6 +301,11 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -329,6 +346,9 @@
    "claim": "A 1 m, 99% track-loss radius is a safe operating threshold",
    "domain": "machine_safety",
    "evidence_status": "not_established",
+   "origin": [
+    "synthetic_inputs"
+   ],
    "uncertainty": null,
    "unit": null,
    "value": "not established: the threshold is a declared policy value"
@@ -368,15 +388,15 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/sensor_fusion_admission.py": "a0d36bf665e88d2851b08c6181a8f794e39751a688a04ebd586fbc93164cc3c7",
+   "src/ciw/lab/sensor_fusion_admission.py": "e0b488855ec251024bfcc9c57dc77430ec45ceee337acfbc6a109fb747a747d0",
    "src/ciw/lab/sensor_fusion_bench.py": "f373849a4c6836fa20685c59ce7a6fe6bf732f6df9d6a49646cdc017262dd656",
    "src/ciw/lab/sensor_fusion_common.py": "db3b0430ad5c13920239cef354da61b64ab1b01f84b2d3d5aff2f78840a5867a",
-   "src/ciw/lab/sensor_fusion_objects.py": "93fc55ddca91f1adfb886d21805ea8f82586548ee84e1f6cc7daed4df1f53bb9"
+   "src/ciw/lab/sensor_fusion_objects.py": "50ec8767a90f261f108d6524c7ff55d22604b55cc9853e749ba4c5f71bc76081"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T074: compare the fused state with the exact batch posterior.",
- "report_id": "sha256:3240050db877f48ad91f2a884b031ce54e94a6e6ffcdd64b122b9d4c035366fc",
+ "recommended_next_task": "Deferred research question: reacquisition under association ambiguity (a second target or clutter near the lost track), where two-point reacquisition can lock onto the wrong target; this task assumes both readings belong to the lost target.",
+ "report_id": "sha256:759c1c24347ab04006a6f035cc44574e4a8f847829da8d59640471e8a1fd10e3",
  "schema": "ciw.lab-task-report.v1",
  "section": "sensor-fusion",
  "state": "completed",

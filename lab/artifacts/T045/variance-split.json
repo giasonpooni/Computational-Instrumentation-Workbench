@@ -1,0 +1,76 @@
+{
+ "alpha_deg": 30.0,
+ "arc_m": 0.12,
+ "chord_m": 0.11602726053203238,
+ "chord_sigma_m": 0.0002,
+ "components": {
+  "geometry_m2": 4.446218322827751e-09,
+  "sensor_m2": 4.916767783728981e-08
+ },
+ "derived_record": {
+  "calibration_ref": "calibration:declared-synthetic",
+  "clock_basis": "acquisition",
+  "clock_id": "clock:daq",
+  "derived_from": [
+   "sha256:7b7d59aa3bd65ced95d2a2b83d793319492e98a4d7cd3db30ab986dcf4d9dcdd"
+  ],
+  "epoch": "epoch:run-0",
+  "frame_id": "reconstruction:cylinder-r0.1",
+  "latency_s": null,
+  "mappings": [
+   "surface_model:sha256:51d9fa708be4df14208d34056065f4abc48ed20b9d226fc911959e05f89206e4"
+  ],
+  "mode": "reconstructed_surface_distance",
+  "raw_ref": "raw:camera_chord_distance:0",
+  "sequence": 0,
+  "surface_model": {
+   "kind": "cylinder_geodesic",
+   "name": "cylinder-r0.1",
+   "parameter_sigma": {
+    "path_angle_rad": 0.005,
+    "radius": 0.0005
+   },
+   "path_angle_rad": 0.5235987755982988,
+   "radius": 0.1
+  },
+  "time_s": 1.0,
+  "unit": "m",
+  "value": [
+   0.11999999999999997
+  ],
+  "variance_components": {
+   "geometry_m2": 4.446218322827751e-09,
+   "sensor_m2": 4.916767783728981e-08
+  }
+ },
+ "finite_difference_relative_gap": 5.552019935497997e-10,
+ "geometry_share": 0.08293033413481364,
+ "parameter_sigma": {
+  "path_angle_rad": 0.005,
+  "radius": 0.0005
+ },
+ "radius_m": 0.1,
+ "ratio_standard_error": 0.02236347538415741,
+ "recovered_arc_m": 0.11999999999999997,
+ "refusals": {
+  "geometry_uncertainty_required": "geometry_uncertainty_required",
+  "variance_split_mismatch": "variance_split_mismatch",
+  "variance_split_required": "variance_split_required"
+ },
+ "samples": 4000,
+ "sensitivities": {
+  "chord": 1.108689291881294,
+  "path_angle_rad": -0.010160243915736611,
+  "radius": -0.08638181318185399
+ },
+ "variance_ratio": {
+  "geometry": 0.9625537498964903,
+  "sensor": 0.9990788790908648,
+  "total": 0.992441525880523
+ },
+ "z": {
+  "geometry": -1.6744378706914709,
+  "sensor": -0.04118862982216725,
+  "total": -0.3379829829504716
+ }
+}

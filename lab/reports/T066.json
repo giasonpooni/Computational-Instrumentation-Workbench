@@ -59,6 +59,10 @@
    "claim": "Innovations normalized by S = H P- H^T + R are chi-square(2) consistent: run-averaged NIS lies inside its per-tick 99% interval at 90% or more of ticks and the grand mean matches 2",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -104,6 +108,10 @@
    "claim": "Post-fit residuals z - H x+ have covariance R - H P+ H^T = R S^-1 R, and normalizing them by it reproduces the innovation NIS exactly, so the post-fit test carries no information beyond the innovation test",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 0.0
@@ -156,6 +164,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -212,6 +224,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -270,6 +286,10 @@
    "claim": "The fusion API normalizes its residuals by the filter covariance: the NIS each FusionSession candidate records, which the admission gate's innovation check consumes, equals nu^T S^-1 nu from the gain schedule and stays below the raw-R value nu^T R^-1 nu by the factor lambda_max(S^-1 R)",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 0.0
@@ -301,6 +321,9 @@
    "claim": "A real residual monitor normalized by datasheet sensor covariance is correctly calibrated",
    "domain": "sensor_performance",
    "evidence_status": "not_established",
+   "origin": [
+    "synthetic_inputs"
+   ],
    "uncertainty": null,
    "unit": null,
    "value": "not established: synthetic Gaussian bench only"
@@ -341,13 +364,13 @@
   "sources": {
    "src/ciw/lab/sensor_fusion_bench.py": "f373849a4c6836fa20685c59ce7a6fe6bf732f6df9d6a49646cdc017262dd656",
    "src/ciw/lab/sensor_fusion_common.py": "db3b0430ad5c13920239cef354da61b64ab1b01f84b2d3d5aff2f78840a5867a",
-   "src/ciw/lab/sensor_fusion_filtering.py": "716a44ff8f4921d188d17179fa80c6b1695c68a90fb16ab85239efb4295b4f8a",
-   "src/ciw/lab/sensor_fusion_objects.py": "93fc55ddca91f1adfb886d21805ea8f82586548ee84e1f6cc7daed4df1f53bb9"
+   "src/ciw/lab/sensor_fusion_filtering.py": "66ae801ecdd34d35c61c9eb5e381eefc26a0234233e143492ab50529ae7e14cb",
+   "src/ciw/lab/sensor_fusion_objects.py": "50ec8767a90f261f108d6524c7ff55d22604b55cc9853e749ba4c5f71bc76081"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T067: gate with a chi-square quantile of the correctly normalized NIS.",
- "report_id": "sha256:1e16ca7f2f4a2f6501a625d7c49aa9b49bc38c0cfc51da36f6c76e909a7fe75b",
+ "recommended_next_task": "Deferred research question: a truth-free consistency monitor built from NIS and its lag-one autocorrelation over a sliding window, with its detection power against a declared R understatement computed exactly (noncentral chi-square) as a function of window length.",
+ "report_id": "sha256:8f108f209fe0e7a5690044c807e1c6ee11df49d66d6c3e143131c38f38d7be50",
  "schema": "ciw.lab-task-report.v1",
  "section": "sensor-fusion",
  "state": "completed",

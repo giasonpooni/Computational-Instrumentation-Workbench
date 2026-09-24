@@ -53,6 +53,10 @@
    "claim": "Interior and boundary stiffness samples give the same PLSR code in all five unit systems",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -94,6 +98,10 @@
    "claim": "check_vertices passes for the converted box in every unit system",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -137,6 +145,10 @@
    "claim": "Margin ratios are not invariant under non-uniform unit changes",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 1e-06
@@ -184,6 +196,10 @@
    "claim": "The declared box bounds 8 and 12 N/m keep their SI box decision in all five unit systems under both conversion formulas, and their binary64 neighbours keep it when bound and sample are both multiplied",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -239,6 +255,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -292,6 +312,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -343,6 +367,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -410,6 +438,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -446,6 +478,10 @@
    "claim": "P = [[6, 0.75], [0.75, 1]] is an exact common quadratic certificate for the SI stiffness box [8, 12]",
    "domain": "mathematical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -492,6 +528,10 @@
    "claim": "Converting box bounds in binary64 collapses neighbours and depends on the formula used",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -521,6 +561,7 @@
    "domain": "physical",
    "evidence_status": "not_established",
    "expected_not_established": true,
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -573,14 +614,14 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/lyapunov.py": "cbcb4d58d7313d7c537957a1b7dd35039a21bae80125bf59147eeed2c1232bbb",
+   "src/ciw/lab/lyapunov.py": "dcda8ba21661667cc03bb126a393e93158a306b4991d0a2450d8e18abe62cb27",
    "src/ciw/lab/lyapunov_provider.py": "da3465b48b5f5efc47bfe6ab8379cf2cf2bc23e4835dc7ff047252e77fa6ef17",
    "src/ciw/lab/lyapunov_reference.py": "bdf0bb5074ae2caca6c8a5d8e63a15e346b007098e6def6b058d077719bc1336"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T106: drive every runtime status; propose that hosts declare boxes with an outward-rounded guard band and that PLSR document that margin ratios are unit-dependent for non-uniform unit changes.",
- "report_id": "sha256:32417f14046e012486302ccdf932bb8264182a23b12a63495b9d78993e60fb67",
+ "recommended_next_task": "Deferred research question: do outward-rounded parameter boxes (a guard band declared by the host) remove the boundary collisions between unit conventions, and should PLSR document that margin ratios are unit-dependent under non-uniform unit changes? Re-run the unit-scale comparison with outward-rounded boxes to find out.",
+ "report_id": "sha256:181464ccb13f6611b12785a6e6cb0c6f12601dd8dbb4c01acca9ed3d35d05192",
  "schema": "ciw.lab-task-report.v1",
  "section": "lyapunov",
  "state": "completed",
@@ -601,7 +642,8 @@
   "check: Converting box bounds in binary64 collapses neighbours and depends on the formula used vs b / 1000 versus b * 0.001 disagreements",
   "pytest: tests/test_lab_lyapunov.py::test_t105_unit_scales",
   "pytest: tests/test_lab_lyapunov.py::test_conversion_scan",
-  "pytest: tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider"
+  "pytest: tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider",
+  "pytest: tests/test_lab_lyapunov.py::test_next_steps_name_forward_work"
  ],
  "tests_skipped": [],
  "title": "Test parameter-box comparisons across unit scales.",

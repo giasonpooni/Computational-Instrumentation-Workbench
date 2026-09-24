@@ -16,7 +16,7 @@
    "exits_side": false,
    "first_conjugate_mm": null,
    "first_focal_mm": 153.407141487,
-   "focus_margin": 0.758766332889,
+   "focal_clearance_ratio": 0.758766332889,
    "heading_deg": 0.0,
    "horizon_mm": 500.0,
    "j_head_end_mm": 107.941892452,
@@ -24,11 +24,11 @@
    "j_lat_end": -0.534551538693,
    "j_lat_prime_end_per_mm": -0.010960090615,
    "length_mm": 202.179689369,
-   "margin_is_lower_bound": false,
    "max_abs_j_head_mm": 107.941892452,
    "max_abs_j_lat": 1.02592282843,
    "nearest_focus_kind": "focal",
    "nearest_focus_mm": 153.407141487,
+   "ratio_is_lower_bound": false,
    "route": "fan+0deg"
   },
   {
@@ -39,7 +39,7 @@
    "exits_side": false,
    "first_conjugate_mm": null,
    "first_focal_mm": 175.964121667,
-   "focus_margin": 0.869631311086,
+   "focal_clearance_ratio": 0.869631311086,
    "heading_deg": 5.0,
    "horizon_mm": 501.909918772,
    "j_head_end_mm": 126.431057776,
@@ -47,11 +47,11 @@
    "j_lat_end": -0.231612301279,
    "j_lat_prime_end_per_mm": -0.00878009848555,
    "length_mm": 202.343360253,
-   "margin_is_lower_bound": false,
    "max_abs_j_head_mm": 126.431057776,
    "max_abs_j_lat": 1.0270142329,
    "nearest_focus_kind": "focal",
    "nearest_focus_mm": 175.964121667,
+   "ratio_is_lower_bound": false,
    "route": "fan+5deg"
   },
   {
@@ -62,7 +62,7 @@
    "exits_side": false,
    "first_conjugate_mm": null,
    "first_focal_mm": 329.854617039,
-   "focus_margin": 1.62398671506,
+   "focal_clearance_ratio": 1.62398671506,
    "heading_deg": 10.0,
    "horizon_mm": 507.713305943,
    "j_head_end_mm": 169.405959979,
@@ -70,11 +70,11 @@
    "j_lat_end": 0.472486229025,
    "j_lat_prime_end_per_mm": -0.003727981088,
    "length_mm": 203.114110466,
-   "margin_is_lower_bound": false,
    "max_abs_j_head_mm": 169.405959979,
    "max_abs_j_lat": 1.03067196131,
    "nearest_focus_kind": "focal",
    "nearest_focus_mm": 329.854617039,
+   "ratio_is_lower_bound": false,
    "route": "fan+10deg"
   },
   {
@@ -85,7 +85,7 @@
    "exits_side": false,
    "first_conjugate_mm": null,
    "first_focal_mm": null,
-   "focus_margin": 2.52167482587,
+   "focal_clearance_ratio": 2.52167482587,
    "heading_deg": 15.0,
    "horizon_mm": 517.638090205,
    "j_head_end_mm": 213.103824711,
@@ -93,11 +93,11 @@
    "j_lat_end": 1.17987075275,
    "j_lat_prime_end_per_mm": 0.00124406904233,
    "length_mm": 205.275511693,
-   "margin_is_lower_bound": true,
    "max_abs_j_head_mm": 213.103824711,
    "max_abs_j_lat": 1.17987075275,
    "nearest_focus_kind": "none",
    "nearest_focus_mm": null,
+   "ratio_is_lower_bound": true,
    "route": "fan+15deg"
   },
   {
@@ -108,7 +108,7 @@
    "exits_side": false,
    "first_conjugate_mm": null,
    "first_focal_mm": null,
-   "focus_margin": 2.53663518063,
+   "focal_clearance_ratio": 2.53663518063,
    "heading_deg": 20.0,
    "horizon_mm": 532.088886238,
    "j_head_end_mm": 242.793270034,
@@ -116,11 +116,11 @@
    "j_lat_end": 1.62709577484,
    "j_lat_prime_end_per_mm": 0.00415328350275,
    "length_mm": 209.761691512,
-   "margin_is_lower_bound": true,
    "max_abs_j_head_mm": 242.793270034,
    "max_abs_j_lat": 1.62709577484,
    "nearest_focus_kind": "none",
    "nearest_focus_mm": null,
+   "ratio_is_lower_bound": true,
    "route": "fan+20deg"
   },
   {
@@ -131,7 +131,7 @@
    "exits_side": false,
    "first_conjugate_mm": null,
    "first_focal_mm": null,
-   "focus_margin": 2.54014031332,
+   "focal_clearance_ratio": 2.54014031332,
    "heading_deg": 25.0,
    "horizon_mm": 551.688959481,
    "j_head_end_mm": 257.257102854,
@@ -139,30 +139,108 @@
    "j_lat_end": 1.77009648168,
    "j_lat_prime_end_per_mm": 0.00478507292436,
    "length_mm": 217.188379944,
-   "margin_is_lower_bound": true,
    "max_abs_j_head_mm": 257.257102854,
    "max_abs_j_lat": 1.77009648168,
    "nearest_focus_kind": "none",
    "nearest_focus_mm": null,
+   "ratio_is_lower_bound": true,
    "route": "fan+25deg"
   }
  ],
- "ranking": [
-  [
-   "fan+15deg",
-   "fan+20deg",
-   "fan+25deg"
-  ],
-  [
-   "fan+10deg"
-  ],
-  [
-   "fan+5deg"
-  ],
-  [
-   "fan+0deg"
+ "focal_clearance_ratio": {
+  "definition": "nearest zero of j_lat or j_head over L; horizon / L as a lower bound",
+  "ranking": [
+   [
+    "fan+15deg",
+    "fan+20deg",
+    "fan+25deg"
+   ],
+   [
+    "fan+10deg"
+   ],
+   [
+    "fan+5deg"
+   ],
+   [
+    "fan+0deg"
+   ]
   ]
- ],
+ },
+ "focus_margin": {
+  "definition": "s_c - L, s_c the first zero of j_head (T024); None when no zero lies within the horizon, with the lower bound horizon - L under its own key",
+  "ranking": [
+   [
+    "fan+0deg",
+    "fan+10deg",
+    "fan+15deg",
+    "fan+20deg",
+    "fan+25deg",
+    "fan+5deg"
+   ]
+  ],
+  "routes": [
+   {
+    "first_conjugate_mm": null,
+    "focus_margin_lower_bound_mm": 297.820315523,
+    "focus_margin_mm": null,
+    "horizon_mm": 500.0,
+    "length_mm": 202.179684477,
+    "margin_is_lower_bound": true,
+    "min_j_head_over_s": 0.533890969929,
+    "route": "fan+0deg"
+   },
+   {
+    "first_conjugate_mm": null,
+    "focus_margin_lower_bound_mm": 299.566562723,
+    "focus_margin_mm": null,
+    "horizon_mm": 501.909918772,
+    "length_mm": 202.343356049,
+    "margin_is_lower_bound": true,
+    "min_j_head_over_s": 0.624834370227,
+    "route": "fan+5deg"
+   },
+   {
+    "first_conjugate_mm": null,
+    "focus_margin_lower_bound_mm": 304.599197844,
+    "focus_margin_mm": null,
+    "horizon_mm": 507.713305943,
+    "length_mm": 203.114108099,
+    "margin_is_lower_bound": true,
+    "min_j_head_over_s": 0.834043459071,
+    "route": "fan+10deg"
+   },
+   {
+    "first_conjugate_mm": null,
+    "focus_margin_lower_bound_mm": 312.362578781,
+    "focus_margin_mm": null,
+    "horizon_mm": 517.638090205,
+    "length_mm": 205.275511424,
+    "margin_is_lower_bound": true,
+    "min_j_head_over_s": 0.998580030745,
+    "route": "fan+15deg"
+   },
+   {
+    "first_conjugate_mm": null,
+    "focus_margin_lower_bound_mm": 322.327193701,
+    "focus_margin_mm": null,
+    "horizon_mm": 532.088886238,
+    "length_mm": 209.761692537,
+    "margin_is_lower_bound": true,
+    "min_j_head_over_s": 1.0000001159,
+    "route": "fan+20deg"
+   },
+   {
+    "first_conjugate_mm": null,
+    "focus_margin_lower_bound_mm": 334.500578252,
+    "focus_margin_mm": null,
+    "horizon_mm": 551.688959481,
+    "length_mm": 217.188381229,
+    "margin_is_lower_bound": true,
+    "min_j_head_over_s": 1.00000011477,
+    "route": "fan+25deg"
+   }
+  ]
+ },
  "routes": [
   {
    "end_u_mm": [
@@ -172,7 +250,7 @@
    "exits_side": false,
    "first_conjugate_mm": null,
    "first_focal_mm": 153.407155341,
-   "focus_margin": 0.758766419769,
+   "focal_clearance_ratio": 0.758766419769,
    "heading_deg": 0.0,
    "horizon_mm": 500.0,
    "j_head_end_mm": 107.941907845,
@@ -180,11 +258,11 @@
    "j_lat_end": -0.534551255261,
    "j_lat_prime_end_per_mm": -0.0109600889045,
    "length_mm": 202.179684477,
-   "margin_is_lower_bound": false,
    "max_abs_j_head_mm": 107.941907845,
    "max_abs_j_lat": 1.02600071879,
    "nearest_focus_kind": "focal",
    "nearest_focus_mm": 153.407155341,
+   "ratio_is_lower_bound": false,
    "route": "fan+0deg"
   },
   {
@@ -195,7 +273,7 @@
    "exits_side": false,
    "first_conjugate_mm": null,
    "first_focal_mm": 175.964161196,
-   "focus_margin": 0.869631524514,
+   "focal_clearance_ratio": 0.869631524514,
    "heading_deg": 5.0,
    "horizon_mm": 501.909918772,
    "j_head_end_mm": 126.431083446,
@@ -203,11 +281,11 @@
    "j_lat_end": -0.231611848515,
    "j_lat_prime_end_per_mm": -0.00878009545379,
    "length_mm": 202.343356049,
-   "margin_is_lower_bound": false,
    "max_abs_j_head_mm": 126.431083446,
    "max_abs_j_lat": 1.02700844074,
    "nearest_focus_kind": "focal",
    "nearest_focus_mm": 175.964161196,
+   "ratio_is_lower_bound": false,
    "route": "fan+5deg"
   },
   {
@@ -218,7 +296,7 @@
    "exits_side": false,
    "first_conjugate_mm": null,
    "first_focal_mm": 329.854911531,
-   "focus_margin": 1.62398818388,
+   "focal_clearance_ratio": 1.62398818388,
    "heading_deg": 10.0,
    "horizon_mm": 507.713305943,
    "j_head_end_mm": 169.405993305,
@@ -226,11 +304,11 @@
    "j_lat_end": 0.472486805218,
    "j_lat_prime_end_per_mm": -0.00372797703111,
    "length_mm": 203.114108099,
-   "margin_is_lower_bound": false,
    "max_abs_j_head_mm": 169.405993305,
    "max_abs_j_lat": 1.03067923685,
    "nearest_focus_kind": "focal",
    "nearest_focus_mm": 329.854911531,
+   "ratio_is_lower_bound": false,
    "route": "fan+10deg"
   },
   {
@@ -241,7 +319,7 @@
    "exits_side": false,
    "first_conjugate_mm": null,
    "first_focal_mm": null,
-   "focus_margin": 2.52167482918,
+   "focal_clearance_ratio": 2.52167482918,
    "heading_deg": 15.0,
    "horizon_mm": 517.638090205,
    "j_head_end_mm": 213.103848827,
@@ -249,11 +327,11 @@
    "j_lat_end": 1.17987116693,
    "j_lat_prime_end_per_mm": 0.00124407191705,
    "length_mm": 205.275511424,
-   "margin_is_lower_bound": true,
    "max_abs_j_head_mm": 213.103848827,
    "max_abs_j_lat": 1.17987116693,
    "nearest_focus_kind": "none",
    "nearest_focus_mm": null,
+   "ratio_is_lower_bound": true,
    "route": "fan+15deg"
   },
   {
@@ -264,7 +342,7 @@
    "exits_side": false,
    "first_conjugate_mm": null,
    "first_focal_mm": null,
-   "focus_margin": 2.53663516823,
+   "focal_clearance_ratio": 2.53663516823,
    "heading_deg": 20.0,
    "horizon_mm": 532.088886238,
    "j_head_end_mm": 242.793282099,
@@ -272,11 +350,11 @@
    "j_lat_end": 1.62709597648,
    "j_lat_prime_end_per_mm": 0.0041532847978,
    "length_mm": 209.761692537,
-   "margin_is_lower_bound": true,
    "max_abs_j_head_mm": 242.793282099,
    "max_abs_j_lat": 1.62709597648,
    "nearest_focus_kind": "none",
    "nearest_focus_mm": null,
+   "ratio_is_lower_bound": true,
    "route": "fan+20deg"
   },
   {
@@ -287,7 +365,7 @@
    "exits_side": false,
    "first_conjugate_mm": null,
    "first_focal_mm": null,
-   "focus_margin": 2.54014029829,
+   "focal_clearance_ratio": 2.54014029829,
    "heading_deg": 25.0,
    "horizon_mm": 551.688959481,
    "j_head_end_mm": 257.257107347,
@@ -295,11 +373,11 @@
    "j_lat_end": 1.77009654905,
    "j_lat_prime_end_per_mm": 0.0047850732908,
    "length_mm": 217.188381229,
-   "margin_is_lower_bound": true,
    "max_abs_j_head_mm": 257.257107347,
    "max_abs_j_lat": 1.77009654905,
    "nearest_focus_kind": "none",
    "nearest_focus_mm": null,
+   "ratio_is_lower_bound": true,
    "route": "fan+25deg"
   }
  ],

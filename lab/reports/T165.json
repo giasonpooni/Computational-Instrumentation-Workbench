@@ -14,12 +14,15 @@
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "State and label totals agree with a raw-text recount of the report files; every report whose provider probe succeeded contributes a runtime identity; the digest depends only on reproducible content.",
- "experiment": "Aggregate queue coverage, states, labels, runtimes and report content into JSON and Markdown and recount states and labels from the raw report text.",
+ "expected_invariant": "State, label and basis-component totals agree with a raw-text recount of the report files; every report whose provider probe succeeded contributes a runtime identity, and every identity recorded is held by the inventory; the digest depends only on reproducible content.",
+ "experiment": "Aggregate queue coverage, states, labels, basis components, runtimes and report content of T001-T164 into JSON and Markdown and recount states, labels and basis components from the raw report text.",
  "failure_modes_checked": [
   "runtime identities nested below the top level missed",
+  "one runtime listed once per task that recorded it",
   "totals disagreeing with the report text",
-  "digest over run-specific bytes (timing artifacts, wheel digests)"
+  "digest over run-specific bytes (timing artifacts, wheel digests)",
+  "an undeclared digest encoding",
+  "the report read as covering the whole run"
  ],
  "findings": [
   {
@@ -41,12 +44,23 @@
       "reference": "absolute label-count differences from the raw-text recount",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "absolute basis-component count differences from the raw-text recount",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
      }
     ]
    },
    "claim": "Release state and label totals match a raw-text recount of the retained report files",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -70,12 +84,31 @@
       "reference": "reports with a successful provider probe and no runtime identity",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "recorded runtime identities the inventory does not hold",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "runtimes listed on more than one inventory row",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
      }
     ]
    },
    "claim": "Every report whose provider probe succeeded contributes a runtime identity to the release inventory",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -95,6 +128,7 @@
    "domain": "provenance",
    "evidence_status": "not_established",
    "expected_not_established": true,
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -102,24 +136,24 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 4299,
+   "bytes": 5492,
    "path": "artifacts/T165/release-report.json",
-   "sha256": "df996fed1ab01ec20828a8ad02404e5c8b582ca7d1f932f3fcdd924a99344fbd"
+   "sha256": "cba02c4c2337b38625baa2774afca14ed0b3f35b204b8547d43fa7ea477f1f42"
   },
   {
-   "bytes": 2553,
+   "bytes": 3282,
    "path": "artifacts/T165/RELEASE.md",
-   "sha256": "7e40891c01a8d73898141937dfeb00ab60153633eac7566a542f2d346fd2a695"
+   "sha256": "4dac47380c06cb430d4c6c56f8f7452d7840a403419323d70173bb4ec16a3801"
   }
  ],
- "hypothesis": "A release report can be generated entirely from machine-readable queue metadata and retained reports.",
+ "hypothesis": "A release report of the tasks before T165 (T001-T164) can be generated entirely from machine-readable queue metadata and their retained reports.",
  "input_data": [
   "Retained reports of T001-T164 in the same output directory",
   "Packaged queue definition (src/ciw/lab/queue.json)"
  ],
- "mathematical_model": "Totals over states and labels; queue coverage per section; runtime inventory = revision- or tree-bearing entries anywhere in each provider/runtime identity; release digest = SHA-256 over (task, state, headline label, claims with labels).",
+ "mathematical_model": "Scope T001-T164: T165 reads only earlier reports, so T165-T168 are not in it; queue-state.json and the dashboard cover the whole run. Totals over states, labels and basis components; queue coverage per section; runtime inventory = revision- or tree-bearing entries anywhere in each provider/runtime identity, one row per runtime with each identity it recorded (a revision recorded without its tree is merged with the entry that records that revision's tree); release digest = sha256 over the UTF-8 bytes of ciw.core.identities.canonical_json (sorted keys, no whitespace, ASCII escapes, NaN refused; the encoding of report identities) of the list [[task, state, headline label, [[claim, label], ...]], ...] in queue order.",
  "number": 165,
- "numerical_result": "164 of 168 queue tasks reported; states {'blocked': 2, 'completed': 146, 'partial': 16}; labels {'analytic': 11, 'numerically_verified': 756, 'provider_backed': 3, 'independently_verified': 57, 'not_established': 175}; runtimes csg, ftr, plsr, ppda, rust, scr, scr-exchange, set.",
+ "numerical_result": "Release report of T001-T164: 164 of 168 queue tasks reported; states {'blocked': 2, 'completed': 145, 'partial': 17}; labels {'analytic': 11, 'numerically_verified': 791, 'provider_backed': 3, 'independently_verified': 57, 'not_established': 187}; basis components {'derivation': 142, 'independent_check': 57, 'provider': 83, 'reference_checks': 823, 'synthetic_inputs': 339, 'none': 165}; 8 runtimes (csg, ftr, plsr, ppda, rust, scr, scr-exchange, set) with 10 identities.",
  "observation_model": "No physical observation; reads retained computational records only.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -133,12 +167,12 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/research_portfolio.py": "0fd0ed475a38bf81fd2145f64cf1335856a471c58d406347c3b66b0f66672702"
+   "src/ciw/lab/research_portfolio.py": "145b8ee8456e1dd57bf2a05fa20e1ce55bd33356522436d8901eb1adfb60fc7a"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "Sign the release digest with a project key once key custody is defined.",
- "report_id": "sha256:0981f4f6047b80ea6cc3f67c711ca54a106a20bc7dab18f84197e0b0b0f80e85",
+ "recommended_next_task": "Sign the release digest with a project key once key custody is defined (a cross-cutting open item of T166 and T167, owned by no queue task); a whole-run release record, including T165-T168, is computed outside the queue with research_portfolio.release_record over all retained reports.",
+ "report_id": "sha256:17c6cdeca156e06922e86187b81351399384256a7bb2d8635a40eb8920d9b4db",
  "schema": "ciw.lab-task-report.v1",
  "section": "research-portfolio",
  "state": "completed",
@@ -146,8 +180,13 @@
  "tests_passed": [
   "check: Release state and label totals match a raw-text recount of the retained report files vs absolute state-count differences from the raw-text recount",
   "check: Release state and label totals match a raw-text recount of the retained report files vs absolute label-count differences from the raw-text recount",
+  "check: Release state and label totals match a raw-text recount of the retained report files vs absolute basis-component count differences from the raw-text recount",
   "check: Every report whose provider probe succeeded contributes a runtime identity to the release inventory vs reports with a successful provider probe and no runtime identity",
-  "pytest: tests/test_lab_research_portfolio.py::test_release_report_inventories_nested_runtimes"
+  "check: Every report whose provider probe succeeded contributes a runtime identity to the release inventory vs recorded runtime identities the inventory does not hold",
+  "check: Every report whose provider probe succeeded contributes a runtime identity to the release inventory vs runtimes listed on more than one inventory row",
+  "pytest: tests/test_lab_research_portfolio.py::test_release_report_inventories_nested_runtimes",
+  "pytest: tests/test_lab_research_portfolio.py::test_release_report_lists_each_runtime_once_and_states_its_scope",
+  "pytest: tests/test_lab_research_portfolio.py::test_raw_recounts_derive_the_components_of_findings_retained_without_origin"
  ],
  "tests_skipped": [],
  "title": "Generate a release report from machine-readable metadata.",
@@ -155,6 +194,6 @@
  "unresolved_assumptions": [
   "The release digest is unsigned.",
   "The digest covers task states, headline labels, claims and their labels, not finding values or artifact bytes; values are compared within tolerance by ciw lab verify.",
-  "T165-T168 run after this report and are listed as not reported."
+  "The report covers T001-T164: T165-T168 run after it and are listed as not reported, so its totals differ from queue-state.json and the dashboard of the same run."
  ]
 }

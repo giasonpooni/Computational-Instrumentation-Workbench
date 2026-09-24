@@ -58,6 +58,10 @@
    "claim": "PLSR never certifies a semidefinite or indefinite edge-case decrease form",
    "domain": "numerical",
    "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check",
+    "provider"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -98,6 +102,10 @@
    "claim": "Every edge-case code is consistent with its exact class and exact distance from the resolution (resolved beyond two resolutions, never against the exact sign)",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -155,6 +163,10 @@
    "claim": "PLSR's Lyapunov solver and certificate constructor refuse a semidefinite Q and a singular P",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -199,6 +211,10 @@
    "claim": "No verdict certifies with a P that quadratic() accepts although it is exactly indefinite",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -243,6 +259,10 @@
    "claim": "Exact rational classes of the declared edge-case decrease forms",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -332,14 +352,14 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/lyapunov.py": "cbcb4d58d7313d7c537957a1b7dd35039a21bae80125bf59147eeed2c1232bbb",
+   "src/ciw/lab/lyapunov.py": "dcda8ba21661667cc03bb126a393e93158a306b4991d0a2450d8e18abe62cb27",
    "src/ciw/lab/lyapunov_provider.py": "da3465b48b5f5efc47bfe6ab8379cf2cf2bc23e4835dc7ff047252e77fa6ef17",
    "src/ciw/lab/lyapunov_reference.py": "bdf0bb5074ae2caca6c8a5d8e63a15e346b007098e6def6b058d077719bc1336"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T105: parameter boxes across unit scales; propose that PLSR's QuadraticCertificate check positive definiteness with an exact LDL^T (or a resolution-aware eigenvalue floor) instead of the eigvalsh sign.",
- "report_id": "sha256:7bfc96e8f45b02e036bf385e38b9c5dd457f48bcd533195b5a8831024fcef2da",
+ "recommended_next_task": "Deferred research question (upstream PLSR change): check positive definiteness in QuadraticCertificate with an exact LDL^T (or a resolution-aware eigenvalue floor) instead of the eigvalsh sign, and re-run to check that the exactly indefinite P candidates that eigvalsh calls positive definite are refused.",
+ "report_id": "sha256:e514e55144efbc104dab940baeffbc6f303956c5e533c6cc79770b6984b9cf08",
  "schema": "ciw.lab-task-report.v1",
  "section": "lyapunov",
  "state": "completed",
@@ -355,7 +375,8 @@
   "pytest: tests/test_lab_lyapunov.py::test_t104_semidefinite_edges",
   "pytest: tests/test_lab_lyapunov.py::test_edge_case_exact_classes",
   "pytest: tests/test_lab_lyapunov.py::test_checks_are_unconditional_and_observed_values_are_computed",
-  "pytest: tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider"
+  "pytest: tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider",
+  "pytest: tests/test_lab_lyapunov.py::test_next_steps_name_forward_work"
  ],
  "tests_skipped": [],
  "title": "Test semidefinite and skew-symmetric edge cases.",

@@ -51,6 +51,10 @@
    "claim": "Monte Carlo covariances of rotated, translated, metre-to-millimetre and composite-transformed states match P' = J P J^T within a Bonferroni-corrected 99.9% sampling bound",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -111,6 +115,10 @@
    "claim": "Roundoff sanity: the sample covariance of transformed samples equals J S J^T, J^-1 (J P J^T) J^-T returns P, and every transformed covariance (J P J^T and the FrameTransform output) is symmetric, to roundoff (algebraic identities that check the arithmetic, not the propagation law)",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 0.0
@@ -150,6 +158,10 @@
    "claim": "Transformed sample means match the declared maps: rotation and unit change act on the whole state, and the translation moves positions only, so the transformed velocities average to J_v mu_v",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -189,6 +201,10 @@
    "claim": "Mahalanobis distance is invariant under every transform, including the metre-to-millimetre unit change, when the covariance is transformed with the vector",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 0.0
@@ -224,6 +240,10 @@
    "claim": "FrameTransform.apply moves a typed position observation to value R z + t and covariance R Sigma R^T, matching J P J^T to roundoff",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 0.0
@@ -283,6 +303,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -330,6 +354,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -360,6 +388,9 @@
    "claim": "The declared 35 degree rotation, translation and body covariance describe a real sensor mounting or extrinsic calibration",
    "domain": "calibration",
    "evidence_status": "not_established",
+   "origin": [
+    "synthetic_inputs"
+   ],
    "uncertainty": null,
    "unit": null,
    "value": "not established: the transform and covariance are declared synthetic values"
@@ -400,13 +431,13 @@
   "sources": {
    "src/ciw/lab/sensor_fusion_bench.py": "f373849a4c6836fa20685c59ce7a6fe6bf732f6df9d6a49646cdc017262dd656",
    "src/ciw/lab/sensor_fusion_common.py": "db3b0430ad5c13920239cef354da61b64ab1b01f84b2d3d5aff2f78840a5867a",
-   "src/ciw/lab/sensor_fusion_geometry.py": "7469c225fd283954f2ea6bda4d86d3e9c098949f0abb74051f233a969c0a46d0",
-   "src/ciw/lab/sensor_fusion_objects.py": "93fc55ddca91f1adfb886d21805ea8f82586548ee84e1f6cc7daed4df1f53bb9"
+   "src/ciw/lab/sensor_fusion_geometry.py": "0f5646c5f28937a59bc20615a26422762d505e20d76547db991726b6880e8e9d",
+   "src/ciw/lab/sensor_fusion_objects.py": "50ec8767a90f261f108d6524c7ff55d22604b55cc9853e749ba4c5f71bc76081"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T064: propagate covariance through the Jacobi transfer matrix, where the map is only first-order.",
- "report_id": "sha256:a7f0765bef0a5996535637be4804ded779244153130f505c94a12a866c76a844",
+ "recommended_next_task": "Deferred research question: an uncertain extrinsic, a rotation angle with a declared variance, adding J_theta Sigma_theta J_theta^T to the transformed covariance, checked by Monte Carlo over the angle and carried through the fusion intake's frame mapping, which today treats every mapping as exact.",
+ "report_id": "sha256:21d51cd1ef864433c4ce790b2c0a970f9deced890ecc5949ac06c7afaafbdda3",
  "schema": "ciw.lab-task-report.v1",
  "section": "sensor-fusion",
  "state": "completed",

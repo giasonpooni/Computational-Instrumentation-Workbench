@@ -68,6 +68,11 @@
    "claim": "PLSR certifies each matrix with its own Lyapunov P exactly in the time convention where numpy finds it stable, and its solver refuses the other convention at a documented gate",
    "domain": "numerical",
    "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check",
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -115,6 +120,10 @@
    "claim": "No Lyapunov P solved for one convention certifies a matrix in the other convention where numpy finds it unstable",
    "domain": "numerical",
    "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check",
+    "provider"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -155,6 +164,10 @@
    "claim": "The two time interpretations give different PLSR outcomes exactly for the matrices whose stability differs between conventions",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -204,6 +217,10 @@
    "claim": "Diagonal plants with P = I receive the code of each convention's exact decrease form",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -249,6 +266,10 @@
    "claim": "A discrete plant refuses a theta_dot",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -284,6 +305,10 @@
    "claim": "A CIW Kronecker Lyapunov solution is positive definite exactly when numpy calls the matrix stable in that time convention",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -346,14 +371,14 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/lyapunov.py": "cbcb4d58d7313d7c537957a1b7dd35039a21bae80125bf59147eeed2c1232bbb",
+   "src/ciw/lab/lyapunov.py": "dcda8ba21661667cc03bb126a393e93158a306b4991d0a2450d8e18abe62cb27",
    "src/ciw/lab/lyapunov_provider.py": "da3465b48b5f5efc47bfe6ab8379cf2cf2bc23e4835dc7ff047252e77fa6ef17",
    "src/ciw/lab/lyapunov_reference.py": "bdf0bb5074ae2caca6c8a5d8e63a15e346b007098e6def6b058d077719bc1336"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T111: scalar quadratic versus matrix-eigenvalue routes; add a sampled-data check that a continuous certificate is not silently reused for exp(A h).",
- "report_id": "sha256:cc00c6cd7277f8685af7484a3cd123abfccfa099f633a08e6bca3dd75240da4d",
+ "recommended_next_task": "Deferred research question: a sampled-data check that a continuous-time certificate is not silently reused for the one-step map exp(A h): certify exp(A h) for declared sampling periods h and compare with the continuous verdict (no sampling period is modelled here).",
+ "report_id": "sha256:806547ea924ec658aecc64a141ba96b748b51baeb21659869766ff9772d9a5e1",
  "schema": "ciw.lab-task-report.v1",
  "section": "lyapunov",
  "state": "completed",
@@ -368,7 +393,8 @@
   "check: A discrete plant refuses a theta_dot vs discrete affine plant with theta_dot = 0",
   "check: A CIW Kronecker Lyapunov solution is positive definite exactly when numpy calls the matrix stable in that time convention vs solves whose definiteness disagrees with the eigenvalue classification",
   "pytest: tests/test_lab_lyapunov.py::test_t110_time_interpretation",
-  "pytest: tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider"
+  "pytest: tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider",
+  "pytest: tests/test_lab_lyapunov.py::test_next_steps_name_forward_work"
  ],
  "tests_skipped": [],
  "title": "Test discrete-time versus continuous-time interpretation.",

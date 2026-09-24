@@ -3,6 +3,7 @@
   "src/ciw/lab/energy_gpu.py",
   "src/ciw/lab/energy_gpu_kernels.py",
   "src/ciw/lab/energy_gpu_telemetry.py",
+  "src/ciw/lab/energy_gpu_workload.py",
   "docs/lab/ENERGY_GPU.md"
  ],
  "evidence_status": {
@@ -17,11 +18,11 @@
   },
   "primary": "not_established"
  },
- "expected_invariant": "Counter monotone across phases; phases non-overlapping; sensor UUID equals workload UUID; every batch meets the declared KL target.",
- "experiment": "Blocked: unavailable requirement(s) hardware:nvidia-gpu. Planned: On the RTX 2080 host: (0) `mkdir -p runs/rtx2080-<date>`; (1) `ciw energy probe --gpu-index 0` must return a reading with status ok; (2) `ciw energy record --problem examples/energy-accuracy/problem.json --output-dir runs/rtx2080-<date>/capture --duration 10 --replicas 4096 --warmup-batches 2 --idle-duration 2 --gpu-index 0`; (3) `ciw energy replay runs/rtx2080-<date>/capture/log.json`; (4) `CIW_LAB_ENERGY_LOG=runs/rtx2080-<date>/capture/log.json ciw lab run T116 T119 --output-dir <dir>` on the same host (T118 additionally needs the nvidia-smi sidecar started before step 2 and CIW_LAB_NVIDIA_SMI_CSV and CIW_LAB_NVIDIA_SMI_UTC_OFFSET set; see its plan).",
+ "expected_invariant": "Counter monotone across phases; phases non-overlapping; sensor UUID equals workload UUID; the log names the common workload (kernel, problem, prepared inputs, K, replicas, KL target); every batch meets the declared KL target.",
+ "experiment": "Blocked: unavailable requirement(s) hardware:nvidia-gpu. Planned: On the RTX 2080 host: (0) `mkdir -p runs/rtx2080-<date>`; (1) `ciw energy probe --gpu-index 0` must return a reading with status ok; (2) start `TZ=UTC nvidia-smi --query-gpu=timestamp,uuid,name,utilization.gpu,utilization.memory,temperature.gpu,power.draw,clocks.sm,clocks.mem,pstate --format=csv,nounits -lms 100 -f runs/rtx2080-<date>/smi.csv` in the background (T118 needs it; T116 and T119 do not); (3) `ciw energy record --problem examples/energy-accuracy/problem.json --output-dir runs/rtx2080-<date>/capture --duration 10 --replicas 4096 --warmup-batches 2 --idle-duration 2 --gpu-index 0`, then stop the sidecar; (4) `ciw energy replay runs/rtx2080-<date>/capture/log.json`; (5) `CIW_LAB_NVIDIA_SMI_UTC_OFFSET=+00:00 ciw lab run T116 T117 T118 T119 T120 T121 T124 T147 --capture energy-log=runs/rtx2080-<date>/capture/log.json --capture nvidia-smi-csv=runs/rtx2080-<date>/smi.csv --output-dir results/rtx2080-<date>` on the same host (the energy-log capture is T116's and T119's input; T117, T121 and T147 run the same PTX kernel on the common workload); (6) `ciw lab hardware retain results/rtx2080-<date> --retained lab --run-id rtx2080-<date> --host \"<RTX 2080 host>\"`.",
  "failure_modes_checked": [
   "hardware:nvidia-gpu probe (nvidia-smi -L): no device here",
-  "acquisition gate exercised by regression tests on synthetic logs: synthetic origin, absent or differing host NVML identity, raw bytes retained",
+  "acquisition gate exercised by regression tests on synthetic logs: synthetic origin, a log of another workload than the common one, absent or differing host NVML identity, raw bytes retained",
   "planned on a captured log (energy_records.analyze): counter reset or wrap, missing endpoint brackets, sensor/workload UUID mismatch, KL target, minimum duration"
  ],
  "findings": [
@@ -35,6 +36,7 @@
    "claim": "GPU-domain gross energy per measured batch",
    "domain": "physical",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": "J/batch",
    "value": null
@@ -49,6 +51,7 @@
    "claim": "The NVML total-energy counter of the RTX 2080 has a characterized accuracy and resolution",
    "domain": "sensor_performance",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -79,14 +82,15 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/energy_gpu.py": "a66107417b5bfa398077a919b2f5351ca222e9961fa8dfb3256b78efc17fd930",
-   "src/ciw/lab/energy_gpu_kernels.py": "366c477ff1af7f59b626f4e64bf994ae4cbce5754c0e9c5be1c2acb515f99f4b",
-   "src/ciw/lab/energy_gpu_telemetry.py": "df82c8748d3aa75384e3928bffcf516cd6f72cccde99edf8d21f089cc768bafa"
+   "src/ciw/lab/energy_gpu.py": "f49195ce5a78ced3c8da1562f4412f2fdc65d8cc2749dd4fbe0b25bc0334e773",
+   "src/ciw/lab/energy_gpu_kernels.py": "1198886637535f3f8ec26601aa70cdc16d1c175dc4286aa9807edec3910005d2",
+   "src/ciw/lab/energy_gpu_telemetry.py": "6935331e622266868a97ee78f8e34d185aa69009a62fedc8ea8273b3a9312bfc",
+   "src/ciw/lab/energy_gpu_workload.py": "5cdaf9fe9f25194dae561e060abf471567cfd3bb8df6c1836630a54c5085a9de"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T118: record utilization, temperature and power from the same capture session (with the nvidia-smi sidecar); T119: energy per accepted result from the same log",
- "report_id": "sha256:0eda167720d082b8062631eb6623ad5c4efba56d63dbe4abc367ede70a0374fb",
+ "recommended_next_task": "Measure gross device energy per batch of the common Gaussian VI workload on the RTX 2080 host (protocol in docs/lab/ENERGY_GPU.md), hardware_measured through the NVML identity gate, in the run that also holds the device telemetry, the energy per accepted result and the kernel's CPU/GPU comparisons: `mkdir -p runs/rtx2080-<date>`; `ciw energy probe --gpu-index 0` must return a reading with status ok; start `TZ=UTC nvidia-smi --query-gpu=timestamp,uuid,name,utilization.gpu,utilization.memory,temperature.gpu,power.draw,clocks.sm,clocks.mem,pstate --format=csv,nounits -lms 100 -f runs/rtx2080-<date>/smi.csv` in the background; `ciw energy record --problem examples/energy-accuracy/problem.json --output-dir runs/rtx2080-<date>/capture --duration 10 --replicas 4096 --warmup-batches 2 --idle-duration 2 --gpu-index 0`; stop the sidecar; `ciw energy replay runs/rtx2080-<date>/capture/log.json`; then `CIW_LAB_NVIDIA_SMI_UTC_OFFSET=+00:00 ciw lab run T116 T117 T118 T119 T120 T121 T124 T147 --capture energy-log=runs/rtx2080-<date>/capture/log.json --capture nvidia-smi-csv=runs/rtx2080-<date>/smi.csv --output-dir results/rtx2080-<date>` on the same host and `ciw lab hardware retain results/rtx2080-<date> --retained lab --run-id rtx2080-<date> --host \"<RTX 2080 host>\"`",
+ "report_id": "sha256:42c8f3f4630c193c1369ced441616022f2edbbe4f0a40c58f043fe0e045aa76e",
  "schema": "ciw.lab-task-report.v1",
  "section": "energy-gpu",
  "state": "blocked",
@@ -95,6 +99,8 @@
   "pytest: tests/test_lab_energy_gpu.py::test_gpu_tasks_are_blocked_with_the_recording_protocol",
   "pytest: tests/test_lab_energy_gpu.py::test_operator_log_gate_withholds_physical_labels_from_synthetic_logs",
   "pytest: tests/test_lab_energy_gpu.py::test_operator_log_gate_trust_boundary_is_the_host_identity",
+  "pytest: tests/test_lab_energy_gpu.py::test_operator_logs_of_another_workload_are_withheld",
+  "pytest: tests/test_lab_energy_gpu.py::test_next_steps_name_work_that_delivers",
   "pytest: tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance"
  ],
  "tests_skipped": [],

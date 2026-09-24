@@ -59,6 +59,11 @@
    "claim": "Jacobi fields on HyperbolicPlane(k) grow like sinh(kL)/k and adaptive integration resolves them",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-08,
     "rel": 1e-09
@@ -106,6 +111,11 @@
    "claim": "Fixed-step RK4 relative error grows like k^5 and matches L k^5 h^4 / 120",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.001,
     "rel": 0.0001
@@ -182,6 +192,11 @@
    "claim": "RK4 steps for relative accuracy 1e-6 grow like k^(5/4); DP45 accepted steps grow about linearly in k",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.03,
     "rel": 0.0
@@ -251,6 +266,11 @@
    "claim": "This is intrinsic exponential instability, not stiffness: the integrated Jacobi flow grows and decays at the same rate k and accuracy, not stability, sets the step",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-08,
     "rel": 0.05
@@ -421,6 +441,11 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.05
@@ -537,6 +562,11 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0001
@@ -611,13 +641,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/geodesic_jacobi_limits.py": "07d850980ac10ad34ca0d1b8c29942c90fe635e15135a5db1f74e90674e3bb18",
+   "src/ciw/lab/geodesic_jacobi_limits.py": "893d8b0240e673dd9aa7b5ba13b09958caa861706335726277d676def21aa83d",
    "src/ciw/lab/geodesic_jacobi_limits_core.py": "0e0b8f85ed4e83c3fcdc866e8a7e580a17432e174b8db8d8277230e226473d7f"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T017 (validity domains, which shrink like 1/cosh(ks) on the hyperbolic plane) and T018",
- "report_id": "sha256:59100f16fdb07d083b63578d5ebbf3edf377624d2d65aa10637fd804014cc0c2",
+ "recommended_next_task": "Deferred research question: add a nonlinear implicit geodesic integrator (for example Gauss-Legendre collocation) and compare it on the full saddle and hyperbolic geodesic systems, including oblique saddle geodesics that sample other K (implicit methods are compared here only on the constant-curvature Jacobi step matrices)",
+ "report_id": "sha256:1210719bf3cd0ddadbe3cc228f62fea62088533bf064ef0d5603dfebb3180706",
  "schema": "ciw.lab-task-report.v1",
  "section": "geodesic-jacobi",
  "state": "completed",
@@ -647,7 +677,8 @@
   "check: Saddle(c): peak |K| = c^2 but Jacobi growth is polynomial in c; the local exponent of j_head(L) decreases toward sqrt(2) vs log j_head(L) / (sqrt(peak |K|) L) at the largest c (exponential growth would give about 1)",
   "check: Saddle(c): peak |K| = c^2 but Jacobi growth is polynomial in c; the local exponent of j_head(L) decreases toward sqrt(2) vs largest change of consecutive local exponents from c = 16 on (nonpositive: decreasing)",
   "check: Saddle(c): peak |K| = c^2 but Jacobi growth is polynomial in c; the local exponent of j_head(L) decreases toward sqrt(2) vs last local exponent (c = 4096 -> 16384) minus the matched-asymptotics value sqrt(2)",
-  "pytest: tests/test_lab_geodesic_jacobi_limits.py::test_t016_negative_curvature_is_not_stiffness"
+  "pytest: tests/test_lab_geodesic_jacobi_limits.py::test_t016_negative_curvature_is_not_stiffness",
+  "pytest: tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work"
  ],
  "tests_skipped": [],
  "title": "Study stiff behavior on strongly negative-curvature surfaces.",

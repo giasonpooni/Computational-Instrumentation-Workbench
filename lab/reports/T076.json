@@ -1,6 +1,8 @@
 {
  "changed_files": [
   "src/ciw/lab/sensor_fusion_admission.py",
+  "src/ciw/lab/sensor_fusion_intake.py",
+  "src/ciw/lab/observation_modes.py",
   "src/ciw/lab/sensor_fusion_common.py",
   "src/ciw/lab/sensor_fusion_bench.py",
   "src/ciw/lab/sensor_fusion_objects.py"
@@ -11,14 +13,14 @@
    "hardware_measured": 0,
    "independently_verified": 0,
    "not_established": 1,
-   "numerically_verified": 4,
+   "numerically_verified": 6,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
  "expected_invariant": "read_only default True; authority == CIW AUTHORITY; initialize, predict, handle_gap, fuse, reacquire and admit refused with read_only_session; record allowed; rebinding read_only or authority refused; authority mapping immutable.",
- "experiment": "Inspect the constructor signature, compare authority dictionaries, call every estimation and admission method on a default session, try to rebind the flag and edit the authority, then construct a session with read_only=False.",
+ "experiment": "Inspect the constructor signature, compare authority dictionaries, call every estimation and admission method on a default session, try to rebind the flag and edit the authority, then construct a session with read_only=False; admit and fuse a tracker record through the intake with a default ledger and a default session; collect every state_admission value the section-4 and section-5 estimators write.",
  "failure_modes_checked": [
   "writable default",
   "authority drift from the CIW vocabulary",
@@ -27,7 +29,10 @@
   "authority upgrade on enabling fusion",
   "flipping read_only after construction",
   "editing the authority record in place",
-  "a missing vocabulary key (reported as missing, failing the checks rather than raising)"
+  "a missing vocabulary key (reported as missing, failing the checks rather than raising)",
+  "admission on a default section-4 ledger",
+  "fusion through the intake into a default session",
+  "a state_admission value outside the vocabulary (for example admitted)"
  ],
  "findings": [
   {
@@ -80,6 +85,10 @@
    "claim": "The CIW authority vocabulary declares state_admission and sensor_fusion not_performed and physical_truth not_established, and the fusion session's default authority equals it",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -188,6 +197,10 @@
    "claim": "FusionSession defaults to read-only: every estimation or admission call (initialize, predict, handle_gap, fuse, reacquire, admit) is refused with read_only_session, observations are still retained, and no state or admitted state exists",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -259,6 +272,10 @@
    "claim": "The read-only flag and the authority record are fixed at construction: rebinding either is refused with read_only_session and the authority record cannot be edited in place",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -312,6 +329,10 @@
    "claim": "Enabling fusion explicitly at construction changes the authority only to synthetic_only; physical truth stays not_established",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -331,12 +352,193 @@
   {
    "assigned_by": "ciw.lab.evidence",
    "basis": {
+    "checks": [
+     {
+      "expected_refusal": "read_only_session",
+      "observed_refusal": "read_only_session",
+      "passed": true,
+      "reference": "admission on a default ledger",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "not_admitted",
+      "observed_refusal": "not_admitted",
+      "passed": true,
+      "reference": "intake fusion of a record retained in a default ledger",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "read_only_session",
+      "observed_refusal": "read_only_session",
+      "passed": true,
+      "reference": "intake fusion of an admitted record into a default session",
+      "reference_kind": "refusal"
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "a state created on the default session",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "default ledger authority state_admission is not not_performed",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     }
+    ],
+    "derivation": "ObservationLedger(), FusionSession() and ObservationIntake",
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "records": "ciw.lab.sensor_fusion_intake.tracker_records",
+     "seed": 752027,
+     "sensor": "tracker_measurement",
+     "ticks": 1
+    }
+   },
+   "claim": "Through the fusion intake the defaults still hold: a default ledger refuses admission with read_only_session, so the intake refuses its records as not_admitted, and a default session refuses fusion of an admitted record with read_only_session; no state is created",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks",
+    "synthetic_inputs"
+   ],
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "refusal codes",
+    "kind": "reference_error",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "intake_authority": {
+     "physical_truth": "not_established",
+     "sensor_fusion": "not_performed",
+     "state_admission": "not_performed"
+    },
+    "intake_on_default_ledger": "not_admitted",
+    "ledger_admit": "read_only_session",
+    "ledger_authority": {
+     "physical_truth": "not_established",
+     "sensor_fusion": "not_performed",
+     "state_admission": "not_performed"
+    },
+    "ledger_read_only": true,
+    "read_only_session_through_intake": "read_only_session",
+    "session_state_created": false
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "state_admission values outside the vocabulary",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "estimators audited that wrote no state_admission value",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "vocabulary values seen differ from {not_performed, synthetic_only}",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     }
+    ],
+    "derivation": "ciw.lab.sensor_fusion_intake.admission_vocabulary_audit",
+    "generator": {
+     "bit_generator": "PCG64",
+     "name": "ciw.lab.sensor_fusion_bench",
+     "records": "ciw.lab.sensor_fusion_intake.tracker_records",
+     "seed": 752027,
+     "sensor": "tracker_measurement",
+     "ticks": 12
+    }
+   },
+   "claim": "No lab estimator writes a state_admission value outside {not_performed, synthetic_only}: section-4 state stores and ledgers, the fusion session with its candidate and admitted states, and the intake lineage, read-only and writable",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks",
+    "synthetic_inputs"
+   ],
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "string comparison of emitted records",
+    "kind": "reference_error",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "estimators": {
+     "FusionSession (default)": [
+      "not_performed"
+     ],
+     "FusionSession (writable)": [
+      "synthetic_only"
+     ],
+     "ObservationIntake": [
+      "synthetic_only"
+     ],
+     "ObservationLedger (default)": [
+      "not_performed"
+     ],
+     "ObservationLedger (writable)": [
+      "not_performed",
+      "synthetic_only"
+     ],
+     "StateStore (default)": [
+      "not_performed"
+     ],
+     "StateStore (writable)": [
+      "not_performed",
+      "synthetic_only"
+     ]
+    },
+    "outside_vocabulary": [],
+    "values_seen": [
+     "not_performed",
+     "synthetic_only"
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
     "derivation": "default-argument and refusal audit of FusionSession against ciw.declared_workload.AUTHORITY; no synthetic draws",
     "notes": "no acquisition"
    },
    "claim": "Synthetic fusion output is admissible as production state",
    "domain": "production_acceptance",
    "evidence_status": "not_established",
+   "origin": [
+    "derivation"
+   ],
    "uncertainty": null,
    "unit": null,
    "value": "not established: sensor_fusion and state_admission are not_performed by default and synthetic_only when enabled"
@@ -344,19 +546,21 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 1151,
+   "bytes": 2360,
    "path": "artifacts/T076/defaults.json",
-   "sha256": "ee5d7b32c9ff1c59d09169fca89c19e721d404ce57bf13e7b17bf51632782cf2"
+   "sha256": "6eaf38a693e416347be17a5d04e48b84282b59c7b33215da0aae0acca7b09743"
   }
  ],
- "hypothesis": "The fusion API cannot estimate, fuse or admit anything unless a caller constructs a writable session, the flag cannot be flipped afterwards, and its authority record uses the CIW vocabulary (sensor_fusion and state_admission not_performed).",
+ "hypothesis": "The fusion API cannot estimate, fuse or admit anything unless a caller constructs a writable session, the flag cannot be flipped afterwards, and its authority record uses the CIW vocabulary (sensor_fusion and state_admission not_performed); the section-4 ledger and the intake inherit the same default, and no lab estimator writes a state_admission value outside {not_performed, synthetic_only}.",
  "input_data": [
   "FusionSession() with default arguments",
-  "ciw.declared_workload.AUTHORITY"
+  "ciw.declared_workload.AUTHORITY",
+  "ObservationLedger() and StateStore() with default arguments",
+  "the intake demonstration's session, candidate, admitted state and lineage"
  ],
- "mathematical_model": "Not numerical: a default-argument and refusal audit of FusionSession against ciw.declared_workload.AUTHORITY.",
+ "mathematical_model": "Not numerical: a default-argument and refusal audit of FusionSession, ObservationLedger, StateStore and ObservationIntake against ciw.declared_workload.AUTHORITY.",
  "number": 76,
- "numerical_result": "read_only default True; authority {'state_admission': 'not_performed', 'sensor_fusion': 'not_performed', 'physical_truth': 'not_established'}; refusals ['read_only_session']; rebinding ['read_only_session']; enabled authority {'state_admission': 'synthetic_only', 'sensor_fusion': 'synthetic_only', 'physical_truth': 'not_established'}.",
+ "numerical_result": "read_only default True; authority {'state_admission': 'not_performed', 'sensor_fusion': 'not_performed', 'physical_truth': 'not_established'}; refusals ['read_only_session']; rebinding ['read_only_session']; enabled authority {'state_admission': 'synthetic_only', 'sensor_fusion': 'synthetic_only', 'physical_truth': 'not_established'}; through the intake: ledger admission read_only_session, fusion not_admitted and read_only_session; state_admission values written ['not_performed', 'synthetic_only'].",
  "observation_model": "One camera observation offered to fuse and record.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -371,15 +575,17 @@
   "scipy": "1.16.2",
   "sources": {
    "src/ciw/declared_workload.py": "d78641236802b296afff11be406791473a40276eb7de37a019bbf192daa03db6",
-   "src/ciw/lab/sensor_fusion_admission.py": "a0d36bf665e88d2851b08c6181a8f794e39751a688a04ebd586fbc93164cc3c7",
+   "src/ciw/lab/observation_modes.py": "14fcc803e9543fa4a6891775dfac6633ca15ade648e6125e2f71fde4c4201c90",
+   "src/ciw/lab/sensor_fusion_admission.py": "e0b488855ec251024bfcc9c57dc77430ec45ceee337acfbc6a109fb747a747d0",
    "src/ciw/lab/sensor_fusion_bench.py": "f373849a4c6836fa20685c59ce7a6fe6bf732f6df9d6a49646cdc017262dd656",
    "src/ciw/lab/sensor_fusion_common.py": "db3b0430ad5c13920239cef354da61b64ab1b01f84b2d3d5aff2f78840a5867a",
-   "src/ciw/lab/sensor_fusion_objects.py": "93fc55ddca91f1adfb886d21805ea8f82586548ee84e1f6cc7daed4df1f53bb9"
+   "src/ciw/lab/sensor_fusion_intake.py": "e8919ac1c921ec4c8e21e80924b493bfa4773071492a6c33a17a4c9990d1cde2",
+   "src/ciw/lab/sensor_fusion_objects.py": "50ec8767a90f261f108d6524c7ff55d22604b55cc9853e749ba4c5f71bc76081"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T113: connect filtered residuals to the Lyapunov runtime without putting sensors inside the kernel.",
- "report_id": "sha256:9e921bfc04f3171b4211e88ddcef0c18f895d5ecff8c92ab52aac36ace2f6064",
+ "recommended_next_task": "Deferred research question: make the audit structural rather than enumerated, a shared authority type that every lab estimator must construct its records through and that refuses any state_admission value outside the vocabulary, so a new estimator cannot bypass the check; today the audit lists the estimators by hand.",
+ "report_id": "sha256:3d2cc3f6a96b9315a653a54395fc508a61b1ccc3118708e9b871c8eb9ddba0ea",
  "schema": "ciw.lab-task-report.v1",
  "section": "sensor-fusion",
  "state": "completed",
@@ -407,7 +613,16 @@
   "check: Enabling fusion explicitly at construction changes the authority only to synthetic_only; physical truth stays not_established vs enabled session sensor_fusion is not synthetic_only",
   "check: Enabling fusion explicitly at construction changes the authority only to synthetic_only; physical truth stays not_established vs enabled session state_admission is not synthetic_only",
   "check: Enabling fusion explicitly at construction changes the authority only to synthetic_only; physical truth stays not_established vs enabled session physical_truth is not not_established",
+  "check: Through the fusion intake the defaults still hold: a default ledger refuses admission with read_only_session, so the intake refuses its records as not_admitted, and a default session refuses fusion of an admitted record with read_only_session; no state is created vs admission on a default ledger",
+  "check: Through the fusion intake the defaults still hold: a default ledger refuses admission with read_only_session, so the intake refuses its records as not_admitted, and a default session refuses fusion of an admitted record with read_only_session; no state is created vs intake fusion of a record retained in a default ledger",
+  "check: Through the fusion intake the defaults still hold: a default ledger refuses admission with read_only_session, so the intake refuses its records as not_admitted, and a default session refuses fusion of an admitted record with read_only_session; no state is created vs intake fusion of an admitted record into a default session",
+  "check: Through the fusion intake the defaults still hold: a default ledger refuses admission with read_only_session, so the intake refuses its records as not_admitted, and a default session refuses fusion of an admitted record with read_only_session; no state is created vs a state created on the default session",
+  "check: Through the fusion intake the defaults still hold: a default ledger refuses admission with read_only_session, so the intake refuses its records as not_admitted, and a default session refuses fusion of an admitted record with read_only_session; no state is created vs default ledger authority state_admission is not not_performed",
+  "check: No lab estimator writes a state_admission value outside {not_performed, synthetic_only}: section-4 state stores and ledgers, the fusion session with its candidate and admitted states, and the intake lineage, read-only and writable vs state_admission values outside the vocabulary",
+  "check: No lab estimator writes a state_admission value outside {not_performed, synthetic_only}: section-4 state stores and ledgers, the fusion session with its candidate and admitted states, and the intake lineage, read-only and writable vs estimators audited that wrote no state_admission value",
+  "check: No lab estimator writes a state_admission value outside {not_performed, synthetic_only}: section-4 state stores and ledgers, the fusion session with its candidate and admitted states, and the intake lineage, read-only and writable vs vocabulary values seen differ from {not_performed, synthetic_only}",
   "pytest: tests/test_lab_sensor_fusion.py::test_defaults_are_read_only_and_not_performed",
+  "pytest: tests/test_lab_sensor_fusion.py::test_no_lab_estimator_leaves_the_admission_vocabulary",
   "pytest: tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T076]"
  ],
  "tests_skipped": [],
@@ -415,6 +630,7 @@
  "uncertainty": "None: the outcomes are deterministic.",
  "unresolved_assumptions": [
   "The CIW vocabulary is read from ciw.declared_workload; if it changes, this task's checks fail rather than silently following it.",
-  "Calibration records can be registered and revoked on a read-only session; they are record-keeping, not estimation, and grant nothing."
+  "Calibration records can be registered and revoked on a read-only session; they are record-keeping, not estimation, and grant nothing.",
+  "The vocabulary audit covers the estimators this lab defines (StateStore, ObservationLedger, FusionSession and the intake); another module that writes state_admission is not audited until it is added to the audit."
  ]
 }

@@ -46,6 +46,10 @@
    "claim": "Lateral-error envelope of the coupon trajectory under the declared registration box",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-08,
     "rel": 1e-07
@@ -86,6 +90,9 @@
    "claim": "Standoff error from a lateral tool offset follows -kappa_lateral e^2 / 2",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-10,
     "rel": 1e-07
@@ -135,6 +142,9 @@
    "claim": "Tool-centre-point path length element is sqrt((1 - H kappa_n)^2 + (H tau_g)^2)",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-07
@@ -209,6 +219,9 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-09
@@ -231,6 +244,7 @@
    "claim": "The torch or gun on a real cell stays within the predicted lateral and standoff band",
    "domain": "physical",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -241,6 +255,7 @@
    "claim": "The trajectory is safe to execute on a welding or coating robot cell",
    "domain": "machine_safety",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -280,15 +295,15 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/manufacturing.py": "f4cd90e1df33b910b78daf4b0556a8861e044d83701474f841e85fd9d96f9063",
-   "src/ciw/lab/manufacturing_geometry.py": "1db6df2ddf778668da2ffd53a66bcddbff4fc933d6f299e8f283cedc60a9332f",
-   "src/ciw/lab/manufacturing_metrology.py": "aef4708b0f296fc66087a6382881a0564c5edcb6d7961b5e472aa711e29feb5d",
-   "src/ciw/lab/manufacturing_records.py": "015ea7fccc586f4b95f64e7ffbc1f6c34eec20b8245778ede3c2324006537087"
+   "src/ciw/lab/manufacturing.py": "a489d9a93946a344e2878840d784e8087098775794108a6729d9179102767969",
+   "src/ciw/lab/manufacturing_geometry.py": "44830e8b1e2811dc3ade9eb1bc40691a6ae53f92c0b178dce5e5e111447879a1",
+   "src/ciw/lab/manufacturing_metrology.py": "f5c7694f91ac7b38a1f886b4acdc189d0abda403956e3b34d3f2dc8644c07dba",
+   "src/ciw/lab/manufacturing_records.py": "9d8cd35dc23541e9067fdced631c2a80bff1077b3bcba7fa9ae377c9db67626f"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T135: generate inspection scan paths over the coupon and measure coverage versus path length.",
- "report_id": "sha256:cffe8b9f5f06eb484e754952843d6169c442ea44e3c2926605bf666e3d088d53",
+ "recommended_next_task": "Open: check robot joint limits and singularities along the tool-centre-point paths, and model the deposition footprint (spray cone, heat input), which the kinematic speed factor does not capture.",
+ "report_id": "sha256:7ff4f97703499f0db7200cb7edabc92465ea6bfd239a849d08cc2ded7736516f",
  "schema": "ciw.lab-task-report.v1",
  "section": "manufacturing",
  "state": "completed",

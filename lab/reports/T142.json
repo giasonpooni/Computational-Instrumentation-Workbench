@@ -74,6 +74,10 @@
    "claim": "Exact floating-point operation counts of the scalar kernel restatements",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -144,6 +148,9 @@
    "claim": "Interpreter calls issued by ciw code per kernel call",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0.25
@@ -189,6 +196,10 @@
    "claim": "Ranked Rust port recommendation",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -215,6 +226,7 @@
    "domain": "computational_pipeline",
    "evidence_status": "not_established",
    "expected_not_established": true,
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -247,6 +259,10 @@
    "claim": "Rust fused RK4 loop reproduces ciw.lab.jacobi.transfer on the unit sphere",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-11,
     "rel": 0
@@ -265,6 +281,7 @@
    "claim": "Rust ports of the ranked kernels are ready for industrial deployment",
    "domain": "industrial_readiness",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -282,14 +299,14 @@
    "sha256": "499c8c25a02b3fb601c00239dc16722ee73933cd40d825179954f0d9e15a122e"
   },
   {
-   "bytes": 1370,
+   "bytes": 1382,
    "path": "artifacts/T142/kernel-timings.json",
-   "sha256": "28e1aeb10624ac3807c48fae5fc1f9e4fe1f651ab42d361de8bb329f4107bcd9"
+   "sha256": "3bf59a2abaa68360180a7db174074c475b697e833a0499100d87180b6b8d4e41"
   },
   {
    "bytes": 1649,
    "path": "artifacts/T142/kernel-timings.svg",
-   "sha256": "74a63f25cb84dd2f53a0be6c91475ee234223e1a2834710585db6ef341a96af2"
+   "sha256": "201be01efbd16ff01ddff2a64eae3eecdc75c5cb4a52ed3bbed3597135e7e89e"
   }
  ],
  "hypothesis": "Python dispatch overhead, not arithmetic, dominates the geodesic/Jacobi kernels (recorded as not established: only retained timings speak to it); ranked by Python dispatches a port removes, the fused transfer loop is the best Rust target (it contains every geodesic RHS call and RK4 step, so it ranks above them by construction); the Kalman update and a standalone RK4 step are poor targets.",
@@ -328,14 +345,14 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/implementation_targets.py": "1df8bd67d28b18d70bcb5f74e4a14616ceb17868c7a9aa75595f15254426ee7e",
+   "src/ciw/lab/implementation_targets.py": "0ea1ac76f50f1c65b47155a6791a0ea74c3ebf57d0b254a4a6615dabb930b5e7",
    "src/ciw/lab/implementation_targets_kernels.py": "daf3fe697f5b8f7627119fe299a270fe6de19d2394eade688624d28526b04785",
    "src/ciw/lab/implementation_targets_serial.py": "7978adc19db2c04e37532de2a5dbff32738b3c286c40e19ab8ec1d78361ef3e6"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T147 (compare a ported kernel against the CPU reference under the tolerance policy), then T148 for its reductions",
- "report_id": "sha256:872aabf76ed467013dd81bacdaf23543d938ad61168155c2bff6995b33112ad7",
+ "recommended_next_task": "Done in this task: the Rust fused RK4 loop reproduces ciw.lab.jacobi.transfer (cross_implementation check). Remaining: whether a Rust port saves time or energy on the target machine, which wall-clock timings cannot establish as a finding; `python -m ciw.lab.energy_gpu_telemetry rapl-capture` now brackets a Rust port and the NumPy reference of the common Gaussian VI workload on a RAPL host, and the lab run it names reports their package energy per batch (docs/lab/ENERGY_GPU.md); a port of the ranked fused transfer loop itself would need its own bracket",
+ "report_id": "sha256:f12e7f1a608bb9410ff8b06fded14f6124747dafbbb192070322c3369e534e32",
  "schema": "ciw.lab-task-report.v1",
  "section": "implementation-targets",
  "state": "completed",
@@ -351,7 +368,8 @@
   "check: Rust fused RK4 loop reproduces ciw.lab.jacobi.transfer on the unit sphere vs Rust against ciw.lab.jacobi.transfer final state",
   "check: Rust fused RK4 loop reproduces ciw.lab.jacobi.transfer on the unit sphere vs Rust Jacobi columns against cos(s), sin(s)",
   "pytest: tests/test_lab_implementation_targets.py::test_t142_kernel_counts_and_ranking",
-  "pytest: tests/test_lab_implementation_targets.py::test_rust_fused_sphere_loop"
+  "pytest: tests/test_lab_implementation_targets.py::test_rust_fused_sphere_loop",
+  "pytest: tests/test_lab_implementation_targets.py::test_next_steps_point_at_work_that_delivers"
  ],
  "tests_skipped": [],
  "title": "Identify kernels suitable for Rust.",

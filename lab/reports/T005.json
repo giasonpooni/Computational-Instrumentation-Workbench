@@ -104,6 +104,10 @@
    "claim": "The heading Jacobi column follows sin(sqrt(K)s)/sqrt(K), s and sinh(sqrt(-K)s)/sqrt(-K) on positive, zero and negative curvature",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 0.0
@@ -199,6 +203,10 @@
    "claim": "The full integrated transfer matrix (lateral column and both rates) follows the model-space law cn_K, sn_K",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 0.0
@@ -329,6 +337,10 @@
    "claim": "Neighbouring closed-form geodesics on the sphere, the plane (seen in its polar chart) and the hyperbolic plane separate as |sn_K| (heading) and |cn_K| (lateral) per unit perturbation (K = 1, 0, -1)",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-06,
     "rel": 0.0001
@@ -452,6 +464,10 @@
    "claim": "The torus equators are geodesics of constant curvature 1/(r(R+r)) and -1/(r(R-r)) whose Jacobi columns obey the model-space laws",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-07
@@ -537,6 +553,10 @@
    "claim": "Residuals against the model-space law are fourth-order RK4 discretization error",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.02,
     "rel": 0.0
@@ -601,6 +621,11 @@
    "claim": "ciw joint geodesic + Jacobi transfer matrices match the pinned CSG provider on six constant-curvature paths",
    "domain": "numerical",
    "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check",
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 0.0
@@ -644,6 +669,7 @@
    "claim": "Nearby real trajectories on a physical curved surface separate according to this Jacobi law",
    "domain": "physical",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -693,7 +719,7 @@
    "python": "3.12.3",
    "scipy": "1.16.2",
    "sources": {
-    "src/ciw/lab/geodesic_jacobi.py": "70e9794df40fbf882cd117859a112b1301552d2c4faca7979f06e7c287828798",
+    "src/ciw/lab/geodesic_jacobi.py": "a3abaeabd7605e4a100c304efb6066d2b656644122bf602c06cb97691415a419",
     "src/ciw/lab/geodesic_jacobi_common.py": "7cb215a28e357a37f1c42cef6bdcb40e22abf7804ae9d58c4818fa40aa52da53"
    },
    "sympy": "1.14.0"
@@ -713,8 +739,8 @@
    "provider:csg": true
   }
  },
- "recommended_next_task": "T006: compare the integrated columns with finite-difference flow perturbations",
- "report_id": "sha256:740e1c074f2c9785b8b5ae85a470ae371fee8ecd01c5c657fb2e5078e02ef356",
+ "recommended_next_task": "Deferred research question (hardware-gated): measure the separation law on real neighbouring trajectories (for example two tracked markers on great circles of a sphere and on a saddle, with a calibrated position sensor) and compare the measured separation with eps j(s) within the sensor's calibrated uncertainty. Route: T005 would read the tracker export as an operator capture (ctx.capture('trajectory-log'), bound with ciw lab run T005 --capture trajectory-log=PATH) and fit the separation from it as a computational finding; the physical finding needs, besides an acquisition record (device, raw_sha256 of the captured bytes, acquired_at, calibration), a probe of the tracker on the analysing host that succeeds in T005 (runner.CAPTURE_INSTRUMENTS has no entry for trajectory-log) or a signed-capture trust anchor, and the run is retained with ciw lab hardware retain under lab/hardware/<run-id>. Neither the capture reader nor a tracker probe exists, so the physical-domain finding stays not_established even when such data exist",
+ "report_id": "sha256:3e15b34603f403db3ccac9588fd72db0b8e93e423ed39dc57cbabcb70318615c",
  "schema": "ciw.lab-task-report.v1",
  "section": "geodesic-jacobi",
  "state": "completed",
@@ -762,7 +788,8 @@
   "pytest: tests/test_lab_geodesic_jacobi.py::test_csg_output_is_refused_unless_complete",
   "pytest: tests/test_lab_geodesic_jacobi.py::test_csg_execution_refusals_are_expected_from_their_stage",
   "pytest: tests/test_lab_geodesic_jacobi.py::test_every_numerical_finding_declares_uncertainty_and_tolerance",
-  "pytest: tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space"
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space",
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_every_next_step_is_a_deferred_research_question"
  ],
  "tests_skipped": [],
  "title": "Verify the Jacobi separation law across positive, zero, and negative curvature.",

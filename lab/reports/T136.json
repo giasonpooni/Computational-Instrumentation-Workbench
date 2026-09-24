@@ -70,6 +70,10 @@
    "claim": "Candidate coupon routes ranked by the heading calibration tolerance that keeps the exactly perturbed route within a 0.5 mm lateral spec",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -147,6 +151,9 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -183,6 +190,9 @@
    "claim": "The dome loosens the heading tolerance of the straight route relative to a flat plate of equal length",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -201,6 +211,7 @@
    "claim": "The robot, fixture and frame calibration achieves the required heading and lateral tolerances",
    "domain": "calibration",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -239,15 +250,15 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/manufacturing.py": "f4cd90e1df33b910b78daf4b0556a8861e044d83701474f841e85fd9d96f9063",
-   "src/ciw/lab/manufacturing_geometry.py": "1db6df2ddf778668da2ffd53a66bcddbff4fc933d6f299e8f283cedc60a9332f",
-   "src/ciw/lab/manufacturing_metrology.py": "aef4708b0f296fc66087a6382881a0564c5edcb6d7961b5e472aa711e29feb5d",
-   "src/ciw/lab/manufacturing_records.py": "015ea7fccc586f4b95f64e7ffbc1f6c34eec20b8245778ede3c2324006537087"
+   "src/ciw/lab/manufacturing.py": "a489d9a93946a344e2878840d784e8087098775794108a6729d9179102767969",
+   "src/ciw/lab/manufacturing_geometry.py": "44830e8b1e2811dc3ade9eb1bc40691a6ae53f92c0b178dce5e5e111447879a1",
+   "src/ciw/lab/manufacturing_metrology.py": "f5c7694f91ac7b38a1f886b4acdc189d0abda403956e3b34d3f2dc8644c07dba",
+   "src/ciw/lab/manufacturing_records.py": "9d8cd35dc23541e9067fdced631c2a80bff1077b3bcba7fa9ae377c9db67626f"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T137: rank the same routes by focus margin and compare the two rankings.",
- "report_id": "sha256:18d1d781ffc07b264deda770a0a5d6ad821c6bf905085922e0c27aa4402183ca",
+ "recommended_next_task": "Open: optimize the lateral/heading tolerance split per route instead of half each, and add path-following error after the start, which the corner evaluation omits.",
+ "report_id": "sha256:bdbd47af995d5887ffeb86daa5ae1d80b059ae449dffd1fcc482679b6c9bca55",
  "schema": "ciw.lab-task-report.v1",
  "section": "manufacturing",
  "state": "completed",

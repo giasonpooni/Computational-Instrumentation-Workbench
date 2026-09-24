@@ -54,6 +54,10 @@
    "claim": "Forwarded samples receive the runtime codes predicted from the declared model",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -120,6 +124,10 @@
    "claim": "The host accepts a window only when the kernel certifies theta_hat and both interval ends, so the near-bound estimate is rejected",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -185,6 +193,10 @@
    "claim": "The kernel refuses every host-owned code the adapter emitted",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -235,6 +247,9 @@
    "claim": "Samples the adapter emits for the kernel carry only the plsr-sample-v1 fields with numeric values, and no envelope metadata",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -277,6 +292,9 @@
    "claim": "The adapter forwards theta_hat with both ends of its three-standard-error interval, and a near-bound estimate yields an interval end outside the box",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -320,6 +338,9 @@
    "claim": "Host statuses are decided in the adapter, are host-owned codes and are never forwarded",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -358,6 +379,10 @@
    "claim": "EKF theta estimates of forwarded windows lie within three standard errors of the synthetic truth",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -390,6 +415,9 @@
    "claim": "The adapter's common P is exactly valid at both box vertices of the declared discrete map",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -413,6 +441,7 @@
    "claim": "The synthetic residual statistics describe a real encoder's performance",
    "domain": "sensor_performance",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -423,6 +452,7 @@
    "claim": "The EKF standard error of theta covers the true parameter of a real axis at the stated rate",
    "domain": "sensor_performance",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -433,6 +463,7 @@
    "claim": "The calibration referenced in the host envelope is valid",
    "domain": "calibration",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -483,15 +514,15 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/lyapunov.py": "cbcb4d58d7313d7c537957a1b7dd35039a21bae80125bf59147eeed2c1232bbb",
+   "src/ciw/lab/lyapunov.py": "dcda8ba21661667cc03bb126a393e93158a306b4991d0a2450d8e18abe62cb27",
    "src/ciw/lab/lyapunov_provider.py": "da3465b48b5f5efc47bfe6ab8379cf2cf2bc23e4835dc7ff047252e77fa6ef17",
    "src/ciw/lab/lyapunov_reference.py": "bdf0bb5074ae2caca6c8a5d8e63a15e346b007098e6def6b058d077719bc1336",
    "src/ciw/lab/lyapunov_research.py": "8e6e5b4ac0a8ba3b12d4ee13ced778fe5070b43f6766752ffc8c5b88f1a4baef"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T114: servo-axis pilot specification; then bind the adapter to acquired encoder data (hardware-gated) and check the coverage of the three-standard-error interval there.",
- "report_id": "sha256:040d07a33d3222f81962de065f623c500360cfc512fa773442608d2fbb745ca9",
+ "recommended_next_task": "Deferred research question (hardware-gated): bind the residual adapter to acquired encoder data and check the coverage of its three-standard-error interval there, which synthetic EKF data cannot establish (a sensor_performance claim). Route: T113 would read the encoder log as an operator capture (ctx.capture('encoder-log'), bound with ciw lab run T113 --capture encoder-log=PATH) and run the residual adapter on it as a computational finding; its sensor_performance and calibration findings need, besides an acquisition record (device, raw_sha256 of the captured bytes, acquired_at, calibration), a probe of the encoder on the analysing host that succeeds in T113 (runner.CAPTURE_INSTRUMENTS has no entry for encoder-log) or a signed-capture trust anchor, and the run is retained with ciw lab hardware retain under lab/hardware/<run-id>. Neither the capture reader nor a probe of the encoder exists, so they stay not_established even when such data exist.",
+ "report_id": "sha256:5564fec23ccd3fcd3e2ff7540700af7c01078837a37096ec793920f0d97eb714",
  "schema": "ciw.lab-task-report.v1",
  "section": "lyapunov",
  "state": "completed",
@@ -515,7 +546,8 @@
   "check: The adapter's common P is exactly valid at both box vertices of the declared discrete map vs vertices without an exactly negative definite decrease",
   "pytest: tests/test_lab_lyapunov.py::test_t113_residual_adapter",
   "pytest: tests/test_lab_lyapunov.py::test_adapter_keeps_metadata_outside",
-  "pytest: tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider"
+  "pytest: tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider",
+  "pytest: tests/test_lab_lyapunov.py::test_next_steps_name_forward_work"
  ],
  "tests_skipped": [],
  "title": "Connect filtered residuals without putting sensors inside the kernel.",

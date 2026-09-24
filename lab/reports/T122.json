@@ -3,6 +3,7 @@
   "src/ciw/lab/energy_gpu.py",
   "src/ciw/lab/energy_gpu_kernels.py",
   "src/ciw/lab/energy_gpu_telemetry.py",
+  "src/ciw/lab/energy_gpu_workload.py",
   "docs/lab/ENERGY_GPU.md"
  ],
  "evidence_status": {
@@ -97,6 +98,10 @@
    "claim": "The variational free-energy identity F + log Z = KL(q || p) holds at every iterate to 1e-10 nats",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-10,
     "rel": 0.0
@@ -196,6 +201,10 @@
    "claim": "KL to the exact posterior decreases monotonically and ends below 1e-12 nats within the 512-iteration bound",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-12,
     "rel": 0.05
@@ -285,6 +294,10 @@
    "claim": "The raw-unit posterior and log evidence are invariant under the choice of normalization scales",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-10,
     "rel": 0.0
@@ -375,6 +388,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.001
@@ -470,6 +487,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 0.0001
@@ -496,6 +517,7 @@
    "claim": "The variational free energy of this model equals a thermodynamic free energy of a physical system",
    "domain": "physical",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": "nat",
    "value": null
@@ -534,14 +556,15 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/energy_gpu.py": "a66107417b5bfa398077a919b2f5351ca222e9961fa8dfb3256b78efc17fd930",
-   "src/ciw/lab/energy_gpu_kernels.py": "366c477ff1af7f59b626f4e64bf994ae4cbce5754c0e9c5be1c2acb515f99f4b",
-   "src/ciw/lab/energy_gpu_telemetry.py": "df82c8748d3aa75384e3928bffcf516cd6f72cccde99edf8d21f089cc768bafa"
+   "src/ciw/lab/energy_gpu.py": "f49195ce5a78ced3c8da1562f4412f2fdc65d8cc2749dd4fbe0b25bc0334e773",
+   "src/ciw/lab/energy_gpu_kernels.py": "1198886637535f3f8ec26601aa70cdc16d1c175dc4286aa9807edec3910005d2",
+   "src/ciw/lab/energy_gpu_telemetry.py": "6935331e622266868a97ee78f8e34d185aa69009a62fedc8ea8273b3a9312bfc",
+   "src/ciw/lab/energy_gpu_workload.py": "5cdaf9fe9f25194dae561e060abf471567cfd3bb8df6c1836630a54c5085a9de"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T123: keep these nats separate from the joules of T116/T119",
- "report_id": "sha256:4599ebf43fd9922c4c191350ccdf2c2aa788a4a08639ff407fc433685cba94b2",
+ "recommended_next_task": "Deferred research question: a bounded free-energy example with a non-Gaussian posterior (for example a two-component mixture likelihood), where F + log Z = KL still holds but KL has no closed form, so the identity must be checked against a quadrature or Monte Carlo KL with its own stated uncertainty",
+ "report_id": "sha256:4397df00aa158030ca7a1741ab57e3bedbd242a0299240527cd9642ef8b81abd",
  "schema": "ciw.lab-task-report.v1",
  "section": "energy-gpu",
  "state": "completed",
@@ -555,6 +578,7 @@
   "check: A mean step 1.2 times the stability bound makes KL grow instead of converge vs KL growth factor over 60 iterations",
   "check: Unit scales leave the same problem unconverged after 512 iterations (condition number 1.3e3) vs final KL with unit scales",
   "pytest: tests/test_lab_energy_gpu.py::test_bounded_free_energy_identity_and_counterexamples",
+  "pytest: tests/test_lab_energy_gpu.py::test_next_steps_name_work_that_delivers",
   "pytest: tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance"
  ],
  "tests_skipped": [],

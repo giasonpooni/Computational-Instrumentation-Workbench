@@ -97,6 +97,11 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-10,
     "rel": 0.0001
@@ -157,6 +162,11 @@
    "claim": "On a generic torus geodesic the separation at the conjugate point is O(eps^2) while eps j vanishes",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-06,
     "rel": 1e-05
@@ -240,6 +250,11 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.001,
     "rel": 0.0001
@@ -326,6 +341,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-05
@@ -423,6 +442,11 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.001,
     "rel": 0.0001
@@ -474,6 +498,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 0.0001
@@ -516,7 +544,7 @@
      "steps": 384
     }
    },
-   "claim": "On the unit sphere a pure heading perturbation refocuses exactly: the relative first-order error is uniform and does not diverge at the conjugate point",
+   "claim": "On the unit sphere a pure heading perturbation refocuses exactly: the relative first-order error of the embedded chord is uniform (2 sin(eps/2)/eps - 1, about -eps^2/24) and does not diverge at the conjugate point",
    "counterexample": {
     "statement": "The relative first-order error diverges at every conjugate point",
     "witness": {
@@ -529,6 +557,11 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 0.0001
@@ -581,6 +614,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-08,
     "rel": 0.0
@@ -639,6 +676,11 @@
    "claim": "A combined lateral+heading perturbation on the sphere has true separation eps^2/2 where eps j vanishes",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-06,
     "rel": 1e-06
@@ -682,7 +724,7 @@
  "mathematical_model": "Unit-speed geodesics with j'' + K j = 0; d(s; eps) = eps j(s) + r(eps, s). At s* with j(s*) = 0, d(s*) = r(eps, s*). Torus(2, 1) outer equator: K = 1/3, s* = pi sqrt(3); a reflection theta -> -theta makes the normal offset odd in eps and the O(eps^2) along-track lag -eps^2 sin(2 w s)/(4 w) vanish at s*, so d(s*) = O(eps^3). Unit sphere: all great circles through a point refocus exactly at s = pi; the combined perturbation (lateral eps, heading eps) has j = eps (cos s + sin s) with zero at 3pi/4 where the exact chord is eps^2/2 + O(eps^3).",
  "number": 10,
  "numerical_result": "Equator: s* = 5.4414, chord(s*) exponent 3; generic: s* = 6.0514, exponent 2.023; divergence slope -0.9912 (generic), -1.012 (equator); relative error 3.796 one step before s* at eps = 0.04; recovery slope after s* -1.01 (generic), -0.9896 (equator), relative error 3.775 one step after s* and 0.0182 at 1.25 s* (eps = 0.04); after s* signed/(eps j) = 0.99588 with j < 0; chord(s*)/chord(s*/2) = 0.000157; sphere relative error uniform -1.667e-05 (max deviation 7.7e-08); sphere combined perturbation chord(3pi/4) = 0.5 eps^2.",
- "observation_model": "Embedded chord |X_eps(s) - X(s)| and its signed component along the base geodesic's embedded in-surface normal, compared at matched arclength nodes; no renormalization.",
+ "observation_model": "Embedded chord |X_eps(s) - X(s)| and its signed component along the base geodesic's embedded in-surface normal, compared at matched arclength nodes; no renormalization. The observable is the extrinsic chord, not the intrinsic geodesic distance (T017) or a Fermi normal offset: error profiles depend on it (unit sphere, pure heading: relative error -eps^2/24 at every s for the chord, -eps^2 cos^2 s/24 for the distance).",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
   "status": "not_established"
@@ -695,13 +737,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/geodesic_jacobi_limits.py": "07d850980ac10ad34ca0d1b8c29942c90fe635e15135a5db1f74e90674e3bb18",
+   "src/ciw/lab/geodesic_jacobi_limits.py": "893d8b0240e673dd9aa7b5ba13b09958caa861706335726277d676def21aa83d",
    "src/ciw/lab/geodesic_jacobi_limits_core.py": "0e0b8f85ed4e83c3fcdc866e8a7e580a17432e174b8db8d8277230e226473d7f"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T017 (validity domains, which tabulates C(s) for these families) and T008 (conjugate-point location accuracy)",
- "report_id": "sha256:4ce28cbf27b490ba8a3f0673d9e2a4bf18a3f5b1bad5fe0b68e767f2a82be43c",
+ "recommended_next_task": "Deferred research question: sample genericity on the torus: fit the chord exponent at s* and the 1/|s - s*| divergence slope over a seeded sample of torus geodesics (one generic path now) and for lateral perturbation families, which are not fitted on the torus here",
+ "report_id": "sha256:b384e7f9eed7d958cb032a0bbeea2a42cce6ce54f8eff5570f5bf522c5339d66",
  "schema": "ciw.lab-task-report.v1",
  "section": "geodesic-jacobi",
  "state": "completed",
@@ -725,13 +767,15 @@
   "check: Past the conjugate point the first-order prediction recovers: the relative error falls again like 1/|s - s*| vs relative first-order error one step after s* (eps = 0.04)",
   "check: Past the conjugate point the first-order prediction recovers: the relative error falls again like 1/|s - s*| vs relative first-order error at 1.25 s* (generic, eps = 0.04)",
   "check: Separation does not grow monotonically with length: it nearly vanishes at the conjugate point vs chord(s*) / chord(s*/2) on the outer equator",
-  "check: On the unit sphere a pure heading perturbation refocuses exactly: the relative first-order error is uniform and does not diverge at the conjugate point vs numerical chord and signed separation versus great circles",
-  "check: On the unit sphere a pure heading perturbation refocuses exactly: the relative first-order error is uniform and does not diverge at the conjugate point vs relative error minus 2 sin(eps/2)/eps - 1 at every node",
+  "check: On the unit sphere a pure heading perturbation refocuses exactly: the relative first-order error of the embedded chord is uniform (2 sin(eps/2)/eps - 1, about -eps^2/24) and does not diverge at the conjugate point vs numerical chord and signed separation versus great circles",
+  "check: On the unit sphere a pure heading perturbation refocuses exactly: the relative first-order error of the embedded chord is uniform (2 sin(eps/2)/eps - 1, about -eps^2/24) and does not diverge at the conjugate point vs relative error minus 2 sin(eps/2)/eps - 1 at every node",
   "check: On the unit sphere the image inverts after the conjugate point (signed ratio -1) vs signed separation at 5pi/4 over 3pi/4 plus 1",
   "check: A combined lateral+heading perturbation on the sphere has true separation eps^2/2 where eps j vanishes vs closed-form exponent minus 2",
   "check: A combined lateral+heading perturbation on the sphere has true separation eps^2/2 where eps j vanishes vs chord / eps^2 at s0 = 3pi/4 minus 1/2",
   "check: A combined lateral+heading perturbation on the sphere has true separation eps^2/2 where eps j vanishes vs numerical chord at s0 minus closed form (eps = 0.02)",
-  "pytest: tests/test_lab_geodesic_jacobi_limits.py::test_t010_near_focus_and_post_focus_counterexamples"
+  "pytest: tests/test_lab_geodesic_jacobi_limits.py::test_t010_near_focus_and_post_focus_counterexamples",
+  "pytest: tests/test_lab_geodesic_jacobi_limits.py::test_t010_t017_name_the_separation_observable",
+  "pytest: tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work"
  ],
  "tests_skipped": [],
  "title": "Generate near-focus and post-focus counterexamples.",

@@ -46,6 +46,10 @@
    "claim": "Every winding with |m|, |n| <= 6 first returns to its start at t = 1/gcd, displaced by its primitive vector after (|m| + |n|)/gcd edge crossings, and returns gcd times by t = 1 (a gcd-fold cover of the primitive loop)",
    "domain": "mathematical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -78,6 +82,9 @@
    "claim": "For all 120 pairs of the 16 primitive classes with 0 <= m <= 3, |n| <= 3 the transverse intersections number |det(v, w)|",
    "domain": "mathematical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -119,6 +126,10 @@
    "claim": "The lattice-point count within radius R (including the origin, and its primitive part) equals a brute-force count over a box proven to contain the disk",
    "domain": "mathematical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-12,
     "rel": 1e-09
@@ -185,6 +196,11 @@
    "claim": "The golden-slope geodesic has positive return gaps phi^-k at Fibonacci returns, with q * gap -> 1/sqrt 5",
    "domain": "numerical",
    "evidence_status": "independently_verified",
+   "origin": [
+    "derivation",
+    "independent_check",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-15,
     "rel": 1e-06
@@ -260,6 +276,9 @@
    },
    "domain": "numerical",
    "evidence_status": "analytic",
+   "origin": [
+    "derivation"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -322,6 +341,11 @@
    "claim": "Closed-geodesic lengths |m w1 + n w2|, edge-crossing counts and unit area agree with the pinned FTR loop_length, trace_closed_geodesic and normalized_lattice",
    "domain": "numerical",
    "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check",
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-12,
     "rel": 0
@@ -404,14 +428,14 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/flat_torus_topology.py": "1221001d96bf1f9aa2f9fea169a2b10bfb37230da11bfb6f1608ba9355c86b9a",
+   "src/ciw/lab/flat_torus_topology.py": "2c05c13905cc51906d41b89219b001396634a9d3bb8bda9bd32ac75a5523fdb1",
    "src/ciw/lab/flat_torus_topology_lattice.py": "15a33fcd29591e43dec16fa3b9ad26d6b6b86846872e9e6bf815508fb0dade63",
    "src/ciw/lab/flat_torus_topology_provider.py": "30fa38e51a20bc8d01beea0e5c44da69f22d7059c04c92c1fea520e5cf6f8806"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T023: compute heading sensitivity of closure across all starting headings",
- "report_id": "sha256:59df99d5453f8cb34d747741652dc4a3777188cfa98412fdd5032eb3f9a0f6ea",
+ "recommended_next_task": "Deferred research question: measure how fast the primitive fraction of winding vectors approaches 6/pi^2 (its deviation over a doubling sequence of radii against the O(log R / R) error of the classical estimate), which is recorded here only as a limit, without a rate",
+ "report_id": "sha256:10498628631f4c24a51ff0ca69b34d711031fc73a8c693586000f7159932c9ee",
  "schema": "ciw.lab-task-report.v1",
  "section": "flat-torus-topology",
  "state": "completed",
@@ -433,7 +457,8 @@
   "pytest: tests/test_lab_flat_torus_topology.py::test_provider_output_is_refused_when_unreadable_or_incomplete",
   "pytest: tests/test_lab_flat_torus_topology.py::test_ftr_provider_agreement",
   "pytest: tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
-  "pytest: tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+  "pytest: tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_next_steps_name_forward_work"
  ],
  "tests_skipped": [],
  "title": "Classify geodesics by winding vector.",

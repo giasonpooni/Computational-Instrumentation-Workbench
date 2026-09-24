@@ -57,6 +57,10 @@
    "claim": "For the four simulated disturbance classes sup sqrt(V) stays below the sharp reachable-set supremum, and worst-case switching comes within 2 % of it",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -111,6 +115,10 @@
    "claim": "The sharp reachable-set supremum of sqrt(V) is converged in the quadrature step and lies below the quadratic ISS bound",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-08,
     "rel": 1e-06
@@ -135,6 +143,9 @@
    "claim": "Quadratic ISS-Lyapunov bound for the synthetic oscillator",
    "domain": "mathematical",
    "evidence_status": "analytic",
+   "origin": [
+    "derivation"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 1e-09
@@ -169,6 +180,9 @@
    "claim": "In one dimension the quadratic ISS bound w_bar / a is approached: sup |x| over 30 s is (1 - e^-30) of it",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-12,
     "rel": 1e-09
@@ -218,6 +232,10 @@
    "claim": "The series matrix exponential behind the exact ZOH simulation agrees with its closed form and, where available, an independent exponential",
    "domain": "numerical",
    "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-12,
     "rel": 0.0
@@ -241,6 +259,9 @@
    "claim": "The ISS branch adds no runtime-status-v1 code, sample field or verdict to PLSR",
    "domain": "computational_pipeline",
    "evidence_status": "analytic",
+   "origin": [
+    "derivation"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -259,6 +280,7 @@
    "claim": "The disturbance bound w_bar = 0.5 holds for a physical plant",
    "domain": "physical",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -271,6 +293,9 @@
    "claim": "The ISS bound defines a safe operating envelope for a machine",
    "domain": "machine_safety",
    "evidence_status": "not_established",
+   "origin": [
+    "derivation"
+   ],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -316,14 +341,14 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/lyapunov.py": "cbcb4d58d7313d7c537957a1b7dd35039a21bae80125bf59147eeed2c1232bbb",
+   "src/ciw/lab/lyapunov.py": "dcda8ba21661667cc03bb126a393e93158a306b4991d0a2450d8e18abe62cb27",
    "src/ciw/lab/lyapunov_reference.py": "bdf0bb5074ae2caca6c8a5d8e63a15e346b007098e6def6b058d077719bc1336",
    "src/ciw/lab/lyapunov_research.py": "8e6e5b4ac0a8ba3b12d4ee13ced778fe5070b43f6766752ffc8c5b88f1a4baef"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "Specify a resolution-aware float64 ISS inequality (open question 1 in the retained spec) before any runtime integration; acquiring an evidenced disturbance bound is hardware-gated.",
- "report_id": "sha256:38e5cba4d24e873e992da38f0716f3aca175df3f13c067448f0af3ae6683b2f2",
+ "recommended_next_task": "Deferred research question: specify a resolution-aware float64 ISS inequality (open question 1 in the retained spec) before any runtime integration (acquiring an evidenced disturbance bound is hardware-gated).",
+ "report_id": "sha256:832f8cc1ddb8367ce9df40cf6d2fedaf49ad287b5f8233c719b4403fd2f831ca",
  "schema": "ciw.lab-task-report.v1",
  "section": "lyapunov",
  "state": "completed",
@@ -337,7 +362,8 @@
   "check: The series matrix exponential behind the exact ZOH simulation agrees with its closed form and, where available, an independent exponential vs max abs entry difference from the closed form of exp([[A, B], [0, 0]] h)",
   "independent: The series matrix exponential behind the exact ZOH simulation agrees with its closed form and, where available, an independent exponential vs scipy.linalg.expm@1.16.2",
   "pytest: tests/test_lab_lyapunov.py::test_t112_iss_branch",
-  "pytest: tests/test_lab_lyapunov.py::test_research_tasks_without_optional_modules"
+  "pytest: tests/test_lab_lyapunov.py::test_research_tasks_without_optional_modules",
+  "pytest: tests/test_lab_lyapunov.py::test_next_steps_name_forward_work"
  ],
  "tests_skipped": [],
  "title": "Define a separate disturbance-aware/ISS research branch.",

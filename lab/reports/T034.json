@@ -50,6 +50,9 @@
    "claim": "sympy-differentiated metric and metric derivatives match the ciw surface interface on every conformance surface",
    "domain": "numerical",
    "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check"
+   ],
    "regression_tolerance": {
     "abs": 1e-12,
     "rel": 0.0
@@ -85,6 +88,9 @@
    "claim": "sympy.diffgeom Christoffel symbols match the ciw surface interface on seven surfaces",
    "domain": "numerical",
    "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check"
+   ],
    "regression_tolerance": {
     "abs": 1e-12,
     "rel": 0.0
@@ -120,6 +126,9 @@
    "claim": "sympy.diffgeom Riemann curvature R_1212 / det g matches the supplied Gaussian curvature on seven surfaces",
    "domain": "numerical",
    "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check"
+   ],
    "regression_tolerance": {
     "abs": 1e-12,
     "rel": 0.0
@@ -145,7 +154,7 @@
      "passed": true,
      "producer": {
       "implementation": "ciw.lab.surfaces_discrete._declared_curvature",
-      "revision": "surfaces_discrete.py sha256 b47b6d9486e322c3e394e25b99849c0aa22039ce45b946825b0f3dbc1a3013b7"
+      "revision": "surfaces_discrete.py sha256 9b277c6212ac8d7c563e3b2257c75438b37f5a73c992f6b9b7ec53a26ec4106f"
      },
      "reference": "restated closed forms whose difference from the diffgeom curvature does not simplify to 0",
      "reference_kind": "exact_arithmetic",
@@ -155,6 +164,9 @@
    "claim": "sympy.diffgeom curvature of seven surfaces simplifies exactly to the closed forms restated from ciw.lab.surfaces",
    "domain": "mathematical",
    "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -187,6 +199,9 @@
    "claim": "Christoffel symbols and curvature assembled in ciw code from sympy derivatives match the interface on every conformance surface",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-12,
     "rel": 0.0
@@ -224,6 +239,9 @@
    "claim": "Nested dual-number derivatives of re-expressed embeddings match the metric, dg and Christoffel symbols",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-12,
     "rel": 0.0
@@ -253,6 +271,9 @@
    "claim": "Dual-number curvature (Brioschi with exact second derivatives, and LN - M^2) matches the supplied K",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-12,
     "rel": 0.0
@@ -282,6 +303,9 @@
    "claim": "Dual numbers reproduce closed-form first, mixed and third derivatives without perturbation confusion",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-13,
     "rel": 0.0
@@ -318,6 +342,9 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-06,
     "rel": 0.0001
@@ -336,6 +363,7 @@
    "claim": "Symbolic and dual-number derivative agreement certifies derivatives of surfaces reconstructed from physical measurements",
    "domain": "physical",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -378,14 +406,14 @@
   "scipy": "1.16.2",
   "sources": {
    "src/ciw/lab/surfaces.py": "e8f264c182743d0177d93b961a49d7ddf78f30d79a7a75b9fea4018b10d4eef0",
-   "src/ciw/lab/surfaces_discrete.py": "b47b6d9486e322c3e394e25b99849c0aa22039ce45b946825b0f3dbc1a3013b7",
+   "src/ciw/lab/surfaces_discrete.py": "9b277c6212ac8d7c563e3b2257c75438b37f5a73c992f6b9b7ec53a26ec4106f",
    "src/ciw/lab/surfaces_discrete_ad.py": "a76cc131eeadc83d5c64a788dd8c0a1453a0c0ffc89a5f49e79cbb1bf35559c0",
    "src/ciw/lab/surfaces_discrete_geometry.py": "d4445a253778e1dff32b68a903a9caf560affa08ca5a7110207e54c8e1baa60e"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T040: compare smooth and mesh Jacobi approximations using these verified smooth derivatives and curvatures as the reference. Complex-step derivatives remain open until the core surfaces accept complex coordinates.",
- "report_id": "sha256:dcb93c9d2c9f5b3f70da586e323452f4768bcac3a3cf0ba6ca88f12952ef1b36",
+ "recommended_next_task": "Deferred research question: an independent assembly of the connection and curvature for gaussian-bump, gaussian-bump-shear and rotated-torus (for example sympy.diffgeom as for the other seven surfaces, or a second computer algebra system), where ciw-written assembly of sympy derivatives gives only same-origin evidence, and complex-step derivatives once the core surfaces accept complex coordinates.",
+ "report_id": "sha256:19dfeda633be2510148326f84e03d111adf84dfa04bbee7a23569d3af3d97b32",
  "schema": "ciw.lab-task-report.v1",
  "section": "surfaces-discrete",
  "state": "completed",

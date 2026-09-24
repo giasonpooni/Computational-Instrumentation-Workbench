@@ -38,6 +38,9 @@
    "claim": "Counterexample catalogue lists every retained counterexample finding",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -48,19 +51,19 @@
     "value": 0
    },
    "unit": "counterexamples",
-   "value": 211
+   "value": 213
   }
  ],
  "generated_artifacts": [
   {
-   "bytes": 134359,
+   "bytes": 135922,
    "path": "artifacts/T157/counterexamples.json",
-   "sha256": "e88b7de63023591ec466299fb04302bcf79a5d6613ff224e0b39449a4471e159"
+   "sha256": "daf165f5ec60b45647b1126008d9185de421df9d89a2efca7f5f1f1f3f367594"
   },
   {
-   "bytes": 84460,
+   "bytes": 85839,
    "path": "artifacts/T157/COUNTEREXAMPLES.md",
-   "sha256": "fbe257abcefb7249fb3e261c3c566d9cb0156e8df27e89778df7c11617738762"
+   "sha256": "cf038afba795c1cb616d50ddb594dc2496297ab7c6841353aa06cdb7418b4674"
   }
  ],
  "hypothesis": "Every counterexample recorded by a queue task can be collected with its witness and evidence status.",
@@ -69,7 +72,7 @@
  ],
  "mathematical_model": "Catalogue = all retained findings carrying a counterexample statement, keyed by task and claim.",
  "number": 157,
- "numerical_result": "211 counterexamples from 111 tasks; labels {'analytic': 2, 'independently_verified': 4, 'numerically_verified': 205}.",
+ "numerical_result": "213 counterexamples from 111 tasks; labels {'analytic': 2, 'independently_verified': 4, 'numerically_verified': 207}.",
  "observation_model": "No physical observation; reads retained computational records only.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -83,19 +86,20 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/research_portfolio.py": "0fd0ed475a38bf81fd2145f64cf1335856a471c58d406347c3b66b0f66672702"
+   "src/ciw/lab/research_portfolio.py": "145b8ee8456e1dd57bf2a05fa20e1ce55bd33356522436d8901eb1adfb60fc7a"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "Turn each catalogued counterexample into a named regression fixture (T168).",
- "report_id": "sha256:5108fbb8f8726b7f4fd7bde2a1ff585caea46294c1b5782c2cc7871580654708",
+ "recommended_next_task": "Counterexamples are compared with a fresh run by ciw lab verify in CI (scripts/check_lab.py); optional: name one pytest witness per counterexample in each section's tests, so a counterexample is also guarded outside the clean-room comparison.",
+ "report_id": "sha256:37257dd8630d7f4b94efffdba984a69c8267f1566be718178ad4c89fef6d6791",
  "schema": "ciw.lab-task-report.v1",
  "section": "research-portfolio",
  "state": "completed",
  "task_id": "T157",
  "tests_passed": [
   "check: Counterexample catalogue lists every retained counterexample finding vs catalogue size minus the raw-text count of counterexample keys",
-  "pytest: tests/test_lab_research_portfolio.py::test_counterexample_catalogue"
+  "pytest: tests/test_lab_research_portfolio.py::test_counterexample_catalogue",
+  "pytest: tests/test_lab_research_portfolio.py::test_next_steps_name_open_work_rather_than_work_done_elsewhere"
  ],
  "tests_skipped": [],
  "title": "Maintain a counterexample catalogue.",

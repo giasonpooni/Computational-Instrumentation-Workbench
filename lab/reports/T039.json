@@ -54,6 +54,10 @@
    "claim": "Traced-geodesic length defect on icospheres converges at second order",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-06,
     "rel": 1e-06
@@ -119,6 +123,10 @@
    "claim": "Traced-geodesic endpoint error on icospheres decreases at least at first order, with irregular pairwise local orders",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-06,
     "rel": 1e-06
@@ -190,6 +198,10 @@
    "claim": "Prism-cylinder helix endpoint error equals the closed-form development and chord-position prediction, and n^2 error tends to L cos(alpha) pi^2 / 6",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-06,
     "rel": 1e-06
@@ -264,6 +276,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -341,6 +357,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -392,6 +412,10 @@
    "claim": "Heat-method distance error decreases under refinement at first order",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-06,
     "rel": 1e-06
@@ -418,6 +442,7 @@
    "claim": "The observed convergence orders transfer to meshes reconstructed from real scans",
    "domain": "physical",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -458,14 +483,14 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/surfaces_discrete_mesh.py": "cc005d2dfb3102b2594e085f9cdcba74ca0e6325edf9865010189ac5f6398500",
+   "src/ciw/lab/surfaces_discrete_mesh.py": "bd83d5f82c82c46a746fe77b3877a010e998d1ef219a90a2dc01bbf7f3c82455",
    "src/ciw/lab/surfaces_discrete_mesh_geometry.py": "b14d56fae8413d78853e96be27a1f11eac369afa0b7a3dbb53bc821511ba4d97",
    "src/ciw/lab/surfaces_discrete_mesh_studies.py": "618ea9848e8b750e333f81a395a7544c8b5127e53f4aae27d59b4f27e9967dfa"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T040: compare finite-difference mesh Jacobi fields with the smooth transfer and locate where curvature estimates fail.",
- "report_id": "sha256:91ed8a53192edda288be50db64701698fb7d5a6bae2b40bb4a9db06ecc589040",
+ "recommended_next_task": "Deferred research question: measure the heat-method convergence rate for time steps t = m h^2 over a range of m (only m = 1, as Crane et al. recommend, is used here) and the endpoint-error order for geodesic directions sampled over their angle to the lattice rows, on which the retained empirical order depends.",
+ "report_id": "sha256:33fa15fbb436f3de868f37b0543cfe88131053b130171e90d0b3618ffde9e037",
  "schema": "ciw.lab-task-report.v1",
  "section": "surfaces-discrete",
  "state": "completed",
@@ -485,6 +510,7 @@
   "check: Steiner graphs with a fixed number of points per edge keep a relative-error floor vs k=3 max |relative error| at the finest level",
   "check: Steiner graphs with a fixed number of points per edge keep a relative-error floor vs k=3 finest minus second-level |relative error|",
   "check: Heat-method distance error decreases under refinement at first order vs fitted order of the max abs error - 1",
+  "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_next_steps_name_forward_work",
   "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_convergence_orders_on_small_levels",
   "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_convergence_task_report"
  ],

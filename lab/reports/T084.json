@@ -88,6 +88,9 @@
    "claim": "Replay receipt source digest forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -171,6 +174,9 @@
    },
    "domain": "provenance",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -195,6 +201,7 @@
    "domain": "provenance",
    "evidence_status": "not_established",
    "expected_not_established": true,
+   "origin": [],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -242,13 +249,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/exchange_provenance.py": "f55593eb90af9ed82e40f0f04987c7f0a06cf1c40e7079b0a371e0506607618b",
-   "src/ciw/lab/exchange_provenance_common.py": "f8e765184af4e893a0c4c6d9e5cb2988b79e6f3dfc3d941444f335ecc894d775"
+   "src/ciw/lab/exchange_provenance.py": "0871a5e3e3a27b365a326036c869338b11e5aa3bc4af3ca60db29e81bedbba36",
+   "src/ciw/lab/exchange_provenance_common.py": "17ab892e3f285ac475b44c240155acf45f8bbdbefca28a345980aba548c6d1a9"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T085 (mutate replay receipt replayed digest)",
- "report_id": "sha256:a25613e486f033020a8a58daaf6acf2c2c3a583f92fbf4afd5f4bf96ab972faf",
+ "recommended_next_task": "Deferred research question (CIW change): bind each replay receipt to the source execution's own identity as well as its bytes, or sign it under a defined key custody, and re-run these mutations to check that receipt-source.sibling-execution is refused while every killed mutant keeps its pinned message.",
+ "report_id": "sha256:5f289a8fae5272c5e18d8f04c61fb3650f594018ce77ac9fc23f110b8d0f3b1a",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "completed",
@@ -263,13 +270,17 @@
   "check: Replay receipt source digest forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs harness control: the unedited saved workspace reopens",
   "check: Surviving mutant receipt-source.sibling-execution: a receipt re-pointed, with its verification subject, at a sibling execution of the same bytes reopens vs receipt-source.sibling-execution: accepted (1 = accepted)",
   "check: Surviving mutant receipt-source.sibling-execution: a receipt re-pointed, with its verification subject, at a sibling execution of the same bytes reopens vs reopened receipt source and verification subject both name the sibling bundle:B0b (0 = shown)",
-  "pytest: tests/test_lab_exchange_provenance.py::test_receipt_digest_mutations"
+  "pytest: tests/test_lab_exchange_provenance.py::test_receipt_digest_mutations",
+  "pytest: tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work"
  ],
- "tests_skipped": [],
+ "tests_skipped": [
+  "pytest: tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply (skipped)"
+ ],
  "title": "Mutate replay receipt source digest.",
  "uncertainty": "Outcomes are exact (accepted or a refusal message). Only kill/survive is a prediction; refusal messages are regression pins recorded from observed runs. Survivors are demonstrated forgeries; kills show only that these particular edits are detected, not that every edit of this field is.",
  "unresolved_assumptions": [
   "The forger model recomputes only unkeyed SHA-256 digests with CIW's public canonicalization; no key exists to steal.",
-  "Whether a reader of a forged workspace would be misled depends on how the record is displayed; not assessed."
+  "Whether a reader of a forged workspace would be misled depends on how the record is displayed; not assessed.",
+  "Deferred research question (key custody and signatures): which key signs CIW workspace records, replay receipts and execution records, who holds it, how is it provisioned, rotated and revoked, and how does a verifier obtain its public key? Every seal and identity on these paths is an unkeyed SHA-256, so 'Retained workspace records are authenticated' stays not_established until records are signed (for example Ed25519 over the canonical record bytes, with an RFC 3161 timestamp for created_at) and T077 and T080-T090 are re-run against the signed records to check that every surviving forgery is refused."
  ]
 }

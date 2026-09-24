@@ -53,7 +53,9 @@
      "observed": 0.0,
      "passed": true,
      "producer": {
-      "implementation": "ciw.lab.implementation_targets_kernels.sum_exact"
+      "implementation": "ciw.lab.implementation_targets_kernels.sum_exact",
+      "revision": "ciw 0.1.0",
+      "source_sha256": "daf3fe697f5b8f7627119fe299a270fe6de19d2394eade688624d28526b04785"
      },
      "reference": "mismatches against math.fsum over every order and dataset",
      "reference_kind": "exact_arithmetic",
@@ -63,6 +65,11 @@
    "claim": "Correctly rounded exact accumulation is permutation-invariant",
    "domain": "numerical",
    "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check",
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -107,6 +114,9 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -162,6 +172,9 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -219,6 +232,9 @@
    "claim": "Observed errors of the sequential, pairwise, Neumaier and exact sums lie within their rigorous bounds",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-12,
     "rel": 1e-06
@@ -253,6 +269,9 @@
    "claim": "Observed Kahan errors lie within 2u sum|x| plus the declared second-order allowance",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-12,
     "rel": 1e-06
@@ -298,6 +317,9 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -344,6 +366,10 @@
    "claim": "Distinct results under permutation for each algorithm and dataset",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -400,6 +426,9 @@
    "claim": "Deterministic reduction policy record",
    "domain": "provenance",
    "evidence_status": "analytic",
+   "origin": [
+    "derivation"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -465,13 +494,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/implementation_targets.py": "1df8bd67d28b18d70bcb5f74e4a14616ceb17868c7a9aa75595f15254426ee7e",
+   "src/ciw/lab/implementation_targets.py": "0ea1ac76f50f1c65b47155a6791a0ea74c3ebf57d0b254a4a6615dabb930b5e7",
    "src/ciw/lab/implementation_targets_kernels.py": "daf3fe697f5b8f7627119fe299a270fe6de19d2394eade688624d28526b04785"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T147 (use the policy to set GPU comparison tolerances), then T155 (formal specification of the policy)",
- "report_id": "sha256:b8dd951394eb2859bc893bb615e13c78296c432f35b0be97a1a68288b01a497c",
+ "recommended_next_task": "Deferred research question: extend the common workload's GPU path beyond the binary64 gaussian_vi PTX kernel of ciw.energy_cuda: a float32 rendering of the same kernel, and a device-wide reduction of its per-replica outputs (a fixed tree over the stored order per T148's REDUCTION_POLICY, plus one atomicAdd variant), each compared with the NumPy reference by compare_outputs on the RTX 2080 host and captured with `ciw energy record` for energy; until then those claims stay not_established on every host",
+ "report_id": "sha256:d5d744bd0ad566b773deaf0a435efc12003dc2695291f94715909c7ee8b18e6c",
  "schema": "ciw.lab-task-report.v1",
  "section": "implementation-targets",
  "state": "completed",
@@ -492,7 +521,9 @@
   "check: The bound 2u|S| + 4n u^2 sum|x| does not bound Neumaier summation vs Neumaier error / (u|S| + gamma_{n-1}^2 sum|x|) on the same input",
   "check: Distinct results under permutation for each algorithm and dataset vs exact accumulation: distinct results minus one, worst dataset",
   "check: Distinct results under permutation for each algorithm and dataset vs sequential summation: distinct results on the cancelling dataset",
-  "pytest: tests/test_lab_implementation_targets.py::test_t148_reduction_policies"
+  "pytest: tests/test_lab_implementation_targets.py::test_t148_reduction_policies",
+  "pytest: tests/test_lab_implementation_targets.py::test_ciw_producers_of_independent_checks_carry_a_revision",
+  "pytest: tests/test_lab_implementation_targets.py::test_next_steps_point_at_work_that_delivers"
  ],
  "tests_skipped": [],
  "title": "Add deterministic reduction policies.",

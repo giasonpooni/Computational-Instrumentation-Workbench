@@ -58,6 +58,9 @@
    "claim": "Cone angles: octagon and L-shape one 6 pi point, H(1,1) two 4 pi points, pillowcase four pi points, square and hexagon tori none",
    "domain": "mathematical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -120,6 +123,10 @@
    "claim": "Gauss-Bonnet sum (2 pi - theta_v) = 2 pi chi holds exactly on every surface with chi known independently of the vertex classes (declared topology; Riemann-Hurwitz for origamis)",
    "domain": "mathematical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -185,6 +192,9 @@
    },
    "domain": "mathematical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -229,13 +239,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/flat_torus_topology.py": "1221001d96bf1f9aa2f9fea169a2b10bfb37230da11bfb6f1608ba9355c86b9a",
+   "src/ciw/lab/flat_torus_topology.py": "2c05c13905cc51906d41b89219b001396634a9d3bb8bda9bd32ac75a5523fdb1",
    "src/ciw/lab/flat_torus_topology_surfaces.py": "da9f9a8e304f9fd8a72044525c78fdd66d2f188ef3d65cfa0d38af31b9f798b2"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T030: compare smooth and discrete geodesic approximations",
- "report_id": "sha256:462f94dfa91bf921bb21f4ffbe8aa698856644db878a9e2395de38febdf2d063",
+ "recommended_next_task": "Deferred research question: recognize cone angles exactly for polygons whose corner angles are not multiples of pi/24 (from exact algebraic vertex coordinates) and test on a declared polygon with such an angle (recognition here assumes the pi/24 grid)",
+ "report_id": "sha256:593bfa4158f8a5770175acaa3a23c18f83b1ea66f24451f71019baba3955c9c7",
  "schema": "ciw.lab-task-report.v1",
  "section": "flat-torus-topology",
  "state": "completed",
@@ -251,7 +261,8 @@
   "pytest: tests/test_lab_flat_torus_topology.py::test_gauss_bonnet_check_detects_wrong_vertex_classes",
   "pytest: tests/test_lab_flat_torus_topology.py::test_regeneration_is_within_tolerance",
   "pytest: tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
-  "pytest: tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+  "pytest: tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_next_steps_name_forward_work"
  ],
  "tests_skipped": [],
  "title": "Detect cone singularities.",

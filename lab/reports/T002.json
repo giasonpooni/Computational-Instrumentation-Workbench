@@ -100,6 +100,9 @@
    "claim": "ciw Richardson RK4 end states match closed-form geodesics and transfer matrices on the six closed-form charts",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 0.0
@@ -168,6 +171,10 @@
    "claim": "ciw Richardson RK4 matches a 34-digit integration of the sympy-derived equations on the saddle path",
    "domain": "numerical",
    "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-07
@@ -241,6 +248,10 @@
    "claim": "ciw Richardson RK4 matches a 34-digit integration of the sympy-derived equations on the torus path",
    "domain": "numerical",
    "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-07
@@ -314,6 +325,10 @@
    "claim": "ciw Richardson RK4 matches a 34-digit integration of the sympy-derived equations on the gaussian-bump path",
    "domain": "numerical",
    "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-07
@@ -363,6 +378,9 @@
    "claim": "Clairaut's integral rho^2 phi' is conserved along the torus reference path",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 0.0
@@ -425,13 +443,13 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/geodesic_jacobi.py": "70e9794df40fbf882cd117859a112b1301552d2c4faca7979f06e7c287828798",
+   "src/ciw/lab/geodesic_jacobi.py": "a3abaeabd7605e4a100c304efb6066d2b656644122bf602c06cb97691415a419",
    "src/ciw/lab/geodesic_jacobi_common.py": "7cb215a28e357a37f1c42cef6bdcb40e22abf7804ae9d58c4818fa40aa52da53"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T003: measure Euler, midpoint, RK4 and adaptive orders against these references",
- "report_id": "sha256:5b78952a7bf8819c8a27ee9501e459ac2539e012bb48e92aa5b78aa4fd7f00fe",
+ "recommended_next_task": "Deferred research question: an integrator-independent 34-digit reference: integrate the sympy-derived equations with mpmath's own Taylor-series solver (mpmath.odefun) instead of the ciw-authored Gragg-Bulirsch-Stoer integrator and check that it agrees with the retained references within their empirical error estimates, so that both the equations and the integrator of the reference are independent of ciw",
+ "report_id": "sha256:7e267ae013282fff52eafad433a4d34c778e2759ee52fa43848575d3b0532ae5",
  "schema": "ciw.lab-task-report.v1",
  "section": "geodesic-jacobi",
  "state": "completed",
@@ -462,7 +480,8 @@
   "pytest: tests/test_lab_geodesic_jacobi.py::test_t002_references_agree",
   "pytest: tests/test_lab_geodesic_jacobi.py::test_t002_without_optional_modules",
   "pytest: tests/test_lab_geodesic_jacobi.py::test_every_numerical_finding_declares_uncertainty_and_tolerance",
-  "pytest: tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space"
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space",
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_every_next_step_is_a_deferred_research_question"
  ],
  "tests_skipped": [],
  "title": "Build high-precision reference solutions for each surface.",

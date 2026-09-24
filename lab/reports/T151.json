@@ -47,6 +47,9 @@
    "claim": "Compatibility rules and the set construction agree on every combination",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -128,6 +131,9 @@
    "claim": "Rollback validation refuses incompatible, unregistered, no-op, forward and unexplained rollbacks",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -166,6 +172,9 @@
    },
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -192,6 +201,7 @@
    "claim": "The rollback procedure is safe to execute on a production machine",
    "domain": "machine_safety",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -202,6 +212,7 @@
    "claim": "Rollback records are accepted for production change control",
    "domain": "production_acceptance",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -245,13 +256,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/implementation_targets.py": "1df8bd67d28b18d70bcb5f74e4a14616ceb17868c7a9aa75595f15254426ee7e",
+   "src/ciw/lab/implementation_targets.py": "0ea1ac76f50f1c65b47155a6791a0ea74c3ebf57d0b254a4a6615dabb930b5e7",
    "src/ciw/lab/implementation_targets_fpga.py": "7af2bda8190c93108f5bac0d8b28ffd057267b6b428af3d8f820d0f594ea5e00"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T152 (link behaviour after a rollback changes the frame format)",
- "report_id": "sha256:521e4d88026a4c73364fda2bc2f4a83fba00ac9dbc31e522b01f36fd2f4028e9",
+ "recommended_next_task": "Deferred research question: qualify the compatibility matrix on real boards and decoder versions (it is illustrative here) and establish how board revision and host decoder version are reported trustworthily",
+ "report_id": "sha256:310997752a83d36705c90088f7397ab1e09bc2f795451fb2b70f8a90bf4373a6",
  "schema": "ciw.lab-task-report.v1",
  "section": "implementation-targets",
  "state": "completed",

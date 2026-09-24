@@ -69,6 +69,9 @@
    "claim": "The golden retained workspaces reopen and validate with the current code without execution",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -124,6 +127,9 @@
    "claim": "Golden fixture SHA-256 digests",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -157,6 +163,9 @@
    "claim": "Reopening recomputes the golden energy analysis bit for bit on this platform",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -212,6 +221,9 @@
    "claim": "The retained golden numerical-heat bundle names the pinned SCR revision, tree and recorded engine digest, and its values equal the integer Jacobi reference",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -237,6 +249,7 @@
    "domain": "provenance",
    "evidence_status": "not_established",
    "expected_not_established": true,
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": "not established by reopen: a fabricated content-consistent bundle also reopens (T092); only a bound replay re-executes (T097)"
@@ -257,6 +270,9 @@
    "claim": "Replay of the golden SCR bundle without a binding is refused",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -299,13 +315,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/exchange_provenance_bundles.py": "3acc6fd6976bb5e6dd8ad3bfc3d09a1d9594ca0a06f4db823581e5b651d4835e",
-   "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "7d6da1148d3744ae1e754b53f697b5b4919aff2666788ae6aec0e48e6e2380c9"
+   "src/ciw/lab/exchange_provenance_bundles.py": "7e841b781d966fe75d5a86bd61e1ef32150c4087393893be788c2b7eff69f3d4",
+   "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "435727947e827d1d601802a5e860f04d578f7b879301c7f5615fb7d6e523500e"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T095: refuse malformed exchange fixtures with retained error text.",
- "report_id": "sha256:7fc546ebacefffb28b41edc85e6cf553125d575164962935e92e0b3edc70b892",
+ "recommended_next_task": "Deferred research question: reopen the golden workspaces on a second platform (Windows x86-64, macOS arm64 or another NumPy/LAPACK build) to learn whether the bit-for-bit energy recomputation refuses the energy golden there, as the platform fingerprint in golden.json anticipates; and retain golden workspaces for provider kinds other than numerical-heat, produced by their pinned providers, so that validator drift in those kinds is caught at reopen.",
+ "report_id": "sha256:bad336a36b03056285532a8943eca1635bc43502c23b9467da4009116a6fbac2",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "completed",

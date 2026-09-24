@@ -1,174 +1,182 @@
 {
- "baseline": {
-  "batches": 2,
-  "fixture_sha256": "3ff4cb68be07e36d9796fb83402b0f72a46a3f1edff0d9e70addc9ab1695ef81",
-  "identity_fields": {
-   "clock": "synthetic monotonic",
-   "compute_capability": [
-    8,
-    6
+ "fixtures": {
+  "baseline": {
+   "batches": 2,
+   "fixture_sha256": "3ff4cb68be07e36d9796fb83402b0f72a46a3f1edff0d9e70addc9ab1695ef81",
+   "identity_fields": {
+    "clock": "synthetic monotonic",
+    "compute_capability": [
+     8,
+     6
+    ],
+    "driver_version": "fixture",
+    "implementation_code_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "kernel_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "numpy_version": "2.4.3",
+    "nvml_library_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "nvml_version": "fixture",
+    "prepared_input_sha256": "5b741b49b6bc4ac239a866f5fa3042222552cf9e9a48632915afa1dd1600e1ff",
+    "python_executable_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "python_version": "3.12.0",
+    "sensor_device_uuid": "GPU-01234567-89ab-cdef-0123-456789abcdef",
+    "sensor_name": "synthetic fixture device",
+    "workload_device_uuid": "GPU-01234567-89ab-cdef-0123-456789abcdef"
+   },
+   "identity_fields_present": 14,
+   "log_digest": "sha256:7d9639af0758fd56b9f6ec5664d098cf806139016505c1a778321284d2cdb803",
+   "origin": "synthetic_fixture",
+   "placeholder_fields": [
+    "clock",
+    "compute_capability",
+    "driver_version",
+    "implementation_code_sha256",
+    "kernel_sha256",
+    "nvml_library_sha256",
+    "nvml_version",
+    "python_executable_sha256",
+    "sensor_device_uuid",
+    "sensor_name",
+    "workload_device_uuid"
    ],
-   "driver_version": "fixture",
-   "implementation_code_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
-   "kernel_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-   "numpy_version": "2.4.3",
-   "nvml_library_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-   "nvml_version": "fixture",
-   "prepared_input_sha256": "5b741b49b6bc4ac239a866f5fa3042222552cf9e9a48632915afa1dd1600e1ff",
-   "python_executable_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
-   "python_version": "3.12.0",
-   "sensor_device_uuid": "GPU-01234567-89ab-cdef-0123-456789abcdef",
-   "sensor_name": "synthetic fixture device",
-   "workload_device_uuid": "GPU-01234567-89ab-cdef-0123-456789abcdef"
+   "placeholder_values": 11,
+   "raw_counter_readings": 12,
+   "samples": 12,
+   "timestamped_samples": 12
   },
-  "identity_fields_present": 14,
-  "log_digest": "sha256:7d9639af0758fd56b9f6ec5664d098cf806139016505c1a778321284d2cdb803",
-  "origin": "synthetic_fixture",
-  "placeholder_fields": [
-   "clock",
-   "compute_capability",
-   "driver_version",
-   "implementation_code_sha256",
-   "kernel_sha256",
-   "nvml_library_sha256",
-   "nvml_version",
-   "python_executable_sha256",
-   "sensor_device_uuid",
-   "sensor_name",
-   "workload_device_uuid"
-  ],
-  "placeholder_values": 11,
-  "raw_counter_readings": 12,
-  "samples": 12,
-  "timestamped_samples": 12
+  "missing": {
+   "batches": 2,
+   "fixture_sha256": "0cffbd14cfcd2d0f14cc906dca689df4de1fd8191ed6fff4cb5a6dced837dacb",
+   "identity_fields": {
+    "clock": "synthetic monotonic",
+    "compute_capability": [
+     8,
+     6
+    ],
+    "driver_version": "fixture",
+    "implementation_code_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "kernel_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "numpy_version": "2.4.3",
+    "nvml_library_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "nvml_version": "fixture",
+    "prepared_input_sha256": "5b741b49b6bc4ac239a866f5fa3042222552cf9e9a48632915afa1dd1600e1ff",
+    "python_executable_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "python_version": "3.12.0",
+    "sensor_device_uuid": "GPU-01234567-89ab-cdef-0123-456789abcdef",
+    "sensor_name": "synthetic fixture device",
+    "workload_device_uuid": "GPU-01234567-89ab-cdef-0123-456789abcdef"
+   },
+   "identity_fields_present": 14,
+   "log_digest": "sha256:517228b91ae283d2ff0834a6a20cf0ec8df45145c5c19237b2e25414ef513f54",
+   "origin": "synthetic_fixture",
+   "placeholder_fields": [
+    "clock",
+    "compute_capability",
+    "driver_version",
+    "implementation_code_sha256",
+    "kernel_sha256",
+    "nvml_library_sha256",
+    "nvml_version",
+    "python_executable_sha256",
+    "sensor_device_uuid",
+    "sensor_name",
+    "workload_device_uuid"
+   ],
+   "placeholder_values": 11,
+   "raw_counter_readings": 11,
+   "samples": 11,
+   "timestamped_samples": 11
+  },
+  "reset": {
+   "batches": 2,
+   "fixture_sha256": "2c8e421e1fd24ce463f765dba365eacb859797facb82d42f180deb42d80a0ddb",
+   "identity_fields": {
+    "clock": "synthetic monotonic",
+    "compute_capability": [
+     8,
+     6
+    ],
+    "driver_version": "fixture",
+    "implementation_code_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "kernel_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "numpy_version": "2.4.3",
+    "nvml_library_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "nvml_version": "fixture",
+    "prepared_input_sha256": "5b741b49b6bc4ac239a866f5fa3042222552cf9e9a48632915afa1dd1600e1ff",
+    "python_executable_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "python_version": "3.12.0",
+    "sensor_device_uuid": "GPU-01234567-89ab-cdef-0123-456789abcdef",
+    "sensor_name": "synthetic fixture device",
+    "workload_device_uuid": "GPU-01234567-89ab-cdef-0123-456789abcdef"
+   },
+   "identity_fields_present": 14,
+   "log_digest": "sha256:29553e889daa7e4c7c7317a86e53012ebc76cb8e003977eac6642bb20fa60038",
+   "origin": "synthetic_fixture",
+   "placeholder_fields": [
+    "clock",
+    "compute_capability",
+    "driver_version",
+    "implementation_code_sha256",
+    "kernel_sha256",
+    "nvml_library_sha256",
+    "nvml_version",
+    "python_executable_sha256",
+    "sensor_device_uuid",
+    "sensor_name",
+    "workload_device_uuid"
+   ],
+   "placeholder_values": 11,
+   "raw_counter_readings": 12,
+   "samples": 12,
+   "timestamped_samples": 12
+  },
+  "under-target": {
+   "batches": 2,
+   "fixture_sha256": "b09bf8b979c213a7ae6617327f9a060ea2c9b2af515eb4b8662ab94dc415e955",
+   "identity_fields": {
+    "clock": "synthetic monotonic",
+    "compute_capability": [
+     8,
+     6
+    ],
+    "driver_version": "fixture",
+    "implementation_code_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "kernel_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "numpy_version": "2.4.3",
+    "nvml_library_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "nvml_version": "fixture",
+    "prepared_input_sha256": "5b741b49b6bc4ac239a866f5fa3042222552cf9e9a48632915afa1dd1600e1ff",
+    "python_executable_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "python_version": "3.12.0",
+    "sensor_device_uuid": "GPU-01234567-89ab-cdef-0123-456789abcdef",
+    "sensor_name": "synthetic fixture device",
+    "workload_device_uuid": "GPU-01234567-89ab-cdef-0123-456789abcdef"
+   },
+   "identity_fields_present": 14,
+   "log_digest": "sha256:86ac46bbe33c9e8399120f32412797814c9cad04db6c6c19b2d5461e7fc9f7a0",
+   "origin": "synthetic_fixture",
+   "placeholder_fields": [
+    "clock",
+    "compute_capability",
+    "driver_version",
+    "implementation_code_sha256",
+    "kernel_sha256",
+    "nvml_library_sha256",
+    "nvml_version",
+    "python_executable_sha256",
+    "sensor_device_uuid",
+    "sensor_name",
+    "workload_device_uuid"
+   ],
+   "placeholder_values": 11,
+   "raw_counter_readings": 12,
+   "samples": 12,
+   "timestamped_samples": 12
+  }
  },
- "missing": {
-  "batches": 2,
-  "fixture_sha256": "0cffbd14cfcd2d0f14cc906dca689df4de1fd8191ed6fff4cb5a6dced837dacb",
-  "identity_fields": {
-   "clock": "synthetic monotonic",
-   "compute_capability": [
-    8,
-    6
-   ],
-   "driver_version": "fixture",
-   "implementation_code_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
-   "kernel_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-   "numpy_version": "2.4.3",
-   "nvml_library_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-   "nvml_version": "fixture",
-   "prepared_input_sha256": "5b741b49b6bc4ac239a866f5fa3042222552cf9e9a48632915afa1dd1600e1ff",
-   "python_executable_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
-   "python_version": "3.12.0",
-   "sensor_device_uuid": "GPU-01234567-89ab-cdef-0123-456789abcdef",
-   "sensor_name": "synthetic fixture device",
-   "workload_device_uuid": "GPU-01234567-89ab-cdef-0123-456789abcdef"
-  },
-  "identity_fields_present": 14,
-  "log_digest": "sha256:517228b91ae283d2ff0834a6a20cf0ec8df45145c5c19237b2e25414ef513f54",
-  "origin": "synthetic_fixture",
-  "placeholder_fields": [
-   "clock",
-   "compute_capability",
-   "driver_version",
-   "implementation_code_sha256",
-   "kernel_sha256",
-   "nvml_library_sha256",
-   "nvml_version",
-   "python_executable_sha256",
-   "sensor_device_uuid",
-   "sensor_name",
-   "workload_device_uuid"
+ "operator_log": {
+  "reasons": [
+   "no operator NVML log was bound (--capture energy-log=PATH or CIW_LAB_ENERGY_LOG)"
   ],
-  "placeholder_values": 11,
-  "raw_counter_readings": 11,
-  "samples": 11,
-  "timestamped_samples": 11
- },
- "reset": {
-  "batches": 2,
-  "fixture_sha256": "2c8e421e1fd24ce463f765dba365eacb859797facb82d42f180deb42d80a0ddb",
-  "identity_fields": {
-   "clock": "synthetic monotonic",
-   "compute_capability": [
-    8,
-    6
-   ],
-   "driver_version": "fixture",
-   "implementation_code_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
-   "kernel_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-   "numpy_version": "2.4.3",
-   "nvml_library_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-   "nvml_version": "fixture",
-   "prepared_input_sha256": "5b741b49b6bc4ac239a866f5fa3042222552cf9e9a48632915afa1dd1600e1ff",
-   "python_executable_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
-   "python_version": "3.12.0",
-   "sensor_device_uuid": "GPU-01234567-89ab-cdef-0123-456789abcdef",
-   "sensor_name": "synthetic fixture device",
-   "workload_device_uuid": "GPU-01234567-89ab-cdef-0123-456789abcdef"
-  },
-  "identity_fields_present": 14,
-  "log_digest": "sha256:29553e889daa7e4c7c7317a86e53012ebc76cb8e003977eac6642bb20fa60038",
-  "origin": "synthetic_fixture",
-  "placeholder_fields": [
-   "clock",
-   "compute_capability",
-   "driver_version",
-   "implementation_code_sha256",
-   "kernel_sha256",
-   "nvml_library_sha256",
-   "nvml_version",
-   "python_executable_sha256",
-   "sensor_device_uuid",
-   "sensor_name",
-   "workload_device_uuid"
-  ],
-  "placeholder_values": 11,
-  "raw_counter_readings": 12,
-  "samples": 12,
-  "timestamped_samples": 12
- },
- "under-target": {
-  "batches": 2,
-  "fixture_sha256": "b09bf8b979c213a7ae6617327f9a060ea2c9b2af515eb4b8662ab94dc415e955",
-  "identity_fields": {
-   "clock": "synthetic monotonic",
-   "compute_capability": [
-    8,
-    6
-   ],
-   "driver_version": "fixture",
-   "implementation_code_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
-   "kernel_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-   "numpy_version": "2.4.3",
-   "nvml_library_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-   "nvml_version": "fixture",
-   "prepared_input_sha256": "5b741b49b6bc4ac239a866f5fa3042222552cf9e9a48632915afa1dd1600e1ff",
-   "python_executable_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
-   "python_version": "3.12.0",
-   "sensor_device_uuid": "GPU-01234567-89ab-cdef-0123-456789abcdef",
-   "sensor_name": "synthetic fixture device",
-   "workload_device_uuid": "GPU-01234567-89ab-cdef-0123-456789abcdef"
-  },
-  "identity_fields_present": 14,
-  "log_digest": "sha256:86ac46bbe33c9e8399120f32412797814c9cad04db6c6c19b2d5461e7fc9f7a0",
-  "origin": "synthetic_fixture",
-  "placeholder_fields": [
-   "clock",
-   "compute_capability",
-   "driver_version",
-   "implementation_code_sha256",
-   "kernel_sha256",
-   "nvml_library_sha256",
-   "nvml_version",
-   "python_executable_sha256",
-   "sensor_device_uuid",
-   "sensor_name",
-   "workload_device_uuid"
-  ],
-  "placeholder_values": 11,
-  "raw_counter_readings": 12,
-  "samples": 12,
-  "timestamped_samples": 12
+  "supplied": false
  }
 }

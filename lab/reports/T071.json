@@ -59,6 +59,10 @@
    "claim": "Fusing a tracker expressed in a frame rotated by 2 degrees with a world-frame camera inflates NIS as the target moves away from the rotation centre, matching the exact mismatched-filter moments within sampling error",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -129,6 +133,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -194,6 +202,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -246,6 +258,10 @@
    "claim": "Applying the declared FrameTransform before fusion restores chi-square consistency",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -308,6 +324,10 @@
    "claim": "The session refuses an observation whose frame id differs from its own, and a transform refuses an observation from another source frame; the refused observation is retained in the log",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -341,6 +361,9 @@
    "claim": "A 2 degree rotation is the size of a real extrinsic calibration error",
    "domain": "calibration",
    "evidence_status": "not_established",
+   "origin": [
+    "synthetic_inputs"
+   ],
    "uncertainty": null,
    "unit": null,
    "value": "not established: the rotation is a declared synthetic fault"
@@ -382,13 +405,13 @@
   "sources": {
    "src/ciw/lab/sensor_fusion_bench.py": "f373849a4c6836fa20685c59ce7a6fe6bf732f6df9d6a49646cdc017262dd656",
    "src/ciw/lab/sensor_fusion_common.py": "db3b0430ad5c13920239cef354da61b64ab1b01f84b2d3d5aff2f78840a5867a",
-   "src/ciw/lab/sensor_fusion_objects.py": "93fc55ddca91f1adfb886d21805ea8f82586548ee84e1f6cc7daed4df1f53bb9",
-   "src/ciw/lab/sensor_fusion_robustness.py": "d8944a1e077dab7955d5162b6dd233a7f0b721c99e76176eb1b987b7d8b765c5"
+   "src/ciw/lab/sensor_fusion_objects.py": "50ec8767a90f261f108d6524c7ff55d22604b55cc9853e749ba4c5f71bc76081",
+   "src/ciw/lab/sensor_fusion_robustness.py": "ef7aebd84e84636cd8eac459886e3be69d96315962d47be5ac66235caada34dc"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T072: calibration expiry, the temporal validity of the declared transform and noise.",
- "report_id": "sha256:d17d748fb00401aed16bbf58e88f48e511925a972afa1c6f8456fb291714b988",
+ "recommended_next_task": "Deferred research question: a translated (lever-arm) frame mismatch, which adds a constant bias instead of a rotation, and its detection by T070's mean-innovation test; this task rotates about the world origin only.",
+ "report_id": "sha256:2f8bbf9307440305e5646036566da1364be835e826c6eb876c6ccce36538de48",
  "schema": "ciw.lab-task-report.v1",
  "section": "sensor-fusion",
  "state": "completed",

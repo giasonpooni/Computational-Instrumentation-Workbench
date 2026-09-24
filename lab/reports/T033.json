@@ -47,6 +47,10 @@
    "claim": "Brioschi curvature from the metric alone equals the supplied Gaussian curvature at every sampled point",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-07,
     "rel": 0.0
@@ -92,6 +96,9 @@
    "claim": "Metrics are symmetric positive definite at every sampled point of the declared domains",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-13,
     "rel": 1e-09
@@ -125,6 +132,9 @@
    "claim": "Christoffel symbols are symmetric in their lower indices at every sampled point",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-12,
     "rel": 0.0
@@ -154,6 +164,9 @@
    "claim": "The connection is metric compatible at every sampled point: d_k g_ij = Gamma^l_ki g_lj + Gamma^l_kj g_il",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-12,
     "rel": 0.0
@@ -183,6 +196,9 @@
    "claim": "Supplied metric derivatives agree with fourth-order differences of the metric at every sampled point",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-08,
     "rel": 0.0
@@ -212,6 +228,9 @@
    "claim": "Differences of the exact metric derivatives have symmetric mixed partials (dg is a gradient field)",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-07,
     "rel": 0.0
@@ -241,6 +260,9 @@
    "claim": "A rigid rotation leaves the torus metric unchanged at every sampled point",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-14,
     "rel": 0.0
@@ -278,6 +300,9 @@
    "claim": "The conformance suite rejects every seeded defect mutant",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -336,6 +361,9 @@
    },
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-06,
     "rel": 1e-06
@@ -389,6 +417,10 @@
    },
    "domain": "mathematical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-06,
     "rel": 1e-06
@@ -410,6 +442,7 @@
    "claim": "The conformance suite certifies surfaces reconstructed from physical measurements",
    "domain": "physical",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -456,13 +489,13 @@
   "scipy": "1.16.2",
   "sources": {
    "src/ciw/lab/surfaces.py": "e8f264c182743d0177d93b961a49d7ddf78f30d79a7a75b9fea4018b10d4eef0",
-   "src/ciw/lab/surfaces_discrete.py": "b47b6d9486e322c3e394e25b99849c0aa22039ce45b946825b0f3dbc1a3013b7",
+   "src/ciw/lab/surfaces_discrete.py": "9b277c6212ac8d7c563e3b2257c75438b37f5a73c992f6b9b7ec53a26ec4106f",
    "src/ciw/lab/surfaces_discrete_geometry.py": "d4445a253778e1dff32b68a903a9caf560affa08ca5a7110207e54c8e1baa60e"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T042: turn the conformance suite into the admission gate for invalid or incomplete surface data, reusing its refusal of the seeded defects.",
- "report_id": "sha256:1812f90750bffda2b9ed2ea512f6738fba6f0773e077769044c223691ae8e61a",
+ "recommended_next_task": "Deferred research question (queue extension after T168): make this conformance suite the admission gate for smooth surface data, run on every Surface before a lab task integrates on it and refusing a nonconforming one with a named code per failed identity (the seeded defects are refused only inside T033 today, the refusal states that T042 defines (MESH_CODES, TRACE_CODES and QUERY_CODES in surfaces_discrete_mesh_geometry.py) are for triangle meshes and do not use this suite).",
+ "report_id": "sha256:7634eed23d5b9c753477d32b4766297ceb48770acf77b2c4a394bba302a75b4f",
  "schema": "ciw.lab-task-report.v1",
  "section": "surfaces-discrete",
  "state": "completed",
@@ -488,7 +521,8 @@
   "pytest: tests/test_lab_surfaces_discrete.py::test_conformance_suite_rejects_seeded_mutants",
   "pytest: tests/test_lab_surfaces_discrete.py::test_conformance_reports_nonfinite_residuals",
   "pytest: tests/test_lab_surfaces_discrete.py::test_brioschi_recovers_supplied_curvature",
-  "pytest: tests/test_lab_surfaces_discrete.py::test_t033_report"
+  "pytest: tests/test_lab_surfaces_discrete.py::test_t033_report",
+  "pytest: tests/test_lab_surfaces_discrete.py::test_next_steps_do_not_hand_work_to_tasks_that_did_not_deliver_it"
  ],
  "tests_skipped": [],
  "title": "Implement a reusable metric/Christoffel/curvature surface interface.",

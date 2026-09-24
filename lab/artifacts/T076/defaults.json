@@ -1,4 +1,41 @@
 {
+ "admission_vocabulary_audit": {
+  "estimators": {
+   "FusionSession (default)": [
+    "not_performed"
+   ],
+   "FusionSession (writable)": [
+    "synthetic_only"
+   ],
+   "ObservationIntake": [
+    "synthetic_only"
+   ],
+   "ObservationLedger (default)": [
+    "not_performed"
+   ],
+   "ObservationLedger (writable)": [
+    "not_performed",
+    "synthetic_only"
+   ],
+   "StateStore (default)": [
+    "not_performed"
+   ],
+   "StateStore (writable)": [
+    "not_performed",
+    "synthetic_only"
+   ]
+  },
+  "estimators_without_values": [],
+  "outside_vocabulary": [],
+  "values_seen": [
+   "not_performed",
+   "synthetic_only"
+  ],
+  "vocabulary": [
+   "not_performed",
+   "synthetic_only"
+  ]
+ },
  "admitted": 0,
  "authority_mutable": false,
  "ciw_authority": {
@@ -21,6 +58,23 @@
   "state_admission": "synthetic_only"
  },
  "enabled_matches_synthetic": true,
+ "intake": {
+  "intake_authority": {
+   "physical_truth": "not_established",
+   "sensor_fusion": "not_performed",
+   "state_admission": "not_performed"
+  },
+  "intake_on_default_ledger": "not_admitted",
+  "ledger_admit": "read_only_session",
+  "ledger_authority": {
+   "physical_truth": "not_established",
+   "sensor_fusion": "not_performed",
+   "state_admission": "not_performed"
+  },
+  "ledger_read_only": true,
+  "read_only_session_through_intake": "read_only_session",
+  "session_state_created": false
+ },
  "log": [
   "refused:read_only_session",
   "recorded",

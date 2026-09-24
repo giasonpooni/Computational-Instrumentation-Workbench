@@ -1,125 +1,139 @@
 {
- "hardware_measured_findings": [],
- "hardware_unavailable_findings": [
+ "acquisition_route_tasks": {
+  "nvidia-gpu": [
+   "T116",
+   "T117",
+   "T118",
+   "T119",
+   "T121",
+   "T124",
+   "T147"
+  ],
+  "rapl": [
+   "T115",
+   "T117",
+   "T120"
+  ]
+ },
+ "boundary": [
   {
-   "claim": "GPU-domain gross energy per measured batch",
+   "cannot_establish_alone": "Physical truth",
    "domain": "physical",
-   "probes": [
-    "hardware:nvidia-gpu"
-   ],
-   "task_id": "T116"
+   "may_establish": "Analytic agreement",
+   "not_established": 65
   },
   {
-   "claim": "The NVML total-energy counter of the RTX 2080 has a characterized accuracy and resolution",
+   "cannot_establish_alone": "Calibration validity",
+   "domain": "calibration",
+   "may_establish": "Numerical convergence",
+   "not_established": 23
+  },
+  {
+   "cannot_establish_alone": "Real sensor performance",
    "domain": "sensor_performance",
-   "probes": [
-    "hardware:nvidia-gpu"
-   ],
-   "task_id": "T116"
+   "may_establish": "Synthetic sensor performance",
+   "not_established": 26
   },
   {
-   "claim": "A Julia implementation agrees with the Python kernel",
-   "domain": "numerical",
-   "probes": [
-    "hardware:nvidia-gpu"
-   ],
-   "task_id": "T117"
+   "cannot_establish_alone": "Independent verification by another party",
+   "domain": null,
+   "may_establish": "Replay determinism",
+   "not_established": null
   },
   {
-   "claim": "A GPU implementation agrees with the Python kernel",
-   "domain": "numerical",
-   "probes": [
-    "hardware:nvidia-gpu"
-   ],
-   "task_id": "T117"
+   "cannot_establish_alone": "Machine safety",
+   "domain": "machine_safety",
+   "may_establish": "Schema/provenance integrity",
+   "not_established": 14
   },
   {
-   "claim": "The Rust kernel uses less energy per trajectory than the Python kernel on real hardware",
-   "domain": "physical",
-   "probes": [
-    "hardware:nvidia-gpu"
-   ],
-   "task_id": "T117"
-  },
-  {
-   "claim": "RTX 2080 power draw during the measurement phase (NVML)",
-   "domain": "physical",
-   "probes": [
-    "hardware:nvidia-gpu"
-   ],
-   "task_id": "T118"
-  },
-  {
-   "claim": "RTX 2080 temperature during the measurement phase (NVML)",
-   "domain": "physical",
-   "probes": [
-    "hardware:nvidia-gpu"
-   ],
-   "task_id": "T118"
-  },
-  {
-   "claim": "RTX 2080 graphics clock during the measurement phase (NVML)",
-   "domain": "physical",
-   "probes": [
-    "hardware:nvidia-gpu"
-   ],
-   "task_id": "T118"
-  },
-  {
-   "claim": "Host-bracketed batch solve duration (launch, sync and copy included)",
-   "domain": "physical",
-   "probes": [
-    "hardware:nvidia-gpu"
-   ],
-   "task_id": "T118"
-  },
-  {
-   "claim": "RTX 2080 GPU utilization during the measurement phase (nvidia-smi rows inside the measurement window)",
-   "domain": "physical",
-   "probes": [
-    "hardware:nvidia-gpu"
-   ],
-   "task_id": "T118"
-  },
-  {
-   "claim": "RTX 2080 power draw is steady over the measurement phase (coefficient of variation <= 0.10)",
-   "domain": "physical",
-   "probes": [
-    "hardware:nvidia-gpu"
-   ],
-   "task_id": "T118"
-  },
-  {
-   "claim": "RTX 2080 temperature drifts by at most 5 C over the measurement phase",
-   "domain": "physical",
-   "probes": [
-    "hardware:nvidia-gpu"
-   ],
-   "task_id": "T118"
-  },
-  {
-   "claim": "RTX 2080 kernel-only duration of the Gaussian VI kernel",
-   "domain": "physical",
-   "probes": [
-    "hardware:nvidia-gpu"
-   ],
-   "task_id": "T118"
-  },
-  {
-   "claim": "CPU and GPU outputs agree under the tolerance policy on GPU hardware",
-   "domain": "numerical",
-   "probes": [
-    "hardware:nvidia-gpu"
-   ],
-   "task_id": "T147"
-  },
-  {
-   "claim": "GPU/CPU agreement establishes industrial readiness",
+   "cannot_establish_alone": "Industrial readiness",
    "domain": "industrial_readiness",
-   "probes": [
-    "hardware:nvidia-gpu"
+   "may_establish": "GPU/CPU agreement",
+   "not_established": 6
+  },
+  {
+   "cannot_establish_alone": "Actual customer demand",
+   "domain": "customer_demand",
+   "may_establish": "A plausible use case",
+   "not_established": 1
+  },
+  {
+   "cannot_establish_alone": "Safe actuator authority",
+   "domain": "actuator_authority",
+   "may_establish": "A simulated control response",
+   "not_established": 6
+  },
+  {
+   "cannot_establish_alone": "Production acceptance",
+   "domain": "production_acceptance",
+   "may_establish": null,
+   "not_established": 11
+  }
+ ],
+ "hardware_measured_findings": [],
+ "hardware_runs": "aggregated outside the queue by `ciw lab unmeasured`; never read here",
+ "next_acquisitions": [
+  {
+   "claim_tasks": [
+    "T116",
+    "T118",
+    "T119",
+    "T124"
    ],
-   "task_id": "T147"
+   "claims": 10,
+   "comparison_tasks": [
+    "T117",
+    "T121",
+    "T147"
+   ],
+   "comparisons": 3,
+   "go_no_go": "`ciw energy probe --gpu-index 0` must report status ok",
+   "hosts": [
+    "RTX 2080"
+   ],
+   "probe": "hardware:nvidia-gpu",
+   "route_tasks": [
+    "T116",
+    "T117",
+    "T118",
+    "T119",
+    "T121",
+    "T124",
+    "T147"
+   ],
+   "tasks": [
+    "T116",
+    "T117",
+    "T118",
+    "T119",
+    "T121",
+    "T124",
+    "T147"
+   ]
+  },
+  {
+   "claim_tasks": [
+    "T115",
+    "T117",
+    "T120"
+   ],
+   "claims": 6,
+   "comparison_tasks": [],
+   "comparisons": 0,
+   "go_no_go": "an intel-rapl energy_uj counter under /sys/class/powercap must read as a number (the runner's hardware:rapl probe); `python -m ciw.lab.energy_gpu_telemetry rapl-capture` then records the capture",
+   "hosts": [],
+   "probe": "hardware:rapl",
+   "route_tasks": [
+    "T115",
+    "T117",
+    "T120"
+   ],
+   "tasks": [
+    "T115",
+    "T117",
+    "T120"
+   ]
   }
  ],
  "not_established_claims": [
@@ -159,7 +173,7 @@
    "task_id": "T023"
   },
   {
-   "claim": "Ranking routes by focus margin selects a route that is safe to execute on a physical part",
+   "claim": "Ranking routes by focus margin s_c - L selects a route that is safe to execute on a physical part",
    "domain": "machine_safety",
    "task_id": "T024"
   },
@@ -409,6 +423,11 @@
    "task_id": "T075"
   },
   {
+   "claim": "The declared tracker latency, synchronization and room-to-cell mapping are those of a real tracker installation",
+   "domain": "calibration",
+   "task_id": "T075"
+  },
+  {
    "claim": "Synthetic fusion output is admissible as production state",
    "domain": "production_acceptance",
    "task_id": "T076"
@@ -534,6 +553,16 @@
    "task_id": "T115"
   },
   {
+   "claim": "Gross CPU package energy (background-inclusive, idle not subtracted) per batch of the common Gaussian VI workload (NumPy float64 reference)",
+   "domain": "physical",
+   "task_id": "T115"
+  },
+  {
+   "claim": "Idle-subtracted CPU package energy per batch of the common Gaussian VI workload (NumPy float64 reference)",
+   "domain": "physical",
+   "task_id": "T115"
+  },
+  {
    "claim": "GPU-domain gross energy per measured batch",
    "domain": "physical",
    "task_id": "T116"
@@ -544,7 +573,7 @@
    "task_id": "T116"
   },
   {
-   "claim": "The Rust kernel uses less energy per trajectory than the Python kernel on real hardware",
+   "claim": "CPU package energy per batch of the common Gaussian VI workload: Rust port and NumPy reference (RAPL, gross and idle-subtracted)",
    "domain": "physical",
    "task_id": "T117"
   },
@@ -594,14 +623,14 @@
    "task_id": "T119"
   },
   {
-   "claim": "float32 lowers the energy per accepted trajectory relative to float64 on real CPU or GPU hardware",
+   "claim": "CPU package energy per batch of the common Gaussian VI workload in float32 and in float64 (NumPy reference, RAPL, gross and idle-subtracted)",
    "domain": "physical",
    "task_id": "T120"
   },
   {
-   "claim": "Reductions on the RTX 2080 (CUB, cuBLAS or atomicAdd) reproduce these emulated spreads and sign flips",
+   "claim": "GPU energy per batch of a float32 build of the common Gaussian VI workload",
    "domain": "physical",
-   "task_id": "T121"
+   "task_id": "T120"
   },
   {
    "claim": "The variational free energy of this model equals a thermodynamic free energy of a physical system",
@@ -615,6 +644,11 @@
   },
   {
    "claim": "The fixtures' counter readings were produced by a physical GPU and NVML counter",
+   "domain": "physical",
+   "task_id": "T124"
+  },
+  {
+   "claim": "The bound operator log names an NVML device present on this analyzing host (UUID, name, driver, NVML version and NVML library digest equal this host's; the capture is unauthenticated)",
    "domain": "physical",
    "task_id": "T124"
   },
@@ -644,6 +678,11 @@
    "task_id": "T127"
   },
   {
+   "claim": "The unrolled-film gauge achieves the declared 0.05 mm on marker-to-marker surface distances",
+   "domain": "calibration",
+   "task_id": "T127"
+  },
+  {
    "claim": "Measured separations of offset routes on the physical coupon follow the Jacobi prediction and cross at the predicted focal point",
    "domain": "physical",
    "task_id": "T128"
@@ -659,7 +698,7 @@
    "task_id": "T128"
   },
   {
-   "claim": "The start jig and tape laying realize the relative start pose of the offset tape within the declared 0.05 mm and 0.5 mrad",
+   "claim": "The start jig realizes the relative start pose of the offset tape within the declared 0.05 mm and 0.5 mrad of its insert and the laying and 0.01 mm and 0.1 mrad per seating of the jig",
    "domain": "calibration",
    "task_id": "T128"
   },
@@ -739,7 +778,7 @@
    "task_id": "T138"
   },
   {
-   "claim": "The start jig and tape laying realize the relative start pose of the offset tape within the declared 0.05 mm and 0.5 mrad",
+   "claim": "The start jig realizes the relative start pose of the offset tape within the declared 0.05 mm and 0.5 mrad of its insert and the laying and 0.01 mm and 0.1 mrad per seating of the jig",
    "domain": "calibration",
    "task_id": "T138"
   },
@@ -754,7 +793,7 @@
    "task_id": "T140"
   },
   {
-   "claim": "The start jig and tape laying realize the relative start pose of the offset tape within the declared 0.05 mm and 0.5 mrad",
+   "claim": "The start jig realizes the relative start pose of the offset tape within the declared 0.05 mm and 0.5 mrad of its insert and the laying and 0.01 mm and 0.1 mrad per seating of the jig",
    "domain": "calibration",
    "task_id": "T140"
   },
@@ -771,6 +810,11 @@
   {
    "claim": "The manufacturing protocols and models are ready for industrial use",
    "domain": "industrial_readiness",
+   "task_id": "T141"
+  },
+  {
+   "claim": "Manufacturers need curvature-aware placement, winding, coating or inspection path checking",
+   "domain": "customer_demand",
    "task_id": "T141"
   },
   {
@@ -854,6 +898,1751 @@
    "task_id": "T154"
   }
  ],
+ "open_claims_by_need": [
+  {
+   "claim": "Nearby real trajectories on a physical curved surface separate according to this Jacobi law",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "",
+   "task_id": "T005",
+   "task_statements": []
+  },
+  {
+   "claim": "The ranking of lateral versus heading start errors computed here predicts which error dominates the endpoint error of real tool or vehicle paths on physical curved parts",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "",
+   "task_id": "T009",
+   "task_statements": []
+  },
+  {
+   "claim": "A physical cylinder or large-radius torus workpiece shows these separations",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "",
+   "task_id": "T013",
+   "task_statements": []
+  },
+  {
+   "claim": "Curvature signals resolvable here would be resolvable in measured sensor data",
+   "domain": "sensor_performance",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "",
+   "task_id": "T018",
+   "task_statements": []
+  },
+  {
+   "claim": "A physical heading sensor closes the shortest loop within the computed heading tolerance",
+   "domain": "sensor_performance",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "",
+   "task_id": "T023",
+   "task_statements": []
+  },
+  {
+   "claim": "Grid-planned path lengths predict distances travelled by a physical vehicle or tool",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "",
+   "task_id": "T030",
+   "task_statements": []
+  },
+  {
+   "claim": "A metric calibrated from physical measurements is accurate enough to decide between near-tied routes",
+   "domain": "calibration",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "",
+   "task_id": "T031",
+   "task_statements": []
+  },
+  {
+   "claim": "The conformance suite certifies surfaces reconstructed from physical measurements",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "",
+   "task_id": "T033",
+   "task_statements": []
+  },
+  {
+   "claim": "Symbolic and dual-number derivative agreement certifies derivatives of surfaces reconstructed from physical measurements",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "",
+   "task_id": "T034",
+   "task_statements": []
+  },
+  {
+   "claim": "The optimal-step law derived here applies to derivatives of measured surface samples",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "",
+   "task_id": "T035",
+   "task_statements": []
+  },
+  {
+   "claim": "The singularity classification applies to scanned physical parts",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "",
+   "task_id": "T037",
+   "task_statements": []
+  },
+  {
+   "claim": "Straightest geodesics on a mesh reconstructed from a real scan reproduce the geodesics of the scanned physical surface",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "No scanned surface, device or calibration was acquired; the computation is synthetic.",
+   "task_id": "T038",
+   "task_statements": []
+  },
+  {
+   "claim": "The observed convergence orders transfer to meshes reconstructed from real scans",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "No scanned surface, device or calibration was acquired; the computation is synthetic.",
+   "task_id": "T039",
+   "task_statements": []
+  },
+  {
+   "claim": "Angle-defect curvature of a scanned mesh estimates the Gaussian curvature of the physical part",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "No scanned surface, device or calibration was acquired; the computation is synthetic.",
+   "task_id": "T040",
+   "task_statements": []
+  },
+  {
+   "claim": "The refusal catalogue covers every defect present in real scanned surface data",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "No scanned surface, device or calibration was acquired; the computation is synthetic.",
+   "task_id": "T042",
+   "task_statements": []
+  },
+  {
+   "claim": "Isotropic Gaussian vertex noise of the tested sigma describes the error of a real scanner",
+   "domain": "calibration",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "No scanned surface, device or calibration was acquired; the computation is synthetic.",
+   "task_id": "T043",
+   "task_statements": []
+  },
+  {
+   "claim": "A real marker-distance sensor on a real scanned part has this geometry and sensor variance split",
+   "domain": "sensor_performance",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "No scanned surface, device or calibration was acquired; the computation is synthetic.",
+   "task_id": "T044",
+   "task_statements": []
+  },
+  {
+   "claim": "The geometry sigma of 1e-3 is the accuracy of a real scanned surface",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "No scanned surface, device or calibration was acquired; the computation is synthetic.",
+   "task_id": "T044",
+   "task_statements": []
+  },
+  {
+   "claim": "The declared noise-model parameters describe real instruments of these modes",
+   "domain": "sensor_performance",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "Noise parameters are declared placeholders; no instrument was acquired.",
+   "task_id": "T045",
+   "task_statements": []
+  },
+  {
+   "claim": "The chord correction computed from nominal curvature holds for chords measured on a physical part",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "No part was measured; curvature, marker placement and surface form error of a real object are not modelled.",
+   "task_id": "T046",
+   "task_statements": []
+  },
+  {
+   "claim": "Chords measured between physical markers on a cylindrical part follow the cos^4(alpha)/(24 R^2) coefficient",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "No part or marker was measured; radius tolerance, marker height and path deviation are unknown.",
+   "task_id": "T047",
+   "task_statements": []
+  },
+  {
+   "claim": "A physical stereo rig with this geometry achieves the synthetic chord accuracy",
+   "domain": "sensor_performance",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "No camera was acquired; lens, sensor, marker detection and calibration errors of real hardware are not represented.",
+   "task_id": "T048",
+   "task_statements": []
+  },
+  {
+   "claim": "The declared perturbation magnitudes bound the calibration error of a real stereo rig",
+   "domain": "calibration",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "No calibration procedure was run; real calibration uncertainty is unknown.",
+   "task_id": "T049",
+   "task_statements": []
+  },
+  {
+   "claim": "A two-term radial plus tangential Brown-Conrady model describes a real lens to the required accuracy",
+   "domain": "calibration",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "No lens was measured; higher-order, decentring and temperature effects of real optics are unknown.",
+   "task_id": "T050",
+   "task_statements": []
+  },
+  {
+   "claim": "Real circular markers and their detector show only the modelled perspective centre bias",
+   "domain": "sensor_performance",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "No markers were imaged; marker flatness, printing, blur, lens distortion across the marker and the detector algorithm are not modelled.",
+   "task_id": "T050",
+   "task_statements": []
+  },
+  {
+   "claim": "Real image noise is Gaussian with sigma = 0.25 px and marker localization rounds to whole pixels",
+   "domain": "sensor_performance",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "No images were acquired; real noise is signal dependent, spatially correlated and marker detectors interpolate below one pixel.",
+   "task_id": "T051",
+   "task_statements": []
+  },
+  {
+   "claim": "A real encoder drive train behaves as a constant-width play operator with constant scale and bias",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "No drive was measured; real backlash varies with load, wear, temperature and position.",
+   "task_id": "T052",
+   "task_statements": []
+  },
+  {
+   "claim": "Real gyroscopes have constant bias and white rate noise with the declared densities",
+   "domain": "sensor_performance",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "No IMU was acquired; bias instability, scale factor, temperature and vibration effects are not modelled.",
+   "task_id": "T053",
+   "task_statements": []
+  },
+  {
+   "claim": "Real sensor clocks have the declared constant offset and white jitter",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "No clocks were measured; drift, rate error and non-Gaussian latency are not modelled.",
+   "task_id": "T054",
+   "task_statements": []
+  },
+  {
+   "claim": "Real links drop observations as Bernoulli or two-state burst processes with these rates",
+   "domain": "sensor_performance",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "No link was monitored; real loss depends on load, interference and buffering.",
+   "task_id": "T055",
+   "task_statements": []
+  },
+  {
+   "claim": "Real tracker latencies and target speeds match the declared values",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "No tracker was acquired; latency distributions and target dynamics are declared.",
+   "task_id": "T056",
+   "task_statements": []
+  },
+  {
+   "claim": "A real tracker's measurement noise and target motion match the constant-velocity model",
+   "domain": "sensor_performance",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "No tracker data were acquired; the model and noise are declared.",
+   "task_id": "T057",
+   "task_statements": []
+  },
+  {
+   "claim": "The declared frame and clock mappings equal the real extrinsic calibration and clock synchronization",
+   "domain": "calibration",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "Mappings are declared synthetic values; no calibration or synchronization procedure was run.",
+   "task_id": "T058",
+   "task_statements": []
+  },
+  {
+   "claim": "The bench's noise levels, rates and motion describe real camera, encoder, IMU or tracker hardware",
+   "domain": "sensor_performance",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "synthetic draws only; no acquisition",
+   "task_id": "T060",
+   "task_statements": []
+  },
+  {
+   "claim": "Real sensors' noise covariance equals the covariance declared for this bench",
+   "domain": "sensor_performance",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "synthetic draws only; no acquisition",
+   "task_id": "T061",
+   "task_statements": []
+  },
+  {
+   "claim": "Real camera and tracker noises share the common-mode covariance assumed here, or are independent",
+   "domain": "sensor_performance",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "synthetic draws only; no acquisition",
+   "task_id": "T062",
+   "task_statements": []
+  },
+  {
+   "claim": "The declared 35 degree rotation, translation and body covariance describe a real sensor mounting or extrinsic calibration",
+   "domain": "calibration",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "synthetic draws only; no acquisition",
+   "task_id": "T063",
+   "task_statements": []
+  },
+  {
+   "claim": "The declared [lateral, heading] covariance and these surfaces predict the path uncertainty of a real vehicle or tool on a real curved part",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "synthetic draws only; no acquisition",
+   "task_id": "T064",
+   "task_statements": []
+  },
+  {
+   "claim": "A real sensor's internally filtered output can be fused downstream as white noise",
+   "domain": "sensor_performance",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "synthetic draws only; no acquisition",
+   "task_id": "T065",
+   "task_statements": []
+  },
+  {
+   "claim": "A real residual monitor normalized by datasheet sensor covariance is correctly calibrated",
+   "domain": "sensor_performance",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "synthetic draws only; no acquisition",
+   "task_id": "T066",
+   "task_statements": []
+  },
+  {
+   "claim": "A real gate at the 99% quantile rejects 1% of valid real readings",
+   "domain": "sensor_performance",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "synthetic draws only; no acquisition",
+   "task_id": "T067",
+   "task_statements": []
+  },
+  {
+   "claim": "Real outliers are rare, isolated and of fixed magnitude as in this contamination model",
+   "domain": "sensor_performance",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "synthetic draws only; no acquisition",
+   "task_id": "T068",
+   "task_statements": []
+  },
+  {
+   "claim": "Real sensor dropouts are independent of the state and of the noise, as assumed here",
+   "domain": "sensor_performance",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "synthetic draws only; no acquisition",
+   "task_id": "T069",
+   "task_statements": []
+  },
+  {
+   "claim": "The recovered offset calibrates the clock of a real camera",
+   "domain": "calibration",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "synthetic draws only; no acquisition",
+   "task_id": "T070",
+   "task_statements": []
+  },
+  {
+   "claim": "A 2 degree rotation is the size of a real extrinsic calibration error",
+   "domain": "calibration",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "synthetic draws only; no acquisition",
+   "task_id": "T071",
+   "task_statements": []
+  },
+  {
+   "claim": "The validity interval [0, 60) reflects how long a real camera calibration stays valid",
+   "domain": "calibration",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "synthetic draws only; no acquisition",
+   "task_id": "T072",
+   "task_statements": []
+  },
+  {
+   "claim": "The fused estimate equals the physical state of a real target within its covariance",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "synthetic draws only; no acquisition",
+   "task_id": "T074",
+   "task_statements": []
+  },
+  {
+   "claim": "The declared tracker latency, synchronization and room-to-cell mapping are those of a real tracker installation",
+   "domain": "calibration",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "synthetic draws only; no acquisition",
+   "task_id": "T075",
+   "task_statements": []
+  },
+  {
+   "claim": "The retained log's device and kernel identities identify the producing GPU and code",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "These values are copied from a synthetic fixture log (the hashes are repeated-character placeholders) and CIW checks only their format; a resealed log with other well-formed values is accepted. Nothing identifies real hardware or code.",
+   "task_id": "T077",
+   "task_statements": []
+  },
+  {
+   "claim": "The retained energy logs are real GPU energy measurements",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "The bundled logs declare origin synthetic_fixture and no device was sampled here. Byte retention says nothing about the physical truth of a log.",
+   "task_id": "T078",
+   "task_statements": []
+  },
+  {
+   "claim": "The integer heat field describes physical heat diffusion in a material",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "",
+   "task_id": "T097",
+   "task_statements": []
+  },
+  {
+   "claim": "The relabelled energy log is a physical GPU energy measurement",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "",
+   "task_id": "T100",
+   "task_statements": []
+  },
+  {
+   "claim": "The synthetic energy fixture characterizes real NVML counter accuracy",
+   "domain": "sensor_performance",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "",
+   "task_id": "T100",
+   "task_statements": []
+  },
+  {
+   "claim": "The declared stiffness box contains the stiffness of a real axis",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "",
+   "task_id": "T105",
+   "task_statements": []
+  },
+  {
+   "claim": "The disturbance bound w_bar = 0.5 holds for a physical plant",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "",
+   "task_id": "T112",
+   "task_statements": []
+  },
+  {
+   "claim": "The synthetic residual statistics describe a real encoder's performance",
+   "domain": "sensor_performance",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "",
+   "task_id": "T113",
+   "task_statements": []
+  },
+  {
+   "claim": "The EKF standard error of theta covers the true parameter of a real axis at the stated rate",
+   "domain": "sensor_performance",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "",
+   "task_id": "T113",
+   "task_statements": []
+  },
+  {
+   "claim": "The calibration referenced in the host envelope is valid",
+   "domain": "calibration",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "",
+   "task_id": "T113",
+   "task_statements": []
+  },
+  {
+   "claim": "The placeholder inertia interval contains the real axis inertia",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "",
+   "task_id": "T114",
+   "task_statements": []
+  },
+  {
+   "claim": "Encoder and current-sensor calibrations of the bench are valid",
+   "domain": "calibration",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "",
+   "task_id": "T114",
+   "task_statements": []
+  },
+  {
+   "claim": "Gross CPU package energy (background-inclusive, idle not subtracted) per geodesic trajectory",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "hardware:rapl",
+   "notes": "no rapl-log capture was bound (--capture rapl-log=PATH or CIW_LAB_RAPL_LOG); the lab runner acquires no energy measurement: make one with `python -m ciw.lab.energy_gpu_telemetry rapl-capture` on a Linux host with readable intel-rapl counters (needs hardware:rapl)",
+   "task_id": "T115",
+   "task_statements": []
+  },
+  {
+   "claim": "Idle-subtracted CPU package energy per geodesic trajectory (equal-length idle bracket after the workload)",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "hardware:rapl",
+   "notes": "no rapl-log capture was bound (--capture rapl-log=PATH or CIW_LAB_RAPL_LOG); the lab runner acquires no energy measurement: make one with `python -m ciw.lab.energy_gpu_telemetry rapl-capture` on a Linux host with readable intel-rapl counters (needs hardware:rapl)",
+   "task_id": "T115",
+   "task_statements": []
+  },
+  {
+   "claim": "Gross CPU package energy (background-inclusive, idle not subtracted) per batch of the common Gaussian VI workload (NumPy float64 reference)",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "hardware:rapl",
+   "notes": "no rapl-log capture was bound (--capture rapl-log=PATH or CIW_LAB_RAPL_LOG); the lab runner acquires no energy measurement: make one with `python -m ciw.lab.energy_gpu_telemetry rapl-capture` on a Linux host with readable intel-rapl counters (needs hardware:rapl)",
+   "task_id": "T115",
+   "task_statements": []
+  },
+  {
+   "claim": "Idle-subtracted CPU package energy per batch of the common Gaussian VI workload (NumPy float64 reference)",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "hardware:rapl",
+   "notes": "no rapl-log capture was bound (--capture rapl-log=PATH or CIW_LAB_RAPL_LOG); the lab runner acquires no energy measurement: make one with `python -m ciw.lab.energy_gpu_telemetry rapl-capture` on a Linux host with readable intel-rapl counters (needs hardware:rapl)",
+   "task_id": "T115",
+   "task_statements": []
+  },
+  {
+   "claim": "GPU-domain gross energy per measured batch",
+   "domain": "physical",
+   "failed_probes": [
+    "hardware:nvidia-gpu"
+   ],
+   "needs": "hardware:nvidia-gpu",
+   "notes": "no NVIDIA GPU or NVML in this environment",
+   "task_id": "T116",
+   "task_statements": []
+  },
+  {
+   "claim": "The NVML total-energy counter of the RTX 2080 has a characterized accuracy and resolution",
+   "domain": "sensor_performance",
+   "failed_probes": [
+    "hardware:nvidia-gpu"
+   ],
+   "needs": "reference_instrument",
+   "notes": "NVML declares no accuracy or resolution for this counter and no external power meter was compared; the counter is used uncalibrated",
+   "task_id": "T116",
+   "task_statements": []
+  },
+  {
+   "claim": "The gaussian_vi PTX kernel on the GPU reproduces the NumPy reference bitwise on every replica of the common Gaussian VI workload",
+   "domain": "numerical",
+   "failed_probes": [
+    "hardware:nvidia-gpu",
+    "tool:julia"
+   ],
+   "needs": "execution:hardware:nvidia-gpu",
+   "notes": "no NVIDIA GPU answered the hardware:nvidia-gpu probe in this task; the PTX kernel of the common workload exists (ciw.energy_cuda gaussian_vi), so this comparison runs on a host where the probe succeeds (needs hardware:nvidia-gpu)",
+   "task_id": "T117",
+   "task_statements": []
+  },
+  {
+   "claim": "A Julia implementation of the common Gaussian VI workload agrees with the NumPy reference",
+   "domain": "numerical",
+   "failed_probes": [
+    "hardware:nvidia-gpu",
+    "tool:julia"
+   ],
+   "needs": "implementation",
+   "notes": "implementation missing: no Julia implementation of the common workload exists, so this comparison cannot run on any host; julia is not on PATH here",
+   "task_id": "T117",
+   "task_statements": []
+  },
+  {
+   "claim": "CPU package energy per batch of the common Gaussian VI workload: Rust port and NumPy reference (RAPL, gross and idle-subtracted)",
+   "domain": "physical",
+   "failed_probes": [
+    "hardware:nvidia-gpu",
+    "tool:julia"
+   ],
+   "needs": "hardware:rapl",
+   "notes": "no rapl-log capture was bound (--capture rapl-log=PATH or CIW_LAB_RAPL_LOG); the lab runner acquires no energy measurement: make one with `python -m ciw.lab.energy_gpu_telemetry rapl-capture` on a Linux host with readable intel-rapl counters (needs hardware:rapl)",
+   "task_id": "T117",
+   "task_statements": []
+  },
+  {
+   "claim": "RTX 2080 power draw during the measurement phase (NVML)",
+   "domain": "physical",
+   "failed_probes": [
+    "hardware:nvidia-gpu"
+   ],
+   "needs": "hardware:nvidia-gpu",
+   "notes": "no NVIDIA GPU or NVML in this environment",
+   "task_id": "T118",
+   "task_statements": []
+  },
+  {
+   "claim": "RTX 2080 temperature during the measurement phase (NVML)",
+   "domain": "physical",
+   "failed_probes": [
+    "hardware:nvidia-gpu"
+   ],
+   "needs": "hardware:nvidia-gpu",
+   "notes": "no NVIDIA GPU or NVML in this environment",
+   "task_id": "T118",
+   "task_statements": []
+  },
+  {
+   "claim": "RTX 2080 graphics clock during the measurement phase (NVML)",
+   "domain": "physical",
+   "failed_probes": [
+    "hardware:nvidia-gpu"
+   ],
+   "needs": "hardware:nvidia-gpu",
+   "notes": "no NVIDIA GPU or NVML in this environment",
+   "task_id": "T118",
+   "task_statements": []
+  },
+  {
+   "claim": "Host-bracketed batch solve duration (launch, sync and copy included)",
+   "domain": "physical",
+   "failed_probes": [
+    "hardware:nvidia-gpu"
+   ],
+   "needs": "hardware:nvidia-gpu",
+   "notes": "no NVIDIA GPU or NVML in this environment",
+   "task_id": "T118",
+   "task_statements": []
+  },
+  {
+   "claim": "RTX 2080 GPU utilization during the measurement phase (nvidia-smi rows inside the measurement window)",
+   "domain": "physical",
+   "failed_probes": [
+    "hardware:nvidia-gpu"
+   ],
+   "needs": "hardware:nvidia-gpu",
+   "notes": "no NVIDIA GPU or NVML in this environment",
+   "task_id": "T118",
+   "task_statements": []
+  },
+  {
+   "claim": "RTX 2080 power draw is steady over the measurement phase (coefficient of variation <= 0.10)",
+   "domain": "physical",
+   "failed_probes": [
+    "hardware:nvidia-gpu"
+   ],
+   "needs": "hardware:nvidia-gpu",
+   "notes": "no NVIDIA GPU or NVML in this environment",
+   "task_id": "T118",
+   "task_statements": []
+  },
+  {
+   "claim": "RTX 2080 temperature drifts by at most 5 C over the measurement phase",
+   "domain": "physical",
+   "failed_probes": [
+    "hardware:nvidia-gpu"
+   ],
+   "needs": "hardware:nvidia-gpu",
+   "notes": "no NVIDIA GPU or NVML in this environment",
+   "task_id": "T118",
+   "task_statements": []
+  },
+  {
+   "claim": "RTX 2080 kernel-only duration of the Gaussian VI kernel",
+   "domain": "physical",
+   "failed_probes": [
+    "hardware:nvidia-gpu"
+   ],
+   "needs": "implementation",
+   "notes": "log.json brackets launch, synchronization and copy; kernel spans need an Nsight Systems report, which this section does not ingest (deferred research question: ingest `nsys stats --report cuda_gpu_kern_sum` output)",
+   "task_id": "T118",
+   "task_statements": []
+  },
+  {
+   "claim": "Physical GPU energy per accepted numerical result",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "hardware:nvidia-gpu",
+   "notes": "no operator NVML log was supplied (--capture energy-log=PATH or CIW_LAB_ENERGY_LOG); the repository fixtures are synthetic, so no physical energy per accepted result was measured",
+   "task_id": "T119",
+   "task_statements": []
+  },
+  {
+   "claim": "CPU package energy per batch of the common Gaussian VI workload in float32 and in float64 (NumPy reference, RAPL, gross and idle-subtracted)",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "hardware:rapl",
+   "notes": "no rapl-log capture was bound (--capture rapl-log=PATH or CIW_LAB_RAPL_LOG); the lab runner acquires no energy measurement: make one with `python -m ciw.lab.energy_gpu_telemetry rapl-capture` on a Linux host with readable intel-rapl counters (needs hardware:rapl)",
+   "task_id": "T120",
+   "task_statements": []
+  },
+  {
+   "claim": "GPU energy per batch of a float32 build of the common Gaussian VI workload",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "implementation",
+   "notes": "implementation missing: no float32 implementation of the gaussian_vi PTX kernel exists (ciw.energy_cuda is binary64 only, and `ciw energy record` captures only it), so a float32 GPU workload cannot run on any host; Deferred research question: extend the common workload's GPU path beyond the binary64 gaussian_vi PTX kernel of ciw.energy_cuda: a float32 rendering of the same kernel, and a device-wide reduction of its per-replica outputs (a fixed tree over the stored order per T148's REDUCTION_POLICY, plus one atomicAdd variant), each compared with the NumPy reference by compare_outputs on the RTX 2080 host and captured with `ciw energy record` for energy; until then those claims stay not_established on every host",
+   "task_id": "T120",
+   "task_statements": []
+  },
+  {
+   "claim": "The gaussian_vi PTX kernel keeps the declared unfused order of its in-kernel reductions on the GPU: its outputs equal the NumPy reference bitwise",
+   "domain": "numerical",
+   "failed_probes": [
+    "hardware:nvidia-gpu"
+   ],
+   "needs": "execution:hardware:nvidia-gpu",
+   "notes": "no NVIDIA GPU answered the hardware:nvidia-gpu probe in this task; the PTX kernel of the common workload exists (ciw.energy_cuda gaussian_vi), so this comparison runs on a host where the probe succeeds (needs hardware:nvidia-gpu)",
+   "task_id": "T121",
+   "task_statements": []
+  },
+  {
+   "claim": "A device-wide reduction of the common workload's per-replica outputs on the RTX 2080 (a fixed tree per T148's policy, and atomicAdd) reproduces the emulated order spreads and sign flips",
+   "domain": "numerical",
+   "failed_probes": [
+    "hardware:nvidia-gpu"
+   ],
+   "needs": "implementation",
+   "notes": "implementation missing: no PTX device reduction kernel exists (the gaussian_vi kernel reduces nothing across replicas), so this comparison cannot run on any host; Deferred research question: extend the common workload's GPU path beyond the binary64 gaussian_vi PTX kernel of ciw.energy_cuda: a float32 rendering of the same kernel, and a device-wide reduction of its per-replica outputs (a fixed tree over the stored order per T148's REDUCTION_POLICY, plus one atomicAdd variant), each compared with the NumPy reference by compare_outputs on the RTX 2080 host and captured with `ciw energy record` for energy; until then those claims stay not_established on every host",
+   "task_id": "T121",
+   "task_statements": []
+  },
+  {
+   "claim": "The variational free energy of this model equals a thermodynamic free energy of a physical system",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "the model is a normalized, dimensionless inference problem; no physical system or temperature is declared",
+   "task_id": "T122",
+   "task_statements": []
+  },
+  {
+   "claim": "A decrease of variational free energy corresponds to a decrease of physical energy consumed by the computation",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "relating nats to joules needs a declared physical system and temperature (for example k_B T per nat) and a measured device",
+   "task_id": "T123",
+   "task_statements": []
+  },
+  {
+   "claim": "The fixtures' counter readings were produced by a physical GPU and NVML counter",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "fixture_origin",
+   "notes": "the fixtures declare origin synthetic_fixture and carry placeholder library and executable digests",
+   "task_id": "T124",
+   "task_statements": []
+  },
+  {
+   "claim": "The bound operator log names an NVML device present on this analyzing host (UUID, name, driver, NVML version and NVML library digest equal this host's; the capture is unauthenticated)",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "hardware:nvidia-gpu",
+   "notes": "no operator NVML log was bound (--capture energy-log=PATH or CIW_LAB_ENERGY_LOG)",
+   "task_id": "T124",
+   "task_statements": []
+  },
+  {
+   "claim": "Replayed energy values are physically valid measurements",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "replay recomputes the same retained synthetic readings; it acquires nothing",
+   "task_id": "T125",
+   "task_statements": []
+  },
+  {
+   "claim": "Measured marker chords on the physical plate equal the predicted geodesic distances within instrument uncertainty",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "",
+   "task_id": "T126",
+   "task_statements": []
+  },
+  {
+   "claim": "The declared instrument uncertainties (camera 0.02 mm, tracker 0.015 mm, CMM 0.002 mm) hold for the instruments that will be used",
+   "domain": "calibration",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "",
+   "task_id": "T126",
+   "task_statements": []
+  },
+  {
+   "claim": "Measured chords and surface distances on the physical tube match the predicted gaps",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "",
+   "task_id": "T127",
+   "task_statements": []
+  },
+  {
+   "claim": "The physical tube radius and roundness lie within the declared +/- 0.1 mm",
+   "domain": "calibration",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "",
+   "task_id": "T127",
+   "task_statements": []
+  },
+  {
+   "claim": "The unrolled-film gauge achieves the declared 0.05 mm on marker-to-marker surface distances",
+   "domain": "calibration",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "",
+   "task_id": "T127",
+   "task_statements": []
+  },
+  {
+   "claim": "Measured separations of offset routes on the physical coupon follow the Jacobi prediction and cross at the predicted focal point",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "",
+   "task_id": "T128",
+   "task_statements": []
+  },
+  {
+   "claim": "The formed coupon matches the declared dome (height 10 mm, sigma 20 mm) within tolerance",
+   "domain": "calibration",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "",
+   "task_id": "T128",
+   "task_statements": []
+  },
+  {
+   "claim": "An unsteered 3 mm tape laid on the coupon follows a geodesic of the as-built surface (no in-plane bending, lift-off or slip)",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "",
+   "task_id": "T128",
+   "task_statements": []
+  },
+  {
+   "claim": "The start jig realizes the relative start pose of the offset tape within the declared 0.05 mm and 0.5 mrad of its insert and the laying and 0.01 mm and 0.1 mrad per seating of the jig",
+   "domain": "calibration",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "",
+   "task_id": "T128",
+   "task_statements": []
+  },
+  {
+   "claim": "A real laser line scanner achieves the declared 0.01 mm point noise on the coupon surface (finish, incidence angle, speckle)",
+   "domain": "sensor_performance",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "",
+   "task_id": "T129",
+   "task_statements": []
+  },
+  {
+   "claim": "The formed coupon passes the Gaussian model test and its fitted height and width lie within the declared forming tolerances",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "",
+   "task_id": "T129",
+   "task_statements": []
+  },
+  {
+   "claim": "The declared scanner scale (20 ppm) and target registration uncertainties hold for the scan",
+   "domain": "calibration",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "",
+   "task_id": "T129",
+   "task_statements": []
+  },
+  {
+   "claim": "The physical gauge sphere, step gauge and scale bar have their certified dimensions, and the lab frame chain has the declared covariances",
+   "domain": "calibration",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "",
+   "task_id": "T130",
+   "task_statements": []
+  },
+  {
+   "claim": "The real gage (instrument, fixture and operators) has %GRR below 10% on the coupon features",
+   "domain": "sensor_performance",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "",
+   "task_id": "T131",
+   "task_statements": []
+  },
+  {
+   "claim": "Tows placed by a real AFP head follow the programmed course within the stack, with gaps and overlaps inside 0.5 mm",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "",
+   "task_id": "T132",
+   "task_statements": []
+  },
+  {
+   "claim": "The declared 635 mm minimum steering radius avoids tow wrinkling for the placed material",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "",
+   "task_id": "T132",
+   "task_statements": []
+  },
+  {
+   "claim": "Fibre does not slip on a real mandrel wherever abs(kappa_g / kappa_n) <= 0.2 (the friction coefficient is declared, not measured)",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "",
+   "task_id": "T133",
+   "task_statements": []
+  },
+  {
+   "claim": "The torch or gun on a real cell stays within the predicted lateral and standoff band",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "",
+   "task_id": "T134",
+   "task_statements": []
+  },
+  {
+   "claim": "The real scanner footprint is a 20 mm swath on this surface at the planned standoff",
+   "domain": "sensor_performance",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "",
+   "task_id": "T135",
+   "task_statements": []
+  },
+  {
+   "claim": "The robot, fixture and frame calibration achieves the required heading and lateral tolerances",
+   "domain": "calibration",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "",
+   "task_id": "T136",
+   "task_statements": []
+  },
+  {
+   "claim": "Physical paths near a predicted focus show the predicted loss of lateral-error ordering",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "",
+   "task_id": "T137",
+   "task_statements": []
+  },
+  {
+   "claim": "Measured separation on the coupon agrees with the prediction (E_n <= 1 at every station)",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "",
+   "task_id": "T138",
+   "task_statements": []
+  },
+  {
+   "claim": "The start jig realizes the relative start pose of the offset tape within the declared 0.05 mm and 0.5 mrad of its insert and the laying and 0.01 mm and 0.1 mrad per seating of the jig",
+   "domain": "calibration",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "",
+   "task_id": "T138",
+   "task_statements": []
+  },
+  {
+   "claim": "A real measurement with raw bytes, calibration and frame metadata has been retained",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "",
+   "task_id": "T139",
+   "task_statements": []
+  },
+  {
+   "claim": "The declared instrument uncertainties are the uncertainties of the instruments used",
+   "domain": "calibration",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "",
+   "task_id": "T140",
+   "task_statements": []
+  },
+  {
+   "claim": "The start jig realizes the relative start pose of the offset tape within the declared 0.05 mm and 0.5 mrad of its insert and the laying and 0.01 mm and 0.1 mrad per seating of the jig",
+   "domain": "calibration",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "",
+   "task_id": "T140",
+   "task_statements": []
+  },
+  {
+   "claim": "The budget contains every significant physical error source (thermal, fixturing, tape bending along the route, target centring)",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "",
+   "task_id": "T140",
+   "task_statements": []
+  },
+  {
+   "claim": "Vendor camera SDK acquisition meets its timing on real cameras",
+   "domain": "sensor_performance",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "",
+   "task_id": "T143",
+   "task_statements": []
+  },
+  {
+   "claim": "Julia environment pinned and exercised through the CIW to SCR boundary",
+   "domain": "computational_pipeline",
+   "failed_probes": [
+    "tool:julia"
+   ],
+   "needs": "implementation",
+   "notes": "This task has no Julia execution path: it records the pin procedure and probes for julia only, so provisioning Julia changes no finding until a Julia worker behind the SCR boundary and a dispatch path from this task exist",
+   "task_id": "T145",
+   "task_statements": []
+  },
+  {
+   "claim": "Byte-identical canonical JSON holds for Julia, C++ and GPU-host implementations",
+   "domain": "computational_pipeline",
+   "failed_probes": [],
+   "needs": "implementation",
+   "notes": "",
+   "task_id": "T146",
+   "task_statements": [
+    "Julia, C++ and GPU-host encoders were not run"
+   ]
+  },
+  {
+   "claim": "CPU and GPU outputs of the common Gaussian VI workload agree under T148's policy for fixed-order reductions (bitwise) on GPU hardware",
+   "domain": "numerical",
+   "failed_probes": [
+    "hardware:nvidia-gpu"
+   ],
+   "needs": "execution:hardware:nvidia-gpu",
+   "notes": "no NVIDIA GPU answered the hardware:nvidia-gpu probe in this task; the PTX kernel of the common workload exists (ciw.energy_cuda gaussian_vi), so this comparison runs on a host where the probe succeeds (needs hardware:nvidia-gpu)",
+   "task_id": "T147",
+   "task_statements": []
+  },
+  {
+   "claim": "The frame format works on real FPGA links",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "",
+   "task_id": "T149",
+   "task_statements": []
+  },
+  {
+   "claim": "A real bitstream with this identity exists and is loaded on hardware",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "",
+   "task_id": "T150",
+   "task_statements": []
+  },
+  {
+   "claim": "Simulated loss, latency and staleness represent the real FPGA telemetry link",
+   "domain": "physical",
+   "failed_probes": [],
+   "needs": "no_probe",
+   "notes": "",
+   "task_id": "T152",
+   "task_statements": []
+  }
+ ],
+ "open_items": [
+  {
+   "closes_it": "a signing key held outside the workspace and signatures over workspace records, receipts, operator captures and the release digest (a queue extension; content identities and seals are unkeyed hashes)",
+   "item": "Key custody and signatures",
+   "key": "key-custody",
+   "owning_task": null,
+   "statements": [
+    {
+     "kind": "next step",
+     "phrase": "trust anchor",
+     "task_id": "T005",
+     "text": "Deferred research question (hardware-gated): measure the separation law on real neighbouring trajectories (for example two tracked markers on great circles of a sphere and on a saddle, with a calibrated position sensor) and compare the measured separation with eps j(s) within the sensor's calibrated uncertainty. Route: T005 would read the tracker export as an operator capture (ctx.capture('trajectory-log'), bound with ciw lab run T005 --capture trajectory-log=PATH) and fit the separation from it as a computational finding; the physical finding needs, besides an acquisition record (device, raw_sha256 of the captured bytes, acquired_at, calibration), a probe of the tracker on the analysing host that succeeds in T005 (runner.CAPTURE_INSTRUMENTS has no entry for trajectory-log) or a signed-capture trust anchor, and the run is retained with ciw lab hardware retain under lab/hardware/<run-id>. Neither the capture reader nor a tracker probe exists, so the physical-domain finding stays not_established even when such data exist"
+    },
+    {
+     "kind": "next step",
+     "phrase": "trust anchor",
+     "task_id": "T043",
+     "text": "Deferred research question: re-trace the geodesic per Monte Carlo sample past the strip-dependent corridor threshold, where the fixed-strip distance stops being the geodesic distance, and propagate a correlated, anisotropic vertex covariance and independently measured normals. A realistic scanner covariance needs acquired scan data (hardware-gated). Route: T043 would read the scan export as an operator capture (ctx.capture('scan-export'), bound with ciw lab run T043 --capture scan-export=PATH) and fit the covariance from it as a computational finding; a scanner claim needs, besides an acquisition record (device, raw_sha256 of the captured bytes, acquired_at, calibration), a probe of the scanner on the analysing host that succeeds in T043 (runner.CAPTURE_INSTRUMENTS has no entry for scan-export) or a signed-capture trust anchor, and the run is retained with ciw lab hardware retain under lab/hardware/<run-id>. Neither the capture reader nor a scanner probe exists, so T043's scanner claims stay not_established even when such data exist."
+    },
+    {
+     "kind": "next step",
+     "phrase": "authenticat",
+     "task_id": "T045",
+     "text": "Deferred research question: a mesh-reconstruction conversion that fills geometry_m2 = sigma_vertex^2 |grad d|^2 from T043's linearized vertex-noise gain (valid only while the unfolded segment stays in its face corridor), checked against T044's nested Monte Carlo, so a reconstructed_surface_distance derived from a scanned mesh carries the same split as one derived from a parametric model. A physical check of the split needs paired chord and tape readings. The runner can retain their raw export as an operator capture (ciw lab run --capture ROLE=PATH), but no section-4 task reads a capture or parses a camera, tracker or tape export, so a capture parser for chord and tape readings is missing; and a capture is unauthenticated, so without an instrument probe or a signed-capture trust anchor for these roles its physical findings stay not_established. No hardware_measured observation exists."
+    },
+    {
+     "kind": "assumption",
+     "phrase": "key custody",
+     "task_id": "T077",
+     "text": "Deferred research question (key custody and signatures): which key signs CIW workspace records, replay receipts and execution records, who holds it, how is it provisioned, rotated and revoked, and how does a verifier obtain its public key? Every seal and identity on these paths is an unkeyed SHA-256, so 'Retained workspace records are authenticated' stays not_established until records are signed (for example Ed25519 over the canonical record bytes, with an RFC 3161 timestamp for created_at) and T077 and T080-T090 are re-run against the signed records to check that every surviving forgery is refused."
+    },
+    {
+     "kind": "finding",
+     "phrase": "authenticat",
+     "task_id": "T077",
+     "text": "Retained workspace records are authenticated: a holder without a secret cannot produce a forged record that reopens"
+    },
+    {
+     "kind": "assumption",
+     "phrase": "key custody",
+     "task_id": "T078",
+     "text": "Deferred research question (key custody and signatures): which key signs CIW workspace records, replay receipts and execution records, who holds it, how is it provisioned, rotated and revoked, and how does a verifier obtain its public key? Every seal and identity on these paths is an unkeyed SHA-256, so 'Retained workspace records are authenticated' stays not_established until records are signed (for example Ed25519 over the canonical record bytes, with an RFC 3161 timestamp for created_at) and T077 and T080-T090 are re-run against the signed records to check that every surviving forgery is refused."
+    },
+    {
+     "kind": "assumption",
+     "phrase": "key custody",
+     "task_id": "T080",
+     "text": "Deferred research question (key custody and signatures): which key signs CIW workspace records, replay receipts and execution records, who holds it, how is it provisioned, rotated and revoked, and how does a verifier obtain its public key? Every seal and identity on these paths is an unkeyed SHA-256, so 'Retained workspace records are authenticated' stays not_established until records are signed (for example Ed25519 over the canonical record bytes, with an RFC 3161 timestamp for created_at) and T077 and T080-T090 are re-run against the signed records to check that every surviving forgery is refused."
+    },
+    {
+     "kind": "finding",
+     "phrase": "authenticat",
+     "task_id": "T080",
+     "text": "Retained workspace records are authenticated: a holder without a secret cannot produce a forged record that reopens"
+    },
+    {
+     "kind": "assumption",
+     "phrase": "key custody",
+     "task_id": "T081",
+     "text": "Deferred research question (key custody and signatures): which key signs CIW workspace records, replay receipts and execution records, who holds it, how is it provisioned, rotated and revoked, and how does a verifier obtain its public key? Every seal and identity on these paths is an unkeyed SHA-256, so 'Retained workspace records are authenticated' stays not_established until records are signed (for example Ed25519 over the canonical record bytes, with an RFC 3161 timestamp for created_at) and T077 and T080-T090 are re-run against the signed records to check that every surviving forgery is refused."
+    },
+    {
+     "kind": "finding",
+     "phrase": "authenticat",
+     "task_id": "T081",
+     "text": "Retained workspace records are authenticated: a holder without a secret cannot produce a forged record that reopens"
+    },
+    {
+     "kind": "assumption",
+     "phrase": "key custody",
+     "task_id": "T082",
+     "text": "Deferred research question (key custody and signatures): which key signs CIW workspace records, replay receipts and execution records, who holds it, how is it provisioned, rotated and revoked, and how does a verifier obtain its public key? Every seal and identity on these paths is an unkeyed SHA-256, so 'Retained workspace records are authenticated' stays not_established until records are signed (for example Ed25519 over the canonical record bytes, with an RFC 3161 timestamp for created_at) and T077 and T080-T090 are re-run against the signed records to check that every surviving forgery is refused."
+    },
+    {
+     "kind": "next step",
+     "phrase": "keyed",
+     "task_id": "T082",
+     "text": "Deferred research question (CIW change): keyed or externally timestamped execution records (for example an RFC 3161 timestamp over the execution record digest) so that created_at carries evidential weight, and a registry of occurrences across workspaces so that two workspaces reusing one occurrence identity are detected."
+    },
+    {
+     "kind": "finding",
+     "phrase": "authenticat",
+     "task_id": "T082",
+     "text": "Retained workspace records are authenticated: a holder without a secret cannot produce a forged record that reopens"
+    },
+    {
+     "kind": "assumption",
+     "phrase": "key custody",
+     "task_id": "T083",
+     "text": "Deferred research question (key custody and signatures): which key signs CIW workspace records, replay receipts and execution records, who holds it, how is it provisioned, rotated and revoked, and how does a verifier obtain its public key? Every seal and identity on these paths is an unkeyed SHA-256, so 'Retained workspace records are authenticated' stays not_established until records are signed (for example Ed25519 over the canonical record bytes, with an RFC 3161 timestamp for created_at) and T077 and T080-T090 are re-run against the signed records to check that every surviving forgery is refused."
+    },
+    {
+     "kind": "next step",
+     "phrase": "sign receipts",
+     "task_id": "T083",
+     "text": "Deferred research question (CIW change): bind replay receipts into the replay bundle identity or a catalog-level seal so that an accidental deletion is detected, and sign receipts at replay time with a host-held key under a defined key custody so that the retained fabricated sibling receipt (B0b) and a transplanted receipt are refused."
+    },
+    {
+     "kind": "finding",
+     "phrase": "authenticat",
+     "task_id": "T083",
+     "text": "Retained workspace records are authenticated: a holder without a secret cannot produce a forged record that reopens"
+    },
+    {
+     "kind": "assumption",
+     "phrase": "key custody",
+     "task_id": "T084",
+     "text": "Deferred research question (key custody and signatures): which key signs CIW workspace records, replay receipts and execution records, who holds it, how is it provisioned, rotated and revoked, and how does a verifier obtain its public key? Every seal and identity on these paths is an unkeyed SHA-256, so 'Retained workspace records are authenticated' stays not_established until records are signed (for example Ed25519 over the canonical record bytes, with an RFC 3161 timestamp for created_at) and T077 and T080-T090 are re-run against the signed records to check that every surviving forgery is refused."
+    },
+    {
+     "kind": "next step",
+     "phrase": "key custody",
+     "task_id": "T084",
+     "text": "Deferred research question (CIW change): bind each replay receipt to the source execution's own identity as well as its bytes, or sign it under a defined key custody, and re-run these mutations to check that receipt-source.sibling-execution is refused while every killed mutant keeps its pinned message."
+    },
+    {
+     "kind": "finding",
+     "phrase": "authenticat",
+     "task_id": "T084",
+     "text": "Retained workspace records are authenticated: a holder without a secret cannot produce a forged record that reopens"
+    },
+    {
+     "kind": "assumption",
+     "phrase": "key custody",
+     "task_id": "T085",
+     "text": "Deferred research question (key custody and signatures): which key signs CIW workspace records, replay receipts and execution records, who holds it, how is it provisioned, rotated and revoked, and how does a verifier obtain its public key? Every seal and identity on these paths is an unkeyed SHA-256, so 'Retained workspace records are authenticated' stays not_established until records are signed (for example Ed25519 over the canonical record bytes, with an RFC 3161 timestamp for created_at) and T077 and T080-T090 are re-run against the signed records to check that every surviving forgery is refused."
+    },
+    {
+     "kind": "finding",
+     "phrase": "authenticat",
+     "task_id": "T085",
+     "text": "Retained workspace records are authenticated: a holder without a secret cannot produce a forged record that reopens"
+    },
+    {
+     "kind": "assumption",
+     "phrase": "key custody",
+     "task_id": "T086",
+     "text": "Deferred research question (key custody and signatures): which key signs CIW workspace records, replay receipts and execution records, who holds it, how is it provisioned, rotated and revoked, and how does a verifier obtain its public key? Every seal and identity on these paths is an unkeyed SHA-256, so 'Retained workspace records are authenticated' stays not_established until records are signed (for example Ed25519 over the canonical record bytes, with an RFC 3161 timestamp for created_at) and T077 and T080-T090 are re-run against the signed records to check that every surviving forgery is refused."
+    },
+    {
+     "kind": "finding",
+     "phrase": "authenticat",
+     "task_id": "T086",
+     "text": "Retained workspace records are authenticated: a holder without a secret cannot produce a forged record that reopens"
+    },
+    {
+     "kind": "assumption",
+     "phrase": "key custody",
+     "task_id": "T087",
+     "text": "Deferred research question (key custody and signatures): which key signs CIW workspace records, replay receipts and execution records, who holds it, how is it provisioned, rotated and revoked, and how does a verifier obtain its public key? Every seal and identity on these paths is an unkeyed SHA-256, so 'Retained workspace records are authenticated' stays not_established until records are signed (for example Ed25519 over the canonical record bytes, with an RFC 3161 timestamp for created_at) and T077 and T080-T090 are re-run against the signed records to check that every surviving forgery is refused."
+    },
+    {
+     "kind": "finding",
+     "phrase": "authenticat",
+     "task_id": "T087",
+     "text": "Retained workspace records are authenticated: a holder without a secret cannot produce a forged record that reopens"
+    },
+    {
+     "kind": "assumption",
+     "phrase": "key custody",
+     "task_id": "T088",
+     "text": "Deferred research question (key custody and signatures): which key signs CIW workspace records, replay receipts and execution records, who holds it, how is it provisioned, rotated and revoked, and how does a verifier obtain its public key? Every seal and identity on these paths is an unkeyed SHA-256, so 'Retained workspace records are authenticated' stays not_established until records are signed (for example Ed25519 over the canonical record bytes, with an RFC 3161 timestamp for created_at) and T077 and T080-T090 are re-run against the signed records to check that every surviving forgery is refused."
+    },
+    {
+     "kind": "next step",
+     "phrase": "authenticat",
+     "task_id": "T088",
+     "text": "Deferred research question: run exchange inspection through inspect_exchange with the pinned State Estimation Evaluation Testbed validator (the set provider, CIW_SET_REPO), which the pure exchange._identity rows here do not reach, and check whether a recomputed artifact claiming independent: true is still accepted as content_recomputed_not_authenticated."
+    },
+    {
+     "kind": "finding",
+     "phrase": "authenticat",
+     "task_id": "T088",
+     "text": "Retained workspace records are authenticated: a holder without a secret cannot produce a forged record that reopens"
+    },
+    {
+     "kind": "assumption",
+     "phrase": "key custody",
+     "task_id": "T089",
+     "text": "Deferred research question (key custody and signatures): which key signs CIW workspace records, replay receipts and execution records, who holds it, how is it provisioned, rotated and revoked, and how does a verifier obtain its public key? Every seal and identity on these paths is an unkeyed SHA-256, so 'Retained workspace records are authenticated' stays not_established until records are signed (for example Ed25519 over the canonical record bytes, with an RFC 3161 timestamp for created_at) and T077 and T080-T090 are re-run against the signed records to check that every surviving forgery is refused."
+    },
+    {
+     "kind": "next step",
+     "phrase": "key custody",
+     "task_id": "T089",
+     "text": "Deferred research question: define a signed admission authorization record (signer, key custody, scope of the admitted result) that CIW would require before any state_admission other than not_performed, and re-run to check that oscillator-admission.injected is refused (admission itself stays an authority decision, a production_acceptance claim never established here)."
+    },
+    {
+     "kind": "finding",
+     "phrase": "authenticat",
+     "task_id": "T089",
+     "text": "Retained workspace records are authenticated: a holder without a secret cannot produce a forged record that reopens"
+    },
+    {
+     "kind": "assumption",
+     "phrase": "key custody",
+     "task_id": "T090",
+     "text": "Deferred research question (key custody and signatures): which key signs CIW workspace records, replay receipts and execution records, who holds it, how is it provisioned, rotated and revoked, and how does a verifier obtain its public key? Every seal and identity on these paths is an unkeyed SHA-256, so 'Retained workspace records are authenticated' stays not_established until records are signed (for example Ed25519 over the canonical record bytes, with an RFC 3161 timestamp for created_at) and T077 and T080-T090 are re-run against the signed records to check that every surviving forgery is refused."
+    },
+    {
+     "kind": "finding",
+     "phrase": "authenticat",
+     "task_id": "T090",
+     "text": "Retained workspace records are authenticated: a holder without a secret cannot produce a forged record that reopens"
+    },
+    {
+     "kind": "next step",
+     "phrase": "authenticat",
+     "task_id": "T098",
+     "text": "Deferred research question: authenticate what the digests only identify, by verifying signed upstream commits or tags of each bound checkout against its maintainers' published keys and recording digests of the Rust and Python toolchains, since a matching HEAD, tree and lock digest is not authentication; and settle why CIW pins two SCR revisions (a59aba2 for declared-workload and proved-heat, 5f04097 for the exchange workflow) and several SET revisions, converging them or recording each workflow's reason."
+    },
+    {
+     "kind": "finding",
+     "phrase": "authenticat",
+     "task_id": "T098",
+     "text": "A matching HEAD, tree and lock digest authenticates the upstream repository, toolchain and built engine"
+    },
+    {
+     "kind": "assumption",
+     "phrase": "authenticat",
+     "task_id": "T100",
+     "text": "The Basis column shows the components and identities a finding declares; they are as recorded, not authenticated (a generator name or provider repository is text in the basis)."
+    },
+    {
+     "kind": "next step",
+     "phrase": "key custody",
+     "task_id": "T100",
+     "text": "Deferred research question (CIW change): key the workspace seals, or have the provider sign its runtime identity at execution under a defined key custody, so that a bundle copying CIW's public pins (the retained copied-pin counterexample) is refused or classified not_established; compare a retained runtime identity with CIW's pins on reopen (Session.from_workspace), as ciw lab classify does; record in CIW's pin tables the source tree of every pinned revision that has none (the kinds ciw.lab.bridge.pins_without_tree lists, such as telemetry and calibrated-observable), so that the invented-tree check reaches them; and authenticate energy-log origin at acquisition, outside the workbench, so that a resealed relabel under a fresh occurrence is detected."
+    },
+    {
+     "kind": "next step",
+     "phrase": "trust anchor",
+     "task_id": "T113",
+     "text": "Deferred research question (hardware-gated): bind the residual adapter to acquired encoder data and check the coverage of its three-standard-error interval there, which synthetic EKF data cannot establish (a sensor_performance claim). Route: T113 would read the encoder log as an operator capture (ctx.capture('encoder-log'), bound with ciw lab run T113 --capture encoder-log=PATH) and run the residual adapter on it as a computational finding; its sensor_performance and calibration findings need, besides an acquisition record (device, raw_sha256 of the captured bytes, acquired_at, calibration), a probe of the encoder on the analysing host that succeeds in T113 (runner.CAPTURE_INSTRUMENTS has no entry for encoder-log) or a signed-capture trust anchor, and the run is retained with ciw lab hardware retain under lab/hardware/<run-id>. Neither the capture reader nor a probe of the encoder exists, so they stay not_established even when such data exist."
+    },
+    {
+     "kind": "next step",
+     "phrase": "trust anchor",
+     "task_id": "T114",
+     "text": "Deferred research question (hardware-gated): identify J, friction and delay on the bench, replace the placeholder interval, re-run this check with an affine over-approximation suitable for PLSR's box semantics, then run T113's adapter on acquired encoder data. Route: T114 would read the servo bench log as an operator capture (ctx.capture('servo-bench-log'), bound with ciw lab run T114 --capture servo-bench-log=PATH) and identify the J, friction and delay interval from it as a computational finding; its physical and calibration findings need, besides an acquisition record (device, raw_sha256 of the captured bytes, acquired_at, calibration), a probe of the bench instrument on the analysing host that succeeds in T114 (runner.CAPTURE_INSTRUMENTS has no entry for servo-bench-log) or a signed-capture trust anchor, and the run is retained with ciw lab hardware retain under lab/hardware/<run-id>. Neither the capture reader nor a probe of the bench instrument exists, so they stay not_established even when such data exist."
+    },
+    {
+     "kind": "assumption",
+     "phrase": "authenticat",
+     "task_id": "T116",
+     "text": "An operator log is an unauthenticated record; the gate binds it to this host's NVML identity but cannot prove the capture genuine"
+    },
+    {
+     "kind": "assumption",
+     "phrase": "authenticat",
+     "task_id": "T119",
+     "text": "An operator log is an unauthenticated record; the gate binds it to this host's NVML identity but cannot prove the capture genuine"
+    },
+    {
+     "kind": "assumption",
+     "phrase": "signature",
+     "task_id": "T124",
+     "text": "Sealing is integrity, not authenticity: no signature binds a log to the device"
+    },
+    {
+     "kind": "assumption",
+     "phrase": "authenticat",
+     "task_id": "T124",
+     "text": "A real device's identity is bound only by the acquisition gate on the GPU host: the gate binds a log to that host's NVML identity, it does not authenticate the capture"
+    },
+    {
+     "kind": "assumption",
+     "phrase": "signed capture",
+     "task_id": "T124",
+     "text": "Deferred research question: a signed capture that binds a log's readings to the device (no signature scheme exists)"
+    },
+    {
+     "kind": "next step",
+     "phrase": "signed capture",
+     "task_id": "T124",
+     "text": "Retain the first RTX 2080 log with its device and runtime identity through the acquisition gate on the RTX 2080 host (protocol in docs/lab/ENERGY_GPU.md): `mkdir -p runs/rtx2080-<date>`; `ciw energy probe --gpu-index 0` must return a reading with status ok; start `TZ=UTC nvidia-smi --query-gpu=timestamp,uuid,name,utilization.gpu,utilization.memory,temperature.gpu,power.draw,clocks.sm,clocks.mem,pstate --format=csv,nounits -lms 100 -f runs/rtx2080-<date>/smi.csv` in the background; `ciw energy record --problem examples/energy-accuracy/problem.json --output-dir runs/rtx2080-<date>/capture --duration 10 --replicas 4096 --warmup-batches 2 --idle-duration 2 --gpu-index 0`; stop the sidecar; `ciw energy replay runs/rtx2080-<date>/capture/log.json`; then `CIW_LAB_NVIDIA_SMI_UTC_OFFSET=+00:00 ciw lab run T116 T117 T118 T119 T120 T121 T124 T147 --capture energy-log=runs/rtx2080-<date>/capture/log.json --capture nvidia-smi-csv=runs/rtx2080-<date>/smi.csv --output-dir results/rtx2080-<date>` on the same host and `ciw lab hardware retain results/rtx2080-<date> --retained lab --run-id rtx2080-<date> --host \"<RTX 2080 host>\"`. Deferred research question: a signed capture that binds a log's readings to the device (no signature scheme exists; the gate binds a log only to the host's NVML identity)"
+    },
+    {
+     "kind": "finding",
+     "phrase": "authenticat",
+     "task_id": "T124",
+     "text": "The bound operator log names an NVML device present on this analyzing host (UUID, name, driver, NVML version and NVML library digest equal this host's; the capture is unauthenticated)"
+    },
+    {
+     "kind": "next step",
+     "phrase": "trust anchor",
+     "task_id": "T126",
+     "text": "Acquire MFG-FLAT-PLATE-01 and bind its camera export to T138 (ciw lab run T138 --capture photogrammetry=<targets.csv>, format ciw.lab-mfg-target-capture.v1), then retain the run with ciw lab hardware retain; T138's pair comparison of the captured chords is computational, and a physical label needs a metrology instrument probe or a signed-capture trust anchor (deferred research question). Open: bound the plate flatness effect by measuring it rather than by the declared tolerance."
+    },
+    {
+     "kind": "next step",
+     "phrase": "trust anchor",
+     "task_id": "T127",
+     "text": "Acquire MFG-CYLINDER-01 and bind its exports to T138 (ciw lab run T138 --capture photogrammetry=<targets.csv> --capture film=<film.csv>), then retain the run with ciw lab hardware retain; T138's comparison of the captured gaps and chords is computational, and a physical label needs a metrology instrument probe or a signed-capture trust anchor (deferred research question). Open: model the seam weld and out-of-roundness, which the cylinder prediction omits."
+    },
+    {
+     "kind": "next step",
+     "phrase": "trust anchor",
+     "task_id": "T128",
+     "text": "Acquire MFG-SCAN-01 and MFG-COUPON-01 and bind the station-target and start-pose exports to T138 (ciw lab run T138 --capture photogrammetry=<targets.csv> --capture cmm=<start-pose.csv>), then retain the run with ciw lab hardware retain; the comparison is computational until a metrology instrument probe or a signed-capture trust anchor exists (deferred research question). Open: predict the separation on a surface fitted to the scan when the Gaussian model test rejects the as-built dome, which is not implemented."
+    },
+    {
+     "kind": "assumption",
+     "phrase": "authenticat",
+     "task_id": "T138",
+     "text": "Operator captures are unauthenticated: their origin header and u column are declarations, and no metrology instrument probe exists on any analysing host. Deferred research question: a signed-capture trust anchor (an instrument-held key that signs each export, verified by the workbench) or a hardware:metrology probe of an instrument attached to the analysing host; until one exists, a bound capture yields computational comparisons only and the physical claims stay not_established."
+    },
+    {
+     "kind": "next step",
+     "phrase": "trust anchor",
+     "task_id": "T138",
+     "text": "Deferred research question: define a signed-capture trust anchor (instrument-held signing keys and their verification) or a hardware:metrology probe, without which no capture can support a physical label. Meanwhile acquire MFG-COUPON-01 and bind its exports (ciw lab run T138 --capture photogrammetry=<targets.csv> --capture cmm=<start-pose.csv>), then retain the run with ciw lab hardware retain."
+    },
+    {
+     "kind": "finding",
+     "phrase": "authenticat",
+     "task_id": "T138",
+     "text": "Normalized errors of the bound metrology captures against the prediction of their protocol, computed from their unauthenticated bytes"
+    },
+    {
+     "kind": "assumption",
+     "phrase": "trust anchor",
+     "task_id": "T139",
+     "text": "The validators cannot tell whether raw bytes came from an instrument; the runner also requires a hardware probe in the task that cites them, and no metrology instrument probe or signed-capture trust anchor exists (deferred research question, T138), so a retained record's acquisition fields support no physical label."
+    },
+    {
+     "kind": "next step",
+     "phrase": "trust anchor",
+     "task_id": "T139",
+     "text": "Deferred research question: a signed-capture trust anchor (instrument-held keys that sign each export) or a hardware:metrology probe, without which a retained record supports no physical label. Meanwhile retain the first real acquisition of a control protocol: run ciw lab run T139 --capture retention=<record.json> with its raw files bound under their roles (--capture photogrammetry=<targets.csv> --capture cmm=<start-pose.csv> ...), the record listing each file with its SHA-256, instrument serial, calibration certificate and validity window, frame chain with covariances and clock; then retain the run with ciw lab hardware retain."
+    },
+    {
+     "kind": "finding",
+     "phrase": "authenticat",
+     "task_id": "T139",
+     "text": "A bound retention record validates against the raw bytes bound with it and yields acquisition fields (computational: the bytes are unauthenticated)"
+    },
+    {
+     "kind": "assumption",
+     "phrase": "signature",
+     "task_id": "T153",
+     "text": "Authorization record format and signature scheme are placeholders"
+    },
+    {
+     "kind": "next step",
+     "phrase": "signature",
+     "task_id": "T153",
+     "text": "Deferred research question: enforce that any future write transport is routed through ActuatorWritePolicy (the scan flags a new transport, routing is not enforced), with a real signature scheme for authorization records; enforcement itself belongs in hardware interlocks outside this package"
+    },
+    {
+     "kind": "next step",
+     "phrase": "trust anchor",
+     "task_id": "T160",
+     "text": "Write the parts the lab cannot write (the thesis in the authors' words, the related-work discussion, the interpretation of the counterexamples and the conclusions) and submit the draft for external review; then the unfinished tasks' own next steps (T115: Measure package energy per geodesic trajectory and per common-workload batch on a Linux host with readable intel-rapl counters (docs/lab/ENERGY_GPU.md) …; T116: Measure gross device energy per batch of the common Gaussian VI workload on the RTX 2080 host (protocol in docs/lab/ENERGY_GPU.md), hardware_measured through …; T117: Compare the PTX kernel's outputs with the NumPy reference bit for bit on the RTX 2080 host (protocol in docs/lab/ENERGY_GPU.md): `mkdir -p …; T118: Record power, temperature, clock and utilization of the common workload on the RTX 2080 host (protocol in docs/lab/ENERGY_GPU.md): `mkdir -p …; T119: Measure energy per accepted replica solve of the common Gaussian VI workload on the RTX 2080 host (protocol in docs/lab/ENERGY_GPU.md), through the same …; T120: Measure float32 and float64 package energy per batch of the common workload on a Linux host with readable intel-rapl counters (docs/lab/ENERGY_GPU.md): `python …; T121: Check on the RTX 2080 host (protocol in docs/lab/ENERGY_GPU.md) that the PTX kernel keeps its in-kernel reductions unfused: `mkdir -p runs/rtx2080-<date>` …; T124: Retain the first RTX 2080 log with its device and runtime identity through the acquisition gate on the RTX 2080 host (protocol in docs/lab/ENERGY_GPU.md) …; T138: Deferred research question: define a signed-capture trust anchor (instrument-held signing keys and their verification) or a hardware:metrology probe, without …; T139: Deferred research question: a signed-capture trust anchor (instrument-held keys that sign each export) or a hardware:metrology probe, without which a retained …); 57 physical, calibration or sensor claims of completed tasks (T045, T046, T047, T048, T049, T050, T051, T052, T053, T054, T055, T056, T057, T058, T060, T061, T062, T063, T064, T065, T066, T067, T068, T069, T070, T071, T072, T074, T075, T122, T123, T125, T126, T127, T128, T129, T130, T131, T132, T133, T134, T135, T136, T137, T140) stay not established, and each task's own next step is listed under Outstanding work; 9 authority-domain claims stay not established on any evidence."
+    },
+    {
+     "kind": "next step",
+     "phrase": "Sign the",
+     "task_id": "T165",
+     "text": "Sign the release digest with a project key once key custody is defined (a cross-cutting open item of T166 and T167, owned by no queue task); a whole-run release record, including T165-T168, is computed outside the queue with research_portfolio.release_record over all retained reports."
+    },
+    {
+     "kind": "finding",
+     "phrase": "signed by",
+     "task_id": "T165",
+     "text": "The release digest is signed by a project key"
+    }
+   ],
+   "tasks": [
+    "T005",
+    "T043",
+    "T045",
+    "T077",
+    "T078",
+    "T080",
+    "T081",
+    "T082",
+    "T083",
+    "T084",
+    "T085",
+    "T086",
+    "T087",
+    "T088",
+    "T089",
+    "T090",
+    "T098",
+    "T100",
+    "T113",
+    "T114",
+    "T116",
+    "T119",
+    "T124",
+    "T126",
+    "T127",
+    "T128",
+    "T138",
+    "T139",
+    "T153",
+    "T160",
+    "T165"
+   ]
+  },
+  {
+   "closes_it": "provider checkouts bound to the telemetry and declared-workload workflows (the pins of src/ciw/telemetry-runtimes.json), provisioned for the clean-room run like the other providers",
+   "item": "Telemetry provider provisioning",
+   "key": "telemetry-provisioning",
+   "owning_task": null,
+   "statements": [
+    {
+     "kind": "assumption",
+     "phrase": "telemetry or calibrated",
+     "task_id": "T077",
+     "text": "Partial: ESM candidate_id and candidate execution identities (they need an operator-bound ESM adapter and a telemetry or calibrated bundle) and pinned-provider runtime identities (ciw.subprocess-runtime.v1; they need a provider checkout bound to a declared-workload or telemetry workflow) are planned matrix rows that the offline path cannot exercise; their predictions are read from the code, not observed."
+    },
+    {
+     "kind": "assumption",
+     "phrase": "telemetry workflow",
+     "task_id": "T077",
+     "text": "The ESM rows use a synthetic telemetry-shaped record (schema, digest, three step occurrences), not a telemetry session validated by the telemetry workflow, which needs provider checkouts."
+    },
+    {
+     "kind": "assumption",
+     "phrase": "workflows (telemetry",
+     "task_id": "T077",
+     "text": "Provider-backed workflows (telemetry, declared workloads, proved heat) were not exercised offline; their identity rows are inferred only where they share the energy-accuracy code path."
+    },
+    {
+     "kind": "assumption",
+     "phrase": "telemetry stack",
+     "task_id": "T077",
+     "text": "Deferred research question (telemetry provider stack): provision the telemetry stack pinned in src/ciw/telemetry-runtimes.json (ppda, stfe, gsie, set, cbsr; scripts/check_lab.py provisions only ppda and set of these, and scripts/reproduce_lab.py TEST_VARIABLES has no variable for stfe, gsie or cbsr), bind it to a telemetry or declared-workload workflow, and observe the ESM candidate, candidate execution and ciw.subprocess-runtime.v1 identity rows and telemetry-validated records that are now read from code or replaced by a synthetic telemetry-shaped record."
+    },
+    {
+     "kind": "assumption",
+     "phrase": "telemetry workflow",
+     "task_id": "T086",
+     "text": "Pure-validator rows run candidate_evidence.validate_response on a synthetic telemetry-shaped record (schema, digest, three step occurrences) that no telemetry workflow validated, without an ESM process, and exchange._identity without the pinned exchange validator."
+    },
+    {
+     "kind": "assumption",
+     "phrase": "telemetry stack",
+     "task_id": "T086",
+     "text": "Deferred research question (telemetry provider stack): provision the telemetry stack pinned in src/ciw/telemetry-runtimes.json (ppda, stfe, gsie, set, cbsr; scripts/check_lab.py provisions only ppda and set of these, and scripts/reproduce_lab.py TEST_VARIABLES has no variable for stfe, gsie or cbsr), bind it to a telemetry or declared-workload workflow, and observe the ESM candidate, candidate execution and ciw.subprocess-runtime.v1 identity rows and telemetry-validated records that are now read from code or replaced by a synthetic telemetry-shaped record."
+    },
+    {
+     "kind": "assumption",
+     "phrase": "telemetry workflow",
+     "task_id": "T088",
+     "text": "Pure-validator rows run candidate_evidence.validate_response on a synthetic telemetry-shaped record (schema, digest, three step occurrences) that no telemetry workflow validated, without an ESM process, and exchange._identity without the pinned exchange validator."
+    },
+    {
+     "kind": "assumption",
+     "phrase": "telemetry stack",
+     "task_id": "T088",
+     "text": "Deferred research question (telemetry provider stack): provision the telemetry stack pinned in src/ciw/telemetry-runtimes.json (ppda, stfe, gsie, set, cbsr; scripts/check_lab.py provisions only ppda and set of these, and scripts/reproduce_lab.py TEST_VARIABLES has no variable for stfe, gsie or cbsr), bind it to a telemetry or declared-workload workflow, and observe the ESM candidate, candidate execution and ciw.subprocess-runtime.v1 identity rows and telemetry-validated records that are now read from code or replaced by a synthetic telemetry-shaped record."
+    },
+    {
+     "kind": "assumption",
+     "phrase": "telemetry workflow",
+     "task_id": "T089",
+     "text": "Pure-validator rows run candidate_evidence.validate_response on a synthetic telemetry-shaped record (schema, digest, three step occurrences) that no telemetry workflow validated, without an ESM process."
+    },
+    {
+     "kind": "assumption",
+     "phrase": "telemetry stack",
+     "task_id": "T089",
+     "text": "Deferred research question (telemetry provider stack): provision the telemetry stack pinned in src/ciw/telemetry-runtimes.json (ppda, stfe, gsie, set, cbsr; scripts/check_lab.py provisions only ppda and set of these, and scripts/reproduce_lab.py TEST_VARIABLES has no variable for stfe, gsie or cbsr), bind it to a telemetry or declared-workload workflow, and observe the ESM candidate, candidate execution and ciw.subprocess-runtime.v1 identity rows and telemetry-validated records that are now read from code or replaced by a synthetic telemetry-shaped record."
+    },
+    {
+     "kind": "assumption",
+     "phrase": "declared-workload or telemetry",
+     "task_id": "T090",
+     "text": "Pinned-provider subprocess runtime identities (ciw.subprocess-runtime.v1: pinned revision, module and source_root, host-measured source_tree and python_sha256; src/ciw/declared_workload.py) were not mutated, because no provider checkout was bound to a declared-workload or telemetry workflow; only the CIW-internal oscillator provider identity and CIW's own energy analysis identity were."
+    },
+    {
+     "kind": "assumption",
+     "phrase": "telemetry stack",
+     "task_id": "T090",
+     "text": "Deferred research question (telemetry provider stack): provision the telemetry stack pinned in src/ciw/telemetry-runtimes.json (ppda, stfe, gsie, set, cbsr; scripts/check_lab.py provisions only ppda and set of these, and scripts/reproduce_lab.py TEST_VARIABLES has no variable for stfe, gsie or cbsr), bind it to a telemetry or declared-workload workflow, and observe the ESM candidate, candidate execution and ciw.subprocess-runtime.v1 identity rows and telemetry-validated records that are now read from code or replaced by a synthetic telemetry-shaped record."
+    },
+    {
+     "kind": "next step",
+     "phrase": "declared-workload or telemetry",
+     "task_id": "T090",
+     "text": "Deferred research question: mutate the pinned-provider subprocess runtime identities (ciw.subprocess-runtime.v1) once a provider checkout is bound to a declared-workload or telemetry workflow, and label a retained runtime that differs from the current analysis identity as historical and unverified on reopen (a CIW change), so that energy-runtime.all-bundles and energy-runtime.python-version no longer reopen as current."
+    },
+    {
+     "kind": "assumption",
+     "phrase": "telemetry or calibrated",
+     "task_id": "T092",
+     "text": "No ESM candidate adapter refusal ('No operator-bound ESM candidate adapter') is reached: that path needs a retained telemetry or calibrated-observable bundle, which needs bound providers. The ESM case here is refused for its bundle kind."
+    },
+    {
+     "kind": "next step",
+     "phrase": "telemetry stack",
+     "task_id": "T092",
+     "text": "Deferred research question: observe, rather than infer, replay refusal for the provider kinds other than numerical-heat by retaining a bundle of each from its bound provider (the telemetry stack pinned in src/ciw/telemetry-runtimes.json for telemetry bundles, and the calibrated-observable stack pinned in src/ciw/calibrated-observable-runtimes.json for calibrated-observable bundles, both of which reach the 'No operator-bound ESM candidate adapter' refusal) and replaying it in a reopened unbound session; and add example sources for acquired-calibrated-window, bim-quantity, identified-stability and residual-monitor so that their execution refusal is observed too."
+    },
+    {
+     "kind": "assumption",
+     "phrase": "telemetry stack",
+     "task_id": "T097",
+     "text": "The PPDA telemetry stack (ppda, stfe, gsie, set, cbsr at src/ciw/telemetry-runtimes.json pins) is a separate integration."
+    },
+    {
+     "kind": "next step",
+     "phrase": "telemetry workflow",
+     "task_id": "T097",
+     "text": "Deferred research question: provision the telemetry provider stack (ppda, stfe, gsie, set and cbsr at the src/ciw/telemetry-runtimes.json pins; scripts/check_lab.py provisions only ppda and set of these, at other pins) and drive CIW's telemetry workflow end to end against it, as the exchange roundtrip here does for PPDA, SCR and SET; and attest the SCR engine a bound replay uses (CIW records a bound engine as operator_asserted_not_attested), for example by requiring a locked build of the bound checkout in the same run before a replay is accepted."
+    }
+   ],
+   "tasks": [
+    "T077",
+    "T086",
+    "T088",
+    "T089",
+    "T090",
+    "T092",
+    "T097"
+   ]
+  },
+  {
+   "closes_it": "a non-gating clean-room run on Windows and on another BLAS build or architecture, compared with the retained reports by ciw lab verify, whose differences answer the platform assumptions",
+   "item": "Cross-platform reproduction",
+   "key": "cross-platform",
+   "owning_task": null,
+   "statements": [
+    {
+     "kind": "assumption",
+     "phrase": "cross-platform",
+     "task_id": "T014",
+     "text": "Deferred research question (cross-platform reproduction): run T014 on Windows x86-64 and macOS arm64 besides the retained Linux x86-64 run and check that the two bitwise claims (dyadic truncation and continuation reproduces direct integration; decimal truncation lengths change the step in the last bit) hold bit for bit there and that every other T014 finding value (reversal orders, adaptive return and restart ratios) matches the retained one within its regression tolerance; adaptive step sequences may differ in the last bit between platforms, and no second platform has been compared"
+    },
+    {
+     "kind": "assumption",
+     "phrase": "cross-platform",
+     "task_id": "T081",
+     "text": "Deferred research question (cross-platform reproduction): run T081 on Windows x86-64 and macOS arm64 besides the retained Linux x86-64 run and check that every float-valued numerical_result_id of the energy-accuracy bundles (originals, sibling, replays, replay after reopen, separate session) equals the retained energy_numerical_result_id exactly (kept in T081's numerical-identity.json and in its identity finding's value, which ciw lab verify compares exactly); a mismatch would mean the canonical float serialization or the analysis arithmetic depends on the platform, and no second platform has been compared."
+    },
+    {
+     "kind": "next step",
+     "phrase": "second host",
+     "task_id": "T081",
+     "text": "Deferred research question (CIW change): give oscillator operation results a content-level numerical_result_id so their replays can be linked, recompute statistics (or at least the moment inequalities) on reopen, and repeat the stability test in a separate process on a second host, since the separate session here shares the process and code."
+    },
+    {
+     "kind": "next step",
+     "phrase": "Windows",
+     "task_id": "T094",
+     "text": "Deferred research question: reopen the golden workspaces on a second platform (Windows x86-64, macOS arm64 or another NumPy/LAPACK build) to learn whether the bit-for-bit energy recomputation refuses the energy golden there, as the platform fingerprint in golden.json anticipates; and retain golden workspaces for provider kinds other than numerical-heat, produced by their pinned providers, so that validator drift in those kinds is caught at reopen."
+    },
+    {
+     "kind": "assumption",
+     "phrase": "cross-platform",
+     "task_id": "T101",
+     "text": "Deferred research question (cross-platform reproduction): run T101 and T102 against the pinned PLSR on Windows x86-64, on macOS arm64 and on Linux x86-64 with a LAPACK other than the retained OpenBLAS build (for example MKL), and check that the PLSR codes below the normal range (the subnormal witness's code included; resolution-floor.json) and the outside-window code flips and scaled-witness code (scaling-invariance.json) match the retained ones case for case, and that every finding value matches within its regression tolerance; these codes are retained as artifacts only because LAPACK/BLAS builds may decide them differently, and no second build has been compared."
+    },
+    {
+     "kind": "assumption",
+     "phrase": "cross-platform",
+     "task_id": "T102",
+     "text": "Deferred research question (cross-platform reproduction): run T101 and T102 against the pinned PLSR on Windows x86-64, on macOS arm64 and on Linux x86-64 with a LAPACK other than the retained OpenBLAS build (for example MKL), and check that the PLSR codes below the normal range (the subnormal witness's code included; resolution-floor.json) and the outside-window code flips and scaled-witness code (scaling-invariance.json) match the retained ones case for case, and that every finding value matches within its regression tolerance; these codes are retained as artifacts only because LAPACK/BLAS builds may decide them differently, and no second build has been compared."
+    },
+    {
+     "kind": "assumption",
+     "phrase": "Cross-platform",
+     "task_id": "T117",
+     "text": "Cross-platform bitwise identity of the sphere kernel is not claimed"
+    },
+    {
+     "kind": "next step",
+     "phrase": "second host",
+     "task_id": "T125",
+     "text": "Deferred research question: replay a retained RTX 2080 log (lab/hardware/<run-id>/artifacts/T116/operator-log.json, once a GPU run is retained) through a Session on a second host and compare its numerical_result_id; whether the ids agree across platforms is open, because they hash binary64 analysis values and ciw.core.identities was not migrated to ciw.canonical-json.v1 (T146 kept the ASCII variant)"
+    },
+    {
+     "kind": "assumption",
+     "phrase": "one platform",
+     "task_id": "T148",
+     "text": "Fixed-tree reproducibility was shown between two implementations on one platform; on other platforms it rests on IEEE-754 round-to-nearest addition and on the regression gate, which compares the retained first-order sum bits exactly"
+    },
+    {
+     "kind": "assumption",
+     "phrase": "one platform",
+     "task_id": "T158",
+     "text": "Byte identity is established on one platform; Windows and other BLAS builds are not compared."
+    },
+    {
+     "kind": "next step",
+     "phrase": "Windows",
+     "task_id": "T158",
+     "text": "Have figure tasks declare timing figures in their reports, and re-execute every figure task on a second platform (Windows CI) outside the section's time budget."
+    },
+    {
+     "kind": "next step",
+     "phrase": "Windows",
+     "task_id": "T164",
+     "text": "Run scripts/check_lab.py under Python 3.12 on Windows and on a second Linux host and retain both gate records."
+    }
+   ],
+   "tasks": [
+    "T014",
+    "T081",
+    "T094",
+    "T101",
+    "T102",
+    "T117",
+    "T125",
+    "T148",
+    "T158",
+    "T164"
+   ]
+  }
+ ],
+ "scope": "T001-T166",
  "unfinished_tasks": [
   {
    "reason": "Trace declared geodesics; compare with exact developments; re-derive lengths by a second ciw implementation (strip layout from edge lengths); compare Dijkstra with a dense Floyd-Warshall and, when installed, scipy.sparse.csgraph; test every Steiner-graph edge for a common face; sandwich traced …",
@@ -874,7 +2663,9 @@
     "The ESM rows use a synthetic telemetry-shaped record (schema, digest, three step occurrences), not a telemetry session validated by the telemetry workflow, which needs provider checkouts.",
     "Provider-backed workflows (telemetry, declared workloads, proved heat) were not exercised offline; their identity rows are inferred only where they share the energy-accuracy code path.",
     "Reopen stability is observed as the value CIW saves again after reopening, which is the reopened session's own serialization of its restored state.",
-    "Content identities establish consistency, not authorship."
+    "Content identities establish consistency, not authorship.",
+    "Deferred research question (telemetry provider stack): provision the telemetry stack pinned in src/ciw/telemetry-runtimes.json (ppda, stfe, gsie, set, cbsr; scripts/check_lab.py provisions only ppda and set of these, and scripts/reproduce_lab.py TEST_VARIABLES has no variable for stfe, gsie or cbsr), bind it to a telemetry or declared-workload workflow, and observe the ESM candidate, candidate execution and ciw.subprocess-runtime.v1 identity rows and telemetry-validated records that are now read from code or replaced by a synthetic telemetry-shaped record.",
+    "Deferred research question (key custody and signatures): which key signs CIW workspace records, replay receipts and execution records, who holds it, how is it provisioned, rotated and revoked, and how does a verifier obtain its public key? Every seal and identity on these paths is an unkeyed SHA-256, so 'Retained workspace records are authenticated' stays not_established until records are signed (for example Ed25519 over the canonical record bytes, with an RFC 3161 timestamp for created_at) and T077 and T080-T090 are re-run against the signed records to check that every surviving forgery is refused."
    ]
   },
   {
@@ -887,17 +2678,19 @@
    ]
   },
   {
-   "reason": "Integrate each geodesic with RK4 (N = 256) and adaptive DP5(4); count evaluations; when CIW_LAB_RAPL_LOG names a capture from `python -m ciw.lab.energy_gpu_telemetry rapl-capture` (repeated fixed-step batches, three by default, then an idle interval of equal length), gate and analyze it.",
+   "reason": "Integrate each geodesic with RK4 (N = 256) and adaptive DP5(4); count evaluations; count the common workload's operations; when a rapl-log capture from `python -m ciw.lab.energy_gpu_telemetry rapl-capture` is bound (a bracket of repeated geodesic batches and one of repeated common-workload batches …",
    "state": "partial",
    "task_id": "T115",
    "unrun": [
-    "Evaluation counts are a work proxy, not an energy measurement",
+    "Evaluation and operation counts are work proxies, not energy measurements",
     "Package energy is not attributed to this process; idle subtraction assumes the idle interval after the workload represents the background during it",
-    "A capture is an operator record: identity binding is checked, authenticity is not"
+    "A capture is an operator record: identity binding is checked, authenticity is not",
+    "CPU energy per common-workload batch (here) and GPU energy per batch (T116) are for the same computation (the RAPL gate and T116's NVML gate both require the common workload's kernel, problem, prepared inputs, K and replicas) but different counters, scopes and batch boundaries: package versus whole device; the NumPy bracket excludes the prepared inputs (computed once before bracketing) and includes their per-batch broadcast to the replica columns, the GPU batch includes launch, synchronization, copy and the worker's output check; no finding combines them",
+    "no rapl-log capture was bound (--capture rapl-log=PATH or CIW_LAB_RAPL_LOG); the lab runner acquires no energy measurement: make one with `python -m ciw.lab.energy_gpu_telemetry rapl-capture` on a Linux host with readable intel-rapl counters (needs hardware:rapl)"
    ]
   },
   {
-   "reason": "Blocked: unavailable requirement(s) hardware:nvidia-gpu. Planned: On the RTX 2080 host: (0) `mkdir -p runs/rtx2080-<date>`; (1) `ciw energy probe --gpu-index 0` must return a reading with status ok; (2) `ciw energy record --problem examples/energy-accuracy/problem.json --output-dir …",
+   "reason": "Blocked: unavailable requirement(s) hardware:nvidia-gpu. Planned: On the RTX 2080 host: (0) `mkdir -p runs/rtx2080-<date>`; (1) `ciw energy probe --gpu-index 0` must return a reading with status ok; (2) start `TZ=UTC nvidia-smi …",
    "state": "blocked",
    "task_id": "T116",
    "unrun": [
@@ -907,13 +2700,17 @@
    ]
   },
   {
-   "reason": "Integrate the same initial states with the generic Python path, the closed-form Python path and the compiled Rust kernel; compare endpoints, counted evaluations and exact endpoints; send the Rust kernel a malformed and a nonfinite input; record the Julia and GPU probes (no Julia or GPU kernel of …",
+   "reason": "Integrate the same initial states with the generic Python path, the closed-form Python path and the compiled Rust kernel; compare endpoints, counted evaluations and exact endpoints; send the Rust kernel a malformed and a nonfinite input. Run the common Gaussian VI workload with the NumPy reference …",
    "state": "partial",
    "task_id": "T117",
    "unrun": [
-    "No Julia or GPU implementation of this sphere RK4 kernel exists in the repository (src/ciw/energy_cuda.py is a Gaussian VI PTX kernel, not this geodesic kernel), so those comparisons cannot run on any host, whatever the tool:julia and hardware:nvidia-gpu probes report",
-    "Deferred research question: write a CUDA/PTX RK4 kernel of this sphere geodesic (for example through the ciw.energy_cuda JIT path) and a Julia kernel, both with the operation order of ciw.lab.integrators.step_rk4, then compare their endpoints and ulp distances with the Python kernel on the RTX 2080 host",
-    "Cross-platform bitwise identity is not claimed"
+    "No Julia implementation of the common Gaussian VI workload exists in the repository (T145 plans a Julia worker behind the SCR boundary; none exists), so that comparison cannot run on any host, whatever the tool:julia probe reports; the GPU comparison runs wherever an NVIDIA GPU answers the probe",
+    "Deferred research question: a Julia port of the common Gaussian VI workload with the kernel's operation order (no fused multiply-add), run through the Julia worker T145 plans behind the SCR boundary and compared bitwise with the NumPy reference",
+    "Deferred research question: extend the common workload's GPU path beyond the binary64 gaussian_vi PTX kernel of ciw.energy_cuda: a float32 rendering of the same kernel, and a device-wide reduction of its per-replica outputs (a fixed tree over the stored order per T148's REDUCTION_POLICY, plus one atomicAdd variant), each compared with the NumPy reference by compare_outputs on the RTX 2080 host and captured with `ciw energy record` for energy; until then those claims stay not_established on every host",
+    "Cross-platform bitwise identity of the sphere kernel is not claimed",
+    "The Rust and NumPy RAPL brackets share one boundary except process overhead: both exclude the prepared inputs (computed once before bracketing, telemetry.NUMPY_BOUNDARY and RUST_BOUNDARY); the Rust bracket includes one process start and one JSON exchange for all its batches, and the NumPy bracket vectorizes each batch across replicas; rust_over_numpy_idle_subtracted compares these two bracket contents, not the arithmetic alone",
+    "no NVIDIA GPU answered the hardware:nvidia-gpu probe in this task; the PTX kernel of the common workload exists (ciw.energy_cuda gaussian_vi), so this comparison runs on a host where the probe succeeds (needs hardware:nvidia-gpu)",
+    "no rapl-log capture was bound (--capture rapl-log=PATH or CIW_LAB_RAPL_LOG); the lab runner acquires no energy measurement: make one with `python -m ciw.lab.energy_gpu_telemetry rapl-capture` on a Linux host with readable intel-rapl counters (needs hardware:rapl)"
    ]
   },
   {
@@ -935,16 +2732,20 @@
     "Idle subtraction and first-attainment accounting are intentionally not applied",
     "The recomputation shares its origin (ciw) with energy_records, so it is a cross-implementation check, not independent verification",
     "An operator log is an unauthenticated record; the gate binds it to this host's NVML identity but cannot prove the capture genuine",
-    "no operator NVML log was supplied (CIW_LAB_ENERGY_LOG); the repository fixtures are synthetic, so no physical energy per accepted result was measured"
+    "no operator NVML log was supplied (--capture energy-log=PATH or CIW_LAB_ENERGY_LOG); the repository fixtures are synthetic, so no physical energy per accepted result was measured"
    ]
   },
   {
-   "reason": "Vectorized RK4 in float32 and float64 across the step grid; smallest grid N per accuracy target; operation counts derived from the kernel source and checked by running one step of the same code on a counting view of a real float32 and a real float64 array (every ufunc call counted and its result …",
+   "reason": "Vectorized RK4 in float32 and float64 across the step grid; smallest grid N per accuracy target; operation counts derived from the kernel source and checked by running one step on counting views. The common Gaussian VI workload in float32 and float64 for 0..256 iterations, KL at every iteration …",
    "state": "partial",
    "task_id": "T120",
    "unrun": [
-    "Energy cost was not measured; operation counts do not capture memory traffic, vector width, transcendental cost or GPU float32 throughput",
-    "Deferred research question: a dtype-parameterized capture of energy_gpu_kernels.rk4_batch (a RAPL bracket with the dtype named in the declared workload, or an NVML capture of a float32 and a float64 GPU kernel) gated like T115/T116, so energy per accepted trajectory can be compared across precisions; no existing capture path measures a float32 RK4 workload"
+    "Operation counts do not capture memory traffic, vector width, transcendental cost or GPU float32 throughput; only a capture relates precision to energy",
+    "The NumPy reference runs each precision vectorized across replicas; CPU energy per batch reflects that implementation, not the GPU kernel",
+    "Both precision brackets share one boundary (telemetry.NUMPY_BOUNDARY): the prepared inputs are computed once before bracketing and excluded; each batch includes the rounding of the 15 inputs to its precision and their broadcast to the replica columns",
+    "implementation missing: no float32 implementation of the gaussian_vi PTX kernel exists (ciw.energy_cuda is binary64 only, and `ciw energy record` captures only it), so a float32 GPU workload cannot run on any host",
+    "Deferred research question: extend the common workload's GPU path beyond the binary64 gaussian_vi PTX kernel of ciw.energy_cuda: a float32 rendering of the same kernel, and a device-wide reduction of its per-replica outputs (a fixed tree over the stored order per T148's REDUCTION_POLICY, plus one atomicAdd variant), each compared with the NumPy reference by compare_outputs on the RTX 2080 host and captured with `ciw energy record` for energy; until then those claims stay not_established on every host",
+    "no rapl-log capture was bound (--capture rapl-log=PATH or CIW_LAB_RAPL_LOG); the lab runner acquires no energy measurement: make one with `python -m ciw.lab.energy_gpu_telemetry rapl-capture` on a Linux host with readable intel-rapl counters (needs hardware:rapl)"
    ]
   },
   {
@@ -952,29 +2753,48 @@
    "state": "partial",
    "task_id": "T121",
    "unrun": [
-    "Real GPU reduction orders, FMA contraction and warp-shuffle trees were not observed",
+    "Device-wide GPU reduction orders and warp-shuffle trees were not observed: no device reduction kernel exists; the kernel's in-kernel contraction is emulated here and observed only where the GPU runs",
     "The pass/fail tolerance 0.01 was chosen inside the observed atomic spread; it shows that such flips exist, not how often they occur",
-    "The a priori guard is sound but so conservative that it decides none of the cancellation signs"
+    "The a priori guard is sound but so conservative that it decides none of the cancellation signs",
+    "T148's policy for fixed-order reductions: pairwise: fixed binary tree split at n//2 over the stored order (bitwise reproducible only for the same order and length); error <= gamma_{ceil(log2 n)} sum|x|",
+    "Deferred research question: extend the common workload's GPU path beyond the binary64 gaussian_vi PTX kernel of ciw.energy_cuda: a float32 rendering of the same kernel, and a device-wide reduction of its per-replica outputs (a fixed tree over the stored order per T148's REDUCTION_POLICY, plus one atomicAdd variant), each compared with the NumPy reference by compare_outputs on the RTX 2080 host and captured with `ciw energy record` for energy; until then those claims stay not_established on every host",
+    "no NVIDIA GPU answered the hardware:nvidia-gpu probe in this task; the PTX kernel of the common workload exists (ciw.energy_cuda gaussian_vi), so this comparison runs on a host where the probe succeeds (needs hardware:nvidia-gpu)"
    ]
   },
   {
-   "reason": "Compute the prediction and its uncertainty components (open loop, conditioned on the start pose, and also on the as-built scan); evaluate a correct model against a tape realized 0.1 mm off its nominal offset with and without the start-pose term, and against the prediction re-integrated from a CMM …",
+   "reason": "Retain the four fixtures' exact bytes as artifacts; validate them; apply 9 mutations (with or without resealing); validate a resealed doubling, an origin relabelling and a UUID mismatch. When an operator log is bound, retain its exact bytes, inventory its identity fields and bind it through T116's …",
+   "state": "partial",
+   "task_id": "T124",
+   "unrun": [
+    "Sealing is integrity, not authenticity: no signature binds a log to the device",
+    "Hardware provenance of every fixture is not established",
+    "The fixtures' identity fields are present but mostly placeholders, including a compute capability given to the placeholder device",
+    "A real device's identity is bound only by the acquisition gate on the GPU host: the gate binds a log to that host's NVML identity, it does not authenticate the capture",
+    "The acquisition gate establishes an identity binding, not the origin of the readings: a resealed synthetic log whose identity strings were edited to name this host's device passes it (see the resealing and relabelling counterexamples), so a bound log names a device present here but its counter readings are not shown to come from that device",
+    "Deferred research question: a signed capture that binds a log's readings to the device (no signature scheme exists)",
+    "Not performed: retaining raw telemetry and device/runtime identity of a real device (no operator NVML log passed the acquisition gate in this run); only the synthetic fixtures were retained",
+    "no operator NVML log was bound (--capture energy-log=PATH or CIW_LAB_ENERGY_LOG)"
+   ]
+  },
+  {
+   "reason": "Compute the prediction and its uncertainty components (open loop, conditioned on the start pose, and also on the as-built scan); evaluate a correct model against a tape realized 0.104 mm (2 sigma of the declared open-loop start error) off its nominal offset with and without the start-pose term, and …",
    "state": "partial",
    "task_id": "T138",
    "unrun": [
     "The physical comparison has not been performed; its outcome is unknown.",
     "The tapes are assumed to follow geodesics after their measured start; in-plane tape bending is not budgeted.",
-    "A registered reader that parses separations or marker coordinates from raw photogrammetry files does not exist yet."
+    "Operator captures are unauthenticated: their origin header and u column are declarations, and no metrology instrument probe exists on any analysing host. Deferred research question: a signed-capture trust anchor (an instrument-held key that signs each export, verified by the workbench) or a hardware:metrology probe of an instrument attached to the analysing host; until one exists, a bound capture yields computational comparisons only and the physical claims stay not_established.",
+    "The plate and cylinder cmm captures (tape start poses) are read and retained but do not yet condition those predictions."
    ]
   },
   {
-   "reason": "Partial: only the retention mechanism was exercised. Validate the fixture, mutate it 11 ways, keep a rank-deficient covariance that an absolute threshold would refuse and refuse a negative one at the same scale, check identity invariance and the fixture/measurement boundary. Not performed …",
+   "reason": "Partial: the retention mechanism was exercised on a synthetic schema fixture (validate it, mutate it 11 ways, keep a rank-deficient covariance that an absolute threshold would refuse and refuse a negative one at the same scale, check identity invariance and the fixture/measurement boundary). No …",
    "state": "partial",
    "task_id": "T139",
    "unrun": [
-    "No acquisition exists, so no raw measurement, calibration record or frame metadata has been retained: the task stays partial until the first protocol is executed.",
+    "No acquisition was bound, so no raw measurement, calibration record or frame metadata has been retained: the task stays partial until a real acquisition of a control protocol is retained with its record. Synthetic or absent material never completes a retention task.",
     "Media-type-specific readers (images, point clouds) are not defined; digests cover bytes, not content semantics.",
-    "The validators cannot tell whether raw bytes came from an instrument; the runner also requires a hardware probe in the task that cites them."
+    "The validators cannot tell whether raw bytes came from an instrument; the runner also requires a hardware probe in the task that cites them, and no metrology instrument probe or signed-capture trust anchor exists (deferred research question, T138), so a retained record's acquisition fields support no physical label."
    ]
   },
   {
@@ -992,10 +2812,11 @@
    "state": "partial",
    "task_id": "T147",
    "unrun": [
-    "No GPU kernel path exists in this task: the recommended rerun on a CUDA host needs a GPU implementation of the batched dot products first",
+    "The batched dot products have no GPU path and need none: the GPU comparison uses the common Gaussian VI workload, whose PTX kernel exists; a device-wide reduction kernel does not",
+    "Deferred research question: extend the common workload's GPU path beyond the binary64 gaussian_vi PTX kernel of ciw.energy_cuda: a float32 rendering of the same kernel, and a device-wide reduction of its per-replica outputs (a fixed tree over the stored order per T148's REDUCTION_POLICY, plus one atomicAdd variant), each compared with the NumPy reference by compare_outputs on the RTX 2080 host and captured with `ciw energy record` for energy; until then those claims stay not_established on every host",
     "GPU reductions may use FMA and tree shapes not modelled by the 32-lane order",
     "Only single dropped products were injected; other fault classes (duplicated terms, wrong operands) have their own detection limits",
-    "No GPU hardware or driver was exercised"
+    "no NVIDIA GPU answered the hardware:nvidia-gpu probe in this task; the PTX kernel of the common workload exists (ciw.energy_cuda gaussian_vi), so this comparison runs on a host where the probe succeeds (needs hardware:nvidia-gpu)"
    ]
   },
   {
@@ -1009,27 +2830,34 @@
    ]
   },
   {
-   "reason": "Generate the draft from retained reports of sections observation, sensor-fusion, manufacturing, energy-gpu and parse its results table back against the source findings.",
+   "reason": "Generate the draft from retained reports of sections observation, sensor-fusion, manufacturing, energy-gpu; parse its finding tables back against the source findings and its label and boundary tables against their definitions; look up each required assumption in its section.",
    "state": "partial",
    "task_id": "T160",
    "unrun": [
-    "Prose beyond the generated structure, related work and peer review are outstanding."
+    "Missing from this draft, which the lab cannot write: the thesis in the authors' words (the generated thesis restates counts and counterexamples of the retained findings only), a related-work discussion (the reference list is the T156 textbook ledger's name matches), an interpretation of the counterexamples against the literature, conclusions, figure selection and captions, and external peer review. The draft stays partial until they exist.",
+    "For a task with independently_verified rows every assumption that mentions independence, same origin or ciw-written code is carried into the Qualifications, statistical independence of noise and events excepted (research_portfolio.STATISTICAL_INDEPENDENCE); for other tasks they are selected by phrase (research_portfolio.INDEPENDENCE_LIMITS), so one worded otherwise is not carried.",
+    "The selected finding of a task is its first established one, not a judgment of importance."
    ]
   },
   {
-   "reason": "Generate the draft from retained reports of sections geodesic-jacobi, flat-torus-topology, surfaces-discrete and parse its results table back against the source findings.",
+   "reason": "Generate the draft from retained reports of sections geodesic-jacobi, flat-torus-topology, surfaces-discrete; parse its finding tables back against the source findings and its label and boundary tables against their definitions; look up each required assumption in its section.",
    "state": "partial",
    "task_id": "T161",
    "unrun": [
-    "Prose beyond the generated structure, related work and peer review are outstanding."
+    "Missing from this draft, which the lab cannot write: the thesis in the authors' words (the generated thesis restates counts and counterexamples of the retained findings only), a related-work discussion (the reference list is the T156 textbook ledger's name matches), an interpretation of the counterexamples against the literature, conclusions, figure selection and captions, and external peer review. The draft stays partial until they exist.",
+    "For a task with independently_verified rows every assumption that mentions independence, same origin or ciw-written code is carried into the Qualifications, statistical independence of noise and events excepted (research_portfolio.STATISTICAL_INDEPENDENCE); for other tasks they are selected by phrase (research_portfolio.INDEPENDENCE_LIMITS), so one worded otherwise is not carried.",
+    "The selected finding of a task is its first established one, not a judgment of importance."
    ]
   },
   {
-   "reason": "Generate the draft from retained reports of sections exchange-provenance, implementation-targets, lyapunov and parse its results table back against the source findings.",
+   "reason": "Generate the draft from retained reports of sections exchange-provenance, implementation-targets, lyapunov; parse its finding tables back against the source findings and its label and boundary tables against their definitions; look up each required assumption in its section.",
    "state": "partial",
    "task_id": "T162",
    "unrun": [
-    "Prose beyond the generated structure, related work and peer review are outstanding."
+    "Missing from this draft, which the lab cannot write: the thesis in the authors' words (the generated thesis restates counts and counterexamples of the retained findings only), a related-work discussion (the reference list is the T156 textbook ledger's name matches), an interpretation of the counterexamples against the literature, conclusions, figure selection and captions, and external peer review. The draft stays partial until they exist.",
+    "For a task with independently_verified rows every assumption that mentions independence, same origin or ciw-written code is carried into the Qualifications, statistical independence of noise and events excepted (research_portfolio.STATISTICAL_INDEPENDENCE); for other tasks they are selected by phrase (research_portfolio.INDEPENDENCE_LIMITS), so one worded otherwise is not carried.",
+    "The selected finding of a task is its first established one, not a judgment of importance.",
+    "Rules 6-9, 11 and 12 are stated from the specification; they are enforced by the validator, the report builder, the runner and the workspace classifier and tested in tests/test_lab_core.py and tests/test_lab_bridge.py, not backed by a T155 finding."
    ]
   }
  ]

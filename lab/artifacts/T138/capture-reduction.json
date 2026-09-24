@@ -1,0 +1,55 @@
+{
+ "conditioned_separation_error_mm": 0.000128190572662,
+ "cylinder_chord_error_mm": 5.68434188608e-14,
+ "cylinder_gap_error_mm": 5.68434188608e-14,
+ "cylinder_signature_max_en": 480.130028587,
+ "estimated_start": {
+  "heading_rad": 0.000398845525144,
+  "lateral_mm": 2.09999988176
+ },
+ "plate_chord_error_mm": 5.68434188608e-14,
+ "realized_start": {
+  "heading_rad": 0.0004,
+  "lateral_mm": 2.1
+ },
+ "refusals": {
+  "banner kept, origin relabelled measurement": {
+   "expected": "capture_header",
+   "observed": "capture_header"
+  },
+  "capture of another protocol": {
+   "expected": "capture_expected",
+   "observed": "capture_expected"
+  },
+  "columns out of order": {
+   "expected": "capture_columns",
+   "observed": "capture_columns"
+  },
+  "origin synthetic without the banner": {
+   "expected": "capture_header",
+   "observed": "capture_header"
+  },
+  "row repeated": {
+   "expected": "capture_duplicate",
+   "observed": "capture_duplicate"
+  },
+  "schema header missing": {
+   "expected": "capture_header",
+   "observed": "capture_header"
+  },
+  "synthetic capture offered as a measurement record": {
+   "expected": "fixture_is_not_measurement",
+   "observed": "fixture_is_not_measurement"
+  },
+  "target row missing": {
+   "expected": "capture_ids",
+   "observed": "capture_ids"
+  },
+  "value that is not a number": {
+   "expected": "capture_value",
+   "observed": "capture_value"
+  }
+ },
+ "start_heading_error_rad": 1.15447485566e-06,
+ "start_lateral_error_mm": 1.18235035096e-07
+}

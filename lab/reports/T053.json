@@ -107,6 +107,10 @@
    "claim": "Single-axis gyro heading error has mean b t and variance N^2 t",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -192,6 +196,9 @@
    "claim": "Mean squared heading error is N^2 t + (b t)^2",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-15,
     "rel": 1e-06
@@ -247,6 +254,9 @@
    "claim": "Strapdown bias error follows e_{k+1} = exp(-omega dt) e_k + J_r(omega dt) b dt",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -304,6 +314,9 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-12,
     "rel": 1e-06
@@ -475,6 +488,10 @@
    "claim": "Angle random walk stays isotropic, N^2 t per body axis and E|e - m|^2 = 3 N^2 t, on stationary and rotating bodies",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -537,6 +554,7 @@
    "claim": "Real gyroscopes have constant bias and white rate noise with the declared densities",
    "domain": "sensor_performance",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -576,13 +594,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/observation.py": "6e5bf960e17dffb62bdaf29d28be9a0f165fd68f8498d173b66eab08fa22ad70",
+   "src/ciw/lab/observation.py": "ef75c3ea4cad06bcbc68592440b3d55a92786a729d5a731b87ece207511ddffb",
    "src/ciw/lab/observation_signals.py": "19e94cb28160a07e5a285b5a4acd76e3820deb37ee5ed180f5c7bf1975a56793"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T054: add asynchronous timestamps",
- "report_id": "sha256:aa0bc9e4a2e33df1902d356fb710cc3a6dfa9e994961f849ad6e175c7ad230fb",
+ "recommended_next_task": "Deferred research question: add bias instability (a random-walk gyro bias with a declared Allan-variance floor) and a time-varying rotation rate, and test whether this task's orientation-error prediction still holds or needs an estimated bias state.",
+ "report_id": "sha256:66fb754162ce654fbb0c0365c434d0e6498c71d0b2b6fd4bc2fcc2e54ae87430",
  "schema": "ciw.lab-task-report.v1",
  "section": "observation",
  "state": "completed",

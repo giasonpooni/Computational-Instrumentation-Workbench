@@ -11,15 +11,15 @@
    "analytic": 0,
    "hardware_measured": 0,
    "independently_verified": 0,
-   "not_established": 1,
+   "not_established": 2,
    "numerically_verified": 4,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "Valid records validate; each mutation is refused with its code; covariance tolerances scale with the matrix; a record of kind schema_fixture, or one carrying the fixture's bytes, serial or zero calibration digest, is refused as hardware evidence.",
- "experiment": "Partial: only the retention mechanism was exercised. Validate the fixture, mutate it 11 ways, keep a rank-deficient covariance that an absolute threshold would refuse and refuse a negative one at the same scale, check identity invariance and the fixture/measurement boundary. Not performed: retaining raw measurements, calibration and frame metadata, because no acquisition exists.",
+ "expected_invariant": "Valid records validate; each mutation is refused with its code; covariance tolerances scale with the matrix; a record of kind schema_fixture, or one carrying the fixture's bytes, serial or zero calibration digest, or synthetic-capture bytes, is refused as hardware evidence; a bound record's raw entries match the bound bytes.",
+ "experiment": "Partial: the retention mechanism was exercised on a synthetic schema fixture (validate it, mutate it 11 ways, keep a rank-deficient covariance that an absolute threshold would refuse and refuse a negative one at the same scale, check identity invariance and the fixture/measurement boundary). No retention record was bound, so no raw measurement was retained. Not performed: retaining raw measurements, calibration and frame metadata of a real acquisition, because none was bound; the missing one is the first executed control protocol (MFG-FLAT-PLATE-01, MFG-CYLINDER-01 or MFG-COUPON-01) with its instrument exports and its retention record (instrument serials, calibration certificates, frame chain and clock).",
  "failure_modes_checked": [
   "digest mismatch",
   "calibration digest and validity window",
@@ -28,7 +28,8 @@
   "scale of covariance tolerances (kept above an absolute threshold, refused when negative at scale)",
   "clock without timezone",
   "fixture promoted or relabelled as a measurement",
-  "measurement without raw bytes"
+  "measurement without raw bytes",
+  "bound record whose raw entries match no bound bytes, or that lists synthetic-capture bytes (refused)"
  ],
  "findings": [
   {
@@ -117,6 +118,9 @@
    "claim": "The retention schema refuses records missing raw digests, calibration, frame-chain or clock metadata",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -168,6 +172,9 @@
    "claim": "The retention schema keeps a rank-deficient frame covariance whose rounding-level negative eigenvalue an absolute threshold would refuse, and still refuses a negative one at the same scale",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 5e-09,
     "rel": 1e-06
@@ -216,6 +223,9 @@
    "claim": "Retention record identity is independent of key order and bound to every raw digest",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -258,6 +268,9 @@
    "claim": "A schema fixture (as is or relabelled as a measurement), or a record without its raw bytes, is refused as hardware evidence",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -272,11 +285,30 @@
   },
   {
    "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": "no retention record was bound (role retention); bind one with its raw files under the roles photogrammetry, cmm, film, scanner"
+   },
+   "claim": "A bound retention record validates against the raw bytes bound with it and yields acquisition fields (computational: the bytes are unauthenticated)",
+   "domain": "computational_pipeline",
+   "evidence_status": "not_established",
+   "expected_not_established": true,
+   "origin": [],
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
    "basis": {},
    "claim": "A real measurement with raw bytes, calibration and frame metadata has been retained",
    "domain": "physical",
    "evidence_status": "not_established",
-   "uncertainty": null,
+   "origin": [],
+   "uncertainty": {
+    "basis": "count of retained measurement records (declared by the operator, unauthenticated)",
+    "kind": "roundoff",
+    "value": 0
+   },
    "unit": "records",
    "value": 0
   }
@@ -293,16 +325,16 @@
    "sha256": "bf6ab4493e3fe9e29990d5da20570730244b7df5e2fddce89e5b2c03110b69ae"
   }
  ],
- "hypothesis": "A retention record that binds raw-byte digests, calibration reference and validity window, frame chain with covariances and an explicit clock is sufficient to supply the acquisition fields of a hardware_measured finding, and every omission is refused.",
+ "hypothesis": "A retention record that binds raw-byte digests, calibration reference and validity window, frame chain with covariances and an explicit clock is sufficient to supply the acquisition fields of a hardware_measured finding, and every omission is refused; a record bound to the run with its raw files is validated against those bytes and retained with them.",
  "input_data": [
   "Schema fixture with explicit 'SCHEMA FIXTURE - NOT A MEASUREMENT' raw bytes (not retained)",
   "11 refused mutations, one rank-deficient covariance at a 1e6 mm^2 scale with a -1e-8 mm^2 eigenvalue and one with a negative eigenvalue of -1e-3 of its largest",
-  "No acquisition: nothing exists to retain"
+  "Operator captures: a retention record (--capture retention=) and its raw files (--capture photogrammetry=, cmm=, film= or scanner=); none in the retained clean-room run"
  ],
- "mathematical_model": "Record = {raw digests, instrument identity, calibration (applied/not_applied), frame chain links (R, t, C), clock}; identity = SHA-256 of canonical JSON; to_acquisition maps a valid measurement record to device / raw_sha256 (SHA-256 of the raw manifest) / acquired_at / calibration.",
+ "mathematical_model": "Record = {raw digests, instrument identity, calibration (applied/not_applied), frame chain links (R, t, C), clock}; identity = SHA-256 of canonical JSON; to_acquisition maps a valid measurement record to device / raw_sha256 (SHA-256 of the raw manifest) / acquired_at / calibration. A bound record's raw entries are matched to the bytes bound under the capture roles photogrammetry, cmm, film, scanner by SHA-256.",
  "number": 139,
- "numerical_result": "11/11 mutations refused with the expected code; rank-deficient covariance kept (min eigenvalue -1.0e-08 mm^2 against a largest of 1.0e+06 mm^2, 1e+04 times an absolute 1e-12 mm^2 threshold); retained real measurements: 0.",
- "observation_model": "No observation: no instrument produced data. The validators read only the declared schema fixture and its mutations.",
+ "numerical_result": "11/11 mutations refused with the expected code; rank-deficient covariance kept (min eigenvalue -1.0e-08 mm^2 against a largest of 1.0e+06 mm^2, 1e+04 times an absolute 1e-12 mm^2 threshold); retained measurement records: 0.",
+ "observation_model": "No instrument is observed here. The validators read the declared schema fixture and its mutations and, when bound, the operator's retention record and raw files, which are retained and not authenticated.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
   "status": "not_established"
@@ -313,17 +345,20 @@
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
   "python": "3.12.3",
+  "requirement_probes": {
+   "capture:retention": false
+  },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/manufacturing.py": "f4cd90e1df33b910b78daf4b0556a8861e044d83701474f841e85fd9d96f9063",
-   "src/ciw/lab/manufacturing_geometry.py": "1db6df2ddf778668da2ffd53a66bcddbff4fc933d6f299e8f283cedc60a9332f",
-   "src/ciw/lab/manufacturing_metrology.py": "aef4708b0f296fc66087a6382881a0564c5edcb6d7961b5e472aa711e29feb5d",
-   "src/ciw/lab/manufacturing_records.py": "015ea7fccc586f4b95f64e7ffbc1f6c34eec20b8245778ede3c2324006537087"
+   "src/ciw/lab/manufacturing.py": "a489d9a93946a344e2878840d784e8087098775794108a6729d9179102767969",
+   "src/ciw/lab/manufacturing_geometry.py": "44830e8b1e2811dc3ade9eb1bc40691a6ae53f92c0b178dce5e5e111447879a1",
+   "src/ciw/lab/manufacturing_metrology.py": "f5c7694f91ac7b38a1f886b4acdc189d0abda403956e3b34d3f2dc8644c07dba",
+   "src/ciw/lab/manufacturing_records.py": "9d8cd35dc23541e9067fdced631c2a80bff1077b3bcba7fa9ae377c9db67626f"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "Retain the first MFG-FLAT-PLATE-01 acquisition with this schema, then rerun T138, whose pair comparator (compare_pair_distances) compares its marker-pair distances.",
- "report_id": "sha256:8fbabadb7e328743143d0d7e2f7df52a32da9b95b1425a261094db481f5e1da0",
+ "recommended_next_task": "Deferred research question: a signed-capture trust anchor (instrument-held keys that sign each export) or a hardware:metrology probe, without which a retained record supports no physical label. Meanwhile retain the first real acquisition of a control protocol: run ciw lab run T139 --capture retention=<record.json> with its raw files bound under their roles (--capture photogrammetry=<targets.csv> --capture cmm=<start-pose.csv> ...), the record listing each file with its SHA-256, instrument serial, calibration certificate and validity window, frame chain with covariances and clock; then retain the run with ciw lab hardware retain.",
+ "report_id": "sha256:2eee6df773fddbe8b5a1051a78b0b304591da55b77a768830d4bad75a3e09cfb",
  "schema": "ciw.lab-task-report.v1",
  "section": "manufacturing",
  "state": "partial",
@@ -351,14 +386,15 @@
   "check: A schema fixture (as is or relabelled as a measurement), or a record without its raw bytes, is refused as hardware evidence vs fixture relabelled as a measurement, with its bytes",
   "check: A schema fixture (as is or relabelled as a measurement), or a record without its raw bytes, is refused as hardware evidence vs measurement record without raw bytes",
   "pytest: tests/test_lab_manufacturing.py::test_retention_schema_refusals_and_fixture_boundary",
+  "pytest: tests/test_lab_manufacturing.py::test_bound_retention_record_is_validated_against_its_raw_bytes",
   "pytest: tests/test_lab_manufacturing.py::test_every_task_is_registered_and_reports_honestly"
  ],
  "tests_skipped": [],
  "title": "Retain raw measurements, calibration, and frame metadata.",
  "uncertainty": "Exact: the outcomes are booleans and refusal codes of deterministic validators; the only floating-point quantity is the rounding-level eigenvalue of the rank-deficient covariance.",
  "unresolved_assumptions": [
-  "No acquisition exists, so no raw measurement, calibration record or frame metadata has been retained: the task stays partial until the first protocol is executed.",
+  "No acquisition was bound, so no raw measurement, calibration record or frame metadata has been retained: the task stays partial until a real acquisition of a control protocol is retained with its record. Synthetic or absent material never completes a retention task.",
   "Media-type-specific readers (images, point clouds) are not defined; digests cover bytes, not content semantics.",
-  "The validators cannot tell whether raw bytes came from an instrument; the runner also requires a hardware probe in the task that cites them."
+  "The validators cannot tell whether raw bytes came from an instrument; the runner also requires a hardware probe in the task that cites them, and no metrology instrument probe or signed-capture trust anchor exists (deferred research question, T138), so a retained record's acquisition fields support no physical label."
  ]
 }

@@ -3,6 +3,7 @@
   "src/ciw/lab/energy_gpu.py",
   "src/ciw/lab/energy_gpu_kernels.py",
   "src/ciw/lab/energy_gpu_telemetry.py",
+  "src/ciw/lab/energy_gpu_workload.py",
   "docs/lab/ENERGY_GPU.md"
  ],
  "evidence_status": {
@@ -10,21 +11,25 @@
    "analytic": 0,
    "hardware_measured": 0,
    "independently_verified": 0,
-   "not_established": 1,
-   "numerically_verified": 9,
+   "not_established": 2,
+   "numerically_verified": 11,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "Every error within its order-specific bound; guarded decisions cannot contradict (if |S_i - s| <= b and |S_j - s| <= b, then S_i - T > b and T - S_j > b would need S_i - S_j > 2b, which the triangle inequality excludes); the maximum of NaN-free, zero-free data is its largest element in every order (by definition, so not re-checked); a comparison-select maximum returns its first operand for equal signed zeros.",
- "experiment": "Emulate the orders in float32 and float64; search seeds for a sign flip among the sequential and two tree orders; test a pass/fail tolerance across atomic orders; test the guarded sign decision; evaluate a comparison-select maximum on signed zeros in both operand orders and retain numpy.max's implementation-specific result with the machine architecture.",
+ "expected_invariant": "Every error within its order-specific bound; guarded decisions cannot contradict (if |S_i - s| <= b and |S_j - s| <= b, then S_i - T > b and T - S_j > b would need S_i - S_j > 2b, which the triangle inequality excludes); the maximum of NaN-free, zero-free data is its largest element in every order (by definition, so not re-checked); a comparison-select maximum returns its first operand for equal signed zeros; contraction moves the kernel's outputs by a few ULP and its KL by far less than the decision margin.",
+ "experiment": "Emulate the orders in float32 and float64; search seeds for a sign flip among the sequential and two tree orders; test a pass/fail tolerance across atomic orders; test the guarded sign decision; evaluate a comparison-select maximum on signed zeros in both operand orders and retain numpy.max's implementation-specific result with the machine architecture. Run the common workload with its in-kernel reductions unfused, contracted and reassociated and compare outputs and acceptance; run the PTX kernel when an NVIDIA GPU answers the probe.",
  "failure_modes_checked": [
   "error exceeds its order-specific bound",
   "no sign counterexample in 399 seeds (would raise)",
   "atomic-order pass/fail flip",
   "guarded sign test deciding wrongly",
-  "comparison-select maximum order dependence on signed zeros"
+  "comparison-select maximum order dependence on signed zeros",
+  "fused multiply-add contraction of the kernel's reductions (emulated exactly)",
+  "GPU outputs differing from the unfused reference (a refuted finding; regression test with a simulated contracting device)",
+  "GPU outputs differing only in sign (ULP distance across signs and a bitwise count)",
+  "GPU outputs the CUDA worker rejects after the kernel ran (a refuted finding, not an expected gap)"
  ],
  "findings": [
   {
@@ -52,6 +57,10 @@
    "claim": "Every emulated float32 summation order of the positive dataset stays within its order-specific a priori error bound; relative spread across orders",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-15,
     "rel": 0.5
@@ -93,6 +102,10 @@
    "claim": "Every emulated float64 summation order of the same data stays within its order-specific bound; relative spread",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-15,
     "rel": 0.5
@@ -158,6 +171,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -210,6 +227,10 @@
    "claim": "float64 accumulation of these float32-valued cancellation inputs is exact in every emulated order (all errors 0), hence sign-correct",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -274,6 +295,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -345,6 +370,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -402,6 +431,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -439,6 +472,10 @@
    "claim": "The bound-guarded sign test (decide only when |S| exceeds the order's own a priori bound) cannot contradict across orders but leaves both cancellation sums undecided in every emulated order",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-12,
     "rel": 1e-06
@@ -497,6 +534,9 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -515,13 +555,155 @@
   {
    "assigned_by": "ciw.lab.evidence",
    "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 3.0,
+      "passed": true,
+      "reference": "smallest largest-ULP change over the two contraction rules",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "ULP distance between the scalar unfused emulation and the NumPy reference (the baseline the contractions are measured against)",
+      "reference_kind": "cross_implementation",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "iterations": 38,
+     "name": "common Gaussian VI workload (examples/energy-accuracy/problem.json)",
+     "replicas": 1,
+     "seed": null
+    },
     "notes": [
-     "no GPU was available; the orders are CPU emulations"
+     "contraction rules: fma-first: a*b + c*d -> fma(a, b, c*d); m - alpha*g -> fma(-alpha, g, m); det -> fma(Q00, Q11, -(Q01*Q10)); fma-second: a*b + c*d -> fma(c, d, a*b); m - alpha*g -> fma(-alpha, g, m); det -> fma(-Q01, Q10, Q00*Q11); reassociated: ((P_i0 m_0) + (P_i1 m_1)) - b_i -> (P_i0 m_0) + ((P_i1 m_1) - b_i), no fused operations"
     ]
    },
-   "claim": "Reductions on the RTX 2080 (CUB, cuBLAS or atomicAdd) reproduce these emulated spreads and sign flips",
-   "domain": "physical",
+   "claim": "Fused multiply-add contraction of the common workload's in-kernel reductions changes its binary64 outputs, so a bitwise CPU/GPU comparison detects a contracting build",
+   "counterexample": {
+    "statement": "A fixed-order reduction gives the same binary64 result whether or not the compiler contracts its multiply-adds",
+    "witness": {
+     "iterations": 38,
+     "max_ulp": 6,
+     "variant": "fma-second"
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
+   "regression_tolerance": {
+    "abs": 16.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "binary64 operations in a declared order; each fused multiply-add rounded once from the exact rational product-sum",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "fma-first": {
+     "max_ulp": 3
+    },
+    "fma-second": {
+     "max_ulp": 6
+    },
+    "reassociated": {
+     "max_ulp": 0
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "variants whose acceptance decision differs from the unfused reference's",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "largest |KL(variant) - KL(reference)| over the decision margin (target - KL(reference))",
+      "reference_kind": "invariant",
+      "tolerance": 1e-06
+     }
+    ],
+    "generator": {
+     "iterations": 38,
+     "name": "common Gaussian VI workload (examples/energy-accuracy/problem.json)",
+     "replicas": 1,
+     "seed": null
+    }
+   },
+   "claim": "Neither fused multiply-add contraction nor reassociation of the in-kernel reductions changes the common workload's KL acceptance decision at its declared 1e-8 nat target",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
+   "regression_tolerance": {
+    "abs": 1e-20,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "absolute: KL evaluated in binary64 against a binary64 posterior",
+    "kind": "reference_error",
+    "value": 1e-20
+   },
+   "unit": "nat",
+   "value": {
+    "kl_nats": {
+     "fma-first": 6.851256876989986e-09,
+     "fma-second": 6.851256876989986e-09,
+     "reassociated": 6.851256876989986e-09
+    },
+    "kl_reference": 6.851256876989986e-09,
+    "margin_nats": 3.1487431230100146e-09,
+    "target_kl_nats": 1e-08
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": [
+     "no NVIDIA GPU answered the hardware:nvidia-gpu probe in this task; the PTX kernel of the common workload exists (ciw.energy_cuda gaussian_vi), so this comparison runs on a host where the probe succeeds (needs hardware:nvidia-gpu)"
+    ]
+   },
+   "claim": "The gaussian_vi PTX kernel keeps the declared unfused order of its in-kernel reductions on the GPU: its outputs equal the NumPy reference bitwise",
+   "domain": "numerical",
    "evidence_status": "not_established",
+   "expected_not_established": true,
+   "origin": [],
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": [
+     "implementation missing: no PTX device reduction kernel exists (the gaussian_vi kernel reduces nothing across replicas), so this comparison cannot run on any host; Deferred research question: extend the common workload's GPU path beyond the binary64 gaussian_vi PTX kernel of ciw.energy_cuda: a float32 rendering of the same kernel, and a device-wide reduction of its per-replica outputs (a fixed tree over the stored order per T148's REDUCTION_POLICY, plus one atomicAdd variant), each compared with the NumPy reference by compare_outputs on the RTX 2080 host and captured with `ciw energy record` for energy; until then those claims stay not_established on every host"
+    ]
+   },
+   "claim": "A device-wide reduction of the common workload's per-replica outputs on the RTX 2080 (a fixed tree per T148's policy, and atomicAdd) reproduces the emulated order spreads and sign flips",
+   "domain": "numerical",
+   "evidence_status": "not_established",
+   "expected_not_established": true,
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -529,9 +711,9 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 11112,
+   "bytes": 12940,
    "path": "artifacts/T121/reductions.json",
-   "sha256": "2b290e9434a983976bc432760e154be892d586bcd9fa32d57b066d525b11823a"
+   "sha256": "cfdf4c4fe71bed832c1caccefe4478a5011d823749c2c9a61ae2d0dbc6e4c732"
   },
   {
    "bytes": 5714,
@@ -539,34 +721,53 @@
    "sha256": "944209c7fa8c94e88a1b579b7b78f46e7e1e0647197e583b684033e3cbb00e62"
   }
  ],
- "hypothesis": "GPU-style reduction orders keep float32 sums within their order-specific a priori bounds, yet the order differences suffice to flip sign and pass/fail decisions near their boundary; float64 suffers the same with data scaled to its precision.",
+ "hypothesis": "GPU-style reduction orders keep float32 sums within their order-specific a priori bounds, yet the order differences suffice to flip sign and pass/fail decisions near their boundary; float64 suffers the same with data scaled to its precision. For the common Gaussian VI workload, whose reductions are fixed two-term dot products, a precision relaxation and a determinant, a compiler's fused multiply-add contraction changes the outputs in the last bits but not the workload's KL acceptance decision.",
  "input_data": [
-  "n = 16384: positive data (u^3 * 1000 + 1e-3 from PCG64 seed 20260923); float32 cancellation data (+a, -a pairs plus 64 x 2^-8, first flipping seed 201); float64-native cancellation data (scale 2^40, first flipping seed 1)"
+  "n = 16384: positive data (u^3 * 1000 + 1e-3 from PCG64 seed 20260923); float32 cancellation data (+a, -a pairs plus 64 x 2^-8, first flipping seed 201); float64-native cancellation data (scale 2^40, first flipping seed 1)",
+  "the common Gaussian VI workload (examples/energy-accuracy/problem.json, K = 38; 4096 replicas on the GPU)"
  ],
- "mathematical_model": "|fl(sum x) - sum x| <= gamma_d sum|x_i|, gamma_d = d u / (1 - d u), where d is the largest number of additions any input passes through (n - 1 sequential, log2 n trees, block height plus partial fold otherwise); Kahan (2u + n u^2) sum|x| to leading order.",
+ "mathematical_model": "|fl(sum x) - sum x| <= gamma_d sum|x_i|, gamma_d = d u / (1 - d u), where d is the largest number of additions any input passes through (n - 1 sequential, log2 n trees, block height plus partial fold otherwise); Kahan (2u + n u^2) sum|x| to leading order. Kernel reductions: fma(a, b, c) = round(a b + c) replaces round(round(a b) + c) under the contraction rules; KL(q || p) against the exact posterior decides acceptance at 1e-8 nats.",
  "number": 121,
- "numerical_result": "float32 relative spread 4.02e-06; float64 6.81e-16; float32 cancellation signs {'sequential': -1, 'tree-adjacent': 1, 'tree-strided': 1, 'blocked-two-pass': 1, 'block-sequential': 1, 'kahan': 1, 'atomic-0': 1, 'atomic-1': 1, 'atomic-2': 1, 'atomic-3': 1, 'atomic-4': 1, 'atomic-5': 1, 'atomic-6': 1, 'atomic-7': 1}; float64-native cancellation signs {'sequential': -1, 'tree-adjacent': 1, 'tree-strided': 1, 'blocked-two-pass': 1, 'block-sequential': 1, 'kahan': 1, 'atomic-0': 1, 'atomic-1': 1, 'atomic-2': 1, 'atomic-3': 1, 'atomic-4': 1, 'atomic-5': 1, 'atomic-6': 1, 'atomic-7': 1}; atomic pass/fail {'atomic-0': True, 'atomic-1': True, 'atomic-2': True, 'atomic-3': True, 'atomic-4': True, 'atomic-5': False, 'atomic-6': True, 'atomic-7': False}; 4 distinct atomic-order results on positive data.",
- "observation_model": "Sums in sequential, adjacent tree, strided tree, two-pass blocked, block-sequential, Kahan and 8 atomic completion orders; exact reference by math.fsum.",
+ "numerical_result": "float32 relative spread 4.02e-06; float64 6.81e-16; float32 cancellation signs {'sequential': -1, 'tree-adjacent': 1, 'tree-strided': 1, 'blocked-two-pass': 1, 'block-sequential': 1, 'kahan': 1, 'atomic-0': 1, 'atomic-1': 1, 'atomic-2': 1, 'atomic-3': 1, 'atomic-4': 1, 'atomic-5': 1, 'atomic-6': 1, 'atomic-7': 1}; float64-native cancellation signs {'sequential': -1, 'tree-adjacent': 1, 'tree-strided': 1, 'blocked-two-pass': 1, 'block-sequential': 1, 'kahan': 1, 'atomic-0': 1, 'atomic-1': 1, 'atomic-2': 1, 'atomic-3': 1, 'atomic-4': 1, 'atomic-5': 1, 'atomic-6': 1, 'atomic-7': 1}; atomic pass/fail {'atomic-0': True, 'atomic-1': True, 'atomic-2': True, 'atomic-3': True, 'atomic-4': True, 'atomic-5': False, 'atomic-6': True, 'atomic-7': False}; 4 distinct atomic-order results on positive data; kernel reductions: largest ULP change {'fma-first': 3, 'fma-second': 6, 'reassociated': 0}, KL 6.851e-09 nats against the 1e-8 target in every variant; GPU comparison not run: no NVIDIA GPU answered the hardware:nvidia-gpu probe in this task; the PTX kernel of the common workload exists (ciw.energy_cuda gaussian_vi), so this comparison runs on a host where the probe succeeds (needs hardware:nvidia-gpu).",
+ "observation_model": "Sums in sequential, adjacent tree, strided tree, two-pass blocked, block-sequential, Kahan and 8 atomic completion orders; exact reference by math.fsum. Kernel reductions evaluated unfused, with two contraction rules (exact rational fused multiply-add) and one reassociation; on a host where the hardware:nvidia-gpu probe succeeds, the PTX kernel's outputs compared bit for bit, the comparison T148's policy prescribes for a fixed-order reduction.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
   "status": "not_established"
  },
  "provider_runtime_identity": {
   "ciw_version": "0.1.0",
+  "common_workload": {
+   "implementation": "numpy",
+   "iterations": 38,
+   "kernel": "ciw.energy_cuda.PTX gaussian_vi",
+   "kernel_sha256": "601049a61cc1dc7b35d80ec7096dd5d81b3028c025472ec54983b4c1d666d699",
+   "name": "ciw.lab.gaussian-vi-iteration.v1",
+   "precision": "float64",
+   "prepared_input_sha256": "49ca05c0343c645d64ec77ffcf7053c1b1380910f7334cc50986fa45f560df86",
+   "problem_sha256": "f082e5dfbb2e735bdaf8b02e57734e29902d5077c70f53e2e7c5ce2eb8219ab7",
+   "replicas": 4096
+  },
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
   "python": "3.12.3",
+  "requirement_probes": {
+   "hardware:nvidia-gpu": false
+  },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/energy_gpu.py": "a66107417b5bfa398077a919b2f5351ca222e9961fa8dfb3256b78efc17fd930",
-   "src/ciw/lab/energy_gpu_kernels.py": "366c477ff1af7f59b626f4e64bf994ae4cbce5754c0e9c5be1c2acb515f99f4b",
-   "src/ciw/lab/energy_gpu_telemetry.py": "df82c8748d3aa75384e3928bffcf516cd6f72cccde99edf8d21f089cc768bafa"
+   "src/ciw/energy_bench.py": "bd50806ba3128ff85a1d240bc9670db04082196ec050c51597ec0cc725e45046",
+   "src/ciw/energy_cuda.py": "9b4b86809e47cba7683dc0c238b0b052b6785fd09e629224c5f8f37b6d5a0e64",
+   "src/ciw/free_energy_math.py": "4f096c281c548e92ed7bb1d49a8fd58f3a4d6b48ababef2958331ca13f088a6e",
+   "src/ciw/lab/energy_gpu.py": "f49195ce5a78ced3c8da1562f4412f2fdc65d8cc2749dd4fbe0b25bc0334e773",
+   "src/ciw/lab/energy_gpu_kernels.py": "1198886637535f3f8ec26601aa70cdc16d1c175dc4286aa9807edec3910005d2",
+   "src/ciw/lab/energy_gpu_telemetry.py": "6935331e622266868a97ee78f8e34d185aa69009a62fedc8ea8273b3a9312bfc",
+   "src/ciw/lab/energy_gpu_workload.py": "5cdaf9fe9f25194dae561e060abf471567cfd3bb8df6c1836630a54c5085a9de"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T148: adopt a deterministic reduction policy (fixed tree or compensated) and T147 to compare against RTX 2080 outputs",
- "report_id": "sha256:4784a47e099163813fe871cb9b60da7e579ccd55e6087b43a94c7a125e1f773f",
+ "recommended_next_task": "Check on the RTX 2080 host (protocol in docs/lab/ENERGY_GPU.md) that the PTX kernel keeps its in-kernel reductions unfused: `mkdir -p runs/rtx2080-<date>`; `ciw energy probe --gpu-index 0` must return a reading with status ok; start `TZ=UTC nvidia-smi --query-gpu=timestamp,uuid,name,utilization.gpu,utilization.memory,temperature.gpu,power.draw,clocks.sm,clocks.mem,pstate --format=csv,nounits -lms 100 -f runs/rtx2080-<date>/smi.csv` in the background; `ciw energy record --problem examples/energy-accuracy/problem.json --output-dir runs/rtx2080-<date>/capture --duration 10 --replicas 4096 --warmup-batches 2 --idle-duration 2 --gpu-index 0`; stop the sidecar; `ciw energy replay runs/rtx2080-<date>/capture/log.json`; then `CIW_LAB_NVIDIA_SMI_UTC_OFFSET=+00:00 ciw lab run T116 T117 T118 T119 T120 T121 T124 T147 --capture energy-log=runs/rtx2080-<date>/capture/log.json --capture nvidia-smi-csv=runs/rtx2080-<date>/smi.csv --output-dir results/rtx2080-<date>` on the same host and `ciw lab hardware retain results/rtx2080-<date> --retained lab --run-id rtx2080-<date> --host \"<RTX 2080 host>\"`. Deferred research question: extend the common workload's GPU path beyond the binary64 gaussian_vi PTX kernel of ciw.energy_cuda: a float32 rendering of the same kernel, and a device-wide reduction of its per-replica outputs (a fixed tree over the stored order per T148's REDUCTION_POLICY, plus one atomicAdd variant), each compared with the NumPy reference by compare_outputs on the RTX 2080 host and captured with `ciw energy record` for energy; until then those claims stay not_established on every host",
+ "report_id": "sha256:e5bdc42f4252e93594aefe6235b29da1cff8ff2417bc6b3a404ba2e6b853c13b",
  "schema": "ciw.lab-task-report.v1",
  "section": "energy-gpu",
  "state": "partial",
@@ -581,15 +782,29 @@
   "check: Emulated atomicAdd completion orders of identical float32 block partials give distinct sums vs distinct float32 results over 8 completion orders",
   "check: The bound-guarded sign test (decide only when |S| exceeds the order's own a priori bound) cannot contradict across orders but leaves both cancellation sums undecided in every emulated order vs orders whose guarded sign test decides",
   "check: A comparison-select maximum (a if a >= b else b, the rule numpy documents for np.maximum) returns its first operand for +0.0 and -0.0, so the sign of the result depends on operand order vs distinct sign bits of select_max over (+0, -0) and (-0, +0)",
+  "check: Fused multiply-add contraction of the common workload's in-kernel reductions changes its binary64 outputs, so a bitwise CPU/GPU comparison detects a contracting build vs smallest largest-ULP change over the two contraction rules",
+  "check: Fused multiply-add contraction of the common workload's in-kernel reductions changes its binary64 outputs, so a bitwise CPU/GPU comparison detects a contracting build vs ULP distance between the scalar unfused emulation and the NumPy reference (the baseline the contractions are measured against)",
+  "check: Neither fused multiply-add contraction nor reassociation of the in-kernel reductions changes the common workload's KL acceptance decision at its declared 1e-8 nat target vs variants whose acceptance decision differs from the unfused reference's",
+  "check: Neither fused multiply-add contraction nor reassociation of the in-kernel reductions changes the common workload's KL acceptance decision at its declared 1e-8 nat target vs largest |KL(variant) - KL(reference)| over the decision margin (target - KL(reference))",
   "pytest: tests/test_lab_energy_gpu.py::test_reduction_orders_bound_and_sign_counterexample",
+  "pytest: tests/test_lab_energy_gpu.py::test_kernel_reductions_under_contraction",
+  "pytest: tests/test_lab_energy_gpu.py::test_gpu_comparisons_follow_the_probe",
+  "pytest: tests/test_lab_energy_gpu.py::test_ulp_distance_counts_across_signs",
+  "pytest: tests/test_lab_energy_gpu.py::test_rejected_gpu_outputs_refute_the_comparisons",
+  "pytest: tests/test_lab_energy_gpu.py::test_workload_tasks_digest_the_workload_sources",
+  "pytest: tests/test_lab_energy_gpu.py::test_common_workload_matches_the_ptx_kernel_and_the_energy_problem",
+  "pytest: tests/test_lab_energy_gpu.py::test_next_steps_name_work_that_delivers",
   "pytest: tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance"
  ],
  "tests_skipped": [],
  "title": "Detect whether GPU reductions alter numerical conclusions.",
- "uncertainty": "Deterministic IEEE arithmetic; the emulated orders are a sample of plausible GPU orders, not those of a specific library; the witnesses were found by search, so they show existence, not frequency.",
+ "uncertainty": "Deterministic IEEE arithmetic; the emulated orders are a sample of plausible GPU orders, not those of a specific library; the witnesses were found by search, so they show existence, not frequency; the contraction rules are two plausible compiler choices, not those of a specific nvcc version.",
  "unresolved_assumptions": [
-  "Real GPU reduction orders, FMA contraction and warp-shuffle trees were not observed",
+  "Device-wide GPU reduction orders and warp-shuffle trees were not observed: no device reduction kernel exists; the kernel's in-kernel contraction is emulated here and observed only where the GPU runs",
   "The pass/fail tolerance 0.01 was chosen inside the observed atomic spread; it shows that such flips exist, not how often they occur",
-  "The a priori guard is sound but so conservative that it decides none of the cancellation signs"
+  "The a priori guard is sound but so conservative that it decides none of the cancellation signs",
+  "T148's policy for fixed-order reductions: pairwise: fixed binary tree split at n//2 over the stored order (bitwise reproducible only for the same order and length); error <= gamma_{ceil(log2 n)} sum|x|",
+  "Deferred research question: extend the common workload's GPU path beyond the binary64 gaussian_vi PTX kernel of ciw.energy_cuda: a float32 rendering of the same kernel, and a device-wide reduction of its per-replica outputs (a fixed tree over the stored order per T148's REDUCTION_POLICY, plus one atomicAdd variant), each compared with the NumPy reference by compare_outputs on the RTX 2080 host and captured with `ciw energy record` for energy; until then those claims stay not_established on every host",
+  "no NVIDIA GPU answered the hardware:nvidia-gpu probe in this task; the PTX kernel of the common workload exists (ciw.energy_cuda gaussian_vi), so this comparison runs on a host where the probe succeeds (needs hardware:nvidia-gpu)"
  ]
 }

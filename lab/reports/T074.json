@@ -72,6 +72,10 @@
    "claim": "The recursive covariance-form Kalman estimate and covariance equal the batch information-form posterior marginal at K = 10, 40 and 100 ticks to near roundoff, by block elimination and, at K = 10 and 40, by a dense solve with no recursion over time",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 0.0
@@ -139,6 +143,10 @@
    "claim": "In exact rational arithmetic the scalar filter's final mean and variance are identical to the batch posterior",
    "domain": "mathematical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -203,6 +211,10 @@
    "claim": "The fused estimate's error against the simulated truth is NEES-consistent: run-averaged NEES lies inside its per-tick 99% interval at 90% or more of ticks and the grand mean matches 4",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -242,6 +254,9 @@
    "claim": "The fused estimate equals the physical state of a real target within its covariance",
    "domain": "physical",
    "evidence_status": "not_established",
+   "origin": [
+    "synthetic_inputs"
+   ],
    "uncertainty": null,
    "unit": null,
    "value": "not established: agreement is with the declared model's exact posterior and simulated truth"
@@ -282,15 +297,15 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/sensor_fusion_admission.py": "a0d36bf665e88d2851b08c6181a8f794e39751a688a04ebd586fbc93164cc3c7",
+   "src/ciw/lab/sensor_fusion_admission.py": "e0b488855ec251024bfcc9c57dc77430ec45ceee337acfbc6a109fb747a747d0",
    "src/ciw/lab/sensor_fusion_bench.py": "f373849a4c6836fa20685c59ce7a6fe6bf732f6df9d6a49646cdc017262dd656",
    "src/ciw/lab/sensor_fusion_common.py": "db3b0430ad5c13920239cef354da61b64ab1b01f84b2d3d5aff2f78840a5867a",
-   "src/ciw/lab/sensor_fusion_objects.py": "93fc55ddca91f1adfb886d21805ea8f82586548ee84e1f6cc7daed4df1f53bb9"
+   "src/ciw/lab/sensor_fusion_objects.py": "50ec8767a90f261f108d6524c7ff55d22604b55cc9853e749ba4c5f71bc76081"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T075: keep the fused estimate a candidate until an explicit admission gate.",
- "report_id": "sha256:c642c948e72e78e5becbd3aa74adf5cec2006e775e5619dda989b05e9c234324",
+ "recommended_next_task": "Deferred research question: extend the batch-posterior reference to the nonlinear encoder-speed and IMU heading-rate readings (a Gauss-Newton MAP over the window) and measure how far an EKF's estimate and covariance depart from it; equality with the batch posterior is established here only for linear position readings.",
+ "report_id": "sha256:6ba8964e01a28f2feb090ed09c95e7ed91e82f470285677f9e94427a2585ed62",
  "schema": "ciw.lab-task-report.v1",
  "section": "sensor-fusion",
  "state": "completed",

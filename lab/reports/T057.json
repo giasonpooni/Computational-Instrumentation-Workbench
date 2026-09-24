@@ -68,6 +68,10 @@
    "claim": "The RTS smoothed covariance never exceeds the filtered covariance in matrix order",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-12,
     "rel": 1e-06
@@ -125,6 +129,10 @@
    "claim": "Ensemble position RMSE orders smoothed <= filtered <= raw",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-12,
     "rel": 1e-06
@@ -186,6 +194,9 @@
    "claim": "Filtered and smoothed NEES are chi-square consistent across the ensemble",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -251,6 +262,10 @@
    "claim": "The filter's predicted covariance reaches the discrete Riccati fixed point",
    "domain": "numerical",
    "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-12,
     "rel": 1e-09
@@ -317,6 +332,11 @@
    "claim": "Wilson-Hilferty chi-square quantiles give the NEES consistency bounds",
    "domain": "numerical",
    "evidence_status": "independently_verified",
+   "origin": [
+    "derivation",
+    "independent_check",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-12,
     "rel": 1e-09
@@ -362,6 +382,9 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-12,
     "rel": 0
@@ -384,6 +407,7 @@
    "claim": "A real tracker's measurement noise and target motion match the constant-velocity model",
    "domain": "sensor_performance",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -430,13 +454,13 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/observation.py": "6e5bf960e17dffb62bdaf29d28be9a0f165fd68f8498d173b66eab08fa22ad70",
+   "src/ciw/lab/observation.py": "ef75c3ea4cad06bcbc68592440b3d55a92786a729d5a731b87ece207511ddffb",
    "src/ciw/lab/observation_signals.py": "19e94cb28160a07e5a285b5a4acd76e3820deb37ee5ed180f5c7bf1975a56793"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T066: verify that filtered residuals use filter covariance, not raw sensor covariance",
- "report_id": "sha256:0469ca8134415c5957e22ddb397f563f3dc565b188c45191da8d2cf3c5bf62b4",
+ "recommended_next_task": "Deferred research question: compare filter and smoother under a mismatched process model (a wrong q) and with dropped samples, where the smoother's gain over the filter can shrink or reverse; this task compares them only under the exact model with every sample present.",
+ "report_id": "sha256:89b682602faae2524fecbf7202416bec505eedbda0da5ff3a94c08d0737038a3",
  "schema": "ciw.lab-task-report.v1",
  "section": "observation",
  "state": "completed",

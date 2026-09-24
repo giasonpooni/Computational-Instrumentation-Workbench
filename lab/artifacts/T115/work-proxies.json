@@ -39,6 +39,52 @@
    "rejected_steps": 1
   }
  ],
+ "common_workload": {
+  "declaration": {
+   "boundary": "prepared inputs computed once before the bracket (excluded); per batch: the 15 inputs rounded to the declared precision and broadcast to the replica columns, K iterations and the output block, vectorized across replicas in NumPy",
+   "implementation": "numpy",
+   "iterations": 38,
+   "kernel": "ciw.energy_cuda.PTX gaussian_vi",
+   "kernel_sha256": "601049a61cc1dc7b35d80ec7096dd5d81b3028c025472ec54983b4c1d666d699",
+   "name": "ciw.lab.gaussian-vi-iteration.v1",
+   "precision": "float64",
+   "prepared_input_sha256": "49ca05c0343c645d64ec77ffcf7053c1b1380910f7334cc50986fa45f560df86",
+   "problem_sha256": "f082e5dfbb2e735bdaf8b02e57734e29902d5077c70f53e2e7c5ce2eb8219ab7",
+   "replicas": 4096
+  },
+  "operation_counts": {
+   "float32": {
+    "iteration_flops": 24,
+    "iteration_other": 0,
+    "output_flops": 7,
+    "output_negations": 2,
+    "output_other": 0,
+    "result_dtypes": [
+     "float32"
+    ],
+    "results_outside_dtype": 0
+   },
+   "float64": {
+    "iteration_flops": 24,
+    "iteration_other": 0,
+    "output_flops": 7,
+    "output_negations": 2,
+    "output_other": 0,
+    "result_dtypes": [
+     "float64"
+    ],
+    "results_outside_dtype": 0
+   },
+   "iterations": 38,
+   "ptx": {
+    "fused_instructions": 0,
+    "iteration_flops": 24,
+    "output_flops": 7,
+    "output_negations": 2
+   },
+   "replicas": 4096
+  }
+ },
  "fixed_step_endpoint_errors": [
   1.087370094109951e-09,
   6.606204165812515e-10,

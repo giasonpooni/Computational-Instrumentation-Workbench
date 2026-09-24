@@ -118,6 +118,10 @@
    },
    "domain": "numerical",
    "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-06,
     "rel": 1e-05
@@ -201,9 +205,9 @@
      "tolerance": 1e-05
     }
    },
-   "claim": "Torus outer equator: the shortest route has a smaller focus margin than a longer route",
+   "claim": "Torus outer equator: the shortest route has a smaller focus margin s_c - L (s_c the first zero of j_head) than a longer route",
    "counterexample": {
-    "statement": "The shortest geodesic has the largest focus margin (farthest from conjugate points)",
+    "statement": "The shortest geodesic has the largest focus margin s_c - L (farthest from its first conjugate point)",
     "witness": {
      "alternative": {
       "amplification": 29.49806945310811,
@@ -239,6 +243,10 @@
    },
    "domain": "numerical",
    "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-06,
     "rel": 1e-05
@@ -328,6 +336,9 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-06,
     "rel": 1e-05
@@ -448,6 +459,10 @@
    },
    "domain": "numerical",
    "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-06,
     "rel": 1e-05
@@ -500,9 +515,9 @@
     ],
     "derivation": "j_head = sin s on the unit sphere; the first conjugate point is at pi, so the minor arc of length pi - delta has margin delta and targeting condition 1/sin delta"
    },
-   "claim": "On the unit sphere the minimizing arc between points at separation pi - delta ends delta before its conjugate point, so minimizing geodesics have no positive lower bound on focus margin",
+   "claim": "On the unit sphere the minimizing arc between points at separation pi - delta ends delta before its conjugate point, so minimizing geodesics have no positive lower bound on the focus margin s_c - L",
    "counterexample": {
-    "statement": "Minimizing geodesics on the unit sphere have focus margin bounded below by a positive constant",
+    "statement": "Minimizing geodesics on the unit sphere have focus margin s_c - L bounded below by a positive constant",
     "witness": {
      "delta": [
       0.1,
@@ -525,6 +540,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-06,
     "rel": 1e-06
@@ -576,6 +595,10 @@
    "claim": "Search on the saddle (K < 0, simply connected) finds exactly one route, consistent with Cartan-Hadamard uniqueness, so this surface admits no witness",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -607,6 +630,9 @@
    "claim": "Every T032 route search gives the same route set at twice the fan density (720 to 1440 headings)",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -661,6 +687,7 @@
    "claim": "A route from this library is safe (or unsafe) to execute on a physical part or vehicle",
    "domain": "machine_safety",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -701,13 +728,13 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/flat_torus_topology.py": "1221001d96bf1f9aa2f9fea169a2b10bfb37230da11bfb6f1608ba9355c86b9a",
+   "src/ciw/lab/flat_torus_topology.py": "2c05c13905cc51906d41b89219b001396634a9d3bb8bda9bd32ac75a5523fdb1",
    "src/ciw/lab/flat_torus_topology_routes.py": "733568202260c5432d01d01976ee1b1a8a4d69b23e6d3c089ca00d1c46f2ab61"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "Extend the library to variable-curvature meshes (surfaces-discrete section) and to manufacturing paths",
- "report_id": "sha256:bb5b68cba56d24dba581adc93b0d0cf9bea26e3a29541b5724db4b80eebe60b6",
+ "recommended_next_task": "Deferred research question: extend the library to variable-curvature triangle meshes (for example a jittered icosphere or a mesh torus, with routes traced by the T038 mesh tracer), where route quantities carry mesh error (manufacturing paths are already covered by T137's retained counterexample to 'The shortest route between a station and an edge is also the safest route')",
+ "report_id": "sha256:e93d7fee7f90640adc826ee9e199c98874c4c358c05470e07ae98918f2447132",
  "schema": "ciw.lab-task-report.v1",
  "section": "flat-torus-topology",
  "state": "completed",
@@ -718,11 +745,11 @@
   "check: Torus inner equator: the shortest route has larger heading amplification than a longer route vs routes where exactly one of ciw.lab.jacobi and scipy/sympy finds a conjugate point within the horizon",
   "check: Torus inner equator: the shortest route has larger heading amplification than a longer route vs scipy solve_ivp runs that stopped before L + horizon",
   "independent: Torus inner equator: the shortest route has larger heading amplification than a longer route vs scipy.integrate.solve_ivp (sympy-derived field)",
-  "check: Torus outer equator: the shortest route has a smaller focus margin than a longer route vs alternative minus shortest focus margin",
-  "check: Torus outer equator: the shortest route has a smaller focus margin than a longer route vs shortest margin vs pi sqrt 3 - 4.5",
-  "check: Torus outer equator: the shortest route has a smaller focus margin than a longer route vs routes where exactly one of ciw.lab.jacobi and scipy/sympy finds a conjugate point within the horizon",
-  "check: Torus outer equator: the shortest route has a smaller focus margin than a longer route vs scipy solve_ivp runs that stopped before L + horizon",
-  "independent: Torus outer equator: the shortest route has a smaller focus margin than a longer route vs scipy.integrate.solve_ivp (sympy-derived field)",
+  "check: Torus outer equator: the shortest route has a smaller focus margin s_c - L (s_c the first zero of j_head) than a longer route vs alternative minus shortest focus margin",
+  "check: Torus outer equator: the shortest route has a smaller focus margin s_c - L (s_c the first zero of j_head) than a longer route vs shortest margin vs pi sqrt 3 - 4.5",
+  "check: Torus outer equator: the shortest route has a smaller focus margin s_c - L (s_c the first zero of j_head) than a longer route vs routes where exactly one of ciw.lab.jacobi and scipy/sympy finds a conjugate point within the horizon",
+  "check: Torus outer equator: the shortest route has a smaller focus margin s_c - L (s_c the first zero of j_head) than a longer route vs scipy solve_ivp runs that stopped before L + horizon",
+  "independent: Torus outer equator: the shortest route has a smaller focus margin s_c - L (s_c the first zero of j_head) than a longer route vs scipy.integrate.solve_ivp (sympy-derived field)",
   "check: Torus (0, 0) -> (2.2, 0): two mirror-image shortest routes tie, so 'the' shortest route is not unique vs length difference of the two shortest routes",
   "check: Torus (0, 0) -> (2.2, 0): two mirror-image shortest routes tie, so 'the' shortest route is not unique vs heading separation (rad)",
   "check: Gaussian bump: a longer route over the top has smaller amplification but passes a conjugate point vs shortest minus top-route amplification",
@@ -731,15 +758,17 @@
   "check: Gaussian bump: a longer route over the top has smaller amplification but passes a conjugate point vs routes where exactly one of ciw.lab.jacobi and scipy/sympy finds a conjugate point within the horizon",
   "check: Gaussian bump: a longer route over the top has smaller amplification but passes a conjugate point vs scipy solve_ivp runs that stopped before L + horizon",
   "independent: Gaussian bump: a longer route over the top has smaller amplification but passes a conjugate point vs scipy.integrate.solve_ivp (sympy-derived field)",
-  "check: On the unit sphere the minimizing arc between points at separation pi - delta ends delta before its conjugate point, so minimizing geodesics have no positive lower bound on focus margin vs ciw.lab.jacobi focus margin relative to delta (max over delta)",
-  "check: On the unit sphere the minimizing arc between points at separation pi - delta ends delta before its conjugate point, so minimizing geodesics have no positive lower bound on focus margin vs ciw.lab.jacobi j_head(L) - sin delta (max over delta)",
+  "check: On the unit sphere the minimizing arc between points at separation pi - delta ends delta before its conjugate point, so minimizing geodesics have no positive lower bound on the focus margin s_c - L vs ciw.lab.jacobi focus margin relative to delta (max over delta)",
+  "check: On the unit sphere the minimizing arc between points at separation pi - delta ends delta before its conjugate point, so minimizing geodesics have no positive lower bound on the focus margin s_c - L vs ciw.lab.jacobi j_head(L) - sin delta (max over delta)",
   "check: Search on the saddle (K < 0, simply connected) finds exactly one route, consistent with Cartan-Hadamard uniqueness, so this surface admits no witness vs routes found minus 1",
   "check: Every T032 route search gives the same route set at twice the fan density (720 to 1440 headings) vs routes found at only one of the two densities (all configurations)",
   "pytest: tests/test_lab_flat_torus_topology.py::test_t032_counterexample_library",
   "pytest: tests/test_lab_flat_torus_topology.py::test_route_helpers",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_focus_margin_claims_state_the_canonical_definition",
   "pytest: tests/test_lab_flat_torus_topology.py::test_sympy_field_matches_the_closed_form_batch_field",
   "pytest: tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
-  "pytest: tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+  "pytest: tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_next_steps_name_forward_work"
  ],
  "tests_skipped": [],
  "title": "Create a counterexample library for “shortest means safest.”",

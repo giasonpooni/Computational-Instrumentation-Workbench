@@ -63,6 +63,10 @@
    "claim": "With a correctly clocked tracker fused alongside, an unmodelled one-tick camera lag biases the whitened innovations of both sensors; a mean test detects it and the bias matches the exact linear prediction within sampling error",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -129,6 +133,10 @@
    "claim": "A filter that estimates the clock offset as a state (h = p - tau v) removes the innovation bias and recovers tau = 0.1 s",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -201,6 +209,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -294,6 +306,10 @@
    "claim": "Declared in the camera's calibration record, the one-tick latency is applied by the fusion API: the session fuses each lagged reading at the tick it refers to, its estimates equal the correctly timed linear filter to roundoff, and that filter's position error is unbiased, so the camera-only bias of about -tau E[v] disappears",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -398,6 +414,10 @@
    "claim": "The fusion API never fuses a reading at the wrong time: a lagged reading delivered after a newer reference reading, a lagged reading that refers to a time before tick 0, an undelayed reading older than the clock and a backward prediction are refused with out_of_order, leave the state, covariance, clock, track status and latest candidate unchanged and are retained with that refusal, while a lagged reading that refers to the current tick is fused at that tick",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -438,6 +458,9 @@
    "claim": "The recovered offset calibrates the clock of a real camera",
    "domain": "calibration",
    "evidence_status": "not_established",
+   "origin": [
+    "synthetic_inputs"
+   ],
    "uncertainty": null,
    "unit": null,
    "value": "not established: the lag is a declared synthetic fault"
@@ -479,13 +502,13 @@
   "sources": {
    "src/ciw/lab/sensor_fusion_bench.py": "f373849a4c6836fa20685c59ce7a6fe6bf732f6df9d6a49646cdc017262dd656",
    "src/ciw/lab/sensor_fusion_common.py": "db3b0430ad5c13920239cef354da61b64ab1b01f84b2d3d5aff2f78840a5867a",
-   "src/ciw/lab/sensor_fusion_objects.py": "93fc55ddca91f1adfb886d21805ea8f82586548ee84e1f6cc7daed4df1f53bb9",
-   "src/ciw/lab/sensor_fusion_robustness.py": "d8944a1e077dab7955d5162b6dd233a7f0b721c99e76176eb1b987b7d8b765c5"
+   "src/ciw/lab/sensor_fusion_objects.py": "50ec8767a90f261f108d6524c7ff55d22604b55cc9853e749ba4c5f71bc76081",
+   "src/ciw/lab/sensor_fusion_robustness.py": "ef7aebd84e84636cd8eac459886e3be69d96315962d47be5ac66235caada34dc"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T071: frame mismatch, the spatial analogue of a stale clock.",
- "report_id": "sha256:de14f2f3ade561561c26414962bda495b7146477083105c39562ed4c6ced9e8a",
+ "recommended_next_task": "Deferred research question: an out-of-sequence measurement update (retrodiction) for readings older than the session clock, compared with this task's refusal and with the batch posterior, so a late reading can be used rather than refused; the session and the intake refuse such readings today.",
+ "report_id": "sha256:2337a7425b56b62e7e5247cb4741e92e68e8fde36376522445807611117b8345",
  "schema": "ciw.lab-task-report.v1",
  "section": "sensor-fusion",
  "state": "completed",

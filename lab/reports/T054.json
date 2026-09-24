@@ -50,6 +50,9 @@
    "claim": "A clock offset delta produces error -v delta + O(delta^2) at the sample times",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-09
@@ -92,6 +95,9 @@
    "claim": "After linear interpolation to a common time the offset error is exactly -S delta (S the interpolant slope); its regression on -v delta is the velocity-weighted sinc^2(omega h/2)",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-12,
     "rel": 1e-09
@@ -133,6 +139,10 @@
    "claim": "Timestamp jitter adds mean squared error S^2 sigma_j^2 ((1 - w)^2 + w^2)",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-18,
     "rel": 1e-06
@@ -189,6 +199,9 @@
    "claim": "A declared clock mapping removes the offset error; combining clocks without one is refused",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-15,
     "rel": 1e-09
@@ -212,6 +225,7 @@
    "claim": "Real sensor clocks have the declared constant offset and white jitter",
    "domain": "physical",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -253,14 +267,14 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/observation.py": "6e5bf960e17dffb62bdaf29d28be9a0f165fd68f8498d173b66eab08fa22ad70",
-   "src/ciw/lab/observation_modes.py": "bfd6aa4471cc876a7ac2fb8790a4a5c4f478c547350b059311f5e6d53702c83e",
+   "src/ciw/lab/observation.py": "ef75c3ea4cad06bcbc68592440b3d55a92786a729d5a731b87ece207511ddffb",
+   "src/ciw/lab/observation_modes.py": "14fcc803e9543fa4a6891775dfac6633ca15ade648e6125e2f71fde4c4201c90",
    "src/ciw/lab/observation_signals.py": "19e94cb28160a07e5a285b5a4acd76e3820deb37ee5ed180f5c7bf1975a56793"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T055: add dropped observations",
- "report_id": "sha256:baa96697dd633c0adcf689fefe2983591bfd9800de0df13d1d2dc86bd7385a3a",
+ "recommended_next_task": "Deferred research question: estimate a drifting clock offset (random-walk offset and rate) online from paired stamps and report its identifiability against jitter; this task's offset is constant and its jitter white.",
+ "report_id": "sha256:dc73f82b5c4547d87199429c4af802a6a8f8366c7b94eabc73738d30cb68e1bd",
  "schema": "ciw.lab-task-report.v1",
  "section": "observation",
  "state": "completed",

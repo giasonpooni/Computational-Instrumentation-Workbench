@@ -8,21 +8,24 @@
    "analytic": 0,
    "hardware_measured": 0,
    "independently_verified": 0,
-   "not_established": 0,
-   "numerically_verified": 3,
+   "not_established": 1,
+   "numerically_verified": 5,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "L equals the oracle on every case (refusals included), every oracle rule branch is exercised, every computational task is named, and established-finding counts agree with a raw-text recount.",
- "experiment": "Enumerate 2 x 2 x 4 x 3 x 8 x 2 bases x 12 domains = 9216 cases (failing, reversed, same-origin, cross-implementation, unknown-family and embedded-ciw independent checks included) and compare L with the oracle; map each specification unit to the tasks it names and count established findings.",
+ "expected_invariant": "L equals the oracle on every case (refusals included) and every oracle rule branch is exercised; evidence.finding equals the rule 10 oracle on every probe case; the evidence-label section numbers its rules from 1 and names the screen, T141, basis components and T100; every computational task is named; established-finding counts agree with a raw-text recount.",
+ "experiment": "Enumerate 2 x 2 x 4 x 3 x 8 x 2 bases x 12 domains = 9216 cases (failing, reversed, same-origin, cross-implementation, unknown-family and embedded-ciw independent checks included) and compare L with the oracle; file each of 14 probe claims in each of the 12 domains (168 cases) with a basis that would establish it where the domain allows; read the evidence-label rules; map each specification unit to the tasks it names, count their established findings and collect their counterexample statements.",
  "failure_modes_checked": [
   "label function departing from a written rule (precedence, origin rule, physical gate, authority)",
   "grammar that leaves a rule branch unexercised",
+  "authority statement filed in a computational or physical domain and labelled by its checks (T141)",
+  "specification that omits the authority boundary or numbers its rules out of order",
   "computational task named by no specification",
   "family page listed but absent",
-  "established-finding traversal disagreeing with the report text"
+  "established-finding traversal disagreeing with the report text",
+  "unit counted as covered while its tasks refute a general statement it may restate"
  ],
  "findings": [
   {
@@ -51,6 +54,10 @@
    "claim": "The evidence-label function agrees with the reference oracle for rules 1-5 on the exhaustive basis grammar",
    "domain": "mathematical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -62,6 +69,92 @@
    },
    "unit": "cases",
    "value": 0
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "probe cases where evidence.finding departs from the rule 10 oracle",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "derivation": "docs/lab/SPECIFICATIONS.md#evidence-labels (rules 1 and 10)"
+   },
+   "claim": "The authority-wording screen refuses each of the 9 hand-classified authority statements of its probe (T141's acceptance statement first) in the 7 computational and physical domains, leaves them not_established in the authority domains, and gives the 5 declined or ordinary statements their rules 1-5 labels (rule 10)",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "every probe claim in every domain; no sampling",
+    "kind": "exact",
+    "value": 0
+   },
+   "unit": "cases",
+   "value": {
+    "cases": 168,
+    "refused": 63,
+    "violations": 0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "evidence rules not numbered 1, 2, ... in order",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "rules 1-5 absent from the section",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "screen, T141, basis-component and T100 anchors the rules do not name",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "The specification states the evidence rules as a numbered list that includes the authority-wording screen (T141's loophole), basis components and workspace classification (T100)",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "integer count over retained report files; no rounding, sampling or tolerance",
+    "kind": "exact",
+    "value": 0
+   },
+   "unit": "rules",
+   "value": 12
   },
   {
    "assigned_by": "ciw.lab.evidence",
@@ -88,6 +181,9 @@
    "claim": "Every computational queue task is named by a specification document",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -125,6 +221,9 @@
    "claim": "Specification documents are exercised by retained established findings",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -136,6 +235,20 @@
    },
    "unit": "units",
    "value": 21
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": "Statements are listed per unit in specification-coverage.json for review; their notation differs from the units' formulas, so no text comparison decides whether a unit restates one."
+   },
+   "claim": "No specification unit restates a general statement that a retained counterexample of its named tasks refutes",
+   "domain": "provenance",
+   "evidence_status": "not_established",
+   "expected_not_established": true,
+   "origin": [],
+   "uncertainty": null,
+   "unit": null,
+   "value": null
   }
  ],
  "generated_artifacts": [
@@ -145,20 +258,26 @@
    "sha256": "0625711bb39e88b3f1fd4a508f1015bed02c5ac6528ba0d461e94d571bb95a18"
   },
   {
-   "bytes": 3613,
+   "bytes": 312,
+   "path": "artifacts/T155/rule10-probe.json",
+   "sha256": "8b64e1f21faea8576689e19e22efc813089e095d357768eb03848e4e38b6e8d3"
+  },
+  {
+   "bytes": 111765,
    "path": "artifacts/T155/specification-coverage.json",
-   "sha256": "b8841609bab15d6573c53e489008a1b3d011a468494579677a8a1e3ed97abe7c"
+   "sha256": "be1af19b44b187621cac10f9ed5fda5aa63c7382ca44ed63a913085909416dbb"
   }
  ],
- "hypothesis": "The label function agrees with rules 1-5 of the specification on every basis of a finite grammar, every computational queue task is named by a specification document, and every specification document is exercised by retained established findings.",
+ "hypothesis": "The label function agrees with rules 1-5 of the specification on every basis of a finite grammar, the authority-wording screen closes T141's computational-domain loophole as rule 10 states, the specification states its evidence rules including that boundary, every computational queue task is named by a specification document, and every specification document is exercised by retained established findings.",
  "input_data": [
   "Retained reports of T001-T154 in the same output directory",
   "docs/lab/SPECIFICATIONS.md and the family pages it lists",
-  "Packaged queue definition (tasks T001-T154)"
+  "Packaged queue definition (tasks T001-T154)",
+  "14 hand-classified authority and ordinary claims, T141's acceptance statement first"
  ],
- "mathematical_model": "Label function L(basis, domain) from ciw.lab.evidence against a reference oracle restating rules 1-5 of docs/lab/SPECIFICATIONS.md; specification units = its sections plus the family pages it lists as specifications of record.",
+ "mathematical_model": "Label function L(basis, domain) from ciw.lab.evidence against a reference oracle restating rules 1-5 of docs/lab/SPECIFICATIONS.md; evidence.finding against a rule 10 oracle (refuse an asserted authority outcome in a computational or physical domain, else the rules 1-5 label) on hand-classified claims; specification units = its sections plus the family pages it lists as specifications of record, each with the counterexample statements that its named tasks' retained findings refute.",
  "number": 155,
- "numerical_result": "9216 label cases, 0 disagreements with the rules 1-5 oracle, 0 unexercised rule branches; 21 specification units name 154/154 computational tasks; 21/21 units have established findings.",
+ "numerical_result": "9216 label cases, 0 disagreements with the rules 1-5 oracle, 0 unexercised rule branches; 168 rule 10 probe cases, 0 disagreements (63 refused); 12 evidence rules stated; 21 specification units name 154/154 computational tasks; 21/21 units have established findings; 21 units name tasks that refute 327 general statements by counterexample, listed per unit for review.",
  "observation_model": "No physical observation; reads retained computational records only.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -172,12 +291,12 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/research_portfolio.py": "0fd0ed475a38bf81fd2145f64cf1335856a471c58d406347c3b66b0f66672702"
+   "src/ciw/lab/research_portfolio.py": "145b8ee8456e1dd57bf2a05fa20e1ce55bd33356522436d8901eb1adfb60fc7a"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "Machine-check the label rules (for example in Lean or with a SAT encoding over the basis grammar).",
- "report_id": "sha256:30e3ab3454f2c4ab517bf0779ecc02a4e8762a2f1a4a048b21d8d9d43da1948b",
+ "recommended_next_task": "Prove the label rules off the finite grammar, for example with property-based tests over unbounded bases or in Lean (the grammar itself is already enumerated exhaustively here), and have a reviewer confirm that no specification unit restates a counterexample statement listed for it in specification-coverage.json.",
+ "report_id": "sha256:5062acd4631fec94b3878c1363aef168b9d56a7ab232c25f4b0d8f8334b1ca7b",
  "schema": "ciw.lab-task-report.v1",
  "section": "research-portfolio",
  "state": "completed",
@@ -185,12 +304,19 @@
  "tests_passed": [
   "check: The evidence-label function agrees with the reference oracle for rules 1-5 on the exhaustive basis grammar vs cases where L differs from the rules 1-5 oracle",
   "check: The evidence-label function agrees with the reference oracle for rules 1-5 on the exhaustive basis grammar vs oracle rule branches not exercised by the grammar",
+  "check: The authority-wording screen refuses each of the 9 hand-classified authority statements of its probe (T141's acceptance statement first) in the 7 computational and physical domains, leaves them not_established in the authority domains, and gives the 5 declined or ordinary statements their rules 1-5 labels (rule 10) vs probe cases where evidence.finding departs from the rule 10 oracle",
+  "check: The specification states the evidence rules as a numbered list that includes the authority-wording screen (T141's loophole), basis components and workspace classification (T100) vs evidence rules not numbered 1, 2, ... in order",
+  "check: The specification states the evidence rules as a numbered list that includes the authority-wording screen (T141's loophole), basis components and workspace classification (T100) vs rules 1-5 absent from the section",
+  "check: The specification states the evidence rules as a numbered list that includes the authority-wording screen (T141's loophole), basis components and workspace classification (T100) vs screen, T141, basis-component and T100 anchors the rules do not name",
   "check: Every computational queue task is named by a specification document vs computational queue tasks named by no specification document",
   "check: Every computational queue task is named by a specification document vs family pages listed in the index but absent",
   "check: Specification documents are exercised by retained established findings vs specification units whose named tasks retain no established finding",
   "check: Specification documents are exercised by retained established findings vs tasks whose established-finding count differs from a raw-text recount",
   "pytest: tests/test_lab_research_portfolio.py::test_label_function_matches_the_reference_oracle_exhaustively",
-  "pytest: tests/test_lab_research_portfolio.py::test_formal_specifications_cover_the_queue"
+  "pytest: tests/test_lab_research_portfolio.py::test_formal_specifications_cover_the_queue",
+  "pytest: tests/test_lab_research_portfolio.py::test_rule_10_screen_closes_the_computational_domain_loophole",
+  "pytest: tests/test_lab_research_portfolio.py::test_specification_units_list_the_counterexamples_of_their_tasks",
+  "pytest: tests/test_lab_research_portfolio.py::test_next_steps_name_open_work_rather_than_work_done_elsewhere"
  ],
  "tests_skipped": [],
  "title": "Write formal mathematical specifications.",
@@ -198,6 +324,9 @@
  "unresolved_assumptions": [
   "Only the families on SPECIFICATIONS.md are stated in formal notation; the family pages it lists specify the other families as method descriptions (models, references and decision rules), not in one uniform notation.",
   "T155 does not recompute retained values from the specification formulas; each task's own reference checks compare its results with its model.",
-  "The oracle restates rules 1-5 by hand: agreement shows that the implementation and the written rules coincide on the grammar, not that the rules are the right ones or that they hold off the grammar."
+  "The oracle restates rules 1-5 by hand: agreement shows that the implementation and the written rules coincide on the grammar, not that the rules are the right ones or that they hold off the grammar.",
+  "The rule 10 probe covers hand-classified claims only; rules 6-9, 11 and 12 are enforced by the validator, the report builder, the runner and the workspace classifier and tested in tests/test_lab_core.py and tests/test_lab_bridge.py, not by T155.",
+  "An established finding exercises a unit; it does not show that the unit is right. Whether a unit restates a general statement that a counterexample of its tasks refutes is a review question: the statements differ in notation from the units' formulas, so text matching cannot decide it.",
+  "The screen matches phrases, not paraphrases: 'Manufacturers need curvature-aware placement checks' passes it in a computational domain (rule10-probe.json), so assigning a free-text claim to a domain remains a review question."
  ]
 }

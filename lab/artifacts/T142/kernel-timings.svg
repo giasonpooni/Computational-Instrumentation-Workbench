@@ -2,16 +2,16 @@
 <rect width="640" height="420" fill="#ffffff"/>
 <text x="78" y="22" font-size="13" font-weight="bold">Per-call time against exact flops (this machine)</text>
 <rect x="78" y="40" width="392" height="322" fill="none" stroke="#333"/>
-<line x1="78" y1="143.19" x2="470" y2="143.19" stroke="#e5e7eb"/>
-<text x="72" y="147.19" text-anchor="end">1e2</text>
+<line x1="78" y1="183.47" x2="470" y2="183.47" stroke="#e5e7eb"/>
+<text x="72" y="187.47" text-anchor="end">1e2</text>
 <text x="274.00" y="406" text-anchor="middle">flops per call</text>
 <text x="16" y="201.00" text-anchor="middle" transform="rotate(-90 16 201.00)">microseconds per call</text>
-<path d="M78.00,241.80" fill="none" stroke="#1f5fa8" stroke-width="1.8"/>
-<circle cx="78.00" cy="241.80" r="2.6" fill="#1f5fa8"/>
+<path d="M78.00,263.25" fill="none" stroke="#1f5fa8" stroke-width="1.8"/>
+<circle cx="78.00" cy="263.25" r="2.6" fill="#1f5fa8"/>
 <line x1="482" y1="52" x2="502" y2="52" stroke="#1f5fa8" stroke-width="2"/>
 <text x="508" y="56">geodesic_rhs</text>
-<path d="M85.18,232.58" fill="none" stroke="#c2410c" stroke-width="1.8"/>
-<circle cx="85.18" cy="232.58" r="2.6" fill="#c2410c"/>
+<path d="M85.18,198.54" fill="none" stroke="#c2410c" stroke-width="1.8"/>
+<circle cx="85.18" cy="198.54" r="2.6" fill="#c2410c"/>
 <line x1="482" y1="70" x2="502" y2="70" stroke="#c2410c" stroke-width="2"/>
 <text x="508" y="74">jacobi_rhs</text>
 <path d="M470.00,51.93" fill="none" stroke="#15803d" stroke-width="1.8"/>

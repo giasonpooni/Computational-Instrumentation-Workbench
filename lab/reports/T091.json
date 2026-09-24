@@ -114,6 +114,9 @@
    "claim": "A saved workspace from a session holding a trusted provider binding, with oscillator results, an energy-accuracy original and replay and a provider-kind numerical-heat bundle, reopens with no provider binding and reaches no execution path",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -160,6 +163,9 @@
    "claim": "The execution guard intercepts a replay attempted while it is active",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -196,6 +202,9 @@
    },
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -225,6 +234,9 @@
    "claim": "After reopen the binding-free energy-accuracy workflow still replays with a numerical match",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -242,7 +254,7 @@
   {
    "bytes": 5301,
    "path": "artifacts/T091/reopen.json",
-   "sha256": "800e9a76134a254632cb97416a72c70e4b1d1d69c039953aad430bbe07526da0"
+   "sha256": "de10023fb4d9101e997ec29bc64f9b8e0fd595d28d908a67fd2de0a275d16033"
   }
  ],
  "hypothesis": "A CIW workspace saved by a session that held a trusted provider binding, with retained oscillator results, an energy-accuracy original and replay and a provider-kind bundle, can be reopened with no provider binding and without reaching any execution entry point, and the binding is not recovered.",
@@ -267,13 +279,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/exchange_provenance_bundles.py": "3acc6fd6976bb5e6dd8ad3bfc3d09a1d9594ca0a06f4db823581e5b651d4835e",
-   "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "7d6da1148d3744ae1e754b53f697b5b4919aff2666788ae6aec0e48e6e2380c9"
+   "src/ciw/lab/exchange_provenance_bundles.py": "7e841b781d966fe75d5a86bd61e1ef32150c4087393893be788c2b7eff69f3d4",
+   "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "435727947e827d1d601802a5e860f04d578f7b879301c7f5615fb7d6e523500e"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T092: refuse replay of provider kinds without a binding in the reopened session.",
- "report_id": "sha256:55d52fc40e350b9ea151a7e05ad84f3161105c62021468c94d1ed9b724e56509",
+ "recommended_next_task": "Deferred research question: intercept execution below CIW's Python entry points while a workspace reopens (a sys.addaudithook hook on subprocess.Popen, os.exec*, os.posix_spawn and ctypes.dlopen, run in a child process because audit hooks cannot be removed), so that a workflow reached through a name imported into another module, or through code outside the listed entry points, is caught; and count validation recomputation for every retained kind, not only the energy analysis.",
+ "report_id": "sha256:17b4ebcbacd03dc2649489cd2fd8edb7ee808accb15bdd54e062ce4e9d021b33",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "completed",

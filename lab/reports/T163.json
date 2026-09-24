@@ -8,18 +8,21 @@
    "hardware_measured": 0,
    "independently_verified": 0,
    "not_established": 0,
-   "numerically_verified": 1,
+   "numerically_verified": 2,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "Every label used by a retained finding appears on the page, and every not_established finding of a panel is shown.",
- "experiment": "Assemble a Markdown portfolio page from the selected reports and their retained figures, then read the labels and not_established claims back from the page.",
+ "expected_invariant": "Every label used by a retained finding appears on the page with the finding's basis, every not_established finding of a panel is shown, and the label definitions, the independence qualification, every boundary row and the customer-demand limitation are stated.",
+ "experiment": "Assemble a Markdown portfolio page from the selected reports and their retained figures, then read the labels, bases, not_established claims, definitions and boundary rows back from the page.",
  "failure_modes_checked": [
   "label in use missing from the page",
   "not_established findings hidden by a finding limit",
-  "curated task not retained"
+  "curated task not retained",
+  "label shown without its basis",
+  "independently_verified read as verification by another party",
+  "customer demand omitted"
  ],
  "findings": [
   {
@@ -47,6 +50,9 @@
    "claim": "Portfolio page shows every evidence label in use and every not_established finding of its panels",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -58,22 +64,71 @@
    },
    "unit": "panels",
    "value": 12
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "shown findings whose line lacks their basis",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "label definitions, independence qualification or boundary rows missing or altered",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "customer-demand limitation absent",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Portfolio page shows each finding's basis beside its label, defines the labels with the independence qualification, lists every boundary row and states customer demand",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "integer count over retained report files; no rounding, sampling or tolerance",
+    "kind": "exact",
+    "value": 0
+   },
+   "unit": "boundary rows",
+   "value": 8
   }
  ],
  "generated_artifacts": [
   {
-   "bytes": 20800,
+   "bytes": 28306,
    "path": "artifacts/T163/PORTFOLIO.md",
-   "sha256": "a58a7b4b42581c9f7878fae0d88059675f29344f904e58b5f8a1c52b28b86d36"
+   "sha256": "90f026d0edf9b67c2037f1a8bc3b780d8f847c96ac667cf19172f78c8b832881"
   }
  ],
- "hypothesis": "A short tour of retained experiments can show every evidence label in use and what each result does not prove.",
+ "hypothesis": "A short tour of retained experiments can show every evidence label in use, with its basis and its definition, and what each result does not prove.",
  "input_data": [
-  "Retained reports of T001-T162 in the same output directory"
+  "Retained reports of T001-T162 in the same output directory",
+  "Label definitions (docs/LAB.md) and ciw.lab.evidence.BOUNDARY"
  ],
- "mathematical_model": "Curated panels plus, for every label in use that they do not show, the first retained task holding it; each panel shows its headline findings and every not_established finding.",
+ "mathematical_model": "Curated panels plus, for every label in use that they do not show, the first retained task holding it; each panel shows its headline findings with their bases and every not_established finding; the page defines the labels, qualifies independently_verified, and lists the computational boundary and customer demand as limitations.",
  "number": 163,
- "numerical_result": "12 panels (10 of 10 curated retained, added T020 (analytic), T097 (provider_backed)); labels in use: analytic, numerically_verified, provider_backed, independently_verified, not_established; labels shown: analytic, numerically_verified, provider_backed, independently_verified, not_established.",
+ "numerical_result": "12 panels (10 of 10 curated retained, added T020 (analytic), T097 (provider_backed)); labels in use: analytic, numerically_verified, provider_backed, independently_verified, not_established; labels shown: analytic, numerically_verified, provider_backed, independently_verified, not_established; 0 shown findings without their basis; 0 label or boundary statements missing.",
  "observation_model": "No physical observation; reads retained computational records only.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -87,12 +142,12 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/research_portfolio.py": "0fd0ed475a38bf81fd2145f64cf1335856a471c58d406347c3b66b0f66672702"
+   "src/ciw/lab/research_portfolio.py": "145b8ee8456e1dd57bf2a05fa20e1ce55bd33356522436d8901eb1adfb60fc7a"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "Present the portfolio page with the physical flat-plate/cylinder experiments once measured.",
- "report_id": "sha256:da94fbae9dba4f0a42e72b5bcf8e93186018bd26672266c6eba1d1e899893da0",
+ "recommended_next_task": "Add panels for a retained hardware run's findings beside the clean-room ones once one exists; hardware runs are aggregated outside the queue by `ciw lab unmeasured`, and this page reads only the clean-room reports.",
+ "report_id": "sha256:ddfeec659bef3298877e89ccd78c646a34663c469f77b76fed5491dc52ebe5d8",
  "schema": "ciw.lab-task-report.v1",
  "section": "research-portfolio",
  "state": "completed",
@@ -100,7 +155,11 @@
  "tests_passed": [
   "check: Portfolio page shows every evidence label in use and every not_established finding of its panels vs labels in use absent from the rendered page",
   "check: Portfolio page shows every evidence label in use and every not_established finding of its panels vs not_established findings of the panels absent from the rendered page",
-  "pytest: tests/test_lab_research_portfolio.py::test_portfolio_shows_every_label_in_use"
+  "check: Portfolio page shows each finding's basis beside its label, defines the labels with the independence qualification, lists every boundary row and states customer demand vs shown findings whose line lacks their basis",
+  "check: Portfolio page shows each finding's basis beside its label, defines the labels with the independence qualification, lists every boundary row and states customer demand vs label definitions, independence qualification or boundary rows missing or altered",
+  "check: Portfolio page shows each finding's basis beside its label, defines the labels with the independence qualification, lists every boundary row and states customer demand vs customer-demand limitation absent",
+  "pytest: tests/test_lab_research_portfolio.py::test_portfolio_shows_every_label_in_use",
+  "pytest: tests/test_lab_research_portfolio.py::test_portfolio_qualifies_labels_and_states_customer_demand"
  ],
  "tests_skipped": [],
  "title": "Create a masters-portfolio demonstration.",

@@ -65,6 +65,10 @@
    "claim": "Sampling design resolving profile curvature to tolerance at k = 2",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-09
@@ -154,6 +158,10 @@
    "claim": "Monte Carlo curvature error on the coupon crest matches the derived bias and noise",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -198,6 +206,9 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-07
@@ -240,6 +251,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -286,6 +301,10 @@
    "claim": "Registration residual and rotation covariance of repeat scans follow chi-square(3N - 6) and the inertia formula",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -340,6 +359,10 @@
    "claim": "Repeat scans needed at the native 0.05 mm spacing versus curvature tolerance (coupon crest)",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -404,6 +427,10 @@
    "claim": "The as-built dome fit (height, width, centre, base plane) recovers a perturbed dome and has its linearized covariance on synthetic scans",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -472,6 +499,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-06,
     "rel": 1e-06
@@ -507,6 +538,13 @@
       "reference_kind": "refusal"
      },
      {
+      "expected_refusal": "undeclared_device",
+      "observed_refusal": "undeclared_device",
+      "passed": true,
+      "reference": "protocol mutation criterion_names_undeclared_instrument",
+      "reference_kind": "refusal"
+     },
+     {
       "expected_refusal": "measurement_without_acquisition",
       "observed_refusal": "measurement_without_acquisition",
       "passed": true,
@@ -524,6 +562,13 @@
       "expected_refusal": "missing_field",
       "observed_refusal": "missing_field",
       "passed": true,
+      "reference": "protocol mutation instrument_without_settings",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "missing_field",
+      "observed_refusal": "missing_field",
+      "passed": true,
       "reference": "protocol mutation missing_markers",
       "reference_kind": "refusal"
      },
@@ -535,10 +580,24 @@
       "reference_kind": "refusal"
      },
      {
+      "expected_refusal": "undeclared_device",
+      "observed_refusal": "undeclared_device",
+      "passed": true,
+      "reference": "protocol mutation raw_format_of_undeclared_instrument",
+      "reference_kind": "refusal"
+     },
+     {
       "expected_refusal": "measurement_without_acquisition",
       "observed_refusal": "measurement_without_acquisition",
       "passed": true,
       "reference": "protocol mutation records_in_empty_slot",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "procedure_step_malformed",
+      "observed_refusal": "procedure_step_malformed",
+      "passed": true,
+      "reference": "protocol mutation repeat_of_itself",
       "reference_kind": "refusal"
      },
      {
@@ -554,12 +613,43 @@
       "passed": true,
       "reference": "protocol mutation slot_without_retention_record",
       "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "fixture_targets_undeclared",
+      "observed_refusal": "fixture_targets_undeclared",
+      "passed": true,
+      "reference": "protocol mutation step_measures_targets_of_a_fixture_without_any",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "undeclared_device",
+      "observed_refusal": "undeclared_device",
+      "passed": true,
+      "reference": "protocol mutation step_names_undeclared_jig",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "undeclared_device",
+      "observed_refusal": "undeclared_device",
+      "passed": true,
+      "reference": "protocol mutation step_uses_undeclared_device",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "procedure_step_malformed",
+      "observed_refusal": "procedure_step_malformed",
+      "passed": true,
+      "reference": "protocol mutation unstructured_procedure_step",
+      "reference_kind": "refusal"
      }
     ]
    },
    "claim": "Surface-scan protocol record validates and refuses malformed variants",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -570,7 +660,7 @@
     "value": 0.0
    },
    "unit": "refused mutations",
-   "value": 9
+   "value": 17
   },
   {
    "assigned_by": "ciw.lab.evidence",
@@ -578,6 +668,7 @@
    "claim": "A real laser line scanner achieves the declared 0.01 mm point noise on the coupon surface (finish, incidence angle, speckle)",
    "domain": "sensor_performance",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -588,6 +679,7 @@
    "claim": "The formed coupon passes the Gaussian model test and its fitted height and width lie within the declared forming tolerances",
    "domain": "physical",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -598,6 +690,7 @@
    "claim": "The declared scanner scale (20 ppm) and target registration uncertainties hold for the scan",
    "domain": "calibration",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -605,9 +698,9 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 9549,
+   "bytes": 15380,
    "path": "artifacts/T129/protocol-surface-scan.json",
-   "sha256": "f3db81741d07deefc2ecca780996a9d9a12b058cc18a1f720e07cacb8d3ba4bb"
+   "sha256": "7231656a631ec4996f7b59e6eb0cc7ac37565c2a8bdd8541ad888a5a2e6f98ba"
   },
   {
    "bytes": 2572,
@@ -648,15 +741,15 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/manufacturing.py": "f4cd90e1df33b910b78daf4b0556a8861e044d83701474f841e85fd9d96f9063",
-   "src/ciw/lab/manufacturing_geometry.py": "1db6df2ddf778668da2ffd53a66bcddbff4fc933d6f299e8f283cedc60a9332f",
-   "src/ciw/lab/manufacturing_metrology.py": "aef4708b0f296fc66087a6382881a0564c5edcb6d7961b5e472aa711e29feb5d",
-   "src/ciw/lab/manufacturing_records.py": "015ea7fccc586f4b95f64e7ffbc1f6c34eec20b8245778ede3c2324006537087"
+   "src/ciw/lab/manufacturing.py": "a489d9a93946a344e2878840d784e8087098775794108a6729d9179102767969",
+   "src/ciw/lab/manufacturing_geometry.py": "44830e8b1e2811dc3ade9eb1bc40691a6ae53f92c0b178dce5e5e111447879a1",
+   "src/ciw/lab/manufacturing_metrology.py": "f5c7694f91ac7b38a1f886b4acdc189d0abda403956e3b34d3f2dc8644c07dba",
+   "src/ciw/lab/manufacturing_records.py": "9d8cd35dc23541e9067fdced631c2a80bff1077b3bcba7fa9ae377c9db67626f"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T130: calibrate the scanner scale and frames on artifacts before executing MFG-SCAN-01 and the T128 coupon measurement.",
- "report_id": "sha256:416115d817a9a16437e63b661bdac3fe45e225e240e4a85a4d12a6b7047cd516",
+ "recommended_next_task": "Open: a reader of the MFG-SCAN-01 point-cloud format that runs fit_dome and the chi2 model test on a bound scanner capture (none exists; T129 fits synthetic scans only), a prediction on a surface fitted to the scan for an as-built dome the model test rejects, and a higher-order local fit for 1% curvature tolerance (deferred research questions).",
+ "report_id": "sha256:2b4f5a3b7d7a80597589f0e6bc1fa7db722765d3fd4565b4c46d1c44bf320546",
  "schema": "ciw.lab-task-report.v1",
  "section": "manufacturing",
  "state": "completed",
@@ -685,13 +778,21 @@
   "check: The fit residual flags an elliptical as-built dome inside the declared width tolerance (chi2 model test) vs fraction of Gaussian scans the threshold flags (false alarms)",
   "check: Surface-scan protocol record validates and refuses malformed variants vs protocol mutation acceptance_inside_system",
   "check: Surface-scan protocol record validates and refuses malformed variants vs protocol mutation criterion_marked_accepted",
+  "check: Surface-scan protocol record validates and refuses malformed variants vs protocol mutation criterion_names_undeclared_instrument",
   "check: Surface-scan protocol record validates and refuses malformed variants vs protocol mutation filled_slot_without_acquisition",
   "check: Surface-scan protocol record validates and refuses malformed variants vs protocol mutation instrument_claimed_verified",
+  "check: Surface-scan protocol record validates and refuses malformed variants vs protocol mutation instrument_without_settings",
   "check: Surface-scan protocol record validates and refuses malformed variants vs protocol mutation missing_markers",
   "check: Surface-scan protocol record validates and refuses malformed variants vs protocol mutation prediction_labelled_measured",
+  "check: Surface-scan protocol record validates and refuses malformed variants vs protocol mutation raw_format_of_undeclared_instrument",
   "check: Surface-scan protocol record validates and refuses malformed variants vs protocol mutation records_in_empty_slot",
+  "check: Surface-scan protocol record validates and refuses malformed variants vs protocol mutation repeat_of_itself",
   "check: Surface-scan protocol record validates and refuses malformed variants vs protocol mutation slot_with_malformed_acquisition",
   "check: Surface-scan protocol record validates and refuses malformed variants vs protocol mutation slot_without_retention_record",
+  "check: Surface-scan protocol record validates and refuses malformed variants vs protocol mutation step_measures_targets_of_a_fixture_without_any",
+  "check: Surface-scan protocol record validates and refuses malformed variants vs protocol mutation step_names_undeclared_jig",
+  "check: Surface-scan protocol record validates and refuses malformed variants vs protocol mutation step_uses_undeclared_device",
+  "check: Surface-scan protocol record validates and refuses malformed variants vs protocol mutation unstructured_procedure_step",
   "pytest: tests/test_lab_manufacturing.py::test_metrology_sampling_design_and_counterexamples",
   "pytest: tests/test_lab_manufacturing.py::test_scan_protocol_and_as_built_fit",
   "pytest: tests/test_lab_manufacturing.py::test_protocols_refuse_filled_slots_and_decisions",

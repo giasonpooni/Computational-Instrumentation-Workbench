@@ -43,6 +43,9 @@
    "claim": "Length spectrum (R^2 <= 60), area and systole are exactly invariant under every tested SL(2,Z) change of basis and under reduction",
    "domain": "mathematical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -80,6 +83,9 @@
    "claim": "Area-one float spectra (first 30 lengths) agree within 1e-8 under all 368 basis changes, a conditioning-limited agreement rather than unit roundoff",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-08,
     "rel": 0
@@ -152,6 +158,9 @@
    },
    "domain": "mathematical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -206,6 +215,9 @@
    },
    "domain": "mathematical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -249,6 +261,10 @@
    "claim": "A det-2 integer matrix changes area and spectrum (an index-2 sublattice, not a basis change)",
    "domain": "mathematical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -318,6 +334,11 @@
    "claim": "Closed-geodesic lengths before and after the fold agree with the pinned FTR length_pair and its winding transport",
    "domain": "numerical",
    "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check",
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 0
@@ -386,14 +407,14 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/flat_torus_topology.py": "1221001d96bf1f9aa2f9fea169a2b10bfb37230da11bfb6f1608ba9355c86b9a",
+   "src/ciw/lab/flat_torus_topology.py": "2c05c13905cc51906d41b89219b001396634a9d3bb8bda9bd32ac75a5523fdb1",
    "src/ciw/lab/flat_torus_topology_lattice.py": "15a33fcd29591e43dec16fa3b9ad26d6b6b86846872e9e6bf815508fb0dade63",
    "src/ciw/lab/flat_torus_topology_provider.py": "30fa38e51a20bc8d01beea0e5c44da69f22d7059c04c92c1fea520e5cf6f8806"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T027: build polygonal translation-surface examples",
- "report_id": "sha256:ca637e94b6a33ec9e06676cf431bf093f2ee9aa56f2f61295e001a88014dd0b6",
+ "recommended_next_task": "Deferred research question: find the word length at which binary64 area-one spectra of SL(2,Z) images first disagree with the exact spectrum beyond tolerance (matrix entries grow with the word length; 10-letter words are used here), and extend the exact comparison beyond R^2 = 60",
+ "report_id": "sha256:b28f09912ac638bb2fd8d735c864e21b40bb07b14358e1f4d9b65116985f82ec",
  "schema": "ciw.lab-task-report.v1",
  "section": "flat-torus-topology",
  "state": "completed",
@@ -413,7 +434,8 @@
   "pytest: tests/test_lab_flat_torus_topology.py::test_provider_output_is_refused_when_unreadable_or_incomplete",
   "pytest: tests/test_lab_flat_torus_topology.py::test_ftr_provider_agreement",
   "pytest: tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
-  "pytest: tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+  "pytest: tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_next_steps_name_forward_work"
  ],
  "tests_skipped": [],
  "title": "Test modular-reduction invariance.",

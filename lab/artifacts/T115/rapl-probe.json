@@ -1,5 +1,13 @@
 {
  "capture_supplied": false,
- "note": "no RAPL capture was supplied; the lab runner acquires no energy measurement (capture with `python -m ciw.lab.energy_gpu_telemetry rapl-capture` and set CIW_LAB_RAPL_LOG)",
- "package_domains_present": []
+ "energy": {},
+ "package_domains_present": [],
+ "withheld_reasons": {
+  "gaussian-vi-numpy-float64": [
+   "no rapl-log capture was bound (--capture rapl-log=PATH or CIW_LAB_RAPL_LOG); the lab runner acquires no energy measurement: make one with `python -m ciw.lab.energy_gpu_telemetry rapl-capture` on a Linux host with readable intel-rapl counters (needs hardware:rapl)"
+  ],
+  "geodesic": [
+   "no rapl-log capture was bound (--capture rapl-log=PATH or CIW_LAB_RAPL_LOG); the lab runner acquires no energy measurement: make one with `python -m ciw.lab.energy_gpu_telemetry rapl-capture` on a Linux host with readable intel-rapl counters (needs hardware:rapl)"
+  ]
+ }
 }

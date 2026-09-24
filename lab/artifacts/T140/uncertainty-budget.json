@@ -41,41 +41,45 @@
    "value": 153.407155341
   },
   "coupon separation at L, 2 mm lateral offset (conditioned on the measured start pose)": {
-   "combined_standard_mm": 0.152600806367,
+   "combined_standard_mm": 0.152600806819,
    "components": {
-    "execution": 0.0221895069017,
+    "execution": 0.0221895100068,
     "geometry": 0.148305872734,
     "instrument": 0.0282842712475,
     "solver": 2.84221282657e-08
    },
    "dominant": "geometry",
-   "dominant_share": 0.944502345609,
+   "dominant_share": 0.94450234002,
    "unit": "mm",
    "value": -1.03736170921
   },
   "coupon separation at L, 2 mm lateral offset (conditioned on the start pose and the as-built scan)": {
-   "combined_standard_mm": 0.0360000804735,
+   "combined_standard_mm": 0.0360000823874,
    "components": {
-    "execution": 0.0221895069017,
+    "execution": 0.0221895100068,
     "geometry": 0.00190566984483,
     "instrument": 0.0282842712475,
     "solver": 2.84221282657e-08
    },
    "dominant": "instrument",
-   "dominant_share": 0.617281190903,
+   "dominant_share": 0.617281125269,
    "unit": "mm",
    "value": -1.03736170921
   },
   "coupon separation at L, 2 mm lateral offset (open-loop start)": {
-   "combined_standard_mm": 0.162644732197,
+   "combined_standard_mm": 0.163542049834,
    "components": {
-    "execution": 0.0604869988033,
+    "execution": 0.0628599250454,
     "geometry": 0.148305872734,
     "instrument": 0.0282842712475,
     "solver": 2.84221282657e-08
    },
    "dominant": "geometry",
-   "dominant_share": 0.831451065758,
+   "dominant_share": 0.822352134523,
+   "execution_terms": {
+    "insert_and_laying": 0.060486991077,
+    "jig_reseating": 0.0171083046257
+   },
    "unit": "mm",
    "value": -1.03736170921
   },
@@ -93,28 +97,32 @@
    "value": 0.539709539739
   },
   "coupon separation at L, 5 mrad heading offset (open-loop start)": {
-   "combined_standard_mm": 0.0702428218206,
+   "combined_standard_mm": 0.0722788498506,
    "components": {
-    "execution": 0.060226459967,
+    "execution": 0.0625891731737,
     "geometry": 0.022512830501,
     "instrument": 0.0282842712475,
     "solver": 5.259972465e-09
    },
    "dominant": "execution",
-   "dominant_share": 0.735141218037,
+   "dominant_share": 0.749852705008,
+   "execution_terms": {
+    "insert_and_laying": 0.060226459967,
+    "jig_reseating": 0.0170346152998
+   },
    "unit": "mm",
    "value": 0.539709539739
   },
   "cylinder gap, 90 deg pair": {
-   "combined_standard_mm": 0.0296938917464,
+   "combined_standard_mm": 0.05815261995,
    "components": {
     "execution": 0.0,
     "geometry": 0.00904031011894,
-    "instrument": 0.0282842712475,
-    "solver": 6.66133814775e-14
+    "instrument": 0.0574456264654,
+    "solver": 0.0
    },
    "dominant": "instrument",
-   "dominant_share": 0.907310099548,
+   "dominant_share": 0.975832702627,
    "unit": "mm",
    "value": 15.6582764422
   },
@@ -132,15 +140,19 @@
    "value": 1.2
   },
   "plate separation at 240 mm, 5 mrad heading offset (open-loop start)": {
-   "combined_standard_mm": 0.133041346957,
+   "combined_standard_mm": 0.138028982464,
    "components": {
-    "execution": 0.13,
+    "execution": 0.13509996299,
     "geometry": 1.43659482532e-07,
     "instrument": 0.0282842712475,
     "solver": 0.0
    },
    "dominant": "execution",
-   "dominant_share": 0.954802259886,
+   "dominant_share": 0.958009657778,
+   "execution_terms": {
+    "insert_and_laying": 0.13,
+    "jig_reseating": 0.0367695526217
+   },
    "unit": "mm",
    "value": 1.2
   }
@@ -150,10 +162,20 @@
   "estimate": 0.0939079810586
  },
  "execution_declared": {
-  "heading_rad": 0.0005,
-  "lateral_mm": 0.05,
-  "source": "start jig and unsteered tape laying, relative pose of the offset tape",
-  "status": "declared_not_verified"
+  "heading_rad": 0.000519615242271,
+  "lateral_mm": 0.0519615242271,
+  "source": "relative start pose of the offset tape: insert and laying (0.05 mm, 0.5 mrad) and two seatings of the start jig (0.01 mm, 0.1 mrad each)",
+  "status": "declared_not_verified",
+  "terms": {
+   "insert_and_laying": {
+    "heading_rad": 0.0005,
+    "lateral_mm": 0.05
+   },
+   "jig_reseating": {
+    "heading_rad": 0.000141421356237,
+    "lateral_mm": 0.0141421356237
+   }
+  }
  },
  "linearity": {
   "focal/height_mm": 0.0178678775816,
@@ -165,7 +187,7 @@
  },
  "plate_flatness": {
   "deviation_mm": 0.05,
-  "model": "flatness deviation as a Gaussian bump of height u = 0.05 / sqrt(3) mm and width 75 mm",
+  "model": "flatness deviation as a Gaussian bump of height u = 0.05 / sqrt(3) mm and width 75 mm, centred under the route",
   "sigma_mm": 75.0
  },
  "standard_uncertainty": {

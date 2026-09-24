@@ -11,6 +11,8 @@
   "geometry": "extrinsic",
   "name": "camera_chord_distance",
   "noise_model": {
+   "chord_sigma_basis": "declared metric chord noise carried as the record's sensor_m2 component",
+   "chord_sigma_m": 0.0002,
    "model": "gaussian_pixel_noise_then_integer_rounding",
    "pixel_sigma_px": 0.25,
    "quantization_variance_px2": 0.08333333333333333,
@@ -18,7 +20,11 @@
   },
   "quantity": "straight-line distance between two triangulated markers",
   "requires_surface_model": false,
-  "unit": "m"
+  "unit": "m",
+  "variance_components": [
+   "sensor_m2"
+  ],
+  "variance_required": false
  },
  "encoder_displacement": {
   "cannot_observe": [
@@ -41,7 +47,9 @@
   },
   "quantity": "actuator axis displacement",
   "requires_surface_model": false,
-  "unit": "m"
+  "unit": "m",
+  "variance_components": [],
+  "variance_required": false
  },
  "image_residual": {
   "cannot_observe": [
@@ -62,7 +70,9 @@
   },
   "quantity": "reprojection residual",
   "requires_surface_model": false,
-  "unit": "px"
+  "unit": "px",
+  "variance_components": [],
+  "variance_required": false
  },
  "imu_orientation": {
   "cannot_observe": [
@@ -83,7 +93,9 @@
   },
   "quantity": "body orientation as a rotation vector",
   "requires_surface_model": false,
-  "unit": "rad"
+  "unit": "rad",
+  "variance_components": [],
+  "variance_required": false
  },
  "intrinsic_geodesic_distance": {
   "cannot_observe": [
@@ -103,7 +115,9 @@
   },
   "quantity": "arc length of a declared geodesic measured along the surface",
   "requires_surface_model": false,
-  "unit": "m"
+  "unit": "m",
+  "variance_components": [],
+  "variance_required": false
  },
  "reconstructed_surface_distance": {
   "cannot_observe": [
@@ -117,14 +131,20 @@
   "geometry": "intrinsic",
   "name": "reconstructed_surface_distance",
   "noise_model": {
-   "model": "input_noise_propagated_through_surface_model",
+   "model": "sensor_plus_geometry_variance",
    "model_form_error_m": "undeclared",
-   "point_sigma_m": 0.0002,
+   "sensor_sigma_m": 0.0002,
+   "split": "T044 law of total variance: Var = sensor_m2 + geometry_m2, each propagated to first order (geometry_m2 = sum_p (ds/dp)^2 sigma_p^2 over the declared surface-model parameters, or sigma_vertex^2 |grad d|^2 for a mesh)",
    "status": "declared_placeholder"
   },
   "quantity": "geodesic length on a declared or reconstructed surface model",
   "requires_surface_model": true,
-  "unit": "m"
+  "unit": "m",
+  "variance_components": [
+   "geometry_m2",
+   "sensor_m2"
+  ],
+  "variance_required": true
  },
  "tracker_measurement": {
   "cannot_observe": [
@@ -145,6 +165,8 @@
   },
   "quantity": "marker position",
   "requires_surface_model": false,
-  "unit": "m"
+  "unit": "m",
+  "variance_components": [],
+  "variance_required": false
  }
 }

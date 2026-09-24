@@ -6,7 +6,7 @@
    "log_tail": [
     "   Compiling execution-core v0.1.0 (<scr>/crates/execution-core)",
     "   Compiling execution-cli v0.1.0 (<scr>/crates/execution-cli)",
-    "    Finished `release` profile [optimized] target(s) in 0.70s"
+    "    Finished `release` profile [optimized] target(s) in 0.79s"
    ],
    "returncode": 0
   },
@@ -16,7 +16,7 @@
    "log_tail": [
     "   Compiling execution-core v0.1.0 (<scr>/crates/execution-core)",
     "   Compiling execution-cli v0.1.0 (<scr>/crates/execution-cli)",
-    "    Finished `release` profile [optimized] target(s) in 0.79s"
+    "    Finished `release` profile [optimized] target(s) in 0.81s"
    ],
    "returncode": 0
   }

@@ -46,6 +46,9 @@
    "claim": "The implemented radial term displaces an on-axis image point by f (k1 r^3 + k2 r^5), as the Brown-Conrady model defines (implementation consistency check)",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 0
@@ -146,6 +149,10 @@
    "claim": "Uncorrected radial distortion biases chords as J_pix delta_pix to first order: odd and linear in k1 and growing as r^2 with mean image radius",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-12,
     "rel": 1e-06
@@ -203,6 +210,9 @@
    "claim": "Undistorting with the true Brown-Conrady model (radial and tangential) removes the chord bias",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-12,
     "rel": 1e-06
@@ -278,6 +288,9 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-09
@@ -362,6 +375,9 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -422,6 +438,9 @@
    "claim": "Perspective displacement of circular-marker image centres biases stereo chords as J_pix delta_pix to first order, growing as the square of the marker radius",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-12,
     "rel": 1e-06
@@ -457,6 +476,7 @@
    "claim": "A two-term radial plus tangential Brown-Conrady model describes a real lens to the required accuracy",
    "domain": "calibration",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -469,6 +489,7 @@
    "claim": "Real circular markers and their detector show only the modelled perspective centre bias",
    "domain": "sensor_performance",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -528,13 +549,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/observation.py": "6e5bf960e17dffb62bdaf29d28be9a0f165fd68f8498d173b66eab08fa22ad70",
+   "src/ciw/lab/observation.py": "ef75c3ea4cad06bcbc68592440b3d55a92786a729d5a731b87ece207511ddffb",
    "src/ciw/lab/observation_camera.py": "130cf51175050a5eb947b8d434553bdfa19bd102a33108f414d7a5fa9c651bce"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T051: add quantization and pixel noise",
- "report_id": "sha256:d914aeb1669d31fd55f0f5d1eb7f25bf95798ec2b934ce0e039c0cf4d8971ab4",
+ "recommended_next_task": "Deferred research question: give each camera its own distortion model and a distortion centre offset from the principal point, and measure how much chord error an unmodelled centre offset adds to T050's shared-model case.",
+ "report_id": "sha256:9236d34a19827cc314aafcefb1d77b1e3acba735a3c94bfd8624061fab3cea39",
  "schema": "ciw.lab-task-report.v1",
  "section": "observation",
  "state": "completed",

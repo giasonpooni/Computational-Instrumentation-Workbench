@@ -72,6 +72,9 @@
    "claim": "Verification method forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -144,6 +147,9 @@
    },
    "domain": "provenance",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -168,6 +174,7 @@
    "domain": "provenance",
    "evidence_status": "not_established",
    "expected_not_established": true,
+   "origin": [],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -215,13 +222,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/exchange_provenance.py": "f55593eb90af9ed82e40f0f04987c7f0a06cf1c40e7079b0a371e0506607618b",
-   "src/ciw/lab/exchange_provenance_common.py": "f8e765184af4e893a0c4c6d9e5cb2988b79e6f3dfc3d941444f335ecc894d775"
+   "src/ciw/lab/exchange_provenance.py": "0871a5e3e3a27b365a326036c869338b11e5aa3bc4af3ca60db29e81bedbba36",
+   "src/ciw/lab/exchange_provenance_common.py": "17ab892e3f285ac475b44c240155acf45f8bbdbefca28a345980aba548c6d1a9"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T088 (mutate independence flag)",
- "report_id": "sha256:033191b8afa15bf8021d4d9f01ebf4ee33c9e87b613e6a6361edee0242e878ea",
+ "recommended_next_task": "Deferred research question (CIW change): fix the oscillator verification method in its protocol record, as the energy path fixes fresh_analysis_of_same_retained_measurement, so that reopen compares it, and re-run to check that oscillator-method.injected is refused.",
+ "report_id": "sha256:5a0b92e07933e96d63aa47715cb1f17ca223930e809624db793b04ed5275d1dd",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "completed",
@@ -234,13 +241,17 @@
   "check: Verification method forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs harness control: the unedited saved workspace reopens",
   "check: Surviving mutant oscillator-method.injected: a sealed result carrying an injected verification_method reopens vs oscillator-method.injected: accepted (1 = accepted)",
   "check: Surviving mutant oscillator-method.injected: a sealed result carrying an injected verification_method reopens vs reopened result.get returns the injected verification_method beside verification_status not_verified (0 = shown)",
-  "pytest: tests/test_lab_exchange_provenance.py::test_verification_mutations"
+  "pytest: tests/test_lab_exchange_provenance.py::test_verification_mutations",
+  "pytest: tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work"
  ],
- "tests_skipped": [],
+ "tests_skipped": [
+  "pytest: tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply (skipped)"
+ ],
  "title": "Mutate verification method.",
  "uncertainty": "Outcomes are exact (accepted or a refusal message). Only kill/survive is a prediction; refusal messages are regression pins recorded from observed runs. Survivors are demonstrated forgeries; kills show only that these particular edits are detected, not that every edit of this field is.",
  "unresolved_assumptions": [
   "The forger model recomputes only unkeyed SHA-256 digests with CIW's public canonicalization; no key exists to steal.",
-  "Whether a reader of a forged workspace would be misled depends on how the record is displayed; not assessed."
+  "Whether a reader of a forged workspace would be misled depends on how the record is displayed; not assessed.",
+  "Deferred research question (key custody and signatures): which key signs CIW workspace records, replay receipts and execution records, who holds it, how is it provisioned, rotated and revoked, and how does a verifier obtain its public key? Every seal and identity on these paths is an unkeyed SHA-256, so 'Retained workspace records are authenticated' stays not_established until records are signed (for example Ed25519 over the canonical record bytes, with an RFC 3161 timestamp for created_at) and T077 and T080-T090 are re-run against the signed records to check that every surviving forgery is refused."
  ]
 }

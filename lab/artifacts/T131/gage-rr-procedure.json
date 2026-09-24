@@ -22,43 +22,43 @@
    ],
    "parts": [
     {
-     "feature": "lateral tape L1 to nominal N1",
+     "feature": "lateral tape L, gage target G0 at s = 0 L / 9: offset normal to the nominal route",
      "id": "P01"
     },
     {
-     "feature": "lateral tape L2 to nominal N2",
+     "feature": "lateral tape L, gage target G1 at s = 1 L / 9: offset normal to the nominal route",
      "id": "P02"
     },
     {
-     "feature": "lateral tape L3 to nominal N3",
+     "feature": "lateral tape L, gage target G2 at s = 2 L / 9: offset normal to the nominal route",
      "id": "P03"
     },
     {
-     "feature": "lateral tape L4 to nominal N4",
+     "feature": "lateral tape L, gage target G3 at s = 3 L / 9: offset normal to the nominal route",
      "id": "P04"
     },
     {
-     "feature": "lateral tape L5 to nominal N5",
+     "feature": "lateral tape L, gage target G4 at s = 4 L / 9: offset normal to the nominal route",
      "id": "P05"
     },
     {
-     "feature": "lateral tape L6 to nominal N6",
+     "feature": "lateral tape L, gage target G5 at s = 5 L / 9: offset normal to the nominal route",
      "id": "P06"
     },
     {
-     "feature": "lateral tape L7 to nominal N7",
+     "feature": "lateral tape L, gage target G6 at s = 6 L / 9: offset normal to the nominal route",
      "id": "P07"
     },
     {
-     "feature": "lateral tape L8 to nominal N8",
+     "feature": "lateral tape L, gage target G7 at s = 7 L / 9: offset normal to the nominal route",
      "id": "P08"
     },
     {
-     "feature": "heading tape H4 to nominal N4",
+     "feature": "lateral tape L, gage target G8 at s = 8 L / 9: offset normal to the nominal route",
      "id": "P09"
     },
     {
-     "feature": "heading tape H8 to nominal N8",
+     "feature": "lateral tape L, gage target G9 at s = 9 L / 9: offset normal to the nominal route",
      "id": "P10"
     }
    ],
@@ -70,46 +70,46 @@
       {
        "operator": "O3",
        "order": [
-        "lateral tape L4 to nominal N4",
-        "lateral tape L5 to nominal N5",
-        "lateral tape L1 to nominal N1",
-        "lateral tape L2 to nominal N2",
-        "heading tape H4 to nominal N4",
-        "heading tape H8 to nominal N8",
-        "lateral tape L6 to nominal N6",
-        "lateral tape L8 to nominal N8",
-        "lateral tape L3 to nominal N3",
-        "lateral tape L7 to nominal N7"
+        "lateral tape L, gage target G4 at s = 4 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G1 at s = 1 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G5 at s = 5 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G9 at s = 9 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G6 at s = 6 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G3 at s = 3 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G8 at s = 8 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G0 at s = 0 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G7 at s = 7 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G2 at s = 2 L / 9: offset normal to the nominal route"
        ]
       },
       {
        "operator": "O1",
        "order": [
-        "lateral tape L6 to nominal N6",
-        "heading tape H8 to nominal N8",
-        "lateral tape L3 to nominal N3",
-        "lateral tape L7 to nominal N7",
-        "lateral tape L4 to nominal N4",
-        "lateral tape L2 to nominal N2",
-        "lateral tape L1 to nominal N1",
-        "lateral tape L5 to nominal N5",
-        "lateral tape L8 to nominal N8",
-        "heading tape H4 to nominal N4"
+        "lateral tape L, gage target G8 at s = 8 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G5 at s = 5 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G0 at s = 0 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G6 at s = 6 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G9 at s = 9 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G1 at s = 1 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G7 at s = 7 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G2 at s = 2 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G3 at s = 3 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G4 at s = 4 L / 9: offset normal to the nominal route"
        ]
       },
       {
        "operator": "O2",
        "order": [
-        "lateral tape L6 to nominal N6",
-        "lateral tape L2 to nominal N2",
-        "heading tape H8 to nominal N8",
-        "lateral tape L5 to nominal N5",
-        "lateral tape L8 to nominal N8",
-        "heading tape H4 to nominal N4",
-        "lateral tape L1 to nominal N1",
-        "lateral tape L3 to nominal N3",
-        "lateral tape L4 to nominal N4",
-        "lateral tape L7 to nominal N7"
+        "lateral tape L, gage target G3 at s = 3 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G5 at s = 5 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G7 at s = 7 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G2 at s = 2 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G4 at s = 4 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G6 at s = 6 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G1 at s = 1 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G9 at s = 9 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G8 at s = 8 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G0 at s = 0 L / 9: offset normal to the nominal route"
        ]
       }
      ],
@@ -121,46 +121,46 @@
       {
        "operator": "O1",
        "order": [
-        "lateral tape L7 to nominal N7",
-        "heading tape H8 to nominal N8",
-        "lateral tape L6 to nominal N6",
-        "lateral tape L1 to nominal N1",
-        "lateral tape L2 to nominal N2",
-        "lateral tape L8 to nominal N8",
-        "lateral tape L5 to nominal N5",
-        "lateral tape L3 to nominal N3",
-        "lateral tape L4 to nominal N4",
-        "heading tape H4 to nominal N4"
+        "lateral tape L, gage target G2 at s = 2 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G7 at s = 7 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G3 at s = 3 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G6 at s = 6 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G4 at s = 4 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G9 at s = 9 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G1 at s = 1 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G0 at s = 0 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G5 at s = 5 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G8 at s = 8 L / 9: offset normal to the nominal route"
        ]
       },
       {
        "operator": "O2",
        "order": [
-        "lateral tape L3 to nominal N3",
-        "lateral tape L2 to nominal N2",
-        "lateral tape L1 to nominal N1",
-        "lateral tape L7 to nominal N7",
-        "lateral tape L4 to nominal N4",
-        "lateral tape L5 to nominal N5",
-        "heading tape H8 to nominal N8",
-        "heading tape H4 to nominal N4",
-        "lateral tape L6 to nominal N6",
-        "lateral tape L8 to nominal N8"
+        "lateral tape L, gage target G8 at s = 8 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G0 at s = 0 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G1 at s = 1 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G3 at s = 3 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G2 at s = 2 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G7 at s = 7 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G4 at s = 4 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G6 at s = 6 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G9 at s = 9 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G5 at s = 5 L / 9: offset normal to the nominal route"
        ]
       },
       {
        "operator": "O3",
        "order": [
-        "lateral tape L2 to nominal N2",
-        "heading tape H4 to nominal N4",
-        "lateral tape L3 to nominal N3",
-        "lateral tape L1 to nominal N1",
-        "heading tape H8 to nominal N8",
-        "lateral tape L5 to nominal N5",
-        "lateral tape L7 to nominal N7",
-        "lateral tape L6 to nominal N6",
-        "lateral tape L4 to nominal N4",
-        "lateral tape L8 to nominal N8"
+        "lateral tape L, gage target G9 at s = 9 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G3 at s = 3 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G2 at s = 2 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G4 at s = 4 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G5 at s = 5 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G7 at s = 7 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G6 at s = 6 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G0 at s = 0 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G1 at s = 1 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G8 at s = 8 L / 9: offset normal to the nominal route"
        ]
       }
      ],
@@ -172,52 +172,53 @@
       {
        "operator": "O3",
        "order": [
-        "lateral tape L2 to nominal N2",
-        "lateral tape L8 to nominal N8",
-        "lateral tape L6 to nominal N6",
-        "heading tape H4 to nominal N4",
-        "lateral tape L5 to nominal N5",
-        "heading tape H8 to nominal N8",
-        "lateral tape L4 to nominal N4",
-        "lateral tape L1 to nominal N1",
-        "lateral tape L3 to nominal N3",
-        "lateral tape L7 to nominal N7"
+        "lateral tape L, gage target G8 at s = 8 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G9 at s = 9 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G3 at s = 3 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G7 at s = 7 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G6 at s = 6 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G0 at s = 0 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G2 at s = 2 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G1 at s = 1 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G4 at s = 4 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G5 at s = 5 L / 9: offset normal to the nominal route"
        ]
       },
       {
        "operator": "O2",
        "order": [
-        "heading tape H4 to nominal N4",
-        "lateral tape L7 to nominal N7",
-        "lateral tape L5 to nominal N5",
-        "lateral tape L4 to nominal N4",
-        "heading tape H8 to nominal N8",
-        "lateral tape L2 to nominal N2",
-        "lateral tape L3 to nominal N3",
-        "lateral tape L6 to nominal N6",
-        "lateral tape L8 to nominal N8",
-        "lateral tape L1 to nominal N1"
+        "lateral tape L, gage target G5 at s = 5 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G2 at s = 2 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G4 at s = 4 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G1 at s = 1 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G7 at s = 7 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G3 at s = 3 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G9 at s = 9 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G8 at s = 8 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G6 at s = 6 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G0 at s = 0 L / 9: offset normal to the nominal route"
        ]
       },
       {
        "operator": "O1",
        "order": [
-        "heading tape H8 to nominal N8",
-        "lateral tape L5 to nominal N5",
-        "lateral tape L6 to nominal N6",
-        "lateral tape L3 to nominal N3",
-        "lateral tape L2 to nominal N2",
-        "lateral tape L4 to nominal N4",
-        "heading tape H4 to nominal N4",
-        "lateral tape L1 to nominal N1",
-        "lateral tape L7 to nominal N7",
-        "lateral tape L8 to nominal N8"
+        "lateral tape L, gage target G5 at s = 5 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G4 at s = 4 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G7 at s = 7 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G8 at s = 8 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G0 at s = 0 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G6 at s = 6 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G9 at s = 9 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G1 at s = 1 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G2 at s = 2 L / 9: offset normal to the nominal route",
+        "lateral tape L, gage target G3 at s = 3 L / 9: offset normal to the nominal route"
        ]
       }
      ],
      "replicate": 3
     }
-   ]
+   ],
+   "setup": "lay the lateral tape L once (JIG-START-01 with insert L, as in MFG-COUPON-01) with ten 6 mm coded targets at s = k L / 9 (k = 0...9); it stays in place, alone on the coupon, for all rounds"
   },
   "MFG-CYLINDER-01": {
    "operators": [
@@ -270,7 +271,7 @@
    "replicates": 3,
    "rounds": [
     {
-     "before": "remove the specimen from FX-321, re-seat it, re-probe datums A, B, C and rebuild the PART frame",
+     "before": "remove the specimen from VB-01, re-seat it, re-probe datums A, B, C and rebuild the PART frame",
      "blocks": [
       {
        "operator": "O3",
@@ -321,7 +322,7 @@
      "replicate": 1
     },
     {
-     "before": "remove the specimen from FX-321, re-seat it, re-probe datums A, B, C and rebuild the PART frame",
+     "before": "remove the specimen from VB-01, re-seat it, re-probe datums A, B, C and rebuild the PART frame",
      "blocks": [
       {
        "operator": "O3",
@@ -372,7 +373,7 @@
      "replicate": 2
     },
     {
-     "before": "remove the specimen from FX-321, re-seat it, re-probe datums A, B, C and rebuild the PART frame",
+     "before": "remove the specimen from VB-01, re-seat it, re-probe datums A, B, C and rebuild the PART frame",
      "blocks": [
       {
        "operator": "O1",
@@ -422,7 +423,8 @@
      ],
      "replicate": 3
     }
-   ]
+   ],
+   "setup": "the markers stay on the tube; no tape is laid; each pair is measured as its camera chord"
   },
   "MFG-FLAT-PLATE-01": {
    "operators": [
@@ -627,7 +629,8 @@
      ],
      "replicate": 3
     }
-   ]
+   ],
+   "setup": "the 25 markers stay on the plate; no tape is laid"
   }
  },
  "type1_study": {

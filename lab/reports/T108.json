@@ -77,6 +77,10 @@
    "claim": "Increasing required_margin never turns a failing PLSR verdict into a passing one",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -121,6 +125,10 @@
    "claim": "The switch from CERTIFIED_WITH_MARGIN to MARGIN_LOW happens exactly at required_margin = margin",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -180,6 +188,10 @@
    "claim": "Negative and non-finite required margins are refused",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -205,6 +217,9 @@
    "claim": "Monotonicity of the verdict in the declared margin follows from the decision order",
    "domain": "mathematical",
    "evidence_status": "analytic",
+   "origin": [
+    "derivation"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -238,6 +253,10 @@
    "claim": "The CIW transcription of the documented decision order never regains a passing code and never changes a non-certifying code as the required margin grows on the same margin grids",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -300,14 +319,14 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/lyapunov.py": "cbcb4d58d7313d7c537957a1b7dd35039a21bae80125bf59147eeed2c1232bbb",
+   "src/ciw/lab/lyapunov.py": "dcda8ba21661667cc03bb126a393e93158a306b4991d0a2450d8e18abe62cb27",
    "src/ciw/lab/lyapunov_provider.py": "da3465b48b5f5efc47bfe6ab8379cf2cf2bc23e4835dc7ff047252e77fa6ef17",
    "src/ciw/lab/lyapunov_reference.py": "bdf0bb5074ae2caca6c8a5d8e63a15e346b007098e6def6b058d077719bc1336"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T109: adversarial eigenvalue cases; extend the property test to affine plants with parameter-dependent P.",
- "report_id": "sha256:e0d956378f0e256c3bb7bffc40272c7471426dc88506e05e2ecfd688340ef2fd",
+ "recommended_next_task": "Deferred research question: extend the required-margin monotonicity property test to affine plants with a parameter-dependent P(theta), which the finite family here does not contain (the general statement rests on the decision-order argument).",
+ "report_id": "sha256:97512b973b895881b64d6ed3449711be601b1ea87b8a04b85a5b31d539953ba5",
  "schema": "ciw.lab-task-report.v1",
  "section": "lyapunov",
  "state": "completed",
@@ -325,7 +344,8 @@
   "check: The CIW transcription of the documented decision order never regains a passing code and never changes a non-certifying code as the required margin grows on the same margin grids vs code-property violations of the transcribed order (passing code regained, non-certifying code changed)",
   "pytest: tests/test_lab_lyapunov.py::test_t108_margin_monotonicity",
   "pytest: tests/test_lab_lyapunov.py::test_documented_rule_is_monotone",
-  "pytest: tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider"
+  "pytest: tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider",
+  "pytest: tests/test_lab_lyapunov.py::test_next_steps_name_forward_work"
  ],
  "tests_skipped": [],
  "title": "Verify required-margin monotonicity.",

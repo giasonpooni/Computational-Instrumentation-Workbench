@@ -32,6 +32,7 @@
    "domain": "computational_pipeline",
    "evidence_status": "not_established",
    "expected_not_established": true,
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -44,6 +45,9 @@
    "claim": "Julia provider pin procedure",
    "domain": "provenance",
    "evidence_status": "analytic",
+   "origin": [
+    "derivation"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -90,6 +94,9 @@
    "claim": "Symbolic torus Christoffel symbols and curvature agree with ciw.lab.surfaces.Torus",
    "domain": "mathematical",
    "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check"
+   ],
    "regression_tolerance": {
     "abs": 1e-12,
     "rel": 0
@@ -141,12 +148,12 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/implementation_targets.py": "1df8bd67d28b18d70bcb5f74e4a14616ceb17868c7a9aa75595f15254426ee7e"
+   "src/ciw/lab/implementation_targets.py": "0ea1ac76f50f1c65b47155a6791a0ea74c3ebf57d0b254a4a6615dabb930b5e7"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Implement the Julia worker behind the SCR boundary (docs/JULIA_SP1.md: handshake, operation allowlist, retained bytes) and a T145 path that dispatches the oscillator fixtures to it; then provision Julia 1.10.12 LTS and rerun T145. Until both exist a Julia host changes no finding",
- "report_id": "sha256:ab92ddd45a7b6d1fa99bbe1801e1356f93eef730ac775d1f34be7c278832b44f",
+ "report_id": "sha256:df603ebac1ee14f01331ce4e4d308b18a2f051323f9d0bea0f306657910a4035",
  "schema": "ciw.lab-task-report.v1",
  "section": "implementation-targets",
  "state": "partial",

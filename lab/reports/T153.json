@@ -75,6 +75,9 @@
    "claim": "Default policy refuses writes on every declared channel",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -180,6 +183,9 @@
    "claim": "Enabling writes is refused on every route, including a well-formed external record",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -230,6 +236,9 @@
    },
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -318,6 +327,9 @@
    "claim": "No ciw module imports a device, serial or fieldbus library or names a device node, and network libraries appear only in the declared workbench servers (source scan)",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -344,6 +356,7 @@
    "claim": "The lab holds actuator write authority",
    "domain": "actuator_authority",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -354,6 +367,7 @@
    "claim": "Disabled-by-default software writes make the machine safe",
    "domain": "machine_safety",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -368,7 +382,7 @@
   {
    "bytes": 1621,
    "path": "artifacts/T153/write-path-scan.json",
-   "sha256": "781c13ec54b2c4aa2a4f24eb1b9e9b34254eb694b9263820b1fbf86e2ccccc00"
+   "sha256": "0ce1a7a61cb40c8781728a6d1910ad8b6a76b42a1a686aeecebd551cfedfeedc"
   }
  ],
  "hypothesis": "A deny-by-default write policy refuses every write; enabling needs an externally issued, signed, in-scope, unexpired authorization verified against a trust anchor the lab does not hold, so no route opens it here; and a source scan finds no device, serial or fieldbus write path in the package and network paths only in the declared workbench servers, so no other code path reaches a machine that the scan can see.",
@@ -376,7 +390,7 @@
   "one write per declared channel (five)",
   "twelve enabling routes",
   "fixed instant 2026-09-23T00:00:00Z",
-  "141 parsed modules of the installed ciw package (source text only; package digest in write-path-scan.json)",
+  "143 parsed modules of the installed ciw package (source text only; package digest in write-path-scan.json)",
   "5 forged write-path modules"
  ],
  "mathematical_model": "Gate(channel) = refuse unless enabled and verify(authorization, channel, now) passes; verify checks type, issuer, timestamp form (ISO-8601 with a UTC offset, parsed to instants), validity window, scope, signature and trust anchor in that order; the lab build has no trust anchor. Write paths: a module is a device path if it imports a device, serial, fieldbus, industrial-protocol or instrument library or names a device node (/dev/..., \\\\.\\..., COMn), and a network path if it imports a network library or calls a connection or server constructor; network paths are allowed only in declared modules.",
@@ -395,14 +409,14 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/implementation_targets.py": "1df8bd67d28b18d70bcb5f74e4a14616ceb17868c7a9aa75595f15254426ee7e",
+   "src/ciw/lab/implementation_targets.py": "0ea1ac76f50f1c65b47155a6791a0ea74c3ebf57d0b254a4a6615dabb930b5e7",
    "src/ciw/lab/implementation_targets_architecture.py": "3c0ba23187cae208b492ff7adbceba135e2d7e071c6a4c978bbe5e3b2ac0ad62",
    "src/ciw/lab/implementation_targets_authority.py": "d1e8750a38aab38f856203f46b2be0ac975963403c1789a04d4763415eff778f"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T154 (treat control outputs as proposals behind the same authorization)",
- "report_id": "sha256:d82506032d44f1433f6734a3b3ab86774b4692932a7283c92f66a0471e9b049f",
+ "recommended_next_task": "Deferred research question: enforce that any future write transport is routed through ActuatorWritePolicy (the scan flags a new transport, routing is not enforced), with a real signature scheme for authorization records; enforcement itself belongs in hardware interlocks outside this package",
+ "report_id": "sha256:de6b093a412f4963cadd401a7e5b2a6e229562585ec9361c816266db9ca97587",
  "schema": "ciw.lab-task-report.v1",
  "section": "implementation-targets",
  "state": "completed",

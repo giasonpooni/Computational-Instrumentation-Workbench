@@ -59,6 +59,10 @@
    "claim": "Backlash error stays within [0, b] for a play operator of width b",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-15,
     "rel": 1e-09
@@ -108,6 +112,9 @@
    "claim": "Backlash error changes only while the play is taken up after a direction reversal",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -167,6 +174,10 @@
    "claim": "Least squares with a direction term recovers scale, bias and backlash",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-12,
     "rel": 1e-06
@@ -234,6 +245,9 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -261,6 +275,7 @@
    "claim": "A real encoder drive train behaves as a constant-width play operator with constant scale and bias",
    "domain": "physical",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -300,13 +315,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/observation.py": "6e5bf960e17dffb62bdaf29d28be9a0f165fd68f8498d173b66eab08fa22ad70",
+   "src/ciw/lab/observation.py": "ef75c3ea4cad06bcbc68592440b3d55a92786a729d5a731b87ece207511ddffb",
    "src/ciw/lab/observation_signals.py": "19e94cb28160a07e5a285b5a4acd76e3820deb37ee5ed180f5c7bf1975a56793"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T053: add IMU drift and orientation noise",
- "report_id": "sha256:932f2993315ad2edec21b070e90363f224429065b2ba9432b3d66b59d1c9b8d0",
+ "recommended_next_task": "Deferred research question: estimate encoder scale, bias and backlash jointly against a reference instrument that has its own declared noise (errors in variables), and report whether backlash stays identifiable from direction reversals; this task assumes the reference position is exact.",
+ "report_id": "sha256:d5ae33ffde4dedb6f7318adb58d90934dfc397ad85d07075ba9ed0779452a02d",
  "schema": "ciw.lab-task-report.v1",
  "section": "observation",
  "state": "completed",

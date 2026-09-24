@@ -69,7 +69,7 @@
  "operator_log": {
   "supplied": false,
   "withheld_reasons": [
-   "no operator NVML log was supplied (CIW_LAB_ENERGY_LOG); the repository fixtures are synthetic, so no physical energy per accepted result was measured"
+   "no operator NVML log was supplied (--capture energy-log=PATH or CIW_LAB_ENERGY_LOG); the repository fixtures are synthetic, so no physical energy per accepted result was measured"
   ]
  },
  "origin": "synthetic_fixture"

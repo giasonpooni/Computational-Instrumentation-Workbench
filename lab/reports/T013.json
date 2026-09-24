@@ -65,6 +65,11 @@
    "claim": "The cylinder is intrinsically flat: K from its second fundamental form vanishes along the helix and the Jacobi field integrated with that K is j_head(s) = s",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-13,
     "rel": 0.0
@@ -138,6 +143,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-09
@@ -188,6 +197,10 @@
    "claim": "Torus outer-equator Jacobi deviation L - j_head(L) matches the closed form for every major radius",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 0.5
@@ -240,6 +253,11 @@
    "claim": "The Jacobi deviation from flat decays like 1/R: exponent -1 in R + 1 = 1/K, with the finite-R offset explained",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-06,
     "rel": 0.0
@@ -297,6 +315,11 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.0001,
     "rel": 0.0
@@ -319,6 +342,7 @@
    "claim": "A physical cylinder or large-radius torus workpiece shows these separations",
    "domain": "physical",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -357,13 +381,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/geodesic_jacobi_limits.py": "07d850980ac10ad34ca0d1b8c29942c90fe635e15135a5db1f74e90674e3bb18",
+   "src/ciw/lab/geodesic_jacobi_limits.py": "893d8b0240e673dd9aa7b5ba13b09958caa861706335726277d676def21aa83d",
    "src/ciw/lab/geodesic_jacobi_limits_core.py": "0e0b8f85ed4e83c3fcdc866e8a7e580a17432e174b8db8d8277230e226473d7f"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T046 (chord versus geodesic distance) and T018 (resolvability of weak curvature)",
- "report_id": "sha256:21d6fea668ab7e49fc422ecd9cafbddf6a1791855302c1963bc179982b863faa",
+ "recommended_next_task": "Deferred research question: fit the flat-limit scaling of L - j_head(L) and of the chord deficit on a cone and a tangent developable (neither is in the core catalogue; each needs a Surface) and on inclined torus geodesics, which average K along the path (only the cylinder and the constant-K outer equator are fitted here)",
+ "report_id": "sha256:462a4d621a5889d494c5022e73a7a606c8cbfcf8d759ec18b6a8bc43d66fe912",
  "schema": "ciw.lab-task-report.v1",
  "section": "geodesic-jacobi",
  "state": "completed",
@@ -381,7 +405,8 @@
   "check: The Jacobi deviation from flat decays like 1/R: exponent -1 in R + 1 = 1/K, with the finite-R offset explained vs |dev / (K L^3/6) - 1| <= K L^2/20 at the smallest fitted R",
   "check: The chord deficit vanishes faster (exponent -2 in R + 1) than the Jacobi deviation (-1) vs numerical chord deficit against 2 rho (x - sin x), max relative",
   "check: The chord deficit vanishes faster (exponent -2 in R + 1) than the Jacobi deviation (-1) vs chord-deficit exponent in R + 1 plus 2",
-  "pytest: tests/test_lab_geodesic_jacobi_limits.py::test_t013_flat_limit"
+  "pytest: tests/test_lab_geodesic_jacobi_limits.py::test_t013_flat_limit",
+  "pytest: tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work"
  ],
  "tests_skipped": [],
  "title": "Quantify the flat-cylinder/developable-surface limit.",

@@ -52,6 +52,9 @@
    "claim": "Every enumerated SL(2,Z) basis and every random word reduces exactly to the same canonical Gram form",
    "domain": "mathematical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -91,6 +94,10 @@
    "claim": "Number of reduced bases equals the predicted stabilizer count (2 generic, 4 boundary or square, 12 hexagonal)",
    "domain": "mathematical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -179,6 +186,10 @@
    },
    "domain": "mathematical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -242,6 +253,11 @@
    "claim": "Float Gauss reduction agrees with the pinned FTR fold_to_fundamental_domain on reduced tau and the reducing SL(2,Z) matrix (up to -I)",
    "domain": "numerical",
    "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check",
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 0
@@ -310,14 +326,14 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/flat_torus_topology.py": "1221001d96bf1f9aa2f9fea169a2b10bfb37230da11bfb6f1608ba9355c86b9a",
+   "src/ciw/lab/flat_torus_topology.py": "2c05c13905cc51906d41b89219b001396634a9d3bb8bda9bd32ac75a5523fdb1",
    "src/ciw/lab/flat_torus_topology_lattice.py": "15a33fcd29591e43dec16fa3b9ad26d6b6b86846872e9e6bf815508fb0dade63",
    "src/ciw/lab/flat_torus_topology_provider.py": "30fa38e51a20bc8d01beea0e5c44da69f22d7059c04c92c1fea520e5cf6f8806"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T026: test modular-reduction invariance of length spectrum, area and systole",
- "report_id": "sha256:22cc2c1239b4e219a2e01040525b5cce7fa9e0fab21a47ae149bccbf3437df0a",
+ "recommended_next_task": "Deferred research question: extend the automorphism-count check from the six declared lattices to a seeded sample of reduced Gram matrices that includes every boundary case of the fundamental domain (|b| = a, a = c, and the hexagonal point where both hold) and compare each count with the classical stabilizer theorem, which is cited here rather than checked in general",
+ "report_id": "sha256:d8974360269f7e3e73e47c128f78f0aeb81326b18c5c47b4032584d9c908fc9e",
  "schema": "ciw.lab-task-report.v1",
  "section": "flat-torus-topology",
  "state": "completed",
@@ -340,7 +356,8 @@
   "pytest: tests/test_lab_flat_torus_topology.py::test_provider_output_is_refused_when_unreadable_or_incomplete",
   "pytest: tests/test_lab_flat_torus_topology.py::test_ftr_provider_agreement",
   "pytest: tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
-  "pytest: tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+  "pytest: tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_next_steps_name_forward_work"
  ],
  "tests_skipped": [],
  "title": "Enumerate equivalent lattice representatives.",

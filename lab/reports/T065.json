@@ -44,6 +44,10 @@
    "claim": "The scalar random-walk filter with q = 1, r = 30 has the exact rational steady state M = 6, P = 5, K = 1/6 and error autocovariance Cov(e_{k+j}, e_k) = (5/6)^j P",
    "domain": "mathematical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -97,6 +101,10 @@
    "claim": "Monte Carlo error autocovariances of the scalar filter match a^j P at lags 0-8, while its innovations are white",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -146,6 +154,10 @@
    "claim": "On the planar constant-velocity bench the lag-j cross-covariance of filtered errors equals [(I - K H) F]^j P_ss for j = 0-5",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -217,6 +229,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -250,6 +266,9 @@
    "claim": "A real sensor's internally filtered output can be fused downstream as white noise",
    "domain": "sensor_performance",
    "evidence_status": "not_established",
+   "origin": [
+    "synthetic_inputs"
+   ],
    "uncertainty": null,
    "unit": null,
    "value": "not established: the correlation shown is that of a declared synthetic filter; a real sensor's internal filter is unknown here"
@@ -291,13 +310,13 @@
   "sources": {
    "src/ciw/lab/sensor_fusion_bench.py": "f373849a4c6836fa20685c59ce7a6fe6bf732f6df9d6a49646cdc017262dd656",
    "src/ciw/lab/sensor_fusion_common.py": "db3b0430ad5c13920239cef354da61b64ab1b01f84b2d3d5aff2f78840a5867a",
-   "src/ciw/lab/sensor_fusion_filtering.py": "716a44ff8f4921d188d17179fa80c6b1695c68a90fb16ab85239efb4295b4f8a",
-   "src/ciw/lab/sensor_fusion_objects.py": "93fc55ddca91f1adfb886d21805ea8f82586548ee84e1f6cc7daed4df1f53bb9"
+   "src/ciw/lab/sensor_fusion_filtering.py": "66ae801ecdd34d35c61c9eb5e381eefc26a0234233e143492ab50529ae7e14cb",
+   "src/ciw/lab/sensor_fusion_objects.py": "50ec8767a90f261f108d6524c7ff55d22604b55cc9853e749ba4c5f71bc76081"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T066: verify that residuals are normalized by the filter covariance, not the raw sensor covariance.",
- "report_id": "sha256:6fb0d779a09ddba873239f2531db5338b8bfa4b024e9911b222e8cee47555984",
+ "recommended_next_task": "Deferred research question: the transient (time-varying) cross-covariance between successive estimates from initialization to steady state, and its size under a mismatched q where the innovations are no longer white; this task analyses only the steady state under the exact model.",
+ "report_id": "sha256:be7dd287da074d219ab48430aaea9f0f302c77509588c0d06f2d6069a089d3ff",
  "schema": "ciw.lab-task-report.v1",
  "section": "sensor-fusion",
  "state": "completed",

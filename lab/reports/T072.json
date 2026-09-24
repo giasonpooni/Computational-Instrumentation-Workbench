@@ -79,6 +79,10 @@
    "claim": "Readings inside the half-open validity interval [0, 60) are fused and every later reading is refused with calibration_expired, exactly at the boundary",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -140,6 +144,10 @@
    "claim": "Refused readings are retained with their digests and dispositions, and they do not change the state: the session equals a shadow session that never saw them, bit for bit",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -205,6 +213,10 @@
    "claim": "Revoked, unknown, other-sensor and other-frame calibrations are refused, and the expired record stays expired after a renewal is registered",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -278,6 +290,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -345,6 +361,9 @@
    "claim": "The validity interval [0, 60) reflects how long a real camera calibration stays valid",
    "domain": "calibration",
    "evidence_status": "not_established",
+   "origin": [
+    "synthetic_inputs"
+   ],
    "uncertainty": null,
    "unit": null,
    "value": "not established: the record and the post-expiry drift are declared"
@@ -383,15 +402,15 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/sensor_fusion_admission.py": "a0d36bf665e88d2851b08c6181a8f794e39751a688a04ebd586fbc93164cc3c7",
+   "src/ciw/lab/sensor_fusion_admission.py": "e0b488855ec251024bfcc9c57dc77430ec45ceee337acfbc6a109fb747a747d0",
    "src/ciw/lab/sensor_fusion_bench.py": "f373849a4c6836fa20685c59ce7a6fe6bf732f6df9d6a49646cdc017262dd656",
    "src/ciw/lab/sensor_fusion_common.py": "db3b0430ad5c13920239cef354da61b64ab1b01f84b2d3d5aff2f78840a5867a",
-   "src/ciw/lab/sensor_fusion_objects.py": "93fc55ddca91f1adfb886d21805ea8f82586548ee84e1f6cc7daed4df1f53bb9"
+   "src/ciw/lab/sensor_fusion_objects.py": "50ec8767a90f261f108d6524c7ff55d22604b55cc9853e749ba4c5f71bc76081"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T073: a sensor that stops altogether, and the explicit track-lost state.",
- "report_id": "sha256:6efda4ef5213d5ce9729d0ec560b951aecad19c7f5f6d6456e7ad0209211417d",
+ "recommended_next_task": "Deferred research question: a calibration that degrades gradually (R inflated, or a drift growing with time since calibration) instead of expiring at a hard tick, and whether readings retained after expiry may be re-fused under a renewed calibration with their original digests preserved.",
+ "report_id": "sha256:010c59634ed29e80fc379230e731b1a9a9f8ee9161c3768259b67978ec783660",
  "schema": "ciw.lab-task-report.v1",
  "section": "sensor-fusion",
  "state": "completed",

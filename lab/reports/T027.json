@@ -58,6 +58,9 @@
    "claim": "L-shape and regular octagon are genus-2 translation surfaces with one vertex class",
    "domain": "mathematical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -189,6 +192,9 @@
    "claim": "Horizontal cylinders: L-shape circumferences equal the r-cycle lengths, octagon strips have circumferences 2 + sqrt 2 and 1 + sqrt 2 with areas summing to the surface area",
    "domain": "mathematical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-12,
     "rel": 1e-09
@@ -240,6 +246,9 @@
    "claim": "Pairings that are not translations, or glue unequal edges, are refused as translation surfaces",
    "domain": "mathematical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -285,13 +294,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/flat_torus_topology.py": "1221001d96bf1f9aa2f9fea169a2b10bfb37230da11bfb6f1608ba9355c86b9a",
+   "src/ciw/lab/flat_torus_topology.py": "2c05c13905cc51906d41b89219b001396634a9d3bb8bda9bd32ac75a5523fdb1",
    "src/ciw/lab/flat_torus_topology_surfaces.py": "da9f9a8e304f9fd8a72044525c78fdd66d2f188ef3d65cfa0d38af31b9f798b2"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T028: trace geodesics across glued edges",
- "report_id": "sha256:6384edc15de5b718e2ba4e6f2a0de60e88a652dca0363fd2663920f819016988",
+ "recommended_next_task": "Deferred research question: predict the cylinder decomposition of the L-shape and the regular octagon in every periodic direction up to a saddle-connection length bound (for the octagon through its Veech group action), not only the horizontal one, and compare it with the periodic directions traced in T028",
+ "report_id": "sha256:972d3189388965f8a5dc5db3547bf08d55487dc792e926d50c7417c3ce9f04ad",
  "schema": "ciw.lab-task-report.v1",
  "section": "flat-torus-topology",
  "state": "completed",
@@ -310,7 +319,8 @@
   "pytest: tests/test_lab_flat_torus_topology.py::test_surface_helpers_exact",
   "pytest: tests/test_lab_flat_torus_topology.py::test_regeneration_is_within_tolerance",
   "pytest: tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
-  "pytest: tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+  "pytest: tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_next_steps_name_forward_work"
  ],
  "tests_skipped": [],
  "title": "Build polygonal translation-surface examples.",

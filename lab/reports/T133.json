@@ -73,6 +73,9 @@
    "claim": "The Clairaut constant is conserved along geodesic windings of the torus mandrel",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-12
@@ -186,6 +189,10 @@
    "claim": "Secular growth rate of the heading-error Jacobi field per unit arclength over one winding period, relative to the cylinder (rate 1)",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-06,
     "rel": 1e-06
@@ -239,6 +246,9 @@
    "claim": "The 50 deg winding librates (turns before the inner equator) and the 70 deg winding circulates through the negatively curved inner region",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-06,
     "rel": 1e-06
@@ -285,6 +295,9 @@
    "claim": "Clairaut sensitivity predicts the turnaround-latitude shift of the librating winding",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-07,
     "rel": 1e-06
@@ -317,6 +330,9 @@
    "claim": "Slippage tendency abs(kappa_g / kappa_n) of constant-angle winding on the torus mandrel",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-09
@@ -376,6 +392,9 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-12,
     "rel": 1e-09
@@ -394,6 +413,7 @@
    "claim": "Fibre does not slip on a real mandrel wherever abs(kappa_g / kappa_n) <= 0.2 (the friction coefficient is declared, not measured)",
    "domain": "physical",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -433,15 +453,15 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/manufacturing.py": "f4cd90e1df33b910b78daf4b0556a8861e044d83701474f841e85fd9d96f9063",
-   "src/ciw/lab/manufacturing_geometry.py": "1db6df2ddf778668da2ffd53a66bcddbff4fc933d6f299e8f283cedc60a9332f",
-   "src/ciw/lab/manufacturing_metrology.py": "aef4708b0f296fc66087a6382881a0564c5edcb6d7961b5e472aa711e29feb5d",
-   "src/ciw/lab/manufacturing_records.py": "015ea7fccc586f4b95f64e7ffbc1f6c34eec20b8245778ede3c2324006537087"
+   "src/ciw/lab/manufacturing.py": "a489d9a93946a344e2878840d784e8087098775794108a6729d9179102767969",
+   "src/ciw/lab/manufacturing_geometry.py": "44830e8b1e2811dc3ade9eb1bc40691a6ae53f92c0b178dce5e5e111447879a1",
+   "src/ciw/lab/manufacturing_metrology.py": "f5c7694f91ac7b38a1f886b4acdc189d0abda403956e3b34d3f2dc8644c07dba",
+   "src/ciw/lab/manufacturing_records.py": "9d8cd35dc23541e9067fdced631c2a80bff1077b3bcba7fa9ae377c9db67626f"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T134: coating or welding trajectory sensitivity on the domed coupon.",
- "report_id": "sha256:5ab8fc1275aa3b2c734a059129ec0a7677cf1df83c3b69499ad2bb5a63ef6f66",
+ "recommended_next_task": "Open: model how a winding machine corrects the path between layers, which decides whether the secular heading-error growth accumulates in a physical winding, and compare the slippage ratio with slip observed under real fibre tension and friction (no such data exists here).",
+ "report_id": "sha256:6279d425f918f4a27a8ff9332f7064321154449fe4daed77d34c4497cc14f194",
  "schema": "ciw.lab-task-report.v1",
  "section": "manufacturing",
  "state": "completed",

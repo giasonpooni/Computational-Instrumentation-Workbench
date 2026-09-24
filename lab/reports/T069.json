@@ -50,6 +50,10 @@
    "claim": "Prediction-only steps grow the covariance exactly as F(n dt) P F(n dt)^T + Q(n dt), identically in the session API and the batch schedule",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 0.0
@@ -122,6 +126,10 @@
    "claim": "With a 30-tick gap and 20% dropout handled by prediction only, NEES stays chi-square consistent and the error covariance at the end of the gap equals the grown covariance",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -241,6 +249,10 @@
    "claim": "After a prediction-only gap that loses the track, the session refuses requested substitution strategies (zero_fill, hold_last), a non-integer prediction tick, a reading older than its clock, a reading under an expired calibration and a reading into the lost track (refused after its prediction was computed on copies); none of these refusals changes the state, covariance, clock, track status or latest candidate, and every refused reading is retained with its refusal. NaN and absent values are refused by the Observation type before any session call",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -315,6 +327,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -362,6 +378,9 @@
    "claim": "Real sensor dropouts are independent of the state and of the noise, as assumed here",
    "domain": "sensor_performance",
    "evidence_status": "not_established",
+   "origin": [
+    "synthetic_inputs"
+   ],
    "uncertainty": null,
    "unit": null,
    "value": "not established: the dropout pattern is declared and state-independent"
@@ -403,13 +422,13 @@
   "sources": {
    "src/ciw/lab/sensor_fusion_bench.py": "f373849a4c6836fa20685c59ce7a6fe6bf732f6df9d6a49646cdc017262dd656",
    "src/ciw/lab/sensor_fusion_common.py": "db3b0430ad5c13920239cef354da61b64ab1b01f84b2d3d5aff2f78840a5867a",
-   "src/ciw/lab/sensor_fusion_objects.py": "93fc55ddca91f1adfb886d21805ea8f82586548ee84e1f6cc7daed4df1f53bb9",
-   "src/ciw/lab/sensor_fusion_robustness.py": "d8944a1e077dab7955d5162b6dd233a7f0b721c99e76176eb1b987b7d8b765c5"
+   "src/ciw/lab/sensor_fusion_objects.py": "50ec8767a90f261f108d6524c7ff55d22604b55cc9853e749ba4c5f71bc76081",
+   "src/ciw/lab/sensor_fusion_robustness.py": "ef7aebd84e84636cd8eac459886e3be69d96315962d47be5ac66235caada34dc"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T070: stale clocks, where a reading is present but refers to the wrong time.",
- "report_id": "sha256:4bbf4251f0f64577d7889f2060ef3d3682a7dd82a44b325d0367f16e8a683ab2",
+ "recommended_next_task": "Deferred research question: require every fused reading to cite a retained section-4 raw reference (the fusion intake's lineage) and refuse readings that bypass the intake, so a caller-built (0, 0) reading, which the session cannot tell from a genuine reading at the origin, is refusable; the session refuses requested substitutes but not a fabricated Observation.",
+ "report_id": "sha256:62f174bf2eb65516ca2329592c2d1aa2eba1d3aa0fe477e5259af48f818a9fbc",
  "schema": "ciw.lab-task-report.v1",
  "section": "sensor-fusion",
  "state": "completed",

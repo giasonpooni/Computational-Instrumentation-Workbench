@@ -1,6 +1,7 @@
 [
  {
   "junit": {
+   "tests/test_lab_geodesic_jacobi.py::test_every_next_step_is_a_deferred_research_question": "passed",
    "tests/test_lab_geodesic_jacobi.py::test_every_numerical_finding_declares_uncertainty_and_tolerance": "passed",
    "tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space": "passed",
    "tests/test_lab_geodesic_jacobi.py::test_t001_self_consistency_helpers": "passed",
@@ -13,7 +14,8 @@
    "tests/test_lab_geodesic_jacobi.py::test_t001_without_sympy_is_partial",
    "tests/test_lab_geodesic_jacobi.py::test_t001_self_consistency_helpers",
    "tests/test_lab_geodesic_jacobi.py::test_every_numerical_finding_declares_uncertainty_and_tolerance",
-   "tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space"
+   "tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space",
+   "tests/test_lab_geodesic_jacobi.py::test_every_next_step_is_a_deferred_research_question"
   ],
   "state": "completed",
   "task_id": "T001",
@@ -24,6 +26,7 @@
  },
  {
   "junit": {
+   "tests/test_lab_geodesic_jacobi.py::test_every_next_step_is_a_deferred_research_question": "passed",
    "tests/test_lab_geodesic_jacobi.py::test_every_numerical_finding_declares_uncertainty_and_tolerance": "passed",
    "tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space": "passed",
    "tests/test_lab_geodesic_jacobi.py::test_t002_references_agree": "passed",
@@ -34,7 +37,8 @@
    "tests/test_lab_geodesic_jacobi.py::test_t002_references_agree",
    "tests/test_lab_geodesic_jacobi.py::test_t002_without_optional_modules",
    "tests/test_lab_geodesic_jacobi.py::test_every_numerical_finding_declares_uncertainty_and_tolerance",
-   "tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space"
+   "tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space",
+   "tests/test_lab_geodesic_jacobi.py::test_every_next_step_is_a_deferred_research_question"
   ],
   "state": "completed",
   "task_id": "T002",
@@ -46,6 +50,7 @@
  {
   "junit": {
    "tests/test_lab_geodesic_jacobi.py::test_adaptive_checks_reject_fourth_order_variant": "passed",
+   "tests/test_lab_geodesic_jacobi.py::test_every_next_step_is_a_deferred_research_question": "passed",
    "tests/test_lab_geodesic_jacobi.py::test_every_numerical_finding_declares_uncertainty_and_tolerance": "passed",
    "tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space": "passed",
    "tests/test_lab_geodesic_jacobi.py::test_t003_integrator_orders": "passed"
@@ -55,7 +60,8 @@
    "tests/test_lab_geodesic_jacobi.py::test_t003_integrator_orders",
    "tests/test_lab_geodesic_jacobi.py::test_adaptive_checks_reject_fourth_order_variant",
    "tests/test_lab_geodesic_jacobi.py::test_every_numerical_finding_declares_uncertainty_and_tolerance",
-   "tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space"
+   "tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space",
+   "tests/test_lab_geodesic_jacobi.py::test_every_next_step_is_a_deferred_research_question"
   ],
   "state": "completed",
   "task_id": "T003",
@@ -65,6 +71,7 @@
  },
  {
   "junit": {
+   "tests/test_lab_geodesic_jacobi.py::test_every_next_step_is_a_deferred_research_question": "passed",
    "tests/test_lab_geodesic_jacobi.py::test_every_numerical_finding_declares_uncertainty_and_tolerance": "passed",
    "tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space": "passed",
    "tests/test_lab_geodesic_jacobi.py::test_integrator_code_path_has_no_normalization": "passed",
@@ -75,7 +82,8 @@
    "tests/test_lab_geodesic_jacobi.py::test_t004_speed_drift_and_no_renormalization",
    "tests/test_lab_geodesic_jacobi.py::test_integrator_code_path_has_no_normalization",
    "tests/test_lab_geodesic_jacobi.py::test_every_numerical_finding_declares_uncertainty_and_tolerance",
-   "tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space"
+   "tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space",
+   "tests/test_lab_geodesic_jacobi.py::test_every_next_step_is_a_deferred_research_question"
   ],
   "state": "completed",
   "task_id": "T004",
@@ -88,6 +96,7 @@
    "tests/test_lab_geodesic_jacobi.py::test_csg_checkout_refusals": "passed",
    "tests/test_lab_geodesic_jacobi.py::test_csg_execution_refusals_are_expected_from_their_stage": "passed",
    "tests/test_lab_geodesic_jacobi.py::test_csg_output_is_refused_unless_complete": "passed",
+   "tests/test_lab_geodesic_jacobi.py::test_every_next_step_is_a_deferred_research_question": "passed",
    "tests/test_lab_geodesic_jacobi.py::test_every_numerical_finding_declares_uncertainty_and_tolerance": "passed",
    "tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space": "passed",
    "tests/test_lab_geodesic_jacobi.py::test_t005_csg_provider_agreement": "passed",
@@ -101,7 +110,8 @@
    "tests/test_lab_geodesic_jacobi.py::test_csg_output_is_refused_unless_complete",
    "tests/test_lab_geodesic_jacobi.py::test_csg_execution_refusals_are_expected_from_their_stage",
    "tests/test_lab_geodesic_jacobi.py::test_every_numerical_finding_declares_uncertainty_and_tolerance",
-   "tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space"
+   "tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space",
+   "tests/test_lab_geodesic_jacobi.py::test_every_next_step_is_a_deferred_research_question"
   ],
   "state": "completed",
   "task_id": "T005",
@@ -109,11 +119,13 @@
    "tests/test_lab_geodesic_jacobi.py::test_t005_separation_law",
    "tests/test_lab_geodesic_jacobi.py::test_t005_csg_provider_agreement",
    "tests/test_lab_geodesic_jacobi.py::test_csg_checkout_refusals",
-   "tests/test_lab_geodesic_jacobi.py::test_csg_execution_refusals_are_expected_from_their_stage"
+   "tests/test_lab_geodesic_jacobi.py::test_csg_execution_refusals_are_expected_from_their_stage",
+   "tests/test_lab_geodesic_jacobi.py::test_every_next_step_is_a_deferred_research_question"
   ]
  },
  {
   "junit": {
+   "tests/test_lab_geodesic_jacobi.py::test_every_next_step_is_a_deferred_research_question": "passed",
    "tests/test_lab_geodesic_jacobi.py::test_every_numerical_finding_declares_uncertainty_and_tolerance": "passed",
    "tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space": "passed",
    "tests/test_lab_geodesic_jacobi.py::test_perturbation_helpers_are_geometric": "passed",
@@ -124,7 +136,8 @@
    "tests/test_lab_geodesic_jacobi.py::test_t006_finite_differences",
    "tests/test_lab_geodesic_jacobi.py::test_perturbation_helpers_are_geometric",
    "tests/test_lab_geodesic_jacobi.py::test_every_numerical_finding_declares_uncertainty_and_tolerance",
-   "tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space"
+   "tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space",
+   "tests/test_lab_geodesic_jacobi.py::test_every_next_step_is_a_deferred_research_question"
   ],
   "state": "completed",
   "task_id": "T006",
@@ -134,6 +147,7 @@
  },
  {
   "junit": {
+   "tests/test_lab_geodesic_jacobi.py::test_every_next_step_is_a_deferred_research_question": "passed",
    "tests/test_lab_geodesic_jacobi.py::test_every_numerical_finding_declares_uncertainty_and_tolerance": "passed",
    "tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space": "passed",
    "tests/test_lab_geodesic_jacobi.py::test_t007_determinant": "passed",
@@ -144,7 +158,8 @@
    "tests/test_lab_geodesic_jacobi.py::test_t007_determinant",
    "tests/test_lab_geodesic_jacobi.py::test_t007_symbolic_step_determinants",
    "tests/test_lab_geodesic_jacobi.py::test_every_numerical_finding_declares_uncertainty_and_tolerance",
-   "tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space"
+   "tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space",
+   "tests/test_lab_geodesic_jacobi.py::test_every_next_step_is_a_deferred_research_question"
   ],
   "state": "completed",
   "task_id": "T007",
@@ -156,6 +171,7 @@
   "junit": {
    "tests/test_lab_geodesic_jacobi.py::test_csg_checkout_refusals": "passed",
    "tests/test_lab_geodesic_jacobi.py::test_csg_execution_refusals_are_expected_from_their_stage": "passed",
+   "tests/test_lab_geodesic_jacobi.py::test_every_next_step_is_a_deferred_research_question": "passed",
    "tests/test_lab_geodesic_jacobi.py::test_every_numerical_finding_declares_uncertainty_and_tolerance": "passed",
    "tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space": "passed",
    "tests/test_lab_geodesic_jacobi.py::test_t008_conjugate_and_focal_points": "passed",
@@ -170,7 +186,8 @@
    "tests/test_lab_geodesic_jacobi.py::test_csg_checkout_refusals",
    "tests/test_lab_geodesic_jacobi.py::test_csg_execution_refusals_are_expected_from_their_stage",
    "tests/test_lab_geodesic_jacobi.py::test_every_numerical_finding_declares_uncertainty_and_tolerance",
-   "tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space"
+   "tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space",
+   "tests/test_lab_geodesic_jacobi.py::test_every_next_step_is_a_deferred_research_question"
   ],
   "state": "completed",
   "task_id": "T008",
@@ -182,6 +199,7 @@
  },
  {
   "junit": {
+   "tests/test_lab_geodesic_jacobi.py::test_every_next_step_is_a_deferred_research_question": "passed",
    "tests/test_lab_geodesic_jacobi.py::test_every_numerical_finding_declares_uncertainty_and_tolerance": "passed",
    "tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space": "passed",
    "tests/test_lab_geodesic_jacobi.py::test_t009_columns_rank_paths_differently": "passed"
@@ -190,7 +208,8 @@
   "regression_tests": [
    "tests/test_lab_geodesic_jacobi.py::test_t009_columns_rank_paths_differently",
    "tests/test_lab_geodesic_jacobi.py::test_every_numerical_finding_declares_uncertainty_and_tolerance",
-   "tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space"
+   "tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space",
+   "tests/test_lab_geodesic_jacobi.py::test_every_next_step_is_a_deferred_research_question"
   ],
   "state": "completed",
   "task_id": "T009",
@@ -200,11 +219,15 @@
  },
  {
   "junit": {
-   "tests/test_lab_geodesic_jacobi_limits.py::test_t010_near_focus_and_post_focus_counterexamples": "passed"
+   "tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work": "passed",
+   "tests/test_lab_geodesic_jacobi_limits.py::test_t010_near_focus_and_post_focus_counterexamples": "passed",
+   "tests/test_lab_geodesic_jacobi_limits.py::test_t010_t017_name_the_separation_observable": "passed"
   },
   "missing": [],
   "regression_tests": [
-   "tests/test_lab_geodesic_jacobi_limits.py::test_t010_near_focus_and_post_focus_counterexamples"
+   "tests/test_lab_geodesic_jacobi_limits.py::test_t010_near_focus_and_post_focus_counterexamples",
+   "tests/test_lab_geodesic_jacobi_limits.py::test_t010_t017_name_the_separation_observable",
+   "tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work"
   ],
   "state": "completed",
   "task_id": "T010",
@@ -215,12 +238,14 @@
  {
   "junit": {
    "tests/test_lab_geodesic_jacobi_limits.py::test_chart_maps_have_exact_derivatives": "passed",
+   "tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work": "passed",
    "tests/test_lab_geodesic_jacobi_limits.py::test_t011_chart_invariance_and_fold_amplification": "passed"
   },
   "missing": [],
   "regression_tests": [
    "tests/test_lab_geodesic_jacobi_limits.py::test_t011_chart_invariance_and_fold_amplification",
-   "tests/test_lab_geodesic_jacobi_limits.py::test_chart_maps_have_exact_derivatives"
+   "tests/test_lab_geodesic_jacobi_limits.py::test_chart_maps_have_exact_derivatives",
+   "tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work"
   ],
   "state": "completed",
   "task_id": "T011",
@@ -230,11 +255,13 @@
  },
  {
   "junit": {
+   "tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work": "passed",
    "tests/test_lab_geodesic_jacobi_limits.py::test_t012_frame_invariance_and_refusal": "passed"
   },
   "missing": [],
   "regression_tests": [
-   "tests/test_lab_geodesic_jacobi_limits.py::test_t012_frame_invariance_and_refusal"
+   "tests/test_lab_geodesic_jacobi_limits.py::test_t012_frame_invariance_and_refusal",
+   "tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work"
   ],
   "state": "completed",
   "task_id": "T012",
@@ -244,11 +271,13 @@
  },
  {
   "junit": {
+   "tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work": "passed",
    "tests/test_lab_geodesic_jacobi_limits.py::test_t013_flat_limit": "passed"
   },
   "missing": [],
   "regression_tests": [
-   "tests/test_lab_geodesic_jacobi_limits.py::test_t013_flat_limit"
+   "tests/test_lab_geodesic_jacobi_limits.py::test_t013_flat_limit",
+   "tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work"
   ],
   "state": "completed",
   "task_id": "T013",
@@ -258,11 +287,15 @@
  },
  {
   "junit": {
+   "tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work": "passed",
+   "tests/test_lab_geodesic_jacobi_limits.py::test_t014_defers_cross_platform_reproduction_as_one_question": "passed",
    "tests/test_lab_geodesic_jacobi_limits.py::test_t014_reversal_and_truncation": "passed"
   },
   "missing": [],
   "regression_tests": [
-   "tests/test_lab_geodesic_jacobi_limits.py::test_t014_reversal_and_truncation"
+   "tests/test_lab_geodesic_jacobi_limits.py::test_t014_reversal_and_truncation",
+   "tests/test_lab_geodesic_jacobi_limits.py::test_t014_defers_cross_platform_reproduction_as_one_question",
+   "tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work"
   ],
   "state": "completed",
   "task_id": "T014",
@@ -272,11 +305,13 @@
  },
  {
   "junit": {
+   "tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work": "passed",
    "tests/test_lab_geodesic_jacobi_limits.py::test_t015_long_horizon_drift": "passed"
   },
   "missing": [],
   "regression_tests": [
-   "tests/test_lab_geodesic_jacobi_limits.py::test_t015_long_horizon_drift"
+   "tests/test_lab_geodesic_jacobi_limits.py::test_t015_long_horizon_drift",
+   "tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work"
   ],
   "state": "completed",
   "task_id": "T015",
@@ -286,11 +321,13 @@
  },
  {
   "junit": {
+   "tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work": "passed",
    "tests/test_lab_geodesic_jacobi_limits.py::test_t016_negative_curvature_is_not_stiffness": "passed"
   },
   "missing": [],
   "regression_tests": [
-   "tests/test_lab_geodesic_jacobi_limits.py::test_t016_negative_curvature_is_not_stiffness"
+   "tests/test_lab_geodesic_jacobi_limits.py::test_t016_negative_curvature_is_not_stiffness",
+   "tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work"
   ],
   "state": "completed",
   "task_id": "T016",
@@ -298,11 +335,15 @@
  },
  {
   "junit": {
+   "tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work": "passed",
+   "tests/test_lab_geodesic_jacobi_limits.py::test_t010_t017_name_the_separation_observable": "passed",
    "tests/test_lab_geodesic_jacobi_limits.py::test_t017_validity_domains": "passed"
   },
   "missing": [],
   "regression_tests": [
-   "tests/test_lab_geodesic_jacobi_limits.py::test_t017_validity_domains"
+   "tests/test_lab_geodesic_jacobi_limits.py::test_t017_validity_domains",
+   "tests/test_lab_geodesic_jacobi_limits.py::test_t010_t017_name_the_separation_observable",
+   "tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work"
   ],
   "state": "completed",
   "task_id": "T017",
@@ -312,13 +353,15 @@
  },
  {
   "junit": {
+   "tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work": "passed",
    "tests/test_lab_geodesic_jacobi_limits.py::test_optional_scipy_cross_check_agrees_with_adaptive_references": "passed",
    "tests/test_lab_geodesic_jacobi_limits.py::test_t018_resolvability_report": "passed"
   },
   "missing": [],
   "regression_tests": [
    "tests/test_lab_geodesic_jacobi_limits.py::test_t018_resolvability_report",
-   "tests/test_lab_geodesic_jacobi_limits.py::test_optional_scipy_cross_check_agrees_with_adaptive_references"
+   "tests/test_lab_geodesic_jacobi_limits.py::test_optional_scipy_cross_check_agrees_with_adaptive_references",
+   "tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work"
   ],
   "state": "completed",
   "task_id": "T018",
@@ -333,6 +376,7 @@
    "tests/test_lab_flat_torus_topology.py::test_ftr_provider_agreement": "passed",
    "tests/test_lab_flat_torus_topology.py::test_ftr_refusal_makes_task_partial": "passed",
    "tests/test_lab_flat_torus_topology.py::test_gauss_reduction_is_exact": "passed",
+   "tests/test_lab_flat_torus_topology.py::test_next_steps_name_forward_work": "passed",
    "tests/test_lab_flat_torus_topology.py::test_provider_output_is_refused_when_unreadable_or_incomplete": "passed",
    "tests/test_lab_flat_torus_topology.py::test_t019_reduction_and_refusals": "passed",
    "tests/test_lab_flat_torus_topology.py::test_vector_reduction_check_detects_a_wrong_boundary_rule": "passed"
@@ -346,7 +390,8 @@
    "tests/test_lab_flat_torus_topology.py::test_provider_output_is_refused_when_unreadable_or_incomplete",
    "tests/test_lab_flat_torus_topology.py::test_ftr_provider_agreement",
    "tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
-   "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+   "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label",
+   "tests/test_lab_flat_torus_topology.py::test_next_steps_name_forward_work"
   ],
   "state": "completed",
   "task_id": "T019",
@@ -361,6 +406,7 @@
    "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label": "passed",
    "tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes": "passed",
    "tests/test_lab_flat_torus_topology.py::test_ftr_provider_agreement": "passed",
+   "tests/test_lab_flat_torus_topology.py::test_next_steps_name_forward_work": "passed",
    "tests/test_lab_flat_torus_topology.py::test_provider_output_is_refused_when_unreadable_or_incomplete": "passed",
    "tests/test_lab_flat_torus_topology.py::test_t020_winding_classification": "passed",
    "tests/test_lab_flat_torus_topology.py::test_winding_flow_and_intersections": "passed"
@@ -372,7 +418,8 @@
    "tests/test_lab_flat_torus_topology.py::test_provider_output_is_refused_when_unreadable_or_incomplete",
    "tests/test_lab_flat_torus_topology.py::test_ftr_provider_agreement",
    "tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
-   "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+   "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label",
+   "tests/test_lab_flat_torus_topology.py::test_next_steps_name_forward_work"
   ],
   "state": "completed",
   "task_id": "T020",
@@ -386,6 +433,7 @@
   "junit": {
    "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label": "passed",
    "tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes": "passed",
+   "tests/test_lab_flat_torus_topology.py::test_next_steps_name_forward_work": "passed",
    "tests/test_lab_flat_torus_topology.py::test_regeneration_is_within_tolerance": "passed",
    "tests/test_lab_flat_torus_topology.py::test_t021_shortest_is_least_sensitive": "passed"
   },
@@ -394,7 +442,8 @@
    "tests/test_lab_flat_torus_topology.py::test_t021_shortest_is_least_sensitive",
    "tests/test_lab_flat_torus_topology.py::test_regeneration_is_within_tolerance",
    "tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
-   "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+   "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label",
+   "tests/test_lab_flat_torus_topology.py::test_next_steps_name_forward_work"
   ],
   "state": "completed",
   "task_id": "T021",
@@ -407,6 +456,7 @@
   "junit": {
    "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label": "passed",
    "tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes": "passed",
+   "tests/test_lab_flat_torus_topology.py::test_next_steps_name_forward_work": "passed",
    "tests/test_lab_flat_torus_topology.py::test_regeneration_is_within_tolerance": "passed",
    "tests/test_lab_flat_torus_topology.py::test_t022_degenerate_representatives": "passed"
   },
@@ -415,7 +465,8 @@
    "tests/test_lab_flat_torus_topology.py::test_t022_degenerate_representatives",
    "tests/test_lab_flat_torus_topology.py::test_regeneration_is_within_tolerance",
    "tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
-   "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+   "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label",
+   "tests/test_lab_flat_torus_topology.py::test_next_steps_name_forward_work"
   ],
   "state": "completed",
   "task_id": "T022",
@@ -427,13 +478,15 @@
   "junit": {
    "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label": "passed",
    "tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes": "passed",
+   "tests/test_lab_flat_torus_topology.py::test_next_steps_name_forward_work": "passed",
    "tests/test_lab_flat_torus_topology.py::test_t023_heading_sensitivity": "passed"
   },
   "missing": [],
   "regression_tests": [
    "tests/test_lab_flat_torus_topology.py::test_t023_heading_sensitivity",
    "tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
-   "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+   "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label",
+   "tests/test_lab_flat_torus_topology.py::test_next_steps_name_forward_work"
   ],
   "state": "completed",
   "task_id": "T023",
@@ -445,7 +498,9 @@
   "junit": {
    "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label": "passed",
    "tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes": "passed",
+   "tests/test_lab_flat_torus_topology.py::test_focus_margin_claims_state_the_canonical_definition": "passed",
    "tests/test_lab_flat_torus_topology.py::test_independent_disagreement_makes_t024_partial_not_blocked": "passed",
+   "tests/test_lab_flat_torus_topology.py::test_next_steps_name_forward_work": "passed",
    "tests/test_lab_flat_torus_topology.py::test_route_helpers": "passed",
    "tests/test_lab_flat_torus_topology.py::test_sympy_field_matches_the_closed_form_batch_field": "passed",
    "tests/test_lab_flat_torus_topology.py::test_t024_t025_route_ranking_and_front": "passed"
@@ -454,10 +509,12 @@
   "regression_tests": [
    "tests/test_lab_flat_torus_topology.py::test_t024_t025_route_ranking_and_front",
    "tests/test_lab_flat_torus_topology.py::test_route_helpers",
+   "tests/test_lab_flat_torus_topology.py::test_focus_margin_claims_state_the_canonical_definition",
    "tests/test_lab_flat_torus_topology.py::test_independent_disagreement_makes_t024_partial_not_blocked",
    "tests/test_lab_flat_torus_topology.py::test_sympy_field_matches_the_closed_form_batch_field",
    "tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
-   "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+   "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label",
+   "tests/test_lab_flat_torus_topology.py::test_next_steps_name_forward_work"
   ],
   "state": "completed",
   "task_id": "T024",
@@ -470,6 +527,8 @@
   "junit": {
    "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label": "passed",
    "tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes": "passed",
+   "tests/test_lab_flat_torus_topology.py::test_focus_margin_claims_state_the_canonical_definition": "passed",
+   "tests/test_lab_flat_torus_topology.py::test_next_steps_name_forward_work": "passed",
    "tests/test_lab_flat_torus_topology.py::test_route_helpers": "passed",
    "tests/test_lab_flat_torus_topology.py::test_t024_t025_route_ranking_and_front": "passed"
   },
@@ -477,8 +536,10 @@
   "regression_tests": [
    "tests/test_lab_flat_torus_topology.py::test_t024_t025_route_ranking_and_front",
    "tests/test_lab_flat_torus_topology.py::test_route_helpers",
+   "tests/test_lab_flat_torus_topology.py::test_focus_margin_claims_state_the_canonical_definition",
    "tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
-   "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+   "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label",
+   "tests/test_lab_flat_torus_topology.py::test_next_steps_name_forward_work"
   ],
   "state": "completed",
   "task_id": "T025",
@@ -492,6 +553,7 @@
    "tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes": "passed",
    "tests/test_lab_flat_torus_topology.py::test_ftr_provider_agreement": "passed",
    "tests/test_lab_flat_torus_topology.py::test_gauss_reduction_is_exact": "passed",
+   "tests/test_lab_flat_torus_topology.py::test_next_steps_name_forward_work": "passed",
    "tests/test_lab_flat_torus_topology.py::test_provider_output_is_refused_when_unreadable_or_incomplete": "passed",
    "tests/test_lab_flat_torus_topology.py::test_t026_modular_invariance": "passed"
   },
@@ -502,7 +564,8 @@
    "tests/test_lab_flat_torus_topology.py::test_provider_output_is_refused_when_unreadable_or_incomplete",
    "tests/test_lab_flat_torus_topology.py::test_ftr_provider_agreement",
    "tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
-   "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+   "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label",
+   "tests/test_lab_flat_torus_topology.py::test_next_steps_name_forward_work"
   ],
   "state": "completed",
   "task_id": "T026",
@@ -515,6 +578,7 @@
   "junit": {
    "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label": "passed",
    "tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes": "passed",
+   "tests/test_lab_flat_torus_topology.py::test_next_steps_name_forward_work": "passed",
    "tests/test_lab_flat_torus_topology.py::test_regeneration_is_within_tolerance": "passed",
    "tests/test_lab_flat_torus_topology.py::test_surface_helpers_exact": "passed",
    "tests/test_lab_flat_torus_topology.py::test_t027_t029_surfaces_and_cones": "passed"
@@ -525,7 +589,8 @@
    "tests/test_lab_flat_torus_topology.py::test_surface_helpers_exact",
    "tests/test_lab_flat_torus_topology.py::test_regeneration_is_within_tolerance",
    "tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
-   "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+   "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label",
+   "tests/test_lab_flat_torus_topology.py::test_next_steps_name_forward_work"
   ],
   "state": "completed",
   "task_id": "T027",
@@ -537,6 +602,7 @@
   "junit": {
    "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label": "passed",
    "tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes": "passed",
+   "tests/test_lab_flat_torus_topology.py::test_next_steps_name_forward_work": "passed",
    "tests/test_lab_flat_torus_topology.py::test_surface_helpers_exact": "passed",
    "tests/test_lab_flat_torus_topology.py::test_t028_glued_edge_flow": "passed"
   },
@@ -545,7 +611,8 @@
    "tests/test_lab_flat_torus_topology.py::test_t028_glued_edge_flow",
    "tests/test_lab_flat_torus_topology.py::test_surface_helpers_exact",
    "tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
-   "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+   "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label",
+   "tests/test_lab_flat_torus_topology.py::test_next_steps_name_forward_work"
   ],
   "state": "completed",
   "task_id": "T028",
@@ -558,6 +625,7 @@
    "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label": "passed",
    "tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes": "passed",
    "tests/test_lab_flat_torus_topology.py::test_gauss_bonnet_check_detects_wrong_vertex_classes": "passed",
+   "tests/test_lab_flat_torus_topology.py::test_next_steps_name_forward_work": "passed",
    "tests/test_lab_flat_torus_topology.py::test_regeneration_is_within_tolerance": "passed",
    "tests/test_lab_flat_torus_topology.py::test_t027_t029_surfaces_and_cones": "passed"
   },
@@ -567,7 +635,8 @@
    "tests/test_lab_flat_torus_topology.py::test_gauss_bonnet_check_detects_wrong_vertex_classes",
    "tests/test_lab_flat_torus_topology.py::test_regeneration_is_within_tolerance",
    "tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
-   "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+   "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label",
+   "tests/test_lab_flat_torus_topology.py::test_next_steps_name_forward_work"
   ],
   "state": "completed",
   "task_id": "T029",
@@ -580,13 +649,15 @@
   "junit": {
    "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label": "passed",
    "tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes": "passed",
+   "tests/test_lab_flat_torus_topology.py::test_next_steps_name_forward_work": "passed",
    "tests/test_lab_flat_torus_topology.py::test_t030_grid_metrication": "passed"
   },
   "missing": [],
   "regression_tests": [
    "tests/test_lab_flat_torus_topology.py::test_t030_grid_metrication",
    "tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
-   "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+   "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label",
+   "tests/test_lab_flat_torus_topology.py::test_next_steps_name_forward_work"
   ],
   "state": "completed",
   "task_id": "T030",
@@ -599,6 +670,7 @@
   "junit": {
    "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label": "passed",
    "tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes": "passed",
+   "tests/test_lab_flat_torus_topology.py::test_next_steps_name_forward_work": "passed",
    "tests/test_lab_flat_torus_topology.py::test_regeneration_is_within_tolerance": "passed",
    "tests/test_lab_flat_torus_topology.py::test_t031_route_switch": "passed"
   },
@@ -607,7 +679,8 @@
    "tests/test_lab_flat_torus_topology.py::test_t031_route_switch",
    "tests/test_lab_flat_torus_topology.py::test_regeneration_is_within_tolerance",
    "tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
-   "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+   "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label",
+   "tests/test_lab_flat_torus_topology.py::test_next_steps_name_forward_work"
   ],
   "state": "completed",
   "task_id": "T031",
@@ -619,6 +692,8 @@
   "junit": {
    "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label": "passed",
    "tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes": "passed",
+   "tests/test_lab_flat_torus_topology.py::test_focus_margin_claims_state_the_canonical_definition": "passed",
+   "tests/test_lab_flat_torus_topology.py::test_next_steps_name_forward_work": "passed",
    "tests/test_lab_flat_torus_topology.py::test_route_helpers": "passed",
    "tests/test_lab_flat_torus_topology.py::test_sympy_field_matches_the_closed_form_batch_field": "passed",
    "tests/test_lab_flat_torus_topology.py::test_t032_counterexample_library": "passed"
@@ -627,9 +702,11 @@
   "regression_tests": [
    "tests/test_lab_flat_torus_topology.py::test_t032_counterexample_library",
    "tests/test_lab_flat_torus_topology.py::test_route_helpers",
+   "tests/test_lab_flat_torus_topology.py::test_focus_margin_claims_state_the_canonical_definition",
    "tests/test_lab_flat_torus_topology.py::test_sympy_field_matches_the_closed_form_batch_field",
    "tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
-   "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+   "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label",
+   "tests/test_lab_flat_torus_topology.py::test_next_steps_name_forward_work"
   ],
   "state": "completed",
   "task_id": "T032",
@@ -643,6 +720,7 @@
    "tests/test_lab_surfaces_discrete.py::test_conformance_reports_nonfinite_residuals": "passed",
    "tests/test_lab_surfaces_discrete.py::test_conformance_suite_accepts_every_surface": "passed",
    "tests/test_lab_surfaces_discrete.py::test_conformance_suite_rejects_seeded_mutants": "passed",
+   "tests/test_lab_surfaces_discrete.py::test_next_steps_do_not_hand_work_to_tasks_that_did_not_deliver_it": "passed",
    "tests/test_lab_surfaces_discrete.py::test_t033_report": "passed"
   },
   "missing": [],
@@ -651,7 +729,8 @@
    "tests/test_lab_surfaces_discrete.py::test_conformance_suite_rejects_seeded_mutants",
    "tests/test_lab_surfaces_discrete.py::test_conformance_reports_nonfinite_residuals",
    "tests/test_lab_surfaces_discrete.py::test_brioschi_recovers_supplied_curvature",
-   "tests/test_lab_surfaces_discrete.py::test_t033_report"
+   "tests/test_lab_surfaces_discrete.py::test_t033_report",
+   "tests/test_lab_surfaces_discrete.py::test_next_steps_do_not_hand_work_to_tasks_that_did_not_deliver_it"
   ],
   "state": "completed",
   "task_id": "T033",
@@ -685,12 +764,14 @@
  {
   "junit": {
    "tests/test_lab_surfaces_discrete.py::test_finite_difference_error_is_v_shaped": "passed",
+   "tests/test_lab_surfaces_discrete.py::test_next_steps_do_not_hand_work_to_tasks_that_did_not_deliver_it": "passed",
    "tests/test_lab_surfaces_discrete.py::test_t035_report": "passed"
   },
   "missing": [],
   "regression_tests": [
    "tests/test_lab_surfaces_discrete.py::test_finite_difference_error_is_v_shaped",
-   "tests/test_lab_surfaces_discrete.py::test_t035_report"
+   "tests/test_lab_surfaces_discrete.py::test_t035_report",
+   "tests/test_lab_surfaces_discrete.py::test_next_steps_do_not_hand_work_to_tasks_that_did_not_deliver_it"
   ],
   "state": "completed",
   "task_id": "T035",
@@ -724,6 +805,7 @@
  },
  {
   "junit": {
+   "tests/test_lab_surfaces_discrete.py::test_next_steps_do_not_hand_work_to_tasks_that_did_not_deliver_it": "passed",
    "tests/test_lab_surfaces_discrete.py::test_singularity_detection_limits": "passed",
    "tests/test_lab_surfaces_discrete.py::test_singularity_refusal_codes": "passed",
    "tests/test_lab_surfaces_discrete.py::test_singularity_scans_classify_every_case": "passed",
@@ -734,7 +816,8 @@
    "tests/test_lab_surfaces_discrete.py::test_singularity_scans_classify_every_case",
    "tests/test_lab_surfaces_discrete.py::test_singularity_detection_limits",
    "tests/test_lab_surfaces_discrete.py::test_singularity_refusal_codes",
-   "tests/test_lab_surfaces_discrete.py::test_t037_report"
+   "tests/test_lab_surfaces_discrete.py::test_t037_report",
+   "tests/test_lab_surfaces_discrete.py::test_next_steps_do_not_hand_work_to_tasks_that_did_not_deliver_it"
   ],
   "state": "completed",
   "task_id": "T037",
@@ -746,11 +829,13 @@
   "junit": {
    "tests/test_lab_surfaces_discrete_mesh.py::test_dijkstra_check_falls_back_without_scipy": "passed",
    "tests/test_lab_surfaces_discrete_mesh.py::test_graph_distances_and_steiner_sandwich": "passed",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_next_steps_name_forward_work": "passed",
    "tests/test_lab_surfaces_discrete_mesh.py::test_solver_task_report": "passed",
    "tests/test_lab_surfaces_discrete_mesh.py::test_tracer_is_exact_on_developable_meshes": "passed"
   },
   "missing": [],
   "regression_tests": [
+   "tests/test_lab_surfaces_discrete_mesh.py::test_next_steps_name_forward_work",
    "tests/test_lab_surfaces_discrete_mesh.py::test_tracer_is_exact_on_developable_meshes",
    "tests/test_lab_surfaces_discrete_mesh.py::test_graph_distances_and_steiner_sandwich",
    "tests/test_lab_surfaces_discrete_mesh.py::test_dijkstra_check_falls_back_without_scipy",
@@ -759,6 +844,7 @@
   "state": "partial",
   "task_id": "T038",
   "tied": [
+   "tests/test_lab_surfaces_discrete_mesh.py::test_next_steps_name_forward_work",
    "tests/test_lab_surfaces_discrete_mesh.py::test_dijkstra_check_falls_back_without_scipy",
    "tests/test_lab_surfaces_discrete_mesh.py::test_solver_task_report"
   ]
@@ -766,44 +852,52 @@
  {
   "junit": {
    "tests/test_lab_surfaces_discrete_mesh.py::test_convergence_orders_on_small_levels": "passed",
-   "tests/test_lab_surfaces_discrete_mesh.py::test_convergence_task_report": "passed"
+   "tests/test_lab_surfaces_discrete_mesh.py::test_convergence_task_report": "passed",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_next_steps_name_forward_work": "passed"
   },
   "missing": [],
   "regression_tests": [
+   "tests/test_lab_surfaces_discrete_mesh.py::test_next_steps_name_forward_work",
    "tests/test_lab_surfaces_discrete_mesh.py::test_convergence_orders_on_small_levels",
    "tests/test_lab_surfaces_discrete_mesh.py::test_convergence_task_report"
   ],
   "state": "completed",
   "task_id": "T039",
   "tied": [
+   "tests/test_lab_surfaces_discrete_mesh.py::test_next_steps_name_forward_work",
    "tests/test_lab_surfaces_discrete_mesh.py::test_convergence_task_report"
   ]
  },
  {
   "junit": {
    "tests/test_lab_surfaces_discrete_mesh.py::test_flat_jacobi_counterexample_and_valence_limit": "passed",
-   "tests/test_lab_surfaces_discrete_mesh.py::test_jacobi_task_report": "passed"
+   "tests/test_lab_surfaces_discrete_mesh.py::test_jacobi_task_report": "passed",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_next_steps_name_forward_work": "passed"
   },
   "missing": [],
   "regression_tests": [
+   "tests/test_lab_surfaces_discrete_mesh.py::test_next_steps_name_forward_work",
    "tests/test_lab_surfaces_discrete_mesh.py::test_flat_jacobi_counterexample_and_valence_limit",
    "tests/test_lab_surfaces_discrete_mesh.py::test_jacobi_task_report"
   ],
   "state": "completed",
   "task_id": "T040",
   "tied": [
+   "tests/test_lab_surfaces_discrete_mesh.py::test_next_steps_name_forward_work",
    "tests/test_lab_surfaces_discrete_mesh.py::test_jacobi_task_report"
   ]
  },
  {
   "junit": {
    "tests/test_lab_surfaces_discrete_mesh.py::test_fold_check_misses_small_bend_inversions": "passed",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_next_steps_name_forward_work": "passed",
    "tests/test_lab_surfaces_discrete_mesh.py::test_quality_task_report": "passed",
    "tests/test_lab_surfaces_discrete_mesh.py::test_rank_correlation_matches_average_ranks": "passed",
    "tests/test_lab_surfaces_discrete_mesh.py::test_schwarz_lantern_counterexample": "passed"
   },
   "missing": [],
   "regression_tests": [
+   "tests/test_lab_surfaces_discrete_mesh.py::test_next_steps_name_forward_work",
    "tests/test_lab_surfaces_discrete_mesh.py::test_schwarz_lantern_counterexample",
    "tests/test_lab_surfaces_discrete_mesh.py::test_rank_correlation_matches_average_ranks",
    "tests/test_lab_surfaces_discrete_mesh.py::test_fold_check_misses_small_bend_inversions",
@@ -812,6 +906,7 @@
   "state": "completed",
   "task_id": "T041",
   "tied": [
+   "tests/test_lab_surfaces_discrete_mesh.py::test_next_steps_name_forward_work",
    "tests/test_lab_surfaces_discrete_mesh.py::test_quality_task_report"
   ]
  },
@@ -819,10 +914,12 @@
   "junit": {
    "tests/test_lab_surfaces_discrete_mesh.py::test_every_defect_has_a_named_refusal": "passed",
    "tests/test_lab_surfaces_discrete_mesh.py::test_fold_check_misses_small_bend_inversions": "passed",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_next_steps_name_forward_work": "passed",
    "tests/test_lab_surfaces_discrete_mesh.py::test_refusal_task_report": "passed"
   },
   "missing": [],
   "regression_tests": [
+   "tests/test_lab_surfaces_discrete_mesh.py::test_next_steps_name_forward_work",
    "tests/test_lab_surfaces_discrete_mesh.py::test_every_defect_has_a_named_refusal",
    "tests/test_lab_surfaces_discrete_mesh.py::test_fold_check_misses_small_bend_inversions",
    "tests/test_lab_surfaces_discrete_mesh.py::test_refusal_task_report"
@@ -830,6 +927,7 @@
   "state": "completed",
   "task_id": "T042",
   "tied": [
+   "tests/test_lab_surfaces_discrete_mesh.py::test_next_steps_name_forward_work",
    "tests/test_lab_surfaces_discrete_mesh.py::test_refusal_task_report"
   ]
  },
@@ -837,50 +935,67 @@
   "junit": {
    "tests/test_lab_surfaces_discrete_mesh.py::test_corridor_threshold_depends_on_the_strip": "passed",
    "tests/test_lab_surfaces_discrete_mesh.py::test_linearization_matches_monte_carlo_and_breaks": "passed",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_next_steps_name_forward_work": "passed",
    "tests/test_lab_surfaces_discrete_mesh.py::test_per_vertex_uncertainty_matches_monte_carlo": "passed",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_t043_reconciles_the_two_declared_strip_estimates": "passed",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_t043_says_when_the_two_declared_strip_estimates_differ": "passed",
    "tests/test_lab_surfaces_discrete_mesh.py::test_uncertainty_task_report": "passed"
   },
   "missing": [],
   "regression_tests": [
+   "tests/test_lab_surfaces_discrete_mesh.py::test_next_steps_name_forward_work",
    "tests/test_lab_surfaces_discrete_mesh.py::test_linearization_matches_monte_carlo_and_breaks",
    "tests/test_lab_surfaces_discrete_mesh.py::test_corridor_threshold_depends_on_the_strip",
    "tests/test_lab_surfaces_discrete_mesh.py::test_per_vertex_uncertainty_matches_monte_carlo",
-   "tests/test_lab_surfaces_discrete_mesh.py::test_uncertainty_task_report"
+   "tests/test_lab_surfaces_discrete_mesh.py::test_uncertainty_task_report",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_t043_reconciles_the_two_declared_strip_estimates",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_t043_says_when_the_two_declared_strip_estimates_differ"
   ],
   "state": "completed",
   "task_id": "T043",
   "tied": [
-   "tests/test_lab_surfaces_discrete_mesh.py::test_uncertainty_task_report"
+   "tests/test_lab_surfaces_discrete_mesh.py::test_next_steps_name_forward_work",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_uncertainty_task_report",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_t043_says_when_the_two_declared_strip_estimates_differ"
   ]
  },
  {
   "junit": {
    "tests/test_lab_surfaces_discrete_mesh.py::test_law_of_total_variance_split": "passed",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_next_steps_name_forward_work": "passed",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_t044_next_step_names_what_t045_leaves_open": "passed",
    "tests/test_lab_surfaces_discrete_mesh.py::test_variance_split_task_report": "passed"
   },
   "missing": [],
   "regression_tests": [
+   "tests/test_lab_surfaces_discrete_mesh.py::test_next_steps_name_forward_work",
    "tests/test_lab_surfaces_discrete_mesh.py::test_law_of_total_variance_split",
-   "tests/test_lab_surfaces_discrete_mesh.py::test_variance_split_task_report"
+   "tests/test_lab_surfaces_discrete_mesh.py::test_variance_split_task_report",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_t044_next_step_names_what_t045_leaves_open"
   ],
   "state": "completed",
   "task_id": "T044",
   "tied": [
-   "tests/test_lab_surfaces_discrete_mesh.py::test_variance_split_task_report"
+   "tests/test_lab_surfaces_discrete_mesh.py::test_next_steps_name_forward_work",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_variance_split_task_report",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_t044_next_step_names_what_t045_leaves_open"
   ]
  },
  {
   "junit": {
+   "tests/test_lab_observation.py::test_reconstructed_distance_carries_the_t044_split": "passed",
    "tests/test_lab_observation.py::test_t045_modes_and_refusals": "passed"
   },
   "missing": [],
   "regression_tests": [
-   "tests/test_lab_observation.py::test_t045_modes_and_refusals"
+   "tests/test_lab_observation.py::test_t045_modes_and_refusals",
+   "tests/test_lab_observation.py::test_reconstructed_distance_carries_the_t044_split"
   ],
   "state": "completed",
   "task_id": "T045",
   "tied": [
-   "tests/test_lab_observation.py::test_t045_modes_and_refusals"
+   "tests/test_lab_observation.py::test_t045_modes_and_refusals",
+   "tests/test_lab_observation.py::test_reconstructed_distance_carries_the_t044_split"
   ]
  },
  {
@@ -1062,30 +1177,48 @@
  },
  {
   "junit": {
+   "tests/test_lab_observation.py::test_intake_import_failure_blocks_only_its_tasks": "passed",
+   "tests/test_lab_observation.py::test_intake_maps_frames_and_clocks_or_refuses": "passed",
    "tests/test_lab_observation.py::test_t058_frame_and_clock_basis": "passed"
   },
   "missing": [],
   "regression_tests": [
-   "tests/test_lab_observation.py::test_t058_frame_and_clock_basis"
+   "tests/test_lab_observation.py::test_t058_frame_and_clock_basis",
+   "tests/test_lab_observation.py::test_intake_maps_frames_and_clocks_or_refuses",
+   "tests/test_lab_observation.py::test_intake_import_failure_blocks_only_its_tasks"
   ],
   "state": "completed",
   "task_id": "T058",
   "tied": [
-   "tests/test_lab_observation.py::test_t058_frame_and_clock_basis"
+   "tests/test_lab_observation.py::test_t058_frame_and_clock_basis",
+   "tests/test_lab_observation.py::test_intake_maps_frames_and_clocks_or_refuses"
   ]
  },
  {
   "junit": {
-   "tests/test_lab_observation.py::test_t059_retained_without_admission": "passed"
+   "tests/test_lab_observation.py::test_intake_import_failure_blocks_only_its_tasks": "passed",
+   "tests/test_lab_observation.py::test_intake_refuses_unadmitted_records": "passed",
+   "tests/test_lab_observation.py::test_state_store_defaults_to_read_only": "passed",
+   "tests/test_lab_observation.py::test_state_update_takes_the_declared_variance": "passed",
+   "tests/test_lab_observation.py::test_t059_retained_without_admission": "passed",
+   "tests/test_lab_observation.py::test_variance_split_survives_retention_and_digesting": "passed"
   },
   "missing": [],
   "regression_tests": [
-   "tests/test_lab_observation.py::test_t059_retained_without_admission"
+   "tests/test_lab_observation.py::test_t059_retained_without_admission",
+   "tests/test_lab_observation.py::test_state_store_defaults_to_read_only",
+   "tests/test_lab_observation.py::test_variance_split_survives_retention_and_digesting",
+   "tests/test_lab_observation.py::test_state_update_takes_the_declared_variance",
+   "tests/test_lab_observation.py::test_intake_refuses_unadmitted_records",
+   "tests/test_lab_observation.py::test_intake_import_failure_blocks_only_its_tasks"
   ],
   "state": "completed",
   "task_id": "T059",
   "tied": [
-   "tests/test_lab_observation.py::test_t059_retained_without_admission"
+   "tests/test_lab_observation.py::test_t059_retained_without_admission",
+   "tests/test_lab_observation.py::test_state_store_defaults_to_read_only",
+   "tests/test_lab_observation.py::test_state_update_takes_the_declared_variance",
+   "tests/test_lab_observation.py::test_intake_refuses_unadmitted_records"
   ]
  },
  {
@@ -1340,6 +1473,9 @@
  {
   "junit": {
    "tests/test_lab_sensor_fusion.py::test_candidates_inherit_inconsistent_innovations_and_revocations": "passed",
+   "tests/test_lab_sensor_fusion.py::test_intake_counts_each_measurement_once_and_trace_refuses_bypasses": "passed",
+   "tests/test_lab_sensor_fusion.py::test_intake_refusals_leave_the_session_unchanged": "passed",
+   "tests/test_lab_sensor_fusion.py::test_observation_to_admission_pipeline_end_to_end": "passed",
    "tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T075]": "passed",
    "tests/test_lab_sensor_fusion.py::test_typed_objects_and_admission_mutations": "passed"
   },
@@ -1347,38 +1483,49 @@
   "regression_tests": [
    "tests/test_lab_sensor_fusion.py::test_typed_objects_and_admission_mutations",
    "tests/test_lab_sensor_fusion.py::test_candidates_inherit_inconsistent_innovations_and_revocations",
+   "tests/test_lab_sensor_fusion.py::test_observation_to_admission_pipeline_end_to_end",
+   "tests/test_lab_sensor_fusion.py::test_intake_refusals_leave_the_session_unchanged",
+   "tests/test_lab_sensor_fusion.py::test_intake_counts_each_measurement_once_and_trace_refuses_bypasses",
    "tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T075]"
   ],
   "state": "completed",
   "task_id": "T075",
   "tied": [
+   "tests/test_lab_sensor_fusion.py::test_observation_to_admission_pipeline_end_to_end",
    "tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T075]"
   ]
  },
  {
   "junit": {
    "tests/test_lab_sensor_fusion.py::test_defaults_are_read_only_and_not_performed": "passed",
+   "tests/test_lab_sensor_fusion.py::test_no_lab_estimator_leaves_the_admission_vocabulary": "passed",
    "tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T076]": "passed"
   },
   "missing": [],
   "regression_tests": [
    "tests/test_lab_sensor_fusion.py::test_defaults_are_read_only_and_not_performed",
+   "tests/test_lab_sensor_fusion.py::test_no_lab_estimator_leaves_the_admission_vocabulary",
    "tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T076]"
   ],
   "state": "completed",
   "task_id": "T076",
   "tied": [
    "tests/test_lab_sensor_fusion.py::test_defaults_are_read_only_and_not_performed",
+   "tests/test_lab_sensor_fusion.py::test_no_lab_estimator_leaves_the_admission_vocabulary",
    "tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T076]"
   ]
  },
  {
   "junit": {
-   "tests/test_lab_exchange_provenance.py::test_identity_matrix": "passed"
+   "tests/test_lab_exchange_provenance.py::test_identity_matrix": "passed",
+   "tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work": "passed",
+   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply": "skipped"
   },
   "missing": [],
   "regression_tests": [
-   "tests/test_lab_exchange_provenance.py::test_identity_matrix"
+   "tests/test_lab_exchange_provenance.py::test_identity_matrix",
+   "tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work",
+   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply"
   ],
   "state": "partial",
   "task_id": "T077",
@@ -1388,11 +1535,15 @@
  },
  {
   "junit": {
-   "tests/test_lab_exchange_provenance.py::test_exact_source_bytes": "passed"
+   "tests/test_lab_exchange_provenance.py::test_exact_source_bytes": "passed",
+   "tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work": "passed",
+   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply": "skipped"
   },
   "missing": [],
   "regression_tests": [
-   "tests/test_lab_exchange_provenance.py::test_exact_source_bytes"
+   "tests/test_lab_exchange_provenance.py::test_exact_source_bytes",
+   "tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work",
+   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply"
   ],
   "state": "completed",
   "task_id": "T078",
@@ -1402,11 +1553,15 @@
  },
  {
   "junit": {
+   "tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work": "passed",
+   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply": "skipped",
    "tests/test_lab_exchange_provenance.py::test_whitespace_variants": "passed"
   },
   "missing": [],
   "regression_tests": [
-   "tests/test_lab_exchange_provenance.py::test_whitespace_variants"
+   "tests/test_lab_exchange_provenance.py::test_whitespace_variants",
+   "tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work",
+   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply"
   ],
   "state": "completed",
   "task_id": "T079",
@@ -1416,11 +1571,15 @@
  },
  {
   "junit": {
-   "tests/test_lab_exchange_provenance.py::test_identity_separation": "passed"
+   "tests/test_lab_exchange_provenance.py::test_identity_separation": "passed",
+   "tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work": "passed",
+   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply": "skipped"
   },
   "missing": [],
   "regression_tests": [
-   "tests/test_lab_exchange_provenance.py::test_identity_separation"
+   "tests/test_lab_exchange_provenance.py::test_identity_separation",
+   "tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work",
+   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply"
   ],
   "state": "completed",
   "task_id": "T080",
@@ -1430,11 +1589,17 @@
  },
  {
   "junit": {
-   "tests/test_lab_exchange_provenance.py::test_numerical_identity": "passed"
+   "tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work": "passed",
+   "tests/test_lab_exchange_provenance.py::test_numerical_identity": "passed",
+   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply": "skipped",
+   "tests/test_lab_exchange_provenance.py::test_t081_defers_cross_platform_reproduction_as_one_question": "passed"
   },
   "missing": [],
   "regression_tests": [
-   "tests/test_lab_exchange_provenance.py::test_numerical_identity"
+   "tests/test_lab_exchange_provenance.py::test_numerical_identity",
+   "tests/test_lab_exchange_provenance.py::test_t081_defers_cross_platform_reproduction_as_one_question",
+   "tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work",
+   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply"
   ],
   "state": "completed",
   "task_id": "T081",
@@ -1444,11 +1609,15 @@
  },
  {
   "junit": {
-   "tests/test_lab_exchange_provenance.py::test_fresh_occurrences": "passed"
+   "tests/test_lab_exchange_provenance.py::test_fresh_occurrences": "passed",
+   "tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work": "passed",
+   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply": "skipped"
   },
   "missing": [],
   "regression_tests": [
-   "tests/test_lab_exchange_provenance.py::test_fresh_occurrences"
+   "tests/test_lab_exchange_provenance.py::test_fresh_occurrences",
+   "tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work",
+   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply"
   ],
   "state": "completed",
   "task_id": "T082",
@@ -1458,11 +1627,15 @@
  },
  {
   "junit": {
-   "tests/test_lab_exchange_provenance.py::test_replay_receipt_binding": "passed"
+   "tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work": "passed",
+   "tests/test_lab_exchange_provenance.py::test_replay_receipt_binding": "passed",
+   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply": "skipped"
   },
   "missing": [],
   "regression_tests": [
-   "tests/test_lab_exchange_provenance.py::test_replay_receipt_binding"
+   "tests/test_lab_exchange_provenance.py::test_replay_receipt_binding",
+   "tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work",
+   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply"
   ],
   "state": "completed",
   "task_id": "T083",
@@ -1472,11 +1645,15 @@
  },
  {
   "junit": {
-   "tests/test_lab_exchange_provenance.py::test_receipt_digest_mutations": "passed"
+   "tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work": "passed",
+   "tests/test_lab_exchange_provenance.py::test_receipt_digest_mutations": "passed",
+   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply": "skipped"
   },
   "missing": [],
   "regression_tests": [
-   "tests/test_lab_exchange_provenance.py::test_receipt_digest_mutations"
+   "tests/test_lab_exchange_provenance.py::test_receipt_digest_mutations",
+   "tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work",
+   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply"
   ],
   "state": "completed",
   "task_id": "T084",
@@ -1486,11 +1663,15 @@
  },
  {
   "junit": {
-   "tests/test_lab_exchange_provenance.py::test_receipt_digest_mutations": "passed"
+   "tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work": "passed",
+   "tests/test_lab_exchange_provenance.py::test_receipt_digest_mutations": "passed",
+   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply": "skipped"
   },
   "missing": [],
   "regression_tests": [
-   "tests/test_lab_exchange_provenance.py::test_receipt_digest_mutations"
+   "tests/test_lab_exchange_provenance.py::test_receipt_digest_mutations",
+   "tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work",
+   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply"
   ],
   "state": "completed",
   "task_id": "T085",
@@ -1500,11 +1681,15 @@
  },
  {
   "junit": {
+   "tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work": "passed",
+   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply": "skipped",
    "tests/test_lab_exchange_provenance.py::test_verification_mutations": "passed"
   },
   "missing": [],
   "regression_tests": [
-   "tests/test_lab_exchange_provenance.py::test_verification_mutations"
+   "tests/test_lab_exchange_provenance.py::test_verification_mutations",
+   "tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work",
+   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply"
   ],
   "state": "completed",
   "task_id": "T086",
@@ -1514,11 +1699,15 @@
  },
  {
   "junit": {
+   "tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work": "passed",
+   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply": "skipped",
    "tests/test_lab_exchange_provenance.py::test_verification_mutations": "passed"
   },
   "missing": [],
   "regression_tests": [
-   "tests/test_lab_exchange_provenance.py::test_verification_mutations"
+   "tests/test_lab_exchange_provenance.py::test_verification_mutations",
+   "tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work",
+   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply"
   ],
   "state": "completed",
   "task_id": "T087",
@@ -1528,11 +1717,15 @@
  },
  {
   "junit": {
+   "tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work": "passed",
+   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply": "skipped",
    "tests/test_lab_exchange_provenance.py::test_verification_mutations": "passed"
   },
   "missing": [],
   "regression_tests": [
-   "tests/test_lab_exchange_provenance.py::test_verification_mutations"
+   "tests/test_lab_exchange_provenance.py::test_verification_mutations",
+   "tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work",
+   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply"
   ],
   "state": "completed",
   "task_id": "T088",
@@ -1542,11 +1735,15 @@
  },
  {
   "junit": {
-   "tests/test_lab_exchange_provenance.py::test_admission_and_runtime_mutations": "passed"
+   "tests/test_lab_exchange_provenance.py::test_admission_and_runtime_mutations": "passed",
+   "tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work": "passed",
+   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply": "skipped"
   },
   "missing": [],
   "regression_tests": [
-   "tests/test_lab_exchange_provenance.py::test_admission_and_runtime_mutations"
+   "tests/test_lab_exchange_provenance.py::test_admission_and_runtime_mutations",
+   "tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work",
+   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply"
   ],
   "state": "completed",
   "task_id": "T089",
@@ -1556,11 +1753,15 @@
  },
  {
   "junit": {
-   "tests/test_lab_exchange_provenance.py::test_admission_and_runtime_mutations": "passed"
+   "tests/test_lab_exchange_provenance.py::test_admission_and_runtime_mutations": "passed",
+   "tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work": "passed",
+   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply": "skipped"
   },
   "missing": [],
   "regression_tests": [
-   "tests/test_lab_exchange_provenance.py::test_admission_and_runtime_mutations"
+   "tests/test_lab_exchange_provenance.py::test_admission_and_runtime_mutations",
+   "tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work",
+   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply"
   ],
   "state": "completed",
   "task_id": "T090",
@@ -1587,12 +1788,14 @@
  {
   "junit": {
    "tests/test_lab_exchange_provenance_bundles.py::test_fabricated_heat_bundle_is_content_consistent_but_wrong": "passed",
+   "tests/test_lab_exchange_provenance_bundles.py::test_t092_next_step_names_the_manifest_that_pins_each_kind": "passed",
    "tests/test_lab_exchange_provenance_bundles.py::test_t092_unbound_replay_and_execution_are_refused": "passed"
   },
   "missing": [],
   "regression_tests": [
    "tests/test_lab_exchange_provenance_bundles.py::test_t092_unbound_replay_and_execution_are_refused",
-   "tests/test_lab_exchange_provenance_bundles.py::test_fabricated_heat_bundle_is_content_consistent_but_wrong"
+   "tests/test_lab_exchange_provenance_bundles.py::test_fabricated_heat_bundle_is_content_consistent_but_wrong",
+   "tests/test_lab_exchange_provenance_bundles.py::test_t092_next_step_names_the_manifest_that_pins_each_kind"
   ],
   "state": "completed",
   "task_id": "T092",
@@ -1664,6 +1867,7 @@
   "junit": {
    "tests/test_lab_exchange_provenance_bundles.py::test_t097_is_blocked_without_scr": "passed",
    "tests/test_lab_exchange_provenance_bundles.py::test_t097_keeps_set_results_when_the_engine_is_missing": "passed",
+   "tests/test_lab_exchange_provenance_bundles.py::test_t097_names_each_executed_provider_beside_its_label": "passed",
    "tests/test_lab_exchange_provenance_bundles.py::test_t097_scr_numerical_heat_integration": "passed",
    "tests/test_lab_exchange_provenance_bundles.py::test_t097_t099_refuse_a_non_repository_scr_binding": "passed"
   },
@@ -1672,14 +1876,16 @@
    "tests/test_lab_exchange_provenance_bundles.py::test_t097_scr_numerical_heat_integration",
    "tests/test_lab_exchange_provenance_bundles.py::test_t097_is_blocked_without_scr",
    "tests/test_lab_exchange_provenance_bundles.py::test_t097_keeps_set_results_when_the_engine_is_missing",
-   "tests/test_lab_exchange_provenance_bundles.py::test_t097_t099_refuse_a_non_repository_scr_binding"
+   "tests/test_lab_exchange_provenance_bundles.py::test_t097_t099_refuse_a_non_repository_scr_binding",
+   "tests/test_lab_exchange_provenance_bundles.py::test_t097_names_each_executed_provider_beside_its_label"
   ],
   "state": "completed",
   "task_id": "T097",
   "tied": [
    "tests/test_lab_exchange_provenance_bundles.py::test_t097_scr_numerical_heat_integration",
    "tests/test_lab_exchange_provenance_bundles.py::test_t097_is_blocked_without_scr",
-   "tests/test_lab_exchange_provenance_bundles.py::test_t097_keeps_set_results_when_the_engine_is_missing"
+   "tests/test_lab_exchange_provenance_bundles.py::test_t097_keeps_set_results_when_the_engine_is_missing",
+   "tests/test_lab_exchange_provenance_bundles.py::test_t097_names_each_executed_provider_beside_its_label"
   ]
  },
  {
@@ -1704,45 +1910,64 @@
  {
   "junit": {
    "tests/test_lab_exchange_provenance_bundles.py::test_t097_t099_refuse_a_non_repository_scr_binding": "passed",
-   "tests/test_lab_exchange_provenance_bundles.py::test_t099_locked_offline_scr_build": "passed"
+   "tests/test_lab_exchange_provenance_bundles.py::test_t099_locked_offline_scr_build": "passed",
+   "tests/test_lab_exchange_provenance_bundles.py::test_t099_names_the_built_checkout_beside_its_label": "passed"
   },
   "missing": [],
   "regression_tests": [
    "tests/test_lab_exchange_provenance_bundles.py::test_t099_locked_offline_scr_build",
-   "tests/test_lab_exchange_provenance_bundles.py::test_t097_t099_refuse_a_non_repository_scr_binding"
+   "tests/test_lab_exchange_provenance_bundles.py::test_t097_t099_refuse_a_non_repository_scr_binding",
+   "tests/test_lab_exchange_provenance_bundles.py::test_t099_names_the_built_checkout_beside_its_label"
   ],
   "state": "partial",
   "task_id": "T099",
   "tied": [
-   "tests/test_lab_exchange_provenance_bundles.py::test_t099_locked_offline_scr_build"
+   "tests/test_lab_exchange_provenance_bundles.py::test_t099_locked_offline_scr_build",
+   "tests/test_lab_exchange_provenance_bundles.py::test_t099_names_the_built_checkout_beside_its_label"
   ]
  },
  {
   "junit": {
+   "tests/test_lab_exchange_provenance_bundles.py::test_basis_audit_compares_the_whole_cell": "passed",
+   "tests/test_lab_exchange_provenance_bundles.py::test_next_steps_name_forward_work": "passed",
    "tests/test_lab_exchange_provenance_bundles.py::test_render_markdown_pipe_probe_matches_the_renderer": "passed",
+   "tests/test_lab_exchange_provenance_bundles.py::test_t100_classifier_study_separates_an_invented_tree_from_a_copied_pin": "passed",
+   "tests/test_lab_exchange_provenance_bundles.py::test_t100_flags_a_rendered_row_that_hides_its_generator_or_provider": "passed",
    "tests/test_lab_exchange_provenance_bundles.py::test_t100_flags_a_retained_report_whose_label_leaves_its_column": "passed",
+   "tests/test_lab_exchange_provenance_bundles.py::test_t100_flags_an_unaccepted_acquisition_shown_as_hardware_acquisition": "passed",
    "tests/test_lab_exchange_provenance_bundles.py::test_t100_labels_and_origins_stay_distinct": "passed"
   },
   "missing": [],
   "regression_tests": [
    "tests/test_lab_exchange_provenance_bundles.py::test_t100_labels_and_origins_stay_distinct",
    "tests/test_lab_exchange_provenance_bundles.py::test_t100_flags_a_retained_report_whose_label_leaves_its_column",
-   "tests/test_lab_exchange_provenance_bundles.py::test_render_markdown_pipe_probe_matches_the_renderer"
+   "tests/test_lab_exchange_provenance_bundles.py::test_t100_flags_a_rendered_row_that_hides_its_generator_or_provider",
+   "tests/test_lab_exchange_provenance_bundles.py::test_t100_classifier_study_separates_an_invented_tree_from_a_copied_pin",
+   "tests/test_lab_exchange_provenance_bundles.py::test_t100_flags_an_unaccepted_acquisition_shown_as_hardware_acquisition",
+   "tests/test_lab_exchange_provenance_bundles.py::test_basis_audit_compares_the_whole_cell",
+   "tests/test_lab_exchange_provenance_bundles.py::test_render_markdown_pipe_probe_matches_the_renderer",
+   "tests/test_lab_exchange_provenance_bundles.py::test_next_steps_name_forward_work"
   ],
   "state": "completed",
   "task_id": "T100",
   "tied": [
    "tests/test_lab_exchange_provenance_bundles.py::test_t100_labels_and_origins_stay_distinct",
    "tests/test_lab_exchange_provenance_bundles.py::test_t100_flags_a_retained_report_whose_label_leaves_its_column",
+   "tests/test_lab_exchange_provenance_bundles.py::test_t100_flags_a_rendered_row_that_hides_its_generator_or_provider",
+   "tests/test_lab_exchange_provenance_bundles.py::test_t100_classifier_study_separates_an_invented_tree_from_a_copied_pin",
+   "tests/test_lab_exchange_provenance_bundles.py::test_t100_flags_an_unaccepted_acquisition_shown_as_hardware_acquisition",
    "tests/test_lab_exchange_provenance_bundles.py::test_render_markdown_pipe_probe_matches_the_renderer"
   ]
  },
  {
   "junit": {
    "tests/test_lab_lyapunov.py::test_checks_are_unconditional_and_observed_values_are_computed": "passed",
+   "tests/test_lab_lyapunov.py::test_next_steps_name_forward_work": "passed",
    "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider": "passed",
    "tests/test_lab_lyapunov.py::test_reference_witness_is_exactly_indefinite": "passed",
    "tests/test_lab_lyapunov.py::test_t101_resolution_floor": "passed",
+   "tests/test_lab_lyapunov.py::test_t101_t102_defer_cross_platform_reproduction_as_one_question": "passed",
+   "tests/test_lab_lyapunov.py::test_t101_t103_retain_the_subnormal_witness_once": "passed",
    "tests/test_lab_lyapunov.py::test_t101_threshold_is_analytic": "passed"
   },
   "missing": [],
@@ -1750,8 +1975,11 @@
    "tests/test_lab_lyapunov.py::test_t101_resolution_floor",
    "tests/test_lab_lyapunov.py::test_reference_witness_is_exactly_indefinite",
    "tests/test_lab_lyapunov.py::test_t101_threshold_is_analytic",
+   "tests/test_lab_lyapunov.py::test_t101_t103_retain_the_subnormal_witness_once",
+   "tests/test_lab_lyapunov.py::test_t101_t102_defer_cross_platform_reproduction_as_one_question",
    "tests/test_lab_lyapunov.py::test_checks_are_unconditional_and_observed_values_are_computed",
-   "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider"
+   "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider",
+   "tests/test_lab_lyapunov.py::test_next_steps_name_forward_work"
   ],
   "state": "completed",
   "task_id": "T101",
@@ -1765,7 +1993,9 @@
    "tests/test_lab_lyapunov.py::test_checks_are_unconditional_and_observed_values_are_computed": "passed",
    "tests/test_lab_lyapunov.py::test_discrete_razor_edge_sits_at_the_threshold": "passed",
    "tests/test_lab_lyapunov.py::test_eigvalsh_scaling_window": "passed",
+   "tests/test_lab_lyapunov.py::test_next_steps_name_forward_work": "passed",
    "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider": "passed",
+   "tests/test_lab_lyapunov.py::test_t101_t102_defer_cross_platform_reproduction_as_one_question": "passed",
    "tests/test_lab_lyapunov.py::test_t102_power_of_two_scaling": "passed"
   },
   "missing": [],
@@ -1773,8 +2003,10 @@
    "tests/test_lab_lyapunov.py::test_t102_power_of_two_scaling",
    "tests/test_lab_lyapunov.py::test_eigvalsh_scaling_window",
    "tests/test_lab_lyapunov.py::test_discrete_razor_edge_sits_at_the_threshold",
+   "tests/test_lab_lyapunov.py::test_t101_t102_defer_cross_platform_reproduction_as_one_question",
    "tests/test_lab_lyapunov.py::test_checks_are_unconditional_and_observed_values_are_computed",
-   "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider"
+   "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider",
+   "tests/test_lab_lyapunov.py::test_next_steps_name_forward_work"
   ],
   "state": "completed",
   "task_id": "T102",
@@ -1786,8 +2018,10 @@
   "junit": {
    "tests/test_lab_lyapunov.py::test_checks_are_unconditional_and_observed_values_are_computed": "passed",
    "tests/test_lab_lyapunov.py::test_level_gate_prediction": "passed",
+   "tests/test_lab_lyapunov.py::test_next_steps_name_forward_work": "passed",
    "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider": "passed",
    "tests/test_lab_lyapunov.py::test_representability_reference": "passed",
+   "tests/test_lab_lyapunov.py::test_t101_t103_retain_the_subnormal_witness_once": "passed",
    "tests/test_lab_lyapunov.py::test_t103_overflow_underflow": "passed"
   },
   "missing": [],
@@ -1795,8 +2029,10 @@
    "tests/test_lab_lyapunov.py::test_t103_overflow_underflow",
    "tests/test_lab_lyapunov.py::test_level_gate_prediction",
    "tests/test_lab_lyapunov.py::test_representability_reference",
+   "tests/test_lab_lyapunov.py::test_t101_t103_retain_the_subnormal_witness_once",
    "tests/test_lab_lyapunov.py::test_checks_are_unconditional_and_observed_values_are_computed",
-   "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider"
+   "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider",
+   "tests/test_lab_lyapunov.py::test_next_steps_name_forward_work"
   ],
   "state": "completed",
   "task_id": "T103",
@@ -1808,6 +2044,7 @@
   "junit": {
    "tests/test_lab_lyapunov.py::test_checks_are_unconditional_and_observed_values_are_computed": "passed",
    "tests/test_lab_lyapunov.py::test_edge_case_exact_classes": "passed",
+   "tests/test_lab_lyapunov.py::test_next_steps_name_forward_work": "passed",
    "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider": "passed",
    "tests/test_lab_lyapunov.py::test_t104_semidefinite_edges": "passed"
   },
@@ -1816,7 +2053,8 @@
    "tests/test_lab_lyapunov.py::test_t104_semidefinite_edges",
    "tests/test_lab_lyapunov.py::test_edge_case_exact_classes",
    "tests/test_lab_lyapunov.py::test_checks_are_unconditional_and_observed_values_are_computed",
-   "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider"
+   "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider",
+   "tests/test_lab_lyapunov.py::test_next_steps_name_forward_work"
   ],
   "state": "completed",
   "task_id": "T104",
@@ -1827,6 +2065,7 @@
  {
   "junit": {
    "tests/test_lab_lyapunov.py::test_conversion_scan": "passed",
+   "tests/test_lab_lyapunov.py::test_next_steps_name_forward_work": "passed",
    "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider": "passed",
    "tests/test_lab_lyapunov.py::test_t105_unit_scales": "passed"
   },
@@ -1834,7 +2073,8 @@
   "regression_tests": [
    "tests/test_lab_lyapunov.py::test_t105_unit_scales",
    "tests/test_lab_lyapunov.py::test_conversion_scan",
-   "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider"
+   "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider",
+   "tests/test_lab_lyapunov.py::test_next_steps_name_forward_work"
   ],
   "state": "completed",
   "task_id": "T105",
@@ -1846,6 +2086,7 @@
   "junit": {
    "tests/test_lab_lyapunov.py::test_checks_are_unconditional_and_observed_values_are_computed": "passed",
    "tests/test_lab_lyapunov.py::test_documented_decision_order": "passed",
+   "tests/test_lab_lyapunov.py::test_next_steps_name_forward_work": "passed",
    "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider": "passed",
    "tests/test_lab_lyapunov.py::test_t106_offline_findings_without_the_provider": "passed",
    "tests/test_lab_lyapunov.py::test_t106_status_coverage": "passed",
@@ -1858,7 +2099,8 @@
    "tests/test_lab_lyapunov.py::test_transition_graph",
    "tests/test_lab_lyapunov.py::test_t106_offline_findings_without_the_provider",
    "tests/test_lab_lyapunov.py::test_checks_are_unconditional_and_observed_values_are_computed",
-   "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider"
+   "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider",
+   "tests/test_lab_lyapunov.py::test_next_steps_name_forward_work"
   ],
   "state": "completed",
   "task_id": "T106",
@@ -1869,13 +2111,15 @@
  },
  {
   "junit": {
+   "tests/test_lab_lyapunov.py::test_next_steps_name_forward_work": "passed",
    "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider": "passed",
    "tests/test_lab_lyapunov.py::test_t107_inconclusive_band": "passed"
   },
   "missing": [],
   "regression_tests": [
    "tests/test_lab_lyapunov.py::test_t107_inconclusive_band",
-   "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider"
+   "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider",
+   "tests/test_lab_lyapunov.py::test_next_steps_name_forward_work"
   ],
   "state": "completed",
   "task_id": "T107",
@@ -1886,6 +2130,7 @@
  {
   "junit": {
    "tests/test_lab_lyapunov.py::test_documented_rule_is_monotone": "passed",
+   "tests/test_lab_lyapunov.py::test_next_steps_name_forward_work": "passed",
    "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider": "passed",
    "tests/test_lab_lyapunov.py::test_t108_margin_monotonicity": "passed"
   },
@@ -1893,7 +2138,8 @@
   "regression_tests": [
    "tests/test_lab_lyapunov.py::test_t108_margin_monotonicity",
    "tests/test_lab_lyapunov.py::test_documented_rule_is_monotone",
-   "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider"
+   "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider",
+   "tests/test_lab_lyapunov.py::test_next_steps_name_forward_work"
   ],
   "state": "completed",
   "task_id": "T108",
@@ -1904,6 +2150,7 @@
  {
   "junit": {
    "tests/test_lab_lyapunov.py::test_checks_are_unconditional_and_observed_values_are_computed": "passed",
+   "tests/test_lab_lyapunov.py::test_next_steps_name_forward_work": "passed",
    "tests/test_lab_lyapunov.py::test_numpy_misreads_exact_jordan_block": "passed",
    "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider": "passed",
    "tests/test_lab_lyapunov.py::test_t109_adversarial_eigenvalues": "passed"
@@ -1913,7 +2160,8 @@
    "tests/test_lab_lyapunov.py::test_t109_adversarial_eigenvalues",
    "tests/test_lab_lyapunov.py::test_numpy_misreads_exact_jordan_block",
    "tests/test_lab_lyapunov.py::test_checks_are_unconditional_and_observed_values_are_computed",
-   "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider"
+   "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider",
+   "tests/test_lab_lyapunov.py::test_next_steps_name_forward_work"
   ],
   "state": "completed",
   "task_id": "T109",
@@ -1923,13 +2171,15 @@
  },
  {
   "junit": {
+   "tests/test_lab_lyapunov.py::test_next_steps_name_forward_work": "passed",
    "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider": "passed",
    "tests/test_lab_lyapunov.py::test_t110_time_interpretation": "passed"
   },
   "missing": [],
   "regression_tests": [
    "tests/test_lab_lyapunov.py::test_t110_time_interpretation",
-   "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider"
+   "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider",
+   "tests/test_lab_lyapunov.py::test_next_steps_name_forward_work"
   ],
   "state": "completed",
   "task_id": "T110",
@@ -1939,13 +2189,15 @@
  },
  {
   "junit": {
+   "tests/test_lab_lyapunov.py::test_next_steps_name_forward_work": "passed",
    "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider": "passed",
    "tests/test_lab_lyapunov.py::test_t111_routes": "passed"
   },
   "missing": [],
   "regression_tests": [
    "tests/test_lab_lyapunov.py::test_t111_routes",
-   "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider"
+   "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider",
+   "tests/test_lab_lyapunov.py::test_next_steps_name_forward_work"
   ],
   "state": "completed",
   "task_id": "T111",
@@ -1955,24 +2207,28 @@
  },
  {
   "junit": {
+   "tests/test_lab_lyapunov.py::test_next_steps_name_forward_work": "passed",
    "tests/test_lab_lyapunov.py::test_research_tasks_without_optional_modules": "passed",
    "tests/test_lab_lyapunov.py::test_t112_iss_branch": "passed"
   },
   "missing": [],
   "regression_tests": [
    "tests/test_lab_lyapunov.py::test_t112_iss_branch",
-   "tests/test_lab_lyapunov.py::test_research_tasks_without_optional_modules"
+   "tests/test_lab_lyapunov.py::test_research_tasks_without_optional_modules",
+   "tests/test_lab_lyapunov.py::test_next_steps_name_forward_work"
   ],
   "state": "completed",
   "task_id": "T112",
   "tied": [
    "tests/test_lab_lyapunov.py::test_t112_iss_branch",
-   "tests/test_lab_lyapunov.py::test_research_tasks_without_optional_modules"
+   "tests/test_lab_lyapunov.py::test_research_tasks_without_optional_modules",
+   "tests/test_lab_lyapunov.py::test_next_steps_name_forward_work"
   ]
  },
  {
   "junit": {
    "tests/test_lab_lyapunov.py::test_adapter_keeps_metadata_outside": "passed",
+   "tests/test_lab_lyapunov.py::test_next_steps_name_forward_work": "passed",
    "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider": "passed",
    "tests/test_lab_lyapunov.py::test_t113_residual_adapter": "passed"
   },
@@ -1980,18 +2236,21 @@
   "regression_tests": [
    "tests/test_lab_lyapunov.py::test_t113_residual_adapter",
    "tests/test_lab_lyapunov.py::test_adapter_keeps_metadata_outside",
-   "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider"
+   "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider",
+   "tests/test_lab_lyapunov.py::test_next_steps_name_forward_work"
   ],
   "state": "completed",
   "task_id": "T113",
   "tied": [
    "tests/test_lab_lyapunov.py::test_t113_residual_adapter",
-   "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider"
+   "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider",
+   "tests/test_lab_lyapunov.py::test_next_steps_name_forward_work"
   ]
  },
  {
   "junit": {
    "tests/test_lab_lyapunov.py::test_level_set_extent_is_checked_independently": "passed",
+   "tests/test_lab_lyapunov.py::test_next_steps_name_forward_work": "passed",
    "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider": "passed",
    "tests/test_lab_lyapunov.py::test_research_tasks_without_optional_modules": "passed",
    "tests/test_lab_lyapunov.py::test_t114_level_set_and_monitor": "passed",
@@ -2003,7 +2262,8 @@
    "tests/test_lab_lyapunov.py::test_t114_level_set_and_monitor",
    "tests/test_lab_lyapunov.py::test_level_set_extent_is_checked_independently",
    "tests/test_lab_lyapunov.py::test_research_tasks_without_optional_modules",
-   "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider"
+   "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider",
+   "tests/test_lab_lyapunov.py::test_next_steps_name_forward_work"
   ],
   "state": "completed",
   "task_id": "T114",
@@ -2011,17 +2271,22 @@
    "tests/test_lab_lyapunov.py::test_t114_servo_pilot_spec",
    "tests/test_lab_lyapunov.py::test_t114_level_set_and_monitor",
    "tests/test_lab_lyapunov.py::test_research_tasks_without_optional_modules",
-   "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider"
+   "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider",
+   "tests/test_lab_lyapunov.py::test_next_steps_name_forward_work"
   ]
  },
  {
   "junit": {
+   "tests/test_lab_energy_gpu.py::test_common_workload_matches_the_ptx_kernel_and_the_energy_problem": "passed",
    "tests/test_lab_energy_gpu.py::test_cpu_energy_task_counts_work_and_leaves_energy_unestablished": "passed",
    "tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance": "passed",
    "tests/test_lab_energy_gpu.py::test_lab_run_acquires_no_energy_measurement": "passed",
+   "tests/test_lab_energy_gpu.py::test_next_steps_name_work_that_delivers": "passed",
+   "tests/test_lab_energy_gpu.py::test_rapl_brackets_exclude_preparation_and_respect_the_port_limit": "passed",
    "tests/test_lab_energy_gpu.py::test_rapl_capture_is_analyzed_read_only_and_gated": "passed",
    "tests/test_lab_energy_gpu.py::test_rapl_helpers_read_counters_and_one_wrap": "passed",
-   "tests/test_lab_energy_gpu.py::test_rapl_probe_is_the_only_counter_read": "passed"
+   "tests/test_lab_energy_gpu.py::test_rapl_probe_is_the_only_counter_read": "passed",
+   "tests/test_lab_energy_gpu.py::test_workload_tasks_digest_the_workload_sources": "passed"
   },
   "missing": [],
   "regression_tests": [
@@ -2030,6 +2295,10 @@
    "tests/test_lab_energy_gpu.py::test_rapl_capture_is_analyzed_read_only_and_gated",
    "tests/test_lab_energy_gpu.py::test_lab_run_acquires_no_energy_measurement",
    "tests/test_lab_energy_gpu.py::test_rapl_probe_is_the_only_counter_read",
+   "tests/test_lab_energy_gpu.py::test_rapl_brackets_exclude_preparation_and_respect_the_port_limit",
+   "tests/test_lab_energy_gpu.py::test_workload_tasks_digest_the_workload_sources",
+   "tests/test_lab_energy_gpu.py::test_common_workload_matches_the_ptx_kernel_and_the_energy_problem",
+   "tests/test_lab_energy_gpu.py::test_next_steps_name_work_that_delivers",
    "tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance"
   ],
   "state": "partial",
@@ -2038,21 +2307,26 @@
    "tests/test_lab_energy_gpu.py::test_cpu_energy_task_counts_work_and_leaves_energy_unestablished",
    "tests/test_lab_energy_gpu.py::test_rapl_capture_is_analyzed_read_only_and_gated",
    "tests/test_lab_energy_gpu.py::test_lab_run_acquires_no_energy_measurement",
-   "tests/test_lab_energy_gpu.py::test_rapl_probe_is_the_only_counter_read"
+   "tests/test_lab_energy_gpu.py::test_rapl_probe_is_the_only_counter_read",
+   "tests/test_lab_energy_gpu.py::test_common_workload_matches_the_ptx_kernel_and_the_energy_problem"
   ]
  },
  {
   "junit": {
    "tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance": "passed",
    "tests/test_lab_energy_gpu.py::test_gpu_tasks_are_blocked_with_the_recording_protocol": "passed",
+   "tests/test_lab_energy_gpu.py::test_next_steps_name_work_that_delivers": "passed",
    "tests/test_lab_energy_gpu.py::test_operator_log_gate_trust_boundary_is_the_host_identity": "passed",
-   "tests/test_lab_energy_gpu.py::test_operator_log_gate_withholds_physical_labels_from_synthetic_logs": "passed"
+   "tests/test_lab_energy_gpu.py::test_operator_log_gate_withholds_physical_labels_from_synthetic_logs": "passed",
+   "tests/test_lab_energy_gpu.py::test_operator_logs_of_another_workload_are_withheld": "passed"
   },
   "missing": [],
   "regression_tests": [
    "tests/test_lab_energy_gpu.py::test_gpu_tasks_are_blocked_with_the_recording_protocol",
    "tests/test_lab_energy_gpu.py::test_operator_log_gate_withholds_physical_labels_from_synthetic_logs",
    "tests/test_lab_energy_gpu.py::test_operator_log_gate_trust_boundary_is_the_host_identity",
+   "tests/test_lab_energy_gpu.py::test_operator_logs_of_another_workload_are_withheld",
+   "tests/test_lab_energy_gpu.py::test_next_steps_name_work_that_delivers",
    "tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance"
   ],
   "state": "blocked",
@@ -2060,33 +2334,62 @@
   "tied": [
    "tests/test_lab_energy_gpu.py::test_gpu_tasks_are_blocked_with_the_recording_protocol",
    "tests/test_lab_energy_gpu.py::test_operator_log_gate_withholds_physical_labels_from_synthetic_logs",
-   "tests/test_lab_energy_gpu.py::test_operator_log_gate_trust_boundary_is_the_host_identity"
+   "tests/test_lab_energy_gpu.py::test_operator_log_gate_trust_boundary_is_the_host_identity",
+   "tests/test_lab_energy_gpu.py::test_operator_logs_of_another_workload_are_withheld"
   ]
  },
  {
   "junit": {
+   "tests/test_lab_energy_gpu.py::test_common_workload_matches_the_ptx_kernel_and_the_energy_problem": "passed",
    "tests/test_lab_energy_gpu.py::test_cross_language_agreement_is_not_independent": "passed",
    "tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance": "passed",
-   "tests/test_lab_energy_gpu.py::test_rust_kernel_matches_python_kernel": "passed"
+   "tests/test_lab_energy_gpu.py::test_gpu_comparisons_follow_the_probe": "passed",
+   "tests/test_lab_energy_gpu.py::test_native_build_failures_name_no_host_path": "passed",
+   "tests/test_lab_energy_gpu.py::test_next_steps_name_work_that_delivers": "passed",
+   "tests/test_lab_energy_gpu.py::test_rapl_brackets_exclude_preparation_and_respect_the_port_limit": "passed",
+   "tests/test_lab_energy_gpu.py::test_rejected_gpu_outputs_refute_the_comparisons": "passed",
+   "tests/test_lab_energy_gpu.py::test_run_gpu_drives_the_cuda_worker_on_the_common_workload": "passed",
+   "tests/test_lab_energy_gpu.py::test_rust_energy_is_read_from_the_captures_rust_bracket": "passed",
+   "tests/test_lab_energy_gpu.py::test_rust_kernel_matches_python_kernel": "passed",
+   "tests/test_lab_energy_gpu.py::test_rust_port_of_the_common_workload_is_bitwise": "passed",
+   "tests/test_lab_energy_gpu.py::test_ulp_distance_counts_across_signs": "passed",
+   "tests/test_lab_energy_gpu.py::test_workload_tasks_digest_the_workload_sources": "passed"
   },
   "missing": [],
   "regression_tests": [
    "tests/test_lab_energy_gpu.py::test_rust_kernel_matches_python_kernel",
+   "tests/test_lab_energy_gpu.py::test_rust_port_of_the_common_workload_is_bitwise",
+   "tests/test_lab_energy_gpu.py::test_gpu_comparisons_follow_the_probe",
+   "tests/test_lab_energy_gpu.py::test_run_gpu_drives_the_cuda_worker_on_the_common_workload",
+   "tests/test_lab_energy_gpu.py::test_native_build_failures_name_no_host_path",
+   "tests/test_lab_energy_gpu.py::test_rust_energy_is_read_from_the_captures_rust_bracket",
    "tests/test_lab_energy_gpu.py::test_cross_language_agreement_is_not_independent",
+   "tests/test_lab_energy_gpu.py::test_ulp_distance_counts_across_signs",
+   "tests/test_lab_energy_gpu.py::test_rejected_gpu_outputs_refute_the_comparisons",
+   "tests/test_lab_energy_gpu.py::test_rapl_brackets_exclude_preparation_and_respect_the_port_limit",
+   "tests/test_lab_energy_gpu.py::test_workload_tasks_digest_the_workload_sources",
+   "tests/test_lab_energy_gpu.py::test_common_workload_matches_the_ptx_kernel_and_the_energy_problem",
+   "tests/test_lab_energy_gpu.py::test_next_steps_name_work_that_delivers",
    "tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance"
   ],
   "state": "partial",
   "task_id": "T117",
   "tied": [
    "tests/test_lab_energy_gpu.py::test_rust_kernel_matches_python_kernel",
-   "tests/test_lab_energy_gpu.py::test_cross_language_agreement_is_not_independent"
+   "tests/test_lab_energy_gpu.py::test_rust_port_of_the_common_workload_is_bitwise",
+   "tests/test_lab_energy_gpu.py::test_gpu_comparisons_follow_the_probe",
+   "tests/test_lab_energy_gpu.py::test_rust_energy_is_read_from_the_captures_rust_bracket",
+   "tests/test_lab_energy_gpu.py::test_cross_language_agreement_is_not_independent",
+   "tests/test_lab_energy_gpu.py::test_rejected_gpu_outputs_refute_the_comparisons"
   ]
  },
  {
   "junit": {
    "tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance": "passed",
    "tests/test_lab_energy_gpu.py::test_gpu_tasks_are_blocked_with_the_recording_protocol": "passed",
+   "tests/test_lab_energy_gpu.py::test_next_steps_name_work_that_delivers": "passed",
    "tests/test_lab_energy_gpu.py::test_operator_log_gate_withholds_physical_labels_from_synthetic_logs": "passed",
+   "tests/test_lab_energy_gpu.py::test_operator_logs_of_another_workload_are_withheld": "passed",
    "tests/test_lab_energy_gpu.py::test_t118_sidecar_rows_are_restricted_to_the_measurement_window": "passed"
   },
   "missing": [],
@@ -2094,6 +2397,8 @@
    "tests/test_lab_energy_gpu.py::test_gpu_tasks_are_blocked_with_the_recording_protocol",
    "tests/test_lab_energy_gpu.py::test_operator_log_gate_withholds_physical_labels_from_synthetic_logs",
    "tests/test_lab_energy_gpu.py::test_t118_sidecar_rows_are_restricted_to_the_measurement_window",
+   "tests/test_lab_energy_gpu.py::test_operator_logs_of_another_workload_are_withheld",
+   "tests/test_lab_energy_gpu.py::test_next_steps_name_work_that_delivers",
    "tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance"
   ],
   "state": "blocked",
@@ -2101,7 +2406,8 @@
   "tied": [
    "tests/test_lab_energy_gpu.py::test_gpu_tasks_are_blocked_with_the_recording_protocol",
    "tests/test_lab_energy_gpu.py::test_operator_log_gate_withholds_physical_labels_from_synthetic_logs",
-   "tests/test_lab_energy_gpu.py::test_t118_sidecar_rows_are_restricted_to_the_measurement_window"
+   "tests/test_lab_energy_gpu.py::test_t118_sidecar_rows_are_restricted_to_the_measurement_window",
+   "tests/test_lab_energy_gpu.py::test_operator_logs_of_another_workload_are_withheld"
   ]
  },
  {
@@ -2109,15 +2415,21 @@
    "tests/test_lab_energy_gpu.py::test_energy_per_accepted_result_on_fixtures": "passed",
    "tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance": "passed",
    "tests/test_lab_energy_gpu.py::test_fixture_tasks_without_repository_files": "passed",
+   "tests/test_lab_energy_gpu.py::test_next_steps_name_work_that_delivers": "passed",
+   "tests/test_lab_energy_gpu.py::test_operator_logs_of_another_workload_are_withheld": "passed",
    "tests/test_lab_energy_gpu.py::test_t119_operator_log_is_gated_like_t116": "passed",
-   "tests/test_lab_energy_gpu.py::test_textbook_kl_matches_closed_form_values": "passed"
+   "tests/test_lab_energy_gpu.py::test_textbook_kl_matches_closed_form_values": "passed",
+   "tests/test_lab_energy_gpu.py::test_workload_tasks_digest_the_workload_sources": "passed"
   },
   "missing": [],
   "regression_tests": [
    "tests/test_lab_energy_gpu.py::test_energy_per_accepted_result_on_fixtures",
    "tests/test_lab_energy_gpu.py::test_textbook_kl_matches_closed_form_values",
    "tests/test_lab_energy_gpu.py::test_t119_operator_log_is_gated_like_t116",
+   "tests/test_lab_energy_gpu.py::test_operator_logs_of_another_workload_are_withheld",
+   "tests/test_lab_energy_gpu.py::test_workload_tasks_digest_the_workload_sources",
    "tests/test_lab_energy_gpu.py::test_fixture_tasks_without_repository_files",
+   "tests/test_lab_energy_gpu.py::test_next_steps_name_work_that_delivers",
    "tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance"
   ],
   "state": "partial",
@@ -2125,49 +2437,83 @@
   "tied": [
    "tests/test_lab_energy_gpu.py::test_energy_per_accepted_result_on_fixtures",
    "tests/test_lab_energy_gpu.py::test_t119_operator_log_is_gated_like_t116",
+   "tests/test_lab_energy_gpu.py::test_operator_logs_of_another_workload_are_withheld",
    "tests/test_lab_energy_gpu.py::test_fixture_tasks_without_repository_files"
   ]
  },
  {
   "junit": {
+   "tests/test_lab_energy_gpu.py::test_common_workload_matches_the_ptx_kernel_and_the_energy_problem": "passed",
+   "tests/test_lab_energy_gpu.py::test_common_workload_precision_study": "passed",
    "tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance": "passed",
-   "tests/test_lab_energy_gpu.py::test_precision_study_float32_floor_and_counterexample": "passed"
+   "tests/test_lab_energy_gpu.py::test_next_steps_name_work_that_delivers": "passed",
+   "tests/test_lab_energy_gpu.py::test_precision_study_float32_floor_and_counterexample": "passed",
+   "tests/test_lab_energy_gpu.py::test_rapl_brackets_exclude_preparation_and_respect_the_port_limit": "passed",
+   "tests/test_lab_energy_gpu.py::test_rapl_capture_is_analyzed_read_only_and_gated": "passed",
+   "tests/test_lab_energy_gpu.py::test_workload_tasks_digest_the_workload_sources": "passed"
   },
   "missing": [],
   "regression_tests": [
    "tests/test_lab_energy_gpu.py::test_precision_study_float32_floor_and_counterexample",
+   "tests/test_lab_energy_gpu.py::test_common_workload_precision_study",
+   "tests/test_lab_energy_gpu.py::test_rapl_capture_is_analyzed_read_only_and_gated",
+   "tests/test_lab_energy_gpu.py::test_rapl_brackets_exclude_preparation_and_respect_the_port_limit",
+   "tests/test_lab_energy_gpu.py::test_workload_tasks_digest_the_workload_sources",
+   "tests/test_lab_energy_gpu.py::test_common_workload_matches_the_ptx_kernel_and_the_energy_problem",
+   "tests/test_lab_energy_gpu.py::test_next_steps_name_work_that_delivers",
    "tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance"
   ],
   "state": "partial",
   "task_id": "T120",
   "tied": [
-   "tests/test_lab_energy_gpu.py::test_precision_study_float32_floor_and_counterexample"
+   "tests/test_lab_energy_gpu.py::test_precision_study_float32_floor_and_counterexample",
+   "tests/test_lab_energy_gpu.py::test_common_workload_precision_study",
+   "tests/test_lab_energy_gpu.py::test_rapl_capture_is_analyzed_read_only_and_gated"
   ]
  },
  {
   "junit": {
+   "tests/test_lab_energy_gpu.py::test_common_workload_matches_the_ptx_kernel_and_the_energy_problem": "passed",
    "tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance": "passed",
-   "tests/test_lab_energy_gpu.py::test_reduction_orders_bound_and_sign_counterexample": "passed"
+   "tests/test_lab_energy_gpu.py::test_gpu_comparisons_follow_the_probe": "passed",
+   "tests/test_lab_energy_gpu.py::test_kernel_reductions_under_contraction": "passed",
+   "tests/test_lab_energy_gpu.py::test_next_steps_name_work_that_delivers": "passed",
+   "tests/test_lab_energy_gpu.py::test_reduction_orders_bound_and_sign_counterexample": "passed",
+   "tests/test_lab_energy_gpu.py::test_rejected_gpu_outputs_refute_the_comparisons": "passed",
+   "tests/test_lab_energy_gpu.py::test_ulp_distance_counts_across_signs": "passed",
+   "tests/test_lab_energy_gpu.py::test_workload_tasks_digest_the_workload_sources": "passed"
   },
   "missing": [],
   "regression_tests": [
    "tests/test_lab_energy_gpu.py::test_reduction_orders_bound_and_sign_counterexample",
+   "tests/test_lab_energy_gpu.py::test_kernel_reductions_under_contraction",
+   "tests/test_lab_energy_gpu.py::test_gpu_comparisons_follow_the_probe",
+   "tests/test_lab_energy_gpu.py::test_ulp_distance_counts_across_signs",
+   "tests/test_lab_energy_gpu.py::test_rejected_gpu_outputs_refute_the_comparisons",
+   "tests/test_lab_energy_gpu.py::test_workload_tasks_digest_the_workload_sources",
+   "tests/test_lab_energy_gpu.py::test_common_workload_matches_the_ptx_kernel_and_the_energy_problem",
+   "tests/test_lab_energy_gpu.py::test_next_steps_name_work_that_delivers",
    "tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance"
   ],
   "state": "partial",
   "task_id": "T121",
   "tied": [
-   "tests/test_lab_energy_gpu.py::test_reduction_orders_bound_and_sign_counterexample"
+   "tests/test_lab_energy_gpu.py::test_reduction_orders_bound_and_sign_counterexample",
+   "tests/test_lab_energy_gpu.py::test_kernel_reductions_under_contraction",
+   "tests/test_lab_energy_gpu.py::test_gpu_comparisons_follow_the_probe",
+   "tests/test_lab_energy_gpu.py::test_rejected_gpu_outputs_refute_the_comparisons"
   ]
  },
  {
   "junit": {
    "tests/test_lab_energy_gpu.py::test_bounded_free_energy_identity_and_counterexamples": "passed",
-   "tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance": "passed"
+   "tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance": "passed",
+   "tests/test_lab_energy_gpu.py::test_next_steps_name_work_that_delivers": "passed"
   },
   "missing": [],
   "regression_tests": [
    "tests/test_lab_energy_gpu.py::test_bounded_free_energy_identity_and_counterexamples",
+   "tests/test_lab_energy_gpu.py::test_next_steps_name_work_that_delivers",
    "tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance"
   ],
   "state": "completed",
@@ -2180,12 +2526,14 @@
   "junit": {
    "tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance": "passed",
    "tests/test_lab_energy_gpu.py::test_fixture_tasks_without_repository_files": "passed",
+   "tests/test_lab_energy_gpu.py::test_next_steps_name_work_that_delivers": "passed",
    "tests/test_lab_energy_gpu.py::test_typed_quantities_refuse_nats_plus_joules": "passed"
   },
   "missing": [],
   "regression_tests": [
    "tests/test_lab_energy_gpu.py::test_typed_quantities_refuse_nats_plus_joules",
    "tests/test_lab_energy_gpu.py::test_fixture_tasks_without_repository_files",
+   "tests/test_lab_energy_gpu.py::test_next_steps_name_work_that_delivers",
    "tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance"
   ],
   "state": "completed",
@@ -2199,18 +2547,28 @@
   "junit": {
    "tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance": "passed",
    "tests/test_lab_energy_gpu.py::test_fixture_tasks_without_repository_files": "passed",
-   "tests/test_lab_energy_gpu.py::test_raw_telemetry_retention_and_tampering": "passed"
+   "tests/test_lab_energy_gpu.py::test_next_steps_name_work_that_delivers": "passed",
+   "tests/test_lab_energy_gpu.py::test_operator_logs_of_another_workload_are_withheld": "passed",
+   "tests/test_lab_energy_gpu.py::test_raw_telemetry_retention_and_tampering": "passed",
+   "tests/test_lab_energy_gpu.py::test_t124_retains_an_operator_log_through_the_gate": "passed",
+   "tests/test_lab_energy_gpu.py::test_workload_tasks_digest_the_workload_sources": "passed"
   },
   "missing": [],
   "regression_tests": [
    "tests/test_lab_energy_gpu.py::test_raw_telemetry_retention_and_tampering",
+   "tests/test_lab_energy_gpu.py::test_t124_retains_an_operator_log_through_the_gate",
+   "tests/test_lab_energy_gpu.py::test_operator_logs_of_another_workload_are_withheld",
+   "tests/test_lab_energy_gpu.py::test_workload_tasks_digest_the_workload_sources",
    "tests/test_lab_energy_gpu.py::test_fixture_tasks_without_repository_files",
+   "tests/test_lab_energy_gpu.py::test_next_steps_name_work_that_delivers",
    "tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance"
   ],
-  "state": "completed",
+  "state": "partial",
   "task_id": "T124",
   "tied": [
    "tests/test_lab_energy_gpu.py::test_raw_telemetry_retention_and_tampering",
+   "tests/test_lab_energy_gpu.py::test_t124_retains_an_operator_log_through_the_gate",
+   "tests/test_lab_energy_gpu.py::test_operator_logs_of_another_workload_are_withheld",
    "tests/test_lab_energy_gpu.py::test_fixture_tasks_without_repository_files"
   ]
  },
@@ -2218,12 +2576,14 @@
   "junit": {
    "tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance": "passed",
    "tests/test_lab_energy_gpu.py::test_fixture_tasks_without_repository_files": "passed",
+   "tests/test_lab_energy_gpu.py::test_next_steps_name_work_that_delivers": "passed",
    "tests/test_lab_energy_gpu.py::test_session_replay_keeps_numerical_result_id": "passed"
   },
   "missing": [],
   "regression_tests": [
    "tests/test_lab_energy_gpu.py::test_session_replay_keeps_numerical_result_id",
    "tests/test_lab_energy_gpu.py::test_fixture_tasks_without_repository_files",
+   "tests/test_lab_energy_gpu.py::test_next_steps_name_work_that_delivers",
    "tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance"
   ],
   "state": "completed",
@@ -2269,7 +2629,8 @@
   "task_id": "T127",
   "tied": [
    "tests/test_lab_manufacturing.py::test_cylinder_protocol_predicts_chord_geodesic_gaps",
-   "tests/test_lab_manufacturing.py::test_protocols_refuse_filled_slots_and_decisions"
+   "tests/test_lab_manufacturing.py::test_protocols_refuse_filled_slots_and_decisions",
+   "tests/test_lab_manufacturing.py::test_every_task_is_registered_and_reports_honestly"
   ]
  },
  {
@@ -2291,7 +2652,8 @@
   "tied": [
    "tests/test_lab_manufacturing.py::test_coupon_protocol_predicts_focal_crossing",
    "tests/test_lab_manufacturing.py::test_coupon_report_wording_does_not_depend_on_optional_modules",
-   "tests/test_lab_manufacturing.py::test_protocols_refuse_filled_slots_and_decisions"
+   "tests/test_lab_manufacturing.py::test_protocols_refuse_filled_slots_and_decisions",
+   "tests/test_lab_manufacturing.py::test_every_task_is_registered_and_reports_honestly"
   ]
  },
  {
@@ -2408,7 +2770,9 @@
   ],
   "state": "completed",
   "task_id": "T135",
-  "tied": []
+  "tied": [
+   "tests/test_lab_manufacturing.py::test_scan_plans_coverage_and_counterexample"
+  ]
  },
  {
   "junit": {
@@ -2465,18 +2829,21 @@
  },
  {
   "junit": {
+   "tests/test_lab_manufacturing.py::test_bound_retention_record_is_validated_against_its_raw_bytes": "passed",
    "tests/test_lab_manufacturing.py::test_every_task_is_registered_and_reports_honestly": "passed",
    "tests/test_lab_manufacturing.py::test_retention_schema_refusals_and_fixture_boundary": "passed"
   },
   "missing": [],
   "regression_tests": [
    "tests/test_lab_manufacturing.py::test_retention_schema_refusals_and_fixture_boundary",
+   "tests/test_lab_manufacturing.py::test_bound_retention_record_is_validated_against_its_raw_bytes",
    "tests/test_lab_manufacturing.py::test_every_task_is_registered_and_reports_honestly"
   ],
   "state": "partial",
   "task_id": "T139",
   "tied": [
    "tests/test_lab_manufacturing.py::test_retention_schema_refusals_and_fixture_boundary",
+   "tests/test_lab_manufacturing.py::test_bound_retention_record_is_validated_against_its_raw_bytes",
    "tests/test_lab_manufacturing.py::test_every_task_is_registered_and_reports_honestly"
   ]
  },
@@ -2515,13 +2882,15 @@
  },
  {
   "junit": {
+   "tests/test_lab_implementation_targets.py::test_next_steps_point_at_work_that_delivers": "passed",
    "tests/test_lab_implementation_targets.py::test_rust_fused_sphere_loop": "passed",
    "tests/test_lab_implementation_targets.py::test_t142_kernel_counts_and_ranking": "passed"
   },
   "missing": [],
   "regression_tests": [
    "tests/test_lab_implementation_targets.py::test_t142_kernel_counts_and_ranking",
-   "tests/test_lab_implementation_targets.py::test_rust_fused_sphere_loop"
+   "tests/test_lab_implementation_targets.py::test_rust_fused_sphere_loop",
+   "tests/test_lab_implementation_targets.py::test_next_steps_point_at_work_that_delivers"
   ],
   "state": "completed",
   "task_id": "T142",
@@ -2575,6 +2944,7 @@
  },
  {
   "junit": {
+   "tests/test_lab_implementation_targets.py::test_ciw_producers_of_independent_checks_carry_a_revision": "passed",
    "tests/test_lab_implementation_targets.py::test_t146_python_canonicalizers_and_vectors": "passed",
    "tests/test_lab_implementation_targets.py::test_t146_reference_float_rule": "passed",
    "tests/test_lab_implementation_targets.py::test_t146_rust_byte_identity": "passed"
@@ -2583,7 +2953,8 @@
   "regression_tests": [
    "tests/test_lab_implementation_targets.py::test_t146_python_canonicalizers_and_vectors",
    "tests/test_lab_implementation_targets.py::test_t146_rust_byte_identity",
-   "tests/test_lab_implementation_targets.py::test_t146_reference_float_rule"
+   "tests/test_lab_implementation_targets.py::test_t146_reference_float_rule",
+   "tests/test_lab_implementation_targets.py::test_ciw_producers_of_independent_checks_carry_a_revision"
   ],
   "state": "completed",
   "task_id": "T146",
@@ -2593,28 +2964,37 @@
  },
  {
   "junit": {
+   "tests/test_lab_implementation_targets.py::test_t147_common_workload_comparison_follows_the_gpu_probe": "passed",
    "tests/test_lab_implementation_targets.py::test_t147_fault_study_is_judged_by_the_harness": "passed",
-   "tests/test_lab_implementation_targets.py::test_t147_harness_detects_differences": "passed"
+   "tests/test_lab_implementation_targets.py::test_t147_harness_detects_differences": "passed",
+   "tests/test_lab_implementation_targets.py::test_t147_identity_digests_the_common_workload_sources": "passed"
   },
   "missing": [],
   "regression_tests": [
    "tests/test_lab_implementation_targets.py::test_t147_harness_detects_differences",
-   "tests/test_lab_implementation_targets.py::test_t147_fault_study_is_judged_by_the_harness"
+   "tests/test_lab_implementation_targets.py::test_t147_fault_study_is_judged_by_the_harness",
+   "tests/test_lab_implementation_targets.py::test_t147_common_workload_comparison_follows_the_gpu_probe",
+   "tests/test_lab_implementation_targets.py::test_t147_identity_digests_the_common_workload_sources"
   ],
   "state": "partial",
   "task_id": "T147",
   "tied": [
    "tests/test_lab_implementation_targets.py::test_t147_harness_detects_differences",
-   "tests/test_lab_implementation_targets.py::test_t147_fault_study_is_judged_by_the_harness"
+   "tests/test_lab_implementation_targets.py::test_t147_fault_study_is_judged_by_the_harness",
+   "tests/test_lab_implementation_targets.py::test_t147_common_workload_comparison_follows_the_gpu_probe"
   ]
  },
  {
   "junit": {
+   "tests/test_lab_implementation_targets.py::test_ciw_producers_of_independent_checks_carry_a_revision": "passed",
+   "tests/test_lab_implementation_targets.py::test_next_steps_point_at_work_that_delivers": "passed",
    "tests/test_lab_implementation_targets.py::test_t148_reduction_policies": "passed"
   },
   "missing": [],
   "regression_tests": [
-   "tests/test_lab_implementation_targets.py::test_t148_reduction_policies"
+   "tests/test_lab_implementation_targets.py::test_t148_reduction_policies",
+   "tests/test_lab_implementation_targets.py::test_ciw_producers_of_independent_checks_carry_a_revision",
+   "tests/test_lab_implementation_targets.py::test_next_steps_point_at_work_that_delivers"
   ],
   "state": "completed",
   "task_id": "T148",
@@ -2624,11 +3004,13 @@
  },
  {
   "junit": {
+   "tests/test_lab_implementation_targets.py::test_ciw_producers_of_independent_checks_carry_a_revision": "passed",
    "tests/test_lab_implementation_targets.py::test_t149_telemetry_only_frames": "passed"
   },
   "missing": [],
   "regression_tests": [
-   "tests/test_lab_implementation_targets.py::test_t149_telemetry_only_frames"
+   "tests/test_lab_implementation_targets.py::test_t149_telemetry_only_frames",
+   "tests/test_lab_implementation_targets.py::test_ciw_producers_of_independent_checks_carry_a_revision"
   ],
   "state": "completed",
   "task_id": "T149",
@@ -2709,17 +3091,26 @@
  {
   "junit": {
    "tests/test_lab_research_portfolio.py::test_formal_specifications_cover_the_queue": "passed",
-   "tests/test_lab_research_portfolio.py::test_label_function_matches_the_reference_oracle_exhaustively": "passed"
+   "tests/test_lab_research_portfolio.py::test_label_function_matches_the_reference_oracle_exhaustively": "passed",
+   "tests/test_lab_research_portfolio.py::test_next_steps_name_open_work_rather_than_work_done_elsewhere": "passed",
+   "tests/test_lab_research_portfolio.py::test_rule_10_screen_closes_the_computational_domain_loophole": "passed",
+   "tests/test_lab_research_portfolio.py::test_specification_units_list_the_counterexamples_of_their_tasks": "passed"
   },
   "missing": [],
   "regression_tests": [
    "tests/test_lab_research_portfolio.py::test_label_function_matches_the_reference_oracle_exhaustively",
-   "tests/test_lab_research_portfolio.py::test_formal_specifications_cover_the_queue"
+   "tests/test_lab_research_portfolio.py::test_formal_specifications_cover_the_queue",
+   "tests/test_lab_research_portfolio.py::test_rule_10_screen_closes_the_computational_domain_loophole",
+   "tests/test_lab_research_portfolio.py::test_specification_units_list_the_counterexamples_of_their_tasks",
+   "tests/test_lab_research_portfolio.py::test_next_steps_name_open_work_rather_than_work_done_elsewhere"
   ],
   "state": "completed",
   "task_id": "T155",
   "tied": [
-   "tests/test_lab_research_portfolio.py::test_formal_specifications_cover_the_queue"
+   "tests/test_lab_research_portfolio.py::test_formal_specifications_cover_the_queue",
+   "tests/test_lab_research_portfolio.py::test_rule_10_screen_closes_the_computational_domain_loophole",
+   "tests/test_lab_research_portfolio.py::test_specification_units_list_the_counterexamples_of_their_tasks",
+   "tests/test_lab_research_portfolio.py::test_next_steps_name_open_work_rather_than_work_done_elsewhere"
   ]
  },
  {
@@ -2738,16 +3129,19 @@
  },
  {
   "junit": {
-   "tests/test_lab_research_portfolio.py::test_counterexample_catalogue": "passed"
+   "tests/test_lab_research_portfolio.py::test_counterexample_catalogue": "passed",
+   "tests/test_lab_research_portfolio.py::test_next_steps_name_open_work_rather_than_work_done_elsewhere": "passed"
   },
   "missing": [],
   "regression_tests": [
-   "tests/test_lab_research_portfolio.py::test_counterexample_catalogue"
+   "tests/test_lab_research_portfolio.py::test_counterexample_catalogue",
+   "tests/test_lab_research_portfolio.py::test_next_steps_name_open_work_rather_than_work_done_elsewhere"
   ],
   "state": "completed",
   "task_id": "T157",
   "tied": [
-   "tests/test_lab_research_portfolio.py::test_counterexample_catalogue"
+   "tests/test_lab_research_portfolio.py::test_counterexample_catalogue",
+   "tests/test_lab_research_portfolio.py::test_next_steps_name_open_work_rather_than_work_done_elsewhere"
   ]
  },
  {
@@ -2769,72 +3163,99 @@
  },
  {
   "junit": {
+   "tests/test_lab_research_portfolio.py::test_raw_recounts_derive_the_components_of_findings_retained_without_origin": "passed",
+   "tests/test_lab_research_portfolio.py::test_uncertainty_listing_names_the_per_quantity_budgets_it_holds": "passed",
+   "tests/test_lab_research_portfolio.py::test_uncertainty_listing_separates_unmeasured_records": "passed",
    "tests/test_lab_research_portfolio.py::test_uncertainty_table_restates_every_numerical_finding": "passed"
   },
   "missing": [],
   "regression_tests": [
-   "tests/test_lab_research_portfolio.py::test_uncertainty_table_restates_every_numerical_finding"
+   "tests/test_lab_research_portfolio.py::test_uncertainty_table_restates_every_numerical_finding",
+   "tests/test_lab_research_portfolio.py::test_uncertainty_listing_separates_unmeasured_records",
+   "tests/test_lab_research_portfolio.py::test_uncertainty_listing_names_the_per_quantity_budgets_it_holds",
+   "tests/test_lab_research_portfolio.py::test_raw_recounts_derive_the_components_of_findings_retained_without_origin"
   ],
   "state": "completed",
   "task_id": "T159",
   "tied": [
-   "tests/test_lab_research_portfolio.py::test_uncertainty_table_restates_every_numerical_finding"
+   "tests/test_lab_research_portfolio.py::test_uncertainty_table_restates_every_numerical_finding",
+   "tests/test_lab_research_portfolio.py::test_uncertainty_listing_separates_unmeasured_records",
+   "tests/test_lab_research_portfolio.py::test_uncertainty_listing_names_the_per_quantity_budgets_it_holds",
+   "tests/test_lab_research_portfolio.py::test_raw_recounts_derive_the_components_of_findings_retained_without_origin"
   ]
  },
  {
   "junit": {
+   "tests/test_lab_research_portfolio.py::test_paper_drafts_have_a_structure_and_qualify_their_labels": "passed",
    "tests/test_lab_research_portfolio.py::test_paper_drafts_trace_to_reports": "passed"
   },
   "missing": [],
   "regression_tests": [
-   "tests/test_lab_research_portfolio.py::test_paper_drafts_trace_to_reports"
+   "tests/test_lab_research_portfolio.py::test_paper_drafts_trace_to_reports",
+   "tests/test_lab_research_portfolio.py::test_paper_drafts_have_a_structure_and_qualify_their_labels"
   ],
   "state": "partial",
   "task_id": "T160",
   "tied": [
-   "tests/test_lab_research_portfolio.py::test_paper_drafts_trace_to_reports"
+   "tests/test_lab_research_portfolio.py::test_paper_drafts_trace_to_reports",
+   "tests/test_lab_research_portfolio.py::test_paper_drafts_have_a_structure_and_qualify_their_labels"
   ]
  },
  {
   "junit": {
+   "tests/test_lab_research_portfolio.py::test_drafts_carry_every_qualification_of_independently_verified_rows": "passed",
+   "tests/test_lab_research_portfolio.py::test_paper_drafts_have_a_structure_and_qualify_their_labels": "passed",
    "tests/test_lab_research_portfolio.py::test_paper_drafts_trace_to_reports": "passed"
   },
   "missing": [],
   "regression_tests": [
-   "tests/test_lab_research_portfolio.py::test_paper_drafts_trace_to_reports"
+   "tests/test_lab_research_portfolio.py::test_paper_drafts_trace_to_reports",
+   "tests/test_lab_research_portfolio.py::test_paper_drafts_have_a_structure_and_qualify_their_labels",
+   "tests/test_lab_research_portfolio.py::test_drafts_carry_every_qualification_of_independently_verified_rows"
   ],
   "state": "partial",
   "task_id": "T161",
   "tied": [
-   "tests/test_lab_research_portfolio.py::test_paper_drafts_trace_to_reports"
+   "tests/test_lab_research_portfolio.py::test_paper_drafts_trace_to_reports",
+   "tests/test_lab_research_portfolio.py::test_paper_drafts_have_a_structure_and_qualify_their_labels",
+   "tests/test_lab_research_portfolio.py::test_drafts_carry_every_qualification_of_independently_verified_rows"
   ]
  },
  {
   "junit": {
+   "tests/test_lab_research_portfolio.py::test_draft_next_step_names_completed_tasks_with_open_physical_claims": "passed",
+   "tests/test_lab_research_portfolio.py::test_paper_drafts_have_a_structure_and_qualify_their_labels": "passed",
    "tests/test_lab_research_portfolio.py::test_paper_drafts_trace_to_reports": "passed"
   },
   "missing": [],
   "regression_tests": [
-   "tests/test_lab_research_portfolio.py::test_paper_drafts_trace_to_reports"
+   "tests/test_lab_research_portfolio.py::test_paper_drafts_trace_to_reports",
+   "tests/test_lab_research_portfolio.py::test_paper_drafts_have_a_structure_and_qualify_their_labels",
+   "tests/test_lab_research_portfolio.py::test_draft_next_step_names_completed_tasks_with_open_physical_claims"
   ],
   "state": "partial",
   "task_id": "T162",
   "tied": [
-   "tests/test_lab_research_portfolio.py::test_paper_drafts_trace_to_reports"
+   "tests/test_lab_research_portfolio.py::test_paper_drafts_trace_to_reports",
+   "tests/test_lab_research_portfolio.py::test_paper_drafts_have_a_structure_and_qualify_their_labels",
+   "tests/test_lab_research_portfolio.py::test_draft_next_step_names_completed_tasks_with_open_physical_claims"
   ]
  },
  {
   "junit": {
+   "tests/test_lab_research_portfolio.py::test_portfolio_qualifies_labels_and_states_customer_demand": "passed",
    "tests/test_lab_research_portfolio.py::test_portfolio_shows_every_label_in_use": "passed"
   },
   "missing": [],
   "regression_tests": [
-   "tests/test_lab_research_portfolio.py::test_portfolio_shows_every_label_in_use"
+   "tests/test_lab_research_portfolio.py::test_portfolio_shows_every_label_in_use",
+   "tests/test_lab_research_portfolio.py::test_portfolio_qualifies_labels_and_states_customer_demand"
   ],
   "state": "completed",
   "task_id": "T163",
   "tied": [
-   "tests/test_lab_research_portfolio.py::test_portfolio_shows_every_label_in_use"
+   "tests/test_lab_research_portfolio.py::test_portfolio_shows_every_label_in_use",
+   "tests/test_lab_research_portfolio.py::test_portfolio_qualifies_labels_and_states_customer_demand"
   ]
  },
  {
@@ -2859,58 +3280,79 @@
  },
  {
   "junit": {
-   "tests/test_lab_research_portfolio.py::test_release_report_inventories_nested_runtimes": "passed"
+   "tests/test_lab_research_portfolio.py::test_raw_recounts_derive_the_components_of_findings_retained_without_origin": "passed",
+   "tests/test_lab_research_portfolio.py::test_release_report_inventories_nested_runtimes": "passed",
+   "tests/test_lab_research_portfolio.py::test_release_report_lists_each_runtime_once_and_states_its_scope": "passed"
   },
   "missing": [],
   "regression_tests": [
-   "tests/test_lab_research_portfolio.py::test_release_report_inventories_nested_runtimes"
+   "tests/test_lab_research_portfolio.py::test_release_report_inventories_nested_runtimes",
+   "tests/test_lab_research_portfolio.py::test_release_report_lists_each_runtime_once_and_states_its_scope",
+   "tests/test_lab_research_portfolio.py::test_raw_recounts_derive_the_components_of_findings_retained_without_origin"
   ],
   "state": "completed",
   "task_id": "T165",
   "tied": [
-   "tests/test_lab_research_portfolio.py::test_release_report_inventories_nested_runtimes"
+   "tests/test_lab_research_portfolio.py::test_release_report_inventories_nested_runtimes",
+   "tests/test_lab_research_portfolio.py::test_release_report_lists_each_runtime_once_and_states_its_scope",
+   "tests/test_lab_research_portfolio.py::test_raw_recounts_derive_the_components_of_findings_retained_without_origin"
   ]
  },
  {
   "junit": {
+   "tests/test_lab_research_portfolio.py::test_ledgers_list_cross_cutting_open_items": "passed",
    "tests/test_lab_research_portfolio.py::test_unresolved_assumption_ledger": "passed"
   },
   "missing": [],
   "regression_tests": [
-   "tests/test_lab_research_portfolio.py::test_unresolved_assumption_ledger"
+   "tests/test_lab_research_portfolio.py::test_unresolved_assumption_ledger",
+   "tests/test_lab_research_portfolio.py::test_ledgers_list_cross_cutting_open_items"
   ],
   "state": "completed",
   "task_id": "T166",
   "tied": [
-   "tests/test_lab_research_portfolio.py::test_unresolved_assumption_ledger"
+   "tests/test_lab_research_portfolio.py::test_unresolved_assumption_ledger",
+   "tests/test_lab_research_portfolio.py::test_ledgers_list_cross_cutting_open_items"
   ]
  },
  {
   "junit": {
-   "tests/test_lab_research_portfolio.py::test_unmeasured_ledger": "passed"
+   "tests/test_lab_research_portfolio.py::test_ledgers_list_cross_cutting_open_items": "passed",
+   "tests/test_lab_research_portfolio.py::test_unmeasured_classifier_is_checked_on_probe_records": "passed",
+   "tests/test_lab_research_portfolio.py::test_unmeasured_ledger": "passed",
+   "tests/test_lab_research_portfolio.py::test_unmeasured_ledger_separates_code_from_hardware": "passed"
   },
   "missing": [],
   "regression_tests": [
-   "tests/test_lab_research_portfolio.py::test_unmeasured_ledger"
+   "tests/test_lab_research_portfolio.py::test_unmeasured_ledger",
+   "tests/test_lab_research_portfolio.py::test_unmeasured_ledger_separates_code_from_hardware",
+   "tests/test_lab_research_portfolio.py::test_unmeasured_classifier_is_checked_on_probe_records",
+   "tests/test_lab_research_portfolio.py::test_ledgers_list_cross_cutting_open_items"
   ],
   "state": "completed",
   "task_id": "T167",
   "tied": [
-   "tests/test_lab_research_portfolio.py::test_unmeasured_ledger"
+   "tests/test_lab_research_portfolio.py::test_unmeasured_ledger",
+   "tests/test_lab_research_portfolio.py::test_unmeasured_ledger_separates_code_from_hardware",
+   "tests/test_lab_research_portfolio.py::test_unmeasured_classifier_is_checked_on_probe_records",
+   "tests/test_lab_research_portfolio.py::test_ledgers_list_cross_cutting_open_items"
   ]
  },
  {
   "junit": {
-   "tests/test_lab_research_portfolio.py::test_regression_coverage_is_checked": "not recorded"
+   "tests/test_lab_research_portfolio.py::test_regression_coverage_is_checked": "not recorded",
+   "tests/test_lab_research_portfolio.py::test_regression_outcomes_add_up_and_name_the_own_node": "not recorded"
   },
   "missing": [],
   "regression_tests": [
-   "tests/test_lab_research_portfolio.py::test_regression_coverage_is_checked"
+   "tests/test_lab_research_portfolio.py::test_regression_coverage_is_checked",
+   "tests/test_lab_research_portfolio.py::test_regression_outcomes_add_up_and_name_the_own_node"
   ],
   "state": "running",
   "task_id": "T168",
   "tied": [
-   "tests/test_lab_research_portfolio.py::test_regression_coverage_is_checked"
+   "tests/test_lab_research_portfolio.py::test_regression_coverage_is_checked",
+   "tests/test_lab_research_portfolio.py::test_regression_outcomes_add_up_and_name_the_own_node"
   ]
  }
 ]

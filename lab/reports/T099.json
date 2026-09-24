@@ -49,19 +49,24 @@
      }
     ],
     "notes": {
-     "provider": {
-      "binary_sha256": [
-       "b9f40b3094ecf4b793676c766ffd559dc69abc4fada564c1bde94e79c6f0b201"
-      ],
-      "repository": "giasonpooni/Scientific-Computation-Runtime",
-      "revision": "a59aba283b0304faeeb3e5d305087e7709e171ca",
-      "source_tree": "4068a711534932e8d89bb0d87d373376dafdf6cd"
-     }
+     "binary_sha256": [
+      "b9f40b3094ecf4b793676c766ffd559dc69abc4fada564c1bde94e79c6f0b201"
+     ]
+    },
+    "provider": {
+     "executed": true,
+     "repository": "giasonpooni/Scientific-Computation-Runtime",
+     "revision": "a59aba283b0304faeeb3e5d305087e7709e171ca",
+     "source_tree": "4068a711534932e8d89bb0d87d373376dafdf6cd"
     }
    },
    "claim": "cargo build --release --locked --offline of SCR execution-cli succeeds at the pinned revision",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -123,11 +128,21 @@
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
      }
-    ]
+    ],
+    "provider": {
+     "executed": true,
+     "repository": "giasonpooni/Scientific-Computation-Runtime",
+     "revision": "a59aba283b0304faeeb3e5d305087e7709e171ca",
+     "source_tree": "4068a711534932e8d89bb0d87d373376dafdf6cd"
+    }
    },
    "claim": "The locked build leaves Cargo.lock and the checkout unchanged and is bit-reproducible across fresh target directories",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -162,11 +177,22 @@
      "reference": "cells differing from the integer Jacobi reference",
      "reference_kind": "exact_arithmetic",
      "tolerance": 0.0
+    },
+    "provider": {
+     "executed": true,
+     "repository": "giasonpooni/Scientific-Computation-Runtime",
+     "revision": "a59aba283b0304faeeb3e5d305087e7709e171ca",
+     "runtime_digest": "sha256:b9f40b3094ecf4b793676c766ffd559dc69abc4fada564c1bde94e79c6f0b201",
+     "source_tree": "4068a711534932e8d89bb0d87d373376dafdf6cd"
     }
    },
    "claim": "The freshly built engine's heat output equals an independent integer reference",
    "domain": "numerical",
    "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check",
+    "provider"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -192,6 +218,7 @@
    "domain": "computational_pipeline",
    "evidence_status": "not_established",
    "expected_not_established": true,
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": {
@@ -240,6 +267,7 @@
    "claim": "A successful locked build makes the engine acceptable for production use",
    "domain": "production_acceptance",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": "not decided by the workbench"
@@ -249,7 +277,7 @@
   {
    "bytes": 1231,
    "path": "artifacts/T099/cargo-build.json",
-   "sha256": "c4404819668428843a9ee073710102d6039c9a052eb02ffada6834d53bfabed9"
+   "sha256": "55c06b985cacf1d45282b59ca3f815a38c0fae4b3cc1ba34e3694a922a4137e4"
   },
   {
    "bytes": 1890,
@@ -279,8 +307,8 @@
    "python": "3.12.3",
    "scipy": "1.16.2",
    "sources": {
-    "src/ciw/lab/exchange_provenance_bundles.py": "3acc6fd6976bb5e6dd8ad3bfc3d09a1d9594ca0a06f4db823581e5b651d4835e",
-    "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "7d6da1148d3744ae1e754b53f697b5b4919aff2666788ae6aec0e48e6e2380c9",
+    "src/ciw/lab/exchange_provenance_bundles.py": "7e841b781d966fe75d5a86bd61e1ef32150c4087393893be788c2b7eff69f3d4",
+    "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "435727947e827d1d601802a5e860f04d578f7b879301c7f5615fb7d6e523500e",
     "src/ciw/lab/exchange_provenance_bundles_providers.py": "5e149f2463bd1f30bcfb61d719d84fcc19f84cd0ec201b5c95512c7a17f150b7"
    },
    "sympy": "1.14.0"
@@ -297,8 +325,8 @@
    "tree": "4068a711534932e8d89bb0d87d373376dafdf6cd"
   }
  },
- "recommended_next_task": "Run the SP1 proved-heat gate (scripts/check_proved_heat.py) on a provisioned machine; then T100.",
- "report_id": "sha256:e7679af0a39299134d0a126540129c99fa869082ebf7237827ddee4f0536905d",
+ "recommended_next_task": "Run the SP1 proved-heat gate (scripts/check_proved_heat.py) on a machine that meets its recorded requirements (network access to crates.io and GitHub releases, the SP1 checkout b38b612, protoc, at least 7 GiB of RAM and 20 GiB of disk) and retain its outcome; and rebuild execution-cli with CI's pinned rustc 1.94.0 beside this run's toolchain to find whether the engine digest depends on the toolchain.",
+ "report_id": "sha256:f793a0ec746092eb57660d31836fbbebc6b27eceee434a40ed67cec84e716153",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "partial",
@@ -312,7 +340,8 @@
   "check: The locked build leaves Cargo.lock and the checkout unchanged and is bit-reproducible across fresh target directories vs distinct binary digests beyond one",
   "independent: The freshly built engine's heat output equals an independent integer reference vs ciw.lab.exchange_provenance_bundles_fixtures.heat_reference",
   "pytest: tests/test_lab_exchange_provenance_bundles.py::test_t099_locked_offline_scr_build",
-  "pytest: tests/test_lab_exchange_provenance_bundles.py::test_t097_t099_refuse_a_non_repository_scr_binding"
+  "pytest: tests/test_lab_exchange_provenance_bundles.py::test_t097_t099_refuse_a_non_repository_scr_binding",
+  "pytest: tests/test_lab_exchange_provenance_bundles.py::test_t099_names_the_built_checkout_beside_its_label"
  ],
  "tests_skipped": [],
  "title": "Verify `cargo build --locked`.",

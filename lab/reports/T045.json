@@ -11,21 +11,24 @@
    "hardware_measured": 0,
    "independently_verified": 0,
    "not_established": 1,
-   "numerically_verified": 4,
+   "numerically_verified": 5,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
  "expected_invariant": "Every well-formed record validates; every record with a missing reference or a substituted mode is refused with a stable code; conversion needs a declared model.",
- "experiment": "Validate the registry declarations; strip each reference from a valid record; attempt all 42 ordered mode substitutions; convert chords to arc lengths with and without a surface model.",
+ "experiment": "Validate the registry declarations; strip each reference from a valid record; attempt all 42 ordered mode substitutions; convert chords to arc lengths with and without a surface model; compare the attached geometry and sensor variance components with finite differences and with Monte Carlo draws of each source alone and of both.",
  "failure_modes_checked": [
   "missing frame, clock, epoch, calibration or clock basis",
   "arrival stamp on an acquisition-stamped mode",
   "frame kind or unit mismatch",
   "surface distance without surface model",
   "all 42 mode substitutions",
-  "model-derived distance presented as a direct intrinsic observation"
+  "model-derived distance presented as a direct intrinsic observation",
+  "surface distance without its geometry/sensor split",
+  "chord conversion without the chord's sensor variance",
+  "surface model without declared parameter uncertainty"
  ],
  "findings": [
   {
@@ -62,6 +65,10 @@
    "claim": "Seven typed observation modes declare quantity, unit, frame kind, clock basis, geometry class, noise model and non-observables",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -158,6 +165,9 @@
    "claim": "Validation refuses records lacking frame, clock, epoch, calibration or clock-basis references",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -211,6 +221,9 @@
    "claim": "No observation mode stands in for another: every ordered substitution is refused",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -250,6 +263,9 @@
    "claim": "A camera chord becomes a surface distance only through a declared surface model",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-12,
     "rel": 0
@@ -265,11 +281,127 @@
   {
    "assigned_by": "ciw.lab.evidence",
    "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 5.552019935497997e-10,
+      "passed": true,
+      "reference": "analytic arc-length sensitivities against central differences of the bisection inverse (max relative, cylinder and sphere)",
+      "reference_kind": "cross_implementation",
+      "tolerance": 1e-06
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.04118862982216725,
+      "passed": true,
+      "reference": "Monte Carlo arc variance under the sensor source over the declared sensor_m2 (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -1.6744378706914709,
+      "passed": true,
+      "reference": "Monte Carlo arc variance under the geometry source over the declared geometry_m2 (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.3379829829504716,
+      "passed": true,
+      "reference": "Monte Carlo arc variance under the total source over the declared sum (|z| <= 3.2905, two-sided 99.9 %)",
+      "reference_kind": "analytic",
+      "tolerance": 3.2905267314919255
+     },
+     {
+      "expected_refusal": "variance_split_mismatch",
+      "observed_refusal": "variance_split_mismatch",
+      "passed": true,
+      "reference": "split: variance split mismatch",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "variance_split_required",
+      "observed_refusal": "variance_split_required",
+      "passed": true,
+      "reference": "split: variance split required",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "geometry_uncertainty_required",
+      "observed_refusal": "geometry_uncertainty_required",
+      "passed": true,
+      "reference": "split: geometry uncertainty required",
+      "reference_kind": "refusal"
+     }
+    ],
+    "generator": {
+     "chord_sigma_m": 0.0002,
+     "name": "numpy.random.PCG64",
+     "parameter_sigma": {
+      "path_angle_rad": 0.005,
+      "radius": 0.0005
+     },
+     "samples": 4000,
+     "seed": 452026
+    }
+   },
+   "claim": "A model-derived surface distance carries separate geometry and sensor variance components (the T044 split): the first-order sensitivities match finite differences, each component matches the Monte Carlo variance of the arc under its own source, and their sum matches both sources together",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "95 % half-width of a variance ratio from 4000 Gaussian samples",
+    "kind": "monte_carlo_95ci",
+    "value": 0.04383160632209657
+   },
+   "unit": "variance ratio (Monte Carlo over linearized)",
+   "value": {
+    "components": {
+     "geometry_m2": 4.446218322827751e-09,
+     "sensor_m2": 4.916767783728981e-08
+    },
+    "finite_difference_relative_gap": 5.552019935497997e-10,
+    "geometry_share": 0.08293033413481364,
+    "refusals": {
+     "geometry_uncertainty_required": "geometry_uncertainty_required",
+     "variance_split_mismatch": "variance_split_mismatch",
+     "variance_split_required": "variance_split_required"
+    },
+    "sensitivities": {
+     "chord": 1.108689291881294,
+     "path_angle_rad": -0.010160243915736611,
+     "radius": -0.08638181318185399
+    },
+    "variance_ratio": {
+     "geometry": 0.9625537498964903,
+     "sensor": 0.9990788790908648,
+     "total": 0.992441525880523
+    },
+    "z": {
+     "geometry": -1.6744378706914709,
+     "sensor": -0.04118862982216725,
+     "total": -0.3379829829504716
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
     "notes": "Noise parameters are declared placeholders; no instrument was acquired."
    },
    "claim": "The declared noise-model parameters describe real instruments of these modes",
    "domain": "sensor_performance",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -277,25 +409,31 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 4222,
+   "bytes": 5032,
    "path": "artifacts/T045/observation-modes.json",
-   "sha256": "5a9c713da9dd05c36687b8ae8f3cb8a908144926d0a2cef97db624a01002c143"
+   "sha256": "bb794447c2ad49147c098b90fd6d1577d48593fbd706ecf745185c96c2a64040"
   },
   {
    "bytes": 7331,
    "path": "artifacts/T045/refusals.json",
-   "sha256": "7a1ab39e6ededd1e819a61c417a1d6e0585f7bb58edf0e546d0bd42d2f1ebf2c"
+   "sha256": "8618f6ba71d9dd2f6b16dc1e5bc97d3749e5676afbbc5837ee90e1d6830f2eb6"
+  },
+  {
+   "bytes": 2007,
+   "path": "artifacts/T045/variance-split.json",
+   "sha256": "4d425f7069ee90871c1f4d6bea8061b80ecfcc472456c97d436cca04d3802e64"
   }
  ],
- "hypothesis": "A typed registry can make every observation declare its frame, clock basis, calibration and geometry class, and can refuse malformed records and silent substitution of one mode for another.",
+ "hypothesis": "A typed registry can make every observation declare its frame, clock basis, calibration and geometry class, and can refuse malformed records and silent substitution of one mode for another; a model-derived surface distance can carry T044's geometry and sensor variance components separately.",
  "input_data": [
   "Seven declared modes in ciw.lab.observation_modes.MODES",
   "One synthetic well-formed record per mode (example_observation)",
-  "Chords of Cylinder.exact_geodesic embeddings on a declared cylinder R = 0.1 m at alpha = 0, 30, 60, 90 deg and s = 0.015, 0.06, 0.12 m"
+  "Chords of Cylinder.exact_geodesic embeddings on a declared cylinder R = 0.1 m at alpha = 0, 30, 60, 90 deg and s = 0.015, 0.06, 0.12 m",
+  "Variance split at s = 0.12 m, alpha = 30 deg: declared chord sigma 0.2 mm, radius sigma 0.5 mm, path-angle sigma 5 mrad; 4000 Monte Carlo samples per source (seed 452026)"
  ],
- "mathematical_model": "Each mode is a tuple (quantity, unit, components, frame kind, clock basis in {acquisition, arrival}, geometry in {intrinsic, extrinsic, none}, noise model, non-observables). A camera chord is extrinsic; it maps to a surface distance only through an inverted chord-arc relation of a declared surface model (T046/T047).",
+ "mathematical_model": "Each mode is a tuple (quantity, unit, components, frame kind, clock basis in {acquisition, arrival}, geometry in {intrinsic, extrinsic, none}, noise model, non-observables). A camera chord is extrinsic; it maps to a surface distance only through an inverted chord-arc relation of a declared surface model (T046/T047). The derived distance carries T044's split: sensor_m2 = (ds/dc)^2 sigma_c^2 and geometry_m2 = sum_p (ds/dp)^2 sigma_p^2 over the declared model parameters (implicit differentiation of c^2 = 4 R^2 sin^2(s cos(alpha)/(2R)) + s^2 sin^2(alpha)).",
  "number": 45,
- "numerical_result": "7 modes, 0 missing declarations; 9 record refusals as expected; 42/42 substitutions refused; chord-to-arc inversion error 2.78e-17 m.",
+ "numerical_result": "7 modes, 0 missing declarations; 9 record refusals as expected; 42/42 substitutions refused; chord-to-arc inversion error 2.78e-17 m; variance split geometry 4.45e-09 m^2 and sensor 4.92e-08 m^2 (geometry share 0.083), Monte Carlo ratios sensor 0.999, geometry 0.963, total 0.992; sensitivities agree with finite differences to 5.6e-10.",
  "observation_model": "No instrument: records are generated with declared (synthetic) calibration references.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -309,14 +447,14 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/observation.py": "6e5bf960e17dffb62bdaf29d28be9a0f165fd68f8498d173b66eab08fa22ad70",
+   "src/ciw/lab/observation.py": "ef75c3ea4cad06bcbc68592440b3d55a92786a729d5a731b87ece207511ddffb",
    "src/ciw/lab/observation_chord.py": "cfbaaaf604b32b686178ea036d27c153d8eebc7d290444c60d7699c1fc60faf5",
-   "src/ciw/lab/observation_modes.py": "bfd6aa4471cc876a7ac2fb8790a4a5c4f478c547350b059311f5e6d53702c83e"
+   "src/ciw/lab/observation_modes.py": "14fcc803e9543fa4a6891775dfac6633ca15ade648e6125e2f71fde4c4201c90"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T058: track exact frame and clock bases and apply declared mappings",
- "report_id": "sha256:cda93682b8f68b0787214bcde837a301b69952ea2cdd597de0db050fae92ec79",
+ "recommended_next_task": "Deferred research question: a mesh-reconstruction conversion that fills geometry_m2 = sigma_vertex^2 |grad d|^2 from T043's linearized vertex-noise gain (valid only while the unfolded segment stays in its face corridor), checked against T044's nested Monte Carlo, so a reconstructed_surface_distance derived from a scanned mesh carries the same split as one derived from a parametric model. A physical check of the split needs paired chord and tape readings. The runner can retain their raw export as an operator capture (ciw lab run --capture ROLE=PATH), but no section-4 task reads a capture or parses a camera, tracker or tape export, so a capture parser for chord and tape readings is missing; and a capture is unauthenticated, so without an instrument probe or a signed-capture trust anchor for these roles its physical findings stay not_established. No hardware_measured observation exists.",
+ "report_id": "sha256:79a7d86675d8dee42abc47021844d140c5ee9b3a336c2447ba8097c74621a9aa",
  "schema": "ciw.lab-task-report.v1",
  "section": "observation",
  "state": "completed",
@@ -339,13 +477,23 @@
   "check: No observation mode stands in for another: every ordered substitution is refused vs model-derived distance used as a direct intrinsic observation",
   "check: A camera chord becomes a surface distance only through a declared surface model vs camera chord converted without a declared surface model",
   "check: A camera chord becomes a surface distance only through a declared surface model vs recovered arc length against the arc length of Cylinder.exact_geodesic embeddings (m)",
-  "pytest: tests/test_lab_observation.py::test_t045_modes_and_refusals"
+  "check: A model-derived surface distance carries separate geometry and sensor variance components (the T044 split): the first-order sensitivities match finite differences, each component matches the Monte Carlo variance of the arc under its own source, and their sum matches both sources together vs analytic arc-length sensitivities against central differences of the bisection inverse (max relative, cylinder and sphere)",
+  "check: A model-derived surface distance carries separate geometry and sensor variance components (the T044 split): the first-order sensitivities match finite differences, each component matches the Monte Carlo variance of the arc under its own source, and their sum matches both sources together vs Monte Carlo arc variance under the sensor source over the declared sensor_m2 (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: A model-derived surface distance carries separate geometry and sensor variance components (the T044 split): the first-order sensitivities match finite differences, each component matches the Monte Carlo variance of the arc under its own source, and their sum matches both sources together vs Monte Carlo arc variance under the geometry source over the declared geometry_m2 (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: A model-derived surface distance carries separate geometry and sensor variance components (the T044 split): the first-order sensitivities match finite differences, each component matches the Monte Carlo variance of the arc under its own source, and their sum matches both sources together vs Monte Carlo arc variance under the total source over the declared sum (|z| <= 3.2905, two-sided 99.9 %)",
+  "check: A model-derived surface distance carries separate geometry and sensor variance components (the T044 split): the first-order sensitivities match finite differences, each component matches the Monte Carlo variance of the arc under its own source, and their sum matches both sources together vs split: variance split mismatch",
+  "check: A model-derived surface distance carries separate geometry and sensor variance components (the T044 split): the first-order sensitivities match finite differences, each component matches the Monte Carlo variance of the arc under its own source, and their sum matches both sources together vs split: variance split required",
+  "check: A model-derived surface distance carries separate geometry and sensor variance components (the T044 split): the first-order sensitivities match finite differences, each component matches the Monte Carlo variance of the arc under its own source, and their sum matches both sources together vs split: geometry uncertainty required",
+  "pytest: tests/test_lab_observation.py::test_t045_modes_and_refusals",
+  "pytest: tests/test_lab_observation.py::test_reconstructed_distance_carries_the_t044_split"
  ],
  "tests_skipped": [],
  "title": "Define typed observation modes: intrinsic geodesic distance; camera chord distance; reconstructed surface distance; encoder displacement; tracker measurement; image residual; IMU orientation.",
- "uncertainty": "Refusals and counts are exact; the chord inversion is a bisection converged to adjacent doubles, so the recovered arc carries rounding of about 1e-16 m.",
+ "uncertainty": "Refusals and counts are exact; the chord inversion is a bisection converged to adjacent doubles, so the recovered arc carries rounding of about 1e-16 m. The variance ratios carry Monte Carlo error with relative standard error sqrt(2/(N-1)) = 0.022; the components are first order and omit the undeclared model-form error.",
  "unresolved_assumptions": [
   "Noise-model values are placeholders, not instrument characteristics",
-  "Frame kinds are declared strings; their physical realization is not checked"
+  "Frame kinds are declared strings; their physical realization is not checked",
+  "The variance split is first order and covers parametric models (plane, sphere, cylinder geodesic); a mesh-reconstructed surface's geometry component sigma_vertex^2 |grad d|^2 (T043/T044) can be declared on a record but no mesh conversion computes it here",
+  "An intrinsic_geodesic_distance record carries no split: its geometry uncertainty enters the model prediction it is compared with (T044's residual), not the reading"
  ]
 }

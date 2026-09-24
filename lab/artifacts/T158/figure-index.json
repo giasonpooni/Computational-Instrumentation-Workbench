@@ -737,6 +737,13 @@
   },
   {
    "digest_matches": true,
+   "path": "artifacts/T120/common-workload-precision.svg",
+   "sha256": "d34fc262be9ec1db97ae81adcf910e087bb5df415c4c023f75b242a074f77d50",
+   "task_id": "T120",
+   "well_formed": true
+  },
+  {
+   "digest_matches": true,
    "path": "artifacts/T121/reduction-errors.svg",
    "sha256": "944209c7fa8c94e88a1b579b7b78f46e7e1e0647197e583b684033e3cbb00e62",
    "task_id": "T121",
@@ -815,14 +822,14 @@
   {
    "digest_matches": true,
    "path": "artifacts/T137/margin-vs-length.svg",
-   "sha256": "de58ee14ecef2fc32ef2c105422b17551e09c5741ffaffd562027015874b355f",
+   "sha256": "b1d4eb5afb03c600c8e52f3571e62404319efc92e82cbfb74973cda4d92cfe63",
    "task_id": "T137",
    "well_formed": true
   },
   {
    "digest_matches": true,
    "path": "artifacts/T142/kernel-timings.svg",
-   "sha256": "74a63f25cb84dd2f53a0be6c91475ee234223e1a2834710585db6ef341a96af2",
+   "sha256": "201be01efbd16ff01ddff2a64eae3eecdc75c5cb4a52ed3bbed3597135e7e89e",
    "task_id": "T142",
    "well_formed": true
   },
@@ -1107,6 +1114,12 @@
   {
    "outcome": "identical",
    "path": "artifacts/T120/precision.svg",
+   "task_id": "T120",
+   "timing": false
+  },
+  {
+   "outcome": "identical",
+   "path": "artifacts/T120/common-workload-precision.svg",
    "task_id": "T120",
    "timing": false
   },

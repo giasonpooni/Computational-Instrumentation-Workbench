@@ -68,6 +68,11 @@
    "claim": "RK4 resolves every truncation-dominated curvature signal from N = 16 (h = 1/8)",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 0.05
@@ -176,6 +181,11 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-06,
     "rel": 0.02
@@ -254,6 +264,11 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-12,
     "rel": 1e-06
@@ -309,6 +324,10 @@
    "claim": "Resolvability ratios improve like h^-p with p = 1, 2, 4 (sphere R = 1)",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.02,
     "rel": 0.0
@@ -359,6 +378,10 @@
    "claim": "Flat surfaces (K from the second fundamental form) show no spurious curvature signal for any method or step",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-13,
     "rel": 0.0
@@ -380,6 +403,7 @@
    "claim": "Curvature signals resolvable here would be resolvable in measured sensor data",
    "domain": "sensor_performance",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -431,13 +455,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/geodesic_jacobi_limits.py": "07d850980ac10ad34ca0d1b8c29942c90fe635e15135a5db1f74e90674e3bb18",
+   "src/ciw/lab/geodesic_jacobi_limits.py": "893d8b0240e673dd9aa7b5ba13b09958caa861706335726277d676def21aa83d",
    "src/ciw/lab/geodesic_jacobi_limits_core.py": "0e0b8f85ed4e83c3fcdc866e8a7e580a17432e174b8db8d8277230e226473d7f"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T005 (Jacobi separation law) with resolvability-aware step selection, and T046",
- "report_id": "sha256:4e8942228f277e3724c5953b9aa147d1dbf19d8c94aa487bc51cf103a27baea1",
+ "recommended_next_task": "Deferred research question: resolvability-aware step selection: choose each method's step from the measured curvature-signal-to-integrator-error ratio and check that the lateral column and the conjugate-point locations (only j_head(L) is compared here) are then resolved on the weak-curvature paths (sensor-level resolvability needs a measured noise floor and is hardware-gated)",
+ "report_id": "sha256:79b70e9421b8e0cf0f45cdabf5792d7c10c2e5125b92dfb482e4a0b94bb13cfa",
  "schema": "ciw.lab-task-report.v1",
  "section": "geodesic-jacobi",
  "state": "completed",
@@ -459,7 +483,8 @@
   "check: Flat surfaces (K from the second fundamental form) show no spurious curvature signal for any method or step vs max |K| from the second fundamental form along the plane and cylinder paths",
   "check: Flat surfaces (K from the second fundamental form) show no spurious curvature signal for any method or step vs max |j_head(L) - L| on plane and cylinder",
   "pytest: tests/test_lab_geodesic_jacobi_limits.py::test_t018_resolvability_report",
-  "pytest: tests/test_lab_geodesic_jacobi_limits.py::test_optional_scipy_cross_check_agrees_with_adaptive_references"
+  "pytest: tests/test_lab_geodesic_jacobi_limits.py::test_optional_scipy_cross_check_agrees_with_adaptive_references",
+  "pytest: tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work"
  ],
  "tests_skipped": [],
  "title": "Generate a report comparing intrinsic curvature effects with integrator error.",

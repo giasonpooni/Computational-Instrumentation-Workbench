@@ -3,6 +3,7 @@
   "src/ciw/lab/energy_gpu.py",
   "src/ciw/lab/energy_gpu_kernels.py",
   "src/ciw/lab/energy_gpu_telemetry.py",
+  "src/ciw/lab/energy_gpu_workload.py",
   "docs/lab/ENERGY_GPU.md"
  ],
  "evidence_status": {
@@ -57,6 +58,10 @@
    "claim": "Session replay keeps numerical_result_id identical across original, reproduction and replay for every fixture",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -96,6 +101,10 @@
    "claim": "Each replay is a fresh analysis occurrence with new execution, result and bundle identities",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -151,6 +160,10 @@
    "claim": "Replay receipts record a numerical match, no state admission, a non-independent method and no fresh hardware measurement",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -195,6 +208,10 @@
    "claim": "Saving and restoring the Session workspace reproduces the retained workbench exactly",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -238,6 +255,10 @@
    "claim": "Replaying a retained bundle whose numerical result was edited is refused, with or without resealed envelopes",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -263,6 +284,7 @@
    "claim": "Replayed energy values are physically valid measurements",
    "domain": "physical",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -272,7 +294,7 @@
   {
    "bytes": 5530,
    "path": "artifacts/T125/session-replay.json",
-   "sha256": "b6359646dfad4b1fecca600fd717a6af0437144412930d062b8750d6dfca3a79"
+   "sha256": "adc01fd69cedf4ec1b999e323114eaf641375a437d3922704587ed6b13cd744e"
   }
  ],
  "hypothesis": "Replaying a retained energy analysis through a ciw Session recomputes the same numerical result (stable numerical_result_id) under fresh execution and result identities.",
@@ -295,14 +317,15 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/energy_gpu.py": "a66107417b5bfa398077a919b2f5351ca222e9961fa8dfb3256b78efc17fd930",
-   "src/ciw/lab/energy_gpu_kernels.py": "366c477ff1af7f59b626f4e64bf994ae4cbce5754c0e9c5be1c2acb515f99f4b",
-   "src/ciw/lab/energy_gpu_telemetry.py": "df82c8748d3aa75384e3928bffcf516cd6f72cccde99edf8d21f089cc768bafa"
+   "src/ciw/lab/energy_gpu.py": "f49195ce5a78ced3c8da1562f4412f2fdc65d8cc2749dd4fbe0b25bc0334e773",
+   "src/ciw/lab/energy_gpu_kernels.py": "1198886637535f3f8ec26601aa70cdc16d1c175dc4286aa9807edec3910005d2",
+   "src/ciw/lab/energy_gpu_telemetry.py": "6935331e622266868a97ee78f8e34d185aa69009a62fedc8ea8273b3a9312bfc",
+   "src/ciw/lab/energy_gpu_workload.py": "5cdaf9fe9f25194dae561e060abf471567cfd3bb8df6c1836630a54c5085a9de"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T146: canonical serialization so numerical ids agree across platforms and languages",
- "report_id": "sha256:fb77c97c12993edb70a135cbc8d72a45e58bb416ce114e889306ae4b2c596051",
+ "recommended_next_task": "Deferred research question: replay a retained RTX 2080 log (lab/hardware/<run-id>/artifacts/T116/operator-log.json, once a GPU run is retained) through a Session on a second host and compare its numerical_result_id; whether the ids agree across platforms is open, because they hash binary64 analysis values and ciw.core.identities was not migrated to ciw.canonical-json.v1 (T146 kept the ASCII variant)",
+ "report_id": "sha256:1a69f3e2c505bb9ad138f4a766fdf450352156e58f9ba2e7af030b5e4a05dfb4",
  "schema": "ciw.lab-task-report.v1",
  "section": "energy-gpu",
  "state": "completed",
@@ -318,6 +341,7 @@
   "check: Replaying a retained bundle whose numerical result was edited is refused, with or without resealed envelopes vs replay_session on an edited bundle with recomputed digests",
   "pytest: tests/test_lab_energy_gpu.py::test_session_replay_keeps_numerical_result_id",
   "pytest: tests/test_lab_energy_gpu.py::test_fixture_tasks_without_repository_files",
+  "pytest: tests/test_lab_energy_gpu.py::test_next_steps_name_work_that_delivers",
   "pytest: tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance"
  ],
  "tests_skipped": [],

@@ -51,6 +51,10 @@
    "claim": "Open loop, the false-rejection rate of a gate at the chi-square(2) p-quantile of the correctly normalized NIS matches 1 - p within a 99.9% Wilson interval for p = 0.9, 0.99 and 0.999",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -120,6 +124,10 @@
    "claim": "The chi-square quantiles used by the gate invert the closed-form chi-square CDF to roundoff for 1-6 degrees of freedom",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 0.0
@@ -174,6 +182,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -236,6 +248,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -320,6 +336,10 @@
    "claim": "The fusion API gates the same way: a FusionSession constructed with gate_probability p refuses exactly the readings run_gated rejects in closed loop (same rates at p = 0.9 and 0.99 over the replayed runs), retains each with disposition refused:innovation_gate_rejected, and ends in the same state to roundoff",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 0.0
@@ -364,6 +384,9 @@
    "claim": "A real gate at the 99% quantile rejects 1% of valid real readings",
    "domain": "sensor_performance",
    "evidence_status": "not_established",
+   "origin": [
+    "synthetic_inputs"
+   ],
    "uncertainty": null,
    "unit": null,
    "value": "not established: real noise may be heavy-tailed, correlated or misstated"
@@ -405,13 +428,13 @@
   "sources": {
    "src/ciw/lab/sensor_fusion_bench.py": "f373849a4c6836fa20685c59ce7a6fe6bf732f6df9d6a49646cdc017262dd656",
    "src/ciw/lab/sensor_fusion_common.py": "db3b0430ad5c13920239cef354da61b64ab1b01f84b2d3d5aff2f78840a5867a",
-   "src/ciw/lab/sensor_fusion_filtering.py": "716a44ff8f4921d188d17179fa80c6b1695c68a90fb16ab85239efb4295b4f8a",
-   "src/ciw/lab/sensor_fusion_objects.py": "93fc55ddca91f1adfb886d21805ea8f82586548ee84e1f6cc7daed4df1f53bb9"
+   "src/ciw/lab/sensor_fusion_filtering.py": "66ae801ecdd34d35c61c9eb5e381eefc26a0234233e143492ab50529ae7e14cb",
+   "src/ciw/lab/sensor_fusion_objects.py": "50ec8767a90f261f108d6524c7ff55d22604b55cc9853e749ba4c5f71bc76081"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T068: inject outliers and measure detection, false alarms and estimate error.",
- "report_id": "sha256:424d025bb544902000280cd83377422cc917f1d75e871ff682161a203a745ea8",
+ "recommended_next_task": "Deferred research question: bound the closed-loop gate excess (the rejection rate above 1 - p caused by the gate's feedback on the state) analytically, or with a Monte Carlo large enough that its interval either excludes zero or bounds the excess below 0.1 percentage point; this task finds it inside the sampling interval, not zero.",
+ "report_id": "sha256:67598d92de6d2db320e317e8cc1eb75dc2df4b63bdbe15a645bf32dc0e88b4ce",
  "schema": "ciw.lab-task-report.v1",
  "section": "sensor-fusion",
  "state": "completed",

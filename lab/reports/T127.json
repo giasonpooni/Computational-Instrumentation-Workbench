@@ -11,21 +11,22 @@
    "analytic": 0,
    "hardware_measured": 0,
    "independently_verified": 0,
-   "not_established": 2,
-   "numerically_verified": 5,
+   "not_established": 3,
+   "numerically_verified": 6,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "gap = 0 on rulings (axial pairs); Phi_cylinder = Phi_plate; circumferential gaps follow the alternating series.",
- "experiment": "Closed-form gaps checked by RK4 geodesic closure and by the series with its remainder bound; helix transfer compared with [[1, s], [0, 1]]; resolvable separation by bisection; protocol validated and mutated.",
+ "expected_invariant": "gap = 0 on rulings (axial pairs); Phi_cylinder = Phi_plate; circumferential gaps follow the alternating series; the axis-primary frame recovers a known pose exactly without noise.",
+ "experiment": "Closed-form gaps checked by RK4 geodesic closure and by the series with its remainder bound; helix transfer compared with [[1, s], [0, 1]]; resolvable separation by bisection; the datum scheme (cylinder fit and axis-primary frame) run on noise-free synthetic points in a known pose, and its degenerate datums refused; protocol validated and mutated.",
  "failure_modes_checked": [
   "RK4 closure",
   "series remainder bound",
   "axial rulings give zero gap",
   "flat Jacobi transfer",
-  "protocol refusal matrix"
+  "axis-primary datum frame: known pose, scribe on the axis, end face parallel to the axis, too few points",
+  "protocol refusal matrix, including the tape layout (tapes alone, clear of markers and datum points)"
  ],
  "findings": [
   {
@@ -34,7 +35,7 @@
     "checks": [
      {
       "comparison": "abs_le",
-      "observed": 1.3322676295501878e-13,
+      "observed": 8.881784197001251e-14,
       "passed": true,
       "reference": "RK4 geodesic closure onto the target marker (mm)",
       "reference_kind": "analytic",
@@ -62,6 +63,10 @@
    "claim": "Rolled-cylinder chord-geodesic gaps for the protocol marker pairs",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-09
@@ -69,18 +74,18 @@
    "uncertainty": {
     "basis": "closed forms; RK4 closure onto the target marker",
     "kind": "roundoff",
-    "value": 1.3322676295501878e-13
+    "value": 8.881784197001251e-14
    },
    "unit": "mm",
    "value": {
     "axial 100 mm": 0.0,
     "axial 200 mm": 0.0,
     "circumferential 120 deg": 36.23442948243181,
-    "circumferential 150 deg": 68.61422254133575,
+    "circumferential 150 deg": 68.61422254133572,
     "circumferential 180 deg": 114.15926535897933,
     "circumferential 30 deg": 0.5960685393257421,
     "circumferential 60 deg": 4.71975511965978,
-    "circumferential 90 deg": 15.658276442180153,
+    "circumferential 90 deg": 15.658276442180181,
     "helical 60 deg / 100 mm": 3.375836802892451,
     "helical 90 deg / 200 mm": 9.361880784385704
    }
@@ -102,6 +107,9 @@
    "claim": "Rolled-cylinder Jacobi transfer equals the flat-plate transfer (K = 0)",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 0
@@ -120,7 +128,7 @@
     "checks": [
      {
       "comparison": "ge",
-      "observed": 276.8018363489788,
+      "observed": 276.8018363489793,
       "passed": true,
       "reference": "gap at 90 deg exceeds k u_pair (camera) by the ratio",
       "reference_kind": "analytic",
@@ -132,7 +140,7 @@
    "counterexample": {
     "statement": "On an intrinsically flat (developable) part the straight chord between two markers equals their surface distance, as on the flat plate",
     "witness": {
-     "chord_mm": 141.4213562373095,
+     "chord_mm": 141.42135623730948,
      "dphi_deg": 90,
      "geodesic_mm": 157.07963267948966,
      "radius_mm": 100.0
@@ -140,6 +148,9 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-09
@@ -147,10 +158,10 @@
    "uncertainty": {
     "basis": "closed form; RK4 closure",
     "kind": "roundoff",
-    "value": 1.3322676295501878e-13
+    "value": 8.881784197001251e-14
    },
    "unit": "mm",
-   "value": 15.658276442180153
+   "value": 15.658276442180181
   },
   {
    "assigned_by": "ciw.lab.evidence",
@@ -169,6 +180,9 @@
    "claim": "Minimum circumferential marker separation that resolves the chord-geodesic gap at k = 2",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-08,
     "rel": 1e-09
@@ -190,6 +204,85 @@
    "basis": {
     "checks": [
      {
+      "comparison": "abs_le",
+      "observed": 2.930988785010413e-14,
+      "passed": true,
+      "reference": "max |pose difference| of the built PART frame from the known pose (mm and rad)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-09
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 1.4210854715202004e-14,
+      "passed": true,
+      "reference": "|fitted radius - 100 mm| (mm)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-09
+     },
+     {
+      "expected_refusal": "datum_degenerate",
+      "observed_refusal": "datum_degenerate",
+      "passed": true,
+      "reference": "scribe datum (B) on the axis (A)",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "datum_degenerate",
+      "observed_refusal": "datum_degenerate",
+      "passed": true,
+      "reference": "end face (C) parallel to the axis (A)",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "cylinder_underdetermined",
+      "observed_refusal": "cylinder_underdetermined",
+      "passed": true,
+      "reference": "cylinder fit from five points",
+      "reference_kind": "refusal"
+     }
+    ],
+    "generator": {
+     "name": "noise-free CMM points on the MFG-CYLINDER-01 datum features in a known pose",
+     "rotation_vector_rad": [
+      0.1,
+      -0.2,
+      0.3
+     ],
+     "seed": null,
+     "translation_mm": [
+      10.0,
+      -20.0,
+      5.0
+     ]
+    }
+   },
+   "claim": "The axis-primary datum frame (cylinder-fit axis A, scribe B, end face C) recovers a known tube pose from noise-free synthetic CMM points and refuses degenerate datums",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "noise-free recovery error of the fit and frame",
+    "kind": "roundoff",
+    "value": 2.930988785010413e-14
+   },
+   "unit": null,
+   "value": {
+    "pose_error": 2.930988785010413e-14,
+    "radius_error_mm": 1.4210854715202004e-14
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
       "expected_refusal": "acceptance_inside_system",
       "observed_refusal": "acceptance_inside_system",
       "passed": true,
@@ -201,6 +294,13 @@
       "observed_refusal": "criterion_is_decision",
       "passed": true,
       "reference": "protocol mutation criterion_marked_accepted",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "undeclared_device",
+      "observed_refusal": "undeclared_device",
+      "passed": true,
+      "reference": "protocol mutation criterion_names_undeclared_instrument",
       "reference_kind": "refusal"
      },
      {
@@ -221,6 +321,13 @@
       "expected_refusal": "missing_field",
       "observed_refusal": "missing_field",
       "passed": true,
+      "reference": "protocol mutation instrument_without_settings",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "missing_field",
+      "observed_refusal": "missing_field",
+      "passed": true,
       "reference": "protocol mutation missing_markers",
       "reference_kind": "refusal"
      },
@@ -232,10 +339,31 @@
       "reference_kind": "refusal"
      },
      {
+      "expected_refusal": "undeclared_device",
+      "observed_refusal": "undeclared_device",
+      "passed": true,
+      "reference": "protocol mutation raw_format_of_undeclared_instrument",
+      "reference_kind": "refusal"
+     },
+     {
       "expected_refusal": "measurement_without_acquisition",
       "observed_refusal": "measurement_without_acquisition",
       "passed": true,
       "reference": "protocol mutation records_in_empty_slot",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "repeat_includes_laying",
+      "observed_refusal": "repeat_includes_laying",
+      "passed": true,
+      "reference": "protocol mutation repeat_includes_laying",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "procedure_step_malformed",
+      "observed_refusal": "procedure_step_malformed",
+      "passed": true,
+      "reference": "protocol mutation repeat_of_itself",
       "reference_kind": "refusal"
      },
      {
@@ -251,12 +379,64 @@
       "passed": true,
       "reference": "protocol mutation slot_without_retention_record",
       "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "path_over_marker",
+      "observed_refusal": "path_over_marker",
+      "passed": true,
+      "reference": "protocol mutation specimen_marker_under_a_tape",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "fixture_targets_undeclared",
+      "observed_refusal": "fixture_targets_undeclared",
+      "passed": true,
+      "reference": "protocol mutation step_measures_targets_of_a_fixture_without_any",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "undeclared_device",
+      "observed_refusal": "undeclared_device",
+      "passed": true,
+      "reference": "protocol mutation step_names_undeclared_jig",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "undeclared_device",
+      "observed_refusal": "undeclared_device",
+      "passed": true,
+      "reference": "protocol mutation step_uses_undeclared_device",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "tapes_overlap",
+      "observed_refusal": "tapes_overlap",
+      "passed": true,
+      "reference": "protocol mutation tape_left_on_the_specimen",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "jig_slots_overlap",
+      "observed_refusal": "jig_slots_overlap",
+      "passed": true,
+      "reference": "protocol mutation two_offset_tapes_in_one_laying",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "procedure_step_malformed",
+      "observed_refusal": "procedure_step_malformed",
+      "passed": true,
+      "reference": "protocol mutation unstructured_procedure_step",
+      "reference_kind": "refusal"
      }
     ]
    },
    "claim": "Rolled-cylinder protocol record validates and refuses malformed variants",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -267,7 +447,7 @@
     "value": 0.0
    },
    "unit": "refused mutations",
-   "value": 9
+   "value": 21
   },
   {
    "assigned_by": "ciw.lab.evidence",
@@ -275,6 +455,7 @@
    "claim": "Measured chords and surface distances on the physical tube match the predicted gaps",
    "domain": "physical",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -285,6 +466,18 @@
    "claim": "The physical tube radius and roundness lie within the declared +/- 0.1 mm",
    "domain": "calibration",
    "evidence_status": "not_established",
+   "origin": [],
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {},
+   "claim": "The unrolled-film gauge achieves the declared 0.05 mm on marker-to-marker surface distances",
+   "domain": "calibration",
+   "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -292,14 +485,14 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 11734,
+   "bytes": 44106,
    "path": "artifacts/T127/protocol-rolled-cylinder.json",
-   "sha256": "ac5f0a7f8bb8f2ec64df6abd0bc8ca6288ff2a7b3d4835f4143d9ee91734a6e3"
+   "sha256": "f3219f36923bef9bedaa82c57130ff0f154471fa41bd1ab59b5efd18d7ea4a33"
   },
   {
-   "bytes": 3124,
+   "bytes": 3858,
    "path": "artifacts/T127/cylinder-pairs.json",
-   "sha256": "51df6b7649a874fd813191892897e2d3b2eb38a53589d8eb8b73d695d04ba0a7"
+   "sha256": "98c757b2bdfdbbd97c205007b0d9c246b7a7d84e9fac1a9645d692569b53264c"
   },
   {
    "bytes": 2466,
@@ -307,16 +500,17 @@
    "sha256": "5ef13f317fc118bb8f4d359a15a1e9cc559c4e9fd0761ddb73067b1b04832d13"
   }
  ],
- "hypothesis": "A rolled cylinder has zero Gaussian curvature, so its Jacobi transfer equals the plate's, while its extrinsic curvature makes marker chords shorter than geodesic distances by d^3/(24 R^2) + O(d^5).",
+ "hypothesis": "A rolled cylinder has zero Gaussian curvature, so its Jacobi transfer equals the plate's, while its extrinsic curvature makes marker chords shorter than geodesic distances by d^3/(24 R^2) + O(d^5); a surface distance measured independently of the chord (an unrolled-film gauge) exposes that gap.",
  "input_data": [
   "Declared tube R = 100 mm, length 300 mm, three rings of 12 markers",
   "Ten marker pairs (circumferential, axial, helical)",
-  "Declared instruments (camera 0.02 mm, tracker 0.015 mm, CMM 0.002 mm)"
+  "Declared instruments (camera 0.02 mm, tracker 0.015 mm, CMM 0.002 mm, film gauge 0.05 mm)",
+  "Radius tolerance +/- 0.1 mm (u_R = 0.0577 mm)"
  ],
- "mathematical_model": "Cylinder X(phi, z) = (R cos phi, R sin phi, z), R = 100 mm; development (R phi, z) is an isometry; gap(d) = d - 2 R sin(d / 2R) for circumferential pairs; resolvable arc solves gap(d) = k sqrt(2) u.",
+ "mathematical_model": "Cylinder X(phi, z) = (R cos phi, R sin phi, z), R = 100 mm; development (R phi, z) is an isometry; gap(d) = d - 2 R sin(d / 2R) for circumferential pairs; resolvable arc solves gap(d) = k sqrt(2) u. Datum frame: least-squares cylinder axis A, scribe B, end face C, z along A, origin at A meets C, x towards B.",
  "number": 127,
- "numerical_result": "gap at 90 deg = 15.6583 mm (chord 141.421 vs geodesic 157.080); minimum resolvable arc: camera 23.9 mm, tracker 21.7 mm, CMM 11.1 mm.",
- "observation_model": "No observation. The protocol specifies marker, tape start-pose and tape centreline measurements; the hardware slot is empty.",
+ "numerical_result": "gap at 90 deg = 15.6583 mm (chord 141.421 vs geodesic 157.080); minimum resolvable arc: camera 23.9 mm, tracker 21.7 mm, CMM 11.1 mm; datum frame recovered to 2.9e-14.",
+ "observation_model": "No observation. The protocol specifies CMM datum probing in a V-block pair, marker, film, tape start-pose and tape centreline measurements and the raw formats of their captures; the hardware slot is empty.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
   "status": "not_established"
@@ -329,15 +523,15 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/manufacturing.py": "f4cd90e1df33b910b78daf4b0556a8861e044d83701474f841e85fd9d96f9063",
-   "src/ciw/lab/manufacturing_geometry.py": "1db6df2ddf778668da2ffd53a66bcddbff4fc933d6f299e8f283cedc60a9332f",
-   "src/ciw/lab/manufacturing_metrology.py": "aef4708b0f296fc66087a6382881a0564c5edcb6d7961b5e472aa711e29feb5d",
-   "src/ciw/lab/manufacturing_records.py": "015ea7fccc586f4b95f64e7ffbc1f6c34eec20b8245778ede3c2324006537087"
+   "src/ciw/lab/manufacturing.py": "a489d9a93946a344e2878840d784e8087098775794108a6729d9179102767969",
+   "src/ciw/lab/manufacturing_geometry.py": "44830e8b1e2811dc3ade9eb1bc40691a6ae53f92c0b178dce5e5e111447879a1",
+   "src/ciw/lab/manufacturing_metrology.py": "f5c7694f91ac7b38a1f886b4acdc189d0abda403956e3b34d3f2dc8644c07dba",
+   "src/ciw/lab/manufacturing_records.py": "9d8cd35dc23541e9067fdced631c2a80bff1077b3bcba7fa9ae377c9db67626f"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "Execute MFG-CYLINDER-01, retain it through a T139 measurement record and compare the measured chord-geodesic gaps with the T138 pair comparator (compare_pair_distances, E_n per pair); the radius term is budgeted in T140.",
- "report_id": "sha256:d1b3794ee21a852bf401ea438c47bb72ab9c6492dbf9c380cdb3eb6e8217cb26",
+ "recommended_next_task": "Acquire MFG-CYLINDER-01 and bind its exports to T138 (ciw lab run T138 --capture photogrammetry=<targets.csv> --capture film=<film.csv>), then retain the run with ciw lab hardware retain; T138's comparison of the captured gaps and chords is computational, and a physical label needs a metrology instrument probe or a signed-capture trust anchor (deferred research question). Open: model the seam weld and out-of-roundness, which the cylinder prediction omits.",
+ "report_id": "sha256:40f38fd04dd493d6864d54da46a5500962aad5a28a201ecbc3946327c77fdd44",
  "schema": "ciw.lab-task-report.v1",
  "section": "manufacturing",
  "state": "completed",
@@ -349,24 +543,42 @@
   "check: Rolled-cylinder Jacobi transfer equals the flat-plate transfer (K = 0) vs max |Phi_cylinder(300) - [[1, 300], [0, 1]]|",
   "check: A marker chord differs from the surface distance on a developable (intrinsically flat) part vs gap at 90 deg exceeds k u_pair (camera) by the ratio",
   "check: Minimum circumferential marker separation that resolves the chord-geodesic gap at k = 2 vs bisection root vs (24 R^2 g)^(1/3) series (relative)",
+  "check: The axis-primary datum frame (cylinder-fit axis A, scribe B, end face C) recovers a known tube pose from noise-free synthetic CMM points and refuses degenerate datums vs max |pose difference| of the built PART frame from the known pose (mm and rad)",
+  "check: The axis-primary datum frame (cylinder-fit axis A, scribe B, end face C) recovers a known tube pose from noise-free synthetic CMM points and refuses degenerate datums vs |fitted radius - 100 mm| (mm)",
+  "check: The axis-primary datum frame (cylinder-fit axis A, scribe B, end face C) recovers a known tube pose from noise-free synthetic CMM points and refuses degenerate datums vs scribe datum (B) on the axis (A)",
+  "check: The axis-primary datum frame (cylinder-fit axis A, scribe B, end face C) recovers a known tube pose from noise-free synthetic CMM points and refuses degenerate datums vs end face (C) parallel to the axis (A)",
+  "check: The axis-primary datum frame (cylinder-fit axis A, scribe B, end face C) recovers a known tube pose from noise-free synthetic CMM points and refuses degenerate datums vs cylinder fit from five points",
   "check: Rolled-cylinder protocol record validates and refuses malformed variants vs protocol mutation acceptance_inside_system",
   "check: Rolled-cylinder protocol record validates and refuses malformed variants vs protocol mutation criterion_marked_accepted",
+  "check: Rolled-cylinder protocol record validates and refuses malformed variants vs protocol mutation criterion_names_undeclared_instrument",
   "check: Rolled-cylinder protocol record validates and refuses malformed variants vs protocol mutation filled_slot_without_acquisition",
   "check: Rolled-cylinder protocol record validates and refuses malformed variants vs protocol mutation instrument_claimed_verified",
+  "check: Rolled-cylinder protocol record validates and refuses malformed variants vs protocol mutation instrument_without_settings",
   "check: Rolled-cylinder protocol record validates and refuses malformed variants vs protocol mutation missing_markers",
   "check: Rolled-cylinder protocol record validates and refuses malformed variants vs protocol mutation prediction_labelled_measured",
+  "check: Rolled-cylinder protocol record validates and refuses malformed variants vs protocol mutation raw_format_of_undeclared_instrument",
   "check: Rolled-cylinder protocol record validates and refuses malformed variants vs protocol mutation records_in_empty_slot",
+  "check: Rolled-cylinder protocol record validates and refuses malformed variants vs protocol mutation repeat_includes_laying",
+  "check: Rolled-cylinder protocol record validates and refuses malformed variants vs protocol mutation repeat_of_itself",
   "check: Rolled-cylinder protocol record validates and refuses malformed variants vs protocol mutation slot_with_malformed_acquisition",
   "check: Rolled-cylinder protocol record validates and refuses malformed variants vs protocol mutation slot_without_retention_record",
+  "check: Rolled-cylinder protocol record validates and refuses malformed variants vs protocol mutation specimen_marker_under_a_tape",
+  "check: Rolled-cylinder protocol record validates and refuses malformed variants vs protocol mutation step_measures_targets_of_a_fixture_without_any",
+  "check: Rolled-cylinder protocol record validates and refuses malformed variants vs protocol mutation step_names_undeclared_jig",
+  "check: Rolled-cylinder protocol record validates and refuses malformed variants vs protocol mutation step_uses_undeclared_device",
+  "check: Rolled-cylinder protocol record validates and refuses malformed variants vs protocol mutation tape_left_on_the_specimen",
+  "check: Rolled-cylinder protocol record validates and refuses malformed variants vs protocol mutation two_offset_tapes_in_one_laying",
+  "check: Rolled-cylinder protocol record validates and refuses malformed variants vs protocol mutation unstructured_procedure_step",
   "pytest: tests/test_lab_manufacturing.py::test_cylinder_protocol_predicts_chord_geodesic_gaps",
   "pytest: tests/test_lab_manufacturing.py::test_protocols_refuse_filled_slots_and_decisions",
   "pytest: tests/test_lab_manufacturing.py::test_every_task_is_registered_and_reports_honestly"
  ],
  "tests_skipped": [],
  "title": "Design a rolled-cylinder control experiment.",
- "uncertainty": "Closed forms; RK4 closure at rounding level. The radius tolerance term is budgeted in T140.",
+ "uncertainty": "Closed forms; RK4 closure at rounding level. The radius tolerance term is budgeted in T140; the film and camera terms give U_m = 0.1149 mm for a measured gap.",
  "unresolved_assumptions": [
-  "Seam weld and out-of-roundness are not modelled; a real tube is not a perfect cylinder.",
-  "Marker centre offsets (target thickness) are not modelled."
+  "Seam weld and out-of-roundness are not modelled; a real tube is not a perfect cylinder. The protocol puts the seam at the bottom between the vees and stops the run when a ring's roundness exceeds 0.108 mm (declared form tolerance plus 2 U of the CMM).",
+  "Marker centre offsets (target thickness) are not modelled.",
+  "The film is assumed to lie on the pair's geodesic when laid without steering, like the tapes."
  ]
 }

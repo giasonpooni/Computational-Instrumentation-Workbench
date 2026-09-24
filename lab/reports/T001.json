@@ -66,6 +66,10 @@
    "claim": "Sympy-derived metrics, Christoffel symbols and geodesic equations match ciw.lab.surfaces on nine charts",
    "domain": "numerical",
    "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 0.0
@@ -127,6 +131,10 @@
    "claim": "Intrinsic Brioschi curvature from sympy matches the ciw Gaussian curvature on nine charts",
    "domain": "numerical",
    "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 0.0
@@ -207,6 +215,11 @@
    "claim": "The hand-derived metrics, Christoffel symbols, geodesic equations and curvatures of the section doc, as transcribed in hand_geometry, match ciw.lab.surfaces on nine charts",
    "domain": "mathematical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 0.0
@@ -323,6 +336,10 @@
    "claim": "ciw.lab.surfaces Christoffel symbols are symmetric and metric-compatible and its exact metric derivatives match finite differences",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-07,
     "rel": 0.0
@@ -414,6 +431,10 @@
    "claim": "Intrinsic curvature from finite-differenced Christoffel symbols matches the ciw Gaussian curvature",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-06,
     "rel": 0.0
@@ -490,6 +511,11 @@
    "claim": "The second-fundamental-form curvature (LN - M^2)/det g equals the intrinsic curvature on the six embedded charts (Theorema Egregium)",
    "domain": "numerical",
    "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check",
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-06,
     "rel": 0.0
@@ -582,6 +608,10 @@
    },
    "domain": "mathematical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-06,
     "rel": 1e-09
@@ -659,6 +689,10 @@
    },
    "domain": "mathematical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-07
@@ -721,13 +755,13 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/geodesic_jacobi.py": "70e9794df40fbf882cd117859a112b1301552d2c4faca7979f06e7c287828798",
+   "src/ciw/lab/geodesic_jacobi.py": "a3abaeabd7605e4a100c304efb6066d2b656644122bf602c06cb97691415a419",
    "src/ciw/lab/geodesic_jacobi_common.py": "7cb215a28e357a37f1c42cef6bdcb40e22abf7804ae9d58c4818fa40aa52da53"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T002: build high-precision reference solutions on the same equations",
- "report_id": "sha256:6e89fe0f06a5c2909a7f2084766740a93db2f1e53a7675bb20f24c9ad0febf67",
+ "recommended_next_task": "Deferred research question: parse the hand table in docs/lab/GEODESIC_JACOBI.md itself (not its Python transcription hand_geometry), evaluate it at more than 8 points per chart and add polar cylinders of radius other than 1, so that a table edit that diverges from ciw.lab.surfaces fails a check instead of resting on review",
+ "report_id": "sha256:cfb7120d0c0c9fed91cc18f594db3b806a4293dbe8b42d477aaef302d4897568",
  "schema": "ciw.lab-task-report.v1",
  "section": "geodesic-jacobi",
  "state": "completed",
@@ -755,7 +789,8 @@
   "pytest: tests/test_lab_geodesic_jacobi.py::test_t001_without_sympy_is_partial",
   "pytest: tests/test_lab_geodesic_jacobi.py::test_t001_self_consistency_helpers",
   "pytest: tests/test_lab_geodesic_jacobi.py::test_every_numerical_finding_declares_uncertainty_and_tolerance",
-  "pytest: tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space"
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space",
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_every_next_step_is_a_deferred_research_question"
  ],
  "tests_skipped": [],
  "title": "Re-derive the geodesic equation for the plane, sphere, cylinder, saddle, torus, and variable-curvature surfaces.",

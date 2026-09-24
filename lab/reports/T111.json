@@ -63,6 +63,10 @@
    "claim": "PLSR continuous-time Lyapunov solutions agree with the reference solver (SciPy's Bartels-Stewart when installed) to within 10 n^2 u cond(P) on the route family",
    "domain": "numerical",
    "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check",
+    "provider"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 0.0
@@ -109,6 +113,10 @@
    "claim": "PLSR discrete-time Lyapunov solutions agree with the reference solver (SciPy's Bartels-Stewart when installed) to within 10 n^2 u cond(P) on the route family",
    "domain": "numerical",
    "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check",
+    "provider"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 0.0
@@ -197,6 +205,11 @@
    "claim": "PLSR's scalar NOT_CERTIFIED gate fires only where the exact x^T M x is positive and its eigenvalue route finds max eig(M) above the resolution, on the route family and on T107's near-threshold forms",
    "domain": "numerical",
    "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check",
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.05,
     "rel": 0.0
@@ -413,6 +426,11 @@
    "claim": "PLSR's solve_lyapunov returns a P exactly for the plants numpy's eigenvalues call stable and raises ValueError for the others",
    "domain": "numerical",
    "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check",
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -460,6 +478,10 @@
    "claim": "PLSR's verdict certifies every numpy-stable plant with its own P and no numpy-unstable plant with P = I",
    "domain": "numerical",
    "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check",
+    "provider"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -534,6 +556,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -579,6 +605,10 @@
    "claim": "For n = 1 the PLSR verdict follows the sign of a throughout the normal range",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -621,6 +651,10 @@
    "claim": "The independent Lyapunov route (positive definite P) agrees with the numpy eigenvalue route on every route-family plant",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -685,14 +719,14 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/lyapunov.py": "cbcb4d58d7313d7c537957a1b7dd35039a21bae80125bf59147eeed2c1232bbb",
+   "src/ciw/lab/lyapunov.py": "dcda8ba21661667cc03bb126a393e93158a306b4991d0a2450d8e18abe62cb27",
    "src/ciw/lab/lyapunov_provider.py": "da3465b48b5f5efc47bfe6ab8379cf2cf2bc23e4835dc7ff047252e77fa6ef17",
    "src/ciw/lab/lyapunov_reference.py": "bdf0bb5074ae2caca6c8a5d8e63a15e346b007098e6def6b058d077719bc1336"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T112: a separate disturbance-aware (ISS) research branch; T113: connect filtered residuals.",
- "report_id": "sha256:1ed8fd5f826c360c0688c2f96d6e1a655d9cd8d0cf4da80b62c7289d9fae6dc8",
+ "recommended_next_task": "Deferred research question: compare the scalar-quadratic and matrix-eigenvalue routes on near-marginal plants (stability margins below 0.05, excluded here) against exact rational references, where the two routes are most likely to disagree.",
+ "report_id": "sha256:2f8268da6d9f2b49659cbc5dd1bd8c78d10d2d11b8f2bc1e284f39dfbf8b0f31",
  "schema": "ciw.lab-task-report.v1",
  "section": "lyapunov",
  "state": "completed",
@@ -735,7 +769,8 @@
   "check: For n = 1 the PLSR verdict follows the sign of a throughout the normal range vs normal-range scalar plants whose certification differs from a < 0",
   "check: The independent Lyapunov route (positive definite P) agrees with the numpy eigenvalue route on every route-family plant vs plants where the two independent routes disagree",
   "pytest: tests/test_lab_lyapunov.py::test_t111_routes",
-  "pytest: tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider"
+  "pytest: tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider",
+  "pytest: tests/test_lab_lyapunov.py::test_next_steps_name_forward_work"
  ],
  "tests_skipped": [],
  "title": "Compare scalar quadratic and matrix-eigenvalue routes.",

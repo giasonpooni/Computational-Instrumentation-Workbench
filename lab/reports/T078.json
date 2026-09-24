@@ -85,6 +85,9 @@
    "claim": "Workbench sources retain the exact supplied bytes live, inside native bundles and after offline reopen",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -146,6 +149,9 @@
    "claim": "Non-canonical base64 transports are refused rather than normalized, and refused submissions retain no source",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -191,6 +197,9 @@
    "claim": "Evidence identity depends only on bytes: one byte string under two labels shares evidence_id while source_id differs",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -224,6 +233,9 @@
    "claim": "The oscillator recording path retains canonical content, not caller bytes: its file is a CIW re-serialization named by a content digest",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -246,6 +258,7 @@
    "claim": "The retained energy logs are real GPU energy measurements",
    "domain": "physical",
    "evidence_status": "not_established",
+   "origin": [],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -287,13 +300,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/exchange_provenance.py": "f55593eb90af9ed82e40f0f04987c7f0a06cf1c40e7079b0a371e0506607618b",
-   "src/ciw/lab/exchange_provenance_common.py": "f8e765184af4e893a0c4c6d9e5cb2988b79e6f3dfc3d941444f335ecc894d775"
+   "src/ciw/lab/exchange_provenance.py": "0871a5e3e3a27b365a326036c869338b11e5aa3bc4af3ca60db29e81bedbba36",
+   "src/ciw/lab/exchange_provenance_common.py": "17ab892e3f285ac475b44c240155acf45f8bbdbefca28a345980aba548c6d1a9"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T079 (whitespace-preserving evidence retention)",
- "report_id": "sha256:8c265fa83c2ec1799d21901d14367f3d12983891c7bf204cfacba9c46e5cf85c",
+ "recommended_next_task": "Deferred research question: exercise exact byte retention for the source kinds other than energy-accuracy (they share workbench._source but have their own parsers), and retain the oscillator recording's input bytes, which are supplied as parsed JSON and so do not exist to retain.",
+ "report_id": "sha256:6e64a0d597ac23ce0e9d47ec5c39036726907bacba4e60c30a25aa9ccf276ed2",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "completed",
@@ -312,14 +325,18 @@
   "check: Evidence identity depends only on bytes: one byte string under two labels shares evidence_id while source_id differs vs distinct evidence ids for identical bytes (observed 1, predicted 1)",
   "check: Evidence identity depends only on bytes: one byte string under two labels shares evidence_id while source_id differs vs distinct source ids for two labels (observed 2, predicted 2)",
   "check: The oscillator recording path retains canonical content, not caller bytes: its file is a CIW re-serialization named by a content digest vs recording file (newlines LF-normalized) differs from the json.dumps(run, indent=2) re-serialization",
-  "pytest: tests/test_lab_exchange_provenance.py::test_exact_source_bytes"
+  "pytest: tests/test_lab_exchange_provenance.py::test_exact_source_bytes",
+  "pytest: tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work"
  ],
- "tests_skipped": [],
+ "tests_skipped": [
+  "pytest: tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply (skipped)"
+ ],
  "title": "Test exact source-byte retention.",
  "uncertainty": "Exact byte equality; no numerical tolerance is involved. The sample is fourteen byte strings of one schema, not every possible source kind.",
  "unresolved_assumptions": [
   "Only the energy-accuracy source kind was exercised; other kinds share workbench._source but have their own parsers.",
   "The oscillator recording is supplied as parsed JSON, so its input bytes do not exist to retain.",
-  "Exact retention is not authenticity: the retained bytes carry only the log author's unkeyed log_digest (see T081 energy-source.resealed)."
+  "Exact retention is not authenticity: the retained bytes carry only the log author's unkeyed log_digest (see T081 energy-source.resealed).",
+  "Deferred research question (key custody and signatures): which key signs CIW workspace records, replay receipts and execution records, who holds it, how is it provisioned, rotated and revoked, and how does a verifier obtain its public key? Every seal and identity on these paths is an unkeyed SHA-256, so 'Retained workspace records are authenticated' stays not_established until records are signed (for example Ed25519 over the canonical record bytes, with an RFC 3161 timestamp for created_at) and T077 and T080-T090 are re-run against the signed records to check that every surviving forgery is refused."
  ]
 }

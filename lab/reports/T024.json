@@ -99,6 +99,10 @@
    "claim": "Every fan-search route p -> q on Torus(2, 1) ends on a lift of q with the Wronskian and the Clairaut integral conserved to tolerance",
    "domain": "numerical",
    "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-06,
     "rel": 1e-05
@@ -246,6 +250,9 @@
    "claim": "The torus route set is unchanged when the fan density doubles (1440 to 2880 headings)",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -290,9 +297,9 @@
      }
     ]
    },
-   "claim": "Rankings by length, amplification and focus margin disagree: the shortest route is neither the least amplifying nor in the best focus-margin group",
+   "claim": "Rankings by length, amplification |j_head(L)| and focus margin s_c - L (s_c the first zero of j_head) disagree: the shortest route is neither the least amplifying nor in the best focus-margin group",
    "counterexample": {
-    "statement": "The shortest route also minimizes amplification and maximizes focus margin",
+    "statement": "The shortest route also minimizes amplification and maximizes focus margin s_c - L",
     "witness": {
      "best_margin_group": [
       {
@@ -378,6 +385,9 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -451,9 +461,13 @@
     ],
     "derivation": "K = 0 gives j_head(s) = s"
    },
-   "claim": "A flat torus has no conjugate points: j_head(s) = s > 0 (infinite focus margin)",
+   "claim": "A flat torus has no conjugate points: j_head(s) = s > 0 has no zero, so the focus margin s_c - L is infinite",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-12,
     "rel": 1e-09
@@ -469,9 +483,10 @@
   {
    "assigned_by": "ciw.lab.evidence",
    "basis": {},
-   "claim": "Ranking routes by focus margin selects a route that is safe to execute on a physical part",
+   "claim": "Ranking routes by focus margin s_c - L selects a route that is safe to execute on a physical part",
    "domain": "machine_safety",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -484,7 +499,7 @@
    "sha256": "769f24fb08795232f34f40e7b635d2d88af7e29aa116da82d23423ace012ee72"
   }
  ],
- "hypothesis": "Between two points of the torus of revolution the ranking of geodesic routes by length, by heading amplification |j_head(L)| and by focus margin (distance to the first conjugate point) disagree; on a flat torus there are no conjugate points (infinite margin).",
+ "hypothesis": "Between two points of the torus of revolution the ranking of geodesic routes by length, by heading amplification |j_head(L)| and by focus margin s_c - L (s_c the first conjugate point of p, the first zero of j_head) disagree; on a flat torus there are no conjugate points (infinite margin).",
  "input_data": [
   "p = (0.0, 0.4), q = (2.0, -0.3) (chart), routes up to length 11.0, extension horizon 8.0",
   "1440-heading fan (convergence rerun at 2880), RK4 batch step 0.025, Newton on (heading, length) with Jacobian [j_head N, v]"
@@ -509,13 +524,13 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/flat_torus_topology.py": "1221001d96bf1f9aa2f9fea169a2b10bfb37230da11bfb6f1608ba9355c86b9a",
+   "src/ciw/lab/flat_torus_topology.py": "2c05c13905cc51906d41b89219b001396634a9d3bb8bda9bd32ac75a5523fdb1",
    "src/ciw/lab/flat_torus_topology_routes.py": "733568202260c5432d01d01976ee1b1a8a4d69b23e6d3c089ca00d1c46f2ab61"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T025: generate Pareto fronts over these routes",
- "report_id": "sha256:35e76c8f288e8c3fed1d735d7e7d4456c574eb891f07aea1c858e6fa01d0fc81",
+ "recommended_next_task": "Deferred research question: report each route's focus margin at q as well (conjugate points of q along the reversed route) and bound the completeness of the route set up to length 11, for example by interval shooting over all headings (the fan search does not prove completeness)",
+ "report_id": "sha256:a8a060f909622c608789e840b112f6b6c5b133ec603ca20df1ce88aa9383f8fb",
  "schema": "ciw.lab-task-report.v1",
  "section": "flat-torus-topology",
  "state": "completed",
@@ -529,15 +544,17 @@
   "check: Every fan-search route p -> q on Torus(2, 1) ends on a lift of q with the Wronskian and the Clairaut integral conserved to tolerance vs scipy solve_ivp runs that stopped before L + horizon",
   "independent: Every fan-search route p -> q on Torus(2, 1) ends on a lift of q with the Wronskian and the Clairaut integral conserved to tolerance vs scipy.integrate.solve_ivp (sympy-derived field)",
   "check: The torus route set is unchanged when the fan density doubles (1440 to 2880 headings) vs routes found at only one of the two densities",
-  "check: Rankings by length, amplification and focus margin disagree: the shortest route is neither the least amplifying nor in the best focus-margin group vs rank of the shortest route by amplification (0 = least amplifying)",
-  "check: Rankings by length, amplification and focus margin disagree: the shortest route is neither the least amplifying nor in the best focus-margin group vs focus-margin group of the shortest route (0 = best group)",
-  "check: A flat torus has no conjugate points: j_head(s) = s > 0 (infinite focus margin) vs min j_head(s)/s - 1 on (0, 20] (ciw.lab.jacobi, plane)",
+  "check: Rankings by length, amplification |j_head(L)| and focus margin s_c - L (s_c the first zero of j_head) disagree: the shortest route is neither the least amplifying nor in the best focus-margin group vs rank of the shortest route by amplification (0 = least amplifying)",
+  "check: Rankings by length, amplification |j_head(L)| and focus margin s_c - L (s_c the first zero of j_head) disagree: the shortest route is neither the least amplifying nor in the best focus-margin group vs focus-margin group of the shortest route (0 = best group)",
+  "check: A flat torus has no conjugate points: j_head(s) = s > 0 has no zero, so the focus margin s_c - L is infinite vs min j_head(s)/s - 1 on (0, 20] (ciw.lab.jacobi, plane)",
   "pytest: tests/test_lab_flat_torus_topology.py::test_t024_t025_route_ranking_and_front",
   "pytest: tests/test_lab_flat_torus_topology.py::test_route_helpers",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_focus_margin_claims_state_the_canonical_definition",
   "pytest: tests/test_lab_flat_torus_topology.py::test_independent_disagreement_makes_t024_partial_not_blocked",
   "pytest: tests/test_lab_flat_torus_topology.py::test_sympy_field_matches_the_closed_form_batch_field",
   "pytest: tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
-  "pytest: tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+  "pytest: tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_next_steps_name_forward_work"
  ],
  "tests_skipped": [],
  "title": "Add focus-margin-aware route ranking.",

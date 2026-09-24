@@ -94,6 +94,10 @@
    "claim": "Endpoint sensitivities to lateral offset (|j_lat(L)|) and heading error (|j_head(L)|) per path",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-07
@@ -225,6 +229,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-06,
     "rel": 1e-06
@@ -287,6 +295,11 @@
    "claim": "On a flat background, to first order, curvature at arclength s moves j_lat(L) with weight L - s (early-weighted) and j_head(L) with weight s(L - s) (symmetric about mid-path)",
    "domain": "mathematical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -376,6 +389,11 @@
    "claim": "Reversing a geodesic leaves j_head(L) unchanged and exchanges j_lat(L) with j_head'(L) (transfer matrix D Phi(L)^-1 D)",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 0.0
@@ -411,6 +429,7 @@
    "claim": "The ranking of lateral versus heading start errors computed here predicts which error dominates the endpoint error of real tool or vehicle paths on physical curved parts",
    "domain": "physical",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -460,13 +479,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/geodesic_jacobi.py": "70e9794df40fbf882cd117859a112b1301552d2c4faca7979f06e7c287828798",
+   "src/ciw/lab/geodesic_jacobi.py": "a3abaeabd7605e4a100c304efb6066d2b656644122bf602c06cb97691415a419",
    "src/ciw/lab/geodesic_jacobi_common.py": "7cb215a28e357a37f1c42cef6bdcb40e22abf7804ae9d58c4818fa40aa52da53"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T010: generate near-focus and post-focus counterexamples",
- "report_id": "sha256:df2c19647cf9325277cfe7690da2acf36ce155c644dc8a7ec382ce9edc89fd81",
+ "recommended_next_task": "Deferred research question: rank lateral against heading sensitivity over equal-length paths (only the witness pair has equal lengths now) and predict the witness pair's heading difference quantitatively from its two curvature profiles through the first-order kernels, which now explain it only qualitatively",
+ "report_id": "sha256:030a8d662aa7687633e1efe8e3d138364da2c836e7a42c24e85b817c2aef0480",
  "schema": "ciw.lab-task-report.v1",
  "section": "geodesic-jacobi",
  "state": "completed",
@@ -489,7 +508,8 @@
   "check: Reversing a geodesic leaves j_head(L) unchanged and exchanges j_lat(L) with j_head'(L) (transfer matrix D Phi(L)^-1 D) vs reversed path returns to the start",
   "pytest: tests/test_lab_geodesic_jacobi.py::test_t009_columns_rank_paths_differently",
   "pytest: tests/test_lab_geodesic_jacobi.py::test_every_numerical_finding_declares_uncertainty_and_tolerance",
-  "pytest: tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space"
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space",
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_every_next_step_is_a_deferred_research_question"
  ],
  "tests_skipped": [],
  "title": "Compare lateral-displacement and heading-perturbation columns separately.",

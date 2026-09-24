@@ -14,13 +14,14 @@
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "Every numerical finding appears once with its declared uncertainty restated exactly; the numerical and undeclared counts agree with a raw-text recount of the report files.",
- "experiment": "Collect every finding whose value contains a number, write the table as JSON and Markdown, parse the Markdown back against the source findings, and recount numerical and undeclared findings from the raw text.",
+ "expected_invariant": "Every numerical finding appears once with its declared uncertainty restated exactly; the numerical, undeclared and unmeasured counts agree with a raw-text recount of the report files.",
+ "experiment": "Collect every finding whose value contains a number, write the table as JSON and Markdown, parse the Markdown back against the source findings, and recount numerical, undeclared and unmeasured findings from the raw text.",
  "failure_modes_checked": [
   "uncertainty or value cells cut inside a number",
   "pipes in claims breaking table columns",
   "non-scalar numerical findings left out",
-  "traversal disagreeing with the raw report text"
+  "traversal disagreeing with the raw report text",
+  "a record with no basis counted as a measurement without uncertainty"
  ],
  "findings": [
   {
@@ -48,6 +49,9 @@
    "claim": "Uncertainty table restates every numerical finding with its declared uncertainty",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -58,7 +62,7 @@
     "value": 0
    },
    "unit": "findings",
-   "value": 668
+   "value": 689
   },
   {
    "assigned_by": "ciw.lab.evidence",
@@ -68,15 +72,26 @@
       "comparison": "abs_le",
       "observed": 0.0,
       "passed": true,
-      "reference": "undeclared numerical findings minus a raw-text recount",
+      "reference": "undeclared measured numerical findings minus a raw-text recount",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "numerical records with no basis minus a raw-text recount",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
      }
     ]
    },
-   "claim": "Numerical findings that declare no per-finding uncertainty",
+   "claim": "Measured numerical findings that declare no per-finding uncertainty",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -87,28 +102,28 @@
     "value": 0
    },
    "unit": "findings",
-   "value": 2
+   "value": 0
   }
  ],
  "generated_artifacts": [
   {
-   "bytes": 434303,
+   "bytes": 466474,
    "path": "artifacts/T159/uncertainty-budget.json",
-   "sha256": "2b5b8c6d420640f1eca254ce644e5ff2a21d6eaf46bfc3cf8a56b5d49a20172c"
+   "sha256": "9a733e83f01e62db79e82d4b19212ddec42754ea7091adf4a15465ae75b2f175"
   },
   {
-   "bytes": 254567,
+   "bytes": 265527,
    "path": "artifacts/T159/uncertainty-budget.md",
-   "sha256": "204cadee315f037a58784f1de78810d280647e59f48f1c9f4610248dfe37f033"
+   "sha256": "f9cd53c4ba52495148efbdfdac8e85be3b2515e2360a1c86f8c5ab48e0dd555b"
   }
  ],
  "hypothesis": "Every numerical finding either declares an uncertainty or is identified as lacking one.",
  "input_data": [
   "Retained reports of T001-T158 in the same output directory (this section's T155-T158 included)"
  ],
- "mathematical_model": "Table rows = every finding whose value contains a number: (task, claim, value, unit, uncertainty kind, value and basis, evidence status). A listing of per-finding components, not a combined budget.",
+ "mathematical_model": "Table rows = every finding whose value contains a number: (task, claim, value, unit, uncertainty kind, value and basis, evidence status). A listing of per-finding components, not a combined budget. A finding whose basis declares no component (evidence.basis_origin is empty) measured nothing: it records an unestablished claim, and its value is listed with the kind 'none (no basis: nothing measured)'.",
  "number": 159,
- "numerical_result": "991 findings, 668 numerical (value contains a number); 666 declare a per-finding uncertainty, 2 do not; kinds {'collision_bound': 1, 'exact': 58, 'fit': 17, 'fit_residual': 3, 'fit_spread': 17, 'grid_resolution': 1, 'method_error': 1, 'model_truncation': 5, 'monte_carlo_95ci': 89, 'none declared': 2, 'platform_spread': 1, 'quantization': 1, 'reference_error': 87, 'roundoff': 285, 'step_quantization': 1, 'step_sequence': 2, 'truncation_bound': 97}.",
+ "numerical_result": "1031 findings, 689 numerical (value contains a number); 688 declare a per-finding uncertainty, 0 measured ones do not, and 1 record an unestablished claim with no basis (nothing measured); kinds {'collision_bound': 1, 'exact': 65, 'fit': 17, 'fit_residual': 3, 'fit_spread': 17, 'grid_resolution': 1, 'method_error': 1, 'model_truncation': 5, 'monte_carlo_95ci': 90, 'none (no basis: nothing measured)': 1, 'platform_spread': 1, 'quantization': 1, 'reference_error': 91, 'roundoff': 293, 'step_quantization': 1, 'step_sequence': 2, 'truncation_bound': 99}.",
  "observation_model": "No physical observation; reads retained computational records only.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -122,12 +137,12 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/research_portfolio.py": "0fd0ed475a38bf81fd2145f64cf1335856a471c58d406347c3b66b0f66672702"
+   "src/ciw/lab/research_portfolio.py": "145b8ee8456e1dd57bf2a05fa20e1ce55bd33356522436d8901eb1adfb60fc7a"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "Require structured uncertainty components (instrument, geometry, solver) on every numerical finding, so a budget can combine components of one quantity.",
- "report_id": "sha256:1b344bea20c3b481d3117b548a5ef2e29c922c5420cfe0c279e6bb460b383f3c",
+ "recommended_next_task": "None open in this listing: every measured numerical finding declares an uncertainty. Deferred research question: combine per-quantity components into budgets where one predicted quantity has several sources, in the form T140 uses.",
+ "report_id": "sha256:078300771cae28c034a366a59aff10ca4b2f0bef914d0b2655367ad6414c9d8f",
  "schema": "ciw.lab-task-report.v1",
  "section": "research-portfolio",
  "state": "completed",
@@ -135,15 +150,20 @@
  "tests_passed": [
   "check: Uncertainty table restates every numerical finding with its declared uncertainty vs table rows that do not parse back to their source finding and uncertainty",
   "check: Uncertainty table restates every numerical finding with its declared uncertainty vs numerical findings minus a raw-text recount of numerical finding values",
-  "check: Numerical findings that declare no per-finding uncertainty vs undeclared numerical findings minus a raw-text recount",
-  "pytest: tests/test_lab_research_portfolio.py::test_uncertainty_table_restates_every_numerical_finding"
+  "check: Measured numerical findings that declare no per-finding uncertainty vs undeclared measured numerical findings minus a raw-text recount",
+  "check: Measured numerical findings that declare no per-finding uncertainty vs numerical records with no basis minus a raw-text recount",
+  "pytest: tests/test_lab_research_portfolio.py::test_uncertainty_table_restates_every_numerical_finding",
+  "pytest: tests/test_lab_research_portfolio.py::test_uncertainty_listing_separates_unmeasured_records",
+  "pytest: tests/test_lab_research_portfolio.py::test_uncertainty_listing_names_the_per_quantity_budgets_it_holds",
+  "pytest: tests/test_lab_research_portfolio.py::test_raw_recounts_derive_the_components_of_findings_retained_without_origin"
  ],
  "tests_skipped": [],
  "title": "Generate uncertainty-budget tables.",
  "uncertainty": "Exact counts; declared values are restated in full, and undeclared uncertainty is reported, not imputed.",
  "unresolved_assumptions": [
-  "2 numerical findings declare no per-finding uncertainty: T099 (1), T139 (1)",
-  "Components are listed per finding and not combined: the findings of one task measure different quantities in different units, so a root-sum-square across them has no meaning, and no finding declares separate components of one quantity.",
-  "Findings of T160-T168 run after this table; the section's regression test asserts that each numerical one declares an uncertainty."
+  "Components are listed per finding and not combined across findings: the findings of one task measure different quantities in different units, so a root-sum-square across them has no meaning. Budgets of one quantity's components are declared inside the findings of T140 (an uncertainty budget per quantity) and are listed as their values declare them.",
+  "A numerical finding whose basis declares no component is a record of an unestablished claim, not a measurement; it is listed with its value but not counted as a measured finding without uncertainty.",
+  "Findings of T160-T168 run after this table; the section's regression test asserts that each numerical one declares an uncertainty.",
+  "1 numerical findings record an unestablished claim with no basis: T099: The SP1 proved-heat locked build was not attempted"
  ]
 }

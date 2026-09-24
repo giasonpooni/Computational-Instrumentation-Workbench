@@ -2,15 +2,21 @@
  "acceptance_criteria": [
   {
    "id": "H1",
-   "statement": "Measured chord equals the predicted chord for every pair and the surface (tape-measure or unrolled-film) distance equals the predicted geodesic",
+   "statement": "The film surface distance minus the camera chord equals the predicted chord-geodesic gap for every marker pair",
    "status": "hypothesis",
-   "test": "E_n <= 1 with U = 2 u_pair = 0.0566 mm plus the radius term of T140"
+   "test": "E_n <= 1 with U_m = 2 sqrt(u_film^2 + u_pair^2) = 0.1149 mm (film 0.05 mm, camera pair 0.0283 mm) and U_p = 2 |d gap / dR| u_R, u_R = 0.1 / sqrt(3) mm (the T140 radius term)"
   },
   {
    "id": "H2",
    "statement": "Separation of offset helices is the flat-plate separation",
    "status": "hypothesis",
-   "test": "fit slope and intercept; compare with the flat-plate control T126"
+   "test": "fit slope and intercept of the 3D distances between the two tape centrelines (their difference from the surface separation is below 1e-4 mm at 2 mm on R = 100 mm); compare with the flat-plate control T126"
+  },
+  {
+   "id": "H3",
+   "statement": "The camera chord alone differs from the predicted geodesic distance for circumferential pairs of 30 deg and more (the extrinsic signature)",
+   "status": "hypothesis",
+   "test": "|chord - geodesic| / sqrt((2 u_pair)^2 + (2 |d chord / dR| u_R)^2) > 1; separations below the T127 resolvable arc (23.9 mm with the camera) are not tested"
   }
  ],
  "calibration_artifacts": [
@@ -56,29 +62,104 @@
  ],
  "datum_frames": [
   {
-   "constrains": "z translation, rotations about x and y",
-   "feature": "specimen back face (or mandrel axis for the cylinder)",
+   "constrains": "x and y translation, rotations about x and y",
+   "construction": "ciw.lab.manufacturing_metrology.fit_cylinder",
+   "feature": "tube axis: least-squares cylinder through CMM points on the three marker rings (z = 50, 150, 250 mm) at phi = -75, -15, 45 and 75 deg from scribe B: between markers, on the upper half that faces away from the vees, clear of the tapes",
    "id": "A",
-   "points": 3,
+   "points": 12,
+   "probe_points_mm": [
+    [
+     25.881905,
+     -96.592583,
+     50.0
+    ],
+    [
+     96.592583,
+     -25.881905,
+     50.0
+    ],
+    [
+     70.710678,
+     70.710678,
+     50.0
+    ],
+    [
+     25.881905,
+     96.592583,
+     50.0
+    ],
+    [
+     25.881905,
+     -96.592583,
+     150.0
+    ],
+    [
+     96.592583,
+     -25.881905,
+     150.0
+    ],
+    [
+     70.710678,
+     70.710678,
+     150.0
+    ],
+    [
+     25.881905,
+     96.592583,
+     150.0
+    ],
+    [
+     25.881905,
+     -96.592583,
+     250.0
+    ],
+    [
+     96.592583,
+     -25.881905,
+     250.0
+    ],
+    [
+     70.710678,
+     70.710678,
+     250.0
+    ],
+    [
+     25.881905,
+     96.592583,
+     250.0
+    ]
+   ],
    "role": "primary"
   },
   {
-   "constrains": "y translation, rotation about z",
-   "feature": "long reference edge (or axial scribe line)",
+   "constrains": "rotation about z",
+   "feature": "axial scribe line at phi = 0, probed at z = 40 and 260 mm",
    "id": "B",
    "points": 2,
+   "probe_points_mm": [
+    [
+     100.0,
+     0.0,
+     40.0
+    ],
+    [
+     100.0,
+     0.0,
+     260.0
+    ]
+   ],
    "role": "secondary"
   },
   {
-   "constrains": "x translation",
-   "feature": "end stop (or circumferential scribe)",
+   "constrains": "z translation",
+   "feature": "end face at z = 0",
    "id": "C",
-   "points": 1,
+   "points": 3,
    "role": "tertiary"
   },
   {
-   "definition": "z normal of A; x = B direction projected into A; origin on A, B plane and C plane (ciw.lab.manufacturing_metrology.datum_frame_321)",
-   "feature": "3-2-1 construction",
+   "definition": "z along the fitted axis A, pointing from end face C into the tube; origin where A meets plane C; x from the axis towards scribe B, perpendicular to z (ciw.lab.manufacturing_metrology.datum_frame_axis)",
+   "feature": "axis-primary construction",
    "id": "PART",
    "role": "datum reference frame"
   }
@@ -90,10 +171,116 @@
  },
  "fixtures": [
   {
-   "clamping": "normal to A, over the rests, torque declared per specimen",
-   "contacts": "three spherical rests on A, two on B, one on C",
-   "id": "FX-321",
-   "kind": "3-2-1 kinematic nest"
+   "clamping": "one strap over each vee, torque declared per specimen",
+   "contacts": "two 90 deg vees give four line contacts on the tube (A), 45 deg either side of the bottom; an end stop touches the end face (C); the tube is turned until the axial scribe (B) faces straight up, away from the vees, which puts the seam weld at the bottom between the vee contact lines",
+   "datum_targets": [
+    {
+     "adapters": [
+      "1.5 in SMR (tracker)",
+      "coded photogrammetry target adapter with the same centre (camera)"
+     ],
+     "frame": "FIXTURE: x along the tube axis from the end stop, z up (declared)",
+     "id": "VB-01-T1",
+     "nest": "1.5 in SMR nest",
+     "position_mm": [
+      -30.0,
+      -100.0,
+      0.0
+     ]
+    },
+    {
+     "adapters": [
+      "1.5 in SMR (tracker)",
+      "coded photogrammetry target adapter with the same centre (camera)"
+     ],
+     "frame": "FIXTURE: x along the tube axis from the end stop, z up (declared)",
+     "id": "VB-01-T2",
+     "nest": "1.5 in SMR nest",
+     "position_mm": [
+      330.0,
+      -100.0,
+      0.0
+     ]
+    },
+    {
+     "adapters": [
+      "1.5 in SMR (tracker)",
+      "coded photogrammetry target adapter with the same centre (camera)"
+     ],
+     "frame": "FIXTURE: x along the tube axis from the end stop, z up (declared)",
+     "id": "VB-01-T3",
+     "nest": "1.5 in SMR nest",
+     "position_mm": [
+      330.0,
+      100.0,
+      0.0
+     ]
+    },
+    {
+     "adapters": [
+      "1.5 in SMR (tracker)",
+      "coded photogrammetry target adapter with the same centre (camera)"
+     ],
+     "frame": "FIXTURE: x along the tube axis from the end stop, z up (declared)",
+     "id": "VB-01-T4",
+     "nest": "1.5 in SMR nest",
+     "position_mm": [
+      -30.0,
+      100.0,
+      0.0
+     ]
+    }
+   ],
+   "geometry": "vee centres 100 mm and 200 mm from the end stop, between the marker rings at 50, 150 and 250 mm, so no ring rests in a vee; the upper half of the tube (within 90 deg of scribe B) stays open to the camera, tracker and CMM; a 360 x 200 mm base plate",
+   "id": "VB-01",
+   "kind": "V-block pair (90 deg vees) with an end stop",
+   "locates": [
+    "A",
+    "C"
+   ]
+  },
+  {
+   "contacts": "a vee foot on the tube, a pointer on the axial scribe B and a stop against end face C",
+   "declared_realization_tolerance": {
+    "heading_rad": 0.0005,
+    "lateral_mm": 0.05,
+    "level": "1 sigma, relative pose of an offset insert's tape (insert and laying)",
+    "status": "declared_not_verified"
+   },
+   "declared_reseat_repeatability": {
+    "heading_rad": 0.0001,
+    "lateral_mm": 0.01,
+    "level": "1 sigma per seating against B and C; two seatings enter the relative pose of an offset tape",
+    "status": "declared_not_verified"
+   },
+   "geometry": {
+    "offsets": "each insert's slot centreline is offset laterally and rotated in heading from the nominal slot at the slot exit, where the tape leaves the jig",
+    "slot_length_mm": 20.0,
+    "slot_width_mm": 3.05,
+    "slots": [
+     {
+      "heading_offset_rad": 0.0,
+      "insert": "insert HX45",
+      "lateral_offset_mm": 0.0,
+      "slot": "HX45"
+     },
+     {
+      "heading_offset_rad": 0.0,
+      "insert": "insert HX45-L2",
+      "lateral_offset_mm": 2.0,
+      "slot": "HX45-L2"
+     }
+    ],
+    "slots_per_insert": 1
+   },
+   "id": "JIG-START-01",
+   "kind": "tape start jig with one single-slot insert per tape",
+   "locates": [
+    "B",
+    "C"
+   ],
+   "use": "one tape per seating: seat the jig against B and C with the insert of the tape to be laid, lay that tape, remove the jig; re-seat it for the next tape after the previous one is removed",
+   "verification": "no pre-laying check: the start-pose step probes each laid tape with the CMM at s = 0 and 20 mm, and the prediction is budgeted open loop or conditioned on that pose (T138, T140)"
   }
  ],
  "frame_chain": [
@@ -110,7 +297,7 @@
   {
    "child": "PART",
    "parent": "FIXTURE",
-   "source": "3-2-1 datum frame from probed A/B/C features"
+   "source": "axis-primary datum frame: cylinder-fit axis A, axial scribe B, end face C"
   },
   {
    "child": "CAD",
@@ -127,6 +314,13 @@
    "declared_standard_uncertainty_mm": 0.02,
    "id": "camera",
    "kind": "photogrammetry camera system with coded targets",
+   "settings": {
+    "exposure": "fixed exposure with ring flash; lossless images",
+    "reference": "the holder's datum targets (coded adapters in their SMR nests) in every image set, so image sets taken while different tapes are on the specimen share the FIXTURE frame; the declared uncertainty covers a target coordinate in that frame, registration of its image set included",
+    "scale": "SB-1000 in every image set",
+    "stations": "12 convergent stations: 4 heights x 3 roll angles",
+    "targets": "6 mm coded retro-reflective targets"
+   },
    "status": "declared_not_verified"
   },
   {
@@ -134,263 +328,537 @@
    "id": "tracker",
    "kind": "laser tracker with 1.5 in SMR",
    "length_dependent_um_per_m": 6.0,
+   "settings": {
+    "mode": "stable point, 2 s averaging",
+    "target": "1.5 in SMR",
+    "warm_up_h": 1
+   },
    "status": "declared_not_verified"
   },
   {
    "declared_standard_uncertainty_mm": 0.002,
    "id": "cmm",
    "kind": "bridge CMM with touch-trigger probe",
+   "settings": {
+    "approach_speed_mm_s": 3.0,
+    "points": "as listed in each procedure step",
+    "probe": "touch-trigger probe, 2 mm ruby stylus",
+    "qualification": "stylus qualified on GS-25.4 at the start of each session"
+   },
+   "status": "declared_not_verified"
+  },
+  {
+   "declared_standard_uncertainty_mm": 0.05,
+   "id": "film",
+   "kind": "unrolled-film gauge: flexible polyester film with a printed 0.5 mm scale",
+   "settings": {
+    "graduation_mm": 0.5,
+    "laying": "laid from marker to marker without tension or in-plane steering",
+    "reading": "10x loupe at both marker centres"
+   },
    "status": "declared_not_verified"
   }
  ],
  "markers": [
   {
+   "faces_up": true,
    "id": "C0-00",
+   "kind": "specimen marker",
+   "position_mm": [
+    100.0,
+    0.0,
+    50.0
+   ],
    "u": [
     0.0,
     50.0
    ]
   },
   {
+   "faces_up": true,
    "id": "C0-01",
+   "kind": "specimen marker",
+   "position_mm": [
+    86.60254,
+    50.0,
+    50.0
+   ],
    "u": [
     0.5235987755982988,
     50.0
    ]
   },
   {
+   "faces_up": true,
    "id": "C0-02",
+   "kind": "specimen marker",
+   "position_mm": [
+    50.0,
+    86.60254,
+    50.0
+   ],
    "u": [
     1.0471975511965976,
     50.0
    ]
   },
   {
+   "faces_up": true,
    "id": "C0-03",
+   "kind": "specimen marker",
+   "position_mm": [
+    0.0,
+    100.0,
+    50.0
+   ],
    "u": [
     1.5707963267948966,
     50.0
    ]
   },
   {
+   "faces_up": false,
    "id": "C0-04",
+   "kind": "specimen marker",
+   "position_mm": [
+    -50.0,
+    86.60254,
+    50.0
+   ],
    "u": [
     2.0943951023931953,
     50.0
    ]
   },
   {
+   "faces_up": false,
    "id": "C0-05",
+   "kind": "specimen marker",
+   "position_mm": [
+    -86.60254,
+    50.0,
+    50.0
+   ],
    "u": [
     2.6179938779914944,
     50.0
    ]
   },
   {
+   "faces_up": false,
    "id": "C0-06",
+   "kind": "specimen marker",
+   "position_mm": [
+    -100.0,
+    0.0,
+    50.0
+   ],
    "u": [
     3.141592653589793,
     50.0
    ]
   },
   {
+   "faces_up": false,
    "id": "C0-07",
+   "kind": "specimen marker",
+   "position_mm": [
+    -86.60254,
+    -50.0,
+    50.0
+   ],
    "u": [
     3.6651914291880923,
     50.0
    ]
   },
   {
+   "faces_up": false,
    "id": "C0-08",
+   "kind": "specimen marker",
+   "position_mm": [
+    -50.0,
+    -86.60254,
+    50.0
+   ],
    "u": [
     4.1887902047863905,
     50.0
    ]
   },
   {
+   "faces_up": true,
    "id": "C0-09",
+   "kind": "specimen marker",
+   "position_mm": [
+    -0.0,
+    -100.0,
+    50.0
+   ],
    "u": [
     4.71238898038469,
     50.0
    ]
   },
   {
+   "faces_up": true,
    "id": "C0-10",
+   "kind": "specimen marker",
+   "position_mm": [
+    50.0,
+    -86.60254,
+    50.0
+   ],
    "u": [
     5.235987755982989,
     50.0
    ]
   },
   {
+   "faces_up": true,
    "id": "C0-11",
+   "kind": "specimen marker",
+   "position_mm": [
+    86.60254,
+    -50.0,
+    50.0
+   ],
    "u": [
     5.759586531581287,
     50.0
    ]
   },
   {
+   "faces_up": true,
    "id": "C1-00",
+   "kind": "specimen marker",
+   "position_mm": [
+    100.0,
+    0.0,
+    150.0
+   ],
    "u": [
     0.0,
     150.0
    ]
   },
   {
+   "faces_up": true,
    "id": "C1-01",
+   "kind": "specimen marker",
+   "position_mm": [
+    86.60254,
+    50.0,
+    150.0
+   ],
    "u": [
     0.5235987755982988,
     150.0
    ]
   },
   {
+   "faces_up": true,
    "id": "C1-02",
+   "kind": "specimen marker",
+   "position_mm": [
+    50.0,
+    86.60254,
+    150.0
+   ],
    "u": [
     1.0471975511965976,
     150.0
    ]
   },
   {
+   "faces_up": true,
    "id": "C1-03",
+   "kind": "specimen marker",
+   "position_mm": [
+    0.0,
+    100.0,
+    150.0
+   ],
    "u": [
     1.5707963267948966,
     150.0
    ]
   },
   {
+   "faces_up": false,
    "id": "C1-04",
+   "kind": "specimen marker",
+   "position_mm": [
+    -50.0,
+    86.60254,
+    150.0
+   ],
    "u": [
     2.0943951023931953,
     150.0
    ]
   },
   {
+   "faces_up": false,
    "id": "C1-05",
+   "kind": "specimen marker",
+   "position_mm": [
+    -86.60254,
+    50.0,
+    150.0
+   ],
    "u": [
     2.6179938779914944,
     150.0
    ]
   },
   {
+   "faces_up": false,
    "id": "C1-06",
+   "kind": "specimen marker",
+   "position_mm": [
+    -100.0,
+    0.0,
+    150.0
+   ],
    "u": [
     3.141592653589793,
     150.0
    ]
   },
   {
+   "faces_up": false,
    "id": "C1-07",
+   "kind": "specimen marker",
+   "position_mm": [
+    -86.60254,
+    -50.0,
+    150.0
+   ],
    "u": [
     3.6651914291880923,
     150.0
    ]
   },
   {
+   "faces_up": false,
    "id": "C1-08",
+   "kind": "specimen marker",
+   "position_mm": [
+    -50.0,
+    -86.60254,
+    150.0
+   ],
    "u": [
     4.1887902047863905,
     150.0
    ]
   },
   {
+   "faces_up": true,
    "id": "C1-09",
+   "kind": "specimen marker",
+   "position_mm": [
+    -0.0,
+    -100.0,
+    150.0
+   ],
    "u": [
     4.71238898038469,
     150.0
    ]
   },
   {
+   "faces_up": true,
    "id": "C1-10",
+   "kind": "specimen marker",
+   "position_mm": [
+    50.0,
+    -86.60254,
+    150.0
+   ],
    "u": [
     5.235987755982989,
     150.0
    ]
   },
   {
+   "faces_up": true,
    "id": "C1-11",
+   "kind": "specimen marker",
+   "position_mm": [
+    86.60254,
+    -50.0,
+    150.0
+   ],
    "u": [
     5.759586531581287,
     150.0
    ]
   },
   {
+   "faces_up": true,
    "id": "C2-00",
+   "kind": "specimen marker",
+   "position_mm": [
+    100.0,
+    0.0,
+    250.0
+   ],
    "u": [
     0.0,
     250.0
    ]
   },
   {
+   "faces_up": true,
    "id": "C2-01",
+   "kind": "specimen marker",
+   "position_mm": [
+    86.60254,
+    50.0,
+    250.0
+   ],
    "u": [
     0.5235987755982988,
     250.0
    ]
   },
   {
+   "faces_up": true,
    "id": "C2-02",
+   "kind": "specimen marker",
+   "position_mm": [
+    50.0,
+    86.60254,
+    250.0
+   ],
    "u": [
     1.0471975511965976,
     250.0
    ]
   },
   {
+   "faces_up": true,
    "id": "C2-03",
+   "kind": "specimen marker",
+   "position_mm": [
+    0.0,
+    100.0,
+    250.0
+   ],
    "u": [
     1.5707963267948966,
     250.0
    ]
   },
   {
+   "faces_up": false,
    "id": "C2-04",
+   "kind": "specimen marker",
+   "position_mm": [
+    -50.0,
+    86.60254,
+    250.0
+   ],
    "u": [
     2.0943951023931953,
     250.0
    ]
   },
   {
+   "faces_up": false,
    "id": "C2-05",
+   "kind": "specimen marker",
+   "position_mm": [
+    -86.60254,
+    50.0,
+    250.0
+   ],
    "u": [
     2.6179938779914944,
     250.0
    ]
   },
   {
+   "faces_up": false,
    "id": "C2-06",
+   "kind": "specimen marker",
+   "position_mm": [
+    -100.0,
+    0.0,
+    250.0
+   ],
    "u": [
     3.141592653589793,
     250.0
    ]
   },
   {
+   "faces_up": false,
    "id": "C2-07",
+   "kind": "specimen marker",
+   "position_mm": [
+    -86.60254,
+    -50.0,
+    250.0
+   ],
    "u": [
     3.6651914291880923,
     250.0
    ]
   },
   {
+   "faces_up": false,
    "id": "C2-08",
+   "kind": "specimen marker",
+   "position_mm": [
+    -50.0,
+    -86.60254,
+    250.0
+   ],
    "u": [
     4.1887902047863905,
     250.0
    ]
   },
   {
+   "faces_up": true,
    "id": "C2-09",
+   "kind": "specimen marker",
+   "position_mm": [
+    -0.0,
+    -100.0,
+    250.0
+   ],
    "u": [
     4.71238898038469,
     250.0
    ]
   },
   {
+   "faces_up": true,
    "id": "C2-10",
+   "kind": "specimen marker",
+   "position_mm": [
+    50.0,
+    -86.60254,
+    250.0
+   ],
    "u": [
     5.235987755982989,
     250.0
    ]
   },
   {
+   "faces_up": true,
    "id": "C2-11",
+   "kind": "specimen marker",
+   "position_mm": [
+    86.60254,
+    -50.0,
+    250.0
+   ],
    "u": [
     5.759586531581287,
     250.0
@@ -399,19 +867,641 @@
  ],
  "paths": [
   {
+   "centreline_mm": [
+    [
+     30.9017,
+     -95.1057,
+     0.0
+    ],
+    [
+     34.2442,
+     -93.9539,
+     3.5355
+    ],
+    [
+     37.5439,
+     -92.6847,
+     7.0711
+    ],
+    [
+     40.7966,
+     -91.2997,
+     10.6066
+    ],
+    [
+     43.9984,
+     -89.8006,
+     14.1421
+    ],
+    [
+     47.1452,
+     -88.1892,
+     17.6777
+    ],
+    [
+     50.233,
+     -86.4676,
+     21.2132
+    ],
+    [
+     53.2581,
+     -84.6379,
+     24.7487
+    ],
+    [
+     56.2166,
+     -82.7025,
+     28.2843
+    ],
+    [
+     59.1048,
+     -80.6636,
+     31.8198
+    ],
+    [
+     61.9191,
+     -78.524,
+     35.3553
+    ],
+    [
+     64.6561,
+     -76.2862,
+     38.8909
+    ],
+    [
+     67.3123,
+     -73.9531,
+     42.4264
+    ],
+    [
+     69.8843,
+     -71.5275,
+     45.9619
+    ],
+    [
+     72.369,
+     -69.0125,
+     49.4975
+    ],
+    [
+     74.7632,
+     -66.4113,
+     53.033
+    ],
+    [
+     77.064,
+     -63.7271,
+     56.5685
+    ],
+    [
+     79.2685,
+     -60.9632,
+     60.1041
+    ],
+    [
+     81.3738,
+     -58.1231,
+     63.6396
+    ],
+    [
+     83.3775,
+     -55.2104,
+     67.1751
+    ],
+    [
+     85.277,
+     -52.2287,
+     70.7107
+    ],
+    [
+     87.0699,
+     -49.1817,
+     74.2462
+    ],
+    [
+     88.7539,
+     -46.0732,
+     77.7817
+    ],
+    [
+     90.3271,
+     -42.9071,
+     81.3173
+    ],
+    [
+     91.7873,
+     -39.6874,
+     84.8528
+    ],
+    [
+     93.1328,
+     -36.4181,
+     88.3883
+    ],
+    [
+     94.3619,
+     -33.1033,
+     91.9239
+    ],
+    [
+     95.4731,
+     -29.7471,
+     95.4594
+    ],
+    [
+     96.4649,
+     -26.3538,
+     98.9949
+    ],
+    [
+     97.3362,
+     -22.9274,
+     102.5305
+    ],
+    [
+     98.0858,
+     -19.4725,
+     106.066
+    ],
+    [
+     98.7128,
+     -15.9932,
+     109.6016
+    ],
+    [
+     99.2164,
+     -12.4939,
+     113.1371
+    ],
+    [
+     99.5961,
+     -8.979,
+     116.6726
+    ],
+    [
+     99.8512,
+     -5.4528,
+     120.2082
+    ],
+    [
+     99.9816,
+     -1.9199,
+     123.7437
+    ],
+    [
+     99.987,
+     1.6154,
+     127.2792
+    ],
+    [
+     99.8674,
+     5.1488,
+     130.8148
+    ],
+    [
+     99.623,
+     8.6757,
+     134.3503
+    ],
+    [
+     99.254,
+     12.1917,
+     137.8858
+    ],
+    [
+     98.761,
+     15.6925,
+     141.4214
+    ],
+    [
+     98.1446,
+     19.1737,
+     144.9569
+    ],
+    [
+     97.4055,
+     22.6309,
+     148.4924
+    ],
+    [
+     96.5447,
+     26.0599,
+     152.028
+    ],
+    [
+     95.5632,
+     29.4563,
+     155.5635
+    ],
+    [
+     94.4623,
+     32.8158,
+     159.099
+    ],
+    [
+     93.2433,
+     36.1344,
+     162.6346
+    ],
+    [
+     91.9077,
+     39.4077,
+     166.1701
+    ],
+    [
+     90.4573,
+     42.6319,
+     169.7056
+    ],
+    [
+     88.8938,
+     45.8027,
+     173.2412
+    ],
+    [
+     87.2192,
+     48.9163,
+     176.7767
+    ],
+    [
+     85.4356,
+     51.9688,
+     180.3122
+    ],
+    [
+     83.5453,
+     54.9563,
+     183.8478
+    ],
+    [
+     81.5505,
+     57.8751,
+     187.3833
+    ],
+    [
+     79.4537,
+     60.7215,
+     190.9188
+    ],
+    [
+     77.2577,
+     63.4921,
+     194.4544
+    ],
+    [
+     74.9651,
+     66.1833,
+     197.9899
+    ],
+    [
+     72.5788,
+     68.7919,
+     201.5254
+    ],
+    [
+     70.1018,
+     71.3144,
+     205.061
+    ],
+    [
+     67.5372,
+     73.7478,
+     208.5965
+    ],
+    [
+     64.8881,
+     76.089,
+     212.132
+    ]
+   ],
    "heading_rad": 0.7853981633974483,
    "id": "HX45",
+   "kind": "tape",
    "length_mm": 300.0,
-   "realization": "centreline of a 3 mm unsteered adhesive tape laid from a start jig that sets the start point and heading; with no in-plane steering the tape follows a geodesic",
+   "realization": "centreline of a 3 mm unsteered adhesive tape laid from the slot of its own insert of the start jig JIG-START-01, which sets the start point and heading; with no in-plane steering the tape follows a geodesic",
    "start_u": [
-    0.0,
+    -1.2566370614359172,
     0.0
+   ],
+   "uses": [
+    "JIG-START-01"
    ]
   },
   {
+   "centreline_mm": [
+    [
+     29.5537,
+     -95.5331,
+     1.4142
+    ],
+    [
+     32.9121,
+     -94.4288,
+     4.9497
+    ],
+    [
+     36.2294,
+     -93.2064,
+     8.4853
+    ],
+    [
+     39.5014,
+     -91.8675,
+     12.0208
+    ],
+    [
+     42.724,
+     -90.4138,
+     15.5563
+    ],
+    [
+     45.8933,
+     -88.8471,
+     19.0919
+    ],
+    [
+     49.0052,
+     -87.1693,
+     22.6274
+    ],
+    [
+     52.0558,
+     -85.3826,
+     26.163
+    ],
+    [
+     55.0414,
+     -83.4892,
+     29.6985
+    ],
+    [
+     57.9582,
+     -81.4914,
+     33.234
+    ],
+    [
+     60.8025,
+     -79.3918,
+     36.7696
+    ],
+    [
+     63.5708,
+     -77.1929,
+     40.3051
+    ],
+    [
+     66.2597,
+     -74.8976,
+     43.8406
+    ],
+    [
+     68.8658,
+     -72.5086,
+     47.3762
+    ],
+    [
+     71.3858,
+     -70.0291,
+     50.9117
+    ],
+    [
+     73.8166,
+     -67.4619,
+     54.4472
+    ],
+    [
+     76.1551,
+     -64.8105,
+     57.9828
+    ],
+    [
+     78.3984,
+     -62.0781,
+     61.5183
+    ],
+    [
+     80.5437,
+     -59.2681,
+     65.0538
+    ],
+    [
+     82.5884,
+     -56.384,
+     68.5894
+    ],
+    [
+     84.5299,
+     -53.4294,
+     72.1249
+    ],
+    [
+     86.3657,
+     -50.4081,
+     75.6604
+    ],
+    [
+     88.0935,
+     -47.3237,
+     79.196
+    ],
+    [
+     89.7113,
+     -44.1802,
+     82.7315
+    ],
+    [
+     91.2169,
+     -40.9815,
+     86.267
+    ],
+    [
+     92.6085,
+     -37.7315,
+     89.8026
+    ],
+    [
+     93.8843,
+     -34.4344,
+     93.3381
+    ],
+    [
+     95.0429,
+     -31.0943,
+     96.8736
+    ],
+    [
+     96.0826,
+     -27.7153,
+     100.4092
+    ],
+    [
+     97.0022,
+     -24.3016,
+     103.9447
+    ],
+    [
+     97.8006,
+     -20.8576,
+     107.4802
+    ],
+    [
+     98.4768,
+     -17.3875,
+     111.0158
+    ],
+    [
+     99.0298,
+     -13.8957,
+     114.5513
+    ],
+    [
+     99.4591,
+     -10.3865,
+     118.0868
+    ],
+    [
+     99.7641,
+     -6.8644,
+     121.6224
+    ],
+    [
+     99.9444,
+     -3.3336,
+     125.1579
+    ],
+    [
+     99.9998,
+     0.2013,
+     128.6934
+    ],
+    [
+     99.9302,
+     3.736,
+     132.229
+    ],
+    [
+     99.7357,
+     7.266,
+     135.7645
+    ],
+    [
+     99.4165,
+     10.7869,
+     139.3
+    ],
+    [
+     98.9731,
+     14.2943,
+     142.8356
+    ],
+    [
+     98.406,
+     17.7839,
+     146.3711
+    ],
+    [
+     97.7158,
+     21.2512,
+     149.9066
+    ],
+    [
+     96.9036,
+     24.692,
+     153.4422
+    ],
+    [
+     95.9702,
+     28.1019,
+     156.9777
+    ],
+    [
+     94.9169,
+     31.4767,
+     160.5132
+    ],
+    [
+     93.7449,
+     34.8121,
+     164.0488
+    ],
+    [
+     92.4558,
+     38.1041,
+     167.5843
+    ],
+    [
+     91.0511,
+     41.3484,
+     171.1198
+    ],
+    [
+     89.5327,
+     44.541,
+     174.6554
+    ],
+    [
+     87.9023,
+     47.678,
+     178.1909
+    ],
+    [
+     86.162,
+     50.7554,
+     181.7264
+    ],
+    [
+     84.3141,
+     53.7693,
+     185.262
+    ],
+    [
+     82.3607,
+     56.716,
+     188.7975
+    ],
+    [
+     80.3045,
+     59.5919,
+     192.333
+    ],
+    [
+     78.1478,
+     62.3932,
+     195.8686
+    ],
+    [
+     75.8935,
+     65.1166,
+     199.4041
+    ],
+    [
+     73.5444,
+     67.7586,
+     202.9396
+    ],
+    [
+     71.1033,
+     70.3159,
+     206.4752
+    ],
+    [
+     68.5733,
+     72.7853,
+     210.0107
+    ],
+    [
+     65.9576,
+     75.1637,
+     213.5462
+    ]
+   ],
    "id": "HX45-L2",
+   "kind": "tape",
    "lateral_offset_mm": 2.0,
-   "of": "HX45"
+   "of": "HX45",
+   "uses": [
+    "JIG-START-01"
+   ]
   }
  ],
  "predicted_quantities": [
@@ -497,6 +1587,86 @@
   },
   {
    "evidence_status": "numerically_verified",
+   "finding_claim": "Rolled-cylinder chord-geodesic gaps for the protocol marker pairs",
+   "id": "K0",
+   "quantity": "marker chord, circumferential 30 deg",
+   "unit": "mm",
+   "value": 51.7638090205
+  },
+  {
+   "evidence_status": "numerically_verified",
+   "finding_claim": "Rolled-cylinder chord-geodesic gaps for the protocol marker pairs",
+   "id": "K1",
+   "quantity": "marker chord, circumferential 60 deg",
+   "unit": "mm",
+   "value": 100.0
+  },
+  {
+   "evidence_status": "numerically_verified",
+   "finding_claim": "Rolled-cylinder chord-geodesic gaps for the protocol marker pairs",
+   "id": "K2",
+   "quantity": "marker chord, circumferential 90 deg",
+   "unit": "mm",
+   "value": 141.421356237
+  },
+  {
+   "evidence_status": "numerically_verified",
+   "finding_claim": "Rolled-cylinder chord-geodesic gaps for the protocol marker pairs",
+   "id": "K3",
+   "quantity": "marker chord, circumferential 120 deg",
+   "unit": "mm",
+   "value": 173.205080757
+  },
+  {
+   "evidence_status": "numerically_verified",
+   "finding_claim": "Rolled-cylinder chord-geodesic gaps for the protocol marker pairs",
+   "id": "K4",
+   "quantity": "marker chord, circumferential 150 deg",
+   "unit": "mm",
+   "value": 193.185165258
+  },
+  {
+   "evidence_status": "numerically_verified",
+   "finding_claim": "Rolled-cylinder chord-geodesic gaps for the protocol marker pairs",
+   "id": "K5",
+   "quantity": "marker chord, circumferential 180 deg",
+   "unit": "mm",
+   "value": 200.0
+  },
+  {
+   "evidence_status": "numerically_verified",
+   "finding_claim": "Rolled-cylinder chord-geodesic gaps for the protocol marker pairs",
+   "id": "K6",
+   "quantity": "marker chord, axial 100 mm",
+   "unit": "mm",
+   "value": 100.0
+  },
+  {
+   "evidence_status": "numerically_verified",
+   "finding_claim": "Rolled-cylinder chord-geodesic gaps for the protocol marker pairs",
+   "id": "K7",
+   "quantity": "marker chord, axial 200 mm",
+   "unit": "mm",
+   "value": 200.0
+  },
+  {
+   "evidence_status": "numerically_verified",
+   "finding_claim": "Rolled-cylinder chord-geodesic gaps for the protocol marker pairs",
+   "id": "K8",
+   "quantity": "marker chord, helical 60 deg / 100 mm",
+   "unit": "mm",
+   "value": 141.421356237
+  },
+  {
+   "evidence_status": "numerically_verified",
+   "finding_claim": "Rolled-cylinder chord-geodesic gaps for the protocol marker pairs",
+   "id": "K9",
+   "quantity": "marker chord, helical 90 deg / 200 mm",
+   "unit": "mm",
+   "value": 244.948974278
+  },
+  {
+   "evidence_status": "numerically_verified",
    "finding_claim": "Rolled-cylinder Jacobi transfer equals the flat-plate transfer (K = 0)",
    "id": "J1",
    "quantity": "Jacobi transfer along a 45 deg helix of 300 mm",
@@ -514,18 +1684,395 @@
   }
  ],
  "procedure": [
-  "Soak specimen and fixture; log temperatures.",
-  "Verify instruments on GS-25.4 and SB-1000 before and after; retain both checks.",
-  "Locate the specimen in FX-321; probe datums A, B, C and build the PART frame.",
-  "Measure the three marker rings with the camera and tracker; probe the tube radius at the three rings with the CMM (radius enters T140).",
-  "Lay the nominal and offset tapes from the start jig without in-plane steering (a robot may carry the tape head but must not steer it); never draw a path traced from the model.",
-  "Probe each tape centreline with the CMM at s = 0 and s = 20 mm; the relative start offset and heading of the offset tape condition the prediction (T138).",
-  "Measure both tape centrelines every 30 mm of arclength.",
-  "Repeat the full acquisition three times, removing and re-seating the specimen in FX-321 between repeats (repeatability replicates); the crossed Gage R&R and type-1 studies follow the separate T131 procedure (gage-rr-procedure.json). Retain every raw file through the T139 retention record."
+  {
+   "action": "Soak the specimen and its holder for 4 h at 20 +/- 1 C; log air and part temperature every 10 min.",
+   "outputs": [
+    "environment log with an explicit UTC offset"
+   ],
+   "step": 1,
+   "uses": [
+    "VB-01"
+   ]
+  },
+  {
+   "action": "Check the instruments before the acquisition: the camera images SB-1000; the tracker measures the SB-1000 end points with its SMR; the CMM probes GS-25.4 at 25 points; the film is read against the SG-200 steps at 50, 100 and 150 mm. Retain every check.",
+   "check": "each artifact reading lies within 2 U of its certificate value, U from the declared instrument uncertainty; otherwise stop and recalibrate",
+   "outputs": [
+    "instrument checks before the acquisition"
+   ],
+   "step": 2,
+   "uses": [
+    "camera",
+    "tracker",
+    "cmm",
+    "film",
+    "GS-25.4",
+    "SB-1000",
+    "SG-200"
+   ]
+  },
+  {
+   "action": "Lay the tube in VB-01 (V-block pair) with the end face against the end stop and the axial scribe B facing straight up, away from the vees; clamp; probe datum A with the CMM at phi = -75, -15, 45, 75 deg from scribe B on each marker ring (between markers), scribe B at z = 40 and 260 mm and end face C at 3 points; fit the axis A (fit_cylinder), record the fitted radius and the roundness of each ring over the probed arc (peak to valley of the radial residuals), and build the PART frame (datum_frame_axis).",
+   "check": "every ring's roundness is at most the declared form tolerance 0.1 mm plus 2 U of the CMM (0.108 mm); otherwise stop and record the tube as outside the cylinder model (seam weld and out-of-roundness are not modelled); re-seating does not change the form",
+   "datums": [
+    "A",
+    "B",
+    "C",
+    "PART"
+   ],
+   "outputs": [
+    "datum point file",
+    "fitted axis and radius",
+    "roundness of each ring",
+    "PART frame"
+   ],
+   "step": 3,
+   "uses": [
+    "VB-01",
+    "cmm"
+   ]
+  },
+  {
+   "action": "Measure the four datum targets of VB-01 (a 1.5 in SMR seated on each) with the tracker to register FIXTURE in WORLD (frame chain).",
+   "outputs": [
+    "WORLD -> FIXTURE transform and its covariance"
+   ],
+   "step": 4,
+   "uses": [
+    "VB-01",
+    "tracker"
+   ]
+  },
+  {
+   "action": "Measure the 21 markers on the upper half of the three rings (within 90 deg of scribe B) with the camera (SB-1000 and the VB-01 datum targets in every image set) and the tracker; export the camera coordinates as the photogrammetry capture. The lower markers face into the vees and the table and are not measured.",
+   "outputs": [
+    "raw images",
+    "photogrammetry capture (ciw.lab-mfg-target-capture.v1)",
+    "tracker point file"
+   ],
+   "step": 5,
+   "uses": [
+    "camera",
+    "tracker",
+    "SB-1000",
+    "VB-01"
+   ]
+  },
+  {
+   "action": "Lay the film gauge from marker centre to marker centre of each of the ten marker pairs (all on the upper half) without tension or in-plane steering, read the surface distance under a 10x loupe, and export the readings as the film capture.",
+   "check": "two readings per pair agree within 2 x 0.05 mm; otherwise re-lay the film",
+   "outputs": [
+    "film capture (ciw.lab-mfg-distance-capture.v1)"
+   ],
+   "step": 6,
+   "uses": [
+    "film"
+   ]
+  },
+  {
+   "action": "Repeat steps 3, 5 and 6 twice more, removing the specimen from VB-01 and re-seating it between repeats (replicates of the datum, marker and film measurements).",
+   "outputs": [
+    "two further replicates (replicates of the datum, marker and film measurements)"
+   ],
+   "repeats": [
+    3,
+    5,
+    6
+   ],
+   "step": 7,
+   "uses": [
+    "VB-01",
+    "cmm",
+    "camera",
+    "tracker",
+    "SB-1000",
+    "film"
+   ]
+  },
+  {
+   "action": "Seat the start jig JIG-START-01 against datums B and C with the insert of tape HX45; lay tape HX45 from its slot without in-plane steering (a robot may carry the tape head but must not steer it; never draw a path traced from the model); remove the jig. No other tape is on the specimen.",
+   "datums": [
+    "B",
+    "C"
+   ],
+   "lays": [
+    "HX45"
+   ],
+   "outputs": [
+    "tape HX45: identity and laying time"
+   ],
+   "step": 8,
+   "uses": [
+    "JIG-START-01"
+   ]
+  },
+  {
+   "action": "Probe the centreline of tape HX45 with the CMM at s = 0 and s = 20 mm; export the points as rows HX45-S0 and HX45-S20 of the cmm capture.",
+   "outputs": [
+    "cmm capture rows HX45-S0 and HX45-S20 (ciw.lab-mfg-target-capture.v1)"
+   ],
+   "step": 9,
+   "uses": [
+    "cmm"
+   ]
+  },
+  {
+   "action": "Place 6 mm coded targets on the centreline of tape HX45 every 30 mm of arclength from s = 0 to 300 mm.",
+   "outputs": [
+    "targets on tape HX45"
+   ],
+   "places": [
+    "HX45"
+   ],
+   "step": 10,
+   "uses": []
+  },
+  {
+   "action": "Measure the targets on tape HX45 with the camera, with SB-1000 and the VB-01 datum targets (coded adapters) in every image set; retain their coordinates (no task reads them yet).",
+   "outputs": [
+    "raw images",
+    "target coordinates of tape HX45"
+   ],
+   "step": 11,
+   "uses": [
+    "camera",
+    "SB-1000",
+    "VB-01"
+   ]
+  },
+  {
+   "action": "Repeat steps 3, 9 and 11 twice more, removing the specimen from VB-01 and re-seating it between repeats (replicates of tape HX45; the tape and its targets stay in place).",
+   "outputs": [
+    "two further replicates (replicates of tape HX45; the tape and its targets stay in place)"
+   ],
+   "repeats": [
+    3,
+    9,
+    11
+   ],
+   "step": 12,
+   "uses": [
+    "VB-01",
+    "cmm",
+    "camera",
+    "SB-1000"
+   ]
+  },
+  {
+   "action": "Remove the targets and tape HX45.",
+   "outputs": [
+    "tape HX45 removed"
+   ],
+   "removes": [
+    "HX45"
+   ],
+   "step": 13,
+   "uses": []
+  },
+  {
+   "action": "Seat the start jig JIG-START-01 against datums B and C with the insert of tape HX45-L2; lay tape HX45-L2 from its slot without in-plane steering (a robot may carry the tape head but must not steer it; never draw a path traced from the model); remove the jig. No other tape is on the specimen.",
+   "datums": [
+    "B",
+    "C"
+   ],
+   "lays": [
+    "HX45-L2"
+   ],
+   "outputs": [
+    "tape HX45-L2: identity and laying time"
+   ],
+   "step": 14,
+   "uses": [
+    "JIG-START-01"
+   ]
+  },
+  {
+   "action": "Probe the centreline of tape HX45-L2 with the CMM at s = 0 and s = 20 mm; export the points as rows HX45-L2-S0 and HX45-L2-S20 of the cmm capture.",
+   "outputs": [
+    "cmm capture rows HX45-L2-S0 and HX45-L2-S20 (ciw.lab-mfg-target-capture.v1)"
+   ],
+   "step": 15,
+   "uses": [
+    "cmm"
+   ]
+  },
+  {
+   "action": "Place 6 mm coded targets on the centreline of tape HX45-L2 every 30 mm of arclength from s = 0 to 300 mm.",
+   "outputs": [
+    "targets on tape HX45-L2"
+   ],
+   "places": [
+    "HX45-L2"
+   ],
+   "step": 16,
+   "uses": []
+  },
+  {
+   "action": "Measure the targets on tape HX45-L2 with the camera, with SB-1000 and the VB-01 datum targets (coded adapters) in every image set; retain their coordinates (no task reads them yet).",
+   "outputs": [
+    "raw images",
+    "target coordinates of tape HX45-L2"
+   ],
+   "step": 17,
+   "uses": [
+    "camera",
+    "SB-1000",
+    "VB-01"
+   ]
+  },
+  {
+   "action": "Repeat steps 3, 15 and 17 twice more, removing the specimen from VB-01 and re-seating it between repeats (replicates of tape HX45-L2; the tape and its targets stay in place).",
+   "outputs": [
+    "two further replicates (replicates of tape HX45-L2; the tape and its targets stay in place)"
+   ],
+   "repeats": [
+    3,
+    15,
+    17
+   ],
+   "step": 18,
+   "uses": [
+    "VB-01",
+    "cmm",
+    "camera",
+    "SB-1000"
+   ]
+  },
+  {
+   "action": "Remove the targets and tape HX45-L2.",
+   "outputs": [
+    "tape HX45-L2 removed"
+   ],
+   "removes": [
+    "HX45-L2"
+   ],
+   "step": 19,
+   "uses": []
+  },
+  {
+   "action": "Check the instruments after the acquisition: the camera images SB-1000; the tracker measures the SB-1000 end points with its SMR; the CMM probes GS-25.4 at 25 points; the film is read against the SG-200 steps at 50, 100 and 150 mm. Retain every check.",
+   "check": "each artifact reading lies within 2 U of its certificate value, U from the declared instrument uncertainty; otherwise stop and recalibrate",
+   "outputs": [
+    "instrument checks after the acquisition"
+   ],
+   "step": 20,
+   "uses": [
+    "camera",
+    "tracker",
+    "cmm",
+    "film",
+    "GS-25.4",
+    "SB-1000",
+    "SG-200"
+   ]
+  },
+  {
+   "action": "Retain every raw file, replicate and instrument check with its T139 retention record (ciw.lab-measurement-retention.v1).",
+   "outputs": [
+    "retained raw data and retention records"
+   ],
+   "step": 21,
+   "uses": []
+  }
  ],
  "production_acceptance": "outside_system",
  "protocol_id": "MFG-CYLINDER-01",
  "purpose": "Separate extrinsic effects (chord vs geodesic) from intrinsic ones (Jacobi separation), which must match the flat plate.",
+ "raw_formats": [
+  {
+   "columns": [
+    "target",
+    "x_mm",
+    "y_mm",
+    "z_mm",
+    "u_mm"
+   ],
+   "coordinates": "CAD (model) frame through the declared PART -> CAD placement",
+   "frame": "CAD",
+   "header": "lines '# key: value' for schema, protocol, instrument, frame, unit, origin; unit mm; origin measurement or synthetic (a synthetic capture starts with '# SYNTHETIC CAPTURE - NOT A MEASUREMENT')",
+   "ids": [
+    "C0-00",
+    "C0-01",
+    "C0-02",
+    "C0-03",
+    "C0-09",
+    "C0-10",
+    "C0-11",
+    "C1-00",
+    "C1-01",
+    "C1-02",
+    "C1-03",
+    "C1-09",
+    "C1-10",
+    "C1-11",
+    "C2-00",
+    "C2-01",
+    "C2-02",
+    "C2-03",
+    "C2-09",
+    "C2-10",
+    "C2-11"
+   ],
+   "instrument": "camera",
+   "media_type": "text/csv",
+   "reader": "ciw.lab.manufacturing_records.read_capture; T138 compares the ten pair chords (H3) and, with the film capture, the chord-geodesic gaps (H1)",
+   "role": "photogrammetry",
+   "schema": "ciw.lab-mfg-target-capture.v1",
+   "uncertainty": "u_mm is the declared standard uncertainty of each row (positive); for targets, of each coordinate in the common frame, including the registration of its image set"
+  },
+  {
+   "columns": [
+    "pair",
+    "distance_mm",
+    "u_mm"
+   ],
+   "coordinates": "surface distance between the two marker centres of the pair",
+   "frame": "surface",
+   "header": "lines '# key: value' for schema, protocol, instrument, frame, unit, origin; unit mm; origin measurement or synthetic (a synthetic capture starts with '# SYNTHETIC CAPTURE - NOT A MEASUREMENT')",
+   "ids": [
+    "circumferential 30 deg",
+    "circumferential 60 deg",
+    "circumferential 90 deg",
+    "circumferential 120 deg",
+    "circumferential 150 deg",
+    "circumferential 180 deg",
+    "axial 100 mm",
+    "axial 200 mm",
+    "helical 60 deg / 100 mm",
+    "helical 90 deg / 200 mm"
+   ],
+   "instrument": "film",
+   "media_type": "text/csv",
+   "reader": "ciw.lab.manufacturing_records.read_capture; T138 compares film minus chord with the predicted gaps (H1)",
+   "role": "film",
+   "schema": "ciw.lab-mfg-distance-capture.v1",
+   "uncertainty": "u_mm is the declared standard uncertainty of each row (positive); for targets, of each coordinate in the common frame, including the registration of its image set"
+  },
+  {
+   "columns": [
+    "target",
+    "x_mm",
+    "y_mm",
+    "z_mm",
+    "u_mm"
+   ],
+   "coordinates": "CAD (model) frame through the declared PART -> CAD placement",
+   "frame": "CAD",
+   "header": "lines '# key: value' for schema, protocol, instrument, frame, unit, origin; unit mm; origin measurement or synthetic (a synthetic capture starts with '# SYNTHETIC CAPTURE - NOT A MEASUREMENT')",
+   "ids": [
+    "HX45-S0",
+    "HX45-S20",
+    "HX45-L2-S0",
+    "HX45-L2-S20"
+   ],
+   "instrument": "cmm",
+   "media_type": "text/csv",
+   "reader": "ciw.lab.manufacturing_records.read_capture; retained by T138, not yet used to condition the helix prediction",
+   "role": "cmm",
+   "schema": "ciw.lab-mfg-target-capture.v1",
+   "uncertainty": "u_mm is the declared standard uncertainty of each row (positive); for targets, of each coordinate in the common frame, including the registration of its image set"
+  }
+ ],
  "required_raw_data": [
   "raw camera images (lossless) with exposure metadata and SHA-256 digests",
   "tracker/CMM native point files with instrument serial and firmware",
@@ -537,15 +2084,66 @@
  "schema": "ciw.lab-measurement-protocol.v1",
  "specimen": {
   "declared_radius_tolerance_mm": 0.1,
+  "declared_roundness_tolerance_mm": 0.1,
   "kind": "rolled tube",
   "length_mm": 300.0,
+  "marker_pairs": {
+   "axial 100 mm": [
+    "C0-00",
+    "C1-00"
+   ],
+   "axial 200 mm": [
+    "C0-00",
+    "C2-00"
+   ],
+   "circumferential 120 deg": [
+    "C1-10",
+    "C1-02"
+   ],
+   "circumferential 150 deg": [
+    "C1-10",
+    "C1-03"
+   ],
+   "circumferential 180 deg": [
+    "C1-09",
+    "C1-03"
+   ],
+   "circumferential 30 deg": [
+    "C1-00",
+    "C1-01"
+   ],
+   "circumferential 60 deg": [
+    "C1-11",
+    "C1-01"
+   ],
+   "circumferential 90 deg": [
+    "C1-11",
+    "C1-02"
+   ],
+   "helical 60 deg / 100 mm": [
+    "C0-00",
+    "C1-02"
+   ],
+   "helical 90 deg / 200 mm": [
+    "C0-00",
+    "C2-03"
+   ]
+  },
   "material": "rolled and seam-welded 3 mm aluminium (declared)",
   "nominal_radius_mm": 100.0,
+  "seam_weld": "along phi = 180 deg, opposite scribe B: it faces down between the vee contact lines (not modelled)",
   "surface_model": {
    "chart": "(phi, z)",
    "name": "cylinder",
    "radius": 100.0
   }
+ },
+ "tape_layout": {
+  "marker_diameter_mm": 6.0,
+  "rules": "tapes on the specimen together: centrelines at least a tape width plus a target diameter apart; slots used in one laying: at least one slot width apart; every tape centreline clears each specimen marker and datum probe point by half the wider of tape and target plus half a marker (manufacturing_records._tape_layout, on the predicted centrelines)",
+  "sequence": "one tape on the specimen at a time: seat the start jig with that tape's insert, lay the tape, remove the jig, measure the tape and its targets (with re-seated replicates) and remove them before the next tape is laid; every tape is measured in the PART frame of the specimen's own datums",
+  "tape_width_mm": 3.0,
+  "target_diameter_mm": 6.0
  },
  "task_id": "T127",
  "title": "Rolled-cylinder control: extrinsic curvature without intrinsic curvature"

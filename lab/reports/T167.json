@@ -8,18 +8,24 @@
    "hardware_measured": 0,
    "independently_verified": 0,
    "not_established": 1,
-   "numerically_verified": 2,
+   "numerically_verified": 4,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "The ledger's counts of not-established physical/authority claims and of unfinished tasks agree with a raw-text recount of the report files.",
- "experiment": "Collect those findings, task states and hardware probe outcomes into JSON and Markdown and recount them from the raw report text.",
+ "expected_invariant": "The ledger's counts of not-established physical/authority claims and of unfinished tasks agree with a raw-text recount of the report files; every open physical claim is classified exactly once, and the count classified agrees with a raw-text recount; the classifier gives every hand-labelled probe record its label; every open-item statement holds its phrase in its task's raw report file.",
+ "experiment": "Classify the hand-labelled probe records; collect the findings, task states and probe outcomes; classify each open claim; rank the acquisition routes; write JSON and Markdown; recount claims, states and open-item phrases from the raw report text.",
  "failure_modes_checked": [
   "claims dropped by the traversal (raw-text recount)",
   "partial tasks omitted",
-  "hardware claims filed under a computational domain"
+  "hardware claims filed under a computational domain",
+  "missing code attributed to missing hardware (a claim listed under a probe its own notes say cannot help)",
+  "a computational comparison that needs only a GPU host filed as a misfiled hardware claim and left out of the host's run",
+  "claims about synthetic fixtures counted as acquirable",
+  "authority claims attributed to hardware",
+  "customer demand omitted",
+  "a classifier that loses every acquisition route (hand-labelled probe records)"
  ],
  "findings": [
   {
@@ -39,6 +45,9 @@
    "claim": "Unmeasured ledger lists every not-established physical or authority claim",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -49,7 +58,7 @@
     "value": 0
    },
    "unit": "claims",
-   "value": 146
+   "value": 152
   },
   {
    "assigned_by": "ciw.lab.evidence",
@@ -68,6 +77,9 @@
    "claim": "Unmeasured ledger lists every blocked, deferred or partial task",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -78,7 +90,79 @@
     "value": 0
    },
    "unit": "tasks",
-   "value": 18
+   "value": 19
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "open physical claims classified minus a raw-text recount of not-established physical findings",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "hand-labelled probe records the classifier gives another need (or lists wrongly)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Unmeasured ledger classifies every open physical claim by what it needs",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "integer count over retained report files; no rounding, sampling or tolerance",
+    "kind": "exact",
+    "value": 0
+   },
+   "unit": "claims",
+   "value": 114
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "grouped statements whose phrase is absent from their task's raw report file",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Cross-cutting open items are listed with every retained statement that raises them",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "integer count over retained report files; no rounding, sampling or tolerance",
+    "kind": "exact",
+    "value": 0
+   },
+   "unit": "items",
+   "value": 3
   },
   {
    "assigned_by": "ciw.lab.evidence",
@@ -86,6 +170,7 @@
    "claim": "Physical validity of the lab's computational results",
    "domain": "physical",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -93,23 +178,25 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 39833,
+   "bytes": 142207,
    "path": "artifacts/T167/unmeasured.json",
-   "sha256": "ab5a43b82b98acf19eef71084e3747dedb30d07e9cf769603e3497600cc639d9"
+   "sha256": "95bb877cc596c79bc048ec631e53ae054121a6aecd52403007f3f9162d4a9b9e"
   },
   {
-   "bytes": 31148,
+   "bytes": 102762,
    "path": "artifacts/T167/UNMEASURED.md",
-   "sha256": "4bc345945480628180e625d3375ee8748a7e38d380e62def62091ae72eaa4d7f"
+   "sha256": "4c8bd18d169fbf16ba172edf7b3f6cfd903f4f536b9df8e910a30e1d9a70fc62"
   }
  ],
- "hypothesis": "Everything that remains physically unmeasured or unrun is enumerable from the retained reports.",
+ "hypothesis": "Everything that remains physically unmeasured or unrun is enumerable from the retained reports, with what each open claim needs: an acquisition on a named route, a run on a named route's host, code that does not exist yet, a reference instrument, or an instrument probe.",
  "input_data": [
-  "Retained reports of T001-T166 in the same output directory"
+  "Retained reports of T001-T166 in the same output directory",
+  "Acquisition routes: the runner's hardware probes and capture roles (runner.CAPTURE_INSTRUMENTS, runner.OPERATOR_CAPTURE_VARIABLES)",
+  "ciw.lab.evidence.BOUNDARY"
  ],
- "mathematical_model": "Unmeasured = physical/authority-domain findings not established; blocked, deferred and partial tasks with their unrun parts; not_established findings of tasks whose hardware probe failed.",
+ "mathematical_model": "Unmeasured = physical/authority-domain findings not established; blocked, deferred and partial tasks with what they leave unresolved; open physical claims and open computational claims that name hardware, each classified from its own claim and basis notes and its task's statements (implementation missing, including code its task says was not run or written; reference instrument missing; a claim about synthetic fixtures, whose origin no acquisition changes; a computational comparison that runs only on the host of its task's acquisition route; a physical quantity filed under a computational domain; hardware:<probe> when its task is on that acquisition route and the claim names the route's device, else no instrument probe), the classifier checked on hand-labelled probe records first; acquisition routes ranked by the physical claims they address, then by the comparisons that run only on their host; the computational boundary per domain; cross-cutting open items.",
  "number": 167,
- "numerical_result": "146 physical/authority claims not established; 18 unfinished tasks {'blocked': 2, 'partial': 16}; 15 not_established findings in tasks whose hardware probe failed; 0 hardware-measured findings.",
+ "numerical_result": "Scope T001-T166: 152 physical/authority claims not established; 19 unfinished tasks {'blocked': 2, 'partial': 17}; open claims by need {'execution:hardware:nvidia-gpu': 3, 'fixture_origin': 1, 'hardware:nvidia-gpu': 10, 'hardware:rapl': 6, 'implementation': 6, 'no_probe': 94, 'reference_instrument': 1}; ready acquisitions hardware:nvidia-gpu (10 physical claims: T116, T118, T119, T124; 3 host-only comparisons: T117, T121, T147), hardware:rapl (6 physical claims: T115, T117, T120; 0 host-only comparisons: -); classifier probe records wrong 0 of 14; 0 hardware-measured findings; open items key-custody 31 tasks, telemetry-provisioning 7 tasks, cross-platform 10 tasks.",
  "observation_model": "No physical observation; reads retained computational records only.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -123,12 +210,12 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/research_portfolio.py": "0fd0ed475a38bf81fd2145f64cf1335856a471c58d406347c3b66b0f66672702"
+   "src/ciw/lab/research_portfolio.py": "145b8ee8456e1dd57bf2a05fa20e1ce55bd33356522436d8901eb1adfb60fc7a"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "Execute the manufacturing measurement protocols (T126-T128) on hardware and retain raw data.",
- "report_id": "sha256:0f1618c06b8a259955921478e19a168fc667862e05b834a1e707088bfe652c5b",
+ "recommended_next_task": "On the RTX 2080 host: `ciw energy probe --gpu-index 0` must report status ok; then run T116, T117, T118, T119, T121, T124, T147 there into a fresh output directory following their protocols (10 open physical claims name this route's device; 3 computational comparisons (T117, T121, T147) run only on this host) and retain the run with `ciw lab hardware retain`; next, hardware:rapl: an intel-rapl energy_uj counter under /sys/class/powercap must read as a number (the runner's hardware:rapl probe); `python -m ciw.lab.energy_gpu_telemetry rapl-capture` then records the capture. Claims needing implementation first, and those with no instrument probe, need code before hardware.",
+ "report_id": "sha256:b942c03cb3b1cffe9f108e2a2c2f98982d8602a69c30462eb33bf4e21c047036",
  "schema": "ciw.lab-task-report.v1",
  "section": "research-portfolio",
  "state": "completed",
@@ -136,13 +223,21 @@
  "tests_passed": [
   "check: Unmeasured ledger lists every not-established physical or authority claim vs listed claims minus a raw-text recount of not-established physical/authority findings",
   "check: Unmeasured ledger lists every blocked, deferred or partial task vs listed tasks minus a raw-text recount of blocked, deferred and partial states",
-  "pytest: tests/test_lab_research_portfolio.py::test_unmeasured_ledger"
+  "check: Unmeasured ledger classifies every open physical claim by what it needs vs open physical claims classified minus a raw-text recount of not-established physical findings",
+  "check: Unmeasured ledger classifies every open physical claim by what it needs vs hand-labelled probe records the classifier gives another need (or lists wrongly)",
+  "check: Cross-cutting open items are listed with every retained statement that raises them vs grouped statements whose phrase is absent from their task's raw report file",
+  "pytest: tests/test_lab_research_portfolio.py::test_unmeasured_ledger",
+  "pytest: tests/test_lab_research_portfolio.py::test_unmeasured_ledger_separates_code_from_hardware",
+  "pytest: tests/test_lab_research_portfolio.py::test_unmeasured_classifier_is_checked_on_probe_records",
+  "pytest: tests/test_lab_research_portfolio.py::test_ledgers_list_cross_cutting_open_items"
  ],
  "tests_skipped": [],
  "title": "Document what remains unmeasured.",
  "uncertainty": "Exact counts.",
  "unresolved_assumptions": [
   "T168 runs after this ledger.",
-  "Hardware needs are inferred from failed hardware probes; a claim that needs hardware in a task that probed none is listed only when its domain is physical or authority."
+  "Hardware runs retained under lab/hardware/ are aggregated outside the queue by `ciw lab unmeasured`; this ledger reads only the clean-room reports of its output directory, so its hardware-measured count covers this run only.",
+  "What an open claim needs is read from its own claim and basis notes, its task's statements that code was not run or written, and its task's probes (phrases in research_portfolio.IMPLEMENTATION_MISSING, UNRUN_CODE, REFERENCE_MISSING, SYNTHETIC_ORIGIN, PHYSICAL_QUANTITY and ACQUISITION_ROUTES); a claim whose statements do not say so is classified by its domain and route alone. The hand-labelled probe records (research_portfolio.UNMEASURED_PROBE) test the classifier on the wordings the queue uses, not on every wording.",
+  "A route ranks by the open physical claims that name its device in tasks on it, then by the computational comparisons that run only on its host; whether a physical claim changes label depends on the capture passing the acquisition gate on the capture host, and a comparison's label on its own checks there."
  ]
 }

@@ -62,6 +62,9 @@
    "claim": "The declared-workload and proved-heat workflows pin one SCR revision, while CIW declares more than one revision of SCR and of SET across its workflows",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -124,6 +127,9 @@
    "claim": "Every bound provider checkout is clean and at a CIW pin and, where CIW pins one, the pinned tree",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -208,6 +214,9 @@
    "claim": "The working bytes of every clean bound checkout reproduce Git's HEAD tree id",
    "domain": "provenance",
    "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -250,6 +259,9 @@
    "claim": "Tracked-source and lockfile digests of every clean bound checkout agree between its working tree and Git's HEAD objects",
    "domain": "provenance",
    "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -415,6 +427,9 @@
    "claim": "CIW's pinned subprocess adapter accepts each clean bound checkout for the module pins at its HEAD and refuses it at any other revision, including a control revision taken from another repository's pin",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -487,6 +502,9 @@
    "claim": "The SCR engine recorded for this run executes the SCR heat descriptor on the survey input",
    "domain": "numerical",
    "evidence_status": "provider_backed",
+   "origin": [
+    "provider"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -540,6 +558,9 @@
    "claim": "The PLSR runtime installed in the bound plsr-python interpreter has CIW's pinned version and source file digests",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -564,6 +585,7 @@
    "domain": "provenance",
    "evidence_status": "not_established",
    "expected_not_established": true,
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": "not established: digests are not signatures"
@@ -604,7 +626,7 @@
    "python": "3.12.3",
    "scipy": "1.16.2",
    "sources": {
-    "src/ciw/lab/exchange_provenance_bundles.py": "3acc6fd6976bb5e6dd8ad3bfc3d09a1d9594ca0a06f4db823581e5b651d4835e",
+    "src/ciw/lab/exchange_provenance_bundles.py": "7e841b781d966fe75d5a86bd61e1ef32150c4087393893be788c2b7eff69f3d4",
     "src/ciw/lab/exchange_provenance_bundles_providers.py": "5e149f2463bd1f30bcfb61d719d84fcc19f84cd0ec201b5c95512c7a17f150b7"
    },
    "sympy": "1.14.0"
@@ -650,8 +672,8 @@
    "tree": "25c667fc507eb8404e1f077d46e87ed2fc6abc3d"
   }
  },
- "recommended_next_task": "T099: verify the locked offline SCR build and record the SP1 build requirements.",
- "report_id": "sha256:6aaa95d7031489f7e6633b6ec3ad7436c52ac4f431057db2bee104f63c1b201c",
+ "recommended_next_task": "Deferred research question: authenticate what the digests only identify, by verifying signed upstream commits or tags of each bound checkout against its maintainers' published keys and recording digests of the Rust and Python toolchains, since a matching HEAD, tree and lock digest is not authentication; and settle why CIW pins two SCR revisions (a59aba2 for declared-workload and proved-heat, 5f04097 for the exchange workflow) and several SET revisions, converging them or recording each workflow's reason.",
+ "report_id": "sha256:c5cb9b44abf3a9c34eafbabebddd6745bd6c69ef79717428585d8b9c71f077cd",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "completed",

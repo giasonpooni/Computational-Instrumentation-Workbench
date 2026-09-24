@@ -2,17 +2,67 @@
  "admission": {
   "decision": "declared synthetic admission",
   "observation_digest": "sha256:1bbccb740c96b78ffac09e4ee9ca0fe1072469f2fc158d8a69ffc9e4a8a3031b",
-  "state_admission": "admitted"
+  "state_admission": "synthetic_only"
  },
  "exact_update_gap": {
   "mean": 0.0,
   "variance": 0.0
+ },
+ "fusion_intake": {
+  "ledger": {
+   "admission_values": [
+    "synthetic_only"
+   ],
+   "admitted": 12,
+   "retained": 26
+  },
+  "refusals": {
+   "missing_calibration": {
+    "admission": "missing_calibration",
+    "intake": "not_admitted"
+   },
+   "not_admitted": {
+    "admission": "not_attempted",
+    "intake": "not_admitted"
+   },
+   "not_retained": {
+    "admission": "not_attempted",
+    "intake": "not_retained"
+   }
+  },
+  "trace": {
+   "all_ledger_admitted_with_raw_ref": true,
+   "bypass": {
+    "fused_by_session_after_bypass": 2,
+    "trace_after_direct_fusion": "untraced_reading",
+    "traced_before_bypass": 1
+   },
+   "distinct_records": 12,
+   "final_mappings": [
+    "frame:sha256:afee1d71aa4ece72230bcf5d783287ae38f0ac1f2bd92f9b813aa9bc71948cb5",
+    "clock:sha256:9fb0d11359f258f20c231b6f8c58b1686dddc2ea9495de2df773abaa4c852cf5",
+    "clock:sha256:899cd17aaeb7a52153a2eadeea876f22ae28d220af82f431cf28c8f813431c01"
+   ],
+   "final_raw_ref": "raw:tracker:12",
+   "final_source_is_last_record": true,
+   "fused_by_session": 12,
+   "readings": 12
+  }
  },
  "per_mode": {
   "camera_chord_distance": {
    "admission": [
     "not_performed"
    ],
+   "default_admit_code": "read_only_session",
+   "default_authority": {
+    "physical_truth": "not_established",
+    "sensor_fusion": "not_performed",
+    "state_admission": "not_performed"
+   },
+   "default_read_only": true,
+   "default_state_unchanged": true,
+   "default_update_code": "read_only_session",
    "retained": 3,
    "retention": [
     "retained"
@@ -25,6 +75,15 @@
    "admission": [
     "not_performed"
    ],
+   "default_admit_code": "read_only_session",
+   "default_authority": {
+    "physical_truth": "not_established",
+    "sensor_fusion": "not_performed",
+    "state_admission": "not_performed"
+   },
+   "default_read_only": true,
+   "default_state_unchanged": true,
+   "default_update_code": "read_only_session",
    "retained": 3,
    "retention": [
     "retained"
@@ -37,6 +96,15 @@
    "admission": [
     "not_performed"
    ],
+   "default_admit_code": "read_only_session",
+   "default_authority": {
+    "physical_truth": "not_established",
+    "sensor_fusion": "not_performed",
+    "state_admission": "not_performed"
+   },
+   "default_read_only": true,
+   "default_state_unchanged": true,
+   "default_update_code": "read_only_session",
    "retained": 3,
    "retention": [
     "retained"
@@ -49,6 +117,15 @@
    "admission": [
     "not_performed"
    ],
+   "default_admit_code": "read_only_session",
+   "default_authority": {
+    "physical_truth": "not_established",
+    "sensor_fusion": "not_performed",
+    "state_admission": "not_performed"
+   },
+   "default_read_only": true,
+   "default_state_unchanged": true,
+   "default_update_code": "read_only_session",
    "retained": 3,
    "retention": [
     "retained"
@@ -61,6 +138,15 @@
    "admission": [
     "not_performed"
    ],
+   "default_admit_code": "read_only_session",
+   "default_authority": {
+    "physical_truth": "not_established",
+    "sensor_fusion": "not_performed",
+    "state_admission": "not_performed"
+   },
+   "default_read_only": true,
+   "default_state_unchanged": true,
+   "default_update_code": "read_only_session",
    "retained": 3,
    "retention": [
     "retained"
@@ -73,6 +159,15 @@
    "admission": [
     "not_performed"
    ],
+   "default_admit_code": "read_only_session",
+   "default_authority": {
+    "physical_truth": "not_established",
+    "sensor_fusion": "not_performed",
+    "state_admission": "not_performed"
+   },
+   "default_read_only": true,
+   "default_state_unchanged": true,
+   "default_update_code": "read_only_session",
    "retained": 3,
    "retention": [
     "retained"
@@ -85,6 +180,15 @@
    "admission": [
     "not_performed"
    ],
+   "default_admit_code": "read_only_session",
+   "default_authority": {
+    "physical_truth": "not_established",
+    "sensor_fusion": "not_performed",
+    "state_admission": "not_performed"
+   },
+   "default_read_only": true,
+   "default_state_unchanged": true,
+   "default_update_code": "read_only_session",
    "retained": 3,
    "retention": [
     "retained"
@@ -96,8 +200,32 @@
  },
  "refusals": {
   "admission_digest_mismatch": "admission_digest_mismatch",
+  "invalid_variance": "invalid_variance",
   "mode_substitution": "mode_substitution",
   "not_retained": "not_retained"
+ },
+ "split": {
+  "admitted": {
+   "geometry_m2": 7.079002517926681e-09,
+   "sensor_m2": 5.872172690111831e-08
+  },
+  "altered_component_changes_digest": {
+   "geometry_m2": true,
+   "sensor_m2": true
+  },
+  "components": {
+   "geometry_m2": 7.079002517926681e-09,
+   "sensor_m2": 5.872172690111831e-08
+  },
+  "declared_total_m2": 6.580072941904499e-08,
+  "digest_preserved": true,
+  "restored": {
+   "geometry_m2": 7.079002517926681e-09,
+   "sensor_m2": 5.872172690111831e-08
+  },
+  "tampered_update": "admission_digest_mismatch",
+  "update_posterior_variance_gap_m2": 0.0,
+  "update_variance_refusal": "variance_split_mismatch"
  },
  "updated_state": {
   "mean": [
@@ -110,5 +238,10 @@
   "variance": [
    0.25
   ]
+ },
+ "writable_authority": {
+  "physical_truth": "not_established",
+  "sensor_fusion": "synthetic_only",
+  "state_admission": "synthetic_only"
  }
 }

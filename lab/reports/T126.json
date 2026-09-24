@@ -19,7 +19,7 @@
   "primary": "numerically_verified"
  },
  "expected_invariant": "chord - geodesic = 0; det Phi = 1; separation of offset paths linear in s.",
- "experiment": "For 47 marker pairs, find the geodesic distance by shooting (Newton on the miss distance with the Jacobi heading field, launched 0.1 rad off the chord direction; the arclength where the converged geodesic passes the other marker) and compare it with the chord; integrate the control path and its exact offset paths; assemble and validate the ciw.lab-measurement-protocol.v1 record; mutate it nine ways and confirm each mutation is refused.",
+ "experiment": "For 47 marker pairs, find the geodesic distance by shooting (Newton on the miss distance with the Jacobi heading field, launched 0.1 rad off the chord direction; the arclength where the converged geodesic passes the other marker) and compare it with the chord; integrate the control path and its exact offset paths; assemble and validate the ciw.lab-measurement-protocol.v1 record (declared fixtures including the start jig, instrument settings, numbered steps naming only declared devices and datums, raw formats of the captures); mutate it and confirm each mutation is refused with its code.",
  "failure_modes_checked": [
   "shooting from a wrong launch heading (solved by Newton)",
   "RK4 closure onto the target marker",
@@ -28,7 +28,10 @@
   "protocol with filled hardware slot but no acquisition",
   "acceptance criterion marked as a decision",
   "prediction labelled hardware_measured",
-  "instrument uncertainty claimed verified"
+  "instrument uncertainty claimed verified",
+  "procedure step or path naming a jig, instrument or artifact the protocol does not declare",
+  "unnumbered procedure step, instrument without settings, raw format of an undeclared instrument",
+  "offset tapes laid together or from overlapping jig slots, a tape over a marker, a repeat that lays a tape, datum targets of a fixture that declares none, a criterion naming an undeclared instrument (all refused)"
  ],
  "findings": [
   {
@@ -65,6 +68,10 @@
    "claim": "Flat-plate control: chord and geodesic marker distances coincide",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 0
@@ -99,7 +106,7 @@
      },
      {
       "comparison": "abs_le",
-      "observed": 1.0969003483296547e-13,
+      "observed": 2.4482638139033952e-12,
       "passed": true,
       "reference": "exactly offset path minus delta + s sin(dtheta) (mm)",
       "reference_kind": "analytic",
@@ -110,6 +117,9 @@
    "claim": "Flat-plate Jacobi transfer is [[1, s], [0, 1]] along the 240 mm control path",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-12
@@ -150,6 +160,13 @@
       "reference_kind": "refusal"
      },
      {
+      "expected_refusal": "undeclared_device",
+      "observed_refusal": "undeclared_device",
+      "passed": true,
+      "reference": "protocol mutation criterion_names_undeclared_instrument",
+      "reference_kind": "refusal"
+     },
+     {
       "expected_refusal": "measurement_without_acquisition",
       "observed_refusal": "measurement_without_acquisition",
       "passed": true,
@@ -167,6 +184,13 @@
       "expected_refusal": "missing_field",
       "observed_refusal": "missing_field",
       "passed": true,
+      "reference": "protocol mutation instrument_without_settings",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "missing_field",
+      "observed_refusal": "missing_field",
+      "passed": true,
       "reference": "protocol mutation missing_markers",
       "reference_kind": "refusal"
      },
@@ -178,10 +202,31 @@
       "reference_kind": "refusal"
      },
      {
+      "expected_refusal": "undeclared_device",
+      "observed_refusal": "undeclared_device",
+      "passed": true,
+      "reference": "protocol mutation raw_format_of_undeclared_instrument",
+      "reference_kind": "refusal"
+     },
+     {
       "expected_refusal": "measurement_without_acquisition",
       "observed_refusal": "measurement_without_acquisition",
       "passed": true,
       "reference": "protocol mutation records_in_empty_slot",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "repeat_includes_laying",
+      "observed_refusal": "repeat_includes_laying",
+      "passed": true,
+      "reference": "protocol mutation repeat_includes_laying",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "procedure_step_malformed",
+      "observed_refusal": "procedure_step_malformed",
+      "passed": true,
+      "reference": "protocol mutation repeat_of_itself",
       "reference_kind": "refusal"
      },
      {
@@ -197,12 +242,64 @@
       "passed": true,
       "reference": "protocol mutation slot_without_retention_record",
       "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "path_over_marker",
+      "observed_refusal": "path_over_marker",
+      "passed": true,
+      "reference": "protocol mutation specimen_marker_under_a_tape",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "fixture_targets_undeclared",
+      "observed_refusal": "fixture_targets_undeclared",
+      "passed": true,
+      "reference": "protocol mutation step_measures_targets_of_a_fixture_without_any",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "undeclared_device",
+      "observed_refusal": "undeclared_device",
+      "passed": true,
+      "reference": "protocol mutation step_names_undeclared_jig",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "undeclared_device",
+      "observed_refusal": "undeclared_device",
+      "passed": true,
+      "reference": "protocol mutation step_uses_undeclared_device",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "tapes_overlap",
+      "observed_refusal": "tapes_overlap",
+      "passed": true,
+      "reference": "protocol mutation tape_left_on_the_specimen",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "jig_slots_overlap",
+      "observed_refusal": "jig_slots_overlap",
+      "passed": true,
+      "reference": "protocol mutation two_offset_tapes_in_one_laying",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "procedure_step_malformed",
+      "observed_refusal": "procedure_step_malformed",
+      "passed": true,
+      "reference": "protocol mutation unstructured_procedure_step",
+      "reference_kind": "refusal"
      }
     ]
    },
    "claim": "Flat-plate protocol record validates and refuses malformed variants",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -213,7 +310,7 @@
     "value": 0.0
    },
    "unit": "refused mutations",
-   "value": 9
+   "value": 21
   },
   {
    "assigned_by": "ciw.lab.evidence",
@@ -221,6 +318,7 @@
    "claim": "Measured marker chords on the physical plate equal the predicted geodesic distances within instrument uncertainty",
    "domain": "physical",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -231,6 +329,7 @@
    "claim": "The declared instrument uncertainties (camera 0.02 mm, tracker 0.015 mm, CMM 0.002 mm) hold for the instruments that will be used",
    "domain": "calibration",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -238,9 +337,9 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 8601,
+   "bytes": 32642,
    "path": "artifacts/T126/protocol-flat-plate.json",
-   "sha256": "28f2e5cdc194f4c6a8f009ce63cc4695befb3402c469fcd764dea5d71e96a63a"
+   "sha256": "1829398202eb0f227369509337a0676cbd3c29c73b5b74c4aeb92f4270976931"
   },
   {
    "bytes": 9952,
@@ -275,15 +374,15 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/manufacturing.py": "f4cd90e1df33b910b78daf4b0556a8861e044d83701474f841e85fd9d96f9063",
-   "src/ciw/lab/manufacturing_geometry.py": "1db6df2ddf778668da2ffd53a66bcddbff4fc933d6f299e8f283cedc60a9332f",
-   "src/ciw/lab/manufacturing_metrology.py": "aef4708b0f296fc66087a6382881a0564c5edcb6d7961b5e472aa711e29feb5d",
-   "src/ciw/lab/manufacturing_records.py": "015ea7fccc586f4b95f64e7ffbc1f6c34eec20b8245778ede3c2324006537087"
+   "src/ciw/lab/manufacturing.py": "a489d9a93946a344e2878840d784e8087098775794108a6729d9179102767969",
+   "src/ciw/lab/manufacturing_geometry.py": "44830e8b1e2811dc3ade9eb1bc40691a6ae53f92c0b178dce5e5e111447879a1",
+   "src/ciw/lab/manufacturing_metrology.py": "f5c7694f91ac7b38a1f886b4acdc189d0abda403956e3b34d3f2dc8644c07dba",
+   "src/ciw/lab/manufacturing_records.py": "9d8cd35dc23541e9067fdced631c2a80bff1077b3bcba7fa9ae377c9db67626f"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "Execute MFG-FLAT-PLATE-01 on hardware, retain it through a T139 measurement record, then compare the marker-pair distances with the T138 pair comparator (compare_pair_distances, E_n per pair).",
- "report_id": "sha256:be5fe72fa661f62ca6e90f4971503e61899e71eb4d9ae9d5295a1c923b663212",
+ "recommended_next_task": "Acquire MFG-FLAT-PLATE-01 and bind its camera export to T138 (ciw lab run T138 --capture photogrammetry=<targets.csv>, format ciw.lab-mfg-target-capture.v1), then retain the run with ciw lab hardware retain; T138's pair comparison of the captured chords is computational, and a physical label needs a metrology instrument probe or a signed-capture trust anchor (deferred research question). Open: bound the plate flatness effect by measuring it rather than by the declared tolerance.",
+ "report_id": "sha256:940201dd20cde23ebc9e03feee9e7da88cf3ee7e78a6902e1f7ecc3fb7a9f931",
  "schema": "ciw.lab-task-report.v1",
  "section": "manufacturing",
  "state": "completed",
@@ -297,13 +396,25 @@
   "check: Flat-plate Jacobi transfer is [[1, s], [0, 1]] along the 240 mm control path vs exactly offset path minus delta + s sin(dtheta) (mm)",
   "check: Flat-plate protocol record validates and refuses malformed variants vs protocol mutation acceptance_inside_system",
   "check: Flat-plate protocol record validates and refuses malformed variants vs protocol mutation criterion_marked_accepted",
+  "check: Flat-plate protocol record validates and refuses malformed variants vs protocol mutation criterion_names_undeclared_instrument",
   "check: Flat-plate protocol record validates and refuses malformed variants vs protocol mutation filled_slot_without_acquisition",
   "check: Flat-plate protocol record validates and refuses malformed variants vs protocol mutation instrument_claimed_verified",
+  "check: Flat-plate protocol record validates and refuses malformed variants vs protocol mutation instrument_without_settings",
   "check: Flat-plate protocol record validates and refuses malformed variants vs protocol mutation missing_markers",
   "check: Flat-plate protocol record validates and refuses malformed variants vs protocol mutation prediction_labelled_measured",
+  "check: Flat-plate protocol record validates and refuses malformed variants vs protocol mutation raw_format_of_undeclared_instrument",
   "check: Flat-plate protocol record validates and refuses malformed variants vs protocol mutation records_in_empty_slot",
+  "check: Flat-plate protocol record validates and refuses malformed variants vs protocol mutation repeat_includes_laying",
+  "check: Flat-plate protocol record validates and refuses malformed variants vs protocol mutation repeat_of_itself",
   "check: Flat-plate protocol record validates and refuses malformed variants vs protocol mutation slot_with_malformed_acquisition",
   "check: Flat-plate protocol record validates and refuses malformed variants vs protocol mutation slot_without_retention_record",
+  "check: Flat-plate protocol record validates and refuses malformed variants vs protocol mutation specimen_marker_under_a_tape",
+  "check: Flat-plate protocol record validates and refuses malformed variants vs protocol mutation step_measures_targets_of_a_fixture_without_any",
+  "check: Flat-plate protocol record validates and refuses malformed variants vs protocol mutation step_names_undeclared_jig",
+  "check: Flat-plate protocol record validates and refuses malformed variants vs protocol mutation step_uses_undeclared_device",
+  "check: Flat-plate protocol record validates and refuses malformed variants vs protocol mutation tape_left_on_the_specimen",
+  "check: Flat-plate protocol record validates and refuses malformed variants vs protocol mutation two_offset_tapes_in_one_laying",
+  "check: Flat-plate protocol record validates and refuses malformed variants vs protocol mutation unstructured_procedure_step",
   "pytest: tests/test_lab_manufacturing.py::test_flat_plate_protocol_is_a_zero_curvature_control",
   "pytest: tests/test_lab_manufacturing.py::test_protocols_refuse_filled_slots_and_decisions",
   "pytest: tests/test_lab_manufacturing.py::test_every_task_is_registered_and_reports_honestly"

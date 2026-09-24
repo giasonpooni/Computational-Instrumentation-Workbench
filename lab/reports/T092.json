@@ -227,6 +227,9 @@
    "claim": "Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are refused with a named error and reach no provider process, adapter or workflow entry point",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -322,6 +325,9 @@
    },
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -368,6 +374,9 @@
    "claim": "The binding-free energy-accuracy replay succeeds in the same reopened session",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -386,6 +395,7 @@
    "claim": "A content-consistent reopened bundle is acceptable as a verified production result",
    "domain": "production_acceptance",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": "not decided by the workbench"
@@ -426,13 +436,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/exchange_provenance_bundles.py": "3acc6fd6976bb5e6dd8ad3bfc3d09a1d9594ca0a06f4db823581e5b651d4835e",
-   "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "7d6da1148d3744ae1e754b53f697b5b4919aff2666788ae6aec0e48e6e2380c9"
+   "src/ciw/lab/exchange_provenance_bundles.py": "7e841b781d966fe75d5a86bd61e1ef32150c4087393893be788c2b7eff69f3d4",
+   "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "435727947e827d1d601802a5e860f04d578f7b879301c7f5615fb7d6e523500e"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T093: show these refusals leave the saved workspace and in-memory state unchanged.",
- "report_id": "sha256:fdd999f659058e92aceb273c1b7d2188f5c059284fc7cb795edb017861d92406",
+ "recommended_next_task": "Deferred research question: observe, rather than infer, replay refusal for the provider kinds other than numerical-heat by retaining a bundle of each from its bound provider (the telemetry stack pinned in src/ciw/telemetry-runtimes.json for telemetry bundles, and the calibrated-observable stack pinned in src/ciw/calibrated-observable-runtimes.json for calibrated-observable bundles, both of which reach the 'No operator-bound ESM candidate adapter' refusal) and replaying it in a reopened unbound session; and add example sources for acquired-calibrated-window, bim-quantity, identified-stability and residual-monitor so that their execution refusal is observed too.",
+ "report_id": "sha256:0595dbc5227a9b17019b24c4cd353bdcce4a801e65bf0801a9f788e0620dd13c",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "completed",
@@ -469,7 +479,8 @@
   "check: A retained numerical-heat bundle whose values no provider computed passes reopen validation vs cells differing from the independent integer reference",
   "check: The binding-free energy-accuracy replay succeeds in the same reopened session vs energy replay without numerical match",
   "pytest: tests/test_lab_exchange_provenance_bundles.py::test_t092_unbound_replay_and_execution_are_refused",
-  "pytest: tests/test_lab_exchange_provenance_bundles.py::test_fabricated_heat_bundle_is_content_consistent_but_wrong"
+  "pytest: tests/test_lab_exchange_provenance_bundles.py::test_fabricated_heat_bundle_is_content_consistent_but_wrong",
+  "pytest: tests/test_lab_exchange_provenance_bundles.py::test_t092_next_step_names_the_manifest_that_pins_each_kind"
  ],
  "tests_skipped": [],
  "title": "Test replay refusal without provider binding.",

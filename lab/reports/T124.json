@@ -3,6 +3,7 @@
   "src/ciw/lab/energy_gpu.py",
   "src/ciw/lab/energy_gpu_kernels.py",
   "src/ciw/lab/energy_gpu_telemetry.py",
+  "src/ciw/lab/energy_gpu_workload.py",
   "docs/lab/ENERGY_GPU.md"
  ],
  "evidence_status": {
@@ -10,7 +11,7 @@
    "analytic": 0,
    "hardware_measured": 0,
    "independently_verified": 0,
-   "not_established": 1,
+   "not_established": 3,
    "numerically_verified": 5,
    "provider_backed": 0,
    "synthetic": 0
@@ -18,7 +19,7 @@
   "primary": "numerically_verified"
  },
  "expected_invariant": "All readings carry monotonic and UTC brackets; identity fields present; each tampering class refused with its expected message (the two field-removal classes share the validator's generic field-set message).",
- "experiment": "Retain the four fixtures' exact bytes as artifacts; validate them; apply 9 mutations (with or without resealing); validate a resealed doubling, an origin relabelling and a UUID mismatch.",
+ "experiment": "Retain the four fixtures' exact bytes as artifacts; validate them; apply 9 mutations (with or without resealing); validate a resealed doubling, an origin relabelling and a UUID mismatch. When an operator log is bound, retain its exact bytes, inventory its identity fields and bind it through T116's acquisition gate (declared physical measurement, eligible analysis, the common workload, sensor identity equal to this host's NVML identity, GPU probe answering in this task) and additionally require that no identity field is a placeholder.",
  "failure_modes_checked": [
   "raw counter reading edited without resealing",
   "sensor device UUID replaced by a non-UUID",
@@ -71,6 +72,10 @@
    "claim": "Every fixture retains raw timestamped counter readings and the 14 device/runtime identity fields (placeholder values in these synthetic fixtures)",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -195,6 +200,10 @@
    "claim": "The energy-log validator refuses 9 classes of tampering",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -252,6 +261,10 @@
    },
    "domain": "provenance",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-12,
     "rel": 0.0
@@ -302,6 +315,10 @@
    },
    "domain": "provenance",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -345,6 +362,10 @@
    "claim": "A resealed sensor/workload UUID mismatch validates but is withheld by the analysis",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -369,6 +390,38 @@
    "claim": "The fixtures' counter readings were produced by a physical GPU and NVML counter",
    "domain": "physical",
    "evidence_status": "not_established",
+   "origin": [],
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": [
+     "no operator NVML log was bound (--capture energy-log=PATH or CIW_LAB_ENERGY_LOG)"
+    ]
+   },
+   "claim": "The bound operator log retains raw timestamped counter readings and every device/runtime identity field, none a placeholder",
+   "domain": "provenance",
+   "evidence_status": "not_established",
+   "expected_not_established": true,
+   "origin": [],
+   "uncertainty": null,
+   "unit": null,
+   "value": null
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": [
+     "no operator NVML log was bound (--capture energy-log=PATH or CIW_LAB_ENERGY_LOG)"
+    ]
+   },
+   "claim": "The bound operator log names an NVML device present on this analyzing host (UUID, name, driver, NVML version and NVML library digest equal this host's; the capture is unauthenticated)",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -396,9 +449,9 @@
    "sha256": "b09bf8b979c213a7ae6617327f9a060ea2c9b2af515eb4b8662ab94dc415e955"
   },
   {
-   "bytes": 6259,
+   "bytes": 6598,
    "path": "artifacts/T124/inventory.json",
-   "sha256": "0c54a6dd9db4111a99dd85bea9aca891a361ccc7cf9529872ba7e0bf4eeae238"
+   "sha256": "70bc9cda6277c350e6b13c11b80dfaf3e92e26b4532af211c75c0834ae278d0c"
   },
   {
    "bytes": 1384,
@@ -406,37 +459,53 @@
    "sha256": "49fa312ecfcda8ea45b1eef227f188673fe5a843f0eb7d6ec71b02a997dc15d1"
   }
  ],
- "hypothesis": "The energy-log format keeps raw timestamped counter readings with device and runtime identity fields, and its validator refuses edits to them unless the log is deliberately resealed. Scope: an audit of the log format on the four synthetic fixtures, whose exact bytes this task retains; retaining a real device's identity needs a hardware log (T116) and is not claimed here.",
+ "hypothesis": "The energy-log format keeps raw timestamped counter readings with device and runtime identity fields, and its validator refuses edits to them unless the log is deliberately resealed; a log captured on the RTX 2080 host is retained byte-exactly with identity fields that name its device (no placeholder) and bind to that host's NVML identity. Without such a log only the format audit on the four synthetic fixtures runs, and the task is partial.",
  "input_data": [
-  "examples/energy-accuracy/{baseline,reset,missing,under-target}.json: synthetic fixtures (origin synthetic_fixture) constructed on the CPU, not hardware captures"
+  "examples/energy-accuracy/{baseline,reset,missing,under-target}.json: synthetic fixtures (origin synthetic_fixture) constructed on the CPU, not hardware captures",
+  "optional operator NVML log bound as energy-log (--capture energy-log=PATH or CIW_LAB_ENERGY_LOG), written by `ciw energy record` on the GPU host"
  ],
  "mathematical_model": "log_digest = sha256(canonical(log without digest)); structural profile of energy_records.validate_log; analysis eligibility rules of energy_records.analyze.",
  "number": 124,
- "numerical_result": "47 raw readings present in the four synthetic fixtures (exact fixture bytes retained as artifacts for ['baseline', 'missing', 'reset', 'under-target']); 14 identity fields per fixture, 44 placeholder values over the four fixtures; refusals {'raw counter reading edited without resealing': 'Retained log digest differs', 'sensor device UUID replaced by a non-UUID': 'Require a physical GPU UUID', 'calibration metadata invented for the sensor': 'Unsupported sensor scope or invented calibration metadata', 'monotonic read bracket reversed': 'Reversed monotonic hardware call bracket', 'failed counter read keeps a fabricated energy': 'Failed counter reading cannot contain fabricated energy', 'UTC timestamp of a reading removed': 'Require exactly the declared energy-log fields', 'runtime executable identity removed': 'Require exactly the declared energy-log fields', 'prepared device input identity replaced': 'Prepared device input differs from declared initial problem', 'retained batch output edited': 'Expanded result bytes differ from their digest'}; resealed doubling accepted; relabelled fixture classified physical_domain_measurement.",
- "observation_model": "Field inventory of each sealed fixture (identity fields present, and how many hold placeholder values, counting device-derived values of a placeholder device such as its compute capability); validation outcome of each mutated copy.",
+ "numerical_result": "47 raw readings present in the four synthetic fixtures (exact fixture bytes retained as artifacts for ['baseline', 'missing', 'reset', 'under-target']); 14 identity fields per fixture, 44 placeholder values over the four fixtures; refusals {'raw counter reading edited without resealing': 'Retained log digest differs', 'sensor device UUID replaced by a non-UUID': 'Require a physical GPU UUID', 'calibration metadata invented for the sensor': 'Unsupported sensor scope or invented calibration metadata', 'monotonic read bracket reversed': 'Reversed monotonic hardware call bracket', 'failed counter read keeps a fabricated energy': 'Failed counter reading cannot contain fabricated energy', 'UTC timestamp of a reading removed': 'Require exactly the declared energy-log fields', 'runtime executable identity removed': 'Require exactly the declared energy-log fields', 'prepared device input identity replaced': 'Prepared device input differs from declared initial problem', 'retained batch output edited': 'Expanded result bytes differ from their digest'}; resealed doubling accepted; relabelled fixture classified physical_domain_measurement. Not performed: retaining raw telemetry and device/runtime identity of a real device (no operator NVML log passed the acquisition gate in this run); only the synthetic fixtures were retained.",
+ "observation_model": "Field inventory of each sealed fixture and of a bound operator log (identity fields present, and how many hold placeholder values, counting device-derived values of a placeholder device such as its compute capability); validation outcome of each mutated copy.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
   "status": "not_established"
  },
  "provider_runtime_identity": {
   "ciw_version": "0.1.0",
+  "common_workload": {
+   "implementation": "numpy",
+   "iterations": 38,
+   "kernel": "ciw.energy_cuda.PTX gaussian_vi",
+   "kernel_sha256": "601049a61cc1dc7b35d80ec7096dd5d81b3028c025472ec54983b4c1d666d699",
+   "name": "ciw.lab.gaussian-vi-iteration.v1",
+   "precision": "float64",
+   "prepared_input_sha256": "49ca05c0343c645d64ec77ffcf7053c1b1380910f7334cc50986fa45f560df86",
+   "problem_sha256": "f082e5dfbb2e735bdaf8b02e57734e29902d5077c70f53e2e7c5ce2eb8219ab7",
+   "replicas": 4096
+  },
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/energy_gpu.py": "a66107417b5bfa398077a919b2f5351ca222e9961fa8dfb3256b78efc17fd930",
-   "src/ciw/lab/energy_gpu_kernels.py": "366c477ff1af7f59b626f4e64bf994ae4cbce5754c0e9c5be1c2acb515f99f4b",
-   "src/ciw/lab/energy_gpu_telemetry.py": "df82c8748d3aa75384e3928bffcf516cd6f72cccde99edf8d21f089cc768bafa"
+   "src/ciw/energy_bench.py": "bd50806ba3128ff85a1d240bc9670db04082196ec050c51597ec0cc725e45046",
+   "src/ciw/energy_cuda.py": "9b4b86809e47cba7683dc0c238b0b052b6785fd09e629224c5f8f37b6d5a0e64",
+   "src/ciw/free_energy_math.py": "4f096c281c548e92ed7bb1d49a8fd58f3a4d6b48ababef2958331ca13f088a6e",
+   "src/ciw/lab/energy_gpu.py": "f49195ce5a78ced3c8da1562f4412f2fdc65d8cc2749dd4fbe0b25bc0334e773",
+   "src/ciw/lab/energy_gpu_kernels.py": "1198886637535f3f8ec26601aa70cdc16d1c175dc4286aa9807edec3910005d2",
+   "src/ciw/lab/energy_gpu_telemetry.py": "6935331e622266868a97ee78f8e34d185aa69009a62fedc8ea8273b3a9312bfc",
+   "src/ciw/lab/energy_gpu_workload.py": "5cdaf9fe9f25194dae561e060abf471567cfd3bb8df6c1836630a54c5085a9de"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T125: replay the retained logs through a Session; deferred research question: a signed capture that binds a log's readings to the device (no signature scheme exists; T116's gate binds a log only to the host's NVML identity)",
- "report_id": "sha256:7089048b4e29636668b8a426a8e895a80b5da9dea54af9c172f288e13caf8165",
+ "recommended_next_task": "Retain the first RTX 2080 log with its device and runtime identity through the acquisition gate on the RTX 2080 host (protocol in docs/lab/ENERGY_GPU.md): `mkdir -p runs/rtx2080-<date>`; `ciw energy probe --gpu-index 0` must return a reading with status ok; start `TZ=UTC nvidia-smi --query-gpu=timestamp,uuid,name,utilization.gpu,utilization.memory,temperature.gpu,power.draw,clocks.sm,clocks.mem,pstate --format=csv,nounits -lms 100 -f runs/rtx2080-<date>/smi.csv` in the background; `ciw energy record --problem examples/energy-accuracy/problem.json --output-dir runs/rtx2080-<date>/capture --duration 10 --replicas 4096 --warmup-batches 2 --idle-duration 2 --gpu-index 0`; stop the sidecar; `ciw energy replay runs/rtx2080-<date>/capture/log.json`; then `CIW_LAB_NVIDIA_SMI_UTC_OFFSET=+00:00 ciw lab run T116 T117 T118 T119 T120 T121 T124 T147 --capture energy-log=runs/rtx2080-<date>/capture/log.json --capture nvidia-smi-csv=runs/rtx2080-<date>/smi.csv --output-dir results/rtx2080-<date>` on the same host and `ciw lab hardware retain results/rtx2080-<date> --retained lab --run-id rtx2080-<date> --host \"<RTX 2080 host>\"`. Deferred research question: a signed capture that binds a log's readings to the device (no signature scheme exists; the gate binds a log only to the host's NVML identity)",
+ "report_id": "sha256:a0b87b1599dcaaab7efdb6def1fbc98b33e45bd7600550992e444ad2295e44f7",
  "schema": "ciw.lab-task-report.v1",
  "section": "energy-gpu",
- "state": "completed",
+ "state": "partial",
  "task_id": "T124",
  "tests_passed": [
   "check: Every fixture retains raw timestamped counter readings and the 14 device/runtime identity fields (placeholder values in these synthetic fixtures) vs readings without monotonic and UTC brackets",
@@ -454,7 +523,11 @@
   "check: Relabelling a synthetic fixture as physical_measurement makes its analysis eligible for physical comparison vs eligible after relabelling (1 = yes)",
   "check: A resealed sensor/workload UUID mismatch validates but is withheld by the analysis vs workload_sensor_device_mismatch reported (1 = yes)",
   "pytest: tests/test_lab_energy_gpu.py::test_raw_telemetry_retention_and_tampering",
+  "pytest: tests/test_lab_energy_gpu.py::test_t124_retains_an_operator_log_through_the_gate",
+  "pytest: tests/test_lab_energy_gpu.py::test_operator_logs_of_another_workload_are_withheld",
+  "pytest: tests/test_lab_energy_gpu.py::test_workload_tasks_digest_the_workload_sources",
   "pytest: tests/test_lab_energy_gpu.py::test_fixture_tasks_without_repository_files",
+  "pytest: tests/test_lab_energy_gpu.py::test_next_steps_name_work_that_delivers",
   "pytest: tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance"
  ],
  "tests_skipped": [],
@@ -464,6 +537,10 @@
   "Sealing is integrity, not authenticity: no signature binds a log to the device",
   "Hardware provenance of every fixture is not established",
   "The fixtures' identity fields are present but mostly placeholders, including a compute capability given to the placeholder device",
-  "No hardware log was audited: a real device's identity is bound only by T116's acquisition gate on the GPU host, outside this format audit"
+  "A real device's identity is bound only by the acquisition gate on the GPU host: the gate binds a log to that host's NVML identity, it does not authenticate the capture",
+  "The acquisition gate establishes an identity binding, not the origin of the readings: a resealed synthetic log whose identity strings were edited to name this host's device passes it (see the resealing and relabelling counterexamples), so a bound log names a device present here but its counter readings are not shown to come from that device",
+  "Deferred research question: a signed capture that binds a log's readings to the device (no signature scheme exists)",
+  "Not performed: retaining raw telemetry and device/runtime identity of a real device (no operator NVML log passed the acquisition gate in this run); only the synthetic fixtures were retained",
+  "no operator NVML log was bound (--capture energy-log=PATH or CIW_LAB_ENERGY_LOG)"
  ]
 }

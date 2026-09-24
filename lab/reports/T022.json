@@ -42,6 +42,9 @@
    "claim": "Square-torus half-period targets have exactly 2 (edge) or 4 (centre) shortest representatives",
    "domain": "mathematical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -76,6 +79,9 @@
    "claim": "Multiplicity census on the 12 x 12 rational grid equals the predicted cut-locus counts",
    "domain": "mathematical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -110,6 +116,10 @@
    "claim": "On six lattices the cut-locus vertices satisfy sum over vertices of (k_v - 2) = 2 (Euler characteristic 0)",
    "domain": "mathematical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -166,6 +176,9 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -221,6 +234,9 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -268,13 +284,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/flat_torus_topology.py": "1221001d96bf1f9aa2f9fea169a2b10bfb37230da11bfb6f1608ba9355c86b9a",
+   "src/ciw/lab/flat_torus_topology.py": "2c05c13905cc51906d41b89219b001396634a9d3bb8bda9bd32ac75a5523fdb1",
    "src/ciw/lab/flat_torus_topology_lattice.py": "15a33fcd29591e43dec16fa3b9ad26d6b6b86846872e9e6bf815508fb0dade63"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T031: study route changes under small metric perturbations near these ties",
- "report_id": "sha256:b0522096c3f9983040a797e7b1d59285bba29d58eb4db2e8d490034053240d98",
+ "recommended_next_task": "Deferred research question: decide ties exactly for targets with algebraic irrational coordinates (for example exact algebraic or interval arithmetic that certifies the sign of each squared-length difference), which are handled here only in binary64 with a declared tolerance",
+ "report_id": "sha256:fce66ef3fafaf7853cd8cc7ac2fdf14be071d1b59c71033ded9dde0231f05155",
  "schema": "ciw.lab-task-report.v1",
  "section": "flat-torus-topology",
  "state": "completed",
@@ -290,7 +306,8 @@
   "pytest: tests/test_lab_flat_torus_topology.py::test_t022_degenerate_representatives",
   "pytest: tests/test_lab_flat_torus_topology.py::test_regeneration_is_within_tolerance",
   "pytest: tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
-  "pytest: tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+  "pytest: tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_next_steps_name_forward_work"
  ],
  "tests_skipped": [],
  "title": "Detect degenerate shortest representatives.",

@@ -52,6 +52,10 @@
    "claim": "Residual variance equals geometry variance plus sensor variance in every scenario",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -113,6 +117,10 @@
    "claim": "Nested variance components are consistent with the declared sensor variance and the linearized geometry variance within sampling error",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -190,6 +198,10 @@
    "claim": "Under isotropic vertex noise with barycentric markers, geometry uncertainty dominates the baseline marker-distance residual",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -274,6 +286,10 @@
    "claim": "Tangential vertex displacement, mostly of the marker-face vertices, carries most of the marker-distance gain |grad d|^2",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -348,6 +364,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -409,6 +429,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -455,6 +479,7 @@
    "claim": "A real marker-distance sensor on a real scanned part has this geometry and sensor variance split",
    "domain": "sensor_performance",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -467,6 +492,7 @@
    "claim": "The geometry sigma of 1e-3 is the accuracy of a real scanned surface",
    "domain": "physical",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -508,14 +534,14 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/surfaces_discrete_mesh.py": "cc005d2dfb3102b2594e085f9cdcba74ca0e6325edf9865010189ac5f6398500",
+   "src/ciw/lab/surfaces_discrete_mesh.py": "bd83d5f82c82c46a746fe77b3877a010e998d1ef219a90a2dc01bbf7f3c82455",
    "src/ciw/lab/surfaces_discrete_mesh_geometry.py": "b14d56fae8413d78853e96be27a1f11eac369afa0b7a3dbb53bc821511ba4d97",
    "src/ciw/lab/surfaces_discrete_mesh_studies.py": "618ea9848e8b750e333f81a395a7544c8b5127e53f4aae27d59b4f27e9967dfa"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T045: carry this split into typed observation modes (intrinsic geodesic distance, camera chord distance).",
- "report_id": "sha256:7aa1e7740cc37b3d30acd590469a150a6f47a725b8d9ea2e8e120c113a9ab1bd",
+ "recommended_next_task": "Deferred research question: fill reconstructed_surface_distance's geometry_m2 from a mesh, as sigma_vertex^2 |grad d|^2 with T043's linearized vertex-noise gain (valid only while the marker segment stays in its face corridor) instead of declared analytic surface parameters, and check it against this task's nested Monte Carlo. Partly delivered by T045, which carries the geometry/sensor split for model-derived distances on parametric surfaces (plane, sphere, cylinder geodesic) and names the same mesh conversion as its next step, and by T140's instrument and geometry budget for manufacturing predictions. An intrinsic_geodesic_distance reading keeps one sensor sigma: as in this task's residual, its geometry part belongs to the model prediction it is compared with, not to the reading.",
+ "report_id": "sha256:4e83b8be314e2205cfa93a3f9ba5291bb29b1a5d340a40628178a76477a2d9bc",
  "schema": "ciw.lab-task-report.v1",
  "section": "surfaces-discrete",
  "state": "completed",
@@ -534,8 +560,10 @@
   "check: Under normal-only (shape) vertex noise of the same sigma the sensor dominates the baseline residual vs z of MC total against sigma_g^2 |grad_n d|^2 + sigma_s^2",
   "check: Averaging repeated sensor readings leaves the geometry variance as a floor vs variance at the largest K / geometry floor",
   "check: Averaging repeated sensor readings leaves the geometry variance as a floor vs max |z| against geometry + sensor / K",
+  "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_next_steps_name_forward_work",
   "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_law_of_total_variance_split",
-  "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_variance_split_task_report"
+  "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_variance_split_task_report",
+  "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_t044_next_step_names_what_t045_leaves_open"
  ],
  "tests_skipped": [],
  "title": "Test geometry uncertainty separately from sensor uncertainty.",

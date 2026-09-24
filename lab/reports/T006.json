@@ -105,6 +105,10 @@
    "claim": "Central finite differences of perturbed geodesics converge to the integrated Jacobi columns at second order",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.02,
     "rel": 0.0
@@ -202,6 +206,10 @@
    "claim": "One-sided finite differences converge to the integrated Jacobi columns at first order",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.02,
     "rel": 0.0
@@ -275,6 +283,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1.5,
     "rel": 0.0
@@ -338,13 +350,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/geodesic_jacobi.py": "70e9794df40fbf882cd117859a112b1301552d2c4faca7979f06e7c287828798",
+   "src/ciw/lab/geodesic_jacobi.py": "a3abaeabd7605e4a100c304efb6066d2b656644122bf602c06cb97691415a419",
    "src/ciw/lab/geodesic_jacobi_common.py": "7cb215a28e357a37f1c42cef6bdcb40e22abf7804ae9d58c4818fa40aa52da53"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T007: measure the Wronskian and transfer-matrix determinant",
- "report_id": "sha256:feb2a74316848b8df61b956d18f08917fb69fb9cc9347211adba223d2fc53e42",
+ "recommended_next_task": "Deferred research question: repeat the comparison with an intrinsic separation (geodesic distance between perturbed and base points at matched arclength, from the 34-digit references) instead of the chart difference projected on N, and measure how much of the one-sided difference error is the chart's second-order term",
+ "report_id": "sha256:414604e5496e2e7c4c5322d669b0ba97b34b9a7e48df94199d3e65edf95486f3",
  "schema": "ciw.lab-task-report.v1",
  "section": "geodesic-jacobi",
  "state": "completed",
@@ -367,7 +379,8 @@
   "pytest: tests/test_lab_geodesic_jacobi.py::test_t006_finite_differences",
   "pytest: tests/test_lab_geodesic_jacobi.py::test_perturbation_helpers_are_geometric",
   "pytest: tests/test_lab_geodesic_jacobi.py::test_every_numerical_finding_declares_uncertainty_and_tolerance",
-  "pytest: tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space"
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space",
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_every_next_step_is_a_deferred_research_question"
  ],
  "tests_skipped": [],
  "title": "Compare integrated Jacobi fields with finite-difference flow perturbations.",

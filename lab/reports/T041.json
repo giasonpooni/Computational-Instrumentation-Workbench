@@ -71,6 +71,10 @@
    "claim": "Seed-averaged curvature RMS error grows and minimum angle falls with tangential jitter",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -259,6 +263,10 @@
    "claim": "For the three declared seeds per amplitude, the dihedral fold check refuses exactly the jittered meshes that have an inverted face",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -405,6 +413,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -522,6 +534,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -573,6 +589,10 @@
    "claim": "Over 60 further seeds per amplitude the dihedral fold check refuses no jittered mesh without an inverted face",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -658,6 +678,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -720,6 +744,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -777,6 +805,10 @@
    "claim": "With the mixed Voronoi area the regular icosphere has a smaller curvature RMS error than every latitude-longitude sphere of the same vertex count",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -853,6 +885,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -944,6 +980,11 @@
    "claim": "Maximum radius ratio is positively rank-correlated with the mixed-Voronoi curvature error and the geodesic error across the pooled valid 642-vertex meshes, but not within the latitude-longitude family",
    "domain": "numerical",
    "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check",
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -1037,6 +1078,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -1106,6 +1151,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -1177,6 +1226,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -1246,6 +1299,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -1299,6 +1356,10 @@
    "claim": "Straightest geodesics on planar meshes are exact at any tested triangle quality, while edge-graph distance error changes with the edge directions",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-12,
     "rel": 1e-06
@@ -1333,6 +1394,7 @@
    "claim": "A minimum-angle or radius-ratio threshold certifies a scanned mesh for production metrology",
    "domain": "production_acceptance",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -1384,14 +1446,14 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/surfaces_discrete_mesh.py": "cc005d2dfb3102b2594e085f9cdcba74ca0e6325edf9865010189ac5f6398500",
+   "src/ciw/lab/surfaces_discrete_mesh.py": "bd83d5f82c82c46a746fe77b3877a010e998d1ef219a90a2dc01bbf7f3c82455",
    "src/ciw/lab/surfaces_discrete_mesh_geometry.py": "b14d56fae8413d78853e96be27a1f11eac369afa0b7a3dbb53bc821511ba4d97",
    "src/ciw/lab/surfaces_discrete_mesh_studies.py": "618ea9848e8b750e333f81a395a7544c8b5127e53f4aae27d59b4f27e9967dfa"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T042: name the refusal states for invalid or incomplete surface data (including folded and inverted faces).",
- "report_id": "sha256:b274c37e5765e5849c5cc73f9634f27a65e2d5d3b351f54fee181c929da93685",
+ "recommended_next_task": "Deferred research question: attribute geodesic and curvature errors per region (per-vertex error against local triangle quality) instead of summarizing each mesh by its worst triangle, and test whether the radius-ratio association holds within each mesh family separately (it is not positive within the latitude-longitude family).",
+ "report_id": "sha256:930991058a2fa3a4c57680b66ec75bcbf450e671ff0dc4a62e75b764e5277218",
  "schema": "ciw.lab-task-report.v1",
  "section": "surfaces-discrete",
  "state": "completed",
@@ -1448,6 +1510,7 @@
   "check: A strongly pleated lantern (m = n^2) is refused as folded although no face normal points towards the axis vs smallest unit face normal . outward radial direction",
   "check: Straightest geodesics on planar meshes are exact at any tested triangle quality, while edge-graph distance error changes with the edge directions vs max trace error over all shears",
   "check: Straightest geodesics on planar meshes are exact at any tested triangle quality, while edge-graph distance error changes with the edge directions vs spread of max relative graph excess across shears",
+  "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_next_steps_name_forward_work",
   "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_schwarz_lantern_counterexample",
   "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_rank_correlation_matches_average_ranks",
   "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_fold_check_misses_small_bend_inversions",

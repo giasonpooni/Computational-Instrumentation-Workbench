@@ -87,6 +87,10 @@
    },
    "domain": "numerical",
    "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-12,
     "rel": 1e-09
@@ -128,6 +132,10 @@
    "claim": "Worst-direction metrication error is sqrt 2 - 1 (4-nbr, 45 deg) and sqrt(4 - 2 sqrt 2) - 1 (8-nbr, 22.5 deg)",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-08,
     "rel": 0
@@ -168,6 +176,9 @@
    "claim": "Fast marching converges to Euclidean length under refinement",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -193,6 +204,7 @@
    "claim": "Grid-planned path lengths predict distances travelled by a physical vehicle or tool",
    "domain": "physical",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -239,13 +251,13 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/flat_torus_topology.py": "1221001d96bf1f9aa2f9fea169a2b10bfb37230da11bfb6f1608ba9355c86b9a",
+   "src/ciw/lab/flat_torus_topology.py": "2c05c13905cc51906d41b89219b001396634a9d3bb8bda9bd32ac75a5523fdb1",
    "src/ciw/lab/flat_torus_topology_discrete.py": "6c2ed09d3b8968a96dc8e576d2281ccac18af9b48a0a3bc1660f11f630aef72f"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T031: study route changes under small metric perturbations",
- "report_id": "sha256:4823bcb02484bc5d4ebd7342bd05372f814d14abf13efc64ece34ed1643d9567",
+ "recommended_next_task": "Deferred research question: fit the fast-marching convergence order over at least five refinement levels with a confidence interval (three grids and an empirical order now) and compare with a second, independently written eikonal solver",
+ "report_id": "sha256:66c5a65f0ac0432220298ffaaefb3f3369fd75f147e92da2c0d9ce42dc622123",
  "schema": "ciw.lab-task-report.v1",
  "section": "flat-torus-topology",
  "state": "completed",
@@ -260,7 +272,8 @@
   "check: Fast marching converges to Euclidean length under refinement vs observed order of the error against Euclidean length",
   "pytest: tests/test_lab_flat_torus_topology.py::test_t030_grid_metrication",
   "pytest: tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
-  "pytest: tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+  "pytest: tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_next_steps_name_forward_work"
  ],
  "tests_skipped": [],
  "title": "Compare smooth and discrete geodesic approximations.",

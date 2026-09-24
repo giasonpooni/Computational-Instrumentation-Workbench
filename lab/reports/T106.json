@@ -54,6 +54,10 @@
    "claim": "The eight rounding-free runtime-status-v1 codes are reached on one-parameter paths far from every rounding threshold",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -102,6 +106,10 @@
    "claim": "Codes along each one-parameter path follow the documented decision order",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -269,6 +277,10 @@
    "claim": "Every transition the decision order allows between two rounding-free codes occurs in PLSR between consecutive path steps at its crossing, and no PLSR code changes at a crossing the order does not allow",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -311,6 +323,10 @@
    "claim": "The exactly indefinite P witnesses are never certified along their weak direction",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -386,6 +402,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -488,6 +508,10 @@
    "claim": "The runtime refuses to emit the five host-owned status codes",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -570,6 +594,10 @@
    "claim": "Pinned runtime constants: resolution factor, numerical policy, status vocabulary",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -627,6 +655,10 @@
    "claim": "The documented decision order, transcribed in CIW, assigns the eight rounding-free codes to the constructed path steps",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -680,6 +712,11 @@
    "claim": "The decision order connects the eight rounding-free codes by one threshold crossing in the pairs the transition graph allows, and the CIW transcription realises each at its crossing on the constructed paths",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -706,6 +743,9 @@
    "claim": "A CERTIFIED_WITH_MARGIN verdict (operationally_acceptable) authorizes actuation",
    "domain": "actuator_authority",
    "evidence_status": "not_established",
+   "origin": [
+    "derivation"
+   ],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -773,14 +813,14 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/lyapunov.py": "cbcb4d58d7313d7c537957a1b7dd35039a21bae80125bf59147eeed2c1232bbb",
+   "src/ciw/lab/lyapunov.py": "dcda8ba21661667cc03bb126a393e93158a306b4991d0a2450d8e18abe62cb27",
    "src/ciw/lab/lyapunov_provider.py": "da3465b48b5f5efc47bfe6ab8379cf2cf2bc23e4835dc7ff047252e77fa6ef17",
    "src/ciw/lab/lyapunov_reference.py": "bdf0bb5074ae2caca6c8a5d8e63a15e346b007098e6def6b058d077719bc1336"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T107: near-boundary spectra; add an upstream regression that pins one witness per code and per allowed transition, and decide whether a P(theta) that loses definiteness in the box should return CERTIFICATE_NOT_POSITIVE rather than raise.",
- "report_id": "sha256:d1c52cbdb37e33ba0d49309f22c2961857c48125b969f2b4989d3c8b69630c4c",
+ "recommended_next_task": "Deferred research question (upstream PLSR change): pin one witness per runtime code and per allowed transition in PLSR's own tests, and decide whether a P(theta) that loses definiteness inside the box should return CERTIFICATE_NOT_POSITIVE rather than raise, which would make the eight transitions involving that code reachable.",
+ "report_id": "sha256:088532334f70a0951f501b2da5a0e24ee757a8317d36d44e189e35a4c1edae3d",
  "schema": "ciw.lab-task-report.v1",
  "section": "lyapunov",
  "state": "completed",
@@ -816,7 +856,8 @@
   "pytest: tests/test_lab_lyapunov.py::test_transition_graph",
   "pytest: tests/test_lab_lyapunov.py::test_t106_offline_findings_without_the_provider",
   "pytest: tests/test_lab_lyapunov.py::test_checks_are_unconditional_and_observed_values_are_computed",
-  "pytest: tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider"
+  "pytest: tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider",
+  "pytest: tests/test_lab_lyapunov.py::test_next_steps_name_forward_work"
  ],
  "tests_skipped": [],
  "title": "Test every runtime status transition.",

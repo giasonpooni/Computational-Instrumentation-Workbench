@@ -3,6 +3,7 @@
   "src/ciw/lab/energy_gpu.py",
   "src/ciw/lab/energy_gpu_kernels.py",
   "src/ciw/lab/energy_gpu_telemetry.py",
+  "src/ciw/lab/energy_gpu_workload.py",
   "docs/lab/ENERGY_GPU.md"
  ],
  "evidence_status": {
@@ -10,19 +11,21 @@
    "analytic": 0,
    "hardware_measured": 0,
    "independently_verified": 0,
-   "not_established": 1,
-   "numerically_verified": 5,
+   "not_established": 2,
+   "numerically_verified": 9,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "float64 order near 4; float32 minimum inside the grid, above float32 roundoff and followed by a roundoff plateau; counted operations per step equal in both precisions, with no result promoted out of the declared precision.",
- "experiment": "Vectorized RK4 in float32 and float64 across the step grid; smallest grid N per accuracy target; operation counts derived from the kernel source and checked by running one step of the same code on a counting view of a real float32 and a real float64 array (every ufunc call counted and its result dtype recorded).",
+ "expected_invariant": "float64 RK4 order near 4; float32 RK4 minimum inside the grid, above float32 roundoff and followed by a plateau; both Gaussian VI precisions meet the declared target at the planned K, float32 then stalls near u^2; counted operations equal in both precisions with no result promoted out of the declared precision.",
+ "experiment": "Vectorized RK4 in float32 and float64 across the step grid; smallest grid N per accuracy target; operation counts derived from the kernel source and checked by running one step on counting views. The common Gaussian VI workload in float32 and float64 for 0..256 iterations, KL at every iteration, first iteration per target; operations counted on counting views and compared with the PTX kernel; a bound rapl-log capture's float64 and float32 NumPy brackets analyzed through the RAPL identity gate. The GPU arm (a float32 build of the kernel) has no implementation and is recorded as not established.",
  "failure_modes_checked": [
   "dtype promotion to float64 (asserted per integration and per ufunc result)",
-  "roundoff floor mistaken for convergence (minimum must lie inside the grid)",
-  "target unreachable at any N (counterexample)"
+  "roundoff floor mistaken for convergence (minimum must lie inside the grid; float32 KL plateau)",
+  "target unreachable at any N or iteration (counterexamples)",
+  "operation count differing from the PTX kernel's instructions",
+  "capture absent, malformed, for another workload or another host (regression tests)"
  ],
  "findings": [
   {
@@ -65,6 +68,10 @@
    "claim": "float64 RK4 endpoint error converges at order 4 on the sphere geodesics (N = 16..256)",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.05,
     "rel": 0.0
@@ -141,6 +148,10 @@
    "claim": "float32 RK4 endpoint error stops improving: its minimum is a truncation/roundoff crossover inside the step grid, followed by a roundoff-dominated plateau above it",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-12,
     "rel": 0.5
@@ -199,6 +210,10 @@
    "claim": "Smallest grid N (>= 16) meeting each accuracy target, by precision (None: not reached for N <= 2048; 16 is censored at the grid minimum)",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -280,6 +295,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.5
@@ -376,6 +395,10 @@
    "claim": "Per RK4 step the kernel performs the same counted arithmetic in float32 and float64, every ufunc result staying in the declared precision (the float32 and float64 transcendental implementations differ)",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -420,58 +443,374 @@
   {
    "assigned_by": "ciw.lab.evidence",
    "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "first float32 iteration meeting the target minus the first float64 one",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "first float64 iteration meeting the target minus the planned K",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "iterations": 256,
+     "name": "common Gaussian VI workload (examples/energy-accuracy/problem.json)",
+     "precisions": [
+      "float64",
+      "float32"
+     ],
+     "seed": null
+    }
+   },
+   "claim": "float32 and float64 runs of the common Gaussian VI workload first meet its declared 1e-8 nat KL target at the same iteration, the one `ciw energy record` plans",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "integer counts, refusal codes or exact comparisons",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": "iterations",
+   "value": {
+    "float32": 38,
+    "float64": 38,
+    "planned_iterations": 38
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 1.0008379705985913,
+      "passed": true,
+      "reference": "float32 KL after 256 iterations over its minimum (a plateau, not convergence)",
+      "reference_kind": "analytic",
+      "tolerance": 2.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 2.429755366417848e-14,
+      "passed": true,
+      "reference": "float32 KL floor above (2^-24)^2 = 3.6e-15 nats",
+      "reference_kind": "analytic",
+      "tolerance": 3.6e-15
+     },
+     {
+      "comparison": "le",
+      "observed": 2.501812828182609e-18,
+      "passed": true,
+      "reference": "float64 KL after 256 iterations over the float32 floor",
+      "reference_kind": "high_precision",
+      "tolerance": 1e-06
+     }
+    ],
+    "generator": {
+     "iterations": 256,
+     "name": "common Gaussian VI workload (examples/energy-accuracy/problem.json)",
+     "precisions": [
+      "float64",
+      "float32"
+     ],
+     "seed": null
+    }
+   },
+   "claim": "The float32 iteration stalls at a KL floor set by float32 roundoff while float64 keeps converging",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
+   "regression_tolerance": {
+    "abs": 1e-28,
+    "rel": 0.1
+   },
+   "uncertainty": {
+    "basis": "absolute: the exact posterior is itself evaluated in binary64 (observation-space conditioning), so KL values near 1e-30 nats reflect the reference's rounding; the prepared inputs come from a LAPACK solve, so the float32 floor may move by a few percent across platforms (regression tolerance rel 0.1)",
+    "kind": "reference_error",
+    "value": 1e-30
+   },
+   "unit": "nat",
+   "value": {
+    "float32_floor_iteration": 66,
+    "float32_floor_kl": 2.429755366417848e-14,
+    "float32_kl_at_256": 2.4317914299766754e-14,
+    "float64_kl_at_256": 6.078793145049708e-32
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "float32 iterations (of 0..256) meeting 1e-14 nats",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "float64 reaches 1e-14 nats within 256 iterations (1 = no)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "iterations": 256,
+     "name": "common Gaussian VI workload (examples/energy-accuracy/problem.json)",
+     "precisions": [
+      "float64",
+      "float32"
+     ],
+     "seed": null
+    }
+   },
+   "claim": "Lowering the common Gaussian VI workload to float32 cannot reach a 1e-14 nat KL target within 256 iterations, while float64 reaches it",
+   "counterexample": {
+    "statement": "Halving floating-point precision reaches every accuracy target of the Gaussian VI workload at no greater operation count",
+    "witness": {
+     "float32_floor_kl": 2.429755366417848e-14,
+     "float64_iteration": 69,
+     "target_kl_nats": 1e-14
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
+   "regression_tolerance": {
+    "abs": 1e-28,
+    "rel": 0.1
+   },
+   "uncertainty": {
+    "basis": "absolute: the exact posterior is itself evaluated in binary64 (observation-space conditioning), so KL values near 1e-30 nats reflect the reference's rounding; the prepared inputs come from a LAPACK solve, so the float32 floor may move by a few percent across platforms (regression tolerance rel 0.1)",
+    "kind": "reference_error",
+    "value": 1e-30
+   },
+   "unit": null,
+   "value": {
+    "float32_floor_kl": 2.429755366417848e-14,
+    "float64_iteration": 69
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "float64 instrumented iteration flops minus the PTX loop's instructions",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "float64 instrumented output flops minus the PTX output block's instructions",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "float64 ufunc results outside float64 (promotion) or uncounted ufunc calls",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "float32 instrumented iteration flops minus the PTX loop's instructions",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "float32 instrumented output flops minus the PTX output block's instructions",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "float32 ufunc results outside float32 (promotion) or uncounted ufunc calls",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "instrumented_replicas": 1,
+     "iterations": 256,
+     "name": "common Gaussian VI workload (examples/energy-accuracy/problem.json)",
+     "precisions": [
+      "float64",
+      "float32"
+     ],
+     "seed": null
+    }
+   },
+   "claim": "Per replica iteration the float32 and float64 runs of the common workload execute the same 24 counted operations (7 in the output block), every result in the declared precision",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "integer counts, refusal codes or exact comparisons",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "float32": {
+     "iteration_flops": 24,
+     "output_flops": 7,
+     "result_dtypes": [
+      "float32"
+     ],
+     "results_outside_dtype": 0
+    },
+    "float64": {
+     "iteration_flops": 24,
+     "output_flops": 7,
+     "result_dtypes": [
+      "float64"
+     ],
+     "results_outside_dtype": 0
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
     "notes": [
-     "no capture path measures a float32 workload: the T115 RAPL capture brackets the float64 generic integrator and T116 measures the Gaussian VI kernel; Deferred research question: a dtype-parameterized capture of energy_gpu_kernels.rk4_batch (a RAPL bracket with the dtype named in the declared workload, or an NVML capture of a float32 and a float64 GPU kernel) gated like T115/T116, so energy per accepted trajectory can be compared across precisions; no existing capture path measures a float32 RK4 workload"
+     "no rapl-log capture was bound (--capture rapl-log=PATH or CIW_LAB_RAPL_LOG); the lab runner acquires no energy measurement: make one with `python -m ciw.lab.energy_gpu_telemetry rapl-capture` on a Linux host with readable intel-rapl counters (needs hardware:rapl)"
     ]
    },
-   "claim": "float32 lowers the energy per accepted trajectory relative to float64 on real CPU or GPU hardware",
+   "claim": "CPU package energy per batch of the common Gaussian VI workload in float32 and in float64 (NumPy reference, RAPL, gross and idle-subtracted)",
    "domain": "physical",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
-   "unit": "J/trajectory",
+   "unit": "J/batch",
+   "value": null
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": [
+     "implementation missing: no float32 implementation of the gaussian_vi PTX kernel exists (ciw.energy_cuda is binary64 only, and `ciw energy record` captures only it), so a float32 GPU workload cannot run on any host; Deferred research question: extend the common workload's GPU path beyond the binary64 gaussian_vi PTX kernel of ciw.energy_cuda: a float32 rendering of the same kernel, and a device-wide reduction of its per-replica outputs (a fixed tree over the stored order per T148's REDUCTION_POLICY, plus one atomicAdd variant), each compared with the NumPy reference by compare_outputs on the RTX 2080 host and captured with `ciw energy record` for energy; until then those claims stay not_established on every host"
+    ]
+   },
+   "claim": "GPU energy per batch of a float32 build of the common Gaussian VI workload",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "origin": [],
+   "uncertainty": null,
+   "unit": "J/batch",
    "value": null
   }
  ],
  "generated_artifacts": [
   {
-   "bytes": 1087,
+   "bytes": 17674,
    "path": "artifacts/T120/precision.json",
-   "sha256": "2391ac6836f7ef6ffb65e680a65af8f3386f812e0f94fafa0e52d20aea28624d"
+   "sha256": "c95ecfd7d6fcb362568c90ef612d8b848afc9b9f52eea56d012fc4d26107ca89"
   },
   {
    "bytes": 3333,
    "path": "artifacts/T120/precision.svg",
    "sha256": "85a212120901eb6c5c3f0c46ad09ab45c2a8584631bed5da138c1506baacea21"
+  },
+  {
+   "bytes": 38838,
+   "path": "artifacts/T120/common-workload-precision.svg",
+   "sha256": "d34fc262be9ec1db97ae81adcf910e087bb5df415c4c023f75b242a074f77d50"
   }
  ],
- "hypothesis": "float32 RK4 matches float64 until truncation error reaches float32 roundoff, after which more steps cannot buy accuracy; the counted operations per step are precision-independent.",
+ "hypothesis": "Lower precision buys nothing once roundoff dominates: float32 RK4 matches float64 until truncation error reaches float32 roundoff, and the float32 Gaussian VI iteration meets the workload's declared KL target as early as float64 but stalls at a roundoff floor below it; the counted operations per step or iteration are precision-independent, so any energy difference comes from how the hardware executes them, which only a capture can show.",
  "input_data": [
-  "6 equatorial sphere geodesics, L = 3.0, N in [16, 32, 64, 128, 256, 512, 1024, 2048]"
+  "6 equatorial sphere geodesics, L = 3.0, N in [16, 32, 64, 128, 256, 512, 1024, 2048]",
+  "the common Gaussian VI workload (examples/energy-accuracy/problem.json), float64 and float32, iterations 0..256; K = 38 and 4096 replicas per batch in a capture",
+  "optional operator capture bound as rapl-log (--capture rapl-log=PATH or CIW_LAB_RAPL_LOG)"
  ],
- "mathematical_model": "Global error ~ C h^4 + c N u with u = 2^-24 (float32) or 2^-53 (float64); cost ~ 4 N right-hand-side evaluations of fixed counted arithmetic.",
+ "mathematical_model": "RK4: global error ~ C h^4 + c N u with u = 2^-24 (float32) or 2^-53 (float64); cost ~ 4 N right-hand-side evaluations. Gaussian VI: a contraction toward the posterior, so KL decays geometrically until the iterate's rounding (relative u) leaves KL ~ u^2 above zero; cost replicas x (24 K + 7) operations per batch in either precision.",
  "number": 120,
- "numerical_result": "float64 order 3.963; float32 crossover minimum 5.83e-07 at N = 64, plateau median 2.46e-06 for N >= 128; smallest grid N per target {'0.0001': {'float32': 16, 'float64': 16}, '1e-05': {'float32': 32, 'float64': 32}, '1e-07': {'float32': None, 'float64': 128}, '1e-10': {'float32': None, 'float64': 512}, '1e-11': {'float32': None, 'float64': 1024}}.",
- "observation_model": "Endpoints computed entirely in the declared dtype, mapped to R^3 and compared in float64 with the exact great circle; maximum over trajectories.",
+ "numerical_result": "float64 RK4 order 3.963; float32 crossover minimum 5.83e-07 at N = 64, plateau median 2.46e-06 for N >= 128; smallest grid N per target {'0.0001': {'float32': 16, 'float64': 16}, '1e-05': {'float32': 32, 'float64': 32}, '1e-07': {'float32': None, 'float64': 128}, '1e-10': {'float32': None, 'float64': 512}, '1e-11': {'float32': None, 'float64': 1024}}; Gaussian VI first iteration meeting 1e-08 nats: {'float64': 38, 'float32': 38}; float32 KL floor 2.43e-14 at iteration 66; float64 reaches 1e-14 at iteration 69; energy: not measured (no accepted RAPL capture).",
+ "observation_model": "RK4 endpoints computed entirely in the declared dtype, mapped to R^3 and compared in float64 with the exact great circle; Gaussian VI outputs computed entirely in the declared dtype and scored in float64 by KL to the exact posterior (ciw.free_energy_math); a bound capture's float64 and float32 brackets give package energy per batch.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
   "status": "not_established"
  },
  "provider_runtime_identity": {
   "ciw_version": "0.1.0",
+  "common_workload": {
+   "implementation": "numpy",
+   "iterations": 38,
+   "kernel": "ciw.energy_cuda.PTX gaussian_vi",
+   "kernel_sha256": "601049a61cc1dc7b35d80ec7096dd5d81b3028c025472ec54983b4c1d666d699",
+   "name": "ciw.lab.gaussian-vi-iteration.v1",
+   "precision": "float64",
+   "prepared_input_sha256": "49ca05c0343c645d64ec77ffcf7053c1b1380910f7334cc50986fa45f560df86",
+   "problem_sha256": "f082e5dfbb2e735bdaf8b02e57734e29902d5077c70f53e2e7c5ce2eb8219ab7",
+   "replicas": 4096
+  },
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/energy_gpu.py": "a66107417b5bfa398077a919b2f5351ca222e9961fa8dfb3256b78efc17fd930",
-   "src/ciw/lab/energy_gpu_kernels.py": "366c477ff1af7f59b626f4e64bf994ae4cbce5754c0e9c5be1c2acb515f99f4b",
-   "src/ciw/lab/energy_gpu_telemetry.py": "df82c8748d3aa75384e3928bffcf516cd6f72cccde99edf8d21f089cc768bafa"
+   "src/ciw/energy_bench.py": "bd50806ba3128ff85a1d240bc9670db04082196ec050c51597ec0cc725e45046",
+   "src/ciw/energy_cuda.py": "9b4b86809e47cba7683dc0c238b0b052b6785fd09e629224c5f8f37b6d5a0e64",
+   "src/ciw/free_energy_math.py": "4f096c281c548e92ed7bb1d49a8fd58f3a4d6b48ababef2958331ca13f088a6e",
+   "src/ciw/lab/energy_gpu.py": "f49195ce5a78ced3c8da1562f4412f2fdc65d8cc2749dd4fbe0b25bc0334e773",
+   "src/ciw/lab/energy_gpu_kernels.py": "1198886637535f3f8ec26601aa70cdc16d1c175dc4286aa9807edec3910005d2",
+   "src/ciw/lab/energy_gpu_telemetry.py": "6935331e622266868a97ee78f8e34d185aa69009a62fedc8ea8273b3a9312bfc",
+   "src/ciw/lab/energy_gpu_workload.py": "5cdaf9fe9f25194dae561e060abf471567cfd3bb8df6c1836630a54c5085a9de"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "Deferred research question: a dtype-parameterized capture of energy_gpu_kernels.rk4_batch (a RAPL bracket with the dtype named in the declared workload, or an NVML capture of a float32 and a float64 GPU kernel) gated like T115/T116, so energy per accepted trajectory can be compared across precisions; no existing capture path measures a float32 RK4 workload; T148 for deterministic reduction policies",
- "report_id": "sha256:9f3f2127a08541f99e55b377d29b4f38025d5e3d31473b0805b03fb24c94d0bf",
+ "recommended_next_task": "Measure float32 and float64 package energy per batch of the common workload on a Linux host with readable intel-rapl counters (docs/lab/ENERGY_GPU.md): `python -m ciw.lab.energy_gpu_telemetry rapl-capture runs/rapl-<date>.json`, then `ciw lab run T115 T117 T120 --capture rapl-log=runs/rapl-<date>.json --output-dir results/rapl-<date>` on the same host, then `ciw lab hardware retain results/rapl-<date> --retained lab --run-id rapl-<date> --host \"<RAPL host>\"`. Deferred research question: extend the common workload's GPU path beyond the binary64 gaussian_vi PTX kernel of ciw.energy_cuda: a float32 rendering of the same kernel, and a device-wide reduction of its per-replica outputs (a fixed tree over the stored order per T148's REDUCTION_POLICY, plus one atomicAdd variant), each compared with the NumPy reference by compare_outputs on the RTX 2080 host and captured with `ciw energy record` for energy; until then those claims stay not_established on every host",
+ "report_id": "sha256:ba7760fd79bf02804f1110f4cb59369585a4a0921a7566d287a3183ae8472f9e",
  "schema": "ciw.lab-task-report.v1",
  "section": "energy-gpu",
  "state": "partial",
@@ -490,14 +829,37 @@
   "check: Per RK4 step the kernel performs the same counted arithmetic in float32 and float64, every ufunc result staying in the declared precision (the float32 and float64 transcendental implementations differ) vs float64 instrumented flops minus the count derived from the source: 4 x (6 mul + 1 div) + 3 x 4 x 2 stage + 4 x 5 + 4 x 2 combine",
   "check: Per RK4 step the kernel performs the same counted arithmetic in float32 and float64, every ufunc result staying in the declared precision (the float32 and float64 transcendental implementations differ) vs float64 instrumented sin/cos calls minus 4 x 2",
   "check: Per RK4 step the kernel performs the same counted arithmetic in float32 and float64, every ufunc result staying in the declared precision (the float32 and float64 transcendental implementations differ) vs float64 ufunc results outside float64 (promotion) or uncounted ufunc calls",
+  "check: float32 and float64 runs of the common Gaussian VI workload first meet its declared 1e-8 nat KL target at the same iteration, the one `ciw energy record` plans vs first float32 iteration meeting the target minus the first float64 one",
+  "check: float32 and float64 runs of the common Gaussian VI workload first meet its declared 1e-8 nat KL target at the same iteration, the one `ciw energy record` plans vs first float64 iteration meeting the target minus the planned K",
+  "check: The float32 iteration stalls at a KL floor set by float32 roundoff while float64 keeps converging vs float32 KL after 256 iterations over its minimum (a plateau, not convergence)",
+  "check: The float32 iteration stalls at a KL floor set by float32 roundoff while float64 keeps converging vs float32 KL floor above (2^-24)^2 = 3.6e-15 nats",
+  "check: The float32 iteration stalls at a KL floor set by float32 roundoff while float64 keeps converging vs float64 KL after 256 iterations over the float32 floor",
+  "check: Lowering the common Gaussian VI workload to float32 cannot reach a 1e-14 nat KL target within 256 iterations, while float64 reaches it vs float32 iterations (of 0..256) meeting 1e-14 nats",
+  "check: Lowering the common Gaussian VI workload to float32 cannot reach a 1e-14 nat KL target within 256 iterations, while float64 reaches it vs float64 reaches 1e-14 nats within 256 iterations (1 = no)",
+  "check: Per replica iteration the float32 and float64 runs of the common workload execute the same 24 counted operations (7 in the output block), every result in the declared precision vs float64 instrumented iteration flops minus the PTX loop's instructions",
+  "check: Per replica iteration the float32 and float64 runs of the common workload execute the same 24 counted operations (7 in the output block), every result in the declared precision vs float64 instrumented output flops minus the PTX output block's instructions",
+  "check: Per replica iteration the float32 and float64 runs of the common workload execute the same 24 counted operations (7 in the output block), every result in the declared precision vs float64 ufunc results outside float64 (promotion) or uncounted ufunc calls",
+  "check: Per replica iteration the float32 and float64 runs of the common workload execute the same 24 counted operations (7 in the output block), every result in the declared precision vs float32 instrumented iteration flops minus the PTX loop's instructions",
+  "check: Per replica iteration the float32 and float64 runs of the common workload execute the same 24 counted operations (7 in the output block), every result in the declared precision vs float32 instrumented output flops minus the PTX output block's instructions",
+  "check: Per replica iteration the float32 and float64 runs of the common workload execute the same 24 counted operations (7 in the output block), every result in the declared precision vs float32 ufunc results outside float32 (promotion) or uncounted ufunc calls",
   "pytest: tests/test_lab_energy_gpu.py::test_precision_study_float32_floor_and_counterexample",
+  "pytest: tests/test_lab_energy_gpu.py::test_common_workload_precision_study",
+  "pytest: tests/test_lab_energy_gpu.py::test_rapl_capture_is_analyzed_read_only_and_gated",
+  "pytest: tests/test_lab_energy_gpu.py::test_rapl_brackets_exclude_preparation_and_respect_the_port_limit",
+  "pytest: tests/test_lab_energy_gpu.py::test_workload_tasks_digest_the_workload_sources",
+  "pytest: tests/test_lab_energy_gpu.py::test_common_workload_matches_the_ptx_kernel_and_the_energy_problem",
+  "pytest: tests/test_lab_energy_gpu.py::test_next_steps_name_work_that_delivers",
   "pytest: tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance"
  ],
  "tests_skipped": [],
  "title": "Compare precision versus energy cost.",
- "uncertainty": "float32 errors depend on the platform's float32 sin/cos and vary by tens of percent; float64 order fit is stable to about 0.05.",
+ "uncertainty": "float32 RK4 errors depend on the platform's float32 sin/cos and vary by tens of percent; the Gaussian VI iteration uses no library function, so its float32 and float64 values are exact IEEE results, scored against a binary64 reference whose own rounding shows below about 1e-30 nats; a RAPL energy would carry model error and background load.",
  "unresolved_assumptions": [
-  "Energy cost was not measured; operation counts do not capture memory traffic, vector width, transcendental cost or GPU float32 throughput",
-  "Deferred research question: a dtype-parameterized capture of energy_gpu_kernels.rk4_batch (a RAPL bracket with the dtype named in the declared workload, or an NVML capture of a float32 and a float64 GPU kernel) gated like T115/T116, so energy per accepted trajectory can be compared across precisions; no existing capture path measures a float32 RK4 workload"
+  "Operation counts do not capture memory traffic, vector width, transcendental cost or GPU float32 throughput; only a capture relates precision to energy",
+  "The NumPy reference runs each precision vectorized across replicas; CPU energy per batch reflects that implementation, not the GPU kernel",
+  "Both precision brackets share one boundary (telemetry.NUMPY_BOUNDARY): the prepared inputs are computed once before bracketing and excluded; each batch includes the rounding of the 15 inputs to its precision and their broadcast to the replica columns",
+  "implementation missing: no float32 implementation of the gaussian_vi PTX kernel exists (ciw.energy_cuda is binary64 only, and `ciw energy record` captures only it), so a float32 GPU workload cannot run on any host",
+  "Deferred research question: extend the common workload's GPU path beyond the binary64 gaussian_vi PTX kernel of ciw.energy_cuda: a float32 rendering of the same kernel, and a device-wide reduction of its per-replica outputs (a fixed tree over the stored order per T148's REDUCTION_POLICY, plus one atomicAdd variant), each compared with the NumPy reference by compare_outputs on the RTX 2080 host and captured with `ciw energy record` for energy; until then those claims stay not_established on every host",
+  "no rapl-log capture was bound (--capture rapl-log=PATH or CIW_LAB_RAPL_LOG); the lab runner acquires no energy measurement: make one with `python -m ciw.lab.energy_gpu_telemetry rapl-capture` on a Linux host with readable intel-rapl counters (needs hardware:rapl)"
  ]
 }

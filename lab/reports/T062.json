@@ -67,6 +67,10 @@
    "claim": "With the correct cross-correlated measurement covariance, run-averaged NEES and NIS lie inside their per-tick 99% chi-square intervals at 90% or more of ticks and the whitened innovations have identity covariance",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -146,6 +150,10 @@
    "claim": "With independent camera and tracker noise (no common mode) and the matching block-diagonal covariance, run-averaged NEES and NIS lie inside their per-tick 99% chi-square intervals at 90% or more of ticks and the whitened innovations have identity covariance",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -215,6 +223,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -278,6 +290,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -354,6 +370,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -419,6 +439,10 @@
    "claim": "Monte Carlo grand-mean NEES and NIS of all four filters agree with the exact moment recursion for tr(P_f^-1 E[e e^T]) and tr(S_f^-1 E[nu nu^T]) within 4 run-level standard errors",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -474,6 +498,9 @@
    "claim": "Real camera and tracker noises share the common-mode covariance assumed here, or are independent",
    "domain": "sensor_performance",
    "evidence_status": "not_established",
+   "origin": [
+    "synthetic_inputs"
+   ],
    "uncertainty": null,
    "unit": null,
    "value": "not established: the cross-correlation is a declared synthetic parameter"
@@ -514,15 +541,15 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/sensor_fusion.py": "40b135c5bf93c1932bc774d41ddaef98419aceb524fba12ce16c1786e00f15d2",
+   "src/ciw/lab/sensor_fusion.py": "c386ab36c33cac3cd0fc441a91a80905525ae0b8ffab763af70a925fc9f5994e",
    "src/ciw/lab/sensor_fusion_bench.py": "f373849a4c6836fa20685c59ce7a6fe6bf732f6df9d6a49646cdc017262dd656",
    "src/ciw/lab/sensor_fusion_common.py": "db3b0430ad5c13920239cef354da61b64ab1b01f84b2d3d5aff2f78840a5867a",
-   "src/ciw/lab/sensor_fusion_objects.py": "93fc55ddca91f1adfb886d21805ea8f82586548ee84e1f6cc7daed4df1f53bb9"
+   "src/ciw/lab/sensor_fusion_objects.py": "50ec8767a90f261f108d6524c7ff55d22604b55cc9853e749ba4c5f71bc76081"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T066: show that residual consistency needs the filter covariance S, not raw R.",
- "report_id": "sha256:c180a691bc6e7602930462c2d68527183c169f4a91fbe91436548ceca85194a1",
+ "recommended_next_task": "Deferred research question: a slowly varying common-mode bias (first-order Gauss-Markov) shared by camera and tracker, fused with and without an augmented bias state, and its detection from NIS alone (no ground truth); this task covers only white common-mode error.",
+ "report_id": "sha256:8497a469f372a3f1e6633703cd68470d59720d8ba0990067808013eddb45050a",
  "schema": "ciw.lab-task-report.v1",
  "section": "sensor-fusion",
  "state": "completed",

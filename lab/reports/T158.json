@@ -41,6 +41,9 @@
    "claim": "Re-executed figure tasks without wall-clock timings regenerate byte-identical figures",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -78,6 +81,9 @@
    },
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -107,6 +113,9 @@
    "claim": "Retained figures hash to the digests their reports record",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -136,6 +145,9 @@
    "claim": "Retained figures are well-formed SVG documents",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -151,9 +163,9 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 32002,
+   "bytes": 32359,
    "path": "artifacts/T158/figure-index.json",
-   "sha256": "a11b000c69d489f6d953a19427aa78e02abc4f6d2e488d2a118517109e320ca5"
+   "sha256": "6b6f5fbb82f65178030e441b6e0afcfd213c4b04ac5447d9d69f102157a70a31"
   }
  ],
  "hypothesis": "Retained SVG figures are byte-for-byte reproducible when their tasks are re-executed.",
@@ -164,7 +176,7 @@
  ],
  "mathematical_model": "Figure bytes are a function of the task's data: ciw.lab.svg uses no clock or randomness, so a regenerated figure can differ only if its data does. A figure plotting wall-clock timings is expected to differ.",
  "number": 158,
- "numerical_result": "122 retained figures from 82 tasks; 45 regenerated and compared from 41 tasks: 0 timing-free mismatches, 1 of 1 wall-clock timing figures differ; 41 tasks not re-executed, 0 not comparable; 0 digest mismatches, 0 malformed.",
+ "numerical_result": "123 retained figures from 82 tasks; 46 regenerated and compared from 41 tasks: 0 timing-free mismatches, 1 of 1 wall-clock timing figures differ; 41 tasks not re-executed, 0 not comparable; 0 digest mismatches, 0 malformed.",
  "observation_model": "No physical observation; reads retained computational records only.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -178,13 +190,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/research_portfolio.py": "0fd0ed475a38bf81fd2145f64cf1335856a471c58d406347c3b66b0f66672702",
+   "src/ciw/lab/research_portfolio.py": "145b8ee8456e1dd57bf2a05fa20e1ce55bd33356522436d8901eb1adfb60fc7a",
    "src/ciw/lab/svg.py": "c257826c20831a9e7f68ac20a665729f91474d83df10b64743d4d5ef1b61ced2"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Have figure tasks declare timing figures in their reports, and re-execute every figure task on a second platform (Windows CI) outside the section's time budget.",
- "report_id": "sha256:5a0d306f2ec96ce3ef77aa69cb3b70b8135e18f069b82f83b6987949d365c0be",
+ "report_id": "sha256:790428e29b19df27ea38cc9910d337cb7c5957c7bba87fd42e40b985958251a3",
  "schema": "ciw.lab-task-report.v1",
  "section": "research-portfolio",
  "state": "partial",

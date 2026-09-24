@@ -57,27 +57,27 @@
  "datum_frames": [
   {
    "constrains": "z translation, rotations about x and y",
-   "feature": "specimen back face (or mandrel axis for the cylinder)",
+   "feature": "specimen back face",
    "id": "A",
    "points": 3,
    "role": "primary"
   },
   {
    "constrains": "y translation, rotation about z",
-   "feature": "long reference edge (or axial scribe line)",
+   "feature": "long reference edge",
    "id": "B",
    "points": 2,
    "role": "secondary"
   },
   {
    "constrains": "x translation",
-   "feature": "end stop (or circumferential scribe)",
+   "feature": "end stop face",
    "id": "C",
    "points": 1,
    "role": "tertiary"
   },
   {
-   "definition": "z normal of A; x = B direction projected into A; origin on A, B plane and C plane (ciw.lab.manufacturing_metrology.datum_frame_321)",
+   "definition": "z normal of plane A; x = B direction projected into A; origin on A, B plane and C plane (ciw.lab.manufacturing_metrology.datum_frame_321)",
    "feature": "3-2-1 construction",
    "id": "PART",
    "role": "datum reference frame"
@@ -91,9 +91,122 @@
  "fixtures": [
   {
    "clamping": "normal to A, over the rests, torque declared per specimen",
-   "contacts": "three spherical rests on A, two on B, one on C",
+   "contacts": "three 12 mm spherical rests on A, two cylindrical side stops on B, one end stop on C",
+   "datum_targets": [
+    {
+     "adapters": [
+      "1.5 in SMR (tracker)",
+      "coded photogrammetry target adapter with the same centre (camera)"
+     ],
+     "frame": "FIXTURE: base plate centre, z up (declared)",
+     "id": "FX-321-T1",
+     "nest": "1.5 in SMR nest",
+     "position_mm": [
+      -200.0,
+      -200.0,
+      0.0
+     ]
+    },
+    {
+     "adapters": [
+      "1.5 in SMR (tracker)",
+      "coded photogrammetry target adapter with the same centre (camera)"
+     ],
+     "frame": "FIXTURE: base plate centre, z up (declared)",
+     "id": "FX-321-T2",
+     "nest": "1.5 in SMR nest",
+     "position_mm": [
+      200.0,
+      -200.0,
+      0.0
+     ]
+    },
+    {
+     "adapters": [
+      "1.5 in SMR (tracker)",
+      "coded photogrammetry target adapter with the same centre (camera)"
+     ],
+     "frame": "FIXTURE: base plate centre, z up (declared)",
+     "id": "FX-321-T3",
+     "nest": "1.5 in SMR nest",
+     "position_mm": [
+      200.0,
+      200.0,
+      0.0
+     ]
+    },
+    {
+     "adapters": [
+      "1.5 in SMR (tracker)",
+      "coded photogrammetry target adapter with the same centre (camera)"
+     ],
+     "frame": "FIXTURE: base plate centre, z up (declared)",
+     "id": "FX-321-T4",
+     "nest": "1.5 in SMR nest",
+     "position_mm": [
+      -200.0,
+      200.0,
+      0.0
+     ]
+    }
+   ],
+   "geometry": "rests at 10% and 90% of the specimen length under A; side stops 200 mm apart along B; a 400 x 400 mm base plate",
    "id": "FX-321",
-   "kind": "3-2-1 kinematic nest"
+   "kind": "3-2-1 kinematic nest",
+   "locates": [
+    "A",
+    "B",
+    "C"
+   ]
+  },
+  {
+   "contacts": "two dowel pins against datum B and a stop face against datum C",
+   "declared_realization_tolerance": {
+    "heading_rad": 0.0005,
+    "lateral_mm": 0.05,
+    "level": "1 sigma, relative pose of an offset insert's tape (insert and laying)",
+    "status": "declared_not_verified"
+   },
+   "declared_reseat_repeatability": {
+    "heading_rad": 0.0001,
+    "lateral_mm": 0.01,
+    "level": "1 sigma per seating against B and C; two seatings enter the relative pose of an offset tape",
+    "status": "declared_not_verified"
+   },
+   "geometry": {
+    "offsets": "each insert's slot centreline is offset laterally and rotated in heading from the nominal slot at the slot exit, where the tape leaves the jig",
+    "slot_length_mm": 20.0,
+    "slot_width_mm": 3.05,
+    "slots": [
+     {
+      "heading_offset_rad": 0.0,
+      "insert": "insert N0",
+      "lateral_offset_mm": 0.0,
+      "slot": "N0"
+     },
+     {
+      "heading_offset_rad": 0.0,
+      "insert": "insert L2",
+      "lateral_offset_mm": 2.0,
+      "slot": "L2"
+     },
+     {
+      "heading_offset_rad": 0.005,
+      "insert": "insert H5",
+      "lateral_offset_mm": 0.0,
+      "slot": "H5"
+     }
+    ],
+    "slots_per_insert": 1
+   },
+   "id": "JIG-START-01",
+   "kind": "tape start jig with one single-slot insert per tape",
+   "locates": [
+    "B",
+    "C"
+   ],
+   "use": "one tape per seating: seat the jig against B and C with the insert of the tape to be laid, lay that tape, remove the jig; re-seat it for the next tape after the previous one is removed",
+   "verification": "no pre-laying check: the start-pose step probes each laid tape with the CMM at s = 0 and 20 mm, and the prediction is budgeted open loop or conditioned on that pose (T138, T140)"
   }
  ],
  "frame_chain": [
@@ -127,6 +240,13 @@
    "declared_standard_uncertainty_mm": 0.02,
    "id": "camera",
    "kind": "photogrammetry camera system with coded targets",
+   "settings": {
+    "exposure": "fixed exposure with ring flash; lossless images",
+    "reference": "the holder's datum targets (coded adapters in their SMR nests) in every image set, so image sets taken while different tapes are on the specimen share the FIXTURE frame; the declared uncertainty covers a target coordinate in that frame, registration of its image set included",
+    "scale": "SB-1000 in every image set",
+    "stations": "12 convergent stations: 4 heights x 3 roll angles",
+    "targets": "6 mm coded retro-reflective targets"
+   },
    "status": "declared_not_verified"
   },
   {
@@ -134,18 +254,35 @@
    "id": "tracker",
    "kind": "laser tracker with 1.5 in SMR",
    "length_dependent_um_per_m": 6.0,
+   "settings": {
+    "mode": "stable point, 2 s averaging",
+    "target": "1.5 in SMR",
+    "warm_up_h": 1
+   },
    "status": "declared_not_verified"
   },
   {
    "declared_standard_uncertainty_mm": 0.002,
    "id": "cmm",
    "kind": "bridge CMM with touch-trigger probe",
+   "settings": {
+    "approach_speed_mm_s": 3.0,
+    "points": "as listed in each procedure step",
+    "probe": "touch-trigger probe, 2 mm ruby stylus",
+    "qualification": "stylus qualified on GS-25.4 at the start of each session"
+   },
    "status": "declared_not_verified"
   }
  ],
  "markers": [
   {
    "id": "M00",
+   "kind": "specimen marker",
+   "position_mm": [
+    -120.0,
+    -120.0,
+    0.0
+   ],
    "u_mm": [
     -120.0,
     -120.0
@@ -153,6 +290,12 @@
   },
   {
    "id": "M01",
+   "kind": "specimen marker",
+   "position_mm": [
+    -60.0,
+    -120.0,
+    0.0
+   ],
    "u_mm": [
     -60.0,
     -120.0
@@ -160,6 +303,12 @@
   },
   {
    "id": "M02",
+   "kind": "specimen marker",
+   "position_mm": [
+    0.0,
+    -120.0,
+    0.0
+   ],
    "u_mm": [
     0.0,
     -120.0
@@ -167,6 +316,12 @@
   },
   {
    "id": "M03",
+   "kind": "specimen marker",
+   "position_mm": [
+    60.0,
+    -120.0,
+    0.0
+   ],
    "u_mm": [
     60.0,
     -120.0
@@ -174,6 +329,12 @@
   },
   {
    "id": "M04",
+   "kind": "specimen marker",
+   "position_mm": [
+    120.0,
+    -120.0,
+    0.0
+   ],
    "u_mm": [
     120.0,
     -120.0
@@ -181,6 +342,12 @@
   },
   {
    "id": "M05",
+   "kind": "specimen marker",
+   "position_mm": [
+    -120.0,
+    -60.0,
+    0.0
+   ],
    "u_mm": [
     -120.0,
     -60.0
@@ -188,6 +355,12 @@
   },
   {
    "id": "M06",
+   "kind": "specimen marker",
+   "position_mm": [
+    -60.0,
+    -60.0,
+    0.0
+   ],
    "u_mm": [
     -60.0,
     -60.0
@@ -195,6 +368,12 @@
   },
   {
    "id": "M07",
+   "kind": "specimen marker",
+   "position_mm": [
+    0.0,
+    -60.0,
+    0.0
+   ],
    "u_mm": [
     0.0,
     -60.0
@@ -202,6 +381,12 @@
   },
   {
    "id": "M08",
+   "kind": "specimen marker",
+   "position_mm": [
+    60.0,
+    -60.0,
+    0.0
+   ],
    "u_mm": [
     60.0,
     -60.0
@@ -209,6 +394,12 @@
   },
   {
    "id": "M09",
+   "kind": "specimen marker",
+   "position_mm": [
+    120.0,
+    -60.0,
+    0.0
+   ],
    "u_mm": [
     120.0,
     -60.0
@@ -216,6 +407,12 @@
   },
   {
    "id": "M10",
+   "kind": "specimen marker",
+   "position_mm": [
+    -120.0,
+    0.0,
+    0.0
+   ],
    "u_mm": [
     -120.0,
     0.0
@@ -223,6 +420,12 @@
   },
   {
    "id": "M11",
+   "kind": "specimen marker",
+   "position_mm": [
+    -60.0,
+    0.0,
+    0.0
+   ],
    "u_mm": [
     -60.0,
     0.0
@@ -230,6 +433,12 @@
   },
   {
    "id": "M12",
+   "kind": "specimen marker",
+   "position_mm": [
+    0.0,
+    0.0,
+    0.0
+   ],
    "u_mm": [
     0.0,
     0.0
@@ -237,6 +446,12 @@
   },
   {
    "id": "M13",
+   "kind": "specimen marker",
+   "position_mm": [
+    60.0,
+    0.0,
+    0.0
+   ],
    "u_mm": [
     60.0,
     0.0
@@ -244,6 +459,12 @@
   },
   {
    "id": "M14",
+   "kind": "specimen marker",
+   "position_mm": [
+    120.0,
+    0.0,
+    0.0
+   ],
    "u_mm": [
     120.0,
     0.0
@@ -251,6 +472,12 @@
   },
   {
    "id": "M15",
+   "kind": "specimen marker",
+   "position_mm": [
+    -120.0,
+    60.0,
+    0.0
+   ],
    "u_mm": [
     -120.0,
     60.0
@@ -258,6 +485,12 @@
   },
   {
    "id": "M16",
+   "kind": "specimen marker",
+   "position_mm": [
+    -60.0,
+    60.0,
+    0.0
+   ],
    "u_mm": [
     -60.0,
     60.0
@@ -265,6 +498,12 @@
   },
   {
    "id": "M17",
+   "kind": "specimen marker",
+   "position_mm": [
+    0.0,
+    60.0,
+    0.0
+   ],
    "u_mm": [
     0.0,
     60.0
@@ -272,6 +511,12 @@
   },
   {
    "id": "M18",
+   "kind": "specimen marker",
+   "position_mm": [
+    60.0,
+    60.0,
+    0.0
+   ],
    "u_mm": [
     60.0,
     60.0
@@ -279,6 +524,12 @@
   },
   {
    "id": "M19",
+   "kind": "specimen marker",
+   "position_mm": [
+    120.0,
+    60.0,
+    0.0
+   ],
    "u_mm": [
     120.0,
     60.0
@@ -286,6 +537,12 @@
   },
   {
    "id": "M20",
+   "kind": "specimen marker",
+   "position_mm": [
+    -120.0,
+    120.0,
+    0.0
+   ],
    "u_mm": [
     -120.0,
     120.0
@@ -293,6 +550,12 @@
   },
   {
    "id": "M21",
+   "kind": "specimen marker",
+   "position_mm": [
+    -60.0,
+    120.0,
+    0.0
+   ],
    "u_mm": [
     -60.0,
     120.0
@@ -300,6 +563,12 @@
   },
   {
    "id": "M22",
+   "kind": "specimen marker",
+   "position_mm": [
+    0.0,
+    120.0,
+    0.0
+   ],
    "u_mm": [
     0.0,
     120.0
@@ -307,6 +576,12 @@
   },
   {
    "id": "M23",
+   "kind": "specimen marker",
+   "position_mm": [
+    60.0,
+    120.0,
+    0.0
+   ],
    "u_mm": [
     60.0,
     120.0
@@ -314,6 +589,12 @@
   },
   {
    "id": "M24",
+   "kind": "specimen marker",
+   "position_mm": [
+    120.0,
+    120.0,
+    0.0
+   ],
    "u_mm": [
     120.0,
     120.0
@@ -322,24 +603,777 @@
  ],
  "paths": [
   {
+   "centreline_mm": [
+    [
+     -120.0,
+     30.0,
+     0.0
+    ],
+    [
+     -115.0,
+     30.0,
+     0.0
+    ],
+    [
+     -110.0,
+     30.0,
+     0.0
+    ],
+    [
+     -105.0,
+     30.0,
+     0.0
+    ],
+    [
+     -100.0,
+     30.0,
+     0.0
+    ],
+    [
+     -95.0,
+     30.0,
+     0.0
+    ],
+    [
+     -90.0,
+     30.0,
+     0.0
+    ],
+    [
+     -85.0,
+     30.0,
+     0.0
+    ],
+    [
+     -80.0,
+     30.0,
+     0.0
+    ],
+    [
+     -75.0,
+     30.0,
+     0.0
+    ],
+    [
+     -70.0,
+     30.0,
+     0.0
+    ],
+    [
+     -65.0,
+     30.0,
+     0.0
+    ],
+    [
+     -60.0,
+     30.0,
+     0.0
+    ],
+    [
+     -55.0,
+     30.0,
+     0.0
+    ],
+    [
+     -50.0,
+     30.0,
+     0.0
+    ],
+    [
+     -45.0,
+     30.0,
+     0.0
+    ],
+    [
+     -40.0,
+     30.0,
+     0.0
+    ],
+    [
+     -35.0,
+     30.0,
+     0.0
+    ],
+    [
+     -30.0,
+     30.0,
+     0.0
+    ],
+    [
+     -25.0,
+     30.0,
+     0.0
+    ],
+    [
+     -20.0,
+     30.0,
+     0.0
+    ],
+    [
+     -15.0,
+     30.0,
+     0.0
+    ],
+    [
+     -10.0,
+     30.0,
+     0.0
+    ],
+    [
+     -5.0,
+     30.0,
+     0.0
+    ],
+    [
+     0.0,
+     30.0,
+     0.0
+    ],
+    [
+     5.0,
+     30.0,
+     0.0
+    ],
+    [
+     10.0,
+     30.0,
+     0.0
+    ],
+    [
+     15.0,
+     30.0,
+     0.0
+    ],
+    [
+     20.0,
+     30.0,
+     0.0
+    ],
+    [
+     25.0,
+     30.0,
+     0.0
+    ],
+    [
+     30.0,
+     30.0,
+     0.0
+    ],
+    [
+     35.0,
+     30.0,
+     0.0
+    ],
+    [
+     40.0,
+     30.0,
+     0.0
+    ],
+    [
+     45.0,
+     30.0,
+     0.0
+    ],
+    [
+     50.0,
+     30.0,
+     0.0
+    ],
+    [
+     55.0,
+     30.0,
+     0.0
+    ],
+    [
+     60.0,
+     30.0,
+     0.0
+    ],
+    [
+     65.0,
+     30.0,
+     0.0
+    ],
+    [
+     70.0,
+     30.0,
+     0.0
+    ],
+    [
+     75.0,
+     30.0,
+     0.0
+    ],
+    [
+     80.0,
+     30.0,
+     0.0
+    ],
+    [
+     85.0,
+     30.0,
+     0.0
+    ],
+    [
+     90.0,
+     30.0,
+     0.0
+    ],
+    [
+     95.0,
+     30.0,
+     0.0
+    ],
+    [
+     100.0,
+     30.0,
+     0.0
+    ],
+    [
+     105.0,
+     30.0,
+     0.0
+    ],
+    [
+     110.0,
+     30.0,
+     0.0
+    ],
+    [
+     115.0,
+     30.0,
+     0.0
+    ],
+    [
+     120.0,
+     30.0,
+     0.0
+    ]
+   ],
    "heading_rad": 0.0,
    "id": "N0",
+   "kind": "tape",
    "length_mm": 240.0,
-   "realization": "centreline of a 3 mm unsteered adhesive tape laid from a start jig that sets the start point and heading; with no in-plane steering the tape follows a geodesic",
+   "realization": "centreline of a 3 mm unsteered adhesive tape laid from the slot of its own insert of the start jig JIG-START-01, which sets the start point and heading; with no in-plane steering the tape follows a geodesic",
    "start_u_mm": [
     -120.0,
-    0.0
+    30.0
+   ],
+   "uses": [
+    "JIG-START-01"
    ]
   },
   {
+   "centreline_mm": [
+    [
+     -120.0,
+     32.0,
+     0.0
+    ],
+    [
+     -115.0,
+     32.0,
+     0.0
+    ],
+    [
+     -110.0,
+     32.0,
+     0.0
+    ],
+    [
+     -105.0,
+     32.0,
+     0.0
+    ],
+    [
+     -100.0,
+     32.0,
+     0.0
+    ],
+    [
+     -95.0,
+     32.0,
+     0.0
+    ],
+    [
+     -90.0,
+     32.0,
+     0.0
+    ],
+    [
+     -85.0,
+     32.0,
+     0.0
+    ],
+    [
+     -80.0,
+     32.0,
+     0.0
+    ],
+    [
+     -75.0,
+     32.0,
+     0.0
+    ],
+    [
+     -70.0,
+     32.0,
+     0.0
+    ],
+    [
+     -65.0,
+     32.0,
+     0.0
+    ],
+    [
+     -60.0,
+     32.0,
+     0.0
+    ],
+    [
+     -55.0,
+     32.0,
+     0.0
+    ],
+    [
+     -50.0,
+     32.0,
+     0.0
+    ],
+    [
+     -45.0,
+     32.0,
+     0.0
+    ],
+    [
+     -40.0,
+     32.0,
+     0.0
+    ],
+    [
+     -35.0,
+     32.0,
+     0.0
+    ],
+    [
+     -30.0,
+     32.0,
+     0.0
+    ],
+    [
+     -25.0,
+     32.0,
+     0.0
+    ],
+    [
+     -20.0,
+     32.0,
+     0.0
+    ],
+    [
+     -15.0,
+     32.0,
+     0.0
+    ],
+    [
+     -10.0,
+     32.0,
+     0.0
+    ],
+    [
+     -5.0,
+     32.0,
+     0.0
+    ],
+    [
+     0.0,
+     32.0,
+     0.0
+    ],
+    [
+     5.0,
+     32.0,
+     0.0
+    ],
+    [
+     10.0,
+     32.0,
+     0.0
+    ],
+    [
+     15.0,
+     32.0,
+     0.0
+    ],
+    [
+     20.0,
+     32.0,
+     0.0
+    ],
+    [
+     25.0,
+     32.0,
+     0.0
+    ],
+    [
+     30.0,
+     32.0,
+     0.0
+    ],
+    [
+     35.0,
+     32.0,
+     0.0
+    ],
+    [
+     40.0,
+     32.0,
+     0.0
+    ],
+    [
+     45.0,
+     32.0,
+     0.0
+    ],
+    [
+     50.0,
+     32.0,
+     0.0
+    ],
+    [
+     55.0,
+     32.0,
+     0.0
+    ],
+    [
+     60.0,
+     32.0,
+     0.0
+    ],
+    [
+     65.0,
+     32.0,
+     0.0
+    ],
+    [
+     70.0,
+     32.0,
+     0.0
+    ],
+    [
+     75.0,
+     32.0,
+     0.0
+    ],
+    [
+     80.0,
+     32.0,
+     0.0
+    ],
+    [
+     85.0,
+     32.0,
+     0.0
+    ],
+    [
+     90.0,
+     32.0,
+     0.0
+    ],
+    [
+     95.0,
+     32.0,
+     0.0
+    ],
+    [
+     100.0,
+     32.0,
+     0.0
+    ],
+    [
+     105.0,
+     32.0,
+     0.0
+    ],
+    [
+     110.0,
+     32.0,
+     0.0
+    ],
+    [
+     115.0,
+     32.0,
+     0.0
+    ],
+    [
+     120.0,
+     32.0,
+     0.0
+    ]
+   ],
    "id": "L2",
+   "kind": "tape",
    "lateral_offset_mm": 2.0,
-   "of": "N0"
+   "of": "N0",
+   "uses": [
+    "JIG-START-01"
+   ]
   },
   {
+   "centreline_mm": [
+    [
+     -120.0,
+     30.0,
+     0.0
+    ],
+    [
+     -115.0001,
+     30.025,
+     0.0
+    ],
+    [
+     -110.0001,
+     30.05,
+     0.0
+    ],
+    [
+     -105.0002,
+     30.075,
+     0.0
+    ],
+    [
+     -100.0002,
+     30.1,
+     0.0
+    ],
+    [
+     -95.0003,
+     30.125,
+     0.0
+    ],
+    [
+     -90.0004,
+     30.15,
+     0.0
+    ],
+    [
+     -85.0004,
+     30.175,
+     0.0
+    ],
+    [
+     -80.0005,
+     30.2,
+     0.0
+    ],
+    [
+     -75.0006,
+     30.225,
+     0.0
+    ],
+    [
+     -70.0006,
+     30.25,
+     0.0
+    ],
+    [
+     -65.0007,
+     30.275,
+     0.0
+    ],
+    [
+     -60.0007,
+     30.3,
+     0.0
+    ],
+    [
+     -55.0008,
+     30.325,
+     0.0
+    ],
+    [
+     -50.0009,
+     30.35,
+     0.0
+    ],
+    [
+     -45.0009,
+     30.375,
+     0.0
+    ],
+    [
+     -40.001,
+     30.4,
+     0.0
+    ],
+    [
+     -35.0011,
+     30.425,
+     0.0
+    ],
+    [
+     -30.0011,
+     30.45,
+     0.0
+    ],
+    [
+     -25.0012,
+     30.475,
+     0.0
+    ],
+    [
+     -20.0012,
+     30.5,
+     0.0
+    ],
+    [
+     -15.0013,
+     30.525,
+     0.0
+    ],
+    [
+     -10.0014,
+     30.55,
+     0.0
+    ],
+    [
+     -5.0014,
+     30.575,
+     0.0
+    ],
+    [
+     -0.0015,
+     30.6,
+     0.0
+    ],
+    [
+     4.9984,
+     30.625,
+     0.0
+    ],
+    [
+     9.9984,
+     30.65,
+     0.0
+    ],
+    [
+     14.9983,
+     30.675,
+     0.0
+    ],
+    [
+     19.9983,
+     30.7,
+     0.0
+    ],
+    [
+     24.9982,
+     30.725,
+     0.0
+    ],
+    [
+     29.9981,
+     30.75,
+     0.0
+    ],
+    [
+     34.9981,
+     30.775,
+     0.0
+    ],
+    [
+     39.998,
+     30.8,
+     0.0
+    ],
+    [
+     44.9979,
+     30.825,
+     0.0
+    ],
+    [
+     49.9979,
+     30.85,
+     0.0
+    ],
+    [
+     54.9978,
+     30.875,
+     0.0
+    ],
+    [
+     59.9978,
+     30.9,
+     0.0
+    ],
+    [
+     64.9977,
+     30.925,
+     0.0
+    ],
+    [
+     69.9976,
+     30.95,
+     0.0
+    ],
+    [
+     74.9976,
+     30.975,
+     0.0
+    ],
+    [
+     79.9975,
+     31.0,
+     0.0
+    ],
+    [
+     84.9974,
+     31.025,
+     0.0
+    ],
+    [
+     89.9974,
+     31.05,
+     0.0
+    ],
+    [
+     94.9973,
+     31.075,
+     0.0
+    ],
+    [
+     99.9973,
+     31.1,
+     0.0
+    ],
+    [
+     104.9972,
+     31.125,
+     0.0
+    ],
+    [
+     109.9971,
+     31.15,
+     0.0
+    ],
+    [
+     114.9971,
+     31.175,
+     0.0
+    ],
+    [
+     119.997,
+     31.2,
+     0.0
+    ]
+   ],
    "heading_offset_rad": 0.005,
    "id": "H5",
-   "of": "N0"
+   "kind": "tape",
+   "of": "N0",
+   "uses": [
+    "JIG-START-01"
+   ]
   }
  ],
  "predicted_quantities": [
@@ -381,18 +1415,432 @@
   }
  ],
  "procedure": [
-  "Soak specimen and fixture; log temperatures.",
-  "Verify instruments on GS-25.4 and SB-1000 before and after; retain both checks.",
-  "Locate the specimen in FX-321; probe datums A, B, C and build the PART frame.",
-  "Measure all 25 coded markers with the camera (12 stations) and the CMM; retain raw files.",
-  "Lay the nominal and offset tapes from the start jig without in-plane steering (a robot may carry the tape head but must not steer it); never draw a path traced from the model.",
-  "Probe each tape centreline with the CMM at s = 0 and s = 20 mm; the relative start offset and heading of the offset tape condition the prediction (T138).",
-  "Measure tape centreline points every 30 mm with the camera.",
-  "Repeat the full acquisition three times, removing and re-seating the specimen in FX-321 between repeats (repeatability replicates); the crossed Gage R&R and type-1 studies follow the separate T131 procedure (gage-rr-procedure.json). Retain every raw file through the T139 retention record."
+  {
+   "action": "Soak the specimen and its holder for 4 h at 20 +/- 1 C; log air and part temperature every 10 min.",
+   "outputs": [
+    "environment log with an explicit UTC offset"
+   ],
+   "step": 1,
+   "uses": [
+    "FX-321"
+   ]
+  },
+  {
+   "action": "Check the instruments before the acquisition: the camera images SB-1000; the tracker measures the SB-1000 end points with its SMR; the CMM probes GS-25.4 at 25 points. Retain every check.",
+   "check": "each artifact reading lies within 2 U of its certificate value, U from the declared instrument uncertainty; otherwise stop and recalibrate",
+   "outputs": [
+    "instrument checks before the acquisition"
+   ],
+   "step": 2,
+   "uses": [
+    "camera",
+    "tracker",
+    "cmm",
+    "GS-25.4",
+    "SB-1000"
+   ]
+  },
+  {
+   "action": "Locate the specimen in FX-321 (3-2-1 nest); clamp; probe datum A (3 points), B (2 points) and C (1 point) with the CMM and build the PART frame (datum_frame_321).",
+   "datums": [
+    "A",
+    "B",
+    "C",
+    "PART"
+   ],
+   "outputs": [
+    "datum point file",
+    "PART frame"
+   ],
+   "step": 3,
+   "uses": [
+    "FX-321",
+    "cmm"
+   ]
+  },
+  {
+   "action": "Measure the four datum targets of FX-321 (a 1.5 in SMR seated on each) with the tracker to register FIXTURE in WORLD (frame chain).",
+   "outputs": [
+    "WORLD -> FIXTURE transform and its covariance"
+   ],
+   "step": 4,
+   "uses": [
+    "FX-321",
+    "tracker"
+   ]
+  },
+  {
+   "action": "Measure all 25 coded markers with the camera (12 stations, SB-1000 and the FX-321 datum targets in every image set) and probe their centres with the CMM; export the camera coordinates as the photogrammetry capture.",
+   "outputs": [
+    "raw images",
+    "photogrammetry capture (ciw.lab-mfg-target-capture.v1)",
+    "CMM marker point file"
+   ],
+   "step": 5,
+   "uses": [
+    "camera",
+    "cmm",
+    "SB-1000",
+    "FX-321"
+   ]
+  },
+  {
+   "action": "Repeat steps 3 and 5 twice more, removing the specimen from FX-321 and re-seating it between repeats (replicates of the marker measurement).",
+   "outputs": [
+    "two further replicates (replicates of the marker measurement)"
+   ],
+   "repeats": [
+    3,
+    5
+   ],
+   "step": 6,
+   "uses": [
+    "FX-321",
+    "cmm",
+    "camera",
+    "SB-1000"
+   ]
+  },
+  {
+   "action": "Seat the start jig JIG-START-01 against datums B and C with the insert of tape N0; lay tape N0 from its slot without in-plane steering (a robot may carry the tape head but must not steer it; never draw a path traced from the model); remove the jig. No other tape is on the specimen.",
+   "datums": [
+    "B",
+    "C"
+   ],
+   "lays": [
+    "N0"
+   ],
+   "outputs": [
+    "tape N0: identity and laying time"
+   ],
+   "step": 7,
+   "uses": [
+    "JIG-START-01"
+   ]
+  },
+  {
+   "action": "Probe the centreline of tape N0 with the CMM at s = 0 and s = 20 mm; export the points as rows N0-S0 and N0-S20 of the cmm capture.",
+   "outputs": [
+    "cmm capture rows N0-S0 and N0-S20 (ciw.lab-mfg-target-capture.v1)"
+   ],
+   "step": 8,
+   "uses": [
+    "cmm"
+   ]
+  },
+  {
+   "action": "Place 6 mm coded targets on the centreline of tape N0 every 30 mm from s = 0 to 240 mm.",
+   "outputs": [
+    "targets on tape N0"
+   ],
+   "places": [
+    "N0"
+   ],
+   "step": 9,
+   "uses": []
+  },
+  {
+   "action": "Measure the targets on tape N0 with the camera, with SB-1000 and the FX-321 datum targets (coded adapters) in every image set; retain their coordinates (no task reads them yet).",
+   "outputs": [
+    "raw images",
+    "target coordinates of tape N0"
+   ],
+   "step": 10,
+   "uses": [
+    "camera",
+    "SB-1000",
+    "FX-321"
+   ]
+  },
+  {
+   "action": "Repeat steps 3, 8 and 10 twice more, removing the specimen from FX-321 and re-seating it between repeats (replicates of tape N0; the tape and its targets stay in place).",
+   "outputs": [
+    "two further replicates (replicates of tape N0; the tape and its targets stay in place)"
+   ],
+   "repeats": [
+    3,
+    8,
+    10
+   ],
+   "step": 11,
+   "uses": [
+    "FX-321",
+    "cmm",
+    "camera",
+    "SB-1000"
+   ]
+  },
+  {
+   "action": "Remove the targets and tape N0.",
+   "outputs": [
+    "tape N0 removed"
+   ],
+   "removes": [
+    "N0"
+   ],
+   "step": 12,
+   "uses": []
+  },
+  {
+   "action": "Seat the start jig JIG-START-01 against datums B and C with the insert of tape L2; lay tape L2 from its slot without in-plane steering (a robot may carry the tape head but must not steer it; never draw a path traced from the model); remove the jig. No other tape is on the specimen.",
+   "datums": [
+    "B",
+    "C"
+   ],
+   "lays": [
+    "L2"
+   ],
+   "outputs": [
+    "tape L2: identity and laying time"
+   ],
+   "step": 13,
+   "uses": [
+    "JIG-START-01"
+   ]
+  },
+  {
+   "action": "Probe the centreline of tape L2 with the CMM at s = 0 and s = 20 mm; export the points as rows L2-S0 and L2-S20 of the cmm capture.",
+   "outputs": [
+    "cmm capture rows L2-S0 and L2-S20 (ciw.lab-mfg-target-capture.v1)"
+   ],
+   "step": 14,
+   "uses": [
+    "cmm"
+   ]
+  },
+  {
+   "action": "Place 6 mm coded targets on the centreline of tape L2 every 30 mm from s = 0 to 240 mm.",
+   "outputs": [
+    "targets on tape L2"
+   ],
+   "places": [
+    "L2"
+   ],
+   "step": 15,
+   "uses": []
+  },
+  {
+   "action": "Measure the targets on tape L2 with the camera, with SB-1000 and the FX-321 datum targets (coded adapters) in every image set; retain their coordinates (no task reads them yet).",
+   "outputs": [
+    "raw images",
+    "target coordinates of tape L2"
+   ],
+   "step": 16,
+   "uses": [
+    "camera",
+    "SB-1000",
+    "FX-321"
+   ]
+  },
+  {
+   "action": "Repeat steps 3, 14 and 16 twice more, removing the specimen from FX-321 and re-seating it between repeats (replicates of tape L2; the tape and its targets stay in place).",
+   "outputs": [
+    "two further replicates (replicates of tape L2; the tape and its targets stay in place)"
+   ],
+   "repeats": [
+    3,
+    14,
+    16
+   ],
+   "step": 17,
+   "uses": [
+    "FX-321",
+    "cmm",
+    "camera",
+    "SB-1000"
+   ]
+  },
+  {
+   "action": "Remove the targets and tape L2.",
+   "outputs": [
+    "tape L2 removed"
+   ],
+   "removes": [
+    "L2"
+   ],
+   "step": 18,
+   "uses": []
+  },
+  {
+   "action": "Seat the start jig JIG-START-01 against datums B and C with the insert of tape H5; lay tape H5 from its slot without in-plane steering (a robot may carry the tape head but must not steer it; never draw a path traced from the model); remove the jig. No other tape is on the specimen.",
+   "datums": [
+    "B",
+    "C"
+   ],
+   "lays": [
+    "H5"
+   ],
+   "outputs": [
+    "tape H5: identity and laying time"
+   ],
+   "step": 19,
+   "uses": [
+    "JIG-START-01"
+   ]
+  },
+  {
+   "action": "Probe the centreline of tape H5 with the CMM at s = 0 and s = 20 mm; export the points as rows H5-S0 and H5-S20 of the cmm capture.",
+   "outputs": [
+    "cmm capture rows H5-S0 and H5-S20 (ciw.lab-mfg-target-capture.v1)"
+   ],
+   "step": 20,
+   "uses": [
+    "cmm"
+   ]
+  },
+  {
+   "action": "Place 6 mm coded targets on the centreline of tape H5 every 30 mm from s = 0 to 240 mm.",
+   "outputs": [
+    "targets on tape H5"
+   ],
+   "places": [
+    "H5"
+   ],
+   "step": 21,
+   "uses": []
+  },
+  {
+   "action": "Measure the targets on tape H5 with the camera, with SB-1000 and the FX-321 datum targets (coded adapters) in every image set; retain their coordinates (no task reads them yet).",
+   "outputs": [
+    "raw images",
+    "target coordinates of tape H5"
+   ],
+   "step": 22,
+   "uses": [
+    "camera",
+    "SB-1000",
+    "FX-321"
+   ]
+  },
+  {
+   "action": "Repeat steps 3, 20 and 22 twice more, removing the specimen from FX-321 and re-seating it between repeats (replicates of tape H5; the tape and its targets stay in place).",
+   "outputs": [
+    "two further replicates (replicates of tape H5; the tape and its targets stay in place)"
+   ],
+   "repeats": [
+    3,
+    20,
+    22
+   ],
+   "step": 23,
+   "uses": [
+    "FX-321",
+    "cmm",
+    "camera",
+    "SB-1000"
+   ]
+  },
+  {
+   "action": "Remove the targets and tape H5.",
+   "outputs": [
+    "tape H5 removed"
+   ],
+   "removes": [
+    "H5"
+   ],
+   "step": 24,
+   "uses": []
+  },
+  {
+   "action": "Check the instruments after the acquisition: the camera images SB-1000; the tracker measures the SB-1000 end points with its SMR; the CMM probes GS-25.4 at 25 points. Retain every check.",
+   "check": "each artifact reading lies within 2 U of its certificate value, U from the declared instrument uncertainty; otherwise stop and recalibrate",
+   "outputs": [
+    "instrument checks after the acquisition"
+   ],
+   "step": 25,
+   "uses": [
+    "camera",
+    "tracker",
+    "cmm",
+    "GS-25.4",
+    "SB-1000"
+   ]
+  },
+  {
+   "action": "Retain every raw file, replicate and instrument check with its T139 retention record (ciw.lab-measurement-retention.v1).",
+   "outputs": [
+    "retained raw data and retention records"
+   ],
+   "step": 26,
+   "uses": []
+  }
  ],
  "production_acceptance": "outside_system",
  "protocol_id": "MFG-FLAT-PLATE-01",
  "purpose": "Establish the measurement chain on a specimen where chord, geodesic and Jacobi predictions are trivial, so any residual belongs to the instruments, frames or procedure.",
+ "raw_formats": [
+  {
+   "columns": [
+    "target",
+    "x_mm",
+    "y_mm",
+    "z_mm",
+    "u_mm"
+   ],
+   "coordinates": "CAD (model) frame through the declared PART -> CAD placement",
+   "frame": "CAD",
+   "header": "lines '# key: value' for schema, protocol, instrument, frame, unit, origin; unit mm; origin measurement or synthetic (a synthetic capture starts with '# SYNTHETIC CAPTURE - NOT A MEASUREMENT')",
+   "ids": [
+    "M00",
+    "M01",
+    "M02",
+    "M03",
+    "M04",
+    "M05",
+    "M06",
+    "M07",
+    "M08",
+    "M09",
+    "M10",
+    "M11",
+    "M12",
+    "M13",
+    "M14",
+    "M15",
+    "M16",
+    "M17",
+    "M18",
+    "M19",
+    "M20",
+    "M21",
+    "M22",
+    "M23",
+    "M24"
+   ],
+   "instrument": "camera",
+   "media_type": "text/csv",
+   "reader": "ciw.lab.manufacturing_records.read_capture; T138 compares the 47 marker-pair chords",
+   "role": "photogrammetry",
+   "schema": "ciw.lab-mfg-target-capture.v1",
+   "uncertainty": "u_mm is the declared standard uncertainty of each row (positive); for targets, of each coordinate in the common frame, including the registration of its image set"
+  },
+  {
+   "columns": [
+    "target",
+    "x_mm",
+    "y_mm",
+    "z_mm",
+    "u_mm"
+   ],
+   "coordinates": "CAD (model) frame through the declared PART -> CAD placement",
+   "frame": "CAD",
+   "header": "lines '# key: value' for schema, protocol, instrument, frame, unit, origin; unit mm; origin measurement or synthetic (a synthetic capture starts with '# SYNTHETIC CAPTURE - NOT A MEASUREMENT')",
+   "ids": [
+    "N0-S0",
+    "N0-S20",
+    "L2-S0",
+    "L2-S20",
+    "H5-S0",
+    "H5-S20"
+   ],
+   "instrument": "cmm",
+   "media_type": "text/csv",
+   "reader": "ciw.lab.manufacturing_records.read_capture; retained by T138, not yet used to condition the plate prediction",
+   "role": "cmm",
+   "schema": "ciw.lab-mfg-target-capture.v1",
+   "uncertainty": "u_mm is the declared standard uncertainty of each row (positive); for targets, of each coordinate in the common frame, including the registration of its image set"
+  }
+ ],
  "required_raw_data": [
   "raw camera images (lossless) with exposure metadata and SHA-256 digests",
   "tracker/CMM native point files with instrument serial and firmware",
@@ -414,6 +1862,13 @@
   "surface_model": {
    "name": "plane"
   }
+ },
+ "tape_layout": {
+  "marker_diameter_mm": 6.0,
+  "rules": "tapes on the specimen together: centrelines at least a tape width plus a target diameter apart; slots used in one laying: at least one slot width apart; every tape centreline clears each specimen marker and datum probe point by half the wider of tape and target plus half a marker (manufacturing_records._tape_layout, on the predicted centrelines)",
+  "sequence": "one tape on the specimen at a time: seat the start jig with that tape's insert, lay the tape, remove the jig, measure the tape and its targets (with re-seated replicates) and remove them before the next tape is laid; every tape is measured in the PART frame of the specimen's own datums",
+  "tape_width_mm": 3.0,
+  "target_diameter_mm": 6.0
  },
  "task_id": "T126",
  "title": "Flat-plate zero-curvature control"

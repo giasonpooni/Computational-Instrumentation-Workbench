@@ -61,6 +61,10 @@
    "claim": "Power-of-two scaling of (A, P, x) inside LAPACK's window never changes the PLSR code or margin ratio",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -102,6 +106,10 @@
    "claim": "Scaling P and x by powers of two never changes a discrete-time PLSR code, near the threshold included",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -142,6 +150,10 @@
    "claim": "Outside LAPACK's scaling window power-of-two rescaling of A and P never moves a PLSR code to a certificate that the exact class contradicts",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -190,6 +202,10 @@
    "claim": "Scaling the witness by 2^-1074 drives its resolution to zero while its unit-scale code is DECREASE_NOT_DEFINITE; the scaled code is retained as an artifact",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -236,6 +252,10 @@
    "claim": "No unscaled PLSR verdict certifies a form whose exact class is not negative definite",
    "domain": "numerical",
    "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check",
+    "provider"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -272,6 +292,10 @@
    "claim": "numpy.linalg.eigvalsh commutes exactly with power-of-two scaling while max|M| stays in [2^-485, 2^485]",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -337,14 +361,14 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/lyapunov.py": "cbcb4d58d7313d7c537957a1b7dd35039a21bae80125bf59147eeed2c1232bbb",
+   "src/ciw/lab/lyapunov.py": "dcda8ba21661667cc03bb126a393e93158a306b4991d0a2450d8e18abe62cb27",
    "src/ciw/lab/lyapunov_provider.py": "da3465b48b5f5efc47bfe6ab8379cf2cf2bc23e4835dc7ff047252e77fa6ef17",
    "src/ciw/lab/lyapunov_reference.py": "bdf0bb5074ae2caca6c8a5d8e63a15e346b007098e6def6b058d077719bc1336"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T103: overflow and underflow of states and parameters; propose that PLSR pre-scale M by a power of two into LAPACK's window before eigvalsh so verdicts are exactly scale-invariant.",
- "report_id": "sha256:886b06dd389572fcd0ae635a47791bda4df6eae235dae1265e9d7caa3483b70e",
+ "recommended_next_task": "Deferred research question (upstream PLSR change): pre-scale M by a power of two into LAPACK's window before eigvalsh and re-run this scaling study to check that verdicts outside [2^-485, 2^485] become exactly scale-invariant, as they are inside the window.",
+ "report_id": "sha256:4fd40e7be16c366878d0b88df1c0ed0a981adb68f52beb13a798188b191b83bb",
  "schema": "ciw.lab-task-report.v1",
  "section": "lyapunov",
  "state": "completed",
@@ -361,14 +385,16 @@
   "pytest: tests/test_lab_lyapunov.py::test_t102_power_of_two_scaling",
   "pytest: tests/test_lab_lyapunov.py::test_eigvalsh_scaling_window",
   "pytest: tests/test_lab_lyapunov.py::test_discrete_razor_edge_sits_at_the_threshold",
+  "pytest: tests/test_lab_lyapunov.py::test_t101_t102_defer_cross_platform_reproduction_as_one_question",
   "pytest: tests/test_lab_lyapunov.py::test_checks_are_unconditional_and_observed_values_are_computed",
-  "pytest: tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider"
+  "pytest: tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider",
+  "pytest: tests/test_lab_lyapunov.py::test_next_steps_name_forward_work"
  ],
  "tests_skipped": [],
  "title": "Test power-of-two homogeneous scaling.",
  "uncertainty": "Inside-window results are exact (bitwise). Outside-window flip counts and the scaled witness's code depend on the LAPACK/BLAS build and on how close each case sits to the threshold; they are retained in the artifact, and only the soundness counts are checked finding values.",
  "unresolved_assumptions": [
   "The LAPACK window [2^-485, 2^485] is taken from reference dsyevd (RMIN, RMAX); other LAPACK builds may rescale differently.",
-  "Outside-window flip counts and the scaled witness's code depend on the LAPACK/BLAS build; they are retained in the artifact, and only the soundness property is checked."
+  "Deferred research question (cross-platform reproduction): run T101 and T102 against the pinned PLSR on Windows x86-64, on macOS arm64 and on Linux x86-64 with a LAPACK other than the retained OpenBLAS build (for example MKL), and check that the PLSR codes below the normal range (the subnormal witness's code included; resolution-floor.json) and the outside-window code flips and scaled-witness code (scaling-invariance.json) match the retained ones case for case, and that every finding value matches within its regression tolerance; these codes are retained as artifacts only because LAPACK/BLAS builds may decide them differently, and no second build has been compared."
  ]
 }

@@ -8,18 +8,19 @@
    "hardware_measured": 0,
    "independently_verified": 0,
    "not_established": 0,
-   "numerically_verified": 1,
+   "numerically_verified": 2,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "Every stated assumption appears once per exact wording with every task stating it; citations agree with a raw-text recount of the report files.",
- "experiment": "Collect, deduplicate and count assumptions; write JSON and Markdown ledgers; parse the Markdown back and recount assumption items from the raw report text.",
+ "expected_invariant": "Every stated assumption appears once per exact wording with every task stating it; citations agree with a raw-text recount of the report files; every statement grouped under an open item holds its matched phrase in its task's raw report file.",
+ "experiment": "Collect, deduplicate and count assumptions; group the open items; write JSON and Markdown ledgers; parse the Markdown ledger back and recount assumption items and open-item phrases from the raw report text.",
  "failure_modes_checked": [
   "assumptions dropped by the traversal (raw-text recount)",
   "ledger lines not restating their assumption",
-  "reports stating no assumption"
+  "reports stating no assumption",
+  "cross-cutting open items missing from the ledger"
  ],
  "findings": [
   {
@@ -47,6 +48,9 @@
    "claim": "Unresolved-assumption ledger lists every assumption stated by the retained reports",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -57,28 +61,65 @@
     "value": 0
    },
    "unit": "assumptions",
-   "value": 418
+   "value": 452
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "grouped statements whose phrase is absent from their task's raw report file",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Cross-cutting open items are listed with every retained statement that raises them",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "integer count over retained report files; no rounding, sampling or tolerance",
+    "kind": "exact",
+    "value": 0
+   },
+   "unit": "items",
+   "value": 3
   }
  ],
  "generated_artifacts": [
   {
-   "bytes": 77476,
+   "bytes": 102247,
    "path": "artifacts/T166/unresolved-assumptions.json",
-   "sha256": "0ec801664a06b9f83313e94cb16ccc3c3ff2a65c23c917bebd138a0346d50716"
+   "sha256": "35a482edbea816f0e88033b05104bffdc876c1c143ff1c5e71899acac87e6e55"
   },
   {
-   "bytes": 59000,
+   "bytes": 48183,
+   "path": "artifacts/T166/open-items.json",
+   "sha256": "b82f27991ccc908d8362be87b2b95b1c8e611961efcac5d159703ab28f495f2c"
+  },
+  {
+   "bytes": 112619,
    "path": "artifacts/T166/UNRESOLVED_ASSUMPTIONS.md",
-   "sha256": "fa0a6a7d4d7d0fb5404db3b24e09a9ac4409501ffd03e5be39fc128ab1e03ef7"
+   "sha256": "2c7a9f961ed4c537020d474a29e71be840f94de31b77fc6ec0aa5a64f2aa4eed"
   }
  ],
- "hypothesis": "Every unresolved assumption stated by any task can be listed in one ledger with its source task.",
+ "hypothesis": "Every unresolved assumption stated by any task can be listed in one ledger with its source task, and the open items that cut across tasks can be grouped from the tasks' own statements.",
  "input_data": [
   "Retained reports of T001-T165 in the same output directory (this section's T155-T165 included)"
  ],
- "mathematical_model": "Ledger = union over reports of unresolved_assumptions, deduplicated by exact wording, with task references.",
+ "mathematical_model": "Ledger = union over reports of unresolved_assumptions, deduplicated by exact wording, with task references. Open items = key custody and signatures, telemetry provider provisioning and cross-platform reproduction, each with the assumptions, next steps and unestablished claims whose wording raises it.",
  "number": 166,
- "numerical_result": "418 distinct unresolved assumptions (439 statements) from 165 reports; 0 reports state none.",
+ "numerical_result": "452 distinct unresolved assumptions (501 statements) from 165 reports; 0 reports state none; open items: Key custody and signatures 60 statements from 31 tasks; Telemetry provider provisioning 17 statements from 7 tasks; Cross-platform reproduction 12 statements from 10 tasks.",
  "observation_model": "No physical observation; reads retained computational records only.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -92,12 +133,12 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/research_portfolio.py": "0fd0ed475a38bf81fd2145f64cf1335856a471c58d406347c3b66b0f66672702"
+   "src/ciw/lab/research_portfolio.py": "145b8ee8456e1dd57bf2a05fa20e1ce55bd33356522436d8901eb1adfb60fc7a"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "Attach each assumption to the experiment that would resolve it and track closure.",
- "report_id": "sha256:8f9de8a6696075a2f4cef318ec3e14880680118096f62d509743ee11f377734c",
+ "recommended_next_task": "Attach each assumption to the experiment that would resolve it and track closure, and open a queue extension for each of the three open items this ledger groups, which no queue task closes.",
+ "report_id": "sha256:b5b0afb8d7288c94c55260d698fdeb5911824f596c16fd0c9858444dce182a06",
  "schema": "ciw.lab-task-report.v1",
  "section": "research-portfolio",
  "state": "completed",
@@ -105,13 +146,16 @@
  "tests_passed": [
   "check: Unresolved-assumption ledger lists every assumption stated by the retained reports vs ledger lines that do not restate their assumption and tasks",
   "check: Unresolved-assumption ledger lists every assumption stated by the retained reports vs assumption statements minus a raw-text recount of the report files",
-  "pytest: tests/test_lab_research_portfolio.py::test_unresolved_assumption_ledger"
+  "check: Cross-cutting open items are listed with every retained statement that raises them vs grouped statements whose phrase is absent from their task's raw report file",
+  "pytest: tests/test_lab_research_portfolio.py::test_unresolved_assumption_ledger",
+  "pytest: tests/test_lab_research_portfolio.py::test_ledgers_list_cross_cutting_open_items"
  ],
  "tests_skipped": [],
  "title": "Record every unresolved assumption.",
  "uncertainty": "Exact counts; completeness depends on what each task states.",
  "unresolved_assumptions": [
   "T167 and T168 run after this ledger; their assumptions are in their own reports.",
-  "Assumptions are deduplicated by exact wording; one assumption worded differently is listed twice."
+  "Assumptions are deduplicated by exact wording; one assumption worded differently is listed twice.",
+  "Open items are grouped by phrases (research_portfolio.OPEN_ITEMS); a statement that raises one in other words is not grouped, and that no queue task closes them is read from the queue's titles, not checked."
  ]
 }

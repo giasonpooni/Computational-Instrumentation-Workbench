@@ -81,6 +81,10 @@
    "claim": "The shortest route switches at eps* = 4 delta, which vanishes as the unperturbed gap vanishes",
    "domain": "mathematical",
    "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -168,6 +172,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-07
@@ -192,6 +200,7 @@
    "claim": "A metric calibrated from physical measurements is accurate enough to decide between near-tied routes",
    "domain": "calibration",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -233,13 +242,13 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/flat_torus_topology.py": "1221001d96bf1f9aa2f9fea169a2b10bfb37230da11bfb6f1608ba9355c86b9a",
+   "src/ciw/lab/flat_torus_topology.py": "2c05c13905cc51906d41b89219b001396634a9d3bb8bda9bd32ac75a5523fdb1",
    "src/ciw/lab/flat_torus_topology_lattice.py": "15a33fcd29591e43dec16fa3b9ad26d6b6b86846872e9e6bf815508fb0dade63"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T032: counterexample library for 'shortest means safest'",
- "report_id": "sha256:1af0ba792b50d42348039a9eba35d4754bc9699056696ce7eb24651dc13cdfa4",
+ "recommended_next_task": "Deferred research question: repeat the route-switch study with a spatially varying metric perturbation (for example eps cos(2 pi x) added to g11 on the square torus), where routes bend continuously and the switch threshold need not be eps* = 4 delta",
+ "report_id": "sha256:b8342f6a1eef11387d7c99c9539cd84ee7fa67885ab5e54da3e2bd38950329c0",
  "schema": "ciw.lab-task-report.v1",
  "section": "flat-torus-topology",
  "state": "completed",
@@ -255,7 +264,8 @@
   "pytest: tests/test_lab_flat_torus_topology.py::test_t031_route_switch",
   "pytest: tests/test_lab_flat_torus_topology.py::test_regeneration_is_within_tolerance",
   "pytest: tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
-  "pytest: tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+  "pytest: tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_next_steps_name_forward_work"
  ],
  "tests_skipped": [],
  "title": "Study route changes under small metric perturbations.",

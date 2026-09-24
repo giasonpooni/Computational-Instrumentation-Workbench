@@ -53,6 +53,9 @@
    "claim": "Atlas integration of the great circle through the north pole matches the exact great circle",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-08,
     "rel": 0.05
@@ -82,6 +85,9 @@
    "claim": "Atlas accuracy is independent of the distance of closest approach to a pole",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.1,
     "rel": 0.0
@@ -111,6 +117,9 @@
    "claim": "Atlas integration keeps fourth-order convergence across chart switches",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.05,
     "rel": 0.0
@@ -159,6 +168,9 @@
    "claim": "Chart transitions are exact: round trip, speed preservation and difference Jacobian",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-07,
     "rel": 0.0
@@ -201,6 +213,10 @@
    "claim": "The better chart of the atlas always has det g / R^4 >= 1/2, so switching never chatters",
    "domain": "mathematical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.001,
     "rel": 0.0
@@ -255,6 +271,9 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1,
     "rel": 0.0
@@ -295,6 +314,9 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1.0,
     "rel": 0.0
@@ -362,6 +384,9 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1.0,
     "rel": 0.0
@@ -422,6 +447,10 @@
    "claim": "The Monge-plus-polar atlas of a graph surface has exact transitions and covers the plane with regularity above the analytic Monge bound",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-07,
     "rel": 0.0
@@ -473,6 +502,9 @@
    "claim": "The graph atlas integrates geodesics through and near the Gaussian-bump apex, where its polar chart alone fails or loses accuracy",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 0.1
@@ -498,6 +530,7 @@
    "claim": "Chart-switching geodesic integration is ready for tool paths over physical parts",
    "domain": "industrial_readiness",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -568,14 +601,14 @@
   "sources": {
    "src/ciw/lab/integrators.py": "a8cd5b2c5042c70970ae27975ef9387c4492ac981132cd9096bf8eafa8dc6084",
    "src/ciw/lab/surfaces.py": "e8f264c182743d0177d93b961a49d7ddf78f30d79a7a75b9fea4018b10d4eef0",
-   "src/ciw/lab/surfaces_discrete.py": "b47b6d9486e322c3e394e25b99849c0aa22039ce45b946825b0f3dbc1a3013b7",
+   "src/ciw/lab/surfaces_discrete.py": "9b277c6212ac8d7c563e3b2257c75438b37f5a73c992f6b9b7ec53a26ec4106f",
    "src/ciw/lab/surfaces_discrete_charts.py": "e1d7e0b8514c7795f0e41b26d993d44ae3f032ea67191b068194ec284f227e71",
    "src/ciw/lab/surfaces_discrete_geometry.py": "d4445a253778e1dff32b68a903a9caf560affa08ca5a7110207e54c8e1baa60e"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "Queue extension after T168: locate the chart-switch crossing with event detection in the adaptive integrator, and drive switching from the T037 require_regular refusal codes instead of a fixed regularity threshold.",
- "report_id": "sha256:0ac0bef697122858d377984ea6b59e96cd6b324ac85042dda9931f67a2d5233d",
+ "recommended_next_task": "Deferred research question (queue extension after T168): locate the chart-switch crossing with event detection in the adaptive integrator (switching now happens between steps), and drive switching from the T037 require_regular refusal codes instead of a fixed regularity threshold.",
+ "report_id": "sha256:b64d05310f24c15f01ae657828a514b5f9c761502a7f07fa7b6ba61f94b6569a",
  "schema": "ciw.lab-task-report.v1",
  "section": "surfaces-discrete",
  "state": "completed",

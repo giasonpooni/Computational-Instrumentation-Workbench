@@ -1,17 +1,22 @@
 {
- "cases": 320,
- "computational_domain_loophole": {
-  "label": "numerically_verified",
-  "rejection_label": "numerically_verified",
-  "rejection_screen": "acceptance_outside_authority_domain",
-  "screen": "acceptance_outside_authority_domain"
+ "authority_phrase_screen": {
+  "acceptance filed as computational_pipeline": "authority_outcome_refused",
+  "acceptance filed as physical with an acquisition record": "authority_outcome_refused",
+  "hand-built computational record carrying the acceptance statement (validate_finding)": "authority_outcome_refused",
+  "rejection filed as computational_pipeline": "authority_outcome_refused"
  },
+ "cases": 320,
  "decisions": {
   "accept": "production_acceptance_outside_system",
   "conditional": "production_acceptance_outside_system",
   "reject": "production_acceptance_outside_system"
  },
  "honest_label_with_hardware_basis": "not_established",
+ "paraphrase": {
+  "claim": "Coupon lot fit for shipment to the customer",
+  "label": "numerically_verified",
+  "section_screen": null
+ },
  "policy": {
   "authority": "external",
   "decisions_performed": false
@@ -23,6 +28,15 @@
    "part": "coupon-001"
   },
   "statement": "The workbench supplies evidence records only."
+ },
+ "section_only_statement": {
+  "claim": "Coupon lot scrapped",
+  "label_by_evidence_finding": "numerically_verified"
+ },
+ "section_screen": {
+  "'Coupon lot scrapped', which evidence.finding accepts": "acceptance_outside_authority_domain",
+  "acceptance statement in a hand-built computational record": "acceptance_outside_authority_domain",
+  "rejection statement in a hand-built computational record": "acceptance_outside_authority_domain"
  },
  "violations": 0
 }

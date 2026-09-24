@@ -2,7 +2,10 @@
  "changed_files": [
   "src/ciw/lab/observation.py",
   "src/ciw/lab/observation_modes.py",
-  "docs/lab/OBSERVATION.md"
+  "docs/lab/OBSERVATION.md",
+  "src/ciw/lab/sensor_fusion_intake.py",
+  "src/ciw/lab/sensor_fusion_objects.py",
+  "src/ciw/lab/sensor_fusion_bench.py"
  ],
  "evidence_status": {
   "counts": {
@@ -10,20 +13,21 @@
    "hardware_measured": 0,
    "independently_verified": 0,
    "not_established": 1,
-   "numerically_verified": 4,
+   "numerically_verified": 5,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
  "expected_invariant": "Exact agreement with hand-written maps on dyadic inputs; inverse round trip to rounding; refusal of every undeclared combination.",
- "experiment": "Combine mismatched records; apply declared frame and clock mappings; compare with independent hand-written formulas; attempt mappings with the wrong source frame, kind or epoch.",
+ "experiment": "Combine mismatched records; apply declared frame and clock mappings; compare with independent hand-written formulas; attempt mappings with the wrong source frame, kind or epoch; pass tracker records through the fusion intake (declared room-to-cell mapping, arrival-to-acquisition latency, tracker-to-fusion synchronization, 0.125 s tick grid) and offer it records whose frame, clock, epoch, latency or stamp is not covered by a declaration, including a one-tick-latency record offered through a single mapping that synchronizes its arrival stamp as an acquisition time.",
  "failure_modes_checked": [
   "frame, clock, epoch and basis mismatches",
   "mapping for another source frame",
   "mapping across frame kinds",
   "clock mapping for another epoch",
-  "mapping identity recorded on the result"
+  "mapping identity recorded on the result",
+  "fusion intake: unmapped frame, clock or epoch; arrival stamp without a latency mapping; contradictory latency; latency folded into a synchronization mapping; stamp off the tick grid"
  ],
  "findings": [
   {
@@ -63,6 +67,9 @@
    "claim": "Combining observations across frames, clocks, epochs or time bases without a declared mapping is refused",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -121,6 +128,9 @@
    "claim": "A declared rigid frame mapping is applied exactly on dyadic inputs, preserves distances to rounding and is recorded on the observation",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-14,
     "rel": 0
@@ -164,6 +174,9 @@
    "claim": "Declared clock mappings (arrival to acquisition, then clock to clock) are applied exactly",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -211,6 +224,9 @@
    "claim": "A mapping declared for another frame, frame kind or epoch is refused",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -230,11 +246,142 @@
   {
    "assigned_by": "ciw.lab.evidence",
    "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "fusion reading minus the hand-written quarter turn and projection (dyadic translation, m)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "fusion tick minus the tick of the dyadic acquisition time",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "fusion covariance minus the declared tracker sigma^2 I (m^2)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "recorded mapping identities (frame, latency, synchronization) minus three",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "expected_refusal": "unmapped_frame",
+      "observed_refusal": "unmapped_frame",
+      "passed": true,
+      "reference": "intake: unmapped frame",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "unmapped_clock",
+      "observed_refusal": "unmapped_clock",
+      "passed": true,
+      "reference": "intake: unmapped clock",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "unmapped_clock",
+      "observed_refusal": "unmapped_clock",
+      "passed": true,
+      "reference": "intake: unmapped epoch",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "unmapped_clock",
+      "observed_refusal": "unmapped_clock",
+      "passed": true,
+      "reference": "intake: arrival without latency mapping",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "latency_mismatch",
+      "observed_refusal": "latency_mismatch",
+      "passed": true,
+      "reference": "intake: latency mismatch",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "unmapped_clock",
+      "observed_refusal": "unmapped_clock",
+      "passed": true,
+      "reference": "intake: combined latency and synchronization",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "off_tick_grid",
+      "observed_refusal": "off_tick_grid",
+      "passed": true,
+      "reference": "intake: off tick grid",
+      "reference_kind": "refusal"
+     }
+    ],
+    "derivation": "ciw.lab.sensor_fusion_intake.ObservationIntake on the declared tracker channel",
+    "generator": {
+     "bit_generator": "PCG64",
+     "declared_sigma_m": 0.0005,
+     "name": "ciw.lab.sensor_fusion_intake.tracker_records",
+     "seed": 752027,
+     "ticks": 12
+    }
+   },
+   "claim": "A section-4 record reaches the fusion session only through declared frame and clock mappings: the intake applies the declared room-to-cell mapping, latency and synchronization exactly and refuses an unmapped frame, clock or epoch, an arrival stamp without its latency mapping, a latency that contradicts the record, a mapping that changes time basis and clock together (so the record's latency cannot be checked) and a stamp off the fusion tick grid",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks",
+    "synthetic_inputs"
+   ],
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "dyadic stamps, offsets and translation; the quarter turn permutes coordinates",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "covariance_gap_m2": 0.0,
+    "mappings_recorded": 3,
+    "origin_frame_id": "tracker:cell",
+    "refusals": {
+     "arrival_without_latency_mapping": "unmapped_clock",
+     "combined_latency_and_synchronization": "unmapped_clock",
+     "latency_mismatch": "latency_mismatch",
+     "off_tick_grid": "off_tick_grid",
+     "unmapped_clock": "unmapped_clock",
+     "unmapped_epoch": "unmapped_clock",
+     "unmapped_frame": "unmapped_frame"
+    },
+    "tick": 12,
+    "value_gap_m": 0.0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
     "notes": "Mappings are declared synthetic values; no calibration or synchronization procedure was run."
    },
    "claim": "The declared frame and clock mappings equal the real extrinsic calibration and clock synchronization",
    "domain": "calibration",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -242,9 +389,9 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 4717,
+   "bytes": 6929,
    "path": "artifacts/T058/frame-clock-study.json",
-   "sha256": "ffb8223831b33ccdf64ed216f221bbdb1b96d5ebd067cf7ad8cd32a61d36c7f2"
+   "sha256": "8376c2c855446b6f77baed87c41615ad3b5efb8455468b94ea818f4e83d399c1"
   }
  ],
  "hypothesis": "Observations that carry frame id, clock id, epoch and time basis can be combined only after an explicit declared mapping, which is then applied exactly and recorded.",
@@ -255,7 +402,7 @@
  ],
  "mathematical_model": "Frame mapping p' = R p + t between frames of one kind (distances invariant, checked on tracker positions; distance-mode records are carried unchanged by design); clock mapping t' = rate t + offset from (clock, epoch, basis) to another; arrival -> acquisition by the declared latency.",
  "number": 58,
- "numerical_result": "exact gap 0.0, round trip 4.4e-16 m and distance change 8.9e-16 m (bound 1.1e-14 m), time gap 0.0 s; refusals ['clock_basis_mismatch', 'clock_mismatch', 'epoch_mismatch', 'frame_kind_mismatch', 'frame_mismatch', 'mapping_not_applicable'].",
+ "numerical_result": "exact gap 0.0, round trip 4.4e-16 m and distance change 8.9e-16 m (bound 1.1e-14 m), time gap 0.0 s; refusals ['clock_basis_mismatch', 'clock_mismatch', 'epoch_mismatch', 'frame_kind_mismatch', 'frame_mismatch', 'mapping_not_applicable']; intake reading gap 0.0 m at tick 12, intake refusals ['latency_mismatch', 'off_tick_grid', 'unmapped_clock', 'unmapped_frame'].",
  "observation_model": "Synthetic tracker_measurement and camera_chord_distance records.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -269,13 +416,16 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/observation.py": "6e5bf960e17dffb62bdaf29d28be9a0f165fd68f8498d173b66eab08fa22ad70",
-   "src/ciw/lab/observation_modes.py": "bfd6aa4471cc876a7ac2fb8790a4a5c4f478c547350b059311f5e6d53702c83e"
+   "src/ciw/lab/observation.py": "ef75c3ea4cad06bcbc68592440b3d55a92786a729d5a731b87ece207511ddffb",
+   "src/ciw/lab/observation_modes.py": "14fcc803e9543fa4a6891775dfac6633ca15ade648e6125e2f71fde4c4201c90",
+   "src/ciw/lab/sensor_fusion_bench.py": "f373849a4c6836fa20685c59ce7a6fe6bf732f6df9d6a49646cdc017262dd656",
+   "src/ciw/lab/sensor_fusion_intake.py": "e8919ac1c921ec4c8e21e80924b493bfa4773071492a6c33a17a4c9990d1cde2",
+   "src/ciw/lab/sensor_fusion_objects.py": "50ec8767a90f261f108d6524c7ff55d22604b55cc9853e749ba4c5f71bc76081"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T059: retain observations without admitting them as state",
- "report_id": "sha256:df161006f07b13adb493803c91fb49dbbeb0b8a32659cd0be5420fe7e8ec3cdd",
+ "recommended_next_task": "Deferred research question: give ClockMapping an uncertain rate and offset (a declared drift covariance) and carry it into the fusion intake as extra measurement covariance (velocity times time uncertainty), then test NEES consistency against a drifting synthetic clock; the intake today refuses any stamp that a static, exact mapping does not put on the tick grid.",
+ "report_id": "sha256:8c4a63c9fe6775b3801834afcf094a7c3ab14ec41971dea827f195948bd696a6",
  "schema": "ciw.lab-task-report.v1",
  "section": "observation",
  "state": "completed",
@@ -294,13 +444,29 @@
   "check: A mapping declared for another frame, frame kind or epoch is refused vs mapping not applicable",
   "check: A mapping declared for another frame, frame kind or epoch is refused vs frame kind mismatch",
   "check: A mapping declared for another frame, frame kind or epoch is refused vs epoch mismatch mapping",
-  "pytest: tests/test_lab_observation.py::test_t058_frame_and_clock_basis"
+  "check: A section-4 record reaches the fusion session only through declared frame and clock mappings: the intake applies the declared room-to-cell mapping, latency and synchronization exactly and refuses an unmapped frame, clock or epoch, an arrival stamp without its latency mapping, a latency that contradicts the record, a mapping that changes time basis and clock together (so the record's latency cannot be checked) and a stamp off the fusion tick grid vs fusion reading minus the hand-written quarter turn and projection (dyadic translation, m)",
+  "check: A section-4 record reaches the fusion session only through declared frame and clock mappings: the intake applies the declared room-to-cell mapping, latency and synchronization exactly and refuses an unmapped frame, clock or epoch, an arrival stamp without its latency mapping, a latency that contradicts the record, a mapping that changes time basis and clock together (so the record's latency cannot be checked) and a stamp off the fusion tick grid vs fusion tick minus the tick of the dyadic acquisition time",
+  "check: A section-4 record reaches the fusion session only through declared frame and clock mappings: the intake applies the declared room-to-cell mapping, latency and synchronization exactly and refuses an unmapped frame, clock or epoch, an arrival stamp without its latency mapping, a latency that contradicts the record, a mapping that changes time basis and clock together (so the record's latency cannot be checked) and a stamp off the fusion tick grid vs fusion covariance minus the declared tracker sigma^2 I (m^2)",
+  "check: A section-4 record reaches the fusion session only through declared frame and clock mappings: the intake applies the declared room-to-cell mapping, latency and synchronization exactly and refuses an unmapped frame, clock or epoch, an arrival stamp without its latency mapping, a latency that contradicts the record, a mapping that changes time basis and clock together (so the record's latency cannot be checked) and a stamp off the fusion tick grid vs recorded mapping identities (frame, latency, synchronization) minus three",
+  "check: A section-4 record reaches the fusion session only through declared frame and clock mappings: the intake applies the declared room-to-cell mapping, latency and synchronization exactly and refuses an unmapped frame, clock or epoch, an arrival stamp without its latency mapping, a latency that contradicts the record, a mapping that changes time basis and clock together (so the record's latency cannot be checked) and a stamp off the fusion tick grid vs intake: unmapped frame",
+  "check: A section-4 record reaches the fusion session only through declared frame and clock mappings: the intake applies the declared room-to-cell mapping, latency and synchronization exactly and refuses an unmapped frame, clock or epoch, an arrival stamp without its latency mapping, a latency that contradicts the record, a mapping that changes time basis and clock together (so the record's latency cannot be checked) and a stamp off the fusion tick grid vs intake: unmapped clock",
+  "check: A section-4 record reaches the fusion session only through declared frame and clock mappings: the intake applies the declared room-to-cell mapping, latency and synchronization exactly and refuses an unmapped frame, clock or epoch, an arrival stamp without its latency mapping, a latency that contradicts the record, a mapping that changes time basis and clock together (so the record's latency cannot be checked) and a stamp off the fusion tick grid vs intake: unmapped epoch",
+  "check: A section-4 record reaches the fusion session only through declared frame and clock mappings: the intake applies the declared room-to-cell mapping, latency and synchronization exactly and refuses an unmapped frame, clock or epoch, an arrival stamp without its latency mapping, a latency that contradicts the record, a mapping that changes time basis and clock together (so the record's latency cannot be checked) and a stamp off the fusion tick grid vs intake: arrival without latency mapping",
+  "check: A section-4 record reaches the fusion session only through declared frame and clock mappings: the intake applies the declared room-to-cell mapping, latency and synchronization exactly and refuses an unmapped frame, clock or epoch, an arrival stamp without its latency mapping, a latency that contradicts the record, a mapping that changes time basis and clock together (so the record's latency cannot be checked) and a stamp off the fusion tick grid vs intake: latency mismatch",
+  "check: A section-4 record reaches the fusion session only through declared frame and clock mappings: the intake applies the declared room-to-cell mapping, latency and synchronization exactly and refuses an unmapped frame, clock or epoch, an arrival stamp without its latency mapping, a latency that contradicts the record, a mapping that changes time basis and clock together (so the record's latency cannot be checked) and a stamp off the fusion tick grid vs intake: combined latency and synchronization",
+  "check: A section-4 record reaches the fusion session only through declared frame and clock mappings: the intake applies the declared room-to-cell mapping, latency and synchronization exactly and refuses an unmapped frame, clock or epoch, an arrival stamp without its latency mapping, a latency that contradicts the record, a mapping that changes time basis and clock together (so the record's latency cannot be checked) and a stamp off the fusion tick grid vs intake: off tick grid",
+  "pytest: tests/test_lab_observation.py::test_t058_frame_and_clock_basis",
+  "pytest: tests/test_lab_observation.py::test_intake_maps_frames_and_clocks_or_refuses",
+  "pytest: tests/test_lab_observation.py::test_intake_import_failure_blocks_only_its_tasks"
  ],
  "tests_skipped": [],
  "title": "Track the exact observation frame and clock basis.",
  "uncertainty": "Exact arithmetic for dyadic inputs; general rotations within 16 eps of the largest coordinate (about 1e-14 m), since each mapped coordinate is rounded.",
  "unresolved_assumptions": [
   "Clock rates are exactly 1 (drift not modelled)",
-  "Mappings are static"
+  "Mappings are static",
+  "The fusion intake takes a mapped time to a tick only when it lies on the grid; it neither interpolates nor retrodicts, so asynchronous sensors need their own grid or an out-of-sequence update",
+  "An arrival record that declares no latency of its own takes the latency of its declared latency mapping unchecked",
+  "Acquisition-age staleness (T056) is not applied at the fusion intake: the session fuses each reading at its own acquisition tick and refuses one older than its state (out_of_order), so a reading older than the state is never fused; but neither the intake nor the admission gate declares a use time, so the age of an admitted state's newest reading at the time the state is used is not checked"
  ]
 }

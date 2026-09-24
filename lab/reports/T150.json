@@ -239,6 +239,10 @@
    "claim": "Bitstream identity record binds bitstream, toolchain version and installation manifest, constraints and source tree",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -271,6 +275,9 @@
    "claim": "Deployment of a synthetic placeholder bitstream is refused",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -289,6 +296,7 @@
    "claim": "A real bitstream with this identity exists and is loaded on hardware",
    "domain": "physical",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -299,6 +307,7 @@
    "claim": "The bitstream is approved for production deployment",
    "domain": "production_acceptance",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -316,7 +325,7 @@
    "sha256": "f8d10354b176b6deed60f704b91d588b355552b901445a08cb1b685a639fc630"
   }
  ],
- "hypothesis": "An identity record over canonical JSON can bind a bitstream's sha256 to its exact toolchain version and installation manifest digest, constraint files and source tree, so that a change to any of them is detected when the changed artifact (bitstream, installed toolchain files and reported version, constraint or source files) is checked against the record. The installation digest binds exactly the toolchain files supplied; which files of a vendor toolchain must be supplied is not specified here.",
+ "hypothesis": "An identity record over canonical JSON can bind a bitstream's sha256 to its exact toolchain version and installation manifest digest, constraint files and source tree, so that a change to any of them is detected when the changed artifact (bitstream, installed toolchain files and reported version, constraint or source files) is checked against the record. The installation digest binds exactly the toolchain files supplied; which files of a vendor toolchain must be supplied is not specified here. Scope: the task records identity and toolchain, a build artifact rather than a measurement, so a synthetic placeholder bitstream exercises every field and refusal of the record; recording a real design's bitstream needs a vendor toolchain and is the deferred research question.",
  "input_data": [
   "Seeded synthetic placeholder bitstream (prefix CIW-SYNTHETIC-BITSTREAM-NOT-A-CONFIGURATION)",
   "placeholder constraint and source files",
@@ -338,14 +347,14 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/implementation_targets.py": "1df8bd67d28b18d70bcb5f74e4a14616ceb17868c7a9aa75595f15254426ee7e",
+   "src/ciw/lab/implementation_targets.py": "0ea1ac76f50f1c65b47155a6791a0ea74c3ebf57d0b254a4a6615dabb930b5e7",
    "src/ciw/lab/implementation_targets_fpga.py": "7af2bda8190c93108f5bac0d8b28ffd057267b6b428af3d8f820d0f594ea5e00",
    "src/ciw/lab/implementation_targets_serial.py": "7978adc19db2c04e37532de2a5dbff32738b3c286c40e19ab8ec1d78361ef3e6"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T151 (compatibility and rollback records referencing these identities)",
- "report_id": "sha256:d6e890ed6bc676351a80db8b4821db1963b2f6c342ff84f79d9aaf6a820c7417",
+ "recommended_next_task": "Deferred research question: toolchain determinism: build one design twice with a vendor toolchain whose installation manifest is recorded and compare the bitstream digests, and specify which toolchain files the installation digest must cover (no real bitstream, design or toolchain exists here)",
+ "report_id": "sha256:defc0658b5ad27611eb74c4e95804df9ff2bfc0cbbda01c833a7ac3a7d72f880",
  "schema": "ciw.lab-task-report.v1",
  "section": "implementation-targets",
  "state": "completed",

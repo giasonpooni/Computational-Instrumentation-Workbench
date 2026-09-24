@@ -2,6 +2,7 @@
  "changed_files": [
   "src/ciw/lab/implementation_targets.py",
   "src/ciw/lab/implementation_targets_kernels.py",
+  "src/ciw/lab/energy_gpu_workload.py",
   "docs/lab/IMPLEMENTATION_TARGETS.md"
  ],
  "evidence_status": {
@@ -10,14 +11,14 @@
    "hardware_measured": 0,
    "independently_verified": 0,
    "not_established": 2,
-   "numerically_verified": 5,
+   "numerically_verified": 6,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
  "expected_invariant": "Bitwise policy flags reordering and not a copy of the reference; bound policy accepts reordering; float32 fails the float64 policy and passes its own; no fault above twice the tolerance escapes; no fault is judged on the wrong side of the (1 +/- m) band; the float32 miss count lies within 4 sigma of its prediction.",
- "experiment": "Compute the dot products in four orders/precisions, compare with the harness under each policy, drop each partial product in turn from the float64 and float32 candidates and judge every faulty candidate with the harness, then compare detection with the operational guarantee, the threshold band and the predicted miss count.",
+ "experiment": "Compute the dot products in four orders/precisions, compare with the harness under each policy, drop each partial product in turn from the float64 and float32 candidates and judge every faulty candidate with the harness, then compare detection with the operational guarantee, the threshold band and the predicted miss count. Judge the common workload's candidates under the fixed-order policy, and when an NVIDIA GPU answers the probe run the PTX kernel and judge its outputs the same way.",
  "failure_modes_checked": [
   "reduction reordering",
   "precision reduction (float32)",
@@ -25,21 +26,89 @@
   "bitwise mode flagging identical outputs",
   "detection threshold off the bound",
   "miss count away from its prediction",
-  "shape mismatch and nonfinite outputs (refused by the harness)"
+  "shape mismatch and nonfinite outputs (refused by the harness)",
+  "fused multiply-add contraction of the common workload (flagged by the fixed-order policy)",
+  "GPU outputs differing from the reference (a refuted finding; regression test with a simulated contracting device)",
+  "GPU outputs the CUDA worker rejects after the kernel ran (a refuted finding, not an expected gap; regression test with a simulated worker)"
  ],
  "findings": [
   {
    "assigned_by": "ciw.lab.evidence",
    "basis": {
-    "notes": "This task has no GPU kernel path: the candidates are CPU reductions, and a CUDA host changes nothing until a GPU implementation of the batched dot products feeds compare_outputs"
+    "notes": [
+     "no NVIDIA GPU answered the hardware:nvidia-gpu probe in this task; the PTX kernel of the common workload exists (ciw.energy_cuda gaussian_vi), so this comparison runs on a host where the probe succeeds (needs hardware:nvidia-gpu)"
+    ]
    },
-   "claim": "CPU and GPU outputs agree under the tolerance policy on GPU hardware",
+   "claim": "CPU and GPU outputs of the common Gaussian VI workload agree under T148's policy for fixed-order reductions (bitwise) on GPU hardware",
    "domain": "numerical",
    "evidence_status": "not_established",
    "expected_not_established": true,
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "elements the fixed-order policy flags for the scalar evaluation of the declared order",
+      "reference_kind": "cross_implementation",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "elements the fixed-order policy flags for the fma-first contraction",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 2.0,
+      "passed": true,
+      "reference": "elements the fixed-order policy flags for the fma-second contraction",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     }
+    ],
+    "generator": {
+     "iterations": 38,
+     "name": "common Gaussian VI workload",
+     "replicas": 1,
+     "seed": null
+    },
+    "notes": [
+     "candidates: the scalar Python-float evaluation of the kernel's declared order, and the two exact fused multiply-add contraction rules of ciw.lab.energy_gpu_workload.VARIANTS"
+    ]
+   },
+   "claim": "Under T148's fixed-order policy the harness accepts a second implementation of the common Gaussian VI workload and flags builds that contract its multiply-adds",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact integer, byte, digest or refusal-code comparison; no rounding enters the value",
+    "kind": "roundoff",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "fma-first": true,
+    "fma-second": true,
+    "python-scalar": false
+   }
   },
   {
    "assigned_by": "ciw.lab.evidence",
@@ -70,6 +139,10 @@
    "claim": "Bitwise policy detects reduction-order differences between float64 CPU orders",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -107,6 +180,9 @@
    "claim": "Float64 reduction-order differences lie within the analytic error-bound policy",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -144,6 +220,9 @@
    "claim": "Float32 results violate the float64 policy and satisfy the float32 policy",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -224,6 +303,9 @@
    "claim": "The harness detects every dropped partial product larger than twice the row tolerance under both policies",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -311,6 +393,9 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 1e-09
@@ -353,6 +438,7 @@
    "claim": "GPU/CPU agreement establishes industrial readiness",
    "domain": "industrial_readiness",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -360,9 +446,9 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 4839,
+   "bytes": 6045,
    "path": "artifacts/T147/comparison-summary.json",
-   "sha256": "de917bcfb99941b7c793feb7100142410774c129ef2d16d244b98390d38a0fa5"
+   "sha256": "237678def35b357ad26c282f8d07d39bd78d45299fd3c90151c7d5e52bc2cbf0"
   },
   {
    "bytes": 8083,
@@ -370,16 +456,17 @@
    "sha256": "47199e1409b8e3a3993c9b1bc7b66c25f58027d10ee2c5e38a903e831d8b3764"
   }
  ],
- "hypothesis": "A comparison harness with an analytic tolerance policy separates legitimate reduction-order and precision differences from faults: once the fault-free candidate is within the policy, every fault larger than twice the tolerance is detected, detection switches at about the tolerance, and faults up to about the bound escape as often as the fault-size distribution predicts. Exercised CPU-against-CPU: the task has no GPU kernel path.",
+ "hypothesis": "A comparison harness with an analytic tolerance policy separates legitimate reduction-order and precision differences from faults: once the fault-free candidate is within the policy, every fault larger than twice the tolerance is detected, detection switches at about the tolerance, and faults up to about the bound escape as often as the fault-size distribution predicts. On the common Gaussian VI workload, whose reductions have a fixed order, T148's policy prescribes a bitwise comparison: it accepts a second implementation of the declared order and flags a build that contracts multiply-adds, and on a GPU host it compares the gaussian_vi PTX kernel's outputs with the CPU reference.",
  "input_data": [
   "128x1024 uniform[-1,1) matrix and vector, PCG64(147)",
   "orders: sequential, pairwise tree, 32-lane blocked (sequential lanes then tree); precisions float64 and float32",
   "exact dot products by TwoProduct + math.fsum",
-  "all 131072 single dropped products per policy, judged by compare_outputs"
+  "all 131072 single dropped products per policy, judged by compare_outputs",
+  "the common Gaussian VI workload (examples/energy-accuracy/problem.json, K = 38): the float64 NumPy reference, a scalar evaluation of the same order, two exact fused multiply-add contractions, and on a GPU host the gaussian_vi PTX kernel's outputs for every replica"
  ],
  "mathematical_model": "For a sum of terms each passing through k roundings, |computed - exact| <= gamma_k * sum|a_j x_j| with gamma_k = k u/(1 - k u), u = 2^-53 (float64) or 2^-24 (float32, inputs rounded). The policy tolerance for two outputs is the sum of their bounds, so the fault-free candidate satisfies |c - r| <= tol; bitwise mode compares bit patterns. A dropped term p gives |c - p - r| >= |p| - tol, so |p| > 2 tol is detected without knowing c - r; with m = max |c - r|/tol, detection switches inside (1 +/- m) tol. With a_ij uniform on [-1, 1), P(|a_ij x_j| <= tol_i) = min(1, tol_i/|x_j|), whose sum over faults predicts the miss count.",
  "number": 147,
- "numerical_result": "123/128 rows flagged by the bitwise policy between float64 orders (0 for a copy of the reference); max difference/bound 0.00173; float32 violates the float64 policy on 128 rows and stays at 0.00874 of its own bound; faults above twice the tolerance left undetected: 0/131072 (float64 policy), 0/129813 (float32 policy); single dropped products undetected: 0/131072 (float64), 708/131072 (float32, predicted 665.3 +/- 22.5; largest missed |a_j x_j| 0.000589 against row tolerance 0.000594; 1 missed above the row bound, ratio 1.00016). GPU present: False (the task has no GPU kernel path).",
+ "numerical_result": "123/128 rows flagged by the bitwise policy between float64 orders (0 for a copy of the reference); max difference/bound 0.00173; float32 violates the float64 policy on 128 rows and stays at 0.00874 of its own bound; faults above twice the tolerance left undetected: 0/131072 (float64 policy), 0/129813 (float32 policy); single dropped products undetected: 0/131072 (float64), 708/131072 (float32, predicted 665.3 +/- 22.5; largest missed |a_j x_j| 0.000589 against row tolerance 0.000594; 1 missed above the row bound, ratio 1.00016). Common workload under the fixed-order policy: flagged ['fma-first', 'fma-second'], accepted ['python-scalar']; GPU comparison not run: no NVIDIA GPU answered the hardware:nvidia-gpu probe in this task; the PTX kernel of the common workload exists (ciw.energy_cuda gaussian_vi), so this comparison runs on a host where the probe succeeds (needs hardware:nvidia-gpu).",
  "observation_model": "Elementwise absolute differences, bitwise equality and ratios to the policy bound, as reported by compare_outputs for the fault-free candidates and for every faulty candidate.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -387,6 +474,17 @@
  },
  "provider_runtime_identity": {
   "ciw_version": "0.1.0",
+  "common_workload": {
+   "implementation": "numpy",
+   "iterations": 38,
+   "kernel": "ciw.energy_cuda.PTX gaussian_vi",
+   "kernel_sha256": "601049a61cc1dc7b35d80ec7096dd5d81b3028c025472ec54983b4c1d666d699",
+   "name": "ciw.lab.gaussian-vi-iteration.v1",
+   "precision": "float64",
+   "prepared_input_sha256": "49ca05c0343c645d64ec77ffcf7053c1b1380910f7334cc50986fa45f560df86",
+   "problem_sha256": "f082e5dfbb2e735bdaf8b02e57734e29902d5077c70f53e2e7c5ce2eb8219ab7",
+   "replicas": 4096
+  },
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
@@ -396,18 +494,25 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/implementation_targets.py": "1df8bd67d28b18d70bcb5f74e4a14616ceb17868c7a9aa75595f15254426ee7e",
+   "src/ciw/energy_bench.py": "bd50806ba3128ff85a1d240bc9670db04082196ec050c51597ec0cc725e45046",
+   "src/ciw/energy_cuda.py": "9b4b86809e47cba7683dc0c238b0b052b6785fd09e629224c5f8f37b6d5a0e64",
+   "src/ciw/free_energy_math.py": "4f096c281c548e92ed7bb1d49a8fd58f3a4d6b48ababef2958331ca13f088a6e",
+   "src/ciw/lab/energy_gpu_workload.py": "5cdaf9fe9f25194dae561e060abf471567cfd3bb8df6c1836630a54c5085a9de",
+   "src/ciw/lab/implementation_targets.py": "0ea1ac76f50f1c65b47155a6791a0ea74c3ebf57d0b254a4a6615dabb930b5e7",
    "src/ciw/lab/implementation_targets_kernels.py": "daf3fe697f5b8f7627119fe299a270fe6de19d2394eade688624d28526b04785"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "Implement a GPU path for the batched dot products (for example a PTX kernel loaded like ciw.energy_cuda's worker) whose outputs feed compare_outputs; only then does rerunning T147 on a CUDA host (hardware:nvidia-gpu) test CPU/GPU agreement",
- "report_id": "sha256:dd12072206b1fd89670c955b79cb17a450c0f39bf23d5a1b6b4bbfad03067f95",
+ "recommended_next_task": "Judge the PTX kernel's outputs for every replica under the fixed-order policy on the RTX 2080 host (protocol in docs/lab/ENERGY_GPU.md): `mkdir -p runs/rtx2080-<date>`; `ciw energy probe --gpu-index 0` must return a reading with status ok; start `TZ=UTC nvidia-smi --query-gpu=timestamp,uuid,name,utilization.gpu,utilization.memory,temperature.gpu,power.draw,clocks.sm,clocks.mem,pstate --format=csv,nounits -lms 100 -f runs/rtx2080-<date>/smi.csv` in the background; `ciw energy record --problem examples/energy-accuracy/problem.json --output-dir runs/rtx2080-<date>/capture --duration 10 --replicas 4096 --warmup-batches 2 --idle-duration 2 --gpu-index 0`; stop the sidecar; `ciw energy replay runs/rtx2080-<date>/capture/log.json`; then `CIW_LAB_NVIDIA_SMI_UTC_OFFSET=+00:00 ciw lab run T116 T117 T118 T119 T120 T121 T124 T147 --capture energy-log=runs/rtx2080-<date>/capture/log.json --capture nvidia-smi-csv=runs/rtx2080-<date>/smi.csv --output-dir results/rtx2080-<date>` on the same host and `ciw lab hardware retain results/rtx2080-<date> --retained lab --run-id rtx2080-<date> --host \"<RTX 2080 host>\"`. Deferred research question: extend the common workload's GPU path beyond the binary64 gaussian_vi PTX kernel of ciw.energy_cuda: a float32 rendering of the same kernel, and a device-wide reduction of its per-replica outputs (a fixed tree over the stored order per T148's REDUCTION_POLICY, plus one atomicAdd variant), each compared with the NumPy reference by compare_outputs on the RTX 2080 host and captured with `ciw energy record` for energy; until then those claims stay not_established on every host",
+ "report_id": "sha256:5404b3a7d6d8f6184b9fbedad4302b16cd1395a19dce025d09c7d21b9b798734",
  "schema": "ciw.lab-task-report.v1",
  "section": "implementation-targets",
  "state": "partial",
  "task_id": "T147",
  "tests_passed": [
+  "check: Under T148's fixed-order policy the harness accepts a second implementation of the common Gaussian VI workload and flags builds that contract its multiply-adds vs elements the fixed-order policy flags for the scalar evaluation of the declared order",
+  "check: Under T148's fixed-order policy the harness accepts a second implementation of the common Gaussian VI workload and flags builds that contract its multiply-adds vs elements the fixed-order policy flags for the fma-first contraction",
+  "check: Under T148's fixed-order policy the harness accepts a second implementation of the common Gaussian VI workload and flags builds that contract its multiply-adds vs elements the fixed-order policy flags for the fma-second contraction",
   "check: Bitwise policy detects reduction-order differences between float64 CPU orders vs rows the bitwise policy flags (sequential vs 32-lane blocked)",
   "check: Bitwise policy detects reduction-order differences between float64 CPU orders vs rows the bitwise policy flags when the reference is compared with a copy of itself",
   "check: Float64 reduction-order differences lie within the analytic error-bound policy vs max |difference|/bound, sequential vs blocked and pairwise",
@@ -426,15 +531,18 @@
   "check: The float32 policy misses dropped partial products up to about its bound, as often as the product distribution predicts vs float32 policy: faults on the wrong side of the band (1 +/- m) tol, m = largest fault-free |difference|/bound reported by the harness (detected below it or missed above it)",
   "check: The float32 policy misses dropped partial products up to about its bound, as often as the product distribution predicts vs float32 policy: (undetected - sum_ij min(1, tol_i/|x_j|)) / sigma, the miss count predicted for a_ij uniform on [-1, 1)",
   "pytest: tests/test_lab_implementation_targets.py::test_t147_harness_detects_differences",
-  "pytest: tests/test_lab_implementation_targets.py::test_t147_fault_study_is_judged_by_the_harness"
+  "pytest: tests/test_lab_implementation_targets.py::test_t147_fault_study_is_judged_by_the_harness",
+  "pytest: tests/test_lab_implementation_targets.py::test_t147_common_workload_comparison_follows_the_gpu_probe",
+  "pytest: tests/test_lab_implementation_targets.py::test_t147_identity_digests_the_common_workload_sources"
  ],
  "tests_skipped": [],
  "title": "Compare CPU and GPU outputs.",
- "uncertainty": "Bounds are worst-case (not probabilistic), so typical ratios are far below one; the twice-tolerance guarantee needs only the policy's own premise (fault-free candidate within tolerance), while faults up to about the bound escape at the rate the fault-size distribution predicts (4-sigma check); the harness has not seen GPU fused multiply-add or atomics ordering.",
+ "uncertainty": "Bounds are worst-case (not probabilistic), so typical ratios are far below one; the twice-tolerance guarantee needs only the policy's own premise (fault-free candidate within tolerance), while faults up to about the bound escape at the rate the fault-size distribution predicts (4-sigma check); on the common workload the bitwise policy is exact, and the emulated contractions are two plausible compiler rules, not those of a specific nvcc version.",
  "unresolved_assumptions": [
-  "No GPU kernel path exists in this task: the recommended rerun on a CUDA host needs a GPU implementation of the batched dot products first",
+  "The batched dot products have no GPU path and need none: the GPU comparison uses the common Gaussian VI workload, whose PTX kernel exists; a device-wide reduction kernel does not",
+  "Deferred research question: extend the common workload's GPU path beyond the binary64 gaussian_vi PTX kernel of ciw.energy_cuda: a float32 rendering of the same kernel, and a device-wide reduction of its per-replica outputs (a fixed tree over the stored order per T148's REDUCTION_POLICY, plus one atomicAdd variant), each compared with the NumPy reference by compare_outputs on the RTX 2080 host and captured with `ciw energy record` for energy; until then those claims stay not_established on every host",
   "GPU reductions may use FMA and tree shapes not modelled by the 32-lane order",
   "Only single dropped products were injected; other fault classes (duplicated terms, wrong operands) have their own detection limits",
-  "No GPU hardware or driver was exercised"
+  "no NVIDIA GPU answered the hardware:nvidia-gpu probe in this task; the PTX kernel of the common workload exists (ciw.energy_cuda gaussian_vi), so this comparison runs on a host where the probe succeeds (needs hardware:nvidia-gpu)"
  ]
 }

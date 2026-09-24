@@ -80,6 +80,10 @@
    "claim": "Rounding plus Gaussian pixel noise has error variance sigma^2 + 1/12 px^2 under a uniform grid phase",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-06,
     "rel": 0.0001
@@ -140,6 +144,9 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-06,
     "rel": 0
@@ -218,6 +225,10 @@
    "claim": "Linear propagation J (sigma^2 + 1/12) J^T predicts the chord standard deviation",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-12,
     "rel": 0.0001
@@ -401,6 +412,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-15,
     "rel": 0.0001
@@ -474,6 +489,7 @@
    "claim": "Real image noise is Gaussian with sigma = 0.25 px and marker localization rounds to whole pixels",
    "domain": "sensor_performance",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -516,14 +532,14 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/observation.py": "6e5bf960e17dffb62bdaf29d28be9a0f165fd68f8498d173b66eab08fa22ad70",
+   "src/ciw/lab/observation.py": "ef75c3ea4cad06bcbc68592440b3d55a92786a729d5a731b87ece207511ddffb",
    "src/ciw/lab/observation_camera.py": "130cf51175050a5eb947b8d434553bdfa19bd102a33108f414d7a5fa9c651bce",
    "src/ciw/lab/observation_signals.py": "19e94cb28160a07e5a285b5a4acd76e3820deb37ee5ed180f5c7bf1975a56793"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T052: add encoder bias, scale and backlash",
- "report_id": "sha256:b3e40a52cc5d856425bd5d81457369ee05d7a996966f2d4ef6e8a4e4d83f4de0",
+ "recommended_next_task": "Deferred research question: a partially correlated grid-phase model (correlation rho between the markers of one camera) that interpolates T051's independent and shared cases, with its predicted chord variance checked by Monte Carlo, so a real rig's phase correlation becomes one declared parameter to measure.",
+ "report_id": "sha256:0c5190b0f959b3e392ef13bcb8b28e3fc00e1904a1ff949165674b0c3bb3f791",
  "schema": "ciw.lab-task-report.v1",
  "section": "observation",
  "state": "completed",

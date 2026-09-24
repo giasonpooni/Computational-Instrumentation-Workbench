@@ -5,6 +5,57 @@
   "f64-pairwise": 0.012959321146328157,
   "f64-sequential": 0.001817126130545391
  },
+ "common_workload": {
+  "gpu": {
+   "identity": null,
+   "invalid": null,
+   "probed": false,
+   "ran": false,
+   "reason": "no NVIDIA GPU answered the hardware:nvidia-gpu probe in this task; the PTX kernel of the common workload exists (ciw.energy_cuda gaussian_vi), so this comparison runs on a host where the probe succeeds (needs hardware:nvidia-gpu)"
+  },
+  "iterations": 38,
+  "policy": {
+   "mode": "bitwise",
+   "rule": "REDUCTION_POLICY.fixed_layout_arrays, same order on both sides"
+  },
+  "reference": [
+   1.171504942472618,
+   -0.37247843839216854,
+   0.46987934615301363,
+   0.06215352132230255,
+   0.06215352132230255,
+   0.4090259797893383
+  ],
+  "results": {
+   "fma-first": {
+    "bitwise_differences": 1,
+    "elements": 6,
+    "max_abs": 1.6653345369377348e-16,
+    "max_ratio": null,
+    "max_ulp": 3.0,
+    "passed": false,
+    "violations": 1
+   },
+   "fma-second": {
+    "bitwise_differences": 2,
+    "elements": 6,
+    "max_abs": 4.163336342344337e-17,
+    "max_ratio": null,
+    "max_ulp": 6.0,
+    "passed": false,
+    "violations": 2
+   },
+   "python-scalar": {
+    "bitwise_differences": 0,
+    "elements": 6,
+    "max_abs": 0.0,
+    "max_ratio": null,
+    "max_ulp": 0.0,
+    "passed": true,
+    "violations": 0
+   }
+  }
+ },
  "comparisons": {
   "bitwise f64 sequential vs blocked": {
    "bitwise_differences": 123,
@@ -207,8 +258,6 @@
    "undetected_z": -0.0062675068589452725
   }
  },
- "gpu_kernel_path": null,
- "gpu_present": false,
  "lane_width": 32,
  "max_ulp_f64_reorder": 188.0,
  "n": 1024,

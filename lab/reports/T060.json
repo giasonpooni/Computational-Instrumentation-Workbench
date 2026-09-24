@@ -59,6 +59,10 @@
    "claim": "Regenerating the bench with the same seed reproduces the truth and all four sensor streams bit for bit, and a different seed changes every stream",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -105,6 +109,10 @@
    "claim": "Every sensor reports exactly at its declared rate on the 20 Hz base clock over 20 s (camera 10 Hz, encoder 20 Hz, IMU 20 Hz, tracker 2 Hz)",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -172,6 +180,10 @@
    "claim": "Every raw reading of all four sensors equals the noise-free sensor function of a trajectory recomputed from the retained initial state and process-noise draws by cumulative sums with the declared dt, plus its retained noise draw, to roundoff; the recomputed trajectory equals the retained truth to roundoff",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-10,
     "rel": 0.0
@@ -214,6 +226,10 @@
    "claim": "Changing the tracker rate from 2 Hz to 4 Hz leaves the truth and the camera, encoder and IMU streams unchanged (independent spawned PCG64 streams)",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -252,6 +268,10 @@
    "claim": "Every declared sensor covariance is symmetric positive definite",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -277,6 +297,9 @@
    "claim": "The bench's noise levels, rates and motion describe real camera, encoder, IMU or tracker hardware",
    "domain": "sensor_performance",
    "evidence_status": "not_established",
+   "origin": [
+    "synthetic_inputs"
+   ],
    "uncertainty": null,
    "unit": null,
    "value": "not established: every stream is a declared synthetic draw"
@@ -321,15 +344,15 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/sensor_fusion.py": "40b135c5bf93c1932bc774d41ddaef98419aceb524fba12ce16c1786e00f15d2",
+   "src/ciw/lab/sensor_fusion.py": "c386ab36c33cac3cd0fc441a91a80905525ae0b8ffab763af70a925fc9f5994e",
    "src/ciw/lab/sensor_fusion_bench.py": "f373849a4c6836fa20685c59ce7a6fe6bf732f6df9d6a49646cdc017262dd656",
    "src/ciw/lab/sensor_fusion_common.py": "db3b0430ad5c13920239cef354da61b64ab1b01f84b2d3d5aff2f78840a5867a",
-   "src/ciw/lab/sensor_fusion_objects.py": "93fc55ddca91f1adfb886d21805ea8f82586548ee84e1f6cc7daed4df1f53bb9"
+   "src/ciw/lab/sensor_fusion_objects.py": "50ec8767a90f261f108d6524c7ff55d22604b55cc9853e749ba4c5f71bc76081"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T061: verify the empirical noise covariance against the declared covariance.",
- "report_id": "sha256:3892cf8751f30003ee72498cc2d8fe3fb7e6e0bb7655a62d96d75c776ba739b2",
+ "recommended_next_task": "Deferred research question: an EKF (and a UKF) that fuses the encoder and IMU streams with the position sensors under the T052 (scale, bias, backlash) and T053 (gyro bias, angle random walk) error models, as encoder_displacement and imu_orientation records through intake channels or as this bench's speed and heading-rate streams, with NEES/NIS consistency and linearization breakdown measured as in T064; the bench generates both streams but no experiment fuses them.",
+ "report_id": "sha256:7ad4523f748d498a0cf4226939cb1aaee84c0c526ec5860f2cab9a3b48bd072c",
  "schema": "ciw.lab-task-report.v1",
  "section": "sensor-fusion",
  "state": "completed",

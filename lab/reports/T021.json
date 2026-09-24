@@ -66,6 +66,10 @@
    "claim": "On the test flat torus every route's heading amplification equals its length (ciw.lab.jacobi), so the length and amplification orders coincide",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-12,
     "rel": 0
@@ -90,6 +94,9 @@
    "claim": "For every flat torus and every pair of points the least-sensitive geodesic is a shortest one",
    "domain": "mathematical",
    "evidence_status": "analytic",
+   "origin": [
+    "derivation"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -110,6 +117,9 @@
    "claim": "Shortest equals least heading-sensitive whenever j_head(L) is one strictly increasing function of L for all routes (constant K <= 0); with K > 0 somewhere, or curvature that differs between routes, the equivalence can fail",
    "domain": "mathematical",
    "evidence_status": "analytic",
+   "origin": [
+    "derivation"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -128,6 +138,7 @@
    "claim": "The shortest route on a physical flat workpiece is the safest route to execute",
    "domain": "machine_safety",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -161,13 +172,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/flat_torus_topology.py": "1221001d96bf1f9aa2f9fea169a2b10bfb37230da11bfb6f1608ba9355c86b9a",
+   "src/ciw/lab/flat_torus_topology.py": "2c05c13905cc51906d41b89219b001396634a9d3bb8bda9bd32ac75a5523fdb1",
    "src/ciw/lab/flat_torus_topology_lattice.py": "15a33fcd29591e43dec16fa3b9ad26d6b6b86846872e9e6bf815508fb0dade63"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T022: detect degenerate (tied) shortest representatives",
- "report_id": "sha256:f561f7dfab1b30340f7afdcb1fc8b5267437aba17f6a8aed2bb085471971a7a0",
+ "recommended_next_task": "Deferred research question: test the equivalence of shortest and least heading-sensitive routes on a closed hyperbolic surface (constant K = -1, for example a genus-2 surface glued from a regular octagon), the other case its assumption covers, with routes between two points in different homotopy classes",
+ "report_id": "sha256:f86b2f6d045b356f13f914eaa582297cea9fa54ae82f93086cec6e31b8f0e355",
  "schema": "ciw.lab-task-report.v1",
  "section": "flat-torus-topology",
  "state": "completed",
@@ -180,7 +191,8 @@
   "pytest: tests/test_lab_flat_torus_topology.py::test_t021_shortest_is_least_sensitive",
   "pytest: tests/test_lab_flat_torus_topology.py::test_regeneration_is_within_tolerance",
   "pytest: tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
-  "pytest: tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+  "pytest: tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_next_steps_name_forward_work"
  ],
  "tests_skipped": [],
  "title": "Compare shortest path against least-sensitive path.",

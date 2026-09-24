@@ -192,6 +192,9 @@
    "claim": "Every malformed exchange input with a declared CIW refusal text is refused by the validator it targets with exactly that text",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -261,6 +264,9 @@
    },
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -301,6 +307,9 @@
    },
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -339,6 +348,9 @@
    },
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -384,6 +396,9 @@
    },
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -416,6 +431,9 @@
    "claim": "The committed malformed fixtures equal their generator's bytes",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -457,6 +475,9 @@
    },
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -517,13 +538,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/exchange_provenance_bundles.py": "3acc6fd6976bb5e6dd8ad3bfc3d09a1d9594ca0a06f4db823581e5b651d4835e",
-   "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "7d6da1148d3744ae1e754b53f697b5b4919aff2666788ae6aec0e48e6e2380c9"
+   "src/ciw/lab/exchange_provenance_bundles.py": "7e841b781d966fe75d5a86bd61e1ef32150c4087393893be788c2b7eff69f3d4",
+   "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "435727947e827d1d601802a5e860f04d578f7b879301c7f5615fb7d6e523500e"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T096: provider-free conformance of exchange identities and ESM candidate responses.",
- "report_id": "sha256:7cbd246ce3b5734a4ed407877dfefdb8ea8271ebdf6f280bd049911e4a2d695c",
+ "recommended_next_task": "Deferred research question: apply the malformed matrix to the source parsers of the workbench kinds other than energy-accuracy, which parse after the same canonical-base64 and byte-budget checks; and, once CIW makes the changes docs/lab/EXCHANGE_BUNDLES.md requests (read_json refusing an overflowing number and turning RecursionError into ValueError, Session.from_workspace refusing unknown or missing top-level fields with a ValueError, source.add naming the source rather than a runtime), re-run it to check that each of the five counterexamples becomes a refusal with its own text.",
+ "report_id": "sha256:f8a186a0d1db5aa8492b3659a0d106adeb4c0bd3deb79b3d3cd81eb7c323051f",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "completed",

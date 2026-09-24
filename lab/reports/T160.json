@@ -8,19 +8,23 @@
    "hardware_measured": 0,
    "independently_verified": 0,
    "not_established": 1,
-   "numerically_verified": 1,
+   "numerically_verified": 3,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "Every results row restates its source finding's task, claim, value headline, unit, label and report identity, and its value cell states no number that the source finding's value does not hold.",
- "experiment": "Generate the draft from retained reports of sections observation, sensor-fusion, manufacturing, energy-gpu and parse its results table back against the source findings.",
+ "expected_invariant": "Every appendix, selected-finding row restates its source finding's task, claim, value headline, unit, label, basis and report identity, and its value cell states no number the source value does not hold; the page states every label definition, the independence qualification and every boundary row; every unresolved assumption of an unfinished task and every assumption limiting independence appears in full.",
+ "experiment": "Generate the draft from retained reports of sections observation, sensor-fusion, manufacturing, energy-gpu; parse its finding tables back against the source findings and its label and boundary tables against their definitions; look up each required assumption in its section.",
  "failure_modes_checked": [
   "claims or units containing '|' breaking table rows",
-  "labels dropped from rows",
+  "labels or bases dropped from rows",
   "values cut inside a number",
-  "rows out of order or missing"
+  "rows out of order or missing",
+  "partial task described by what it did instead of what is missing",
+  "independently_verified shown without its definition or the assumptions that limit it",
+  "boundary rows or label definitions missing",
+  "a next step that says the unfinished tasks' steps close every limitation (completed tasks keep open physical claims, and authority claims never close)"
  ],
  "findings": [
   {
@@ -31,15 +35,26 @@
       "comparison": "abs_le",
       "observed": 0.0,
       "passed": true,
-      "reference": "results rows that do not parse back to their source finding",
+      "reference": "appendix rows that do not parse back to their source finding",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "selected-finding rows that do not parse back to their source finding",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
      }
     ]
    },
-   "claim": "Draft results table restates every retained finding of its sections with its retained label",
+   "claim": "Draft finding tables restate every retained finding of their sections with its retained label and basis",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -50,7 +65,71 @@
     "value": 0
    },
    "unit": "findings",
-   "value": 358
+   "value": 392
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "label definitions, independence qualification or boundary rows missing or altered",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Draft defines every evidence label, states that independently_verified is implementation agreement and not verification by another party, and lists every boundary row",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "integer count over retained report files; no rounding, sampling or tolerance",
+    "kind": "exact",
+    "value": 0
+   },
+   "unit": "boundary rows",
+   "value": 8
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "required assumption statements absent from their section",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Draft limitations state what each unfinished task is missing, and its methods carry every assumption that mentions independence, same origin or ciw-written code in a task with independently_verified rows and every other assumption research_portfolio.INDEPENDENCE_LIMITS selects",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "integer count over retained report files; no rounding, sampling or tolerance",
+    "kind": "exact",
+    "value": 0
+   },
+   "unit": "statements",
+   "value": 55
   },
   {
    "assigned_by": "ciw.lab.evidence",
@@ -59,6 +138,7 @@
    "domain": "provenance",
    "evidence_status": "not_established",
    "expected_not_established": true,
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -66,18 +146,20 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 152538,
+   "bytes": 295088,
    "path": "artifacts/T160/instrument-methods-draft.md",
-   "sha256": "2ba1711e15d4f6c36eaa1d36aec69b49b149950bf480151b17ef86e459fcc7a0"
+   "sha256": "d993b8326184726446c54a43c18fa71048eb6f8a15cdb1259db50ecea12fcac9"
   }
  ],
- "hypothesis": "An instrument methods draft can be assembled entirely from retained findings, with every number traceable to a report identity and every limitation drawn from not_established findings.",
+ "hypothesis": "An instrument methods draft with a thesis, introduction, methods, results, discussion, limitations and outstanding work can be generated from retained findings alone: every number traceable to a report identity, every label defined and shown with its basis, and every limitation drawn from not_established findings and the unfinished tasks' own statements.",
  "input_data": [
-  "Retained reports of sections observation, sensor-fusion, manufacturing, energy-gpu"
+  "Retained reports of sections observation, sensor-fusion, manufacturing, energy-gpu",
+  "Textbook ledger of T156 (research_portfolio.TEXTBOOK)",
+  "Label definitions (docs/LAB.md) and ciw.lab.evidence.BOUNDARY"
  ],
- "mathematical_model": "Draft = generated Markdown: abstract, methods (task hypotheses and models), results (one row per finding), limitations (not_established findings and unfinished tasks).",
+ "mathematical_model": "Draft = generated Markdown: a thesis restating counts and counterexamples of the retained findings; an introduction listing the tasks' questions; methods (label definitions, the independence qualification, task hypotheses and models, the assumptions that limit independence); results (one selected finding and figure per task); a discussion listing each counterexample with its witness; limitations (the computational boundary, not_established findings, what each unfinished task is missing); outstanding work; references from the T156 textbook ledger; an appendix with every finding, its label and its basis.",
  "number": 160,
- "numerical_result": "Draft cites 358 findings from 59 reports; 0 results rows differ from their source.",
+ "numerical_result": "Draft cites 392 findings from 59 reports (59 selected, 40 figures, 64 counterexamples discussed, 10 unfinished tasks, 5 independence qualifications); 0 table rows differ from their source; 0 label or boundary statements missing; 0 required assumptions absent.",
  "observation_model": "No physical observation; reads retained computational records only.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -91,24 +173,30 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/research_portfolio.py": "0fd0ed475a38bf81fd2145f64cf1335856a471c58d406347c3b66b0f66672702"
+   "src/ciw/lab/research_portfolio.py": "145b8ee8456e1dd57bf2a05fa20e1ce55bd33356522436d8901eb1adfb60fc7a"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "Human authorship pass, related-work section and external review; physical experiments from the manufacturing protocols.",
- "report_id": "sha256:0ea4979de6c87dd79e8399ac545bc1a04070a5d4475d39ef3fc05c309a9d2713",
+ "recommended_next_task": "Write the parts the lab cannot write (the thesis in the authors' words, the related-work discussion, the interpretation of the counterexamples and the conclusions) and submit the draft for external review; then the unfinished tasks' own next steps (T115: Measure package energy per geodesic trajectory and per common-workload batch on a Linux host with readable intel-rapl counters (docs/lab/ENERGY_GPU.md) …; T116: Measure gross device energy per batch of the common Gaussian VI workload on the RTX 2080 host (protocol in docs/lab/ENERGY_GPU.md), hardware_measured through …; T117: Compare the PTX kernel's outputs with the NumPy reference bit for bit on the RTX 2080 host (protocol in docs/lab/ENERGY_GPU.md): `mkdir -p …; T118: Record power, temperature, clock and utilization of the common workload on the RTX 2080 host (protocol in docs/lab/ENERGY_GPU.md): `mkdir -p …; T119: Measure energy per accepted replica solve of the common Gaussian VI workload on the RTX 2080 host (protocol in docs/lab/ENERGY_GPU.md), through the same …; T120: Measure float32 and float64 package energy per batch of the common workload on a Linux host with readable intel-rapl counters (docs/lab/ENERGY_GPU.md): `python …; T121: Check on the RTX 2080 host (protocol in docs/lab/ENERGY_GPU.md) that the PTX kernel keeps its in-kernel reductions unfused: `mkdir -p runs/rtx2080-<date>` …; T124: Retain the first RTX 2080 log with its device and runtime identity through the acquisition gate on the RTX 2080 host (protocol in docs/lab/ENERGY_GPU.md) …; T138: Deferred research question: define a signed-capture trust anchor (instrument-held signing keys and their verification) or a hardware:metrology probe, without …; T139: Deferred research question: a signed-capture trust anchor (instrument-held keys that sign each export) or a hardware:metrology probe, without which a retained …); 57 physical, calibration or sensor claims of completed tasks (T045, T046, T047, T048, T049, T050, T051, T052, T053, T054, T055, T056, T057, T058, T060, T061, T062, T063, T064, T065, T066, T067, T068, T069, T070, T071, T072, T074, T075, T122, T123, T125, T126, T127, T128, T129, T130, T131, T132, T133, T134, T135, T136, T137, T140) stay not established, and each task's own next step is listed under Outstanding work; 9 authority-domain claims stay not established on any evidence.",
+ "report_id": "sha256:32bfbd606e87e0552316a56859e43dab53d1762ded57e77b67e798a89bd9f848",
  "schema": "ciw.lab-task-report.v1",
  "section": "research-portfolio",
  "state": "partial",
  "task_id": "T160",
  "tests_passed": [
-  "check: Draft results table restates every retained finding of its sections with its retained label vs results rows that do not parse back to their source finding",
-  "pytest: tests/test_lab_research_portfolio.py::test_paper_drafts_trace_to_reports"
+  "check: Draft finding tables restate every retained finding of their sections with its retained label and basis vs appendix rows that do not parse back to their source finding",
+  "check: Draft finding tables restate every retained finding of their sections with its retained label and basis vs selected-finding rows that do not parse back to their source finding",
+  "check: Draft defines every evidence label, states that independently_verified is implementation agreement and not verification by another party, and lists every boundary row vs label definitions, independence qualification or boundary rows missing or altered",
+  "check: Draft limitations state what each unfinished task is missing, and its methods carry every assumption that mentions independence, same origin or ciw-written code in a task with independently_verified rows and every other assumption research_portfolio.INDEPENDENCE_LIMITS selects vs required assumption statements absent from their section",
+  "pytest: tests/test_lab_research_portfolio.py::test_paper_drafts_trace_to_reports",
+  "pytest: tests/test_lab_research_portfolio.py::test_paper_drafts_have_a_structure_and_qualify_their_labels"
  ],
  "tests_skipped": [],
  "title": "Write an instrument-methods paper.",
  "uncertainty": "Numbers carry the uncertainty stated in their source findings.",
  "unresolved_assumptions": [
-  "Prose beyond the generated structure, related work and peer review are outstanding."
+  "Missing from this draft, which the lab cannot write: the thesis in the authors' words (the generated thesis restates counts and counterexamples of the retained findings only), a related-work discussion (the reference list is the T156 textbook ledger's name matches), an interpretation of the counterexamples against the literature, conclusions, figure selection and captions, and external peer review. The draft stays partial until they exist.",
+  "For a task with independently_verified rows every assumption that mentions independence, same origin or ciw-written code is carried into the Qualifications, statistical independence of noise and events excepted (research_portfolio.STATISTICAL_INDEPENDENCE); for other tasks they are selected by phrase (research_portfolio.INDEPENDENCE_LIMITS), so one worded otherwise is not carried.",
+  "The selected finding of a task is its first established one, not a judgment of importance."
  ]
 }

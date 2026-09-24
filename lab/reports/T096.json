@@ -71,6 +71,10 @@
    "claim": "exchange._identity accepts every synthetic result and verification record sealed by a lab-written canonical encoder that agrees byte for byte with json.dumps, in any member order, and refuses every single-field mutation and a forged identity",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -110,11 +114,19 @@
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
      }
-    ]
+    ],
+    "generator": {
+     "count": 72,
+     "name": "ciw.lab.exchange_provenance_bundles._candidate_cases"
+    }
    },
    "claim": "candidate_evidence.validate_response accepts valid synthetic ESM responses and refuses every boundary mutation",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -144,7 +156,12 @@
       "reference_kind": "invariant",
       "tolerance": 1.0
      }
-    ]
+    ],
+    "generator": {
+     "count": 24,
+     "name": "ciw.lab seeded nested JSON records",
+     "seed": 9601
+    }
    },
    "claim": "Observation-batch identities are caller-declared: mutated batches pass exchange._identity",
    "counterexample": {
@@ -156,6 +173,10 @@
    },
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -183,7 +204,11 @@
       "reference_kind": "invariant",
       "tolerance": 1.0
      }
-    ]
+    ],
+    "generator": {
+     "count": 72,
+     "name": "ciw.lab.exchange_provenance_bundles._candidate_cases"
+    }
    },
    "claim": "validate_response accepts unknown extra fields in an ESM response",
    "counterexample": {
@@ -198,6 +223,10 @@
    },
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -219,6 +248,7 @@
    "claim": "Passing provider-free conformance admits a candidate into canonical state",
    "domain": "production_acceptance",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": "not decided by the workbench"
@@ -239,7 +269,7 @@
  "hypothesis": "The provider-free parts of the exchange and ESM candidate boundaries accept valid records and refuse every mutation of a bound field, without any provider checkout.",
  "input_data": [
   "24 seeded synthetic result/verification records (PCG64 seed 9601)",
-  "72 synthetic ESM inspect/capture responses over telemetry and calibrated bundle stubs"
+  "72 synthetic ESM inspect/capture responses over telemetry and calibrated bundle stubs (deterministic, unseeded: ciw.lab.exchange_provenance_bundles._candidate_cases)"
  ],
  "mathematical_model": "exchange._identity: id = 'sha256:' + SHA-256(schema NUL canonical_json(record without id)); validate_response: equality of boundary fields with the explicit request and the selected bundle.",
  "number": 96,
@@ -257,13 +287,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/exchange_provenance_bundles.py": "3acc6fd6976bb5e6dd8ad3bfc3d09a1d9594ca0a06f4db823581e5b651d4835e",
-   "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "7d6da1148d3744ae1e754b53f697b5b4919aff2666788ae6aec0e48e6e2380c9"
+   "src/ciw/lab/exchange_provenance_bundles.py": "7e841b781d966fe75d5a86bd61e1ef32150c4087393893be788c2b7eff69f3d4",
+   "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "435727947e827d1d601802a5e860f04d578f7b879301c7f5615fb7d6e523500e"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T097: exact SCR/SET/PPDA integrations when the pinned checkouts are bound.",
- "report_id": "sha256:5954ef6d8afa517abe5485b48d10285181637c841dbb9e33aba07b409b1488fd",
+ "recommended_next_task": "Deferred research question: explore combined mutations that restore consistency (two or more fields changed together, including a recomputed identity) against exchange._identity and candidate_evidence.validate_response, which single-field mutations cannot reach; and, as CIW changes, bind observation-batch identities to their content and refuse unknown ESM response fields, then re-run to check that both counterexamples become refusals.",
+ "report_id": "sha256:b5b9476d10536f8d59dcf73fb8be5b984b11b42bfd4fa864e3d7faca680a0f72",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "completed",

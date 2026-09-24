@@ -80,6 +80,9 @@
    "claim": "The sphere pole in the polar chart is a coordinate singularity: det g -> 0 while K stays 1",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.001,
     "rel": 0.0
@@ -135,6 +138,9 @@
    "claim": "The scan classifies 9 of the 10 declared approaches as their true type, with no false positive at regular points",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -202,6 +208,9 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-06,
     "rel": 0.0
@@ -262,6 +271,9 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0001,
     "rel": 1e-06
@@ -327,6 +339,9 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.01,
     "rel": 0.0
@@ -389,6 +404,9 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-06,
     "rel": 0.0
@@ -431,6 +449,9 @@
    "claim": "The hyperbolic chart boundary y -> 0 is at infinite distance, not a singular point",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.001,
     "rel": 0.0
@@ -471,6 +492,9 @@
    "claim": "The boundary of g = y^-1.8 I lies at finite distance and carries a curvature singularity",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-06,
     "rel": 0.0
@@ -545,6 +569,9 @@
    },
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.001,
     "rel": 0.0
@@ -608,6 +635,9 @@
    },
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-06,
     "rel": 1e-06
@@ -695,6 +725,9 @@
    "claim": "The pointwise guard and the core check refuse degenerate, blown-up, nonfinite and out-of-chart points with computed codes, and accept curvature below the declared bound",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -732,6 +765,9 @@
    "claim": "The pointwise guard propagates a refusal code that a surface raises at its own apex unchanged",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -763,6 +799,9 @@
    "claim": "The core Surface.check accepts sphere-chart points with metric condition number above 1e10",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.3,
     "rel": 0.0
@@ -781,6 +820,7 @@
    "claim": "The singularity classification applies to scanned physical parts",
    "domain": "physical",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -828,14 +868,14 @@
   "scipy": "1.16.2",
   "sources": {
    "src/ciw/lab/surfaces.py": "e8f264c182743d0177d93b961a49d7ddf78f30d79a7a75b9fea4018b10d4eef0",
-   "src/ciw/lab/surfaces_discrete.py": "b47b6d9486e322c3e394e25b99849c0aa22039ce45b946825b0f3dbc1a3013b7",
+   "src/ciw/lab/surfaces_discrete.py": "9b277c6212ac8d7c563e3b2257c75438b37f5a73c992f6b9b7ec53a26ec4106f",
    "src/ciw/lab/surfaces_discrete_charts.py": "e1d7e0b8514c7795f0e41b26d993d44ae3f032ea67191b068194ec284f227e71",
    "src/ciw/lab/surfaces_discrete_geometry.py": "d4445a253778e1dff32b68a903a9caf560affa08ca5a7110207e54c8e1baa60e"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T042: adopt these refusal codes (nonfinite_point, nonfinite_metric, degenerate_metric, curvature_blowup, outside_chart, curvature_singularity, conical_singularity) as the refusal states for invalid or incomplete surface data.",
- "report_id": "sha256:623001d9a3a006cc0c017d25ab3767e116cb20c6329737064d862dac821f01f7",
+ "recommended_next_task": "Deferred research question (queue extension after T168): adopt these refusal codes (nonfinite_point, nonfinite_metric, degenerate_metric, curvature_blowup, outside_chart, curvature_singularity, conical_singularity) as the admission refusal states for smooth surface data, and add a removability test (metric regularity in radial arclength coordinates) so the cube-root chart's removable singularity is classified (the refusal states that T042 defines (MESH_CODES, TRACE_CODES and QUERY_CODES in surfaces_discrete_mesh_geometry.py) are for triangle meshes and contain none of these codes).",
+ "report_id": "sha256:845a79b0d5273f7d55eb6c43b306d5ec115300efc034fa48a163deb4bdee9a83",
  "schema": "ciw.lab-task-report.v1",
  "section": "surfaces-discrete",
  "state": "completed",
@@ -885,7 +925,8 @@
   "pytest: tests/test_lab_surfaces_discrete.py::test_singularity_scans_classify_every_case",
   "pytest: tests/test_lab_surfaces_discrete.py::test_singularity_detection_limits",
   "pytest: tests/test_lab_surfaces_discrete.py::test_singularity_refusal_codes",
-  "pytest: tests/test_lab_surfaces_discrete.py::test_t037_report"
+  "pytest: tests/test_lab_surfaces_discrete.py::test_t037_report",
+  "pytest: tests/test_lab_surfaces_discrete.py::test_next_steps_do_not_hand_work_to_tasks_that_did_not_deliver_it"
  ],
  "tests_skipped": [],
  "title": "Detect coordinate singularities.",

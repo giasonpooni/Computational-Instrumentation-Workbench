@@ -94,7 +94,7 @@ Generated from retained lab reports. Each entry refutes the quoted general state
 
 ## T010: The relative first-order error diverges at every conjugate point
 
-- Finding: On the unit sphere a pure heading perturbation refocuses exactly: the relative first-order error is uniform and does not diverge at the conjugate point
+- Finding: On the unit sphere a pure heading perturbation refocuses exactly: the relative first-order error of the embedded chord is uniform (2 sin(eps/2)/eps - 1, about -eps^2/24) and does not diverge at the conjugate point
 - Evidence status: `numerically_verified`
 - Witness: `{"eps": 0.02, "perturbation": "pure heading", "relative_error": -1.6590023186879854e-05, "s": 3.129320807286708 …(+1)}`
 
@@ -212,9 +212,9 @@ Generated from retained lab reports. Each entry refutes the quoted general state
 - Evidence status: `numerically_verified`
 - Witness: `{"binary64": 2, "exact": 3, "lattice": "generic", "tolerance": 3 …(+2)}`
 
-## T024: The shortest route also minimizes amplification and maximizes focus margin
+## T024: The shortest route also minimizes amplification and maximizes focus margin s_c - L
 
-- Finding: Rankings by length, amplification and focus margin disagree: the shortest route is neither the least amplifying nor in the best focus-margin group
+- Finding: Rankings by length, amplification |j_head(L)| and focus margin s_c - L (s_c the first zero of j_head) disagree: the shortest route is neither the least amplifying nor in the best focus-margin group
 - Evidence status: `numerically_verified`
 - Witness: `{"best_margin_group[0].amplification": 35.84781929262236, "best_margin_group[0].focus_margin": null, "best_margin_group[0].heading": 1.328869465787598, "best_margin_group[0].length": 6.354490781532511 …(+50)}`
 
@@ -254,9 +254,9 @@ Generated from retained lab reports. Each entry refutes the quoted general state
 - Evidence status: `independently_verified`
 - Witness: `{"alternative.amplification": 2.2424499641265205, "alternative.focus_margin": null, "alternative.heading": -0.6654954777289914, "alternative.length": 7.4048964512362 …(+16)}`
 
-## T032: The shortest geodesic has the largest focus margin (farthest from conjugate points)
+## T032: The shortest geodesic has the largest focus margin s_c - L (farthest from its first conjugate point)
 
-- Finding: Torus outer equator: the shortest route has a smaller focus margin than a longer route
+- Finding: Torus outer equator: the shortest route has a smaller focus margin s_c - L (s_c the first zero of j_head) than a longer route
 - Evidence status: `independently_verified`
 - Witness: `{"alternative.amplification": 29.49806945310811, "alternative.focus_margin": null, "alternative.heading": -1.3844466400297355, "alternative.length": 6.723214266466979 …(+16)}`
 
@@ -272,9 +272,9 @@ Generated from retained lab reports. Each entry refutes the quoted general state
 - Evidence status: `independently_verified`
 - Witness: `{"alternative.amplification": 6.488420201199406, "alternative.focus_margin": -1.9973831828910869, "alternative.heading": 0.0, "alternative.length": 5.8779306681414605 …(+15)}`
 
-## T032: Minimizing geodesics on the unit sphere have focus margin bounded below by a positive constant
+## T032: Minimizing geodesics on the unit sphere have focus margin s_c - L bounded below by a positive constant
 
-- Finding: On the unit sphere the minimizing arc between points at separation pi - delta ends delta before its conjugate point, so minimizing geodesics have no positive lower bound on focus margin
+- Finding: On the unit sphere the minimizing arc between points at separation pi - delta ends delta before its conjugate point, so minimizing geodesics have no positive lower bound on the focus margin s_c - L
 - Evidence status: `numerically_verified`
 - Witness: `{"kind": "near-conjugate conditioning", "surface": "unit sphere", "delta[0]": 0.1, "delta[1]": 0.01 …(+7)}`
 
@@ -916,9 +916,9 @@ Generated from retained lab reports. Each entry refutes the quoted general state
 
 ## T100: CIW's retained records and their classification keep provider-backed results visibly distinct from fabricated ones
 
-- Finding: A fabricated, content-consistent numerical-heat bundle reopens and is labelled provider_backed by the workspace classifier, as a provider result is
+- Finding: A fabricated numerical-heat bundle sealed with CIW's pinned SCR revision and source tree reopens and is labelled provider_backed by the workspace classifier, as a provider result is
 - Evidence status: `numerically_verified`
-- Witness: `{"adapter_version": "fabricated-by-ciw-lab", "bundle_id": "sha256:9369906b44c440bebfdc3ac93f9442288a392206b0410035773f9 …", "engine_source_binding": "operator_asserted_not_attested", "revision_is_ciw_pin": true …(+7)}`
+- Witness: `{"adapter_version": "fabricated-by-ciw-lab", "bundle_id": "sha256:60f6b1a3bc1e43ffe35c1786663264183e5e3788356702dceb044 …", "engine_source_binding": "operator_asserted_not_attested", "repository_root": "/fabricated/not-a-provider-checkout" …(+9)}`
 
 ## T101: The float64 resolution floor bounds the rounding error of the decrease form at every matrix scale
 
@@ -949,12 +949,6 @@ Generated from retained lab reports. Each entry refutes the quoted general state
 - Finding: PLSR sets value_out_of_range and reports V = 0 for states whose exact V and x^T M x are representable binary64 subnormals, because s^2 underflows before the product is formed
 - Evidence status: `numerically_verified`
 - Witness: `{"code": "CERTIFIED_WITH_MARGIN", "decrease": -0.0, "error_units": null, "exact_representable": true …(+4)}`
-
-## T103: Near the representable limits the float64 resolution still bounds the rounding error of the decrease form
-
-- Finding: PLSR's resolution of a subnormal plant is zero while forming its decrease matrix rounds an exactly indefinite declared form to a negative definite one
-- Evidence status: `numerically_verified`
-- Witness: `{"resolution": 0.0, "A_hex[0][0]": "-0x0.0000000000002p-1022", "A_hex[0][1]": "0x0.0000000000005p-1022", "A_hex[1][0]": "0x0.0p+0" …(+15)}`
 
 ## T105: The declared box bounds and their binary64 neighbours keep their SI box decision under either conversion formula
 
@@ -1022,6 +1016,12 @@ Generated from retained lab reports. Each entry refutes the quoted general state
 - Evidence status: `numerically_verified`
 - Witness: `{"float32_min_error": 5.826263982645739e-07, "float64_steps": 128, "target": 1e-07}`
 
+## T120: Halving floating-point precision reaches every accuracy target of the Gaussian VI workload at no greater operation count
+
+- Finding: Lowering the common Gaussian VI workload to float32 cannot reach a 1e-14 nat KL target within 256 iterations, while float64 reaches it
+- Evidence status: `numerically_verified`
+- Witness: `{"float32_floor_kl": 2.429755366417848e-14, "float64_iteration": 69, "target_kl_nats": 1e-14}`
+
 ## T121: The sign of a float32 reduction (a pass/fail decision at threshold 0) does not depend on the reduction order
 
 - Finding: Reduction order alone flips the sign of a float32 sum whose exact value is +0.25 (the one-thread sequential CPU fold against the GPU-style orders)
@@ -1051,6 +1051,12 @@ Generated from retained lab reports. Each entry refutes the quoted general state
 - Finding: A comparison-select maximum (a if a >= b else b, the rule numpy documents for np.maximum) returns its first operand for +0.0 and -0.0, so the sign of the result depends on operand order
 - Evidence status: `numerically_verified`
 - Witness: `{"orders[0]": "(+0.0, -0.0)", "orders[1]": "(-0.0, +0.0)", "signbits[0]": false, "signbits[1]": true}`
+
+## T121: A fixed-order reduction gives the same binary64 result whether or not the compiler contracts its multiply-adds
+
+- Finding: Fused multiply-add contraction of the common workload's in-kernel reductions changes its binary64 outputs, so a bitwise CPU/GPU comparison detects a contracting build
+- Evidence status: `numerically_verified`
+- Witness: `{"iterations": 38, "max_ulp": 6, "variant": "fma-second"}`
 
 ## T122: Gradient descent on the variational free energy converges for every positive step size
 
@@ -1086,7 +1092,7 @@ Generated from retained lab reports. Each entry refutes the quoted general state
 
 - Finding: A marker chord differs from the surface distance on a developable (intrinsically flat) part
 - Evidence status: `numerically_verified`
-- Witness: `{"chord_mm": 141.4213562373095, "dphi_deg": 90, "geodesic_mm": 157.07963267948966, "radius_mm": 100.0}`
+- Witness: `{"chord_mm": 141.42135623730948, "dphi_deg": 90, "geodesic_mm": 157.07963267948966, "radius_mm": 100.0}`
 
 ## T129: A window chosen from the osculating circle keeps the quadratic-fit curvature bias within tolerance on any convex profile
 
@@ -1136,17 +1142,17 @@ Generated from retained lab reports. Each entry refutes the quoted general state
 - Evidence status: `numerically_verified`
 - Witness: `{"route": "fan+15deg", "worst_corner_ratio": 1.0091492341266857}`
 
-## T137: The shortest route between a station and an edge is also the safest route (largest distance to a focal or conjugate point)
+## T137: The shortest route between a station and an edge is also the one farthest, relative to its length, from a focal or conjugate point (largest focal clearance ratio)
 
-- Finding: The shortest candidate route has the worst focus margin
+- Finding: The shortest candidate route has the lowest focal clearance ratio
 - Evidence status: `numerically_verified`
-- Witness: `{"length_mm": 202.1796844767861, "nearest_focus_kind": "focal", "nearest_focus_mm": 153.40715534052734, "next_longer": "fan+5deg" …(+1)}`
+- Witness: `{"focus_margin_lower_bound_mm": 297.82031552321394, "focus_margin_mm": null, "length_mm": 202.1796844767861, "nearest_focus_kind": "focal" …(+4)}`
 
 ## T138: A physically correct model passes E_n <= 1 against its open-loop prediction when U covers only the instrument and the dome tolerances
 
 - Finding: A 2-sigma start offset of the declared jig makes a correct model fail E_n <= 1 unless the start pose is budgeted or measured
 - Evidence status: `numerically_verified`
-- Witness: `{"declared_jig_sigma_mm": 0.05, "max_en_without_execution": 1.8079673521997977, "realized_offset_mm": 2.1}`
+- Witness: `{"declared_jig_sigma_mm": 0.05196152422706632, "max_en_without_execution": 1.8788917732749837, "realized_offset_mm": 2.1039230484541327}`
 
 ## T140: The uncertainty of a curved-surface prediction compared with a photogrammetric measurement is limited by the instrument
 
@@ -1154,11 +1160,17 @@ Generated from retained lab reports. Each entry refutes the quoted general state
 - Evidence status: `numerically_verified`
 - Witness: `{"quantity": "coupon focal distance", "components_mm.execution": 0.8324762391006113, "components_mm.geometry": 4.388650263504834, "components_mm.instrument": 1.2903303761332685 …(+1)}`
 
+## T141: evidence.finding labels a claim from its basis and domain alone, so an acceptance statement filed in a computational domain with a passing check is established (the loophole T141 recorded before evidence.screen_authority_claim)
+
+- Finding: evidence.finding and validate_finding refuse an acceptance or rejection statement filed in a computational or physical domain because of its wording
+- Evidence status: `numerically_verified`
+- Witness: `{"claim": "Coupon lot accepted for production", "domain": "computational_pipeline", "refused_by": "ciw.lab.evidence.screen_authority_claim"}`
+
 ## T141: The lab API cannot mark production acceptance
 
-- Finding: evidence.finding establishes an acceptance statement when its author files it in a computational domain
+- Finding: A paraphrased acceptance statement outside both screened vocabularies, filed in a computational domain with a passing check, is still labelled by its checks
 - Evidence status: `numerically_verified`
-- Witness: `{"caught_by": "manufacturing_records.screen_acceptance_language", "claim": "Coupon lot accepted for production", "domain": "computational_pipeline", "label": "numerically_verified"}`
+- Witness: `{"claim": "Coupon lot fit for shipment to the customer", "domain": "computational_pipeline", "label": "numerically_verified", "screens_passed[0]": "ciw.lab.evidence.screen_authority_claim" …(+1)}`
 
 ## T144: Numerical providers are invoked only through pinned executables
 

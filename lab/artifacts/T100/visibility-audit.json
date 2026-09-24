@@ -1,4 +1,5 @@
 {
+ "basis_violations": [],
  "energy": {
   "fresh_bundle": {
    "classification": "physical_domain_measurement",
@@ -35,24 +36,65 @@
    "synthetic_reference_not_hardware_measurement"
   ]
  },
+ "hidden_generator_or_provider": [],
  "label_violations": [],
  "provider_origin": {
-  "bundle_id": "sha256:9369906b44c440bebfdc3ac93f9442288a392206b0410035773f9af33a87e62c",
-  "numerical_labels": [
-   "provider_backed"
-  ],
-  "reader_view": {
-   "adapter_version": "fabricated-by-ciw-lab",
-   "engine_source_binding": "operator_asserted_not_attested",
-   "revision_is_ciw_pin": true,
-   "source_tree_is_ciw_pin": false
+  "copied_pin": {
+   "bundle_id": "sha256:60f6b1a3bc1e43ffe35c1786663264183e5e3788356702dceb04427e7cd56e77",
+   "classifier_notes": "1 pinned runtime identities in the record; every revision is a CIW pin (ciw.declared_workload.PINS[numerical-heat]) and every source tree equals the tree CIW records.",
+   "numerical_labels": [
+    "provider_backed"
+   ],
+   "reader_view": {
+    "adapter_version": "fabricated-by-ciw-lab",
+    "engine_source_binding": "operator_asserted_not_attested",
+    "repository_root": "/fabricated/not-a-provider-checkout",
+    "revision_is_ciw_pin": true,
+    "source_tree_is_ciw_pin": true
+   },
+   "reopen": "accepted",
+   "runtime_pins": [
+    {
+     "matched": [
+      "ciw.declared_workload.PINS[numerical-heat]"
+     ],
+     "problem": null,
+     "role": "scr",
+     "tree_pinned": true
+    }
+   ]
   },
-  "reopen": "accepted"
+  "fabricated": {
+   "bundle_id": "sha256:9369906b44c440bebfdc3ac93f9442288a392206b0410035773f9af33a87e62c",
+   "classifier_notes": "Runtime identity does not match a CIW pin: source tree 0000000000000000000000000000000000000000 is not the tree 4068a711534932e8d89bb0d87d373376dafdf6cd CIW records for revision a59aba283b0304faeeb3e5d305087e7709e171ca. provider_backed needs the retained revision and source tree to be a pin CIW declares for this workflow kind.",
+   "numerical_labels": [
+    "not_established"
+   ],
+   "reader_view": {
+    "adapter_version": "fabricated-by-ciw-lab",
+    "engine_source_binding": "operator_asserted_not_attested",
+    "repository_root": "/fabricated/not-a-provider-checkout",
+    "revision_is_ciw_pin": true,
+    "source_tree_is_ciw_pin": false
+   },
+   "reopen": "accepted",
+   "runtime_pins": [
+    {
+     "matched": null,
+     "problem": "source tree 0000000000000000000000000000000000000000 is not the tree 4068a711534932e8d89bb0d87d373376dafdf6cd CIW records for revision a59aba283b0304faeeb3e5d305087e7709e171ca",
+     "role": "scr",
+     "tree_pinned": null
+    }
+   ]
+  }
  },
- "rendering_probe_row": "| claim with a \\| pipe | 1 | `synthetic` |",
+ "rendering_probe_row": "| claim with a \\| pipe | 1 | `synthetic` | synthetic inputs (rendering probe) |",
  "rendering_violations": [],
  "reports": [
   {
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
    "findings": 8,
    "labels": [
     "independently_verified",
@@ -63,6 +105,7 @@
    "task_id": "T001"
   },
   {
+   "declared_sources": [],
    "findings": 5,
    "labels": [
     "independently_verified",
@@ -73,6 +116,9 @@
    "task_id": "T002"
   },
   {
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
    "findings": 7,
    "labels": [
     "numerically_verified"
@@ -82,6 +128,9 @@
    "task_id": "T003"
   },
   {
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
    "findings": 5,
    "labels": [
     "numerically_verified"
@@ -91,6 +140,10 @@
    "task_id": "T004"
   },
   {
+   "declared_sources": [
+    "provider",
+    "synthetic_inputs"
+   ],
    "findings": 7,
    "labels": [
     "independently_verified",
@@ -102,6 +155,9 @@
    "task_id": "T005"
   },
   {
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
    "findings": 3,
    "labels": [
     "numerically_verified"
@@ -111,6 +167,9 @@
    "task_id": "T006"
   },
   {
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
    "findings": 5,
    "labels": [
     "numerically_verified"
@@ -120,6 +179,10 @@
    "task_id": "T007"
   },
   {
+   "declared_sources": [
+    "provider",
+    "synthetic_inputs"
+   ],
    "findings": 7,
    "labels": [
     "independently_verified",
@@ -130,6 +193,9 @@
    "task_id": "T008"
   },
   {
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
    "findings": 5,
    "labels": [
     "not_established",
@@ -140,6 +206,9 @@
    "task_id": "T009"
   },
   {
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
    "findings": 9,
    "labels": [
     "numerically_verified"
@@ -149,6 +218,9 @@
    "task_id": "T010"
   },
   {
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
    "findings": 4,
    "labels": [
     "numerically_verified"
@@ -158,6 +230,9 @@
    "task_id": "T011"
   },
   {
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
    "findings": 7,
    "labels": [
     "numerically_verified"
@@ -167,6 +242,9 @@
    "task_id": "T012"
   },
   {
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
    "findings": 6,
    "labels": [
     "not_established",
@@ -177,6 +255,9 @@
    "task_id": "T013"
   },
   {
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
    "findings": 5,
    "labels": [
     "numerically_verified"
@@ -186,6 +267,9 @@
    "task_id": "T014"
   },
   {
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
    "findings": 9,
    "labels": [
     "numerically_verified"
@@ -195,6 +279,9 @@
    "task_id": "T015"
   },
   {
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
    "findings": 6,
    "labels": [
     "numerically_verified"
@@ -204,6 +291,9 @@
    "task_id": "T016"
   },
   {
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
    "findings": 7,
    "labels": [
     "not_established",
@@ -214,6 +304,9 @@
    "task_id": "T017"
   },
   {
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
    "findings": 6,
    "labels": [
     "not_established",
@@ -224,6 +317,9 @@
    "task_id": "T018"
   },
   {
+   "declared_sources": [
+    "provider"
+   ],
    "findings": 4,
    "labels": [
     "independently_verified",
@@ -234,6 +330,9 @@
    "task_id": "T019"
   },
   {
+   "declared_sources": [
+    "provider"
+   ],
    "findings": 6,
    "labels": [
     "analytic",
@@ -245,6 +344,7 @@
    "task_id": "T020"
   },
   {
+   "declared_sources": [],
    "findings": 4,
    "labels": [
     "analytic",
@@ -256,6 +356,7 @@
    "task_id": "T021"
   },
   {
+   "declared_sources": [],
    "findings": 5,
    "labels": [
     "numerically_verified"
@@ -265,6 +366,7 @@
    "task_id": "T022"
   },
   {
+   "declared_sources": [],
    "findings": 4,
    "labels": [
     "not_established",
@@ -275,6 +377,7 @@
    "task_id": "T023"
   },
   {
+   "declared_sources": [],
    "findings": 5,
    "labels": [
     "independently_verified",
@@ -282,20 +385,24 @@
     "numerically_verified"
    ],
    "physical_or_authority": 1,
-   "pipe_claims": 0,
+   "pipe_claims": 1,
    "task_id": "T024"
   },
   {
+   "declared_sources": [],
    "findings": 2,
    "labels": [
     "not_established",
     "numerically_verified"
    ],
    "physical_or_authority": 1,
-   "pipe_claims": 0,
+   "pipe_claims": 1,
    "task_id": "T025"
   },
   {
+   "declared_sources": [
+    "provider"
+   ],
    "findings": 6,
    "labels": [
     "independently_verified",
@@ -306,6 +413,7 @@
    "task_id": "T026"
   },
   {
+   "declared_sources": [],
    "findings": 3,
    "labels": [
     "numerically_verified"
@@ -315,6 +423,7 @@
    "task_id": "T027"
   },
   {
+   "declared_sources": [],
    "findings": 5,
    "labels": [
     "numerically_verified"
@@ -324,6 +433,7 @@
    "task_id": "T028"
   },
   {
+   "declared_sources": [],
    "findings": 3,
    "labels": [
     "numerically_verified"
@@ -333,6 +443,7 @@
    "task_id": "T029"
   },
   {
+   "declared_sources": [],
    "findings": 4,
    "labels": [
     "independently_verified",
@@ -344,6 +455,7 @@
    "task_id": "T030"
   },
   {
+   "declared_sources": [],
    "findings": 3,
    "labels": [
     "independently_verified",
@@ -355,6 +467,7 @@
    "task_id": "T031"
   },
   {
+   "declared_sources": [],
    "findings": 8,
    "labels": [
     "independently_verified",
@@ -366,6 +479,7 @@
    "task_id": "T032"
   },
   {
+   "declared_sources": [],
    "findings": 11,
    "labels": [
     "not_established",
@@ -376,6 +490,7 @@
    "task_id": "T033"
   },
   {
+   "declared_sources": [],
    "findings": 10,
    "labels": [
     "independently_verified",
@@ -387,6 +502,7 @@
    "task_id": "T034"
   },
   {
+   "declared_sources": [],
    "findings": 8,
    "labels": [
     "not_established",
@@ -397,6 +513,7 @@
    "task_id": "T035"
   },
   {
+   "declared_sources": [],
    "findings": 11,
    "labels": [
     "not_established",
@@ -407,6 +524,7 @@
    "task_id": "T036"
   },
   {
+   "declared_sources": [],
    "findings": 14,
    "labels": [
     "not_established",
@@ -417,6 +535,9 @@
    "task_id": "T037"
   },
   {
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
    "findings": 7,
    "labels": [
     "independently_verified",
@@ -428,6 +549,9 @@
    "task_id": "T038"
   },
   {
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
    "findings": 7,
    "labels": [
     "not_established",
@@ -438,6 +562,9 @@
    "task_id": "T039"
   },
   {
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
    "findings": 8,
    "labels": [
     "not_established",
@@ -448,6 +575,9 @@
    "task_id": "T040"
   },
   {
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
    "findings": 16,
    "labels": [
     "independently_verified",
@@ -459,6 +589,9 @@
    "task_id": "T041"
   },
   {
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
    "findings": 7,
    "labels": [
     "not_established",
@@ -469,6 +602,9 @@
    "task_id": "T042"
   },
   {
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
    "findings": 12,
    "labels": [
     "not_established",
@@ -479,6 +615,9 @@
    "task_id": "T043"
   },
   {
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
    "findings": 8,
    "labels": [
     "not_established",
@@ -489,7 +628,10 @@
    "task_id": "T044"
   },
   {
-   "findings": 5,
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
+   "findings": 6,
    "labels": [
     "not_established",
     "numerically_verified"
@@ -499,6 +641,9 @@
    "task_id": "T045"
   },
   {
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
    "findings": 6,
    "labels": [
     "independently_verified",
@@ -510,6 +655,9 @@
    "task_id": "T046"
   },
   {
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
    "findings": 6,
    "labels": [
     "independently_verified",
@@ -521,6 +669,9 @@
    "task_id": "T047"
   },
   {
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
    "findings": 6,
    "labels": [
     "not_established",
@@ -531,6 +682,9 @@
    "task_id": "T048"
   },
   {
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
    "findings": 6,
    "labels": [
     "not_established",
@@ -541,6 +695,9 @@
    "task_id": "T049"
   },
   {
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
    "findings": 8,
    "labels": [
     "not_established",
@@ -551,6 +708,9 @@
    "task_id": "T050"
   },
   {
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
    "findings": 5,
    "labels": [
     "not_established",
@@ -561,6 +721,9 @@
    "task_id": "T051"
   },
   {
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
    "findings": 5,
    "labels": [
     "not_established",
@@ -571,6 +734,9 @@
    "task_id": "T052"
   },
   {
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
    "findings": 6,
    "labels": [
     "not_established",
@@ -581,6 +747,9 @@
    "task_id": "T053"
   },
   {
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
    "findings": 5,
    "labels": [
     "not_established",
@@ -591,6 +760,9 @@
    "task_id": "T054"
   },
   {
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
    "findings": 6,
    "labels": [
     "not_established",
@@ -601,6 +773,9 @@
    "task_id": "T055"
   },
   {
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
    "findings": 5,
    "labels": [
     "not_established",
@@ -611,6 +786,9 @@
    "task_id": "T056"
   },
   {
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
    "findings": 7,
    "labels": [
     "independently_verified",
@@ -622,7 +800,10 @@
    "task_id": "T057"
   },
   {
-   "findings": 5,
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
+   "findings": 6,
    "labels": [
     "not_established",
     "numerically_verified"
@@ -632,7 +813,10 @@
    "task_id": "T058"
   },
   {
-   "findings": 5,
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
+   "findings": 8,
    "labels": [
     "not_established",
     "numerically_verified"
@@ -642,6 +826,9 @@
    "task_id": "T059"
   },
   {
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
    "findings": 6,
    "labels": [
     "not_established",
@@ -652,6 +839,9 @@
    "task_id": "T060"
   },
   {
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
    "findings": 5,
    "labels": [
     "not_established",
@@ -662,6 +852,9 @@
    "task_id": "T061"
   },
   {
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
    "findings": 7,
    "labels": [
     "not_established",
@@ -672,6 +865,9 @@
    "task_id": "T062"
   },
   {
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
    "findings": 8,
    "labels": [
     "not_established",
@@ -682,6 +878,9 @@
    "task_id": "T063"
   },
   {
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
    "findings": 7,
    "labels": [
     "not_established",
@@ -692,6 +891,9 @@
    "task_id": "T064"
   },
   {
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
    "findings": 5,
    "labels": [
     "not_established",
@@ -702,6 +904,9 @@
    "task_id": "T065"
   },
   {
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
    "findings": 6,
    "labels": [
     "not_established",
@@ -712,6 +917,9 @@
    "task_id": "T066"
   },
   {
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
    "findings": 6,
    "labels": [
     "not_established",
@@ -722,6 +930,9 @@
    "task_id": "T067"
   },
   {
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
    "findings": 8,
    "labels": [
     "not_established",
@@ -732,6 +943,9 @@
    "task_id": "T068"
   },
   {
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
    "findings": 5,
    "labels": [
     "not_established",
@@ -742,6 +956,9 @@
    "task_id": "T069"
   },
   {
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
    "findings": 6,
    "labels": [
     "not_established",
@@ -752,6 +969,9 @@
    "task_id": "T070"
   },
   {
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
    "findings": 6,
    "labels": [
     "not_established",
@@ -762,6 +982,9 @@
    "task_id": "T071"
   },
   {
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
    "findings": 5,
    "labels": [
     "not_established",
@@ -772,6 +995,9 @@
    "task_id": "T072"
   },
   {
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
    "findings": 5,
    "labels": [
     "not_established",
@@ -782,6 +1008,9 @@
    "task_id": "T073"
   },
   {
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
    "findings": 4,
    "labels": [
     "not_established",
@@ -792,17 +1021,23 @@
    "task_id": "T074"
   },
   {
-   "findings": 5,
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
+   "findings": 8,
    "labels": [
     "not_established",
     "numerically_verified"
    ],
-   "physical_or_authority": 1,
+   "physical_or_authority": 2,
    "pipe_claims": 0,
    "task_id": "T075"
   },
   {
-   "findings": 5,
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
+   "findings": 7,
    "labels": [
     "not_established",
     "numerically_verified"
@@ -812,6 +1047,7 @@
    "task_id": "T076"
   },
   {
+   "declared_sources": [],
    "findings": 5,
    "labels": [
     "not_established",
@@ -822,6 +1058,7 @@
    "task_id": "T077"
   },
   {
+   "declared_sources": [],
    "findings": 5,
    "labels": [
     "not_established",
@@ -832,6 +1069,7 @@
    "task_id": "T078"
   },
   {
+   "declared_sources": [],
    "findings": 5,
    "labels": [
     "numerically_verified"
@@ -841,6 +1079,7 @@
    "task_id": "T079"
   },
   {
+   "declared_sources": [],
    "findings": 5,
    "labels": [
     "not_established",
@@ -851,6 +1090,7 @@
    "task_id": "T080"
   },
   {
+   "declared_sources": [],
    "findings": 10,
    "labels": [
     "not_established",
@@ -861,6 +1101,7 @@
    "task_id": "T081"
   },
   {
+   "declared_sources": [],
    "findings": 4,
    "labels": [
     "not_established",
@@ -871,6 +1112,7 @@
    "task_id": "T082"
   },
   {
+   "declared_sources": [],
    "findings": 7,
    "labels": [
     "not_established",
@@ -881,6 +1123,7 @@
    "task_id": "T083"
   },
   {
+   "declared_sources": [],
    "findings": 3,
    "labels": [
     "not_established",
@@ -891,6 +1134,7 @@
    "task_id": "T084"
   },
   {
+   "declared_sources": [],
    "findings": 3,
    "labels": [
     "not_established",
@@ -901,6 +1145,7 @@
    "task_id": "T085"
   },
   {
+   "declared_sources": [],
    "findings": 4,
    "labels": [
     "not_established",
@@ -911,6 +1156,7 @@
    "task_id": "T086"
   },
   {
+   "declared_sources": [],
    "findings": 3,
    "labels": [
     "not_established",
@@ -921,6 +1167,7 @@
    "task_id": "T087"
   },
   {
+   "declared_sources": [],
    "findings": 4,
    "labels": [
     "not_established",
@@ -931,6 +1178,7 @@
    "task_id": "T088"
   },
   {
+   "declared_sources": [],
    "findings": 4,
    "labels": [
     "not_established",
@@ -941,6 +1189,7 @@
    "task_id": "T089"
   },
   {
+   "declared_sources": [],
    "findings": 6,
    "labels": [
     "not_established",
@@ -951,6 +1200,7 @@
    "task_id": "T090"
   },
   {
+   "declared_sources": [],
    "findings": 4,
    "labels": [
     "numerically_verified"
@@ -960,6 +1210,7 @@
    "task_id": "T091"
   },
   {
+   "declared_sources": [],
    "findings": 4,
    "labels": [
     "not_established",
@@ -970,6 +1221,7 @@
    "task_id": "T092"
   },
   {
+   "declared_sources": [],
    "findings": 3,
    "labels": [
     "numerically_verified"
@@ -979,6 +1231,7 @@
    "task_id": "T093"
   },
   {
+   "declared_sources": [],
    "findings": 6,
    "labels": [
     "not_established",
@@ -989,6 +1242,7 @@
    "task_id": "T094"
   },
   {
+   "declared_sources": [],
    "findings": 7,
    "labels": [
     "numerically_verified"
@@ -998,6 +1252,9 @@
    "task_id": "T095"
   },
   {
+   "declared_sources": [
+    "synthetic_inputs"
+   ],
    "findings": 5,
    "labels": [
     "not_established",
@@ -1008,6 +1265,9 @@
    "task_id": "T096"
   },
   {
+   "declared_sources": [
+    "provider"
+   ],
    "findings": 7,
    "labels": [
     "independently_verified",
@@ -1020,6 +1280,9 @@
    "task_id": "T097"
   },
   {
+   "declared_sources": [
+    "provider"
+   ],
    "findings": 8,
    "labels": [
     "independently_verified",
@@ -1032,6 +1295,9 @@
    "task_id": "T098"
   },
   {
+   "declared_sources": [
+    "provider"
+   ],
    "findings": 5,
    "labels": [
     "independently_verified",

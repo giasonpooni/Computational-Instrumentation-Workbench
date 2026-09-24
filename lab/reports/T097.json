@@ -48,6 +48,9 @@
    "claim": "SCR executed through CIW's shared numerical-heat workflow and through its own Python API returns the declared integer heat fields",
    "domain": "numerical",
    "evidence_status": "provider_backed",
+   "origin": [
+    "provider"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -117,11 +120,22 @@
      "engine_origin": "cargo_build_locked_offline_in_this_run",
      "engine_sha256": "b9f40b3094ecf4b793676c766ffd559dc69abc4fada564c1bde94e79c6f0b201",
      "engine_source_binding": "built_from_the_bound_checkout_in_this_run"
+    },
+    "provider": {
+     "executed": true,
+     "repository": "giasonpooni/Scientific-Computation-Runtime",
+     "revision": "a59aba283b0304faeeb3e5d305087e7709e171ca",
+     "runtime_digest": "sha256:b9f40b3094ecf4b793676c766ffd559dc69abc4fada564c1bde94e79c6f0b201",
+     "source_tree": "4068a711534932e8d89bb0d87d373376dafdf6cd"
     }
    },
    "claim": "SCR heat outputs from the workbench and from SCR's Python API equal an independent integer reference",
    "domain": "numerical",
    "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check",
+    "provider"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -181,11 +195,27 @@
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
      }
-    ]
+    ],
+    "notes": {
+     "engine_origin": "cargo_build_locked_offline_in_this_run",
+     "engine_sha256": "b9f40b3094ecf4b793676c766ffd559dc69abc4fada564c1bde94e79c6f0b201",
+     "engine_source_binding": "built_from_the_bound_checkout_in_this_run"
+    },
+    "provider": {
+     "executed": true,
+     "repository": "giasonpooni/Scientific-Computation-Runtime",
+     "revision": "a59aba283b0304faeeb3e5d305087e7709e171ca",
+     "runtime_digest": "sha256:b9f40b3094ecf4b793676c766ffd559dc69abc4fada564c1bde94e79c6f0b201",
+     "source_tree": "4068a711534932e8d89bb0d87d373376dafdf6cd"
+    }
    },
    "claim": "SCR replay reproduces the numerical identity with fresh execution occurrences and a non-independent verification",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -237,6 +267,9 @@
    "claim": "The reopened SCR workspace carries no binding and refuses replay",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -300,18 +333,26 @@
      }
     ],
     "notes": {
-     "provider": {
-      "executed": true,
-      "repository": "giasonpooni/State-Estimation-Evaluation-Testbed",
+     "validator": {
+      "path": "state_estimation_testbed/contracts.py",
       "revision": "542e672be512bf43b61253f2b2a43cd967cb3062",
-      "validator_path": "state_estimation_testbed/contracts.py",
-      "validator_sha256": "2385537daa6147ef2475d17bd75c026fe187077b90841515a9e9378e0246ae54"
+      "sha256": "2385537daa6147ef2475d17bd75c026fe187077b90841515a9e9378e0246ae54"
      }
+    },
+    "provider": {
+     "executed": true,
+     "repository": "giasonpooni/State-Estimation-Evaluation-Testbed",
+     "revision": "542e672be512bf43b61253f2b2a43cd967cb3062",
+     "source_tree": "25c667fc507eb8404e1f077d46e87ed2fc6abc3d"
     }
    },
    "claim": "The pinned SET contracts validator reports the synthetic observation conformant with effective covariance rank 2 and refuses an indefinite covariance",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -394,11 +435,21 @@
        "source_tree": "25c667fc507eb8404e1f077d46e87ed2fc6abc3d"
       }
      }
+    },
+    "provider": {
+     "executed": true,
+     "repository": "giasonpooni/State-Estimation-Evaluation-Testbed",
+     "revision": "542e672be512bf43b61253f2b2a43cd967cb3062",
+     "source_tree": "25c667fc507eb8404e1f077d46e87ed2fc6abc3d"
     }
    },
    "claim": "PPDA and SCR exchange artifacts pass the pinned SET checker, link to each other, keep a failed verification failed and a changed result is refused",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -427,6 +478,7 @@
    "claim": "The integer heat field describes physical heat diffusion in a material",
    "domain": "physical",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": "not established: dimensionless integer arithmetic"
@@ -436,7 +488,7 @@
   {
    "bytes": 6081,
    "path": "artifacts/T097/integration.json",
-   "sha256": "907c8cfb9bea0303b36cf34ddd715bf201a8ac5fae497cfd8624dbbcfe89e468"
+   "sha256": "5d5aa8b8a9a15b16a53848e65795a67c8afd67502ca86e1895efa1c9f491de44"
   },
   {
    "bytes": 3098,
@@ -468,8 +520,8 @@
    "python": "3.12.3",
    "scipy": "1.16.2",
    "sources": {
-    "src/ciw/lab/exchange_provenance_bundles.py": "3acc6fd6976bb5e6dd8ad3bfc3d09a1d9594ca0a06f4db823581e5b651d4835e",
-    "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "7d6da1148d3744ae1e754b53f697b5b4919aff2666788ae6aec0e48e6e2380c9",
+    "src/ciw/lab/exchange_provenance_bundles.py": "7e841b781d966fe75d5a86bd61e1ef32150c4087393893be788c2b7eff69f3d4",
+    "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "435727947e827d1d601802a5e860f04d578f7b879301c7f5615fb7d6e523500e",
     "src/ciw/lab/exchange_provenance_bundles_providers.py": "5e149f2463bd1f30bcfb61d719d84fcc19f84cd0ec201b5c95512c7a17f150b7"
    },
    "sympy": "1.14.0"
@@ -479,7 +531,8 @@
    "matched": [
     ".github/workflows/exchange.yml"
    ],
-   "state": "ready"
+   "state": "ready",
+   "tree": "7140bf71289161245e73801e0cd934dc93156509"
   },
   "requirement_probes": {
    "provider:scr": true,
@@ -496,7 +549,8 @@
    "matched": [
     ".github/workflows/exchange.yml"
    ],
-   "state": "ready"
+   "state": "ready",
+   "tree": "4b9ba4bf1f95562d299714d4ed4bf7b9d0c6e913"
   },
   "set": {
    "head": "542e672be512bf43b61253f2b2a43cd967cb3062",
@@ -504,11 +558,12 @@
     "ciw/exchange-runtime.json",
     ".github/workflows/exchange.yml"
    ],
-   "state": "ready"
+   "state": "ready",
+   "tree": "25c667fc507eb8404e1f077d46e87ed2fc6abc3d"
   }
  },
- "recommended_next_task": "T098: record the identities of every bound provider checkout.",
- "report_id": "sha256:97c2367f468d5d32e768370fe5ddf0b5b164fdd4438cd8d94a2b3249ad3c0a15",
+ "recommended_next_task": "Deferred research question: provision the telemetry provider stack (ppda, stfe, gsie, set and cbsr at the src/ciw/telemetry-runtimes.json pins; scripts/check_lab.py provisions only ppda and set of these, at other pins) and drive CIW's telemetry workflow end to end against it, as the exchange roundtrip here does for PPDA, SCR and SET; and attest the SCR engine a bound replay uses (CIW records a bound engine as operator_asserted_not_attested), for example by requiring a locked build of the bound checkout in the same run before a replay is accepted.",
+ "report_id": "sha256:3395185a76d07b33dca8b5bacdcaed25339a1e416ae4847168ccd7758d9774fb",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "completed",
@@ -536,7 +591,8 @@
   "pytest: tests/test_lab_exchange_provenance_bundles.py::test_t097_scr_numerical_heat_integration",
   "pytest: tests/test_lab_exchange_provenance_bundles.py::test_t097_is_blocked_without_scr",
   "pytest: tests/test_lab_exchange_provenance_bundles.py::test_t097_keeps_set_results_when_the_engine_is_missing",
-  "pytest: tests/test_lab_exchange_provenance_bundles.py::test_t097_t099_refuse_a_non_repository_scr_binding"
+  "pytest: tests/test_lab_exchange_provenance_bundles.py::test_t097_t099_refuse_a_non_repository_scr_binding",
+  "pytest: tests/test_lab_exchange_provenance_bundles.py::test_t097_names_each_executed_provider_beside_its_label"
  ],
  "tests_skipped": [],
  "title": "Add exact SET/SCR/PPDA integration tests when checkouts are available.",

@@ -12,21 +12,121 @@
    "hardware_measured": 0,
    "independently_verified": 0,
    "not_established": 1,
-   "numerically_verified": 4,
+   "numerically_verified": 5,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "Focus locations and focus-found flags stable under step halving; mirror symmetry; index form = second variation.",
- "experiment": "Locate focal/conjugate points by Hermite zeros, rank, compare with lengths and with the T136 ranking, and verify the Jacobi second-variation formula by Richardson finite differences of route length.",
+ "expected_invariant": "Focus and conjugate locations and their found flags stable under step halving; mirror symmetry; j_head > 0 on (0, L]; index form = second variation.",
+ "experiment": "Locate focal and conjugate points by Hermite zeros, rank by the focus margin and by the focal clearance ratio, compare with lengths and with the T136 ranking, and verify the Jacobi second-variation formula by Richardson finite differences of route length.",
  "failure_modes_checked": [
   "step refinement",
   "mirror symmetry",
-  "lower-bound margins (no focus within horizon)",
-  "second-variation identity"
+  "lower bounds (no focus or conjugate point within the horizon)",
+  "second-variation identity",
+  "positivity of j_head along every route"
  ],
  "findings": [
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 0.5338909699292065,
+      "passed": true,
+      "reference": "min over routes and s in (0, L] of j_head(s) / s (positive: no conjugate point on any route, so every focus margin is positive)",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "conjugate-found flags agree at h = 1 and 2 mm",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "mirror route -5 deg has the +5 deg focus margin, or the same lower bound when both are censored (mm)",
+      "reference_kind": "invariant",
+      "tolerance": 1e-09
+     }
+    ]
+   },
+   "claim": "Candidate coupon routes ranked by focus margin s_c - L (first conjugate point, a zero of j_head, minus the route length, as T024 defines it)",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
+   "regression_tolerance": {
+    "abs": 1e-06,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "RK4 Richardson estimate of the route lengths (mm); lower bounds depend on the horizon",
+    "kind": "truncation_bound",
+    "value": 3.261669955160566e-07
+   },
+   "unit": "mm",
+   "value": {
+    "focus_margin_lower_bound_mm": {
+     "fan+0deg": 297.82031552321394,
+     "fan+10deg": 304.5991978437602,
+     "fan+15deg": 312.3625787812062,
+     "fan+20deg": 322.3271937005462,
+     "fan+25deg": 334.50057825179243,
+     "fan+5deg": 299.56656272275154
+    },
+    "focus_margin_mm": {
+     "fan+0deg": null,
+     "fan+10deg": null,
+     "fan+15deg": null,
+     "fan+20deg": null,
+     "fan+25deg": null,
+     "fan+5deg": null
+    },
+    "horizon_mm": {
+     "fan+0deg": 500.0,
+     "fan+10deg": 507.71330594287247,
+     "fan+15deg": 517.6380902050415,
+     "fan+20deg": 532.088886237956,
+     "fan+25deg": 551.6889594812459,
+     "fan+5deg": 501.9099187716737
+    },
+    "lower_bound": {
+     "fan+0deg": true,
+     "fan+10deg": true,
+     "fan+15deg": true,
+     "fan+20deg": true,
+     "fan+25deg": true,
+     "fan+5deg": true
+    },
+    "min_j_head_over_s": {
+     "fan+0deg": 0.5338909699292065,
+     "fan+10deg": 0.8340434590709359,
+     "fan+15deg": 0.9985800307453471,
+     "fan+20deg": 1.0000001159043237,
+     "fan+25deg": 1.0000001147676394,
+     "fan+5deg": 0.6248343702270505
+    },
+    "ranking": [
+     [
+      "fan+0deg",
+      "fan+10deg",
+      "fan+15deg",
+      "fan+20deg",
+      "fan+25deg",
+      "fan+5deg"
+     ]
+    ]
+   }
+  },
   {
    "assigned_by": "ciw.lab.evidence",
    "basis": {
@@ -51,7 +151,7 @@
       "comparison": "abs_le",
       "observed": 0.0,
       "passed": true,
-      "reference": "mirror route -5 deg has the +5 deg margin",
+      "reference": "mirror route -5 deg has the +5 deg focal clearance ratio",
       "reference_kind": "invariant",
       "tolerance": 1e-09
      },
@@ -59,15 +159,18 @@
       "comparison": "signed_ge",
       "observed": 0.8976866453067347,
       "passed": true,
-      "reference": "smallest lower-bound margin of the unresolved tier minus the largest resolved margin (the tied tier leads)",
+      "reference": "smallest lower-bound ratio of the unresolved tier minus the largest resolved ratio (the tied tier leads)",
       "reference_kind": "analytic",
       "tolerance": 0.0
      }
     ]
    },
-   "claim": "Candidate coupon routes ranked by focus margin (nearest focal or conjugate point / route length)",
+   "claim": "Candidate coupon routes ranked by focal clearance ratio (nearest focal or conjugate point, a zero of j_lat or j_head, over the route length)",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-06,
     "rel": 1e-06
@@ -79,6 +182,14 @@
    },
    "unit": null,
    "value": {
+    "focal_clearance_ratio": {
+     "fan+0deg": 0.7587664197692487,
+     "fan+10deg": 1.6239881838757226,
+     "fan+15deg": 2.5216748291824573,
+     "fan+20deg": 2.5366351682305432,
+     "fan+25deg": 2.5401402982897228,
+     "fan+5deg": 0.869631524514244
+    },
     "lower_bound": {
      "fan+0deg": false,
      "fan+10deg": false,
@@ -86,14 +197,6 @@
      "fan+20deg": true,
      "fan+25deg": true,
      "fan+5deg": false
-    },
-    "margin": {
-     "fan+0deg": 0.7587664197692487,
-     "fan+10deg": 1.6239881838757226,
-     "fan+15deg": 2.5216748291824573,
-     "fan+20deg": 2.5366351682305432,
-     "fan+25deg": 2.5401402982897228,
-     "fan+5deg": 0.869631524514244
     },
     "ranking": [
      [
@@ -126,7 +229,7 @@
       "comparison": "abs_le",
       "observed": 0.0,
       "passed": true,
-      "reference": "shortest route is last in the focus ranking",
+      "reference": "shortest route is last in the focal-clearance ranking",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
      },
@@ -134,25 +237,31 @@
       "comparison": "le",
       "observed": 0.7587664197692487,
       "passed": true,
-      "reference": "its focal point lies inside the route (margin)",
+      "reference": "its focal point lies inside the route (focal clearance ratio)",
       "reference_kind": "analytic",
       "tolerance": 1.0
      }
     ]
    },
-   "claim": "The shortest candidate route has the worst focus margin",
+   "claim": "The shortest candidate route has the lowest focal clearance ratio",
    "counterexample": {
-    "statement": "The shortest route between a station and an edge is also the safest route (largest distance to a focal or conjugate point)",
+    "statement": "The shortest route between a station and an edge is also the one farthest, relative to its length, from a focal or conjugate point (largest focal clearance ratio)",
     "witness": {
+     "focus_margin_lower_bound_mm": 297.82031552321394,
+     "focus_margin_mm": null,
      "length_mm": 202.1796844767861,
      "nearest_focus_kind": "focal",
      "nearest_focus_mm": 153.40715534052734,
      "next_longer": "fan+5deg",
+     "ranked_by": "focal clearance ratio (zeros of j_lat or j_head) / L",
      "route": "fan+0deg"
     }
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-06,
     "rel": 1e-07
@@ -164,8 +273,10 @@
    },
    "unit": null,
    "value": {
+    "focal_clearance_ratio": 0.7587664197692487,
+    "focus_margin_lower_bound_mm": 297.82031552321394,
+    "focus_margin_mm": null,
     "length_mm": 202.1796844767861,
-    "margin": 0.7587664197692487,
     "shortest": "fan+0deg"
    }
   },
@@ -194,6 +305,9 @@
    "claim": "The second variation of route length equals the Jacobi index form j_head(L) j_head'(L)",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-06,
     "rel": 1e-05
@@ -217,15 +331,18 @@
       "comparison": "abs_le",
       "observed": 0.0,
       "passed": true,
-      "reference": "first by calibration tolerance is last by focus margin",
+      "reference": "first by calibration tolerance is last by focal clearance ratio",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
      }
     ]
    },
-   "claim": "The calibration-tolerance ranking and the focus-margin ranking put the straight route at opposite ends",
+   "claim": "The calibration-tolerance ranking and the focal-clearance ranking put the straight route at opposite ends",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -238,7 +355,7 @@
    "unit": null,
    "value": {
     "calibration_first": "fan+0deg",
-    "focus_last": "fan+0deg"
+    "focal_clearance_last": "fan+0deg"
    }
   },
   {
@@ -247,6 +364,7 @@
    "claim": "Physical paths near a predicted focus show the predicted loss of lateral-error ordering",
    "domain": "physical",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -254,24 +372,24 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 7944,
+   "bytes": 10218,
    "path": "artifacts/T137/focus-ranking.json",
-   "sha256": "f8f706d3d067f1edd053b95e945500ac31c441c4b4ea4cb0821ca43d98e0a541"
+   "sha256": "9b41bac2afdbd864b5146fffa53b1a11039d9adf4209fe084051e8a973a84892"
   },
   {
-   "bytes": 2331,
+   "bytes": 2348,
    "path": "artifacts/T137/margin-vs-length.svg",
-   "sha256": "de58ee14ecef2fc32ef2c105422b17551e09c5741ffaffd562027015874b355f"
+   "sha256": "b1d4eb5afb03c600c8e52f3571e62404319efc92e82cbfb74973cda4d92cfe63"
   }
  ],
- "hypothesis": "The focus margin (distance to the nearest focal or conjugate point relative to route length) ranks routes differently from length: the straight route over the dome is the shortest candidate route to the far edge yet has a focal point inside it.",
+ "hypothesis": "Two margins rank the routes differently. The focus margin s_c - L (T024: first conjugate point, a zero of j_head, minus the route length) is positive for every candidate route, so each is locally length minimizing to the edge; the focal clearance ratio (nearest zero of j_lat or j_head over L) separates them and ranks routes differently from length: the straight route over the dome is the shortest candidate route to the far edge yet has a focal point of lateral offsets inside it.",
  "input_data": [
   "Fan of geodesic routes (T136) at h = 1 and 2 mm; horizon 2.5 x the chart reach",
   "Routes at 1 and 2 deg for the second variation"
  ],
- "mathematical_model": "Focal points: zeros of j_lat; conjugate points: zeros of j_head (s > 0); margin = s_focus / L, or horizon / L as a lower bound; L''(0) = j_head(L) j_head'(L) for routes from a point to a straight edge line.",
+ "mathematical_model": "Conjugate points: zeros of j_head (s > 0); focal points: zeros of j_lat. Focus margin = s_c - L, recorded as no value when censored (no conjugate point within the horizon), with the lower bound horizon - L kept separately; focal clearance ratio = s_focus / L with s_focus the nearest focal or conjugate point, or horizon / L as a lower bound; L''(0) = j_head(L) j_head'(L) for routes from a point to a straight edge line.",
  "number": 137,
- "numerical_result": "ranking {fan+15deg, fan+20deg, fan+25deg} (no focus within the horizon: lower bounds, tied) > fan+10deg > fan+5deg > fan+0deg; shortest fan+0deg (202.1797 mm) has margin 0.759 with a focal point at 153.41 mm; L''(0) finite difference 36.9633 mm vs index form 36.9639 mm.",
+ "numerical_result": "focus margin: {fan+0deg, fan+10deg, fan+15deg, fan+20deg, fan+25deg, fan+5deg} (no conjugate point within the horizon: lower bounds, tied), censored margins (no value) with lower bounds from 297.8 mm (min j_head(s) / s = 0.534); focal clearance ratio: {fan+15deg, fan+20deg, fan+25deg} (no focus within the horizon: lower bounds, tied) > fan+10deg > fan+5deg > fan+0deg; shortest fan+0deg (202.1797 mm) has ratio 0.759 with a focal point at 153.41 mm and focus margin >= 297.8 mm (censored); L''(0) finite difference 36.9633 mm vs index form 36.9639 mm.",
  "observation_model": "No observation: margins and lengths are model outputs.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -285,37 +403,41 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/manufacturing.py": "f4cd90e1df33b910b78daf4b0556a8861e044d83701474f841e85fd9d96f9063",
-   "src/ciw/lab/manufacturing_geometry.py": "1db6df2ddf778668da2ffd53a66bcddbff4fc933d6f299e8f283cedc60a9332f",
-   "src/ciw/lab/manufacturing_metrology.py": "aef4708b0f296fc66087a6382881a0564c5edcb6d7961b5e472aa711e29feb5d",
-   "src/ciw/lab/manufacturing_records.py": "015ea7fccc586f4b95f64e7ffbc1f6c34eec20b8245778ede3c2324006537087"
+   "src/ciw/lab/manufacturing.py": "a489d9a93946a344e2878840d784e8087098775794108a6729d9179102767969",
+   "src/ciw/lab/manufacturing_geometry.py": "44830e8b1e2811dc3ade9eb1bc40691a6ae53f92c0b178dce5e5e111447879a1",
+   "src/ciw/lab/manufacturing_metrology.py": "f5c7694f91ac7b38a1f886b4acdc189d0abda403956e3b34d3f2dc8644c07dba",
+   "src/ciw/lab/manufacturing_records.py": "9d8cd35dc23541e9067fdced631c2a80bff1077b3bcba7fa9ae377c9db67626f"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T138: compare predicted and measured separation along the straight route once measured.",
- "report_id": "sha256:a6bf89dcfabe1cf3ca656c98807b0c506795ceab6e2db9e7de1e80f65a3dbfee",
+ "recommended_next_task": "Open: bound the focus margin and the focal clearance ratio between the sampled fan headings with a continuous heading sweep that tracks the zeros of j_head and j_lat, which the discrete fan leaves unbounded.",
+ "report_id": "sha256:6556d506e96604066843e9800683c6221b94577b1689ce954f9bffe79a6f51f5",
  "schema": "ciw.lab-task-report.v1",
  "section": "manufacturing",
  "state": "completed",
  "task_id": "T137",
  "tests_passed": [
-  "check: Candidate coupon routes ranked by focus margin (nearest focal or conjugate point / route length) vs nearest-focus distance at h = 1 vs 2 mm (mm)",
-  "check: Candidate coupon routes ranked by focus margin (nearest focal or conjugate point / route length) vs focus-found flags agree at h = 1 and 2 mm",
-  "check: Candidate coupon routes ranked by focus margin (nearest focal or conjugate point / route length) vs mirror route -5 deg has the +5 deg margin",
-  "check: Candidate coupon routes ranked by focus margin (nearest focal or conjugate point / route length) vs smallest lower-bound margin of the unresolved tier minus the largest resolved margin (the tied tier leads)",
-  "check: The shortest candidate route has the worst focus margin vs shortest route is last in the focus ranking",
-  "check: The shortest candidate route has the worst focus margin vs its focal point lies inside the route (margin)",
+  "check: Candidate coupon routes ranked by focus margin s_c - L (first conjugate point, a zero of j_head, minus the route length, as T024 defines it) vs min over routes and s in (0, L] of j_head(s) / s (positive: no conjugate point on any route, so every focus margin is positive)",
+  "check: Candidate coupon routes ranked by focus margin s_c - L (first conjugate point, a zero of j_head, minus the route length, as T024 defines it) vs conjugate-found flags agree at h = 1 and 2 mm",
+  "check: Candidate coupon routes ranked by focus margin s_c - L (first conjugate point, a zero of j_head, minus the route length, as T024 defines it) vs mirror route -5 deg has the +5 deg focus margin, or the same lower bound when both are censored (mm)",
+  "check: Candidate coupon routes ranked by focal clearance ratio (nearest focal or conjugate point, a zero of j_lat or j_head, over the route length) vs nearest-focus distance at h = 1 vs 2 mm (mm)",
+  "check: Candidate coupon routes ranked by focal clearance ratio (nearest focal or conjugate point, a zero of j_lat or j_head, over the route length) vs focus-found flags agree at h = 1 and 2 mm",
+  "check: Candidate coupon routes ranked by focal clearance ratio (nearest focal or conjugate point, a zero of j_lat or j_head, over the route length) vs mirror route -5 deg has the +5 deg focal clearance ratio",
+  "check: Candidate coupon routes ranked by focal clearance ratio (nearest focal or conjugate point, a zero of j_lat or j_head, over the route length) vs smallest lower-bound ratio of the unresolved tier minus the largest resolved ratio (the tied tier leads)",
+  "check: The shortest candidate route has the lowest focal clearance ratio vs shortest route is last in the focal-clearance ranking",
+  "check: The shortest candidate route has the lowest focal clearance ratio vs its focal point lies inside the route (focal clearance ratio)",
   "check: The second variation of route length equals the Jacobi index form j_head(L) j_head'(L) vs relative difference (Richardson finite difference vs index form)",
   "check: The second variation of route length equals the Jacobi index form j_head(L) j_head'(L) vs straight route is a local length minimum (L'' > 0)",
-  "check: The calibration-tolerance ranking and the focus-margin ranking put the straight route at opposite ends vs first by calibration tolerance is last by focus margin",
+  "check: The calibration-tolerance ranking and the focal-clearance ranking put the straight route at opposite ends vs first by calibration tolerance is last by focal clearance ratio",
   "pytest: tests/test_lab_manufacturing.py::test_rankings_by_calibration_tolerance_and_focus_margin",
   "pytest: tests/test_lab_manufacturing.py::test_every_task_is_registered_and_reports_honestly"
  ],
  "tests_skipped": [],
  "title": "Rank paths by focus margin.",
- "uncertainty": "Focus locations agree to 2.9e-04 mm between step sizes; lower-bound margins depend on the horizon.",
+ "uncertainty": "Focus locations agree to 2.9e-04 mm and route lengths to 4.9e-06 mm between step sizes; lower-bound margins and ratios depend on the horizon.",
  "unresolved_assumptions": [
-  "The straight route is a local length minimum (L'' > 0) although it contains a lateral focal point; a focal point of the start normal does not contradict minimality to the edge line.",
+  "No candidate route has a conjugate point within 2.5 x its reach, so the focus margin only bounds them from below and ties them; the focal clearance ratio, which includes zeros of j_lat, is the quantity that ranks.",
+  "The straight route is a local length minimum (L'' > 0, positive focus margin) although it contains a lateral focal point; a focal point of the start normal does not contradict minimality to the edge line.",
   "The fan is a discrete candidate set; margins between sampled headings are not bounded."
  ]
 }

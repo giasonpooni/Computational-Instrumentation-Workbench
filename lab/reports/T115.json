@@ -3,6 +3,7 @@
   "src/ciw/lab/energy_gpu.py",
   "src/ciw/lab/energy_gpu_kernels.py",
   "src/ciw/lab/energy_gpu_telemetry.py",
+  "src/ciw/lab/energy_gpu_workload.py",
   "docs/lab/ENERGY_GPU.md"
  ],
  "evidence_status": {
@@ -10,18 +11,19 @@
    "analytic": 0,
    "hardware_measured": 0,
    "independently_verified": 0,
-   "not_established": 2,
-   "numerically_verified": 3,
+   "not_established": 4,
+   "numerically_verified": 4,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "Counted RK4 evaluations equal 4 N per trajectory; endpoints match the great circle; a capture must name this workload and this host's CPU model and RAPL zones.",
- "experiment": "Integrate each geodesic with RK4 (N = 256) and adaptive DP5(4); count evaluations; when CIW_LAB_RAPL_LOG names a capture from `python -m ciw.lab.energy_gpu_telemetry rapl-capture` (repeated fixed-step batches, three by default, then an idle interval of equal length), gate and analyze it.",
+ "expected_invariant": "Counted RK4 evaluations equal 4 N per trajectory; endpoints match the great circle; instrumented Gaussian VI operations equal the PTX instruction counts; each capture bracket must name its declared workload and this host's CPU model and RAPL zones.",
+ "experiment": "Integrate each geodesic with RK4 (N = 256) and adaptive DP5(4); count evaluations; count the common workload's operations; when a rapl-log capture from `python -m ciw.lab.energy_gpu_telemetry rapl-capture` is bound (a bracket of repeated geodesic batches and one of repeated common-workload batches, then an idle interval), gate and analyze it.",
  "failure_modes_checked": [
   "evaluation count differs from 4N",
   "endpoint error exceeds 1e-8",
+  "NumPy reference operation count differs from the PTX kernel's instructions",
   "capture absent, malformed, for another workload or another host (regression tests)",
   "RAPL counter wrap (one wrap allowed; regression test)"
  ],
@@ -57,6 +59,10 @@
    "claim": "Fixed-step RK4 spends exactly 4N = 1024 right-hand-side evaluations per trajectory (N = 256)",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -107,6 +113,10 @@
    "claim": "The fixed-step trajectories are accepted results: embedded endpoint error against the exact great circle is below 1e-8",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-12,
     "rel": 0.001
@@ -151,6 +161,10 @@
    "claim": "Adaptive Dormand-Prince 5(4) (rtol 1e-9) reaches every great-circle endpoint within 1e-7 with these right-hand-side evaluation counts per trajectory",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 14.0,
     "rel": 0.05
@@ -173,13 +187,75 @@
   {
    "assigned_by": "ciw.lab.evidence",
    "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "instrumented NumPy flops per replica iteration minus the PTX loop's mul/add/sub.rn.f64 instructions",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "instrumented NumPy flops of the output block minus the PTX output block's mul/sub/div.rn.f64 instructions",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "fused multiply-add instructions in the PTX kernel",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "iterations": 38,
+     "name": "common Gaussian VI workload (examples/energy-accuracy/problem.json)",
+     "replicas": 4096,
+     "seed": null
+    }
+   },
+   "claim": "One batch of the common Gaussian VI workload performs exactly replicas x (24 K + 7) floating-point operations, the arithmetic instructions of the gaussian_vi PTX kernel",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "integer counts, refusal codes or exact comparisons",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": "floating-point operations",
+   "value": {
+    "flops_per_batch": 3764224,
+    "flops_per_replica_iteration": 24,
+    "flops_per_replica_output": 7,
+    "iterations": 38,
+    "replicas": 4096
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
     "notes": [
-     "no RAPL capture was supplied; the lab runner acquires no energy measurement (capture with `python -m ciw.lab.energy_gpu_telemetry rapl-capture` and set CIW_LAB_RAPL_LOG)"
+     "no rapl-log capture was bound (--capture rapl-log=PATH or CIW_LAB_RAPL_LOG); the lab runner acquires no energy measurement: make one with `python -m ciw.lab.energy_gpu_telemetry rapl-capture` on a Linux host with readable intel-rapl counters (needs hardware:rapl)"
     ]
    },
    "claim": "Gross CPU package energy (background-inclusive, idle not subtracted) per geodesic trajectory",
    "domain": "physical",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": "J/trajectory",
    "value": null
@@ -188,63 +264,110 @@
    "assigned_by": "ciw.lab.evidence",
    "basis": {
     "notes": [
-     "no RAPL capture was supplied; the lab runner acquires no energy measurement (capture with `python -m ciw.lab.energy_gpu_telemetry rapl-capture` and set CIW_LAB_RAPL_LOG)"
+     "no rapl-log capture was bound (--capture rapl-log=PATH or CIW_LAB_RAPL_LOG); the lab runner acquires no energy measurement: make one with `python -m ciw.lab.energy_gpu_telemetry rapl-capture` on a Linux host with readable intel-rapl counters (needs hardware:rapl)"
     ]
    },
    "claim": "Idle-subtracted CPU package energy per geodesic trajectory (equal-length idle bracket after the workload)",
    "domain": "physical",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": "J/trajectory",
+   "value": null
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": [
+     "no rapl-log capture was bound (--capture rapl-log=PATH or CIW_LAB_RAPL_LOG); the lab runner acquires no energy measurement: make one with `python -m ciw.lab.energy_gpu_telemetry rapl-capture` on a Linux host with readable intel-rapl counters (needs hardware:rapl)"
+    ]
+   },
+   "claim": "Gross CPU package energy (background-inclusive, idle not subtracted) per batch of the common Gaussian VI workload (NumPy float64 reference)",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "origin": [],
+   "uncertainty": null,
+   "unit": "J/batch",
+   "value": null
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": [
+     "no rapl-log capture was bound (--capture rapl-log=PATH or CIW_LAB_RAPL_LOG); the lab runner acquires no energy measurement: make one with `python -m ciw.lab.energy_gpu_telemetry rapl-capture` on a Linux host with readable intel-rapl counters (needs hardware:rapl)"
+    ]
+   },
+   "claim": "Idle-subtracted CPU package energy per batch of the common Gaussian VI workload (NumPy float64 reference)",
+   "domain": "physical",
+   "evidence_status": "not_established",
+   "origin": [],
+   "uncertainty": null,
+   "unit": "J/batch",
    "value": null
   }
  ],
  "generated_artifacts": [
   {
-   "bytes": 245,
+   "bytes": 701,
    "path": "artifacts/T115/rapl-probe.json",
-   "sha256": "263418eadf4481605787c05ef1d2ff10d16ce350a86eb4b3ad848c6992311d50"
+   "sha256": "d8efd07f65d685c59ad3a85c1dfdcf11caede3633233b36e4c8ea9f885b7da0f"
   },
   {
-   "bytes": 1046,
+   "bytes": 2449,
    "path": "artifacts/T115/work-proxies.json",
-   "sha256": "a08707d044819ef6a2b9ae6a13bb08b8791bbd092b2656d20fa9a5c3daf5c7a0"
+   "sha256": "d686210a2ad5489fd856053ee3898c0d4c9ffc1cfb2158c23d9c6fb70b923c1c"
   },
   {
-   "bytes": 500,
+   "bytes": 496,
    "path": "artifacts/T115/timing.json",
-   "sha256": "e133dfc7f10976de655f60b706ffbd29753748068f91ee745df47be880a41aba"
+   "sha256": "ce80d4b721ad90dd7964070fda09c09f07864252edb725af8a2f4df8757d7b3e"
   }
  ],
- "hypothesis": "The deterministic work of a fixed-step RK4 geodesic trajectory is exactly 4N right-hand-side evaluations; its CPU energy can be read only from package counters bracketing a batch, which an operator captures outside the lab runner.",
+ "hypothesis": "The deterministic work of a fixed-step RK4 geodesic trajectory is exactly 4N right-hand-side evaluations, and that of a batch of the common Gaussian VI workload exactly replicas x (24 K + 7) operations; their CPU energy can be read only from package counters bracketing repeated batches, which an operator captures outside the lab runner.",
  "input_data": [
   "6 unit-speed geodesics on the unit sphere from the equator, headings [0.7, 0.85, 1.0, 1.15, 1.3, 1.45] rad, length 3.0",
-  "optional operator capture named by CIW_LAB_RAPL_LOG"
+  "the common Gaussian VI workload (examples/energy-accuracy/problem.json, K = 38 iterations, 4096 replicas, NumPy float64 reference of the gaussian_vi PTX kernel)",
+  "optional operator capture bound as rapl-log (--capture rapl-log=PATH or CIW_LAB_RAPL_LOG)"
  ],
- "mathematical_model": "E_gross = sum over package domains of (E(after) - E(before)) / (repeats * trajectories), one wrap allowed; E_idle-subtracted = (E_gross_total - E_idle * t_work / t_idle) / (repeats * trajectories); work proxy W = 4N evaluations (RK4) or the Dormand-Prince count.",
+ "mathematical_model": "E_gross = sum over package domains of (E(after) - E(before)) / units, one wrap allowed; E_idle-subtracted = (E_gross_total - E_idle * t_work / t_idle) / units, where units are trajectories (repeats x 6) or common-workload batches; work proxy W = 4N evaluations (RK4), the Dormand-Prince count, or replicas x (24 K + 7) flops for a Gaussian VI batch.",
  "number": 115,
- "numerical_result": "1024 evaluations per RK4 trajectory; max endpoint error 1.09e-09; adaptive evaluations [487, 427, 361, 337, 313, 295]; energy: not measured (no accepted RAPL capture; the runner acquires no energy measurement)",
- "observation_model": "Evaluations counted by wrapping Surface.geodesic_rhs; a supplied capture is read-only input whose raw bytes are retained; the hardware:rapl probe (only with a capture) reads one counter value to confirm readability and discards it; wall/CPU time retained only as an artifact.",
+ "numerical_result": "1024 evaluations per RK4 trajectory; max endpoint error 1.09e-09; adaptive evaluations [487, 427, 361, 337, 313, 295]; 3764224 flops per common-workload batch; energy: not measured (no accepted RAPL capture; the runner acquires no energy measurement)",
+ "observation_model": "Evaluations counted by wrapping Surface.geodesic_rhs; Gaussian VI operations counted by instrumenting the NumPy reference and compared with the kernel's PTX instructions; a supplied capture is read-only input whose raw bytes are retained; the hardware:rapl probe (only with a capture) reads one counter value to confirm readability and discards it; wall/CPU time retained only as an artifact.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
   "status": "not_established"
  },
  "provider_runtime_identity": {
   "ciw_version": "0.1.0",
+  "common_workload": {
+   "implementation": "numpy",
+   "iterations": 38,
+   "kernel": "ciw.energy_cuda.PTX gaussian_vi",
+   "kernel_sha256": "601049a61cc1dc7b35d80ec7096dd5d81b3028c025472ec54983b4c1d666d699",
+   "name": "ciw.lab.gaussian-vi-iteration.v1",
+   "precision": "float64",
+   "prepared_input_sha256": "49ca05c0343c645d64ec77ffcf7053c1b1380910f7334cc50986fa45f560df86",
+   "problem_sha256": "f082e5dfbb2e735bdaf8b02e57734e29902d5077c70f53e2e7c5ce2eb8219ab7",
+   "replicas": 4096
+  },
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/energy_gpu.py": "a66107417b5bfa398077a919b2f5351ca222e9961fa8dfb3256b78efc17fd930",
-   "src/ciw/lab/energy_gpu_kernels.py": "366c477ff1af7f59b626f4e64bf994ae4cbce5754c0e9c5be1c2acb515f99f4b",
-   "src/ciw/lab/energy_gpu_telemetry.py": "df82c8748d3aa75384e3928bffcf516cd6f72cccde99edf8d21f089cc768bafa"
+   "src/ciw/energy_bench.py": "bd50806ba3128ff85a1d240bc9670db04082196ec050c51597ec0cc725e45046",
+   "src/ciw/energy_cuda.py": "9b4b86809e47cba7683dc0c238b0b052b6785fd09e629224c5f8f37b6d5a0e64",
+   "src/ciw/free_energy_math.py": "4f096c281c548e92ed7bb1d49a8fd58f3a4d6b48ababef2958331ca13f088a6e",
+   "src/ciw/lab/energy_gpu.py": "f49195ce5a78ced3c8da1562f4412f2fdc65d8cc2749dd4fbe0b25bc0334e773",
+   "src/ciw/lab/energy_gpu_kernels.py": "1198886637535f3f8ec26601aa70cdc16d1c175dc4286aa9807edec3910005d2",
+   "src/ciw/lab/energy_gpu_telemetry.py": "6935331e622266868a97ee78f8e34d185aa69009a62fedc8ea8273b3a9312bfc",
+   "src/ciw/lab/energy_gpu_workload.py": "5cdaf9fe9f25194dae561e060abf471567cfd3bb8df6c1836630a54c5085a9de"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "Capture T115 on a Linux host with readable intel-rapl counters (operator protocol in docs/lab/ENERGY_GPU.md); energy by precision needs T120's deferred dtype-parameterized capture",
- "report_id": "sha256:96d5137d853e1f6e5bfe3e04664ddb2d159f10189df0575ce24920160b4fa6f0",
+ "recommended_next_task": "Measure package energy per geodesic trajectory and per common-workload batch on a Linux host with readable intel-rapl counters (docs/lab/ENERGY_GPU.md), hardware_measured through the RAPL identity gate: `python -m ciw.lab.energy_gpu_telemetry rapl-capture runs/rapl-<date>.json`, then `ciw lab run T115 T117 T120 --capture rapl-log=runs/rapl-<date>.json --output-dir results/rapl-<date>` on the same host, then `ciw lab hardware retain results/rapl-<date> --retained lab --run-id rapl-<date> --host \"<RAPL host>\"`",
+ "report_id": "sha256:c648a2b4ee7a80082282719c0cfd9a7d614228db468ce5b365bc4bbc804350f3",
  "schema": "ciw.lab-task-report.v1",
  "section": "energy-gpu",
  "state": "partial",
@@ -253,19 +376,28 @@
   "check: Fixed-step RK4 spends exactly 4N = 1024 right-hand-side evaluations per trajectory (N = 256) vs largest |counted evaluations of one trajectory - 4 N| over the trajectories",
   "check: The fixed-step trajectories are accepted results: embedded endpoint error against the exact great circle is below 1e-8 vs great circle cos(L) X0 + sin(L) T0",
   "check: Adaptive Dormand-Prince 5(4) (rtol 1e-9) reaches every great-circle endpoint within 1e-7 with these right-hand-side evaluation counts per trajectory vs great circle endpoint",
+  "check: One batch of the common Gaussian VI workload performs exactly replicas x (24 K + 7) floating-point operations, the arithmetic instructions of the gaussian_vi PTX kernel vs instrumented NumPy flops per replica iteration minus the PTX loop's mul/add/sub.rn.f64 instructions",
+  "check: One batch of the common Gaussian VI workload performs exactly replicas x (24 K + 7) floating-point operations, the arithmetic instructions of the gaussian_vi PTX kernel vs instrumented NumPy flops of the output block minus the PTX output block's mul/sub/div.rn.f64 instructions",
+  "check: One batch of the common Gaussian VI workload performs exactly replicas x (24 K + 7) floating-point operations, the arithmetic instructions of the gaussian_vi PTX kernel vs fused multiply-add instructions in the PTX kernel",
   "pytest: tests/test_lab_energy_gpu.py::test_cpu_energy_task_counts_work_and_leaves_energy_unestablished",
   "pytest: tests/test_lab_energy_gpu.py::test_rapl_helpers_read_counters_and_one_wrap",
   "pytest: tests/test_lab_energy_gpu.py::test_rapl_capture_is_analyzed_read_only_and_gated",
   "pytest: tests/test_lab_energy_gpu.py::test_lab_run_acquires_no_energy_measurement",
   "pytest: tests/test_lab_energy_gpu.py::test_rapl_probe_is_the_only_counter_read",
+  "pytest: tests/test_lab_energy_gpu.py::test_rapl_brackets_exclude_preparation_and_respect_the_port_limit",
+  "pytest: tests/test_lab_energy_gpu.py::test_workload_tasks_digest_the_workload_sources",
+  "pytest: tests/test_lab_energy_gpu.py::test_common_workload_matches_the_ptx_kernel_and_the_energy_problem",
+  "pytest: tests/test_lab_energy_gpu.py::test_next_steps_name_work_that_delivers",
   "pytest: tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance"
  ],
  "tests_skipped": [],
  "title": "Measure CPU energy per geodesic trajectory.",
  "uncertainty": "Work counts are exact; a RAPL energy would carry model error, background load and a model-dependent counter unit (commonly 2^-16 J), none characterized here.",
  "unresolved_assumptions": [
-  "Evaluation counts are a work proxy, not an energy measurement",
+  "Evaluation and operation counts are work proxies, not energy measurements",
   "Package energy is not attributed to this process; idle subtraction assumes the idle interval after the workload represents the background during it",
-  "A capture is an operator record: identity binding is checked, authenticity is not"
+  "A capture is an operator record: identity binding is checked, authenticity is not",
+  "CPU energy per common-workload batch (here) and GPU energy per batch (T116) are for the same computation (the RAPL gate and T116's NVML gate both require the common workload's kernel, problem, prepared inputs, K and replicas) but different counters, scopes and batch boundaries: package versus whole device; the NumPy bracket excludes the prepared inputs (computed once before bracketing) and includes their per-batch broadcast to the replica columns, the GPU batch includes launch, synchronization, copy and the worker's output check; no finding combines them",
+  "no rapl-log capture was bound (--capture rapl-log=PATH or CIW_LAB_RAPL_LOG); the lab runner acquires no energy measurement: make one with `python -m ciw.lab.energy_gpu_telemetry rapl-capture` on a Linux host with readable intel-rapl counters (needs hardware:rapl)"
  ]
 }

@@ -26,7 +26,7 @@
   "second- vs third-order remainder (symmetry)",
   "nonlinear crossing vs linear focal point",
   "plate signature vs combined uncertainty",
-  "protocol refusal matrix",
+  "protocol refusal matrix, including the tape layout (the three tapes cross or come within 0.54 mm, so each is laid, measured and removed alone)",
   "circular test (a path drawn from its own program): paths are realized as unsteered tapes instead"
  ],
  "findings": [
@@ -63,6 +63,9 @@
    "claim": "Laterally offset routes cross the nominal route at the first focal point (small-offset limit)",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0001,
     "rel": 1e-07
@@ -100,6 +103,9 @@
    "claim": "Domed-coupon Jacobi transfer at the end of the nominal route",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-06,
     "rel": 1e-07
@@ -149,6 +155,9 @@
    "claim": "Linearized separation remainder is at least second order (third order on the symmetry axis)",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0001,
     "rel": 1e-05
@@ -170,7 +179,7 @@
     "checks": [
      {
       "comparison": "ge",
-      "observed": 9.337411879777704,
+      "observed": 9.286179647011794,
       "passed": true,
       "reference": "(plate - coupon separation of the 2 mm offset route at L) / combined k = 2 uncertainty (open-loop prediction and camera pair)",
       "reference_kind": "analytic",
@@ -189,6 +198,9 @@
    "claim": "Curvature signature relative to the flat-plate control at the route end",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-06,
     "rel": 1e-07
@@ -196,13 +208,13 @@
    "uncertainty": {
     "basis": "k = 2 open-loop prediction uncertainty at the end (mm)",
     "kind": "reference_error",
-    "value": 0.32033300742553683
+    "value": 0.3221552548946697
    },
    "unit": "mm",
    "value": {
     "coupon_heading_5mrad": 0.5397095397385409,
     "coupon_lateral_2mm": -1.0373617092070082,
-    "expanded_uncertainty_mm": 0.325289464394851,
+    "expanded_uncertainty_mm": 0.327084099668953,
     "plate_heading_5mrad": 1.0108984223839306,
     "plate_lateral_2mm": 2.0
    }
@@ -224,6 +236,9 @@
    "claim": "The RK4 coupon transfer agrees with ciw's adaptive Dormand-Prince 5(4) integration of the same equations",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-05,
     "rel": 0
@@ -261,6 +276,9 @@
    "claim": "Coupon Christoffel symbols and Gaussian curvature agree with finite-difference derivations from the metric and from the height values",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 0
@@ -288,8 +306,8 @@
      "observed": 9.82036297614286e-07,
      "passed": true,
      "producer": {
-      "implementation": "ciw.lab",
-      "revision": "ciw.lab.jacobi RK4 / surfaces"
+      "implementation": "ciw.lab.jacobi",
+      "revision": "ciw 0.1.0"
      },
      "reference": "max |state(L)| difference, RK4 (h ~ 1 mm) vs scipy DOP853 at rtol 1e-12",
      "reference_kind": "high_precision",
@@ -299,6 +317,9 @@
    "claim": "scipy DOP853 integrating the ciw right-hand side agrees with the RK4 coupon transfer (independent time stepping; the geometry code is shared)",
    "domain": "numerical",
    "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check"
+   ],
    "regression_tolerance": {
     "abs": 1e-05,
     "rel": 0
@@ -323,8 +344,8 @@
      "observed": 8.673617379884035e-19,
      "passed": true,
      "producer": {
-      "implementation": "ciw.lab",
-      "revision": "ciw.lab.jacobi RK4 / surfaces"
+      "implementation": "ciw.lab.jacobi",
+      "revision": "ciw 0.1.0"
      },
      "reference": "max |Gamma| (1/mm) and |K| (1/mm^2) differences at six points",
      "reference_kind": "high_precision",
@@ -334,6 +355,9 @@
    "claim": "A sympy derivation of the coupon Christoffel symbols and Gaussian curvature from the height formula agrees with ciw at six points",
    "domain": "numerical",
    "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check"
+   ],
    "regression_tolerance": {
     "abs": 1e-12,
     "rel": 0
@@ -365,6 +389,13 @@
       "reference_kind": "refusal"
      },
      {
+      "expected_refusal": "undeclared_device",
+      "observed_refusal": "undeclared_device",
+      "passed": true,
+      "reference": "protocol mutation criterion_names_undeclared_instrument",
+      "reference_kind": "refusal"
+     },
+     {
       "expected_refusal": "measurement_without_acquisition",
       "observed_refusal": "measurement_without_acquisition",
       "passed": true,
@@ -382,6 +413,13 @@
       "expected_refusal": "missing_field",
       "observed_refusal": "missing_field",
       "passed": true,
+      "reference": "protocol mutation instrument_without_settings",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "missing_field",
+      "observed_refusal": "missing_field",
+      "passed": true,
       "reference": "protocol mutation missing_markers",
       "reference_kind": "refusal"
      },
@@ -393,10 +431,31 @@
       "reference_kind": "refusal"
      },
      {
+      "expected_refusal": "undeclared_device",
+      "observed_refusal": "undeclared_device",
+      "passed": true,
+      "reference": "protocol mutation raw_format_of_undeclared_instrument",
+      "reference_kind": "refusal"
+     },
+     {
       "expected_refusal": "measurement_without_acquisition",
       "observed_refusal": "measurement_without_acquisition",
       "passed": true,
       "reference": "protocol mutation records_in_empty_slot",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "repeat_includes_laying",
+      "observed_refusal": "repeat_includes_laying",
+      "passed": true,
+      "reference": "protocol mutation repeat_includes_laying",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "procedure_step_malformed",
+      "observed_refusal": "procedure_step_malformed",
+      "passed": true,
+      "reference": "protocol mutation repeat_of_itself",
       "reference_kind": "refusal"
      },
      {
@@ -412,12 +471,64 @@
       "passed": true,
       "reference": "protocol mutation slot_without_retention_record",
       "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "path_over_marker",
+      "observed_refusal": "path_over_marker",
+      "passed": true,
+      "reference": "protocol mutation specimen_marker_under_a_tape",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "fixture_targets_undeclared",
+      "observed_refusal": "fixture_targets_undeclared",
+      "passed": true,
+      "reference": "protocol mutation step_measures_targets_of_a_fixture_without_any",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "undeclared_device",
+      "observed_refusal": "undeclared_device",
+      "passed": true,
+      "reference": "protocol mutation step_names_undeclared_jig",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "undeclared_device",
+      "observed_refusal": "undeclared_device",
+      "passed": true,
+      "reference": "protocol mutation step_uses_undeclared_device",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "tapes_overlap",
+      "observed_refusal": "tapes_overlap",
+      "passed": true,
+      "reference": "protocol mutation tape_left_on_the_specimen",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "jig_slots_overlap",
+      "observed_refusal": "jig_slots_overlap",
+      "passed": true,
+      "reference": "protocol mutation two_offset_tapes_in_one_laying",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "procedure_step_malformed",
+      "observed_refusal": "procedure_step_malformed",
+      "passed": true,
+      "reference": "protocol mutation unstructured_procedure_step",
+      "reference_kind": "refusal"
      }
     ]
    },
    "claim": "Domed-coupon protocol record validates and refuses malformed variants",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -428,7 +539,7 @@
     "value": 0.0
    },
    "unit": "refused mutations",
-   "value": 9
+   "value": 21
   },
   {
    "assigned_by": "ciw.lab.evidence",
@@ -436,6 +547,7 @@
    "claim": "Measured separations of offset routes on the physical coupon follow the Jacobi prediction and cross at the predicted focal point",
    "domain": "physical",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -446,6 +558,7 @@
    "claim": "The formed coupon matches the declared dome (height 10 mm, sigma 20 mm) within tolerance",
    "domain": "calibration",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -456,6 +569,7 @@
    "claim": "An unsteered 3 mm tape laid on the coupon follows a geodesic of the as-built surface (no in-plane bending, lift-off or slip)",
    "domain": "physical",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -463,9 +577,10 @@
   {
    "assigned_by": "ciw.lab.evidence",
    "basis": {},
-   "claim": "The start jig and tape laying realize the relative start pose of the offset tape within the declared 0.05 mm and 0.5 mrad",
+   "claim": "The start jig realizes the relative start pose of the offset tape within the declared 0.05 mm and 0.5 mrad of its insert and the laying and 0.01 mm and 0.1 mrad per seating of the jig",
    "domain": "calibration",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -473,9 +588,9 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 10823,
+   "bytes": 33103,
    "path": "artifacts/T128/protocol-domed-coupon.json",
-   "sha256": "10d7497aafd05157f1fa594f165214afb83fb7f770751bcfad08c9477edb0ab8"
+   "sha256": "86b7e4c45b0acf7632937a0a145a35069684cc6f4afab522e3a0746495fd3629"
   },
   {
    "bytes": 1565,
@@ -492,7 +607,7 @@
  "input_data": [
   "Declared domed coupon and chart extent x in [-60, 140], y in [-100, 100] mm",
   "Perturbations: 2 mm lateral, 5 mrad heading; remainder study eps = 0.4, 0.2, 0.1 mm",
-  "Declared start-pose error of the offset tape 0.05 mm / 0.5 mrad (1 sigma) for the open-loop uncertainty"
+  "Declared relative start-pose error of the offset tape for the open-loop uncertainty (1 sigma): insert and laying 0.05 mm / 0.5 mrad, and two seatings of the start jig at 0.01 mm / 0.1 mrad each"
  ],
  "mathematical_model": "Coupon z = h exp(-(x^2 + y^2) / (2 sigma^2)), h = 10 mm, sigma = 20 mm; nominal route from (-60, 0) along +x to x = 140; separation = delta j_lat + dtheta j_head with j'' + K j = 0.",
  "number": 128,
@@ -510,15 +625,15 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/manufacturing.py": "f4cd90e1df33b910b78daf4b0556a8861e044d83701474f841e85fd9d96f9063",
-   "src/ciw/lab/manufacturing_geometry.py": "1db6df2ddf778668da2ffd53a66bcddbff4fc933d6f299e8f283cedc60a9332f",
-   "src/ciw/lab/manufacturing_metrology.py": "aef4708b0f296fc66087a6382881a0564c5edcb6d7961b5e472aa711e29feb5d",
-   "src/ciw/lab/manufacturing_records.py": "015ea7fccc586f4b95f64e7ffbc1f6c34eec20b8245778ede3c2324006537087"
+   "src/ciw/lab/manufacturing.py": "a489d9a93946a344e2878840d784e8087098775794108a6729d9179102767969",
+   "src/ciw/lab/manufacturing_geometry.py": "44830e8b1e2811dc3ade9eb1bc40691a6ae53f92c0b178dce5e5e111447879a1",
+   "src/ciw/lab/manufacturing_metrology.py": "f5c7694f91ac7b38a1f886b4acdc189d0abda403956e3b34d3f2dc8644c07dba",
+   "src/ciw/lab/manufacturing_records.py": "9d8cd35dc23541e9067fdced631c2a80bff1077b3bcba7fa9ae377c9db67626f"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T138: compare predicted and measured separation once MFG-COUPON-01 has been executed and retained (T139).",
- "report_id": "sha256:0bde9ff0b202a6da90502a11e774efb0845efe582b1a5e39995088b225d2a02e",
+ "recommended_next_task": "Acquire MFG-SCAN-01 and MFG-COUPON-01 and bind the station-target and start-pose exports to T138 (ciw lab run T138 --capture photogrammetry=<targets.csv> --capture cmm=<start-pose.csv>), then retain the run with ciw lab hardware retain; the comparison is computational until a metrology instrument probe or a signed-capture trust anchor exists (deferred research question). Open: predict the separation on a surface fitted to the scan when the Gaussian model test rejects the as-built dome, which is not implemented.",
+ "report_id": "sha256:018530baa32b78f8723146e37b5b06a208a391f6c64ad915ee5437434172ff67",
  "schema": "ciw.lab-task-report.v1",
  "section": "manufacturing",
  "state": "completed",
@@ -540,13 +655,25 @@
   "independent: A sympy derivation of the coupon Christoffel symbols and Gaussian curvature from the height formula agrees with ciw at six points vs sympy symbolic differentiation",
   "check: Domed-coupon protocol record validates and refuses malformed variants vs protocol mutation acceptance_inside_system",
   "check: Domed-coupon protocol record validates and refuses malformed variants vs protocol mutation criterion_marked_accepted",
+  "check: Domed-coupon protocol record validates and refuses malformed variants vs protocol mutation criterion_names_undeclared_instrument",
   "check: Domed-coupon protocol record validates and refuses malformed variants vs protocol mutation filled_slot_without_acquisition",
   "check: Domed-coupon protocol record validates and refuses malformed variants vs protocol mutation instrument_claimed_verified",
+  "check: Domed-coupon protocol record validates and refuses malformed variants vs protocol mutation instrument_without_settings",
   "check: Domed-coupon protocol record validates and refuses malformed variants vs protocol mutation missing_markers",
   "check: Domed-coupon protocol record validates and refuses malformed variants vs protocol mutation prediction_labelled_measured",
+  "check: Domed-coupon protocol record validates and refuses malformed variants vs protocol mutation raw_format_of_undeclared_instrument",
   "check: Domed-coupon protocol record validates and refuses malformed variants vs protocol mutation records_in_empty_slot",
+  "check: Domed-coupon protocol record validates and refuses malformed variants vs protocol mutation repeat_includes_laying",
+  "check: Domed-coupon protocol record validates and refuses malformed variants vs protocol mutation repeat_of_itself",
   "check: Domed-coupon protocol record validates and refuses malformed variants vs protocol mutation slot_with_malformed_acquisition",
   "check: Domed-coupon protocol record validates and refuses malformed variants vs protocol mutation slot_without_retention_record",
+  "check: Domed-coupon protocol record validates and refuses malformed variants vs protocol mutation specimen_marker_under_a_tape",
+  "check: Domed-coupon protocol record validates and refuses malformed variants vs protocol mutation step_measures_targets_of_a_fixture_without_any",
+  "check: Domed-coupon protocol record validates and refuses malformed variants vs protocol mutation step_names_undeclared_jig",
+  "check: Domed-coupon protocol record validates and refuses malformed variants vs protocol mutation step_uses_undeclared_device",
+  "check: Domed-coupon protocol record validates and refuses malformed variants vs protocol mutation tape_left_on_the_specimen",
+  "check: Domed-coupon protocol record validates and refuses malformed variants vs protocol mutation two_offset_tapes_in_one_laying",
+  "check: Domed-coupon protocol record validates and refuses malformed variants vs protocol mutation unstructured_procedure_step",
   "pytest: tests/test_lab_manufacturing.py::test_coupon_protocol_predicts_focal_crossing",
   "pytest: tests/test_lab_manufacturing.py::test_coupon_report_wording_does_not_depend_on_optional_modules",
   "pytest: tests/test_lab_manufacturing.py::test_protocols_refuse_filled_slots_and_decisions",

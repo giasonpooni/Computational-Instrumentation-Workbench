@@ -1,0 +1,16 @@
+{
+ "cases": 168,
+ "claims": 14,
+ "outcomes": {
+  "hardware_measured": 15,
+  "not_established": 70,
+  "numerically_verified": 20,
+  "refused": 63
+ },
+ "paraphrase": {
+  "claim": "Manufacturers need curvature-aware placement checks",
+  "outcome": "passes the screen"
+ },
+ "violation_count": 0,
+ "violations": []
+}

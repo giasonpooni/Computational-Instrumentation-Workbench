@@ -74,6 +74,11 @@
    "claim": "Converged geodesic endpoints, lengths and Jacobi transfer matrices agree in every chart",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 0.5
@@ -136,6 +141,10 @@
    "claim": "Between N = 128 and 256 RK4 error falls at least like h^3.7 in every chart; smooth charts show order 4, near-fold charts are still pre-asymptotic (order above 4) at N = 256",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.05,
     "rel": 0.0
@@ -211,6 +220,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-06,
     "rel": 0.02
@@ -253,6 +266,9 @@
    "claim": "The identity chart reproduces the base-chart integration bit for bit",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -300,13 +316,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/geodesic_jacobi_limits.py": "07d850980ac10ad34ca0d1b8c29942c90fe635e15135a5db1f74e90674e3bb18",
+   "src/ciw/lab/geodesic_jacobi_limits.py": "893d8b0240e673dd9aa7b5ba13b09958caa861706335726277d676def21aa83d",
    "src/ciw/lab/geodesic_jacobi_limits_core.py": "0e0b8f85ed4e83c3fcdc866e8a7e580a17432e174b8db8d8277230e226473d7f"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T012 (frame-change invariance) and a fold-scaling study of error versus mu",
- "report_id": "sha256:579fff6484c49c09b64565c48ffc59acc0520dc5ef30323597ad0b7e7d8f7094",
+ "recommended_next_task": "Deferred research question: fit how the fold amplification scales with mu (error versus mu over a declared mu sequence; measured here, not fitted) and reparametrize the intrinsic HyperbolicPlane chart, which is exercised here only through embedded observables",
+ "report_id": "sha256:b823d0795232eab4659d586edff58cd3615ae5620ac9a886d139ed5eeafa403a",
  "schema": "ciw.lab-task-report.v1",
  "section": "geodesic-jacobi",
  "state": "completed",
@@ -321,7 +337,8 @@
   "check: A geometry-preserving near-fold chart multiplies the fixed-step error by a large factor vs min over sphere and torus of error(fold 0.1)/error(base)",
   "check: The identity chart reproduces the base-chart integration bit for bit vs max |identity-chart state - base state|",
   "pytest: tests/test_lab_geodesic_jacobi_limits.py::test_t011_chart_invariance_and_fold_amplification",
-  "pytest: tests/test_lab_geodesic_jacobi_limits.py::test_chart_maps_have_exact_derivatives"
+  "pytest: tests/test_lab_geodesic_jacobi_limits.py::test_chart_maps_have_exact_derivatives",
+  "pytest: tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work"
  ],
  "tests_skipped": [],
  "title": "Test coordinate-change invariance under nonlinear parameterizations.",

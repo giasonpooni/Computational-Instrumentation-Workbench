@@ -70,6 +70,10 @@
    "claim": "Geodesic curvature of a 30-to-60 degree variable-angle steered course on the R = 100 mm mandrel",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-12,
     "rel": 1e-09
@@ -110,6 +114,9 @@
    "claim": "Lateral deviation on the mandrel follows e(s) = delta + s sin(dpsi) (flat Jacobi transfer)",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 0
@@ -157,6 +164,10 @@
    "claim": "Tolerance stack of the placed course and the longest course meeting a 0.5 mm lateral spec at k = 2",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-09
@@ -206,6 +217,9 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-09
@@ -236,6 +250,10 @@
    "claim": "End deviation of the steered course from the geodesic along its initial tangent",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-09
@@ -254,6 +272,7 @@
    "claim": "Tows placed by a real AFP head follow the programmed course within the stack, with gaps and overlaps inside 0.5 mm",
    "domain": "physical",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -264,6 +283,7 @@
    "claim": "The declared 635 mm minimum steering radius avoids tow wrinkling for the placed material",
    "domain": "physical",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -303,15 +323,15 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/manufacturing.py": "f4cd90e1df33b910b78daf4b0556a8861e044d83701474f841e85fd9d96f9063",
-   "src/ciw/lab/manufacturing_geometry.py": "1db6df2ddf778668da2ffd53a66bcddbff4fc933d6f299e8f283cedc60a9332f",
-   "src/ciw/lab/manufacturing_metrology.py": "aef4708b0f296fc66087a6382881a0564c5edcb6d7961b5e472aa711e29feb5d",
-   "src/ciw/lab/manufacturing_records.py": "015ea7fccc586f4b95f64e7ffbc1f6c34eec20b8245778ede3c2324006537087"
+   "src/ciw/lab/manufacturing.py": "a489d9a93946a344e2878840d784e8087098775794108a6729d9179102767969",
+   "src/ciw/lab/manufacturing_geometry.py": "44830e8b1e2811dc3ade9eb1bc40691a6ae53f92c0b178dce5e5e111447879a1",
+   "src/ciw/lab/manufacturing_metrology.py": "f5c7694f91ac7b38a1f886b4acdc189d0abda403956e3b34d3f2dc8644c07dba",
+   "src/ciw/lab/manufacturing_records.py": "9d8cd35dc23541e9067fdced631c2a80bff1077b3bcba7fa9ae377c9db67626f"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T133: winding path sensitivity on a torus mandrel, where Gaussian curvature is nonzero.",
- "report_id": "sha256:0ff7185863f7bd251e7c2ac12003930a7a706cbb1a5a9e1fe121a61aaa00d66f",
+ "recommended_next_task": "Open: model tows as strips with width, compaction and tack instead of curves, and compare the placement stack with process data (tow positions, gaps and overlaps at the steering radius), none of which exists here.",
+ "report_id": "sha256:ef37b66dc20f6fb05b2b47a0d1d014aa59e2aa52015ae8c92b469c0d2eb1c6f0",
  "schema": "ciw.lab-task-report.v1",
  "section": "manufacturing",
  "state": "completed",

@@ -51,6 +51,9 @@
    "claim": "Evidence and identity closure is standard-library Python with no native loading or process spawns",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -95,6 +98,9 @@
    "claim": "Package-wide structural rules hold (no shell spawns, native loading only in declared hardware probes, no compiled extensions)",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -124,6 +130,9 @@
    "claim": "Every process-spawning module names an identity in its code (heuristic, not a pin)",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -222,6 +231,9 @@
    "claim": "Scanner flags forged modules that cross the boundary",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -267,6 +279,9 @@
    },
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -290,6 +305,7 @@
    "domain": "computational_pipeline",
    "evidence_status": "not_established",
    "expected_not_established": true,
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -318,6 +334,9 @@
    },
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -338,6 +357,7 @@
    "claim": "Keeping native code behind subprocess boundaries makes machine interfaces safe",
    "domain": "machine_safety",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -345,23 +365,23 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 73562,
+   "bytes": 76938,
    "path": "artifacts/T144/import-graph.json",
-   "sha256": "d1e1003edb611ea94d6fd8151fc2f0eadc85ba160c382f51a970c1edab2de216"
+   "sha256": "e9da29bbf73507057f10ebc9fdb9859a38f17a9e6319632541857807676aae28"
   },
   {
-   "bytes": 2532,
+   "bytes": 2619,
    "path": "artifacts/T144/architecture-scan.json",
-   "sha256": "3add4f83843edd0c6868d5cbcdd876a6b1af77aeb86b84183a89d00bf353f3ad"
+   "sha256": "e81342346808134e329c5a007c46dd00f8f692b36f0cf7016b4f7f5af00d62bb"
   }
  ],
  "hypothesis": "The evidence and identity layer (ciw.lab.evidence, ciw.lab.report, ciw.core.identities, their ciw imports and the packages whose __init__ runs when they are imported) is pure standard-library Python; process spawns use argument vectors without a shell; native loading is confined to declared hardware probes. Whether spawned providers are pinned is not decidable from source and is tested only by a heuristic plus counterexample search.",
  "input_data": [
-  "141 parsed modules of the installed ciw package (source text only, not imported); package digest in the provider/runtime identity"
+  "143 parsed modules of the installed ciw package (source text only, not imported); package digest in the provider/runtime identity"
  ],
  "mathematical_model": "Directed import graph over parsed modules; transitive closure from the evidence roots, adding each visited module's ancestor packages (Python executes their __init__ first); structural rules {closure stdlib-only, no native/spawn in closure, native loading within allowlist, no shell (shell=True, os.system/popen, asyncio.create_subprocess_shell), no compiled extensions}; heuristic rule: a spawning module names an identity token in identifiers or non-docstring strings.",
  "number": 144,
- "numerical_result": "Evidence closure ['ciw', 'ciw.core', 'ciw.core.identities', 'ciw.lab', 'ciw.lab.evidence', 'ciw.lab.report']; 0 structural and 0 heuristic violations over 141 modules; 9 spawning modules, 4 of them PATH-resolved; 11/11 forged mutations detected.",
+ "numerical_result": "Evidence closure ['ciw', 'ciw.core', 'ciw.core.identities', 'ciw.lab', 'ciw.lab.evidence', 'ciw.lab.report']; 0 structural and 0 heuristic violations over 143 modules; 10 spawning modules, 4 of them PATH-resolved; 11/11 forged mutations detected.",
  "observation_model": "Static source analysis with ast; nothing from the scanned modules is imported or executed.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -373,17 +393,17 @@
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
   "python": "3.12.3",
-  "scanned_files": 141,
-  "scanned_package_sha256": "fd3bc9aa261ee331e4c848d995f8d9373428f14e2ac7974c2f34a39151bbc35b",
+  "scanned_files": 143,
+  "scanned_package_sha256": "bd2ecfd61676c5b6e1c5586c49dddc9b286cde6bacc02a1bf681efc5d63a97d0",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/implementation_targets.py": "1df8bd67d28b18d70bcb5f74e4a14616ceb17868c7a9aa75595f15254426ee7e",
+   "src/ciw/lab/implementation_targets.py": "0ea1ac76f50f1c65b47155a6791a0ea74c3ebf57d0b254a4a6615dabb930b5e7",
    "src/ciw/lab/implementation_targets_architecture.py": "3c0ba23187cae208b492ff7adbceba135e2d7e071c6a4c978bbe5e3b2ac0ad62"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T146 (fix one canonical serialization for identities crossing the language boundary); pin the Rust probe and other PATH-resolved tools against expected identities",
- "report_id": "sha256:8f240976cebdc602ee0754a2a14eb5704f34087ea89af5aa13b85e2bd080837b",
+ "recommended_next_task": "Pin the Rust probe and other PATH-resolved tools against expected identities (a resolved rustc is recorded by version and binary digest, not checked against a pin)",
+ "report_id": "sha256:7899baa10f9faa2842df011481d680a173ae28acf2a42bce6b53de709591c395",
  "schema": "ciw.lab-task-report.v1",
  "section": "implementation-targets",
  "state": "completed",

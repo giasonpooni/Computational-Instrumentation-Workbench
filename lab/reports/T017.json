@@ -73,6 +73,11 @@
    "claim": "On a generic torus geodesic C2(s*) != 0 and the validity domain shrinks to zero linearly at the conjugate point",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-08,
     "rel": 0.001
@@ -142,6 +147,11 @@
    "claim": "The predicted validity boundary holds: new integrations at eps_max/2 and 2 eps_max fall on either side of tau and match the C2/C3 remainder model",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-08,
     "rel": 0.001
@@ -244,6 +254,11 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-07,
     "rel": 0.001
@@ -302,6 +317,11 @@
    "claim": "Hyperbolic plane, pure heading: C2 = 0 and eps_max = sqrt(24 tau)/cosh(s) shrinks exponentially",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-07,
     "rel": 0.001
@@ -363,6 +383,11 @@
    "claim": "Sphere lateral+heading perturbation: C2(s0) = 1/2 at the first-order zero s0 = 3pi/4, and eps_max shrinks to zero linearly there",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-08,
     "rel": 0.001
@@ -417,6 +442,10 @@
    "claim": "Torus outer equator: C2 vanishes along the whole path (reflection symmetry); the remainder is cubic",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-06,
     "rel": 0.001
@@ -439,6 +468,7 @@
    "claim": "These validity domains certify first-order path corrections as safe on real machines",
    "domain": "machine_safety",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -465,7 +495,7 @@
  "mathematical_model": "Unsigned separation d at matched arclength. Unit sphere, pure heading: d = 2 arcsin(|sin s| sin(eps/2)), so C2 = 0, C3 = -|sin s| cos^2 s / 24 and eps_max = sqrt(24 tau)/|cos s| (no collapse at s = pi). Hyperbolic plane: d = 2 asinh(sinh s sin(eps/2)), C2 = 0, eps_max = sqrt(24 tau)/cosh s. Generic paths: a normal eps^2 term C2(s*) != 0, so eps_max ~ tau |j'(s*)| |s - s*| / |C2(s*)| -> 0; symmetric paths: C2 = 0 and eps_max ~ sqrt(|s - s*|). Sphere lateral+heading: the eps^2/2 offset at s0 = 3pi/4 is along-track, orthogonal to eps j N, so d = sqrt((eps j)^2 + eps^4/4) near s0 and eps_max = 2 |j| sqrt(2 tau + tau^2) ~ 2 sqrt(2 tau) |j'(s0)| |s - s0|.",
  "number": 17,
  "numerical_result": "Generic torus: C2(s*) = 1.519, eps_max(s*/2) = 0.0406, eps_max / |s - s*| next to s* = 0.007384 against tau |j'(s*)| / |C2(s*)| = 0.007386; boundary probe relative errors 0.00499 (eps_max/2) and 0.0201 (2 eps_max) against tau = 0.01, within 0.00031 (relative) of the C2/C3 model and -0.0024, 0.0054 of the linear values tau/2, 2 tau; sphere pure heading eps_max near pi = 0.4899 (C3 relative error 8.3e-05); hyperbolic eps_max within 0.0035 (relative) of sqrt(24 tau)/cosh s; sphere lateral+heading C2(s0) = 0.5, eps_max / |s - s0| next to s0 = 0.4013 against 0.401; equator max |C2| = 5.1e-06; hyperbolic eps_max = 0.475, 0.4345, 0.3175, 0.2084, 0.1304, 0.08016.",
- "observation_model": "Great-circle or hyperbolic distance (closed form) or embedded chord (torus) versus eps |j(s)|; C2 and C3 by least squares over eps; eps_max from the fitted quadratic.",
+ "observation_model": "Unsigned separation d at matched arclength, by family: intrinsic geodesic distance on the unit sphere (great-circle distance, closed form) and on the hyperbolic plane (hyperbolic distance, closed form); embedded chord |X_eps(s) - X(s)| on Torus(2, 1) (RK4 chords at grid nodes, equal to the intrinsic distance up to O(d^3)); each versus eps |j(s)|; C2 and C3 by least squares over eps; eps_max from the fitted quadratic.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
   "status": "not_established"
@@ -478,13 +508,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/geodesic_jacobi_limits.py": "07d850980ac10ad34ca0d1b8c29942c90fe635e15135a5db1f74e90674e3bb18",
+   "src/ciw/lab/geodesic_jacobi_limits.py": "893d8b0240e673dd9aa7b5ba13b09958caa861706335726277d676def21aa83d",
    "src/ciw/lab/geodesic_jacobi_limits_core.py": "0e0b8f85ed4e83c3fcdc866e8a7e580a17432e174b8db8d8277230e226473d7f"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T018 (curvature signal versus integrator error) and a sampled survey of C2(s*) over random torus geodesics",
- "report_id": "sha256:13faf54511fe8a876f0c91ff3c2982e6f326d49e31c88efdabb003073882d9c4",
+ "recommended_next_task": "Deferred research question: survey C2(s*) over a seeded sample of torus geodesics (how often a path is reflection-symmetric with C2 = 0) and tabulate validity domains for lateral perturbation families beyond the single lateral case on the sphere",
+ "report_id": "sha256:1b026ae96517024266167f9a5a1b8ac1a65e21f068dd03f864b518cda2ca5f5a",
  "schema": "ciw.lab-task-report.v1",
  "section": "geodesic-jacobi",
  "state": "completed",
@@ -506,7 +536,9 @@
   "check: Sphere lateral+heading perturbation: C2(s0) = 1/2 at the first-order zero s0 = 3pi/4, and eps_max shrinks to zero linearly there vs eps_max / |s - s0| at 0.99 s0 and 1.01 s0 against 2 sqrt(2 tau + tau^2) |j'(s0)| (along-track eps^2/2), relative",
   "check: Torus outer equator: C2 vanishes along the whole path (reflection symmetry); the remainder is cubic vs max |C2| over the tabulated nodes",
   "check: Torus outer equator: C2 vanishes along the whole path (reflection symmetry); the remainder is cubic vs remainder exponent at s* minus 3 (reflection symmetry)",
-  "pytest: tests/test_lab_geodesic_jacobi_limits.py::test_t017_validity_domains"
+  "pytest: tests/test_lab_geodesic_jacobi_limits.py::test_t017_validity_domains",
+  "pytest: tests/test_lab_geodesic_jacobi_limits.py::test_t010_t017_name_the_separation_observable",
+  "pytest: tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work"
  ],
  "tests_skipped": [],
  "title": "Derive validity domains for the first-order approximation.",

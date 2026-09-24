@@ -217,6 +217,10 @@
    "claim": "Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every chart with nonzero Christoffel symbols",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.02,
     "rel": 0.0
@@ -352,6 +356,10 @@
    "claim": "A non-unit initial speed stays non-unit: g(v,v) remains 1.69 to integrator accuracy",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 0.0
@@ -410,6 +418,9 @@
    "claim": "The integrator and geodesic/Jacobi right-hand-side code paths contain no state normalization",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-08,
     "rel": 0.0
@@ -479,6 +490,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -537,6 +552,10 @@
    "claim": "Speed drift is at rounding on flat Cartesian charts, where every method is exact",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 0.0
@@ -606,13 +625,13 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/geodesic_jacobi.py": "70e9794df40fbf882cd117859a112b1301552d2c4faca7979f06e7c287828798",
+   "src/ciw/lab/geodesic_jacobi.py": "a3abaeabd7605e4a100c304efb6066d2b656644122bf602c06cb97691415a419",
    "src/ciw/lab/geodesic_jacobi_common.py": "7cb215a28e357a37f1c42cef6bdcb40e22abf7804ae9d58c4818fa40aa52da53"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T005: verify the Jacobi separation law on constant-curvature paths",
- "report_id": "sha256:2d58959c07c6f315f2a1c8475562bb6993f2201620584712846480c34caf7bfc",
+ "recommended_next_task": "Deferred research question: extend the no-renormalization scan from the listed functions to every function reachable from the integrator step (the metric evaluations called from the right-hand side included), for example by walking the call graph with the ast module, with the start-state normalization declared as the one allowed exception",
+ "report_id": "sha256:97e3c555fe7df8caf627b61579955ea09010105d5d2953107845f4d913ac7217",
  "schema": "ciw.lab-task-report.v1",
  "section": "geodesic-jacobi",
  "state": "completed",
@@ -659,7 +678,8 @@
   "pytest: tests/test_lab_geodesic_jacobi.py::test_t004_speed_drift_and_no_renormalization",
   "pytest: tests/test_lab_geodesic_jacobi.py::test_integrator_code_path_has_no_normalization",
   "pytest: tests/test_lab_geodesic_jacobi.py::test_every_numerical_finding_declares_uncertainty_and_tolerance",
-  "pytest: tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space"
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space",
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_every_next_step_is_a_deferred_research_question"
  ],
  "tests_skipped": [],
  "title": "Measure unit-speed drift without hidden renormalization.",

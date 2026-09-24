@@ -63,27 +63,27 @@
  "datum_frames": [
   {
    "constrains": "z translation, rotations about x and y",
-   "feature": "specimen back face (or mandrel axis for the cylinder)",
+   "feature": "specimen back face",
    "id": "A",
    "points": 3,
    "role": "primary"
   },
   {
    "constrains": "y translation, rotation about z",
-   "feature": "long reference edge (or axial scribe line)",
+   "feature": "long reference edge",
    "id": "B",
    "points": 2,
    "role": "secondary"
   },
   {
    "constrains": "x translation",
-   "feature": "end stop (or circumferential scribe)",
+   "feature": "end stop face",
    "id": "C",
    "points": 1,
    "role": "tertiary"
   },
   {
-   "definition": "z normal of A; x = B direction projected into A; origin on A, B plane and C plane (ciw.lab.manufacturing_metrology.datum_frame_321)",
+   "definition": "z normal of plane A; x = B direction projected into A; origin on A, B plane and C plane (ciw.lab.manufacturing_metrology.datum_frame_321)",
    "feature": "3-2-1 construction",
    "id": "PART",
    "role": "datum reference frame"
@@ -97,9 +97,73 @@
  "fixtures": [
   {
    "clamping": "normal to A, over the rests, torque declared per specimen",
-   "contacts": "three spherical rests on A, two on B, one on C",
+   "contacts": "three 12 mm spherical rests on A, two cylindrical side stops on B, one end stop on C",
+   "datum_targets": [
+    {
+     "adapters": [
+      "1.5 in SMR (tracker)",
+      "coded photogrammetry target adapter with the same centre (camera)"
+     ],
+     "frame": "FIXTURE: base plate centre, z up (declared)",
+     "id": "FX-321-T1",
+     "nest": "1.5 in SMR nest",
+     "position_mm": [
+      -200.0,
+      -200.0,
+      0.0
+     ]
+    },
+    {
+     "adapters": [
+      "1.5 in SMR (tracker)",
+      "coded photogrammetry target adapter with the same centre (camera)"
+     ],
+     "frame": "FIXTURE: base plate centre, z up (declared)",
+     "id": "FX-321-T2",
+     "nest": "1.5 in SMR nest",
+     "position_mm": [
+      200.0,
+      -200.0,
+      0.0
+     ]
+    },
+    {
+     "adapters": [
+      "1.5 in SMR (tracker)",
+      "coded photogrammetry target adapter with the same centre (camera)"
+     ],
+     "frame": "FIXTURE: base plate centre, z up (declared)",
+     "id": "FX-321-T3",
+     "nest": "1.5 in SMR nest",
+     "position_mm": [
+      200.0,
+      200.0,
+      0.0
+     ]
+    },
+    {
+     "adapters": [
+      "1.5 in SMR (tracker)",
+      "coded photogrammetry target adapter with the same centre (camera)"
+     ],
+     "frame": "FIXTURE: base plate centre, z up (declared)",
+     "id": "FX-321-T4",
+     "nest": "1.5 in SMR nest",
+     "position_mm": [
+      -200.0,
+      200.0,
+      0.0
+     ]
+    }
+   ],
+   "geometry": "rests at 10% and 90% of the specimen length under A; side stops 200 mm apart along B; a 400 x 400 mm base plate",
    "id": "FX-321",
-   "kind": "3-2-1 kinematic nest"
+   "kind": "3-2-1 kinematic nest",
+   "locates": [
+    "A",
+    "B",
+    "C"
+   ]
   }
  ],
  "frame_chain": [
@@ -134,12 +198,24 @@
    "id": "scanner",
    "kind": "laser line scanner",
    "native_point_spacing_mm": 0.05,
+   "settings": {
+    "exposure": "automatic per pass, logged with the pass",
+    "max_incidence_deg": 30.0,
+    "point_spacing_mm": 0.05,
+    "standoff_mm": 100.0
+   },
    "status": "declared_not_verified"
   },
   {
    "declared_standard_uncertainty_mm": 0.002,
    "id": "cmm",
    "kind": "bridge CMM with touch-trigger probe",
+   "settings": {
+    "approach_speed_mm_s": 3.0,
+    "points": "as listed in each procedure step",
+    "probe": "touch-trigger probe, 2 mm ruby stylus",
+    "qualification": "stylus qualified on GS-25.4 at the start of each session"
+   },
    "status": "declared_not_verified"
   }
  ],
@@ -197,12 +273,18 @@
   {
    "direction": "+x",
    "id": "RASTER-X",
-   "kind": "scan pass"
+   "kind": "scan pass",
+   "uses": [
+    "scanner"
+   ]
   },
   {
    "direction": "+y",
    "id": "RASTER-Y",
-   "kind": "scan pass"
+   "kind": "scan pass",
+   "uses": [
+    "scanner"
+   ]
   }
  ],
  "predicted_quantities": [
@@ -240,19 +322,183 @@
   }
  ],
  "procedure": [
-  "Soak specimen and fixture; log temperatures.",
-  "Verify instruments on GS-25.4 and SB-1000 before and after; retain both checks.",
-  "Locate the specimen in FX-321; probe datums A, B, C and build the PART frame.",
-  "Measure the six registration targets with the CMM in the PART frame.",
-  "Set the scanner to the declared 100 mm standoff; scan both raster passes at the native spacing, rejecting points with incidence above 30 deg.",
-  "Register each pass to the targets (Kabsch) and retain the transform and its residual.",
-  "Fit the as-built dome on the 4 mm grid; fit the crest curvature in the T129 windows at full density.",
-  "Report the fitted parameters with their covariance and the chi2 / dof model test (H1) before any tape is laid.",
-  "Repeat the full acquisition three times, removing and re-seating the specimen in FX-321 between repeats (repeatability replicates); the crossed Gage R&R and type-1 studies follow the separate T131 procedure (gage-rr-procedure.json). Retain every raw file through the T139 retention record."
+  {
+   "action": "Soak the specimen and its holder for 4 h at 20 +/- 1 C; log air and part temperature every 10 min.",
+   "outputs": [
+    "environment log with an explicit UTC offset"
+   ],
+   "step": 1,
+   "uses": [
+    "FX-321"
+   ]
+  },
+  {
+   "action": "Check the instruments before the acquisition: the scanner scans GS-25.4; the CMM probes GS-25.4 at 25 points. Retain every check.",
+   "check": "each artifact reading lies within 2 U of its certificate value, U from the declared instrument uncertainty; otherwise stop and recalibrate",
+   "outputs": [
+    "instrument checks before the acquisition"
+   ],
+   "step": 2,
+   "uses": [
+    "scanner",
+    "cmm",
+    "GS-25.4",
+    "SB-1000"
+   ]
+  },
+  {
+   "action": "Locate the specimen in FX-321 (3-2-1 nest); clamp; probe datum A (3 points), B (2 points) and C (1 point) with the CMM and build the PART frame (datum_frame_321).",
+   "datums": [
+    "A",
+    "B",
+    "C",
+    "PART"
+   ],
+   "outputs": [
+    "datum point file",
+    "PART frame"
+   ],
+   "step": 3,
+   "uses": [
+    "FX-321",
+    "cmm"
+   ]
+  },
+  {
+   "action": "Measure the six registration targets RT1-RT6 with the CMM in the PART frame and export them as the cmm capture.",
+   "outputs": [
+    "cmm capture (ciw.lab-mfg-target-capture.v1)"
+   ],
+   "step": 4,
+   "uses": [
+    "cmm"
+   ]
+  },
+  {
+   "action": "Set the scanner to the declared 100 mm standoff; scan both raster passes at the native spacing, rejecting points with incidence above 30 deg.",
+   "outputs": [
+    "native point cloud of each pass with the scanner settings"
+   ],
+   "step": 5,
+   "uses": [
+    "scanner"
+   ]
+  },
+  {
+   "action": "Repeat steps 3, 4 and 5 twice more, removing the specimen from FX-321 and re-seating it between repeats (replicates of the target measurement and both raster passes).",
+   "outputs": [
+    "two further replicates (replicates of the target measurement and both raster passes)"
+   ],
+   "repeats": [
+    3,
+    4,
+    5
+   ],
+   "step": 6,
+   "uses": [
+    "FX-321",
+    "cmm",
+    "scanner"
+   ]
+  },
+  {
+   "action": "Register each pass of every replicate to the targets (Kabsch) and retain the transform and its residual.",
+   "check": "registration residual consistent with chi-square(3N - 6) at the declared noise",
+   "outputs": [
+    "registration transform and residual per pass"
+   ],
+   "step": 7,
+   "uses": []
+  },
+  {
+   "action": "Fit the as-built dome on the 4 mm grid; fit the crest curvature in the T129 windows at full density.",
+   "outputs": [
+    "fit parameters, covariance, residual map and outlier count"
+   ],
+   "step": 8,
+   "uses": []
+  },
+  {
+   "action": "Report the fitted parameters with their covariance and the chi2 / dof model test (H1) before any tape is laid.",
+   "outputs": [
+    "as-built dome record for MFG-COUPON-01, T138 and T140"
+   ],
+   "step": 9,
+   "uses": []
+  },
+  {
+   "action": "Check the instruments after the acquisition: the scanner scans GS-25.4; the CMM probes GS-25.4 at 25 points. Retain every check.",
+   "check": "each artifact reading lies within 2 U of its certificate value, U from the declared instrument uncertainty; otherwise stop and recalibrate",
+   "outputs": [
+    "instrument checks after the acquisition"
+   ],
+   "step": 10,
+   "uses": [
+    "scanner",
+    "cmm",
+    "GS-25.4",
+    "SB-1000"
+   ]
+  },
+  {
+   "action": "Retain every raw file, replicate and instrument check with its T139 retention record (ciw.lab-measurement-retention.v1).",
+   "outputs": [
+    "retained raw data and retention records"
+   ],
+   "step": 11,
+   "uses": []
+  }
  ],
  "production_acceptance": "outside_system",
  "protocol_id": "MFG-SCAN-01",
  "purpose": "Identify the as-built dome (height, width, centre) with its covariance and test the Gaussian model before the coupon separations of MFG-COUPON-01 are predicted and compared.",
+ "raw_formats": [
+  {
+   "columns": [
+    "target",
+    "x_mm",
+    "y_mm",
+    "z_mm",
+    "u_mm"
+   ],
+   "coordinates": "CAD (model) frame through the declared PART -> CAD placement",
+   "frame": "CAD",
+   "header": "lines '# key: value' for schema, protocol, instrument, frame, unit, origin; unit mm; origin measurement or synthetic (a synthetic capture starts with '# SYNTHETIC CAPTURE - NOT A MEASUREMENT')",
+   "ids": [
+    "RT1",
+    "RT2",
+    "RT3",
+    "RT4",
+    "RT5",
+    "RT6"
+   ],
+   "instrument": "cmm",
+   "media_type": "text/csv",
+   "reader": "ciw.lab.manufacturing_records.read_capture; no task reads it yet",
+   "role": "cmm",
+   "schema": "ciw.lab-mfg-target-capture.v1",
+   "uncertainty": "u_mm is the declared standard uncertainty of each row (positive); for targets, of each coordinate in the common frame, including the registration of its image set"
+  },
+  {
+   "columns": [
+    "x_mm",
+    "y_mm",
+    "z_mm",
+    "incidence_deg",
+    "flag"
+   ],
+   "frame": "scanner, registered to PART by the targets",
+   "ids": [
+    "RASTER-X",
+    "RASTER-Y"
+   ],
+   "instrument": "scanner",
+   "media_type": "text/csv",
+   "reader": "none yet: T129 fits synthetic scans only; a reader that runs fit_dome on a bound scan is open work",
+   "role": "scanner",
+   "schema": "native point cloud per pass: x_mm, y_mm, z_mm, incidence_deg, flag"
+  }
+ ],
  "required_raw_data": [
   "raw camera images (lossless) with exposure metadata and SHA-256 digests",
   "tracker/CMM native point files with instrument serial and firmware",

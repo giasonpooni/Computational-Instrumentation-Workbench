@@ -58,6 +58,10 @@
    "claim": "No near-boundary case receives a certifying code unless its exact decrease form is negative definite",
    "domain": "numerical",
    "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check",
+    "provider"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -104,6 +108,10 @@
    "claim": "Beyond two resolutions from zero PLSR always resolves the sign",
    "domain": "numerical",
    "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check",
+    "provider"
+   ],
    "regression_tolerance": {
     "abs": 2.0,
     "rel": 0.0
@@ -150,6 +158,10 @@
    "claim": "With a declared margin of three resolutions no case within two resolutions of zero is CERTIFIED_WITH_MARGIN",
    "domain": "numerical",
    "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check",
+    "provider"
+   ],
    "regression_tolerance": {
     "abs": 2.0,
     "rel": 0.0
@@ -233,6 +245,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 4.0,
     "rel": 0.0
@@ -283,6 +299,10 @@
    "claim": "MARGIN_LOW appears exactly when the resolvable margin does not exceed the declared margin",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -313,6 +333,9 @@
    "claim": "Share of exactly negative definite band cases answered NUMERICAL_INCONCLUSIVE without a declared margin",
    "domain": "numerical",
    "evidence_status": "provider_backed",
+   "origin": [
+    "provider"
+   ],
    "regression_tolerance": {
     "abs": 0.2,
     "rel": 0.0
@@ -348,6 +371,10 @@
    "claim": "The near-boundary family populates every exact resolution bin of max eig(M)",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 2.0,
     "rel": 0.0
@@ -422,14 +449,14 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/lyapunov.py": "cbcb4d58d7313d7c537957a1b7dd35039a21bae80125bf59147eeed2c1232bbb",
+   "src/ciw/lab/lyapunov.py": "dcda8ba21661667cc03bb126a393e93158a306b4991d0a2450d8e18abe62cb27",
    "src/ciw/lab/lyapunov_provider.py": "da3465b48b5f5efc47bfe6ab8379cf2cf2bc23e4835dc7ff047252e77fa6ef17",
    "src/ciw/lab/lyapunov_reference.py": "bdf0bb5074ae2caca6c8a5d8e63a15e346b007098e6def6b058d077719bc1336"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T108: required-margin monotonicity; measure how much of the [-2, 0) res band a less conservative eigensolver term (p(n) = n instead of n^2) would recover without losing soundness against exact bins.",
- "report_id": "sha256:f9fd359c3b9987ea94bbc2286a0ce8f3126af2857121e82094ae3520df0ccb78",
+ "recommended_next_task": "Deferred research question: how much of the [-2, 0) res inconclusive band would a less conservative eigensolver term (p(n) = n instead of n^2) recover without losing soundness against the exact bins?",
+ "report_id": "sha256:91e46325d69042ce0a335edac4ddd812edebd3de258e6990b0562ed472c9a368",
  "schema": "ciw.lab-task-report.v1",
  "section": "lyapunov",
  "state": "completed",
@@ -444,7 +471,8 @@
   "check: MARGIN_LOW appears exactly when the resolvable margin does not exceed the declared margin vs MARGIN_LOW verdicts observed",
   "check: The near-boundary family populates every exact resolution bin of max eig(M) vs exact bins without a case (six bins from below -2 res to above 2 res)",
   "pytest: tests/test_lab_lyapunov.py::test_t107_inconclusive_band",
-  "pytest: tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider"
+  "pytest: tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider",
+  "pytest: tests/test_lab_lyapunov.py::test_next_steps_name_forward_work"
  ],
  "tests_skipped": [],
  "title": "Verify numerical inconclusive behavior.",

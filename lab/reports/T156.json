@@ -40,6 +40,9 @@
    "claim": "Every retained task is attributed to a textbook result or a present implementation source file",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -69,6 +72,9 @@
    "claim": "Every textbook result in the ledger is named by a retained task",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -98,6 +104,9 @@
    "claim": "Curated implementation contributions each name a present source file",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -117,6 +126,7 @@
    "domain": "mathematical",
    "evidence_status": "not_established",
    "expected_not_established": true,
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -124,14 +134,14 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 69423,
+   "bytes": 74071,
    "path": "artifacts/T156/attribution-ledger.json",
-   "sha256": "e18c80442b997d631a0ee474dc1ebf66fe2c6a1e9bbc999009fa746efac478d7"
+   "sha256": "bed24d2c4697da0fa0941fed01d452bc98163889ee57f6621f079d235771a3c8"
   },
   {
-   "bytes": 12209,
+   "bytes": 12673,
    "path": "artifacts/T156/ATTRIBUTION.md",
-   "sha256": "73802a3ac7ea46801cf831b1f4312ba3869e079dd15b782d0b53fa3ea98153e5"
+   "sha256": "c96a5c11dbf5fa4e7511524eda37c37a02ceddd0d132c0486e284ecd5895c8b8"
   }
  ],
  "hypothesis": "Every result used by the lab can be attributed either to established literature or to a named implementation artifact in this repository.",
@@ -142,7 +152,7 @@
  ],
  "mathematical_model": "Per retained task: textbook results whose names its report text uses (pattern per ledger entry) and the package source files its report names as changed files; a task with neither is unattributed.",
  "number": 156,
- "numerical_result": "155 reports: 123 use at least one of 30 textbook results, 32 rest on implementation sources only, 0 unattributed; 0 ledger textbook results unused; 59 implementation files, 0 curated ones missing.",
+ "numerical_result": "155 reports: 123 use at least one of 30 textbook results, 32 rest on implementation sources only, 0 unattributed; 0 ledger textbook results unused; 61 implementation files, 0 curated ones missing.",
  "observation_model": "No physical observation; reads retained computational records only.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -156,12 +166,12 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/research_portfolio.py": "0fd0ed475a38bf81fd2145f64cf1335856a471c58d406347c3b66b0f66672702"
+   "src/ciw/lab/research_portfolio.py": "145b8ee8456e1dd57bf2a05fa20e1ce55bd33356522436d8901eb1adfb60fc7a"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Record per-finding provenance tags (textbook result or contribution) so attribution is declared by each task rather than inferred from its wording.",
- "report_id": "sha256:f4deaf462656a7d8eeac559eb0a315e9cf1bda512515640d6df91950dbbd8250",
+ "report_id": "sha256:179ee953929e587f19264dbdb201254f572fd891dbcf55f0115d14ef0711b151",
  "schema": "ciw.lab-task-report.v1",
  "section": "research-portfolio",
  "state": "completed",

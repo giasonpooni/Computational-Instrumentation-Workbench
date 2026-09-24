@@ -106,6 +106,10 @@
    "claim": "Explicit Euler global endpoint error converges at order 1 on every chart with nonzero Christoffel symbols",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.02,
     "rel": 0.0
@@ -205,6 +209,10 @@
    "claim": "Explicit midpoint global endpoint error converges at order 2 on every chart with nonzero Christoffel symbols",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.02,
     "rel": 0.0
@@ -304,6 +312,10 @@
    "claim": "Classical RK4 global endpoint error converges at order 4 on every chart with nonzero Christoffel symbols",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.02,
     "rel": 0.0
@@ -379,6 +391,10 @@
    "claim": "Adaptive Dormand-Prince error falls with function evaluations at a median effective order near 5",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.35,
     "rel": 0.0
@@ -446,6 +462,10 @@
    "claim": "Adaptive Dormand-Prince endpoint error is proportional to the requested tolerance (median over charts)",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.1,
     "rel": 0.0
@@ -522,6 +542,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.35,
     "rel": 0.0
@@ -590,6 +614,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 0.0
@@ -679,13 +707,13 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/geodesic_jacobi.py": "70e9794df40fbf882cd117859a112b1301552d2c4faca7979f06e7c287828798",
+   "src/ciw/lab/geodesic_jacobi.py": "a3abaeabd7605e4a100c304efb6066d2b656644122bf602c06cb97691415a419",
    "src/ciw/lab/geodesic_jacobi_common.py": "7cb215a28e357a37f1c42cef6bdcb40e22abf7804ae9d58c4818fa40aa52da53"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T004: measure unit-speed drift of the same integrations without renormalization",
- "report_id": "sha256:51f1f6e5cc6868e2ab7a0d496c3380a441af70bd4c29f33314dda1074e5e1722",
+ "recommended_next_task": "Deferred research question: separate the adaptive effective order from the step-size controller by re-measuring it with a second controller and start step on the same references (for example scipy's RK45 and DOP853 at matched tolerances), since the retained effective orders hold for integrators.integrate_adaptive only and the half-way thresholds do not certify the exact order of the pair",
+ "report_id": "sha256:653999afa8c81062715c1e0f9738b8ca530558f0189c1489e7aa18628cd7e4bd",
  "schema": "ciw.lab-task-report.v1",
  "section": "geodesic-jacobi",
  "state": "completed",
@@ -723,7 +751,8 @@
   "pytest: tests/test_lab_geodesic_jacobi.py::test_t003_integrator_orders",
   "pytest: tests/test_lab_geodesic_jacobi.py::test_adaptive_checks_reject_fourth_order_variant",
   "pytest: tests/test_lab_geodesic_jacobi.py::test_every_numerical_finding_declares_uncertainty_and_tolerance",
-  "pytest: tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space"
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space",
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_every_next_step_is_a_deferred_research_question"
  ],
  "tests_skipped": [],
  "title": "Verify Euler, midpoint, RK4, and adaptive integrator orders.",

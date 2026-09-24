@@ -1,7 +1,92 @@
 {
- "gpu": {
-  "device_answered_probe": false,
-  "implemented": false
+ "common_workload": {
+  "declaration": {
+   "implementation": "numpy",
+   "iterations": 38,
+   "kernel": "ciw.energy_cuda.PTX gaussian_vi",
+   "kernel_sha256": "601049a61cc1dc7b35d80ec7096dd5d81b3028c025472ec54983b4c1d666d699",
+   "name": "ciw.lab.gaussian-vi-iteration.v1",
+   "precision": "float64",
+   "prepared_input_sha256": "49ca05c0343c645d64ec77ffcf7053c1b1380910f7334cc50986fa45f560df86",
+   "problem_sha256": "f082e5dfbb2e735bdaf8b02e57734e29902d5077c70f53e2e7c5ce2eb8219ab7",
+   "replicas": 4096
+  },
+  "gpu": {
+   "identity": null,
+   "invalid": null,
+   "probed": false,
+   "ran": false,
+   "reason": "no NVIDIA GPU answered the hardware:nvidia-gpu probe in this task; the PTX kernel of the common workload exists (ciw.energy_cuda gaussian_vi), so this comparison runs on a host where the probe succeeds (needs hardware:nvidia-gpu)"
+  },
+  "numpy_reference": {
+   "float32": [
+    1.1715048551559448,
+    -0.3724784851074219,
+    0.4698793888092041,
+    0.062153540551662445,
+    0.062153540551662445,
+    0.40902599692344666
+   ],
+   "float64": [
+    1.171504942472618,
+    -0.37247843839216854,
+    0.46987934615301363,
+    0.06215352132230255,
+    0.06215352132230255,
+    0.4090259797893383
+   ]
+  },
+  "rust_port": {
+   "available": true,
+   "float32": {
+    "iterations_executed": 155648,
+    "max_ulp_to_numpy": 0,
+    "outputs": [
+     1.1715048551559448,
+     -0.3724784851074219,
+     0.4698793888092041,
+     0.062153540551662445,
+     0.062153540551662445,
+     0.40902599692344666
+    ],
+    "replicas_identical": true
+   },
+   "float64": {
+    "iterations_executed": 155648,
+    "max_ulp_to_numpy": 0,
+    "outputs": [
+     1.171504942472618,
+     -0.37247843839216854,
+     0.46987934615301363,
+     0.06215352132230255,
+     0.06215352132230255,
+     0.4090259797893383
+    ],
+    "replicas_identical": true
+   },
+   "identity": {
+    "binary_sha256": "bdf545c7e9050cc557a68e36f825914ec65fd4e91b25a56a842da477412dccb7",
+    "flags": [
+     "-O",
+     "-C",
+     "debuginfo=0",
+     "-C",
+     "codegen-units=1",
+     "--edition",
+     "2021",
+     "--remap-path-prefix=<scratch>=."
+    ],
+    "implementation": "ciw.lab.energy_gpu_workload.RUST_SOURCE",
+    "language": "rust",
+    "rustc": "rustc 1.94.1 (e408947bf 2026-03-25)",
+    "source_sha256": "35dc834dfd4a5502a4a996eb6bb45135613c084a628271a4cb029ec2dfa23c56"
+   },
+   "refusals": {
+    "iterations-above-kernel-limit": "Rust port refused its input: iterations must be an integer in [0, 256]",
+    "short-inputs": "Rust port refused its input: values must hold the 15 prepared inputs",
+    "unknown-precision": "Rust port refused its input: precision must be float64 or float32"
+   }
+  }
  },
  "initial_states": [
   [
@@ -122,6 +207,18 @@
    0.993000148798082
   ]
  ],
+ "rapl": {
+  "energy": {},
+  "supplied": false,
+  "withheld_reasons": {
+   "gaussian-vi-numpy-float64": [
+    "no rapl-log capture was bound (--capture rapl-log=PATH or CIW_LAB_RAPL_LOG); the lab runner acquires no energy measurement: make one with `python -m ciw.lab.energy_gpu_telemetry rapl-capture` on a Linux host with readable intel-rapl counters (needs hardware:rapl)"
+   ],
+   "gaussian-vi-rust-float64": [
+    "no rapl-log capture was bound (--capture rapl-log=PATH or CIW_LAB_RAPL_LOG); the lab runner acquires no energy measurement: make one with `python -m ciw.lab.energy_gpu_telemetry rapl-capture` on a Linux host with readable intel-rapl counters (needs hardware:rapl)"
+   ]
+  }
+ },
  "rust": {
   "available": true,
   "bitwise_identical_to_python": true,

@@ -44,6 +44,116 @@
    0.625
   ]
  },
+ "fusion_intake": {
+  "clock": {
+   "basis": "acquisition",
+   "clock_id": "clock:fusion",
+   "dt": 0.125,
+   "epoch": "epoch:fusion-0",
+   "tolerance_s": 1e-09
+  },
+  "final_reading": {
+   "calibration_id": "trk-cal",
+   "covariance": [
+    [
+     2.5e-07,
+     0.0
+    ],
+    [
+     0.0,
+     2.5e-07
+    ]
+   ],
+   "covariance_gap_m2": 0.0,
+   "hand_mapped_value": [
+    0.3836913621692701,
+    2.090274788671662
+   ],
+   "origin_frame_id": "tracker:cell",
+   "tick": 12,
+   "value": [
+    0.3836913621692701,
+    2.090274788671662
+   ],
+   "value_gap_m": 0.0
+  },
+  "lineage_mappings": [
+   "frame:sha256:afee1d71aa4ece72230bcf5d783287ae38f0ac1f2bd92f9b813aa9bc71948cb5",
+   "clock:sha256:9fb0d11359f258f20c231b6f8c58b1686dddc2ea9495de2df773abaa4c852cf5",
+   "clock:sha256:899cd17aaeb7a52153a2eadeea876f22ae28d220af82f431cf28c8f813431c01"
+  ],
+  "mappings": {
+   "arrival_to_acquisition": {
+    "kind": "clock",
+    "offset_s": -0.0078125,
+    "rate": 1.0,
+    "reference": "declared tracker latency",
+    "source": [
+     "clock:tracker",
+     "epoch:run-0",
+     "arrival"
+    ],
+    "target": [
+     "clock:tracker",
+     "epoch:run-0",
+     "acquisition"
+    ]
+   },
+   "frame": {
+    "calibration_ref": "calibration:tracker-extrinsic-declared",
+    "kind": "frame",
+    "rotation": [
+     [
+      0.0,
+      -1.0,
+      0.0
+     ],
+     [
+      1.0,
+      0.0,
+      0.0
+     ],
+     [
+      0.0,
+      0.0,
+      1.0
+     ]
+    ],
+    "source": "tracker:room",
+    "target": "tracker:cell",
+    "translation": [
+     0.25,
+     -0.5,
+     1.0
+    ]
+   },
+   "tracker_to_fusion": {
+    "kind": "clock",
+    "offset_s": -1.5,
+    "rate": 1.0,
+    "reference": "declared synchronization",
+    "source": [
+     "clock:tracker",
+     "epoch:run-0",
+     "acquisition"
+    ],
+    "target": [
+     "clock:fusion",
+     "epoch:fusion-0",
+     "acquisition"
+    ]
+   }
+  },
+  "refusals": {
+   "arrival_without_latency_mapping": "unmapped_clock",
+   "combined_latency_and_synchronization": "unmapped_clock",
+   "latency_mismatch": "latency_mismatch",
+   "off_tick_grid": "off_tick_grid",
+   "unmapped_clock": "unmapped_clock",
+   "unmapped_epoch": "unmapped_clock",
+   "unmapped_frame": "unmapped_frame"
+  }
+ },
  "identity_recorded": true,
  "mapped_records": [
   {

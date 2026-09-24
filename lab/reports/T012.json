@@ -53,6 +53,11 @@
    "claim": "Ambient rotations leave chart trajectories and Jacobi fields unchanged to roundoff",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-11,
     "rel": 0.0
@@ -87,6 +92,10 @@
    "claim": "Embedded endpoints rotate exactly with the ambient frame",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-12,
     "rel": 0.0
@@ -121,6 +130,10 @@
    "claim": "Gaussian curvature from the rotated second fundamental form is unchanged",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-12,
     "rel": 0.0
@@ -180,6 +193,11 @@
    "claim": "A reference tangent basis rotated in ciw's metric (heading measured from e1') gives the same start tangent, and heading perturbations stated in it separate as ciw's Jacobi field predicts",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 0.0
@@ -230,6 +248,11 @@
    "claim": "A heading change +eps stated in a left-handed basis (e1, -e2) is the geometric perturbation -eps: along the right-handed normal its separation has the opposite sign",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 0.0
@@ -314,6 +337,11 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-06,
     "rel": 0.001
@@ -354,6 +382,9 @@
    "claim": "An improper rotation (reflection) is refused as a frame change",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "uncertainty": null,
    "unit": null,
    "value": "Frame change requires a proper rotation matrix"
@@ -398,13 +429,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/geodesic_jacobi_limits.py": "07d850980ac10ad34ca0d1b8c29942c90fe635e15135a5db1f74e90674e3bb18",
+   "src/ciw/lab/geodesic_jacobi_limits.py": "893d8b0240e673dd9aa7b5ba13b09958caa861706335726277d676def21aa83d",
    "src/ciw/lab/geodesic_jacobi_limits_core.py": "0e0b8f85ed4e83c3fcdc866e8a7e580a17432e174b8db8d8277230e226473d7f"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T013 (flat/developable limit) and an isometry test for HyperbolicPlane under Mobius maps",
- "report_id": "sha256:ac7f9063003298de952ec3d7c9fc0f898c3abbe9afc7a3648adca6c95e74375e",
+ "recommended_next_task": "Deferred research question: implement Mobius isometries of HyperbolicPlane as a ChartMap and check that Jacobi columns and endpoint distances are invariant under them (only tangent-basis changes are tested there now), and extend the ambient tests to translations and reflections of the embedding",
+ "report_id": "sha256:69eb8ecb939dae98d33b491ff0042129545f9b99b80d1689f614fafde22e3d3a",
  "schema": "ciw.lab-task-report.v1",
  "section": "geodesic-jacobi",
  "state": "completed",
@@ -422,7 +453,8 @@
   "check: On a non-symmetric surface the orientation-reversed separation agrees only to first order: own/right - 1 is proportional to eps (Torus(2, 1) generic path) vs |own/right - 1| at eps = 1e-3",
   "check: On a non-symmetric surface the orientation-reversed separation agrees only to first order: own/right - 1 is proportional to eps (Torus(2, 1) generic path) vs max relative change of own/right - 1 from N = 64 to 128 (the gap is not truncation)",
   "check: An improper rotation (reflection) is refused as a frame change vs Rotated(sphere, diag(1, 1, -1))",
-  "pytest: tests/test_lab_geodesic_jacobi_limits.py::test_t012_frame_invariance_and_refusal"
+  "pytest: tests/test_lab_geodesic_jacobi_limits.py::test_t012_frame_invariance_and_refusal",
+  "pytest: tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work"
  ],
  "tests_skipped": [],
  "title": "Test frame-change invariance under rotations and tangent-basis changes.",

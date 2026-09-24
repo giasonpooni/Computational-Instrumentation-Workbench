@@ -54,6 +54,10 @@
    "claim": "Gross 1.5 m outliers are detected at the rate predicted by the noncentral chi-square(2) law with lambda = b^T S^-1 b at each outlier's own prior covariance",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -102,6 +106,10 @@
    "claim": "Over all runs with gross outliers, gating lowers the per-run mean squared error in most runs (sign test), while the cold-start lock-out runs together give back more than half of the summed MSE it gains in the other runs; the mean difference, its paired z and the outcome-conditioned comparison without the lock-out runs are reported descriptively, not as tests",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -219,6 +227,10 @@
    "claim": "The fusion API reproduces the gated filter on the contaminated readings: FusionSession(gate_probability=0.99) makes run_gated's accept/reject decision for every reading of the replayed runs, including every lock-out run, which locks out in the session too, and ends in the same state to roundoff",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 0.0
@@ -279,6 +291,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -348,6 +364,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -426,6 +446,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -466,6 +490,10 @@
    "claim": "The vectorized and scalar noncentral chi-square CDFs agree",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 0.0
@@ -491,6 +519,9 @@
    "claim": "Real outliers are rare, isolated and of fixed magnitude as in this contamination model",
    "domain": "sensor_performance",
    "evidence_status": "not_established",
+   "origin": [
+    "synthetic_inputs"
+   ],
    "uncertainty": null,
    "unit": null,
    "value": "not established: the contamination model is declared, not measured"
@@ -533,13 +564,13 @@
   "sources": {
    "src/ciw/lab/sensor_fusion_bench.py": "f373849a4c6836fa20685c59ce7a6fe6bf732f6df9d6a49646cdc017262dd656",
    "src/ciw/lab/sensor_fusion_common.py": "db3b0430ad5c13920239cef354da61b64ab1b01f84b2d3d5aff2f78840a5867a",
-   "src/ciw/lab/sensor_fusion_filtering.py": "716a44ff8f4921d188d17179fa80c6b1695c68a90fb16ab85239efb4295b4f8a",
-   "src/ciw/lab/sensor_fusion_objects.py": "93fc55ddca91f1adfb886d21805ea8f82586548ee84e1f6cc7daed4df1f53bb9"
+   "src/ciw/lab/sensor_fusion_filtering.py": "66ae801ecdd34d35c61c9eb5e381eefc26a0234233e143492ab50529ae7e14cb",
+   "src/ciw/lab/sensor_fusion_objects.py": "50ec8767a90f261f108d6524c7ff55d22604b55cc9853e749ba4c5f71bc76081"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T069: missing data must be handled by prediction only, never by zero-filling.",
- "report_id": "sha256:5bc440f81b3767a9af3c82c4844e1ec2b6f5b8b8ef0e8cc54a9f048fdbfca601",
+ "recommended_next_task": "Deferred research question: lock-out recovery, covariance inflation or automatic reacquisition after k consecutive gate rejections, and its trade-off between recovering from a real manoeuvre and admitting an outlier burst; neither run_gated nor the session gate implements recovery.",
+ "report_id": "sha256:7bd4b67123e752d4caeaade83d1fc7ab01f30abc767f54418e3f595d12c651cf",
  "schema": "ciw.lab-task-report.v1",
  "section": "sensor-fusion",
  "state": "completed",

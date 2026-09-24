@@ -171,6 +171,9 @@
    "claim": "Each of the 16 exercised non-recording request classes is refused and leaves the in-memory session state and the session directory unchanged, and a re-save reproduces the saved workspace content (a refused recording operation is the exception: it is retained as an execution record)",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -213,6 +216,9 @@
    "claim": "A refused reopen of a corrupted workspace creates no output directory",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -262,6 +268,9 @@
    },
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -286,7 +295,7 @@
   {
    "bytes": 3784,
    "path": "artifacts/T093/unchanged.json",
-   "sha256": "d166f878bf3e04094b42e9d5e42292f39f6a5ca6ef2a16ec345fc57d7488d3fc"
+   "sha256": "6fedfdf8c8dc376ae5cd0525f36c40e576066b87d1020dff59eae0086855b6b4"
   }
  ],
  "hypothesis": "A refused request other than a recording operation changes neither the session state a save would write nor the session directory; a refused recording operation is retained by design as an execution record.",
@@ -309,13 +318,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/exchange_provenance_bundles.py": "3acc6fd6976bb5e6dd8ad3bfc3d09a1d9594ca0a06f4db823581e5b651d4835e",
-   "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "7d6da1148d3744ae1e754b53f697b5b4919aff2666788ae6aec0e48e6e2380c9"
+   "src/ciw/lab/exchange_provenance_bundles.py": "7e841b781d966fe75d5a86bd61e1ef32150c4087393893be788c2b7eff69f3d4",
+   "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "435727947e827d1d601802a5e860f04d578f7b879301c7f5615fb7d6e523500e"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T094: reopen golden retained bundles with the current code.",
- "report_id": "sha256:20a31df636e9b7270667469fd1b09b70d6730f355db3241fcf6d1ff059665428",
+ "recommended_next_task": "Deferred research question: generate the refused requests from CIW's own request table (every request type Session._dispatch accepts, each with an unknown identity, a wrong-typed field and an unknown field) instead of the hand-written classes, and compare the same state digests; and decide, as a CIW design question, whether a refused recording operation should stay in the saved workspace as an execution record (the retained counterexample) or be kept out of it.",
+ "report_id": "sha256:ecf3a6fcedb95b43e331faeb2c44d1d86e3e6235b0499f50b214d5fa9fb62ca2",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "completed",

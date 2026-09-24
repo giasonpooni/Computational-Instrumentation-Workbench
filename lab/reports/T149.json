@@ -56,6 +56,10 @@
    "claim": "Telemetry frames round-trip every header field and channel bit-exactly",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -90,7 +94,9 @@
      "observed": 0.0,
      "passed": true,
      "producer": {
-      "implementation": "ciw.lab.implementation_targets_fpga.crc32"
+      "implementation": "ciw.lab.implementation_targets_fpga.crc32",
+      "revision": "ciw 0.1.0",
+      "source_sha256": "7af2bda8190c93108f5bac0d8b28ffd057267b6b428af3d8f820d0f594ea5e00"
      },
      "reference": "mismatches against zlib.crc32 on random messages",
      "reference_kind": "exact_arithmetic",
@@ -100,6 +106,10 @@
    "claim": "CIW table-driven CRC-32 agrees with zlib and the catalogue check value",
    "domain": "numerical",
    "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -149,6 +159,9 @@
    "claim": "Every burst of at most 32 bits and every single-bit error in a frame is refused by the decoder",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -223,6 +236,9 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -309,6 +325,9 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -444,6 +463,9 @@
    "claim": "Decoder, encoder and interface validator refuse every command, write or malformed path",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -505,6 +527,9 @@
    "claim": "Host receiver exposes only accept() and plain data attributes, with no sending method or transport handle",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -531,6 +556,7 @@
    "claim": "The frame format works on real FPGA links",
    "domain": "physical",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -541,6 +567,7 @@
    "claim": "A telemetry-only interface guarantees the FPGA cannot actuate the machine",
    "domain": "machine_safety",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -586,13 +613,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/implementation_targets.py": "1df8bd67d28b18d70bcb5f74e4a14616ceb17868c7a9aa75595f15254426ee7e",
+   "src/ciw/lab/implementation_targets.py": "0ea1ac76f50f1c65b47155a6791a0ea74c3ebf57d0b254a4a6615dabb930b5e7",
    "src/ciw/lab/implementation_targets_fpga.py": "7af2bda8190c93108f5bac0d8b28ffd057267b6b428af3d8f820d0f594ea5e00"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T152 (drive the decoder with a lossy, jittered stream)",
- "report_id": "sha256:7ba897096723b788867ef6cf598561c2f7d2bb9af434f18cda5c9e513c34967b",
+ "recommended_next_task": "Deferred research question: an HDL implementation of this frame format on an FPGA, driven over a physical transmit-only link, to test the LSB-first burst guarantee and the unidirectional transport this task assumes (the link simulation of this section is software only)",
+ "report_id": "sha256:af71838e1c0ed533a166ee6d5d04390d37c48f116d191616df9fcb744a7ff375",
  "schema": "ciw.lab-task-report.v1",
  "section": "implementation-targets",
  "state": "completed",
@@ -626,7 +653,8 @@
   "check: Host receiver exposes only accept() and plain data attributes, with no sending method or transport handle vs receiver attributes holding objects other than plain data, after receiving frames",
   "check: Host receiver exposes only accept() and plain data attributes, with no sending method or transport handle vs forged subclass: public methods other than accept (emit)",
   "check: Host receiver exposes only accept() and plain data attributes, with no sending method or transport handle vs forged subclass: attributes holding a transport handle (link)",
-  "pytest: tests/test_lab_implementation_targets.py::test_t149_telemetry_only_frames"
+  "pytest: tests/test_lab_implementation_targets.py::test_t149_telemetry_only_frames",
+  "pytest: tests/test_lab_implementation_targets.py::test_ciw_producers_of_independent_checks_carry_a_revision"
  ],
  "tests_skipped": [],
  "title": "Define FPGA telemetry-only interfaces.",

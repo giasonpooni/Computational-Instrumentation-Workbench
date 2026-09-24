@@ -124,6 +124,9 @@
    "claim": "Canonical JSON v1 test vectors (bytes and sha256)",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -166,6 +169,9 @@
    "claim": "ciw.telemetry.canonical reproduces the specification bytes on every accepted vector and tested float",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -216,6 +222,9 @@
    "claim": "ciw.core.identities.canonical_json reproduces the ASCII-escaped variant, not the specification bytes",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -271,6 +280,9 @@
    },
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -325,6 +337,9 @@
    },
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -364,6 +379,9 @@
    },
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -428,7 +446,9 @@
      "observed": 0.0,
      "passed": true,
      "producer": {
-      "implementation": "ciw.lab.implementation_targets_serial.shortest_digits"
+      "implementation": "ciw.lab.implementation_targets_serial.shortest_digits",
+      "revision": "ciw 0.1.0",
+      "source_sha256": "7978adc19db2c04e37532de2a5dbff32738b3c286c40e19ab8ec1d78361ef3e6"
      },
      "reference": "NumPy digit/exponent mismatches against the exact rule",
      "reference_kind": "exact_arithmetic",
@@ -438,6 +458,10 @@
    "claim": "The exact shortest-digit rule agrees with CPython repr and NumPy Dragon4 on vector, random and decimal-tie binary64 values",
    "domain": "numerical",
    "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -498,6 +522,10 @@
    },
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -546,6 +574,9 @@
    "claim": "Rust canonical JSON is byte-identical to the specification and refuses the same inputs",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -590,6 +621,9 @@
    },
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -612,6 +646,7 @@
    "domain": "computational_pipeline",
    "evidence_status": "not_established",
    "expected_not_established": true,
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -680,13 +715,13 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/implementation_targets.py": "1df8bd67d28b18d70bcb5f74e4a14616ceb17868c7a9aa75595f15254426ee7e",
+   "src/ciw/lab/implementation_targets.py": "0ea1ac76f50f1c65b47155a6791a0ea74c3ebf57d0b254a4a6615dabb930b5e7",
    "src/ciw/lab/implementation_targets_serial.py": "7978adc19db2c04e37532de2a5dbff32738b3c286c40e19ab8ec1d78361ef3e6"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T150 (bind FPGA identity records to this encoding), then migrate ciw.core.identities with a versioned hash change",
- "report_id": "sha256:383d64712e08eb5a0804db3400850b44ba641a410040721cc928079d4095c3bd",
+ "recommended_next_task": "Deferred research question: migrate ciw.core.identities.canonical_json to ciw.canonical-json.v1 with a versioned hash change, so old and new identities coexist during the migration (every retained identity would change), and run a Julia or C++ encoder against the vectors",
+ "report_id": "sha256:b076877af2782871857f41bf5e5e65ff6d38e22e031c9976624b59884250d7c5",
  "schema": "ciw.lab-task-report.v1",
  "section": "implementation-targets",
  "state": "completed",
@@ -725,7 +760,8 @@
   "check: Rust's own shortest float formatting breaks exact decimal ties away from the specification vs decimal ties on which Rust's format!(\"{:e}\") digits differ from the specification",
   "pytest: tests/test_lab_implementation_targets.py::test_t146_python_canonicalizers_and_vectors",
   "pytest: tests/test_lab_implementation_targets.py::test_t146_rust_byte_identity",
-  "pytest: tests/test_lab_implementation_targets.py::test_t146_reference_float_rule"
+  "pytest: tests/test_lab_implementation_targets.py::test_t146_reference_float_rule",
+  "pytest: tests/test_lab_implementation_targets.py::test_ciw_producers_of_independent_checks_carry_a_revision"
  ],
  "tests_skipped": [],
  "title": "Define one canonical serialization across languages.",

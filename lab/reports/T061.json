@@ -50,6 +50,10 @@
    "claim": "Sample means and covariances of every sensor residual z - h(truth) and of the process noise x_{k+1} - F x_k agree with the declared covariances within a Bonferroni-corrected 99.9% Monte Carlo bound",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -124,6 +128,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -215,6 +223,10 @@
    "claim": "The relative variance misstatement that one variance test flags with probability one half is z_crit sqrt(2 / N) to within 1% of the exact chi-square value for every stream",
    "domain": "mathematical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -278,6 +290,10 @@
    "claim": "The declared process-noise covariance Q(dt) equals the continuous-time integral of F(u) G q G^T F(u)^T and composes as Q(a + b) = F(b) Q(a) F(b)^T + Q(b); the discrete white-noise-acceleration alternative fails the integral",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 0.0
@@ -309,6 +325,9 @@
    "claim": "Real sensors' noise covariance equals the covariance declared for this bench",
    "domain": "sensor_performance",
    "evidence_status": "not_established",
+   "origin": [
+    "synthetic_inputs"
+   ],
    "uncertainty": null,
    "unit": null,
    "value": "not established: residuals are synthetic draws from the declared covariance"
@@ -348,15 +367,15 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/sensor_fusion.py": "40b135c5bf93c1932bc774d41ddaef98419aceb524fba12ce16c1786e00f15d2",
+   "src/ciw/lab/sensor_fusion.py": "c386ab36c33cac3cd0fc441a91a80905525ae0b8ffab763af70a925fc9f5994e",
    "src/ciw/lab/sensor_fusion_bench.py": "f373849a4c6836fa20685c59ce7a6fe6bf732f6df9d6a49646cdc017262dd656",
    "src/ciw/lab/sensor_fusion_common.py": "db3b0430ad5c13920239cef354da61b64ab1b01f84b2d3d5aff2f78840a5867a",
-   "src/ciw/lab/sensor_fusion_objects.py": "93fc55ddca91f1adfb886d21805ea8f82586548ee84e1f6cc7daed4df1f53bb9"
+   "src/ciw/lab/sensor_fusion_objects.py": "50ec8767a90f261f108d6524c7ff55d22604b55cc9853e749ba4c5f71bc76081"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T062: test independent versus correlated noise in the filter.",
- "report_id": "sha256:41901b2978f20a6c7b4e0cd510b4a2ec6bca010652cc51f20ea3c3244ffccaf7",
+ "recommended_next_task": "Deferred research question: repeat the covariance-moment test on heavy-tailed (Student-t) and autocorrelated residuals, with the kurtosis-corrected variance of S_ij, and measure how far the Gaussian-law z-test's false-alarm rate and power drift; this task's residuals are Gaussian and independent by construction.",
+ "report_id": "sha256:f412fe9f83d41100491a145ab8bca494a548dc596c71a6ef261b3bdaa3bf50aa",
  "schema": "ciw.lab-task-report.v1",
  "section": "sensor-fusion",
  "state": "completed",

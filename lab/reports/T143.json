@@ -37,6 +37,9 @@
    "claim": "Industrial interfaces assigned to C/C++ libraries behind a pinned subprocess boundary (required, or preferred over existing pure-Python stacks)",
    "domain": "computational_pipeline",
    "evidence_status": "analytic",
+   "origin": [
+    "derivation"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -152,6 +155,9 @@
    "claim": "Inventory validator refuses in-process bindings, write-capable directions or bus roles, unpinned entries and unexplained native preferences",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -170,6 +176,7 @@
    "claim": "The listed interfaces are qualified for plant integration",
    "domain": "industrial_readiness",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -180,6 +187,7 @@
    "claim": "Vendor camera SDK acquisition meets its timing on real cameras",
    "domain": "sensor_performance",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -224,13 +232,13 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/implementation_targets.py": "1df8bd67d28b18d70bcb5f74e4a14616ceb17868c7a9aa75595f15254426ee7e",
+   "src/ciw/lab/implementation_targets.py": "0ea1ac76f50f1c65b47155a6791a0ea74c3ebf57d0b254a4a6615dabb930b5e7",
    "src/ciw/lab/implementation_targets_architecture.py": "3c0ba23187cae208b492ff7adbceba135e2d7e071c6a4c978bbe5e3b2ac0ad62"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T144 (verify the Python orchestration boundary in the package source)",
- "report_id": "sha256:3c7ded184eeb600c143423085f26ca4348b37de4fb6046854c2ed9065626af74",
+ "recommended_next_task": "Deferred research question: build the first provider executable behind a pinned subprocess boundary (none exists for any entry), starting with an OPC UA client, and check vendor SDK licensing and platform support and a passive TAP's inability to inject frames on real hardware, which this inventory assumes",
+ "report_id": "sha256:5008b0bd1d71cec44028a514736cd1e23be608b09bbe18d5ead34b2c5dc2e51b",
  "schema": "ciw.lab-task-report.v1",
  "section": "implementation-targets",
  "state": "completed",

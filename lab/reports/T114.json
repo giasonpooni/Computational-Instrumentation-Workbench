@@ -79,6 +79,11 @@
    "claim": "PLSR's monitor code on the declared configuration is the same at every scanned state without a level set and follows the exact V(x) > c decision with the declared level",
    "domain": "numerical",
    "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check",
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -135,6 +140,10 @@
    "claim": "PLSR produces every runtime code named as an abort trigger on the declared monitor configuration, and no code outside the expected set",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -180,6 +189,10 @@
    "claim": "The unit-balanced nominal P gives an exactly negative definite discrete decrease at every grid inertia",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -223,6 +236,9 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -271,6 +287,10 @@
    "claim": "The ZOH exponential agrees with its closed form and, where available, an independent exponential",
    "domain": "numerical",
    "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-12,
     "rel": 0.0
@@ -315,6 +335,10 @@
    "claim": "The declared level set {V <= c} lies inside the operating envelope",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 0.0
@@ -359,6 +383,10 @@
    "claim": "By the CIW transcription of the documented decision order, the monitor's code is the same at every scanned state without a level set and follows the exact V(x) > c decision with the declared level",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -411,6 +439,10 @@
    "claim": "By the CIW transcription of the documented decision order, every runtime code named as an abort trigger is produced by the declared monitor configuration, and no code outside the expected set",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -443,6 +475,9 @@
    "claim": "The servo-axis pilot is safe to operate",
    "domain": "machine_safety",
    "evidence_status": "not_established",
+   "origin": [
+    "derivation"
+   ],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -455,6 +490,9 @@
    "claim": "The Lyapunov monitor may command, gate or release the axis",
    "domain": "actuator_authority",
    "evidence_status": "not_established",
+   "origin": [
+    "derivation"
+   ],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -465,6 +503,7 @@
    "claim": "The pilot configuration is acceptable for production use",
    "domain": "production_acceptance",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -475,6 +514,7 @@
    "claim": "The monitor is ready for industrial deployment",
    "domain": "industrial_readiness",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -485,6 +525,7 @@
    "claim": "The placeholder inertia interval contains the real axis inertia",
    "domain": "physical",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -495,6 +536,7 @@
    "claim": "Encoder and current-sensor calibrations of the bench are valid",
    "domain": "calibration",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -558,15 +600,15 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/lyapunov.py": "cbcb4d58d7313d7c537957a1b7dd35039a21bae80125bf59147eeed2c1232bbb",
+   "src/ciw/lab/lyapunov.py": "dcda8ba21661667cc03bb126a393e93158a306b4991d0a2450d8e18abe62cb27",
    "src/ciw/lab/lyapunov_provider.py": "da3465b48b5f5efc47bfe6ab8379cf2cf2bc23e4835dc7ff047252e77fa6ef17",
    "src/ciw/lab/lyapunov_reference.py": "bdf0bb5074ae2caca6c8a5d8e63a15e346b007098e6def6b058d077719bc1336",
    "src/ciw/lab/lyapunov_research.py": "8e6e5b4ac0a8ba3b12d4ee13ced778fe5070b43f6766752ffc8c5b88f1a4baef"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "Hardware-gated: identify J, friction and delay on the bench, replace the placeholder interval, re-run this check with an affine over-approximation suitable for PLSR's box semantics, then run T113's adapter on acquired encoder data.",
- "report_id": "sha256:fe319c8c5c6880344ce428b359d5f6de4c3f40f1ae1fe9c47f05f96f3fbc0e5e",
+ "recommended_next_task": "Deferred research question (hardware-gated): identify J, friction and delay on the bench, replace the placeholder interval, re-run this check with an affine over-approximation suitable for PLSR's box semantics, then run T113's adapter on acquired encoder data. Route: T114 would read the servo bench log as an operator capture (ctx.capture('servo-bench-log'), bound with ciw lab run T114 --capture servo-bench-log=PATH) and identify the J, friction and delay interval from it as a computational finding; its physical and calibration findings need, besides an acquisition record (device, raw_sha256 of the captured bytes, acquired_at, calibration), a probe of the bench instrument on the analysing host that succeeds in T114 (runner.CAPTURE_INSTRUMENTS has no entry for servo-bench-log) or a signed-capture trust anchor, and the run is retained with ciw lab hardware retain under lab/hardware/<run-id>. Neither the capture reader nor a probe of the bench instrument exists, so they stay not_established even when such data exist.",
+ "report_id": "sha256:3ecb67f2c4e9ff87cf0beb25ab535ab76b45d79d77544d994950c6c9b805f3b1",
  "schema": "ciw.lab-task-report.v1",
  "section": "lyapunov",
  "state": "completed",
@@ -591,7 +633,8 @@
   "pytest: tests/test_lab_lyapunov.py::test_t114_level_set_and_monitor",
   "pytest: tests/test_lab_lyapunov.py::test_level_set_extent_is_checked_independently",
   "pytest: tests/test_lab_lyapunov.py::test_research_tasks_without_optional_modules",
-  "pytest: tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider"
+  "pytest: tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider",
+  "pytest: tests/test_lab_lyapunov.py::test_next_steps_name_forward_work"
  ],
  "tests_skipped": [],
  "title": "Prepare a non-production servo-axis pilot specification.",

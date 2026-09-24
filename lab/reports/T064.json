@@ -54,6 +54,10 @@
    "claim": "The Jacobi transfer matrix integrated by ciw.lab.jacobi.transfer matches the constant-curvature closed forms (cos s, sin s; cosh s, sinh s) with unit Wronskian on both surfaces",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 0.001
@@ -106,6 +110,10 @@
    "claim": "Phi P Phi^T predicts the Monte Carlo covariance of (lateral offset, lateral rate) over perturbed geodesics on the sphere and the hyperbolic plane within a Bonferroni 99.9% bound",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -169,6 +177,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -219,6 +231,10 @@
    "claim": "On the hyperbolic plane (K = -1) there is no conjugate point and the lateral variance grows as the closed form cosh^2 s sigma_l^2 + 2 cosh s sinh s c + sinh^2 s sigma_h^2",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -275,6 +291,10 @@
    "claim": "The first-order variance sigma^2 j_head^2 overestimates the exact lateral variance by a relative error that grows like cos^2(s) sigma^2 on the sphere and cosh^2(s) sigma^2 on the hyperbolic plane; integrated geodesics agree with the exact nonlinear expectation",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -395,6 +415,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-06
@@ -423,6 +447,9 @@
    "claim": "The declared [lateral, heading] covariance and these surfaces predict the path uncertainty of a real vehicle or tool on a real curved part",
    "domain": "physical",
    "evidence_status": "not_established",
+   "origin": [
+    "synthetic_inputs"
+   ],
    "uncertainty": null,
    "unit": null,
    "value": "not established: normalized synthetic surfaces and declared perturbations only"
@@ -481,14 +508,14 @@
    "src/ciw/lab/jacobi.py": "87b7d23f17cac61b513ab96bd56fb9f58a50c19de463055c2278097c8c623e42",
    "src/ciw/lab/sensor_fusion_bench.py": "f373849a4c6836fa20685c59ce7a6fe6bf732f6df9d6a49646cdc017262dd656",
    "src/ciw/lab/sensor_fusion_common.py": "db3b0430ad5c13920239cef354da61b64ab1b01f84b2d3d5aff2f78840a5867a",
-   "src/ciw/lab/sensor_fusion_geometry.py": "7469c225fd283954f2ea6bda4d86d3e9c098949f0abb74051f233a969c0a46d0",
-   "src/ciw/lab/sensor_fusion_objects.py": "93fc55ddca91f1adfb886d21805ea8f82586548ee84e1f6cc7daed4df1f53bb9",
+   "src/ciw/lab/sensor_fusion_geometry.py": "0f5646c5f28937a59bc20615a26422762d505e20d76547db991726b6880e8e9d",
+   "src/ciw/lab/sensor_fusion_objects.py": "50ec8767a90f261f108d6524c7ff55d22604b55cc9853e749ba4c5f71bc76081",
    "src/ciw/lab/surfaces.py": "e8f264c182743d0177d93b961a49d7ddf78f30d79a7a75b9fea4018b10d4eef0"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T065: model the correlation that a filter itself induces between successive estimates.",
- "report_id": "sha256:b771f793a2326a741845cdeb7a59f81249d1fe8699123b6d19002109cf7f74fc",
+ "recommended_next_task": "Deferred research question: repeat the Jacobi covariance propagation and the linearization-breakdown study on the variable-curvature torus and Gaussian bump, using as references the geodesic integrator that T002 validates against 34-digit solutions on those surfaces (largest gap 6.4e-14) and the Jacobi columns that T006 checks against finite-difference flow there.",
+ "report_id": "sha256:5173ac2797c3f23f9e304fd0f43c28a74e7a8f33c874e45bb9df72220b2cb905",
  "schema": "ciw.lab-task-report.v1",
  "section": "sensor-fusion",
  "state": "completed",
@@ -516,7 +543,7 @@
  "title": "Propagate covariance through the Jacobi transfer matrix.",
  "uncertainty": "Monte Carlo sampling error (600 geodesics) is covered by the Bonferroni bound; the linearization errors come from 96-node Gauss-Hermite quadrature of closed forms and are deterministic (64 against 96 nodes changes them by at most 3e-04 relative); RK4 integration error is below 1e-6 against the closed forms.",
  "unresolved_assumptions": [
-  "Only constant-curvature surfaces were used, where exact nonlinear references exist; variable-curvature surfaces need a numerical reference.",
+  "Only constant-curvature surfaces were used here, where exact nonlinear references exist. The numerical reference variable curvature needs already exists: T002 validates the geodesic integrator against 34-digit references on the torus, saddle and Gaussian bump, and T006 checks the Jacobi columns against finite-difference flow on the torus and bump; this task has not been run on those surfaces.",
   "The perturbation is Gaussian in (lateral, heading); real path errors may have other shapes and correlations with speed."
  ]
 }

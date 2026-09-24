@@ -43,6 +43,9 @@
    "claim": "The finite-difference chord Jacobian matches the analytic focal-length, right-camera horizontal principal-point and baseline derivatives on a rectified rig",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-06,
     "rel": 0
@@ -98,6 +101,10 @@
    "claim": "First-order calibration-error prediction agrees with direct recomputation with a second-order residual",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 1e-05
@@ -149,6 +156,9 @@
    "claim": "Chord sensitivity to 12 declared calibration parameters of the pinhole rig (per-camera focal length and principal point, right-camera rotation and center; m per px, mrad or mm); disparity-changing errors dominate their like-unit counterparts",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-12,
     "rel": 1e-05
@@ -276,6 +286,9 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-12,
     "rel": 1e-06
@@ -309,6 +322,9 @@
    "claim": "A baseline error rescales every chord by b_believed / b on the rectified rig",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-12,
     "rel": 1e-06
@@ -334,6 +350,7 @@
    "claim": "The declared perturbation magnitudes bound the calibration error of a real stereo rig",
    "domain": "calibration",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -377,13 +394,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/observation.py": "6e5bf960e17dffb62bdaf29d28be9a0f165fd68f8498d173b66eab08fa22ad70",
+   "src/ciw/lab/observation.py": "ef75c3ea4cad06bcbc68592440b3d55a92786a729d5a731b87ece207511ddffb",
    "src/ciw/lab/observation_camera.py": "130cf51175050a5eb947b8d434553bdfa19bd102a33108f414d7a5fa9c651bce"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T050: add perspective and lens-distortion perturbations",
- "report_id": "sha256:e0f2a6c91c49e6ccf1846d6d5ae58a202ede09efb6e465bfbd33fac3b3c4902e",
+ "recommended_next_task": "Deferred research question: propagate a declared calibration covariance (intrinsics and extrinsic rotation, including the aspect ratio and skew held fixed here) to the chord variance and attach it as a calibration component beside T045's geometry/sensor split, instead of evaluating fixed perturbations one at a time.",
+ "report_id": "sha256:4e6596effd970b77a5ad6daad77ce8009798ca49e7f4a28eed7e2de9e3c13301",
  "schema": "ciw.lab-task-report.v1",
  "section": "observation",
  "state": "completed",

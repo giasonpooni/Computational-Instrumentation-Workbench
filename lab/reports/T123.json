@@ -3,6 +3,7 @@
   "src/ciw/lab/energy_gpu.py",
   "src/ciw/lab/energy_gpu_kernels.py",
   "src/ciw/lab/energy_gpu_telemetry.py",
+  "src/ciw/lab/energy_gpu_workload.py",
   "docs/lab/ENERGY_GPU.md"
  ],
  "evidence_status": {
@@ -86,6 +87,9 @@
    "claim": "Typed arithmetic refuses to add, compare (including ==) or convert nats of variational free energy with joules, watts with joules, and quantities with untyped numbers",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -155,6 +159,9 @@
    "claim": "Typed arithmetic within one dimension agrees with hand-converted values to binary64 rounding: 0.2 J + 100 mJ = 0.3 J, 1000 mW = 1 W, 1 bit = ln 2 nat, 1 J == 1000 mJ, F + log Z - KL = 0 nat",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-10,
     "rel": 0.0
@@ -223,6 +230,9 @@
    "claim": "CIW energy records and free-energy records keep joules, watts and nats in distinct unit-bearing fields",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -288,6 +298,9 @@
    },
    "domain": "mathematical",
    "evidence_status": "analytic",
+   "origin": [
+    "derivation"
+   ],
    "regression_tolerance": {
     "abs": 1e-09,
     "rel": 0.0
@@ -315,6 +328,7 @@
    "claim": "A decrease of variational free energy corresponds to a decrease of physical energy consumed by the computation",
    "domain": "physical",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -348,14 +362,15 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/energy_gpu.py": "a66107417b5bfa398077a919b2f5351ca222e9961fa8dfb3256b78efc17fd930",
-   "src/ciw/lab/energy_gpu_kernels.py": "366c477ff1af7f59b626f4e64bf994ae4cbce5754c0e9c5be1c2acb515f99f4b",
-   "src/ciw/lab/energy_gpu_telemetry.py": "df82c8748d3aa75384e3928bffcf516cd6f72cccde99edf8d21f089cc768bafa"
+   "src/ciw/lab/energy_gpu.py": "f49195ce5a78ced3c8da1562f4412f2fdc65d8cc2749dd4fbe0b25bc0334e773",
+   "src/ciw/lab/energy_gpu_kernels.py": "1198886637535f3f8ec26601aa70cdc16d1c175dc4286aa9807edec3910005d2",
+   "src/ciw/lab/energy_gpu_telemetry.py": "6935331e622266868a97ee78f8e34d185aa69009a62fedc8ea8273b3a9312bfc",
+   "src/ciw/lab/energy_gpu_workload.py": "5cdaf9fe9f25194dae561e060abf471567cfd3bb8df6c1836630a54c5085a9de"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T146: carry units in one canonical serialization across languages",
- "report_id": "sha256:a24e3d0e1c82615a7bd907b79fabd9fab78b0a6f4156c3245a3c7b1589300251",
+ "recommended_next_task": "Deferred research question: carry units in exchanged records, so a joule and a nat cannot collide after serialization; the canonical JSON fixed by T146 (ciw.canonical-json.v1) encodes numbers without units, and CIW records keep the unit only in field-name suffixes (_j, _mj, _mw, _nats), which this task's audit relies on",
+ "report_id": "sha256:07a21f2c483bc9c3a9270830552ea3a0e445b0274363b619e7effbc436ff3f1e",
  "schema": "ciw.lab-task-report.v1",
  "section": "energy-gpu",
  "state": "completed",
@@ -380,6 +395,7 @@
   "check: CIW energy records and free-energy records keep joules, watts and nats in distinct unit-bearing fields vs experiment view panels mixing units",
   "pytest: tests/test_lab_energy_gpu.py::test_typed_quantities_refuse_nats_plus_joules",
   "pytest: tests/test_lab_energy_gpu.py::test_fixture_tasks_without_repository_files",
+  "pytest: tests/test_lab_energy_gpu.py::test_next_steps_name_work_that_delivers",
   "pytest: tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance"
  ],
  "tests_skipped": [],

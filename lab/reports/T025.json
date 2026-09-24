@@ -56,9 +56,13 @@
     ],
     "derivation": "Every route off the front is dominated by a front member because strict dominance is transitive and acyclic on a finite set (definitional, not tested); the shortest route is always on the front: no route is strictly shorter, so none dominates it (exact length ties aside)"
    },
-   "claim": "The three-objective front has several members, and a second computation (numpy dominance matrix; sort-and-sweep for the two-objective fronts) reproduces every front",
+   "claim": "The three-objective front (length, |j_head(L)|, focus margin s_c - L with s_c the first zero of j_head) has several members, and a second computation (numpy dominance matrix; sort-and-sweep for the two-objective fronts) reproduces every front",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -100,6 +104,7 @@
    "claim": "A Pareto-optimal route is safe to execute on a physical part",
    "domain": "machine_safety",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -121,7 +126,7 @@
  "input_data": [
   "T024 routes (same run, shared memo)"
  ],
- "mathematical_model": "Minimize (L, |j_head(L)|, -margin) with censored margins treated as +infinity; a dominates b when no worse in every objective and better in one. The shortest route is on the front by definition (nothing is shorter), so its membership is not a test.",
+ "mathematical_model": "Minimize (L, |j_head(L)|, -margin) with margin the focus margin s_c - L (s_c the first zero of j_head) and censored margins treated as +infinity; a dominates b when no worse in every objective and better in one. The shortest route is on the front by definition (nothing is shorter), so its membership is not a test.",
  "number": 25,
  "numerical_result": "3-objective front [0, 1, 2, 3, 4] of 9 routes (members past a conjugate point: [2]); length/amplification front [0, 1, 2]; length/margin front [0, 3]; targeting condition 1/|j_head| of front members [0.545, 1.27, 2.286, 0.028, 0.028].",
  "observation_model": "No physical observation: exact or floating-point computation on declared mathematical objects.",
@@ -137,25 +142,27 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/flat_torus_topology.py": "1221001d96bf1f9aa2f9fea169a2b10bfb37230da11bfb6f1608ba9355c86b9a",
+   "src/ciw/lab/flat_torus_topology.py": "2c05c13905cc51906d41b89219b001396634a9d3bb8bda9bd32ac75a5523fdb1",
    "src/ciw/lab/flat_torus_topology_routes.py": "733568202260c5432d01d01976ee1b1a8a4d69b23e6d3c089ca00d1c46f2ab61"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T032: build the counterexample library for 'shortest means safest'",
- "report_id": "sha256:767a36c022d2bc080840c1604bf2df5b0c431c70258cd1a82598e4662c12f463",
+ "recommended_next_task": "Deferred research question: which declared constraints (for example a lower bound on the focus margin s_c - L and an upper bound on the targeting condition 1/|j_head(L)| derived from a declared heading error) leave a unique route on the front, and is that choice stable under the route uncertainty? Choosing the constraints is an operator decision the workbench does not make",
+ "report_id": "sha256:95445422294b81d64045d70b8d0b47e04e841b48428ae688e4e8815ea6ee32ae",
  "schema": "ciw.lab-task-report.v1",
  "section": "flat-torus-topology",
  "state": "completed",
  "task_id": "T025",
  "tests_passed": [
-  "check: The three-objective front has several members, and a second computation (numpy dominance matrix; sort-and-sweep for the two-objective fronts) reproduces every front vs three-objective front members differing from a numpy dominance matrix",
-  "check: The three-objective front has several members, and a second computation (numpy dominance matrix; sort-and-sweep for the two-objective fronts) reproduces every front vs two-objective front members differing from a sort-and-sweep",
-  "check: The three-objective front has several members, and a second computation (numpy dominance matrix; sort-and-sweep for the two-objective fronts) reproduces every front vs front size",
+  "check: The three-objective front (length, |j_head(L)|, focus margin s_c - L with s_c the first zero of j_head) has several members, and a second computation (numpy dominance matrix; sort-and-sweep for the two-objective fronts) reproduces every front vs three-objective front members differing from a numpy dominance matrix",
+  "check: The three-objective front (length, |j_head(L)|, focus margin s_c - L with s_c the first zero of j_head) has several members, and a second computation (numpy dominance matrix; sort-and-sweep for the two-objective fronts) reproduces every front vs two-objective front members differing from a sort-and-sweep",
+  "check: The three-objective front (length, |j_head(L)|, focus margin s_c - L with s_c the first zero of j_head) has several members, and a second computation (numpy dominance matrix; sort-and-sweep for the two-objective fronts) reproduces every front vs front size",
   "pytest: tests/test_lab_flat_torus_topology.py::test_t024_t025_route_ranking_and_front",
   "pytest: tests/test_lab_flat_torus_topology.py::test_route_helpers",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_focus_margin_claims_state_the_canonical_definition",
   "pytest: tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
-  "pytest: tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+  "pytest: tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label",
+  "pytest: tests/test_lab_flat_torus_topology.py::test_next_steps_name_forward_work"
  ],
  "tests_skipped": [],
  "title": "Generate Pareto fronts for length, amplification, and focus margin.",

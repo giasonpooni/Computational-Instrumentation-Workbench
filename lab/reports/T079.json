@@ -78,6 +78,9 @@
    "claim": "Whitespace, key-order and float-spelling variants under one label retain distinct exact bytes and distinct evidence and source identities while their parsed content is canonically equal",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -133,6 +136,9 @@
    "claim": "Content-level identities coincide across the byte variants: one experiment_digest, log_digest and numerical_result_id",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -195,6 +201,9 @@
    },
    "domain": "provenance",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -233,6 +242,9 @@
    "claim": "A partial int-for-float rewrite of one copy of the solver settings is refused by CIW's cross-field solver check",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -263,6 +275,9 @@
    "claim": "A UTF-8 byte-order-mark variant with equal content is refused",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -312,13 +327,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/exchange_provenance.py": "f55593eb90af9ed82e40f0f04987c7f0a06cf1c40e7079b0a371e0506607618b",
-   "src/ciw/lab/exchange_provenance_common.py": "f8e765184af4e893a0c4c6d9e5cb2988b79e6f3dfc3d941444f335ecc894d775"
+   "src/ciw/lab/exchange_provenance.py": "0871a5e3e3a27b365a326036c869338b11e5aa3bc4af3ca60db29e81bedbba36",
+   "src/ciw/lab/exchange_provenance_common.py": "17ab892e3f285ac475b44c240155acf45f8bbdbefca28a345980aba548c6d1a9"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T080 (operation/execution/result identity separation)",
- "report_id": "sha256:d141cf266c0dbf7c14bd1b525cbe584281da9ea32dcbc33cdb07eadc83e54eb3",
+ "recommended_next_task": "Deferred research question: do Unicode escape variants of the same JSON text (\\u0041 versus A, escaped versus literal non-ASCII characters) retain distinct bytes and source identities under one label, as the eight whitespace and spelling variants do, and should the BOM refusal name the source bytes rather than a bound runtime (a CIW message change, reported and not made here)?",
+ "report_id": "sha256:884134a472f338fd1f1ee7d014a5f5f4bf32ce8ff71ada466b6e8a0f70ded0a2",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "completed",
@@ -337,9 +352,12 @@
   "check: CIW canonical comparison is type-sensitive (1 != 1.0): a consistent int-for-float rewrite is refused by the stale log seal and, once resealed, retained as distinct evidence rather than aliased vs content identities of the resealed rewrite equal to baseline (experiment_digest, log_digest, numerical_result_id)",
   "check: A partial int-for-float rewrite of one copy of the solver settings is refused by CIW's cross-field solver check vs first '1.0,' (runtime.workload.solver_settings) rewritten as '1,': source.add refusal",
   "check: A UTF-8 byte-order-mark variant with equal content is refused vs BOM-prefixed baseline: source.add refusal",
-  "pytest: tests/test_lab_exchange_provenance.py::test_whitespace_variants"
+  "pytest: tests/test_lab_exchange_provenance.py::test_whitespace_variants",
+  "pytest: tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work"
  ],
- "tests_skipped": [],
+ "tests_skipped": [
+  "pytest: tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply (skipped)"
+ ],
  "title": "Test whitespace-preserving evidence retention.",
  "uncertainty": "Exact equality of digests; the variant set samples whitespace, order and float spelling but not every lexical freedom JSON allows (for example escaped string characters).",
  "unresolved_assumptions": [

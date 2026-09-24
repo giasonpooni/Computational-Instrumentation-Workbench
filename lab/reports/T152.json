@@ -76,6 +76,10 @@
    "claim": "Sequence-number gap detection recovers every lost frame across the 32-bit wrap",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -118,6 +122,9 @@
    "claim": "With the declared clock offset no stale frame is missed and false alarms match the timestamp quantization and drift prediction",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-06,
     "rel": 1e-09
@@ -169,6 +176,9 @@
    "claim": "An offset estimated from minimum delay misses stale frames at the rate its bias predicts",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-06,
     "rel": 1e-09
@@ -218,6 +228,10 @@
    "claim": "Loss rate and mean latency of a long run match the declared link model",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 1e-06,
     "rel": 1e-09
@@ -268,6 +282,9 @@
    },
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -319,6 +336,9 @@
    },
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -343,6 +363,7 @@
    "claim": "Simulated loss, latency and staleness represent the real FPGA telemetry link",
    "domain": "physical",
    "evidence_status": "not_established",
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -381,13 +402,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/implementation_targets.py": "1df8bd67d28b18d70bcb5f74e4a14616ceb17868c7a9aa75595f15254426ee7e",
+   "src/ciw/lab/implementation_targets.py": "0ea1ac76f50f1c65b47155a6791a0ea74c3ebf57d0b254a4a6615dabb930b5e7",
    "src/ciw/lab/implementation_targets_fpga.py": "7af2bda8190c93108f5bac0d8b28ffd057267b6b428af3d8f820d0f594ea5e00"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T153 (keep any response to telemetry gaps from reaching actuators)",
- "report_id": "sha256:5049563cae6a220ceb3b1301e98fe856a42cb731581895bc039b04aa355f85d7",
+ "recommended_next_task": "Deferred research question: negative clock drift and loss-dependent latency (bursty congestion) in the link simulation; both are assumed away here, and a negative drift would turn false staleness alarms into misses",
+ "report_id": "sha256:9fe6b20f0732c08d732e7722d093f9d64be54f39089f5001675de2b00eda9b93",
  "schema": "ciw.lab-task-report.v1",
  "section": "implementation-targets",
  "state": "completed",

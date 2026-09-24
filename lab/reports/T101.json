@@ -54,6 +54,10 @@
    "claim": "PLSR decrease_resolution equals the documented bound transcribed in CIW at every evaluated matrix scale",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1e-12,
     "rel": 0.0
@@ -110,6 +114,10 @@
    "claim": "Inside the binary64 normal range the resolution scales exactly with 2^k and PLSR certifies exactly when eps > eps*",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -178,6 +186,10 @@
    "claim": "NUMERICAL_OVERFLOW first appears exactly where the CIW-recomputed decrease form overflows",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 1.0,
     "rel": 0.0
@@ -306,6 +318,10 @@
    },
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "provider",
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -341,6 +357,9 @@
    "claim": "Inconclusive threshold of the family A = s[[-eps, 1], [-1, -eps]], P = I: certified iff eps > 4 gamma_5 / (1 - 8u), independent of s",
    "domain": "mathematical",
    "evidence_status": "analytic",
+   "origin": [
+    "derivation"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 1e-12
@@ -374,6 +393,10 @@
    "claim": "The documented decision order, transcribed in CIW, places the family's threshold at eps* in the normal range",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -410,6 +433,10 @@
    "claim": "CIW's re-derived resolution scales exactly with a power-of-two matrix scale in the normal range",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -450,6 +477,9 @@
    "claim": "The subnormal witness's exact decrease form is indefinite while its binary64 evaluation is negative definite",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -520,14 +550,14 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/lyapunov.py": "cbcb4d58d7313d7c537957a1b7dd35039a21bae80125bf59147eeed2c1232bbb",
+   "src/ciw/lab/lyapunov.py": "dcda8ba21661667cc03bb126a393e93158a306b4991d0a2450d8e18abe62cb27",
    "src/ciw/lab/lyapunov_provider.py": "da3465b48b5f5efc47bfe6ab8379cf2cf2bc23e4835dc7ff047252e77fa6ef17",
    "src/ciw/lab/lyapunov_reference.py": "bdf0bb5074ae2caca6c8a5d8e63a15e346b007098e6def6b058d077719bc1336"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T102: test power-of-two homogeneous scaling of A, P and x together; then propose a subnormal-aware resolution term (an absolute n^2 * 2^-1074 floor) upstream and re-run T101.",
- "report_id": "sha256:0e35d1ccc7141c8cd2bf403ad96daa7c61643c7242affe446eb38bdaaca5c555",
+ "recommended_next_task": "Deferred research question (upstream PLSR change): add a subnormal-aware term (an absolute n^2 * 2^-1074 floor) to PLSR's decrease resolution and re-run this resolution-floor study to check that the subnormal witness's resolution then covers the rounding error of forming its decrease matrix.",
+ "report_id": "sha256:3a2e72fc2324eec25b7fc7525b673506a3e73003b0ebd7ea53797040830ed828",
  "schema": "ciw.lab-task-report.v1",
  "section": "lyapunov",
  "state": "completed",
@@ -551,8 +581,11 @@
   "pytest: tests/test_lab_lyapunov.py::test_t101_resolution_floor",
   "pytest: tests/test_lab_lyapunov.py::test_reference_witness_is_exactly_indefinite",
   "pytest: tests/test_lab_lyapunov.py::test_t101_threshold_is_analytic",
+  "pytest: tests/test_lab_lyapunov.py::test_t101_t103_retain_the_subnormal_witness_once",
+  "pytest: tests/test_lab_lyapunov.py::test_t101_t102_defer_cross_platform_reproduction_as_one_question",
   "pytest: tests/test_lab_lyapunov.py::test_checks_are_unconditional_and_observed_values_are_computed",
-  "pytest: tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider"
+  "pytest: tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider",
+  "pytest: tests/test_lab_lyapunov.py::test_next_steps_name_forward_work"
  ],
  "tests_skipped": [],
  "title": "Test the resolution floor over many matrix scales.",
@@ -560,6 +593,6 @@
  "unresolved_assumptions": [
   "The exact class concerns the declared binary64 numbers; they are synthetic, not measured plants.",
   "The resolution comparison is against CIW's transcription of the documented formula: a same-specification check, not an independent one.",
-  "Subnormal behaviour of numpy.linalg.eigvalsh (LAPACK dsyevd) may differ between BLAS builds, so the codes below the normal range, the witness's code included, are retained in the artifact and not compared by a finding."
+  "Deferred research question (cross-platform reproduction): run T101 and T102 against the pinned PLSR on Windows x86-64, on macOS arm64 and on Linux x86-64 with a LAPACK other than the retained OpenBLAS build (for example MKL), and check that the PLSR codes below the normal range (the subnormal witness's code included; resolution-floor.json) and the outside-window code flips and scaled-witness code (scaling-invariance.json) match the retained ones case for case, and that every finding value matches within its regression tolerance; these codes are retained as artifacts only because LAPACK/BLAS builds may decide them differently, and no second build has been compared."
  ]
 }

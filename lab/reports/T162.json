@@ -8,19 +8,23 @@
    "hardware_measured": 0,
    "independently_verified": 0,
    "not_established": 1,
-   "numerically_verified": 2,
+   "numerically_verified": 4,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "Every results row restates its source finding's task, claim, value headline, unit, label and report identity, and its value cell states no number that the source finding's value does not hold.",
- "experiment": "Generate the draft from retained reports of sections exchange-provenance, implementation-targets, lyapunov and parse its results table back against the source findings.",
+ "expected_invariant": "Every appendix, selected-finding and boundary-finding row restates its source finding's task, claim, value headline, unit, label, basis and report identity, and its value cell states no number the source value does not hold; the page states every label definition, the independence qualification and every boundary row; every unresolved assumption of an unfinished task and every assumption limiting independence appears in full.",
+ "experiment": "Generate the draft from retained reports of sections exchange-provenance, implementation-targets, lyapunov; parse its finding tables back against the source findings and its label and boundary tables against their definitions; look up each required assumption in its section.",
  "failure_modes_checked": [
   "claims or units containing '|' breaking table rows",
-  "labels dropped from rows",
+  "labels or bases dropped from rows",
   "values cut inside a number",
-  "rows out of order or missing"
+  "rows out of order or missing",
+  "partial task described by what it did instead of what is missing",
+  "independently_verified shown without its definition or the assumptions that limit it",
+  "boundary rows or label definitions missing",
+  "a next step that says the unfinished tasks' steps close every limitation (completed tasks keep open physical claims, and authority claims never close)"
  ],
  "findings": [
   {
@@ -31,15 +35,34 @@
       "comparison": "abs_le",
       "observed": 0.0,
       "passed": true,
-      "reference": "results rows that do not parse back to their source finding",
+      "reference": "appendix rows that do not parse back to their source finding",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "selected-finding rows that do not parse back to their source finding",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "boundary-finding rows that do not parse back to their source finding",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
      }
     ]
    },
-   "claim": "Draft results table restates every retained finding of its sections with its retained label",
+   "claim": "Draft finding tables restate every retained finding of their sections with its retained label and basis",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -50,7 +73,7 @@
     "value": 0
    },
    "unit": "findings",
-   "value": 329
+   "value": 332
   },
   {
    "assigned_by": "ciw.lab.evidence",
@@ -60,15 +83,98 @@
       "comparison": "abs_le",
       "observed": 0.0,
       "passed": true,
-      "reference": "T155 cases where the label function departs from the stated rules",
+      "reference": "label definitions, independence qualification or boundary rows missing or altered",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
      }
     ]
    },
-   "claim": "Draft methods state the evidence-label rules that T155 found the label function to follow",
+   "claim": "Draft defines every evidence label, states that independently_verified is implementation agreement and not verification by another party, and lists every boundary row",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "integer count over retained report files; no rounding, sampling or tolerance",
+    "kind": "exact",
+    "value": 0
+   },
+   "unit": "boundary rows",
+   "value": 8
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "required assumption statements absent from their section",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Draft limitations state what each unfinished task is missing, and its methods carry every assumption that mentions independence, same origin or ciw-written code in a task with independently_verified rows and every other assumption research_portfolio.INDEPENDENCE_LIMITS selects",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "integer count over retained report files; no rounding, sampling or tolerance",
+    "kind": "exact",
+    "value": 0
+   },
+   "unit": "statements",
+   "value": 24
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "T155 cases where the label function departs from rules 1-5",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "T155 probe cases where evidence.finding departs from rule 10",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "stated rules not numbered 1, 2, ... in order",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Draft methods state the specification's evidence rules, of which T155 found the label function to follow rules 1-5 and the authority screen to follow rule 10 on its probe claims",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0,
     "rel": 0
@@ -79,7 +185,7 @@
     "value": 0
    },
    "unit": "rules",
-   "value": 9
+   "value": 12
   },
   {
    "assigned_by": "ciw.lab.evidence",
@@ -88,6 +194,7 @@
    "domain": "provenance",
    "evidence_status": "not_established",
    "expected_not_established": true,
+   "origin": [],
    "uncertainty": null,
    "unit": null,
    "value": null
@@ -95,20 +202,23 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 138077,
+   "bytes": 241592,
    "path": "artifacts/T162/evidence-provenance-note-draft.md",
-   "sha256": "930859faeafac616dbd845e6e512d89cfaf19ca39c7a65b14b10ee60851ac926"
+   "sha256": "a538f2f6b69138fe09238152c3f73411fb0b0f1c6aaacf50a5f3a54df854d80f"
   }
  ],
- "hypothesis": "An evidence provenance note draft can be assembled entirely from retained findings, with every number traceable to a report identity and every limitation drawn from not_established findings.",
+ "hypothesis": "An evidence provenance note draft with a thesis, introduction, methods, results, discussion, limitations and outstanding work can be generated from retained findings alone: every number traceable to a report identity, every label defined and shown with its basis, and every limitation drawn from not_established findings and the unfinished tasks' own statements.",
  "input_data": [
   "Retained reports of sections exchange-provenance, implementation-targets, lyapunov",
+  "Textbook ledger of T156 (research_portfolio.TEXTBOOK)",
+  "Label definitions (docs/LAB.md) and ciw.lab.evidence.BOUNDARY",
   "docs/lab/SPECIFICATIONS.md (evidence-label rules)",
-  "ciw.lab.evidence constants"
+  "ciw.lab.evidence constants",
+  "Retained reports of T100 and T141 (boundary findings) and T155 (rule checks)"
  ],
- "mathematical_model": "Draft = generated Markdown: abstract, methods (task hypotheses and models; the evidence-label rules of the specification), results (one row per finding), limitations (not_established findings and unfinished tasks).",
+ "mathematical_model": "Draft = generated Markdown: a thesis restating counts and counterexamples of the retained findings; an introduction listing the tasks' questions; methods (label definitions, the independence qualification; the specification's evidence rules and the T100 and T141 boundary findings, task hypotheses and models, the assumptions that limit independence); results (one selected finding and figure per task); a discussion listing each counterexample with its witness; limitations (the computational boundary, not_established findings, what each unfinished task is missing); outstanding work; references from the T156 textbook ledger; an appendix with every finding, its label and its basis.",
  "number": 162,
- "numerical_result": "Draft cites 329 findings from 51 reports; 0 results rows differ from their source.",
+ "numerical_result": "Draft cites 332 findings from 51 reports (51 selected, 10 figures, 66 counterexamples discussed, 4 unfinished tasks, 7 independence qualifications); 0 table rows differ from their source; 0 label or boundary statements missing; 0 required assumptions absent.",
  "observation_model": "No physical observation; reads retained computational records only.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -122,25 +232,36 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/research_portfolio.py": "0fd0ed475a38bf81fd2145f64cf1335856a471c58d406347c3b66b0f66672702"
+   "src/ciw/lab/research_portfolio.py": "145b8ee8456e1dd57bf2a05fa20e1ce55bd33356522436d8901eb1adfb60fc7a"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "Human authorship pass, related-work section and external review; physical experiments from the manufacturing protocols.",
- "report_id": "sha256:d1b72a6e7a25724307c333109dff8befb69f89178b4cac5a85f8db49900498bf",
+ "recommended_next_task": "Write the parts the lab cannot write (the thesis in the authors' words, the related-work discussion, the interpretation of the counterexamples and the conclusions) and submit the draft for external review; then the unfinished tasks' own next steps (T077: Complete T077: observe the ESM candidate, candidate execution and pinned-provider runtime identity rows, now read from code, once the telemetry provider stack …; T099: Run the SP1 proved-heat gate (scripts/check_proved_heat.py) on a machine that meets its recorded requirements (network access to crates.io and GitHub releases …; T145: Implement the Julia worker behind the SCR boundary (docs/JULIA_SP1.md: handshake, operation allowlist, retained bytes) and a T145 path that dispatches the …; T147: Judge the PTX kernel's outputs for every replica under the fixed-order policy on the RTX 2080 host (protocol in docs/lab/ENERGY_GPU.md): `mkdir -p …); 15 physical, calibration or sensor claims of completed tasks (T078, T097, T100, T105, T112, T113, T114, T143, T149, T150, T152) stay not established, and each task's own next step is listed under Outstanding work; 22 authority-domain claims stay not established on any evidence.",
+ "report_id": "sha256:e2eb141164a4e4d22e69156111cc8abc9e84dba697bd8152d251b32571078b76",
  "schema": "ciw.lab-task-report.v1",
  "section": "research-portfolio",
  "state": "partial",
  "task_id": "T162",
  "tests_passed": [
-  "check: Draft results table restates every retained finding of its sections with its retained label vs results rows that do not parse back to their source finding",
-  "check: Draft methods state the evidence-label rules that T155 found the label function to follow vs T155 cases where the label function departs from the stated rules",
-  "pytest: tests/test_lab_research_portfolio.py::test_paper_drafts_trace_to_reports"
+  "check: Draft finding tables restate every retained finding of their sections with its retained label and basis vs appendix rows that do not parse back to their source finding",
+  "check: Draft finding tables restate every retained finding of their sections with its retained label and basis vs selected-finding rows that do not parse back to their source finding",
+  "check: Draft finding tables restate every retained finding of their sections with its retained label and basis vs boundary-finding rows that do not parse back to their source finding",
+  "check: Draft defines every evidence label, states that independently_verified is implementation agreement and not verification by another party, and lists every boundary row vs label definitions, independence qualification or boundary rows missing or altered",
+  "check: Draft limitations state what each unfinished task is missing, and its methods carry every assumption that mentions independence, same origin or ciw-written code in a task with independently_verified rows and every other assumption research_portfolio.INDEPENDENCE_LIMITS selects vs required assumption statements absent from their section",
+  "check: Draft methods state the specification's evidence rules, of which T155 found the label function to follow rules 1-5 and the authority screen to follow rule 10 on its probe claims vs T155 cases where the label function departs from rules 1-5",
+  "check: Draft methods state the specification's evidence rules, of which T155 found the label function to follow rules 1-5 and the authority screen to follow rule 10 on its probe claims vs T155 probe cases where evidence.finding departs from rule 10",
+  "check: Draft methods state the specification's evidence rules, of which T155 found the label function to follow rules 1-5 and the authority screen to follow rule 10 on its probe claims vs stated rules not numbered 1, 2, ... in order",
+  "pytest: tests/test_lab_research_portfolio.py::test_paper_drafts_trace_to_reports",
+  "pytest: tests/test_lab_research_portfolio.py::test_paper_drafts_have_a_structure_and_qualify_their_labels",
+  "pytest: tests/test_lab_research_portfolio.py::test_draft_next_step_names_completed_tasks_with_open_physical_claims"
  ],
  "tests_skipped": [],
  "title": "Write an evidence/provenance methods note.",
  "uncertainty": "Numbers carry the uncertainty stated in their source findings.",
  "unresolved_assumptions": [
-  "Prose beyond the generated structure, related work and peer review are outstanding."
+  "Missing from this draft, which the lab cannot write: the thesis in the authors' words (the generated thesis restates counts and counterexamples of the retained findings only), a related-work discussion (the reference list is the T156 textbook ledger's name matches), an interpretation of the counterexamples against the literature, conclusions, figure selection and captions, and external peer review. The draft stays partial until they exist.",
+  "For a task with independently_verified rows every assumption that mentions independence, same origin or ciw-written code is carried into the Qualifications, statistical independence of noise and events excepted (research_portfolio.STATISTICAL_INDEPENDENCE); for other tasks they are selected by phrase (research_portfolio.INDEPENDENCE_LIMITS), so one worded otherwise is not carried.",
+  "The selected finding of a task is its first established one, not a judgment of importance.",
+  "Rules 6-9, 11 and 12 are stated from the specification; they are enforced by the validator, the report builder, the runner and the workspace classifier and tested in tests/test_lab_core.py and tests/test_lab_bridge.py, not backed by a T155 finding."
  ]
 }

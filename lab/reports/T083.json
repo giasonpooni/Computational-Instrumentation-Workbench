@@ -85,6 +85,9 @@
    "claim": "Every retained replay receipt binds its source and replayed bundle digests, verification subject, fresh reproduction step, runtime digest and limited authority",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -147,6 +150,9 @@
    "claim": "A false numerical-match claim, and a receipt moved onto another bundle with a stale replayed digest or with the donor's reproduction step, are refused on reopen",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -223,6 +229,9 @@
    },
    "domain": "provenance",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -285,6 +294,9 @@
    },
    "domain": "provenance",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -343,6 +355,9 @@
    },
    "domain": "provenance",
    "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -367,6 +382,7 @@
    "domain": "provenance",
    "evidence_status": "not_established",
    "expected_not_established": true,
+   "origin": [],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -391,6 +407,7 @@
    "domain": "provenance",
    "evidence_status": "not_established",
    "expected_not_established": true,
+   "origin": [],
    "regression_tolerance": {
     "abs": 0.0,
     "rel": 0.0
@@ -445,13 +462,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/exchange_provenance.py": "f55593eb90af9ed82e40f0f04987c7f0a06cf1c40e7079b0a371e0506607618b",
-   "src/ciw/lab/exchange_provenance_common.py": "f8e765184af4e893a0c4c6d9e5cb2988b79e6f3dfc3d941444f335ecc894d775"
+   "src/ciw/lab/exchange_provenance.py": "0871a5e3e3a27b365a326036c869338b11e5aa3bc4af3ca60db29e81bedbba36",
+   "src/ciw/lab/exchange_provenance_common.py": "17ab892e3f285ac475b44c240155acf45f8bbdbefca28a345980aba548c6d1a9"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "T084 (mutate replay receipt source digest); CIW change: bind receipts into the replay bundle identity or a catalog-level seal so accidental deletion is detected, and sign receipts with a host-held key at replay time so a transplanted or fabricated receipt is refused",
- "report_id": "sha256:b95b2f73c4245b6fd7380b8c249a6aee7836fc489b186ef45630f7cb7661302f",
+ "recommended_next_task": "Deferred research question (CIW change): bind replay receipts into the replay bundle identity or a catalog-level seal so that an accidental deletion is detected, and sign receipts at replay time with a host-held key under a defined key custody so that the retained fabricated sibling receipt (B0b) and a transplanted receipt are refused.",
+ "report_id": "sha256:0613f5ce2b482b8b2df23016b014dbbcd38841c9dc5b614eb64218f5f9a8daee",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "completed",
@@ -474,13 +491,17 @@
   "check: Surviving mutant receipt.fabricated: a receipt written onto a never-replayed original, claiming it replays its sibling, reopens vs reopened bundles list the receipt sources {'bundle:B0': [], 'bundle:B0b': ['bundle:B0'], 'bundle:Bother': [], 'bundle:B1': ['bundle:B0']} (0 = shown)",
   "check: Surviving mutant receipt.deleted: a replay bundle reopens without its replay receipt, listed with no receipt like an original execution vs receipt.deleted: accepted (1 = accepted)",
   "check: Surviving mutant receipt.deleted: a replay bundle reopens without its replay receipt, listed with no receipt like an original execution vs reopened bundles list the receipt sources {'bundle:B0': [], 'bundle:B0b': [], 'bundle:Bother': [], 'bundle:B1': []} (0 = shown)",
-  "pytest: tests/test_lab_exchange_provenance.py::test_replay_receipt_binding"
+  "pytest: tests/test_lab_exchange_provenance.py::test_replay_receipt_binding",
+  "pytest: tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work"
  ],
- "tests_skipped": [],
+ "tests_skipped": [
+  "pytest: tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply (skipped)"
+ ],
  "title": "Test replay receipt binding.",
  "uncertainty": "Exact equalities. Kills show only that these particular edits are detected, not that every receipt edit is. Receipt deletion, full transplant and fabrication are accepted because every receipt field is recomputable from retained bundles and bundle_digest excludes replay_receipts (src/ciw/telemetry.py:_bundle_digest); nothing else records that a replay happened.",
  "unresolved_assumptions": [
   "Only energy-accuracy receipts were exercised; provider-backed receipts share workbench._validate_receipts but have workflow-specific checks.",
-  "A fabricated receipt needs a sibling of the same source bytes, configuration and runtime; one was retained here (B0b), which any user can create by executing a source twice."
+  "A fabricated receipt needs a sibling of the same source bytes, configuration and runtime; one was retained here (B0b), which any user can create by executing a source twice.",
+  "Deferred research question (key custody and signatures): which key signs CIW workspace records, replay receipts and execution records, who holds it, how is it provisioned, rotated and revoked, and how does a verifier obtain its public key? Every seal and identity on these paths is an unkeyed SHA-256, so 'Retained workspace records are authenticated' stays not_established until records are signed (for example Ed25519 over the canonical record bytes, with an RFC 3161 timestamp for created_at) and T077 and T080-T090 are re-run against the signed records to check that every surviving forgery is refused."
  ]
 }
