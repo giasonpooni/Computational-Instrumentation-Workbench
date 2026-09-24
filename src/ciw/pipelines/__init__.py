@@ -73,6 +73,14 @@ def _refusal_codes(tree, roles):
     return codes
 
 
+def _uses_declared_workload(module: str) -> bool:
+    """Whether a runner-based implementation executes DeclaredWorkflow code, by subclassing or importing it."""
+    import ast
+    path = Path(__file__).resolve().parents[1] / (module.removeprefix("ciw.").replace(".", "/") + ".py")
+    return any(isinstance(node, ast.ImportFrom) and node.level == 1 and node.module == "declared_workload"
+               for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))))
+
+
 def code_refusals(descriptor: dict, descriptors: dict | None = None) -> list[str]:
     """Refusal codes raised on the pipeline's execution path.
 
@@ -89,7 +97,7 @@ def code_refusals(descriptor: dict, descriptors: dict | None = None) -> list[str
     implementation = descriptor["implementation"]
     modules = [(implementation["module"], descriptor)]
     modules += [(module, owners.get(module, descriptor)) for module in implementation["delegates"]]
-    if implementation["runner"] == "declared_workflow":
+    if implementation["runner"] == "declared_workflow" and _uses_declared_workload(implementation["module"]):
         modules.append(("ciw.declared_workload", descriptor))
     if implementation["runner"] == "generic_runner":
         modules.append(("ciw.pipelines.runner", descriptor))

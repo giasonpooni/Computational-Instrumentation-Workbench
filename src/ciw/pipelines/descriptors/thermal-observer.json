@@ -77,14 +77,15 @@
       ]
     },
     {
-      "rule": "Operation-identity aliasing. request.operation_id must equal 'julia.thermal-design.v1' (`ciw.thermal_contract:OPERATION_ID`, enforced by `ciw.thermal_contract:validate_request`), and the constant configuration `ciw.thermal_contract:POLICY` names inference 'julia_time_varying_kalman_filter'. The executed operation, however, is ciw.thermal-observer.v1 (`ciw.thermal_workflow:OPERATION`), run by a runtime with execution_scope 'independent_python_reference_only' (`ciw.thermal_workflow:runtime_identity`). `ciw.thermal_workflow:_validate_step` binds the step to OPERATION and the request to the source request without comparing the two; a runner that required request operation == step operation would reject every valid source.",
+      "rule": "Operation-identity aliasing. request.operation_id must equal 'julia.thermal-design.v1' (`ciw.thermal_contract:OPERATION_ID`, enforced by `ciw.thermal_contract:validate_request`), and the constant configuration `ciw.thermal_contract:POLICY` names inference 'julia_time_varying_kalman_filter'. The executed operation, however, is ciw.thermal-observer.v1 (`ciw.thermal_workflow:OPERATION`), run by a runtime with execution_scope 'independent_python_reference_only' (`ciw.thermal_workflow:runtime_identity`). `ciw.pipelines.runner:check_step` binds the step to OPERATION and its request to `ciw.thermal_workflow:ThermalWorkflow.step_request` (the source request) without comparing the two; a runner that required request operation == step operation would reject every valid source.",
       "evidence": "added by adversarial verification; symbol citations in the rule",
       "code": [
         "ciw.thermal_contract:OPERATION_ID",
         "ciw.thermal_contract:POLICY",
         "ciw.thermal_workflow:OPERATION",
         "ciw.thermal_workflow:runtime_identity",
-        "ciw.thermal_workflow:_validate_step"
+        "ciw.pipelines.runner:check_step",
+        "ciw.thermal_workflow:ThermalWorkflow.step_request"
       ]
     },
     {
@@ -125,11 +126,11 @@
       ]
     },
     {
-      "rule": "The retained runtime is checked only structurally on reopen (`ciw.thermal_workflow:ThermalWorkflow._validate`) but by exact equality with the current runtime identity on replay (`ciw.thermal_workflow:_adapters`). The runtime-match policy is therefore split by verb.",
+      "rule": "The retained runtime is checked only structurally on reopen (`ciw.thermal_workflow:ThermalWorkflow._check_runtimes`, from `ciw.thermal_workflow:ThermalWorkflow._validate`) but by exact equality with the current runtime identity on replay (`ciw.thermal_workflow:ThermalWorkflow._adapters`). The runtime-match policy is therefore split by verb.",
       "evidence": "added by adversarial verification; symbol citations in the rule",
       "code": [
         "ciw.thermal_workflow:ThermalWorkflow._validate",
-        "ciw.thermal_workflow:_adapters"
+        "ciw.thermal_workflow:ThermalWorkflow._adapters"
       ]
     },
     {
@@ -148,7 +149,7 @@
   "authority": "read_only",
   "implementation": {
     "module": "ciw.thermal_workflow",
-    "runner": "hand_written",
+    "runner": "declared_workflow",
     "delegates": [],
     "entry": {
       "symbol": "ciw.thermal_workflow:ThermalWorkflow",

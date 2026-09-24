@@ -55,6 +55,17 @@ RESULT_SCHEMA = "ciw.declared-workload-result.v1"
 VERIFY_SCHEMA = "ciw.declared-workload-verification.v1"
 VERIFY_METHOD = "same_runtime_fresh_occurrence_reproduction"
 AUTHORITY = {"state_admission": "not_performed", "sensor_fusion": "not_performed", "physical_truth": "not_established"}
+
+
+class RecordProfile:
+    """The result schema, verification schema and method, and authority a pipeline's records carry."""
+
+    def __init__(self, result_schema: str, verify_schema: str, verify_method: str, authority: dict):
+        self.result_schema, self.verify_schema, self.verify_method = result_schema, verify_schema, verify_method
+        self.authority = dict(authority)
+
+
+DECLARED = RecordProfile(RESULT_SCHEMA, VERIFY_SCHEMA, VERIFY_METHOD, AUTHORITY)
 STEP_FIELDS = frozenset({"runtime_ref", "operation_id", "execution_id", "input_refs", "request", "request_sha256",
                          "result", "result_sha256", "result_id", "numerical_result", "numerical_result_id"})
 RESULT_FIELDS = frozenset({"schema", "operation_id", "execution_ref", "input_refs", "data", "authority", "result_id"})
@@ -67,7 +78,8 @@ BUNDLE_FIELDS = frozenset({"schema", "session_id", "created_at", "source", "conf
 RUNTIME_FIELDS = frozenset({"schema", "adapter_version", "repository_root", "revision", "source_tree", "module",
                             "source_root", "python_executable", "python_sha256", "python_version", "dependencies"})
 HOST_FIELDS = frozenset({"repository_root", "python_executable"})
-HOOKS = frozenset({"__init__", "parse_source", "invoke", "check_data", "check_runtime", "make_adapter", "bind_extra"})
+HOOKS = frozenset({"__init__", "parse_source", "invoke", "check_data", "check_runtime", "make_adapter", "bind_extra",
+                   "step_request"})
 _EXECUTION = re.compile(r"execution-[a-f0-9]{32}")
 _SESSION = re.compile(r"session-[a-f0-9]{32}")
 _SHA256 = re.compile(r"sha256:[a-f0-9]{64}")
@@ -101,15 +113,16 @@ def host_projection(runtime):
     return value
 
 
-def seal_step(role: str, operation: str, source: dict, input_refs: list, data, numerical=None) -> dict:
+def seal_step(role: str, operation: str, source: dict, input_refs: list, data, numerical=None,
+              profile: RecordProfile = DECLARED) -> dict:
     """One execution occurrence and its sealed result over the provider's native data.
 
     ``numerical`` replaces the default ``{operation_id, data}`` projection that
     replay compares, for a step whose data embeds sealed companion stages.
     """
     occurrence = "execution-" + uuid.uuid4().hex
-    result = {"schema": RESULT_SCHEMA, "operation_id": operation, "execution_ref": occurrence,
-              "input_refs": list(input_refs), "data": deepcopy(data), "authority": deepcopy(AUTHORITY)}
+    result = {"schema": profile.result_schema, "operation_id": operation, "execution_ref": occurrence,
+              "input_refs": list(input_refs), "data": deepcopy(data), "authority": deepcopy(profile.authority)}
     result["result_id"] = digest(result)
     numerical = {"operation_id": operation, "data": deepcopy(data)} if numerical is None else deepcopy(numerical)
     return {"runtime_ref": role, "operation_id": operation, "execution_id": occurrence,
@@ -119,7 +132,7 @@ def seal_step(role: str, operation: str, source: dict, input_refs: list, data, n
 
 
 def check_step(step, *, role: str, operation: str, source: dict, input_refs: list, check_data, label: str,
-               numerical=None) -> None:
+               numerical=None, profile: RecordProfile = DECLARED) -> None:
     """Refuse a step unless every identity in it binds this source, operation and native data.
 
     ``check_data`` may be ``None`` when the caller checks the data itself.
@@ -134,8 +147,8 @@ def check_step(step, *, role: str, operation: str, source: dict, input_refs: lis
     exact_keys(result, RESULT_FIELDS)
     if check_data is not None:
         check_data(source, result["data"])
-    same(result["authority"], AUTHORITY, f"{label} result cannot confer state or physical authority")
-    if (result["schema"] != RESULT_SCHEMA or result["operation_id"] != operation or
+    same(result["authority"], profile.authority, f"{label} result cannot confer state or physical authority")
+    if (result["schema"] != profile.result_schema or result["operation_id"] != operation or
             result["execution_ref"] != step["execution_id"] or result["input_refs"] != input_refs or
             result["result_id"] != step["result_id"] or
             result["result_id"] != digest({key: value for key, value in result.items() if key != "result_id"})):
@@ -213,18 +226,18 @@ def chain_claims(bundle: dict) -> dict:
     return claims
 
 
-def verification(bundle: dict, reproduced: dict) -> dict:
+def verification(bundle: dict, reproduced: dict, profile: RecordProfile = DECLARED) -> dict:
     """Same-runtime reproduction of a bundle's primary step; never independent verification."""
     if canonical(bundle["steps"][0]["numerical_result"]) != canonical(reproduced["numerical_result"]):
         raise ValueError("Native workload replay mismatch")
-    value = {"schema": VERIFY_SCHEMA, "subject_ref": bundle["bundle_digest"], "outcome": "passed",
-             "independent": False, "method": VERIFY_METHOD, "runtime_digest": digest(bundle["runtimes"]),
-             "reproduction": reproduced, "authority": AUTHORITY}
-    value["verification_id"] = byte_digest(VERIFY_SCHEMA.encode() + b"\0" + canonical(value))
+    value = {"schema": profile.verify_schema, "subject_ref": bundle["bundle_digest"], "outcome": "passed",
+             "independent": False, "method": profile.verify_method, "runtime_digest": digest(bundle["runtimes"]),
+             "reproduction": reproduced, "authority": profile.authority}
+    value["verification_id"] = byte_digest(profile.verify_schema.encode() + b"\0" + canonical(value))
     return value
 
 
-def check_receipts(bundle: dict, kind: str) -> None:
+def check_receipts(bundle: dict, kind: str, profile: RecordProfile = DECLARED) -> None:
     """A replayed bundle retains at most one receipt naming the earlier occurrence it reproduced.
 
     The receipt's runtime digest covers the earlier occurrence's host paths;
@@ -243,11 +256,11 @@ def check_receipts(bundle: dict, kind: str) -> None:
             raise ValueError("Invalid replay receipt binding or authority")
         proof = receipt["verification"]
         exact_keys(proof, VERIFICATION_FIELDS)
-        if (proof["schema"] != VERIFY_SCHEMA or proof["subject_ref"] != earlier or proof["outcome"] != "passed" or
-                proof["independent"] is not False or proof["method"] != VERIFY_METHOD or
+        if (proof["schema"] != profile.verify_schema or proof["subject_ref"] != earlier or proof["outcome"] != "passed" or
+                proof["independent"] is not False or proof["method"] != profile.verify_method or
                 not isinstance(proof["runtime_digest"], str) or not _SHA256.fullmatch(proof["runtime_digest"])):
             raise ValueError("Invalid replay verification scope")
-        same(proof["authority"], AUTHORITY, "Replay cannot confer authority")
+        same(proof["authority"], profile.authority, "Replay cannot confer authority")
         same(proof["reproduction"], bundle["steps"][0], "Replay must bind this exact fresh step")
         _identity(proof, "verification_id")
         if receipt["replay_id"] != digest({key: value for key, value in receipt.items() if key != "replay_id"}):
@@ -259,6 +272,7 @@ class PipelineRunner:
 
     MAX_BYTES = MAX_BYTES
     LABEL = "Native"
+    PROFILE = DECLARED
     EXTRA_ROLES = frozenset()
     RUNTIME_EXTRA = frozenset()
 
@@ -299,6 +313,10 @@ class PipelineRunner:
 
     def check_runtime(self, runtime: dict) -> None:
         return None
+
+    def step_request(self, source: dict):
+        """What a step retains as its request: the whole source unless the pipeline narrows it."""
+        return source
 
     def make_adapter(self, repository, retained: dict):
         return PinnedSubprocessAdapter(
@@ -364,18 +382,19 @@ class PipelineRunner:
         self._unchanged(adapter, runtime, "before")
         data = self.invoke(source, bound)
         self._unchanged(adapter, runtime, "during")
-        self.check_data(source, data)
-        return seal_step(self.role, self.operation, source, self._input_refs(source, evidence_id), data)
+        self.check_data(self.step_request(source), data)
+        return seal_step(self.role, self.operation, self.step_request(source), self._input_refs(source, evidence_id), data,
+                         profile=self.PROFILE)
 
     def _validate_step(self, step, source, evidence_id):
-        check_step(step, role=self.role, operation=self.operation, source=source,
+        check_step(step, role=self.role, operation=self.operation, source=self.step_request(source), profile=self.PROFILE,
                    input_refs=self._input_refs(source, evidence_id), check_data=self.check_data, label=self.LABEL)
 
     def _check_verification(self, bundle, proof, source, evidence):
         exact_keys(proof, VERIFICATION_FIELDS)
         self._validate_step(proof["reproduction"], source, evidence)
         old, new = bundle["steps"][0], proof["reproduction"]
-        if old["execution_id"] == new["execution_id"] or old["result_id"] == new["result_id"] or proof != verification(bundle, new):
+        if old["execution_id"] == new["execution_id"] or old["result_id"] == new["result_id"] or proof != verification(bundle, new, self.PROFILE):
             raise ValueError("Verification must bind fresh native reproduction and limited authority")
         _identity(proof, "verification_id")
 
@@ -400,10 +419,10 @@ class PipelineRunner:
         return raw, source, evidence["artifact_ref"]
 
     def _check_receipts(self, bundle):
-        check_receipts(bundle, self.kind)
+        check_receipts(bundle, self.kind, self.PROFILE)
 
     def _verify(self, bundle, source, evidence, bound):
-        return verification(bundle, self._step(source, evidence, bound))
+        return verification(bundle, self._step(source, evidence, bound), self.PROFILE)
 
     def _validate(self, bundle):
         try:
@@ -451,7 +470,7 @@ class PipelineRunner:
         fresh = self._execute(raw, self._adapters(repositories, bundle["runtimes"]))
         receipt = {"schema": "ciw." + self.kind + "-replay.v1", "source_bundle_digest": bundle["bundle_digest"],
                    "replayed_bundle_digest": fresh["bundle_digest"], "numerical_match": True,
-                   "verification": verification(bundle, fresh["steps"][0]), "admission": "not_performed"}
+                   "verification": verification(bundle, fresh["steps"][0], self.PROFILE), "admission": "not_performed"}
         receipt["replay_id"] = digest(receipt)
         fresh["replay_receipts"] = [receipt]
         return {"session": fresh, "replay_receipt": receipt}
