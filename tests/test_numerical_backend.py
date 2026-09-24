@@ -1,5 +1,7 @@
 """The linear-algebra backend label is informational, bounded and never fails."""
 
+from pathlib import Path
+
 from ciw import numerical_backend
 from ciw import reference_workflow as base
 
@@ -23,7 +25,7 @@ def test_unreadable_backend_reports_unknown_without_raising(monkeypatch):
 
 
 def test_label_is_not_part_of_any_reference_identity():
-    assert "numerical_backend" not in base.__file__
+    package = Path(base.__file__).parent
+    assert "numerical_backend" not in package.joinpath("reference_workflow.py").read_text(encoding="utf-8")
     for module in ("thermal_workflow", "machine_workflow", "uncertainty_validation", "energy_workflow", "project_workflow"):
-        source = (base.__file__.replace("reference_workflow.py", module + ".py"))
-        assert "numerical_backend" not in open(source, encoding="utf-8").read(), module
+        assert "numerical_backend" not in package.joinpath(module + ".py").read_text(encoding="utf-8"), module

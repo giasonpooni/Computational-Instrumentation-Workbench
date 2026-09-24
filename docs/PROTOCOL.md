@@ -44,6 +44,36 @@ a `ciw.spatial-view.v1` packet respectively. Its only broadcast is
 | `workspace.save` | `{}` | `{workspace_file: string}`; saves to the service output directory |
 | `bundle.replayability` | `{}` | `{host: {python_version, numpy_version, kernel_probe, linear_algebra}, bundles: [{kind, bundle_id, operation_id, execution_ids, result_ids, numerical_result_ids, replay_here, runtime_roles, differences, ...}]}`; read-only. `replay_here` is `runtime_identity_matches`, `runtime_identity_differs` (with the differing identity fields, such as `algorithm.kernel_probe`) or `requires_provider_binding`; nothing executes or rebinds |
 
+## Shared workbench commands
+
+Every retained source, bundle, context, instrument view and candidate receipt
+of the running session is readable through these requests. All are read-only
+except `source.add`, `operation.execute` and `bundle.replay`, which retain new
+records and broadcast `workbench.changed`. Identities are exact strings from
+earlier responses; an unknown identity is an `invalid_payload` error.
+
+| Type | Payload | Response payload |
+| --- | --- | --- |
+| `source.add` | `{kind, label, bytes_b64}` | SOURCE_DESCRIPTOR `{schema, kind, label, source_schema, evidence_id, byte_count, source_id}`; the exact bytes are retained once and an identical retention is refused by identity |
+| `source.list` | `{}` | `{sources: [SOURCE_DESCRIPTOR]}` |
+| `source.get` | `{source_id}` | SOURCE_DESCRIPTOR plus `bytes_b64`, the exact retained bytes |
+| `operation.list` | `{}` | `{operations: [{operation_id, role, source_kind, available, requires_upstream_bundle, ...}]}` |
+| `operation.execute` | `{operation_id, parameters: {source_id, upstream_bundle_id?, configuration?}}` | BUNDLE_SUMMARY of the retained native bundle, or the retained refusal |
+| `bundle.list` | `{}` | `{bundles: [BUNDLE_SUMMARY]}` with `{bundle_id, kind, source_id, upstream_bundle_id, session_id, operation_id, result_ids, execution_ids, verification_id, retained_verification_outcome, validation, numerical_replay, state_admission}` |
+| `bundle.get` | `{bundle_id}` | The complete native bundle as retained |
+| `bundle.replay` | `{bundle_id}` | `{bundle: BUNDLE_SUMMARY, replay_receipt}` for the fresh occurrence |
+| `bundle.replayability` | `{}` | see the table above |
+| `experiment.inspect` | `{bundle_id}` | Read-only experiment projection: object context, panels, provenance |
+| `fusion.list` | `{}` | `{contexts: [...]}`; compatible-state contexts of the estimator-backed kinds with their lineage, never of declared kinds |
+| `instrument.list` | `{}` | `{instruments: [{bundle_id, source_id, instrument, operation_id, result_id, execution_id, view, state_admission}]}` |
+| `instrument.inspect` | `{bundle_id, instrument}` | The retained native result of that instrument role inside the bundle |
+| `candidate.list` | `{}` | `{candidates: [{candidate_id, bundle_id, operation_id, execution_id, state, eligibility, state_admission}]}`; historical receipts only |
+| `candidate.get` | `{candidate_id}` | The complete candidate receipt as retained |
+| `execution.list` | `{}` | Retained completed and refused execution records, including native occurrences |
+
+Payload keys are exact: an extra or missing key is refused. Nothing here
+admits state, binds a provider or changes a retained record.
+
 The initial selection is `{run_id, channel:"q", interval_s:[0,duration_s], cursor_s:0, coordinate_frame:"oscillator-state", revision:0}`. Analysis intervals are half-open `[start,end)` and independent of the playback cursor. Updates must specify the observed expected_revision; stale updates fail with `revision_conflict` and clients refresh. Analysis responses capture the selection revision and exact interval that produced them; results never mutate. Cursor updates do not recalculate analyses. Empty or reversed intervals, out-of-range cursors, unknown channels, nonfinite numbers and unsupported versions are rejected.
 
 ## Recorded run and instrument API
