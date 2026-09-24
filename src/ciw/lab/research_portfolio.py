@@ -1003,11 +1003,25 @@ def compare_figure(retained, fresh, declared: bool) -> str:
 
 
 def providers_used(report) -> list:
-    """Provider roles a report's task found bound (its recorded ``provider:ROLE`` probes that succeeded)."""
+    """Provider roles a report's task used: its ``provider:ROLE`` probes that succeeded, and the checkout roles
+    (``exchange_provenance_bundles_providers.REPOSITORIES``) its runtime identity records as ready or at a
+    revision.
+
+    A task can read an optional checkout without probing it (T097 reads set, ppda and scr-exchange); its
+    runtime identity records the checkout's state, head and tree.
+    """
+    from .exchange_provenance_bundles_providers import REPOSITORIES
     identity = report.get("provider_runtime_identity")
-    probes = identity.get("requirement_probes") if isinstance(identity, dict) else None
-    return sorted(name.partition(":")[2] for name, present in (probes if isinstance(probes, dict) else {}).items()
-                  if name.startswith("provider:") and present is True)
+    identity = identity if isinstance(identity, dict) else {}
+    probes = identity.get("requirement_probes") if isinstance(identity.get("requirement_probes"), dict) else {}
+    roles = {name.partition(":")[2] for name, present in probes.items()
+             if name.startswith("provider:") and present is True}
+    for role in set(REPOSITORIES) & set(identity):
+        entry = identity[role]
+        if isinstance(entry, dict) and (entry["state"] == "ready" if "state" in entry
+                                        else bool(entry.get("revision") or entry.get("head"))):
+            roles.add(role)
+    return sorted(roles)
 
 
 def _second_platform_step(roles) -> str:
@@ -1018,7 +1032,8 @@ def _second_platform_step(roles) -> str:
             "results/figures-windows with --provider ROLE=PATH for every provider the retained figure tasks used"
             f"{bound}, at the pins scripts/check_lab.py provisions and with plsr-python bound to that Python. It "
             "re-executes every figure task without the section's time budget and records each figure's outcome "
-            "with the platform in figure-check.json; fix or declare every figure it reports as a mismatch.")
+            "with the platform in figure-check.json; fix every figure it reports as a mismatch, declaring one only "
+            "when its plotted data are wall-clock timings.")
 
 
 def _figure_index(ctx, reports) -> list:

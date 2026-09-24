@@ -376,7 +376,9 @@ figure task of a retained run with the installed `ciw`, without a time budget,
 into a new directory, compares the figures the same way and writes
 `figure-check.json` (`ciw.lab-figure-check.v1`: each figure's outcome and the
 platform, Python, NumPy and BLAS build) and `figure-check.md`. A task whose
-retained report used a provider that is not bound (`--provider ROLE=PATH`) or
+retained report used a provider that is not bound (`--provider ROLE=PATH`; a
+provider probe that succeeded, or a checkout its runtime identity records as
+ready or at a revision, as T097 records set, ppda and scr-exchange) or
 recorded source digests that differ from the installed package's is listed as
 not re-executed, and one that ends in another state or with other
 requirement-probe outcomes as not comparable; neither counts as a match. It
@@ -389,6 +391,8 @@ python scripts/check_figures.py --retained lab --output-dir results/figures     
 python scripts/check_figures.py --retained lab --output-dir results/figures T013 T020   # selected tasks
 python scripts/check_figures.py --retained lab --output-dir results/figures-windows \
     --provider csg=/trusted/references/csg --provider scr=/trusted/references/scr \
+    --provider set=/trusted/references/set --provider ppda=/trusted/references/ppda \
+    --provider scr-exchange=/trusted/references/scr-exchange \
     --provider plsr-python=/path/to/python3.12   # the providers the retained figure tasks used
 ```
 

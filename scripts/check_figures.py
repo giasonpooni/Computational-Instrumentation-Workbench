@@ -104,9 +104,13 @@ def not_reexecuted(report, providers) -> str | None:
     if unbound:
         return f"provider {', '.join(unbound)} not bound here; the retained run used it"
     identity = report.get("provider_runtime_identity")
-    sources = identity.get("sources") if isinstance(identity, dict) else None
-    changed = sorted(name for name, digest in (sources if isinstance(sources, dict) else {}).items()
-                     if runner.source_digest(name) != digest)
+    identity = identity if isinstance(identity, dict) else {}
+    # Provider-backed tasks (T005, T008, T097) record their CIW sources under "ciw", beside the provider's identity.
+    sources = {}
+    for record in (identity, identity.get("ciw")):
+        if isinstance(record, dict) and isinstance(record.get("sources"), dict):
+            sources.update(record["sources"])
+    changed = sorted(name for name, digest in sources.items() if runner.source_digest(name) != digest)
     if changed:
         return "sources differ from the retained run's: " + ", ".join(changed)
     return None

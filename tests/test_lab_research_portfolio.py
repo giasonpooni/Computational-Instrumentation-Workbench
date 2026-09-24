@@ -300,10 +300,10 @@ TIMING_IDENTICAL = "Re-executed figures declared as wall-clock timing figures re
 
 
 def _figure_task(task_id, varying=False, declared=False, timing_note=False, growing=False, provider=None,
-                 states=("completed",), extra=False):
+                 states=("completed",), extra=False, identity=None):
     """A fake figure task: ``varying`` changes one plotted value on every call, ``growing`` adds a point,
     ``timing_note`` retains a JSON note on wall-clock timings (no declaration), ``declared`` declares the figure,
-    ``extra`` writes a second figure from its second call on."""
+    ``extra`` writes a second figure from its second call on, ``identity`` is its recorded runtime identity."""
     from ciw.lab import svg
     calls = iter(range(1, 100))
 
@@ -319,7 +319,8 @@ def _figure_task(task_id, varying=False, declared=False, timing_note=False, grow
                           wall_clock_timing=declared)
         if extra and call > 1:
             ctx.artifact_text("extra.svg", svg.line_plot([("a", xs, ys)], title="t", xlabel="x", ylabel="y"))
-        return {"state": states[min(call, len(states)) - 1], "fields": {},
+        return {"state": states[min(call, len(states)) - 1],
+                "fields": {"provider_runtime_identity": identity} if identity else {},
                 "findings": [finding("f", "numerical", 1.0, {"generator": {"name": "g"}, "checks": [CHECK]},
                                      uncertainty={"kind": "exact", "value": 0, "basis": "b"},
                                      tolerance={"abs": 0, "rel": 0})]}
@@ -410,14 +411,31 @@ def test_figures_not_reexecuted_leave_the_task_partial(tmp_path, monkeypatch):
     assert any("not re-executed" in a and "T010" in a for a in report["unresolved_assumptions"])
 
 
+# A T097-like runtime identity: optional checkouts read without a provider probe, one ready and one not bound.
+UNPROBED = {"set": {"state": "ready", "head": "h", "tree": "t"}, "ppda": {"state": "not_bound", "head": None},
+            "scr": {"revision": "r", "source_tree": "t"}, "scr-engine": {"revision": "r"}, "sources": {}}
+
+
 def test_next_step_runs_the_figure_check_on_the_second_platform(tmp_path, monkeypatch):
-    _retain_figures(tmp_path, monkeypatch, {"T010": _figure_task("T010", provider="csg"), "T013": _figure_task("T013")},
+    _retain_figures(tmp_path, monkeypatch, {"T010": _figure_task("T010", provider="csg"), "T013": _figure_task("T013"),
+                                            "T020": _figure_task("T020", identity=UNPROBED)},
                     providers={"csg": tmp_path})
     step = _run("T158", tmp_path)["recommended_next_task"]
-    # The remaining work is the Windows run of scripts/check_figures.py with the providers the figure tasks used.
+    # The remaining work is the Windows run of scripts/check_figures.py with the providers the figure tasks used,
+    # the checkouts a task read without probing them included.
     assert "Windows" in step and "python scripts/check_figures.py --retained lab" in step
-    assert "(csg in this run)" in step and "figure-check.json" in step
+    assert "(csg, scr, set in this run)" in step and "figure-check.json" in step
     assert "declare timing figures" not in step and not re.search(r"\bT\d{3}\b", step)
+    # A declaration is for wall-clock timing figures only, never for a figure that differs on another platform.
+    assert "fix or declare" not in step and "declaring one only when its plotted data are wall-clock timings" in step
+
+
+def test_providers_used_include_checkouts_read_without_a_probe():
+    used = research_portfolio.providers_used({"provider_runtime_identity": dict(
+        UNPROBED, requirement_probes={"provider:csg": True, "provider:ftr": False, "tool:cargo": True})})
+    # A ready or pinned checkout role counts; a role not bound, a failed probe and a non-checkout key do not.
+    assert used == ["csg", "scr", "set"]
+    assert research_portfolio.providers_used({"provider_runtime_identity": None}) == []
 
 
 def _script(name):
@@ -478,6 +496,14 @@ def test_figure_check_script_reexecutes_a_retained_run_and_compares_every_figure
     # Changed sources, a used output directory, one inside the retained run and unknown tasks are refused.
     changed = check.not_reexecuted({"provider_runtime_identity": {"sources": {"src/ciw/lab/svg.py": "0" * 64}}}, {})
     assert changed == "sources differ from the retained run's: src/ciw/lab/svg.py"
+    # Provider-backed reports record their CIW sources under "ciw"; those are compared as well.
+    nested = {"provider_runtime_identity": {"ciw": {"sources": {"src/ciw/lab/svg.py": "0" * 64}},
+                                            "requirement_probes": {"provider:csg": True}}}
+    assert check.not_reexecuted(nested, {"csg": tmp_path}) == (
+        "sources differ from the retained run's: src/ciw/lab/svg.py")
+    # A checkout the task read without probing it (T097's set) must be bound as well.
+    assert check.not_reexecuted({"provider_runtime_identity": UNPROBED}, {"scr": tmp_path}) == (
+        "provider set not bound here; the retained run used it")
     for args, message in ((("--output-dir", str(out)), "new or empty"),
                           (("--output-dir", str(retained / "figures")), "outside the retained run"),
                           (("--output-dir", str(tmp_path / "unknown"), "T001"), "Not figure tasks"),

@@ -283,6 +283,8 @@ exception by its type, not its message, when it may name a path.
   SVG figures can be declared). T158 and `scripts/check_figures.py` compare a
   declared figure for presence and structure only; every other figure must
   regenerate byte for byte, so an undeclared timing figure is a mismatch.
+  Declare only figures whose plotted data are wall-clock timings: a figure
+  that differs for another reason (platform numerics) is fixed, not declared.
 - Budget: the whole section run ≤ 60 s and its tests ≤ 60 s on one CPU core.
   The clean-room gate pins `OPENBLAS_NUM_THREADS=1`; do not rely on BLAS
   threading, and avoid large dense solves where a structured solver exists.
