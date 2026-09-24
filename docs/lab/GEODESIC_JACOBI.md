@@ -230,18 +230,30 @@ defined for same-origin pairs, and it is used here only for want of a kind for
 this case, with the caveat stated in the check's reference text (the label
 comes from the independent check either way). The provider output is refused
 (`CSG_EXECUTION_FAILED`) unless it answers every requested case in the expected
-shape. The checkout is also refused as dirty when any untracked file other than
-bytecode caches sits under its `src/` (ignored files included), since the
-bootstrap puts that directory first on `sys.path`.
+shape (finite 2×2 matrices and determinants on the requested grid). The
+checkout is refused as dirty (`CSG_CHECKOUT_DIRTY`) under the core rule of
+`git_identity`: any modified, untracked or *ignored* file outside the runtime
+cache directories (`ciw.lab.runner.RUNTIME_CACHES`: `.venv`, `__pycache__`,
+tool caches), anywhere in the checkout, or any tracked file flagged
+skip-worktree or assume-unchanged in the index (whose bytes `git status` never
+compares). Ignored build output such as `out/` therefore makes a checkout
+dirty. Untracked files under `src/` other than bytecode caches are refused in
+addition, since the bootstrap puts that directory first on `sys.path`.
 
 **Refusals.** Before verification, the pin-stage code a checkout calls for is
-predicted from direct git queries (`rev-parse`, `status`, `ls-files`); the
-refusal finding compares that prediction with the code `verify_csg_checkout`
-raises. Execution-stage refusals (`CSG_EXECUTION_FAILED`,
-`CSG_CHANGED_DURING_EXECUTION`) cannot be predicted and are checked by
-membership, stated as such. Reports carry only the code and a fixed sentence;
-the message, with the checkout path replaced by `<checkout>`, is retained in
-`provider-refusal.json`. T008 records the same refusal finding.
+predicted from direct git queries (`rev-parse`; `status --porcelain -z
+--untracked-files=all --ignored`, exempting paths inside a runtime-cache
+directory; `ls-files -v` for index flags; `ls-files --others` under `src/`);
+the refusal finding compares that prediction with the code
+`verify_csg_checkout` raises, whose message names the cause (dirty files or
+index flags, and the count under `src/` only when there are any). After a
+clean pin stage the expected code follows from where the
+refusal was raised, not from the observed code: the provider subprocess and
+its output check refuse only with `CSG_EXECUTION_FAILED`, and the
+re-verification after execution only with `CSG_CHANGED_DURING_EXECUTION`, so a
+code from the wrong stage fails the check. Reports carry only the code and a
+fixed sentence; the message, with the checkout path replaced by `<checkout>`,
+is retained in `provider-refusal.json`. T008 records the same refusal finding.
 
 ## T006 — Jacobi columns against finite differences
 
@@ -302,8 +314,11 @@ there). Each surface must have at least one geodesic that reaches a conjugate
 point, otherwise the check fails rather than passing vacuously. Zero locations
 move by at most 3e-8 between rtol 1e-9 and 1e-10, with no count change.
 Counterexample: on variable curvature the first focal point is not half the
-first conjugate distance (3.47 against 3.89); if no seeded geodesic provided a
-witness, the finding would be recorded as unestablished, not raised. With the
+first conjugate distance (3.47 against 3.89). If no seeded geodesic provided a
+witness, the finding would be recorded, not raised: `not_established` with
+`expected_not_established`, its seeded sample declared as `inputs` (a
+`generator` basis would label it `synthetic`), and a note that the
+counterexample was not found; the task stays completed. With the
 provider bound, ciw zeros match the focus events of the provider's closed-form
 transfer (independent check) and of its RK4 trace (same method, different
 origin), with equal zero counts.
@@ -317,13 +332,17 @@ the Green function G(L, s) = j_lat(s) j_head(L) − j_head(s) j_lat(L),
     δj(L) = −∫₀ᴸ G(L, s) j(s) δK(s) ds,
 
 and on constant curvature G(L, s) = sn(L − s). The lateral weight
-sn(L − s) cn(s) is largest for early curvature; the heading weight
-sn(L − s) sn(s) (s(L − s) on a flat background) is symmetric about mid-path and
-vanishes at both ends — the heading column is *not* late-weighted. Checked with
-a curvature bump (amplitude 1e-3, width 0.3) at s = 0.5, 1.5, 2.5 on a flat path
-of length 3: direct RK4 agrees with the kernel integrals to 5.7e-5 (relative);
-the lateral response at 0.5 is 4.94 times that at 2.5; the heading responses
-at 0.5 and 2.5 agree to 1.7e-11 of the mid-path response.
+sn(L − s) cn(s) = [sn(L) + sn(L − 2s)]/2 decreases along the path when K ≤ 0 or
+√K·L ≤ π/2 (before the first focal distance), so it is early-weighted there
+(L − s on a flat background); beyond that it is not monotone (on the unit
+sphere with L = 3 it peaks near s ≈ 0.71 and changes sign). The heading weight
+sn(L − s) sn(s) (s(L − s) on a flat background) is symmetric about mid-path for
+every K and vanishes at both ends — the heading column is *not* late-weighted.
+The finding checks the flat case only, with a curvature bump (amplitude 1e-3,
+width 0.3) at s = 0.5, 1.5, 2.5 on a flat path of length 3: direct RK4 agrees
+with the kernel integrals to 5.7e-5 (relative); the lateral response at 0.5 is
+4.94 times that at 2.5; the heading responses at 0.5 and 2.5 agree to 1.7e-11
+of the mid-path response.
 
 The heading symmetry is in fact exact, not first order: reversing a path
 (s → L − s) maps Φ(L) to D Φ(L)⁻¹ D with D = diag(1, −1), so j_head(L) is
@@ -338,7 +357,11 @@ rankings have Kendall τ = 0.23 (43 discordant pairs of 120). Witness at equal
 length (L = 3, same torus): `torus-outer-to-inner` (K > 0 first) has |j_lat|
 0.857 and |j_head| 3.907, `torus-inner-to-outer` (K < 0 first) has 1.803 and
 2.846 — lateral error ranks the second path worse, heading error ranks the
-first worse. The lateral reversal follows the early weighting; the heading
+first worse. The lateral reversal follows the early weighting: on both
+witness paths the lateral kernel G(L, s) j_lat(s) decreases along the path,
+although √K_max·L (1.65 and 1.73) exceeds π/2, so the constant-curvature
+condition above does not cover them and this was read off the integrated
+kernels (`columns.json`, `kernels.svg`), not assumed; the heading
 difference comes from the two curvature profiles not being mirror images (by
 reciprocity, exact mirrors would tie), which the first-order kernels explain
 only qualitatively (`kernels.svg` plots them on the witness paths). Central
@@ -362,8 +385,9 @@ differences (ε = 1e-3) confirm the endpoint sensitivities to 1.9e-6.
 * The RK4 O(h⁶) per-step determinant defect assumes smooth K along the stage
   points; curvature discontinuities (meshes, CAD patches) were not tested.
 * Deferred research question: characterize the leading RK4 determinant
-  coefficient −(4k₀³ − k₀k₂ + 2k₁²)/288 along whole paths, and whether a
-  Wronskian-preserving (symplectic) integrator for the Jacobi block changes
-  conjugate-point accuracy near foci (T010–T011).
+  coefficient −(4k₀³ − k₀k₂ + 2k₁² + 4k₀(e₂ + e₃))/288 along whole paths (the
+  stage offsets e₂, e₃ included), and whether a Wronskian-preserving
+  (symplectic) integrator for the Jacobi block changes conjugate-point accuracy
+  near foci (T010–T011).
 * Physical claims (T005 separation of real trajectories, T009 which error
   dominates a real tool or vehicle path) are recorded as `not_established`.

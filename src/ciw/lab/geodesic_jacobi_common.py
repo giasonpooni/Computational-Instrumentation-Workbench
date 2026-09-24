@@ -507,8 +507,6 @@ class ProviderRefusal(ValueError):
 # Refusal codes by stage: pin verification before execution, then execution itself.
 PIN_REFUSALS = ("CSG_CHECKOUT_UNREADABLE", "CSG_REVISION_MISMATCH", "CSG_TREE_MISMATCH", "CSG_CHECKOUT_DIRTY")
 EXECUTION_REFUSALS = ("CSG_EXECUTION_FAILED", "CSG_CHANGED_DURING_EXECUTION")
-# Directories a provider run may create inside its checkout; they hold no importable sources.
-RUNTIME_CACHES = (".venv", "venv", "__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache")
 
 
 def csg_pin() -> dict:
@@ -519,11 +517,11 @@ def csg_pin() -> dict:
     return {"revision": pin["revision"], "source_tree": pin["source_tree"], "source_root": pin["source_root"]}
 
 
-def _git(checkout, *args) -> str:
+def _git(checkout, *args, raw: bool = False) -> str:
     import subprocess
 
-    return subprocess.run(["git", "-C", str(checkout), *args], check=True, capture_output=True,
-                          text=True).stdout.strip()
+    out = subprocess.run(["git", "-C", str(checkout), *args], check=True, capture_output=True, text=True).stdout
+    return out if raw else out.strip()
 
 
 def untracked_sources(checkout) -> list:
@@ -537,20 +535,46 @@ def untracked_sources(checkout) -> list:
     return sorted(path for path in listing if path and "__pycache__" not in path.split("/"))
 
 
+def _status_paths(checkout) -> list:
+    """Paths ``git status`` reports (modified, untracked and ignored), parsed from NUL-separated porcelain v1."""
+    entries = _git(checkout, "status", "--porcelain=v1", "-z", "--untracked-files=all", "--ignored",
+                   raw=True).split("\0")
+    paths, index = [], 0
+    while index < len(entries):
+        entry = entries[index]
+        index += 1
+        if not entry:
+            continue
+        paths.append(entry[3:])
+        if "R" in entry[:2] or "C" in entry[:2]:
+            # A rename or copy is followed by its origin path.
+            paths.append(entries[index])
+            index += 1
+    return paths
+
+
 def predict_csg_refusal(checkout) -> str:
     """Pin-stage refusal code a checkout calls for, or "none", from direct git queries.
 
     Computed before and independently of :func:`verify_csg_checkout` (which
     goes through ``ciw.lab.runner.git_identity``), so a refusal finding can
-    compare an expected code with the observed one instead of copying it.
+    compare an expected code with the observed one instead of copying it. The
+    dirtiness rule is the core one: any modified, untracked or ignored path
+    outside a runtime-cache directory, or a tracked file flagged skip-worktree
+    or assume-unchanged (``ls-files -v`` tags ``S`` or lower case), whose bytes
+    ``git status`` never compares.
     """
     import subprocess
+
+    from .runner import RUNTIME_CACHES
 
     pin = csg_pin()
     try:
         head = _git(checkout, "rev-parse", "--verify", "HEAD")
         tree = _git(checkout, "rev-parse", "HEAD^{tree}")
-        status = _git(checkout, "status", "--porcelain", "--untracked-files=all").splitlines()
+        status = _status_paths(checkout)
+        flagged = [line for line in _git(checkout, "ls-files", "-v", "--", ":(top)").splitlines()
+                   if line[:1] == "S" or line[:1].islower()]
         stray = untracked_sources(checkout)
     except (OSError, subprocess.CalledProcessError):
         return "CSG_CHECKOUT_UNREADABLE"
@@ -558,9 +582,9 @@ def predict_csg_refusal(checkout) -> str:
         return "CSG_REVISION_MISMATCH"
     if tree != pin["source_tree"]:
         return "CSG_TREE_MISMATCH"
-    changed = [line for line in status
-               if not set(line[3:].strip('"').split("/")) & set(RUNTIME_CACHES)]
-    return "CSG_CHECKOUT_DIRTY" if changed or stray else "none"
+    # Runtime caches are directories: a path is exempt when one of its parent directories is one.
+    changed = [path for path in status if not set(path.rstrip("/").split("/")[:-1]) & set(RUNTIME_CACHES)]
+    return "CSG_CHECKOUT_DIRTY" if changed or flagged or stray else "none"
 
 
 def verify_csg_checkout(checkout) -> dict:
@@ -583,8 +607,10 @@ def verify_csg_checkout(checkout) -> dict:
     if identity["source_tree"] != pin["source_tree"]:
         raise ProviderRefusal("CSG_TREE_MISMATCH", "Provider source tree differs from the pinned tree")
     if identity["dirty"] or stray:
-        raise ProviderRefusal("CSG_CHECKOUT_DIRTY", "Provider checkout has uncommitted changes or untracked "
-                              f"files under its source root ({len(stray)} untracked source files)")
+        causes = (["uncommitted, untracked, ignored or index-flagged files outside the runtime caches"]
+                  if identity["dirty"] else [])
+        causes += [f"untracked files under its source root ({len(stray)})"] if stray else []
+        raise ProviderRefusal("CSG_CHECKOUT_DIRTY", "Provider checkout has " + ", including ".join(causes))
     return {"repository": CSG_REPOSITORY, "revision": identity["revision"], "source_tree": identity["source_tree"],
             "dirty": False, "entry": CSG_ENTRY}
 
@@ -600,8 +626,12 @@ def _check_csg_output(data, cases) -> None:
         nodes = len(case["arclength"])
         for source in ("numeric", "closed_form"):
             summary = entry[source]
-            if len(summary["matrices"]) != nodes or len(summary["determinant"]) != nodes:
+            matrices = np.asarray(summary["matrices"], dtype=float)
+            determinant = np.asarray(summary["determinant"], dtype=float)
+            if matrices.shape != (nodes, 2, 2) or determinant.shape != (nodes,):
                 raise ValueError("provider transfer matrices do not match the requested grid")
+            if not (np.all(np.isfinite(matrices)) and np.all(np.isfinite(determinant))):
+                raise ValueError("provider transfer matrices are not finite")
             for column in ("a", "b"):
                 for event in summary["focus_events"][column]:
                     float(event["arc_length"])

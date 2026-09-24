@@ -392,6 +392,75 @@ def test_csg_checkout_refusals(tmp_path, monkeypatch):
         assert detail["stage"] == "pin" and str(tmp_path) not in detail["message"]
 
 
+@pytest.mark.skipif(shutil.which("git") is None, reason="git is not installed")
+def test_csg_refusal_prediction_follows_the_core_dirtiness_rule(tmp_path, monkeypatch):
+    # A throwaway repository stands in for the provider; no provider checkout is needed.
+    monkeypatch.setenv("GIT_CEILING_DIRECTORIES", str(tmp_path))
+    repo = tmp_path / "provider"
+    (repo / "src" / "pkg").mkdir(parents=True)
+    git = _git_prefix(repo, tmp_path)
+    subprocess.run(git + ["init", "-q"], check=True)
+    (repo / ".gitignore").write_text("out/\n.venv/\n", encoding="utf-8")
+    (repo / "README.md").write_text("provider\n", encoding="utf-8")
+    (repo / "src" / "pkg" / "__init__.py").write_text("", encoding="utf-8")
+    subprocess.run(git + ["add", "-A"], check=True)
+    subprocess.run(git + ["commit", "-q", "-m", "pinned"], check=True)
+    head = subprocess.run(git + ["rev-parse", "HEAD"], check=True, capture_output=True, text=True).stdout.strip()
+    tree = subprocess.run(git + ["rev-parse", "HEAD^{tree}"], check=True, capture_output=True,
+                          text=True).stdout.strip()
+    monkeypatch.setattr(gj, "csg_pin", lambda: {"revision": head, "source_tree": tree, "source_root": "src"})
+
+    def observed():
+        try:
+            gj.verify_csg_checkout(repo)
+        except gj.ProviderRefusal as refusal:
+            return refusal.code
+        return "none"
+
+    def write(relative, text=""):
+        target = repo / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(text, encoding="utf-8")
+        return target
+
+    def flag(option):
+        subprocess.run(git + ["update-index", option, "README.md"], check=True)
+
+    cases = (
+        ("clean", lambda: None, lambda: None, "none"),
+        ("ignored build output at the root", lambda: write("out/result.json"),
+         lambda: shutil.rmtree(repo / "out"), "CSG_CHECKOUT_DIRTY"),
+        ("skip-worktree flag", lambda: flag("--skip-worktree"), lambda: flag("--no-skip-worktree"),
+         "CSG_CHECKOUT_DIRTY"),
+        ("assume-unchanged flag", lambda: flag("--assume-unchanged"), lambda: flag("--no-assume-unchanged"),
+         "CSG_CHECKOUT_DIRTY"),
+        ("untracked module under src", lambda: write("src/x.py"), lambda: (repo / "src" / "x.py").unlink(),
+         "CSG_CHECKOUT_DIRTY"),
+        # A leading-space porcelain entry (" M") must still be parsed by path.
+        ("modified tracked file", lambda: write("README.md", "edited\n"), lambda: write("README.md", "provider\n"),
+         "CSG_CHECKOUT_DIRTY"),
+        ("ignored runtime cache", lambda: write(".venv/lib/site.py"), lambda: shutil.rmtree(repo / ".venv"), "none"),
+        ("bytecode cache under src", lambda: write("src/pkg/__pycache__/x.pyc"),
+         lambda: shutil.rmtree(repo / "src" / "pkg" / "__pycache__"), "none"),
+    )
+    for name, make, undo, code in cases:
+        make()
+        try:
+            assert gj.predict_csg_refusal(repo) == observed() == code, name
+        finally:
+            undo()
+    assert gj.predict_csg_refusal(repo) == observed() == "none"
+    # The refusal names what made the checkout dirty; the source-root count appears only when nonzero.
+    write("out/result.json")
+    with pytest.raises(gj.ProviderRefusal) as ignored:
+        gj.verify_csg_checkout(repo)
+    assert "ignored" in str(ignored.value) and "source root" not in str(ignored.value)
+    write("src/x.py")
+    with pytest.raises(gj.ProviderRefusal) as stray:
+        gj.verify_csg_checkout(repo)
+    assert "including untracked files under its source root (1)" in str(stray.value)
+
+
 def test_csg_output_is_refused_unless_complete():
     cases = [{"arclength": [0.0, 0.5, 1.0], "gaussian_curvature": 1.0}]
     summary = {"matrices": [[[1, 0], [0, 1]]] * 3, "determinant": [1.0] * 3,
@@ -400,9 +469,49 @@ def test_csg_output_is_refused_unless_complete():
     gj._check_csg_output(good, cases)
     for broken in ({**good, "maps": []}, {**good, "traces": [{}, {}]},
                    {**good, "maps": [{"numeric": dict(summary, matrices=[]), "closed_form": summary}]},
+                   {**good, "maps": [{"numeric": dict(summary, matrices=[[1.0]] * 3), "closed_form": summary}]},
+                   {**good, "maps": [{"numeric": summary,
+                                      "closed_form": dict(summary, determinant=[1.0, float("nan"), 1.0])}]},
                    {key: value for key, value in good.items() if key != "numpy"}):
         with pytest.raises((ValueError, KeyError, TypeError)):
             gj._check_csg_output(broken, cases)
+
+
+def test_csg_execution_refusals_are_expected_from_their_stage(tmp_path, monkeypatch):
+    pin = gj.csg_pin()
+    identity = {"repository": gj.CSG_REPOSITORY, "revision": pin["revision"], "source_tree": pin["source_tree"],
+                "dirty": False, "entry": gj.CSG_ENTRY}
+    checkout = tmp_path / "checkout"
+    checkout.mkdir()
+    calls = []
+
+    def verify(path):
+        # Clean at the pin stage; a different revision when re-verified after execution.
+        calls.append(path)
+        return identity if len(calls) == 1 else dict(identity, revision="0" * 40)
+
+    def failed(path, cases):
+        raise gj.ProviderRefusal("CSG_EXECUTION_FAILED", "Provider exited with a nonzero status")
+
+    monkeypatch.setattr(gj, "predict_csg_refusal", lambda path: "none")
+    monkeypatch.setattr(gj, "verify_csg_checkout", verify)
+    claim = ("A pinned CSG provider whose execution fails or whose checkout changes during execution is refused "
+             "rather than compared")
+    for stage, run, code in (("execution", failed, "CSG_EXECUTION_FAILED"),
+                             ("post-execution", lambda path, cases: {}, "CSG_CHANGED_DURING_EXECUTION")):
+        calls.clear()
+        monkeypatch.setattr(gj, "run_csg_jacobi", run)
+        report = _run(runner.Context(tmp_path / stage, {"csg": checkout}), "T005")
+        assert report["state"] == "partial"
+        record = _findings(report)[claim]
+        assert record["evidence_status"] == "numerically_verified"
+        assert record["value"] == {"predicted_pin_stage": "none", "stage": stage, "expected": code, "observed": code}
+    # The expectation comes from the stage, not from the observed code: a code from another stage refutes it.
+    ctx = runner.Context(tmp_path / "wrong-stage")
+    ctx.begin("T005")
+    record, _ = gjt._refusal_record(ctx, {"refusal": "CSG_TREE_MISMATCH", "stage": "execution", "predicted": "none",
+                                          "message": "Provider source tree differs from the pinned tree"})
+    assert record["evidence_status"] == "not_established"
 
 
 def test_t006_finite_differences(lab):
@@ -479,6 +588,33 @@ def test_t008_conjugate_and_focal_points(lab):
     assert abs(counter["value"]["focal"] - counter["value"]["conjugate"] / 2) > 0.3 and counter["counterexample"]
 
 
+def test_t008_missing_witness_is_recorded_not_raised(lab, tmp_path, monkeypatch):
+    original = gjt.sturm_study
+
+    def no_witness(ctx):
+        # Every torus focal point sits at exactly half its conjugate distance, so no witness exists.
+        rows = [dict(r) for r in original(lab.ctx)]
+        for r in rows:
+            if r["surface"] == "torus" and r["conjugate"]:
+                r["focal"] = [r["conjugate"][0] / 2]
+        return rows
+
+    class Shared(runner.Context):
+        # Reuse the module run's memoized integrations; this run's artifacts go to tmp_path.
+        def memo(self, key, compute):
+            return lab.ctx.memo(key, compute)
+
+    monkeypatch.setattr(gjt, "sturm_study", no_witness)
+    report = _run(Shared(tmp_path), "T008")
+    assert report["state"] == "completed"
+    assert report["evidence_status"]["primary"] == "numerically_verified"
+    record = _findings(report)["On variable curvature the first focal point is not half the first conjugate distance"]
+    assert record["evidence_status"] == "not_established" and record["expected_not_established"] is True
+    assert "counterexample" not in record and record["value"]["largest_separation"] == pytest.approx(0.0)
+    assert any("the counterexample was not found in this sample" in note
+               for note in report["unresolved_assumptions"])
+
+
 def test_t009_columns_rank_paths_differently(lab):
     report = lab("T009")
     assert report["state"] == "completed"
@@ -492,8 +628,8 @@ def test_t009_columns_rank_paths_differently(lab):
                  "path"]["evidence_status"] == "numerically_verified"
     physical = [f for f in report["findings"] if f["domain"] == "physical"]
     assert physical and all(f["evidence_status"] == "not_established" for f in physical)
-    kernel = found["To first order, curvature at arclength s moves j_lat(L) with weight sn(L-s) cn(s) (early-weighted) "
-                   "and j_head(L) with weight sn(L-s) sn(s) (symmetric about mid-path)"]
+    kernel = found["On a flat background, to first order, curvature at arclength s moves j_lat(L) with weight L - s "
+                   "(early-weighted) and j_head(L) with weight s(L - s) (symmetric about mid-path)"]
     assert kernel["evidence_status"] == "numerically_verified"
     assert kernel["value"]["heading_early_late_asymmetry"] < 1e-6 and kernel["value"]["lateral_early_over_late"] > 3
     reversal = found["Reversing a geodesic leaves j_head(L) unchanged and exchanges j_lat(L) with j_head'(L) (transfer "

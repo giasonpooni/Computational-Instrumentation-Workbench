@@ -1279,6 +1279,9 @@ SEPARATION_PATHS = ("sphere-great-circle", "hyperbolic-long")
 SEPARATION_EPS = (0.04, 0.02, 0.01)
 SEPARATION_NODES = 141
 CSG_REFUSALS = frozenset(gj.PIN_REFUSALS + gj.EXECUTION_REFUSALS)
+# After pin verification the refusal code follows from where it was raised: run_csg_jacobi refuses only
+# with CSG_EXECUTION_FAILED, and the re-verification after it only with CSG_CHANGED_DURING_EXECUTION.
+STAGE_REFUSALS = {"execution": "CSG_EXECUTION_FAILED", "post-execution": "CSG_CHANGED_DURING_EXECUTION"}
 
 
 def _model_error(tr, k):
@@ -1342,6 +1345,8 @@ def _csg(ctx):
 
     The expected pin-stage refusal is predicted from direct git queries before
     verification, so a refusal finding compares a prediction with the outcome.
+    Later refusals are expected from the stage that raised them (see
+    ``STAGE_REFUSALS``), never copied from the observed code.
     """
     def compute():
         checkout = ctx.providers["csg"]
@@ -1353,6 +1358,7 @@ def _csg(ctx):
             cases = [{"arclength": _fine_transfer(ctx, key).s.tolist(), "gaussian_curvature": _constant_curvature_of(key)}
                      for key in CONSTANT_PATHS]
             data = gj.run_csg_jacobi(checkout, cases)
+            stage = "post-execution"
             try:
                 unchanged = gj.verify_csg_checkout(checkout) == identity
             except gj.ProviderRefusal:
@@ -1389,24 +1395,26 @@ def _refusal_record(ctx, csg) -> tuple:
                          "passed": code == csg["predicted"]}]},
             uncertainty=_unc("exact", 0.0, "refusal codes are exact strings"))
     else:
-        expected = code if code in gj.EXECUTION_REFUSALS else gj.EXECUTION_REFUSALS[0]
+        expected = STAGE_REFUSALS[csg["stage"]]
         record = finding(
             "A pinned CSG provider whose execution fails or whose checkout changes during execution is refused "
-            "rather than compared", "provenance", {"predicted_pin_stage": csg["predicted"], "observed": code},
+            "rather than compared", "provenance",
+            {"predicted_pin_stage": csg["predicted"], "stage": csg["stage"], "expected": expected, "observed": code},
             {"checks": [
                 {"reference_kind": "refusal", "reference": "pin stage predicted clean by direct git queries and "
                  "verified clean", "expected_refusal": csg["predicted"], "observed_refusal": "none",
                  "passed": csg["predicted"] == "none"},
-                {"reference_kind": "refusal", "reference": "membership: the observed code is an execution-stage "
-                 "refusal (" + ", ".join(gj.EXECUTION_REFUSALS) + ")", "expected_refusal": expected,
-                 "observed_refusal": code, "passed": code == expected}]},
+                {"reference_kind": "refusal", "reference": "code implied by the stage that refused: a failed provider "
+                 "subprocess or malformed output (execution) or a failed re-verification (post-execution)",
+                 "expected_refusal": expected, "observed_refusal": code, "passed": code == expected}]},
             uncertainty=_unc("exact", 0.0, "refusal codes are exact strings"))
     return record, f"CSG provider refused ({code}); the comparison did not run (detail in provider-refusal.json)"
 
 
 @task("T005", changed_files=CHANGED,
       regression_tests=(_test("test_t005_separation_law"), _test("test_t005_csg_provider_agreement"),
-                        _test("test_csg_checkout_refusals"), _test("test_csg_output_is_refused_unless_complete"))
+                        _test("test_csg_checkout_refusals"), _test("test_csg_output_is_refused_unless_complete"),
+                        _test("test_csg_execution_refusals_are_expected_from_their_stage"))
       + SECTION_TESTS)
 def separation_law(ctx):
     rows = {}
@@ -2031,7 +2039,10 @@ def sturm_study(ctx):
 
 
 @task("T008", changed_files=CHANGED, regression_tests=(_test("test_t008_conjugate_and_focal_points"),
-                                                       _test("test_csg_checkout_refusals")) + SECTION_TESTS)
+                                                       _test("test_t008_missing_witness_is_recorded_not_raised"),
+                                                       _test("test_csg_checkout_refusals"),
+                                                       _test("test_csg_execution_refusals_are_expected_from_their_stage"))
+      + SECTION_TESTS)
 def conjugate_focal_points(ctx):
     torus = gj.surface("torus")
     bump = gj.surface("gaussian-bump")
@@ -2172,10 +2183,18 @@ def conjugate_focal_points(ctx):
                                         "heading": witness["heading"], "first_focal": witness["focal"][0],
                                         "first_conjugate": witness["conjugate"][0]}}))
     else:
+        # Recorded, not raised: a generator basis would label it synthetic, so the sample is declared as inputs
+        # (which add no label) and the claim stays not_established.
+        separations = [abs(r["focal"][0] - r["conjugate"][0] / 2) for r in sturm
+                       if r["surface"] == "torus" and r["conjugate"] and r["focal"]]
         findings.append(finding(
             "On variable curvature the first focal point is not half the first conjugate distance", "numerical",
-            None, {"generator": {"name": "seeded torus geodesics", "seed": gj.SEED + 8}},
-            expected_not_established=True))
+            {"torus_geodesics": STURM_TORUS, "with_focal_and_conjugate": len(separations),
+             "largest_separation": max(separations, default=None)},
+            {"inputs": {"name": "seeded torus geodesics", "seed": gj.SEED + 8, "count": STURM_TORUS}},
+            uncertainty=_unc("truncation_bound", located_change, "largest change of a zero location between "
+                             "adaptive rtol 1e-9 and 1e-10; no witness separated by more than 0.3"),
+            tolerance={"abs": 1e-6, "rel": 1e-6}, expected_not_established=True))
     state, notes, identity = "completed", [], None
     if witness is None:
         notes.append("No seeded torus geodesic separated its first focal point from half its first conjugate "
@@ -2455,8 +2474,8 @@ def lateral_heading_columns(ctx):
                                     "lateral": {a: lateral[a], b: lateral[b]},
                                     "heading": {a: heading[a], b: heading[b]}}}))
     findings.append(finding(
-        "To first order, curvature at arclength s moves j_lat(L) with weight sn(L-s) cn(s) (early-weighted) and "
-        "j_head(L) with weight sn(L-s) sn(s) (symmetric about mid-path)", "mathematical",
+        "On a flat background, to first order, curvature at arclength s moves j_lat(L) with weight L - s "
+        "(early-weighted) and j_head(L) with weight s(L - s) (symmetric about mid-path)", "mathematical",
         {"responses": {c: v["direct"] for c, v in kernels.items()}, "first_order_relative_error": kernel_error,
          "heading_early_late_asymmetry": heading_asymmetry, "lateral_early_over_late": lateral_ratio},
         {"derivation": f"{DOC}, section T009 (variation of j'' + K j = 0 with its Green function)",
@@ -2490,11 +2509,12 @@ def lateral_heading_columns(ctx):
         "physical", None, {}))
     return _outcome(
         "completed", findings,
-        hypothesis=("A curvature change at arclength s moves j_lat(L) with weight sn(L-s) cn(s), which is largest "
-                    "for early curvature, and j_head(L) with weight sn(L-s) sn(s), which is symmetric about "
-                    "mid-path and vanishes at both ends; exactly, reversing the curvature profile leaves j_head(L) "
-                    "unchanged. The two columns therefore respond differently to where curvature sits along a path "
-                    "and can order paths differently."),
+        hypothesis=("On a constant-K background a curvature change at arclength s moves j_lat(L) with weight "
+                    "sn(L-s) cn(s), which decreases along the path when K <= 0 or sqrt(K) L <= pi/2 (before the "
+                    "first focal distance), and j_head(L) with weight sn(L-s) sn(s), which is symmetric about "
+                    "mid-path for every K and vanishes at both ends; exactly, reversing the curvature profile leaves "
+                    "j_head(L) unchanged. The two columns therefore respond differently to where curvature sits "
+                    "along a path and can order paths differently."),
         mathematical_model=("Endpoint normal displacement = j_lat(L) delta_perp + j_head(L) delta_alpha; "
                             "delta j(L) = -int G(L, s) j(s) delta K(s) ds with G(L, s) = j_lat(s) j_head(L) - "
                             "j_head(s) j_lat(L); reversal maps Phi(L) to D Phi(L)^-1 D; model spaces give "
