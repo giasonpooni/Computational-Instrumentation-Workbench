@@ -1,7 +1,6 @@
 """Offline algebra tests; kernel records are not claimed as native evidence."""
 from copy import deepcopy
 
-import numpy as np
 import pytest
 
 from ciw import free_energy_math as mathematics

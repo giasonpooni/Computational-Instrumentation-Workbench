@@ -1,5 +1,4 @@
 """Assembly/lineage tests; native provider science remains in its own repos."""
-import base64
 from copy import deepcopy
 import json
 import os
@@ -9,7 +8,7 @@ import pytest
 
 from ciw import measurement_chain as module
 from ciw.measurement_chain_view import project
-from ciw.telemetry import canonical, digest, _bundle_digest
+from ciw.telemetry import canonical, digest
 
 
 EXAMPLE = Path(__file__).parents[1] / "examples" / "measurement-chain" / "source.json"

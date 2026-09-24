@@ -11,7 +11,7 @@ import pytest
 from websockets.asyncio.client import connect
 from websockets.asyncio.server import serve
 
-from ciw import calibrated_observable, identified_design, measurement_chain, geometric_circle, identified_stability
+from ciw import calibrated_observable, identified_design, measurement_chain
 from ciw.cli import parser, request_remote
 from ciw.instruments import make_demo_run
 from ciw.server import WorkbenchServer

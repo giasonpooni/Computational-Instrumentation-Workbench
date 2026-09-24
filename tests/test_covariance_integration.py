@@ -9,7 +9,6 @@ import numpy as np
 import pytest
 
 from ciw.adapters.protocol import AdapterRefusal
-from ciw.core.identities import evidence_id
 from ciw.covariance_workflow import execute_covariance, replay_covariance
 from ciw.investigation import create_investigation, inspect_investigation, replay_investigation
 from ciw.session import Session, read_json

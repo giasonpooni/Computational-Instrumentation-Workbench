@@ -1,5 +1,4 @@
 """Selected state/model binding and bounded native discrete stability checks."""
-import base64
 from copy import deepcopy
 import json
 import os

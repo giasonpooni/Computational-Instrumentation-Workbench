@@ -12,7 +12,6 @@ import sys
 import numpy as np
 import pytest
 
-from ciw.adapters.protocol import AdapterRefusal
 from ciw.cli import main
 from ciw.core.identities import evidence_id
 from ciw.geodesic import (

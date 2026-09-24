@@ -1,7 +1,6 @@
 """Shared CIW lifecycle coverage for the provider-free thermal operation."""
 
 from copy import deepcopy
-import json
 
 import numpy as np
 import pytest

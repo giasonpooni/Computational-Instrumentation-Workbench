@@ -2,7 +2,6 @@
 import ctypes as ct
 from hashlib import sha256
 import os
-from pathlib import Path
 
 import pytest
 

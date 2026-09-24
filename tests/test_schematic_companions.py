@@ -9,7 +9,7 @@ import uuid
 import pytest
 
 from ciw.declared_workload import DeclaredWorkflow, _verification
-from ciw.schematic_companions import (SchematicCompanionWorkflow, POLICY, SOURCE_SCHEMA,
+from ciw.schematic_companions import (SchematicCompanionWorkflow,
                                      _source, native_occurrences, numerical_projection)
 from ciw.telemetry import canonical, digest, _bundle_digest
 

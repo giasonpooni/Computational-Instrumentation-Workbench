@@ -1,5 +1,4 @@
 """Native monitoring reuses retained innovations and never estimates state."""
-import base64
 from copy import deepcopy
 import os
 from pathlib import Path

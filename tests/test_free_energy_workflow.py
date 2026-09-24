@@ -4,7 +4,6 @@ from functools import lru_cache
 import json
 import os
 from pathlib import Path
-import runpy
 
 import pytest
 
