@@ -7,12 +7,17 @@ extend it (queue tasks T033–T037). The experiments live in
 `surfaces_discrete_geometry.py` (conformance suite, Brioschi curvature,
 stencils, chart maps, singular surfaces, defect mutants),
 `surfaces_discrete_ad.py` (dual numbers, sympy and sympy.diffgeom references) and
-`surfaces_discrete_charts.py` (sphere atlas, singularity scans, pointwise
+`surfaces_discrete_charts.py` (chart atlases, singularity scans, pointwise
 guard). Tests: `tests/test_lab_surfaces_discrete.py`.
 
 Numbers below are from a retained run (`ciw lab run T033 T034 T035 T036
 T037`); the reports and artifacts are the authority, this page summarizes
-them. Every surface is a normalized mathematical object: nothing here
+them. Each report records the source digests of the section modules and of
+the core modules its numbers depend on (`src/ciw/lab/surfaces.py`, and
+`src/ciw/lab/integrators.py` for T036) under
+`provider_runtime_identity.sources`, so the conformance evidence names the
+revision of the interface it certifies. Every numerical finding carries its
+own uncertainty (`{kind, value, basis}`). Every surface is a normalized mathematical object: nothing here
 describes, measures or calibrates a physical surface.
 
 ## Interface contract
@@ -27,7 +32,7 @@ surface.
 | `gaussian_curvature(u)` | exact `K` (closed form or second fundamental form); must satisfy the Gauss equation, i.e. equal the curvature computed from `g` alone | T033 Brioschi, T034 Riemann tensor |
 | `christoffel(u)` | generic `Γ[k, i, j] = ½ gᵏˡ (∂_i g_jl + ∂_j g_il − ∂_l g_ij)`: symmetric in `i, j`, metric compatible | T033 |
 | `geodesic_rhs(y)` | `y = (u, v)`, `u' = v`, `v'ᵏ = −Γᵏ_ij vⁱ vʲ`; no renormalization | T036 |
-| `check(u)` | raises `SurfaceRefusal(message, code)` with code `nonfinite_point` for nonfinite coordinates or `degenerate_metric` when `det g ≤ 1e-12 max(1, tr g)²` (charts may override, e.g. `outside_chart` for the hyperbolic plane at y ≤ 0) | T037 |
+| `check(u)` | raises `SurfaceRefusal(message, code)` with code `nonfinite_point` for nonfinite coordinates or `degenerate_metric` when `det(g / tr g) = det g / (tr g)² ≤ 1e-12`, a scale-free test roughly equivalent to `cond g > 1e12` (charts may override, e.g. `outside_chart` for the hyperbolic plane at y ≤ 0) | T037 |
 | `embedding(u)`, `embedding_jacobian(u)` | optional point in R³ and 3×2 Jacobian; `None` for intrinsic charts | T034 |
 
 `EmbeddedSurface` derives `g` and `dg` from exact `first(u) = (X_u, X_v)` and
@@ -41,9 +46,10 @@ Extensions added without modifying the core: `PolarChart`, `ShearChart`
 (a ↦ (a₁ + c a₂², a₂)), `CubeRootChart` (a ↦ (∛a₁, a₂), whose Jacobian blows
 up on a₁ = 0), `Cone` (apex refused with code `conical_singularity`),
 `PowerGraph` (z = c ρᵖ, apex refused with `curvature_singularity`),
-`ConformalHalfPlane` (g = y^(−2a) I, K = −a y^(2a−2)), `require_regular` and
-`SphereAtlas`. Every refusal is the core `SurfaceRefusal(message, code)`; the
-section defines no refusal class of its own.
+`ConformalHalfPlane` (g = y^(−2a) I, K = −a y^(2a−2)), `require_regular`,
+`Atlas` (with `Atlas.from_chart_maps`, `graph_atlas` and `SphereAtlas`). Every
+refusal is the core `SurfaceRefusal(message, code)`; the section defines no
+refusal class of its own.
 
 ### Declared domains
 
@@ -125,6 +131,13 @@ einsum is symmetric term by term whenever `dg` is symmetric in its last two
 indices. The check adds evidence only for a surface that overrides
 `christoffel()`.
 
+Per-finding uncertainties: the algebraic identities (symmetry,
+compatibility, rigid rotation) are rounding level (`roundoff`, 1e-15); the
+stencil-based identities carry the fourth-order stencil error at h = 1e-3 l
+(`truncation_bound`: 1e-11 for derivative consistency, 1e-12 for mixed
+partials, 1e-10 for the Gauss equation), so their residuals measure stencil
+error, not a defect; mutant and refusal counts are exact.
+
 ## Derivative checks (T034)
 
 Each conformance surface is re-expressed once as a closed-form embedding
@@ -152,8 +165,11 @@ rounded by `nsimplify`. The same formula feeds:
   heavy ones (gaussian-bump, gaussian-bump-shear, rotated-torus). Residual
   5.6e-16, recorded as a same-origin `cross_implementation` check
   (`numerically_verified`), not as independent evidence.
-* **Nested forward-mode dual numbers** (implemented in ciw, so same-origin
-  and `numerically_verified` only). Tags keep nested perturbations apart,
+* **Nested forward-mode dual numbers** (implemented in ciw, so same-origin:
+  their comparisons with the ciw interface, the embedding and the seeded
+  defect are recorded as `cross_implementation` checks and are
+  `numerically_verified` only; the self-test against hand-derived closed
+  forms is the one `analytic` check). Tags keep nested perturbations apart,
   and the Siskind–Pearlmutter test d/dx[x · d/dy(x + y)] = 1 passes. Against
   ciw the residuals are 4.4e-16 (`g, dg, Γ`) and 1.0e-15 (`K`, both via
   Brioschi with exact second derivatives and via LN − M²). The dual numbers
@@ -203,36 +219,55 @@ metrics are quadratic, so their central differences are exact up to rounding
 0. Complex-step differentiation was not run, because the core formulas use
 `math.*` and reject complex input.
 
+The counterexample witnesses are recorded as log10 values (h_opt, E(h_opt),
+E(1e-12)), so the finding's regression tolerance (0.5 decade) bounds them.
+The optimal step is resolved on a grid of 4 steps per decade, and the
+findings state that as a 0.25-decade uncertainty; the rounding slopes carry
+the standard error of their least-squares fit (at most 0.036).
+
 ## Chart atlas (T036)
 
-The atlas has two charts:
+`Atlas` holds charts of one embedded surface, each with a closed-form inverse
+of its embedding. Points move between charts through the embedding and the
+target chart's inverse; velocities map by `v_B = g_B⁻¹ J_Bᵀ J_A v_A`, which is
+exact because `J_A v_A` lies in the shared tangent plane. A chart's
+regularity is the scale-free inverse condition number `λ_min/λ_max` of its
+metric. `Atlas.from_chart_maps(base, base_inverse, maps)` builds an atlas from
+`ChartMap` reparametrizations of a base chart, each inverted by
+`map.inverse(base_inverse(X))`. Two atlases are exercised:
 
-* chart A is the core polar chart, with poles at (0, 0, ±R);
-* chart B is `Rotated(Sphere, R_y(π/2))`, with poles at (±R, 0, 0), on the
-  equator of chart A.
+* the **sphere atlas** (`SphereAtlas`): chart A is the core polar chart, with
+  poles at (0, 0, ±R); chart B is `Rotated(Sphere, R_y(π/2))`, with poles at
+  (±R, 0, 0), on the equator of chart A;
+* the **graph atlas** (`graph_atlas`) of the Gaussian bump (h = 0.5, σ = 1):
+  its global Monge chart (x, y) and the polar chart (r, t) pulled back through
+  `PolarChart`, singular at the apex r = 0.
 
-`det g/R⁴ = sin²θ` in each chart, and `sin²θ_A + sin²θ_B = 1 + y²/R² ≥ 1`.
-So the better chart always has `det g/R⁴ ≥ ½`, which T036 confirms at 4352
-sampled points (minimum 0.502).
+On the sphere the regularity is `sin²θ = det g/R⁴` in each chart, and
+`sin²θ_A + sin²θ_B = 1 + y²/R² ≥ 1`. So the better chart always has
+regularity at least ½. T036 checks this at 4352 sampled points (minimum
+0.502), evaluating every point through each chart's inverse and metric, so a
+wrong inverse or metric fails the check. On the graph the Monge regularity is
+`1/(1 + |∇f|²) ≥ 1/(1 + h²/(e σ²)) = 0.9158`; the sampled minimum over 256
+points of the disc of radius 2 is 0.9158, above that bound.
 
-Transitions are closed form. Points map through the embedding and the
-target chart's inverse (`atan2`/`hypot`). Velocities map by
-`v_B = g_B⁻¹ J_Bᵀ J_A v_A`, which is exact because `J_A v_A` lies in the
-shared tangent plane. The A→B→A round trip is exact to 6.5e-16, speed is
-preserved to 5.2e-16, and the pushforward matches a central difference of
-the point map to 3.7e-10.
+Transitions are exact to rounding. On the sphere the A→B→A round trip is
+exact to 6.5e-16, speed is preserved to 5.2e-16, and the pushforward matches
+a central difference of the point map to 3.7e-10 (the central-difference
+error at h = 1e-6). On the graph atlas the same checks give 6.0e-16, 8.2e-16
+and 3.0e-10.
 
 Integration uses the core RK4 step. After each step, if the active chart's
-`det g/R⁴ < ¼`, the state moves to the better chart. The ½ ≥ ¼ margin rules
-out chattering; the lowest post-switch value was 0.754.
+regularity is below ¼, the state moves to the better chart. On the sphere the
+½ ≥ ¼ margin rules out chattering; the lowest post-switch value was 0.754.
 
-The test geodesics are great circles of length 2π at azimuth 1.3, with
+The sphere test geodesics are great circles of length 2π at azimuth 1.3, with
 closest approach δ to the north pole, integrated in 400 steps and compared
 with the exact great circle:
 
 | δ | atlas error (4 switches) | chart A alone |
 | --- | --- | --- |
-| 0 | 4.9e-8 | 7.4e-14 (exact meridian, v_φ ≡ 0) |
+| 0 | 4.9e-8 | 7.4e-14 at 400 steps (depends on the step grid, see below) |
 | 1e-1 | 5.7e-8 | 7.2e-6 |
 | 1e-2 … 1e-6 | 4.7e-8 … 4.9e-8 | fails (nonfinite state or math domain error) |
 | 1e-8 | 4.9e-8 | 1.0e-1 |
@@ -240,23 +275,67 @@ with the exact great circle:
 | 1e-12 | 4.9e-8 | 1.0e-7 |
 
 The atlas converges at orders 4.16 (200/400 steps) and 3.96 (400/800 steps)
-through the switches.
+through the switches. The 400-step error differs from the fourth-order
+predictions of the 200- and 800-step runs by 5.7e-9 (12%), which the finding
+records as its uncertainty.
 
-A single chart passes the pole cleanly only on the exact meridian, where
-`v_φ` is exactly zero and the `cot θ` terms never act. That case is itself a
-counterexample to "single-chart integration through a pole always fails".
-Away from it the single-chart error grows continuously with δ. It is roughly
-1e5 δ for δ ≤ 1e-10 (1.0e-7 at 1e-12, which is only 2.1 times the atlas
-error, and 1.1e-5 at 1e-10), reaches 0.10 at 1e-8, and the integration fails
-for 1e-6 ≤ δ ≤ 1e-2 at 400 steps. The mechanism is the azimuthal rate
-`φ' = sin δ/sin²θ`, which peaks at 1/sin δ at closest approach and is not
-resolved by the fixed step.
+Away from the exact meridian the single-chart error grows continuously with
+δ. It is roughly 1e5 δ for δ ≤ 1e-10 (1.0e-7 at 1e-12, which is only 2.1
+times the atlas error, and 1.1e-5 at 1e-10), reaches 0.10 at 1e-8, and the
+integration fails for 1e-6 ≤ δ ≤ 1e-2 at 400 steps. The mechanism is the
+azimuthal rate `φ' = sin δ/sin²θ`, which peaks at 1/sin δ at closest
+approach and is not resolved by the fixed step.
+
+On the exact meridian (δ = 0) chart A alone is accurate at 400 steps (error
+7.4e-14), which is a counterexample to "single-chart integration through a
+pole always fails". That success belongs to the step grid, not to the chart.
+`v_φ` starts at exactly 0 but does not stay there: rounding in `g_12` (1.5e-17
+at the start point) makes the off-diagonal Christoffel symbols nonzero and
+seeds an angular momentum `L = sin²θ v_φ`, and each pole crossing amplifies
+it, the more the closer a step point lands to the pole, where
+`v_φ = L/sin²θ` and the `cot θ` terms act. At 400 steps no step point comes
+closer than 5.3e-3 to either pole; even so `|v_φ|` reaches 2.5e-10 and `|L|`
+7.4e-14. A scan of 101 step counts (350 to 450) separates the runs cleanly by
+that grid distance:
+
+| Steps | closest step point to a pole | chart A alone |
+| --- | --- | --- |
+| 355 | 8.5e-8 | fails (nonfinite state at step 236) |
+| 377 | 2.4e-5 | 1.5e-6 |
+| 399 | 4.4e-5 | 3.1e-7 |
+| 400 | 5.3e-3 | 7.4e-14 |
+| 421 | 6.3e-5 | 2.1e-8 |
+| 443 | 8.0e-5 | 3.5e-8 |
+| the other 96 | ≥ 1e-4 | ≤ 1.2e-10 |
+
+The five runs whose grid comes within 1e-4 of a pole fail or err at least
+2.1e-8; all others err at most 1.2e-10. This is a second counterexample: an
+accurate single-chart pole crossing at one step count does not carry over to
+the neighbouring step count.
+
+On the graph atlas, geodesics start in the polar chart at x = −1.5, offset δ
+from the apex, heading in +x, over length 3 with 200 RK4 steps; the reference
+is the Monge chart alone at 800 steps. Every run switches once (polar →
+Monge, near r ≈ 0.5):
+
+| δ | atlas error | Monge chart alone | polar chart alone |
+| --- | --- | --- | --- |
+| 0 | 6.1e-11 | 6.1e-11 | 6.1e-11 (radial line) |
+| 1e-1 | 4.1e-9 | 6.0e-11 | 4.8e-6 |
+| 1e-2 | 4.3e-10 | 6.1e-11 | 0.55 |
+| 1e-3, 1e-4 | 7.0e-11, 6.1e-11 | 6.1e-11 | fails (math domain error, nonfinite state) |
+| 1e-6 | 6.1e-11 | 6.1e-11 | 1.4e-2 |
+| 1e-8 | 6.1e-11 | 6.1e-11 | 4.4e-6 |
 
 Only a nonfinite RK4 state or a math domain error counts as a single-chart
 failure, and it is recorded with its message. Any other exception (a bad step
 count, an unknown method) propagates instead of strengthening the
 counterexample. In the figure `atlas-vs-single-chart.svg`, failed runs sit at
-a fixed ceiling of 1, and the single-chart line never bridges them.
+a fixed ceiling of 1, and the single-chart line never bridges them;
+`meridian-steps.svg` plots the step-count scan (failures at 2).
+
+Counterexample witnesses are recorded as counts and log10 values, which the
+findings' regression tolerances (±1 count or decade) bound.
 
 ## Singularity classification (T037)
 
@@ -277,7 +356,8 @@ The rules are applied in this order:
    ∫ r^b dr diverges, and the point is an `infinite_distance_boundary`.
 4. If `det g` blows up at finite distance with bounded `K`, it is
    `unclassified`: a removable blow-up chart and a genuine singularity look
-   alike here.
+   alike here. This rule misses removable coordinate singularities of that
+   kind (the cube-root chart below), and T037 counts the miss.
 5. If `det g → 0` or `cond g → ∞`, it is a `conical_singularity` when the
    circumference ratio differs from 1 by more than 1e-6, and a
    `coordinate_singularity` otherwise.
@@ -297,7 +377,7 @@ approaches whose radial chart lines are geodesics.
 | z = r^1.8 apex | r⁰ | r⁰ | r^0.6 | r^−0.4 | r⁰ | 1 | curvature singularity |
 | hyperbolic plane, y → 0 | y⁻⁴ | 1 | y⁻¹ | K = −1 | y⁻¹ | n/a | infinite-distance boundary |
 | g = y^−1.8 I, y → 0 | y^−3.6 | 1 | y⁻¹ | y^−0.2 | y^−0.9 (finite distance) | n/a | curvature singularity |
-| plane in the cube-root chart, a₁ → 0 | r^−4/3 | r^−4/3 | r⁻¹ | K ≡ 0 | r^−2/3 (finite distance) | n/a | unclassified |
+| plane in the cube-root chart, a₁ → 0 | r^−4/3 | r^−4/3 | r⁻¹ | K ≡ 0 | r^−2/3 (finite distance) | n/a | unclassified (**missed**: truly a removable coordinate singularity) |
 | saddle origin, sphere equator | regular | regular | r¹ | bounded | r⁰ | 1 | regular |
 
 The z = r^(3/2) exponents carry the leading smooth correction:
@@ -325,6 +405,13 @@ The scans produce these counterexamples:
   | g = y^−1.999 I, y → 0 | curvature singularity at finite distance (about 2e3 from y = 0.2) | infinite-distance boundary | speed exponent −0.9995 is within 1e-3 of −1; K exponent −0.001 |
   | cone with 1 − sin α = 5e-7 | conical singularity | coordinate singularity | circumference defect 5e-7 is below 1e-6 |
 
+* A missed coordinate singularity. The plane in the cube-root chart has
+  `cond g → ∞` (exponent −4/3) at finite distance (radial-speed exponent
+  −2/3) with K ≡ 0, which is a coordinate singularity by the definition in
+  T037's hypothesis, and it is removable. Rule 4 leaves it `unclassified`, so
+  the scan reads 9 of the 10 declared approaches correctly. Separating it
+  from a genuine finite-distance singularity would need a removability test,
+  for example regularity of the metric in radial arclength coordinates.
 * Approach-loop dependence. The same sphere pole, scanned with Cartesian
   loops about (0, 0.3) in chart A, gives circumference ratio 0.832 and reads
   as a conical singularity. Those loops are not geodesic circles, so the
@@ -337,13 +424,15 @@ The scans produce these counterexamples:
 | --- | --- | --- |
 | `nonfinite_point` | guard (also the core check) | coordinates are not finite |
 | `nonfinite_metric` | guard | the metric is not finite |
-| `degenerate_metric` | guard (also the core check) | the metric is indefinite, or its condition number exceeds 1e8 (guard) or det g ≤ 1e-12 max(1, tr g)² (core). This is a coordinate *or* conical singularity |
+| `degenerate_metric` | guard (also the core check) | the metric is indefinite, or its condition number exceeds 1e8 (guard) or det g / (tr g)² ≤ 1e-12, roughly cond g > 1e12 (core). This is a coordinate *or* conical singularity |
 | `curvature_blowup` | guard | \|K\| l² exceeds the declared bound (1e6). A slower blow-up passes: z = r^1.8 at ρ = 1e-8 (\|K\| = 4.1e3) is accepted |
 | `outside_chart` | core check of the chart, propagated unchanged | for example the hyperbolic plane at y ≤ 0 |
-| `curvature_singularity`, `conical_singularity` | declared by the surface at its own apex | author labels (the power-graph metric at ρ = 0, the cone's K at r = 0), not detections; the guard propagates them unchanged |
+| `curvature_singularity`, `conical_singularity` | declared by the surface at its own apex | author labels (the power-graph metric at ρ = 0, the cone's K at r = 0), not detections; recorded in `refusals.json` without a check |
 
-T037 checks 8 guard and core-check outcomes, including two acceptances, and
-the 2 surface-declared codes as separate findings.
+T037 checks 8 guard and core-check outcomes, including two acceptances, and,
+as a separate finding, that the guard propagates the power graph's own apex
+refusal unchanged (it neither swallows nor re-codes it). The surface-declared
+codes themselves are not counted as detections.
 
 The core `Surface.check` is more lenient than the guard: on the sphere pole
 approach it accepts points with `cond g` up to 3.2e11 (θ ≈ 1.8e-6). The
@@ -360,7 +449,9 @@ guard refuses from θ ≈ 1e-4.
   (sympy.diffgeom). The closed-form re-expressions and the restated closed
   forms are hand-written from the same definitions as the core, so a shared
   misreading of a surface definition would pass both.
-* The atlas exists for the sphere only. Chart switching happens between
+* Atlases need an embedding and a closed-form inverse for each chart; they
+  are exercised on the sphere and on one graph surface. Intrinsic charts
+  (the hyperbolic plane) are not covered. Chart switching happens between
   fixed steps; adaptive integration would need event location.
 * Nothing here applies to measured surfaces. Noise σ ≫ ε changes the
   optimal difference step to about (σ/|∂³g|)^(1/3), and scanned singular
@@ -370,9 +461,11 @@ guard refuses from θ ≈ 1e-4.
 
 ## Requested core change (not made here)
 
-* `Surface.check` could also refuse by metric condition number (for example
-  `cond g > 1e8`, code `degenerate_metric`), in addition to
-  `det g ≤ 1e-12 max(1, tr g)²`, as `require_regular` does.
+* `Surface.check` already refuses by a scale-free conditioning test,
+  `det g / (tr g)² ≤ 1e-12` (roughly `cond g > 1e12`). It could use a
+  tighter condition bound (for example `cond g > 1e8`, code
+  `degenerate_metric`), as `require_regular` does; on the sphere pole
+  approach it now accepts `cond g` up to 3.2e11.
 
 The coded `SurfaceRefusal(message, code)` and `SAMPLING_DOMAINS` /
 `sampling_domain()` are already in the core, and this section uses them.

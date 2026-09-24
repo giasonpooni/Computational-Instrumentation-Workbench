@@ -6,12 +6,13 @@ every catalogue surface, two reparametrized charts and a rigid rotation, and
 shows that the suite rejects seeded defects. T034 checks the hand-coded
 derivatives against sympy (distinct origin, optional) and against nested
 forward-mode dual numbers (same origin). T035 maps the central-difference
-error of metric derivatives over twelve decades of step size. T036 builds a
-two-chart sphere atlas with exact transitions and integrates geodesics through
-the poles with chart switching. T037 scans approaches to candidate singular
-points and separates coordinate, conical and curvature singularities and an
-infinite-distance boundary within stated detection limits, with pointwise
-refusal codes.
+error of metric derivatives over twelve decades of step size. T036 builds
+chart atlases with exact transitions (two polar charts of the sphere, and the
+Monge and polar charts of a graph surface) and integrates geodesics through
+chart singularities with chart switching. T037 scans approaches to candidate
+singular points and separates coordinate, conical and curvature singularities
+and an infinite-distance boundary within stated detection limits, with
+pointwise refusal codes.
 
 Non-claims: all surfaces, coordinates and curvatures are normalized
 mathematical objects. Findings establish agreement between computations on
@@ -30,13 +31,15 @@ import numpy as np
 
 from . import svg
 from .evidence import finding, holds as compare
+from .integrators import integrate_fixed
 from .registry import task
-from .surfaces import HyperbolicPlane, Plane, Reparametrized, Saddle, Sphere
+from .runner import builtin_identity
+from .surfaces import GaussianBump, HyperbolicPlane, Plane, Reparametrized, Saddle, Sphere
 from .surfaces_discrete_ad import DualMath, DualSurface, diffgeom_reference, formulas, partial, symbolic_reference
 from .surfaces_discrete_charts import (CONICAL_TOLERANCE, CURVATURE_BLOWUP, DEGENERACY, DIVERGENCE_TOLERANCE,
-                                       FIT_RESIDUAL, FIT_WINDOW, SWITCH_THRESHOLD, Approach, SphereAtlas, great_circle,
-                                       integrate_atlas, integrate_single, pole_passing_great_circle, refusal_code,
-                                       require_regular, scan)
+                                       FIT_RESIDUAL, FIT_WINDOW, SWITCH_THRESHOLD, Approach, SphereAtlas, graph_atlas,
+                                       great_circle, integrate_atlas, integrate_single, pole_passing_great_circle,
+                                       refusal_code, require_regular, scan)
 from .surfaces_discrete_geometry import (DOMAINS, EPS, SEED, THRESHOLDS, ConformalHalfPlane, Cone, CubeRootChart,
                                          DroppedCrossTermBump, PolarChart, PowerGraph, central_difference, conformance,
                                          conformance_surfaces, mutant_surfaces)
@@ -46,6 +49,9 @@ GEOMETRY = "src/ciw/lab/surfaces_discrete_geometry.py"
 AD = "src/ciw/lab/surfaces_discrete_ad.py"
 CHARTS = "src/ciw/lab/surfaces_discrete_charts.py"
 DOC = "docs/lab/SURFACE_INTERFACE.md"
+# Core modules the numbers depend on: recorded in the runtime identity, not as changed files.
+CORE = "src/ciw/lab/surfaces.py"
+INTEGRATORS = "src/ciw/lab/integrators.py"
 TESTS = "tests/test_lab_surfaces_discrete.py"
 POINTS = 32
 AD_POINTS = 12
@@ -84,6 +90,21 @@ CONFORMANCE_FAILURE_MODES = [
     "NaN metric derivatives on part of the domain (seeded mutant)",
     "points refused by the core Surface.check inside a declared domain"]
 RESIDUAL_FLOOR = 1e-17  # log-axis floor for exact-zero residuals in the conformance figure
+# Per-finding uncertainty (AUTHORING rule 5). Algebraic identities are exact up
+# to rounding; the stencil-based identities carry the fourth-order stencil
+# error at h = 1e-3 l: h^4 ~ 1e-12 truncation and eps / h ~ 2e-13 rounding,
+# scaled by higher metric derivatives (largest on the hyperbolic plane, whose
+# length scale y reaches 0.3 in the declared domain).
+ALGEBRAIC_UNCERTAINTY = {"kind": "roundoff", "value": 1e-15,
+                         "basis": "algebraic identity evaluated in floating point (einsum and 2x2 products)"}
+EXACT_UNCERTAINTY = {"kind": "reference_error", "value": 0, "basis": "exact counts of identities and mutants"}
+STENCIL_UNCERTAINTY = {
+    name: {"kind": "truncation_bound", "value": value,
+           "basis": f"fourth-order stencil (h = 1e-3 l) in the {what}: h^4 truncation and eps/h rounding scaled by "
+                    "higher metric derivatives; the residual measures this stencil error, not a defect"}
+    for name, value, what in (("gauss_equation", 1e-10, "second metric derivatives of the Brioschi curvature"),
+                              ("derivative_consistency", 1e-11, "differences of the metric"),
+                              ("mixed_partials", 1e-12, "differences of the exact metric derivatives"))}
 
 
 @task("T033", changed_files=(MODULE, GEOMETRY, DOC),
@@ -139,7 +160,9 @@ def surface_interface(ctx):
         "input_data": [f"{len(surfaces)} surfaces (catalogue + plane-polar, gaussian-bump-shear, rotated-torus)",
                        f"{POINTS} seeded points per surface (PCG64 seed {SEED}) in declared domains "
                        "(docs/lab/SURFACE_INTERFACE.md)",
-                       f"{len(mutants)} seeded defect mutants"],
+                       f"{len(mutants)} seeded defect mutants",
+                       "interface under test: ciw.lab.surfaces at the source digest recorded in "
+                       "provider_runtime_identity.sources"],
         "observation_model": ("Normalized residuals: metric terms by max|g|, derivative terms by max|dg| + max|g|/l, "
                               "Christoffel terms by max|Gamma| + 1/l, curvature by |K| + 1/l^2, with l the local "
                               "length scale (y on the hyperbolic plane, 1 elsewhere). Second metric derivatives come "
@@ -169,6 +192,7 @@ def surface_interface(ctx):
             "Conformance on sampled points is evidence, not proof, of correctness on the whole domain."],
         "recommended_next_task": ("T042: turn the conformance suite into the admission gate for invalid or "
                                   "incomplete surface data, reusing its refusal of the seeded defects."),
+        "provider_runtime_identity": builtin_identity((MODULE, GEOMETRY, DOC, CORE)),
     }
     findings = [
         finding("Brioschi curvature from the metric alone equals the supplied Gaussian curvature at every sampled point",
@@ -176,7 +200,8 @@ def surface_interface(ctx):
                 {"derivation": "Theorema Egregium, Brioschi form; docs/lab/SURFACE_INTERFACE.md#conformance-suite",
                  "checks": [_check("Brioschi K (fourth-order differences of exact dg) vs supplied K, worst normalized",
                                    worst["gauss_equation"], THRESHOLDS["gauss_equation"], kind="invariant")]},
-                unit="normalized residual", tolerance={"abs": THRESHOLDS["gauss_equation"], "rel": 0.0}),
+                unit="normalized residual", uncertainty=STENCIL_UNCERTAINTY["gauss_equation"],
+                tolerance={"abs": THRESHOLDS["gauss_equation"], "rel": 0.0}),
         finding("Metrics are symmetric positive definite at every sampled point of the declared domains", "numerical",
                 {"max_asymmetry": worst["metric_asymmetry"], "min_eigenvalue_ratio": worst["min_eigenvalue_ratio"],
                  "points_refused_by_core_check": refused},
@@ -185,38 +210,42 @@ def surface_interface(ctx):
                             _check("min lambda_min / lambda_max over samples", worst["min_eigenvalue_ratio"],
                                    THRESHOLDS["min_eigenvalue_ratio"], comparison="ge", kind="invariant"),
                             _check("sampled points refused by core Surface.check", refused, 0, kind="exact_arithmetic")]},
+                uncertainty={"kind": "roundoff", "value": 1e-15,
+                             "basis": "metric entries and eigenvalues to a few ulps; the refusal count is exact"},
                 tolerance={"abs": 1e-13, "rel": 1e-9}),
         finding("Christoffel symbols are symmetric in their lower indices at every sampled point", "numerical",
                 worst["christoffel_asymmetry"],
                 {"checks": [_check("max |Gamma^k_ij - Gamma^k_ji|, normalized", worst["christoffel_asymmetry"],
                                    THRESHOLDS["christoffel_asymmetry"], kind="invariant")]},
-                tolerance={"abs": THRESHOLDS["christoffel_asymmetry"], "rel": 0.0}),
+                uncertainty=ALGEBRAIC_UNCERTAINTY, tolerance={"abs": THRESHOLDS["christoffel_asymmetry"], "rel": 0.0}),
         finding("The connection is metric compatible at every sampled point: d_k g_ij = Gamma^l_ki g_lj + Gamma^l_kj g_il",
                 "numerical",
                 worst["compatibility"],
                 {"checks": [_check("max compatibility residual, normalized", worst["compatibility"],
                                    THRESHOLDS["compatibility"], kind="invariant")]},
-                tolerance={"abs": THRESHOLDS["compatibility"], "rel": 0.0}),
+                uncertainty=ALGEBRAIC_UNCERTAINTY, tolerance={"abs": THRESHOLDS["compatibility"], "rel": 0.0}),
         finding("Supplied metric derivatives agree with fourth-order differences of the metric at every sampled point",
                 "numerical",
                 worst["derivative_consistency"],
                 {"checks": [_check("max |D4 g - dg|, normalized (h = 1e-3 l)", worst["derivative_consistency"],
                                    THRESHOLDS["derivative_consistency"], kind="self_convergence")]},
+                uncertainty=STENCIL_UNCERTAINTY["derivative_consistency"],
                 tolerance={"abs": THRESHOLDS["derivative_consistency"], "rel": 0.0}),
         finding("Differences of the exact metric derivatives have symmetric mixed partials (dg is a gradient field)",
                 "numerical", worst["mixed_partials"],
                 {"checks": [_check("max |d_u d_v g - d_v d_u g|, normalized", worst["mixed_partials"],
                                    THRESHOLDS["mixed_partials"], kind="invariant")]},
+                uncertainty=STENCIL_UNCERTAINTY["mixed_partials"],
                 tolerance={"abs": THRESHOLDS["mixed_partials"], "rel": 0.0}),
         finding("A rigid rotation leaves the torus metric unchanged at every sampled point", "numerical", rigid,
                 {"checks": [_check("max |g_rotated - g_torus| / max|g|", rigid, 1e-14, kind="invariant")]},
-                tolerance={"abs": 1e-14, "rel": 0.0}),
+                uncertainty=ALGEBRAIC_UNCERTAINTY, tolerance={"abs": 1e-14, "rel": 0.0}),
         finding("The conformance suite rejects every seeded defect mutant", "computational_pipeline",
                 {"mutants": len(mutants), "undetected": len(undetected)},
                 {"checks": [_check("mutants passing every identity", len(undetected), 0, kind="exact_arithmetic"),
                             _check("identities flagged nonfinite for the NaN-derivative mutant",
                                    len(nan_mutant["nonfinite"]), 1, comparison="ge", kind="exact_arithmetic")]},
-                tolerance={"abs": 0, "rel": 0}),
+                uncertainty=EXACT_UNCERTAINTY, tolerance={"abs": 0, "rel": 0}),
         finding("A curvature-misscaled sphere passes every identity except the Gauss equation", "computational_pipeline",
                 {"failed": misscaled["failed"], "gauss_residual": _sig(misscaled["worst"]["gauss_equation"])},
                 {"checks": [_check("identities other than the Gauss equation failed by the misscaled mutant",
@@ -226,6 +255,9 @@ def surface_interface(ctx):
                                    kind="exact_arithmetic"),
                             _check("misscaled mutant Gauss residual", misscaled["worst"]["gauss_equation"], 0.1,
                                    comparison="ge", kind="invariant")]},
+                uncertainty={"kind": "truncation_bound", "value": 1e-10,
+                             "basis": "stencil error of the Brioschi curvature (h = 1e-3 l); the misscaling residual "
+                                      "itself is exact"},
                 tolerance={"abs": 1e-6, "rel": 1e-6},
                 counterexample={"statement": ("Metric symmetry, positive definiteness, Christoffel symmetry, metric "
                                               "compatibility and derivative consistency together certify a surface "
@@ -241,6 +273,9 @@ def surface_interface(ctx):
                                    THRESHOLDS["compatibility"], kind="invariant"),
                             _check("sign-flipped mutant derivative-consistency residual",
                                    flipped["worst"]["derivative_consistency"], 0.5, comparison="ge", kind="invariant")]},
+                uncertainty={"kind": "truncation_bound", "value": 1e-11,
+                             "basis": "stencil error of the metric differences (h = 1e-3 l); the sign-flip residual "
+                                      "itself is the defect"},
                 tolerance={"abs": 1e-6, "rel": 1e-6},
                 counterexample={"statement": "A metric-compatible connection certifies the metric derivatives",
                                 "witness": {"mutant": "saddle with dg negated", "failed": flipped["failed"]}}),
@@ -450,14 +485,15 @@ def derivative_checks(ctx):
         finding("Nested dual-number derivatives of re-expressed embeddings match the metric, dg and Christoffel symbols",
                 "numerical", dual_derivs,
                 {"checks": [_check("max normalized residual over metric, dg and Gamma (same ciw origin)", dual_derivs,
-                                   1e-12, kind="analytic"),
+                                   1e-12, kind="cross_implementation"),
                             _check("max |X_dual - X| (formula re-expresses the same embedding)", dual_embed, 1e-13,
-                                   kind="analytic")]},
+                                   kind="cross_implementation")]},
                 unit="normalized residual", uncertainty={"kind": "roundoff", "value": 1e-12, "basis": "dual arithmetic"},
                 tolerance={"abs": 1e-12, "rel": 0.0}),
         finding("Dual-number curvature (Brioschi with exact second derivatives, and LN - M^2) matches the supplied K",
                 "numerical", dual_curv,
-                {"checks": [_check("max normalized curvature residual", dual_curv, 1e-12, kind="analytic")]},
+                {"checks": [_check("max normalized curvature residual", dual_curv, 1e-12,
+                                   kind="cross_implementation")]},
                 unit="normalized residual", uncertainty={"kind": "roundoff", "value": 1e-12, "basis": "dual arithmetic"},
                 tolerance={"abs": 1e-12, "rel": 0.0}),
         finding("Dual numbers reproduce closed-form first, mixed and third derivatives without perturbation confusion",
@@ -468,7 +504,7 @@ def derivative_checks(ctx):
         finding("Dual-number checks expose a hand-coded derivative defect that symmetry checks cannot see",
                 "numerical", _sig(defect, 6),
                 {"checks": [_check("dropped-cross-term mutant: max normalized |dg_mutant - dg_dual|", defect, 1e-3,
-                                   comparison="ge", kind="analytic")]},
+                                   comparison="ge", kind="cross_implementation")]},
                 uncertainty={"kind": "roundoff", "value": 1e-12, "basis": "dual arithmetic"},
                 tolerance={"abs": 1e-6, "rel": 1e-4},
                 counterexample={"statement": "Finite, index-symmetric hand-coded metric derivatives are correct",
@@ -522,6 +558,7 @@ def derivative_checks(ctx):
         "recommended_next_task": ("T040: compare smooth and mesh Jacobi approximations using these verified smooth "
                                   "derivatives and curvatures as the reference. Complex-step derivatives remain open "
                                   "until the core surfaces accept complex coordinates."),
+        "provider_runtime_identity": builtin_identity((MODULE, AD, GEOMETRY, DOC, CORE)),
     }
     return {"state": state, "fields": fields, "findings": findings}
 
@@ -587,7 +624,15 @@ def fd_study(points=12, seed=SEED + 35) -> dict:
         for name, (lo, hi) in (("truncation_slope", TRUNCATION_WINDOW), ("rounding_slope", ROUNDING_WINDOW)):
             mask = (hs >= lo * (1 - 1e-9)) & (hs <= hi * (1 + 1e-9))
             values = median[mask]
-            row[name] = None if np.any(values <= 0) else float(np.polyfit(np.log(hs[mask]), np.log(values), 1)[0])
+            row[name] = row[f"{name}_stderr"] = None
+            if np.all(values > 0):
+                x, y = np.log(hs[mask]), np.log(values)
+                slope, intercept = np.polyfit(x, y, 1)
+                residual = y - (slope * x + intercept)
+                row[name] = float(slope)
+                # Standard error of the least-squares slope from the fit residuals.
+                row[f"{name}_stderr"] = float(math.sqrt(float(residual @ residual) / (len(x) - 2)
+                                                        / float(np.sum((x - x.mean()) ** 2))))
         best, pbest = int(np.argmin(median)), int(np.argmin(pmedian))
         row.update({"h_opt": float(hs[best]), "h_opt_predicted": float(hs[pbest]), "min_error": float(median[best]),
                     "min_error_predicted": float(pmedian[pbest]),
@@ -605,6 +650,7 @@ def finite_difference_derivatives(ctx):
     main = [rows[k] for k in FD_SURFACES]
     trunc = max(abs(r["truncation_slope"] - 2.0) for r in main)
     rounding = max(abs(r["rounding_slope"] + 1.0) for r in main)
+    rounding_stderr = max(r["rounding_slope_stderr"] for r in main)
     leading = max(r["leading_term_deviation"] for r in main)
     leading_points = sum(r["leading_term_points"] for r in main)
     pointwise_min = max(r["pointwise_min_error"] for r in main)
@@ -655,6 +701,7 @@ def finite_difference_derivatives(ctx):
             "nothing here measures that."],
         "recommended_next_task": ("T043: propagate vertex and normal uncertainty through difference-based metric "
                                   "derivatives, where noise replaces eps in the step-size law."),
+        "provider_runtime_identity": builtin_identity((MODULE, GEOMETRY, AD, DOC, CORE)),
     }
     findings = [
         finding("Central-difference error of the analytic metric derivatives falls as h^2 on the truncation branch",
@@ -671,6 +718,9 @@ def finite_difference_derivatives(ctx):
         finding("Rounding error of central differences grows as 1/h for small steps", "numerical",
                 {k: _sig(rows[k]["rounding_slope"], 4) for k in FD_SURFACES},
                 {"checks": [_check("max |slope + 1| over h in [1e-13, 1e-10]", rounding, 0.2, kind="analytic")]},
+                uncertainty={"kind": "fit", "value": _sig(rounding_stderr, 2),
+                             "basis": "largest standard error of the least-squares slope over the rounding window "
+                                      "(13 steps of the median error curve)"},
                 tolerance={"abs": 0.2, "rel": 0.0}),
         finding("The optimal step lies within a factor 4 of the predicted h* = (3 eps |g| / |d^3 g|)^(1/3)", "numerical",
                 {k: _sig(math.log10(rows[k]["h_opt"]), 4) for k in FD_SURFACES},
@@ -678,7 +728,11 @@ def finite_difference_derivatives(ctx):
                  "checks": [_check("max |log10(h_opt / h_pred)|", hopt_log, math.log10(4.0), kind="analytic"),
                             _check("smallest observed h_opt", bracket[0], 1e-7, comparison="ge", kind="analytic"),
                             _check("largest observed h_opt", bracket[1], 1e-4, comparison="le", kind="analytic")]},
-                unit="log10(relative step)", tolerance={"abs": 0.75, "rel": 0.0}),
+                unit="log10(relative step)",
+                uncertainty={"kind": "reference_error", "value": 0.25,
+                             "basis": "h_opt is located on a grid of 4 steps per decade and the flat V-bottom of the "
+                                      "median curve can move it by one grid step (0.25 decade)"},
+                tolerance={"abs": 0.75, "rel": 0.0}),
         finding("The median central-difference error curve bottoms out at or below the predicted minimum error",
                 "numerical", _sig(worst_min, 2),
                 {"checks": [_check("max over surfaces of median E(h_opt) / median E_pred(h_pred)", min_ratio, 1.0,
@@ -700,16 +754,23 @@ def finite_difference_derivatives(ctx):
                 tolerance={"abs": 2e-10, "rel": 0.0}),
         finding("Smaller finite-difference steps can be far less accurate", "numerical", _sig(math.log10(growth), 3),
                 {"checks": [_check("sphere E(1e-12) / E(h_opt)", growth, 1e3, comparison="ge", kind="analytic")]},
-                unit="log10 error ratio", tolerance={"abs": 1.0, "rel": 0.0},
+                unit="log10 error ratio",
+                uncertainty={"kind": "reference_error", "value": 0.25,
+                             "basis": "h_opt on a grid of 4 steps per decade and rounding-branch scatter of tens of "
+                                      "percent (about 0.1 decade) in E(1e-12)"},
+                tolerance={"abs": 0.5, "rel": 0.0},
                 counterexample={"statement": ("Decreasing the finite-difference step always improves agreement with "
                                               "the analytic derivative"),
-                                "witness": {"surface": "sphere", "h_opt": sphere["h_opt"],
-                                            "error_at_h_opt": _sig(sphere["min_error"]),
-                                            "error_at_1e-12": _sig(sphere["error_at_1e-12"])}}),
+                                "witness": {"surface": "sphere", "log10_h_opt": _sig(math.log10(sphere["h_opt"]), 4),
+                                            "log10_error_at_h_opt": _sig(math.log10(sphere["min_error"]), 4),
+                                            "log10_error_at_1e-12": _sig(math.log10(sphere["error_at_1e-12"]), 4)}}),
         finding("Quadratic metrics have no truncation branch and a constant metric differences to exactly zero",
                 "numerical", {"quadratic_error_at_1e-2": _sig(control, 2), "plane_max_error": plane_zero},
                 {"checks": [_check("saddle and plane-polar E(1e-2)", control, 1e-13, comparison="le", kind="analytic"),
                             _check("plane E(h) for every h", plane_zero, 0.0, kind="exact_arithmetic")]},
+                uncertainty={"kind": "roundoff", "value": 1e-13,
+                             "basis": "rounding of the difference quotient at h = 1e-2 (eps |g| / h ~ 2e-14 "
+                                      "normalized, times a few ulps of g); the plane value is exact"},
                 tolerance={"abs": 1e-13, "rel": 0.0},
                 counterexample={"statement": "Every smooth metric shows an O(h^2) truncation branch in central-difference error",
                                 "witness": {"surface": "saddle, E = 1 + c^2 x^2 (degree-2 metric)",
@@ -723,6 +784,17 @@ def finite_difference_derivatives(ctx):
 DELTAS = (0.0, 1e-1, 1e-2, 1e-3, 1e-4, 1e-6, 1e-8, 1e-10, 1e-12)
 AZIMUTH = 1.3
 STEPS = 400
+# Exact-meridian scan in chart A alone: step counts, and the distance between
+# a step point and a pole below which a run counts as landing near the pole.
+MERIDIAN_STEPS = tuple(range(350, 451))
+NEAR_POLE = 1e-4
+MERIDIAN_SPLIT = 1e-9  # error level separating near-pole runs from the others
+# Graph atlas of the Gaussian bump (Monge chart plus its polar chart): starts
+# at x = -GRAPH_START, offset delta from the apex, heading in +x; RK4 over
+# GRAPH_LENGTH; the reference is the Monge chart alone at GRAPH_REFINE times the steps.
+GRAPH_DELTAS = (0.0, 1e-1, 1e-2, 1e-3, 1e-4, 1e-6, 1e-8)
+GRAPH_START, GRAPH_LENGTH, GRAPH_STEPS, GRAPH_REFINE = 1.5, 3.0, 200, 4
+GRAPH_DISC = 2.0  # radius of the Monge-chart disc sampled for graph-atlas transitions
 
 
 # Numerical breakdowns that count as a single-chart failure; any other
@@ -742,6 +814,10 @@ def _single(chart, u0, v0, length, steps):
             return None, f"{type(exc).__name__}: {message}"
 
 
+def _path_error(points, reference) -> float:
+    return float(np.max(np.linalg.norm(np.asarray(points) - np.asarray(reference), axis=1)))
+
+
 def atlas_study(radius=1.0) -> dict:
     atlas = SphereAtlas(radius)
     length = 2 * math.pi * radius
@@ -751,11 +827,10 @@ def atlas_study(radius=1.0) -> dict:
         u0 = atlas.to_chart("A", start)
         v0 = atlas.lift("A", u0, tangent)
         run = integrate_atlas(atlas, "A", u0, v0, length, STEPS)
-        exact = great_circle(start, tangent, radius, run["s"])
-        error = float(np.max(np.linalg.norm(run["points"] - exact, axis=1)))
+        error = _path_error(run["points"], great_circle(start, tangent, radius, run["s"]))
         single, failure = _single(atlas.charts["A"], u0, v0, length, STEPS)
-        single_error = None if single is None else float(np.max(np.linalg.norm(
-            single["points"] - great_circle(start, tangent, radius, single["s"]), axis=1)))
+        single_error = None if single is None else _path_error(single["points"],
+                                                               great_circle(start, tangent, radius, single["s"]))
         rows.append({"delta": delta, "atlas_error": error, "switches": len(run["switches"]),
                      "switch_path": [f"{w['from']}->{w['to']}" for w in run["switches"]],
                      "min_det_after_switch": min(w["det_after"] for w in run["switches"]) if run["switches"] else None,
@@ -768,9 +843,13 @@ def atlas_study(radius=1.0) -> dict:
     v0 = atlas.lift("A", u0, tangent)
     for steps in (STEPS // 2, STEPS, 2 * STEPS):
         run = integrate_atlas(atlas, "A", u0, v0, length, steps)
-        convergence.append({"steps": steps, "error": float(np.max(np.linalg.norm(
-            run["points"] - great_circle(start, tangent, radius, run["s"]), axis=1)))})
+        convergence.append({"steps": steps, "error": _path_error(run["points"],
+                                                                 great_circle(start, tangent, radius, run["s"]))})
     orders = [math.log2(convergence[i]["error"] / convergence[i + 1]["error"]) for i in range(2)]
+    # Pre-asymptotic spread of the 400-step error: its distance from the fourth-order
+    # predictions e(200) / 16 and 16 e(800).
+    coarse, middle, fine = (row["error"] for row in convergence)
+    richardson = max(abs(middle - coarse / 16.0), abs(middle - 16.0 * fine))
     # Regularity along the delta = 1e-3 path: active chart versus chart A alone.
     start, tangent = pole_passing_great_circle(radius, 1e-3, azimuth=AZIMUTH)
     u0 = atlas.to_chart("A", start)
@@ -779,46 +858,138 @@ def atlas_study(radius=1.0) -> dict:
     chart_a = [atlas.regularity("A", atlas.to_chart("A", x)) for x in exact]
     active = [max(atlas.regularity(name, atlas.to_chart(name, x)) for name in ("A", "B")) for x in exact]
     return {"atlas": atlas.describe(), "azimuth": AZIMUTH, "steps": STEPS, "length": length, "runs": rows,
-            "convergence": convergence, "orders": orders,
+            "convergence": convergence, "orders": orders, "richardson_spread": richardson,
             "regularity_profile": {"s": [float(v) for v in run["s"][::4]], "chart_A": chart_a[::4],
                                    "best_chart": active[::4]}}
 
 
-def transition_study(radius=1.0, count=256, seed=SEED + 36) -> dict:
-    """Round trips, metric preservation of the velocity pushforward and its difference Jacobian."""
+def _grid_distance(steps, length, crossings) -> float:
+    """Smallest distance between a step point n length / steps and an arclength where the path crosses a pole."""
+    s = np.arange(steps + 1) * (length / steps)
+    return float(min(np.min(np.abs(s - crossing)) for crossing in crossings))
+
+
+def meridian_study(radius=1.0, step_counts=MERIDIAN_STEPS) -> dict:
+    """Chart A alone on the exact meridian (delta = 0) for many step counts, and its v_phi drift at STEPS.
+
+    The path crosses the north pole at arclength R and the south pole half a
+    circle later. In exact arithmetic v_phi stays 0 and the cot(theta) terms
+    never act. In floating point, rounding in g_12 (~1e-17) makes the
+    off-diagonal Christoffel symbols nonzero and seeds an angular momentum
+    L = sin^2(theta) v_phi; each pole crossing amplifies it, the more the
+    closer a step point lands to the pole, where v_phi = L / sin^2(theta).
+    """
+    atlas = SphereAtlas(radius)
+    chart = atlas.charts["A"]
+    length = 2 * math.pi * radius
+    start, tangent = pole_passing_great_circle(radius, 0.0, azimuth=AZIMUTH)
+    u0 = atlas.to_chart("A", start)
+    v0 = atlas.lift("A", u0, tangent)
+    crossings = (radius, radius * (1.0 + math.pi))
+    rows = []
+    for steps in step_counts:
+        single, failure = _single(chart, u0, v0, length, steps)
+        rows.append({"steps": int(steps), "grid_distance": _grid_distance(steps, length, crossings),
+                     "error": None if single is None else _path_error(
+                         single["points"], great_circle(start, tangent, radius, single["s"])),
+                     "failure": failure})
+    _, states = integrate_fixed(chart.geodesic_rhs, np.concatenate([u0, v0]), length, STEPS, "rk4")
+    momentum = np.sin(states[:, 0]) ** 2 * states[:, 3]
+    drift = {"steps": STEPS, "grid_distance": _grid_distance(STEPS, length, crossings),
+             "g12_at_start": float(chart.metric(u0)[0, 1]), "v_phi_at_start": float(v0[1]),
+             "max_abs_v_phi": float(np.max(np.abs(states[:, 3]))), "max_abs_momentum": float(np.max(np.abs(momentum)))}
+    return {"step_counts": [int(n) for n in step_counts], "near_pole": NEAR_POLE, "rows": rows, "drift": drift}
+
+
+def transition_defects(atlas, source, target, points, rng, length=1.0, floor=0.05) -> dict:
+    """Round trip, speed preservation and difference Jacobian of source -> target at ambient points.
+
+    Every point enters the covering minimum (the better chart's regularity);
+    the transition is evaluated only where both charts have regularity >= floor.
+    """
+    roundtrip = metric_defect = jacobian_defect = 0.0
+    covering, used = math.inf, 0
+    for x in points:
+        ua, ub = atlas.to_chart(source, x), atlas.to_chart(target, x)
+        ra, rb = atlas.regularity(source, ua), atlas.regularity(target, ub)
+        covering = min(covering, max(ra, rb))
+        if min(ra, rb) < floor:
+            continue
+        used += 1
+        back = atlas.transition(target, source, atlas.transition(source, target, ua))
+        roundtrip = max(roundtrip, float(np.linalg.norm(atlas.embedding(source, back) - x)) / length)
+        va = rng.standard_normal(2)
+        ub2, vb = atlas.pushforward(source, target, ua, va)
+        speed_a, speed_b = atlas.charts[source].speed_squared(ua, va), atlas.charts[target].speed_squared(ub2, vb)
+        metric_defect = max(metric_defect, abs(speed_b - speed_a) / speed_a)
+        jac = np.column_stack([atlas.pushforward(source, target, ua, e)[1] for e in np.eye(2)])
+        h = 1e-6
+        fd = np.column_stack([
+            _angle_difference(atlas.transition(source, target, ua + h * e),
+                              atlas.transition(source, target, ua - h * e)) / (2 * h)
+            for e in np.eye(2)])
+        jacobian_defect = max(jacobian_defect, float(np.max(np.abs(fd - jac))) / float(np.max(np.abs(jac))))
+    return {"used": used, "roundtrip": roundtrip, "metric_defect": metric_defect,
+            "jacobian_defect": jacobian_defect, "covering_min": covering}
+
+
+def transition_study(radius=1.0, count=256, dense=4096, seed=SEED + 36) -> dict:
+    """Sphere atlas: transition defects at ``count`` points; covering bound through the atlas at count + dense points."""
     atlas = SphereAtlas(radius)
     rng = np.random.Generator(np.random.PCG64(seed))
     normals = rng.standard_normal((count, 3))
     points = radius * normals / np.linalg.norm(normals, axis=1)[:, None]
-    roundtrip = metric_defect = jacobian_defect = 0.0
-    covering = math.inf
-    used = 0
-    for index, x in enumerate(points):
-        ua, ub = atlas.to_chart("A", x), atlas.to_chart("B", x)
-        ra, rb = atlas.regularity("A", ua), atlas.regularity("B", ub)
-        covering = min(covering, max(ra, rb))
-        if min(ra, rb) < 0.05:
-            continue  # the transition is evaluated only where both charts are regular
-        used += 1
-        back = atlas.transition("B", "A", atlas.transition("A", "B", ua))
-        roundtrip = max(roundtrip, float(np.linalg.norm(atlas.embedding("A", back) - x)) / radius)
-        va = rng.standard_normal(2)
-        ub2, vb = atlas.pushforward("A", "B", ua, va)
-        speed_a, speed_b = atlas.charts["A"].speed_squared(ua, va), atlas.charts["B"].speed_squared(ub2, vb)
-        metric_defect = max(metric_defect, abs(speed_b - speed_a) / speed_a)
-        jac = np.column_stack([atlas.pushforward("A", "B", ua, e)[1] for e in np.eye(2)])
-        h = 1e-6
-        fd = np.column_stack([
-            _angle_difference(atlas.transition("A", "B", ua + h * e), atlas.transition("A", "B", ua - h * e)) / (2 * h)
-            for e in np.eye(2)])
-        jacobian_defect = max(jacobian_defect, float(np.max(np.abs(fd - jac))) / float(np.max(np.abs(jac))))
-    # Dense covering check: max(det_A, det_B) / R^4 = max(x^2 + y^2, y^2 + z^2) / R^2 >= 1/2.
-    dense = rng.standard_normal((4096, 3))
-    dense /= np.linalg.norm(dense, axis=1)[:, None]
-    covering = min(covering, float(np.min(np.maximum(dense[:, 0] ** 2 + dense[:, 1] ** 2,
-                                                     dense[:, 1] ** 2 + dense[:, 2] ** 2))))
-    return {"points": count, "used": used, "seed": seed, "roundtrip": roundtrip, "metric_defect": metric_defect,
-            "jacobian_defect": jacobian_defect, "covering_min": covering}
+    result = transition_defects(atlas, "A", "B", points, rng, length=radius)
+    # Dense covering check, evaluated through each chart's inverse and metric:
+    # the better chart's regularity (sin^2 theta = det g / R^4) is at least 1/2.
+    extra = rng.standard_normal((dense, 3))
+    extra = radius * extra / np.linalg.norm(extra, axis=1)[:, None]
+    covering = min([result["covering_min"]] + [max(atlas.regularity(name, atlas.to_chart(name, x)) for name in ("A", "B"))
+                                               for x in extra])
+    return dict(result, points=count, dense_points=dense, seed=seed, covering_min=covering)
+
+
+def graph_transition_study(count=256, seed=SEED + 360, disc=GRAPH_DISC) -> dict:
+    """Graph atlas of the Gaussian bump: transition defects at seeded points of a Monge-chart disc."""
+    surface = GaussianBump(0.5, 1.0)
+    atlas = graph_atlas(surface)
+    rng = np.random.Generator(np.random.PCG64(seed))
+    radii, angles = disc * np.sqrt(rng.random(count)), 2 * math.pi * rng.random(count)
+    points = [atlas.embedding("monge", np.array([r * math.cos(t), r * math.sin(t)])) for r, t in zip(radii, angles)]
+    result = transition_defects(atlas, "polar", "monge", points, rng)
+    # The Monge chart has g = I + grad f grad f^T, so its regularity is
+    # 1 / (1 + |grad f|^2) >= 1 / (1 + h^2 / (e sigma^2)) on the whole plane.
+    bound = 1.0 / (1.0 + surface.h ** 2 / (math.e * surface.sigma ** 2))
+    return dict(result, points=count, seed=seed, disc_radius=disc, monge_regularity_bound=bound)
+
+
+def graph_study(deltas=GRAPH_DELTAS) -> dict:
+    """Geodesics from the polar chart of the Gaussian bump through and near its apex, with and without switching."""
+    atlas = graph_atlas(GaussianBump(0.5, 1.0))
+    monge, polar = atlas.charts["monge"], atlas.charts["polar"]
+    rows = []
+    for delta in deltas:
+        base = np.array([-GRAPH_START, delta])
+        start = atlas.embedding("monge", base)
+        tangent = monge.embedding_jacobian(base) @ np.array([1.0, 0.0])
+        tangent = tangent / np.linalg.norm(tangent)
+        vm = atlas.lift("monge", base, tangent)
+        up = atlas.to_chart("polar", start)
+        vp = atlas.lift("polar", up, tangent)
+        _, fine = integrate_fixed(monge.geodesic_rhs, np.concatenate([base, vm]), GRAPH_LENGTH,
+                                  GRAPH_REFINE * GRAPH_STEPS, "rk4")
+        reference = np.array([monge.embedding(y[:2]) for y in fine[::GRAPH_REFINE]])
+        run = integrate_atlas(atlas, "polar", up, vp, GRAPH_LENGTH, GRAPH_STEPS)
+        alone = integrate_single(monge, base, vm, GRAPH_LENGTH, GRAPH_STEPS)
+        single, failure = _single(polar, up, vp, GRAPH_LENGTH, GRAPH_STEPS)
+        rows.append({"delta": delta, "atlas_error": _path_error(run["points"], reference),
+                     "switches": len(run["switches"]), "switch_path": [f"{w['from']}->{w['to']}" for w in run["switches"]],
+                     "min_active_regularity": run["min_active_det"],
+                     "monge_error": _path_error(alone["points"], reference),
+                     "polar_error": None if single is None else _path_error(single["points"], reference),
+                     "polar_failure": failure})
+    return {"atlas": atlas.describe(), "start": [-GRAPH_START, "delta"], "length": GRAPH_LENGTH, "steps": GRAPH_STEPS,
+            "reference_steps": GRAPH_REFINE * GRAPH_STEPS, "runs": rows}
 
 
 def _angle_difference(a, b):
@@ -826,26 +997,62 @@ def _angle_difference(a, b):
     return (d + math.pi) % (2 * math.pi) - math.pi
 
 
-@task("T036", changed_files=(MODULE, CHARTS, DOC),
+def _log10(value) -> float:
+    return _sig(math.log10(value), 4)
+
+
+def _log10_or_none(value):
+    return None if value is None else _log10(value)
+
+
+@task("T036", changed_files=(MODULE, CHARTS, GEOMETRY, DOC),
       regression_tests=(f"{TESTS}::test_atlas_transitions_are_exact",
                         f"{TESTS}::test_atlas_geodesic_through_pole_matches_great_circle",
-                        f"{TESTS}::test_single_chart_near_pole_counterexample", f"{TESTS}::test_t036_report"))
+                        f"{TESTS}::test_single_chart_near_pole_counterexample",
+                        f"{TESTS}::test_meridian_depends_on_the_step_grid",
+                        f"{TESTS}::test_graph_atlas_transitions_and_apex_geodesics", f"{TESTS}::test_t036_report"))
 def chart_transitions(ctx):
     study = atlas_study()
     transitions = transition_study()
+    meridian = meridian_study()
+    graph = graph_study()
+    graph_transitions = graph_transition_study()
     runs = {row["delta"]: row for row in study["runs"]}
     through = runs[0.0]
     atlas_errors = [row["atlas_error"] for row in study["runs"]]
     spread = max(atlas_errors) / min(atlas_errors)
     order_defect = max(abs(order - 4.0) for order in study["orders"])
+    relative_richardson = study["richardson_spread"] / through["atlas_error"]
     min_after = min(row["min_det_after_switch"] for row in study["runs"])
     # Recorded after any switch, so it restates the threshold and covering bound; kept as a value only.
     min_active = min(row["min_active_det"] for row in study["runs"])
     degraded = [row for row in study["runs"] if row["delta"] > 0 and (
         row["single_chart_failure"] is not None or row["single_chart_error"] > 10 * row["atlas_error"])]
     failed = [row for row in study["runs"] if row["single_chart_failure"] is not None]
+    # Exact meridian in chart A alone: the step grid decides the outcome.
+    drift = meridian["drift"]
+    single_through = through["single_chart_error"]
+    by_steps = {row["steps"]: row for row in meridian["rows"]}
+    near = [row for row in meridian["rows"] if row["grid_distance"] < NEAR_POLE]
+    far = [row for row in meridian["rows"] if row["grid_distance"] >= NEAR_POLE]
+    ceiling = 2.0  # a failed run counts as the largest possible error on the unit sphere, 2R
+    near_min = min(ceiling if row["error"] is None else row["error"] for row in near)
+    far_max = max(ceiling if row["error"] is None else row["error"] for row in far)
+    meridian_failed = [row["steps"] for row in meridian["rows"] if row["error"] is None]
+    near_steps = [row["steps"] for row in near]
+    # Graph atlas of the Gaussian bump.
+    graph_rows = graph["runs"]
+    graph_atlas_error = max(row["atlas_error"] for row in graph_rows)
+    graph_monge_error = max(row["monge_error"] for row in graph_rows)
+    graph_switches = min(row["switches"] for row in graph_rows)
+    graph_positive = [row for row in graph_rows if row["delta"] > 0]
+    graph_degraded = [row for row in graph_positive if row["polar_failure"] is not None
+                      or row["polar_error"] > 10 * row["atlas_error"]]
+    graph_failed = [row for row in graph_positive if row["polar_failure"] is not None]
     ctx.artifact_json("atlas-runs.json", study)
-    ctx.artifact_json("transitions.json", transitions)
+    ctx.artifact_json("transitions.json", {"sphere": transitions, "graph": graph_transitions})
+    ctx.artifact_json("meridian-steps.json", meridian)
+    ctx.artifact_json("graph-atlas-runs.json", graph)
     positive = [row for row in study["runs"] if row["delta"] > 0]
     # Each run of consecutive successful single-chart deltas is its own series,
     # so the line never bridges a failure; failures sit at a fixed ceiling.
@@ -872,51 +1079,97 @@ def chart_transitions(ctx):
     ctx.artifact_text("regularity-profile.svg", svg.line_plot(
         [("chart A alone: sin^2 theta_A", profile["s"], profile["chart_A"]),
          ("best chart of the atlas", profile["s"], profile["best_chart"])],
-        title="Normalized det g along the delta = 1e-3 great circle", xlabel="arclength s",
-        ylabel="det g / R^4", logy=True, markers=False))
+        title="Chart regularity along the delta = 1e-3 great circle", xlabel="arclength s",
+        ylabel="1/cond(g) = det g / R^4 = sin^2 theta", logy=True, markers=False))
+    ctx.artifact_text("meridian-steps.svg", svg.line_plot(
+        [("chart A alone, exact meridian", [row["steps"] for row in meridian["rows"]],
+          [ceiling if row["error"] is None else row["error"] for row in meridian["rows"]]),
+         ("closest step point to a pole", [row["steps"] for row in meridian["rows"]],
+          [row["grid_distance"] for row in meridian["rows"]])],
+        title="Exact meridian in one polar chart: error (failures at 2) and step-grid distance to the poles",
+        xlabel="RK4 steps over 2 pi", ylabel="length", logy=True))
     fields = {
-        "hypothesis": ("A two-chart polar atlas of the sphere with exact transitions integrates great circles through "
-                       "or near a pole with an accuracy that does not depend on how close they pass, while a single "
-                       "polar chart loses accuracy or fails near its poles."),
-        "mathematical_model": ("Chart A: X = R(sin t cos p, sin t sin p, cos t); chart B = R_y(pi/2) X_A, poles on A's "
-                               "equator. det g / R^4 = sin^2 theta in each chart and sin^2 theta_A + sin^2 theta_B = "
-                               "1 + y^2/R^2 >= 1, so the better chart always has det g / R^4 >= 1/2. Transitions: "
-                               "u_B = X_B^{-1}(X_A(u_A)), v_B = g_B^{-1} J_B^T J_A v_A."),
+        "hypothesis": ("An atlas of charts with exact transitions through the embedding integrates geodesics through "
+                       "or near a chart's coordinate singularity with an accuracy that does not depend on how close "
+                       "they pass, while a single chart loses accuracy or fails near its singular point. Shown for "
+                       "the two-chart polar atlas of the sphere (great circles through and near a pole) and for the "
+                       "Monge-plus-polar atlas of the Gaussian bump built from a ChartMap (geodesics through and near "
+                       "the apex)."),
+        "mathematical_model": ("Atlas: charts X_c with closed-form inverses; u_B = X_B^{-1}(X_A(u_A)), "
+                               "v_B = g_B^{-1} J_B^T J_A v_A; regularity lambda_min / lambda_max of g (scale free); "
+                               "switch between RK4 steps when the active chart's regularity < 1/4. Sphere: chart A "
+                               "X = R(sin t cos p, sin t sin p, cos t), chart B = R_y(pi/2) X_A; regularity sin^2 theta "
+                               "= det g / R^4 in each chart and sin^2 theta_A + sin^2 theta_B = 1 + y^2/R^2 >= 1, so the "
+                               "better chart always has regularity >= 1/2. Graph z = f(x, y): Monge chart g = I + grad f "
+                               "grad f^T with regularity 1/(1 + |grad f|^2), and the polar chart (r, t) pulled back "
+                               "through PolarChart, singular at r = 0."),
         "input_data": [f"unit sphere; great circles with closest approach delta in {list(DELTAS)} to the north pole, "
                        f"azimuth {AZIMUTH}, full length 2 pi", f"RK4, {STEPS} steps (convergence: 200/400/800)",
-                       f"switch threshold det g / R^4 < {SWITCH_THRESHOLD}",
-                       f"{transitions['points']} seeded sphere points for transitions (seed {transitions['seed']})"],
-        "observation_model": "Ambient error max_s |X_num(s) - X_exact(s)|; exact great circle cos(s) X0 + sin(s) T0.",
+                       f"exact meridian in chart A alone at {len(MERIDIAN_STEPS)} step counts "
+                       f"({MERIDIAN_STEPS[0]}..{MERIDIAN_STEPS[-1]})",
+                       f"switch threshold: regularity < {SWITCH_THRESHOLD}",
+                       f"{transitions['points']} + {transitions['dense_points']} seeded sphere points for transitions "
+                       f"and covering (seed {transitions['seed']})",
+                       f"Gaussian bump h = 0.5, sigma = 1: geodesics from x = -{GRAPH_START} at offset delta in "
+                       f"{list(GRAPH_DELTAS)} from the apex, length {GRAPH_LENGTH}, RK4 {GRAPH_STEPS} steps, reference "
+                       f"Monge chart alone at {GRAPH_REFINE * GRAPH_STEPS} steps; {graph_transitions['points']} seeded "
+                       f"points of the Monge disc of radius {GRAPH_DISC} (seed {graph_transitions['seed']})",
+                       "interface under test: ciw.lab.surfaces and ciw.lab.integrators at the source digests recorded "
+                       "in provider_runtime_identity.sources"],
+        "observation_model": ("Ambient error max_s |X_num(s) - X_ref(s)|: exact great circle cos(s) X0 + sin(s) T0 on "
+                              "the sphere, the refined Monge-chart run on the bump."),
         "expected_invariant": ("Atlas error independent of delta and fourth order in the step; transitions exact to "
-                               "rounding; single-chart error grows or the integration fails for small delta > 0."),
-        "experiment": ("Integrate each great circle with chart switching and in chart A alone; verify transitions "
-                       "by round trip, speed preservation and difference Jacobians; convergence at delta = 0."),
-        "numerical_result": (f"atlas through the pole: error {_fmt(through['atlas_error'])}, {through['switches']} "
-                             f"switches ({', '.join(through['switch_path'])}); atlas error spread over delta "
-                             f"{_fmt(spread)}x; orders {', '.join(_fmt(o) for o in study['orders'])}; single chart "
-                             f"failed for {len(failed)} and degraded (>10x atlas) for {len(degraded)} of "
-                             f"{len(positive)} delta > 0; exact meridian in chart A alone: error "
-                             f"{_fmt(through['single_chart_error'])}; transitions round trip "
-                             f"{_fmt(transitions['roundtrip'])}, speed {_fmt(transitions['metric_defect'])}, Jacobian "
-                             f"{_fmt(transitions['jacobian_defect'])}; covering bound {_fmt(transitions['covering_min'])}."),
-        "uncertainty": ("Atlas errors are RK4 truncation errors (order 4). Single-chart errors for small delta come "
-                        "from the unresolved azimuthal rate 1/sin(delta) at a fixed step; the failure steps and the "
-                        "errors for delta <= 1e-8 depend on rounding and may differ across platforms."),
-        "failure_modes_checked": ["geodesic exactly through a pole", "geodesics 1e-1..1e-12 from a pole",
+                               "rounding; single-chart error grows or the integration fails for small delta > 0; on "
+                               "the exact meridian the single chart is accurate only when no step point lands near a "
+                               "pole."),
+        "experiment": ("Integrate each geodesic with chart switching and in the singular chart alone; verify "
+                       "transitions by round trip, speed preservation and difference Jacobians; convergence at "
+                       "delta = 0; scan the step count of the exact meridian in chart A alone and record the drift of "
+                       "v_phi."),
+        "numerical_result": (f"sphere atlas through the pole: error {_fmt(through['atlas_error'])}, "
+                             f"{through['switches']} switches ({', '.join(through['switch_path'])}); atlas error spread "
+                             f"over delta {_fmt(spread)}x; orders {', '.join(_fmt(o) for o in study['orders'])}; single "
+                             f"chart failed for {len(failed)} and degraded (>10x atlas) for {len(degraded)} of "
+                             f"{len(positive)} delta > 0; exact meridian in chart A alone at {STEPS} steps: error "
+                             f"{_fmt(single_through)} with |v_phi| up to {_fmt(drift['max_abs_v_phi'])} from rounding; "
+                             f"over {len(MERIDIAN_STEPS)} step counts the {len(near)} runs with a step point within "
+                             f"1e-4 of a pole fail ({len(meridian_failed)}) or err >= {_fmt(near_min)}, the "
+                             f"others err <= {_fmt(far_max)}; transitions round trip {_fmt(transitions['roundtrip'])}, "
+                             f"speed {_fmt(transitions['metric_defect'])}, Jacobian "
+                             f"{_fmt(transitions['jacobian_defect'])}; covering bound {_fmt(transitions['covering_min'])}. "
+                             f"Gaussian-bump atlas: error <= {_fmt(graph_atlas_error)} for every delta (Monge chart "
+                             f"alone {_fmt(graph_monge_error)}), polar chart alone failed for {len(graph_failed)} and "
+                             f"degraded for {len(graph_degraded)} of {len(graph_positive)} delta > 0; transitions round "
+                             f"trip {_fmt(graph_transitions['roundtrip'])}, speed "
+                             f"{_fmt(graph_transitions['metric_defect'])}, Jacobian "
+                             f"{_fmt(graph_transitions['jacobian_defect'])}."),
+        "uncertainty": ("Atlas errors are RK4 truncation errors (order 4); the 400-step sphere error differs from the "
+                        "fourth-order predictions of the 200- and 800-step runs by "
+                        f"{_fmt(100 * relative_richardson)}%. Single-chart errors for small delta come from the "
+                        "unresolved azimuthal rate 1/sin(delta) at a fixed step; the failure steps and the errors for "
+                        "delta <= 1e-8 depend on rounding and may differ across platforms. On the exact meridian the "
+                        "single-chart result depends on the step grid: rounding in g_12 seeds an angular momentum "
+                        "sin^2(theta) v_phi that each pole crossing amplifies, so the 400-step success is a property "
+                        "of that grid (closest step point "
+                        f"{_fmt(drift['grid_distance'])} from a pole), not of the chart."),
+        "failure_modes_checked": ["geodesic exactly through a pole or the apex", "geodesics 1e-1..1e-12 from a pole",
                                   "chattering between charts (bound 1/2 > threshold 1/4)",
                                   "longitude wrap-around in transition differences",
+                                  "step grids landing near a pole on the exact meridian",
                                   "nonfinite single-chart states and math domain errors (recorded with their message; "
                                   "any other exception propagates instead of counting as a failure)"],
         "unresolved_assumptions": [
-            "Only the sphere has an atlas here; other surfaces need their own charts and transitions.",
+            "An atlas needs an embedding and a closed-form inverse for each chart; atlases are built here for the "
+            "sphere (rotated polar charts) and for graph surfaces (Monge chart and its polar ChartMap); intrinsic "
+            "charts such as the hyperbolic plane are not covered.",
             "Switching happens between steps; an adaptive integrator would need event location at the threshold.",
-            "The recorded minimum det g / R^4 of the active chart restates the switch threshold and the covering "
+            "The recorded minimum regularity of the active chart restates the switch threshold and the covering "
             "bound; it is reported, not checked."],
         "recommended_next_task": ("Queue extension after T168: locate the chart-switch crossing with event detection "
                                   "in the adaptive integrator, and drive switching from the T037 require_regular "
-                                  "refusal codes instead of a fixed det g threshold."),
+                                  "refusal codes instead of a fixed regularity threshold."),
+        "provider_runtime_identity": builtin_identity((MODULE, CHARTS, GEOMETRY, DOC, CORE, INTEGRATORS)),
     }
-    single_through = through["single_chart_error"]
     findings = [
         finding("Atlas integration of the great circle through the north pole matches the exact great circle",
                 "numerical", _sig(through["atlas_error"], 3),
@@ -924,14 +1177,22 @@ def chart_transitions(ctx):
                                    kind="analytic"),
                             _check("chart switches along the path", through["switches"], 1, comparison="ge",
                                    kind="exact_arithmetic")]},
-                unit="length", tolerance={"abs": 1e-8, "rel": 0.05}),
+                unit="length", uncertainty={"kind": "truncation_bound", "value": _sig(study["richardson_spread"], 2),
+                                            "basis": "Richardson: largest distance of the 400-step error from the "
+                                                     "fourth-order predictions e(200)/16 and 16 e(800)"},
+                tolerance={"abs": 1e-8, "rel": 0.05}),
         finding("Atlas accuracy is independent of the distance of closest approach to a pole", "numerical",
                 _sig(spread, 3),
                 {"checks": [_check("max / min atlas error over delta", spread, 1.5, comparison="le", kind="analytic")]},
+                uncertainty={"kind": "truncation_bound", "value": _sig(2 * relative_richardson * spread, 2),
+                             "basis": "each atlas error carries the relative Richardson spread of the delta = 0 run; "
+                                      "a ratio of two errors carries at most about twice it"},
                 tolerance={"abs": 0.1, "rel": 0.0}),
         finding("Atlas integration keeps fourth-order convergence across chart switches", "numerical",
                 [_sig(order, 4) for order in study["orders"]],
                 {"checks": [_check("max |order - 4| (200/400/800 steps)", order_defect, 0.25, kind="self_convergence")]},
+                uncertainty={"kind": "fit", "value": _sig(abs(study["orders"][0] - study["orders"][1]) / 2, 2),
+                             "basis": "half the difference between the two pairwise orders (pre-asymptotic drift)"},
                 tolerance={"abs": 0.05, "rel": 0.0}),
         finding("Chart transitions are exact: round trip, speed preservation and difference Jacobian", "numerical",
                 {"roundtrip": transitions["roundtrip"], "speed": transitions["metric_defect"],
@@ -942,15 +1203,23 @@ def chart_transitions(ctx):
                                    1e-12, kind="invariant"),
                             _check("pushforward vs central difference of the point transition (h = 1e-6)",
                                    transitions["jacobian_defect"], 1e-7, kind="self_convergence")]},
+                uncertainty={"kind": "truncation_bound", "value": 1e-9,
+                             "basis": "the Jacobian comparison carries the central-difference error at h = 1e-6 "
+                                      "(h^2 truncation ~1e-12, eps/h rounding ~2e-10); round trip and speed are "
+                                      "rounding level (~1e-15)"},
                 tolerance={"abs": 1e-7, "rel": 0.0}),
         finding("The better chart of the atlas always has det g / R^4 >= 1/2, so switching never chatters",
                 "mathematical", {"covering_min": _sig(transitions["covering_min"], 6), "min_det_after_switch":
                                  _sig(min_after, 6), "min_active_det": _sig(min_active, 6)},
                 {"derivation": "sin^2 theta_A + sin^2 theta_B = 1 + y^2 / R^2 >= 1",
-                 "checks": [_check("min over 4352 sphere points of max(det_A, det_B) / R^4", transitions["covering_min"],
-                                   0.5 - 1e-12, comparison="ge", kind="analytic"),
-                            _check("min det g / R^4 right after a switch", min_after, 0.5 - 1e-12, comparison="ge",
+                 "checks": [_check(f"min over {transitions['points'] + transitions['dense_points']} sphere points of "
+                                   "the better chart's regularity, evaluated through each chart's inverse and metric",
+                                   transitions["covering_min"], 0.5 - 1e-12, comparison="ge", kind="analytic"),
+                            _check("min regularity right after a switch", min_after, 0.5 - 1e-12, comparison="ge",
                                    kind="analytic")]},
+                uncertainty={"kind": "roundoff", "value": 1e-15,
+                             "basis": "regularity from the chart inverse and the eigenvalues of g at sampled points; "
+                                      "the bound itself is analytic"},
                 tolerance={"abs": 1e-3, "rel": 0.0}),
         finding("A single polar chart fails or loses accuracy on great circles passing near its pole", "numerical",
                 {"cases": len(positive), "failed": len(failed), "degraded": len(degraded)},
@@ -958,24 +1227,89 @@ def chart_transitions(ctx):
                                    5, comparison="ge", kind="analytic"),
                             _check("delta > 0 cases where chart A alone fails outright", len(failed), 1,
                                    comparison="ge", kind="analytic")]},
+                uncertainty={"kind": "reference_error", "value": 1,
+                             "basis": "counts at a fixed 400-step grid; which small-delta runs fail or degrade depends "
+                                      "on rounding and may move by one case across platforms"},
                 tolerance={"abs": 1, "rel": 0.0},
                 counterexample={"statement": ("Fixed-step RK4 in a single polar chart integrates every great circle "
                                               "as accurately as a chart-switching atlas at the same step count"),
-                                "witness": {"delta_failed": [r["delta"] for r in failed],
-                                            "delta_0.1_single_error": None if runs[0.1]["single_chart_error"] is None
-                                            else _sig(runs[0.1]["single_chart_error"]),
-                                            "delta_0.1_atlas_error": _sig(runs[0.1]["atlas_error"])}}),
-        finding("Along the exact meridian (v_phi = 0 exactly) chart A alone crosses the pole accurately", "numerical",
-                _sig(single_through, 2),
-                {"checks": [_check("chart A alone, delta = 0: max |X - X_exact|", single_through, 1e-10, comparison="le",
-                                   kind="analytic")]},
-                unit="length", tolerance={"abs": 1e-10, "rel": 0.0},
+                                "witness": {"log10_delta_failed": [round(math.log10(r["delta"])) for r in failed],
+                                            "log10_delta_0.1_single_error": None
+                                            if runs[0.1]["single_chart_error"] is None
+                                            else _log10(runs[0.1]["single_chart_error"]),
+                                            "log10_delta_0.1_atlas_error": _log10(runs[0.1]["atlas_error"])}}),
+        finding(f"At {STEPS} RK4 steps chart A alone crosses both poles on the exact meridian to within 1e-10",
+                "numerical",
+                {"log10_error": _log10(single_through), "log10_max_abs_v_phi": _log10(drift["max_abs_v_phi"]),
+                 "log10_max_abs_momentum": _log10(drift["max_abs_momentum"]),
+                 "log10_closest_step_to_pole": _log10(drift["grid_distance"])},
+                {"checks": [_check(f"chart A alone, delta = 0, {STEPS} steps: max |X - X_exact|", single_through, 1e-10,
+                                   comparison="le", kind="analytic")]},
+                unit="log10 of each quantity", uncertainty={"kind": "roundoff", "value": 1e-13,
+                                                  "basis": "the error is rounding level at this step count; v_phi is "
+                                                           "not exactly zero (rounding in g_12 seeds sin^2(theta) "
+                                                           "v_phi), and the result depends on the step grid"},
+                tolerance={"abs": 1.0, "rel": 0.0},
                 counterexample={"statement": "Single-chart integration exactly through a coordinate pole always fails",
-                                "witness": {"delta": 0.0, "single_chart_error": _sig(single_through, 2),
-                                            "single_chart_error_by_delta": {
-                                                f"{d:g}": (None if runs[d]["single_chart_error"] is None
-                                                           else _sig(runs[d]["single_chart_error"], 2))
-                                                for d in (1e-12, 1e-10, 1e-8)}}}),
+                                "witness": {"steps": STEPS, "log10_error": _log10(single_through)}}),
+        finding(f"On the exact meridian chart A alone fails or loses accuracy whenever a step point lands within "
+                f"1e-4 of a pole ({MERIDIAN_STEPS[0]} to {MERIDIAN_STEPS[-1]} RK4 steps)", "numerical",
+                {"step_counts": len(MERIDIAN_STEPS), "near_pole": len(near), "failed": len(meridian_failed),
+                 "log10_min_near_pole_error": _log10(near_min), "log10_max_other_error": _log10(far_max)},
+                {"checks": [_check("smallest error of the runs with a step point within 1e-4 of a pole "
+                                   "(a failure counts as 2R)", near_min, MERIDIAN_SPLIT, comparison="ge",
+                                   kind="analytic"),
+                            _check("largest error of the other runs", far_max, MERIDIAN_SPLIT, comparison="le",
+                                   kind="analytic"),
+                            _check("step counts with a step point within the near-pole distance", len(near), 1,
+                                   comparison="ge", kind="exact_arithmetic")]},
+                unit="log10 length", uncertainty={"kind": "reference_error", "value": 1.0,
+                                                  "basis": "near-pole errors amplify a rounding-level angular momentum, "
+                                                           "so their size may move by about a decade across "
+                                                           "platforms; grid distances are exact arithmetic"},
+                tolerance={"abs": 1.0, "rel": 0.0},
+                counterexample={"statement": ("A single-chart integration that crosses a pole accurately at one step "
+                                              "count stays accurate at nearby step counts"),
+                                "witness": {"steps_near_pole": near_steps, "failed_steps": meridian_failed,
+                                            f"log10_error_at_{STEPS - 1}": _log10_or_none(by_steps[STEPS - 1]["error"]),
+                                            f"log10_error_at_{STEPS}": _log10_or_none(by_steps[STEPS]["error"])}}),
+        finding("The Monge-plus-polar atlas of a graph surface has exact transitions and covers the plane with "
+                "regularity above the analytic Monge bound", "numerical",
+                {"roundtrip": graph_transitions["roundtrip"], "speed": graph_transitions["metric_defect"],
+                 "jacobian": graph_transitions["jacobian_defect"],
+                 "covering_min": _sig(graph_transitions["covering_min"], 6),
+                 "monge_bound": _sig(graph_transitions["monge_regularity_bound"], 6)},
+                {"derivation": "Monge chart g = I + grad f grad f^T: regularity 1 / (1 + |grad f|^2), and |grad f| "
+                               "<= h / (sqrt(e) sigma) for the Gaussian bump",
+                 "checks": [_check("polar -> Monge -> polar round trip, max |X' - X|", graph_transitions["roundtrip"],
+                                   1e-13, kind="invariant"),
+                            _check("relative speed change under the velocity pushforward",
+                                   graph_transitions["metric_defect"], 1e-12, kind="invariant"),
+                            _check("pushforward vs central difference of the point transition (h = 1e-6)",
+                                   graph_transitions["jacobian_defect"], 1e-7, kind="self_convergence"),
+                            _check("min over sampled points of the better chart's regularity minus the Monge bound",
+                                   graph_transitions["covering_min"] - graph_transitions["monge_regularity_bound"],
+                                   -1e-12, comparison="signed_ge", kind="analytic")]},
+                uncertainty={"kind": "truncation_bound", "value": 1e-9,
+                             "basis": "the Jacobian comparison carries the central-difference error at h = 1e-6; "
+                                      "round trip, speed and regularities are rounding level"},
+                tolerance={"abs": 1e-7, "rel": 0.0}),
+        finding("The graph atlas integrates geodesics through and near the Gaussian-bump apex, where its polar chart "
+                "alone fails or loses accuracy", "numerical",
+                {"atlas_error": _sig(graph_atlas_error, 3), "monge_alone_error": _sig(graph_monge_error, 3),
+                 "min_switches": graph_switches, "polar_failed": len(graph_failed),
+                 "polar_degraded": len(graph_degraded), "cases": len(graph_positive)},
+                {"checks": [_check(f"max over delta of |X_atlas - X_ref| (RK4 {GRAPH_STEPS} steps from the polar chart; "
+                                   f"reference Monge chart alone, {GRAPH_REFINE * GRAPH_STEPS} steps)",
+                                   graph_atlas_error, 1e-8, comparison="le", kind="cross_implementation"),
+                            _check("chart switches per run (polar -> Monge)", graph_switches, 1, comparison="ge",
+                                   kind="exact_arithmetic"),
+                            _check("delta > 0 cases where the polar chart alone fails or errs > 10x the atlas",
+                                   len(graph_degraded), len(graph_positive) - 1, comparison="ge", kind="analytic")]},
+                uncertainty={"kind": "truncation_bound", "value": _sig(graph_monge_error / GRAPH_REFINE ** 4, 2),
+                             "basis": "fourth-order error of the refined Monge reference, estimated as the "
+                                      f"{GRAPH_STEPS}-step Monge error / {GRAPH_REFINE}^4"},
+                tolerance={"abs": 1e-9, "rel": 0.1}),
         finding("Chart-switching geodesic integration is ready for tool paths over physical parts", "industrial_readiness",
                 None, {}),
     ]
@@ -997,12 +1331,18 @@ def approaches() -> list:
             Approach("sphere-equator", Sphere(1.0), (math.pi / 2, 0.3), False)]
 
 
-EXPECTED_CLASS = {"sphere-north-pole": "coordinate_singularity", "plane-polar-origin": "coordinate_singularity",
-                  "cone-apex": "conical_singularity", "power-graph-apex": "curvature_singularity",
-                  "power-graph-1.8-apex": "curvature_singularity",
-                  "hyperbolic-boundary": "infinite_distance_boundary",
-                  "conformal-0.9-boundary": "curvature_singularity", "plane-cube-root-chart": "unclassified",
-                  "saddle-origin": "regular", "sphere-equator": "regular"}
+# True type of each declared approach. The plane in the cube-root chart has a
+# removable coordinate singularity (cond g -> infinity at finite distance with
+# K = 0); rule 4 of the scan leaves every finite-distance metric blow-up with
+# bounded K unclassified, so the scan misses it. T037 counts that miss and
+# records it as a counterexample rather than expecting it.
+TRUE_CLASS = {"sphere-north-pole": "coordinate_singularity", "plane-polar-origin": "coordinate_singularity",
+              "cone-apex": "conical_singularity", "power-graph-apex": "curvature_singularity",
+              "power-graph-1.8-apex": "curvature_singularity",
+              "hyperbolic-boundary": "infinite_distance_boundary",
+              "conformal-0.9-boundary": "curvature_singularity", "plane-cube-root-chart": "coordinate_singularity",
+              "saddle-origin": "regular", "sphere-equator": "regular"}
+RULE4_MISS = "plane-cube-root-chart"
 
 # Cases just beyond each detection threshold, with their true type: the scan
 # is expected to misclassify them, and T037 records that as a counterexample.
@@ -1038,13 +1378,19 @@ def refusal_cases() -> dict:
     }
 
 
-def declared_refusal_cases() -> dict:
-    """Codes that singular surfaces raise themselves at their apex (author labels, not detections)."""
-    return {
-        "cone curvature at r = 0": ("conical_singularity", refusal_code(Cone().gaussian_curvature, np.array([0.0, 0.3]))),
-        "power graph apex through the guard": ("curvature_singularity",
-                                               refusal_code(require_regular, PowerGraph(1.0, 1.5), np.array([0.0, 0.0]))),
-    }
+def declared_refusal_codes() -> dict:
+    """Codes that singular surfaces raise themselves at their apex: author labels, recorded but not checked."""
+    return {"cone curvature at r = 0": refusal_code(Cone().gaussian_curvature, np.array([0.0, 0.3])),
+            "power graph metric at rho = 0": refusal_code(PowerGraph(1.0, 1.5).metric, np.array([0.0, 0.0]))}
+
+
+def propagated_refusal_cases() -> dict:
+    """A surface's own apex refusal passed through the pointwise guard: name -> (expected, observed).
+
+    The guard must neither swallow nor re-code a refusal raised by the surface.
+    """
+    return {"power graph apex through the guard": (
+        "curvature_singularity", refusal_code(require_regular, PowerGraph(1.0, 1.5), np.array([0.0, 0.0])))}
 
 
 def core_check_leniency() -> dict:
@@ -1067,25 +1413,30 @@ def core_check_leniency() -> dict:
 def coordinate_singularities(ctx):
     scans = {a.name: scan(a) for a in approaches()}
     classes = {name: result["classification"] for name, result in scans.items()}
-    misclassified = sorted(name for name in classes if classes[name] != EXPECTED_CLASS[name])
+    misclassified = sorted(name for name in classes if classes[name] != TRUE_CLASS[name])
+    unexpected = sorted(set(misclassified) - {RULE4_MISS})
+    correct = len(classes) - len(misclassified)
+    false_positives = sorted(name for name in classes if TRUE_CLASS[name] == "regular" and classes[name] != "regular")
+    cube = scans[RULE4_MISS]
     limits = {name: (scan(approach), truth) for name, (approach, truth) in limit_approaches().items()}
     limit_classes = {name: {"true": truth, "observed": result["classification"]}
                      for name, (result, truth) in limits.items()}
     missed = sorted(name for name, row in limit_classes.items() if row["observed"] != row["true"])
     cartesian_pole = scan(Approach("sphere-north-pole-cartesian-loops", Sphere(1.0), (0.0, 0.3), False))
-    refusals, declared = refusal_cases(), declared_refusal_cases()
+    refusals, propagated, declared = refusal_cases(), propagated_refusal_cases(), declared_refusal_codes()
     leniency = core_check_leniency()
     ctx.artifact_json("singularity-scans.json", {
         "thresholds": {"fit_window": FIT_WINDOW, "fit_residual": FIT_RESIDUAL, "curvature_blowup": CURVATURE_BLOWUP,
                        "degeneracy": DEGENERACY, "divergence_tolerance": DIVERGENCE_TOLERANCE,
                        "conical_tolerance": CONICAL_TOLERANCE},
-        "expected": EXPECTED_CLASS, "scans": scans,
+        "true_class": TRUE_CLASS, "scans": scans,
         "detection_limits": {name: dict(limit_classes[name], scan=result) for name, (result, _) in limits.items()},
         "approach_loop_dependence": cartesian_pole})
     ctx.artifact_json("refusals.json", {"computed": {name: {"expected": e, "observed": o}
                                                      for name, (e, o) in refusals.items()},
-                                        "declared_by_surface": {name: {"expected": e, "observed": o}
-                                                                for name, (e, o) in declared.items()},
+                                        "propagated_by_guard": {name: {"expected": e, "observed": o}
+                                                                for name, (e, o) in propagated.items()},
+                                        "declared_by_surface": declared,
                                         "core_check_leniency": leniency})
     r = scans["sphere-north-pole"]["distances"]
     ctx.artifact_text("singularity-scan.svg", svg.line_plot(
@@ -1115,23 +1466,29 @@ def coordinate_singularities(ctx):
                        "separates coordinate singularities (det g -> 0 or cond g -> infinity with bounded K and "
                        "circumference ratio 1) from conical points (circumference deficit above 1e-6), curvature "
                        "singularities (|K| ~ r^a with a <= -0.05) and boundaries at infinite distance (radial speed "
-                       "~ r^b with b <= -1 + 1e-3); beyond these detection limits it misclassifies. A pointwise guard "
-                       "refuses points whose metric condition number or |K| exceeds its declared bounds, with codes."),
+                       "~ r^b with b <= -1 + 1e-3); beyond these detection limits it misclassifies, and it leaves a "
+                       "metric blow-up at finite distance with bounded K unclassified even when that is a removable "
+                       "coordinate singularity. A pointwise guard refuses points whose metric condition number or |K| "
+                       "exceeds its declared bounds, with codes."),
         "mathematical_model": ("Fit power laws r^a on r in [1e-8, 1e-5] for det g, cond(g), max|Gamma|, |K| and the "
                                "radial speed |dX/dr|; a fit is clean when its max log residual is <= 0.05. Radial "
                                "distance int r^b dr diverges iff b <= -1; circumference ratio C(r) / (2 pi rho(r)) -> 1 "
                                "at smooth points and sin(alpha) at a cone apex."),
-        "input_data": [f"{len(EXPECTED_CLASS)} declared approaches: " + ", ".join(EXPECTED_CLASS),
+        "input_data": [f"{len(TRUE_CLASS)} declared approaches: " + ", ".join(TRUE_CLASS),
                        f"{len(limit_classes)} detection-limit cases: " + ", ".join(limit_classes),
-                       "the sphere pole with Cartesian loops in chart A", "29 log-spaced distances 1e-1..1e-8"],
+                       "the sphere pole with Cartesian loops in chart A", "29 log-spaced distances 1e-1..1e-8",
+                       "interface under test: ciw.lab.surfaces at the source digest recorded in "
+                       "provider_runtime_identity.sources"],
         "observation_model": ("Pointwise invariants of the chart; loop length by 64-point trapezoid; radial length "
                               "by 16-point Gauss-Legendre."),
         "expected_invariant": ("Sphere pole: det ~ r^2, cond ~ r^-2, Gamma ~ r^-1, K ~ r^0; r^(3/2) graph: K ~ r^-1 "
                                "with det g -> 1; cone: ratio sin(alpha) = 1/2; hyperbolic: radial speed ~ y^-1."),
         "experiment": ("Scan, fit and classify every declared approach and every detection-limit case; repeat the "
                        "sphere pole with Cartesian loops; exercise the pointwise guard and the core check."),
-        "numerical_result": (f"{len(classes) - len(misclassified)}/{len(classes)} declared approaches classified as "
-                             f"expected; {len(missed)}/{len(limit_classes)} detection-limit cases misclassified as "
+        "numerical_result": (f"{correct}/{len(classes)} declared approaches classified as their true type (missed: "
+                             f"{', '.join(misclassified) or 'none'}, read as "
+                             f"{', '.join(classes[name] for name in misclassified) or 'n/a'}); "
+                             f"{len(missed)}/{len(limit_classes)} detection-limit cases misclassified as "
                              f"predicted; sphere pole exponents det {_fmt(e_pole['det'])}, cond "
                              f"{_fmt(e_pole['condition'])}, Gamma {_fmt(e_pole['christoffel'])}, K "
                              f"{_fmt(e_pole['curvature'])}; r^(3/2) graph K exponent {e_graph['curvature']:.7g}, K r -> "
@@ -1141,9 +1498,9 @@ def coordinate_singularities(ctx):
                              f"ratio {_fmt(cartesian_pole['circumference_ratio'])} "
                              f"({cartesian_pole['classification']}); core check accepts cond(g) up to "
                              f"{_fmt(leniency['max_accepted_condition'])}; "
-                             f"{sum(e == o for e, o in refusals.values())}/{len(refusals)} computed and "
-                             f"{sum(e == o for e, o in declared.values())}/{len(declared)} surface-declared refusal "
-                             f"codes as expected."),
+                             f"{sum(e == o for e, o in refusals.values())}/{len(refusals)} computed refusal codes as "
+                             f"expected, and {sum(e == o for e, o in propagated.values())}/{len(propagated)} "
+                             f"surface-raised apex code propagated unchanged by the guard."),
         "uncertainty": ("Fits on r <= 1e-5 keep the leading smooth correction of each quantity: for z = r^(3/2), "
                         "K = (9/8) r^-1 (1 + 9r/4)^-2, so the K exponent is -1 - O(r) (observed "
                         f"{e_graph['curvature']:.7g}) and the det exponent O(r) ({_fmt(e_graph['det'])}); exact power "
@@ -1154,7 +1511,8 @@ def coordinate_singularities(ctx):
                                   "Christoffel blow-up without curvature blow-up and vice versa",
                                   "metric blow-up at an infinite-distance boundary",
                                   "slow curvature blow-up (K ~ r^-0.4) and a finite-distance boundary with K blow-up",
-                                  "removable metric blow-up at finite distance (left unclassified)",
+                                  "removable metric blow-up at finite distance (missed: left unclassified, recorded "
+                                  "as a counterexample)",
                                   "cases just beyond each detection threshold", "approach loops that are not "
                                   "geodesic-circle preimages", "apex evaluation (refused)"],
         "unresolved_assumptions": [
@@ -1164,17 +1522,23 @@ def coordinate_singularities(ctx):
             "Detection limits: |K| blow-up slower than r^0.05 over the fit window, radial-speed exponents within 1e-3 "
             "of -1 and circumference deficits below 1e-6 are misclassified; logarithmic corrections are read through "
             "their fitted exponent.",
-            "A metric blow-up at finite distance with bounded K is left unclassified; the cube-root chart of the plane "
-            "is such a case although it is removable.",
+            "A metric blow-up at finite distance with bounded K is left unclassified, so the removable coordinate "
+            "singularity of the plane in the cube-root chart is missed (counted as misclassified); telling it apart "
+            "from a genuine singularity would need a removability test, for example regularity of the metric in "
+            "radial arclength coordinates.",
             "Non-rotationally-symmetric singular points (edges, cusps along curves) are not covered.",
             "The pointwise guard reports a conical point and a coordinate singularity alike as degenerate_metric, "
             "accepts curvature below its declared bound however fast it grows, and does not flag the hyperbolic "
             "boundary at any finite y (cond g = 1, K = -1); only the scan separates them.",
-            "The core Surface.check threshold (det g <= 1e-12 max(1, tr g)^2) is left unchanged; a condition-number "
-            "threshold is proposed as a core change."],
+            "The core Surface.check threshold is scale free (det(g / tr g) = det g / (tr g)^2 <= 1e-12, roughly "
+            "cond g > 1e12) and is left unchanged; a tighter condition bound (1e8, as in require_regular) is "
+            "proposed as a core change.",
+            "The apex codes that the cone and the power graph raise themselves (conical_singularity, "
+            "curvature_singularity) are author labels, recorded in refusals.json but not counted as detections."],
         "recommended_next_task": ("T042: adopt these refusal codes (nonfinite_point, nonfinite_metric, "
                                   "degenerate_metric, curvature_blowup, outside_chart, curvature_singularity, "
                                   "conical_singularity) as the refusal states for invalid or incomplete surface data."),
+        "provider_runtime_identity": builtin_identity((MODULE, CHARTS, GEOMETRY, DOC, CORE)),
     }
     findings = [
         finding("The sphere pole in the polar chart is a coordinate singularity: det g -> 0 while K stays 1",
@@ -1189,10 +1553,37 @@ def coordinate_singularities(ctx):
                                    kind="analytic")]},
                 uncertainty={"kind": "roundoff", "value": 1e-9, "basis": "least-squares fit of exact power laws"},
                 tolerance={"abs": 1e-3, "rel": 0.0}),
-        finding("Every declared approach is classified as expected, with no false positive at regular points",
-                "computational_pipeline", classes,
-                {"checks": [_check("misclassified declared approaches", len(misclassified), 0, kind="exact_arithmetic")]},
+        finding("The scan classifies 9 of the 10 declared approaches as their true type, with no false positive at "
+                "regular points", "computational_pipeline", {"classes": classes, "correct": correct},
+                {"checks": [_check("declared approaches classified as their true type", correct, 9, comparison="ge",
+                                   kind="exact_arithmetic"),
+                            _check(f"declared approaches misclassified other than {RULE4_MISS}", len(unexpected), 0,
+                                   kind="exact_arithmetic"),
+                            _check("regular approaches classified as singular", len(false_positives), 0,
+                                   kind="exact_arithmetic")]},
+                uncertainty={"kind": "reference_error", "value": 0, "basis": "exact classification outcome per scan"},
                 tolerance={"abs": 0, "rel": 0}),
+        finding("The scan misses the removable coordinate singularity of the plane in the cube-root chart", "numerical",
+                {"true": TRUE_CLASS[RULE4_MISS], "observed": cube["classification"],
+                 "det_exponent": _sig(cube["exponents"]["det"], 6),
+                 "condition_exponent": _sig(cube["exponents"]["condition"], 6),
+                 "radial_speed_exponent": _sig(cube["exponents"]["radial_speed"], 6),
+                 "max_abs_curvature": max(abs(k) for k in cube["table"]["curvature"])},
+                {"checks": [_check("classified as other than its true type, coordinate_singularity (1 = yes)",
+                                   int(cube["classification"] != TRUE_CLASS[RULE4_MISS]), 1, comparison="ge",
+                                   kind="exact_arithmetic"),
+                            _check("|cond exponent + 4/3| (cond g -> infinity)", cube["exponents"]["condition"] + 4 / 3,
+                                   1e-6, kind="analytic"),
+                            _check("|radial-speed exponent + 2/3| (the point is at finite distance)",
+                                   cube["exponents"]["radial_speed"] + 2 / 3, 1e-6, kind="analytic")]},
+                uncertainty={"kind": "truncation_bound", "value": 1e-6,
+                             "basis": "least-squares fit on r <= 1e-5; the radial speed carries an O(r^(4/3)) "
+                                      "correction from the unscaled coordinate"},
+                tolerance={"abs": 1e-6, "rel": 0.0},
+                counterexample={"statement": ("The scan detects every coordinate singularity, that is every det g -> 0 "
+                                              "or cond g -> infinity at finite distance with bounded K"),
+                                "witness": {"approach": RULE4_MISS, "true": TRUE_CLASS[RULE4_MISS],
+                                            "observed": cube["classification"]}}),
         finding("The graph z = r^(3/2) has a curvature singularity although its Monge metric is regular", "numerical",
                 {"curvature_exponent": _sig(e_graph["curvature"], 6), "det_exponent": _sig(e_graph["det"], 3),
                  "christoffel_exponent": _sig(e_graph["christoffel"], 3), "K_times_r": _sig(graph_prefactor, 8)},
@@ -1288,10 +1679,12 @@ def coordinate_singularities(ctx):
                 "with computed codes, and accept curvature below the declared bound", "computational_pipeline",
                 {name: observed for name, (_, observed) in refusals.items()},
                 {"checks": [_refusal(name, expected, observed) for name, (expected, observed) in refusals.items()]},
+                uncertainty={"kind": "reference_error", "value": 0, "basis": "exact refusal codes"},
                 tolerance={"abs": 0, "rel": 0}),
-        finding("Singular surfaces declare their apex refusal codes, and the guard propagates them unchanged",
-                "computational_pipeline", {name: observed for name, (_, observed) in declared.items()},
-                {"checks": [_refusal(name, expected, observed) for name, (expected, observed) in declared.items()]},
+        finding("The pointwise guard propagates a refusal code that a surface raises at its own apex unchanged",
+                "computational_pipeline", {name: observed for name, (_, observed) in propagated.items()},
+                {"checks": [_refusal(name, expected, observed) for name, (expected, observed) in propagated.items()]},
+                uncertainty={"kind": "reference_error", "value": 0, "basis": "exact refusal codes"},
                 tolerance={"abs": 0, "rel": 0}),
         finding("The core Surface.check accepts sphere-chart points with metric condition number above 1e10",
                 "numerical", _sig(math.log10(leniency["max_accepted_condition"]), 4),

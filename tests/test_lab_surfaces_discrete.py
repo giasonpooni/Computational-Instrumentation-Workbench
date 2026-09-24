@@ -1,19 +1,20 @@
 """Surface interface conformance, derivative checks, chart atlas and singularity scans (T033-T037)."""
 from __future__ import annotations
 
+from copy import deepcopy
 import math
 
 import numpy as np
 import pytest
 
 from ciw.lab import surfaces_discrete as sd
-from ciw.lab.evidence import validate_finding
+from ciw.lab.evidence import COMPUTATIONAL_DOMAINS, validate_finding
 from ciw.lab.registry import _REGISTRY, load_queue
-from ciw.lab.runner import Context, run_task
-from ciw.lab.surfaces import SAMPLING_DOMAINS, Sphere, SurfaceRefusal, Torus
+from ciw.lab.runner import Context, _close, _witness, run_task
+from ciw.lab.surfaces import SAMPLING_DOMAINS, GaussianBump, Sphere, SurfaceRefusal, Torus
 from ciw.lab.surfaces_discrete_ad import DualSurface, formulas
-from ciw.lab.surfaces_discrete_charts import (SphereAtlas, great_circle, integrate_atlas, pole_passing_great_circle,
-                                              refusal_code, require_regular, scan)
+from ciw.lab.surfaces_discrete_charts import (Atlas, SphereAtlas, graph_atlas, great_circle, integrate_atlas,
+                                              pole_passing_great_circle, refusal_code, require_regular, scan)
 from ciw.lab.surfaces_discrete_geometry import (DOMAINS, SEED, THRESHOLDS, PowerGraph, brioschi, conformance,
                                                 conformance_surfaces, metric_second_derivatives, mutant_surfaces)
 
@@ -28,14 +29,49 @@ def _labels(report):
     return {f["claim"]: f["evidence_status"] for f in report["findings"]}
 
 
+def _numeric_leaves(value, path=()):
+    """Paths of the numeric (non-boolean) leaves of a JSON value."""
+    if isinstance(value, bool) or value is None or isinstance(value, str):
+        return []
+    if isinstance(value, (int, float)):
+        return [path]
+    items = value.items() if isinstance(value, dict) else enumerate(value)
+    return [leaf for key, item in items for leaf in _numeric_leaves(item, path + (key,))]
+
+
+def _set_leaf(value, path, new):
+    for key in path[:-1]:
+        value = value[key]
+    value[path[-1]] = new
+
+
+def _witnesses_guarded(record):
+    """Every numeric witness value is bounded by the finding's regression tolerance (the gate compares with it)."""
+    counter = record.get("counterexample")
+    if not counter:
+        return
+    tolerance = record["regression_tolerance"]
+    for path in _numeric_leaves(counter["witness"]):
+        tampered = deepcopy(counter)
+        _set_leaf(tampered["witness"], path, 0.5)
+        assert not _close(_witness(counter), _witness(tampered), tolerance), (record["claim"], path)
+
+
 def _common_report_checks(report):
     assert report["physical_validation_status"]["status"] == "not_established"
+    assert "src/ciw/lab/surfaces.py" in report["provider_runtime_identity"]["sources"]
     for record in report["findings"]:
         validate_finding(record)
         if record["domain"] in ("physical", "industrial_readiness"):
             assert record["evidence_status"] == "not_established"
         elif record["value"] is not None:
             assert "regression_tolerance" in record
+            # AUTHORING rule 5: every numerical finding states its uncertainty.
+            assert record["domain"] in COMPUTATIONAL_DOMAINS
+            uncertainty = record["uncertainty"]
+            assert isinstance(uncertainty, dict) and set(uncertainty) == {"kind", "value", "basis"}, record["claim"]
+            assert isinstance(uncertainty["value"], (int, float)) and uncertainty["basis"]
+            _witnesses_guarded(record)
     for name in ("hypothesis", "mathematical_model", "experiment", "numerical_result", "uncertainty",
                  "recommended_next_task"):
         assert isinstance(report[name], str) and report[name]
@@ -196,6 +232,14 @@ def test_t034_report(tmp_path):
     derivs = findings["sympy-differentiated metric and metric derivatives match the ciw surface interface on every "
                       "conformance surface"]
     assert "surfaces_discrete_geometry.py" in derivs["basis"]["independent_check"]["producer"]["revision"]
+    # ciw dual numbers against ciw surfaces are same-origin comparisons; only the
+    # self-test against hand-derived closed forms is analytic.
+    for claim, record in findings.items():
+        if claim.startswith(("Nested dual-number", "Dual-number curvature", "Dual-number checks expose")):
+            assert {c["reference_kind"] for c in record["basis"]["checks"]} == {"cross_implementation"}, claim
+    self_test = findings["Dual numbers reproduce closed-form first, mixed and third derivatives without perturbation "
+                         "confusion"]
+    assert {c["reference_kind"] for c in self_test["basis"]["checks"]} == {"analytic"}
     _common_report_checks(report)
 
 
@@ -238,6 +282,9 @@ def test_t035_report(tmp_path):
     assert report["evidence_status"]["primary"] == "numerically_verified"
     counter = [f for f in report["findings"] if f.get("counterexample")]
     assert len(counter) == 2
+    smaller = {f["claim"]: f for f in counter}["Smaller finite-difference steps can be far less accurate"]
+    assert set(smaller["counterexample"]["witness"]) == {"surface", "log10_h_opt", "log10_error_at_h_opt",
+                                                         "log10_error_at_1e-12"}
     assert _labels(report)["The optimal-step law derived here applies to derivatives of measured surface samples"] \
         == "not_established"
     _common_report_checks(report)
@@ -245,7 +292,7 @@ def test_t035_report(tmp_path):
 
 # ------------------------------------------------------------------ T036
 def test_atlas_transitions_are_exact():
-    study = sd.transition_study(count=48)
+    study = sd.transition_study(count=48, dense=256)
     assert study["used"] > 20
     assert study["roundtrip"] <= 1e-13
     assert study["metric_defect"] <= 1e-12
@@ -253,6 +300,22 @@ def test_atlas_transitions_are_exact():
     assert study["covering_min"] >= 0.5 - 1e-12
     with pytest.raises(SurfaceRefusal, match="threshold"):
         SphereAtlas(threshold=0.6)
+    with pytest.raises(SurfaceRefusal, match="two charts"):
+        Atlas({"only": Sphere(1.0)}, {"only": lambda x: x[:2]})
+    # The scale-free regularity (1/cond g) equals det g / R^4 = sin^2 theta on the sphere, for any radius.
+    atlas = SphereAtlas(3.0)
+    for theta in (0.2, 0.9, 1.5):
+        u = np.array([theta, 0.4])
+        assert atlas.regularity("A", u) == pytest.approx(math.sin(theta) ** 2, rel=1e-13)
+
+
+def test_covering_check_goes_through_the_atlas(monkeypatch):
+    """A wrong chart inverse must make the covering bound fail: the dense points are not a closed form."""
+    healthy = sd.transition_study(count=16, dense=512)["covering_min"]
+    assert healthy >= 0.5 - 1e-12
+    broken = staticmethod(lambda rotation, point: np.array([0.05, 0.0]))  # every point mapped next to a pole
+    monkeypatch.setattr(SphereAtlas, "_polar_inverse", broken)
+    assert sd.transition_study(count=16, dense=512)["covering_min"] < 0.01
 
 
 def _great_circle_run(delta, steps=200):
@@ -288,6 +351,32 @@ def test_single_chart_near_pole_counterexample():
     assert failure is None and single_error > 10 * atlas_error
 
 
+def test_meridian_depends_on_the_step_grid():
+    study = sd.meridian_study(step_counts=(355, 399, 400))
+    rows = {row["steps"]: row for row in study["rows"]}
+    # v_phi starts at exactly 0 but rounding in g_12 seeds it.
+    assert study["drift"]["v_phi_at_start"] == 0.0 and study["drift"]["max_abs_v_phi"] > 0.0
+    assert rows[400]["grid_distance"] > 5e-3 and rows[400]["error"] <= 1e-10
+    assert rows[399]["grid_distance"] < sd.NEAR_POLE and rows[399]["error"] > 1e-8
+    assert rows[355]["grid_distance"] < 1e-6 and rows[355]["error"] is None
+    assert rows[355]["failure"].startswith("FloatingPointError: rk4 produced a nonfinite state")
+
+
+def test_graph_atlas_transitions_and_apex_geodesics():
+    bump = GaussianBump(0.5, 1.0)
+    atlas = graph_atlas(bump)
+    assert atlas.regularity("polar", np.array([1e-3, 0.4])) < 1e-5 < atlas.regularity("monge", np.array([0.0, 0.0]))
+    transitions = sd.graph_transition_study(count=48)
+    assert transitions["used"] > 40 and transitions["roundtrip"] <= 1e-13 and transitions["metric_defect"] <= 1e-12
+    assert transitions["jacobian_defect"] <= 1e-7
+    assert transitions["covering_min"] >= transitions["monge_regularity_bound"] - 1e-12
+    study = sd.graph_study(deltas=(0.0, 1e-3))
+    for row in study["runs"]:
+        assert row["switch_path"] == ["polar->monge"] and row["atlas_error"] <= 1e-8
+    assert study["runs"][1]["polar_failure"] is not None or study["runs"][1]["polar_error"] > 10 * study["runs"][1][
+        "atlas_error"]
+
+
 def test_t036_report(tmp_path):
     report = _run("T036", tmp_path)
     assert report["state"] == "completed"
@@ -300,13 +389,28 @@ def test_t036_report(tmp_path):
     assert single["counterexample"]["statement"].startswith("Fixed-step RK4")
     assert findings["Chart-switching geodesic integration is ready for tool paths over physical parts"][
         "evidence_status"] == "not_established"
+    meridian = findings["At 400 RK4 steps chart A alone crosses both poles on the exact meridian to within 1e-10"]
+    assert meridian["evidence_status"] == "numerically_verified" and meridian["value"]["log10_error"] <= -10
+    grid = findings["On the exact meridian chart A alone fails or loses accuracy whenever a step point lands within "
+                    "1e-4 of a pole (350 to 450 RK4 steps)"]
+    assert grid["evidence_status"] == "numerically_verified"
+    assert 399 in grid["counterexample"]["witness"]["steps_near_pole"]
+    assert grid["counterexample"]["witness"]["failed_steps"] == [355]
+    graph = findings["The graph atlas integrates geodesics through and near the Gaussian-bump apex, where its polar "
+                     "chart alone fails or loses accuracy"]
+    assert graph["evidence_status"] == "numerically_verified" and graph["value"]["min_switches"] >= 1
+    assert report["evidence_status"]["counts"]["numerically_verified"] == 10
+    assert "src/ciw/lab/integrators.py" in report["provider_runtime_identity"]["sources"]
     _common_report_checks(report)
 
 
 # ------------------------------------------------------------------ T037
 def test_singularity_scans_classify_every_case():
     results = {a.name: scan(a) for a in sd.approaches()}
-    assert {name: r["classification"] for name, r in results.items()} == sd.EXPECTED_CLASS
+    # Every declared approach is read as its true type except the removable cube-root chart blow-up (rule 4).
+    assert {name: r["classification"] for name, r in results.items()} == dict(
+        sd.TRUE_CLASS, **{sd.RULE4_MISS: "unclassified"})
+    assert sd.TRUE_CLASS[sd.RULE4_MISS] == "coordinate_singularity"
     pole = results["sphere-north-pole"]["exponents"]
     assert pole["det"] == pytest.approx(2.0, abs=1e-3) and pole["curvature"] == pytest.approx(0.0, abs=1e-3)
     assert results["power-graph-apex"]["exponents"]["curvature"] == pytest.approx(-1.0, abs=1e-3)
@@ -332,9 +436,12 @@ def test_singularity_detection_limits():
 
 
 def test_singularity_refusal_codes():
-    for cases in (sd.refusal_cases(), sd.declared_refusal_cases()):
+    for cases in (sd.refusal_cases(), sd.propagated_refusal_cases()):
         assert {name: observed for name, (_, observed) in cases.items()} == \
             {name: expected for name, (expected, _) in cases.items()}
+    # Surface-declared apex codes are recorded as author labels, not checked as detections.
+    assert sd.declared_refusal_codes() == {"cone curvature at r = 0": "conical_singularity",
+                                           "power graph metric at rho = 0": "curvature_singularity"}
     with pytest.raises(SurfaceRefusal) as info:
         PowerGraph().metric(np.array([0.0, 0.0]))
     assert info.value.code == "curvature_singularity"
@@ -356,18 +463,25 @@ def test_t037_report(tmp_path):
     assert report["state"] == "completed"
     assert report["evidence_status"]["primary"] == "numerically_verified"
     findings = {f["claim"]: f for f in report["findings"]}
-    classes = findings["Every declared approach is classified as expected, with no false positive at regular points"][
-        "value"]
-    assert classes == sd.EXPECTED_CLASS
+    classes = findings["The scan classifies 9 of the 10 declared approaches as their true type, with no false "
+                       "positive at regular points"]["value"]
+    assert classes["correct"] == 9 and classes["classes"][sd.RULE4_MISS] == "unclassified"
+    missed = findings["The scan misses the removable coordinate singularity of the plane in the cube-root chart"]
+    assert missed["evidence_status"] == "numerically_verified"
+    assert missed["counterexample"]["witness"] == {"approach": sd.RULE4_MISS, "true": "coordinate_singularity",
+                                                   "observed": "unclassified"}
     computed = findings["The pointwise guard and the core check refuse degenerate, blown-up, nonfinite and "
                         "out-of-chart points with computed codes, and accept curvature below the declared bound"]
-    declared = findings["Singular surfaces declare their apex refusal codes, and the guard propagates them unchanged"]
-    for record, count in ((computed, 8), (declared, 2)):
+    propagated = findings["The pointwise guard propagates a refusal code that a surface raises at its own apex "
+                          "unchanged"]
+    for record, count in ((computed, 8), (propagated, 1)):
         assert len(record["basis"]["checks"]) == count
         assert all(check["reference_kind"] == "refusal" and check["passed"] for check in record["basis"]["checks"])
     assert "curvature_singularity" not in computed["value"].values()
     limits = findings["Cases just beyond each classification threshold are misclassified"]
     assert limits["evidence_status"] == "numerically_verified"
     assert all(row["observed"] != row["true"] for row in limits["value"]["cases"].values())
-    assert sum(1 for f in report["findings"] if f.get("counterexample")) == 5
+    assert sum(1 for f in report["findings"] if f.get("counterexample")) == 6
+    assert report["evidence_status"]["counts"]["numerically_verified"] == 13
+    assert "max(1, tr g)" not in " ".join(report["unresolved_assumptions"])
     _common_report_checks(report)

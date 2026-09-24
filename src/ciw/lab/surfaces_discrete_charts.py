@@ -1,13 +1,19 @@
-"""Chart atlas with exact transitions, and coordinate-versus-curvature singularity scans.
+"""Chart atlases with exact transitions, and coordinate-versus-curvature singularity scans.
 
-Scope: a two-chart atlas of the sphere of radius R built from the core polar
-chart A (poles on the z axis) and the same chart rigidly rotated so that its
-poles B lie on the equator of A (``ciw.lab.surfaces.Rotated``). Transition
-maps go through the embedding: a point is mapped by the closed-form inverse of
-the target chart and a velocity by v_B = g_B^{-1} J_B^T J_A v_A, which is
-exact because J_A v_A lies in the common tangent plane. Geodesics are
-integrated with the core RK4 step, switching charts between steps when the
-active chart's normalized det g falls below a threshold.
+Scope: ``Atlas`` holds charts of one embedded surface, each with a closed-form
+inverse of its embedding. Transition maps go through the embedding: a point
+is mapped by the inverse of the target chart and a velocity by
+v_B = g_B^{-1} J_B^T J_A v_A, which is exact because J_A v_A lies in the
+common tangent plane. A chart's regularity is the scale-free inverse
+condition number lambda_min / lambda_max of its metric. ``Atlas.from_chart_maps``
+builds an atlas from ``ChartMap`` reparametrizations of a base chart (their
+``inverse`` composed with the base inverse); ``graph_atlas`` is the Monge chart
+of a graph surface with its polar reparametrization, and ``SphereAtlas`` is
+the core polar chart A of the sphere of radius R with the same chart rigidly
+rotated so that its poles B lie on the equator of A
+(``ciw.lab.surfaces.Rotated``). Geodesics are integrated with the core RK4
+step, switching charts between steps when the active chart's regularity falls
+below a threshold.
 
 The singularity scan follows a path into a candidate point and fits power
 laws for det g, the metric condition number, the largest Christoffel symbol,
@@ -19,58 +25,78 @@ pointwise guard; it refuses with a coded core ``SurfaceRefusal``.
 Detection limits (stated, and exercised as counterexamples in T037): a
 curvature blow-up slower than r^0.05 over the fit window reads as bounded; a
 radial-speed exponent within 1e-3 of -1 reads as divergent; a circumference
-deficit below 1e-6 reads as removable; and the approach loops must be
-preimages of geodesic circles about the candidate point, which the caller
-chooses (``Approach.polar``) from knowledge of the chart.
+deficit below 1e-6 reads as removable; a metric blow-up at finite distance
+with bounded K is left unclassified even when it is a removable coordinate
+singularity; and the approach loops must be preimages of geodesic circles
+about the candidate point, which the caller chooses (``Approach.polar``) from
+knowledge of the chart.
 
-Non-claims: normalized mathematical surfaces only. The rules assume
-rotationally symmetric approaches whose radial chart lines are geodesics;
-they are not a proof of the singularity type of an arbitrary surface or of a
-measured one.
+Non-claims: normalized mathematical surfaces only. Atlases need an embedding
+and a closed-form inverse per chart; intrinsic charts are not covered. The
+singularity rules assume rotationally symmetric approaches whose radial chart
+lines are geodesics; they are not a proof of the singularity type of an
+arbitrary surface or of a measured one.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass
 import math
+from typing import Callable
 
 import numpy as np
 
 from .integrators import integrate_fixed, step_rk4
-from .surfaces import Rotated, Sphere, Surface, SurfaceRefusal
+from .surfaces import MongeSurface, Reparametrized, Rotated, Sphere, Surface, SurfaceRefusal
+from .surfaces_discrete_geometry import PolarChart
 
 # Rotation about the y axis by +pi/2: maps e_z to e_x, so chart B's poles are (+-R, 0, 0).
 ROTATION_B = np.array([[0.0, 0.0, 1.0], [0.0, 1.0, 0.0], [-1.0, 0.0, 0.0]])
 SWITCH_THRESHOLD = 0.25
 
 
-class SphereAtlas:
-    """Charts A (core polar chart) and B (A rotated so its poles lie on A's equator)."""
+def inverse_condition(g) -> float:
+    """lambda_min / lambda_max of a metric: scale free, 1 for a conformal chart, 0 where it degenerates."""
+    g = np.asarray(g, dtype=float)
+    eig = np.linalg.eigvalsh(0.5 * (g + g.T))
+    return float(eig[0] / eig[1]) if eig[1] > 0 else 0.0
 
-    def __init__(self, radius=1.0, threshold=SWITCH_THRESHOLD):
-        if not 0 < threshold < 0.5:
-            raise SurfaceRefusal("Chart-switch threshold must lie in (0, 1/2), below the atlas covering bound",
-                                 "invalid_parameter")
-        self.radius, self.threshold = float(radius), float(threshold)
-        self.charts = {"A": Sphere(radius), "B": Rotated(Sphere(radius), ROTATION_B)}
-        self.rotations = {"A": np.eye(3), "B": ROTATION_B}
+
+class Atlas:
+    """Charts of one embedded surface, each with a closed-form inverse of its embedding."""
+
+    def __init__(self, charts: dict, inverses: dict, threshold=SWITCH_THRESHOLD):
+        if len(charts) < 2 or set(charts) != set(inverses):
+            raise SurfaceRefusal("An atlas needs at least two charts, each with an inverse", "invalid_parameter")
+        if not 0 < threshold < 1:
+            raise SurfaceRefusal("Chart-switch threshold must lie in (0, 1)", "invalid_parameter")
+        self.charts, self.inverses, self.threshold = dict(charts), dict(inverses), float(threshold)
+
+    @classmethod
+    def from_chart_maps(cls, base: Surface, base_inverse: Callable, maps: dict, threshold=SWITCH_THRESHOLD):
+        """Charts Reparametrized(base, map) (the base itself for None), inverted by map.inverse(base_inverse(X))."""
+        charts, inverses = {}, {}
+        for name, chart_map in maps.items():
+            if chart_map is None:
+                charts[name], inverses[name] = base, base_inverse
+            else:
+                charts[name] = Reparametrized(base, chart_map)
+                inverses[name] = (lambda m: lambda point: m.inverse(np.asarray(base_inverse(point), dtype=float)))(
+                    chart_map)
+        return cls(charts, inverses, threshold)
 
     def describe(self) -> dict:
-        return {"radius": self.radius, "threshold": self.threshold,
-                "charts": {"A": "polar (theta, phi), poles (0, 0, +-R)",
-                           "B": "polar chart rotated by +pi/2 about y, poles (+-R, 0, 0)"}}
+        return {"threshold": self.threshold, "regularity": "lambda_min / lambda_max of g",
+                "charts": {name: self.charts[name].describe() for name in sorted(self.charts)}}
 
     def embedding(self, name, u) -> np.ndarray:
         return self.charts[name].embedding(u)
 
     def to_chart(self, name, point) -> np.ndarray:
-        """Closed-form inverse of chart ``name``: theta in [0, pi], phi in (-pi, pi]."""
-        p = self.rotations[name].T @ np.asarray(point, dtype=float)
-        return np.array([math.atan2(math.hypot(p[0], p[1]), p[2]), math.atan2(p[1], p[0])])
+        return np.asarray(self.inverses[name](np.asarray(point, dtype=float)), dtype=float)
 
     def regularity(self, name, u) -> float:
-        """det g / R^4 = sin^2(theta): 1 on the chart's equator, 0 at its poles."""
-        g = self.charts[name].metric(u)
-        return float((g[0, 0] * g[1, 1] - g[0, 1] * g[1, 0]) / self.radius ** 4)
+        """Scale-free inverse condition number of the chart metric at u."""
+        return inverse_condition(self.charts[name].metric(u))
 
     def transition(self, source, target, u) -> np.ndarray:
         return self.to_chart(target, self.embedding(source, u))
@@ -91,7 +117,44 @@ class SphereAtlas:
         return max(sorted(scores), key=lambda name: scores[name])
 
 
-def integrate_atlas(atlas: SphereAtlas, chart, u0, v0, length, steps) -> dict:
+class SphereAtlas(Atlas):
+    """Charts A (core polar chart) and B (A rotated so its poles lie on A's equator).
+
+    In each chart g = R^2 diag(1, sin^2 theta), so the regularity is
+    sin^2 theta = det g / R^4, and sin^2 theta_A + sin^2 theta_B = 1 + y^2 / R^2
+    gives the better chart a regularity of at least 1/2 everywhere.
+    """
+
+    def __init__(self, radius=1.0, threshold=SWITCH_THRESHOLD):
+        if not 0 < threshold < 0.5:
+            raise SurfaceRefusal("Chart-switch threshold must lie in (0, 1/2), below the atlas covering bound",
+                                 "invalid_parameter")
+        self.radius = float(radius)
+        self.rotations = {"A": np.eye(3), "B": ROTATION_B}
+        charts = {"A": Sphere(radius), "B": Rotated(Sphere(radius), ROTATION_B)}
+        inverses = {name: (lambda rotation: lambda point: self._polar_inverse(rotation, point))(self.rotations[name])
+                    for name in charts}
+        super().__init__(charts, inverses, threshold)
+
+    @staticmethod
+    def _polar_inverse(rotation, point) -> np.ndarray:
+        """Closed-form inverse of a rotated polar chart: theta in [0, pi], phi in (-pi, pi]."""
+        p = rotation.T @ np.asarray(point, dtype=float)
+        return np.array([math.atan2(math.hypot(p[0], p[1]), p[2]), math.atan2(p[1], p[0])])
+
+    def describe(self) -> dict:
+        return {"radius": self.radius, "threshold": self.threshold, "regularity": "lambda_min / lambda_max of g",
+                "charts": {"A": "polar (theta, phi), poles (0, 0, +-R)",
+                           "B": "polar chart rotated by +pi/2 about y, poles (+-R, 0, 0)"}}
+
+
+def graph_atlas(surface: MongeSurface, threshold=SWITCH_THRESHOLD) -> Atlas:
+    """The Monge chart (x, y) of a graph surface and its polar reparametrization (r, t), singular at r = 0."""
+    return Atlas.from_chart_maps(surface, lambda point: np.asarray(point, dtype=float)[:2],
+                                 {"monge": None, "polar": PolarChart()}, threshold)
+
+
+def integrate_atlas(atlas: Atlas, chart, u0, v0, length, steps) -> dict:
     """RK4 geodesic with chart switches between steps when regularity drops below the threshold.
 
     A switch changes only coordinates (exact transition), so the sequence of
