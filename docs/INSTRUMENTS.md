@@ -29,7 +29,7 @@ existing benches.
 | SCR/SP1 registered heat computation | Bounded integer execution and proof verification; exact Linux runtime required | `ciw serve --computation-repo ... --computation-engine ... --sp1-prover ... --sp1-heat-guest ...`; [full setup and contract](PROVED_HEAT.md) |
 | Variational free-energy sensor fusion | Synthetic curved-surface inference with native CSG/GSIE/PLSR, exact Gaussian reference and retained model failure cases | `ciw serve --free-energy-stack-root /trusted/free-energy`; [mathematics, setup and six cases](VARIATIONAL_FREE_ENERGY.md) |
 | GPU energy to accuracy | Actual NVML/CUDA host capture; built-in retained-log analysis, shared view and replay | `ciw energy probe`, `record`, `replay`; [contract and operating guide](ENERGY_ACCURACY.md) |
-| Uncertainty validation | Provider-free finite-sample consistency of declared covariances: NEES, NIS, coverage and bias against declared bands | `source.add` kind `uncertainty-validation`, `operation.execute` `ciw.uncertainty-validation.v1`; [contract and fixtures](UNCERTAINTY_VALIDATION.md) |
+| Uncertainty validation | Provider-free finite-sample consistency of declared covariances: NEES, NIS, coverage and bias against declared bands | `ciw source add --kind uncertainty-validation --file …`, `ciw operation execute ciw.uncertainty-validation.v1 --source …`; [contract and fixtures](UNCERTAINTY_VALIDATION.md) |
 
 ## Identified model and budgeted next observation
 

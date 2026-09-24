@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import base64
 import json
 import math
 import os
@@ -204,6 +205,43 @@ async def watch_remote(url: str) -> None:
             print(json.dumps(event, allow_nan=False), flush=True)
 
 
+def _remote(url: str, kind: str, payload: dict, timeout: float) -> int:
+    """Send one request to a running session, print the envelope, exit 0 on a response and 2 on an error."""
+    if not math.isfinite(timeout) or not 0 < timeout <= 3600:
+        raise ValueError("timeout must be finite, positive and at most 3600 seconds")
+    response = asyncio.run(request_remote(url, kind, payload, timeout_s=timeout))
+    print_json(response)
+    return 0 if response["type"] == "response" else 2
+
+
+def _workbench_command(args) -> int:
+    """Terminal verbs over the shared workbench: retained sources, operations and bundles."""
+    if args.command == "source" and args.source_command == "add":
+        raw = args.file.read_bytes()
+        payload = {"kind": args.kind, "label": args.label or args.file.name,
+                   "bytes_b64": base64.b64encode(raw).decode("ascii")}
+        return _remote(args.url, "source.add", payload, args.timeout)
+    if args.command == "source":
+        return _remote(args.url, "source.list", {}, args.timeout)
+    if args.command == "operation" and args.operation_command == "list":
+        return _remote(args.url, "operation.list", {}, args.timeout)
+    if args.command == "operation":
+        parameters = {"source_id": args.source}
+        if args.upstream is not None:
+            parameters["upstream_bundle_id"] = args.upstream
+        if args.configuration_file is not None:
+            configuration = read_json(args.configuration_file)
+            if not isinstance(configuration, dict):
+                raise ValueError("configuration file must hold a JSON object")
+            parameters["configuration"] = configuration
+        return _remote(args.url, "operation.execute",
+                       {"operation_id": args.operation, "parameters": parameters}, args.timeout)
+    if args.bundle_command == "list":
+        return _remote(args.url, "bundle.list", {}, args.timeout)
+    kind = {"get": "bundle.get", "replay": "bundle.replay", "inspect": "experiment.inspect"}[args.bundle_command]
+    return _remote(args.url, kind, {"bundle_id": args.bundle}, args.timeout)
+
+
 def parser() -> argparse.ArgumentParser:
     root = argparse.ArgumentParser(prog="ciw", description="Computational Instrumentation Workbench")
     commands = root.add_subparsers(dest="command", required=True)
@@ -284,6 +322,39 @@ def parser() -> argparse.ArgumentParser:
                       help="Request deadline in seconds; allow longer for pinned provider workflows")
     watch = commands.add_parser("watch", help="Print shared selection and workbench change events as JSON lines")
     watch.add_argument("--url", default="ws://127.0.0.1:8765")
+
+    def remote_arguments(command):
+        command.add_argument("--url", default="ws://127.0.0.1:8765")
+        command.add_argument("--timeout", type=float, default=15,
+                             help="Request deadline in seconds; allow longer for pinned provider workflows")
+
+    source_group = commands.add_parser("source", help="Retain or list source files in the running shared session")
+    source_actions = source_group.add_subparsers(dest="source_command", required=True)
+    source_add = source_actions.add_parser("add", help="Retain a file's exact bytes under a declared source kind")
+    source_add.add_argument("--kind", required=True, help="Source kind, for example uncertainty-validation")
+    source_add.add_argument("--file", type=Path, required=True, help="File whose exact bytes are retained")
+    source_add.add_argument("--label", help="Defaults to the file name")
+    remote_arguments(source_add)
+    remote_arguments(source_actions.add_parser("list", help="List retained sources"))
+    operation_group = commands.add_parser("operation", help="List or execute shared-session operations")
+    operation_actions = operation_group.add_subparsers(dest="operation_command", required=True)
+    remote_arguments(operation_actions.add_parser("list", help="List registered operations and their availability"))
+    operation_execute = operation_actions.add_parser("execute", help="Execute an operation over a retained source")
+    operation_execute.add_argument("operation", help="Versioned operation identity, for example ciw.project-graph.v1")
+    operation_execute.add_argument("--source", required=True, help="Retained source identity")
+    operation_execute.add_argument("--upstream", help="Retained upstream bundle identity where the operation requires one")
+    operation_execute.add_argument("--configuration-file", type=Path,
+                                   help="JSON object for operations that take a separate configuration")
+    remote_arguments(operation_execute)
+    bundle_group = commands.add_parser("bundle", help="List, read, inspect or replay retained bundles")
+    bundle_actions = bundle_group.add_subparsers(dest="bundle_command", required=True)
+    remote_arguments(bundle_actions.add_parser("list", help="List retained bundles"))
+    for name, help_text in (("get", "Print the complete retained native bundle"),
+                            ("inspect", "Print the read-only experiment projection of a bundle"),
+                            ("replay", "Record a fresh occurrence of a retained bundle under the bound runtime")):
+        action = bundle_actions.add_parser(name, help=help_text)
+        action.add_argument("bundle", help="Retained bundle identity")
+        remote_arguments(action)
     inspect = commands.add_parser("inspect", help="Inspect a saved result/workspace without executing it")
     inspect.add_argument("path", type=Path)
     proof = commands.add_parser("proof", help="Freshly verify a retained registered SCR heat proof")
@@ -558,11 +629,9 @@ def main(argv: list[str] | None = None) -> int:
                        json.loads(args.payload, parse_constant=_reject_constant))
             if not isinstance(payload, dict):
                 raise ValueError("payload must be a JSON object")
-            if not math.isfinite(args.timeout) or not 0 < args.timeout <= 3600:
-                raise ValueError("timeout must be finite, positive and at most 3600 seconds")
-            response = asyncio.run(request_remote(args.url, args.type, payload, timeout_s=args.timeout))
-            print_json(response)
-            return 0 if response["type"] == "response" else 2
+            return _remote(args.url, args.type, payload, args.timeout)
+        elif args.command in {"source", "operation", "bundle"}:
+            return _workbench_command(args)
         elif args.command == "watch":
             asyncio.run(watch_remote(args.url))
         elif args.command == "inspect":

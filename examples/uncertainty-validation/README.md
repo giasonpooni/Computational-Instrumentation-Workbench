@@ -12,8 +12,15 @@ they declare over identical errors:
 | `covariance-too-large.json` | four times the truth | declared independent | NEES and NIS flag `covariance_too_large`; coverage is uninformative at 64 samples |
 | `unknown-dependence.json` | the true covariance | unknown | consistent numbers with `diagnostic_only` authority |
 
-Register a file as a `uncertainty-validation` source and execute the operation
-with its `source_id`; no repository binding is needed. Regenerate with:
+Register a file and execute the operation against a running `ciw serve`; no
+repository binding is needed:
+
+```sh
+ciw source add --kind uncertainty-validation --file examples/uncertainty-validation/consistent.json
+ciw operation execute ciw.uncertainty-validation.v1 --source SOURCE_ID
+```
+
+Regenerate with:
 
 ```sh
 python examples/uncertainty-validation/generate.py

@@ -10,8 +10,14 @@ computation revisions current when the result was recorded.
 python examples/project-graph/make_source.py > /tmp/project-source.json
 ```
 
-Register those bytes as a `project-graph` source, then execute
-`ciw.project-graph.v1` with its `source_id`. No repository binding is needed;
+Register those bytes and execute the operation against a running `ciw serve`:
+
+```sh
+ciw source add --kind project-graph --file /tmp/project-source.json
+ciw operation execute ciw.project-graph.v1 --source SOURCE_ID
+```
+
+No repository binding is needed;
 the operation is served by the independent Python reference in
 `src/ciw/project_model.py`. The request names the project revision the operator
 reviewed; a source whose artifact revision differs from that request, or whose

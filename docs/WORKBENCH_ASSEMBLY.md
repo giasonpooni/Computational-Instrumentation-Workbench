@@ -100,37 +100,32 @@ identity, executes design in the same server session, saves the workspace and
 prints its posterior/prediction contexts. Omit `--with-design` for the eight-provider
 process alone. The following commands show the individual protocol requests.
 
-Prepare a request retaining the exact source bytes from the synthetic fixture:
+Retain the exact source bytes of the synthetic fixture under its declared kind.
+The terminal reads the file, encodes it and sends `source.add`; the bytes are
+never rewritten:
 
 ```sh
-python - <<'PY'
-import base64
-import json
-from pathlib import Path
-
-request = {
-    "kind": "calibrated-observable",
-    "label": "Two-reservoir process",
-    "bytes_b64": base64.b64encode(
-        Path("examples/calibrated-observable/source.json").read_bytes()
-    ).decode("ascii"),
-}
-Path("source-request.json").write_text(json.dumps(request), encoding="utf-8")
-PY
-python -m ciw send source.add --payload-file source-request.json
+python -m ciw source add --kind calibrated-observable --file examples/calibrated-observable/source.json \
+  --label "Two-reservoir process"
 ```
 
 Use the returned `source_id` in the operation request. The following literal
 placeholders stand for IDs returned by this session:
 
 ```sh
-python -m ciw send operation.execute --timeout 300 \
-  --payload '{"operation_id":"ciw.calibrated-observable.v1","parameters":{"source_id":"SOURCE_ID"}}'
-python -m ciw send bundle.get --payload '{"bundle_id":"BUNDLE_ID"}'
-python -m ciw send bundle.replay --timeout 300 \
-  --payload '{"bundle_id":"BUNDLE_ID"}'
+python -m ciw operation execute ciw.calibrated-observable.v1 --source SOURCE_ID --timeout 300
+python -m ciw bundle get BUNDLE_ID
+python -m ciw bundle inspect BUNDLE_ID
+python -m ciw bundle replay BUNDLE_ID --timeout 300
 python -m ciw send workspace.save
 ```
+
+Operations that consume a retained upstream bundle take `--upstream BUNDLE_ID`;
+the telemetry operation takes its separate configuration through
+`--configuration-file`. Every verb prints the protocol envelope and exits with
+status 2 on a refusal. `python -m ciw send` remains available for any request,
+for example `send source.add --payload-file request.json` with a prepared
+`bytes_b64` payload.
 
 For observation design, register `examples/identified-design/source.json` with
 `kind: "identified-design"`, then execute `ciw.identified-design.v1` with

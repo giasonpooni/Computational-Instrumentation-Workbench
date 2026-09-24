@@ -79,9 +79,15 @@ files are the generator's output.
 | `covariance-too-large.json` | four times the truth | NEES and NIS flag it; coverage cannot at 64 samples |
 | `unknown-dependence.json` | the true covariance, dependence unknown | consistent numbers, diagnostic authority |
 
-Register a fixture as a `uncertainty-validation` source through `source.add`
-and execute `ciw.uncertainty-validation.v1` with its `source_id`; no repository
-binding is needed. The retained bundle, `result.get`, `execution.list` and the
+Register a fixture and execute the operation from a second terminal while
+`ciw serve` runs; no repository binding is needed:
+
+```sh
+ciw source add --kind uncertainty-validation --file examples/uncertainty-validation/covariance-too-small.json
+ciw operation execute ciw.uncertainty-validation.v1 --source SOURCE_ID
+ciw bundle inspect BUNDLE_ID
+```
+ The retained bundle, `result.get`, `execution.list` and the
 `experiment.inspect` projection expose the statistics, and `bundle.replay`
 records a fresh occurrence whose numerical identity must match. Reopening a
 workspace validates the retained statistics against a fresh reference
