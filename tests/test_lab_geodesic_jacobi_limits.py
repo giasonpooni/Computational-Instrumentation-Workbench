@@ -94,16 +94,36 @@ def test_t010_near_focus_and_post_focus_counterexamples(run):
     assert divergence["value"]["slope_generic_eps_0.01"] == pytest.approx(-1.0, abs=0.1)
     assert divergence["value"]["relative_error_at_s_star_minus_h_eps_0.04"] > 1.0
     assert "whole path" in divergence["counterexample"]["statement"]
-    inversion = _labelled(report, "inverts sign")["value"]
+    inversion_finding = _labelled(report, "inverts sign")
+    inversion = inversion_finding["value"]
     for key in ("equator", "generic"):
         assert inversion[key]["j_before"] > 0 > inversion[key]["j_after"]
         assert inversion[key]["signed_before"] > 0 > inversion[key]["signed_after"]
         assert inversion[key]["ratio_after"] == pytest.approx(1.0, abs=0.05)
+    # Post-focus counterexamples are witnessed after the conjugate point, not at or before it.
+    side = inversion_finding["counterexample"]
+    assert "keeps its sign" in side["statement"]
+    for key, path in side["witness"]["paths"].items():
+        assert path["s_after"] > path["s_star"] > path["s_before"], key
+        assert path["signed_before"] > 0 > path["signed_after"], key
+    recovery = _labelled(report, "first-order prediction recovers")
+    assert recovery["evidence_status"] == "numerically_verified"
+    assert recovery["value"]["slope_after_generic_eps_0.01"] == pytest.approx(-1.0, abs=0.1)
+    witness = recovery["counterexample"]["witness"]
+    assert "stays invalid beyond it" in recovery["counterexample"]["statement"]
+    assert witness["s_star"] < witness["s_after_h"] < witness["s_late"]
+    assert witness["relative_error_after_h"] > 1.0 > 0.05 > witness["relative_error_late"]
+    flip = _labelled(report, "image inverts after the conjugate point")
+    assert flip["counterexample"]["witness"]["s_after"] > math.pi > flip["counterexample"]["witness"]["s_before"]
+    assert flip["counterexample"]["witness"]["signed_ratio"] == pytest.approx(-1.0, abs=1e-8)
     monotone = _labelled(report, "does not grow monotonically")
     assert monotone["value"] < 1e-3 and "monotonically" in monotone["counterexample"]["statement"]
     sphere = _labelled(report, "refocuses exactly")
     assert sphere["value"]["max_deviation_from_uniform"] < 1e-6
     assert sphere["value"]["relative_error_at_pi_minus_h"] == pytest.approx(-0.02 ** 2 / 24, rel=1e-2)
+    # The generic conjugate point is located numerically, so its vanishing first-order term is self-convergence.
+    kinds = {c["reference"]: c["reference_kind"] for c in generic["basis"]["checks"]}
+    assert [k for ref, k in kinds.items() if "first-order prediction" in ref] == ["self_convergence"]
     mixed = _labelled(report, "combined lateral+heading")
     assert mixed["value"]["coefficient"] == pytest.approx(0.5, abs=1e-3)
     assert all(f["evidence_status"] == "numerically_verified" for f in report["findings"])
@@ -114,8 +134,12 @@ def test_t011_chart_invariance_and_fold_amplification(run):
     converged = _labelled(report, "agree in every chart")
     assert converged["evidence_status"] == "numerically_verified"
     assert converged["value"]["max_adaptive_error"] < 1e-8
-    orders = _labelled(report, "at least like h^3.7")["value"]
+    order_finding = _labelled(report, "at least like h^3.7")
+    orders = order_finding["value"]
     assert orders["min_order"] >= 3.7 and orders["smooth_max_gap_to_4"] < 0.1 and orders["min_fold_order"] > 4.0
+    # The bound is claimed for N = 128/256 only; the coarser pair falls below it for the mu = 0.1 fold.
+    assert order_finding["claim"].startswith("Between N = 128 and 256")
+    assert orders["min_order_N_64_128"] < 3.7
     fold = _labelled(report, "near-fold chart multiplies")
     assert fold["evidence_status"] == "numerically_verified"
     assert min(fold["value"]["error_factor_mu_0.1_at_N_256"].values()) > 1e3
@@ -152,12 +176,17 @@ def test_t012_frame_invariance_and_refusal(run):
     report = run[1]["T012"]
     assert _labelled(report, "Ambient rotations")["value"] < 1e-11
     assert _labelled(report, "rotate exactly")["value"] < 1e-12
-    assert _labelled(report, "reference tangent basis")["value"]["max_state_difference"] < 1e-11
+    basis = _labelled(report, "reference tangent basis")
+    assert basis["value"]["max_state_difference"] < 1e-11 and basis["value"]["max_frame_residual"] < 1e-13
+    # Perturbations stated in the rotated basis go through ciw's normal, geodesic and Jacobi code.
+    assert basis["value"]["max_jacobi_relative_gap"] < 1e-6
+    assert any("ciw normal separation" in c["reference"] for c in basis["basis"]["checks"])
     flipped = _labelled(report, "left-handed basis (e1, -e2) is the geometric perturbation -eps")
     assert flipped["value"]["ratio_along_right_handed_normal"] == pytest.approx(-1.0, abs=1e-9)
+    # Along -N the same separation is negated exactly, so it is context, not a second finding.
+    assert flipped["value"]["ratio_along_own_normal"] == -flipped["value"]["ratio_along_right_handed_normal"]
     assert abs(flipped["value"]["right_handed_minus_exact"]) < 1e-10 and "counterexample" not in flipped
-    invariant = _labelled(report, "On the unit sphere, where the separation sin(s) sin(eps) is odd in eps")
-    assert invariant["value"] == pytest.approx(1.0, abs=1e-9) and "counterexample" not in invariant
+    assert not [f for f in report["findings"] if "sin(s) sin(eps) is odd in eps, signed" in f["claim"]]
     # Off the sphere the orientation-reversed separation agrees only to first order: own/right - 1 ~ eps.
     torus = _labelled(report, "agrees only to first order")
     assert torus["evidence_status"] == "numerically_verified"
@@ -176,10 +205,11 @@ def test_t012_frame_invariance_and_refusal(run):
 
 def test_t013_flat_limit(run):
     report = run[1]["T013"]
-    bitwise = _labelled(report, "bitwise identical Jacobi columns")
-    assert bitwise["domain"] == "computational_pipeline" and bitwise["value"] == 0.0
+    # Both core classes return a literal K = 0: equal Jacobi columns are context, not a verified finding.
+    assert not [f for f in report["findings"] if "bitwise identical Jacobi columns" in f["claim"]]
     flat = _labelled(report, "intrinsically flat")["value"]
     assert flat["second_form_max_abs_curvature"] == 0.0 and flat["j_head_minus_s_max"] < 1e-13
+    assert flat["literal_K_plane_cylinder_jacobi_difference"] == 0.0
     chords = _labelled(report, "do not imply equal chords")["value"]
     assert chords["chord_plane"] == pytest.approx(3.0, abs=1e-12)
     assert chords["chord_cylinder"] < 2.6
@@ -207,6 +237,9 @@ def test_t014_reversal_and_truncation(run):
     assert decimal["value"]["differs"] is True and decimal["value"]["max_abs_difference"] < 1e-12
     witness = decimal["counterexample"]["witness"]
     assert witness["h_first"] != witness["h_direct"] or witness["h_rest"] != witness["h_direct"]
+    # The count of differing components depends on last-bit rounding and stays out of the witness.
+    assert witness["step_mismatch"] is True and witness["differs"] is True
+    assert "differing_final_components" not in witness
     assert _labelled(report, "Adaptive restart")["value"] <= 10.0
 
 
@@ -216,12 +249,26 @@ def test_t015_long_horizon_drift(run):
     assert all(abs(v - 1.0) < 0.2 for v in adaptive.values())
     position = _labelled(report, "position error grows")["value"]
     assert position["rk4"] == pytest.approx(1.0, abs=0.1) and position["adaptive"] == pytest.approx(2.0, abs=0.1)
+    tilt = _labelled(report, "angular-momentum drift of fixed-step RK4")["value"]
+    assert tilt["plane_tilt_exponent"] == pytest.approx(1.0, abs=0.1)
+    assert tilt["momentum_size_at_320"] < 0.05 * tilt["plane_tilt_at_320"]
+    # Fixed-step RK4: the error is cross-track (plane precession); its along-track part opposes the speed error.
+    precession = _labelled(report, "position error is cross-track")
+    assert precession["value"]["cross_track_share"] > 0.99
+    assert precession["value"]["along_track_at_320"] * precession["value"]["integrated_speed_error_at_320"] < 0
+    assert "phase error of its speed error" in precession["counterexample"]["statement"]
+    # Adaptive DP45: the error is along-track and equals the integrated speed error.
+    phase = _labelled(report, "along-track and equals its integrated speed error")["value"]
+    assert phase["along_over_integrated_speed_error"] == pytest.approx(1.0, abs=0.02)
+    assert "plane" in report["mathematical_model"] and "hence position error ~ L" not in report["mathematical_model"]
     rk4 = _labelled(report, "oscillation-dominated")
     assert rk4["value"]["torus_exponent_L_10_to_160"] < 0.5 and rk4["value"]["sphere_exponent_L_10_to_320"] < 0.5
     assert rk4["value"]["torus_local_slope_L_160_to_320"] > 0.5 and rk4["counterexample"]
     assert rk4["evidence_status"] == "numerically_verified"
     clairaut = _labelled(report, "Clairaut drift of adaptive DP45")
-    assert clairaut["value"] == pytest.approx(1.0, abs=0.2) and len(clairaut["basis"]["checks"]) == 1
+    assert clairaut["value"]["exponent_L_40_to_320"] == pytest.approx(1.0, abs=0.1)
+    # The single exponent is fitted where the local slopes agree, and its spread is below the checked tolerance.
+    assert clairaut["uncertainty"]["value"] < 0.1 and len(clairaut["basis"]["checks"]) == 2
     euler = _labelled(report, "changes the orbit type")["value"]
     assert euler["max_energy_error"] < 0.1 and euler["theta_max_abs"] > euler["theta_turning"] + 1.0
     assert _labelled(report, "leaves the polar chart")["value"] < 320.0
@@ -235,8 +282,13 @@ def test_t016_negative_curvature_is_not_stiffness(run):
     assert steps["rk4_exponent"] == pytest.approx(1.25, abs=0.1)
     stiffness = _labelled(report, "not stiffness")
     assert min(stiffness["value"]["steps_required_over_stability_limit"]) >= 5.0
-    for k, (low, high) in stiffness["value"]["jacobian_eigenvalues"].items():
-        assert low == pytest.approx(-float(k), rel=1e-12) and high == pytest.approx(float(k), rel=1e-12)
+    # Growth and decay rates are measured from the integrated transfer matrix, not the literal K = -k^2.
+    rates = stiffness["value"]["measured_rates"]
+    for k, rate in rates.items():
+        assert rate["growth"] == pytest.approx(float(k), rel=1e-8)
+        assert rate["decay"] is None or rate["decay"] == pytest.approx(float(k), rel=1e-8)
+    assert rates["1"]["decay"] is not None and rates["8"]["decay"] is None
+    assert not any("generator at the path curvature" in c["reference"] for c in stiffness["basis"]["checks"])
     assert stiffness["value"]["log_growth_slope_in_kL"] == pytest.approx(1.0, abs=0.01)
     implicit = _labelled(report, "A-stable implicit methods")
     assert implicit["value"]["implicit_midpoint"]["exponent"] == pytest.approx(1.5, abs=0.05)
@@ -258,11 +310,19 @@ def test_t016_negative_curvature_is_not_stiffness(run):
 
 def test_t017_validity_domains(run):
     report = run[1]["T017"]
-    generic = _labelled(report, "shrinks to zero at the conjugate point")["value"]
-    assert abs(generic["C2_at_s_star"]) > 0.1 and generic["eps_max_at_s_star"] < 1e-6
+    generic_finding = _labelled(report, "shrinks to zero linearly at the conjugate point")
+    generic = generic_finding["value"]
+    assert abs(generic["C2_at_s_star"]) > 0.1
+    # The collapse is checked through its linear law next to s*, not through eps_max at the placed zero.
+    assert generic["collapse_slope"] == pytest.approx(generic["collapse_slope_predicted"], rel=0.01)
+    assert not any(c["reference"] == "eps_max at s*" for c in generic_finding["basis"]["checks"])
     probe = _labelled(report, "predicted validity boundary")["value"]
-    assert probe["half"]["relative_error"] == pytest.approx(gjl.TAU / 2, rel=0.05)
-    assert probe["double"]["relative_error"] == pytest.approx(2 * gjl.TAU, rel=0.05)
+    assert probe["half"]["relative_error"] < gjl.TAU < probe["double"]["relative_error"]
+    for label in ("half", "double"):
+        assert probe[label]["relative_error"] == pytest.approx(probe[label]["model_relative_error"], rel=1e-3)
+    assert "exactly" not in report["numerical_result"]
+    mixed = _labelled(report, "Sphere lateral+heading")["value"]
+    assert mixed["collapse_slope"] == pytest.approx(mixed["collapse_slope_predicted"], rel=0.01)
     sphere = _labelled(report, "does not shrink at s = pi")
     assert min(sphere["value"]["eps_max_near_pi"].values()) == pytest.approx(math.sqrt(24 * gjl.TAU), rel=1e-3)
     assert _labelled(report, "Sphere lateral+heading")["value"]["C2_at_s0"] == pytest.approx(0.5, abs=1e-2)
@@ -292,26 +352,40 @@ def test_validity_bound_and_step_search_helpers():
     assert gjl.flat_deviation(1.0, 2.0) == pytest.approx(math.sin(2.0) - 2.0, rel=1e-14)
     assert gjl.flat_deviation(-1e-6, 2.0) == pytest.approx(math.sinh(2e-3) / 1e-3 - 2.0, rel=1e-6)
     assert gjl.flat_deviation(0.0, 2.0) == 0.0 and Plane().gaussian_curvature(np.zeros(2)) == 0.0
+    # Exact rational step matrices agree with the floating-point ones and carry no rounding at all.
+    for method in ("euler", "midpoint", "rk4"):
+        exact = core.exact_arithmetic_transfer(method, -0.7, 2.0, 16)
+        assert np.allclose([[float(v) for v in row] for row in exact],
+                           core.constant_curvature_transfer(method, -0.7, 2.0, 16), rtol=1e-13)
+    # Euler on j'' + K j = 0 has j_head(L) = L exactly up to K: with K = 0 the exact result is L.
+    assert core.exact_arithmetic_transfer("euler", 0.0, 2.0, 7)[0][1] == 2
+    with pytest.raises(ValueError, match="explicit methods only"):
+        core.exact_arithmetic_transfer("implicit-midpoint", 1.0, 2.0, 4)
+    assert gjl.rounding_affected([1e-15, 1e-15], [0.5e-16, 2e-16]) == [False, True]
+    assert gjl.resolved_from([1.0, 12.0, None, 20.0, 30.0, 40.0]) == 8 and gjl.resolved_from([1.0] * 6) is None
 
 
 def test_t018_resolvability_report(run):
     directory, reports = run
     report = reports["T018"]
-    rk4 = _labelled(report, "resolves every truncation-limited")["value"]
+    rk4 = _labelled(report, "resolves every truncation-dominated")["value"]
     assert rk4["min_ratio_rk4_N_ge_16"] >= 10.0
-    assert set(rk4["roundoff_limited_surfaces_excluded"]) == {"sphere R=1e4", "sphere R=1e7", "sphere R=1e8"}
+    assert set(rk4["rounding_affected_surfaces_excluded"]) == {"sphere R=1e4", "sphere R=1e7", "sphere R=1e8"}
     weak = _labelled(report, "Weak curvature is harder to resolve for Euler and midpoint only down to")
     assert weak["value"]["ratio_K_1e-8_over_K_1e-2_at_N16"]["euler"] == pytest.approx(1.0, abs=0.05)
     assert max(weak["value"]["ratio_K_1e-2_over_K_1_at_N16"].values()) < 1.0
     assert weak["value"]["rk4_ratio_K_1e-4_over_K_1e-2_at_N16"] == pytest.approx(100.0, rel=0.5)
     # Roundoff-limited ratios never enter the witness.
-    assert "sphere R=1e4" not in weak["counterexample"]["witness"]["truncation_limited_ratios_at_N16"]["rk4"]
+    assert "sphere R=1e4" not in weak["counterexample"]["witness"]["truncation_dominated_ratios_at_N16"]["rk4"]
     floor = _labelled(report, "floating-point resolution")
-    assert floor["value"] == {"max_ratio_K_1e-16": 1.0, "nonzero_computed_deviations_K_1e-16": 0,
-                              "K_1e-14_all_runs_roundoff_limited": True}
+    assert floor["value"]["max_ratio_K_1e-16"] == 1.0 and floor["value"]["nonzero_computed_deviations_K_1e-16"] == 0
+    # The truncation errors alone would resolve K = 1e-16: rounding, not truncation, is the limit.
+    assert floor["value"]["min_truncation_only_ratio_K_1e-16_at_N128"] >= 10.0
     assert "rk4_ratios_sphere_1e7" not in floor["counterexample"]["witness"]
-    # Every value in the floor finding is checked, including the K = 1e-14 roundoff classification.
-    assert any("K = 1e-14" in c["reference"] for c in floor["basis"]["checks"])
+    # K = 1e-14 is no longer claimed to be roundoff-limited: its Euler and midpoint errors are truncation errors.
+    assert not any("K = 1e-14" in c["reference"] for f in report["findings"] for c in f["basis"].get("checks", []))
+    assert "K_1e-14_all_runs_roundoff_limited" not in floor["value"]
+    assert "every run roundoff-limited" not in report["numerical_result"]
     assert "except the K = 1e-16 floor finding" in report["uncertainty"]
     flat = _labelled(report, "no spurious curvature")["value"]
     assert flat == {"max_abs_deviation": 0.0, "max_abs_path_curvature": 0.0}
@@ -323,6 +397,15 @@ def test_t018_resolvability_report(run):
     assert sensor["domain"] == "sensor_performance" and sensor["evidence_status"] == "not_established"
     rows = json.loads((directory / "artifacts" / "T018" / "resolvability.json").read_text(encoding="utf-8"))
     assert {r["surface"] for r in rows} >= {"plane", "sphere R=1e8", "torus R=2"}
+    near = {r["surface"]: r for r in rows}["sphere R=1e7"]["methods"]
+    # At K = 1e-14 the coarse Euler and midpoint errors are truncation errors (auditor's mpmath values 8.333e-15
+    # and 8.333e-16 at N = 4); RK4 errors there are pure rounding.
+    assert near["euler"]["truncation_errors"][0] == pytest.approx(8.333e-15, rel=1e-3)
+    assert near["midpoint"]["truncation_errors"][0] == pytest.approx(8.333e-16, rel=1e-3)
+    # Euler's rounding part at N = 4 is under 2 % of its truncation part, far from the 10 % share (platform-safe).
+    assert near["euler"]["rounding_affected"][0] is False
+    assert all(near["rk4"]["rounding_affected"]) and max(near["rk4"]["truncation_errors"]) < 1e-29
+    assert near["midpoint"]["truncation_resolved_from_steps"] == 4
 
 
 def test_optional_scipy_cross_check_agrees_with_adaptive_references(run):

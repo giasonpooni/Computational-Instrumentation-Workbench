@@ -4,8 +4,9 @@ Scope: nonlinear chart maps with exact Jacobians and Hessians, heading and
 lateral perturbation families evaluated on one common arclength grid,
 closed-form separations on the unit sphere and the hyperbolic plane,
 constant-curvature Jacobi transfer matrices of explicit and implicit one-step
-methods, log-log fits and check builders whose ``passed`` flag is computed from
-the recorded numbers.
+methods (in floating point and, for the explicit methods, in exact rational
+arithmetic), log-log fits and check builders whose ``passed`` flag is computed
+from the recorded numbers.
 
 Non-claims: every surface, length, curvature and perturbation is in declared
 normalized units. Nothing here measures or represents a physical surface or
@@ -409,6 +410,43 @@ def hyperbolic_j_head_by_modes(method: str, k: float, length: float, steps: int)
 def constant_curvature_transfer(method: str, curvature, length, steps) -> np.ndarray:
     """Transfer matrix after ``steps`` equal steps: the method's step matrix to the power ``steps``."""
     return np.linalg.matrix_power(step_matrix(method, curvature, length / steps), int(steps))
+
+
+def _fraction_product(a, b):
+    return [[a[0][0] * b[0][0] + a[0][1] * b[1][0], a[0][0] * b[0][1] + a[0][1] * b[1][1]],
+            [a[1][0] * b[0][0] + a[1][1] * b[1][0], a[1][0] * b[0][1] + a[1][1] * b[1][1]]]
+
+
+def exact_arithmetic_transfer(method: str, curvature: float, length: float, steps: int):
+    """Transfer matrix of an explicit method on j'' + K j = 0 in exact rational arithmetic.
+
+    The float inputs are taken at their exact binary values (``Fraction``), so
+    the result is the method's truncation-only answer with no rounding at all:
+    for constant K the Jacobi part of every stage of an explicit Runge-Kutta
+    step is linear, and the step matrix is the truncated exponential series
+    sum_{j <= p} (h A)^j / j!. The difference between a floating-point run and
+    this matrix is therefore the run's rounding contribution.
+    """
+    from fractions import Fraction
+
+    if method not in integrators.ORDERS:
+        raise ValueError(f"Exact-arithmetic transfer is defined for the explicit methods only, not {method}")
+    if int(steps) != steps or steps < 1:
+        raise ValueError("steps must be a positive integer")
+    one, zero = Fraction(1), Fraction(0)
+    h, k = Fraction(length) / int(steps), Fraction(curvature)
+    z = [[zero, h], [-k * h, zero]]
+    step = [[one, zero], [zero, one]]
+    term = [[one, zero], [zero, one]]
+    for j in range(1, integrators.ORDERS[method] + 1):
+        term = [[entry / j for entry in row] for row in _fraction_product(term, z)]
+        step = [[step[r][c] + term[r][c] for c in range(2)] for r in range(2)]
+    result, power, n = [[one, zero], [zero, one]], step, int(steps)
+    while n:
+        if n & 1:
+            result = _fraction_product(result, power)
+        power, n = _fraction_product(power, power), n >> 1
+    return result
 
 
 def minimal_steps(error_of, tolerance, limit=2 ** 24) -> int:
