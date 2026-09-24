@@ -38,6 +38,8 @@ CORE = "src/ciw/lab/geodesic_jacobi_limits_core.py"
 DOC = "docs/lab/GEODESIC_JACOBI_LIMITS.md"
 TESTS = "tests/test_lab_geodesic_jacobi_limits.py"
 CHANGED = (MODULE, CORE, DOC)
+# T014 and T016 run the implicit (Gauss collocation) integrators added to the geometry core for them.
+CHANGED_IMPLICIT = CHANGED + ("src/ciw/lab/integrators.py",)
 # Section-wide contract test: every next step names forward work.
 NEXT_STEP_TEST = f"{TESTS}::test_next_steps_name_forward_work"
 OBSERVABLE_TEST = f"{TESTS}::test_t010_t017_name_the_separation_observable"
@@ -1385,14 +1387,93 @@ def truncation_study():
             "adaptive_restart": {"rtol": rtol, "difference": float(np.max(np.abs(cont[-1] - whole[-1])))}}
 
 
-@task("T014", changed_files=CHANGED, regression_tests=(f"{TESTS}::test_t014_reversal_and_truncation",
-                                                     f"{TESTS}::test_t014_defers_cross_platform_reproduction_as_one_question",
-                                                     NEXT_STEP_TEST))
+# Symmetric (Gauss collocation) methods, stage equations solved by fixed-point iteration to integrators.SOLVE_TOL.
+T014_SYMMETRIC = ("implicit-midpoint", "gauss-legendre-2")
+# Rounding level for a return error: the joint states are O(1) (at most about 3), so 1e-12 is about 4500 ulp(1)
+# after 2 x 160 steps, and it is 5 decades below the smallest explicit same-order return error at N = 20.
+T014_ROUNDING = 1e-12
+# Looser declared stage tolerances (torus case, coarsest and a finer grid): the return error should follow them. They
+# stay far above rounding, so rounding cannot move a fixed-point stop across one of them on another platform.
+T014_SOLVE_TOLS = (1e-4, 1e-6, 1e-8)
+T014_TOL_STEPS = (20, 80)
+T014_REFERENCE_RTOL = 1e-13
+
+
+def _power_of_ten(value) -> str:
+    """'1e-4' for 0.0001: how the declared tolerances are named in claims and tables."""
+    return f"1e{int(round(math.log10(value)))}"
+
+
+def _t014_endpoint(key, surface, u0, heading, length):
+    """Reference end point of the forward geodesic: closed form (sphere, hyperbolic plane) or DP45 (torus)."""
+    start = np.asarray(u0, dtype=float)
+    tangent = surface.unit_tangent(start, heading)
+    if key == "sphere":
+        return surface.exact_embedded_geodesic(start, tangent, [length])[0], 0.0
+    if key == "hyperbolic-plane":
+        return surface.exact_geodesic(start, tangent, [length])[0], 0.0
+    y0 = np.concatenate([start, tangent])
+    ends = [integrators.integrate_adaptive(surface.geodesic_rhs, y0, length, rtol=rtol, atol=rtol * 1e-2)[1][-1, :2]
+            for rtol in (T014_REFERENCE_RTOL, 10 * T014_REFERENCE_RTOL)]
+    return surface.embedding(ends[0]), float(np.linalg.norm(surface.embedding(ends[0]) - surface.embedding(ends[1])))
+
+
+def _t014_position_error(key, surface, point, reference) -> float:
+    """Embedded distance to the reference end point (sphere, torus) or hyperbolic distance (hyperbolic plane)."""
+    if key == "hyperbolic-plane":
+        return core.hyperbolic_distance(surface.k, point, reference)
+    return float(np.linalg.norm(surface.embedding(point) - reference))
+
+
+def symmetric_reversal_study():
+    """Forward-then-reversed Gauss collocation runs on the T014 cases, forward errors and a solve-tolerance sweep."""
+    rows, sweep, reference_uncertainty = [], [], {}
+    for key, make, u0, heading, length in T014_CASES:
+        surface = make()
+        f = jacobi.rhs(surface)
+        y0 = jacobi.initial_state(surface, u0, heading)
+        reference, reference_uncertainty[key] = _t014_endpoint(key, surface, u0, heading, length)
+        for method in T014_SYMMETRIC:
+            returns, forward_errors, iterations = [], [], []
+            for steps in T014_STEPS:
+                _, forward, stats_f = integrators.integrate_implicit(f, y0, length, steps, method)
+                _, backward, stats_b = integrators.integrate_implicit(f, forward[-1] * FLIP, length, steps, method)
+                returns.append(float(np.max(np.abs(backward[-1] * FLIP - y0))))
+                forward_errors.append(_t014_position_error(key, surface, forward[-1, :2], reference))
+                iterations.append((stats_f["iterations_total"] + stats_b["iterations_total"]) / (2 * steps))
+            rows.append({"surface": key, "method": method, "return_errors": returns,
+                         "forward_position_errors": forward_errors,
+                         "forward_order": -core.loglog_slope(T014_STEPS, forward_errors),
+                         "forward_order_spread": core.slope_spread(T014_STEPS, forward_errors),
+                         "iterations_per_step": iterations, "max_state": float(np.max(np.abs(forward)))})
+        if key != "torus":
+            continue
+        for method in T014_SYMMETRIC:
+            for tol in T014_SOLVE_TOLS:
+                errors = []
+                for steps in T014_TOL_STEPS:
+                    _, forward, _ = integrators.integrate_implicit(f, y0, length, steps, method, tol=tol)
+                    _, backward, _ = integrators.integrate_implicit(f, forward[-1] * FLIP, length, steps, method,
+                                                                    tol=tol)
+                    errors.append(float(np.max(np.abs(backward[-1] * FLIP - y0))))
+                sweep.append({"method": method, "solve_tol": tol, "steps": list(T014_TOL_STEPS),
+                              "return_errors": errors})
+    return {"solve_tol": integrators.SOLVE_TOL, "rows": rows, "tolerance_sweep": sweep,
+            "reference_uncertainty": reference_uncertainty}
+
+
+@task("T014", changed_files=CHANGED_IMPLICIT,
+      regression_tests=(f"{TESTS}::test_t014_reversal_and_truncation",
+                        f"{TESTS}::test_t014_symmetric_methods_return_at_rounding_level",
+                        f"{TESTS}::test_t014_defers_cross_platform_reproduction_as_one_question",
+                        f"{TESTS}::test_gauss_collocation_steps_and_refusal", NEXT_STEP_TEST))
 def reversal_and_truncation(ctx):
     rev = ctx.memo("gjl-reversal", reversal_study)
     trunc = ctx.memo("gjl-truncation", truncation_study)
+    sym = ctx.memo("gjl-symmetric-reversal", symmetric_reversal_study)
     ctx.artifact_json("reversal.json", core.jsonable(rev, 12))
     ctx.artifact_json("truncation.json", core.jsonable(trunc, 17))
+    ctx.artifact_json("symmetric-reversal.json", core.jsonable(sym, 12))
     ctx.artifact_text("reversal.svg", svg.line_plot(
         [(f"{r['surface']} {r['method']}", [1.0 / n for n in T014_STEPS], r["errors"]) for r in rev["fixed"]],
         title="Forward-then-reversed return error", xlabel="1/N", ylabel="max |return - start|", logx=True, logy=True))
@@ -1404,6 +1485,28 @@ def reversal_and_truncation(ctx):
     dyadic = max(trunc["dyadic_max_difference"].values())
     restart_ratio = trunc["adaptive_restart"]["difference"] / trunc["adaptive_restart"]["rtol"]
     by_method = {m: float(np.mean([r["order"] for r in rev["fixed"] if r["method"] == m])) for m in T014_PREDICTED}
+    # Symmetric (Gauss collocation) methods: return errors, iterations, forward orders and the solve-tolerance sweep.
+    sym_rows = sym["rows"]
+    sym_max = {m: max(max(r["return_errors"]) for r in sym_rows if r["method"] == m) for m in T014_SYMMETRIC}
+    sym_iterations = {m: [float(np.mean([r["iterations_per_step"][i] for r in sym_rows if r["method"] == m]))
+                          for i in range(len(T014_STEPS))] for m in T014_SYMMETRIC}
+    same_order = {"implicit-midpoint": "midpoint", "gauss-legendre-2": "rk4"}
+    explicit_n20 = {same_order[m]: min(r["errors"][0] for r in rev["fixed"] if r["method"] == same_order[m])
+                    for m in T014_SYMMETRIC}
+    forward_n20 = min(r["forward_position_errors"][0] for r in sym_rows)
+    forward_orders = {f"{r['surface']}: {r['method']}": r["forward_order"] for r in sym_rows}
+    forward_ranges = {m: (min(r["forward_order"] for r in sym_rows if r["method"] == m),
+                          max(r["forward_order"] for r in sym_rows if r["method"] == m)) for m in T014_SYMMETRIC}
+    torus_reference = sym["reference_uncertainty"]["torus"]
+    torus_smallest = min(min(r["forward_position_errors"]) for r in sym_rows if r["surface"] == "torus")
+    torus_state = max(r["max_state"] for r in sym_rows if r["surface"] == "torus")
+    sweep = {m: {_power_of_ten(row["solve_tol"]): row["return_errors"] for row in sym["tolerance_sweep"]
+                 if row["method"] == m} for m in T014_SYMMETRIC}
+    sweep_ratio = max(max(row["return_errors"]) / (row["solve_tol"] * torus_state) for row in sym["tolerance_sweep"])
+    loosest = max(T014_SOLVE_TOLS)
+    loose_min = min(min(row["return_errors"]) for row in sym["tolerance_sweep"] if row["solve_tol"] == loosest)
+    loose_max = max(max(row["return_errors"]) for row in sym["tolerance_sweep"] if row["solve_tol"] == loosest)
+    gl_witness = next(r for r in sym_rows if r["surface"] == "sphere" and r["method"] == "gauss-legendre-2")
     findings = [
         finding("Reversal error orders are 1 (Euler), 3 (midpoint) and 5 (RK4): even-order methods gain one order",
                 "numerical", orders,
@@ -1458,44 +1561,149 @@ def reversal_and_truncation(ctx):
                                              "the whole difference comes from different accepted step sequences "
                                              "after the restart"),
                 tolerance={"abs": 0.5, "rel": 0.5}),
+        finding("Symmetric implicit methods (implicit midpoint, 2-stage Gauss-Legendre; fixed-point stage solve to "
+                f"{_power_of_ten(sym['solve_tol'])}) return from forward-then-reversed integration at rounding level "
+                "at every step size",
+                "numerical",
+                {"max_return_error": sym_max,
+                 "return_errors": {f"{r['surface']}: {r['method']}": r["return_errors"] for r in sym_rows},
+                 "explicit_same_order_return_error_at_N_20": explicit_n20,
+                 "iterations_per_step": sym_iterations},
+                {"generator": _gen("symmetric-reversal", methods=list(T014_SYMMETRIC), steps=list(T014_STEPS),
+                                   solve_tol=sym["solve_tol"]),
+                 "derivation": _derivation("t014-geodesic-reversal-and-path-truncation"),
+                 "checks": [core.check("invariant", "max return error of implicit midpoint and 2-stage Gauss-Legendre "
+                                       f"over three surfaces and N = {T014_STEPS[0]} ... {T014_STEPS[-1]} (rounding "
+                                       "bound)", max(sym_max.values()), T014_ROUNDING, "le"),
+                            core.check("invariant", "smallest same-order explicit return error at N = 20 (explicit "
+                                       "midpoint, RK4) over the rounding bound", min(explicit_n20.values())
+                                       / T014_ROUNDING, 1e5, "ge"),
+                            core.check("invariant", "smallest forward end-point error of the symmetric methods at "
+                                       "N = 20 over the rounding bound (they are not exact)",
+                                       forward_n20 / T014_ROUNDING, 1e4, "ge")]},
+                uncertainty=core.uncertainty("roundoff", max(sym_max.values()),
+                                             "the return errors are rounding and stage-solve residuals; they differ "
+                                             "between OpenBLAS kernels by less than 1e-15"),
+                tolerance={"abs": T014_ROUNDING, "rel": 0.01},
+                counterexample={"statement": "The forward-then-reversed return error of an integrator measures its "
+                                             "global error",
+                                "witness": {"surface": "sphere", "method": "gauss-legendre-2",
+                                            "steps": T014_STEPS[0],
+                                            "forward_position_error": gl_witness["forward_position_errors"][0],
+                                            "return_error": gl_witness["return_errors"][0]}}),
+        finding("Implicit midpoint and 2-stage Gauss-Legendre are not exact: their forward end-point errors converge "
+                "at orders 2 and 4", "numerical", forward_orders,
+                {"generator": _gen("symmetric-forward", methods=list(T014_SYMMETRIC), steps=list(T014_STEPS)),
+                 "derivation": _derivation("t014-geodesic-reversal-and-path-truncation"),
+                 "checks": [core.check("analytic", f"{r['surface']} {r['method']} forward order minus "
+                                       f"{integrators.IMPLICIT_ORDERS[r['method']]}",
+                                       r["forward_order"] - integrators.IMPLICIT_ORDERS[r["method"]], 0.1)
+                            for r in sym_rows]
+                 + [core.check("self_convergence", "torus reference end point (DP45 rtol 1e-13) change against rtol "
+                               "1e-12, over the smallest torus forward error", torus_reference / torus_smallest, 0.1,
+                               "le")]},
+                uncertainty=core.uncertainty("fit_spread", max(r["forward_order_spread"] for r in sym_rows),
+                                             "largest gap between a fitted forward order and its consecutive-step-pair "
+                                             "orders"),
+                tolerance={"abs": 5e-3, "rel": 0.0}),
+        finding("The symmetric methods' return error is set by the stage-solve tolerance: at tolerances "
+                f"{', '.join(_power_of_ten(t) for t in T014_SOLVE_TOLS)} it rises above rounding level and stays "
+                "below the tolerance times the state size",
+                "numerical", {"steps": list(T014_TOL_STEPS), "return_errors": sweep},
+                {"generator": _gen("solve-tolerance-sweep", surface="torus", solve_tol=list(T014_SOLVE_TOLS),
+                                   steps=list(T014_TOL_STEPS)),
+                 "checks": [core.check("invariant", "max return error / (solve tolerance x largest |state|)",
+                                       sweep_ratio, 1.0, "le"),
+                            core.check("invariant", "smallest return error at solve tolerance "
+                                       f"{_power_of_ten(loosest)} over the rounding bound", loose_min / T014_ROUNDING,
+                                       1e3, "ge")]},
+                uncertainty=core.uncertainty("step_sequence", sweep_ratio,
+                                             "the return error depends on where each fixed-point iteration stops; "
+                                             "the largest ratio to the tolerance bound is given"),
+                tolerance={"abs": T014_ROUNDING, "rel": 1e-3}),
     ]
     fields = _fields(
         hypothesis=("The geodesic flow is reversible, so integrating forward, flipping velocities and Jacobi "
-                    "derivatives, and integrating again returns to the start up to the method's global error; "
-                    "truncate-and-continue on an identical grid is the same arithmetic as direct integration."),
+                    "derivatives, and integrating again returns to the start up to the method's global error for "
+                    "an explicit method, but exactly for a symmetric one (implicit midpoint, Gauss-Legendre), whose "
+                    "return error is only its stage-solve residual and rounding; truncate-and-continue on an "
+                    "identical grid is the same arithmetic as direct integration."),
         mathematical_model=("With (u, v, j, j') -> (u, -v, j, -j') the flow over L is inverted. For a one-step method "
                             "with local error C h^(p+1), the step with -h has local error C (-h)^(p+1); the composition "
                             "cancels at order h^(p+1) when p is even, so the return error is O(h^(p+1)) for even p and "
                             "O(h^p) for odd p. Linear check: RK4 R(z) R(-z) = 1 + z^6/72 + ..., midpoint "
-                            "1 + z^4/4, Euler 1 - z^2."),
+                            "1 + z^4/4, Euler 1 - z^2. A symmetric method has Phi_(-h) = Phi_h^(-1), and every "
+                            "Runge-Kutta method commutes with the linear flip rho (Phi_h(rho y) = rho Phi_(-h)(y)), so "
+                            "rho Phi_h^N rho Phi_h^N = identity: the return error is bounded by the stage-solve "
+                            "tolerance plus rounding, not by h^p (linear check: implicit midpoint and the (2, 2) Pade "
+                            "approximant have R(z) R(-z) = 1 exactly), while the forward error is still O(h^2) and "
+                            "O(h^4)."),
         input_data=["Unit sphere (1.1, 0.4) heading 0.9 L = 2; Torus(2, 1) (0, 0.5) heading 0.7 L = 3; "
                     "HyperbolicPlane(1) (0, 1) heading 0.6 L = 1.5",
                     f"Fixed steps N = {list(T014_STEPS)}; DP45 rtol 1e-9, atol 1e-12",
+                    f"Implicit midpoint and 2-stage Gauss-Legendre at the same N: fixed-point stage solve to "
+                    f"{_g(sym['solve_tol'], 2)} (at most {integrators.SOLVE_MAX_ITERATIONS} iterations); torus also "
+                    f"at solve tolerances {', '.join(_power_of_ten(t) for t in T014_SOLVE_TOLS)} with N = "
+                    f"{', '.join(str(n) for n in T014_TOL_STEPS)}",
                     "Truncation: torus, L1 = 1.25 / N1 = 160 and L2 = 2 / N2 = 256 (h = 2^-7); decimal cuts of L2 = 3, N2 = 300"],
-        observation_model="Max absolute difference of the full joint state (geodesic and both Jacobi columns).",
-        expected_invariant="Return error orders 1, 3, 5; bitwise continuation for identical step doubles.",
-        experiment=("Forward/backward fixed-step and adaptive runs; truncated and continued runs compared with direct "
-                    "runs bit for bit; a deterministic search over decimal truncation lengths for a step-size mismatch."),
+        observation_model=("Max absolute difference of the full joint state (geodesic and both Jacobi columns); for "
+                           "the symmetric methods also the forward end-point error: embedded distance to the exact "
+                           "great circle (sphere) or to a DP45 rtol 1e-13 end point (torus), hyperbolic distance to "
+                           "the exact semicircle."),
+        expected_invariant=("Return error orders 1, 3, 5 for the explicit methods; symmetric return error at rounding "
+                            "level (<= 1e-12) at every N and below the solve tolerance times the state size when that "
+                            "is loosened; forward orders 2 and 4; bitwise continuation for identical step doubles."),
+        experiment=("Forward/backward fixed-step (explicit and symmetric implicit) and adaptive runs; a sweep of the "
+                    "declared stage-solve tolerance; truncated and continued runs compared with direct runs bit for "
+                    "bit; a deterministic search over decimal truncation lengths for a step-size mismatch."),
         numerical_result=(f"Mean reversal orders {', '.join(f'{m} {_g(v, 4)}' for m, v in by_method.items())}; adaptive "
-                          f"return error up to {_g(adaptive_ratio, 3)} x rtol; dyadic continuation difference "
+                          f"return error up to {_g(adaptive_ratio, 3)} x rtol; symmetric return error at most "
+                          f"{_g(sym_max['implicit-midpoint'], 2)} (implicit midpoint) and "
+                          f"{_g(sym_max['gauss-legendre-2'], 2)} (Gauss-Legendre) at every N, against "
+                          f"{_g(explicit_n20['midpoint'], 2)} (explicit midpoint) and "
+                          f"{_g(explicit_n20['rk4'], 2)} (RK4) "
+                          f"at N = 20, although their forward orders are "
+                          f"{', '.join(f'{m} {_g(lo, 4)}-{_g(hi, 4)}' for m, (lo, hi) in forward_ranges.items())} "
+                          f"with forward errors from {_g(forward_n20, 2)} at N = 20; "
+                          f"{_g(sym_iterations['implicit-midpoint'][0], 3)}-"
+                          f"{_g(sym_iterations['implicit-midpoint'][-1], 3)} "
+                          f"(implicit midpoint) and {_g(sym_iterations['gauss-legendre-2'][0], 3)}-"
+                          f"{_g(sym_iterations['gauss-legendre-2'][-1], 3)} (Gauss-Legendre) fixed-point iterations "
+                          f"per step from N = 20 to 160; at solve tolerance {_power_of_ten(loosest)} the return "
+                          f"error rises to {_g(loose_max, 2)} "
+                          f"(at most {_g(sweep_ratio, 2)} x tolerance x state size); dyadic continuation difference "
                           f"{_g(dyadic, 2)}; decimal witness L1 = {witness['L1'] if witness else None} with a "
                           f"step-size mismatch and a bitwise different result (max difference "
                           f"{_g(witness['max_abs_difference'], 2) if witness else 0}); adaptive restart "
                           f"difference {_g(restart_ratio, 3)} x rtol."),
         uncertainty=("Orders are least-squares fits over four step sizes; the smallest RK4 return error ("
                      f"{_g(min(min(r['errors']) for r in rev['fixed'] if r['method'] == 'rk4'), 2)}) stays far above "
-                     "roundoff. Adaptive ratios depend on the accepted step sequence."),
+                     "roundoff. Adaptive ratios depend on the accepted step sequence. The symmetric return errors are "
+                     "rounding and stage-solve residuals: they change in the last bits between OpenBLAS kernels "
+                     "(below 1e-15), so their regression tolerance is the 1e-12 rounding bound itself. Where a "
+                     "fixed-point iteration stops can move by one iteration between platforms, which changes a mean "
+                     "iteration count by 1/(2N) and a state by up to about 1e-14; the iteration means are therefore "
+                     "compared within 1 %, and the forward orders, fitted down to errors of 1e-11, within 5e-3."),
         failure_modes_checked=["Jacobi derivatives flipped along with velocities (otherwise the Jacobi state does not return)",
                                "roundoff floor kept below the smallest fitted error",
+                               "symmetric methods checked to be inexact forward (orders 2 and 4), so the exact return "
+                               "is not an artefact of an overly fine grid",
+                               "stage equations solved to a declared tolerance; a step whose fixed-point iteration "
+                               "does not converge is refused, never returned unconverged",
                                "bitwise claims checked with exact equality, not tolerances",
                                "decimal witness search is deterministic and bounded"],
         unresolved_assumptions=["The order gain for even p is derived for smooth problems; it can fail near "
                                 "chart singularities",
+                                "The symmetric methods are integrated with fixed steps only; a time-reversible "
+                                "adaptive step control is not implemented, so the adaptive return error stays at "
+                                "tolerance level",
                                 PLATFORM_QUESTION_T014],
-        recommended_next_task=("Deferred research question: add a symmetric integrator (implicit midpoint) to "
-                               "ciw.lab.integrators and check that its forward/backward return error stays at "
-                               "rounding level at every step size, where the explicit methods return with errors "
-                               "of order 1, 3 and 5"),
+        recommended_next_task=("Deferred research question: implement a time-reversible adaptive step control for "
+                               "the Gauss-Legendre integrator (step size from a symmetric error estimate) and test "
+                               "whether its forward/backward return error also stays at rounding level where the "
+                               "DP45 return error sits at the tolerance, and measure how the rounding-level return "
+                               "error of the fixed-step symmetric methods grows with N (random walk or linear) with "
+                               "compensated summation of the step increments"),
     )
     return {"state": "completed", "fields": fields, "findings": findings}
 
@@ -1844,7 +2052,8 @@ def long_horizon_drift(ctx):
                                "nonfinite states stop the run", "dyadic step so every checkpoint is a node"],
         unresolved_assumptions=["Two geodesics only; resonant or chaotic geodesics are not sampled",
                                 "Horizon 320 is limited by the run budget; asymptotic drift laws are not established",
-                                "Symplectic or symmetric integrators are not in the core and are not compared"],
+                                "The symmetric integrators of the core (implicit midpoint, Gauss-Legendre) are not "
+                                "run on these two geodesics and horizons"],
         recommended_next_task=("Deferred research question: sample resonant and chaotic geodesics (two geodesics "
                                "now) beyond the horizon 320 the run budget allows, fit asymptotic drift laws, and "
                                "compare a symmetric integrator on the same horizons"),
@@ -1955,13 +2164,211 @@ def negative_curvature_study():
     return {"hyperbolic": rows, "beyond_pole": beyond_pole, "saddle": saddle}
 
 
-@task("T016", changed_files=CHANGED, regression_tests=(f"{TESTS}::test_t016_negative_curvature_is_not_stiffness",
-                                                     NEXT_STEP_TEST))
+# Nonlinear implicit integration: 2-stage Gauss-Legendre (fixed-point stage solve to integrators.SOLVE_TOL) against
+# RK4 on the full geodesic/Jacobi systems, not only on the constant-curvature step matrices.
+T016_FULL_STEPS = (64, 128, 256)                  # hyperbolic plane, every k: kh <= 1/4
+# End-point comparisons use k <= 4: at k = 8 the half-plane chart compresses the geodesic (y ~ e^(-kL)) so much that
+# its end-point error is still far from asymptotic at these N (RK4 hyperbolic distance error 0.46 at N = 128).
+T016_ENDPOINT_K = 4.0
+T016_FULL_SADDLE_C = (1.0, 4.0, 16.0)
+T016_FULL_SADDLE_STEPS = {1.0: (32, 64, 128), 4.0: (32, 64, 128), 16.0: (64, 128, 256)}
+# Oblique saddle geodesics: start offset from the ridge by T016_OBLIQUE_OFFSET / c (in units of the core width 1/c)
+# at the ridge start's x0, with this chart heading, so they miss the saddle point and sample a different range of K.
+T016_OBLIQUE_OFFSET, T016_OBLIQUE_HEADING = 0.5, -0.3
+T016_REFERENCE_RTOL = 1e-13                       # DP45 reference, checked against rtol 1e-12
+T016_RESOLVED = 1e-11                             # errors below this are not used in an order fit or ratio
+# Long-horizon speed drift at a fixed dyadic step: two escaping geodesics and one recurrent Torus(2, 1) geodesic that
+# winds around the tube, crossing the inner equator (K = -1) on every turn.
+T016_DRIFT_H = 0.25
+T016_ESCAPE_HORIZON, T016_RECURRENT_HORIZON = 32.0, 160.0
+T016_WINDING_HEADING = 1.3
+T016_DRIFT_METHODS = ("rk4", "implicit-midpoint", "gauss-legendre-2")
+T016_DRIFT_FRACTIONS = (1 / 32, 1 / 16, 1 / 8, 1 / 4, 1 / 2, 1.0)
+T016_BOUNDED_FROM = 1 / 8                         # boundedness is judged from this fraction of the horizon on
+# Implicit midpoint beyond its pole on the full nonlinear system (HyperbolicPlane(8), the kh = 2.29 of the step-matrix
+# study): the fixed-point stage iteration cannot converge and the step must be refused by name.
+T016_REFUSAL = {"k": 8.0, "steps": 7}
+
+
+def _drift_cases():
+    """(key, surface, start, heading, horizon): two escaping geodesics and one recurrent geodesic."""
+    return (("hyperbolic-plane", HyperbolicPlane(1.0), (0.0, 1.0), 0.6, T016_ESCAPE_HORIZON),
+            ("saddle-oblique", Saddle(1.0), (_saddle_start(1.0), T016_OBLIQUE_OFFSET), T016_OBLIQUE_HEADING,
+             T016_ESCAPE_HORIZON),
+            ("torus-winding", Torus(2.0, 1.0), (0.0, 0.0), T016_WINDING_HEADING, T016_RECURRENT_HORIZON))
+
+
+def _full_run(f, y0, length, steps, method):
+    if method == "rk4":
+        _, states = integrators.integrate_fixed(f, y0, length, steps, "rk4")
+        return states, None
+    _, states, stats = integrators.integrate_implicit(f, y0, length, steps, method)
+    return states, stats
+
+
+def _speed_errors(surface, states) -> np.ndarray:
+    return np.array([abs(surface.speed_squared(y[:2], y[2:4]) - 1.0) for y in states])
+
+
+def _resolved_order(steps, errors):
+    """Observed order over the steps whose error is at least T016_RESOLVED (None with fewer than two)."""
+    kept = [(n, e) for n, e in zip(steps, errors) if e >= T016_RESOLVED]
+    if len(kept) < 2:
+        return None
+    return -core.loglog_slope([n for n, _ in kept], [e for _, e in kept])
+
+
+def implicit_hyperbolic_study(required):
+    """RK4 and Gauss-Legendre on the full HyperbolicPlane(k) system; ``required`` maps k to the step-matrix N."""
+    u0, heading, length = (0.0, 1.0), 0.6, T016_LENGTH
+    rows = []
+    for k in T016_K:
+        plane = HyperbolicPlane(k)
+        f = jacobi.rhs(plane)
+        y0 = jacobi.initial_state(plane, u0, heading)
+        exact = math.sinh(k * length) / k
+        start = np.asarray(u0, dtype=float)
+        end = plane.exact_geodesic(start, plane.unit_tangent(start, heading), [length])[0]
+        row = {"k": k, "steps": list(T016_FULL_STEPS)}
+        for method in ("rk4", "gauss-legendre-2"):
+            j_err, end_err, speed, iterations, matrix_gap = [], [], [], [], []
+            for steps in T016_FULL_STEPS:
+                states, stats = _full_run(f, y0, length, steps, method)
+                j_err.append(float(abs(states[-1, 6] - exact) / exact))
+                end_err.append(core.hyperbolic_distance(k, states[-1, :2], end))
+                speed.append(float(np.max(_speed_errors(plane, states))))
+                matrix = core.constant_curvature_transfer(method, -k * k, length, steps)[0, 1]
+                matrix_gap.append(float(abs(states[-1, 6] - matrix) / exact))
+                if stats:
+                    iterations.append(stats["iterations_mean"])
+            row[method] = {"j_head_relative_error": j_err, "endpoint_distance_error": end_err,
+                           "max_speed_error": speed, "matrix_power_gap": matrix_gap,
+                           "j_head_order": -core.loglog_slope(T016_FULL_STEPS, j_err),
+                           "endpoint_order": -core.loglog_slope(T016_FULL_STEPS, end_err)}
+            if iterations:
+                row[method]["iterations_per_step"] = iterations
+        # The minimal step counts found on the exact step matrices, rerun with the nonlinear integrator.
+        n = required[k]
+        at = [float(abs(_full_run(f, y0, length, m, "gauss-legendre-2")[0][-1, 6] - exact) / exact)
+              for m in (n - 1, n)]
+        row["gauss-legendre-2"]["at_required_steps"] = {"steps": n, "relative_error": at[1],
+                                                        "relative_error_one_step_fewer": at[0]}
+        rows.append(row)
+    return rows
+
+
+def implicit_saddle_study():
+    """Ridge and oblique Saddle(c) geodesics: RK4 and Gauss-Legendre against a DP45 reference on the full system."""
+    rows = []
+    for c in T016_FULL_SADDLE_C:
+        surface = Saddle(c)
+        f = jacobi.rhs(surface)
+        x0 = _saddle_start(c)
+        for kind, u0, heading in (("ridge", (x0, 0.0), 0.0),
+                                  ("oblique", (x0, T016_OBLIQUE_OFFSET / c), T016_OBLIQUE_HEADING)):
+            y0 = jacobi.initial_state(surface, u0, heading)
+            _, ref, ref_stats = integrators.integrate_adaptive(f, y0, 2.0, rtol=T016_REFERENCE_RTOL,
+                                                               atol=T016_REFERENCE_RTOL * 1e-2)
+            _, check, _ = integrators.integrate_adaptive(f, y0, 2.0, rtol=10 * T016_REFERENCE_RTOL,
+                                                         atol=T016_REFERENCE_RTOL * 1e-1)
+            j_ref = float(ref[-1, 6])
+            curvature = [surface.gaussian_curvature(y[:2]) for y in ref]
+            steps = T016_FULL_SADDLE_STEPS[c]
+            row = {"c": c, "geodesic": kind, "start": list(u0), "heading": heading, "steps": list(steps),
+                   "curvature_range": [float(min(curvature)), float(max(curvature))], "j_head": j_ref,
+                   "reference_steps": ref_stats["accepted_steps"],
+                   "reference_uncertainty": {"j_head_relative": float(abs(check[-1, 6] - j_ref) / abs(j_ref)),
+                                             "position": float(np.max(np.abs(check[-1, :2] - ref[-1, :2])))}}
+            for method in ("rk4", "gauss-legendre-2"):
+                j_err, pos_err, speed, iterations = [], [], [], []
+                for n in steps:
+                    states, stats = _full_run(f, y0, 2.0, n, method)
+                    j_err.append(float(abs(states[-1, 6] - j_ref) / abs(j_ref)))
+                    pos_err.append(float(np.max(np.abs(states[-1, :2] - ref[-1, :2]))))
+                    speed.append(float(np.max(_speed_errors(surface, states))))
+                    if stats:
+                        iterations.append(stats["iterations_mean"])
+                row[method] = {"j_head_relative_error": j_err, "position_error": pos_err, "max_speed_error": speed,
+                               "j_head_order": _resolved_order(steps, j_err),
+                               "position_order": _resolved_order(steps, pos_err)}
+                if iterations:
+                    row[method]["iterations_per_step"] = iterations
+            rows.append(row)
+    return rows
+
+
+def speed_drift_study():
+    """Speed-error envelopes max_{s <= L} |g(v, v) - 1| of RK4 and the symmetric methods over long horizons."""
+    rows = []
+    for key, surface, u0, heading, horizon in _drift_cases():
+        start = np.asarray(u0, dtype=float)
+        y0 = np.concatenate([start, surface.unit_tangent(start, heading)])
+        steps = int(round(horizon / T016_DRIFT_H))
+        checkpoints = [horizon * fraction for fraction in T016_DRIFT_FRACTIONS]
+        row = {"surface": key, "horizon": horizon, "h": T016_DRIFT_H, "checkpoints": checkpoints}
+        for method in T016_DRIFT_METHODS:
+            states, stats = _full_run(surface.geodesic_rhs, y0, horizon, steps, method)
+            envelope = np.maximum.accumulate(_speed_errors(surface, states))
+            values = [float(envelope[int(round(c / T016_DRIFT_H))]) for c in checkpoints]
+            row[method] = {"envelope": values, "local_slopes": _local_slopes(checkpoints, values),
+                           "bounded_ratio": values[-1] / values[T016_DRIFT_FRACTIONS.index(T016_BOUNDED_FROM)]}
+            if stats:
+                row[method]["iterations_per_step"] = stats["iterations_mean"]
+            if method == "gauss-legendre-2":
+                curvature = [surface.gaussian_curvature(y[:2]) for y in states]
+                row["curvature_range"] = [float(min(curvature)), float(max(curvature))]
+                # The escaping hyperbolic geodesic turns toward the vertical ray (heading from vertical -> 0); the
+                # winding torus geodesic turns around the tube (theta range beyond 2 pi).
+                row["final_heading_from_vertical"] = float(math.atan2(abs(states[-1, 2]), abs(states[-1, 3])))
+                row["theta_or_y_range"] = [float(np.min(states[:, 1])), float(np.max(states[:, 1]))]
+        rows.append(row)
+    # Every Runge-Kutta method keeps the speed on a vertical hyperbolic geodesic: there the right-hand side is linear
+    # along the ray v = q y, so the stages stay on it and v/y is kept exactly (up to rounding).
+    plane = HyperbolicPlane(1.0)
+    vertical = np.array([0.0, 1.0, 0.0, -1.0])
+    vertical_speed = {}
+    for method in T016_DRIFT_METHODS:
+        states, _ = _full_run(plane.geodesic_rhs, vertical, T016_ESCAPE_HORIZON,
+                              int(round(T016_ESCAPE_HORIZON / T016_DRIFT_H)), method)
+        vertical_speed[method] = float(np.max(_speed_errors(plane, states)))
+    return {"rows": rows, "vertical_hyperbolic_max_speed_error": vertical_speed}
+
+
+def implicit_refusal():
+    """Implicit midpoint on the full HyperbolicPlane(8) system at kh = 2.29: the refusal message (None if it ran)."""
+    k, steps = T016_REFUSAL["k"], T016_REFUSAL["steps"]
+    plane = HyperbolicPlane(k)
+    y0 = jacobi.initial_state(plane, (0.0, 1.0), 0.6)
+    try:
+        integrators.integrate_implicit(jacobi.rhs(plane), y0, T016_LENGTH, steps, "implicit-midpoint")
+    except integrators.ImplicitSolveRefusal as refusal:
+        return str(refusal)
+    return None
+
+
+def implicit_nonlinear_study(required):
+    return {"hyperbolic": implicit_hyperbolic_study(required), "saddle": implicit_saddle_study(),
+            "drift": speed_drift_study(), "refusal": implicit_refusal(), "solve_tol": integrators.SOLVE_TOL,
+            "max_iterations": integrators.SOLVE_MAX_ITERATIONS}
+
+
+@task("T016", changed_files=CHANGED_IMPLICIT,
+      regression_tests=(f"{TESTS}::test_t016_negative_curvature_is_not_stiffness",
+                        f"{TESTS}::test_t016_gauss_legendre_on_the_full_nonlinear_systems",
+                        f"{TESTS}::test_gauss_collocation_steps_and_refusal", NEXT_STEP_TEST))
 def negative_curvature(ctx):
     study = ctx.memo("gjl-negative-curvature", negative_curvature_study)
     ctx.artifact_json("negative-curvature.json", core.jsonable(study, 12))
     rows, saddle = study["hyperbolic"], study["saddle"]
     ks = [r["k"] for r in rows]
+    required = {r["k"]: r["gauss-legendre-2_steps_required"] for r in rows}
+    nonlinear = ctx.memo("gjl-implicit-nonlinear", lambda: implicit_nonlinear_study(required))
+    ctx.artifact_json("implicit-nonlinear.json", core.jsonable(nonlinear, 12))
+    drift_rows = nonlinear["drift"]["rows"]
+    ctx.artifact_text("speed-drift.svg", svg.line_plot(
+        [(f"{r['surface']} {m}", r["checkpoints"], r[m]["envelope"]) for r in drift_rows for m in T016_DRIFT_METHODS],
+        title=f"Speed-error envelope, fixed step h = {T016_DRIFT_H}", xlabel="L", ylabel="max |g(v, v) - 1|",
+        logx=True, logy=True))
     ctx.artifact_text("steps-versus-k.svg", svg.line_plot(
         [("RK4 steps for rel. error 1e-6", ks, [r["rk4_steps_required"] for r in rows]),
          ("implicit midpoint steps", ks, [r["implicit-midpoint_steps_required"] for r in rows]),
@@ -2012,6 +2419,48 @@ def negative_curvature(ctx):
                               "at the required N)", modes_mismatch, 1e-10),
                    core.check("cross_implementation", "max |RK4 matrix-power j_head - integrated j_head| / j_head "
                               f"(full geodesic/Jacobi system, N = {T016_STEPS})", linear_match, 1e-12)]
+    # Gauss-Legendre (fixed-point stage solve) against RK4 on the full nonlinear systems.
+    full = nonlinear["hyperbolic"]
+    glf = "gauss-legendre-2"
+    full_orders = {m: [r[m]["j_head_order"] for r in full] for m in ("rk4", glf)}
+    full_ratio = [[g / e for g, e in zip(r[glf]["j_head_relative_error"], r["rk4"]["j_head_relative_error"])]
+                  for r in full]
+    full_gap = max(max(r[glf]["matrix_power_gap"]) for r in full)
+    at_required = [r[glf]["at_required_steps"] for r in full]
+    end_rows = [r for r in full if r["k"] <= T016_ENDPOINT_K]
+    end_orders = {m: [r[m]["endpoint_order"] for r in end_rows] for m in ("rk4", glf)}
+    end_ratio = [[g / e for g, e in zip(r[glf]["endpoint_distance_error"], r["rk4"]["endpoint_distance_error"])]
+                 for r in end_rows]
+    speed_ratio = [[g / e for g, e in zip(r[glf]["max_speed_error"], r["rk4"]["max_speed_error"])] for r in end_rows]
+    saddle_full = nonlinear["saddle"]
+
+    def _finest_ratio(row, key):
+        """GL/RK4 ratio of an error series at the finest N where both errors are resolved."""
+        pairs = [(g, e) for g, e in zip(row[glf][key], row["rk4"][key]) if min(g, e) >= T016_RESOLVED]
+        return pairs[-1][0] / pairs[-1][1]
+
+    saddle_label = [f"c = {_g(r['c'], 3)} {r['geodesic']}" for r in saddle_full]
+    saddle_orders = [r[m]["j_head_order"] for r in saddle_full for m in ("rk4", glf)
+                     if r[m]["j_head_order"] is not None]
+    saddle_ratio = [_finest_ratio(r, "j_head_relative_error") for r in saddle_full]
+    saddle_speed = [g / e for r in saddle_full for g, e in zip(r[glf]["max_speed_error"], r["rk4"]["max_speed_error"])]
+    saddle_reference = max(r["reference_uncertainty"]["j_head_relative"] for r in saddle_full)
+    worst = max(range(len(saddle_full)), key=lambda i: abs(math.log(6.0 * saddle_ratio[i])))
+    drift = {r["surface"]: r for r in drift_rows}
+    winding = drift["torus-winding"]
+    escaping = [drift[key] for key in ("hyperbolic-plane", "saddle-oblique")]
+    symmetric = ("implicit-midpoint", glf)
+    vertical = nonlinear["drift"]["vertical_hyperbolic_max_speed_error"]
+    bounded_from = T016_BOUNDED_FROM * T016_RECURRENT_HORIZON
+    expected_refusal = (f"implicit-midpoint stage equations did not converge within {integrators.SOLVE_MAX_ITERATIONS} "
+                        f"fixed-point iterations at step size {T016_LENGTH / T016_REFUSAL['steps']!r} (step 1 of "
+                        f"{T016_REFUSAL['steps']})")
+    iteration_ranges = {
+        "hyperbolic plane": [min(min(r[glf]["iterations_per_step"]) for r in full),
+                             max(max(r[glf]["iterations_per_step"]) for r in full)],
+        "saddle": [min(min(r[glf]["iterations_per_step"]) for r in saddle_full),
+                   max(max(r[glf]["iterations_per_step"]) for r in saddle_full)],
+        "winding torus": [winding[glf]["iterations_per_step"], winding["implicit-midpoint"]["iterations_per_step"]]}
     findings = [
         finding("Jacobi fields on HyperbolicPlane(k) grow like sinh(kL)/k and adaptive integration resolves them",
                 "numerical", {"max_adaptive_relative_error": max(r["adaptive_relative_error"] for r in rows),
@@ -2129,13 +2578,160 @@ def negative_curvature(ctx):
                                 "witness": {"c": saddle[-1]["c"], "peak_abs_curvature": saddle[-1]["peak_abs_curvature"],
                                             "log_j_head": math.log(saddle[-1]["j_head"]),
                                             "sqrt_peak_times_L": 2.0 * saddle[-1]["c"]}}),
+        finding("On the full nonlinear HyperbolicPlane(k) system the 2-stage Gauss-Legendre integrator converges at "
+                "order 4, its j_head error tends to 1/6 of RK4's, and it needs exactly the step counts found on its "
+                "constant-curvature step matrix", "numerical",
+                {"k": ks, "steps": list(T016_FULL_STEPS), "j_head_order": full_orders,
+                 "gauss_legendre_over_rk4_j_head_error": full_ratio,
+                 "required_steps": [a["steps"] for a in at_required],
+                 "relative_error_at_required_steps": [a["relative_error"] for a in at_required],
+                 "relative_error_one_step_fewer": [a["relative_error_one_step_fewer"] for a in at_required]},
+                {"generator": _gen("implicit-hyperbolic", k=list(T016_K), steps=list(T016_FULL_STEPS),
+                                   solve_tol=nonlinear["solve_tol"]),
+                 "derivation": _derivation("t016-strongly-negative-curvature"),
+                 "checks": [core.check("analytic", "max |Gauss-Legendre j_head order - 4| over k", max(
+                                abs(v - 4.0) for v in full_orders[glf]), 0.1),
+                            core.check("analytic", "max |RK4 j_head order - 4| over k", max(
+                                abs(v - 4.0) for v in full_orders["rk4"]), 0.15),
+                            core.check("analytic", f"max over k of |6 x (GL/RK4 j_head error at N = "
+                                       f"{T016_FULL_STEPS[-1]}) - 1| (error constants 1/720 and 1/120)",
+                                       max(abs(6.0 * r[-1] - 1.0) for r in full_ratio), 0.1),
+                            core.check("cross_implementation", "max |nonlinear Gauss-Legendre j_head - its step-"
+                                       "matrix power| / j_head", full_gap, 1e-12),
+                            core.check("analytic", f"max relative j_head error of the nonlinear integrator at the "
+                                       f"step-matrix step count (target {_g(T016_TAU, 2)})",
+                                       max(a["relative_error"] for a in at_required), T016_TAU, "le"),
+                            core.check("analytic", "min relative j_head error of the nonlinear integrator one step "
+                                       "below it", min(a["relative_error_one_step_fewer"] for a in at_required),
+                                       T016_TAU, "ge")]},
+                uncertainty=core.uncertainty("fit_spread", max(core.slope_spread(T016_FULL_STEPS,
+                                                                                 r[m]["j_head_relative_error"])
+                                                               for r in full for m in ("rk4", glf)),
+                                             "largest gap between a fitted order and its consecutive-step-pair "
+                                             "orders; errors are against the closed form sinh(kL)/k"),
+                tolerance={"abs": 1e-12, "rel": 1e-3}),
+        finding("The constant-curvature Jacobi error constants do not carry over to the nonlinear hyperbolic "
+                "geodesic: Gauss-Legendre's end-point and speed errors are not 1/6 of RK4's", "numerical",
+                {"k": [r["k"] for r in end_rows], "steps": list(T016_FULL_STEPS), "endpoint_order": end_orders,
+                 "gauss_legendre_over_rk4_endpoint_error": end_ratio,
+                 "gauss_legendre_over_rk4_max_speed_error": speed_ratio},
+                {"generator": _gen("implicit-hyperbolic-endpoint", k=[r["k"] for r in end_rows],
+                                   steps=list(T016_FULL_STEPS)),
+                 "checks": [core.check("analytic", f"max |end-point order - 4| over RK4 and Gauss-Legendre, k <= "
+                                       f"{_g(T016_ENDPOINT_K, 2)} (hyperbolic distance to the exact semicircle)",
+                                       max(abs(v - 4.0) for m in end_orders.values() for v in m), 0.25),
+                            core.check("invariant", "6 x smallest GL/RK4 end-point error ratio (1 if the Jacobi "
+                                       "error constants carried over)", 6.0 * min(min(r) for r in end_ratio), 3.0,
+                                       "ge"),
+                            core.check("invariant", "6 x smallest GL/RK4 max speed error ratio",
+                                       6.0 * min(min(r) for r in speed_ratio), 3.0, "ge")]},
+                uncertainty=core.uncertainty("fit_spread", max(core.slope_spread(T016_FULL_STEPS,
+                                                                                 r[m]["endpoint_distance_error"])
+                                                               for r in end_rows for m in ("rk4", glf)),
+                                             "largest gap between a fitted end-point order and its consecutive-step-"
+                                             "pair orders"),
+                tolerance={"abs": 1e-12, "rel": 5e-3},
+                counterexample={"statement": "An integrator with a six times smaller error constant on the "
+                                             "constant-curvature Jacobi equation is correspondingly more accurate "
+                                             "for the geodesic itself",
+                                "witness": {"k": end_rows[0]["k"], "steps": T016_FULL_STEPS[-1],
+                                            "j_head_error_ratio": full_ratio[0][-1],
+                                            "endpoint_error_ratio": end_ratio[0][-1],
+                                            "max_speed_error_ratio": speed_ratio[0][-1]}}),
+        finding("On ridge and oblique saddle-surface geodesics (full nonlinear system) Gauss-Legendre and RK4 both "
+                "converge at order 4, but their j_head error ratio depends on the geodesic instead of being the "
+                "constant-curvature 1/6, while Gauss-Legendre's speed error is several times smaller at equal steps",
+                "numerical",
+                {"geodesics": saddle_label, "curvature_range": [r["curvature_range"] for r in saddle_full],
+                 "j_head_order": {m: [r[m]["j_head_order"] for r in saddle_full] for m in ("rk4", glf)},
+                 "gauss_legendre_over_rk4_j_head_error_at_finest_resolved_N": saddle_ratio,
+                 "max_gauss_legendre_over_rk4_speed_error": max(saddle_speed)},
+                {"generator": _gen("implicit-saddle", c=list(T016_FULL_SADDLE_C),
+                                   oblique_offset_over_c=T016_OBLIQUE_OFFSET, oblique_heading=T016_OBLIQUE_HEADING),
+                 "checks": [core.check("analytic", f"max |j_head order - 4| over RK4 and Gauss-Legendre on six "
+                                       f"geodesics (errors >= {_g(T016_RESOLVED, 2)})",
+                                       max(abs(v - 4.0) for v in saddle_orders), 0.3),
+                            core.check("self_convergence", "max relative change of the DP45 reference j_head from "
+                                       f"rtol {_g(10 * T016_REFERENCE_RTOL, 2)} to {_g(T016_REFERENCE_RTOL, 2)}, over "
+                                       "the resolution floor", saddle_reference / T016_RESOLVED, 0.2, "le"),
+                            core.check("invariant", "largest factor between a GL/RK4 j_head error ratio and 1/6",
+                                       math.exp(abs(math.log(6.0 * saddle_ratio[worst]))), 2.0, "ge"),
+                            core.check("invariant", "max GL/RK4 speed error ratio over geodesics and N",
+                                       max(saddle_speed), 0.5, "le")]},
+                uncertainty=core.uncertainty("reference_error", saddle_reference,
+                                             "largest relative change of the DP45 reference j_head from rtol 1e-12 "
+                                             "to 1e-13; errors below 1e-11 are left out of the fits and ratios"),
+                tolerance={"abs": 5e-3, "rel": 5e-3},
+                counterexample={"statement": "Gauss-Legendre's constant-curvature advantage over RK4 (j_head error 1/6 "
+                                             "of RK4's) holds on variable-curvature geodesics",
+                                "witness": {"geodesic": saddle_label[worst],
+                                            "curvature_range": saddle_full[worst]["curvature_range"],
+                                            "j_head_error_ratio": saddle_ratio[worst]}}),
+        finding("On a recurrent Torus(2, 1) geodesic that winds around the tube through negative curvature, the speed "
+                "errors of implicit midpoint and 2-stage Gauss-Legendre stay bounded while RK4's grows secularly",
+                "numerical",
+                {"checkpoints": winding["checkpoints"], "h": T016_DRIFT_H,
+                 "envelope": {m: winding[m]["envelope"] for m in T016_DRIFT_METHODS},
+                 "growth_after_one_eighth": {m: winding[m]["bounded_ratio"] for m in T016_DRIFT_METHODS},
+                 "rk4_local_slopes": winding["rk4"]["local_slopes"],
+                 "curvature_range": winding["curvature_range"], "theta_range": winding["theta_or_y_range"]},
+                {"generator": _gen("speed-drift-winding", heading=T016_WINDING_HEADING, h=T016_DRIFT_H,
+                                   horizon=T016_RECURRENT_HORIZON),
+                 "checks": [core.check("invariant", f"max over the symmetric methods of envelope(L = "
+                                       f"{_g(T016_RECURRENT_HORIZON, 4)}) / envelope(L = {_g(bounded_from, 4)})",
+                                       max(winding[m]["bounded_ratio"] for m in symmetric), 1.05, "le"),
+                            core.check("invariant", f"RK4 envelope(L = {_g(T016_RECURRENT_HORIZON, 4)}) / "
+                                       f"envelope(L = {_g(bounded_from, 4)})", winding["rk4"]["bounded_ratio"], 4.0,
+                                       "ge"),
+                            core.check("analytic", "RK4 local slope of the envelope over the last doubling minus 1 "
+                                       "(secular drift)", winding["rk4"]["local_slopes"][-1] - 1.0, 0.2),
+                            core.check("invariant", "the geodesic crosses the inner equator (K = -1): -min K along it",
+                                       -winding["curvature_range"][0], 0.99, "ge")]},
+                uncertainty=core.uncertainty("fit_spread", abs(winding["rk4"]["local_slopes"][-1]
+                                                               - winding["rk4"]["local_slopes"][-2]),
+                                             "change of the RK4 local slope between the last two doublings"),
+                tolerance={"abs": 1e-9, "rel": 1e-6}),
+        finding("On escaping geodesics (hyperbolic plane, oblique saddle geodesic) RK4's speed error does not drift "
+                "either: it saturates like the symmetric methods', so boundedness there does not distinguish them",
+                "numerical",
+                {"horizon": T016_ESCAPE_HORIZON, "h": T016_DRIFT_H,
+                 "growth_after_one_eighth": {r["surface"]: {m: r[m]["bounded_ratio"] for m in T016_DRIFT_METHODS}
+                                             for r in escaping},
+                 "envelope_at_horizon": {r["surface"]: {m: r[m]["envelope"][-1] for m in T016_DRIFT_METHODS}
+                                         for r in escaping},
+                 "vertical_ray_max_speed_error": vertical},
+                {"generator": _gen("speed-drift-escaping", h=T016_DRIFT_H, horizon=T016_ESCAPE_HORIZON),
+                 "checks": [core.check("invariant", "max over methods and both geodesics of envelope(L) / "
+                                       "envelope(L/8)", max(r[m]["bounded_ratio"] for r in escaping
+                                                            for m in T016_DRIFT_METHODS), 1.05, "le"),
+                            core.check("invariant", "hyperbolic geodesic heading from the vertical at L (it turns "
+                                       "toward the vertical ray)",
+                                       drift["hyperbolic-plane"]["final_heading_from_vertical"], 1e-6, "le"),
+                            core.check("invariant", "max speed error of every method on the vertical hyperbolic "
+                                       "geodesic (right-hand side linear along the ray)", max(vertical.values()),
+                                       1e-13, "le")]},
+                uncertainty=core.uncertainty("roundoff", max(vertical.values()),
+                                             "speed errors on the vertical ray are rounding; the envelope ratios "
+                                             "are exact maxima of the sampled runs"),
+                tolerance={"abs": 1e-13, "rel": 1e-6},
+                counterexample={"statement": "Over long horizons RK4's speed error drifts while a symmetric "
+                                             "integrator's stays bounded",
+                                "witness": {r["surface"]: {"rk4_growth_after_one_eighth": r["rk4"]["bounded_ratio"],
+                                                           "rk4_envelope": r["rk4"]["envelope"][-1]}
+                                            for r in escaping}}),
+        finding("The fixed-point stage solve refuses implicit midpoint on the full HyperbolicPlane(8) system at "
+                "kh = 2.29 instead of returning an unconverged step", "computational_pipeline", nonlinear["refusal"],
+                {"checks": [core.refusal_check("integrators.integrate_implicit(implicit midpoint, HyperbolicPlane(8), "
+                                               "N = 7)", expected_refusal, nonlinear["refusal"])]}),
     ]
     fields = _fields(
         hypothesis=("On K = -k^2 the Jacobi fields grow like e^(kL), so absolute errors are amplified by e^(kL) and a "
                     "fixed relative accuracy needs steps growing with k; this is intrinsic instability of the flow "
                     "(eigenvalues +k and -k of the Jacobi linearization), not classical stiffness, so A-stable "
                     "implicit methods do not remove it. Concentrated negative curvature (Saddle with large c) does "
-                    "not produce exponential growth."),
+                    "not produce exponential growth. On the full nonlinear systems a Gauss-Legendre integrator keeps "
+                    "its constant-curvature advantage only for the Jacobi field on constant K, and its symmetry keeps "
+                    "the speed error bounded where RK4's drifts only on recurrent geodesics."),
         mathematical_model=("j'' = k^2 j, j_head = sinh(kL)/k. A one-step method of order p with R(z) = e^z (1 + c "
                             "z^(p+1) + ...) on the growing mode has relative error N |c| (kh)^(p+1), so N(tau) = L (L |c| "
                             "k^(p+1) / tau)^(1/p) ~ k^((p+1)/p): RK4 c = -1/120 (k^(5/4)), implicit midpoint c = 1/12 "
@@ -2144,26 +2740,56 @@ def negative_curvature(ctx):
                             "needs kh <= 2.785. Saddle ridge y = 0: K = -c^2/(1 + c^2 x^2)^2 ~ -1/(4 s^2) away from the "
                             "saddle point, where j'' = j/(4 s^2) has solutions |s|^((1 +/- sqrt(2))/2); matching the "
                             "inbound and outbound power laws through the core of width 1/c gives j_head(L) ~ c^sqrt(2) "
-                            "(matched asymptotics, not a proof)."),
+                            "(matched asymptotics, not a proof). The nonlinear Gauss-Legendre integrator is the "
+                            "same collocation method, so on constant K its Jacobi columns equal the step-matrix powers "
+                            "up to the stage-solve tolerance; the geodesic equation is nonlinear, where the linear "
+                            "error constants say nothing. Gauss methods are symmetric (applied in chart position-"
+                            "velocity coordinates they are not symplectic for the geodesic Hamiltonian), so on a "
+                            "reversible integrable problem with recurrent (quasi-periodic) orbits their error in first "
+                            "integrals stays bounded, while a non-symmetric method such as RK4 accumulates a secular "
+                            "drift; on an escaping geodesic nothing recurs and the local speed errors can saturate for "
+                            "any method (on the vertical hyperbolic ray the right-hand side is linear along the ray, "
+                            "so every Runge-Kutta method keeps the speed)."),
         input_data=[f"HyperbolicPlane(k), k in {', '.join(_g(k, 3) for k in T016_K)}, start (0, 1), heading 0.6, "
                     f"L = {T016_LENGTH}",
                     f"RK4 N = {T016_STEPS}; DP45 rtol 1e-10; relative accuracy target {T016_TAU}; implicit midpoint "
                     "and 2-stage Gauss-Legendre as exact step matrices",
                     f"Saddle(c), c in {', '.join(_g(c, 5) for c in T016_SADDLE_C)}, ridge geodesic y = 0 from "
-                    "arclength 1 before the saddle point, L = 2, DP45 rtol 1e-9 (checked at 1e-11)"],
+                    "arclength 1 before the saddle point, L = 2, DP45 rtol 1e-9 (checked at 1e-11)",
+                    f"Full nonlinear systems: 2-stage Gauss-Legendre (fixed-point stage solve to "
+                    f"{_g(nonlinear['solve_tol'], 2)}, at most {nonlinear['max_iterations']} iterations) and RK4 on "
+                    f"HyperbolicPlane(k) with N = {', '.join(str(n) for n in T016_FULL_STEPS)}; on Saddle(c), c in "
+                    f"{', '.join(_g(c, 3) for c in T016_FULL_SADDLE_C)}, the ridge geodesic and an oblique one from "
+                    f"(x0, {_g(T016_OBLIQUE_OFFSET, 2)}/c) with heading {_g(T016_OBLIQUE_HEADING, 2)}, N = "
+                    f"{'; '.join(', '.join(str(n) for n in T016_FULL_SADDLE_STEPS[c]) for c in T016_FULL_SADDLE_C)}, "
+                    f"against DP45 at rtol {_g(T016_REFERENCE_RTOL, 2)} (checked at "
+                    f"{_g(10 * T016_REFERENCE_RTOL, 2)})",
+                    f"Speed drift at h = {T016_DRIFT_H} for RK4, implicit midpoint and Gauss-Legendre: "
+                    f"HyperbolicPlane(1) from (0, 1) heading 0.6 and the oblique Saddle(1) geodesic to L = "
+                    f"{_g(T016_ESCAPE_HORIZON, 3)}; Torus(2, 1) from (0, 0) heading {_g(T016_WINDING_HEADING, 2)} "
+                    f"(winds around the tube) to L = {_g(T016_RECURRENT_HORIZON, 4)}"],
         observation_model=("Relative error of j_head(L); required steps by doubling and bisection on the exact step "
                            "matrices of RK4, implicit midpoint and 2-stage Gauss-Legendre (matrix powers, checked "
                            "against the scalar stability function on the eigenmodes, and for RK4 against the full "
                            "geodesic/Jacobi integration); hyperbolic distance of the geodesic endpoint to the exact "
-                           "semicircle."),
+                           "semicircle; for the full nonlinear comparison the j_head and end-point errors against "
+                           "the closed forms (hyperbolic plane) or the DP45 reference (saddle; errors below 1e-11 are "
+                           "not fitted), and the running maximum of |g(v, v) - 1| along each run (speed-error "
+                           "envelope)."),
         expected_invariant=("Exponents 5 (error), 5/4 (RK4 and Gauss-Legendre steps), 3/2 (implicit midpoint), ~1 "
                             "(DP45 steps); Gauss-Legendre/RK4 step ratio (120/720)^(1/4) = 0.639 at every k; saddle "
-                            "local exponents approaching sqrt(2)."),
+                            "local exponents approaching sqrt(2); nonlinear Gauss-Legendre of order 4 with j_head "
+                            "error 1/6 of RK4's on constant K and the step-matrix step counts; bounded symmetric "
+                            "speed errors against a secular RK4 drift on the recurrent geodesic."),
         experiment=("Integrate the joint geodesic/Jacobi system per k (adaptive and RK4), measure the growth and "
                     "decay rates from the eigenvalues of the integrated transfer matrix, search the minimal step "
                     "counts, compare with "
                     "stability limits, iterate implicit midpoint beyond its pole, and integrate the saddle ridge "
-                    "geodesic for c up to 16384."),
+                    "geodesic for c up to 16384; integrate the full nonlinear hyperbolic and saddle systems (ridge and "
+                    "oblique geodesics) with the fixed-point Gauss-Legendre integrator and RK4 at three step sizes, "
+                    "rerun the step-matrix step counts with the nonlinear integrator, follow the speed error of RK4, "
+                    "implicit midpoint and Gauss-Legendre over long horizons on escaping and recurrent geodesics, and "
+                    "run implicit midpoint beyond its pole on the full system to see its stage solve refused."),
         numerical_result=(f"RK4 error exponent {_g(rk4_exp, 4)} (measured/predicted {_g(min(ratio_pred), 3)}-"
                           f"{_g(max(ratio_pred), 3)}); required steps for k = {', '.join(_g(k, 2) for k in ks)}: RK4 "
                           f"{', '.join(str(r['rk4_steps_required']) for r in rows)} (exponent {_g(steps_exp, 3)}), "
@@ -2182,12 +2808,47 @@ def negative_curvature(ctx):
                           f"{', '.join(_g(r['j_head'], 4) for r in saddle)} for c = {', '.join(_g(c, 5) for c in cs)} "
                           f"(fitted exponent {_g(saddle_exp, 3)} for c >= {_g(T016_SADDLE_FIT_FROM, 3)}, local exponents "
                           f"{_slopes_text(saddle_local[2:], 4)} from c = 16), DP45 steps grow by "
-                          f"{', '.join(str(v) for v in increments)} per factor 4 in c."),
+                          f"{', '.join(str(v) for v in increments)} per factor 4 in c. Full nonlinear systems: "
+                          f"Gauss-Legendre j_head orders {', '.join(_g(v, 4) for v in full_orders[glf])} (RK4 "
+                          f"{', '.join(_g(v, 4) for v in full_orders['rk4'])}) for k = "
+                          f"{', '.join(_g(k, 2) for k in ks)}, GL/RK4 j_head error at N = {T016_FULL_STEPS[-1]} "
+                          f"{', '.join(_g(r[-1], 4) for r in full_ratio)} (1/6 = 0.1667), equal to its step-matrix "
+                          f"power to {_g(full_gap, 2)}, relative error at the step-matrix counts "
+                          f"{', '.join(str(a['steps']) for a in at_required)} up to "
+                          f"{_g(max(a['relative_error'] for a in at_required), 4)} and one step below at least "
+                          f"{_g(min(a['relative_error_one_step_fewer'] for a in at_required), 4)}; hyperbolic "
+                          f"end-point error ratio GL/RK4 {_g(min(min(r) for r in end_ratio), 3)}-"
+                          f"{_g(max(max(r) for r in end_ratio), 3)} and speed error ratio "
+                          f"{_g(min(min(r) for r in speed_ratio), 3)}-{_g(max(max(r) for r in speed_ratio), 3)} "
+                          f"(k <= {_g(T016_ENDPOINT_K, 2)}); saddle j_head orders "
+                          f"{_g(min(saddle_orders), 4)}-{_g(max(saddle_orders), 4)}, GL/RK4 j_head error ratios "
+                          f"{', '.join(f'{label} {_g(v, 3)}' for label, v in zip(saddle_label, saddle_ratio))}, GL/RK4 "
+                          f"speed error ratio at most {_g(max(saddle_speed), 3)}; fixed-point iterations per step "
+                          f"{_g(iteration_ranges['hyperbolic plane'][0], 3)}-"
+                          f"{_g(iteration_ranges['hyperbolic plane'][1], 3)} (hyperbolic plane) and "
+                          f"{_g(iteration_ranges['saddle'][0], 3)}-{_g(iteration_ranges['saddle'][1], 3)} (saddle) for "
+                          f"Gauss-Legendre; winding torus speed-error envelope at L = "
+                          f"{_g(T016_RECURRENT_HORIZON, 4)} over L = {_g(bounded_from, 4)}: RK4 "
+                          f"{_g(winding['rk4']['bounded_ratio'], 4)} (last local slope "
+                          f"{_g(winding['rk4']['local_slopes'][-1], 3)}), implicit midpoint "
+                          f"{_g(winding['implicit-midpoint']['bounded_ratio'], 6)}, Gauss-Legendre "
+                          f"{_g(winding[glf]['bounded_ratio'], 6)} ({_g(iteration_ranges['winding torus'][0], 3)} and "
+                          f"{_g(iteration_ranges['winding torus'][1], 3)} iterations per step); on the escaping "
+                          f"geodesics every envelope ratio is at most "
+                          f"{_g(max(r[m]['bounded_ratio'] for r in escaping for m in T016_DRIFT_METHODS), 4)}, and "
+                          f"the vertical hyperbolic ray keeps the speed to {_g(max(vertical.values()), 2)} for every "
+                          f"method; implicit midpoint on the full HyperbolicPlane(8) system at kh = 2.29: refused "
+                          f"('{nonlinear['refusal']}')."),
         uncertainty=("Step counts are integers found by bisection assuming monotone error in N; the saddle local "
                      f"exponents ({_slopes_text(saddle_local[2:], 4)} for c = 16 ... 16384) come from adaptive runs "
                      f"self-consistent to {_g(max(r['self_convergence'] for r in saddle), 2)} relative, so each "
                      "local exponent is accurate to about 1e-8; the sqrt(2) limit is a matched-asymptotics argument "
-                     "supported by these slopes, not a proof."),
+                     "supported by these slopes, not a proof. The nonlinear Gauss-Legendre results carry the stage-"
+                     "solve residual (tolerance 1e-13) and rounding. Where a fixed-point iteration stops can change "
+                     "by one iteration between platforms (it did for one step in 640 between OpenBLAS kernels), which "
+                     "moves a Gauss-Legendre state by up to about 1e-14 relative: up to 1e-3 of the smallest errors "
+                     "used (1e-11), so orders and error ratios built from them are compared within 1e-3 to 5e-3, "
+                     "while the speed envelopes (1e-6 and larger) move by less than 1e-8 relative."),
         failure_modes_checked=["matrix-power step search checked against the scalar stability functions on the "
                                "eigenmodes and, for RK4, against the full geodesic/Jacobi integration",
                                "implicit-midpoint singular step (kh = 2) refused rather than divided by zero",
@@ -2199,18 +2860,31 @@ def negative_curvature(ctx):
                                "decay rate is claimed only where the decaying eigenvalue exceeds 100 rtol times the "
                                "largest entry of Phi(L)",
                                "implicit methods of order 2 and 4 both compared, so the step growth is not an order "
-                               "artefact"],
+                               "artefact",
+                               "nonlinear Gauss-Legendre checked against its own step-matrix powers on constant K and "
+                               "at the step-matrix step counts, so the implicit comparison is not an artefact of the "
+                               "linearization",
+                               "saddle errors below the reference resolution are left out of the fits instead of "
+                               "being fitted to reference noise",
+                               "speed drift judged on both escaping and recurrent geodesics, so boundedness is not "
+                               "attributed to symmetry where no method drifts",
+                               "a stage solve that does not converge is refused by name, never returned unconverged"],
         unresolved_assumptions=["The sqrt(2) saddle exponent is a matched-asymptotics argument, not a proof",
-                                "Only the ridge geodesic of the saddle is studied; oblique geodesics sample other K",
-                                "Implicit methods are evaluated on the constant-curvature Jacobi system through their "
-                                "exact step matrices; no nonlinear implicit geodesic integrator is in the core",
+                                "The sqrt(2) exponent is fitted on the ridge geodesic only; oblique saddle geodesics "
+                                "are compared for integrator accuracy, not for their Jacobi growth law",
+                                "The nonlinear implicit integrator solves its stage equations by fixed-point "
+                                "iteration, which converges only for kh below about 1 here; a Newton solve would "
+                                "reach larger steps and is not implemented",
+                                "Why the Gauss-Legendre/RK4 error ratio varies between saddle geodesics is measured, "
+                                "not derived from the methods' error expansions",
                                 "Error amplification of the geodesic in the half-plane chart mixes chart compression near "
                                 "y = 0 with intrinsic instability"],
-        recommended_next_task=("Deferred research question: add a nonlinear implicit geodesic integrator (for "
-                               "example Gauss-Legendre collocation) and compare it on the full saddle and "
-                               "hyperbolic geodesic systems, including oblique saddle geodesics that sample other K "
-                               "(implicit methods are compared here only on the constant-curvature Jacobi step "
-                               "matrices)"),
+        recommended_next_task=("Deferred research question: derive the Gauss-Legendre and RK4 global error "
+                               "coefficients along variable-curvature geodesics (their j_head error ratio is measured "
+                               "here from well below to above 1 on saddle geodesics, not the constant-curvature 1/6), "
+                               "and add a Newton stage solve to reach the steps kh >= 1 where the fixed-point "
+                               "iteration is refused, to test whether A-stability then pays on the full "
+                               "hyperbolic system"),
     )
     return {"state": "completed", "fields": fields, "findings": findings}
 

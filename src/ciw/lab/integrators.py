@@ -1,4 +1,11 @@
-"""Fixed-step and adaptive explicit integrators for first-order systems y' = f(y).
+"""Fixed-step and adaptive integrators for first-order systems y' = f(y).
+
+Explicit methods: Euler, explicit midpoint, classical RK4 and adaptive
+Dormand-Prince 5(4). Symmetric implicit methods: the Gauss collocation
+methods with one stage (implicit midpoint, order 2) and two stages
+(Gauss-Legendre, order 4), whose stage equations are solved by fixed-point
+iteration to a declared tolerance; a step whose iteration does not converge
+is refused (:class:`ImplicitSolveRefusal`), never returned unconverged.
 
 The integrators never renormalize the state: any drift of speed, energy or
 first integrals is part of the measured numerical result.
@@ -48,6 +55,106 @@ def integrate_fixed(f, y0, length, steps, method="rk4"):
             raise FloatingPointError(f"{method} produced a nonfinite state at step {n + 1}")
         states[n + 1] = y
     return np.linspace(0.0, length, steps + 1), states
+
+
+# Gauss collocation methods (symmetric, A-stable, order 2s): Butcher matrix A and weights b. Stage sums are
+# formed elementwise (no BLAS), like the explicit steps, so the method adds no kernel-dependent rounding.
+_R3 = math.sqrt(3.0) / 6.0
+GAUSS_TABLEAUS = {"implicit-midpoint": (((0.5,),), (1.0,)),
+                  "gauss-legendre-2": (((0.25, 0.25 - _R3), (0.25 + _R3, 0.25)), (0.5, 0.5))}
+IMPLICIT_ORDERS = {"implicit-midpoint": 2, "gauss-legendre-2": 4}
+# Declared stage-equation tolerance: the fixed-point iteration stops at the first iterate whose stage values
+# change by at most SOLVE_TOL times the magnitude of the terms they are summed from (componentwise). That is
+# about 450 units of roundoff, so rounding noise cannot keep a contracting iteration from meeting it, and the
+# remainder left after the stop is smaller still (the change times the contraction factor).
+SOLVE_TOL = 1e-13
+SOLVE_MAX_ITERATIONS = 60
+
+
+class ImplicitSolveRefusal(FloatingPointError):
+    """The stage equations of an implicit step did not converge; nothing unconverged is returned."""
+
+    code = "implicit_solve_not_converged"
+
+
+def step_gauss(f, y, h, method="gauss-legendre-2", tol=SOLVE_TOL, max_iterations=SOLVE_MAX_ITERATIONS):
+    """One Gauss collocation step by fixed-point iteration; returns (next state, iterations).
+
+    With stage derivatives K (one row per stage) the stage values are
+    Y_i = y + h sum_j a_ij K_j and K_i = f(Y_i). Starting from K_i = f(y), the
+    iteration K <- f(y + h A K) stops at the first iterate m with
+    |Y^(m) - Y^(m-1)| <= tol (|y| + |h| sum_j |a_ij| |K_j|) in every
+    component, the scale of the terms Y is summed from, so the test is
+    independent of the units of each component and reachable by rounding. It
+    contracts when |h| times the Lipschitz constant of f times the spectral
+    radius of A (1/2 for implicit midpoint, 1/sqrt(12) for two-stage
+    Gauss-Legendre) is below one; otherwise, or when an iterate is nonfinite
+    or outside the domain of f, the step is refused with
+    :class:`ImplicitSolveRefusal`.
+    """
+    if method not in GAUSS_TABLEAUS:
+        raise ValueError(f"Unsupported implicit method: {method}")
+    if not (tol > 0 and math.isfinite(tol)) or max_iterations < 1:
+        raise ValueError("An implicit step needs a positive finite tolerance and at least one iteration")
+    a, b = GAUSS_TABLEAUS[method]
+    y = np.asarray(y, dtype=float)
+    size = np.abs(y)
+
+    def stage_values(stages):
+        return [y + h * sum(aij * kj for aij, kj in zip(row, stages)) for row in a]
+
+    previous = stage_values([f(y)] * len(b))
+    # A diverging iteration may overflow inside f or leave its domain; it ends in the refusal below.
+    with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
+        for iteration in range(1, max_iterations + 1):
+            try:
+                stages = [f(value) for value in previous]
+            except (ArithmeticError, ValueError):
+                break
+            values = stage_values(stages)
+            if not all(np.all(np.isfinite(value)) for value in values):
+                break
+            magnitude = [abs(h) * np.abs(kj) for kj in stages]
+            if all(np.all(np.abs(new - old) <= tol * (size + sum(abs(aij) * mj for aij, mj in zip(row, magnitude))))
+                   for new, old, row in zip(values, previous, a)):
+                return y + h * sum(bi * kj for bi, kj in zip(b, stages)), iteration
+            previous = values
+    raise ImplicitSolveRefusal(f"{method} stage equations did not converge within {max_iterations} fixed-point "
+                               f"iterations at step size {h!r}")
+
+
+def integrate_implicit(f, y0, length, steps, method="gauss-legendre-2", tol=SOLVE_TOL,
+                       max_iterations=SOLVE_MAX_ITERATIONS):
+    """Gauss collocation over [0, length] with ``steps`` equal steps; returns (s, states, stats).
+
+    ``stats`` reports the fixed-point iterations (total, largest and mean per
+    step) and the function evaluations. A step whose stage equations do not
+    converge raises :class:`ImplicitSolveRefusal` naming the step; no
+    unconverged state is returned. A negative ``length`` integrates backward.
+    """
+    if method not in GAUSS_TABLEAUS:
+        raise ValueError(f"Unsupported implicit method: {method}")
+    if steps < 1:
+        raise ValueError("steps must be positive")
+    h = length / steps
+    stages = len(GAUSS_TABLEAUS[method][1])
+    states = np.empty((steps + 1, len(y0)))
+    states[0] = y0
+    y = np.array(y0, dtype=float)
+    iterations = []
+    for n in range(steps):
+        try:
+            y, count = step_gauss(f, y, h, method, tol, max_iterations)
+        except ImplicitSolveRefusal as refusal:
+            raise ImplicitSolveRefusal(f"{refusal} (step {n + 1} of {steps})") from None
+        if not np.all(np.isfinite(y)):
+            raise FloatingPointError(f"{method} produced a nonfinite state at step {n + 1}")
+        iterations.append(count)
+        states[n + 1] = y
+    stats = {"method": method, "steps": steps, "solve_tol": tol, "iterations_total": int(sum(iterations)),
+             "iterations_max": int(max(iterations)), "iterations_mean": float(np.mean(iterations)),
+             "function_evaluations": int(steps + stages * sum(iterations))}
+    return np.linspace(0.0, length, steps + 1), states, stats
 
 
 def richardson_rk4(f, y0, length, steps):

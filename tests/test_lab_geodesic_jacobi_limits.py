@@ -4,15 +4,18 @@ The nine tasks run once per module through ``ciw.lab.runner.run_task`` with one
 shared context, exactly as a queue run does; the tests assert labels, key
 numbers, counterexamples and refusals from the retained reports.
 """
+import ast
+import inspect
 import json
 import math
+import textwrap
 
 import numpy as np
 import pytest
 
 from ciw.lab import geodesic_jacobi_limits as gjl
 from ciw.lab import geodesic_jacobi_limits_core as core
-from ciw.lab import registry, runner
+from ciw.lab import integrators, registry, runner
 from ciw.lab.evidence import AUTHORITY_DOMAINS, COMPUTATIONAL_DOMAINS, PHYSICAL_DOMAINS
 from ciw.lab.report import FIELD_NAMES, validate_report
 from ciw.lab.surfaces import Plane, Reparametrized, Sphere, SurfaceRefusal, Torus
@@ -288,6 +291,97 @@ def test_t014_reversal_and_truncation(run):
     assert _labelled(report, "Adaptive restart")["value"] <= 10.0
 
 
+@pytest.mark.lab_task("T014")
+def test_t014_symmetric_methods_return_at_rounding_level(run):
+    report = run[1]["T014"]
+    symmetric = _labelled(report, "Symmetric implicit methods")
+    assert symmetric["evidence_status"] == "numerically_verified"
+    value = symmetric["value"]
+    # Rounding level at every N, where explicit methods of the same order return with O(h^3) and O(h^5) errors.
+    assert max(value["max_return_error"].values()) <= gjl.T014_ROUNDING
+    for errors in value["return_errors"].values():
+        assert len(errors) == len(gjl.T014_STEPS) and max(errors) <= gjl.T014_ROUNDING
+    assert min(value["explicit_same_order_return_error_at_N_20"].values()) > 1e5 * gjl.T014_ROUNDING
+    # Iterations are reported, and fewer are needed as the step (and the contraction factor) shrinks.
+    for means in value["iterations_per_step"].values():
+        assert all(b < a for a, b in zip(means, means[1:])) and 1.0 < means[-1] < means[0] < 20.0
+    witness = symmetric["counterexample"]["witness"]
+    assert witness["return_error"] <= gjl.T014_ROUNDING < 1e-4 * witness["forward_position_error"]
+    assert "measures its global error" in symmetric["counterexample"]["statement"]
+    # The symmetric methods are not exact: forward orders 2 and 4.
+    forward = _labelled(report, "are not exact")
+    for label, order in forward["value"].items():
+        assert order == pytest.approx({"implicit-midpoint": 2, "gauss-legendre-2": 4}[label.split(": ")[1]], abs=0.05)
+    assert any(c["reference_kind"] == "self_convergence" for c in forward["basis"]["checks"])
+    # Loosening the stage-solve tolerance raises the return error up to (not beyond) the tolerance.
+    sweep = _labelled(report, "set by the stage-solve tolerance")
+    assert sweep["evidence_status"] == "numerically_verified"
+    for method, by_tol in sweep["value"]["return_errors"].items():
+        assert set(by_tol) == {gjl._power_of_ten(t) for t in gjl.T014_SOLVE_TOLS} == {"1e-4", "1e-6", "1e-8"}
+        for tol, errors in by_tol.items():
+            assert max(errors) <= 3.0 * float(tol), (method, tol)
+        assert min(by_tol["1e-4"]) > 1e3 * gjl.T014_ROUNDING
+    assert "time-reversible adaptive step control" in report["recommended_next_task"]
+    assert "symmetric-reversal.json" in {a["path"].rsplit("/", 1)[-1] for a in report["generated_artifacts"]}
+
+
+@pytest.mark.lab_task("T014", "T016")
+def test_gauss_collocation_steps_and_refusal():
+    # One step on y' = lambda y is the method's stability function: (1 + z/2)/(1 - z/2) and the (2, 2) Pade
+    # approximant, the functions T016's step matrices use.
+    for method in ("implicit-midpoint", "gauss-legendre-2"):
+        for z in (-0.7, 0.3, 0.9):
+            y, iterations = integrators.step_gauss(lambda v: np.array([1.0]) * v, np.array([1.0]), z, method)
+            assert y[0] == pytest.approx(core.stability_function(method, z), rel=1e-12) and iterations >= 2
+    assert core.IMPLICIT_ORDERS is integrators.IMPLICIT_ORDERS
+    # Orders 2 and 4 on a nonlinear pendulum, the quadratic invariant of a rotation kept to the stage-solve residual
+    # (about 1e-14 per step), and the step with -h inverting the step with h (symmetry) to rounding while the explicit
+    # midpoint step does not.
+    def pendulum(y):
+        return np.array([y[1], -math.sin(y[0])])
+
+    y0 = np.array([1.2, 0.0])
+    _, fine, _ = integrators.integrate_implicit(pendulum, y0, 4.0, 1024, "gauss-legendre-2")
+    for method, order in integrators.IMPLICIT_ORDERS.items():
+        errors = [float(np.max(np.abs(integrators.integrate_implicit(pendulum, y0, 4.0, n, method)[1][-1] - fine[-1])))
+                  for n in (32, 64)]
+        assert math.log2(errors[0] / errors[1]) == pytest.approx(order, abs=0.15), method
+        forward, _ = integrators.step_gauss(pendulum, y0, 0.3, method)
+        back, _ = integrators.step_gauss(pendulum, forward, -0.3, method)
+        assert np.max(np.abs(back - y0)) < 1e-13, method
+    back = integrators.step_midpoint(pendulum, integrators.step_midpoint(pendulum, y0, 0.3), -0.3)
+    assert np.max(np.abs(back - y0)) > 1e-5
+    rotation = np.array([[0.0, 1.0], [-1.0, 0.0]])
+    _, states, stats = integrators.integrate_implicit(lambda v: rotation @ v, np.array([1.0, 0.0]), 50.0, 100)
+    assert np.max(np.abs(np.sum(states ** 2, axis=1) - 1.0)) < 1e-11
+    assert stats["function_evaluations"] == 100 + 2 * stats["iterations_total"]
+    assert stats["iterations_max"] <= integrators.SOLVE_MAX_ITERATIONS and stats["solve_tol"] == integrators.SOLVE_TOL
+    # A negative length integrates backward.
+    s, states, _ = integrators.integrate_implicit(lambda v: v, np.array([1.0]), -1.0, 50, "gauss-legendre-2")
+    assert s[-1] == -1.0 and states[-1, 0] == pytest.approx(math.exp(-1.0), rel=1e-9)
+    # Non-convergence is refused by name, never returned: a diverging fixed-point iteration and a stage outside the
+    # right-hand side's domain.
+    with pytest.raises(integrators.ImplicitSolveRefusal,
+                       match=r"^implicit-midpoint stage equations did not converge within 60 fixed-point iterations "
+                             r"at step size 0\.5 \(step 1 of 2\)$") as refused:
+        integrators.integrate_implicit(lambda v: -100.0 * v, np.array([1.0]), 1.0, 2, "implicit-midpoint")
+    assert refused.value.code == "implicit_solve_not_converged" and isinstance(refused.value, FloatingPointError)
+    with pytest.raises(integrators.ImplicitSolveRefusal, match="did not converge"):
+        integrators.step_gauss(lambda v: np.array([math.sqrt(v[0])]), np.array([1.0]), -8.0)
+    with pytest.raises(integrators.ImplicitSolveRefusal, match="within 3 fixed-point iterations"):
+        integrators.step_gauss(pendulum, y0, 0.3, max_iterations=3)
+    with pytest.raises(ValueError, match="Unsupported implicit method"):
+        integrators.integrate_implicit(pendulum, y0, 1.0, 4, "rk4")
+    with pytest.raises(ValueError, match="positive finite tolerance"):
+        integrators.step_gauss(pendulum, y0, 0.1, tol=0.0)
+    # Like the explicit integrators, the implicit ones never renormalize a state: no norm-like call anywhere.
+    for function in (integrators.step_gauss, integrators.integrate_implicit):
+        tree = ast.parse(textwrap.dedent(inspect.getsource(function)))
+        called = {getattr(n.func, "attr", getattr(n.func, "id", None))
+                  for n in ast.walk(tree) if isinstance(n, ast.Call)}
+        assert not called & {"norm", "normalize", "sqrt", "hypot", "speed_squared", "unit_tangent"}, function
+
+
 @pytest.mark.lab_task("T015")
 def test_t015_long_horizon_drift(run):
     report = run[1]["T015"]
@@ -358,6 +452,64 @@ def test_t016_negative_curvature_is_not_stiffness(run):
         assert record["evidence_status"] == "numerically_verified", record["claim"]
     assert all(f["evidence_status"] == "numerically_verified" for f in report["findings"])
     assert report["evidence_status"]["primary"] == "numerically_verified"
+
+
+@pytest.mark.lab_task("T016")
+def test_t016_gauss_legendre_on_the_full_nonlinear_systems(run):
+    report = run[1]["T016"]
+    implicit = _labelled(report, "A-stable implicit methods")["value"]
+    # The nonlinear fixed-point Gauss-Legendre integrator: order 4, j_head error 1/6 of RK4's on constant K, and
+    # the step-matrix step counts reproduced on the full system.
+    full = _labelled(report, "On the full nonlinear HyperbolicPlane(k) system")
+    assert full["evidence_status"] == "numerically_verified"
+    value = full["value"]
+    assert all(order == pytest.approx(4.0, abs=0.05) for order in value["j_head_order"]["gauss-legendre-2"])
+    assert all(ratios[-1] == pytest.approx(1.0 / 6.0, rel=0.1)
+               for ratios in value["gauss_legendre_over_rk4_j_head_error"])
+    assert value["required_steps"] == implicit["gauss_legendre_2"]["steps_required"]
+    assert max(value["relative_error_at_required_steps"]) <= gjl.T016_TAU < min(value["relative_error_one_step_fewer"])
+    assert any(c["reference_kind"] == "cross_implementation" and "step-matrix power" in c["reference"]
+               for c in full["basis"]["checks"])
+    # The linear error constants do not carry over to the nonlinear geodesic.
+    endpoint = _labelled(report, "do not carry over to the nonlinear hyperbolic geodesic")
+    assert min(min(r) for r in endpoint["value"]["gauss_legendre_over_rk4_endpoint_error"]) > 0.5
+    assert endpoint["counterexample"]["witness"]["j_head_error_ratio"] < 0.2 < endpoint["counterexample"]["witness"][
+        "endpoint_error_ratio"]
+    # Saddle: ridge and oblique geodesics, order 4 for both methods, a geodesic-dependent ratio, smaller GL speed error.
+    saddle = _labelled(report, "On ridge and oblique saddle-surface geodesics")
+    assert saddle["evidence_status"] == "numerically_verified"
+    labels, ranges = saddle["value"]["geodesics"], saddle["value"]["curvature_range"]
+    assert len(labels) == 2 * len(gjl.T016_FULL_SADDLE_C) and sum("oblique" in label for label in labels) == 3
+    for label, (low, _) in zip(labels, ranges):
+        c = float(label.split()[2])
+        # The ridge passes the saddle point (K = -c^2); the oblique geodesics miss it and sample other K.
+        assert (low < -0.99 * c * c) if "ridge" in label else (low > -0.9 * c * c), label
+    for orders in saddle["value"]["j_head_order"].values():
+        assert all(order is None or abs(order - 4.0) < 0.3 for order in orders)
+    ratios = saddle["value"]["gauss_legendre_over_rk4_j_head_error_at_finest_resolved_N"]
+    assert min(ratios) < 1.0 / 6.0 * 3 and max(ratios) > 1.0, ratios
+    assert saddle["value"]["max_gauss_legendre_over_rk4_speed_error"] < 0.5
+    assert "holds on variable-curvature geodesics" in saddle["counterexample"]["statement"]
+    # Long horizons: bounded symmetric speed errors against a secular RK4 drift on the recurrent winding geodesic ...
+    winding = _labelled(report, "winds around the tube")["value"]
+    assert max(winding["growth_after_one_eighth"][m] for m in ("implicit-midpoint", "gauss-legendre-2")) < 1.05
+    assert winding["growth_after_one_eighth"]["rk4"] > 4.0
+    assert winding["rk4_local_slopes"][-1] == pytest.approx(1.0, abs=0.2)
+    assert winding["theta_range"][1] - winding["theta_range"][0] > 2 * math.pi and winding["curvature_range"][0] < -0.99
+    # ... but no drift for any method on escaping geodesics, where the RK4 part of the prediction fails.
+    escaping = _labelled(report, "On escaping geodesics")
+    assert escaping["evidence_status"] == "numerically_verified"
+    for surface, ratios in escaping["value"]["growth_after_one_eighth"].items():
+        assert max(ratios.values()) < 1.05, surface
+    assert max(escaping["value"]["vertical_ray_max_speed_error"].values()) < 1e-13
+    assert "RK4's speed error drifts" in escaping["counterexample"]["statement"]
+    # Implicit midpoint beyond its pole is refused by name on the full system.
+    refusal = _labelled(report, "refuses implicit midpoint")
+    assert refusal["evidence_status"] == "numerically_verified" and refusal["domain"] == "computational_pipeline"
+    assert refusal["value"].startswith("implicit-midpoint stage equations did not converge within 60 fixed-point")
+    assert "Newton stage solve" in report["recommended_next_task"]
+    artifacts = {a["path"].rsplit("/", 1)[-1] for a in report["generated_artifacts"]}
+    assert {"implicit-nonlinear.json", "speed-drift.svg"} <= artifacts
 
 
 @pytest.mark.lab_task("T017")

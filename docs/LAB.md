@@ -628,5 +628,8 @@ copies CIW's public pins and recomputes every digest passes.
 
 The shared geometry core (`surfaces.py`, `integrators.py`, `jacobi.py`)
 provides a chart-level metric/Christoffel/curvature interface with exact
-embedding derivatives, Euler/midpoint/RK4 and Dormand–Prince integrators that
-never renormalize, and joint geodesic/Jacobi transfer integration.
+embedding derivatives, Euler/midpoint/RK4, Dormand–Prince and symmetric
+implicit Gauss collocation integrators (implicit midpoint and two-stage
+Gauss–Legendre, fixed-point stage solve to a declared tolerance, refusing a
+step that does not converge) that never renormalize, and joint
+geodesic/Jacobi transfer integration.
