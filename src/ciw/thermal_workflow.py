@@ -126,8 +126,8 @@ class ThermalWorkflow(PipelineRunner):
     def step_request(self, source):
         return source["request"]
 
-    def check_data(self, request, data):
-        contract.validate_result(request, data)
+    def check_data(self, source, data):
+        contract.validate_result(source["request"], data)
 
     def _adapters(self, repositories, expected=None):
         if not isinstance(repositories, dict) or repositories:
@@ -141,7 +141,7 @@ class ThermalWorkflow(PipelineRunner):
 
     def _step(self, source, evidence_id, bound):
         data = _native_result(source)
-        self.check_data(self.step_request(source), data)
+        self.check_data(source, data)
         return seal_step(ROLE, OPERATION, self.step_request(source), [evidence_id], data, profile=self.PROFILE)
 
     def _check_runtimes(self, runtimes):

@@ -132,17 +132,20 @@ def seal_step(role: str, operation: str, source: dict, input_refs: list, data, n
 
 
 def check_step(step, *, role: str, operation: str, source: dict, input_refs: list, check_data, label: str,
-               numerical=None, profile: RecordProfile = DECLARED) -> None:
+               numerical=None, profile: RecordProfile = DECLARED, request=None) -> None:
     """Refuse a step unless every identity in it binds this source, operation and native data.
 
     ``check_data`` may be ``None`` when the caller checks the data itself.
     ``numerical`` is the expected projection, or a function of the checked data.
+    ``request`` is what the step retains as its request when that is narrower
+    than the source; ``check_data`` always receives the whole source.
     """
+    request = source if request is None else request
     exact_keys(step, STEP_FIELDS)
     if (step["runtime_ref"] != role or step["operation_id"] != operation or step["input_refs"] != input_refs or
             not isinstance(step["execution_id"], str) or not _EXECUTION.fullmatch(step["execution_id"])):
         raise ValueError(f"{label} operation, evidence or execution occurrence mismatch")
-    same(step["request"], source, f"{label} request differs from the retained source")
+    same(step["request"], request, f"{label} request differs from the retained source")
     result = step["result"]
     exact_keys(result, RESULT_FIELDS)
     if check_data is not None:
@@ -158,7 +161,7 @@ def check_step(step, *, role: str, operation: str, source: dict, input_refs: lis
     elif callable(numerical):
         numerical = numerical(result["data"])
     same(step["numerical_result"], numerical, f"{label} numerical projection mismatch")
-    for key, content in (("request_sha256", source), ("result_sha256", result),
+    for key, content in (("request_sha256", request), ("result_sha256", result),
                          ("numerical_result_id", step["numerical_result"])):
         if step[key] != digest(content):
             raise ValueError(f"{label} step content binding mismatch")
@@ -382,12 +385,13 @@ class PipelineRunner:
         self._unchanged(adapter, runtime, "before")
         data = self.invoke(source, bound)
         self._unchanged(adapter, runtime, "during")
-        self.check_data(self.step_request(source), data)
+        self.check_data(source, data)
         return seal_step(self.role, self.operation, self.step_request(source), self._input_refs(source, evidence_id), data,
                          profile=self.PROFILE)
 
     def _validate_step(self, step, source, evidence_id):
-        check_step(step, role=self.role, operation=self.operation, source=self.step_request(source), profile=self.PROFILE,
+        check_step(step, role=self.role, operation=self.operation, source=source, request=self.step_request(source),
+                   profile=self.PROFILE,
                    input_refs=self._input_refs(source, evidence_id), check_data=self.check_data, label=self.LABEL)
 
     def _check_verification(self, bundle, proof, source, evidence):
