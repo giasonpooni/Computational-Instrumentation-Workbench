@@ -157,6 +157,11 @@ verification and replay receipt remain the runner's records.
 Native occurrences inside a step reach the workbench through three workflow
 hooks, `catalog_steps`, `identity_claims` and `native_occurrences` (runner
 defaults: none), so the workbench has no per-kind branch for them.
+Each descriptor's `implementation.entry` names the symbol that is the kind's
+workflow and how it is built (`none`: a class with no argument, `kind`: a class
+given the source kind, `value`: used as-is). The workbench builds workflows
+only from these entries, and `pipelines.check()` binds every entry to its
+declared module and runner class.
 
 A pipeline verified by a proof instead of a reproduction (proved heat: an SP1
 proof checked against the registered guest) overrides `_verify`,

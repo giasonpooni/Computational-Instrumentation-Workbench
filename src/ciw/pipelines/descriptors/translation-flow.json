@@ -97,7 +97,11 @@
   "implementation": {
     "module": "ciw.geometry_research",
     "runner": "generic_runner",
-    "delegates": []
+    "delegates": [],
+    "entry": {
+      "symbol": "ciw.geometry_research:GeometryResearchWorkflow",
+      "call": "kind"
+    }
   },
   "guide": "docs/GEOMETRY_RESEARCH.md"
 }

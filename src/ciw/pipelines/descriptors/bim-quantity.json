@@ -122,7 +122,11 @@
   "implementation": {
     "module": "ciw.bim_quantity",
     "runner": "generic_runner",
-    "delegates": []
+    "delegates": [],
+    "entry": {
+      "symbol": "ciw.bim_quantity:workflow",
+      "call": "value"
+    }
   },
   "guide": "docs/INTEGRATED_MODULES.md"
 }

@@ -133,7 +133,11 @@
   "implementation": {
     "module": "ciw.machine_workflow",
     "runner": "hand_written",
-    "delegates": []
+    "delegates": [],
+    "entry": {
+      "symbol": "ciw.machine_workflow:MachineManifestWorkflow",
+      "call": "none"
+    }
   },
   "guide": "docs/CONTRACT_FOUNDATIONS.md"
 }

@@ -107,7 +107,11 @@
   "implementation": {
     "module": "ciw.geometric_circle",
     "runner": "generic_runner",
-    "delegates": []
+    "delegates": [],
+    "entry": {
+      "symbol": "ciw.geometric_circle:workflow",
+      "call": "value"
+    }
   },
   "guide": "docs/REMAINING_MODULES.md"
 }

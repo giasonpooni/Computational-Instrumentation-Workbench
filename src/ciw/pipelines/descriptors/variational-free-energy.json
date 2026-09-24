@@ -177,7 +177,11 @@
     "runner": "declared_workflow",
     "delegates": [
       "ciw.free_energy_native"
-    ]
+    ],
+    "entry": {
+      "symbol": "ciw.free_energy_workflow:FreeEnergyWorkflow",
+      "call": "none"
+    }
   },
   "guide": "docs/VARIATIONAL_FREE_ENERGY.md"
 }

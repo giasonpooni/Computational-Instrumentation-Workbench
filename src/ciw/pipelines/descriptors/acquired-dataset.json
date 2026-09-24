@@ -112,7 +112,11 @@
   "implementation": {
     "module": "ciw.acquired_dataset",
     "runner": "generic_runner",
-    "delegates": []
+    "delegates": [],
+    "entry": {
+      "symbol": "ciw.acquired_dataset:workflow",
+      "call": "value"
+    }
   },
   "guide": "docs/ACQUIRED_DATASET.md"
 }

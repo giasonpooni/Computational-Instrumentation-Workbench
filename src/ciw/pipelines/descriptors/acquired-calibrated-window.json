@@ -168,7 +168,11 @@
     "runner": "hand_written",
     "delegates": [
       "ciw.calibrated_window"
-    ]
+    ],
+    "entry": {
+      "symbol": "ciw.acquired_window",
+      "call": "value"
+    }
   },
   "guide": "docs/ACQUIRED_STREAM.md"
 }

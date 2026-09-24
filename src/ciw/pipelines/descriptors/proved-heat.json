@@ -144,7 +144,11 @@
   "implementation": {
     "module": "ciw.proved_heat",
     "runner": "declared_workflow",
-    "delegates": []
+    "delegates": [],
+    "entry": {
+      "symbol": "ciw.proved_heat:ProvedHeatWorkflow",
+      "call": "none"
+    }
   },
   "guide": "docs/PROVED_HEAT.md"
 }

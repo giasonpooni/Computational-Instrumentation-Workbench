@@ -119,3 +119,22 @@ def test_domain_rules_cite_resolvable_code_not_line_numbers():
     del unbound["domain_rules"][0]["code"]
     with pytest.raises(ValueError):
         pipelines.validate(unbound)
+
+
+def test_workbench_builds_each_kind_from_its_descriptor_entry():
+    from copy import deepcopy
+    from ciw import workbench
+    descriptors = pipelines.load()
+    for kind, value in descriptors.items():
+        assert type(workbench._workflow(kind)) is type(pipelines.build(value))
+        assert pipelines.session_kind(value["session_schema"]) == kind
+    broken = deepcopy(descriptors["geometric-circle"])
+    broken["implementation"]["entry"]["symbol"] = "ciw.telemetry:canonical"
+    with pytest.raises(ValueError, match="entry"):
+        pipelines.validate(broken)
+    broken = deepcopy(descriptors["geometric-circle"])
+    broken["implementation"]["entry"]["call"] = "import"
+    with pytest.raises(ValueError, match="entry"):
+        pipelines.validate(broken)
+    with pytest.raises(ValueError, match="Unknown workbench source kind"):
+        workbench._workflow("not-a-kind")

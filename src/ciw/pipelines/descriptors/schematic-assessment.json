@@ -99,7 +99,11 @@
   "implementation": {
     "module": "ciw.declared_workload",
     "runner": "generic_runner",
-    "delegates": []
+    "delegates": [],
+    "entry": {
+      "symbol": "ciw.declared_workload:DeclaredWorkflow",
+      "call": "kind"
+    }
   },
   "guide": "docs/DECLARED_WORKLOADS.md"
 }

@@ -145,7 +145,11 @@
   "implementation": {
     "module": "ciw.schematic_companions",
     "runner": "declared_workflow",
-    "delegates": []
+    "delegates": [],
+    "entry": {
+      "symbol": "ciw.schematic_companions:SchematicCompanionWorkflow",
+      "call": "none"
+    }
   },
   "guide": "docs/INTEGRATED_MODULES.md"
 }

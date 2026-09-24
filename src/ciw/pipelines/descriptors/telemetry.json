@@ -183,7 +183,11 @@
   "implementation": {
     "module": "ciw.telemetry",
     "runner": "hand_written",
-    "delegates": []
+    "delegates": [],
+    "entry": {
+      "symbol": "ciw.telemetry",
+      "call": "value"
+    }
   },
   "guide": "docs/SHARED_TELEMETRY.md"
 }

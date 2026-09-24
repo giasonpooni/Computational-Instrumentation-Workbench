@@ -147,7 +147,11 @@
     "delegates": [
       "ciw.investigation",
       "ciw.covariance_workflow"
-    ]
+    ],
+    "entry": {
+      "symbol": "ciw.measurement_chain:workflow",
+      "call": "value"
+    }
   },
   "guide": "docs/REMAINING_MODULES.md"
 }

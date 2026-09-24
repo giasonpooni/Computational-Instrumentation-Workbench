@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import base64
 import binascii
-import re
 from copy import deepcopy
 from hashlib import sha256
 from pathlib import Path
@@ -64,74 +63,12 @@ _OVERHEAD = 4096
 
 
 def _workflow(kind):
-    if kind == "machine-manifest":
-        from .machine_workflow import MachineManifestWorkflow
-        return MachineManifestWorkflow()
-    if kind == "thermal-observer":
-        from .thermal_workflow import ThermalWorkflow
-        return ThermalWorkflow()
-    if kind == "instrument-exchange":
-        from . import exchange_adapter
-        return exchange_adapter
-    if kind == "energy-accuracy":
-        from .energy_workflow import EnergyAccuracyWorkflow
-        return EnergyAccuracyWorkflow()
-    if kind == "variational-free-energy":
-        from .free_energy_workflow import FreeEnergyWorkflow
-        return FreeEnergyWorkflow()
-    # Lazy imports avoid the existing workflows' Session persistence dependency.
-    if kind in {"covariance-geometry", "mesh-path", "translation-flow"}:
-        from .geometry_research import GeometryResearchWorkflow
-        return GeometryResearchWorkflow(kind)
-    if kind == "proved-heat":
-        from .proved_heat import ProvedHeatWorkflow
-        return ProvedHeatWorkflow()
-    if kind in {"flat-torus-reference", "curved-path-transfer"}:
-        from .geodesic_reference import GeodesicReferenceWorkflow
-        return GeodesicReferenceWorkflow(kind)
-    if kind in {"schematic-assessment", "numerical-heat"}:
-        from .declared_workload import DeclaredWorkflow
-        return DeclaredWorkflow(kind)
-    if kind == "schematic-companions":
-        from .schematic_companions import SchematicCompanionWorkflow
-        return SchematicCompanionWorkflow()
-    if kind == "bim-quantity":
-        from .bim_quantity import workflow
-        return workflow
-    if kind == "acquired-dataset":
-        from .acquired_dataset import workflow
-        return workflow
-    if kind == "acquired-calibrated-window":
-        from . import acquired_window
-        return acquired_window
-    if kind == "residual-monitor":
-        from .residual_monitor import workflow
-        return workflow
-    if kind == "measurement-chain":
-        from .measurement_chain import workflow
-        return workflow
-    if kind == "geometric-circle":
-        from .geometric_circle import workflow
-        return workflow
-    if kind == "identified-stability":
-        from .identified_stability import workflow
-        return workflow
+    """A kind's workflow as its pipeline descriptor declares it; geographic context is a source-only view."""
     if kind == "geographic-context":
         from . import spatial_view
         return spatial_view
-    if kind == "calibrated-observable":
-        from . import calibrated_observable
-        return calibrated_observable
-    if kind == "identified-design":
-        from . import identified_design
-        return identified_design
-    if kind == "telemetry":
-        from . import telemetry
-        return telemetry
-    if kind == "calibrated-window":
-        from . import calibrated_window
-        return calibrated_window
-    raise ValueError("Unknown workbench source kind")
+    from .pipelines import workflow
+    return workflow(kind)
 
 
 def _surface(kind):
@@ -332,11 +269,10 @@ def _catalog_steps(native):
 
 
 def _native_hook(native, name):
-    """A retained session's workflow hook, found from its ``ciw.<kind>-session.v1`` schema."""
-    match = re.fullmatch(r"ciw\.([a-z0-9-]+)-session\.v1", native.get("schema", ""))
-    if match is None or match.group(1) not in OPERATIONS:
-        return None
-    return getattr(_workflow(match.group(1)), name, None)
+    """A retained session's workflow hook, found from its descriptor's session schema."""
+    from .pipelines import session_kind
+    kind = session_kind(native.get("schema"))
+    return None if kind is None else getattr(_workflow(kind), name, None)
 
 
 def _source_claims(source):

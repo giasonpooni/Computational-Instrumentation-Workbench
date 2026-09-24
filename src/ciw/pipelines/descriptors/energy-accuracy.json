@@ -92,7 +92,11 @@
   "implementation": {
     "module": "ciw.energy_workflow",
     "runner": "declared_workflow",
-    "delegates": []
+    "delegates": [],
+    "entry": {
+      "symbol": "ciw.energy_workflow:EnergyAccuracyWorkflow",
+      "call": "none"
+    }
   },
   "guide": "docs/ENERGY_ACCURACY.md"
 }

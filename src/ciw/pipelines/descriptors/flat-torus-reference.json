@@ -94,7 +94,11 @@
   "implementation": {
     "module": "ciw.geodesic_reference",
     "runner": "generic_runner",
-    "delegates": []
+    "delegates": [],
+    "entry": {
+      "symbol": "ciw.geodesic_reference:GeodesicReferenceWorkflow",
+      "call": "kind"
+    }
   },
   "guide": "docs/GEODESIC_REFERENCES.md"
 }

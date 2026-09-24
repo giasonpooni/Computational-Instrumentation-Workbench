@@ -215,7 +215,11 @@
   "implementation": {
     "module": "ciw.calibrated_window",
     "runner": "hand_written",
-    "delegates": []
+    "delegates": [],
+    "entry": {
+      "symbol": "ciw.calibrated_window",
+      "call": "value"
+    }
   },
   "guide": "docs/CALIBRATED_WINDOW.md"
 }

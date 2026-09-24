@@ -113,7 +113,11 @@
   "implementation": {
     "module": "ciw.identified_stability",
     "runner": "declared_workflow",
-    "delegates": []
+    "delegates": [],
+    "entry": {
+      "symbol": "ciw.identified_stability:workflow",
+      "call": "value"
+    }
   },
   "guide": "docs/REMAINING_MODULES.md"
 }

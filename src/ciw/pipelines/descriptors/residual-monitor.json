@@ -130,7 +130,11 @@
   "implementation": {
     "module": "ciw.residual_monitor",
     "runner": "declared_workflow",
-    "delegates": []
+    "delegates": [],
+    "entry": {
+      "symbol": "ciw.residual_monitor:workflow",
+      "call": "value"
+    }
   },
   "guide": "docs/ACQUIRED_STREAM.md"
 }

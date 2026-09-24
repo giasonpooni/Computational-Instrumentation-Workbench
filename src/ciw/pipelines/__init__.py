@@ -16,6 +16,7 @@ declared.
 from __future__ import annotations
 
 from copy import deepcopy
+from functools import lru_cache
 from importlib import import_module, resources
 import json
 from pathlib import Path
@@ -26,6 +27,9 @@ INVESTIGATION_SCHEMA = "ciw.investigation.v1"
 INVOCATIONS = frozenset({"pinned_subprocess", "verified_contract_file", "host_bound_binary", "ciw_reference"})
 SURFACES = frozenset({"entry", "inner", "bench", "certification", "source_only"})
 IMPLEMENTATIONS = frozenset({"hand_written", "declared_workflow", "generic_runner"})
+# How a descriptor's implementation entry becomes the kind's workflow: a class
+# built with no argument or with the source kind, or an object used as-is.
+ENTRY_CALLS = frozenset({"none", "kind", "value"})
 UPSTREAM_CARDINALITIES = frozenset({"none", "one", "ordered_many"})
 FIELDS = frozenset({"schema", "pipeline_id", "source_kind", "session_schema", "summary", "inputs", "steps",
                     "verification", "refusals", "domain_rules", "investigations", "surface", "authority",
@@ -221,7 +225,12 @@ def validate(value) -> dict:
     if value["authority"] != "read_only":
         raise ValueError("Every current pipeline is read-only with respect to equipment")
     implementation = value["implementation"]
-    _keys(implementation, {"module", "runner", "delegates"}, name="implementation")
+    _keys(implementation, {"module", "runner", "delegates", "entry"}, name="implementation")
+    entry = implementation["entry"]
+    _keys(entry, {"symbol", "call"}, name="implementation.entry")
+    if (not isinstance(entry["symbol"], str) or entry["call"] not in ENTRY_CALLS or
+            entry["symbol"].partition(":")[0] != implementation["module"]):
+        raise ValueError("implementation.entry names a symbol of its module and how to build the workflow")
     if implementation["runner"] not in IMPLEMENTATIONS or not implementation["module"].startswith("ciw."):
         raise ValueError("implementation names a CIW module and its runner class")
     if (not isinstance(implementation["delegates"], list)
@@ -326,6 +335,36 @@ def resolve_symbol(reference: str):
     return target
 
 
+def build(descriptor: dict):
+    """The workflow a descriptor's implementation entry declares."""
+    entry = descriptor["implementation"]["entry"]
+    target = resolve_symbol(entry["symbol"]) if ":" in entry["symbol"] else import_module(entry["symbol"])
+    if entry["call"] == "value":
+        return target
+    if not isinstance(target, type):
+        raise ValueError(f"{descriptor['source_kind']}: implementation entry must name a class to build")
+    return target(descriptor["source_kind"]) if entry["call"] == "kind" else target()
+
+
+@lru_cache(maxsize=None)
+def _packaged() -> tuple:
+    descriptors = load()
+    return descriptors, {value["session_schema"]: kind for kind, value in descriptors.items()}
+
+
+def workflow(kind: str):
+    """The workflow for a frozen kind, built from its packaged descriptor."""
+    descriptor = _packaged()[0].get(kind)
+    if descriptor is None:
+        raise ValueError("Unknown workbench source kind")
+    return build(descriptor)
+
+
+def session_kind(schema) -> str | None:
+    """The kind whose retained session carries this schema, if any."""
+    return _packaged()[1].get(schema) if isinstance(schema, str) else None
+
+
 def _check_runner(kind: str, runner: str, workflow) -> None:
     """A generic runner pipeline supplies domain hooks only; the runner owns its records."""
     from .runner import HOOKS, PipelineRunner
@@ -348,7 +387,7 @@ def _check_runner(kind: str, runner: str, workflow) -> None:
 def check(descriptors: dict | None = None) -> dict:
     """Bind descriptors to code: kinds, operation ids, roles, pins, upstreams, guides, investigations."""
     from .. import kernel
-    from ..workbench import OPERATIONS, UPSTREAM_KINDS, _workflow
+    from ..workbench import OPERATIONS, UPSTREAM_KINDS
     descriptors = load() if descriptors is None else descriptors
     investigations = load_investigations()
     expected = kernel.FROZEN_KINDS
@@ -360,14 +399,15 @@ def check(descriptors: dict | None = None) -> dict:
         if kind in OPERATIONS and value["pipeline_id"] != OPERATIONS[kind]:
             raise ValueError(f"{kind}: pipeline_id differs from the registered operation")
         roles = {step["role"] for step in value["steps"]}
-        workflow_roles = set(getattr(_workflow(kind), "ROLES", ()))
+        flow = build(value)
+        workflow_roles = set(getattr(flow, "ROLES", ()))
         if roles != workflow_roles:
             raise ValueError(f"{kind}: descriptor roles {sorted(roles)} differ from bound roles {sorted(workflow_roles)}")
         upstream = [UPSTREAM_KINDS[kind]] if kind in UPSTREAM_KINDS else []
         if kind != "residual-monitor" and value["inputs"]["upstream_kinds"] != upstream:
             raise ValueError(f"{kind}: descriptor upstream differs from the registered upstream")
         import_module(value["implementation"]["module"])
-        _check_runner(kind, value["implementation"]["runner"], _workflow(kind))
+        _check_runner(kind, value["implementation"]["runner"], flow)
         for rule in value["domain_rules"]:
             for reference in rule["code"]:
                 resolve_symbol(reference)
