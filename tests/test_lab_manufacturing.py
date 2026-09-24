@@ -12,6 +12,7 @@ from ciw.lab import manufacturing_geometry as geo
 from ciw.lab import manufacturing_metrology as met
 from ciw.lab import manufacturing_records as rec
 from ciw.lab import runner
+from ciw import __version__
 from ciw.lab.evidence import AUTHORITY_DOMAINS, PHYSICAL_DOMAINS, EvidenceRefusal, finding
 from ciw.lab.registry import load_queue, section_implementations
 from ciw.lab.report import validate_report
@@ -80,6 +81,17 @@ def test_every_task_is_registered_and_reports_honestly(section):
         assert hasattr(section_implementations("manufacturing")[task_id].run, "__wrapped__")
         for name in ("hypothesis", "mathematical_model", "experiment", "numerical_result", "recommended_next_task"):
             assert isinstance(report[name], str) and report[name].strip()
+        # Next steps name forward work, not a queue task that has already run in the same run.
+        assert not report["recommended_next_task"].startswith("T"), (task_id, report["recommended_next_task"])
+        if task_id in ("T126", "T127", "T128", "T138", "T139"):
+            # The measurement route is the capture path, and its physical label waits on a deferred trust anchor;
+            # the closed route (execute on hardware, retain through T139, compare with the pair comparator) is gone.
+            step = report["recommended_next_task"]
+            assert "--capture" in step and "trust anchor" in step and "deferred research question" in step.lower(), task_id
+            assert "compare_pair_distances" not in step and "on hardware, retain it through a T139" not in step, task_id
+    # The customer-demand boundary item of the section's robotic use cases is recorded, never established.
+    demand = [f for f in reports["T141"]["findings"] if f["domain"] == "customer_demand"]
+    assert len(demand) == 1 and demand[0]["evidence_status"] == "not_established" and demand[0]["basis"] == {}
 
 
 def test_flat_plate_protocol_is_a_zero_curvature_control(section):
@@ -115,9 +127,12 @@ def test_protocols_refuse_filled_slots_and_decisions(section):
         matrix = rec.protocol_refusal_matrix(protocol)
         assert all(case["observed"] == case["expected"] for case in matrix.values()), matrix
         validated = [f for f in reports[task_id]["findings"] if f["claim"].endswith("refuses malformed variants")]
-        assert validated[0]["value"] == len(matrix) == 9
+        # Tape protocols add the layout mutations (two tapes in one laying, a tape left on the specimen, a marker
+        # under a tape, a repeat that lays a tape) to the seventeen every protocol has.
+        assert validated[0]["value"] == len(matrix) == (17 if task_id == "T129" else 21), task_id
         assert validated[0]["evidence_status"] == "numerically_verified"
         assert all("unsteered" in path["realization"] for path in protocol["paths"] if "realization" in path)
+        assert matrix["step_names_undeclared_jig"]["observed"] == "undeclared_device"
     forged = dict(protocol, hardware_measured={"status": "acquired", "records": [{"acquisition": {
         "device": "camera:1", "raw_sha256": "not-a-digest", "acquired_at": "yesterday", "calibration": "CERT"},
         "retention_identity": "sha256:" + "a" * 64}]})
@@ -129,6 +144,236 @@ def test_protocols_refuse_filled_slots_and_decisions(section):
     cited = deepcopy(uncited)
     cited["hardware_measured"]["records"][0]["retention_identity"] = "sha256:" + "a" * 64
     assert rec.validate_protocol(cited)["hardware_measured"]["status"] == "acquired"
+
+
+def test_protocols_are_executable_as_written(section):
+    """Every device a step or path names is declared; the start jig is a fixture; the tube has its own datum scheme."""
+    directory, _ = section
+    protocols = {task_id: json.loads((directory / "artifacts" / task_id / name).read_text(encoding="utf-8"))
+                 for task_id, name in (("T126", "protocol-flat-plate.json"), ("T127", "protocol-rolled-cylinder.json"),
+                                       ("T128", "protocol-domed-coupon.json"), ("T129", "protocol-surface-scan.json"))}
+    for task_id, protocol in protocols.items():
+        fixtures = {f["id"]: f for f in protocol["fixtures"]}
+        declared = set(fixtures) | {i["id"] for i in protocol["instruments"]} | {a["id"] for a in protocol["calibration_artifacts"]}
+        datums = {d["id"] for d in protocol["datum_frames"]}
+        assert [step["step"] for step in protocol["procedure"]] == list(range(1, len(protocol["procedure"]) + 1))
+        for step in protocol["procedure"]:
+            assert set(step["uses"]) <= declared and set(step.get("datums", [])) <= datums and step["outputs"], step
+        assert all(i["settings"] for i in protocol["instruments"])
+        for fmt in protocol["raw_formats"]:
+            assert fmt["instrument"] in declared
+        tape = [path for path in protocol["paths"] if "realization" in path or "of" in path]
+        if tape:
+            # The start jig realizes the independent variable, so it is a declared fixture with its slots and tolerance.
+            jig = fixtures["JIG-START-01"]
+            assert jig["declared_realization_tolerance"]["lateral_mm"] == mfg.EXECUTION_INSERT["lateral_mm"]
+            assert jig["declared_realization_tolerance"]["heading_rad"] == mfg.EXECUTION_INSERT["heading_rad"]
+            assert jig["declared_reseat_repeatability"]["lateral_mm"] == mfg.JIG_RESEAT["lateral_mm"]
+            assert jig["geometry"]["slots_per_insert"] == 1
+            assert {slot["slot"] for slot in jig["geometry"]["slots"]} == {path["id"] for path in tape}
+            assert all(path["uses"] == ["JIG-START-01"] for path in tape) and set(jig["locates"]) <= datums
+            offsets = {slot["slot"]: (slot["lateral_offset_mm"], slot["heading_offset_rad"]) for slot in jig["geometry"]["slots"]}
+            for path in tape:
+                assert offsets[path["id"]] == (path.get("lateral_offset_mm", 0.0), path.get("heading_offset_rad", 0.0))
+            assert any("JIG-START-01" in step["uses"] for step in protocol["procedure"])
+        # Raw formats of the section's own captures agree with what T138 reads.
+        if task_id != "T129":
+            expected = mfg.capture_expectations(protocol["protocol_id"])
+            for fmt in protocol["raw_formats"]:
+                assert expected[fmt["role"]]["ids"] == fmt["ids"] and expected[fmt["role"]]["schema"] == fmt["schema"]
+                assert expected[fmt["role"]]["instrument"] == fmt["instrument"]
+                assert expected[fmt["role"]]["frame"] == fmt["frame"]
+    # The tube is located on its axis: V-blocks, a cylinder-fit axis A, scribe B, end face C, axis-primary frame.
+    cylinder = protocols["T127"]
+    assert {f["id"] for f in cylinder["fixtures"]} == {"VB-01", "JIG-START-01"}
+    frames = {d["id"]: d for d in cylinder["datum_frames"]}
+    assert "cylinder" in frames["A"]["feature"] and "datum_frame_axis" in frames["PART"]["definition"]
+    assert "(or" not in json.dumps(cylinder["datum_frames"]) and "normal of A" not in json.dumps(cylinder["datum_frames"])
+    assert cylinder["frame_chain"][2]["source"] == mfg.AXIS_FRAME_SOURCE
+    # H1 no longer tests a surface distance without an instrument: the film gauge measures it, with its own U.
+    h1 = cylinder["acceptance_criteria"][0]
+    assert "film" in h1["statement"] and "film" in {i["id"] for i in cylinder["instruments"]}
+    assert f"{2 * mfg.GAP_U:.4f}" in h1["test"]
+    assert any("film" in step["uses"] for step in cylinder["procedure"])
+    # A step that names a device it does not use, or a device the protocol lacks, is refused.
+    broken = deepcopy(protocols["T128"])
+    broken["fixtures"] = [f for f in broken["fixtures"] if f["id"] != "JIG-START-01"]
+    assert rec.refusal_code(rec.validate_protocol, broken) == "undeclared_device"
+    unnamed = deepcopy(protocols["T126"])
+    unnamed["procedure"][0]["action"] += " Place the V-block."
+    assert rec.refusal_code(rec.validate_protocol, unnamed) == "undeclared_device"
+    wrong_datum = deepcopy(protocols["T126"])
+    wrong_datum["procedure"][2]["datums"] = ["D"]
+    assert rec.refusal_code(rec.validate_protocol, wrong_datum) == "undeclared_datum"
+
+
+def _protocols(directory):
+    return {task_id: json.loads((directory / "artifacts" / task_id / name).read_text(encoding="utf-8"))
+            for task_id, name in (("T126", "protocol-flat-plate.json"), ("T127", "protocol-rolled-cylinder.json"),
+                                  ("T128", "protocol-domed-coupon.json"), ("T129", "protocol-surface-scan.json"))}
+
+
+def _dense(line, step=0.25):
+    """A polyline resampled every ``step`` mm (for brute-force distances independent of the validator's)."""
+    line = np.asarray(line, dtype=float)
+    out = [line[0]]
+    for a, b in zip(line[:-1], line[1:]):
+        n = max(1, int(math.ceil(np.linalg.norm(b - a) / step)))
+        out += [a + (b - a) * k / n for k in range(1, n + 1)]
+    return np.array(out)
+
+
+def test_tape_layout_keeps_tapes_targets_and_markers_apart(section):
+    """One tape is on a specimen at a time; tape centrelines clear every marker and datum probe point; a layout
+    that lays offset tapes together, runs a tape over markers or repeats a laying step is refused."""
+    directory, _ = section
+    protocols = _protocols(directory)
+    for task_id in ("T126", "T127", "T128"):
+        protocol = protocols[task_id]
+        layout = protocol["tape_layout"]
+        assert (layout["tape_width_mm"], layout["target_diameter_mm"], layout["marker_diameter_mm"]) == (3.0, 6.0, 6.0)
+        tapes = {p["id"]: p for p in protocol["paths"] if p.get("kind") == "tape"}
+        on, placed = set(), set()
+        for step in protocol["procedure"]:
+            for name in step.get("lays", []):
+                assert not on and len(step["lays"]) == 1, (task_id, step["step"])   # one tape at a time
+                on.add(name)
+            for name in step.get("places", []):
+                assert name in on
+                placed.add(name)
+            for name in step.get("removes", []):
+                on.discard(name)
+        assert not on and placed == set(tapes), task_id
+        # Brute-force clearance on densely resampled centrelines (the validator uses exact segment distances).
+        obstacles = [m["position_mm"] for m in protocol["markers"] if m.get("kind") == "specimen marker"]
+        obstacles += [p for d in protocol["datum_frames"] for p in d.get("probe_points_mm", [])]
+        for name, path in tapes.items():
+            dense = _dense(path["centreline_mm"])
+            if obstacles:
+                nearest = min(float(np.min(np.linalg.norm(dense - np.asarray(o), axis=1))) for o in obstacles)
+                assert nearest >= 0.5 * (6.0 + 6.0), (task_id, name, nearest)
+        # The offset tapes would overlap if they lay together: that is why each is laid alone.
+        names = sorted(tapes)
+        closest = min(rec.polyline_distance(tapes[a]["centreline_mm"], tapes[b]["centreline_mm"])
+                      for a in names for b in names if a < b)
+        assert closest < 3.0 + 6.0, task_id
+        # Repeats measure again; they never lay, place or remove anything, and they name the steps they repeat.
+        for step in protocol["procedure"]:
+            if "repeats" in step:
+                assert all(n < step["step"] and not {"lays", "places", "removes"} & set(protocol["procedure"][n - 1])
+                           for n in step["repeats"]), step
+                assert all(str(n) in step["action"] for n in step["repeats"])
+    # The plate tapes run midway between two marker rows: their centrelines are the closed-form lines.
+    plate = {p["id"]: np.array(p["centreline_mm"]) for p in protocols["T126"]["paths"]}
+    assert np.allclose(plate["N0"][:, 1], 30.0, atol=1e-9) and np.allclose(np.abs(plate["L2"][:, 1] - 30.0), 2.0, atol=1e-4)
+    s = plate["H5"][:, 0] - plate["H5"][0, 0]
+    assert np.allclose(np.abs(plate["H5"][:, 1] - 30.0), np.tan(0.005) * s, atol=1e-4)
+    # The cylinder helices are straight on the development (R phi, z) at 45 degrees.
+    helix = np.array(next(p for p in protocols["T127"]["paths"] if p["id"] == "HX45")["centreline_mm"])
+    arc = geo.CYLINDER_RADIUS * np.unwrap(np.arctan2(helix[:, 1], helix[:, 0]))
+    assert np.allclose(arc - arc[0], helix[:, 2], atol=1e-3)  # points are rounded to 0.1 um
+    # The reviewer's layouts are refused: tapes on the plate's marker row, the helix over marker C0-01, offset tapes
+    # laid together (their slots 2 mm apart), a tape left on the coupon when the next is laid, a repeat that lays.
+    old_plate = deepcopy(protocols["T126"])
+    for path in old_plate["paths"]:
+        start = (-120.0, 0.0)
+        path["centreline_mm"] = mfg.tape_centreline(geo.PLATE, start, 0.0, 240.0, path.get("lateral_offset_mm", 0.0),
+                                                    path.get("heading_offset_rad", 0.0))
+    assert rec.refusal_code(rec.validate_protocol, old_plate) == "path_over_marker"
+    old_helix = deepcopy(protocols["T127"])
+    for path in old_helix["paths"]:
+        path["centreline_mm"] = mfg.tape_centreline(geo.CYLINDER, (0.0, 0.0), math.radians(45.0), 300.0,
+                                                    path.get("lateral_offset_mm", 0.0))
+    assert rec.refusal_code(rec.validate_protocol, old_helix) == "path_over_marker"
+    marker = next(m for m in protocols["T127"]["markers"] if m["id"] == "C0-01")
+    assert rec.point_polyline_distance(marker["position_mm"], old_helix["paths"][0]["centreline_mm"]) < 2.0
+    for task_id in ("T126", "T127", "T128"):
+        matrix = rec.protocol_refusal_matrix(protocols[task_id])
+        for case, code in (("two_offset_tapes_in_one_laying", "jig_slots_overlap"),
+                           ("tape_left_on_the_specimen", "tapes_overlap"),
+                           ("specimen_marker_under_a_tape", "path_over_marker"),
+                           ("repeat_includes_laying", "repeat_includes_laying")):
+            assert matrix[case] == {"expected": code, "observed": code}, (task_id, case)
+    jig = next(f for f in protocols["T128"]["fixtures"] if f["id"] == "JIG-START-01")
+    slots = {slot["slot"]: slot for slot in jig["geometry"]["slots"]}
+    assert rec.slot_gap(slots["N"], slots["L"], 20.0) == pytest.approx(2.0)
+    assert rec.slot_gap(slots["N"], slots["H"], 20.0) == pytest.approx(0.0)  # the heading slot shares the exit point
+    # Two polylines that cross are at distance zero, and parallel ones at their offset.
+    assert rec.polyline_distance([[0, 0, 0], [10, 0, 0]], [[5, -5, 0], [5, 5, 0]]) == pytest.approx(0.0)
+    assert rec.polyline_distance([[0, 0, 0], [10, 0, 0]], [[0, 3, 0], [10, 3, 0]]) == pytest.approx(3.0)
+
+
+def test_fixtures_declare_the_datum_targets_their_steps_measure(section):
+    directory, _ = section
+    for task_id, protocol in _protocols(directory).items():
+        fixtures = {f["id"]: f for f in protocol["fixtures"]}
+        holder = protocol["fixtures"][0]
+        assert len(holder["datum_targets"]) == 4 and all(len(t["position_mm"]) == 3 for t in holder["datum_targets"])
+        for step in protocol["procedure"]:
+            if "datum targets" in step["action"]:
+                assert any(fixtures[name].get("datum_targets") for name in step["uses"] if name in fixtures), step
+        # The tracker registration exists only where a tracker is declared (not in MFG-SCAN-01).
+        has_tracker = "tracker" in {i["id"] for i in protocol["instruments"]}
+        assert has_tracker == any("tracker" in step["uses"] for step in protocol["procedure"]), task_id
+        broken = deepcopy(protocol)
+        broken["fixtures"][0].pop("datum_targets")
+        if has_tracker:
+            assert rec.refusal_code(rec.validate_protocol, broken) == "fixture_targets_undeclared"
+    # MFG-SCAN-01 lays no tapes, and its repeat step says nothing about tapes.
+    scan = _protocols(directory)["T129"]
+    repeat = [step for step in scan["procedure"] if "repeats" in step]
+    assert len(repeat) == 1 and "tape" not in repeat[0]["action"]
+    # A free-text repeat that lists no steps is refused.
+    free = deepcopy(scan)
+    free["procedure"][repeat[0]["step"] - 1].pop("repeats")
+    assert rec.refusal_code(rec.validate_protocol, free) == "procedure_step_malformed"
+
+
+def test_cylinder_protocol_is_acquirable_in_its_v_blocks(section):
+    """The vees sit between the marker rings; datum A is probed between markers on the upper half; the captures
+    ask only for markers the camera can see; a tube out of round stops the run instead of being re-seated."""
+    directory, _ = section
+    protocol = _protocols(directory)["T127"]
+    blocks = next(f for f in protocol["fixtures"] if f["id"] == "VB-01")
+    assert "100 mm and 200 mm" in blocks["geometry"] and "straight up" in blocks["contacts"]
+    rings = set(mfg.CYLINDER_RINGS_MM)
+    assert not {100.0, 200.0} & rings
+    angles = [round(math.degrees(phi), 9) for phi, _ in mfg.axis_probe_points()["A"]]
+    assert all(abs(a) <= mfg.ACCESSIBLE_ARC_DEG and abs(a) % 30.0 == 15.0 for a in angles)
+    assert {z for _, z in mfg.axis_probe_points()["A"]} == rings
+    datum_a = next(d for d in protocol["datum_frames"] if d["id"] == "A")
+    assert datum_a["points"] == len(datum_a["probe_points_mm"]) == 12 and "-75, -15, 45 and 75 deg" in datum_a["feature"]
+    photogrammetry = next(f for f in protocol["raw_formats"] if f["role"] == "photogrammetry")
+    visible = {m["id"] for m in protocol["markers"] if m["faces_up"]}
+    assert set(photogrammetry["ids"]) == visible and len(visible) == 21
+    assert {name for pair in protocol["specimen"]["marker_pairs"].values() for name in pair} <= visible
+    for marker in protocol["markers"]:
+        phi = math.degrees(math.atan2(marker["position_mm"][1], marker["position_mm"][0]))
+        assert marker["faces_up"] == (abs(phi) <= 90.0 + 1e-9), marker["id"]
+    locate = protocol["procedure"][2]
+    assert f"{mfg.roundness_threshold():.3f} mm" in locate["check"] and "otherwise stop and record" in locate["check"]
+    assert mfg.roundness_threshold() == pytest.approx(0.1 + 2 * 2 * 0.002)
+    assert protocol["specimen"]["declared_roundness_tolerance_mm"] == 0.1
+    # The datum scheme recovers a known pose from exactly these probe points.
+    assert mfg.axis_frame_study()["pose_error"] < 1e-9
+
+
+def test_axis_datum_frame_recovers_a_tube_pose():
+    pose = met.transform(met.exp_so3([-0.3, 0.2, 0.1]), [5.0, 7.0, -3.0])
+    rings = np.array([[100 * math.cos(a), 100 * math.sin(a), z] for z in (50.0, 250.0) for a in np.linspace(0, 2 * math.pi, 9)[:-1]])
+    moved = rings @ pose[:3, :3].T + pose[:3, 3]
+    point, direction, radius, residual = met.fit_cylinder(moved, pose[:3, 3] + pose[:3, :3] @ [0.5, 0.5, 100.0],
+                                                          pose[:3, :3] @ [0.01, -0.02, 1.0], 98.0)
+    assert radius == pytest.approx(100.0, abs=1e-9) and np.max(np.abs(residual)) < 1e-9
+    scribe = np.array([[100.0, 0.0, 30.0]]) @ pose[:3, :3].T + pose[:3, 3]
+    face = np.array([[0.0, 10.0, 0.0], [10.0, 0.0, 0.0], [-5.0, -5.0, 0.0]]) @ pose[:3, :3].T + pose[:3, 3]
+    # The axis direction's sign does not matter: z points from the end face into the tube.
+    for sign in (1.0, -1.0):
+        frame = met.datum_frame_axis(point, sign * direction, scribe, face)
+        assert np.max(np.abs(met.pose_difference(frame, pose))) < 1e-9
+    study = mfg.axis_frame_study()
+    assert study["pose_error"] < 1e-9 and study["scribe_on_axis"] == study["face_parallel_to_axis"] == "datum_degenerate"
+    assert study["too_few_points"] == "cylinder_underdetermined"
 
 
 def test_cylinder_protocol_predicts_chord_geodesic_gaps(section):
@@ -152,6 +397,10 @@ def test_cylinder_protocol_predicts_chord_geodesic_gaps(section):
     assert resolvable["camera"] == pytest.approx(23.86, abs=0.01)
     assert resolvable["cmm"] < resolvable["tracker"] < resolvable["camera"]
     assert _finding(report, "Rolled-cylinder Jacobi transfer equals")["value"] <= 1e-9
+    axis = _finding(report, "The axis-primary datum frame")
+    assert axis["evidence_status"] == "numerically_verified" and axis["value"]["pose_error"] < 1e-9
+    assert _labels(report)["The unrolled-film gauge achieves the declared 0.05 mm on marker-to-marker surface distances"] \
+        == "not_established"
 
 
 def test_coupon_protocol_predicts_focal_crossing(section):
@@ -181,6 +430,10 @@ def test_coupon_protocol_predicts_focal_crossing(section):
         record = _finding(report, prefix)
         if has[module]:
             assert record["evidence_status"] == "independently_verified"
+            # Producer and checker each carry a real revision: ciw's version and the external package's.
+            check = record["basis"]["independent_check"]
+            assert check["producer"]["revision"] == f"ciw {__version__}"
+            assert check["checker"]["revision"] == __import__(module).__version__
         else:
             assert record["evidence_status"] == "not_established" and record["expected_not_established"] is True
 
@@ -234,7 +487,7 @@ def test_scan_protocol_and_as_built_fit(section):
     assert fit["evidence_status"] == "numerically_verified" and fit["uncertainty"]["value"] >= 0.0
     model = _finding(report, "The fit residual flags an elliptical as-built dome")
     assert model["evidence_status"] == "numerically_verified" and "counterexample" in model
-    assert _finding(report, "Surface-scan protocol record validates")["value"] == 9
+    assert _finding(report, "Surface-scan protocol record validates")["value"] == 17
     assert _labels(report)["The formed coupon passes the Gaussian model test and its fitted height and width lie within "
                            "the declared forming tolerances"] == "not_established"
     protocol = rec.validate_protocol(json.loads(
@@ -313,6 +566,9 @@ def test_gage_rr_recovers_components_and_refuses_unbalanced(section):
     # The procedure of a real study: parts are features, every cell once per replicate round, re-fixturing between.
     procedure = json.loads((directory / "artifacts" / "T131" / "gage-rr-procedure.json").read_text(encoding="utf-8"))
     assert procedure["status"].startswith("plan") and procedure["type1_study"]["readings"] == 25
+    # Coupon parts lie on one tape left alone on the coupon (tapes are never on it together).
+    assert "alone on the coupon" in procedure["studies"]["MFG-COUPON-01"]["setup"]
+    assert not any(" to nominal " in p["feature"] for p in procedure["studies"]["MFG-COUPON-01"]["parts"])
     for protocol_id, study in procedure["studies"].items():
         parts = [p["feature"] for p in study["parts"]]
         assert len(parts) == 10 and len(study["rounds"]) == 3, protocol_id
@@ -406,9 +662,12 @@ def test_coating_standoff_and_offset_cusp(section):
 def test_scan_plans_coverage_and_counterexample(section):
     _, reports = section
     report = reports["T135"]
-    plans = _finding(report, "Coverage and path length")["value"]
+    plans_finding = _finding(report, "Coverage and path length")
+    assert plans_finding["evidence_status"] == "numerically_verified"
+    plans = plans_finding["value"]
     assert plans["geodesic x1"]["coverage"] < 0.99 < plans["geodesic x0.6"]["coverage"]
     counter = _finding(report, "Geodesic rows at the swath spacing leave gaps")
+    assert counter["evidence_status"] == "numerically_verified"
     assert counter["counterexample"]["witness"]["plate_coverage"] == 1.0
     shortest = _finding(report, "Shortest evaluated scan plan")["value"]
     assert shortest["plan"] == "chart-parallel x0.9"
@@ -437,21 +696,48 @@ def test_rankings_by_calibration_tolerance_and_focus_margin(section):
     first = _finding(reports["T136"], "The first-order tolerance allocation exceeds the spec")
     assert first["evidence_status"] == "numerically_verified" and "counterexample" in first
     assert first["value"]["fan+25deg"] > 1.0 and first["value"]["fan+0deg"] < 1.0
-    focus = _finding(reports["T137"], "Candidate coupon routes ranked by focus margin")
-    # Routes without a focus inside the horizon have lower-bound margins only: one tied tier, not an order.
+    # The focus margin is T024's s_c - L over conjugate points (zeros of j_head): no candidate route has one within
+    # its horizon, so every margin is a positive lower bound and the routes tie.
+    margin = _finding(reports["T137"], "Candidate coupon routes ranked by focus margin s_c - L")
+    assert margin["evidence_status"] == "numerically_verified" and margin["unit"] == "mm"
+    routes = [f"fan+{a}deg" for a in mfg.FAN_HEADINGS]
+    assert margin["value"]["ranking"] == [sorted(routes)]
+    assert all(margin["value"]["lower_bound"][r] for r in routes)
+    # A censored margin has no value, as T024 records it; its horizon-dependent lower bound has its own key, so a
+    # queue aggregate cannot show a bound as a margin.
+    assert all(margin["value"]["focus_margin_mm"][r] is None for r in routes)
+    bounds = margin["value"]["focus_margin_lower_bound_mm"]
+    assert min(bounds.values()) > 0.0 and bounds["fan+0deg"] == pytest.approx(297.82, abs=0.01)
+    assert all(bounds[r] == pytest.approx(margin["value"]["horizon_mm"][r] - _length(reports, r), abs=1e-6) for r in routes)
+    rows = mfg.focus_margins(mfg.fan_study()["routes"])
+    assert all((row["focus_margin_mm"] is None) == row["margin_is_lower_bound"] for row in rows)
+    assert min(margin["value"]["min_j_head_over_s"].values()) > 0.1
+    # The ratio that includes focal points (zeros of j_lat) has its own name and ranks the routes.
+    focus = _finding(reports["T137"], "Candidate coupon routes ranked by focal clearance ratio")
+    # Routes without a focus inside the horizon have lower-bound ratios only: one tied tier, not an order.
     assert focus["value"]["ranking"][0] == ["fan+15deg", "fan+20deg", "fan+25deg"]
     assert focus["value"]["ranking"][-1] == ["fan+0deg"] and all(len(t) == 1 for t in focus["value"]["ranking"][1:])
     assert focus["value"]["unresolved_tier"] == ["fan+15deg", "fan+20deg", "fan+25deg"]
-    assert focus["value"]["margin"]["fan+0deg"] == pytest.approx(0.7588, abs=1e-4)
-    counter = _finding(reports["T137"], "The shortest candidate route has the worst focus margin")
+    assert focus["value"]["focal_clearance_ratio"]["fan+0deg"] == pytest.approx(0.7588, abs=1e-4)
+    assert not any("focus margin" in f["claim"] and "ratio" not in f["claim"] and f is not margin
+                   for f in reports["T137"]["findings"])
+    counter = _finding(reports["T137"], "The shortest candidate route has the lowest focal clearance ratio")
     assert counter["evidence_status"] == "numerically_verified"
     assert counter["counterexample"]["witness"]["route"] == "fan+0deg"
+    assert "focal clearance ratio" in counter["counterexample"]["statement"]
+    # The shortest route's focus margin is censored and positive: no value, a positive lower bound.
+    assert counter["value"]["focus_margin_mm"] is None and counter["value"]["focus_margin_lower_bound_mm"] > 0.0
+    assert counter["counterexample"]["witness"]["focus_margin_mm"] is None
     variation_finding = _finding(reports["T137"], "The second variation of route length")
     variation = variation_finding["value"]
     assert variation["finite_difference_mm"] == pytest.approx(variation["index_form_mm"], rel=2e-4)
     assert variation_finding["uncertainty"]["value"] == pytest.approx(
         abs(variation["finite_difference_mm"] - variation["index_form_mm"]), abs=1e-12)
     assert _finding(reports["T136"], "The robot, fixture and frame calibration")["evidence_status"] == "not_established"
+
+
+def _length(reports, route):
+    return next(s["length_mm"] for s in mfg.fan_study()["summaries"] if s["route"] == route)
 
 
 def test_ranking_evidence_detects_a_wrong_exact_perturbation(monkeypatch):
@@ -526,6 +812,171 @@ def test_comparators_compute_normalized_errors_for_a_measurement_record():
     assert cylinder["expanded_uncertainty_mm"][cylinder["pairs"].index("axial 100 mm")] == 0.0
 
 
+def test_capture_reader_refuses_malformed_and_marks_synthetic_bytes():
+    expected = mfg.capture_expectations("MFG-FLAT-PLATE-01")["photogrammetry"]
+    data = mfg.synthetic_capture("MFG-FLAT-PLATE-01", "photogrammetry")
+    assert data.startswith(rec.SYNTHETIC_CAPTURE_PREFIX)
+    parsed = rec.read_capture(data, expected)
+    assert parsed["origin"] == "synthetic" and len(parsed["rows"]) == 25 and parsed["frame"] == "CAD"
+    # An export declared as a measurement carries no banner; the declaration is the operator's, not authenticated.
+    rows = {name: values for name, values in parsed["rows"].items()}
+    declared = rec.write_capture(mfg.TARGET_CAPTURE, "MFG-FLAT-PLATE-01", "camera", "CAD", rows, origin="measurement")
+    assert rec.read_capture(declared, expected)["origin"] == "measurement"
+    assert rec.refusal_code(rec.read_capture, b"\xff\xfe", expected) == "capture_encoding"
+    assert rec.refusal_code(rec.read_capture, declared.replace(b"# unit: mm", b"# unit: in"), expected) == "capture_header"
+    assert rec.refusal_code(rec.read_capture, declared.replace(b"MFG-FLAT-PLATE-01", b"MFG-OTHER-01"), expected) \
+        == "capture_expected"
+    study = mfg.capture_reduction_study()
+    assert all(case["observed"] == case["expected"] for case in study["refusals"].values()), study["refusals"]
+    assert study["start_heading_error_rad"] < 1e-5 and study["conditioned_separation_error_mm"] < 1e-3
+    # A cylinder capture: film minus chord recovers the gaps; the chord alone differs from the geodesic (H3).
+    cylinder = mfg.compare_captures({role: mfg.synthetic_capture("MFG-CYLINDER-01", role)
+                                     for role in ("photogrammetry", "film")})
+    gaps = cylinder["comparisons"]["film minus chord (H1)"]
+    assert gaps["max_normalized_error"] < 1e-6 and gaps["within_en_1"]
+    signature = cylinder["comparisons"]["pair chord against the geodesic distance (H3)"]
+    ninety = signature["labels"].index("circumferential 90 deg")
+    assert signature["normalized_error"][ninety] > 1.0 and signature["normalized_error"][
+        signature["labels"].index("axial 100 mm")] < 1e-6
+    with pytest.raises(rec.RecordRefusal) as refused:
+        mfg.compare_captures({"photogrammetry": data, "film": mfg.synthetic_capture("MFG-CYLINDER-01", "film")})
+    assert refused.value.code == "capture_protocol_mismatch"
+
+
+def test_operator_captures_are_compared_but_never_hardware_evidence(tmp_path):
+    """T138 reads bound captures through ctx.capture, compares them, retains them, and keeps physical claims open."""
+    queue = {t["id"]: t for t in load_queue()["tasks"]}
+    implementation = section_implementations("manufacturing")["T138"]
+    targets, pose = tmp_path / "targets.csv", tmp_path / "pose.csv"
+    targets.write_bytes(mfg.synthetic_capture("MFG-COUPON-01", "photogrammetry", 2.05, 3e-4))
+    pose.write_bytes(mfg.synthetic_capture("MFG-COUPON-01", "cmm", 2.05, 3e-4))
+    ctx = runner.Context(tmp_path / "run", captures={"photogrammetry": targets, "cmm": pose})
+    report = validate_report(runner.run_task(queue["T138"], implementation, ctx, {}))
+    assert report["state"] == "partial" and report["physical_validation_status"]["status"] == "not_established"
+    for record in report["findings"]:
+        if record["domain"] in PHYSICAL_DOMAINS:
+            assert record["evidence_status"] == "not_established" and record["basis"] == {}
+    capture = _finding(report, "Normalized errors of the bound metrology captures")
+    assert capture["evidence_status"] == "numerically_verified" and "synthetic_inputs" in capture["origin"]
+    assert capture["value"]["origin"] == "synthetic" and capture["basis"]["inputs"]["authenticated"] is False
+    conditioned = capture["value"]["comparisons"]["separation, conditioned on the captured start pose"]
+    assert conditioned["max_normalized_error"] < 0.05
+    assert capture["value"]["start_pose"]["lateral_mm"] == pytest.approx(2.05, abs=1e-6)
+    assert capture["value"]["start_pose"]["heading_rad"] == pytest.approx(3e-4, abs=1e-5)
+    assert "crossing arclength (H1)" in capture["value"]["comparisons"]
+    retained = {a["path"]: a["sha256"] for a in report["generated_artifacts"]}
+    digest = hashlib.sha256(targets.read_bytes()).hexdigest()
+    assert retained["artifacts/T138/capture-photogrammetry.csv"] == digest
+    # The capture is unauthenticated: a physical finding citing its digest cannot pass the runner's gate.
+    physical = finding("Measured separation on the coupon", "physical", 1.0, {"acquisition": {
+        "device": "photogrammetry camera system:camera:SN-1", "raw_sha256": digest,
+        "acquired_at": "2026-09-23T00:00:00Z", "calibration": "CERT-1"}})
+    with pytest.raises(EvidenceRefusal):
+        runner._gate_physical([physical], ctx)
+    # A capture the reader refuses refutes the comparison claim; nothing else changes.
+    bad = tmp_path / "bad.csv"
+    bad.write_bytes(b"x,y\n1,2\n")
+    refused = validate_report(runner.run_task(queue["T138"], implementation,
+                                              runner.Context(tmp_path / "bad", captures={"photogrammetry": bad}), {}))
+    record = _finding(refused, "Normalized errors of the bound metrology captures")
+    assert record["evidence_status"] == "not_established" and "expected_not_established" not in record
+    assert record["value"] == {"refusal": "capture_header"} and refused["evidence_status"]["primary"] == "not_established"
+    # Without a capture the claim is recorded as expected-unestablished (the retained clean-room run).
+    plain = validate_report(runner.run_task(queue["T138"], implementation, runner.Context(tmp_path / "plain"), {}))
+    assert _finding(plain, "Normalized errors of the bound metrology captures")["expected_not_established"] is True
+
+
+def _run_t138(tmp_path, name, captures):
+    queue = {t["id"]: t for t in load_queue()["tasks"]}
+    files = {}
+    for role, data in captures.items():
+        files[role] = tmp_path / f"{name}-{role}.csv"
+        files[role].write_bytes(data)
+    ctx = runner.Context(tmp_path / name, captures=files)
+    return validate_report(runner.run_task(queue["T138"], section_implementations("manufacturing")["T138"], ctx, {}))
+
+
+def _declared(data, u=None, only=None):
+    """A synthetic capture rewritten as a declared measurement (test bytes, never retained), optionally with new u."""
+    parsed = rec.read_capture(data)
+    rows = {name: [*values[:-1], (u if (only is None or name in only) else values[-1]) if u is not None else values[-1]]
+            for name, values in parsed["rows"].items()}
+    return rec.write_capture(parsed["schema"], parsed["protocol"], parsed["instrument"], parsed["frame"], rows,
+                             origin="measurement")
+
+
+def test_zero_uncertainty_capture_refutes_the_comparison_instead_of_blocking(tmp_path):
+    """A capture whose u column is 0 would make E_n infinite or undefined: the reader refuses it, and T138 records
+    the refused comparison (partial, refuted capture finding) instead of being blocked by a serialization error."""
+    plate = mfg.synthetic_capture("MFG-FLAT-PLATE-01", "photogrammetry")
+    expected = mfg.capture_expectations("MFG-FLAT-PLATE-01")["photogrammetry"]
+    for zero in (_declared(plate, 0.0), _declared(plate, 0.0, only=("M00", "M01"))):
+        assert rec.refusal_code(rec.read_capture, zero, expected) == "capture_value"
+    report = _run_t138(tmp_path, "zero", {"photogrammetry": _declared(plate, 0.0)})
+    assert report["state"] == "partial"
+    record = _finding(report, "Normalized errors of the bound metrology captures")
+    assert record["value"] == {"refusal": "capture_value"} and record["evidence_status"] == "not_established"
+    assert "expected_not_established" not in record and report["evidence_status"]["primary"] == "not_established"
+
+
+def test_capture_roles_without_a_comparison_are_retained_not_refuted(tmp_path):
+    """Roles a protocol defines for retention only (a start-pose file alone) are parsed and retained, and the
+    comparison claim is recorded as expected-unestablished, not refuted."""
+    pose = {"N0-S0": [-120.0, 30.0, 0.0, 0.002], "N0-S20": [-100.0, 30.0, 0.0, 0.002]}
+    ids = mfg.capture_expectations("MFG-FLAT-PLATE-01")["cmm"]["ids"]
+    rows = {name: pose.get(name, [0.0, 0.0, 0.0, 0.002]) for name in ids}
+    cases = {"plate-cmm": {"cmm": rec.write_capture(mfg.TARGET_CAPTURE, "MFG-FLAT-PLATE-01", "cmm", "CAD", rows,
+                                                    origin="measurement")},
+             "coupon-cmm": {"cmm": mfg.synthetic_capture("MFG-COUPON-01", "cmm", 2.05, 3e-4)}}
+    for name, captures in cases.items():
+        report = _run_t138(tmp_path, name, captures)
+        assert report["state"] == "partial", name
+        record = _finding(report, "Normalized errors of the bound metrology captures")
+        assert record["expected_not_established"] is True and not record["basis"].get("checks"), name
+        assert record["value"]["comparisons"] == {} and "cmm" in record["basis"]["notes"], name
+        assert report["evidence_status"]["primary"] != "not_established", name
+        assert any(a["path"] == "artifacts/T138/capture-cmm.csv" for a in report["generated_artifacts"]), name
+
+
+def test_crossing_comparison_carries_the_capture_uncertainty():
+    """The measured crossing's U comes from the capture's u column through the interpolation; the predicted one
+    from the prediction terms of the T140 focal row only."""
+    captures = {role: mfg.synthetic_capture("MFG-COUPON-01", role, 2.05, 3e-4, noise_mm=0.01)
+                for role in ("photogrammetry", "cmm")}
+    base = mfg.compare_captures(captures)["comparisons"]["crossing arclength (H1)"]
+    wider = mfg.compare_captures(dict(captures, photogrammetry=_declared(captures["photogrammetry"], 0.05)))
+    wider = wider["comparisons"]["crossing arclength (H1)"]
+    assert 0.0 < base["expanded_uncertainty_measured_mm"][0] < wider["expanded_uncertainty_measured_mm"][0]
+    assert wider["normalized_error"][0] < base["normalized_error"][0]
+    focal = mfg.budget_study()["budget"]["coupon focal distance (conditioned on the measured start pose)"]["components"]
+    prediction = 2 * math.sqrt(focal["geometry"] ** 2 + focal["execution"] ** 2 + focal["solver"] ** 2)
+    assert base["expanded_uncertainty_predicted_mm"][0] == pytest.approx(prediction, rel=1e-12)
+    # The propagation formula against finite differences of the interpolated crossing.
+    stations, values, sigmas = [0.0, 10.0, 20.0], np.array([2.0, 0.6, -0.9]), np.array([0.03, 0.02, 0.05])
+    where, u = mfg._crossing(stations, values, sigmas)
+    gradient = []
+    for k in (1, 2):
+        step = np.zeros(3)
+        step[k] = 1e-6
+        gradient.append((mfg._crossing(stations, values + step)[0] - mfg._crossing(stations, values - step)[0]) / 2e-6)
+    assert u == pytest.approx(math.hypot(gradient[0] * sigmas[1], gradient[1] * sigmas[2]), rel=1e-6)
+    assert where == pytest.approx(10.0 + 0.6 / 1.5 * 10.0)
+
+
+def test_acceptance_criteria_name_only_declared_devices(section):
+    directory, _ = section
+    protocol = json.loads((directory / "artifacts" / "T126" / "protocol-flat-plate.json").read_text(encoding="utf-8"))
+    for text in ("surface distance by tape-measure and laser interferometer equals the geodesic",
+                 "the tape measure reading equals the geodesic", "an interferometer confirms the chord"):
+        for key in ("statement", "test"):
+            broken = deepcopy(protocol)
+            broken["acceptance_criteria"][0][key] = text
+            assert rec.refusal_code(rec.validate_protocol, broken) == "undeclared_device", (text, key)
+    matrix = rec.protocol_refusal_matrix(protocol)
+    assert matrix["criterion_names_undeclared_instrument"] == {"expected": "undeclared_device",
+                                                                "observed": "undeclared_device"}
+
+
 def test_retention_schema_refusals_and_fixture_boundary(section, tmp_path):
     _, reports = section
     report = reports["T139"]
@@ -535,12 +986,18 @@ def test_retention_schema_refusals_and_fixture_boundary(section, tmp_path):
     assert boundary["value"] == 3 and boundary["evidence_status"] == "numerically_verified"
     assert _finding(report, "The retention schema keeps a rank-deficient")["evidence_status"] == "numerically_verified"
     assert _finding(report, "A real measurement with raw bytes")["evidence_status"] == "not_established"
-    assert report["state"] == "partial" and "no acquisition exists" in report["experiment"]
+    assert report["state"] == "partial" and "none was bound" in report["experiment"]
+    bound = _finding(report, "A bound retention record validates")
+    assert bound["expected_not_established"] is True and bound["value"] is None
     assert not any(a["path"].endswith("fixture.txt") for a in report["generated_artifacts"])
     fixture, raw = mfg._schema_fixture()
     assert rec.refusal_code(rec.to_acquisition, fixture, raw) == "fixture_is_not_measurement"
     # Relabelling the fixture does not help: its bytes, serial and zero calibration digest are refused.
     assert rec.refusal_code(rec.to_acquisition, dict(fixture, record_kind="measurement"), raw) == "fixture_is_not_measurement"
+    # Synthetic capture bytes are refused as hardware evidence too, whatever record lists them.
+    synthetic = mfg.synthetic_capture("MFG-FLAT-PLATE-01", "photogrammetry")
+    listed = _measurement_record({"capture.csv": synthetic})
+    assert rec.refusal_code(rec.to_acquisition, listed, {"capture.csv": synthetic}) == "fixture_is_not_measurement"
     assert rec.refusal_code(rec.validate_retention, dict(fixture, clock=dict(fixture["clock"], acquired_at="2026-09-23 00:00"))) \
         == "clock_without_timezone"
     assert rec.refusal_code(rec.validate_retention, dict(fixture, clock=dict(fixture["clock"], acquired_at="2031-01-01T00:00:00Z"))) \
@@ -573,14 +1030,81 @@ def test_retention_schema_refusals_and_fixture_boundary(section, tmp_path):
     assert rec.refusal_code(rec.validate_retention, lever, raw) == "frame_covariance_invalid"
 
 
+def _run_t139(tmp_path, name, captures):
+    queue = {t["id"]: t for t in load_queue()["tasks"]}
+    files = {}
+    for role, data in captures.items():
+        files[role] = tmp_path / f"{name}-{role}.{'json' if role == 'retention' else 'csv'}"
+        files[role].write_bytes(data)
+    ctx = runner.Context(tmp_path / name, captures=files)
+    return validate_report(runner.run_task(queue["T139"], section_implementations("manufacturing")["T139"], ctx, {})), ctx
+
+
+def test_bound_retention_record_is_validated_against_its_raw_bytes(tmp_path):
+    """T139 reads a retention record bound with --capture retention=, matches its raw entries to the bytes bound
+    under the capture roles by digest, builds the acquisition fields and retains both; it completes only for a
+    measurement record matching real (non-synthetic, non-fixture) bytes, and the physical claim stays open."""
+    synthetic = mfg.synthetic_capture("MFG-FLAT-PLATE-01", "photogrammetry")
+    declared = _declared(synthetic)                        # test bytes declared as a measurement, never retained
+    record = _measurement_record({"targets.csv": declared})
+    record["protocol_id"] = "MFG-FLAT-PLATE-01"
+    encode = lambda value: json.dumps(value).encode("utf-8")
+    report, ctx = _run_t139(tmp_path, "good", {"retention": encode(record), "photogrammetry": declared})
+    assert report["state"] == "completed" and "Completed:" in report["experiment"]
+    bound = _finding(report, "A bound retention record validates")
+    assert bound["evidence_status"] == "numerically_verified" and bound["basis"]["inputs"]["authenticated"] is False
+    acquisition = bound["value"]["acquisition"]
+    assert acquisition["raw_sha256"] == hashlib.sha256(rec.raw_manifest(record)).hexdigest()
+    assert bound["value"]["raw_roles"] == {"targets.csv": "photogrammetry"}
+    retained = {a["path"]: a["sha256"] for a in report["generated_artifacts"]}
+    assert retained["artifacts/T139/capture-retention.json"] == hashlib.sha256(encode(record)).hexdigest()
+    assert retained["artifacts/T139/capture-photogrammetry.csv"] == hashlib.sha256(declared).hexdigest()
+    assert retained["artifacts/T139/retention-raw-manifest.json"] == acquisition["raw_sha256"]
+    physical = _finding(report, "A real measurement with raw bytes")
+    assert physical["evidence_status"] == "not_established" and physical["basis"] == {}
+    assert report["physical_validation_status"]["status"] == "not_established"
+    # Without a hardware probe the acquisition fields cannot back a physical finding, even with the bytes retained.
+    with pytest.raises(EvidenceRefusal):
+        runner._gate_physical([finding("Retained plate markers", "physical", 1.0, {"acquisition": acquisition})], ctx)
+    # Refused: bytes that do not match, synthetic bytes, the schema fixture, a record that is not JSON.
+    fixture, fixture_raw = mfg._schema_fixture()
+    listed_synthetic = _measurement_record({"targets.csv": synthetic})
+    cases = {"altered": ({"retention": encode(record), "photogrammetry": declared + b"\n"}, "raw_digest_mismatch"),
+             "unbound": ({"retention": encode(record)}, "raw_digest_mismatch"),
+             "synthetic": ({"retention": encode(listed_synthetic), "photogrammetry": synthetic},
+                           "fixture_is_not_measurement"),
+             "fixture": ({"retention": encode(fixture), "photogrammetry": fixture_raw["fixture.txt"]},
+                         "fixture_is_not_measurement"),
+             "text": ({"retention": b"not json"}, "retention_not_json")}
+    for name, (captures, code) in cases.items():
+        refused, _ = _run_t139(tmp_path, name, captures)
+        record_finding = _finding(refused, "A bound retention record validates")
+        assert refused["state"] == "partial" and record_finding["value"] == {"refusal": code}, name
+        assert record_finding["evidence_status"] == "not_established" and "expected_not_established" not in record_finding
+        assert _finding(refused, "A real measurement with raw bytes")["value"] == 0
+
+
 def test_uncertainty_budget_classifies_limiting_terms(section):
     _, reports = section
     report = reports["T140"]
     budget = _finding(report, "Uncertainty budget per predicted quantity")["value"]
     assert budget["cylinder gap, 90 deg pair"]["dominant"] == "instrument"
+    # A measured gap is the film surface distance minus the camera chord: both instruments enter.
+    assert budget["cylinder gap, 90 deg pair"]["instrument"] == pytest.approx(math.hypot(0.05, mfg.PAIR_U), rel=1e-12)
     assert budget["coupon focal distance (conditioned on the measured start pose)"]["dominant"] == "geometry"
     assert budget["coupon separation at L, 5 mrad heading offset (open-loop start)"]["dominant"] == "execution"
     assert budget["coarse-solver control (6 RK4 steps)"]["dominant"] == "solver"
+    # Open loop, each tape is laid after its own seating of the start jig: the execution term carries the insert
+    # and laying error and the re-seating of the jig, in quadrature; conditioned rows measure the pose instead.
+    for name, row in budget.items():
+        if "(open-loop start)" in name:
+            terms = row["execution_terms"]
+            assert set(terms) == {"insert_and_laying", "jig_reseating"} and min(terms.values()) > 0.0, name
+            assert math.hypot(*terms.values()) == pytest.approx(row["execution"], rel=1e-12), name
+        else:
+            assert "execution_terms" not in row, name
+    assert mfg.EXECUTION["lateral_mm"] == pytest.approx(math.hypot(0.05, math.sqrt(2) * 0.01), rel=1e-12)
+    assert mfg.EXECUTION["heading_rad"] == pytest.approx(math.hypot(5e-4, math.sqrt(2) * 1e-4), rel=1e-12)
     plate = budget["plate separation at 240 mm, 5 mrad heading offset (open-loop start)"]
     assert plate["value"] == pytest.approx(1.2, abs=1e-12) and 0.0 < plate["geometry"] < 1e-5
     assert _finding(report, "On the coupon, the heading-offset separation")["evidence_status"] == "numerically_verified"
@@ -606,25 +1130,41 @@ def test_uncertainty_budget_classifies_limiting_terms(section):
 def test_production_acceptance_stays_outside_the_system(section):
     _, reports = section
     report = reports["T141"]
+    assert report["state"] == "completed"
     api = _finding(report, "No basis establishes a claim filed in an authority domain")
     assert api["evidence_status"] == "numerically_verified"
     assert api["value"]["basis_domain_cases"] == 64 * len(AUTHORITY_DOMAINS) and api["value"]["violations"] == 0
-    loophole = _finding(report, "evidence.finding establishes an acceptance statement")
-    assert loophole["value"] == "numerically_verified" and "counterexample" in loophole
+    assert api["value"]["refusals"] == len(api["basis"]["checks"]) - 1
+    refs = {c["reference"]: c for c in api["basis"]["checks"]}
+    only_section = refs["section screen: 'Coupon lot scrapped', which evidence.finding accepts"]
+    assert only_section["passed"] and only_section["observed_refusal"] == "acceptance_outside_authority_domain"
+    # The loophole T141 recorded is closed: evidence.finding refuses the statement in a computational domain, and
+    # the task records that refusal instead of an established acceptance statement.
+    closed = _finding(report, "evidence.finding and validate_finding refuse an acceptance or rejection statement")
+    assert closed["evidence_status"] == "numerically_verified" and closed["value"] == len(closed["basis"]["checks"]) == 4
+    assert all(c["observed_refusal"] == "authority_outcome_refused" for c in closed["basis"]["checks"])
+    assert "loophole" in closed["counterexample"]["statement"]
+    assert not [f for f in report["findings"] if f["claim"].startswith("evidence.finding establishes")]
+    passing = {"reference_kind": "analytic", "reference": "r", "observed": 0.0, "tolerance": 1.0, "passed": True}
+    with pytest.raises(EvidenceRefusal, match="authority outcome"):
+        finding("Coupon lot accepted for production", "computational_pipeline", "accepted", {"checks": [passing]})
+    # What stays open is recorded: a paraphrase outside both vocabularies is still labelled by its checks.
+    paraphrase = _finding(report, "A paraphrased acceptance statement outside both screened vocabularies")
+    assert paraphrase["evidence_status"] == "numerically_verified" and paraphrase["value"] == "numerically_verified"
+    assert paraphrase["counterexample"]["statement"] == "The lab API cannot mark production acceptance"
+    assert finding(mfg.PARAPHRASE, "computational_pipeline", 1.0, {"checks": [passing]})["evidence_status"] \
+        == "numerically_verified"
     note = _finding(report, "Domain assignment of free-text claims is machine-checked")
     assert note["evidence_status"] == "not_established" and note["expected_not_established"] is True
-    passing = {"reference_kind": "analytic", "reference": "r", "observed": 0.0, "tolerance": 1.0, "passed": True}
-    statement = finding("Coupon lot accepted for production", "computational_pipeline", "accepted", {"checks": [passing]})
-    assert rec.refusal_code(rec.screen_acceptance_language, [statement]) == "acceptance_outside_authority_domain"
-    refs = {c["reference"]: c for c in api["basis"]["checks"]}
-    rejection_check = refs["rejection statement filed in a computational domain (section screen)"]
-    assert rejection_check["passed"] and rejection_check["observed_refusal"] == "acceptance_outside_authority_domain"
-    assert api["value"]["refusals"] == len(api["basis"]["checks"]) - 1
+    assert "evidence.screen_authority_claim" in note["basis"]["notes"]
+    # Both screens: the core one refuses these decisions at finding(); the section one refuses the rest.
     for claim in ("Coupon lot rejected for production", "Coupon lot rejected", "Coupon lot scrapped",
                   "Coupon lot quarantined", "Coupon lot passes acceptance", "Coupon lot passed inspection",
                   "Coupon lot conforms and is released to production"):
-        decision = finding(claim, "computational_pipeline", "ok", {"checks": [passing]})
-        assert decision["evidence_status"] == "numerically_verified"
+        try:
+            decision = finding(claim, "computational_pipeline", "ok", {"checks": [passing]})
+        except EvidenceRefusal:
+            continue
         assert rec.refusal_code(rec.screen_acceptance_language, [decision]) == "acceptance_outside_authority_domain", claim
     topic = finding("Acceptance criteria are hypotheses", "computational_pipeline", 1.0, {"checks": [passing]})
     assert rec.screen_acceptance_language([topic]) == ["Acceptance criteria are hypotheses"]

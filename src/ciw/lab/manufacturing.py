@@ -1,21 +1,28 @@
 """Manufacturing and robotic use cases T126-T141: protocols, path sensitivities, rankings and boundaries.
 
-Scope: machine-readable measurement protocols for a flat-plate, a rolled-
-cylinder and a domed-coupon control experiment and for the as-built scan of
-the coupon; metrology procedures (curvature sampling, as-built dome fit,
-registration, calibration artifacts, datum frames, Gage R&R and type-1
-procedures); model sensitivities of tape placement, filament winding, coating or
-welding and robotic inspection paths from the Jacobi transfer; path rankings
-by calibration tolerance and focus margin; uncertainty budgets; the retention
-schema for future measurements; and the production-acceptance boundary.
+Scope: machine-readable measurement protocols a technician can execute as
+written (declared fixtures including the tape start jig, datum schemes,
+instrument settings, numbered steps, raw formats of the instrument exports)
+for a flat-plate, a rolled-cylinder and a domed-coupon control experiment and
+for the as-built scan of the coupon; metrology procedures (curvature sampling,
+as-built dome fit, registration, calibration artifacts, datum frames, Gage R&R
+and type-1 procedures); model sensitivities of tape placement, filament
+winding, coating or welding and robotic inspection paths from the Jacobi
+transfer; path rankings by calibration tolerance, focus margin and focal
+clearance ratio; uncertainty budgets; the reader and comparison of operator
+captures in the protocols' raw formats; the retention schema for future
+measurements; and the production-acceptance boundary.
 
 Non-claims: nothing in this section is measured. Every specimen, instrument
 uncertainty, friction coefficient, steering limit and tolerance is a declared
 input. Predictions are labelled from their computational basis; every claim
-about a physical part, a real instrument, a real calibration, machine safety
-or production acceptance is recorded as a ``not_established`` finding in its
-physical or authority domain. Hardware-evidence slots in the protocols are
-empty, and the workbench never accepts or rejects production parts.
+about a physical part, a real instrument, a real calibration, machine safety,
+customer demand or production acceptance is recorded as a ``not_established``
+finding in its physical or authority domain. An operator capture is read,
+retained and compared computationally but is not authenticated, and no
+metrology instrument probe exists, so it never supports a physical label.
+Hardware-evidence slots in the protocols are empty, and the workbench never
+accepts or rejects production parts.
 """
 from __future__ import annotations
 
@@ -23,10 +30,12 @@ from copy import deepcopy
 import functools
 import hashlib
 import itertools
+import json
 import math
 
 import numpy as np
 
+from .. import __version__
 from . import integrators, jacobi, svg
 from . import manufacturing_geometry as geo
 from . import manufacturing_metrology as met
@@ -47,17 +56,36 @@ SEED = 20260926
 # any device; the protocols mark them declared_not_verified.
 INSTRUMENTS = {
     "camera": {"id": "camera", "kind": "photogrammetry camera system with coded targets",
-               "declared_standard_uncertainty_mm": 0.02, "status": "declared_not_verified"},
+               "declared_standard_uncertainty_mm": 0.02, "status": "declared_not_verified",
+               "settings": {"stations": "12 convergent stations: 4 heights x 3 roll angles",
+                            "targets": "6 mm coded retro-reflective targets", "scale": "SB-1000 in every image set",
+                            "reference": "the holder's datum targets (coded adapters in their SMR nests) in every "
+                                         "image set, so image sets taken while different tapes are on the specimen "
+                                         "share the FIXTURE frame; the declared uncertainty covers a target "
+                                         "coordinate in that frame, registration of its image set included",
+                            "exposure": "fixed exposure with ring flash; lossless images"}},
     "tracker": {"id": "tracker", "kind": "laser tracker with 1.5 in SMR",
                 "declared_standard_uncertainty_mm": 0.015, "length_dependent_um_per_m": 6.0,
-                "status": "declared_not_verified"},
+                "status": "declared_not_verified",
+                "settings": {"target": "1.5 in SMR", "mode": "stable point, 2 s averaging", "warm_up_h": 1}},
     "cmm": {"id": "cmm", "kind": "bridge CMM with touch-trigger probe",
-            "declared_standard_uncertainty_mm": 0.002, "status": "declared_not_verified"},
+            "declared_standard_uncertainty_mm": 0.002, "status": "declared_not_verified",
+            "settings": {"probe": "touch-trigger probe, 2 mm ruby stylus", "approach_speed_mm_s": 3.0,
+                         "qualification": "stylus qualified on GS-25.4 at the start of each session",
+                         "points": "as listed in each procedure step"}},
     "scanner": {"id": "scanner", "kind": "laser line scanner", "declared_standard_uncertainty_mm": 0.01,
-                "native_point_spacing_mm": 0.05, "status": "declared_not_verified"},
+                "native_point_spacing_mm": 0.05, "status": "declared_not_verified",
+                "settings": {"standoff_mm": 100.0, "max_incidence_deg": 30.0, "point_spacing_mm": 0.05,
+                             "exposure": "automatic per pass, logged with the pass"}},
+    "film": {"id": "film", "kind": "unrolled-film gauge: flexible polyester film with a printed 0.5 mm scale",
+             "declared_standard_uncertainty_mm": 0.05, "status": "declared_not_verified",
+             "settings": {"graduation_mm": 0.5, "reading": "10x loupe at both marker centres",
+                          "laying": "laid from marker to marker without tension or in-plane steering"}},
 }
 COVERAGE_K = 2.0
 PAIR_U = math.sqrt(2.0) * INSTRUMENTS["camera"]["declared_standard_uncertainty_mm"]
+# A measured chord-geodesic gap: film surface distance minus camera chord.
+GAP_U = math.hypot(INSTRUMENTS["film"]["declared_standard_uncertainty_mm"], PAIR_U)
 
 
 # Common builders ---------------------------------------------------------------
@@ -138,17 +166,101 @@ FRAME_CHAIN = [
     {"parent": "FIXTURE", "child": "PART", "source": "3-2-1 datum frame from probed A/B/C features"},
     {"parent": "PART", "child": "CAD", "source": "nominal model placement in the datum frame (declared)"},
 ]
+AXIS_FRAME_SOURCE = "axis-primary datum frame: cylinder-fit axis A, axial scribe B, end face C"
+# Layout of what sits on a specimen (mm). Tapes are 3 mm wide; coded targets and specimen markers are 6 mm. An
+# offset tape starts 2 mm from the nominal one, and on the coupon every lateral offset crosses the nominal tape
+# at the focus, so no two tapes of a protocol can lie on the specimen together: each is laid from its own jig
+# insert, measured and removed before the next, all in the PART frame of the specimen's own datums.
+TAPE_WIDTH_MM = 3.0
+TARGET_DIAMETER_MM = 6.0
+MARKER_DIAMETER_MM = 6.0
+TAPE_LAYOUT = {"tape_width_mm": TAPE_WIDTH_MM, "target_diameter_mm": TARGET_DIAMETER_MM,
+               "marker_diameter_mm": MARKER_DIAMETER_MM,
+               "sequence": "one tape on the specimen at a time: seat the start jig with that tape's insert, lay the "
+                           "tape, remove the jig, measure the tape and its targets (with re-seated replicates) and "
+                           "remove them before the next tape is laid; every tape is measured in the PART frame of the "
+                           "specimen's own datums",
+               "rules": "tapes on the specimen together: centrelines at least a tape width plus a target diameter "
+                        "apart; slots used in one laying: at least one slot width apart; every tape centreline clears "
+                        "each specimen marker and datum probe point by half the wider of tape and target plus half a "
+                        "marker (manufacturing_records._tape_layout, on the predicted centrelines)"}
+# Datum schemes. A plate or a formed coupon rests on its back face (3-2-1); a tube has no face to rest on,
+# so its primary datum is the axis of a fitted cylinder and the frame is built axis first.
 DATUMS = [
-    {"id": "A", "role": "primary", "feature": "specimen back face (or mandrel axis for the cylinder)",
-     "points": 3, "constrains": "z translation, rotations about x and y"},
-    {"id": "B", "role": "secondary", "feature": "long reference edge (or axial scribe line)",
-     "points": 2, "constrains": "y translation, rotation about z"},
-    {"id": "C", "role": "tertiary", "feature": "end stop (or circumferential scribe)", "points": 1,
-     "constrains": "x translation"},
+    {"id": "A", "role": "primary", "feature": "specimen back face", "points": 3,
+     "constrains": "z translation, rotations about x and y"},
+    {"id": "B", "role": "secondary", "feature": "long reference edge", "points": 2,
+     "constrains": "y translation, rotation about z"},
+    {"id": "C", "role": "tertiary", "feature": "end stop face", "points": 1, "constrains": "x translation"},
     {"id": "PART", "role": "datum reference frame", "feature": "3-2-1 construction",
-     "definition": "z normal of A; x = B direction projected into A; origin on A, B plane and C plane "
+     "definition": "z normal of plane A; x = B direction projected into A; origin on A, B plane and C plane "
                    "(ciw.lab.manufacturing_metrology.datum_frame_321)"},
 ]
+# The tube lies in VB-01 with scribe B straight up; the vees sit between the marker rings and touch the tube 45 deg
+# either side of the bottom, where the seam weld faces down. Only the upper half (within 90 deg of B) is
+# accessible to the camera, tracker and CMM. Datum A is probed between markers on that half, at angles clear of
+# both helix tapes (which start 72 deg from B on end face C and cross the rings between markers).
+CYLINDER_RINGS_MM = (50.0, 150.0, 250.0)
+ACCESSIBLE_ARC_DEG = 90.0
+DATUM_A_ANGLES_DEG = (-75.0, -15.0, 45.0, 75.0)
+SCRIBE_POINTS_MM = (40.0, 260.0)
+HELIX_START_DEG = -72.0
+ROUNDNESS_TOLERANCE_MM = 0.1
+
+
+def axis_probe_points() -> dict:
+    """Chart points (phi rad, z mm) the CMM probes for datum A (four per ring, between markers) and B (scribe)."""
+    return {"A": [(math.radians(angle), z) for z in CYLINDER_RINGS_MM for angle in DATUM_A_ANGLES_DEG],
+            "B": [(0.0, z) for z in SCRIBE_POINTS_MM]}
+
+
+def _cylinder_points(chart) -> list:
+    return [[round(float(v), 6) for v in geo.CYLINDER.embedding(np.asarray(u, dtype=float))] for u in chart]
+
+
+AXIS_DATUMS = [
+    {"id": "A", "role": "primary", "feature": "tube axis: least-squares cylinder through CMM points on the three marker "
+     "rings (z = 50, 150, 250 mm) at phi = -75, -15, 45 and 75 deg from scribe B: between markers, on the upper half "
+     "that faces away from the vees, clear of the tapes", "points": len(axis_probe_points()["A"]),
+     "constrains": "x and y translation, rotations about x and y",
+     "construction": "ciw.lab.manufacturing_metrology.fit_cylinder",
+     "probe_points_mm": _cylinder_points(axis_probe_points()["A"])},
+    {"id": "B", "role": "secondary", "feature": "axial scribe line at phi = 0, probed at z = 40 and 260 mm", "points": 2,
+     "constrains": "rotation about z", "probe_points_mm": _cylinder_points(axis_probe_points()["B"])},
+    {"id": "C", "role": "tertiary", "feature": "end face at z = 0", "points": 3, "constrains": "z translation"},
+    {"id": "PART", "role": "datum reference frame", "feature": "axis-primary construction",
+     "definition": "z along the fitted axis A, pointing from end face C into the tube; origin where A meets plane C; "
+                   "x from the axis towards scribe B, perpendicular to z "
+                   "(ciw.lab.manufacturing_metrology.datum_frame_axis)"},
+]
+
+
+def _datum_targets(prefix, positions, frame) -> list:
+    return [{"id": f"{prefix}-T{k}", "position_mm": list(position), "frame": frame,
+             "nest": "1.5 in SMR nest", "adapters": ["1.5 in SMR (tracker)",
+                                                     "coded photogrammetry target adapter with the same centre (camera)"]}
+            for k, position in enumerate(positions, start=1)]
+
+
+NEST = {"id": "FX-321", "kind": "3-2-1 kinematic nest", "locates": ["A", "B", "C"],
+        "contacts": "three 12 mm spherical rests on A, two cylindrical side stops on B, one end stop on C",
+        "geometry": "rests at 10% and 90% of the specimen length under A; side stops 200 mm apart along B; a 400 x 400 mm "
+                    "base plate",
+        "clamping": "normal to A, over the rests, torque declared per specimen",
+        "datum_targets": _datum_targets("FX-321", [(-200.0, -200.0, 0.0), (200.0, -200.0, 0.0), (200.0, 200.0, 0.0),
+                                                   (-200.0, 200.0, 0.0)],
+                                        "FIXTURE: base plate centre, z up (declared)")}
+V_BLOCKS = {"id": "VB-01", "kind": "V-block pair (90 deg vees) with an end stop", "locates": ["A", "C"],
+            "contacts": "two 90 deg vees give four line contacts on the tube (A), 45 deg either side of the bottom; an end "
+                        "stop touches the end face (C); the tube is turned until the axial scribe (B) faces straight up, "
+                        "away from the vees, which puts the seam weld at the bottom between the vee contact lines",
+            "geometry": "vee centres 100 mm and 200 mm from the end stop, between the marker rings at 50, 150 and 250 mm, "
+                        "so no ring rests in a vee; the upper half of the tube (within 90 deg of scribe B) stays open to "
+                        "the camera, tracker and CMM; a 360 x 200 mm base plate",
+            "clamping": "one strap over each vee, torque declared per specimen",
+            "datum_targets": _datum_targets("VB-01", [(-30.0, -100.0, 0.0), (330.0, -100.0, 0.0), (330.0, 100.0, 0.0),
+                                                      (-30.0, 100.0, 0.0)],
+                                            "FIXTURE: x along the tube axis from the end stop, z up (declared)")}
 REQUIRED_RAW = [
     "raw camera images (lossless) with exposure metadata and SHA-256 digests",
     "tracker/CMM native point files with instrument serial and firmware",
@@ -167,47 +279,258 @@ ENVIRONMENT = {"temperature_C": "20 +/- 1 (declared)", "soak_time_h": 4,
 # Paths are realized physically as geodesics, not drawn from the model: a robot tracing the
 # computed offset path would reproduce its own program, and the comparison would test only
 # the robot. The realized start pose is measured and the prediction conditioned on it.
-PATH_REALIZATION = ("centreline of a 3 mm unsteered adhesive tape laid from a start jig that sets the start point and "
-                    "heading; with no in-plane steering the tape follows a geodesic")
-PATH_PROCEDURE = ("Lay the nominal and offset tapes from the start jig without in-plane steering (a robot may carry the "
-                  "tape head but must not steer it); never draw a path traced from the model.")
+START_JIG = "JIG-START-01"
+PATH_REALIZATION = ("centreline of a 3 mm unsteered adhesive tape laid from the slot of its own insert of the start jig "
+                    "JIG-START-01, which sets the start point and heading; with no in-plane steering the tape follows a "
+                    "geodesic")
 START_POSE_PROCEDURE = ("Probe each tape centreline with the CMM at s = 0 and s = 20 mm; the relative start offset and "
                         "heading of the offset tape condition the prediction (T138).")
-# Declared relative start-pose error of the offset tape (jig and laying), and the uncertainty of
-# its CMM estimate: offset sqrt(2) u_cmm, heading 2 u_cmm / 20 mm (difference of two headings).
-EXECUTION = {"lateral_mm": 0.05, "heading_rad": 5e-4, "status": "declared_not_verified",
-             "source": "start jig and unsteered tape laying, relative pose of the offset tape"}
+# Declared relative start-pose error of an offset tape: its insert and the laying, and the re-seating of the jig
+# (each tape is laid after its own seating, so the relative pose carries two seatings). The CMM estimate of the
+# pose has offset sqrt(2) u_cmm and heading 2 u_cmm / 20 mm (difference of two headings).
+EXECUTION_INSERT = {"lateral_mm": 0.05, "heading_rad": 5e-4, "status": "declared_not_verified",
+                    "source": "slot insert and unsteered tape laying, relative pose of the offset tape"}
+JIG_RESEAT = {"lateral_mm": 0.01, "heading_rad": 1e-4, "status": "declared_not_verified",
+              "source": "re-seating the start jig against datums B and C, 1 sigma per seating"}
+RESEAT_RELATIVE = {"lateral_mm": math.sqrt(2.0) * JIG_RESEAT["lateral_mm"],
+                   "heading_rad": math.sqrt(2.0) * JIG_RESEAT["heading_rad"]}
+EXECUTION = {"lateral_mm": math.hypot(EXECUTION_INSERT["lateral_mm"], RESEAT_RELATIVE["lateral_mm"]),
+             "heading_rad": math.hypot(EXECUTION_INSERT["heading_rad"], RESEAT_RELATIVE["heading_rad"]),
+             "status": "declared_not_verified",
+             "source": "relative start pose of the offset tape: insert and laying (0.05 mm, 0.5 mrad) and two seatings "
+                       "of the start jig (0.01 mm, 0.1 mrad each)",
+             "terms": {"insert_and_laying": {k: EXECUTION_INSERT[k] for k in ("lateral_mm", "heading_rad")},
+                       "jig_reseating": dict(RESEAT_RELATIVE)}}
 START_POSE_U = {"lateral_mm": math.sqrt(2.0) * INSTRUMENTS["cmm"]["declared_standard_uncertainty_mm"],
                 "heading_rad": 2.0 * INSTRUMENTS["cmm"]["declared_standard_uncertainty_mm"] / 20.0,
                 "source": "CMM centreline points at s = 0 and 20 mm on both tapes"}
-EXECUTION_CLAIM = ("The start jig and tape laying realize the relative start pose of the offset tape within the declared "
-                   "0.05 mm and 0.5 mrad")
+EXECUTION_CLAIM = ("The start jig realizes the relative start pose of the offset tape within the declared 0.05 mm and "
+                   "0.5 mrad of its insert and the laying and 0.01 mm and 0.1 mrad per seating of the jig")
+TARGET_CAPTURE = "ciw.lab-mfg-target-capture.v1"
+DISTANCE_CAPTURE = "ciw.lab-mfg-distance-capture.v1"
+
+
+def start_jig(paths, contacts) -> dict:
+    """The start jig of a tape protocol: one single-slot insert per path, offset from the nominal slot as declared.
+
+    One tape is laid per seating: the jig is seated against datums B and C
+    with the insert of that tape, the tape laid and the jig removed. It is not
+    verified before laying: the start-pose step probes every laid tape, and
+    the prediction is budgeted open loop (insert, laying and re-seating terms)
+    or conditioned on that pose.
+    """
+    base = next(path for path in paths if "realization" in path)
+    slots = [{"slot": base["id"], "insert": f"insert {base['id']}", "lateral_offset_mm": 0.0, "heading_offset_rad": 0.0}]
+    slots += [{"slot": path["id"], "insert": f"insert {path['id']}", "lateral_offset_mm": path.get("lateral_offset_mm", 0.0),
+               "heading_offset_rad": path.get("heading_offset_rad", 0.0)} for path in paths if path.get("of") == base["id"]]
+    return {"id": START_JIG, "kind": "tape start jig with one single-slot insert per tape", "locates": ["B", "C"],
+            "contacts": contacts,
+            "geometry": {"slots": slots, "slot_width_mm": 3.05, "slot_length_mm": 20.0, "slots_per_insert": 1,
+                         "offsets": "each insert's slot centreline is offset laterally and rotated in heading from the "
+                                    "nominal slot at the slot exit, where the tape leaves the jig"},
+            "use": "one tape per seating: seat the jig against B and C with the insert of the tape to be laid, lay that "
+                   "tape, remove the jig; re-seat it for the next tape after the previous one is removed",
+            "declared_realization_tolerance": {"lateral_mm": EXECUTION_INSERT["lateral_mm"],
+                                               "heading_rad": EXECUTION_INSERT["heading_rad"],
+                                               "level": "1 sigma, relative pose of an offset insert's tape (insert and "
+                                                        "laying)",
+                                               "status": "declared_not_verified"},
+            "declared_reseat_repeatability": {"lateral_mm": JIG_RESEAT["lateral_mm"],
+                                              "heading_rad": JIG_RESEAT["heading_rad"],
+                                              "level": "1 sigma per seating against B and C; two seatings enter the "
+                                                       "relative pose of an offset tape",
+                                              "status": "declared_not_verified"},
+            "verification": "no pre-laying check: the start-pose step probes each laid tape with the CMM at s = 0 and "
+                            "20 mm, and the prediction is budgeted open loop or conditioned on that pose (T138, T140)"}
+
+
+def tape_centreline(surface, start, heading, length, lateral=0.0, dheading=0.0, spacing=5.0) -> list:
+    """Predicted 3D centreline of a tape (exact start perturbation, RK4 at about 1 mm), sampled every ``spacing`` mm.
+
+    Used by the protocol's layout checks: chords between these points never
+    exceed surface distances, so a clearance computed from them is conservative.
+    """
+    samples = max(1, round(length / spacing))
+    y0 = jacobi.perturbed_start(surface, start, heading, lateral=lateral, heading_change=dheading)
+    states = integrators.integrate_fixed(surface.geodesic_rhs, y0, length, 5 * samples, "rk4")[1][::5]
+    return [[round(float(v), 4) for v in surface.embedding(y[:2])] for y in states]
+
+
+def capture_format(role, schema, instrument, ids, reader) -> dict:
+    """A raw format an operator capture of ``role`` must follow (manufacturing_records.read_capture)."""
+    return {"role": role, "schema": schema, "media_type": "text/csv", "instrument": instrument,
+            "frame": "CAD" if schema == TARGET_CAPTURE else "surface",
+            "header": "lines '# key: value' for " + ", ".join(rec.CAPTURE_HEADER) + "; unit mm; origin measurement "
+                      "or synthetic (a synthetic capture starts with '" + rec.SYNTHETIC_CAPTURE_PREFIX.decode() + "')",
+            "columns": list(rec.CAPTURE_SCHEMAS[schema]), "ids": list(ids), "reader": reader,
+            "coordinates": "CAD (model) frame through the declared PART -> CAD placement" if schema == TARGET_CAPTURE
+                           else "surface distance between the two marker centres of the pair",
+            "uncertainty": "u_mm is the declared standard uncertainty of each row (positive); for targets, of each "
+                           "coordinate in the common frame, including the registration of its image set"}
+
+
+def _step(action, uses, outputs, datums=(), check=None, key=None, lays=(), places=(), removes=()) -> dict:
+    """A procedure step; ``key`` lets a repeat step refer to it before steps are numbered."""
+    record = {"action": action, "uses": list(uses), "outputs": list(outputs)}
+    if datums:
+        record["datums"] = list(datums)
+    if check:
+        record["check"] = check
+    for name, value in (("lays", lays), ("places", places), ("removes", removes)):
+        if value:
+            record[name] = list(value)
+    if key:
+        record["_key"] = key
+    return record
+
+
+def _repeat(keys, holder, what) -> dict:
+    """A repeat of earlier measurement steps (by key), numbered and worded when the protocol is assembled."""
+    return {"_repeat": list(keys), "_what": what, "uses": [holder], "outputs": [f"two further replicates ({what})"]}
+
+
+def _listing(numbers) -> str:
+    text = [str(n) for n in numbers]
+    return text[0] if len(text) == 1 else ", ".join(text[:-1]) + " and " + text[-1]
+
+
+CHECK_TEXT = {"camera": "the camera images SB-1000", "tracker": "the tracker measures the SB-1000 end points with its SMR",
+              "cmm": "the CMM probes GS-25.4 at 25 points", "scanner": "the scanner scans GS-25.4",
+              "film": "the film is read against the SG-200 steps at 50, 100 and 150 mm"}
+
+
+def _verification_step(instruments, when) -> dict:
+    uses = sorted({"GS-25.4", "SB-1000"} | ({"SG-200"} if "film" in instruments else set()))
+    return _step(f"Check the instruments {when} the acquisition: " + "; ".join(CHECK_TEXT[key] for key in instruments)
+                 + ". Retain every check.", [*instruments, *uses], [f"instrument checks {when} the acquisition"],
+                 check="each artifact reading lies within 2 U of its certificate value, U from the declared instrument "
+                       "uncertainty; otherwise stop and recalibrate")
+
+
+def roundness_threshold() -> float:
+    """Largest recorded ring roundness the cylinder model accepts: form tolerance plus 2 U (k = 2) of the CMM."""
+    return ROUNDNESS_TOLERANCE_MM + 2.0 * COVERAGE_K * INSTRUMENTS["cmm"]["declared_standard_uncertainty_mm"]
+
+
+def locate_step(holder) -> dict:
+    if holder["id"] == V_BLOCKS["id"]:
+        angles = ", ".join(f"{a:g}" for a in DATUM_A_ANGLES_DEG)
+        return _step(f"Lay the tube in VB-01 (V-block pair) with the end face against the end stop and the axial scribe "
+                     f"B facing straight up, away from the vees; clamp; probe datum A with the CMM at phi = {angles} deg "
+                     f"from scribe B on each marker ring (between markers), scribe B at z = 40 and 260 mm and end face "
+                     "C at 3 points; fit the axis A (fit_cylinder), record the fitted radius and the roundness of each "
+                     "ring over the probed arc (peak to valley of the radial residuals), and build the PART frame "
+                     "(datum_frame_axis).",
+                     ["VB-01", "cmm"], ["datum point file", "fitted axis and radius", "roundness of each ring",
+                                        "PART frame"], ("A", "B", "C", "PART"),
+                     check=f"every ring's roundness is at most the declared form tolerance {ROUNDNESS_TOLERANCE_MM:g} mm "
+                           f"plus 2 U of the CMM ({roundness_threshold():.3f} mm); otherwise stop and record the tube as "
+                           "outside the cylinder model (seam weld and out-of-roundness are not modelled); re-seating "
+                           "does not change the form", key="locate")
+    return _step("Locate the specimen in FX-321 (3-2-1 nest); clamp; probe datum A (3 points), B (2 points) and C "
+                 "(1 point) with the CMM and build the PART frame (datum_frame_321).", ["FX-321", "cmm"],
+                 ["datum point file", "PART frame"], ("A", "B", "C", "PART"), key="locate")
 
 
 def build_protocol(task_id, protocol_id, title, purpose, specimen, markers, paths, predicted, criteria,
-                   instruments, procedure, extra=None) -> dict:
+                   instruments, procedure, raw_formats, holder=NEST, extra=None) -> dict:
+    """A validated ciw.lab-measurement-protocol.v1 record; ``procedure`` holds the protocol's own steps.
+
+    Common steps surround them: soak, instrument checks before, locating the
+    specimen in its holder and building the PART frame (key ``locate``) and,
+    after them, instrument checks and retention. Repeat steps in ``procedure``
+    name earlier steps by key and are numbered and worded here. The start jig
+    is declared as a fixture, and the tape layout recorded, whenever a path
+    is a tape.
+    """
+    axis = holder["id"] == V_BLOCKS["id"]
+    fixtures = [deepcopy(holder)]
+    tapes = any(path.get("kind") == "tape" for path in paths)
+    if tapes:
+        fixtures.append(start_jig(paths, "a vee foot on the tube, a pointer on the axial scribe B and a stop against "
+                                         "end face C" if axis else
+                                  "two dowel pins against datum B and a stop face against datum C"))
+    steps = [_step("Soak the specimen and its holder for 4 h at 20 +/- 1 C; log air and part temperature every "
+                   "10 min.", [holder["id"]], ["environment log with an explicit UTC offset"]),
+             _verification_step(instruments, "before"), locate_step(holder), *deepcopy(procedure),
+             _verification_step(instruments, "after"),
+             _step("Retain every raw file, replicate and instrument check with its T139 retention record "
+                   "(ciw.lab-measurement-retention.v1).", [], ["retained raw data and retention records"])]
+    numbers = {step["_key"]: index for index, step in enumerate(steps, start=1) if "_key" in step}
+    numbered = []
+    for index, step in enumerate(steps, start=1):
+        step.pop("_key", None)
+        if "_repeat" in step:
+            repeats = [numbers[key] for key in step.pop("_repeat")]
+            what = step.pop("_what")
+            # A repeat uses the holder it re-seats the specimen in and every device of the steps it repeats.
+            uses = list(dict.fromkeys([*step["uses"], *(name for n in repeats for name in steps[n - 1]["uses"])]))
+            step = {"action": f"Repeat steps {_listing(repeats)} twice more, removing the specimen from {holder['id']} "
+                              f"and re-seating it between repeats ({what}).", "repeats": repeats,
+                    **dict(step, uses=uses)}
+        numbered.append(dict(step=index, **step))
+    chain = deepcopy(FRAME_CHAIN)
+    if axis:
+        chain[2]["source"] = AXIS_FRAME_SOURCE
     record = {"schema": rec.PROTOCOL_SCHEMA, "protocol_id": protocol_id, "task_id": task_id, "title": title,
-              "purpose": purpose, "specimen": specimen,
-              "fixtures": [{"id": "FX-321", "kind": "3-2-1 kinematic nest",
-                            "contacts": "three spherical rests on A, two on B, one on C",
-                            "clamping": "normal to A, over the rests, torque declared per specimen"}],
-              "datum_frames": deepcopy(DATUMS), "frame_chain": deepcopy(FRAME_CHAIN), "markers": markers,
+              "purpose": purpose, "specimen": specimen, "fixtures": fixtures,
+              "datum_frames": deepcopy(AXIS_DATUMS if axis else DATUMS), "frame_chain": chain, "markers": markers,
               "paths": paths, "instruments": [deepcopy(INSTRUMENTS[key]) for key in instruments],
-              "required_raw_data": list(REQUIRED_RAW), "calibration_artifacts": deepcopy(CALIBRATION_ARTIFACTS),
-              "environment": dict(ENVIRONMENT),
-              "procedure": ["Soak specimen and fixture; log temperatures.",
-                            "Verify instruments on GS-25.4 and SB-1000 before and after; retain both checks.",
-                            "Locate the specimen in FX-321; probe datums A, B, C and build the PART frame.",
-                            *procedure,
-                            "Repeat the full acquisition three times, removing and re-seating the specimen in FX-321 "
-                            "between repeats (repeatability replicates); the crossed Gage R&R and type-1 studies "
-                            "follow the separate T131 procedure (gage-rr-procedure.json). Retain every raw file "
-                            "through the T139 retention record."],
-              "predicted_quantities": predicted, "acceptance_criteria": criteria,
+              "required_raw_data": list(REQUIRED_RAW), "raw_formats": raw_formats,
+              "calibration_artifacts": deepcopy(CALIBRATION_ARTIFACTS), "environment": dict(ENVIRONMENT),
+              "procedure": numbered, "predicted_quantities": predicted, "acceptance_criteria": criteria,
               "hardware_measured": {"status": "not_acquired", "records": []},
               "production_acceptance": "outside_system"}
+    if tapes:
+        record["tape_layout"] = deepcopy(TAPE_LAYOUT)
     record.update(deepcopy(extra or {}))
     return rec.validate_protocol(record)
+
+
+def tape_paths(base, offsets, surface, start) -> list:
+    """The nominal tape path and its offset paths, each laid from its own jig insert, with predicted centrelines."""
+    length, heading = base["length_mm"], base["heading_rad"]
+    paths = [dict(base, kind="tape", realization=PATH_REALIZATION, uses=[START_JIG],
+                  centreline_mm=tape_centreline(surface, start, heading, length))]
+    return paths + [dict(offset, kind="tape", of=base["id"], uses=[START_JIG],
+                         centreline_mm=tape_centreline(surface, start, heading, length,
+                                                       offset.get("lateral_offset_mm", 0.0),
+                                                       offset.get("heading_offset_rad", 0.0)))
+                    for offset in offsets]
+
+
+def start_pose_ids(paths) -> list:
+    """Row identifiers of the start-pose capture: each tape centreline at s = 0 and s = 20 mm."""
+    return [f"{path['id']}-S{s}" for path in paths for s in (0, 20)]
+
+
+def tape_block(path, holder, places, rows=None) -> list:
+    """Steps for one tape: lay it alone, probe its start pose, place and image its targets, replicate, remove it."""
+    name = path["id"]
+    export = (f"export their coordinates as rows {rows} of the photogrammetry capture" if rows
+              else "retain their coordinates (no task reads them yet)")
+    return [
+        _step(f"Seat the start jig {START_JIG} against datums B and C with the insert of tape {name}; lay tape {name} "
+              "from its slot without in-plane steering (a robot may carry the tape head but must not steer it; never "
+              "draw a path traced from the model); remove the jig. No other tape is on the specimen.", [START_JIG],
+              [f"tape {name}: identity and laying time"], ("B", "C"), key=f"lay {name}", lays=[name]),
+        _step(f"Probe the centreline of tape {name} with the CMM at s = 0 and s = 20 mm; export the points as rows "
+              f"{name}-S0 and {name}-S20 of the cmm capture.", ["cmm"],
+              [f"cmm capture rows {name}-S0 and {name}-S20 (ciw.lab-mfg-target-capture.v1)"], key=f"pose {name}"),
+        _step(f"Place 6 mm coded targets on the centreline of tape {name} {places}.", [], [f"targets on tape {name}"],
+              places=[name]),
+        _step(f"Measure the targets on tape {name} with the camera, with SB-1000 and the {holder} datum targets "
+              f"(coded adapters) in every image set; {export}.", ["camera", "SB-1000", holder],
+              ["raw images", f"target coordinates of tape {name}"], key=f"image {name}"),
+        _repeat(["locate", f"pose {name}", f"image {name}"], holder,
+                f"replicates of tape {name}; the tape and its targets stay in place"),
+        _step(f"Remove the targets and tape {name}.", [], [f"tape {name} removed"], removes=[name])]
+
+
+def register_step(holder) -> dict:
+    return _step(f"Measure the four datum targets of {holder['id']} (a 1.5 in SMR seated on each) with the tracker to "
+                 "register FIXTURE in WORLD (frame chain).", [holder["id"], "tracker"],
+                 ["WORLD -> FIXTURE transform and its covariance"])
 
 
 def _predicted(identifier, quantity, value, unit, record):
@@ -226,6 +549,7 @@ def _protocol_findings(protocol, claim):
 
 # T126 flat plate ---------------------------------------------------------------------
 PLATE_PITCH = 60.0
+PLATE_TAPE_START = (-120.0, 30.0)   # between the marker rows y = 0 and y = 60
 # Shooting starts this far off the chord direction, so the heading is solved for, not assumed.
 SHOOTING_OFFSET_RAD = 0.1
 
@@ -260,6 +584,7 @@ def shoot_geodesic(surface, a, b, heading, horizon, steps=8, iterations=20) -> d
     return {"heading_rad": heading, "arclength_mm": arclength, "closure_mm": closure, "iterations": count}
 
 
+@functools.lru_cache(maxsize=1)
 def plate_study() -> dict:
     coords = [-120.0, -60.0, 0.0, 60.0, 120.0]
     markers = [np.array([x, y]) for y in coords for x in coords]
@@ -283,12 +608,15 @@ def plate_study() -> dict:
         rows.append({"pair": [f"M{i:02d}", f"M{j:02d}"], "geodesic_mm": geodesic, "chord_mm": chord,
                      "rk4_closure_mm": closure, "shooting_iterations": shot["iterations"],
                      "heading_minus_chord_direction_rad": heading_error})
-    control = jacobi.transfer(geo.PLATE, [-120.0, 0.0], 0.0, 240.0, steps=24)
+    # The tape paths run along y = 30, midway between two marker rows (the plane is homogeneous, so the
+    # prediction does not depend on where they run).
+    control = jacobi.transfer(geo.PLATE, list(PLATE_TAPE_START), 0.0, 240.0, steps=24)
     phi = control.matrix()
     phi_error = float(np.max(np.abs(phi - np.array([[1.0, 240.0], [0.0, 1.0]]))))
     stations = control.s[::6]
     lateral, dheading = 2.0, 0.005
-    nonlinear = geo.separation_nonlinear(geo.PLATE, [-120.0, 0.0], 0.0, 240.0, 24, lateral, dheading, base=control)
+    nonlinear = geo.separation_nonlinear(geo.PLATE, list(PLATE_TAPE_START), 0.0, 240.0, 24, lateral, dheading,
+                                         base=control)
     linear = geo.separation_linear(control, lateral, dheading)
     # On the plane the exactly rotated path separates as delta + s sin(dtheta).
     exact = lateral + control.s * math.sin(dheading)
@@ -340,18 +668,30 @@ def flat_plate_control(ctx):
         {"id": "H2", "status": "hypothesis", "statement": "Offset-path separation is constant (lateral) and linear in s (heading)",
          "test": "slope of heading-offset separation equals the heading difference measured at the start (CMM) within "
                  "2 sigma of the regression slope"}]
+    paths = tape_paths({"id": "N0", "start_u_mm": list(PLATE_TAPE_START), "heading_rad": 0.0, "length_mm": 240.0},
+                       [{"id": "L2", "lateral_offset_mm": 2.0}, {"id": "H5", "heading_offset_rad": 0.005}],
+                       geo.PLATE, PLATE_TAPE_START)
+    markers = [dict(m, kind="specimen marker", position_mm=[*m["u_mm"], 0.0]) for m in study["markers"]]
     protocol = build_protocol(
         "T126", "MFG-FLAT-PLATE-01", "Flat-plate zero-curvature control",
         "Establish the measurement chain on a specimen where chord, geodesic and Jacobi predictions are trivial, "
         "so any residual belongs to the instruments, frames or procedure.",
         {"kind": "flat plate", "material": "6082-T6 aluminium (declared)", "nominal_mm": [300.0, 300.0, 6.0],
          "surface_model": geo.PLATE.describe(), "declared_flatness_mm": 0.05},
-        study["markers"],
-        [{"id": "N0", "start_u_mm": [-120.0, 0.0], "heading_rad": 0.0, "length_mm": 240.0, "realization": PATH_REALIZATION},
-         {"id": "L2", "of": "N0", "lateral_offset_mm": 2.0}, {"id": "H5", "of": "N0", "heading_offset_rad": 0.005}],
-        predicted, criteria, ("camera", "tracker", "cmm"),
-        ["Measure all 25 coded markers with the camera (12 stations) and the CMM; retain raw files.",
-         PATH_PROCEDURE, START_POSE_PROCEDURE, "Measure tape centreline points every 30 mm with the camera."])
+        markers, paths, predicted, criteria, ("camera", "tracker", "cmm"),
+        [register_step(NEST),
+         _step("Measure all 25 coded markers with the camera (12 stations, SB-1000 and the FX-321 datum targets in every "
+               "image set) and probe their centres with the CMM; export the camera coordinates as the photogrammetry "
+               "capture.", ["camera", "cmm", "SB-1000", "FX-321"],
+               ["raw images", "photogrammetry capture (ciw.lab-mfg-target-capture.v1)", "CMM marker point file"],
+               key="markers"),
+         _repeat(["locate", "markers"], "FX-321", "replicates of the marker measurement"),
+         *[step for path in paths for step in tape_block(path, "FX-321", "every 30 mm from s = 0 to 240 mm")]],
+        [capture_format("photogrammetry", TARGET_CAPTURE, "camera", [m["id"] for m in study["markers"]],
+                        "ciw.lab.manufacturing_records.read_capture; T138 compares the 47 marker-pair chords"),
+         capture_format("cmm", TARGET_CAPTURE, "cmm", start_pose_ids(paths),
+                        "ciw.lab.manufacturing_records.read_capture; retained by T138, not yet used to condition the "
+                        "plate prediction")])
     ctx.artifact_json("protocol-flat-plate.json", protocol)
     ctx.artifact_json("plate-pairs.json", _r(study["pairs"]))
     ctx.artifact_text("plate-separation.svg", svg.line_plot(
@@ -377,22 +717,30 @@ def flat_plate_control(ctx):
         "For 47 marker pairs, find the geodesic distance by shooting (Newton on the miss distance with the Jacobi "
         "heading field, launched 0.1 rad off the chord direction; the arclength where the converged geodesic passes "
         "the other marker) and compare it with the chord; integrate the control path and its exact offset paths; "
-        "assemble and validate the ciw.lab-measurement-protocol.v1 record; mutate it nine ways and confirm each "
-        "mutation is refused.",
+        "assemble and validate the ciw.lab-measurement-protocol.v1 record (declared fixtures including the start jig, "
+        "instrument settings, numbered steps naming only declared devices and datums, raw formats of the captures); "
+        "mutate it and confirm each mutation is refused with its code.",
         f"max |chord - geodesic| = {study['max_gap_mm']:.3g} mm; max |Phi(240) - exact| = {study['phi_error']:.3g}; "
         f"heading-offset separation at 240 mm = {study['heading_separation_mm'][-1]:.4g} mm.",
         "Rounding only (flat metric, zero Christoffel symbols). Measurement uncertainty is declared, not known.",
         ["shooting from a wrong launch heading (solved by Newton)", "RK4 closure onto the target marker",
          "Wronskian drift", "nonlinear vs linear offset separation",
          "protocol with filled hardware slot but no acquisition", "acceptance criterion marked as a decision",
-         "prediction labelled hardware_measured", "instrument uncertainty claimed verified"],
+         "prediction labelled hardware_measured", "instrument uncertainty claimed verified",
+         "procedure step or path naming a jig, instrument or artifact the protocol does not declare",
+         "unnumbered procedure step, instrument without settings, raw format of an undeclared instrument",
+         "offset tapes laid together or from overlapping jig slots, a tape over a marker, a repeat that lays a tape, "
+         "datum targets of a fixture that declares none, a criterion naming an undeclared instrument (all refused)"],
         ["Real plate flatness (declared 0.05 mm) and thermal state are not measured; their effect is bounded "
          "only by the declared tolerance.",
          "Instrument uncertainties are declared planning values, not calibrated values.",
          "On the plane the chord-geodesic comparison is a zero-curvature sanity check of the shooting machinery: "
          "RK4 and the Jacobi heading field are exact there, so it cannot detect curvature errors."],
-        "Execute MFG-FLAT-PLATE-01 on hardware, retain it through a T139 measurement record, then compare the "
-        "marker-pair distances with the T138 pair comparator (compare_pair_distances, E_n per pair).")
+        "Acquire MFG-FLAT-PLATE-01 and bind its camera export to T138 (ciw lab run T138 --capture "
+        "photogrammetry=<targets.csv>, format ciw.lab-mfg-target-capture.v1), then retain the run with ciw lab hardware "
+        "retain; T138's pair comparison of the captured chords is computational, and a physical label needs a "
+        "metrology instrument probe or a signed-capture trust anchor (deferred research question). Open: bound the "
+        "plate flatness effect by measuring it rather than by the declared tolerance.")
     return {"state": "completed", "fields": fields, "findings": findings}
 
 
@@ -416,11 +764,28 @@ def resolvable_separation(radius, target_gap):
     return 0.5 * (lo + hi)
 
 
+def _ring_marker(u, rings) -> str:
+    """Identifier of the cylinder marker at chart point (phi, z): ring index and 30 degree position."""
+    return f"C{rings.index(float(u[1]))}-{round(math.degrees(float(u[0])) / 30.0) % 12:02d}"
+
+
+def chord_radius_derivative(dphi, dz, radius):
+    """d(chord)/dR at fixed marker angles and heights: chord = hypot(2 R sin(dphi / 2), dz)."""
+    chord = math.hypot(2.0 * radius * math.sin(dphi / 2.0), dz)
+    return 4.0 * radius * math.sin(dphi / 2.0) ** 2 / chord
+
+
+@functools.lru_cache(maxsize=1)
 def cylinder_study() -> dict:
     radius = geo.CYLINDER_RADIUS
-    rings = (50.0, 150.0, 250.0)
-    markers = [{"id": f"C{r:d}-{k:02d}", "u": [math.radians(30.0 * k), z]} for r, z in enumerate(rings) for k in range(12)]
-    pair_specs = [((0.0, 150.0), (math.radians(d), 150.0), f"circumferential {d} deg") for d in (30, 60, 90, 120, 150, 180)]
+    rings = CYLINDER_RINGS_MM
+    markers = [{"id": f"C{r:d}-{k:02d}", "u": [math.radians(30.0 * k), z],
+                "faces_up": abs(math.remainder(30.0 * k, 360.0)) <= ACCESSIBLE_ARC_DEG}
+               for r, z in enumerate(rings) for k in range(12)]
+    # Every pair uses markers on the upper half (within 90 deg of scribe B), which faces away from the vees:
+    # circumferential pairs are placed about B, from -30 floor(d / 60) deg to d deg later.
+    pair_specs = [((math.radians(-30 * (d // 60)), 150.0), (math.radians(d - 30 * (d // 60)), 150.0),
+                   f"circumferential {d} deg") for d in (30, 60, 90, 120, 150, 180)]
     pair_specs += [((0.0, 50.0), (0.0, 150.0), "axial 100 mm"), ((0.0, 50.0), (0.0, 250.0), "axial 200 mm"),
                    ((0.0, 50.0), (math.radians(60), 150.0), "helical 60 deg / 100 mm"),
                    ((0.0, 50.0), (math.radians(90), 250.0), "helical 90 deg / 200 mm")]
@@ -433,8 +798,9 @@ def cylinder_study() -> dict:
         chord = float(np.linalg.norm(geo.CYLINDER.embedding(b) - geo.CYLINDER.embedding(a)))
         path = jacobi.transfer(geo.CYLINDER, a, math.atan2(dz, arc), geodesic, steps=16)
         closure = float(np.linalg.norm(geo.CYLINDER.embedding(path.points[-1]) - geo.CYLINDER.embedding(b)))
-        row = {"pair": name, "geodesic_mm": geodesic, "chord_mm": chord, "gap_mm": geodesic - chord,
-               "rk4_closure_mm": closure, "dphi_rad": float(b[0] - a[0]), "dz_mm": float(dz)}
+        row = {"pair": name, "markers": [_ring_marker(a, rings), _ring_marker(b, rings)], "geodesic_mm": geodesic,
+               "chord_mm": chord, "gap_mm": geodesic - chord, "rk4_closure_mm": closure,
+               "dphi_rad": float(b[0] - a[0]), "dz_mm": float(dz)}
         if dz == 0.0:
             d = arc
             series = d ** 3 / (24 * radius ** 2) - d ** 5 / (1920 * radius ** 4)
@@ -443,7 +809,7 @@ def cylinder_study() -> dict:
             max_series = max(max_series, abs(series - row["gap_mm"]) - bound)
         rows.append(row)
         max_closure = max(max_closure, closure)
-    helix = jacobi.transfer(geo.CYLINDER, [0.0, 0.0], math.radians(45.0), 300.0, steps=30)
+    helix = jacobi.transfer(geo.CYLINDER, [math.radians(HELIX_START_DEG), 0.0], math.radians(45.0), 300.0, steps=30)
     flat_error = float(np.max(np.abs(helix.matrix() - np.array([[1.0, 300.0], [0.0, 1.0]]))))
     resolvable = {}
     for key in ("camera", "tracker", "cmm"):
@@ -457,6 +823,44 @@ def cylinder_study() -> dict:
     return {"markers": markers, "pairs": rows, "max_closure_mm": max_closure, "series_excess_mm": max_series,
             "flat_transfer_error": flat_error, "resolvable": resolvable, "resolvable_series_rel": series_rel,
             "axial_gap_mm": max(abs(r["gap_mm"]) for r in rows if r["pair"].startswith("axial"))}
+
+
+AXIS_POSE = ((0.1, -0.2, 0.3), (10.0, -20.0, 5.0))   # rotation vector (rad) and translation (mm) of the test tube
+
+
+def axis_frame_study() -> dict:
+    """The MFG-CYLINDER-01 datum scheme on noise-free synthetic CMM points of a tube in a known pose.
+
+    The protocol's CMM points (four per marker ring between markers on the
+    upper half, A; two on the axial scribe, B) and three on the end face (C)
+    are moved by a known rigid pose; the cylinder is fitted from a start axis
+    tilted by about 0.02 rad and offset by 1.4 mm with a radius 1 mm short, and
+    the axis-primary frame is built. Without noise the frame must equal the
+    pose and the radius the nominal one. A scribe on the axis and an end face
+    parallel to it must be refused.
+    """
+    radius = geo.CYLINDER_RADIUS
+    pose = met.transform(met.exp_so3(AXIS_POSE[0]), AXIS_POSE[1])
+
+    def moved(points):
+        points = np.asarray(points, dtype=float)
+        return points @ pose[:3, :3].T + pose[:3, 3]
+
+    probes = axis_probe_points()
+    rings = [geo.CYLINDER.embedding(np.array(u)) for u in probes["A"]]
+    scribe = moved([geo.CYLINDER.embedding(np.array(u)) for u in probes["B"]])
+    face = moved([[0.0, 50.0, 0.0], [50.0, -30.0, 0.0], [-40.0, -20.0, 0.0]])
+    start_point = moved([[1.0, -1.0, 150.0]])[0]
+    start_direction = pose[:3, :3] @ np.array([0.02, 0.01, 1.0])
+    point, direction, fitted, residual = met.fit_cylinder(moved(rings), start_point, start_direction, radius - 1.0)
+    frame = met.datum_frame_axis(point, direction, scribe, face)
+    parallel_face = moved([[radius, 0.0, 0.0], [radius, 0.0, 100.0], [radius * math.cos(0.3), radius * math.sin(0.3), 50.0]])
+    return {"pose_error": float(np.max(np.abs(met.pose_difference(frame, pose)))),
+            "radius_error_mm": abs(fitted - radius), "residual_mm": float(np.max(np.abs(residual))),
+            "scribe_on_axis": _metrology_refusal(met.datum_frame_axis, point, direction, [point, point + 10.0 * direction],
+                                                 face),
+            "face_parallel_to_axis": _metrology_refusal(met.datum_frame_axis, point, direction, scribe, parallel_face),
+            "too_few_points": _metrology_refusal(met.fit_cylinder, moved(rings)[:5], start_point, start_direction, radius)}
 
 
 @_task("T127", ("test_cylinder_protocol_predicts_chord_geodesic_gaps", "test_protocols_refuse_filled_slots_and_decisions"))
@@ -497,69 +901,138 @@ def rolled_cylinder_control(ctx):
                     unit="mm",
                     uncertainty=_u("roundoff", 1e-12, "200-step bisection of the closed-form gap"),
                     tolerance={"abs": 1e-8, "rel": 1e-9})
+    axis = ctx.memo("mfg.axis-frame", axis_frame_study)
+    f_axis = finding("The axis-primary datum frame (cylinder-fit axis A, scribe B, end face C) recovers a known tube pose "
+                     "from noise-free synthetic CMM points and refuses degenerate datums", "numerical",
+                     {"pose_error": axis["pose_error"], "radius_error_mm": axis["radius_error_mm"]},
+                     {"generator": _generator("noise-free CMM points on the MFG-CYLINDER-01 datum features in a known pose",
+                                              seed=None, rotation_vector_rad=list(AXIS_POSE[0]),
+                                              translation_mm=list(AXIS_POSE[1])),
+                      "checks": [_check("analytic", "max |pose difference| of the built PART frame from the known pose "
+                                        "(mm and rad)", axis["pose_error"], 1e-9),
+                                 _check("analytic", "|fitted radius - 100 mm| (mm)", axis["radius_error_mm"], 1e-9),
+                                 _refusal("scribe datum (B) on the axis (A)", "datum_degenerate", axis["scribe_on_axis"]),
+                                 _refusal("end face (C) parallel to the axis (A)", "datum_degenerate",
+                                          axis["face_parallel_to_axis"]),
+                                 _refusal("cylinder fit from five points", "cylinder_underdetermined",
+                                          axis["too_few_points"])]},
+                     uncertainty=_u("roundoff", max(axis["pose_error"], axis["radius_error_mm"]),
+                                    "noise-free recovery error of the fit and frame"),
+                     tolerance={"abs": 1e-9, "rel": 0})
+    u_radius = 0.1 / math.sqrt(3.0)
     predicted = [_predicted(f"G{k}", f"chord-geodesic gap, {name}", _r(value), "mm", f_gap)
                  for k, (name, value) in enumerate(gaps.items())]
+    predicted += [_predicted(f"K{k}", f"marker chord, {r['pair']}", _r(r["chord_mm"]), "mm", f_gap)
+                  for k, r in enumerate(study["pairs"])]
     predicted.append(_predicted("J1", "Jacobi transfer along a 45 deg helix of 300 mm", [[1.0, 300.0], [0.0, 1.0]], "1, mm", f_flat))
     criteria = [
-        {"id": "H1", "status": "hypothesis", "statement": "Measured chord equals the predicted chord for every pair and the "
-         "surface (tape-measure or unrolled-film) distance equals the predicted geodesic",
-         "test": f"E_n <= 1 with U = 2 u_pair = {COVERAGE_K * PAIR_U:.4f} mm plus the radius term of T140"},
+        {"id": "H1", "status": "hypothesis", "statement": "The film surface distance minus the camera chord equals the "
+         "predicted chord-geodesic gap for every marker pair",
+         "test": f"E_n <= 1 with U_m = 2 sqrt(u_film^2 + u_pair^2) = {COVERAGE_K * GAP_U:.4f} mm (film 0.05 mm, camera "
+                 f"pair {PAIR_U:.4f} mm) and U_p = 2 |d gap / dR| u_R, u_R = 0.1 / sqrt(3) mm (the T140 radius term)"},
         {"id": "H2", "status": "hypothesis", "statement": "Separation of offset helices is the flat-plate separation",
-         "test": "fit slope and intercept; compare with the flat-plate control T126"}]
+         "test": "fit slope and intercept of the 3D distances between the two tape centrelines (their difference from "
+                 "the surface separation is below 1e-4 mm at 2 mm on R = 100 mm); compare with the flat-plate control T126"},
+        {"id": "H3", "status": "hypothesis", "statement": "The camera chord alone differs from the predicted geodesic "
+         "distance for circumferential pairs of 30 deg and more (the extrinsic signature)",
+         "test": f"|chord - geodesic| / sqrt((2 u_pair)^2 + (2 |d chord / dR| u_R)^2) > 1; separations below the T127 "
+                 f"resolvable arc ({study['resolvable']['camera']['min_arc_mm']:.1f} mm with the camera) are not tested"}]
+    helix_start = (math.radians(HELIX_START_DEG), 0.0)
+    paths = tape_paths({"id": "HX45", "start_u": list(helix_start), "heading_rad": math.radians(45.0), "length_mm": 300.0},
+                       [{"id": "HX45-L2", "lateral_offset_mm": 2.0}], geo.CYLINDER, helix_start)
+    pair_ids = [r["pair"] for r in study["pairs"]]
+    markers = [dict(m, kind="specimen marker", position_mm=_cylinder_points([m["u"]])[0]) for m in study["markers"]]
+    visible = [m["id"] for m in study["markers"] if m["faces_up"]]
     protocol = build_protocol(
         "T127", "MFG-CYLINDER-01", "Rolled-cylinder control: extrinsic curvature without intrinsic curvature",
         "Separate extrinsic effects (chord vs geodesic) from intrinsic ones (Jacobi separation), which must "
         "match the flat plate.",
         {"kind": "rolled tube", "material": "rolled and seam-welded 3 mm aluminium (declared)",
          "nominal_radius_mm": geo.CYLINDER_RADIUS, "length_mm": 300.0, "declared_radius_tolerance_mm": 0.1,
-         "surface_model": geo.CYLINDER.describe()},
-        study["markers"],
-        [{"id": "HX45", "start_u": [0.0, 0.0], "heading_rad": math.radians(45.0), "length_mm": 300.0,
-          "realization": PATH_REALIZATION},
-         {"id": "HX45-L2", "of": "HX45", "lateral_offset_mm": 2.0}],
-        predicted, criteria, ("camera", "tracker", "cmm"),
-        ["Measure the three marker rings with the camera and tracker; probe the tube radius at the three rings "
-         "with the CMM (radius enters T140).",
-         PATH_PROCEDURE, START_POSE_PROCEDURE, "Measure both tape centrelines every 30 mm of arclength."])
+         "declared_roundness_tolerance_mm": ROUNDNESS_TOLERANCE_MM,
+         "seam_weld": "along phi = 180 deg, opposite scribe B: it faces down between the vee contact lines (not modelled)",
+         "surface_model": geo.CYLINDER.describe(), "marker_pairs": {r["pair"]: r["markers"] for r in study["pairs"]}},
+        markers, paths, predicted, criteria, ("camera", "tracker", "cmm", "film"),
+        [register_step(V_BLOCKS),
+         _step(f"Measure the {len(visible)} markers on the upper half of the three rings (within 90 deg of scribe B) with "
+               "the camera (SB-1000 and the VB-01 datum targets in every image set) and the tracker; export the camera "
+               "coordinates as the photogrammetry capture. The lower markers face into the vees and the table and are "
+               "not measured.", ["camera", "tracker", "SB-1000", "VB-01"],
+               ["raw images", "photogrammetry capture (ciw.lab-mfg-target-capture.v1)", "tracker point file"],
+               key="markers"),
+         _step("Lay the film gauge from marker centre to marker centre of each of the ten marker pairs (all on the upper "
+               "half) without tension or in-plane steering, read the surface distance under a 10x loupe, and export the "
+               "readings as the film capture.", ["film"], ["film capture (ciw.lab-mfg-distance-capture.v1)"],
+               check="two readings per pair agree within 2 x 0.05 mm; otherwise re-lay the film", key="film"),
+         _repeat(["locate", "markers", "film"], "VB-01", "replicates of the datum, marker and film measurements"),
+         *[step for path in paths for step in tape_block(path, "VB-01", "every 30 mm of arclength from s = 0 to 300 mm")]],
+        [capture_format("photogrammetry", TARGET_CAPTURE, "camera", visible,
+                        "ciw.lab.manufacturing_records.read_capture; T138 compares the ten pair chords (H3) and, with "
+                        "the film capture, the chord-geodesic gaps (H1)"),
+         capture_format("film", DISTANCE_CAPTURE, "film", pair_ids,
+                        "ciw.lab.manufacturing_records.read_capture; T138 compares film minus chord with the predicted "
+                        "gaps (H1)"),
+         capture_format("cmm", TARGET_CAPTURE, "cmm", start_pose_ids(paths),
+                        "ciw.lab.manufacturing_records.read_capture; retained by T138, not yet used to condition the "
+                        "helix prediction")],
+        holder=V_BLOCKS)
     ctx.artifact_json("protocol-rolled-cylinder.json", protocol)
-    ctx.artifact_json("cylinder-pairs.json", _r({"pairs": study["pairs"], "resolvable": study["resolvable"]}))
+    ctx.artifact_json("cylinder-pairs.json", _r({"pairs": study["pairs"], "resolvable": study["resolvable"],
+                                                 "axis_frame": axis}))
     circ = [r for r in study["pairs"] if "series_mm" in r]
     ctx.artifact_text("cylinder-gap.svg", svg.line_plot(
         [("exact gap", [r["geodesic_mm"] for r in circ], [r["gap_mm"] for r in circ]),
          ("d^3/24R^2 - d^5/1920R^4", [r["geodesic_mm"] for r in circ], [r["series_mm"] for r in circ])],
         title="Rolled cylinder R = 100 mm: chord-geodesic gap", xlabel="arc length (mm)", ylabel="gap (mm)"))
-    findings = [f_gap, f_flat, f_counter, f_res,
+    findings = [f_gap, f_flat, f_counter, f_res, f_axis,
                 _protocol_findings(protocol, "Rolled-cylinder protocol record validates and refuses malformed variants"),
                 _not_measured("Measured chords and surface distances on the physical tube match the predicted gaps"),
-                _not_measured("The physical tube radius and roundness lie within the declared +/- 0.1 mm", "calibration")]
+                _not_measured("The physical tube radius and roundness lie within the declared +/- 0.1 mm", "calibration"),
+                _not_measured("The unrolled-film gauge achieves the declared 0.05 mm on marker-to-marker surface distances",
+                              "calibration")]
     res = study["resolvable"]
     fields = _fields(
         "A rolled cylinder has zero Gaussian curvature, so its Jacobi transfer equals the plate's, while its "
-        "extrinsic curvature makes marker chords shorter than geodesic distances by d^3/(24 R^2) + O(d^5).",
+        "extrinsic curvature makes marker chords shorter than geodesic distances by d^3/(24 R^2) + O(d^5); a surface "
+        "distance measured independently of the chord (an unrolled-film gauge) exposes that gap.",
         "Cylinder X(phi, z) = (R cos phi, R sin phi, z), R = 100 mm; development (R phi, z) is an isometry; "
-        "gap(d) = d - 2 R sin(d / 2R) for circumferential pairs; resolvable arc solves gap(d) = k sqrt(2) u.",
+        "gap(d) = d - 2 R sin(d / 2R) for circumferential pairs; resolvable arc solves gap(d) = k sqrt(2) u. Datum frame: "
+        "least-squares cylinder axis A, scribe B, end face C, z along A, origin at A meets C, x towards B.",
         ["Declared tube R = 100 mm, length 300 mm, three rings of 12 markers", "Ten marker pairs (circumferential, axial, helical)",
-         "Declared instruments (camera 0.02 mm, tracker 0.015 mm, CMM 0.002 mm)"],
-        "No observation. The protocol specifies marker, tape start-pose and tape centreline measurements; the "
-        "hardware slot is empty.",
-        "gap = 0 on rulings (axial pairs); Phi_cylinder = Phi_plate; circumferential gaps follow the alternating series.",
+         "Declared instruments (camera 0.02 mm, tracker 0.015 mm, CMM 0.002 mm, film gauge 0.05 mm)",
+         f"Radius tolerance +/- 0.1 mm (u_R = {u_radius:.4f} mm)"],
+        "No observation. The protocol specifies CMM datum probing in a V-block pair, marker, film, tape start-pose and "
+        "tape centreline measurements and the raw formats of their captures; the hardware slot is empty.",
+        "gap = 0 on rulings (axial pairs); Phi_cylinder = Phi_plate; circumferential gaps follow the alternating series; "
+        "the axis-primary frame recovers a known pose exactly without noise.",
         "Closed-form gaps checked by RK4 geodesic closure and by the series with its remainder bound; helix "
-        "transfer compared with [[1, s], [0, 1]]; resolvable separation by bisection; protocol validated and mutated.",
+        "transfer compared with [[1, s], [0, 1]]; resolvable separation by bisection; the datum scheme (cylinder fit and "
+        "axis-primary frame) run on noise-free synthetic points in a known pose, and its degenerate datums refused; "
+        "protocol validated and mutated.",
         f"gap at 90 deg = {ninety['gap_mm']:.4f} mm (chord {ninety['chord_mm']:.3f} vs geodesic {ninety['geodesic_mm']:.3f}); "
         f"minimum resolvable arc: camera {res['camera']['min_arc_mm']:.1f} mm, tracker {res['tracker']['min_arc_mm']:.1f} mm, "
-        f"CMM {res['cmm']['min_arc_mm']:.1f} mm.",
-        "Closed forms; RK4 closure at rounding level. The radius tolerance term is budgeted in T140.",
+        f"CMM {res['cmm']['min_arc_mm']:.1f} mm; datum frame recovered to {axis['pose_error']:.1e}.",
+        "Closed forms; RK4 closure at rounding level. The radius tolerance term is budgeted in T140; the film and camera "
+        f"terms give U_m = {COVERAGE_K * GAP_U:.4f} mm for a measured gap.",
         ["RK4 closure", "series remainder bound", "axial rulings give zero gap", "flat Jacobi transfer",
-         "protocol refusal matrix"],
-        ["Seam weld and out-of-roundness are not modelled; a real tube is not a perfect cylinder.",
-         "Marker centre offsets (target thickness) are not modelled."],
-        "Execute MFG-CYLINDER-01, retain it through a T139 measurement record and compare the measured chord-geodesic "
-        "gaps with the T138 pair comparator (compare_pair_distances, E_n per pair); the radius term is budgeted in T140.")
+         "axis-primary datum frame: known pose, scribe on the axis, end face parallel to the axis, too few points",
+         "protocol refusal matrix, including the tape layout (tapes alone, clear of markers and datum points)"],
+        ["Seam weld and out-of-roundness are not modelled; a real tube is not a perfect cylinder. The protocol puts the "
+         f"seam at the bottom between the vees and stops the run when a ring's roundness exceeds "
+         f"{roundness_threshold():.3f} mm (declared form tolerance plus 2 U of the CMM).",
+         "Marker centre offsets (target thickness) are not modelled.",
+         "The film is assumed to lie on the pair's geodesic when laid without steering, like the tapes."],
+        "Acquire MFG-CYLINDER-01 and bind its exports to T138 (ciw lab run T138 --capture photogrammetry=<targets.csv> "
+        "--capture film=<film.csv>), then retain the run with ciw lab hardware retain; T138's comparison of the "
+        "captured gaps and chords is computational, and a physical label needs a metrology instrument probe or a "
+        "signed-capture trust anchor (deferred research question). Open: model the seam weld and out-of-roundness, "
+        "which the cylinder prediction omits.")
     return {"state": "completed", "fields": fields, "findings": findings}
 
 
 # T128 domed coupon ------------------------------------------------------------------------
 NOMINAL_STATIONS = 8
+COUPON_TARGETS = [f"{tape}{k}" for tape in "NLH" for k in range(NOMINAL_STATIONS + 1)]
 
 
 @functools.lru_cache(maxsize=1)
@@ -705,7 +1178,7 @@ def _optional_finding(claim, result, reference, observed, threshold, module, **e
         return finding(claim, "numerical", None, {"notes": f"{module} is not installed here; the check did not run"},
                        expected_not_established=True)
     check = _check("high_precision", reference, observed, threshold)
-    basis = {"independent_check": dict(check, producer={"implementation": "ciw.lab", "revision": "ciw.lab.jacobi RK4 / surfaces"},
+    basis = {"independent_check": dict(check, producer={"implementation": "ciw.lab.jacobi", "revision": f"ciw {__version__}"},
                                        checker={"implementation": result["checker"], "revision": result["revision"]})}
     return finding(claim, "numerical", observed, basis, **extra)
 
@@ -802,12 +1275,18 @@ def curved_coupon(ctx):
     criteria = [
         {"id": "H1", "status": "hypothesis", "statement": "The 2 mm offset tape crosses the nominal tape where the geodesic "
          "re-integrated from its measured start pose crosses (near the focal point F0)",
-         "test": "crossing arclength within the T140 expanded uncertainty of the focal distance (conditioned row)"},
+         "test": "crossing arclength (linear interpolation between the two stations whose separations change sign, "
+                 "applied alike to the measured and the re-integrated predicted separations) within the T140 expanded "
+                 "uncertainty of the focal distance (conditioned row)"},
         {"id": "H2", "status": "hypothesis", "statement": "Conditioned on the measured start pose, the measured separations follow "
          "the Jacobi prediction, not the flat-plate one",
          "test": "E_n <= 1 at stations 1..8 against the prediction re-integrated from the CMM start pose, with U_p from dome "
                  "tolerances, the start-pose estimate and solver error (T138) and U_m from the camera pair; E_n > 1 against "
                  "the flat-plate prediction at the last two stations"}]
+    paths = tape_paths({"id": "N", "start_u_mm": list(geo.STATION), "heading_rad": 0.0, "end": "x = 140 mm",
+                        "length_mm": length},
+                       [{"id": "L", "lateral_offset_mm": 2.0, "construction": "exp map along the start normal"},
+                        {"id": "H", "heading_offset_rad": 0.005}], geo.COUPON, geo.STATION)
     protocol = build_protocol(
         "T128", "MFG-COUPON-01", "Domed coupon: Jacobi focusing of offset paths",
         "Measure the separation of exactly offset robot paths across a dome, where positive curvature focuses "
@@ -816,19 +1295,21 @@ def curved_coupon(ctx):
          "surface_model": geo.COUPON.describe(), "chart_extent_mm": {"x": list(geo.COUPON_X), "y": list(geo.COUPON_Y)},
          "declared_height_tolerance_mm": 0.2, "declared_sigma_tolerance_mm": 0.5,
          "crest_principal_radius_mm": geo.DOME_SIGMA ** 2 / geo.DOME_HEIGHT},
-        [{"id": f"N{k}", "route": "nominal", "s_mm": s} for k, s in enumerate(stations)]
-        + [{"id": f"L{k}", "route": "lateral 2 mm", "s_mm": s} for k, s in enumerate(stations)]
-        + [{"id": f"H{k}", "route": "heading 5 mrad", "s_mm": s} for k, s in enumerate(stations)],
-        [{"id": "N", "start_u_mm": list(geo.STATION), "heading_rad": 0.0, "end": "x = 140 mm", "length_mm": length,
-          "realization": PATH_REALIZATION},
-         {"id": "L", "of": "N", "lateral_offset_mm": 2.0, "construction": "exp map along the start normal"},
-         {"id": "H", "of": "N", "heading_offset_rad": 0.005}],
-        predicted, criteria, ("camera", "tracker", "cmm", "scanner"),
-        ["Scan the coupon surface with protocol MFG-SCAN-01 (T129) to identify the as-built dome and its covariance "
-         "before laying the tapes.",
-         PATH_PROCEDURE, START_POSE_PROCEDURE,
-         "Place coded targets on the tape centrelines at the stations; measure them by photogrammetry; fit the crossing "
-         "arclength of the lateral offset tape."])
+        [{"id": f"{tape}{k}", "route": route, "s_mm": s, "kind": "tape target", "on": tape}
+         for tape, route in (("N", "nominal"), ("L", "lateral 2 mm"), ("H", "heading 5 mrad"))
+         for k, s in enumerate(stations)],
+        paths, predicted, criteria, ("camera", "tracker", "cmm", "scanner"),
+        [register_step(NEST),
+         _step("Scan the coupon surface with the scanner following protocol MFG-SCAN-01 (T129) to identify the as-built "
+               "dome and its covariance before laying the tapes.", ["scanner"], ["MFG-SCAN-01 records"]),
+         *[step for path in paths for step in tape_block(
+             path, "FX-321", "at the nine stations s = k L / 8", f"{path['id']}0-{path['id']}{NOMINAL_STATIONS}")]],
+        [capture_format("photogrammetry", TARGET_CAPTURE, "camera", COUPON_TARGETS,
+                        "ciw.lab.manufacturing_records.read_capture; T138 reduces the lateral tape targets to separations "
+                        "(projection on the model's in-surface normal of the nominal route) and compares them (H2)"),
+         capture_format("cmm", TARGET_CAPTURE, "cmm", start_pose_ids(paths),
+                        "ciw.lab.manufacturing_records.read_capture; T138 estimates the realized start pose of the "
+                        "lateral tape and re-integrates the prediction from it (conditioned H2)")])
     ctx.artifact_json("protocol-domed-coupon.json", protocol)
     ctx.artifact_json("coupon-predictions.json", _r({k: study[k] for k in (
         "length_mm", "focal_mm", "stations_mm", "j_lat", "j_head_mm", "lateral_linear_mm", "lateral_nonlinear_mm",
@@ -857,7 +1338,8 @@ def curved_coupon(ctx):
         "to x = 140; separation = delta j_lat + dtheta j_head with j'' + K j = 0.",
         ["Declared domed coupon and chart extent x in [-60, 140], y in [-100, 100] mm",
          "Perturbations: 2 mm lateral, 5 mrad heading; remainder study eps = 0.4, 0.2, 0.1 mm",
-         "Declared start-pose error of the offset tape 0.05 mm / 0.5 mrad (1 sigma) for the open-loop uncertainty"],
+         "Declared relative start-pose error of the offset tape for the open-loop uncertainty (1 sigma): insert and "
+         "laying 0.05 mm / 0.5 mrad, and two seatings of the start jig at 0.01 mm / 0.1 mrad each"],
         "No observation. The protocol specifies CMM probing of the tape start poses and photogrammetry of coded targets "
         "on the tape centrelines at the stations; its hardware slot is empty.",
         "det Phi = 1; focal point independent of step size; linear remainder O(eps^2) (O(eps^3) on the symmetry axis).",
@@ -873,14 +1355,20 @@ def curved_coupon(ctx):
         f"{geom['max_christoffel_difference']:.1e}; curvature vs finite differences: {geom['max_curvature_difference']:.1e}.",
         "Solver error ~1e-6 (Richardson); geometry, start-pose and instrument terms are budgeted in T138 and T140.",
         ["step refinement of Phi and of the focal point", "Wronskian", "second- vs third-order remainder (symmetry)",
-         "nonlinear crossing vs linear focal point", "plate signature vs combined uncertainty", "protocol refusal matrix",
+         "nonlinear crossing vs linear focal point", "plate signature vs combined uncertainty",
+         "protocol refusal matrix, including the tape layout (the three tapes cross or come within 0.54 mm, so each is "
+         "laid, measured and removed alone)",
          "circular test (a path drawn from its own program): paths are realized as unsteered tapes instead"],
         ["The formed coupon will not be an exact Gaussian; the T129 scan protocol (MFG-SCAN-01) fits the as-built dome "
          "and tests the Gaussian model by its residual, and a refuted model needs a prediction on the scanned surface.",
          "The tapes are assumed to follow geodesics; their realized start pose is measured and conditioned on (T138), "
          "while in-plane tape bending along the route is not modelled.",
          "Geometry independence (sympy) covers six points; elsewhere the geometry is checked against ciw finite differences only."],
-        "T138: compare predicted and measured separation once MFG-COUPON-01 has been executed and retained (T139).")
+        "Acquire MFG-SCAN-01 and MFG-COUPON-01 and bind the station-target and start-pose exports to T138 (ciw lab run "
+        "T138 --capture photogrammetry=<targets.csv> --capture cmm=<start-pose.csv>), then retain the run with ciw lab "
+        "hardware retain; the comparison is computational until a metrology instrument probe or a signed-capture trust "
+        "anchor exists (deferred research question). Open: predict the separation on a surface fitted to the scan when "
+        "the Gaussian model test rejects the as-built dome, which is not implemented.")
     return {"state": "completed", "fields": fields, "findings": findings}
 
 
@@ -1134,14 +1622,29 @@ def scan_protocol(f_design, f_fit, f_model, scan, crest) -> dict:
          "chart_extent_mm": {"x": list(geo.COUPON_X), "y": list(geo.COUPON_Y)},
          "declared_height_tolerance_mm": 0.2, "declared_sigma_tolerance_mm": 0.5},
         [{"id": f"RT{k + 1}", "u_mm": list(u), "kind": "sphere-mounted registration target"} for k, u in enumerate(SCAN_TARGETS_U)],
-        [{"id": "RASTER-X", "kind": "scan pass", "direction": "+x"}, {"id": "RASTER-Y", "kind": "scan pass", "direction": "+y"}],
+        [{"id": "RASTER-X", "kind": "scan pass", "direction": "+x", "uses": ["scanner"]},
+         {"id": "RASTER-Y", "kind": "scan pass", "direction": "+y", "uses": ["scanner"]}],
         predicted, criteria, ("scanner", "cmm"),
-        ["Measure the six registration targets with the CMM in the PART frame.",
-         f"Set the scanner to the declared {SCAN_STANDOFF['standoff_mm']:g} mm standoff; scan both raster passes at the "
-         f"native spacing, rejecting points with incidence above {SCAN_STANDOFF['max_incidence_deg']:g} deg.",
-         "Register each pass to the targets (Kabsch) and retain the transform and its residual.",
-         "Fit the as-built dome on the 4 mm grid; fit the crest curvature in the T129 windows at full density.",
-         "Report the fitted parameters with their covariance and the chi2 / dof model test (H1) before any tape is laid."],
+        [_step("Measure the six registration targets RT1-RT6 with the CMM in the PART frame and export them as the cmm "
+               "capture.", ["cmm"], ["cmm capture (ciw.lab-mfg-target-capture.v1)"], key="targets"),
+         _step(f"Set the scanner to the declared {SCAN_STANDOFF['standoff_mm']:g} mm standoff; scan both raster passes "
+               f"at the native spacing, rejecting points with incidence above {SCAN_STANDOFF['max_incidence_deg']:g} deg.",
+               ["scanner"], ["native point cloud of each pass with the scanner settings"], key="scan"),
+         _repeat(["locate", "targets", "scan"], "FX-321", "replicates of the target measurement and both raster passes"),
+         _step("Register each pass of every replicate to the targets (Kabsch) and retain the transform and its "
+               "residual.", [],
+               ["registration transform and residual per pass"],
+               check="registration residual consistent with chi-square(3N - 6) at the declared noise"),
+         _step("Fit the as-built dome on the 4 mm grid; fit the crest curvature in the T129 windows at full density.", [],
+               ["fit parameters, covariance, residual map and outlier count"]),
+         _step("Report the fitted parameters with their covariance and the chi2 / dof model test (H1) before any tape is "
+               "laid.", [], ["as-built dome record for MFG-COUPON-01, T138 and T140"])],
+        [capture_format("cmm", TARGET_CAPTURE, "cmm", [f"RT{k + 1}" for k in range(len(SCAN_TARGETS_U))],
+                        "ciw.lab.manufacturing_records.read_capture; no task reads it yet"),
+         {"role": "scanner", "schema": "native point cloud per pass: x_mm, y_mm, z_mm, incidence_deg, flag",
+          "media_type": "text/csv", "instrument": "scanner", "frame": "scanner, registered to PART by the targets",
+          "columns": ["x_mm", "y_mm", "z_mm", "incidence_deg", "flag"], "ids": ["RASTER-X", "RASTER-Y"],
+          "reader": "none yet: T129 fits synthetic scans only; a reader that runs fit_dome on a bound scan is open work"}],
         extra=plan)
 
 
@@ -1326,8 +1829,10 @@ def surface_metrology(ctx):
          "At 1% tolerance a quadratic fit needs about 100 repeat scans: a higher-order local fit is a deferred research question.",
          "If the model test rejects the Gaussian dome, the scan-derived covariance does not apply and the prediction must "
          "be re-integrated on a surface fitted to the scan (not implemented)."],
-        "T130: calibrate the scanner scale and frames on artifacts before executing MFG-SCAN-01 and the T128 coupon "
-        "measurement.")
+        "Open: a reader of the MFG-SCAN-01 point-cloud format that runs fit_dome and the chi2 model test on a bound "
+        "scanner capture (none exists; T129 fits synthetic scans only), a prediction on a surface fitted to the scan "
+        "for an as-built dome the model test rejects, and a higher-order local fit for 1% curvature tolerance "
+        "(deferred research questions).")
     return {"state": "completed", "fields": fields, "findings": findings}
 
 
@@ -1530,7 +2035,9 @@ def calibration_artifacts(ctx):
          "linearization of the chain vs exact SE(3) sampling"],
         ["All link covariances are declared; real ones come from the instrument and fixture calibration records (T139).",
          "Thermal drift and probe lobing are not modelled."],
-        "T131: define the repeatability and Gage R&R study that measures the datum and marker repeatability.")
+        "Open: estimate the link covariances from the repeated datum probing of a real acquisition (the three re-seated "
+        "repeats of each protocol) instead of declaring them, which needs a reader of datum-probing exports that does "
+        "not exist, and add probe lobing and thermal drift to the chain model.")
     return {"state": "completed", "fields": fields, "findings": findings}
 
 
@@ -1607,8 +2114,17 @@ GAGE_PARTS = {
     "MFG-CYLINDER-01": ["circumferential 30 deg", "circumferential 60 deg", "circumferential 90 deg",
                         "circumferential 120 deg", "circumferential 150 deg", "circumferential 180 deg", "axial 100 mm",
                         "axial 200 mm", "helical 60 deg / 100 mm", "helical 90 deg / 200 mm"],
-    "MFG-COUPON-01": [f"lateral tape L{k} to nominal N{k}" for k in range(1, 9)]
-                     + ["heading tape H4 to nominal N4", "heading tape H8 to nominal N8"],
+    # One tape is on the coupon at a time (MFG-COUPON-01), so a separation between tapes is never a stable part.
+    # The study lays the lateral tape L once and leaves it in place for all rounds; its ten gage targets at
+    # s = k L / 9 have offsets from the model's nominal route that span the measured range (2 mm to -1 mm).
+    "MFG-COUPON-01": [f"lateral tape L, gage target G{k} at s = {k} L / 9: offset normal to the nominal route"
+                      for k in range(10)],
+}
+GAGE_SETUP = {
+    "MFG-FLAT-PLATE-01": "the 25 markers stay on the plate; no tape is laid",
+    "MFG-CYLINDER-01": "the markers stay on the tube; no tape is laid; each pair is measured as its camera chord",
+    "MFG-COUPON-01": "lay the lateral tape L once (JIG-START-01 with insert L, as in MFG-COUPON-01) with ten 6 mm coded "
+                     "targets at s = k L / 9 (k = 0...9); it stays in place, alone on the coupon, for all rounds",
 }
 
 
@@ -1626,10 +2142,12 @@ def gage_procedure() -> dict:
                            f"{protocol}|{replicate}|{operator}|{part}".encode("utf-8")).hexdigest())}
                       for operator in sorted(operators, key=lambda name: hashlib.sha256(
                           f"{protocol}|{replicate}|{name}".encode("utf-8")).hexdigest())]
-            rounds.append({"replicate": replicate, "before": "remove the specimen from FX-321, re-seat it, re-probe "
+            holder = V_BLOCKS["id"] if protocol == "MFG-CYLINDER-01" else NEST["id"]
+            rounds.append({"replicate": replicate, "before": f"remove the specimen from {holder}, re-seat it, re-probe "
                                                              "datums A, B, C and rebuild the PART frame",
                            "blocks": blocks})
-        studies[protocol] = {"parts": [{"id": f"P{k + 1:02d}", "feature": part} for k, part in enumerate(parts)],
+        studies[protocol] = {"setup": GAGE_SETUP[protocol],
+                             "parts": [{"id": f"P{k + 1:02d}", "feature": part} for k, part in enumerate(parts)],
                              "operators": operators, "replicates": r, "rounds": rounds}
     return {"schema": "ciw.lab-gage-rr-procedure.v1", "design": {"parts": p, "operators": o, "replicates": r},
             "studies": studies,
@@ -1723,7 +2241,8 @@ def gage_rr(ctx):
         ["Declared synthetic truth (mm): part 0.050, operator 0.006, interaction 0.004, repeatability 0.010",
          f"Design 10 parts x 3 operators x 3 replicates; {study['studies']} simulated studies (seed {SEED + 2})",
          "Procedure (gage-rr-procedure.json): the ten parts of each protocol are ten features of its specimen (plate "
-         "marker pairs, cylinder marker pairs, coupon target separations); SHA-256-keyed run order per replicate and "
+         "marker pairs, cylinder marker pairs, the offsets of ten gage targets on the coupon's lateral tape, which is "
+         "laid once and left alone on the coupon for the study); SHA-256-keyed run order per replicate and "
          "operator; re-fixturing before every replicate round; blinded coded features; a type-1 study on the SG-200 "
          "100 mm step"],
         "Synthetic readings only; no gage, operator or part was involved.",
@@ -1743,7 +2262,9 @@ def gage_rr(ctx):
          "Normal random effects; real operator effects may be systematic or drift in time.",
          "Features of one specimen stand in for parts, so the between-part variance is a spread of measurands, not of "
          "a process; the procedure reports %GRR against the declared tolerance (P/T) for that reason."],
-        "T140: feed measured repeatability into the uncertainty budget once a real study exists (retained via T139).")
+        "Open: read the 10 x 3 x 3 readings of a real study run by gage-rr-procedure.json into gage_rr_anova (no reader "
+        "of study exports exists) and replace T140's declared instrument terms by the measured repeatability; decide "
+        "whether to apply the AIAG interaction-pooling rule, which is not applied.")
     return {"state": "completed", "fields": fields, "findings": findings}
 
 
@@ -1922,7 +2443,8 @@ def placement_tolerance(ctx):
          "radius error through machine-angle programming"],
         ["Tow width, compaction and tack are not modelled; tows are curves, not strips.",
          "Error sources are independent and Gaussian with declared sigmas."],
-        "T133: winding path sensitivity on a torus mandrel, where Gaussian curvature is nonzero.")
+        "Open: model tows as strips with width, compaction and tack instead of curves, and compare the placement stack "
+        "with process data (tow positions, gaps and overlaps at the steering radius), none of which exists here.")
     return {"state": "completed", "fields": fields, "findings": findings}
 
 
@@ -2169,7 +2691,9 @@ def winding_sensitivity(ctx):
          "The friction coefficient is declared; slip also depends on tension and cure state.",
          "The secular rate is per unit heading error; the growth of a physical winding error also depends on how the "
          "machine corrects the path between layers."],
-        "T134: coating or welding trajectory sensitivity on the domed coupon.")
+        "Open: model how a winding machine corrects the path between layers, which decides whether the secular "
+        "heading-error growth accumulates in a physical winding, and compare the slippage ratio with slip observed "
+        "under real fibre tension and friction (no such data exists here).")
     return {"state": "completed", "fields": fields, "findings": findings}
 
 
@@ -2405,7 +2929,8 @@ def trajectory_sensitivity(ctx):
          "cusp detection by two routes (sign of 1 - H kappa_n and reversed segments)"],
         ["Deposition footprint, spray cone and heat input are not modelled; the speed factor is a kinematic proxy.",
          "Robot joint limits and singularities are not checked."],
-        "T135: generate inspection scan paths over the coupon and measure coverage versus path length.")
+        "Open: check robot joint limits and singularities along the tool-centre-point paths, and model the deposition "
+        "footprint (spray cone, heat input), which the kinematic speed factor does not capture.")
     return {"state": "completed", "fields": fields, "findings": findings}
 
 
@@ -2578,7 +3103,9 @@ def inspection_scan_paths(ctx):
          "Edge transitions are straight 3D chords.",
          "First-order Jacobi tightening does not guarantee complete coverage where rows cross beyond a focal point.",
          "Slivers with area below about 1e-4 of the coupon can escape 32000 sample points."],
-        "T136: rank candidate paths by the calibration tolerance they require.")
+        "Open: bound uncovered slivers below the sampling resolution (about 1e-4 of the coupon area) with an exact "
+        "footprint union instead of area sampling, and add occlusion, incidence and depth-of-field limits to the "
+        "footprint.")
     return {"state": "completed", "fields": fields, "findings": findings}
 
 
@@ -2801,70 +3328,138 @@ def rank_by_calibration(ctx):
          "Only the corners of the tolerance box are evaluated exactly; interior points are covered by the linear model "
          "(where the error is maximal at a corner) plus the small second-order terms.",
          "Tape or robot path-following error along the route (after the start) is not included."],
-        "T137: rank the same routes by focus margin and compare the two rankings.")
+        "Open: optimize the lateral/heading tolerance split per route instead of half each, and add path-following "
+        "error after the start, which the corner evaluation omits.")
     return {"state": "completed", "fields": fields, "findings": findings}
 
 
-def focus_tiers(summaries) -> list:
-    """Routes in tiers of decreasing focus margin; routes with no focus within the horizon share one unresolved tier.
+def focus_tiers(summaries, key="focal_clearance_ratio", bound="ratio_is_lower_bound") -> list:
+    """Routes in tiers of decreasing margin; routes whose margin is only a lower bound share one unresolved tier.
 
-    Their margins are lower bounds (horizon / L), so they are tied, not ordered;
-    the tier leads only if every lower bound exceeds every resolved margin, which
-    the task checks.
+    Their margins are lower bounds set by the integration horizon, so they are
+    tied, not ordered; the tier leads only if every lower bound exceeds every
+    resolved margin, which the task checks.
     """
-    unresolved = sorted(s["route"] for s in summaries if s["margin_is_lower_bound"])
-    resolved = sorted((s for s in summaries if not s["margin_is_lower_bound"]), key=lambda s: (-s["focus_margin"], s["route"]))
+    unresolved = sorted(s["route"] for s in summaries if s[bound])
+    resolved = sorted((s for s in summaries if not s[bound]), key=lambda s: (-s[key], s["route"]))
     return ([unresolved] if unresolved else []) + [[s["route"]] for s in resolved]
 
 
-def _tier_text(tiers, unresolved) -> str:
-    return " > ".join("{" + ", ".join(tier) + "} (no focus within the horizon: lower bounds, tied)"
+def _tier_text(tiers, unresolved, what="focus") -> str:
+    return " > ".join("{" + ", ".join(tier) + f"}} (no {what} within the horizon: lower bounds, tied)"
                       if set(tier) <= set(unresolved) else ", ".join(tier) for tier in tiers)
+
+
+def focus_margins(routes) -> list:
+    """Focus margin s_c - L of each route as T024 defines it: first conjugate point (zero of j_head) minus length.
+
+    A route whose j_head has no zero within its integration horizon has no
+    focus margin (None, as T024 records a censored margin) and only the lower
+    bound horizon - L, kept under its own key beside the horizon it depends on.
+    ``min_j_head_over_s`` is min j_head(s) / s over (0, L]: positive means no
+    conjugate point on the route, so the route is locally length minimizing and
+    its margin, found or censored, is positive.
+    """
+    rows = []
+    for route in routes:
+        states, s = route.transfer.states, route.transfer.s
+        conjugate = route.conjugate[0] if route.conjugate else None
+        rows.append({"route": route.name, "length_mm": route.length, "first_conjugate_mm": conjugate,
+                     "focus_margin_mm": None if conjugate is None else conjugate - route.length,
+                     "focus_margin_lower_bound_mm": route.horizon - route.length if conjugate is None else None,
+                     "margin_is_lower_bound": conjugate is None, "horizon_mm": route.horizon,
+                     "min_j_head_over_s": float(np.min(states[1:, 6] / s[1:]))})
+    return rows
+
+
+def _margin_or_bound(row) -> float:
+    """The focus margin of a route, or its lower bound when censored (for comparisons of like with like only)."""
+    return row["focus_margin_lower_bound_mm"] if row["margin_is_lower_bound"] else row["focus_margin_mm"]
 
 
 @_task("T137", ("test_rankings_by_calibration_tolerance_and_focus_margin",))
 def rank_by_focus_margin(ctx):
     fan = ctx.memo("mfg.fan", fan_study)
     summaries, coarse = fan["summaries"], {c["route"]: c for c in fan["coarse"]}
-    # Tiers, not a strict order: routes without a focus inside the horizon have only lower-bound margins.
+    # The focus margin (T024): s_c - L over conjugate points only.
+    margins = focus_margins(fan["routes"])
+    margin_ranking = focus_tiers(margins, "focus_margin_mm", "margin_is_lower_bound")
+    mirror, plus5 = fan["mirror"], next(s for s in summaries if s["route"] == "fan+5deg")
+    # The mirror route and fan+5deg must agree in censoring and in the margin (or its lower bound).
+    plus5_row = next(m for m in margins if m["route"] == "fan+5deg")
+    mirror_censored = mirror["first_conjugate_mm"] is None
+    mirror_difference = (((mirror["horizon_mm"] if mirror_censored else mirror["first_conjugate_mm"]) - mirror["length_mm"])
+                         - _margin_or_bound(plus5_row)) if mirror_censored == plus5_row["margin_is_lower_bound"] else 1.0
+    conjugate_agree = all((m["first_conjugate_mm"] is None) == (coarse[m["route"]]["first_conjugate_mm"] is None)
+                          for m in margins)
+    length_drift = max(abs(s["length_mm"] - coarse[s["route"]]["length_mm"]) for s in summaries)
+    positive = min(m["min_j_head_over_s"] for m in margins)
+    f_margin = finding("Candidate coupon routes ranked by focus margin s_c - L (first conjugate point, a zero of j_head, "
+                       "minus the route length, as T024 defines it)", "numerical",
+                       {"ranking": margin_ranking, "focus_margin_mm": {m["route"]: m["focus_margin_mm"] for m in margins},
+                        "lower_bound": {m["route"]: m["margin_is_lower_bound"] for m in margins},
+                        "focus_margin_lower_bound_mm": {m["route"]: m["focus_margin_lower_bound_mm"] for m in margins},
+                        "horizon_mm": {m["route"]: m["horizon_mm"] for m in margins},
+                        "min_j_head_over_s": {m["route"]: m["min_j_head_over_s"] for m in margins}},
+                       {"checks": [_check("analytic", "min over routes and s in (0, L] of j_head(s) / s (positive: no "
+                                          "conjugate point on any route, so every focus margin is positive)", positive,
+                                          0.1, "ge"),
+                                   _check("exact_arithmetic", "conjugate-found flags agree at h = 1 and 2 mm",
+                                          0.0 if conjugate_agree else 1.0, 0.0),
+                                   _check("invariant", "mirror route -5 deg has the +5 deg focus margin, or the same "
+                                          "lower bound when both are censored (mm)", mirror_difference, 1e-9)]},
+                       unit="mm",
+                       uncertainty=_u("truncation_bound", length_drift / 15.0,
+                                      "RK4 Richardson estimate of the route lengths (mm); lower bounds depend on the horizon"),
+                       tolerance={"abs": 1e-6, "rel": 1e-6})
+    # The focal clearance ratio: nearest zero of j_lat or j_head over the route length.
     ranking = focus_tiers(summaries)
-    unresolved = sorted(s["route"] for s in summaries if s["margin_is_lower_bound"])
-    resolved_margins = [s["focus_margin"] for s in summaries if not s["margin_is_lower_bound"]]
-    bound_lead = (min(s["focus_margin"] for s in summaries if s["margin_is_lower_bound"]) - max(resolved_margins)
+    unresolved = sorted(s["route"] for s in summaries if s["ratio_is_lower_bound"])
+    resolved_margins = [s["focal_clearance_ratio"] for s in summaries if not s["ratio_is_lower_bound"]]
+    bound_lead = (min(s["focal_clearance_ratio"] for s in summaries if s["ratio_is_lower_bound"]) - max(resolved_margins)
                   if unresolved and resolved_margins else 0.0)
     focus_drift = max(abs(s["nearest_focus_mm"] - coarse[s["route"]]["nearest_focus_mm"])
                       for s in summaries if s["nearest_focus_mm"] is not None)
-    bound_agree = all(s["margin_is_lower_bound"] == coarse[s["route"]]["margin_is_lower_bound"] for s in summaries)
+    bound_agree = all(s["ratio_is_lower_bound"] == coarse[s["route"]]["ratio_is_lower_bound"] for s in summaries)
     shortest = min(summaries, key=lambda s: s["length_mm"])
+    shortest_margin = next(m for m in margins if m["route"] == shortest["route"])
     worst = ranking[-1][0] if len(ranking[-1]) == 1 and ranking[-1][0] not in unresolved else None
-    mirror = fan["mirror"]
-    plus5 = next(s for s in summaries if s["route"] == "fan+5deg")
-    f_rank = finding("Candidate coupon routes ranked by focus margin (nearest focal or conjugate point / route length)",
+    f_rank = finding("Candidate coupon routes ranked by focal clearance ratio (nearest focal or conjugate point, a zero "
+                     "of j_lat or j_head, over the route length)",
                      "numerical", {"ranking": ranking, "unresolved_tier": unresolved,
-                                   "margin": {s["route"]: s["focus_margin"] for s in summaries},
-                                   "lower_bound": {s["route"]: s["margin_is_lower_bound"] for s in summaries}},
+                                   "focal_clearance_ratio": {s["route"]: s["focal_clearance_ratio"] for s in summaries},
+                                   "lower_bound": {s["route"]: s["ratio_is_lower_bound"] for s in summaries}},
                      {"checks": [_check("self_convergence", "nearest-focus distance at h = 1 vs 2 mm (mm)", focus_drift, 1e-2),
                                  _check("exact_arithmetic", "focus-found flags agree at h = 1 and 2 mm", 0.0 if bound_agree else 1.0, 0.0),
-                                 _check("invariant", "mirror route -5 deg has the +5 deg margin",
-                                        mirror["focus_margin"] - plus5["focus_margin"], 1e-9),
-                                 _check("analytic", "smallest lower-bound margin of the unresolved tier minus the largest "
-                                        "resolved margin (the tied tier leads)", bound_lead, 0.0, "signed_ge")]},
+                                 _check("invariant", "mirror route -5 deg has the +5 deg focal clearance ratio",
+                                        mirror["focal_clearance_ratio"] - plus5["focal_clearance_ratio"], 1e-9),
+                                 _check("analytic", "smallest lower-bound ratio of the unresolved tier minus the largest "
+                                        "resolved ratio (the tied tier leads)", bound_lead, 0.0, "signed_ge")]},
                      uncertainty=_u("truncation_bound", focus_drift / 15.0,
                                     "RK4 Richardson estimate of focus locations (mm)"),
                      tolerance={"abs": 1e-6, "rel": 1e-6})
-    f_counter = finding("The shortest candidate route has the worst focus margin", "numerical",
-                        {"shortest": shortest["route"], "length_mm": shortest["length_mm"], "margin": shortest["focus_margin"]},
-                        {"checks": [_check("exact_arithmetic", "shortest route is last in the focus ranking",
+    f_counter = finding("The shortest candidate route has the lowest focal clearance ratio", "numerical",
+                        {"shortest": shortest["route"], "length_mm": shortest["length_mm"],
+                         "focal_clearance_ratio": shortest["focal_clearance_ratio"],
+                         "focus_margin_mm": shortest_margin["focus_margin_mm"],
+                         "focus_margin_lower_bound_mm": shortest_margin["focus_margin_lower_bound_mm"]},
+                        {"checks": [_check("exact_arithmetic", "shortest route is last in the focal-clearance ranking",
                                            0.0 if worst == shortest["route"] else 1.0, 0.0),
-                                    _check("analytic", "its focal point lies inside the route (margin)", shortest["focus_margin"], 1.0, "le")]},
+                                    _check("analytic", "its focal point lies inside the route (focal clearance ratio)",
+                                           shortest["focal_clearance_ratio"], 1.0, "le")]},
                         uncertainty=_u("truncation_bound", focus_drift / 15.0,
                                        "RK4 Richardson estimate of focus locations (mm)"),
                         tolerance={"abs": 1e-6, "rel": 1e-7},
-                        counterexample={"statement": "The shortest route between a station and an edge is also the safest "
-                                                     "route (largest distance to a focal or conjugate point)",
+                        counterexample={"statement": "The shortest route between a station and an edge is also the one "
+                                                     "farthest, relative to its length, from a focal or conjugate point "
+                                                     "(largest focal clearance ratio)",
                                         "witness": {"route": shortest["route"], "length_mm": shortest["length_mm"],
+                                                    "ranked_by": "focal clearance ratio (zeros of j_lat or j_head) / L",
                                                     "nearest_focus_mm": shortest["nearest_focus_mm"],
                                                     "nearest_focus_kind": shortest["nearest_focus_kind"],
+                                                    "focus_margin_mm": shortest_margin["focus_margin_mm"],
+                                                    "focus_margin_lower_bound_mm":
+                                                        shortest_margin["focus_margin_lower_bound_mm"],
                                                     "next_longer": sorted(summaries, key=lambda s: s["length_mm"])[1]["route"]}})
     # Second variation of length for routes to the edge line: L''(0) = j_head(L) j_head'(L) (straight end line).
     straight = next(s for s in summaries if s["route"] == "fan+0deg")
@@ -2883,42 +3478,69 @@ def rank_by_focus_margin(ctx):
                                          "form (mm)"),
                           tolerance={"abs": 1e-6, "rel": 1e-5})
     calibration = ctx.memo("mfg.calibration", calibration_table)["ranking"]
-    f_conflict = finding("The calibration-tolerance ranking and the focus-margin ranking put the straight route at opposite ends",
-                         "numerical", {"calibration_first": calibration[0], "focus_last": worst},
-                         {"checks": [_check("exact_arithmetic", "first by calibration tolerance is last by focus margin",
-                                            0.0 if calibration[0] == worst else 1.0, 0.0)]},
+    f_conflict = finding("The calibration-tolerance ranking and the focal-clearance ranking put the straight route at "
+                         "opposite ends", "numerical", {"calibration_first": calibration[0], "focal_clearance_last": worst},
+                         {"checks": [_check("exact_arithmetic", "first by calibration tolerance is last by focal clearance "
+                                            "ratio", 0.0 if calibration[0] == worst else 1.0, 0.0)]},
                          uncertainty=EXACT, tolerance={"abs": 0, "rel": 0})
-    ctx.artifact_json("focus-ranking.json", _r({"ranking": ranking, "routes": summaries, "coarse": fan["coarse"],
+    ctx.artifact_json("focus-ranking.json", _r({"focus_margin": {"definition": "s_c - L, s_c the first zero of j_head "
+                                                                               "(T024); None when no zero lies within "
+                                                                               "the horizon, with the lower bound "
+                                                                               "horizon - L under its own key",
+                                                                 "ranking": margin_ranking, "routes": margins},
+                                                "focal_clearance_ratio": {"definition": "nearest zero of j_lat or j_head "
+                                                                                        "over L; horizon / L as a lower bound",
+                                                                          "ranking": ranking},
+                                                "routes": summaries, "coarse": fan["coarse"],
                                                 "second_variation": {"finite_difference": d, "extrapolated": extrapolated,
                                                                      "index_form": predicted},
                                                 "calibration_ranking": calibration}))
     ctx.artifact_text("margin-vs-length.svg", svg.line_plot(
-        [("focus margin (lower bound when no focus)", [s["length_mm"] for s in summaries], [s["focus_margin"] for s in summaries]),
-         ("margin = 1 (focus at the route end)", [summaries[0]["length_mm"], summaries[-1]["length_mm"]], [1.0, 1.0])],
-        title="Coupon routes: focus margin vs length", xlabel="route length (mm)", ylabel="s_focus / L"))
-    findings = [f_rank, f_counter, f_variation, f_conflict,
+        [("focal clearance ratio (lower bound when no focus)", [s["length_mm"] for s in summaries],
+          [s["focal_clearance_ratio"] for s in summaries]),
+         ("ratio = 1 (focus at the route end)", [summaries[0]["length_mm"], summaries[-1]["length_mm"]], [1.0, 1.0])],
+        title="Coupon routes: focal clearance ratio vs length", xlabel="route length (mm)", ylabel="s_focus / L"))
+    findings = [f_margin, f_rank, f_counter, f_variation, f_conflict,
                 _not_measured("Physical paths near a predicted focus show the predicted loss of lateral-error ordering")]
     fields = _fields(
-        "The focus margin (distance to the nearest focal or conjugate point relative to route length) ranks routes "
-        "differently from length: the straight route over the dome is the shortest candidate route to the far edge yet "
-        "has a focal point inside it.",
-        "Focal points: zeros of j_lat; conjugate points: zeros of j_head (s > 0); margin = s_focus / L, or horizon / L as "
-        "a lower bound; L''(0) = j_head(L) j_head'(L) for routes from a point to a straight edge line.",
+        "Two margins rank the routes differently. The focus margin s_c - L (T024: first conjugate point, a zero of "
+        "j_head, minus the route length) is positive for every candidate route, so each is locally length "
+        "minimizing to the edge; the focal clearance ratio (nearest zero of j_lat or j_head over L) separates them and "
+        "ranks routes differently from length: the straight route over the dome is the shortest candidate route to the "
+        "far edge yet has a focal point of lateral offsets inside it.",
+        "Conjugate points: zeros of j_head (s > 0); focal points: zeros of j_lat. Focus margin = s_c - L, recorded as "
+        "no value when censored (no conjugate point within the horizon), with the lower bound horizon - L kept "
+        "separately; focal clearance ratio = s_focus / L with s_focus the nearest focal or conjugate point, or "
+        "horizon / L as a lower bound; L''(0) = j_head(L) j_head'(L) for routes from a point to a straight edge line.",
         ["Fan of geodesic routes (T136) at h = 1 and 2 mm; horizon 2.5 x the chart reach",
          "Routes at 1 and 2 deg for the second variation"],
         "No observation: margins and lengths are model outputs.",
-        "Focus locations and focus-found flags stable under step halving; mirror symmetry; index form = second variation.",
-        "Locate focal/conjugate points by Hermite zeros, rank, compare with lengths and with the T136 ranking, and "
-        "verify the Jacobi second-variation formula by Richardson finite differences of route length.",
-        f"ranking {_tier_text(ranking, unresolved)}; shortest {shortest['route']} ({shortest['length_mm']:.4f} mm) has margin "
-        f"{shortest['focus_margin']:.3f} with a {shortest['nearest_focus_kind']} point at {shortest['nearest_focus_mm']:.2f} mm; "
+        "Focus and conjugate locations and their found flags stable under step halving; mirror symmetry; j_head > 0 on "
+        "(0, L]; index form = second variation.",
+        "Locate focal and conjugate points by Hermite zeros, rank by the focus margin and by the focal clearance "
+        "ratio, compare with lengths and with the T136 ranking, and verify the Jacobi second-variation formula by "
+        "Richardson finite differences of route length.",
+        f"focus margin: {_tier_text(margin_ranking, [m['route'] for m in margins if m['margin_is_lower_bound']], 'conjugate point')}, "
+        f"censored margins (no value) with lower bounds from "
+        f"{min((m['focus_margin_lower_bound_mm'] for m in margins if m['margin_is_lower_bound']), default=math.nan):.1f} "
+        f"mm (min j_head(s) / s = {positive:.3f}); "
+        f"focal clearance ratio: {_tier_text(ranking, unresolved)}; shortest {shortest['route']} "
+        f"({shortest['length_mm']:.4f} mm) has ratio {shortest['focal_clearance_ratio']:.3f} with a {shortest['nearest_focus_kind']} "
+        f"point at {shortest['nearest_focus_mm']:.2f} mm and focus margin "
+        + (f">= {shortest_margin['focus_margin_lower_bound_mm']:.1f} mm (censored)"
+           if shortest_margin["margin_is_lower_bound"] else f"{shortest_margin['focus_margin_mm']:.1f} mm") + "; "
         f"L''(0) finite difference {extrapolated:.4f} mm vs index form {predicted:.4f} mm.",
-        f"Focus locations agree to {focus_drift:.1e} mm between step sizes; lower-bound margins depend on the horizon.",
-        ["step refinement", "mirror symmetry", "lower-bound margins (no focus within horizon)", "second-variation identity"],
-        ["The straight route is a local length minimum (L'' > 0) although it contains a lateral focal point; a focal "
-         "point of the start normal does not contradict minimality to the edge line.",
+        f"Focus locations agree to {focus_drift:.1e} mm and route lengths to {length_drift:.1e} mm between step sizes; "
+        "lower-bound margins and ratios depend on the horizon.",
+        ["step refinement", "mirror symmetry", "lower bounds (no focus or conjugate point within the horizon)",
+         "second-variation identity", "positivity of j_head along every route"],
+        ["No candidate route has a conjugate point within 2.5 x its reach, so the focus margin only bounds them from "
+         "below and ties them; the focal clearance ratio, which includes zeros of j_lat, is the quantity that ranks.",
+         "The straight route is a local length minimum (L'' > 0, positive focus margin) although it contains a lateral "
+         "focal point; a focal point of the start normal does not contradict minimality to the edge line.",
          "The fan is a discrete candidate set; margins between sampled headings are not bounded."],
-        "T138: compare predicted and measured separation along the straight route once measured.")
+        "Open: bound the focus margin and the focal clearance ratio between the sampled fan headings with a continuous "
+        "heading sweep that tracks the zeros of j_head and j_lat, which the discrete fan leaves unbounded.")
     return {"state": "completed", "fields": fields, "findings": findings}
 
 
@@ -2995,8 +3617,9 @@ def separation_prediction() -> dict:
 
     Components (standard uncertainties, mm): geometry from the dome tolerances
     (central differences, T140), solver from RK4 Richardson, and the start pose of
-    the offset tape either open loop (declared jig and laying error) or
-    conditioned on its CMM estimate. Start-pose sensitivities are central
+    the offset tape either open loop (declared insert and laying error and two
+    seatings of the jig, kept as separate terms) or conditioned on its CMM
+    estimate. Start-pose sensitivities are central
     differences of the exactly re-integrated offset route at the declared step,
     so they include the nonlinearity of a 2 mm offset.
     """
@@ -3025,10 +3648,12 @@ def separation_prediction() -> dict:
         return np.hypot(u["lateral_mm"] * start["lateral"]["central"], u["heading_rad"] * start["heading"]["central"])
 
     execution, conditioning = start_term(EXECUTION), start_term(START_POSE_U)
+    execution_terms = {name: start_term(u) for name, u in EXECUTION["terms"].items()}
     # After the MFG-SCAN-01 scan (T129) the dome tolerances give way to the scan-derived dome covariance.
     geometry_scan = scan_geometry(sensitivity, "lateral", as_built_study()["covariance_mm2"])
     return {"stations_mm": nominal["stations_mm"], "separation_mm": center.tolist(), "offset_mm": lateral,
             "geometry_mm": geometry.tolist(), "solver_mm": solver.tolist(), "execution_mm": execution.tolist(),
+            "execution_terms_mm": {name: term.tolist() for name, term in execution_terms.items()},
             "conditioning_mm": conditioning.tolist(), "geometry_scan_mm": geometry_scan.tolist(),
             "open_loop_expanded_mm": (COVERAGE_K * np.sqrt(geometry ** 2 + solver ** 2 + execution ** 2)).tolist(),
             "conditioned_expanded_mm": (COVERAGE_K * np.sqrt(geometry ** 2 + solver ** 2 + conditioning ** 2)).tolist(),
@@ -3044,7 +3669,7 @@ def separation_prediction() -> dict:
 
 
 def start_error_scenario() -> dict:
-    """A correct model compared with a tape realized 0.1 mm off its nominal start offset (2 sigma of the jig).
+    """A correct model compared with a tape realized 2 sigma of the declared open-loop start error off its offset.
 
     The 'measured' separations are the exactly re-integrated realized route: model
     output standing in for a perfect instrument, not a measurement.
@@ -3104,8 +3729,10 @@ def pair_predictions(plate, cylinder) -> dict:
 
     Plate: the chord of every T126 pair equals its geodesic distance; the declared
     flatness enters at second order (T140), so U_p = 0. Cylinder: the T127
-    chord-geodesic gaps with U_p = k |d gap / dR| u_R for the declared radius
-    tolerance (u_R = 0.1 / sqrt(3) mm).
+    chord-geodesic gaps (measured as film surface distance minus camera chord,
+    H1) with U_p = k |d gap / dR| u_R for the declared radius tolerance
+    (u_R = 0.1 / sqrt(3) mm), and the chords themselves with
+    U_p = k |d chord / dR| u_R beside the geodesic distances they differ from (H3).
     """
     u_radius = 0.1 / math.sqrt(3.0)
     return {"MFG-FLAT-PLATE-01": {"pairs": ["-".join(r["pair"]) for r in plate["pairs"]],
@@ -3115,7 +3742,321 @@ def pair_predictions(plate, cylinder) -> dict:
                                 "values_mm": [r["gap_mm"] for r in cylinder["pairs"]],
                                 "expanded_uncertainty_mm": [
                                     COVERAGE_K * abs(gap_radius_derivative(r["dphi_rad"], r["dz_mm"], geo.CYLINDER_RADIUS))
-                                    * u_radius for r in cylinder["pairs"]]}}
+                                    * u_radius for r in cylinder["pairs"]]},
+            "MFG-CYLINDER-01 chords": {"pairs": [r["pair"] for r in cylinder["pairs"]],
+                                       "values_mm": [r["chord_mm"] for r in cylinder["pairs"]],
+                                       "geodesic_mm": [r["geodesic_mm"] for r in cylinder["pairs"]],
+                                       "expanded_uncertainty_mm": [
+                                           COVERAGE_K * abs(chord_radius_derivative(r["dphi_rad"], r["dz_mm"],
+                                                                                    geo.CYLINDER_RADIUS)) * u_radius
+                                           for r in cylinder["pairs"]]}}
+
+
+# Operator captures of the protocols (read by T138) --------------------------------------------
+CAPTURE_ROLES = ("photogrammetry", "cmm", "film")
+PLATE_PATHS, CYLINDER_PATHS, COUPON_PATHS = ("N0", "L2", "H5"), ("HX45", "HX45-L2"), ("N", "L", "H")
+
+
+def _pose_ids(paths) -> list:
+    return [f"{path}-S{s}" for path in paths for s in (0, 20)]
+
+
+def capture_expectations(protocol: str) -> dict:
+    """What each capture role of a protocol must declare and hold (manufacturing_records.read_capture ``expected``)."""
+    if protocol == "MFG-FLAT-PLATE-01":
+        roles = {"photogrammetry": (TARGET_CAPTURE, "camera", [f"M{k:02d}" for k in range(25)]),
+                 "cmm": (TARGET_CAPTURE, "cmm", _pose_ids(PLATE_PATHS))}
+    elif protocol == "MFG-CYLINDER-01":
+        cylinder = cylinder_study()
+        roles = {"photogrammetry": (TARGET_CAPTURE, "camera", [m["id"] for m in cylinder["markers"] if m["faces_up"]]),
+                 "film": (DISTANCE_CAPTURE, "film", [r["pair"] for r in cylinder["pairs"]]),
+                 "cmm": (TARGET_CAPTURE, "cmm", _pose_ids(CYLINDER_PATHS))}
+    elif protocol == "MFG-COUPON-01":
+        roles = {"photogrammetry": (TARGET_CAPTURE, "camera", COUPON_TARGETS),
+                 "cmm": (TARGET_CAPTURE, "cmm", _pose_ids(COUPON_PATHS))}
+    else:
+        raise rec.RecordRefusal("capture_protocol_unsupported", f"T138 compares no capture of protocol {protocol!r}")
+    return {role: {"schema": schema, "protocol": protocol, "instrument": instrument,
+                   "frame": "CAD" if schema == TARGET_CAPTURE else "surface", "ids": ids}
+            for role, (schema, instrument, ids) in roles.items()}
+
+
+def _coupon_states(lateral, dheading, span, steps) -> np.ndarray:
+    """RK4 geodesic states of a tape started at the station with a relative start pose (exp-map lateral offset)."""
+    start = jacobi.perturbed_start(geo.COUPON, geo.STATION, 0.0, lateral=lateral, heading_change=dheading)
+    return integrators.integrate_fixed(geo.COUPON.geodesic_rhs, start, span, steps, "rk4")[1]
+
+
+def synthetic_capture(protocol: str, role: str, lateral_mm: float = 2.0, dheading_rad: float = 0.0,
+                      noise_mm: float = 0.0, seed: int = SEED + 11) -> bytes:
+    """A synthetic operator capture: model output standing in for an instrument export, never a measurement.
+
+    The bytes start with the synthetic banner and declare origin synthetic, so
+    read_capture reports them as synthetic and to_acquisition refuses them.
+    Coupon targets lie on the exactly integrated nominal tape and on tapes
+    started ``lateral_mm`` and ``dheading_rad`` off it (lateral tape L) and 5
+    mrad off it (heading tape H); plate and cylinder targets are the declared
+    markers and film readings the geodesic distances. ``noise_mm`` adds seeded
+    Gaussian noise to every coordinate or distance.
+    """
+    spec = capture_expectations(protocol)[role]
+    generator = met.rng(seed)
+    u = INSTRUMENTS[spec["instrument"]]["declared_standard_uncertainty_mm"]
+    if protocol == "MFG-COUPON-01":
+        tapes = {"N": (0.0, 0.0), "L": (lateral_mm, dheading_rad), "H": (0.0, 0.005)}
+        length, steps = nominal_study()["length_mm"], NOMINAL_STATIONS * 26
+        stride = steps // NOMINAL_STATIONS
+        points = {}
+        for tape, (lateral, dheading) in tapes.items():
+            if role == "photogrammetry":
+                states = _coupon_states(lateral, dheading, length, steps)[::stride]
+                points.update({f"{tape}{k}": geo.COUPON.embedding(y[:2]) for k, y in enumerate(states)})
+            else:
+                states = _coupon_states(lateral, dheading, START_BASELINE_MM, 20)
+                points.update({f"{tape}-S0": geo.COUPON.embedding(states[0, :2]),
+                               f"{tape}-S20": geo.COUPON.embedding(states[-1, :2])})
+    elif protocol == "MFG-FLAT-PLATE-01" and role == "photogrammetry":
+        points = {m["id"]: geo.PLATE.embedding(np.array(m["u_mm"], dtype=float)) for m in plate_study()["markers"]}
+    elif protocol == "MFG-CYLINDER-01" and role == "photogrammetry":
+        points = {m["id"]: geo.CYLINDER.embedding(np.array(m["u"], dtype=float)) for m in cylinder_study()["markers"]}
+    elif protocol == "MFG-CYLINDER-01" and role == "film":
+        rows = {r["pair"]: [r["geodesic_mm"] + (generator.normal(0.0, noise_mm) if noise_mm else 0.0), u]
+                for r in cylinder_study()["pairs"]}
+        return rec.write_capture(spec["schema"], protocol, spec["instrument"], spec["frame"], rows)
+    else:
+        raise ValueError(f"No synthetic {role} capture is defined for {protocol}")
+    rows = {name: [*(np.asarray(p) + (generator.normal(0.0, noise_mm, 3) if noise_mm else 0.0)), u]
+            for name, p in points.items() if name in spec["ids"]}
+    return rec.write_capture(spec["schema"], protocol, spec["instrument"], spec["frame"], rows)
+
+
+START_BASELINE_MM = 20.0
+
+
+def estimate_start_pose(rows, nominal="N", offset="L") -> tuple[float, float]:
+    """Relative start pose (lateral mm, heading rad) of the offset tape from CMM points at s = 0 and 20 mm.
+
+    The separations e(0) and e(20) of the offset tape's points from the nominal
+    tape's, each projected on the model's in-surface normal of the nominal
+    route there, give the pose through the Jacobi fields of the nominal route:
+    e(0) = delta and e(20) = delta j_lat(20) + dtheta j_head(20). A plain angle
+    between the two 20 mm chords would be biased by delta (j_lat(20) - 1) / 20,
+    about 0.1 mrad at the station, half the CMM heading uncertainty.
+    """
+    start = jacobi.transfer(geo.COUPON, geo.STATION, 0.0, START_BASELINE_MM, steps=20)
+    point = {name: np.asarray(values[:3], dtype=float) for name, values in rows.items()}
+    separation = []
+    for index, s in ((0, 0), (-1, 20)):
+        y = start.states[index]
+        normal = geo.COUPON.embedding_jacobian(y[:2]) @ geo.COUPON.normal(y[:2], y[2:4])
+        separation.append(float((point[f"{offset}-S{s}"] - point[f"{nominal}-S{s}"]) @ normal / np.linalg.norm(normal)))
+    j_lat, j_head = start.states[-1, 4], start.states[-1, 6]
+    return separation[0], float((separation[1] - separation[0] * j_lat) / j_head)
+
+
+def coupon_separations(rows, offset="L") -> tuple[np.ndarray, np.ndarray]:
+    """Separations of the offset tape's station targets from the nominal tape's, and their standard uncertainties.
+
+    Each is the difference of the two targets at a station projected on the
+    model's unit in-surface normal of the nominal route there; it equals the
+    normal separation of the exactly offset route to second order (checked in
+    T138). u = sqrt(u_offset^2 + u_nominal^2) from the capture's u column.
+    """
+    length, steps = nominal_study()["length_mm"], NOMINAL_STATIONS * 26
+    base = jacobi.transfer(geo.COUPON, geo.STATION, 0.0, length, steps=steps).states[::steps // NOMINAL_STATIONS]
+    values, sigmas = [], []
+    for k, y in enumerate(base):
+        normal = geo.COUPON.embedding_jacobian(y[:2]) @ geo.COUPON.normal(y[:2], y[2:4])
+        a, b = np.asarray(rows[f"N{k}"], dtype=float), np.asarray(rows[f"{offset}{k}"], dtype=float)
+        values.append(float((b[:3] - a[:3]) @ normal / np.linalg.norm(normal)))
+        sigmas.append(math.hypot(a[3], b[3]))
+    return np.array(values), np.array(sigmas)
+
+
+def _crossing(stations, values, sigmas=None):
+    """First arclength where the separation changes sign, by linear interpolation between stations, and its
+    standard uncertainty from the ``sigmas`` of the two bracketing separations; (None, None) if there is none.
+
+    s* = s_k + ds v_k / D with D = v_k - v_{k+1}, so ds*/dv_k = -ds v_{k+1} / D^2 and ds*/dv_{k+1} = ds v_k / D^2:
+    u(s*) = ds sqrt(v_{k+1}^2 u_k^2 + v_k^2 u_{k+1}^2) / D^2, about u_separation / |slope|.
+    """
+    for k in range(len(values) - 1):
+        if values[k] > 0.0 >= values[k + 1]:
+            step, spread = stations[k + 1] - stations[k], values[k] - values[k + 1]
+            where = float(stations[k] + values[k] / spread * step)
+            if sigmas is None:
+                return where, None
+            return where, float(step * math.hypot(values[k + 1] * sigmas[k], values[k] * sigmas[k + 1]) / spread ** 2)
+    return None, None
+
+
+def _pair_chords(rows, pairs):
+    chords, sigmas = [], []
+    for a, b in pairs:
+        pa, pb = np.asarray(rows[a], dtype=float), np.asarray(rows[b], dtype=float)
+        chords.append(float(np.linalg.norm(pb[:3] - pa[:3])))
+        sigmas.append(math.hypot(pa[3], pb[3]))
+    return np.array(chords), np.array(sigmas)
+
+
+def _en_summary(labels, measured, predicted, u_measured, u_predicted) -> dict:
+    en = rec.normalized_error(measured, predicted, u_measured, u_predicted)
+    return {"labels": list(labels), "measured_mm": measured.tolist(), "predicted_mm": np.asarray(predicted).tolist(),
+            "expanded_uncertainty_measured_mm": np.asarray(u_measured).tolist(),
+            "expanded_uncertainty_predicted_mm": np.asarray(u_predicted).tolist(), "normalized_error": en.tolist(),
+            "max_normalized_error": float(np.max(en)), "within_en_1": bool(np.all(en <= 1.0))}
+
+
+def compare_captures(raw: dict) -> dict:
+    """Parse bound captures and compare them with the prediction of their protocol (E_n); refuses what it cannot read.
+
+    ``raw`` maps capture roles to bytes. Returns the protocol, per-role header
+    and digest, and the comparisons: coupon separations at stations 1..8
+    against the open-loop prediction and, with a cmm capture, against the
+    prediction re-integrated from the estimated start pose; plate marker-pair
+    chords; cylinder pair chords against the predicted chords and geodesics
+    and, with a film capture, film minus chord against the predicted gaps. A
+    computational comparison of unauthenticated bytes, never a measurement.
+    """
+    headers = {role: rec.read_capture(data) for role, data in sorted(raw.items())}
+    protocols = {header["protocol"] for header in headers.values()}
+    if len(protocols) != 1:
+        raise rec.RecordRefusal("capture_protocol_mismatch", f"Bound captures name different protocols: {sorted(protocols)}")
+    protocol = protocols.pop()
+    expectations = capture_expectations(protocol)
+    unknown = sorted(set(raw) - set(expectations))
+    if unknown:
+        raise rec.RecordRefusal("capture_role_unsupported", f"Protocol {protocol} defines no capture role {unknown}")
+    parsed = {role: rec.read_capture(data, expectations[role]) for role, data in sorted(raw.items())}
+    out = {"protocol": protocol,
+           "captures": {role: {"sha256": hashlib.sha256(raw[role]).hexdigest(), "bytes": len(raw[role]),
+                               "origin": parsed[role]["origin"], "instrument": parsed[role]["instrument"],
+                               "rows": len(parsed[role]["rows"])} for role in parsed},
+           "origin": "synthetic" if any(p["origin"] == "synthetic" for p in parsed.values())
+           else "measurement (declared by the operator; unauthenticated)", "comparisons": {}}
+    comparisons = out["comparisons"]
+    if protocol == "MFG-COUPON-01":
+        prediction = separation_prediction()
+        stations = np.array(prediction["stations_mm"])
+        tested = slice(1, None)  # station 0 is where the start offset itself is read
+        if "photogrammetry" in parsed:
+            measured, sigma = coupon_separations(parsed["photogrammetry"]["rows"])
+            comparisons["separation, open loop"] = dict(_en_summary(
+                [f"L{k}" for k in range(1, NOMINAL_STATIONS + 1)], measured[tested],
+                np.array(prediction["separation_mm"])[tested], COVERAGE_K * sigma[tested],
+                np.array(prediction["open_loop_expanded_mm"])[tested]))
+        if "cmm" in parsed:
+            lateral, dheading = estimate_start_pose(parsed["cmm"]["rows"])
+            out["start_pose"] = {"lateral_mm": lateral, "heading_rad": dheading}
+            if "photogrammetry" in parsed:
+                length, steps = nominal_study()["length_mm"], NOMINAL_STATIONS * 26
+                base = jacobi.transfer(geo.COUPON, geo.STATION, 0.0, length, steps=steps)
+                conditioned = geo.separation_nonlinear(geo.COUPON, geo.STATION, 0.0, length, steps, lateral, dheading,
+                                                       base=base)[::steps // NOMINAL_STATIONS]
+                comparisons["separation, conditioned on the captured start pose"] = _en_summary(
+                    [f"L{k}" for k in range(1, NOMINAL_STATIONS + 1)], measured[tested], conditioned[tested],
+                    COVERAGE_K * sigma[tested], np.array(prediction["conditioned_expanded_mm"])[tested])
+                # H1: the measured crossing carries the capture's own uncertainty, propagated through the
+                # interpolation; the prediction carries only the prediction terms of the T140 focal row (geometry,
+                # start pose, solver), not its declared instrument term, which the capture replaces.
+                focal = budget_study()["budget"]["coupon focal distance (conditioned on the measured start pose)"]
+                terms = focal["components"]
+                crossing_m, u_cross = _crossing(stations, measured, sigma)
+                crossing_p, _ = _crossing(stations, conditioned)
+                if crossing_m is not None and crossing_p is not None:
+                    comparisons["crossing arclength (H1)"] = _en_summary(
+                        ["crossing"], np.array([crossing_m]), np.array([crossing_p]), np.array([COVERAGE_K * u_cross]),
+                        np.array([COVERAGE_K * math.sqrt(terms["geometry"] ** 2 + terms["execution"] ** 2
+                                                         + terms["solver"] ** 2)]))
+    elif protocol == "MFG-FLAT-PLATE-01" and "photogrammetry" in parsed:
+        plate = plate_study()
+        pairs = pair_predictions(plate, cylinder_study())["MFG-FLAT-PLATE-01"]
+        chords, sigma = _pair_chords(parsed["photogrammetry"]["rows"], [r["pair"] for r in plate["pairs"]])
+        comparisons["marker-pair chord (H1)"] = _en_summary(pairs["pairs"], chords, pairs["values_mm"],
+                                                           COVERAGE_K * sigma, pairs["expanded_uncertainty_mm"])
+    elif protocol == "MFG-CYLINDER-01" and "photogrammetry" in parsed:
+        cylinder = cylinder_study()
+        predictions = pair_predictions(plate_study(), cylinder)
+        chords, sigma = _pair_chords(parsed["photogrammetry"]["rows"], [r["markers"] for r in cylinder["pairs"]])
+        chord = predictions["MFG-CYLINDER-01 chords"]
+        comparisons["pair chord"] = _en_summary(chord["pairs"], chords, chord["values_mm"], COVERAGE_K * sigma,
+                                                chord["expanded_uncertainty_mm"])
+        comparisons["pair chord against the geodesic distance (H3)"] = _en_summary(
+            chord["pairs"], chords, chord["geodesic_mm"], COVERAGE_K * sigma, chord["expanded_uncertainty_mm"])
+        if "film" in parsed:
+            film = parsed["film"]["rows"]
+            gaps = np.array([film[pair][0] for pair in chord["pairs"]]) - chords
+            u_gap = np.hypot([film[pair][1] for pair in chord["pairs"]], sigma)
+            gap = predictions["MFG-CYLINDER-01"]
+            comparisons["film minus chord (H1)"] = _en_summary(gap["pairs"], gaps, gap["values_mm"], COVERAGE_K * u_gap,
+                                                              gap["expanded_uncertainty_mm"])
+    return out
+
+
+REALIZED_START = (2.1, 4e-4)   # relative start pose of the synthetic lateral tape (mm, rad)
+
+
+@functools.lru_cache(maxsize=1)
+def capture_reduction_study() -> dict:
+    """The capture reader and reductions on noise-free synthetic captures, and the reader's refusals.
+
+    Coupon: targets and start-pose points of a lateral tape started 2.1 mm and
+    0.4 mrad off the nominal one; the start pose must be recovered and the
+    reduced separations must equal the prediction re-integrated from it. Plate
+    and cylinder: chords and film-minus-chord gaps must equal the predicted
+    ones. Malformed or relabelled variants of a synthetic capture must be
+    refused, and so must a retention record that offers its bytes as a
+    measurement.
+    """
+    coupon = compare_captures({role: synthetic_capture("MFG-COUPON-01", role, *REALIZED_START)
+                               for role in ("photogrammetry", "cmm")})
+    conditioned = coupon["comparisons"]["separation, conditioned on the captured start pose"]
+    plate = compare_captures({"photogrammetry": synthetic_capture("MFG-FLAT-PLATE-01", "photogrammetry")})
+    cylinder = compare_captures({role: synthetic_capture("MFG-CYLINDER-01", role) for role in ("photogrammetry", "film")})
+
+    def worst(comparison):
+        return float(np.max(np.abs(np.array(comparison["measured_mm"]) - np.array(comparison["predicted_mm"]))))
+
+    data = synthetic_capture("MFG-FLAT-PLATE-01", "photogrammetry")
+    text = data.decode("utf-8")
+    lines = text.splitlines(keepends=True)
+    header = [i for i, line in enumerate(lines) if line.startswith("target,")][0]
+    expected = capture_expectations("MFG-FLAT-PLATE-01")["photogrammetry"]
+    variants = {
+        "banner kept, origin relabelled measurement": (text.replace("# origin: synthetic", "# origin: measurement"),
+                                                       "capture_header"),
+        "origin synthetic without the banner": ("".join(lines[1:]), "capture_header"),
+        "schema header missing": (text.replace(f"# schema: {TARGET_CAPTURE}\n", ""), "capture_header"),
+        "columns out of order": (text.replace("target,x_mm,y_mm,z_mm,u_mm", "target,y_mm,x_mm,z_mm,u_mm"),
+                                 "capture_columns"),
+        "row repeated": (text + lines[header + 1], "capture_duplicate"),
+        "target row missing": ("".join(lines[:header + 1] + lines[header + 2:]), "capture_ids"),
+        "value that is not a number": (text.replace(lines[header + 1].split(",")[1], "n/a", 1), "capture_value"),
+        "capture of another protocol": (text.replace("# protocol: MFG-FLAT-PLATE-01", "# protocol: MFG-COUPON-01"),
+                                        "capture_expected"),
+    }
+    refusals = {name: {"expected": code, "observed": rec.refusal_code(rec.read_capture, variant.encode("utf-8"), expected)}
+                for name, (variant, code) in variants.items()}
+    fixture, _ = _schema_fixture()
+    record = deepcopy(fixture)
+    record.update(record_kind="measurement", instrument=dict(fixture["instrument"], serial="SN-1"),
+                  raw=[{"name": "capture.csv", "sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data),
+                        "media_type": "text/csv"}])
+    record["calibration"] = dict(fixture["calibration"], sha256="c" * 64)
+    refusals["synthetic capture offered as a measurement record"] = {
+        "expected": "fixture_is_not_measurement",
+        "observed": rec.refusal_code(rec.to_acquisition, record, {"capture.csv": data})}
+    return {"realized_start": {"lateral_mm": REALIZED_START[0], "heading_rad": REALIZED_START[1]},
+            "estimated_start": coupon["start_pose"],
+            "start_lateral_error_mm": abs(coupon["start_pose"]["lateral_mm"] - REALIZED_START[0]),
+            "start_heading_error_rad": abs(coupon["start_pose"]["heading_rad"] - REALIZED_START[1]),
+            "conditioned_separation_error_mm": worst(conditioned),
+            "plate_chord_error_mm": worst(plate["comparisons"]["marker-pair chord (H1)"]),
+            "cylinder_chord_error_mm": worst(cylinder["comparisons"]["pair chord"]),
+            "cylinder_gap_error_mm": worst(cylinder["comparisons"]["film minus chord (H1)"]),
+            "cylinder_signature_max_en": cylinder["comparisons"]["pair chord against the geodesic distance (H3)"][
+                "max_normalized_error"],
+            "refusals": refusals}
 
 
 @_task("T138", ("test_predicted_separation_has_no_measured_counterpart",
@@ -3197,55 +4138,170 @@ def predicted_vs_measured(ctx):
                        unit="refusals", uncertainty=EXACT, tolerance={"abs": 0, "rel": 0})
     f_measured = finding("Measured separation on the coupon agrees with the prediction (E_n <= 1 at every station)",
                          "physical", None, {})
+    reduction = ctx.memo("mfg.capture-reduction", capture_reduction_study)
+    reader_refusals = [_refusal(f"capture variant: {name}", case["expected"], case["observed"])
+                       for name, case in sorted(reduction["refusals"].items())]
+    worst_chord = max(reduction["plate_chord_error_mm"], reduction["cylinder_chord_error_mm"],
+                      reduction["cylinder_gap_error_mm"])
+    f_reduce = finding("The capture reader and its reductions recover the separations, start pose, chords and gaps of "
+                       "noise-free synthetic captures and refuse malformed or relabelled ones", "computational_pipeline",
+                       {key: reduction[key] for key in ("estimated_start", "start_lateral_error_mm",
+                                                        "start_heading_error_rad", "conditioned_separation_error_mm",
+                                                        "plate_chord_error_mm", "cylinder_chord_error_mm",
+                                                        "cylinder_gap_error_mm", "cylinder_signature_max_en")},
+                       {"generator": _generator("noise-free synthetic captures (manufacturing.synthetic_capture) of "
+                                                "MFG-COUPON-01, MFG-FLAT-PLATE-01 and MFG-CYLINDER-01", seed=None,
+                                                realized_offset_mm=REALIZED_START[0],
+                                                realized_heading_rad=REALIZED_START[1]),
+                        "checks": [_check("analytic", "|estimated - realized| start offset of the lateral tape (mm)",
+                                          reduction["start_lateral_error_mm"], 1e-6, "le"),
+                                   _check("analytic", "|estimated - realized| start heading of the lateral tape (rad; a "
+                                          "twentieth of the CMM heading uncertainty)", reduction["start_heading_error_rad"],
+                                          1e-5, "le"),
+                                   _check("analytic", "max over stations 1..8 of |separation reduced from the targets - "
+                                          "prediction re-integrated from the estimated start pose| (mm)",
+                                          reduction["conditioned_separation_error_mm"], 1e-3, "le"),
+                                   _check("analytic", "max |captured - predicted| over the plate chords, cylinder chords "
+                                          "and cylinder film-minus-chord gaps (mm)", worst_chord, 1e-9, "le"),
+                                   _check("analytic", "largest E_n of the cylinder chords against the geodesic distances "
+                                          "(the H3 signature is resolved)", reduction["cylinder_signature_max_en"], 1.0,
+                                          "ge"),
+                                   *reader_refusals]},
+                       unit="mm", uncertainty=_u("truncation_bound", reduction["conditioned_separation_error_mm"],
+                                                 "second-order remainder of the separation reduction and start-pose "
+                                                 "estimate on the synthetic captures (mm)"),
+                       tolerance={"abs": 1e-6, "rel": 1e-6})
+    # Operator captures bound to this run (ciw lab run T138 --capture ROLE=PATH): retained, parsed and compared
+    # computationally. They are unauthenticated and no metrology instrument probe exists, so the physical claims
+    # above stay not_established whatever the comparison shows.
+    bound = [role for role in CAPTURE_ROLES if ctx.available(f"capture:{role}")]
+    raw = {role: ctx.capture(role) for role in bound}
+    capture_claim = ("Normalized errors of the bound metrology captures against the prediction of their protocol, "
+                     "computed from their unauthenticated bytes")
+    compared = None
+    if raw:
+        try:
+            compared, capture_code = compare_captures(raw), None
+        except rec.RecordRefusal as exc:
+            capture_code = exc.code
+        comparisons = compared["comparisons"] if compared else {}
+        inputs = {"operator_captures": {role: hashlib.sha256(data).hexdigest() for role, data in raw.items()},
+                  "authenticated": False}
+        if compared and not comparisons:
+            # Roles the protocol defines only for retention (a start-pose file without the targets it would
+            # condition) are read and retained; nothing is compared, so the claim is honestly unestablished.
+            f_capture = finding(capture_claim, "computational_pipeline", compared,
+                                {"notes": f"the bound roles ({', '.join(sorted(raw))}) of {compared['protocol']} define "
+                                          "no comparison: they were parsed and retained; a comparison needs the "
+                                          "photogrammetry capture", "inputs": inputs},
+                                expected_not_established=True)
+        else:
+            en = [value for c in comparisons.values() for value in c["normalized_error"]]
+            basis = {"checks": [_refusal("the bound captures parse in the protocol's raw formats and roles", "none",
+                                         capture_code),
+                                _check("exact_arithmetic", "comparisons computed from the bound captures (at least "
+                                       "one)", len(comparisons), 1.0, "ge"),
+                                _check("exact_arithmetic", "non-finite normalized errors",
+                                       float(sum(not math.isfinite(v) for v in en)), 0.0)],
+                     "inputs": inputs}
+            if compared and compared["origin"] == "synthetic":
+                basis["generator"] = {"name": "synthetic operator capture (declared in its header)", "seed": None}
+            f_capture = finding(capture_claim, "computational_pipeline", compared or {"refusal": capture_code}, basis,
+                                uncertainty=_u("roundoff", 1e-12, "double-precision arithmetic on the parsed values; "
+                                                                  "the declared measurement uncertainty is inside each "
+                                                                  "E_n"),
+                                tolerance={"abs": 1e-9, "rel": 1e-9})
+    else:
+        f_capture = finding(capture_claim, "computational_pipeline", None,
+                            {"notes": "no operator capture was bound (roles " + ", ".join(CAPTURE_ROLES) + ")"},
+                            expected_not_established=True)
     ctx.artifact_json("predicted-separation.json", _r(dict(prediction, protocol="MFG-COUPON-01", start_error_scenario=scenario,
                                                            execution_declared=EXECUTION, start_pose_uncertainty=START_POSE_U,
                                                            measured="none: no hardware record exists")))
     ctx.artifact_json("pair-predictions.json", _r(dict(pairs, measured="none: no hardware record exists")))
+    ctx.artifact_json("capture-reduction.json", _r(reduction))
+    if compared:
+        ctx.artifact_json("capture-comparison.json", _r(compared))
+    if compared:
+        summary = "; ".join(f"{name}: max E_n {c['max_normalized_error']:.2f} over {len(c['labels'])}"
+                            for name, c in compared["comparisons"].items())
+        capture_text = (f" Bound captures ({', '.join(sorted(raw))}, {compared['protocol']}, origin "
+                        f"{compared['origin']}): {summary or 'no comparison for these roles'}.")
+    elif raw:
+        capture_text = f" Bound captures ({', '.join(sorted(raw))}) were refused by the reader ({capture_code})."
+    else:
+        capture_text = " No operator capture was bound."
     fields = _fields(
         "The predicted separation of the 2 mm offset tape (and its crossing near s = 154 mm) can be compared with "
         "measurement by the normalized error E_n, provided the prediction uncertainty includes the realized start pose "
         "of the tape (budgeted open loop, or removed by conditioning on its measured start pose); the comparison is only "
-        "meaningful against acquired hardware evidence.",
+        "meaningful against acquired hardware evidence, and bytes an operator binds are compared computationally "
+        "without becoming that evidence.",
         "E_n = |m - p| / sqrt(U_m^2 + U_p^2), U = 2 u. Open loop: u_p^2 = u_geometry^2 + u_solver^2 + u_start^2 with "
-        "u_start from the declared jig error (0.05 mm, 0.5 mrad) times central-difference start sensitivities of the "
+        "u_start from the declared start-pose error (insert and laying 0.05 mm, 0.5 mrad; two jig seatings of 0.01 mm, "
+        "0.1 mrad each; in quadrature) times central-difference start sensitivities of the "
         "exactly re-integrated offset route. Conditioned: p is re-integrated from the CMM start pose and u_start uses "
         "its estimate uncertainty (offset sqrt(2) u_cmm, heading 2 u_cmm / 20 mm). Scan-conditioned: u_geometry^2 = "
         "g^T C g with g the dome sensitivities (height, width, centre) and C the MFG-SCAN-01 covariance (T129) instead of "
         "the declared tolerances. Pair comparator: E_n per plate marker pair (chord = geodesic) or cylinder pair "
-        "(chord-geodesic gap, U_p = 2 |d gap / dR| u_R).",
+        "(chord-geodesic gap, U_p = 2 |d gap / dR| u_R). Captures: a separation is the difference of two station "
+        "targets projected on the model's in-surface normal of the nominal route; the start pose solves "
+        "e(0) = delta, e(20) = delta j_lat(20) + dtheta j_head(20).",
         ["Nominal route and offset stations from T128 (k L / 8)", "Declared dome tolerances height +/- 0.2 mm, sigma +/- 0.5 mm",
          "Scan-derived dome covariance of MFG-SCAN-01 (T129, synthetic verification; declared scanner terms)",
-         "Declared relative start-pose error of the offset tape 0.05 mm and 0.5 mrad (1 sigma); CMM 0.002 mm",
+         "Declared relative start-pose error of the offset tape (1 sigma): insert and laying 0.05 mm and 0.5 mrad, two "
+         "jig seatings of 0.01 mm and 0.1 mrad each; CMM 0.002 mm",
          "Plate and cylinder marker-pair predictions (T126, T127); declared radius tolerance +/- 0.1 mm",
-         "No measured separation, distance or gap (none exists)"],
+         "Noise-free synthetic captures of the three control protocols (lateral tape started 2.1 mm and 0.4 mrad off)",
+         "Operator captures bound with --capture photogrammetry=, cmm= or film= (none in the retained clean-room run)"],
         "No observation: the measurement slot of MFG-COUPON-01 is empty. The planned observation is photogrammetry of "
-        "coded targets on the tape centrelines at the nine stations plus CMM probing of the start pose.",
+        "coded targets on the tape centrelines at the nine stations plus CMM probing of the start pose, exported in the "
+        "raw formats the protocols define; a bound export is read, retained and compared, but it is not authenticated "
+        "and no metrology instrument probe exists, so it is never hardware evidence here.",
         "The comparators refuse absent measurements, schema fixtures (also when relabelled) and digest mismatches; "
-        "start-pose and geometry sensitivities are linear over their declared steps.",
+        "start-pose and geometry sensitivities are linear over their declared steps; the capture reader recovers "
+        "synthetic captures exactly and refuses malformed or relabelled ones.",
         "Compute the prediction and its uncertainty components (open loop, conditioned on the start pose, and also on "
-        "the as-built scan); evaluate a correct model against a tape realized 0.1 mm off its nominal offset with and "
+        f"the as-built scan); evaluate a correct model against a tape realized {scenario['realized_offset_mm'] - 2.0:.3f} "
+        "mm (2 sigma of the declared open-loop start error) off its nominal offset with and "
         "without the start-pose term, and against the prediction re-integrated from a CMM start-pose estimate at the "
         "four 2-sigma corners; attempt the separation and pair comparisons with no measurement, with a schema fixture "
-        "(as is and relabelled) and with a tampered record, and record the refusals.",
+        "(as is and relabelled) and with a tampered record, and record the refusals; run the capture reader and "
+        "reductions on noise-free synthetic captures and malformed variants; read, retain and compare any operator "
+        "capture bound to the run.",
         "Predicted separation (mm) at stations: " + ", ".join(f"{v:.3f}" for v in prediction["separation_mm"])
         + f"; k = 2 uncertainty up to {open_loop.max():.3f} mm open loop, {conditioned.max():.3f} mm conditioned on the "
-        f"measured start pose and {scan_conditioned.max():.3f} mm conditioned also on the as-built scan; a 0.1 mm start "
-        f"error gives max E_n {en_bare:.2f} without the start-pose term, "
+        f"measured start pose and {scan_conditioned.max():.3f} mm conditioned also on the as-built scan; a "
+        f"{scenario['realized_offset_mm'] - 2.0:.3f} mm start error gives max E_n {en_bare:.2f} without the start-pose term, "
         f"{en_open:.2f} with it (open loop) and {en_cond:.2f} when the prediction is re-integrated from a CMM start-pose "
-        f"estimate 2 sigma off in offset and heading (conditioned U_p). No measured value exists.",
+        f"estimate 2 sigma off in offset and heading (conditioned U_p); synthetic captures: start pose recovered to "
+        f"{reduction['start_lateral_error_mm']:.1e} mm and {reduction['start_heading_error_rad']:.1e} rad, separations "
+        f"to {reduction['conditioned_separation_error_mm']:.1e} mm. No hardware-evidenced measurement exists."
+        + capture_text,
         "Prediction uncertainty only (under the declared tolerances geometry dominates beyond mid-route; start pose "
         "dominates near the start in the open-loop case); the scan-conditioned uncertainty holds only if the as-built "
-        "coupon passes the MFG-SCAN-01 model test; measurement uncertainty is declared until the protocol is executed.",
+        "coupon passes the MFG-SCAN-01 model test; measurement uncertainty is declared until the protocol is executed, "
+        "and a capture's u column is the operator's declaration.",
         ["absent measurement (refused)", "schema fixture as measurement, also relabelled (refused)",
          "raw digest mismatch (refused)", "plate and cylinder pair comparisons without a measurement (refused)",
-         "start-pose error outside the prediction uncertainty", "linearity of geometry and start-pose sensitivities"],
+         "start-pose error outside the prediction uncertainty", "linearity of geometry and start-pose sensitivities",
+         "malformed, relabelled or foreign-protocol captures (refused)",
+         "synthetic capture offered as a measurement record (refused)",
+         "chord-angle start-heading estimate biased by delta (j_lat(20) - 1) / 20 (replaced by the Jacobi-field solve)"],
         ["The physical comparison has not been performed; its outcome is unknown.",
          "The tapes are assumed to follow geodesics after their measured start; in-plane tape bending is not budgeted.",
-         "A registered reader that parses separations or marker coordinates from raw photogrammetry files does not "
-         "exist yet."],
-        "Execute MFG-SCAN-01 and MFG-COUPON-01 on hardware, retain them with T139 measurement records, add a raw-file "
-        "reader, and rerun T138 (the plate and cylinder protocols use its pair comparator).")
-    return {"state": "partial", "fields": fields, "findings": [f_pred, f_start, f_refuse, f_measured,
+         "Operator captures are unauthenticated: their origin header and u column are declarations, and no metrology "
+         "instrument probe exists on any analysing host. Deferred research question: a signed-capture trust anchor "
+         "(an instrument-held key that signs each export, verified by the workbench) or a hardware:metrology probe of "
+         "an instrument attached to the analysing host; until one exists, a bound capture yields computational "
+         "comparisons only and the physical claims stay not_established.",
+         "The plate and cylinder cmm captures (tape start poses) are read and retained but do not yet condition those "
+         "predictions."],
+        "Deferred research question: define a signed-capture trust anchor (instrument-held signing keys and their "
+        "verification) or a hardware:metrology probe, without which no capture can support a physical label. Meanwhile "
+        "acquire MFG-COUPON-01 and bind its exports (ciw lab run T138 --capture photogrammetry=<targets.csv> --capture "
+        "cmm=<start-pose.csv>), then retain the run with ciw lab hardware retain.")
+    return {"state": "partial", "fields": fields, "findings": [f_pred, f_start, f_refuse, f_reduce, f_capture, f_measured,
                                                               _not_measured(EXECUTION_CLAIM, "calibration")]}
 
 
@@ -3263,7 +4319,43 @@ def _rank_deficient_covariance(negative=SCALE_TEST_EIGENVALUES[-1]):
     return basis @ np.diag([*SCALE_TEST_EIGENVALUES[:-1], negative]) @ basis.T
 
 
-@_task("T139", ("test_retention_schema_refusals_and_fixture_boundary",))
+# A retention record bound to T139 (ciw lab run T139 --capture retention=<record.json>) describes raw files that
+# are bound beside it under the protocols' capture roles; its raw entries are matched to those bytes by digest.
+RETENTION_ROLE = "retention"
+RETAINED_RAW_ROLES = ("photogrammetry", "cmm", "film", "scanner")
+PROTOCOL_IDS = ("MFG-FLAT-PLATE-01", "MFG-CYLINDER-01", "MFG-COUPON-01", "MFG-SCAN-01")
+
+
+def retain_measurement(record_bytes: bytes, raw: dict) -> dict:
+    """Validate a bound retention record against the raw bytes bound with it and build its acquisition fields.
+
+    ``raw`` maps capture roles to bytes. Each raw entry of the record is
+    matched to the bound bytes with its SHA-256; an entry without matching
+    bytes is refused (raw_digest_mismatch), and so are a schema fixture, the
+    fixture's markers and synthetic-capture bytes (to_acquisition). The
+    acquisition fields are computational: nothing binds the bytes to an
+    instrument here, so they never support a physical label.
+    """
+    try:
+        record = json.loads(bytes(record_bytes).decode("utf-8"))
+    except (UnicodeDecodeError, ValueError):
+        raise rec.RecordRefusal("retention_not_json", "A bound retention record must be a UTF-8 JSON object") from None
+    if not isinstance(record, dict):
+        raise rec.RecordRefusal("retention_not_json", "A bound retention record must be a UTF-8 JSON object")
+    rec.validate_retention(record)
+    if record["protocol_id"] not in PROTOCOL_IDS:
+        raise rec.RecordRefusal("retention_protocol_unknown", f"No protocol {record['protocol_id']!r} in this section")
+    digests = {hashlib.sha256(data).hexdigest(): (role, data) for role, data in sorted(raw.items())}
+    matched = {entry["name"]: digests[entry["sha256"]] for entry in record["raw"] if entry["sha256"] in digests}
+    acquisition = rec.to_acquisition(record, {name: data for name, (_, data) in matched.items()})
+    return {"protocol_id": record["protocol_id"], "record_kind": record["record_kind"],
+            "retention_identity": rec.retention_identity(record), "acquisition": acquisition,
+            "raw_roles": {name: role for name, (role, _) in sorted(matched.items())},
+            "manifest": rec.raw_manifest(record).decode("utf-8")}
+
+
+@_task("T139", ("test_retention_schema_refusals_and_fixture_boundary",
+                "test_bound_retention_record_is_validated_against_its_raw_bytes"))
 def retention_schema(ctx):
     fixture, raw = _schema_fixture()
     rec.validate_retention(fixture, raw)
@@ -3369,46 +4461,107 @@ def retention_schema(ctx):
     # The fixture record and its digests are retained; its raw bytes are not, so no retained
     # artifact carries a digest that a hardware claim could cite.
     ctx.artifact_json("retention-schema-fixture.json", fixture)
-    findings = [f_schema, f_scale, f_identity, f_boundary,
-                finding("A real measurement with raw bytes, calibration and frame metadata has been retained", "physical", 0, {},
-                        unit="records")]
+    # A retention record bound to this run is validated against the raw bytes bound beside it and retained with
+    # them. The bytes are unauthenticated and no metrology probe exists, so the physical claim stays open.
+    bound_claim = ("A bound retention record validates against the raw bytes bound with it and yields acquisition "
+                   "fields (computational: the bytes are unauthenticated)")
+    retained = None
+    if ctx.available(f"capture:{RETENTION_ROLE}"):
+        record_bytes = ctx.capture(RETENTION_ROLE)
+        raw_bound = {role: ctx.capture(role) for role in RETAINED_RAW_ROLES if ctx.available(f"capture:{role}")}
+        try:
+            retained, retention_code = retain_measurement(record_bytes, raw_bound), None
+        except rec.RecordRefusal as exc:
+            retention_code = exc.code
+        inputs = {"operator_captures": {role: hashlib.sha256(data).hexdigest()
+                                        for role, data in {RETENTION_ROLE: record_bytes, **raw_bound}.items()},
+                  "authenticated": False}
+        f_bound = finding(bound_claim, "computational_pipeline",
+                          {key: retained[key] for key in ("protocol_id", "record_kind", "retention_identity",
+                                                          "acquisition", "raw_roles")} if retained
+                          else {"refusal": retention_code},
+                          {"checks": [_refusal("the bound retention record validates, its raw entries match the bound "
+                                               "bytes by digest and it is a measurement record without fixture or "
+                                               "synthetic markers", "none", retention_code)],
+                           "inputs": inputs},
+                          uncertainty=EXACT, tolerance={"abs": 0, "rel": 0})
+        if retained:
+            ctx.artifact_text("retention-raw-manifest.json", retained["manifest"])
+            ctx.artifact_json("retention-acquisition.json", {k: retained[k] for k in (
+                "protocol_id", "retention_identity", "acquisition", "raw_roles")})
+    else:
+        f_bound = finding(bound_claim, "computational_pipeline", None,
+                          {"notes": f"no retention record was bound (role {RETENTION_ROLE}); bind one with its raw files "
+                                    "under the roles " + ", ".join(RETAINED_RAW_ROLES)},
+                          expected_not_established=True)
+    count = 1 if retained else 0
+    findings = [f_schema, f_scale, f_identity, f_boundary, f_bound,
+                finding("A real measurement with raw bytes, calibration and frame metadata has been retained", "physical",
+                        count, {}, unit="records",
+                        uncertainty={"kind": "roundoff", "value": 0, "basis": "count of retained measurement records "
+                                                                              "(declared by the operator, unauthenticated)"})]
+    if retained:
+        retention_text = (f"Retained the bound {retained['record_kind']} record of {retained['protocol_id']} "
+                          f"({retained['retention_identity'][:19]}...) with its raw files "
+                          f"({', '.join(f'{name} as {role}' for name, role in retained['raw_roles'].items())}), matched "
+                          "by digest; its acquisition fields were built. The bytes are the operator's and unauthenticated.")
+    elif ctx.available(f"capture:{RETENTION_ROLE}"):
+        retention_text = f"The bound retention record was refused ({retention_code}); nothing was retained as a measurement."
+    else:
+        retention_text = "No retention record was bound, so no raw measurement was retained."
     fields = _fields(
         "A retention record that binds raw-byte digests, calibration reference and validity window, frame chain with "
         "covariances and an explicit clock is sufficient to supply the acquisition fields of a hardware_measured "
-        "finding, and every omission is refused.",
+        "finding, and every omission is refused; a record bound to the run with its raw files is validated against "
+        "those bytes and retained with them.",
         "Record = {raw digests, instrument identity, calibration (applied/not_applied), frame chain links (R, t, C), clock}; "
         "identity = SHA-256 of canonical JSON; to_acquisition maps a valid measurement record to device / raw_sha256 "
-        "(SHA-256 of the raw manifest) / acquired_at / calibration.",
+        "(SHA-256 of the raw manifest) / acquired_at / calibration. A bound record's raw entries are matched to the "
+        "bytes bound under the capture roles " + ", ".join(RETAINED_RAW_ROLES) + " by SHA-256.",
         ["Schema fixture with explicit 'SCHEMA FIXTURE - NOT A MEASUREMENT' raw bytes (not retained)",
          f"{len(cases)} refused mutations, one rank-deficient covariance at a 1e6 mm^2 scale with a -1e-8 mm^2 "
          "eigenvalue and one with a negative eigenvalue of -1e-3 of its largest",
-         "No acquisition: nothing exists to retain"],
-        "No observation: no instrument produced data. The validators read only the declared schema fixture and its "
-        "mutations.",
+         f"Operator captures: a retention record (--capture {RETENTION_ROLE}=) and its raw files (--capture "
+         "photogrammetry=, cmm=, film= or scanner=); none in the retained clean-room run"],
+        "No instrument is observed here. The validators read the declared schema fixture and its mutations and, when "
+        "bound, the operator's retention record and raw files, which are retained and not authenticated.",
         "Valid records validate; each mutation is refused with its code; covariance tolerances scale with the matrix; "
-        "a record of kind schema_fixture, or one carrying the fixture's bytes, serial or zero calibration digest, is "
-        "refused as hardware evidence.",
-        f"Partial: only the retention mechanism was exercised. Validate the fixture, mutate it {len(cases)} ways, keep a "
-        "rank-deficient covariance that an absolute threshold would refuse and refuse a negative one at the same scale, "
-        "check identity invariance and the fixture/measurement boundary. Not performed: retaining raw measurements, "
-        "calibration and frame metadata, because no acquisition exists.",
+        "a record of kind schema_fixture, or one carrying the fixture's bytes, serial or zero calibration digest, or "
+        "synthetic-capture bytes, is refused as hardware evidence; a bound record's raw entries match the bound bytes.",
+        ("Completed: " if retained else "Partial: ")
+        + f"the retention mechanism was exercised on a synthetic schema fixture (validate it, mutate it {len(cases)} "
+        "ways, keep a rank-deficient covariance that an absolute threshold would refuse and refuse a negative one at "
+        "the same scale, check identity invariance and the fixture/measurement boundary). " + retention_text
+        + ("" if retained else " Not performed: retaining raw measurements, calibration and frame metadata of a real "
+           "acquisition, because none was bound; the missing one is the first executed control protocol "
+           "(MFG-FLAT-PLATE-01, MFG-CYLINDER-01 or MFG-COUPON-01) with its instrument exports and its retention record "
+           "(instrument serials, calibration certificates, frame chain and clock)."),
         f"{matched}/{len(cases)} mutations refused with the expected code; rank-deficient covariance kept (min eigenvalue "
         f"{eigenvalues[0]:.1e} mm^2 against a largest of {eigenvalues[-1]:.1e} mm^2, {residue / ABSOLUTE_THRESHOLD:.0e} "
-        f"times an absolute 1e-12 mm^2 threshold); retained real measurements: 0.",
+        f"times an absolute 1e-12 mm^2 threshold); retained measurement records: {count}.",
         "Exact: the outcomes are booleans and refusal codes of deterministic validators; the only floating-point "
         "quantity is the rounding-level eigenvalue of the rank-deficient covariance.",
         ["digest mismatch", "calibration digest and validity window", "broken frame chain",
          "invalid rotation or covariance",
          "scale of covariance tolerances (kept above an absolute threshold, refused when negative at scale)",
-         "clock without timezone", "fixture promoted or relabelled as a measurement", "measurement without raw bytes"],
-        ["No acquisition exists, so no raw measurement, calibration record or frame metadata has been retained: the task "
-         "stays partial until the first protocol is executed.",
+         "clock without timezone", "fixture promoted or relabelled as a measurement", "measurement without raw bytes",
+         "bound record whose raw entries match no bound bytes, or that lists synthetic-capture bytes (refused)"],
+        [("A measurement record was bound and retained with its raw files; its origin is the operator's declaration."
+          if retained else
+          "No acquisition was bound, so no raw measurement, calibration record or frame metadata has been retained: the "
+          "task stays partial until a real acquisition of a control protocol is retained with its record. Synthetic or "
+          "absent material never completes a retention task."),
          "Media-type-specific readers (images, point clouds) are not defined; digests cover bytes, not content semantics.",
          "The validators cannot tell whether raw bytes came from an instrument; the runner also requires a hardware "
-         "probe in the task that cites them."],
-        "Retain the first MFG-FLAT-PLATE-01 acquisition with this schema, then rerun T138, whose pair comparator "
-        "(compare_pair_distances) compares its marker-pair distances.")
-    return {"state": "partial", "fields": fields, "findings": findings}
+         "probe in the task that cites them, and no metrology instrument probe or signed-capture trust anchor exists "
+         "(deferred research question, T138), so a retained record's acquisition fields support no physical label."],
+        "Deferred research question: a signed-capture trust anchor (instrument-held keys that sign each export) or a "
+        "hardware:metrology probe, without which a retained record supports no physical label. Meanwhile retain the "
+        "first real acquisition of a control protocol: run ciw lab run T139 --capture retention=<record.json> with its "
+        "raw files bound under their roles (--capture photogrammetry=<targets.csv> --capture cmm=<start-pose.csv> ...), "
+        "the record listing each file with its SHA-256, instrument serial, calibration certificate and validity window, "
+        "frame chain with covariances and clock; then retain the run with ciw lab hardware retain.")
+    return {"state": "completed" if retained else "partial", "fields": fields, "findings": findings}
 
 
 # T140 uncertainty budget -----------------------------------------------------------------------
@@ -3420,13 +4573,15 @@ def _classify(components):
 
 
 PLATE_FLATNESS = {"deviation_mm": 0.05, "sigma_mm": 75.0,
-                  "model": "flatness deviation as a Gaussian bump of height u = 0.05 / sqrt(3) mm and width 75 mm"}
+                  "model": "flatness deviation as a Gaussian bump of height u = 0.05 / sqrt(3) mm and width 75 mm, "
+                           "centred under the route"}
 
 
 def _start_term(u, j_lat, j_head):
     return math.hypot(u["lateral_mm"] * j_lat, u["heading_rad"] * j_head)
 
 
+@functools.lru_cache(maxsize=1)
 def budget_study() -> dict:
     nominal = nominal_study()
     sensitivity = sensitivity_study()
@@ -3437,11 +4592,12 @@ def budget_study() -> dict:
     length = nominal["length_mm"]
     j_lat_end, j_head_end = nominal["j_lat"][-1], nominal["j_head_mm"][-1]
     budget = {}
-    # Q1: cylinder chord-geodesic gap at 90 degrees (fixed markers: no path, no start pose).
+    # Q1: cylinder chord-geodesic gap at 90 degrees (fixed markers: no path, no start pose), measured as the
+    # film surface distance minus the camera chord.
     ninety = next(r for r in cylinder["pairs"] if r["pair"] == "circumferential 90 deg")
     u_radius = 0.1 / math.sqrt(3.0)
     budget["cylinder gap, 90 deg pair"] = {"value": ninety["gap_mm"], "unit": "mm",
-                                           "components": {"instrument": u_pair,
+                                           "components": {"instrument": GAP_U,
                                                           "geometry": abs(math.pi / 2 - 2 * math.sin(math.pi / 4)) * u_radius,
                                                           "execution": 0.0, "solver": ninety["rk4_closure_mm"]}}
     # Q2: coupon separation at the route end for a 5 mrad heading offset. Solver: the reported value is
@@ -3455,6 +4611,10 @@ def budget_study() -> dict:
             "value": heading_end, "unit": "mm",
             "components": {"instrument": u_pair, "geometry": geometry_q2,
                            "execution": _start_term(u, j_lat_end, j_head_end), "solver": solver_q2}}
+    # Open loop, the start pose has two terms: the insert and laying, and the two seatings of the start jig
+    # (each tape is laid after its own seating). Their quadrature sum is the execution component.
+    budget["coupon separation at L, 5 mrad heading offset (open-loop start)"]["execution_terms"] = {
+        name: _start_term(u, j_lat_end, j_head_end) for name, u in EXECUTION["terms"].items()}
     # Q3: coupon separation at the route end for the 2 mm lateral offset (the T138 quantity): open loop,
     # conditioned on the measured start pose, and conditioned also on the as-built scan (T129).
     scan_covariance = as_built_study()["covariance_mm2"]
@@ -3467,6 +4627,8 @@ def budget_study() -> dict:
             "value": prediction["separation_mm"][-1], "unit": "mm",
             "components": {"instrument": u_pair, "geometry": geometry, "execution": execution,
                            "solver": prediction["solver_mm"][-1]}}
+    budget["coupon separation at L, 2 mm lateral offset (open-loop start)"]["execution_terms"] = {
+        name: terms[-1] for name, terms in prediction["execution_terms_mm"].items()}
     # Q4: arclength of the first focal point; a start heading error moves the zero of
     # delta j_lat + dtheta j_head by dtheta j_head(s_f) / (delta |j_lat'(s_f)|).
     slope = abs(2.0 * sensitivity["center"]["j_lat_prime_focal"])
@@ -3481,7 +4643,8 @@ def budget_study() -> dict:
                            "execution": START_POSE_U["heading_rad"] * abs(j_head_focal) / slope,
                            "solver": abs(nominal["focal_mm"] - nominal["focal_h2_mm"]) / 15.0}}
     # Q5: flat-plate control, heading-offset separation at 240 mm. Geometry: the declared flatness as a
-    # bump; its effect is second order in the deviation, so the difference from the plane is used.
+    # bump centred under the route (the worst placement); its effect is second order in the deviation, so the
+    # difference from the plane is used.
     plate_value = plate["heading_separation_mm"][-1]
     bump = jacobi.transfer(geo.coupon(PLATE_FLATNESS["deviation_mm"] / math.sqrt(3.0), PLATE_FLATNESS["sigma_mm"]),
                            [-120.0, 0.0], 0.0, 240.0, steps=48)
@@ -3491,6 +4654,8 @@ def budget_study() -> dict:
             "value": plate_value, "unit": "mm",
             "components": {"instrument": u_pair, "geometry": geometry_plate, "execution": _start_term(u, 1.0, 240.0),
                            "solver": 0.005 * plate["phi_error"]}}
+    budget["plate separation at 240 mm, 5 mrad heading offset (open-loop start)"]["execution_terms"] = {
+        name: _start_term(u, 1.0, 240.0) for name, u in EXECUTION["terms"].items()}
     # Q6: control with a deliberately coarse solver (6 steps): the classification must say solver-limited.
     # Its reported value is the coarse solution q(6), whose error is (16/15) |q(6) - q(12)|.
     q = {n: 0.005 * jacobi.transfer(geo.COUPON, geo.STATION, 0.0, length, steps=n).states[-1, 6] for n in (6, 12, 256)}
@@ -3518,15 +4683,21 @@ def uncertainty_budget(ctx):
     study = ctx.memo("mfg.budget", budget_study)
     budget = study["budget"]
     coarse = study["coarse_check"]
+    # Open loop, the execution component is the quadrature sum of the insert-and-laying and jig re-seating terms.
+    split = max(abs(math.hypot(*e["execution_terms"].values()) / e["components"]["execution"] - 1.0)
+                for e in budget.values() if "execution_terms" in e)
     f_budget = finding("Uncertainty budget per predicted quantity and its limiting term", "numerical",
-                       {name: dict({k: v for k, v in e["components"].items()}, value=e["value"], dominant=e["dominant"])
+                       {name: dict({k: v for k, v in e["components"].items()}, value=e["value"], dominant=e["dominant"],
+                                   **({"execution_terms": e["execution_terms"]} if "execution_terms" in e else {}))
                         for name, e in budget.items()},
                        {"checks": [_check("self_convergence", f"geometry sensitivity linearity (forward vs central), {k}", v, 0.1)
                                    for k, v in sorted(study["linearity"].items())]
                         + [_check("self_convergence", "coarse control: actual error / Richardson estimate",
                                   coarse["actual"] / coarse["estimate"], 3.0, "le"),
                            _check("self_convergence", "coarse control: Richardson estimate / actual error",
-                                  coarse["estimate"] / coarse["actual"], 3.0, "le")]},
+                                  coarse["estimate"] / coarse["actual"], 3.0, "le"),
+                           _check("invariant", "open-loop execution component vs the quadrature sum of its insert-and-"
+                                  "laying and jig re-seating terms (relative)", split, 1e-9)]},
                        unit="mm",
                        uncertainty=_u("reference_error", max(study["linearity"].values()),
                                       "forward vs central geometry sensitivity (relative)"),
@@ -3592,6 +4763,9 @@ def uncertainty_budget(ctx):
         c = e["components"]
         lines.append(f"| {name} | {e['value']:.4g} {e['unit']} | {c['instrument']:.2e} | {c['geometry']:.2e} | "
                      f"{c['execution']:.2e} | {c['solver']:.2e} | {e['dominant']} ({100 * e['dominant_share']:.0f}%) |")
+    lines += ["", "Open-loop execution terms (insert and laying; two seatings of the start jig):"]
+    lines += [f"- {name}: " + ", ".join(f"{term} {value:.2e}" for term, value in e["execution_terms"].items())
+              for name, e in budget.items() if "execution_terms" in e]
     ctx.artifact_text("uncertainty-budget.md", "\n".join(lines) + "\n")
     findings = [f_budget, f_counter, f_start, f_scan, f_control,
                 _not_measured("The declared instrument uncertainties are the uncertainties of the instruments used",
@@ -3610,12 +4784,14 @@ def uncertainty_budget(ctx):
         "u_c^2 = u_instrument^2 + u_geometry^2 + u_execution^2 + u_solver^2; u_geometry from central differences over "
         "rectangular tolerances (u = a / sqrt 3), or g^T C g with the MFG-SCAN-01 dome covariance C over height, width "
         "and centre when conditioned on the scan; u_execution = start-pose uncertainty times the Jacobi fields "
-        "(declared jig error open loop, CMM estimate when conditioned); u_solver = |Q(h) - Q(2h)| / 15 for a reported "
+        "(declared insert-and-laying error and two jig seatings open loop, CMM estimate when conditioned); u_solver = |Q(h) - Q(2h)| / 15 for a reported "
         "h-solution and (16/15) |Q(h) - Q(2h)| when the reported value is the coarse one (the 6-step control); "
         "u_instrument(focal) = u_pair / |d sep / ds|; limiting term = variance share > 50%, otherwise mixed.",
-        ["Declared camera pair uncertainty sqrt(2) x 0.02 mm", "Declared tolerances: cylinder radius +/- 0.1 mm, dome height "
+        ["Declared camera pair uncertainty sqrt(2) x 0.02 mm; a measured cylinder gap (film surface distance minus "
+         "camera chord) adds the declared 0.05 mm film gauge", "Declared tolerances: cylinder radius +/- 0.1 mm, dome height "
          "+/- 0.2 mm, dome sigma +/- 0.5 mm, plate flatness 0.05 mm",
-         "Declared start-pose error 0.05 mm / 0.5 mrad (open loop); CMM start-pose estimate 0.0028 mm / 0.2 mrad",
+         "Declared start-pose error open loop: insert and laying 0.05 mm / 0.5 mrad and two jig seatings of 0.01 mm / "
+         "0.1 mrad (combined 0.052 mm / 0.52 mrad); CMM start-pose estimate 0.0028 mm / 0.2 mrad",
          "Scan-derived dome covariance of MFG-SCAN-01 (T129: synthetic verification, declared scanner noise, scale and "
          "registration)",
          "Predictions from T126, T127, T128 and T138"],
@@ -3635,17 +4811,37 @@ def uncertainty_budget(ctx):
         ["Instrument and start-pose uncertainties are declared; the real budget needs calibration records (T130/T139).",
          "The scan-derived geometry terms hold only if the as-built coupon passes the MFG-SCAN-01 model test.",
          "In-plane tape bending along the route, thermal drift and target centring are not budgeted."],
-        "T141: keep production acceptance outside the system and record it as not performed.")
+        "Open: budget in-plane tape bending along the route, thermal drift and target centring, which every row "
+        "omits, and replace the declared instrument and start-pose terms by values from retained calibration records "
+        "once a real acquisition and its calibration certificates exist.")
     return {"state": "completed", "fields": fields, "findings": findings}
 
 
 # T141 production acceptance boundary ------------------------------------------------------------
+ACCEPTANCE_STATEMENT = "Coupon lot accepted for production"
+REJECTION_STATEMENT = "Coupon lot rejected for production"
+# A decision word only this section's screen knows, and a paraphrase that neither screen matches.
+SECTION_ONLY_STATEMENT = "Coupon lot scrapped"
+PARAPHRASE = "Coupon lot fit for shipment to the customer"
+
+
+def _finding_refusal(claim, domain, basis) -> str | None:
+    """The refusal evidence.finding raises for a claim ('authority_outcome_refused' for the phrase screen), or None."""
+    try:
+        finding(claim, domain, "decision", basis)
+    except EvidenceRefusal as exc:
+        return "authority_outcome_refused" if "authority outcome" in str(exc) else "other"
+    return None
+
+
 def acceptance_boundary() -> dict:
-    """Exhaustively check that no basis establishes production acceptance, and that the policy refuses decisions."""
+    """Exhaustively check that no basis establishes production acceptance, and that the policy and screens refuse decisions."""
     passing = {"reference_kind": "analytic", "reference": "r", "observed": 0.0, "tolerance": 1.0, "passed": True}
     acquisition = {"device": "camera:1:SN", "raw_sha256": "0" * 64, "acquired_at": "2026-09-23T00:00:00Z",
                    "calibration": "CERT-1"}
-    independent = dict(passing, producer={"implementation": "ciw.lab"}, checker={"implementation": "scipy"})
+    # A hypothetical independent check: enumerated as a basis shape, never run.
+    independent = dict(passing, producer={"implementation": "ciw.lab", "revision": f"ciw {__version__}"},
+                       checker={"implementation": "scipy", "revision": "hypothetical (enumerated basis; no check ran)"})
     provider = {"repository": "owner/provider", "revision": "a" * 40, "source_tree": "b" * 40, "executed": True}
     options = {"derivation": (None, "doc"), "generator": (None, {"name": "g"}), "checks": (None, [passing]),
                "provider": (None, provider), "independent_check": (None, independent), "acquisition": (None, acquisition)}
@@ -3662,24 +4858,44 @@ def acceptance_boundary() -> dict:
     policy = rec.AcceptancePolicy()
     decisions = {kind: rec.refusal_code(policy.decide, {"part": "coupon-001", "decision": kind})
                  for kind in ("accept", "reject", "conditional")}
-    record = finding("Coupon lot accepted for production", "production_acceptance", "accepted", {"acquisition": acquisition})
+    record = finding(ACCEPTANCE_STATEMENT, "production_acceptance", "accepted", {"acquisition": acquisition})
     forged = dict(record, evidence_status="hardware_measured")
     try:
         validate_finding(forged)
         forged_code = None
     except EvidenceRefusal as exc:
         forged_code = "label_refused" if "refused" in str(exc) else "other"
-    # The loophole: the same statement filed in a computational domain with a passing check is established
-    # by evidence.finding; only a screen on the claim text (here, this section's) catches it.
-    loophole = finding("Coupon lot accepted for production", "computational_pipeline", "accepted", {"checks": [passing]})
-    screen_code = rec.refusal_code(rec.screen_acceptance_language, [loophole])
-    rejection = finding("Coupon lot rejected for production", "computational_pipeline", "rejected", {"checks": [passing]})
-    reject_screen_code = rec.refusal_code(rec.screen_acceptance_language, [rejection])
+    # The loophole this task recorded, now closed by evidence.screen_authority_claim: the acceptance statement
+    # filed in a computational (or physical) domain is refused by evidence.finding and by validate_finding.
+    core = {"acceptance filed as computational_pipeline": _finding_refusal(ACCEPTANCE_STATEMENT, "computational_pipeline",
+                                                                           {"checks": [passing]}),
+            "rejection filed as computational_pipeline": _finding_refusal(REJECTION_STATEMENT, "computational_pipeline",
+                                                                          {"checks": [passing]}),
+            "acceptance filed as physical with an acquisition record": _finding_refusal(
+                ACCEPTANCE_STATEMENT, "physical", {"acquisition": acquisition})}
+    honest = finding("Coupon lot conforms to the drawing", "computational_pipeline", "decision", {"checks": [passing]})
+    try:
+        validate_finding(dict(honest, claim=ACCEPTANCE_STATEMENT))
+        core["hand-built computational record carrying the acceptance statement (validate_finding)"] = None
+    except EvidenceRefusal as exc:
+        core["hand-built computational record carrying the acceptance statement (validate_finding)"] = (
+            "authority_outcome_refused" if "authority outcome" in str(exc) else "other")
+    # This section's screen: a hand-built record with the statement, and a decision word the core screen passes.
+    section = {"acceptance statement in a hand-built computational record": rec.refusal_code(
+                   rec.screen_acceptance_language, [dict(honest, claim=ACCEPTANCE_STATEMENT)]),
+               "rejection statement in a hand-built computational record": rec.refusal_code(
+                   rec.screen_acceptance_language, [dict(honest, claim=REJECTION_STATEMENT)])}
+    only_section = finding(SECTION_ONLY_STATEMENT, "computational_pipeline", "decision", {"checks": [passing]})
+    section[f"'{SECTION_ONLY_STATEMENT}', which evidence.finding accepts"] = rec.refusal_code(
+        rec.screen_acceptance_language, [only_section])
+    # What remains open: a paraphrase outside both vocabularies is labelled by its checks.
+    paraphrase = finding(PARAPHRASE, "computational_pipeline", "decision", {"checks": [passing]})
     return {"cases": cases, "violations": violations, "decisions": decisions, "honest_label": record["evidence_status"],
             "forged_code": forged_code, "policy_record": policy.record({"part": "coupon-001"}),
-            "domains": sorted(AUTHORITY_DOMAINS), "all_domains": len(DOMAINS),
-            "loophole_label": loophole["evidence_status"], "screen_code": screen_code,
-            "reject_label": rejection["evidence_status"], "reject_screen_code": reject_screen_code}
+            "domains": sorted(AUTHORITY_DOMAINS), "all_domains": len(DOMAINS), "core_refusals": core,
+            "section_refusals": section, "section_only_label": only_section["evidence_status"],
+            "paraphrase_label": paraphrase["evidence_status"],
+            "paraphrase_section_screen": rec.refusal_code(rec.screen_acceptance_language, [paraphrase])}
 
 
 @_task("T141", ("test_production_acceptance_stays_outside_the_system",))
@@ -3695,74 +4911,110 @@ def acceptance_outside(ctx):
                for kind, code in sorted(study["decisions"].items())]
     checks += [_refusal("forged hardware_measured acceptance finding", "label_refused", study["forged_code"]),
                _refusal("protocol declaring acceptance inside the system", "acceptance_inside_system", matrix_code),
-               _refusal("protocol criterion marked accepted", "criterion_is_decision", criterion_code),
-               _refusal("acceptance statement filed in a computational domain (section screen)",
-                        "acceptance_outside_authority_domain", study["screen_code"]),
-               _refusal("rejection statement filed in a computational domain (section screen)",
-                        "acceptance_outside_authority_domain", study["reject_screen_code"])]
+               _refusal("protocol criterion marked accepted", "criterion_is_decision", criterion_code)]
+    checks += [_refusal(f"section screen: {name}", "acceptance_outside_authority_domain", code)
+               for name, code in sorted(study["section_refusals"].items())]
     f_api = finding("No basis establishes a claim filed in an authority domain, and the acceptance policy, the protocol "
                     "validator and this section's acceptance-language screen refuse acceptance decisions",
                     "computational_pipeline", {"basis_domain_cases": study["cases"], "violations": study["violations"],
                                                "refusals": sum(c["passed"] for c in checks[1:])},
                     {"checks": checks}, unit="cases", uncertainty=EXACT, tolerance={"abs": 0, "rel": 0})
-    f_loophole = finding("evidence.finding establishes an acceptance statement when its author files it in a computational "
-                         "domain", "computational_pipeline", study["loophole_label"],
-                         {"checks": [_check("exact_arithmetic", "label of the statement filed as computational_pipeline with "
-                                            "one passing check is established (0 = yes)",
-                                            0.0 if study["loophole_label"] != "not_established" else 1.0, 0.0)]},
-                         uncertainty=EXACT, tolerance={"abs": 0, "rel": 0},
-                         counterexample={"statement": "The lab API cannot mark production acceptance",
-                                         "witness": {"claim": "Coupon lot accepted for production",
-                                                     "domain": "computational_pipeline", "label": study["loophole_label"],
-                                                     "caught_by": "manufacturing_records.screen_acceptance_language"}})
+    core = study["core_refusals"]
+    f_closed = finding("evidence.finding and validate_finding refuse an acceptance or rejection statement filed in a "
+                       "computational or physical domain because of its wording", "computational_pipeline",
+                       sum(code == "authority_outcome_refused" for code in core.values()),
+                       {"checks": [_refusal(f"evidence screen: {name}", "authority_outcome_refused", code)
+                                   for name, code in sorted(core.items())]},
+                       unit="refusals", uncertainty=EXACT, tolerance={"abs": 0, "rel": 0},
+                       counterexample={"statement": "evidence.finding labels a claim from its basis and domain alone, so an "
+                                                    "acceptance statement filed in a computational domain with a passing "
+                                                    "check is established (the loophole T141 recorded before "
+                                                    "evidence.screen_authority_claim)",
+                                       "witness": {"claim": ACCEPTANCE_STATEMENT, "domain": "computational_pipeline",
+                                                   "refused_by": "ciw.lab.evidence.screen_authority_claim"}})
+    f_paraphrase = finding("A paraphrased acceptance statement outside both screened vocabularies, filed in a "
+                           "computational domain with a passing check, is still labelled by its checks",
+                           "computational_pipeline", study["paraphrase_label"],
+                           {"checks": [_check("exact_arithmetic", "label of the paraphrase is established (0 = yes)",
+                                              0.0 if study["paraphrase_label"] != "not_established" else 1.0, 0.0),
+                                       _refusal("section screen on the paraphrase", "none",
+                                                study["paraphrase_section_screen"])]},
+                           uncertainty=EXACT, tolerance={"abs": 0, "rel": 0},
+                           counterexample={"statement": "The lab API cannot mark production acceptance",
+                                           "witness": {"claim": PARAPHRASE, "domain": "computational_pipeline",
+                                                       "label": study["paraphrase_label"],
+                                                       "screens_passed": ["ciw.lab.evidence.screen_authority_claim",
+                                                                          "manufacturing_records.screen_acceptance_language"]}})
     f_domain = finding("Domain assignment of free-text claims is machine-checked across the lab", "computational_pipeline",
-                       None, {"notes": "Only this section screens its findings for decision words; other sections and "
-                                       "paraphrases rely on review."}, expected_not_established=True)
+                       None, {"notes": "evidence.screen_authority_claim refuses authority-outcome phrases in every "
+                                       "section and this section also screens decision words, but both match phrases: "
+                                       "a paraphrase outside them is labelled by its checks (recorded here), so the "
+                                       "domain of a free-text claim remains a review question."},
+                       expected_not_established=True)
     f_accept = finding("Production acceptance of the coupon, cylinder or plate process", "production_acceptance",
                        study["policy_record"]["decision"], {})
     f_ready = finding("The manufacturing protocols and models are ready for industrial use", "industrial_readiness", None, {})
+    f_demand = finding("Manufacturers need curvature-aware placement, winding, coating or inspection path checking",
+                       "customer_demand", None, {})
     ctx.artifact_json("acceptance-policy.json", {"policy": {"authority": "external", "decisions_performed": False},
                                                  "record": study["policy_record"], "cases": study["cases"],
                                                  "violations": study["violations"], "decisions": study["decisions"],
                                                  "honest_label_with_hardware_basis": study["honest_label"],
-                                                 "computational_domain_loophole": {"label": study["loophole_label"],
-                                                                                   "screen": study["screen_code"],
-                                                                                   "rejection_label": study["reject_label"],
-                                                                                   "rejection_screen":
-                                                                                       study["reject_screen_code"]}})
+                                                 "authority_phrase_screen": core,
+                                                 "section_screen": study["section_refusals"],
+                                                 "section_only_statement": {"claim": SECTION_ONLY_STATEMENT,
+                                                                            "label_by_evidence_finding":
+                                                                                study["section_only_label"]},
+                                                 "paraphrase": {"claim": PARAPHRASE, "label": study["paraphrase_label"],
+                                                                "section_screen": study["paraphrase_section_screen"]}})
     fields = _fields(
         "Production acceptance is an authority decision outside the workbench: no evidence basis makes a claim filed in "
-        "an authority domain established, and no policy call or protocol field can record a decision; a statement "
-        "filed in a computational domain is caught only by a screen on its wording.",
+        "an authority domain established, no policy call or protocol field can record a decision, and an acceptance "
+        "statement filed in another domain is refused by its wording where the screens know the phrase, while a "
+        "paraphrase they do not know is still labelled by its checks.",
         "Label function L(basis, domain) = not_established for every authority domain; AcceptancePolicy.decide always "
-        "refuses; protocols require production_acceptance = outside_system and hypothesis-status criteria; the section "
-        "screen refuses decision phrases (accepted, approved, rejected, scrapped, quarantined, signed off, "
-        "dispositioned, released for or to production, passed or passes inspection or acceptance, certified for "
-        "production) in claims and string values outside the authority domains.",
+        "refuses; protocols require production_acceptance = outside_system and hypothesis-status criteria; "
+        "evidence.screen_authority_claim refuses authority-outcome phrases in computational and physical claims in "
+        "every section; this section's screen also refuses decision words (accepted, approved, rejected, scrapped, "
+        "quarantined, signed off, dispositioned, released for or to production, passed or passes inspection or "
+        "acceptance, certified for production) in claims and string values outside the authority domains.",
         [f"{study['cases'] // len(AUTHORITY_DOMAINS)} bases (all combinations of derivation, generator, checks, provider, "
          f"independent check and acquisition) x the five authority domains = {study['cases']} cases",
          "Acceptance requests: accept, reject, conditional",
-         "One acceptance and one rejection statement filed in computational_pipeline with a passing check"],
+         f"'{ACCEPTANCE_STATEMENT}' and '{REJECTION_STATEMENT}' filed in computational_pipeline with a passing check, "
+         "and the first filed as physical with an acquisition record",
+         f"'{SECTION_ONLY_STATEMENT}' (a decision word only the section screen knows) and the paraphrase "
+         f"'{PARAPHRASE}'"],
         "No observation: the task enumerates bases and domains through the label function and calls the policy, the "
-        "protocol validator and the language screen; no instrument, part or acceptance authority is involved.",
+        "protocol validator and both screens; no instrument, part, customer or acceptance authority is involved.",
         "Zero bases establish a claim filed in an authority domain; every decision request, forged record and screened "
-        "statement is refused.",
-        "Enumerate bases, call the policy, forge a hardware_measured acceptance finding, mutate a protocol, file an "
-        "acceptance and a rejection statement in a computational domain and screen them.",
+        "statement is refused; the paraphrase shows what the screens cannot see.",
+        "Enumerate bases, call the policy, forge a hardware_measured acceptance finding, mutate a protocol, build the "
+        "acceptance and rejection statements through evidence.finding and validate_finding in computational and "
+        "physical domains, screen hand-built records and a section-only decision word, and build a paraphrase that "
+        "neither screen matches.",
         f"{study['cases']} cases, {study['violations']} violations; all decisions refused; honest label of an acceptance "
-        f"claim even with hardware acquisition: {study['honest_label']}; the same statement filed in a computational "
-        f"domain is labelled {study['loophole_label']} by evidence.finding and refused by the section screen, as is a "
-        f"rejection statement (labelled {study['reject_label']}).",
+        f"claim even with hardware acquisition: {study['honest_label']}; evidence.finding refuses the acceptance and "
+        f"rejection statements in computational and physical domains "
+        f"({sum(code == 'authority_outcome_refused' for code in core.values())}/{len(core)} refusals); the section "
+        f"screen refuses '{SECTION_ONLY_STATEMENT}', which evidence.finding labels {study['section_only_label']}; the "
+        f"paraphrase is labelled {study['paraphrase_label']}.",
         "Exact: every outcome is a label or refusal code returned by deterministic validators; no quantity is estimated.",
         ["authority domain with hardware acquisition and passing checks", "forged label", "policy decide calls",
          "protocol acceptance field and criterion status",
-         "acceptance and rejection statements filed in a computational domain"],
+         "acceptance and rejection statements filed in computational and physical domains (evidence screen)",
+         "hand-built records bypassing evidence.finding (validate_finding and the section screen)",
+         "decision word outside the evidence screen's phrases (section screen)", "paraphrase outside both screens"],
         ["The external acceptance authority and its criteria are outside the repository.",
-         "The language screen is a vocabulary check on this section only; paraphrased decisions and other sections "
-         "rely on review, and evidence.finding itself does not refuse them."],
-        "T155: include the acceptance boundary, and the computational-domain loophole, in the formal specification of "
-        "the evidence labels.")
-    return {"state": "completed", "fields": fields, "findings": [f_api, f_loophole, f_domain, f_accept, f_ready]}
+         "Both screens match phrases, not meaning: a paraphrased decision filed in a computational domain is labelled "
+         "by its checks, so choosing the domain remains a review question in every section.",
+         "Customer demand for curvature-aware path checking is recorded, not surveyed: no customer or market data "
+         "exists here."],
+        "Deferred research question: make a claim's domain derivable from the claim instead of declared by its author "
+        "(a claim grammar with typed subjects, or a classifier whose misses are themselves recorded), so that "
+        "paraphrased authority outcomes such as the one recorded here are refused as reliably as screened phrases.")
+    return {"state": "completed", "fields": fields,
+            "findings": [f_api, f_closed, f_paraphrase, f_domain, f_accept, f_ready, f_demand]}
 
 
 def _minimal_protocol(plate):
@@ -3773,4 +5025,6 @@ def _minimal_protocol(plate):
         "T141", "MFG-ACCEPTANCE-PROBE", "Acceptance boundary probe", "Probe the protocol validator.",
         {"kind": "flat plate", "surface_model": geo.PLATE.describe()}, plate["markers"][:2],
         [], [_predicted("P1", "chord - geodesic", 0.0, "mm", record)],
-        [{"id": "H1", "status": "hypothesis", "statement": "chord = geodesic", "test": "E_n <= 1"}], ("camera",), [])
+        [{"id": "H1", "status": "hypothesis", "statement": "chord = geodesic", "test": "E_n <= 1"}], ("camera", "cmm"), [],
+        [capture_format("photogrammetry", TARGET_CAPTURE, "camera", [m["id"] for m in plate["markers"][:2]],
+                        "ciw.lab.manufacturing_records.read_capture")])

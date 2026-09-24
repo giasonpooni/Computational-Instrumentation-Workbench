@@ -4,7 +4,8 @@ Scope: closed-form design rules for resolving curvature from sampled profiles,
 rigid registration (Kabsch) and its residual statistics, a least-squares fit of
 the as-built dome (height, width, centre, base plane) with its linearized
 covariance, least-squares sphere and step-gauge fits with linearized
-covariance, 3-2-1 datum frames, first-order and sigma-point covariance
+covariance, a geometric least-squares cylinder fit, 3-2-1 datum frames and the
+axis-primary datum frame of a tube, first-order and sigma-point covariance
 propagation along a chain of rigid frames, and the ANOVA method for a balanced
 crossed Gage R&R study. Each is exercised on seeded synthetic data with known
 truth.
@@ -243,6 +244,83 @@ def pose_difference(pose, nominal) -> np.ndarray:
     """xi with pose = exp(xi) nominal (first order)."""
     delta = pose @ np.linalg.inv(nominal)
     return np.concatenate([delta[:3, 3], rotation_vector(delta[:3, :3])])
+
+
+def _perpendicular_basis(direction) -> tuple[np.ndarray, np.ndarray]:
+    """Two unit vectors completing ``direction`` to a right-handed orthonormal basis."""
+    helper = np.eye(3)[int(np.argmin(np.abs(direction)))]
+    e1 = np.cross(direction, helper)
+    e1 /= np.linalg.norm(e1)
+    return e1, np.cross(direction, e1)
+
+
+def fit_cylinder(points, axis_point, axis_direction, radius, iterations=50) -> tuple[np.ndarray, np.ndarray, float, np.ndarray]:
+    """Geometric least-squares cylinder by Gauss-Newton on the radial residuals, from a start axis and radius.
+
+    Five parameters: two offsets of the axis point and two tilts of the axis
+    direction perpendicular to the current axis, and the radius; the frame is
+    re-centred after every step. Returns the axis point nearest the centroid,
+    the unit axis direction (sign of the start direction), the radius and the
+    residuals. Refuses fewer than six points (``cylinder_underdetermined``).
+    """
+    p = np.asarray(points, dtype=float)
+    if len(p) < 6:
+        raise MetrologyRefusal("cylinder_underdetermined", "A cylinder fit needs at least six points")
+    point = np.asarray(axis_point, dtype=float)
+    direction = np.asarray(axis_direction, dtype=float) / np.linalg.norm(axis_direction)
+    radius = float(radius)
+    for _ in range(iterations):
+        e1, e2 = _perpendicular_basis(direction)
+        offsets = p - point
+        along = offsets @ direction
+        radial = offsets - np.outer(along, direction)
+        distances = np.linalg.norm(radial, axis=1)
+        if np.any(distances < 1e-12):
+            raise MetrologyRefusal("cylinder_degenerate", "A probed point lies on the start axis")
+        unit = radial / distances[:, None]
+        jac = np.column_stack([-unit @ e1, -unit @ e2, -along * (unit @ e1), -along * (unit @ e2), -np.ones(len(p))])
+        step, *_ = np.linalg.lstsq(jac, -(distances - radius), rcond=None)
+        point = point + step[0] * e1 + step[1] * e2
+        direction = direction + step[2] * e1 + step[3] * e2
+        direction /= np.linalg.norm(direction)
+        radius += step[4]
+        if np.max(np.abs(step)) < 1e-15 * max(1.0, radius):
+            break
+    centroid = p.mean(axis=0)
+    point = point + ((centroid - point) @ direction) * direction
+    offsets = p - point
+    radial = offsets - np.outer(offsets @ direction, direction)
+    return point, direction, float(radius), np.linalg.norm(radial, axis=1) - radius
+
+
+def datum_frame_axis(axis_point, axis_direction, b_points, c_points) -> np.ndarray:
+    """Axis-primary datum reference frame of a tube as a 4x4 pose (datum -> measurement frame).
+
+    Primary A: the fitted cylinder axis gives z, oriented from the end face C
+    into the part (the axis point, taken inside the part, lies at z > 0).
+    Tertiary C: the end-face plane through three points fixes the origin where
+    A meets it. Secondary B: the axial scribe line (mean of its points) fixes
+    x, the direction from the axis to B perpendicular to z. Refuses an end face
+    parallel to the axis and a scribe on the axis (``datum_degenerate``).
+    """
+    point = np.asarray(axis_point, dtype=float)
+    z = np.asarray(axis_direction, dtype=float) / np.linalg.norm(axis_direction)
+    c = np.asarray(c_points, dtype=float)
+    normal = np.cross(c[1] - c[0], c[2] - c[0])
+    if np.linalg.norm(normal) < 1e-12:
+        raise MetrologyRefusal("datum_degenerate", "End-face datum points (C) are collinear")
+    normal /= np.linalg.norm(normal)
+    if abs(z @ normal) < 1e-6:
+        raise MetrologyRefusal("datum_degenerate", "End-face datum (C) is parallel to the axis (A)")
+    origin = point + ((c.mean(axis=0) - point) @ normal) / (z @ normal) * z
+    if (point - origin) @ z < 0:
+        z = -z
+    offset = np.asarray(b_points, dtype=float).reshape(-1, 3).mean(axis=0) - origin
+    x = offset - (offset @ z) * z
+    if np.linalg.norm(x) < 1e-9 * max(1.0, np.linalg.norm(offset)):
+        raise MetrologyRefusal("datum_degenerate", "Scribe datum (B) lies on the axis (A)")
+    x /= np.linalg.norm(x)
+    return transform(np.column_stack([x, np.cross(z, x), z]), origin)
 
 
 # Calibration artifacts -------------------------------------------------------

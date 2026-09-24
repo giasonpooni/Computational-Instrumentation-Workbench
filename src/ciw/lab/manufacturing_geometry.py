@@ -94,8 +94,9 @@ class Route:
         candidates = [(s, "focal") for s in self.focal[:1]] + [(s, "conjugate") for s in self.conjugate[:1]]
         return min(candidates) if candidates else (None, "none")
 
-    def margin(self) -> tuple[float, bool]:
-        """Focus margin s_focus / L; the bound flag is True when no focus lies within the horizon."""
+    def clearance_ratio(self) -> tuple[float, bool]:
+        """Focal clearance ratio s_focus / L (nearest zero of j_lat or j_head); the bound flag is True when none lies
+        within the horizon. Not the focus margin s_c - L of T024, which counts conjugate points (zeros of j_head) only."""
         distance, _ = self.nearest_focus()
         if distance is None:
             return self.horizon / self.length, True
@@ -104,7 +105,7 @@ class Route:
     def summary(self) -> dict:
         states = self.transfer.states
         distance, kind = self.nearest_focus()
-        margin, bound = self.margin()
+        ratio, bound = self.clearance_ratio()
         return {"route": self.name, "heading_deg": round(math.degrees(self.heading), 10),
                 "length_mm": self.length, "end_u_mm": [float(v) for v in self.end],
                 "max_abs_j_lat": float(np.max(np.abs(states[:, 4]))),
@@ -114,7 +115,7 @@ class Route:
                 "first_focal_mm": self.focal[0] if self.focal else None,
                 "first_conjugate_mm": self.conjugate[0] if self.conjugate else None,
                 "nearest_focus_kind": kind, "nearest_focus_mm": distance,
-                "focus_margin": margin, "margin_is_lower_bound": bound, "horizon_mm": self.horizon,
+                "focal_clearance_ratio": ratio, "ratio_is_lower_bound": bound, "horizon_mm": self.horizon,
                 "exits_side": self.exits_side}
 
 
