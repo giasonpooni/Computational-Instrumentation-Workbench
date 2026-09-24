@@ -189,7 +189,12 @@ def test_bad_window_or_undeclared_transform_publishes_no_partial_state(repositor
     source = add_source(session)
     result = request(session, "operation.execute", {"operation_id": "ciw.telemetry.v1",
         "parameters": {"source_id": source["source_id"], "configuration": config}})
-    assert result["type"] == "error", result
+    # A defect found during execution is a retained refused execution: an
+    # identity and a reason, never a bundle, a result or partial state.
+    assert result["type"] == "response" and result["payload"]["status"] == "refused", result
+    refused = result["payload"]["execution"]
+    assert result["payload"]["result"] is None and refused["result_id"] is None
+    assert refused["source_id"] == source["source_id"] and refused["action"] == "execute"
     assert response(session, "bundle.list")["bundles"] == []
     assert response(session, "result.list")["results"] == []
     assert response(session, "source.list")["sources"] == [source]

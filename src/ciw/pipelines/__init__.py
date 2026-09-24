@@ -188,7 +188,9 @@ def validate(value) -> dict:
         raise ValueError("steps must be a list")
     roles = []
     for step in value["steps"]:
-        _keys(step, {"role", "invocation", "purpose"}, {"pin"}, name="step")
+        _keys(step, {"role", "invocation", "purpose"}, {"pin", "optional"}, name="step")
+        if step.get("optional", True) is not True:
+            raise ValueError("step.optional marks a provider the operator may leave unbound; omit it otherwise")
         if not isinstance(step["role"], str) or not _ROLE.fullmatch(step["role"]) or step["invocation"] not in INVOCATIONS:
             raise ValueError("Each step needs a provider role and a declared invocation")
         _text(step["purpose"], "step purpose")
@@ -436,6 +438,12 @@ def check(descriptors: dict | None = None) -> dict:
                for hook in ("validate_upstreams", "requested_upstream_ids")):
             raise ValueError(f"{kind}: ordered upstreams are selected and bound by exactly the workflow's "
                              "requested_upstream_ids and validate_upstreams")
+        separate = value["inputs"]["configuration"] == "separate_operator_configuration"
+        optional = any(step.get("optional") for step in value["steps"])
+        if (optional or separate) != all(callable(getattr(flow, hook, None))
+                                         for hook in ("check_bindings", "select_bindings", "replay_bindings")):
+            raise ValueError(f"{kind}: optional providers or a separate configuration are bound only through the "
+                             "workflow's check_bindings, select_bindings and replay_bindings")
         import_module(value["implementation"]["module"])
         _check_runner(kind, value["implementation"]["runner"], flow)
         if not callable(resolve_symbol(value["implementation"]["view"]["symbol"])):

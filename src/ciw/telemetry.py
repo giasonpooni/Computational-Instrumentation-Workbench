@@ -445,6 +445,30 @@ def _adapters(configuration, repositories, expected=None):
             for role in sorted(roles)}
 
 
+REQUIRED_ROLES = frozenset({"ppda", "stfe", "gsie", "set"})
+
+
+def check_bindings(bindings):
+    """Validate host bindings before the workbench advertises telemetry; CBSR is optional."""
+    _adapters({"cbsr": {}} if "cbsr" in bindings else {}, bindings)
+
+
+def select_bindings(configuration, bindings):
+    """The bound providers one execution under this configuration uses."""
+    roles = set(REQUIRED_ROLES) | ({"cbsr"} if "cbsr" in configuration else set())
+    if not roles <= bindings.keys():
+        raise AdapterRefusal("operation_unavailable", "Telemetry reconciliation needs an explicitly bound CBSR checkout")
+    return {role: bindings[role] for role in roles}
+
+
+def replay_bindings(bundle, bindings):
+    """Replay binds exactly the provider set the retained session ran."""
+    roles = set(bundle["runtimes"])
+    if not roles <= bindings.keys():
+        raise AdapterRefusal("operation_unavailable", "Replay requires the original telemetry provider set")
+    return {role: bindings[role] for role in roles}
+
+
 def create_session(source_bytes, configuration, repositories):
     """Execute all declared operations, reexecute, then attach SET verification."""
     source = _source(source_bytes)

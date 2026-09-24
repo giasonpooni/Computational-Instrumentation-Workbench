@@ -20,7 +20,8 @@
         "revision": "b543969cb80a69a5df1274eee10d22549bcea773",
         "module": "cbsr",
         "source_root": "src"
-      }
+      },
+      "optional": true
     },
     {
       "role": "gsie",

@@ -542,7 +542,7 @@ class Workbench:
         if kind not in OPERATIONS:
             raise ValueError("This source kind has no executable operation")
         workflow = _workflow(kind)
-        required = workflow.ROLES - {"cbsr"} if kind == "telemetry" else workflow.ROLES
+        required = workflow.ROLES - {step["role"] for step in _pipeline(kind)["steps"] if step.get("optional")}
         if not isinstance(repositories, dict) or not required <= set(repositories) <= workflow.ROLES:
             raise ValueError("Bind exactly the repositories declared by the workflow")
         if any(not isinstance(path, (str, Path)) or not str(path).strip() for path in repositories.values()):
@@ -550,8 +550,9 @@ class Workbench:
         bindings = {role: Path(path).resolve() for role, path in repositories.items()}
         # Validate trusted provider identities before advertising availability.
         # The workflows check them again at each execution and replay.
-        if kind == "telemetry":
-            workflow._adapters({"cbsr": {}} if "cbsr" in bindings else {}, bindings)
+        check = getattr(workflow, "check_bindings", None)
+        if check is not None:
+            check(bindings)
         else:
             workflow._adapters(bindings)
         with self._lock:
@@ -873,13 +874,14 @@ class Workbench:
         kind = next((kind for kind, operation in OPERATIONS.items() if operation == payload["operation_id"]), None)
         if kind is None:
             raise AdapterRefusal("operation_unavailable", "Unknown shared workbench operation")
-        if kind == "telemetry":
+        separate = _pipeline(kind)["inputs"]["configuration"] == "separate_operator_configuration"
+        if separate:
             _keys(payload, {"operation_id", "source_id", "configuration"})
             if not isinstance(payload["configuration"], dict):
-                raise ValueError("Telemetry requires an explicit window and estimator configuration")
+                raise ValueError("This operation requires an explicit operator configuration")
             configuration = deepcopy(payload["configuration"])
         elif "configuration" in payload:
-            raise ValueError("Only telemetry accepts a separate operation configuration")
+            raise ValueError("This operation takes its configuration from the source")
         upstream_id = payload.get("upstream_bundle_id")
         if kind in UPSTREAM_KINDS:
             _text(upstream_id, "Explicit upstream bundle identity")
@@ -911,11 +913,8 @@ class Workbench:
         try:
             raw = base64.b64decode(source["bytes_b64"], validate=True)
             workflow = _workflow(kind)
-            if kind == "telemetry":
-                roles = {"ppda", "stfe", "gsie", "set"} | ({"cbsr"} if "cbsr" in configuration else set())
-                if not roles <= bindings.keys():
-                    raise AdapterRefusal("operation_unavailable", "Telemetry reconciliation needs an explicitly bound CBSR checkout")
-                native = workflow.create_session(raw, configuration, {role: bindings[role] for role in roles})
+            if separate:
+                native = workflow.create_session(raw, configuration, workflow.select_bindings(configuration, bindings))
             else:
                 native = workflow.create_session(raw, bindings) if upstream is None else workflow.create_session(raw, upstream, bindings)
             return self._retain(kind, source, upstream_id, native)
@@ -940,12 +939,11 @@ class Workbench:
             except AdapterRefusal as exc:
                 return self._retain_refusal("replay", record["kind"], source, upstream_ids, record["bundle_id"], exc)
         try:
-            if record["kind"] == "telemetry":
-                roles = set(record["native"]["runtimes"])
-                if not roles <= bindings.keys():
-                    raise AdapterRefusal("operation_unavailable", "Replay requires the original telemetry provider set")
-                bindings = {role: bindings[role] for role in roles}
-            replayed = _workflow(record["kind"]).replay_session(record["native"], bindings)
+            workflow = _workflow(record["kind"])
+            select = getattr(workflow, "replay_bindings", None)
+            if select is not None:
+                bindings = select(record["native"], bindings)
+            replayed = workflow.replay_session(record["native"], bindings)
             native, receipt = replayed["session"], replayed["replay_receipt"]
             if (receipt["source_bundle_digest"] != record["bundle_id"] or
                     _canonical(native.get("replay_receipts")) != _canonical([receipt])):
