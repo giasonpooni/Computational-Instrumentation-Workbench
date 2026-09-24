@@ -164,3 +164,19 @@ def test_refusals_follow_only_the_declared_workload_code_a_pipeline_executes():
     proved = pipelines.code_refusals(descriptors["proved-heat"], descriptors)
     assert "DECLARED_WORKLOAD_REFUSED" not in proved and "RUNTIME_UNAVAILABLE" in proved
     assert "DECLARED_WORKLOAD_REFUSED" not in pipelines.code_refusals(descriptors["measurement-chain"], descriptors)
+
+
+@pytest.mark.parametrize("kind, path, value, message", [
+    ("telemetry", ("implementation", "view", "context"), False, "view context differs"),
+    ("energy-accuracy", ("implementation", "view", "context"), True, "view context differs"),
+    ("variational-free-energy", ("session_schema",), "ciw.variational-free-energy-sesion.v1", "session_schema differs"),
+    ("measurement-chain", ("session_schema",), "ciw.mesh-path-session.v1", "session_schema differs"),
+])
+def test_a_descriptor_binds_its_view_and_session_schema_to_code(kind, path, value, message):
+    descriptors = deepcopy(pipelines.load())
+    target = descriptors[kind]
+    for key in path[:-1]:
+        target = target[key]
+    target[path[-1]] = value
+    with pytest.raises(ValueError, match=message):
+        pipelines.check(descriptors)

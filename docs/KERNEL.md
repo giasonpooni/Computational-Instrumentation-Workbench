@@ -117,15 +117,19 @@ The view's `investigations` list reads the same graph against the
 
 - for each member pipeline, its result nodes and which of them are current;
 - the default-pipeline stages that still lack a current result;
-- the lineage chains that connect results of the investigation's pipelines,
-  for example calibrated observable → identified design → identified stability.
-  A chain is current only while every node in it is.
+- one chain per terminal result: the results of the investigation's pipelines
+  it was computed from, with their links, for example calibrated observable →
+  identified design → identified stability. A fan-in keeps its branches as
+  links, and each branch of a fan-out is its own chain. A chain is current
+  only while every node in it is.
 
 The live view passes the pins each kind is bound to now. Shared-runner provider
-kinds pass the runtime identity checked at binding, and provider-free references
-pass their current code identity. A result computed under other pins therefore
-reads `needs_reevaluation`, as do its dependents and any chain containing it,
-until it is replayed. An investigation is `not_started`, `incomplete`, or
+kinds pass the runtime identity found at binding or by their latest retained
+execution or replay, and provider-free references pass their current code
+identity. A result computed under other pins therefore reads `needs_reevaluation`, as do its dependents and any chain containing it.
+Replay reproduces a result only under its retained pins, so it is refused
+there; executing the same source under the current pins retains a fresh,
+current result beside the stale one. An investigation is `not_started`, `incomplete`, or
 `default_pipeline_current`. `ciw investigations WORKSPACE [--json]` prints the
 same progress for a saved workspace without executing or writing anything.
 Like the rest of the view, this is computed from retained records and never

@@ -54,6 +54,17 @@ def test_replay_reevaluates_the_same_node_and_reopen_reads_the_same_graph(tmp_pa
     assert result["status"] == "current_for_declared_inputs" and len(result["current_occurrences"]) == 2
 
 
+def test_a_retained_execution_refreshes_the_pins_a_provider_was_bound_with(tmp_path):
+    session, source = _session_with_source(tmp_path)
+    # The provider changed after binding; the next execution retains what it found.
+    session.workbench._bound_pins["thermal-observer"] = {"thermal": "sha256:" + "0" * 64}
+    _call(session, "operation.execute", {"operation_id": "ciw.thermal-observer.v1",
+                                         "parameters": {"source_id": source["source_id"]}})
+    view = session.workbench.project_view()
+    assert session.workbench.current_pins()["thermal-observer"] == _node(view, "computation:")[0]["pins"]
+    assert view["needs_reevaluation"] == []
+
+
 def test_pin_drift_marks_results_for_reevaluation_without_host_paths(tmp_path):
     session, source = _session_with_source(tmp_path)
     _call(session, "operation.execute", {"operation_id": "ciw.thermal-observer.v1",
@@ -157,6 +168,35 @@ def test_a_stale_upstream_makes_its_chain_and_its_default_stage_need_reevaluatio
     assert stages["ciw.b.v1"]["results"] == ["result:b"] and stages["ciw.b.v1"]["current"] == []
 
 
+def test_a_fan_in_is_one_chain_whose_links_keep_its_branches():
+    from ciw.cli import chain_text
+    nodes = [_result("result:c1", "c"), _result("result:c2", "c"), _result("result:d1", "d"),
+             _result("result:d2", "d"), _result("result:e", "e")]
+    edges = [_edge("result:c1", "result:d1"), _edge("result:c2", "result:d2"),
+             _edge("result:d1", "result:e"), _edge("result:d2", "result:e")]
+    (progress,) = project_graph.investigations(nodes, edges, OPS, CATALOG)
+    (chain,) = progress["chains"]
+    assert chain["result"] == "result:e" and len(chain["nodes"]) == 5
+    assert chain["links"] == [["result:c1", "result:d1"], ["result:c2", "result:d2"],
+                              ["result:d1", "result:e"], ["result:d2", "result:e"]]
+    # Never printed as a line that claims a d result feeds a c result.
+    assert chain_text(chain) == "ciw.c.v1 -> ciw.d.v1; ciw.c.v1 -> ciw.d.v1; ciw.d.v1 -> ciw.e.v1; ciw.d.v1 -> ciw.e.v1"
+
+
+def test_a_current_branch_is_its_own_chain_beside_a_stale_sibling():
+    from ciw.cli import chain_text
+    nodes = [_result("result:c", "c"), _result("result:d1", "d"), _result("result:e1", "e", "needs_reevaluation"),
+             _result("result:d2", "d"), _result("result:e2", "e")]
+    edges = [_edge("result:c", "result:d1"), _edge("result:d1", "result:e1"),
+             _edge("result:c", "result:d2"), _edge("result:d2", "result:e2")]
+    (progress,) = project_graph.investigations(nodes, edges, OPS, CATALOG)
+    stale, current = progress["chains"]
+    assert (stale["result"], stale["status"]) == ("result:e1", "needs_reevaluation")
+    assert (current["result"], current["status"]) == ("result:e2", "current_for_declared_inputs")
+    assert current["nodes"] == ["result:c", "result:d2", "result:e2"]
+    assert chain_text(current) == "ciw.c.v1 -> ciw.d.v1 -> ciw.e.v1"
+
+
 def test_the_graph_view_reports_a_retained_member_result_under_its_investigation(tmp_path):
     from test_machine_workflow import _session_with_source as machine_session
     session, source = machine_session(tmp_path)
@@ -193,6 +233,18 @@ def test_a_changed_reference_code_identity_marks_retained_results_for_reevaluati
     cycle = next(item for item in after["investigations"] if item["investigation_id"] == "manufacturing-cycle")
     stage = next(item for item in cycle["stages"] if item["pipeline_id"] == "ciw.encoder-position.v1")
     assert stage["results"] == [result["node_id"]] and stage["current"] == []
+    # Replay reproduces only under the retained pins; executing the source
+    # again under the current ones retains a current result beside it.
+    replay = _call(session, "bundle.replay", {"bundle_id": result["current_occurrences"][0]})
+    assert replay["status"] == "refused"
+    _call(session, "operation.execute", {"operation_id": "ciw.encoder-position.v1",
+                                         "parameters": {"source_id": source["source_id"]}})
+    rerun = session.workbench.project_view()
+    assert rerun["needs_reevaluation"] == [result["node_id"]]
+    cycle = next(item for item in rerun["investigations"] if item["investigation_id"] == "manufacturing-cycle")
+    stage = next(item for item in cycle["stages"] if item["pipeline_id"] == "ciw.encoder-position.v1")
+    assert len(stage["results"]) == 2 and len(stage["current"]) == 1
     # Restoring the identity restores currency: nothing was rewritten.
     monkeypatch.setattr(machine_workflow, "runtime_identity", original)
-    assert session.workbench.project_view()["needs_reevaluation"] == []
+    assert session.workbench.project_view()["needs_reevaluation"] == [node["node_id"] for node in _node(rerun, "result:")
+                                                                      if node["node_id"] != result["node_id"]]

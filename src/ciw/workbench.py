@@ -409,13 +409,17 @@ def _validate_links(record, bundles):
             raise ValueError("Replay must preserve numerical identity and create fresh occurrences")
 
 
+def _pins_of(native):
+    from .project_graph import pins_of
+    return pins_of(native)
+
+
 def _runner_pins(workflow, bound):
     """The graph pins of a shared-runner binding: its runtime under the workflow's role, as a bundle retains it."""
     from .pipelines.runner import PipelineRunner
-    from .project_graph import pins_of
     if not isinstance(workflow, PipelineRunner) or not isinstance(bound, tuple) or len(bound) != 3:
         return None
-    return pins_of({"runtimes": {workflow.role: bound[1]}})
+    return _pins_of({"runtimes": {workflow.role: bound[1]}})
 
 
 def _own_child(record, native):
@@ -704,6 +708,10 @@ class Workbench:
             self._identities.update(claims)
             self._used_bytes += size
             self._revision += 1
+            if kind in self._bound_pins:
+                # Each execution re-probes its bound provider; the view compares against what it found last.
+                role = _workflow(kind).role
+                self._bound_pins[kind] = _pins_of({"runtimes": {role: native["runtimes"][role]}})
             return deepcopy(_summary(record))
 
     def _retain_refusal(self, action, kind, source, upstream_ids, subject, exc, reserved=0):
@@ -1011,8 +1019,9 @@ class Workbench:
     def current_pins(self):
         """Pins each executable kind is bound to now, for marking results computed under other pins.
 
-        Provider kinds report the runtime identity checked when they were bound;
-        provider-free references report their current code identity. Nothing
+        Provider kinds report the runtime identity found when they were bound,
+        or by their latest retained execution or replay; provider-free
+        references report their current code identity. Nothing
         executes a scientific operation.
         """
         with self._lock:

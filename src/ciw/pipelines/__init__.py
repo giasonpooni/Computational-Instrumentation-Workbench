@@ -18,6 +18,7 @@ from __future__ import annotations
 from copy import deepcopy
 from functools import lru_cache
 from importlib import import_module, resources
+import inspect
 import json
 from pathlib import Path
 import re
@@ -484,8 +485,15 @@ def check(descriptors: dict | None = None) -> dict:
         import_module(value["implementation"]["module"])
         _check_runner(kind, value["implementation"]["runner"], flow)
         _check_method(kind, value["verification"]["method"], flow)
-        if not callable(resolve_symbol(value["implementation"]["view"]["symbol"])):
+        view = value["implementation"]["view"]
+        projector = resolve_symbol(view["symbol"])
+        if not callable(projector):
             raise ValueError(f"{kind}: inspection view is not callable")
+        if ("context" in inspect.signature(projector).parameters) != view["context"]:
+            raise ValueError(f"{kind}: inspection view context differs from its projector's signature")
+        recorded = next((getattr(flow, name) for name in ("schema", "SCHEMA", "SESSION_SCHEMA") if hasattr(flow, name)), None)
+        if value["session_schema"] != recorded:
+            raise ValueError(f"{kind}: descriptor session_schema differs from the recorded {recorded}")
         for rule in value["domain_rules"]:
             for reference in rule["code"]:
                 resolve_symbol(reference)
@@ -498,6 +506,9 @@ def check(descriptors: dict | None = None) -> dict:
         for item in value["investigations"]:
             if item not in investigations or value["pipeline_id"] not in investigations[item]["pipelines"]:
                 raise ValueError(f"{kind}: investigation {item} does not list this pipeline")
+    schemas = [value["session_schema"] for value in descriptors.values()]
+    if len(set(schemas)) != len(schemas):
+        raise ValueError("Each kind retains its own session schema")
     by_pipeline = {value["pipeline_id"]: value for value in descriptors.values()}
     for item in investigations.values():
         if not set(item["pipelines"]) <= set(by_pipeline):

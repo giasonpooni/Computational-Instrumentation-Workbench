@@ -199,14 +199,19 @@ def test_unknown_covariance_and_missing_clock_mapping_cannot_create_results(reta
         source = call(session, "source.add", {"kind": "acquired-calibrated-window", "label": name,
             "bytes_b64": base64.b64encode(raw).decode()}, error=name == "missing_clock_map")
         if name == "missing_clock_map":
-            error, stage = source, "source.add"
+            error, stage, execution = source, "source.add", "not_performed"
         else:
-            error = call(session, "operation.execute", {"operation_id": "ciw.acquired-calibrated-window.v1",
-                "parameters": {"source_id": source["source_id"], "upstream_bundle_id": retained["acquisition"]["bundle_digest"]}}, error=True)
-            stage = "operation.execute"
+            reply = call(session, "operation.execute", {"operation_id": "ciw.acquired-calibrated-window.v1",
+                "parameters": {"source_id": source["source_id"], "upstream_bundle_id": retained["acquisition"]["bundle_digest"]}})
+            # A failed native execution is retained as a refusal with no result, never a bundle.
+            assert reply["status"] == "refused" and reply["result"] is None, reply
+            refused = reply["execution"]
+            assert refused["result_id"] is None and refused["source_id"] == source["source_id"]
+            assert refused in call(session, "execution.list")["executions"]
+            error, stage, execution = refused["refusal"], "operation.execute", "refused"
         assert call(session, "bundle.list") == before
         faults.append({"case": name, "source_bytes_b64": base64.b64encode(raw).decode(), "stage": stage,
-                       "error": error, "execution": "not_performed"})
+                       "error": error, "execution": execution})
     output("acquired-calibrated-window", "source-refusals", faults)
     assert session.workbench.pending_operations == 0
 

@@ -477,7 +477,18 @@ def print_investigations(progress: list) -> None:
         if item["missing_default_stages"] and item["state"] != "not_started":
             print("    missing: " + ", ".join(item["missing_default_stages"]))
         for chain in item["chains"]:
-            print(f"    chain ({chain['status']}): " + " -> ".join(chain["sequence"]))
+            print(f"    chain ({chain['status']}): " + chain_text(chain))
+
+
+def chain_text(chain: dict) -> str:
+    """A linear lineage reads as one arrow path; a branching one lists its links."""
+    pipeline = dict(zip(chain["nodes"], chain["sequence"]))
+    links = chain["links"]
+    if len(links) == len(chain["nodes"]) - 1 and all(
+            [target for _, target in links].count(node) <= 1 and [origin for origin, _ in links].count(node) <= 1
+            for node in chain["nodes"]):
+        return " -> ".join(chain["sequence"])
+    return "; ".join(f"{pipeline[origin]} -> {pipeline[target]}" for origin, target in links)
 
 
 def parse_bindings(values):

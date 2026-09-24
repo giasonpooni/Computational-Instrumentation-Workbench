@@ -155,28 +155,27 @@ def investigations(nodes: list, edges: list, operations: dict, catalog: dict | N
         missing = [stage["pipeline_id"] for stage in stages if stage["default"] and not stage["current"]]
         links = [(edge["from"], edge["to"]) for edge in edges
                  if edge["relation"] == "computation" and edge["from"] in in_scope and edge["to"] in in_scope]
-        component = {node: node for node in in_scope}
-
-        def root(node):
-            while component[node] != node:
-                component[node] = component[component[node]]
-                node = component[node]
-            return node
-
+        parents, followed = {}, set()
         for origin, target in links:
-            component[root(origin)] = root(target)
-        groups = {}
-        for node in in_scope:
-            groups.setdefault(root(node), []).append(node)
+            parents.setdefault(target, set()).add(origin)
+            followed.add(origin)
         chains = []
-        for group in groups.values():
-            if len(group) < 2:
+        # One chain per terminal result: the in-scope lineage it was computed from.
+        for terminal in sorted(in_scope - followed, key=order.__getitem__):
+            lineage, pending = set(), [terminal]
+            while pending:
+                node = pending.pop()
+                if node not in lineage:
+                    lineage.add(node)
+                    pending += parents.get(node, ())
+            if len(lineage) < 2:
                 continue
-            ordered = sorted(group, key=order.__getitem__)
-            chains.append({"nodes": ordered, "sequence": [members[kind_at[node]] for node in ordered],
-                           "pipelines": sorted({members[kind_at[node]] for node in group}),
+            ordered = sorted(lineage, key=order.__getitem__)
+            chains.append({"result": terminal, "nodes": ordered,
+                           "links": sorted([origin, target] for origin, target in links if target in lineage),
+                           "sequence": [members[kind_at[node]] for node in ordered],
+                           "pipelines": sorted({members[kind_at[node]] for node in lineage}),
                            "status": CURRENT if all(status[node] == CURRENT for node in ordered) else "needs_reevaluation"})
-        chains.sort(key=lambda chain: order[chain["nodes"][0]])
         state = ("not_started" if not in_scope else "default_pipeline_current" if not missing else "incomplete")
         progress.append({"investigation_id": investigation_id, "title": item["title"], "question": item["question"],
                          "state": state, "missing_default_stages": missing, "stages": stages, "chains": chains})
