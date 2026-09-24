@@ -197,13 +197,79 @@ def test_t002_references_agree(lab):
 
 
 @pytest.mark.lab_task("T002")
+def test_t002_reference_integrator_agrees_with_mpmath_odefun(lab):
+    for name in ("sympy", "mpmath"):
+        pytest.importorskip(name)
+    import mpmath
+
+    report = lab("T002")
+    table = _artifact(lab.ctx, "T002", "odefun.json")
+    assert table["dps"] == gj.MP_DPS >= 34 and table["degree"] == gj.ODEFUN_DEGREE
+    for key in gj.VARIABLE_KEYS:
+        record = _findings(report)[gjt.ODEFUN_CLAIM.format(key=key)]
+        assert record["evidence_status"] == "independently_verified"
+        independent = record["basis"]["independent_check"]
+        # The ciw-authored integrator is the producer, identified by version and module digest; mpmath's is the checker.
+        producer, checker = independent["producer"], independent["checker"]
+        assert producer["implementation"] == "ciw.lab.geodesic_jacobi_common.gbs_integrate"
+        assert producer["revision"].startswith("ciw ")
+        assert producer["source_sha256"] == runner.source_digest(gjt.COMMON) and len(producer["source_sha256"]) == 64
+        assert checker == {"implementation": "mpmath.odefun", "revision": mpmath.__version__}
+        # Within the reference's own 10 vs 20 macro-step estimate, and by far: the estimate measures the 10-step
+        # result, which an order-16 extrapolation leaves about 2^16 times less accurate than the retained 20-step one.
+        assert independent["comparison"] == "le" and independent["tolerance"] == 1.0
+        assert independent["observed"] == record["value"]["gap_over_estimate"] < 1e-3
+        assert record["value"]["gbs_minus_odefun"] < 1e-24
+        assert all(check["passed"] for check in record["basis"]["checks"])
+        row = table["rows"][key]
+        assert abs(row["odefun_speed_squared_drift"]) < 1e-30 and abs(row["odefun_determinant_minus_one"]) < 1e-30
+        assert row["odefun_evaluations"] == row["odefun_taylor_steps"] * gj.ODEFUN_DEGREE
+        assert record["uncertainty"]["kind"] == "roundoff" and record["uncertainty"]["value"] < 1e-32
+    assert "mpmath.odefun" in report["numerical_result"]
+    # The figure plots only these 34-digit quantities (binary64 gaps move with the BLAS kernel).
+    figure = ET.parse(lab.ctx.output_dir / "artifacts" / "T002" / "agreement.svg").getroot()
+    paths = list(figure.iter("{http://www.w3.org/2000/svg}path"))
+    assert len(paths) == 2 and len(table["figure_path_index"]) == len(gj.VARIABLE_KEYS)
+
+
+@pytest.mark.lab_task("T002")
+def test_odefun_reference_follows_the_closed_form_on_the_sphere():
+    # The odefun harness (joint lambdify, state order, Jacobi block) against closed forms, independently of the GBS.
+    pytest.importorskip("sympy")
+    pytest.importorskip("mpmath")
+    length = 0.6
+    derived = gj.derive("sphere")
+    result = gj.odefun_reference("sphere", derived, dps=20, degree=16, length=length)
+    assert result["dps"] == 20 and result["taylor_steps"] >= 1
+    assert result["evaluations"] == 16 * result["taylor_steps"]
+    state = np.array(result["state"])
+    exact = gj.exact_position("sphere", [length])[0]
+    assert np.linalg.norm(gj.position("sphere", state[:2]) - exact) < 1e-14
+    # K = 1: lateral column (cos s, -sin s), heading column (sin s, cos s).
+    assert np.allclose(state[4:], [math.cos(length), -math.sin(length), math.sin(length), math.cos(length)],
+                       rtol=0.0, atol=1e-15)
+    assert abs(result["determinant_minus_one"]) < 1e-18 and abs(result["speed_squared_drift"]) < 1e-18
+    # The Taylor degree sets the cost, not the result: mpmath's default degree (3 + 1.5 dps) agrees to rounding.
+    default = gj.odefun_reference("sphere", derived, dps=20, degree=33, length=length)
+    assert gj.mp_difference(result["mpf_state"], default["mpf_state"], dps=20) < 1e-18
+
+
+@pytest.mark.lab_task("T002")
 def test_t002_without_optional_modules(tmp_path):
     report = _run(BareContext(tmp_path), "T002")
     assert report["state"] == "partial"
-    assert set(_labels(report).values()) == {"numerically_verified"}
-    assert "ciw Richardson RK4 is self-convergent on the torus path (no independent reference available)" \
-        in _labels(report)
+    labels = _labels(report)
+    assert "ciw Richardson RK4 is self-convergent on the torus path (no independent reference available)" in labels
+    # The mpmath.odefun comparison keeps its claims and is recorded as not established, not dropped.
+    odefun = [gjt.ODEFUN_CLAIM.format(key=key) for key in gj.VARIABLE_KEYS]
+    assert all(labels.pop(claim) == "not_established" for claim in odefun)
+    assert all(_findings(report)[claim].get("expected_not_established") is True for claim in odefun)
+    assert set(labels.values()) == {"numerically_verified"}
+    assert report["evidence_status"]["primary"] == "numerically_verified"
     assert any("Unavailable optional modules" in item for item in report["unresolved_assumptions"])
+    assert any("mpmath.odefun comparison does not run" in item for item in report["unresolved_assumptions"])
+    written = {Path(artifact["path"]).name for artifact in report["generated_artifacts"]}
+    assert "references.json" in written and not written & {"odefun.json", "agreement.svg"}
 
 
 @pytest.mark.lab_task("T003")

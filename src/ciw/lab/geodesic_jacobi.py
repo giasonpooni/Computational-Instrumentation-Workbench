@@ -1,10 +1,12 @@
 """Geodesic and Jacobi-field experiments T001-T009 on the ``ciw.lab.surfaces`` catalogue.
 
 Scope: symbolic re-derivation of the geodesic equations (sympy, optional),
-closed-form and arbitrary-precision references (mpmath, optional), integrator
-order and unit-speed drift studies, the Jacobi separation law, finite-difference
-flow perturbations, the transfer-matrix determinant, conjugate and focal points,
-and the separate behaviour of the lateral and heading Jacobi columns. The pinned
+closed-form and arbitrary-precision references (mpmath, optional; the ciw
+extrapolation integrator checked against mpmath's Taylor-series solver),
+integrator order and unit-speed drift studies, the Jacobi separation law,
+finite-difference flow perturbations, the transfer-matrix determinant,
+conjugate and focal points, and the separate behaviour of the lateral and
+heading Jacobi columns. The pinned
 Curved-Surface-Geodesic-Sensitivity-Runtime provider is compared in a
 subprocess only when it is bound as ``csg``.
 
@@ -23,6 +25,7 @@ import textwrap
 
 import numpy as np
 
+from .. import __version__
 from . import geodesic_jacobi_common as gj
 from . import integrators, jacobi, surfaces, svg
 from .evidence import finding
@@ -552,7 +555,7 @@ def reference(ctx, key: str) -> dict:
                     "matrix": [[float(a[0]), float(b[0])], [float(ap[0]), float(bp[0])]], "curvature": k,
                     "error_estimate": 0.0}
         if ctx.available("module:sympy") and ctx.available("module:mpmath"):
-            result = gj.mp_reference(key)
+            result = gj.mp_reference(key, derived=_derived(ctx, spec.surface))
         elif ctx.available("module:scipy"):
             result = gj.scipy_reference(key)
         else:
@@ -579,6 +582,77 @@ def _scipy(ctx, key):
     return ctx.memo(("gj-scipy", key), lambda: gj.scipy_reference(key))
 
 
+# The same claim is retained with or without sympy and mpmath; without them it is recorded as not established.
+# Its values are mpmath results from binary64 starts that no BLAS kernel changes (bit-identical on SkylakeX, Haswell
+# and Sandybridge); the relative tolerance leaves room only for last-digit changes of the 34-digit arithmetic, which
+# reach about 1e-5 of the smallest gap (the saddle's).
+TOL_ODEFUN = {"abs": 0.0, "rel": 1e-3}
+ODEFUN_CLAIM = ("The 34-digit Gragg-Bulirsch-Stoer reference on the {key} path agrees with mpmath.odefun (Taylor "
+                "series) on the same sympy-derived equations within its error estimate")
+
+
+def _odefun(ctx, key):
+    surface_key = gj.path(key).surface
+    return ctx.memo(("gj-odefun", key, gj.MP_DPS, gj.ODEFUN_DEGREE),
+                    lambda: gj.odefun_reference(key, _derived(ctx, surface_key)))
+
+
+def _gbs_producer() -> dict:
+    """The ciw producer of the 34-digit references: package version plus the digest of the module holding the GBS."""
+    from .runner import source_digest
+
+    return {"implementation": "ciw.lab.geodesic_jacobi_common.gbs_integrate", "revision": f"ciw {__version__}",
+            "source_sha256": source_digest(COMMON)}
+
+
+def odefun_comparison(ctx) -> dict:
+    """Each 34-digit Gragg-Bulirsch-Stoer reference against mpmath.odefun on the same equations (memoized)."""
+    def compute():
+        rows = {}
+        for key in gj.VARIABLE_KEYS:
+            ref, taylor = reference(ctx, key), _odefun(ctx, key)
+            gap = gj.mp_difference(ref["mpf_state"], taylor["mpf_state"])
+            scale = max(1.0, float(np.max(np.abs(ref["state"]))))
+            rows[key] = {"gbs_minus_odefun": gap, "gbs_error_estimate": ref["error_estimate"],
+                         "gap_over_estimate": gap / ref["error_estimate"], "state_scale": scale,
+                         "odefun_digits": taylor["digits"], "gbs_digits": ref["digits"],
+                         "odefun_speed_squared_drift": taylor["speed_squared_drift"],
+                         "odefun_determinant_minus_one": taylor["determinant_minus_one"],
+                         "odefun_taylor_steps": taylor["taylor_steps"], "odefun_evaluations": taylor["evaluations"]}
+        return rows
+    return ctx.memo(("gj-odefun-comparison", gj.MP_DPS, gj.ODEFUN_DEGREE), compute)
+
+
+def _odefun_finding(key: str, row: dict | None) -> dict:
+    claim = ODEFUN_CLAIM.format(key=key)
+    if row is None:
+        return finding(claim, "numerical", None, {"notes": "sympy and mpmath are not both installed: neither the "
+                                                  "34-digit reference nor mpmath.odefun ran"},
+                       expected_not_established=True)
+    drift = max(abs(row["odefun_speed_squared_drift"]), abs(row["odefun_determinant_minus_one"]))
+    checks = [gj.check("high_precision", f"largest end-state difference between the Gragg-Bulirsch-Stoer reference "
+                       f"and mpmath.odefun on {key} (absolute)", row["gbs_minus_odefun"], 1e-18, "le"),
+              gj.check("invariant", f"first integrals of the mpmath.odefun end state on {key}: larger of the "
+                       "g(u', u') drift from its start value and |det Phi - 1|", drift, 1e-30, "le")]
+    basis = {"checks": checks, "independent_check": dict(
+        gj.check("high_precision", f"largest end-state difference (geodesic state and both Jacobi columns) between the "
+                 f"ciw Gragg-Bulirsch-Stoer reference (20 macro-steps) and mpmath.odefun (Taylor series of degree "
+                 f"{gj.ODEFUN_DEGREE}), both at {gj.MP_DPS} digits on the same sympy-derived equations from the same "
+                 f"binary64 start on {key}, over the reference's 10 vs 20 macro-step error estimate; the integrators "
+                 "differ in origin, mpmath supplies the arithmetic of both", row["gap_over_estimate"], 1.0, "le"),
+        producer=_gbs_producer(), checker={"implementation": "mpmath.odefun",
+                                           "revision": gj.optional_version("mpmath")})}
+    scale = row["state_scale"]
+    return finding(
+        claim, "numerical", {name: row[name] for name in ("gbs_minus_odefun", "gbs_error_estimate",
+                                                          "gap_over_estimate")}, basis,
+        uncertainty=_unc("roundoff", 10.0 ** -gj.MP_DPS * scale, f"{gj.MP_DPS}-digit arithmetic: both end states and "
+                         f"their difference carry rounding of about 1e-{gj.MP_DPS} times the end-state scale "
+                         f"{_fmt(scale)}; the gap is the difference of the two integrators' own errors, which neither "
+                         "reports separately (odefun gives no error estimate)"),
+        tolerance=TOL_ODEFUN)
+
+
 def _end_gap(key, state, ref) -> dict:
     spec = gj.path(key)
     state = np.asarray(state, dtype=float)
@@ -601,7 +675,10 @@ def _clairaut_mp(ref, surf):
 
 
 @task("T002", changed_files=CHANGED,
-      regression_tests=(_test("test_t002_references_agree"), _test("test_t002_without_optional_modules"))
+      regression_tests=(_test("test_t002_references_agree"),
+                        _test("test_t002_reference_integrator_agrees_with_mpmath_odefun"),
+                        _test("test_odefun_reference_follows_the_closed_form_on_the_sphere"),
+                        _test("test_t002_without_optional_modules"))
       + SECTION_TESTS)
 def high_precision_references(ctx):
     have_scipy = ctx.available("module:scipy")
@@ -639,20 +716,28 @@ def high_precision_references(ctx):
         drift = [abs(torus.clairaut(y[:2], y[2:4]) - c0) for y in tr.states]
         clairaut[f"ciw_rk4_{steps}_max"] = float(max(drift))
         curves.append((f"RK4 N={steps}", tr.s, drift))
-    order = list(rows)
+    # The 34-digit Gragg-Bulirsch-Stoer references against mpmath's own Taylor-series integrator.
+    taylor = odefun_comparison(ctx) if have_mp else None
     ctx.artifact_json("references.json", _plain({
         "richardson_steps": [RICHARDSON_STEPS, 2 * RICHARDSON_STEPS], "mp_dps": gj.MP_DPS,
         "mp_macro_steps": list(gj.MP_MACRO_STEPS), "paths": {k: gj.path(k).as_dict() for k in gj.STANDARD},
-        "figure_path_index": {str(i + 1): k for i, k in enumerate(order)},
         "rows": rows, "clairaut": clairaut, "clairaut_initial": c0}))
-    series = [("ciw Richardson", range(1, len(rows) + 1), [max(rows[k]["ciw_vs_reference"]["max"], 1e-17)
-                                                           for k in order])]
-    if have_scipy:
-        series.append(("scipy DOP853", range(1, len(rows) + 1),
-                       [max(rows[k]["scipy_vs_reference"]["max"], 1e-17) for k in order]))
-    ctx.artifact_text("agreement.svg", svg.line_plot(
-        series, title="End-state gap to the reference (paths: references.json)",
-        xlabel="path index (figure_path_index)", ylabel="max(position, transfer) gap", logy=True))
+    if taylor is not None:
+        order = list(taylor)
+        ctx.artifact_json("odefun.json", _plain({
+            "method": "mpmath.odefun (Taylor series) on the sympy-derived geodesic + Jacobi equations",
+            "dps": gj.MP_DPS, "degree": gj.ODEFUN_DEGREE, "mpmath": gj.optional_version("mpmath"),
+            "state_order": ["u", "v", "u'", "v'", "j_lat", "j_lat'", "j_head", "j_head'"],
+            "figure_path_index": {str(i + 1): k for i, k in enumerate(order)}, "rows": taylor}))
+        # Only 34-digit quantities are plotted: they come from the same binary64 starts and mpmath arithmetic on every
+        # platform. The binary64 gaps of ciw RK4 and scipy (about 1e-14) are rounding noise that moves with the BLAS
+        # kernel, so they stay in references.json and the findings, whose tolerances absorb it.
+        index = range(1, len(order) + 1)
+        ctx.artifact_text("agreement.svg", svg.line_plot(
+            [("GBS 10 vs 20", index, [taylor[k]["gbs_error_estimate"] for k in order]),
+             ("mpmath.odefun gap", index, [taylor[k]["gbs_minus_odefun"] for k in order])],
+            title="34-digit references: GBS estimate and odefun gap (odefun.json)",
+            xlabel="variable-curvature path (figure_path_index)", ylabel="max state difference", logy=True))
     ctx.artifact_text("clairaut.svg", svg.line_plot(
         [(n, s, np.maximum(d, 1e-17)) for n, s, d in curves], title="Torus Clairaut drift |C(s) - C(0)|",
         xlabel="arclength s", ylabel="|rho^2 phi' - C0|", logy=True, markers=False))
@@ -732,6 +817,7 @@ def high_precision_references(ctx):
             uncertainty = _unc("truncation_bound", reference(ctx, key)["error_estimate"],
                                "Richardson error estimate of the 800-step reference")
         findings.append(finding(claim, "numerical", value, basis, uncertainty=uncertainty, tolerance=TOL_VALUE))
+    findings += [_odefun_finding(key, None if taylor is None else taylor[key]) for key in gj.VARIABLE_KEYS]
     clairaut_checks = [gj.check("invariant", "Clairaut drift of the ciw Richardson end state",
                                 clairaut["ciw_richardson"], 1e-12)]
     if "mpmath_reference" in clairaut:
@@ -747,53 +833,86 @@ def high_precision_references(ctx):
     missing = [name for name, ok in (("scipy", have_scipy), ("sympy+mpmath", have_mp)) if not ok]
     worst = max(r["ciw_vs_reference"]["max"] for r in rows.values())
     mp_estimates = [r["reference_error_estimate"] for r in rows.values() if r["reference_kind"] == "mpmath"]
+    if taylor is None:
+        taylor_result = "; the mpmath.odefun comparison did not run (sympy and mpmath are not both installed)."
+        taylor_uncertainty = ""
+    else:
+        ratios = [taylor[k]["gap_over_estimate"] for k in gj.VARIABLE_KEYS]
+        taylor_result = (f"; mpmath.odefun (degree {gj.ODEFUN_DEGREE}, {gj.MP_DPS} digits) differs from the "
+                         "Gragg-Bulirsch-Stoer references by "
+                         + ", ".join(f"{k} {_fmt(taylor[k]['gbs_minus_odefun'], 2)}" for k in gj.VARIABLE_KEYS)
+                         + f", {_fmt(min(ratios), 2)} to {_fmt(max(ratios), 2)} of their 10 vs 20 macro-step "
+                         "estimates (about 2^-16, the error ratio of an order-16 extrapolation over a halved "
+                         "macro-step: consistent with the estimates measuring the error of the 10-step result, not of "
+                         "the retained 20-step one).")
+        taylor_uncertainty = (f"; mpmath.odefun, which gives no estimate of its own, differs from them by at most "
+                              f"{_fmt(max(taylor[k]['gbs_minus_odefun'] for k in gj.VARIABLE_KEYS), 2)}, inside "
+                              "every estimate")
     return _outcome(
         state, findings,
         hypothesis=("Every declared standard path has a reference end state accurate far beyond the integrators under "
                     "test: closed forms on constant-curvature charts and a 34-digit extrapolated integration on the "
-                    "saddle, torus and gaussian bump."),
+                    "saddle, torus and gaussian bump, whose ciw-authored integrator agrees with mpmath's own "
+                    "Taylor-series integrator within its error estimate."),
         mathematical_model=("Great circle X(s) = cos(s/R) X0 + R sin(s/R) T0; helix and polar lines through the flat "
                             "development; hyperbolic semicircles; transfer matrices cn_K, sn_K; otherwise the "
-                            "sympy-derived geodesic + Jacobi system integrated by Gragg-Bulirsch-Stoer in mpmath."),
+                            "sympy-derived geodesic + Jacobi system integrated by Gragg-Bulirsch-Stoer in mpmath, "
+                            f"and again by mpmath.odefun (Taylor series of degree {gj.ODEFUN_DEGREE} at "
+                            f"{gj.MP_DPS} digits) as an integrator of another origin."),
         input_data=[f"Standard paths: {', '.join(f'{k} (L={gj.path(k).length})' for k in gj.STANDARD)}",
                     "Start states are the binary64 states used by the ciw integrators, converted exactly"],
         observation_model=("Euclidean distance of embedded end points (chart distance on the hyperbolic plane) and "
-                           "max-abs difference of the 2x2 transfer matrix."),
+                           "max-abs difference of the 2x2 transfer matrix; between the two 34-digit integrations, "
+                           "the largest difference of the eight state components."),
         expected_invariant=("ciw Richardson RK4 (200/400 steps) and scipy DOP853 (rtol 1e-13) agree with each "
                             "reference to about 1e-12; the mpmath reference changes by less than 1e-18 between 10 "
-                            "and 20 macro-steps; Clairaut's integral is conserved on the torus."),
+                            "and 20 macro-steps, and mpmath.odefun agrees with it within that difference; "
+                            "Clairaut's integral is conserved on the torus."),
         experiment=("Build each reference, integrate the ciw joint geodesic + Jacobi system with Richardson RK4 and "
-                    "with scipy DOP853, and compare end states; check the torus Clairaut integral."),
+                    "with scipy DOP853, and compare end states; integrate the sympy-derived system over the full "
+                    f"path lengths again with mpmath.odefun at {gj.MP_DPS} digits (Taylor degree "
+                    f"{gj.ODEFUN_DEGREE} instead of mpmath's default {3 + 3 * gj.MP_DPS // 2}, for run time) and "
+                    "compare it with the Gragg-Bulirsch-Stoer references; check the torus Clairaut integral."),
         numerical_result=(f"Largest ciw-vs-reference gap {_fmt(worst)}; variable-curvature references "
                           + ", ".join(f"{k} {rows[k]['reference_kind']}"
                                       + ("" if rows[k]["reference_error_estimate"] is None else
                                          f" (self-estimate {_fmt(rows[k]['reference_error_estimate'])})")
                                       for k in gj.VARIABLE_KEYS)
-                          + f"; Clairaut drift of the ciw end state {_fmt(clairaut['ciw_richardson'])}."),
+                          + f"; Clairaut drift of the ciw end state {_fmt(clairaut['ciw_richardson'])}"
+                          + taylor_result),
         uncertainty=((f"The 34-digit references change by at most {_fmt(max(mp_estimates))} between 10 and 20 "
-                      "macro-steps, but the reported end states and gaps are binary64, so each per-finding "
-                      "uncertainty is at least their binary64 rounding (about 1e-15); " if mp_estimates else
+                      f"macro-steps{taylor_uncertainty}; the reported reference end states and RK4 gaps are binary64, "
+                      "so each of those per-finding uncertainties is at least their binary64 rounding (about 1e-15); "
+                      if mp_estimates else
                       "Without the 34-digit references the variable-curvature uncertainty is the scipy tolerance or "
                       "the Richardson estimate; ")
                      + "closed forms carry rounding only; the ciw Richardson error estimate is retained per path."),
         failure_modes_checked=["reference and integrator start from the same binary64 state",
                                "reference equations derived independently of ciw.lab.surfaces (sympy)",
                                "extrapolation self-consistency (macro-step halving)",
+                               "ciw-authored reference integrator against mpmath.odefun on the same equations "
+                               "(an error estimate that understates the reference error fails)",
+                               "first integrals g(u', u') and det Phi of the mpmath.odefun end state",
                                "missing or wrong Richardson extrapolation (gap must be far below the RK4 estimate)",
                                "Clairaut invariant on the torus"],
         unresolved_assumptions=(["Unavailable optional modules: " + ", ".join(missing)] if missing else [])
         + ([] if have_mp else ["Without sympy the variable-curvature references integrate the ciw equations "
-                               "(scipy) or reuse ciw RK4: the integrator may be independent, the equations are not"])
+                               "(scipy) or reuse ciw RK4: the integrator may be independent, the equations are not",
+                               "Without sympy and mpmath the mpmath.odefun comparison does not run; its findings are "
+                               "recorded as not established"])
         + ["The 34-digit reference is an extrapolated integration, not a closed form; its error estimate is "
            "empirical",
-           "Only the equations of the 34-digit reference are independent of ciw (sympy derives them); its "
-           "Gragg-Bulirsch-Stoer integrator is ciw-authored and mpmath supplies the arithmetic. The scipy DOP853 "
-           "comparison integrates the ciw equations, so only its integrator is independent"],
-        recommended_next_task=("Deferred research question: an integrator-independent 34-digit reference: integrate "
-                               "the sympy-derived equations with mpmath's own Taylor-series solver (mpmath.odefun) "
-                               "instead of the ciw-authored Gragg-Bulirsch-Stoer integrator and check that it agrees "
-                               "with the retained references within their empirical error estimates, so that both "
-                               "the equations and the integrator of the reference are independent of ciw"))
+           "The Gragg-Bulirsch-Stoer integrator of the 34-digit reference is ciw-authored; wherever sympy and mpmath "
+           "are installed its end states are checked against mpmath.odefun on the same sympy-derived equations, so "
+           "the reference rests on equations (sympy) and a second integrator (mpmath) of origins other than ciw. "
+           "mpmath supplies the arithmetic of both integrations, and neither gives a proved error bound: their "
+           "agreement is empirical. The scipy DOP853 comparison integrates the ciw equations, so only its integrator "
+           "is independent"],
+        recommended_next_task=("Deferred research question: a proved error bound for the 34-digit references: "
+                               "enclose the sympy-derived geodesic and Jacobi flow with a validated integrator "
+                               "(interval Taylor models in mpmath interval arithmetic with a rigorous remainder "
+                               "bound), so that each reference end state carries an enclosure instead of the "
+                               "empirical agreement of two integrators"))
 
 
 # ---------------------------------------------------------------------------

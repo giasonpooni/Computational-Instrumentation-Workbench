@@ -419,19 +419,20 @@ MP_DPS = 34
 MP_MACRO_STEPS = (10, 20)
 
 
-def mp_reference(key: str, dps: int = MP_DPS, macro_steps=MP_MACRO_STEPS) -> dict:
+def mp_reference(key: str, dps: int = MP_DPS, macro_steps=MP_MACRO_STEPS, derived: dict | None = None) -> dict:
     """Arbitrary-precision geodesic + Jacobi end state of a declared path (needs sympy and mpmath).
 
     The equations are the sympy derivation (Christoffel symbols and Brioschi
     curvature), not ``ciw.lab.surfaces``; the start is the same binary64 state
     the ciw integrators use, so only the integration differs. The error
     estimate is the largest component difference between the two macro-step
-    counts at ``dps`` digits.
+    counts at ``dps`` digits. ``derived`` reuses a :func:`derive` of the
+    path's surface.
     """
     import mpmath
 
     spec = path(key)
-    derived = derive(spec.surface)
+    derived = derive(spec.surface) if derived is None else derived
     functions = lambdified(derived, modules="mpmath")
     rhs, curvature = functions["rhs"], functions["curvature"]
 
@@ -449,6 +450,77 @@ def mp_reference(key: str, dps: int = MP_DPS, macro_steps=MP_MACRO_STEPS) -> dic
                 "error_estimate": float(estimate), "local_indicator": float(indicator),
                 "speed_squared_minus_one": float(speed - 1), "dps": dps, "macro_steps": list(macro_steps),
                 "method": "Gragg-Bulirsch-Stoer modified midpoint, sequence 2..16", "mpf_state": fine}
+
+
+# mpmath.odefun takes each step's Taylor coefficients from finite differences of Euler steps carried at about
+# (degree + 1) times the working precision, so a higher degree buys fewer steps at a steeper price per step. Its
+# default at 34 digits is 3 + 3 * 34 // 2 = 54; degree 30 gives the same 34-digit end states on the three
+# variable-curvature paths in about 12 s instead of 17 s (one core, mpmath's pure-Python backend).
+ODEFUN_DEGREE = 30
+
+
+def mp_system(derived: dict):
+    """The sympy-derived geodesic + Jacobi system (8 states) as one mpmath callable f(y).
+
+    The same expressions as :func:`mp_reference` integrates (Christoffel
+    symbols and Brioschi curvature), with products of exponentials combined
+    by sympy (``powsimp``) and lambdified jointly, so that the transcendental
+    subexpressions the geodesic and Jacobi parts share are evaluated once.
+    State order: u, v, u', v', j_lat, j_lat', j_head, j_head'.
+    """
+    sp = derived["sympy"]
+    u, v = derived["coords"]
+    du, dv = derived["velocity"]
+    lat, lat_rate, head, head_rate = sp.symbols("j_lat j_lat_rate j_head j_head_rate", real=True)
+    k = derived["curvature"]
+    system = [du, dv, *derived["acceleration"], lat_rate, -k * lat, head_rate, -k * head]
+    joint = sp.lambdify((u, v, du, dv, lat, lat_rate, head, head_rate),
+                        [sp.powsimp(entry, combine="exp", deep=True) for entry in system], modules="mpmath", cse=True)
+    return lambda y: joint(*y)
+
+
+def odefun_reference(key: str, derived: dict | None = None, dps: int = MP_DPS, degree: int = ODEFUN_DEGREE,
+                     length: float | None = None) -> dict:
+    """Geodesic + Jacobi end state from mpmath's own Taylor-series solver (needs sympy and mpmath).
+
+    ``mpmath.odefun`` integrates the sympy-derived equations of
+    :func:`mp_system` from the same binary64 start as every other reference,
+    so it differs from :func:`mp_reference` only in the integrator: mpmath's
+    Taylor series, not the ciw-authored :func:`gbs_integrate`. It reports no
+    error estimate. Two first integrals of the exact flow are returned as
+    diagnostics: the drift of g(u', u') from its start value and det(Phi) - 1
+    of the transfer matrix (1 at the start). ``length`` defaults to the path
+    length.
+    """
+    import mpmath
+
+    spec = path(key)
+    derived = derive(spec.surface) if derived is None else derived
+    system = mp_system(derived)
+    evaluations = [0]
+
+    def f(s, y):  # autonomous: the arclength odefun passes is not used
+        evaluations[0] += 1
+        return system(y)
+
+    with mpmath.workdps(dps):
+        start = [mpmath.mpf(float(x)) for x in start_state(key)]
+        end = mpmath.odefun(f, 0, start, degree=degree)(spec.length if length is None else length)
+        drift = mp_speed_squared(derived, end, dps) - mp_speed_squared(derived, start, dps)
+        determinant = end[4] * end[7] - end[6] * end[5] - 1
+        # odefun evaluates the system `degree` times per Taylor step, and nowhere else.
+        return {"kind": "mpmath.odefun", "state": [float(x) for x in end], "digits": [mpmath.nstr(x, 30) for x in end],
+                "speed_squared_drift": float(drift), "determinant_minus_one": float(determinant),
+                "evaluations": evaluations[0], "taylor_steps": evaluations[0] // degree, "dps": dps,
+                "degree": degree, "method": "mpmath.odefun Taylor series", "mpf_state": end}
+
+
+def mp_difference(a, b, dps: int = MP_DPS) -> float:
+    """Largest component difference of two arbitrary-precision states, evaluated at ``dps`` digits."""
+    import mpmath
+
+    with mpmath.workdps(dps):
+        return float(max(abs(x - y) for x, y in zip(a, b, strict=True)))
 
 
 def scipy_reference(key: str, rtol: float = 1e-13, atol: float = 1e-15) -> dict:

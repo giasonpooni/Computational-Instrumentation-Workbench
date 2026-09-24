@@ -121,6 +121,23 @@ table and the ciw-only checks.
   error estimate. The start is the binary64 ciw start converted exactly, so the
   reference differs from the ciw integration only in the integrator and in the
   independently derived equations.
+* **Taylor-series cross-check** (same three paths): the same sympy-derived
+  system (products of exponentials combined by sympy's `powsimp`, lambdified
+  jointly with common subexpressions, `mp_system`) is integrated again over
+  the full path lengths by mpmath's own solver, `mpmath.odefun`, at 34 digits
+  (`odefun_reference`). The solver builds each step's Taylor polynomial from
+  finite differences of Euler steps carried at about (degree + 1) times the
+  working precision, so its cost is set by the degree: T002 uses degree 30
+  (`ODEFUN_DEGREE`) instead of mpmath's default 3 + 1.5 · 34 = 54, which takes
+  about 12 s instead of about 17 s on one core with mpmath's pure-Python
+  backend (faster with gmpy2), so T002 takes about 14 s and the section run
+  T001–T009 about 37 s. The precision (34 digits, the reference's own) and
+  the horizons (the full declared path lengths, so both references are
+  compared at the same end states) are kept; only the degree trades run time.
+  When the degree was chosen, degrees 30 and 54 gave identical 34-digit end
+  states on all three paths and a 40-digit run moved them by at most 2.3e-35;
+  the retained run does not repeat those runs (a test repeats the degree
+  comparison on a short sphere arc). odefun reports no error estimate.
 * Compared against it: ciw `richardson_rk4` (200/400 steps) and scipy
   `solve_ivp(DOP853, rtol=1e-13, atol=1e-15)` on the ciw right-hand side.
 
@@ -129,8 +146,22 @@ check with checker `sympy.lambdify(derived geodesic and Jacobi equations)`:
 sympy derives the equations from the embedding, independently of
 `ciw.lab.surfaces`. The Gragg–Bulirsch–Stoer integrator (`gbs_integrate`) and the
 assembly of the Jacobi block are ciw-authored and mpmath supplies only the
-arithmetic, so neither is named as the checker, and the check's reference text
-says so. The scipy DOP853 comparison integrates the ciw right-hand side, so only
+arithmetic, so neither is named as the checker of that comparison, and its
+reference text says so. The integrator is checked separately: for each path a
+finding compares the Gragg–Bulirsch–Stoer end state (20 macro-steps) with the
+`mpmath.odefun` end state over all eight components, with the independent check
+producer `ciw.lab.geodesic_jacobi_common.gbs_integrate` (revision `ciw
+<version>` and the SHA-256 of `geodesic_jacobi_common.py`) and checker
+`mpmath.odefun` (revision: mpmath's version). Its observed value is the gap
+over the reference's own 10 vs 20 macro-step estimate, which must be at most 1,
+so an estimate that understates the reference error fails; the finding's
+further checks bound the gap by 1e-18 and the odefun end state's first
+integrals (drift of g(u′, u′) from its start value, |det Φ − 1|) by 1e-30.
+The two integrations share the equations, the start and mpmath's arithmetic;
+their integrators differ in origin. Both the equations (sympy) and a second
+integrator (mpmath) behind the reference are therefore independent of ciw, and
+the chain ciw RK4 ≈ Gragg–Bulirsch–Stoer ≈ odefun is checked link by link. The
+scipy DOP853 comparison integrates the ciw right-hand side, so only
 its integrator is independent: on the closed-form charts, whose claim is about
 ciw-coded closed forms, it is a `high_precision` check, not an independent one
 (that finding is `numerically_verified`).
@@ -149,11 +180,38 @@ The reported end states and gaps are binary64, so each per-finding uncertainty
 is the larger of the self-estimate and the binary64 rounding of the end state
 and gap (4 ε times the end-state scale, 1.6e-15 to 2.1e-15); the saddle gap of
 9.2e-16 is at that rounding level.
+`mpmath.odefun` (43, 44 and 66 Taylor steps) differs from the
+Gragg–Bulirsch–Stoer references by 1.8e-29 (saddle), 6.8e-28 (torus) and
+8.1e-27 (bump): 1.26e-5 to 1.57e-5 of their 10 vs 20 macro-step estimates, all
+three `independently_verified`. That ratio is about 2⁻¹⁶ = 1.5e-5, the error
+ratio of an order-16 extrapolation (eight midpoint stages, full extrapolation
+in h²) over a halved macro-step: consistent with the retained estimate measuring
+the error of the 10-step result, and with the retained 20-step state being about
+10⁵ times more accurate than the estimate states. The odefun first integrals
+stay at 34-digit rounding (speed drift at most 4.8e-35, det Φ − 1 = 0 to 34
+digits). Each of these findings carries the 34-digit rounding of the gap
+(1e-34 times the end-state scale) as its uncertainty; the gap itself is the
+difference of the two integrators' errors, which neither reports separately,
+and its values are bit-identical on the three kernels (regression tolerance
+relative 1e-3, room for last-digit changes of the 34-digit arithmetic only).
+`agreement.svg` plots
+the macro-step estimate and the odefun gap per path (`odefun.json`), and
+nothing in binary64: the ciw RK4 and scipy gaps near 1e-14 are rounding noise
+that moves with the OpenBLAS kernel (a figure of them differed between the
+SkylakeX, Haswell and Sandybridge kernels), so they stay in `references.json`
+and in the findings, whose regression tolerances absorb that spread. The
+34-digit quantities start from the same binary64 states (identical on the three
+kernels) and use only mpmath arithmetic, so the figure regenerates byte for
+byte.
 Fallbacks: without sympy/mpmath the variable references come from scipy DOP853
 applied to the ciw right-hand side — an independent integrator, but the
 equations are not independently checked (recorded as an unresolved
 assumption); without scipy as well, from a finer ciw Richardson run
-(self-convergence only). Either fallback makes the task `partial`.
+(self-convergence only). Either fallback makes the task `partial`. Without
+sympy and mpmath the odefun comparison cannot run: its three findings keep
+their claims and are recorded as `not_established` (expected, with a note), so
+they neither refute anything nor lift the report's primary label, and neither
+`odefun.json` nor `agreement.svg` is written.
 
 ## T003 — integrator orders
 
@@ -434,13 +492,16 @@ differences (ε = 1e-3) confirm the endpoint sensitivities to 1.9e-6.
 ## Limits and open questions
 
 * Agreement with sympy (T001 derivations, the equations of the T002 34-digit
-  reference), scipy (an independent integrator of the ciw equations, recorded
-  as a `high_precision` check where the claim is about ciw closed forms) or the
-  CSG provider is agreement between implementations on declared equations; it
-  is not physical validation and not review by another party.
+  reference), mpmath (the Taylor-series integrator that checks the T002
+  reference integrator), scipy (an independent integrator of the ciw equations,
+  recorded as a `high_precision` check where the claim is about ciw closed
+  forms) or the CSG provider is agreement between implementations on declared
+  equations; it is not physical validation and not review by another party.
 * The 34-digit reference is an extrapolated integration whose error estimate is
   empirical (macro-step halving), not a proof; its equations come from sympy,
-  but its integrator is ciw-authored (only the equations are independent).
+  and its ciw-authored integrator agrees with `mpmath.odefun` well inside that
+  estimate. Neither integrator gives a proved bound: two integrators of
+  different origin agree, and both use mpmath's arithmetic.
 * Orders are least-squares fits over four halvings; fixed-step tolerances
   were set to cover the observed pre-asymptotic spread and are declared in each
   check. The adaptive thresholds (4.5, 0.9) come from the two competing
@@ -448,6 +509,7 @@ differences (ε = 1e-3) confirm the endpoint sensitivities to 1.9e-6.
 * Every numerical finding carries an uncertainty object (`kind`, `value`,
   `basis`): reference error of the closed-form reference, binary64 rounding of
   the 34-digit reference's end state and gap (which dominates its self-estimate),
+  34-digit rounding of the gap between the reference and `mpmath.odefun`,
   RK4 truncation estimated by step halving, the spread of pairwise log-log slopes
   around a fitted order, or binary64 rounding.
 * The RK4 O(h⁶) per-step determinant defect assumes smooth K along the stage
@@ -459,12 +521,13 @@ differences (ε = 1e-3) confirm the endpoint sensitivities to 1.9e-6.
   near foci (T010–T011).
 * Each task's `recommended_next_task` is its own deferred research question,
   not the next queue task (which has already run): a Markdown-parsed hand
-  table (T001), an integrator-independent 34-digit reference through
-  `mpmath.odefun` (T002), a second step-size controller (T003), a call-graph
-  renormalization scan (T004), measured trajectories (T005, hardware-gated),
-  an intrinsic finite-difference separation (T006), the determinant
-  coefficient and curvature discontinuities (T007), a proof of the bump's
-  curvature monotonicity (T008) and equal-length column rankings (T009).
+  table (T001), a proved enclosure of the 34-digit references by a validated
+  interval Taylor-model integrator (T002), a second step-size controller
+  (T003), a call-graph renormalization scan (T004), measured trajectories
+  (T005, hardware-gated), an intrinsic finite-difference separation (T006),
+  the determinant coefficient and curvature discontinuities (T007), a proof of
+  the bump's curvature monotonicity (T008) and equal-length column rankings
+  (T009).
 * Physical claims (T005 separation of real trajectories, T009 that the computed
   lateral/heading ranking predicts which start error dominates a real tool or
   vehicle path) are recorded as `not_established`.
