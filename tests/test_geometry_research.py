@@ -119,8 +119,8 @@ def test_native_seals_and_request_binding_are_checked_offline(native):
         _check_data(kind, workflow._source(raw), data)
     changed = deepcopy(original)
     changed["runtimes"][workflow.role]["source_tree"] = "f" * 40
-    from ciw.telemetry import _bundle_digest
-    changed["bundle_digest"] = _bundle_digest(changed)
+    from ciw.core.canonical import bundle_digest
+    changed["bundle_digest"] = bundle_digest(changed)
     with pytest.raises(ValueError):
         workflow._validate(changed)
 

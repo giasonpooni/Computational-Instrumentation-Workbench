@@ -73,7 +73,8 @@ def main():
     if set(measurement) != set(MEASUREMENT_REPOSITORIES):
         raise ValueError("The measurement chain requires exactly RCI, FSRT and JSPT")
     measurement_pins = {role: pin["revision"] for role, pin in measurement.items()}
-    geometry = literal(package / "geometric_circle.py", "PIN")["revision"]
+    # The pipeline descriptor is the GTE pin definition the module executes.
+    geometry = json.loads((package / "pipelines/descriptors/geometric-circle.json").read_text())["steps"][0]["pin"]["revision"]
     stability = json.loads((package / "plsr-runtime.json").read_text())["commit"]
     with tempfile.TemporaryDirectory(prefix="ciw-remaining-modules-gate-") as directory:
         temporary = Path(directory)

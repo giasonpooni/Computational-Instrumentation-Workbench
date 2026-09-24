@@ -136,7 +136,7 @@ def test_missing_provider_binding_is_refused():
 @pytest.mark.parametrize("stage_index", range(3))
 def test_reproduction_cannot_reuse_execution_identity_across_aggregate_and_native_stages(native_experiments,direction,stage_index):
     from ciw.declared_workload import _verification
-    from ciw.telemetry import digest
+    from ciw.core.canonical import digest
 
     case = native_experiments["cases"]["baseline"]
     bundle = deepcopy(case["bundle"])

@@ -72,7 +72,7 @@
   "authority": "read_only",
   "implementation": {
     "module": "ciw.declared_workload",
-    "runner": "declared_workflow",
+    "runner": "generic_runner",
     "delegates": []
   },
   "guide": "docs/DECLARED_WORKLOADS.md"

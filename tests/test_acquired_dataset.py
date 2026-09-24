@@ -11,6 +11,7 @@ import pytest
 from ciw import acquired_dataset as a
 from ciw.adapters.ppda_acquisition import AcquisitionAdapter
 from ciw.adapters.protocol import AdapterRefusal
+from ciw.core.canonical import bundle_digest
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -95,7 +96,7 @@ def test_resealed_adversarial_changes_refused(retained, fault):
     if fault == "source": data["source_definition"]["source_id"] = "another-source"
     if fault == "vendor": bundle["runtimes"]["ppda"]["vendor"]["revision"] = "0" * 40
     if fault == "freshness": bundle["verification"]["reproduction"] = deepcopy(bundle["steps"][0])
-    bundle["bundle_digest"] = a._bundle_digest(bundle)
+    bundle["bundle_digest"] = bundle_digest(bundle)
     with pytest.raises(ValueError): a._validate(bundle)
 
 

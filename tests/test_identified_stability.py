@@ -13,6 +13,7 @@ import pytest
 from ciw import identified_stability as stability
 from ciw.adapters.subprocess import PinnedSubprocessAdapter
 from ciw.declared_workload import _verification
+from ciw.core.canonical import bundle_digest
 
 ROOT = Path(__file__).resolve().parents[1]
 make_source = runpy.run_path(str(ROOT / "examples/identified-stability/make_source.py"))["make_source"]
@@ -113,7 +114,7 @@ def _reseal(bundle):
         step.update(result_id=result["result_id"], result_sha256=stability.digest(result),
                     numerical_result={"operation_id": stability.OPERATION, "data": deepcopy(result["data"])})
         step["numerical_result_id"] = stability.digest(step["numerical_result"])
-    bundle["bundle_digest"] = stability._bundle_digest(bundle)
+    bundle["bundle_digest"] = bundle_digest(bundle)
     bundle["verification"] = _verification(bundle, bundle["verification"]["reproduction"])
 
 

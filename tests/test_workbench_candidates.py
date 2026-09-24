@@ -124,7 +124,7 @@ def actions(fixture):
 
 
 def test_real_session_capture_binds_exact_evidence_and_no_canonical_state(fixture, actions):
-    from ciw.telemetry import canonical
+    from ciw.core.canonical import canonical
     capture = actions["capture"]["native_response"]
     files = [path for path in Path(fixture["configuration"]["store_root"]).rglob("*") if path.is_file()]
     assert len(files) == 1

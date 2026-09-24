@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 
 from ciw.bim_quantity import POLICY
-from ciw.telemetry import byte_digest, canonical
+from ciw.core.canonical import byte_digest, canonical
 
 
 def source():

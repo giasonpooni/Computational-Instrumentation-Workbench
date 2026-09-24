@@ -28,7 +28,6 @@
   },
   "refusals": [
     "BIM_QUANTITY_REFUSED",
-    "DECLARED_WORKLOAD_REFUSED",
     "INPUT_LIMIT",
     "INVALID_INPUT",
     "MALFORMED_RESPONSE",
@@ -83,7 +82,7 @@
   "authority": "read_only",
   "implementation": {
     "module": "ciw.bim_quantity",
-    "runner": "declared_workflow",
+    "runner": "generic_runner",
     "delegates": []
   },
   "guide": "docs/INTEGRATED_MODULES.md"

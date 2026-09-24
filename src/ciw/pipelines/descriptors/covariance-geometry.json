@@ -28,7 +28,6 @@
     "role": null
   },
   "refusals": [
-    "DECLARED_WORKLOAD_REFUSED",
     "GEOMETRY_PROVIDER_REFUSED",
     "INPUT_LIMIT",
     "INVALID_INPUT",
@@ -72,7 +71,7 @@
   "authority": "read_only",
   "implementation": {
     "module": "ciw.geometry_research",
-    "runner": "declared_workflow",
+    "runner": "generic_runner",
     "delegates": []
   },
   "guide": "docs/GEOMETRY_RESEARCH.md"

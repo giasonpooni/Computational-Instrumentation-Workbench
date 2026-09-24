@@ -84,8 +84,9 @@ def code_refusals(descriptor: dict, descriptors: dict | None = None) -> list[str
     """Refusal codes raised on the pipeline's execution path.
 
     The path is the implementation module, its declared delegates (modules
-    whose pipelines it executes), the DeclaredWorkflow base when that is its
-    runner, the pinned-subprocess adapter when a step uses it, and the
+    whose pipelines it executes), the DeclaredWorkflow base or the shared
+    runner when that is its runner, the pinned-subprocess adapter when a step
+    uses it, and the
     workbench's own admission codes. Role-templated codes expand over the
     roles of the pipeline that owns the module.
     """
@@ -97,6 +98,8 @@ def code_refusals(descriptor: dict, descriptors: dict | None = None) -> list[str
     modules += [(module, owners.get(module, descriptor)) for module in implementation["delegates"]]
     if implementation["runner"] == "declared_workflow":
         modules.append(("ciw.declared_workload", descriptor))
+    if implementation["runner"] == "generic_runner":
+        modules.append(("ciw.pipelines.runner", descriptor))
     codes = set(WORKBENCH_REFUSALS)
     for module, owner in modules:
         path = package / (module.removeprefix("ciw.").replace(".", "/") + ".py")
@@ -252,6 +255,25 @@ def load_investigations() -> dict:
     return result
 
 
+def _check_runner(kind: str, runner: str, workflow) -> None:
+    """A generic runner pipeline supplies domain hooks only; the runner owns its records."""
+    from .runner import HOOKS, PipelineRunner
+    is_runner = isinstance(workflow, PipelineRunner)
+    if runner == "generic_runner":
+        if not is_runner:
+            raise ValueError(f"{kind}: a generic_runner pipeline must execute through the shared runner")
+        for cls in type(workflow).__mro__:
+            if cls is PipelineRunner:
+                break
+            extra = {name for name, value in vars(cls).items() if callable(value) or isinstance(value, (staticmethod, classmethod, property))} - HOOKS
+            if extra:
+                raise ValueError(f"{kind}: generic_runner {cls.__name__} overrides runner methods {sorted(extra)}")
+    elif runner == "declared_workflow" and not is_runner:
+        raise ValueError(f"{kind}: a declared_workflow pipeline extends the shared runner")
+    elif runner == "hand_written" and is_runner:
+        raise ValueError(f"{kind}: runs through the shared runner; declare it generic_runner or declared_workflow")
+
+
 def check(descriptors: dict | None = None) -> dict:
     """Bind descriptors to code: kinds, operation ids, roles, pins, upstreams, guides, investigations."""
     from .. import kernel
@@ -277,6 +299,7 @@ def check(descriptors: dict | None = None) -> dict:
         if kind != "residual-monitor" and value["inputs"]["upstream_kinds"] != upstream:
             raise ValueError(f"{kind}: descriptor upstream differs from the registered upstream")
         import_module(value["implementation"]["module"])
+        _check_runner(kind, value["implementation"]["runner"], _workflow(kind))
         for module in value["implementation"]["delegates"]:
             import_module(module)
         if value["refusals"] != code_refusals(value, descriptors):

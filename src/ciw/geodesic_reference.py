@@ -6,19 +6,16 @@ state, an embedded physical surface, or a sensor-fusion operation.
 """
 from __future__ import annotations
 
-from copy import deepcopy
 from fractions import Fraction
 from hashlib import sha256
 import math
 import re
-import uuid
 
 from .adapters.protocol import AdapterRefusal
 from .adapters.subprocess import _json
-from .declared_workload import AUTHORITY, DeclaredWorkflow, RESULT_SCHEMA, VERIFY_SCHEMA, _text, _verification
-from .exchange import _identity
+from .pipelines.runner import PipelineRunner, same as _same, text as _text
 from .pipelines import provider_pin
-from .core.canonical import canonical, digest, exact_keys
+from .core.canonical import canonical, exact_keys
 
 KINDS = frozenset({"flat-torus-reference", "curved-path-transfer"})
 MAX_SAMPLES = 128
@@ -67,11 +64,6 @@ def _covariance(value, name):
     if b != c or a < 0 or d < 0 or a * d < b * b:
         raise ValueError(name + " must be an exactly symmetric positive-semidefinite matrix")
     return result
-
-
-def _same(actual, expected, message):
-    if canonical(actual) != canonical(expected):
-        raise ValueError(message)
 
 
 def _source(kind, raw):
@@ -334,27 +326,20 @@ def _check_data(kind, source, data):
         raise ValueError("Malformed native geodesic reference response") from exc
 
 
-class GeodesicReferenceWorkflow(DeclaredWorkflow):
+class GeodesicReferenceWorkflow(PipelineRunner):
+    LABEL = "Geodesic"
+
     def __init__(self, kind):
         if not isinstance(kind, str) or kind not in KINDS:
             raise ValueError("Unsupported geodesic reference kind")
-        self.kind, self.pin = kind, PINS[kind]
-        self.role = self.pin["role"]
-        self.ROLES = {self.role}
-        self.SOURCE_SCHEMA = "ciw." + kind + "-source.v1"
-        self.schema, self.operation = "ciw." + kind + "-session.v1", "ciw." + kind + ".v1"
+        super().__init__(kind, PINS[kind])
 
-    def _source(self, raw):
+    def parse_source(self, raw):
         return _source(self.kind, raw)
 
-    def _adapters(self, repositories, expected=None):
-        bound = super()._adapters(repositories, expected)
-        self._check_runtime(bound[1])
-        return bound
-
-    def _check_runtime(self, runtime):
-        if runtime["source_tree"] != self.pin["source_tree"] or runtime["adapter_version"] != "ciw-pinned-subprocess-v1":
-            raise ValueError("Geodesic provider source tree or adapter differs from the approved pin")
+    def check_runtime(self, runtime):
+        if runtime["adapter_version"] != "ciw-pinned-subprocess-v1":
+            raise ValueError("Geodesic provider adapter differs from the approved pin")
         version = runtime["python_version"]
         if not isinstance(version, str) or not re.fullmatch(r"\d+\.\d+\.\d+", version):
             raise ValueError("Invalid geodesic runtime Python version")
@@ -362,93 +347,18 @@ class GeodesicReferenceWorkflow(DeclaredWorkflow):
         if tuple(map(int, version.split(".")[:2])) < minimum:
             raise ValueError("Native reference provider requires Python " + ".".join(map(str, minimum)) + " or newer")
         exact_keys(runtime["dependencies"], {"numpy", "scipy"})
-        for name, value in runtime["dependencies"].items():
+        for value in runtime["dependencies"].values():
             if value is not None:
                 _text(value)
         if runtime["dependencies"]["numpy"] is None:
             raise ValueError("Native reference provider requires NumPy")
 
-    def _validate(self, bundle):
-        raw = super()._validate(bundle)
-        self._check_runtime(bundle["runtimes"][self.role])
-        try:
-            receipts = bundle.get("replay_receipts", [])
-            if not isinstance(receipts, list) or len(receipts) > 1:
-                raise ValueError("A geodesic occurrence retains at most one replay receipt")
-            for receipt in receipts:
-                exact_keys(receipt, {"schema", "source_bundle_digest", "replayed_bundle_digest", "numerical_match",
-                                "verification", "admission", "replay_id"})
-                source_id = receipt["source_bundle_digest"]
-                if (receipt["schema"] != "ciw." + self.kind + "-replay.v1" or
-                        not isinstance(source_id, str) or not re.fullmatch(r"sha256:[a-f0-9]{64}", source_id) or
-                        source_id == bundle["bundle_digest"] or receipt["replayed_bundle_digest"] != bundle["bundle_digest"] or
-                        receipt["numerical_match"] is not True or receipt["admission"] != "not_performed"):
-                    raise ValueError("Invalid geodesic replay receipt binding or authority")
-                verification = receipt["verification"]
-                exact_keys(verification, {"schema", "subject_ref", "outcome", "independent", "method", "runtime_digest",
-                                     "reproduction", "authority", "verification_id"})
-                if (verification["schema"] != VERIFY_SCHEMA or verification["subject_ref"] != source_id or
-                        verification["outcome"] != "passed" or verification["independent"] is not False or
-                        verification["method"] != "same_runtime_fresh_occurrence_reproduction" or
-                        not isinstance(verification["runtime_digest"], str) or
-                        not re.fullmatch(r"sha256:[a-f0-9]{64}", verification["runtime_digest"])):
-                    raise ValueError("Invalid geodesic replay verification scope")
-                _same(verification["authority"], AUTHORITY, "Replay cannot confer authority")
-                _same(verification["reproduction"], bundle["steps"][0], "Replay must bind this exact fresh step")
-                _identity(verification, "verification_id")
-                if receipt["replay_id"] != digest({k: v for k, v in receipt.items() if k != "replay_id"}):
-                    raise ValueError("Geodesic replay receipt content identity mismatch")
-                # The historical runtime digest includes its original paths.
-                # Standalone inspection cannot resolve that source bundle;
-                # Workbench._validate_links checks it against retained history.
-        except (KeyError, TypeError, AttributeError, IndexError, OverflowError, RecursionError) as exc:
-            raise ValueError("Malformed geodesic replay receipt") from exc
-        return raw
-
-    def _step(self, source, evidence_id, bound):
-        adapter, runtime, _ = bound
-        _same(self._runtime_projection(adapter.runtime_identity()), self._runtime_projection(runtime), "Geodesic provider changed before execution")
+    def invoke(self, source, bound):
+        adapter = bound[0]
         code, raw = adapter._run(_BOOTSTRAP, [self.role, str(adapter.source_root)], canonical(source))
-        _same(self._runtime_projection(adapter.runtime_identity()), self._runtime_projection(runtime), "Geodesic provider changed during execution")
         if code:
             raise AdapterRefusal("GEODESIC_REFERENCE_REFUSED", "Pinned " + self.role + " refused the declared reference")
-        data = _json(raw)
+        return _json(raw)
+
+    def check_data(self, source, data):
         _check_data(self.kind, source, data)
-        occurrence = "execution-" + uuid.uuid4().hex
-        result = {"schema": RESULT_SCHEMA, "operation_id": self.operation, "execution_ref": occurrence,
-                  "input_refs": [evidence_id], "data": data, "authority": deepcopy(AUTHORITY)}
-        result["result_id"] = digest(result)
-        numerical = {"operation_id": self.operation, "data": deepcopy(data)}
-        return {"runtime_ref": self.role, "operation_id": self.operation, "execution_id": occurrence,
-            "input_refs": [evidence_id], "request": deepcopy(source), "request_sha256": digest(source),
-            "result": result, "result_sha256": digest(result), "result_id": result["result_id"],
-            "numerical_result": numerical, "numerical_result_id": digest(numerical)}
-
-    def _validate_step(self, step, source, evidence_id):
-        exact_keys(step, {"runtime_ref", "operation_id", "execution_id", "input_refs", "request", "request_sha256",
-            "result", "result_sha256", "result_id", "numerical_result", "numerical_result_id"})
-        if (step["runtime_ref"] != self.role or step["operation_id"] != self.operation or step["input_refs"] != [evidence_id] or
-                not isinstance(step["execution_id"], str) or not re.fullmatch(r"execution-[a-f0-9]{32}", step["execution_id"])):
-            raise ValueError("Invalid geodesic operation, evidence or execution identity")
-        _same(step["request"], source, "Geodesic request differs from retained source")
-        result = step["result"]
-        exact_keys(result, {"schema", "operation_id", "execution_ref", "input_refs", "data", "authority", "result_id"})
-        _check_data(self.kind, source, result["data"])
-        _same(result["authority"], AUTHORITY, "Geodesic reference cannot confer authority")
-        if (result["schema"] != RESULT_SCHEMA or result["operation_id"] != self.operation or result["execution_ref"] != step["execution_id"] or
-                result["input_refs"] != [evidence_id] or result["result_id"] != step["result_id"] or
-                result["result_id"] != digest({k: v for k, v in result.items() if k != "result_id"})):
-            raise ValueError("Geodesic result binding mismatch")
-        _same(step["numerical_result"], {"operation_id": self.operation, "data": result["data"]}, "Geodesic numerical projection mismatch")
-        for key, content in (("request_sha256", source), ("result_sha256", result), ("numerical_result_id", step["numerical_result"])):
-            if step[key] != digest(content):
-                raise ValueError("Geodesic step content binding mismatch")
-
-    def _check_verification(self, bundle, verification, source, evidence):
-        exact_keys(verification, {"schema", "subject_ref", "outcome", "independent", "method", "runtime_digest", "reproduction", "authority", "verification_id"})
-        self._validate_step(verification["reproduction"], source, evidence)
-        old, new = bundle["steps"][0], verification["reproduction"]
-        if old["execution_id"] == new["execution_id"] or old["result_id"] == new["result_id"]:
-            raise ValueError("Geodesic verification requires a fresh native occurrence")
-        _same(verification, _verification(bundle, new), "Geodesic verification binding or scope mismatch")
-        _identity(verification, "verification_id")

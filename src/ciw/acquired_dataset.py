@@ -12,16 +12,14 @@ from datetime import datetime
 from hashlib import sha256
 import json
 import re
-import uuid
 
 from .adapters.ppda_acquisition import AcquisitionAdapter, PPDA_REVISION, VENDOR_REVISION
 from .adapters.protocol import AdapterRefusal
 from .adapters.subprocess import _json
-from .declared_workload import DeclaredWorkflow, RESULT_SCHEMA, AUTHORITY, _text
-from .core.canonical import canonical, digest, byte_digest, bundle_digest, exact_keys
+from .pipelines import provider_pin
+from .pipelines.runner import RUNTIME_FIELDS, PipelineRunner, text as _text
+from .core.canonical import canonical, byte_digest, exact_keys
 
-MAX_BYTES = 4 * 1024 * 1024
-ROLES = {"ppda"}
 SOURCE_SCHEMA = "ciw.acquired-dataset-source.v1"
 POLICY = {"mode": "incremental", "source_format": "json_records_with_declared_sequence",
           "replay_scope": "isolated_offline_reacquisition", "event_time_order": "not_inferred",
@@ -30,6 +28,9 @@ DATA_SCHEMA = "ciw.ppda-acquisition.v1"
 ADAPTER_VERSION = "352e01125ba1fe5c751ab78bd70740f8ab999590c8ef253068d07213d7a7cdf7"
 SOURCE_TREES = {PPDA_REVISION: "5d7515101f00763cff7165aa4c61c0b4ae69e152",
                 VENDOR_REVISION: "145f0617b2da7e4d391985f0a03fb58f408992ee"}
+# The SCOUT vendor is a gitlink inside the PPDA checkout, pinned with it.
+VENDOR_PIN = {"revision": VENDOR_REVISION, "source_tree": SOURCE_TREES[VENDOR_REVISION],
+              "module": "evidence.types", "source_root": "."}
 
 
 def _source(raw):
@@ -190,89 +191,41 @@ claims that the acquisition code actually reproduced the graph.
         raise ValueError("Native acquisition lineage/checkpoint/content binding mismatch")
 
 
-class AcquisitionWorkflow(DeclaredWorkflow):
-    def __init__(self):
-        self.kind, self.role = "acquired-dataset", "ppda"
-        self.ROLES = ROLES
-        self.SOURCE_SCHEMA = SOURCE_SCHEMA
-        self.schema, self.operation = "ciw.acquired-dataset-session.v1", "ciw.acquired-dataset.v1"
-        self.pin = {"revision": PPDA_REVISION, "module": "daf.scheduling.runner", "source_root": "."}
+class AcquisitionWorkflow(PipelineRunner):
+    LABEL = "Acquisition"
+    RUNTIME_EXTRA = frozenset({"vendor"})
 
-    def _source(self, raw):
+    def __init__(self):
+        super().__init__("acquired-dataset", provider_pin("acquired-dataset"))
+
+    def parse_source(self, raw):
         return _source(raw)
 
-    @staticmethod
-    def _runtime_projection(runtime):
-        value = {k: v for k, v in runtime.items() if k not in {"repository_root", "python_executable"}}
-        if "vendor" in value:
-            value["vendor"] = AcquisitionWorkflow._runtime_projection(value["vendor"])
-        return value
+    def make_adapter(self, repository, retained):
+        return AcquisitionAdapter(repository, expected_python_sha256=retained.get("python_sha256"),
+                                  expected_python_version=retained.get("python_version"),
+                                  expected_dependencies=retained.get("dependencies"))
 
-    def _adapters(self, repositories, expected=None):
-        if set(repositories) != ROLES:
-            raise ValueError("Bind exactly the native PPDA checkout with its pinned vendor")
-        retained = expected["ppda"] if expected else {}
-        adapter = AcquisitionAdapter(repositories["ppda"], expected_python_sha256=retained.get("python_sha256"), expected_python_version=retained.get("python_version"), expected_dependencies=retained.get("dependencies"))
-        runtime = adapter.runtime_identity()
-        if retained and self._runtime_projection(runtime) != self._runtime_projection(retained):
-            raise ValueError("Native acquisition runtime differs from retained pins")
-        return adapter, runtime, None
+    def check_runtime(self, runtime):
+        vendor = runtime["vendor"]
+        exact_keys(vendor, RUNTIME_FIELDS)
+        if (vendor["schema"] != "ciw.subprocess-runtime.v1" or
+                any(vendor[key] != value for key, value in VENDOR_PIN.items()) or
+                not isinstance(vendor["python_sha256"], str) or not re.fullmatch("[a-f0-9]{64}", vendor["python_sha256"]) or
+                not isinstance(vendor["dependencies"], dict)):
+            raise ValueError("Unapproved acquisition provider/vendor pin")
+        for field in ("adapter_version", "repository_root", "python_executable", "python_version"):
+            _text(vendor[field])
 
-    def _step(self, source, evidence_id, bound):
-        adapter, runtime, _ = bound
-        if self._runtime_projection(adapter.runtime_identity()) != self._runtime_projection(runtime):
-            raise ValueError("Native acquisition runtime changed")
+    def invoke(self, source, bound):
+        adapter = bound[0]
         code, raw = adapter._run(_BOOTSTRAP, [str(adapter.source_root), _filename(source)], canonical(source))
-        adapter.runtime_identity()
         if code:
             raise AdapterRefusal("ACQUISITION_REFUSED", "Pinned PPDA refused the declared offline acquisition")
-        data = _json(raw)
+        return _json(raw)
+
+    def check_data(self, source, data):
         _check_data(source, data)
-        occurrence = "execution-" + uuid.uuid4().hex
-        result = {"schema": RESULT_SCHEMA, "operation_id": self.operation, "execution_ref": occurrence, "input_refs": [evidence_id], "data": data, "authority": AUTHORITY}
-        result["result_id"] = digest(result)
-        numerical = {"operation_id": self.operation, "data": data}
-        return {"runtime_ref": self.role, "operation_id": self.operation, "execution_id": occurrence, "input_refs": [evidence_id], "request": source, "request_sha256": digest(source), "result": result, "result_sha256": digest(result), "result_id": result["result_id"], "numerical_result": numerical, "numerical_result_id": digest(numerical)}
-
-    def _validate_step(self, step, source, evidence_id):
-        exact_keys(step, {"runtime_ref", "operation_id", "execution_id", "input_refs", "request", "request_sha256", "result", "result_sha256", "result_id", "numerical_result", "numerical_result_id"})
-        if step["runtime_ref"] != self.role or step["operation_id"] != self.operation or step["input_refs"] != [evidence_id] or canonical(step["request"]) != canonical(source) or not isinstance(step["execution_id"], str) or not re.fullmatch(r"execution-[a-f0-9]{32}", step["execution_id"]):
-            raise ValueError("Acquisition request/execution/evidence mismatch")
-        result = step["result"]
-        exact_keys(result, {"schema", "operation_id", "execution_ref", "input_refs", "data", "authority", "result_id"})
-        _check_data(source, result["data"])
-        if result != {"schema": RESULT_SCHEMA, "operation_id": self.operation, "execution_ref": step["execution_id"], "input_refs": [evidence_id], "data": result["data"], "authority": AUTHORITY, "result_id": digest({k: v for k, v in result.items() if k != "result_id"})} or result["result_id"] != step["result_id"] or canonical(step["numerical_result"]) != canonical({"operation_id": self.operation, "data": result["data"]}):
-            raise ValueError("Acquisition result/authority binding mismatch")
-        for key, content in (("request_sha256", source), ("result_sha256", result), ("numerical_result_id", step["numerical_result"])):
-            if step[key] != digest(content):
-                raise ValueError("Acquisition step content mismatch")
-
-    def _validate(self, bundle):
-        try:
-            exact_keys(bundle, {"schema", "session_id", "created_at", "source", "configuration", "runtimes", "steps", "bundle_digest", "verification"}, {"replay_receipts"})
-            if len(canonical(bundle)) > MAX_BYTES or bundle["schema"] != self.schema or bundle["bundle_digest"] != bundle_digest(bundle) or not re.fullmatch(r"session-[a-f0-9]{32}", bundle["session_id"]):
-                raise ValueError("Acquisition bundle identity mismatch")
-            _text(bundle["created_at"])
-            evidence, = bundle["source"]["evidence"]
-            raw = base64.b64decode(evidence["bytes_b64"], validate=True)
-            source = _source(raw)
-            if evidence != {"artifact_ref": byte_digest(raw), "sha256": byte_digest(raw), "bytes_b64": base64.b64encode(raw).decode()} or bundle["source"] != {"experiment_id": source["experiment_id"], "experiment_digest": digest(source), "evidence": [evidence]} or bundle["configuration"] != POLICY:
-                raise ValueError("Acquisition retained source mismatch")
-            if set(bundle["runtimes"]) != ROLES:
-                raise ValueError("Unexpected acquisition runtime")
-            runtime = bundle["runtimes"]["ppda"]
-            for value, pin, vendor in ((runtime, self.pin, True), (runtime["vendor"], {"revision": VENDOR_REVISION, "module": "evidence.types", "source_root": "."}, False)):
-                exact_keys(value, {"schema", "adapter_version", "repository_root", "revision", "source_tree", "module", "source_root", "python_executable", "python_sha256", "python_version", "dependencies"} | ({"vendor"} if vendor else set()))
-                if value["schema"] != "ciw.subprocess-runtime.v1" or any(value[k] != pin[k] for k in pin) or value["source_tree"] != SOURCE_TREES[pin["revision"]] or not re.fullmatch("[a-f0-9]{64}", value["python_sha256"]) or not isinstance(value["dependencies"], dict):
-                    raise ValueError("Unapproved acquisition provider/vendor pin")
-                for field in ("adapter_version", "repository_root", "python_executable", "python_version"):
-                    _text(value[field])
-            step, = bundle["steps"]
-            self._validate_step(step, source, evidence["artifact_ref"])
-            self._check_verification(bundle, bundle["verification"], source, evidence["artifact_ref"])
-            return raw
-        except (KeyError, TypeError, IndexError, AttributeError, OverflowError, RecursionError) as exc:
-            raise ValueError("Malformed acquisition session") from exc
 
 
 _workflow = AcquisitionWorkflow()

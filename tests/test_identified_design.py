@@ -13,6 +13,7 @@ import pytest
 from ciw.adapters.protocol import AdapterRefusal
 from ciw import calibrated_observable as calibrated
 from ciw import identified_design as design
+from ciw.core.canonical import bundle_digest
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -258,7 +259,7 @@ def test_outer_rehash_cannot_hide_broken_model_operation_or_authority_binding(bu
     changed = deepcopy(bundle)
     changed.pop("verification", None)
     mutate(changed)
-    changed["bundle_digest"] = calibrated._bundle_digest(changed)
+    changed["bundle_digest"] = bundle_digest(changed)
     with pytest.raises(ValueError):
         design.inspect_session(changed)
 
@@ -284,7 +285,7 @@ def test_fully_rehashed_token_claims_still_bind_selection_and_authority(bundle, 
     step["result_sha256"] = calibrated.digest(step["result"])
     step["numerical_result"] = {"operation_id": step["operation_id"], "data": deepcopy(data)}
     step["numerical_result_id"] = calibrated.digest(step["numerical_result"])
-    changed["bundle_digest"] = calibrated._bundle_digest(changed)
+    changed["bundle_digest"] = bundle_digest(changed)
     with pytest.raises(ValueError, match="semantic binding"):
         design.inspect_session(changed)
 
@@ -305,7 +306,7 @@ def test_fully_rehashed_advisory_forgery_fails_pinned_reexecution(bundle, reposi
     step["result_sha256"] = calibrated.digest(result)
     step["numerical_result"] = {"operation_id": step["operation_id"], "data": deepcopy(data)}
     step["numerical_result_id"] = calibrated.digest(step["numerical_result"])
-    changed["bundle_digest"] = calibrated._bundle_digest(changed)
+    changed["bundle_digest"] = bundle_digest(changed)
     assert design.inspect_session(changed)["status"] == "content_consistent"
     with pytest.raises(ValueError, match="pinned recomputation"):
         design.replay_session(changed, repositories)

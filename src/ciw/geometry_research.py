@@ -6,15 +6,12 @@ or executes a provider and never authenticates a fabricated numerical result.
 """
 from __future__ import annotations
 
-from copy import deepcopy
 import re
-import uuid
 
 from .adapters.protocol import AdapterRefusal
 from .adapters.subprocess import _json
-from .declared_workload import AUTHORITY, RESULT_SCHEMA, _text
-from .geodesic_reference import GeodesicReferenceWorkflow
 from .pipelines import provider_pin
+from .pipelines.runner import PipelineRunner, same as _same, text as _text
 from .core.canonical import canonical, digest, exact_keys
 
 SOURCE_LIMIT = 128 * 1024
@@ -36,11 +33,6 @@ POLICIES = {
     "translation-flow": {"surface": "declared_square_tiled", "arithmetic": "exact_rational",
         "partial_trajectory": "retain_explicit_status", "state_admission": "not_performed"},
 }
-
-
-def _same(actual, expected, message):
-    if canonical(actual) != canonical(expected):
-        raise ValueError(message)
 
 
 def _contract(kind):
@@ -107,22 +99,21 @@ def _check_data(kind, source, data):
     _contract(kind).validate_result(source["request"], data)
 
 
-class GeometryResearchWorkflow(GeodesicReferenceWorkflow):
+class GeometryResearchWorkflow(PipelineRunner):
+    LABEL = "Geometry"
+
     def __init__(self, kind):
         if kind not in KINDS:
             raise ValueError("Unsupported geometry provider kind")
-        self.kind, self.pin = kind, PINS[kind]
-        self.role, self.ROLES = self.pin["role"], {self.pin["role"]}
-        self.SOURCE_SCHEMA = "ciw." + kind + "-source.v1"
-        self.schema, self.operation = "ciw." + kind + "-session.v1", "ciw." + kind + ".v1"
+        super().__init__(kind, PINS[kind])
 
-    def _source(self, raw):
+    def parse_source(self, raw):
         return _source(self.kind, raw)
 
-    def _check_runtime(self, runtime):
-        if runtime["source_tree"] != self.pin["source_tree"] or runtime["adapter_version"] != "ciw-pinned-subprocess-v1":
-            raise ValueError("Geometry provider source or adapter differs from its pin")
-        if not re.fullmatch(r"\d+\.\d+\.\d+", runtime["python_version"]):
+    def check_runtime(self, runtime):
+        if runtime["adapter_version"] != "ciw-pinned-subprocess-v1":
+            raise ValueError("Geometry provider adapter differs from its pin")
+        if not isinstance(runtime["python_version"], str) or not re.fullmatch(r"\d+\.\d+\.\d+", runtime["python_version"]):
             raise ValueError("Invalid geometry Python version")
         if tuple(map(int, runtime["python_version"].split(".")[:2])) < (3, 11):
             raise ValueError("Geometry providers require Python 3.11 or newer")
@@ -132,41 +123,12 @@ class GeometryResearchWorkflow(GeodesicReferenceWorkflow):
         if runtime["dependencies"]["scipy"] is not None:
             _text(runtime["dependencies"]["scipy"])
 
-    def _step(self, source, evidence_id, bound):
-        adapter, runtime, _ = bound
-        _same(self._runtime_projection(adapter.runtime_identity()), self._runtime_projection(runtime), "Geometry provider changed before execution")
+    def invoke(self, source, bound):
+        adapter = bound[0]
         code, raw = adapter._run(_BOOTSTRAP, [self.role, str(adapter.source_root)], canonical(source))
-        _same(self._runtime_projection(adapter.runtime_identity()), self._runtime_projection(runtime), "Geometry provider changed during execution")
         if code:
             raise AdapterRefusal("GEOMETRY_PROVIDER_REFUSED", "Pinned " + self.role + " refused the declared mathematical request")
-        data = _json(raw)
-        _check_data(self.kind, source, data)
-        occurrence = "execution-" + uuid.uuid4().hex
-        result = {"schema": RESULT_SCHEMA, "operation_id": self.operation, "execution_ref": occurrence,
-                  "input_refs": [evidence_id], "data": data, "authority": deepcopy(AUTHORITY)}
-        result["result_id"] = digest(result)
-        numerical = {"operation_id": self.operation, "data": deepcopy(data)}
-        return {"runtime_ref": self.role, "operation_id": self.operation, "execution_id": occurrence,
-            "input_refs": [evidence_id], "request": deepcopy(source), "request_sha256": digest(source),
-            "result": result, "result_sha256": digest(result), "result_id": result["result_id"],
-            "numerical_result": numerical, "numerical_result_id": digest(numerical)}
+        return _json(raw)
 
-    def _validate_step(self, step, source, evidence_id):
-        exact_keys(step, {"runtime_ref", "operation_id", "execution_id", "input_refs", "request", "request_sha256",
-            "result", "result_sha256", "result_id", "numerical_result", "numerical_result_id"})
-        if (step["runtime_ref"] != self.role or step["operation_id"] != self.operation or step["input_refs"] != [evidence_id] or
-                not isinstance(step["execution_id"], str) or not re.fullmatch(r"execution-[a-f0-9]{32}", step["execution_id"])):
-            raise ValueError("Invalid geometry operation, evidence or execution occurrence")
-        _same(step["request"], source, "Geometry request differs from retained source")
-        result = step["result"]
-        exact_keys(result, {"schema", "operation_id", "execution_ref", "input_refs", "data", "authority", "result_id"})
-        _check_data(self.kind, source, result["data"])
-        _same(result["authority"], AUTHORITY, "Geometry calculation cannot confer state or physical authority")
-        if (result["schema"] != RESULT_SCHEMA or result["operation_id"] != self.operation or result["execution_ref"] != step["execution_id"] or
-                result["input_refs"] != [evidence_id] or result["result_id"] != step["result_id"] or
-                result["result_id"] != digest({k:v for k,v in result.items() if k != "result_id"})):
-            raise ValueError("Geometry result binding mismatch")
-        _same(step["numerical_result"], {"operation_id": self.operation, "data": result["data"]}, "Geometry numerical projection mismatch")
-        for key, content in (("request_sha256", source), ("result_sha256", result), ("numerical_result_id", step["numerical_result"])):
-            if step[key] != digest(content):
-                raise ValueError("Geometry step content binding mismatch")
+    def check_data(self, source, data):
+        _check_data(self.kind, source, data)

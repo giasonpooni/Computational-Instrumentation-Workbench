@@ -172,7 +172,7 @@ from test_free_energy_workflow import native_experiments
 
 
 def native_data(native_experiments):
-    from ciw.telemetry import byte_digest
+    from ciw.core.canonical import byte_digest
     case=native_experiments["cases"]["baseline"]
     return case["source"],case["bundle"]["steps"][0]["result"]["data"],byte_digest(case["raw"])
 

@@ -11,6 +11,7 @@ from ciw import calibrated_window as window
 from ciw.cli import parser
 from ciw.instruments import make_demo_run
 from ciw.session import Session
+from ciw.core.canonical import bundle_digest
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = (ROOT / "examples/calibrated-window/source.json").read_bytes()
@@ -214,7 +215,7 @@ def test_resealed_request_cannot_drop_shared_uncertainty(retained):
     step = bundle["steps"][2]
     step["request"]["uncertainty"]["matrix"][0][1] = step["request"]["uncertainty"]["matrix"][1][0] = 0
     step["request_sha256"] = window.digest(step["request"])
-    bundle["bundle_digest"] = window._bundle_digest(bundle)
+    bundle["bundle_digest"] = bundle_digest(bundle)
     with pytest.raises(ValueError, match="lineage"):
         window._validate(bundle)
 
@@ -229,7 +230,7 @@ def test_equal_python_numbers_cannot_substitute_retained_json(retained, target, 
     matrix = configuration["gsie"]["dynamics"]["matrix"]
     assert type(matrix[0][0]) is int
     matrix[0][0] = replacement
-    bundle["bundle_digest"] = window._bundle_digest(bundle)
+    bundle["bundle_digest"] = bundle_digest(bundle)
     with pytest.raises(ValueError, match="configuration binding|lineage"):
         window._validate(bundle)
 
@@ -242,6 +243,6 @@ def test_rehashed_numerical_projection_must_preserve_json_number_type(retained):
     assert sample["event_time"] == 0.0
     sample["event_time"] = False
     step["numerical_result_id"] = window.digest(step["numerical_result"])
-    bundle["bundle_digest"] = window._bundle_digest(bundle)
+    bundle["bundle_digest"] = bundle_digest(bundle)
     with pytest.raises(ValueError, match="Numerical projection"):
         window._validate(bundle)

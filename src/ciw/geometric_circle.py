@@ -7,25 +7,22 @@ a geometric policy does not authorize physical or construction acceptance.
 from __future__ import annotations
 
 import base64
-from copy import deepcopy
 from datetime import datetime
-import re
-import uuid
 
 from .adapters.gte_records import validate_payload, _array, _covariance
 from .adapters.subprocess import _json
-from .declared_workload import AUTHORITY, DeclaredWorkflow, RESULT_SCHEMA, _text
+from .pipelines import provider_pin
+from .pipelines.runner import PipelineRunner, text as _text
 from .core.records import number
 from .geodesic import GTE_OPERATION, _make_run, _observations, _parse
-from .core.canonical import canonical, digest, exact_keys
+from .core.canonical import canonical, exact_keys
 
 KIND = "geometric-circle"
 SOURCE_SCHEMA = "ciw.geometric-circle-source.v1"
 OPERATION = "ciw.geometric-circle.v1"
 ROLES = frozenset({"gte"})
-PIN = {"role": "gte", "revision": "e55b8be2b3ba05f7e6c6a31807c77b3e42700f07",
-       "source_root": "src", "module": "geodesic_telemetry.ciw_adapter"}
-SOURCE_TREE = "7609bbda95123a7156222ac5c4460e95ff58ab2d"
+PIN = provider_pin(KIND)
+SOURCE_TREE = PIN["source_tree"]
 POLICY = {"geometry_uncertainty": "fixed_exact", "frame_authority": "declared_not_surveyed",
           "selection": "full_retained_batch", "covariance": "native_first_order_full_joint",
           "input_covariance_validation": "exact_symmetric_positive_semidefinite_before_retention",
@@ -119,58 +116,20 @@ def _check_data(source, data):
                      {"interval_s": [0.0, run["metadata"]["duration_s"]]})
 
 
-class GeometricCircleWorkflow(DeclaredWorkflow):
-    def __init__(self):
-        self.kind, self.pin, self.role = KIND, PIN, "gte"
-        self.ROLES, self.SOURCE_SCHEMA = ROLES, SOURCE_SCHEMA
-        self.schema, self.operation = "ciw.geometric-circle-session.v1", OPERATION
+class GeometricCircleWorkflow(PipelineRunner):
+    LABEL = "GTE"
 
-    def _source(self, raw):
+    def __init__(self):
+        super().__init__(KIND, PIN)
+
+    def parse_source(self, raw):
         return _source(raw)
 
-    def _validate(self, bundle):
-        raw = super()._validate(bundle)
-        if bundle["runtimes"]["gte"]["source_tree"] != SOURCE_TREE:
-            raise ValueError("GTE source tree differs from the approved provider pin")
-        return raw
+    def invoke(self, source, bound):
+        return bound[0].invoke(GTE_OPERATION, request(source))
 
-    def _step(self, source, evidence_id, bound):
-        adapter, runtime, _ = bound
-        if self._runtime_projection(adapter.runtime_identity()) != self._runtime_projection(runtime):
-            raise ValueError("GTE runtime changed before execution")
-        data = adapter.invoke(GTE_OPERATION, request(source))
+    def check_data(self, source, data):
         _check_data(source, data)
-        occurrence = "execution-" + uuid.uuid4().hex
-        result = {"schema": RESULT_SCHEMA, "operation_id": self.operation, "execution_ref": occurrence,
-                  "input_refs": [evidence_id], "data": data, "authority": deepcopy(AUTHORITY)}
-        result["result_id"] = digest(result)
-        numerical = {"operation_id": self.operation, "data": deepcopy(data)}
-        return {"runtime_ref": self.role, "operation_id": self.operation, "execution_id": occurrence,
-                "input_refs": [evidence_id], "request": deepcopy(source), "request_sha256": digest(source),
-                "result": result, "result_sha256": digest(result), "result_id": result["result_id"],
-                "numerical_result": numerical, "numerical_result_id": digest(numerical)}
-
-    def _validate_step(self, step, source, evidence_id):
-        exact_keys(step, {"runtime_ref", "operation_id", "execution_id", "input_refs", "request", "request_sha256",
-                     "result", "result_sha256", "result_id", "numerical_result", "numerical_result_id"})
-        if (step["runtime_ref"] != self.role or step["operation_id"] != self.operation or
-                step["input_refs"] != [evidence_id] or canonical(step["request"]) != canonical(source)):
-            raise ValueError("GTE request/operation/evidence binding mismatch")
-        if not isinstance(step["execution_id"], str) or not re.fullmatch(r"execution-[a-f0-9]{32}", step["execution_id"]):
-            raise ValueError("Invalid GTE execution occurrence")
-        result = step["result"]
-        exact_keys(result, {"schema", "operation_id", "execution_ref", "input_refs", "data", "authority", "result_id"})
-        _check_data(source, result["data"])
-        if (result["schema"] != RESULT_SCHEMA or canonical(result["authority"]) != canonical(AUTHORITY) or
-                result["operation_id"] != self.operation or result["execution_ref"] != step["execution_id"] or
-                result["input_refs"] != [evidence_id] or result["result_id"] != step["result_id"] or
-                result["result_id"] != digest({k: v for k, v in result.items() if k != "result_id"}) or
-                canonical(step["numerical_result"]) != canonical({"operation_id": self.operation, "data": result["data"]})):
-            raise ValueError("GTE result binding or authority mismatch")
-        for key, content in (("request_sha256", source), ("result_sha256", result),
-                             ("numerical_result_id", step["numerical_result"])):
-            if step[key] != digest(content):
-                raise ValueError("GTE step content mismatch")
 
 
 workflow = GeometricCircleWorkflow()

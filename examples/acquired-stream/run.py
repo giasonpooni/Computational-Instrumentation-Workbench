@@ -11,7 +11,7 @@ import uuid
 from websockets.asyncio.client import connect
 
 from ciw.residual_monitor import DEFAULT_CONFIGURATION
-from ciw.telemetry import canonical
+from ciw.core.canonical import canonical
 
 
 async def _operate(call):

@@ -28,7 +28,6 @@
     "role": null
   },
   "refusals": [
-    "DECLARED_WORKLOAD_REFUSED",
     "GEODESIC_REFERENCE_REFUSED",
     "INPUT_LIMIT",
     "INVALID_INPUT",
@@ -80,7 +79,7 @@
   "authority": "read_only",
   "implementation": {
     "module": "ciw.geodesic_reference",
-    "runner": "declared_workflow",
+    "runner": "generic_runner",
     "delegates": []
   },
   "guide": "docs/GEODESIC_REFERENCES.md"

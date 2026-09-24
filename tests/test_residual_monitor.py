@@ -11,6 +11,7 @@ from ciw import calibrated_window as window
 from ciw import residual_monitor as monitor
 from ciw.adapters.subprocess import PinnedSubprocessAdapter
 from ciw.declared_workload import _verification
+from ciw.core.canonical import bundle_digest
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -150,7 +151,7 @@ def _reseal(bundle):
         step["request_sha256"] = monitor.digest(step["request"])
         step["numerical_result"] = {"operation_id": monitor.OPERATION, "data": deepcopy(result["data"])}
         step["numerical_result_id"] = monitor.digest(step["numerical_result"])
-    bundle["bundle_digest"] = monitor._bundle_digest(bundle)
+    bundle["bundle_digest"] = bundle_digest(bundle)
     bundle["verification"] = _verification(bundle, bundle["verification"]["reproduction"])
 
 

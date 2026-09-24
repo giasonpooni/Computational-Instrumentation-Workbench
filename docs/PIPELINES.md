@@ -122,9 +122,9 @@ Specific refusals: `CALIBRATED_WINDOW_GSIE_REFUSED`, `CALIBRATED_WINDOW_MCUR_REF
 
 ### `ciw.acquired-dataset.v1`
 
-Implementation `ciw.acquired_dataset` (declared workflow); verification: same_runtime_fresh_occurrence_reproduction.
+Implementation `ciw.acquired_dataset` (generic runner); verification: same_runtime_fresh_occurrence_reproduction.
 
-Specific refusals: `ACQUISITION_REFUSED`, `DECLARED_WORKLOAD_REFUSED`.
+Specific refusals: `ACQUISITION_REFUSED`.
 
 - Recompute the PPDA native evidence graph from the retained snapshot bytes: source, document, record, observation and artifact ids using PPDA's ensure_ascii sha256 formula, a 12-digit zero-padded locator and checkpoint position, per-run pool fingerprints, and the final checkpoint and restored pool fingerprint. (acquired_dataset.py:140-190. _native_hash is at 140-141. The identity formulas are at 162-172. The checkpoint and fingerprint logic is at 179-189. The docstring at 145-149 limits this to an integrity check.)
 - Incremental append-only acquisition semantics: request times must be strictly increasing and tz-aware, record sequences strictly increasing, each snapshot must extend the previous one as a prefix, and revisions require a new plan. (acquired_dataset.py:49-76 (53-55, 68-74))
@@ -136,9 +136,9 @@ Specific refusals: `ACQUISITION_REFUSED`, `DECLARED_WORKLOAD_REFUSED`.
 
 ### `ciw.bim-quantity.v1`
 
-Implementation `ciw.bim_quantity` (declared workflow); verification: same_runtime_fresh_occurrence_reproduction.
+Implementation `ciw.bim_quantity` (generic runner); verification: same_runtime_fresh_occurrence_reproduction.
 
-Specific refusals: `BIM_QUANTITY_REFUSED`, `DECLARED_WORKLOAD_REFUSED`.
+Specific refusals: `BIM_QUANTITY_REFUSED`.
 
 - Held-reason ladder: ordered first-match predicates (cross covariance unknown -> frame unresolved -> frame mismatch -> IFC binding -> target binding -> target missing -> derived quantity -> unit -> assumed units -> initial invariants) with held/accepted/refused consistency (bim_quantity.py:272-286; duplicated natively inside the provider shim at bim_quantity.py:133-145)
 - CSE execution-ledger integrity: sha256 hash chain from 64 zeros, per-event verification_digest and event_hash over canonical JSON, ledger head equals integrity.head, genesis binds prior world/belief and module/configuration digests, ledger replay counts, and exact expected observe_quantity operation and provenance (noise_sigma=sqrt(variance)) (bim_quantity.py:295-355)
@@ -191,9 +191,9 @@ Specific refusals: `CALIBRATED_WINDOW_GSIE_REFUSED`, `CALIBRATED_WINDOW_MCUR_REF
 
 ### `ciw.covariance-geometry.v1`
 
-Implementation `ciw.geometry_research` (declared workflow); verification: same_runtime_fresh_occurrence_reproduction.
+Implementation `ciw.geometry_research` (generic runner); verification: same_runtime_fresh_occurrence_reproduction.
 
-Specific refusals: `DECLARED_WORKLOAD_REFUSED`, `GEOMETRY_PROVIDER_REFUSED`.
+Specific refusals: `GEOMETRY_PROVIDER_REFUSED`.
 
 - Spectral evidence consistency for each input, the relative covariance and every sample. Eigenvalues are ordered and above a strict floor (a declared floor, or a relative floor of 8*n*EPS*max\|lambda\|). min, max, margin and condition number are derived exactly. The condition number is within the declared limit. The decomposition residual is within abs+rel*norm. log-det equals fsum(log lambda). The Frobenius norm equals hypot(lambda) and the matrix norm. The trace equals the sum of eigenvalues. (src/ciw/geometry_covariance_contract.py:142-176, tolerance model _close 79-84 (64*EPS*scale + 8 ulp + residual))
 - Affine-invariant distance = \|\|log eig(relative covariance)\|\|_2. For each sample, constant-speed invariants (distance_from_a = t*d, distance_to_b = (1-t)*d) and log-det affinity, plus endpoint residuals at t=0 and t=1. The ordered invariants list must match these names and budgets exactly. (src/ciw/geometry_covariance_contract.py:179-189,215-252)
@@ -203,9 +203,9 @@ Specific refusals: `DECLARED_WORKLOAD_REFUSED`, `GEOMETRY_PROVIDER_REFUSED`.
 
 ### `ciw.curved-path-transfer.v1`
 
-Implementation `ciw.geodesic_reference` (declared workflow); verification: same_runtime_fresh_occurrence_reproduction.
+Implementation `ciw.geodesic_reference` (generic runner); verification: same_runtime_fresh_occurrence_reproduction.
 
-Specific refusals: `DECLARED_WORKLOAD_REFUSED`, `GEODESIC_REFERENCE_REFUSED`.
+Specific refusals: `GEODESIC_REFERENCE_REFUSED`.
 
 - The arclength grid must be refined for the declared curvature: abs(K)*(s[i+1]-s[i])^2 <= 0.01 (with slack 1e-14), with the grid starting at 0 and strictly increasing. (src/ciw/geodesic_reference.py:105-113)
 - The declared starting covariance must be exactly symmetric positive-semidefinite in rational arithmetic (b==c, a,d >= 0, ad >= b^2), with entries of magnitude at most 1 and basis 'assumed'. (src/ciw/geodesic_reference.py:67-72,119-126)
@@ -250,9 +250,9 @@ Specific refusals: `DECLARED_WORKLOAD_REFUSED`.
 
 ### `ciw.flat-torus-reference.v1`
 
-Implementation `ciw.geodesic_reference` (declared workflow); verification: same_runtime_fresh_occurrence_reproduction.
+Implementation `ciw.geodesic_reference` (generic runner); verification: same_runtime_fresh_occurrence_reproduction.
 
-Specific refusals: `DECLARED_WORKLOAD_REFUSED`, `GEODESIC_REFERENCE_REFUSED`.
+Specific refusals: `GEODESIC_REFERENCE_REFUSED`.
 
 - The native start must equal the declared cover point modulo the retained lattice. alpha and beta must be integers within 1e-12, and the reduced coordinates must lie in [0,1). Lattice orientation must have omega1 real and positive and Im(omega2) > 0. (src/ciw/geodesic_reference.py:196-208)
 - Trajectory consistency: exactly `samples` path parameters strictly increasing from 0 to 1. Both point lists start within 1e-12 of the reference start. Crossings are ordered in (prev,1], their count is at most \|m\|+\|n\|, and lattice steps lie in {-1,0,1}. The trajectory's lattice, winding, start, length and closed fields agree with the reference. (src/ciw/geodesic_reference.py:220-254)
@@ -262,9 +262,9 @@ Specific refusals: `DECLARED_WORKLOAD_REFUSED`, `GEODESIC_REFERENCE_REFUSED`.
 
 ### `ciw.geometric-circle.v1`
 
-Implementation `ciw.geometric_circle` (declared workflow); verification: same_runtime_fresh_occurrence_reproduction.
+Implementation `ciw.geometric_circle` (generic runner); verification: same_runtime_fresh_occurrence_reproduction.
 
-Specific refusals: `DECLARED_WORKLOAD_REFUSED`.
+Specific refusals: none.
 
 - Input joint covariance must be exactly symmetric PSD in rational arithmetic (exact Schur complements, no jitter/averaging) before retention, stricter than GTE's native roundoff-tolerant domain (geometric_circle.py:95-102 calling calibrated_window._covariance (calibrated_window.py:64-76) and gte_records._covariance; policy flag at geometric_circle.py:31)
 - Fixed-exact circle applicability: constraint frame equals observation frame, kind circle, euclidean metric, radius>0, validity window [start,end) contains every sample time, no observed point equals the circle centre, geometry_uncertainty fixed_exact (geometric_circle.py:103-114)
@@ -335,9 +335,9 @@ Specific refusals: `DECLARED_WORKLOAD_REFUSED`, `MEASUREMENT_CHAIN_REFUSED`, `in
 
 ### `ciw.mesh-path.v1`
 
-Implementation `ciw.geometry_research` (declared workflow); verification: same_runtime_fresh_occurrence_reproduction.
+Implementation `ciw.geometry_research` (generic runner); verification: same_runtime_fresh_occurrence_reproduction.
 
-Specific refusals: `DECLARED_WORKLOAD_REFUSED`, `GEOMETRY_PROVIDER_REFUSED`.
+Specific refusals: `GEOMETRY_PROVIDER_REFUSED`.
 
 - Mesh topology recomputed from the declaration. No coincident vertices. Triangles non-degenerate under exact Fraction cross products. Triangle quality (twice area over longest edge squared) above the declared threshold. No duplicate triangles. Manifold edges (at most two incident) and connected vertex links with degrees in {1,2}. No isolated vertices. Component labels, boundary and orientation-conflict counts. The retained mesh_quality must equal the recomputation, with an ulp tolerance on minimum quality. (src/ciw/geometry_mesh_contract.py:50-122,203-209)
 - Dijkstra optimality certificate. Every retained finite distance must satisfy the edge inequality \|d_a - d_b\| <= w + 64*n*ulp. There must be a tight-predecessor chain from the source that witnesses every reachable vertex; hop rank is used so binary64 plateaus are tolerated. Unreachable vertices have null distances. (src/ciw/geometry_mesh_contract.py:216-230,243-267)
@@ -347,7 +347,7 @@ Specific refusals: `DECLARED_WORKLOAD_REFUSED`, `GEOMETRY_PROVIDER_REFUSED`.
 
 ### `ciw.numerical-heat.v1`
 
-Implementation `ciw.declared_workload` (declared workflow); verification: same_runtime_fresh_occurrence_reproduction.
+Implementation `ciw.declared_workload` (generic runner); verification: same_runtime_fresh_occurrence_reproduction.
 
 Specific refusals: `DECLARED_WORKLOAD_REFUSED`.
 
@@ -387,7 +387,7 @@ Specific refusals: `DECLARED_WORKLOAD_REFUSED`, `RESIDUAL_MONITOR_REFUSED`.
 
 ### `ciw.schematic-assessment.v1`
 
-Implementation `ciw.declared_workload` (declared workflow); verification: same_runtime_fresh_occurrence_reproduction.
+Implementation `ciw.declared_workload` (generic runner); verification: same_runtime_fresh_occurrence_reproduction.
 
 Specific refusals: `DECLARED_WORKLOAD_REFUSED`.
 
@@ -453,9 +453,9 @@ Specific refusals: none.
 
 ### `ciw.translation-flow.v1`
 
-Implementation `ciw.geometry_research` (declared workflow); verification: same_runtime_fresh_occurrence_reproduction.
+Implementation `ciw.geometry_research` (generic runner); verification: same_runtime_fresh_occurrence_reproduction.
 
-Specific refusals: `DECLARED_WORKLOAD_REFUSED`, `GEOMETRY_PROVIDER_REFUSED`.
+Specific refusals: `GEOMETRY_PROVIDER_REFUSED`.
 
 - The gluing must consist of two complete permutations (right and up) of 1-32 tiles forming a connected surface. The start is strictly inside a square. The direction is nonzero and bounded by 1024. The duration is in [0,1024]. Rationals are canonical, reduced and within 64- or 256-bit budgets. (src/ciw/geometry_translation_contract.py:45-54,72-105)
 - Corner-class topology derived from the gluing: corner equivalence classes, cone angles that are multiples of 2π, Euler characteristic <= 0 and even, and the genus. The retained gluing_validation must equal the derived structure exactly. (src/ciw/geometry_translation_contract.py:108-143)

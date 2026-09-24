@@ -8,21 +8,19 @@ is implied. CSE owns compilation, Gaussian conditioning, invariants and replay.
 from __future__ import annotations
 
 import base64
-from copy import deepcopy
 from hashlib import sha256
 import math
 import re
 import struct
-import uuid
 
 from .adapters.protocol import AdapterRefusal
 from .adapters.subprocess import _json
 from .core.covariance import _validate_matrix
-from .declared_workload import DeclaredWorkflow, AUTHORITY, RESULT_SCHEMA, _text
-from .core.canonical import canonical, digest, byte_digest, exact_keys
+from .pipelines import provider_pin
+from .pipelines.runner import PipelineRunner, text as _text
+from .core.canonical import canonical, byte_digest, exact_keys
 
-PIN = {"role": "cse", "revision": "4b74abda40bba3277de69bf61e9e09283ae2d5b3",
-       "source_root": ".", "module": "gat.session"}
+PIN = provider_pin("bim-quantity")
 POLICY = {"observation_model": "native_raw_quantity", "geometry_authority": "QUANTITY_ONLY",
           "cross_covariance": "explicit_independent_or_hold", "frame_transform": "not_performed",
           "state_admission": "not_performed"}
@@ -355,54 +353,24 @@ def _check_data(source, data):
                 raise ValueError("Native rejection error binding differs")
 
 
-class BimQuantityWorkflow(DeclaredWorkflow):
-    def __init__(self):
-        self.kind, self.pin, self.role = "bim-quantity", deepcopy(PIN), "cse"
-        self.ROLES = {"cse"}
-        self.SOURCE_SCHEMA = "ciw.bim-quantity-source.v1"
-        self.schema = "ciw.bim-quantity-session.v1"
-        self.operation = "ciw.bim-quantity.v1"
+class BimQuantityWorkflow(PipelineRunner):
+    LABEL = "BIM"
 
-    def _source(self, raw):
+    def __init__(self):
+        super().__init__("bim-quantity", PIN)
+
+    def parse_source(self, raw):
         return _source(raw)
 
-    def _step(self, source, evidence_id, bound):
-        adapter, runtime, _ = bound
-        if self._runtime_projection(adapter.runtime_identity()) != self._runtime_projection(runtime):
-            raise ValueError("CSE provider identity changed")
+    def invoke(self, source, bound):
+        adapter = bound[0]
         code, raw = adapter._run(_BOOTSTRAP, [str(adapter.source_root)], canonical(source))
-        adapter.runtime_identity()
         if code:
             raise AdapterRefusal("BIM_QUANTITY_REFUSED", "Pinned CSE refused the bounded IFC workload")
-        data = _json(raw)
-        _check_data(source, data)
-        occurrence = "execution-" + uuid.uuid4().hex
-        result = {"schema": RESULT_SCHEMA, "operation_id": self.operation, "execution_ref": occurrence,
-                  "input_refs": [evidence_id], "data": data, "authority": AUTHORITY}
-        result["result_id"] = digest(result)
-        numerical = {"operation_id": self.operation, "data": data}
-        return {"runtime_ref": self.role, "operation_id": self.operation, "execution_id": occurrence,
-                "input_refs": [evidence_id], "request": source, "request_sha256": digest(source),
-                "result": result, "result_sha256": digest(result), "result_id": result["result_id"],
-                "numerical_result": numerical, "numerical_result_id": digest(numerical)}
+        return _json(raw)
 
-    def _validate_step(self, step, source, evidence_id):
-        exact_keys(step, {"runtime_ref", "operation_id", "execution_id", "input_refs", "request", "request_sha256", "result", "result_sha256", "result_id", "numerical_result", "numerical_result_id"})
-        if step["runtime_ref"] != self.role or step["operation_id"] != self.operation or step["input_refs"] != [evidence_id] or canonical(step["request"]) != canonical(source):
-            raise ValueError("BIM request/operation/evidence binding mismatch")
-        if not isinstance(step["execution_id"], str) or not re.fullmatch(r"execution-[a-f0-9]{32}", step["execution_id"]):
-            raise ValueError("Invalid native execution occurrence")
-        result = step["result"]
-        exact_keys(result, {"schema", "operation_id", "execution_ref", "input_refs", "data", "authority", "result_id"})
-        _check_data(source, result["data"])
-        if (result["schema"] != RESULT_SCHEMA or result["authority"] != AUTHORITY or result["operation_id"] != self.operation or
-                result["execution_ref"] != step["execution_id"] or result["input_refs"] != [evidence_id] or
-                result["result_id"] != digest({k: v for k, v in result.items() if k != "result_id"}) or result["result_id"] != step["result_id"] or
-                canonical(step["numerical_result"]) != canonical({"operation_id": self.operation, "data": result["data"]})):
-            raise ValueError("BIM result binding or authority mismatch")
-        for key, content in (("request_sha256", source), ("result_sha256", result), ("numerical_result_id", step["numerical_result"])):
-            if step[key] != digest(content):
-                raise ValueError("BIM step content mismatch")
+    def check_data(self, source, data):
+        _check_data(source, data)
 
 
 workflow = BimQuantityWorkflow()

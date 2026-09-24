@@ -52,7 +52,7 @@
       "evidence": "src/ciw/declared_workload.py:149-152, :200-204. _commit is reused for the proof identity at proved_heat.py:155"
     },
     {
-      "rule": "The specification must equal CIW's embedded HEAT_DESCRIPTOR program bytes and the little-endian input [steps u32][n u32][n x i64] derived from the source JSON. The displayed values must re-encode to the native output bytes, with |u| \u2264 2^40",
+      "rule": "The specification must equal CIW's embedded HEAT_DESCRIPTOR program bytes and the little-endian input [steps u32][n u32][n x i64] derived from the source JSON. The displayed values must re-encode to the native output bytes, with |u| ≤ 2^40",
       "evidence": "src/ciw/declared_workload.py:35-42, :191-199"
     },
     {
@@ -69,7 +69,7 @@
   "authority": "read_only",
   "implementation": {
     "module": "ciw.declared_workload",
-    "runner": "declared_workflow",
+    "runner": "generic_runner",
     "delegates": []
   },
   "guide": "docs/DECLARED_WORKLOADS.md"

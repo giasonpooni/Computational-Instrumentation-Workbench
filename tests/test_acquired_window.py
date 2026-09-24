@@ -11,6 +11,7 @@ import pytest
 from ciw import acquired_dataset as acquisition
 from ciw import acquired_window as bridge
 from ciw import calibrated_window as window
+from ciw.core.canonical import bundle_digest
 
 ROOT = Path(__file__).resolve().parents[1]
 HELPERS = runpy.run_path(str(ROOT / "examples/acquired-window/make_source.py"))
@@ -122,7 +123,7 @@ def test_resealed_outer_tampering_cannot_break_lineage(retained, fault):
     if fault == "child-bytes": bundle["child_window"]["source"]["evidence"][0]["bytes_b64"] += "AA=="
     if fault == "selected-record": bundle["acquisition_binding"]["selected_records"][0]["snapshot_sha256"] = "sha256:" + "0" * 64
     if fault == "upstream-bytes": bundle["upstream_acquisition"]["source"]["evidence"][0]["bytes_b64"] += "AA=="
-    bundle["bundle_digest"] = bridge._bundle_digest(bundle)
+    bundle["bundle_digest"] = bundle_digest(bundle)
     bundle["verification"] = bridge._verification(bundle)
     if fault == "receipt-subject": bundle["verification"]["subject_ref"] = bundle["child_window"]["bundle_digest"]
     if fault == "receipt-authority": bundle["verification"]["independent"] = True

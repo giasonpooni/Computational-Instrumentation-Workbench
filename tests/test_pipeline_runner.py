@@ -1,0 +1,174 @@
+"""The shared runner owns every identity-bearing record; pipelines supply hooks."""
+from copy import deepcopy
+import json
+
+import pytest
+
+from ciw.adapters.protocol import AdapterRefusal
+from ciw.core.canonical import bundle_digest, canonical, digest
+from ciw.pipelines import _check_runner
+from ciw.pipelines.runner import PipelineRunner, check_receipts, check_step, host_projection, seal_step
+
+TREE = "a" * 40
+PIN = {"role": "toy", "revision": "b" * 40, "source_tree": TREE, "module": "toy.provider", "source_root": "src"}
+
+
+class FakeAdapter:
+    def __init__(self, repository, identity):
+        self.repository, self.identity, self.calls = repository, identity, 0
+
+    def runtime_identity(self):
+        return deepcopy(self.identity)
+
+
+def runtime(root="/host/a", python="/usr/bin/python3"):
+    return {"schema": "ciw.subprocess-runtime.v1", "adapter_version": "ciw-pinned-subprocess-v1",
+            "repository_root": root, "revision": PIN["revision"], "source_tree": TREE, "module": PIN["module"],
+            "source_root": PIN["source_root"], "python_executable": python, "python_sha256": "c" * 64,
+            "python_version": "3.12.3", "dependencies": {"numpy": "2.4.3"}}
+
+
+class ToyRunner(PipelineRunner):
+    LABEL = "Toy"
+
+    def __init__(self, identity=None, refuse=False, drift=None):
+        super().__init__("toy-kind", PIN)
+        self.identity, self.refuse, self.drift = identity or runtime(), refuse, drift
+
+    def parse_source(self, raw):
+        value = json.loads(raw)
+        if set(value) != {"schema", "experiment_id", "configuration", "values"} or value["schema"] != self.SOURCE_SCHEMA:
+            raise ValueError("Toy source is not declared")
+        return value
+
+    def make_adapter(self, repository, retained):
+        return FakeAdapter(repository, self.identity)
+
+    def invoke(self, source, bound):
+        adapter = bound[0]
+        adapter.calls += 1
+        if self.refuse:
+            raise AdapterRefusal("TOY_REFUSED", "The toy provider refused")
+        if self.drift and adapter.calls == self.drift:
+            adapter.identity = {**adapter.identity, "source_tree": "d" * 40}
+        return {"sum": sum(source["values"])}
+
+    def check_data(self, source, data):
+        if data != {"sum": sum(source["values"])}:
+            raise ValueError("Toy result differs from its source")
+
+
+def source_bytes():
+    return canonical({"schema": "ciw.toy-kind-source.v1", "experiment_id": "toy", "configuration": {"mode": "sum"},
+                      "values": [1, 2, 3]})
+
+
+def test_create_seal_verify_and_reopen_without_the_provider():
+    runner = ToyRunner()
+    bundle = runner.create_session(source_bytes(), {"toy": "/host/a"})
+    assert bundle["schema"] == "ciw.toy-kind-session.v1" and bundle["steps"][0]["operation_id"] == "ciw.toy-kind.v1"
+    assert bundle["bundle_digest"] == bundle_digest(bundle)
+    step, proof = bundle["steps"][0], bundle["verification"]
+    assert proof["reproduction"]["execution_id"] != step["execution_id"]
+    assert proof["reproduction"]["numerical_result_id"] == step["numerical_result_id"]
+    assert proof["independent"] is False and proof["subject_ref"] == bundle["bundle_digest"]
+    # Reopen is validation of retained records; it never binds a provider.
+    offline = ToyRunner()
+    offline.make_adapter = lambda *_: pytest.fail("Reopen bound a provider")
+    assert offline._validate(json.loads(canonical(bundle))) == source_bytes()
+
+
+def test_replay_is_a_fresh_occurrence_with_a_bound_receipt():
+    runner = ToyRunner()
+    original = runner.create_session(source_bytes(), {"toy": "/host/a"})
+    # Host paths are bindings, not pins: another checkout location replays.
+    replayed = ToyRunner(runtime(root="/host/b", python="/opt/python3")).replay_session(original, {"toy": "/host/b"})
+    fresh, receipt = replayed["session"], replayed["replay_receipt"]
+    assert fresh["session_id"] != original["session_id"] and fresh["bundle_digest"] != original["bundle_digest"]
+    assert fresh["steps"][0]["numerical_result_id"] == original["steps"][0]["numerical_result_id"]
+    assert receipt["source_bundle_digest"] == original["bundle_digest"] and receipt["admission"] == "not_performed"
+    ToyRunner()._validate(fresh)
+    for mutate in (lambda r: r.update(numerical_match=False), lambda r: r.update(source_bundle_digest=fresh["bundle_digest"]),
+                   lambda r: r["verification"].update(independent=True)):
+        changed = deepcopy(fresh)
+        mutate(changed["replay_receipts"][0])
+        with pytest.raises(ValueError):
+            check_receipts(changed, "toy-kind")
+    doubled = deepcopy(fresh)
+    doubled["replay_receipts"].append(deepcopy(receipt))
+    with pytest.raises(ValueError, match="at most one"):
+        check_receipts(doubled, "toy-kind")
+
+
+def test_replay_refuses_a_different_pin():
+    original = ToyRunner().create_session(source_bytes(), {"toy": "/host/a"})
+    moved = runtime()
+    moved["dependencies"] = {"numpy": "2.5.0"}
+    with pytest.raises(ValueError, match="runtime differs from the retained execution"):
+        ToyRunner(moved).replay_session(original, {"toy": "/host/a"})
+    other = runtime()
+    other["source_tree"] = "e" * 40
+    with pytest.raises(ValueError, match="source tree differs"):
+        ToyRunner(other).create_session(source_bytes(), {"toy": "/host/a"})
+
+
+def test_binding_refusal_and_drift():
+    with pytest.raises(ValueError, match="declared provider roles"):
+        ToyRunner().create_session(source_bytes(), {"toy": "/a", "other": "/b"})
+    with pytest.raises(AdapterRefusal):
+        ToyRunner(refuse=True).create_session(source_bytes(), {"toy": "/host/a"})
+    with pytest.raises(ValueError, match="changed during execution"):
+        ToyRunner(drift=1).create_session(source_bytes(), {"toy": "/host/a"})
+
+
+@pytest.mark.parametrize("path, value", [
+    (("steps", 0, "result", "data", "sum"), 7),
+    (("steps", 0, "result", "authority", "state_admission"), "performed"),
+    (("steps", 0, "input_refs", 0), "sha256:" + "0" * 64),
+    (("steps", 0, "execution_id"), "execution-" + "0" * 31),
+    (("steps", 0, "numerical_result_id"), "sha256:" + "1" * 64),
+    (("runtimes", "toy", "revision"), "f" * 40),
+    (("configuration", "mode"), "product"),
+])
+def test_every_identity_is_checked_on_reopen(path, value):
+    bundle = ToyRunner().create_session(source_bytes(), {"toy": "/host/a"})
+    target = bundle
+    for key in path[:-1]:
+        target = target[key]
+    target[path[-1]] = value
+    bundle["bundle_digest"] = bundle_digest(bundle)
+    with pytest.raises(ValueError):
+        ToyRunner()._validate(bundle)
+
+
+def test_sealed_step_binds_request_result_and_numbers():
+    source = json.loads(source_bytes())
+    step = seal_step("toy", "ciw.toy-kind.v1", source, ["sha256:" + "2" * 64], {"sum": 6})
+    assert step["result_id"] == digest({k: v for k, v in step["result"].items() if k != "result_id"})
+    check = dict(role="toy", operation="ciw.toy-kind.v1", source=source, input_refs=["sha256:" + "2" * 64],
+                 check_data=lambda *_: None, label="Toy")
+    check_step(step, **check)
+    changed = deepcopy(step)
+    changed["request"]["values"] = [9]
+    with pytest.raises(ValueError, match="request differs"):
+        check_step(changed, **check)
+
+
+def test_host_fields_never_count_as_pins():
+    nested = {"repository_root": "/x", "revision": "r", "vendor": {"python_executable": "/y", "revision": "v"}}
+    assert host_projection(nested) == {"revision": "r", "vendor": {"revision": "v"}}
+
+
+def test_generic_runner_classes_supply_hooks_only():
+    _check_runner("toy", "generic_runner", ToyRunner())
+
+    class Overrides(ToyRunner):
+        def _step(self, source, evidence_id, bound):
+            return {}
+
+    with pytest.raises(ValueError, match="overrides runner methods"):
+        _check_runner("toy", "generic_runner", Overrides())
+    with pytest.raises(ValueError, match="shared runner"):
+        _check_runner("toy", "generic_runner", object())
+    with pytest.raises(ValueError, match="declare it generic_runner"):
+        _check_runner("toy", "hand_written", ToyRunner())

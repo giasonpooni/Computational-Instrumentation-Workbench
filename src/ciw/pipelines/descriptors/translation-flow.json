@@ -28,7 +28,6 @@
     "role": null
   },
   "refusals": [
-    "DECLARED_WORKLOAD_REFUSED",
     "GEOMETRY_PROVIDER_REFUSED",
     "INPUT_LIMIT",
     "INVALID_INPUT",
@@ -49,7 +48,7 @@
       "evidence": "src/ciw/geometry_translation_contract.py:45-54,72-105"
     },
     {
-      "rule": "Corner-class topology derived from the gluing: corner equivalence classes, cone angles that are multiples of 2\u03c0, Euler characteristic <= 0 and even, and the genus. The retained gluing_validation must equal the derived structure exactly.",
+      "rule": "Corner-class topology derived from the gluing: corner equivalence classes, cone angles that are multiples of 2π, Euler characteristic <= 0 and even, and the genus. The retained gluing_validation must equal the derived structure exactly.",
       "evidence": "src/ciw/geometry_translation_contract.py:108-143"
     },
     {
@@ -72,7 +71,7 @@
   "authority": "read_only",
   "implementation": {
     "module": "ciw.geometry_research",
-    "runner": "declared_workflow",
+    "runner": "generic_runner",
     "delegates": []
   },
   "guide": "docs/GEOMETRY_RESEARCH.md"

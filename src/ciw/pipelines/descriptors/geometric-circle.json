@@ -17,6 +17,7 @@
       "purpose": "geometric projection",
       "pin": {
         "revision": "e55b8be2b3ba05f7e6c6a31807c77b3e42700f07",
+        "source_tree": "7609bbda95123a7156222ac5c4460e95ff58ab2d",
         "module": "geodesic_telemetry.ciw_adapter",
         "source_root": "src"
       }
@@ -27,7 +28,6 @@
     "role": null
   },
   "refusals": [
-    "DECLARED_WORKLOAD_REFUSED",
     "INPUT_LIMIT",
     "INVALID_INPUT",
     "MALFORMED_RESPONSE",
@@ -74,7 +74,7 @@
   "authority": "read_only",
   "implementation": {
     "module": "ciw.geometric_circle",
-    "runner": "declared_workflow",
+    "runner": "generic_runner",
     "delegates": []
   },
   "guide": "docs/REMAINING_MODULES.md"
