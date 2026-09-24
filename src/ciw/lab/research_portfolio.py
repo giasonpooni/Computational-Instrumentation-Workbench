@@ -502,7 +502,8 @@ def _installed_from(wheel: bytes, package_dir: Path) -> bool:
 
 @task("T164", changed_files=(MODULE, "scripts/reproduce_lab.py"),
       regression_tests=(f"{TESTS}::test_clean_room_marker_is_recognized",
-                        f"{TESTS}::test_clean_room_needs_the_installed_package_to_be_the_named_wheel"))
+                        f"{TESTS}::test_clean_room_needs_the_installed_package_to_be_the_named_wheel",
+                        f"{TESTS}::test_clean_room_prose_does_not_carry_the_wheel_digest"))
 def clean_room_reproduction(ctx):
     fields = _common(
         "One command builds an isolated wheel, installs it into a fresh virtual environment, runs the lab tests "
@@ -510,7 +511,8 @@ def clean_room_reproduction(ctx):
         "scripts/reproduce_lab.py: wheel -> venv -> pytest (JUnit) -> ciw lab run --all -> ciw lab verify.",
         "When the queue runs inside that command, it exports CIW_LAB_CLEAN_ROOM with the wheel digest; this task "
         "checks that the imported package is that wheel's files. Outside the command the task is partial.",
-        "Run scripts/reproduce_lab.py on Windows and on a second Linux host and retain both gate records.")
+        "Run scripts/check_lab.py under Python 3.12 on Windows and on a second Linux host and retain both gate "
+        "records.")
     marker = os.environ.get("CIW_LAB_CLEAN_ROOM")
     if not marker:
         fields["numerical_result"] = "Queue not running inside the clean-room command."
@@ -534,7 +536,8 @@ def clean_room_reproduction(ctx):
         "package_inside_environment": package_dir.is_relative_to(Path(sys.prefix).resolve()),
     }
     failures = [name for name, ok in observed.items() if not ok]
-    fields["numerical_result"] = f"Clean-room evidence for wheel {wheel[:16]}: {observed}."
+    # The wheel digest changes with every build (file times, toolchain); compared prose must not carry it.
+    fields["numerical_result"] = f"Clean-room evidence for the built wheel: {observed}."
     fields["uncertainty"] = "Comparison with retained reports is performed by the command after this run."
     # The interpreter is observed, never taken from the marker.
     fields["provider_runtime_identity"] = {"implementation": "ciw.lab", "wheel_sha256": wheel,

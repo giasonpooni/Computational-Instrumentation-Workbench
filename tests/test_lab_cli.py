@@ -97,6 +97,208 @@ def test_clean_room_refuses_an_empty_comparison_and_ignores_extensions(tmp_path,
     assert not (tmp_path / "out").exists()  # refused before building anything
     monkeypatch.setenv("CIW_LAB_EXTENSIONS", str(tmp_path / "follow-ups.json"))
     monkeypatch.setenv("CIW_LAB_MODULES", "my_lab_tasks")
+    # An operator's hardware captures (for example after a T115 capture) are not the packaged queue's.
+    captures = {"CIW_LAB_RAPL_LOG", "CIW_LAB_ENERGY_LOG", "CIW_LAB_NVIDIA_SMI_CSV", "CIW_LAB_NVIDIA_SMI_UTC_OFFSET"}
+    for name in captures:
+        monkeypatch.setenv(name, str(tmp_path / "operator-capture"))
     environment = reproduce.clean_room_environment(tmp_path)
-    assert not {"CIW_LAB_EXTENSIONS", "CIW_LAB_MODULES", "PYTHONPATH"} & set(environment)
+    assert not {"CIW_LAB_EXTENSIONS", "CIW_LAB_MODULES", "PYTHONPATH", *captures} & set(environment)
     assert environment["CIW_LAB_REPOSITORY_ROOT"] == str(tmp_path)
+    # The queue reads exactly these capture variables.
+    from ciw.lab import energy_gpu_telemetry as telemetry
+    assert {telemetry.LOG_ENV, telemetry.SMI_ENV, telemetry.SMI_OFFSET_ENV, telemetry.RAPL_ENV} == captures
+
+
+def test_clean_room_builds_with_build_isolation_under_a_relative_temporary_root(tmp_path, monkeypatch):
+    import os
+    import shutil
+    import tempfile
+    from types import SimpleNamespace
+    reproduce = _script("reproduce_lab")
+
+    class Relative:
+        """A temporary directory named relative to the current directory, as mkdtemp returns it on Python 3.11."""
+        def __init__(self, prefix, dir):
+            self.name = os.path.relpath(tempfile.mkdtemp(prefix=prefix, dir=dir))
+
+        def __enter__(self):
+            return self.name
+
+        def __exit__(self, *exc):
+            shutil.rmtree(self.name)
+
+    class Built(Exception):
+        pass
+
+    commands = []
+
+    def run(command, **kwargs):
+        commands.append([str(part) for part in command])
+        raise Built
+
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "reltmp").mkdir()
+    monkeypatch.setattr(reproduce, "tempfile", SimpleNamespace(TemporaryDirectory=Relative))
+    monkeypatch.setattr(reproduce, "run", run)
+    monkeypatch.setattr(sys, "argv", ["reproduce_lab.py", "--no-compare", "--output-dir", "out",
+                                      "--temporary-root", "reltmp"])
+    with pytest.raises(Built):
+        reproduce.main()
+    wheel = commands[0]
+    # pip's build isolation provides setuptools>=77; the host interpreter need not have it.
+    assert wheel[1:4] == ["-m", "pip", "wheel"] and "--no-build-isolation" not in wheel
+    # Every clean-room path is absolute: later steps run with the clean room as working directory.
+    paths = [part for part in wheel if "ciw-lab-clean-room-" in part]
+    assert paths and all(Path(part).is_absolute() for part in paths)
+
+
+def test_gate_record_names_the_bindings_the_queue_received(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+    reproduce = _script("reproduce_lab")
+    commands = []
+
+    def run(command, **kwargs):
+        command = [str(part) for part in command]
+        commands.append(command)
+        if command[1:4] == ["-m", "pip", "wheel"]:  # stands in for the wheel build
+            dist = Path(command[command.index("--wheel-dir") + 1])
+            dist.mkdir(parents=True)
+            (dist / "ciw-0-py3-none-any.whl").write_bytes(b"wheel")
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(reproduce, "run", run)
+    monkeypatch.setattr(reproduce, "venv", SimpleNamespace(EnvBuilder=lambda **kwargs: SimpleNamespace(
+        create=lambda path: None)))
+    monkeypatch.setattr(reproduce, "subprocess", SimpleNamespace(
+        run=lambda *args, **kwargs: SimpleNamespace(stdout=str(tmp_path / "site" / "ciw" / "__init__.py"))))
+    monkeypatch.setattr(sys, "argv", ["reproduce_lab.py", "--no-compare", "--output-dir", "out",
+                                      "--temporary-root", str(tmp_path), "--provider", "csg=stack/csg",
+                                      "--provider", "plsr-python=venv312/bin/python", "--provider", "ftr-python=@venv"])
+    assert reproduce.main() == 0
+    queue = next(command for command in commands if command[1:5] == ["-m", "ciw", "lab", "run"])
+    passed = [queue[index + 1] for index, part in enumerate(queue) if part == "--provider"]
+    assert passed[:2] == [f"csg={Path.cwd() / 'stack' / 'csg'}", f"plsr-python={Path.cwd() / 'venv312' / 'bin' / 'python'}"]
+    record = json.loads((tmp_path / "out" / "gate.json").read_text(encoding="utf-8"))
+    # The record shows what the queue and the tests were bound to, and the clean-room Python.
+    assert record["providers"] == passed and record["python"] == sys.version.split()[0]
+
+
+def test_clean_room_tests_see_the_bound_providers(tmp_path, monkeypatch):
+    reproduce = _script("reproduce_lab")
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("CIW_LAB_SET_REPO", str(tmp_path / "unbound-set"))  # the calling shell's, not bound
+    python = tmp_path / "venv" / "bin" / "python"
+    providers = reproduce.bindings(["csg=stack/csg", "ftr=stack/ftr", "scr=stack/scr",
+                                    "plsr-python=@venv", "ftr-python=@venv"], python)
+    stack = Path.cwd() / "stack"
+    assert providers == [("csg", str(stack / "csg")), ("ftr", str(stack / "ftr")), ("scr", str(stack / "scr")),
+                         ("plsr-python", str(python)), ("ftr-python", str(python))]
+    environment = reproduce.clean_room_environment(tmp_path, providers)
+    assert {name: environment.get(name) for name in reproduce.TEST_VARIABLES.values()} == {
+        "CIW_LAB_CSG_REPO": str(stack / "csg"), "CIW_LAB_FTR_REPO": str(stack / "ftr"),
+        "CIW_LAB_SCR_REPO": str(stack / "scr"), "CIW_LAB_PLSR_PYTHON": str(python),
+        "CIW_LAB_FTR_PYTHON": str(python), "CIW_LAB_SET_REPO": None, "CIW_LAB_PPDA_REPO": None,
+        "CIW_LAB_SCR_EXCHANGE_REPO": None, "CIW_LAB_SCR_ENGINE": None}
+    # A virtual environment's python is a symlink to a base interpreter that lacks the environment's
+    # packages (PLSR): the binding is made absolute, never resolved to that interpreter.
+    link = Path("plsr-venv") / "bin" / "python"
+    link.parent.mkdir(parents=True)
+    try:
+        link.symlink_to(tmp_path / "base" / "python3")
+    except OSError:  # symlinks need a privilege on Windows
+        link = None
+    if link is not None:
+        [(role, path)] = reproduce.bindings([f"plsr-python={link}"], python)
+        assert path == str(Path.cwd() / link) != str(link.resolve())
+        assert reproduce.clean_room_environment(tmp_path, [(role, path)])["CIW_LAB_PLSR_PYTHON"] == path
+    # The variables are the ones the provider-gated tests read, and every provider variable they read is bound.
+    import re
+    tests = "".join(path.read_text(encoding="utf-8") for path in Path(__file__).parent.glob("test_lab_*.py"))
+    assert all(name in tests for name in reproduce.TEST_VARIABLES.values())
+    assert set(re.findall(r"CIW_LAB_[A-Z_]+_(?:REPO|PYTHON|ENGINE)\b", tests)) == set(reproduce.TEST_VARIABLES.values())
+
+
+def test_gate_compares_only_under_python_312_and_resolves_its_temporary_root(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+    monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[1] / "scripts"))
+    check = _script("check_lab")
+    commands = []
+    monkeypatch.setattr(check, "call", lambda command, **kwargs: commands.append([str(part) for part in command]))
+    monkeypatch.setattr(check, "sys", SimpleNamespace(version_info=(3, 11, 9), version="3.11.9",
+                                                      executable=sys.executable))
+    monkeypatch.setattr(sys, "argv", ["check_lab.py", "--output-dir", str(tmp_path / "out")])
+    # The retained run binds PLSR and FTR interpreters, which need Python 3.12.
+    with pytest.raises(SystemExit, match="needs Python 3.12"):
+        check.main()
+    assert commands == []
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "reltmp").mkdir()
+    monkeypatch.setattr(check, "pins", lambda: {role: "0" * 40 for role in check.REPOSITORIES})
+    monkeypatch.setattr(check, "validate_checkout", lambda path, revision: Path(path).resolve())
+    monkeypatch.setattr(sys, "argv", ["check_lab.py", "--no-compare", "--stack-root", "stack",
+                                      "--temporary-root", "reltmp", "--output-dir", "out"])
+    assert check.main() == 0
+    command = commands[-1]
+    assert Path(command[command.index("--temporary-root") + 1]) == (tmp_path / "reltmp").resolve()
+    assert "plsr-python=@venv" not in command
+
+
+def test_refresh_retains_only_a_run_that_bound_every_provider(tmp_path, monkeypatch):
+    refresh = _script("refresh_lab")
+    run = tmp_path / "run"
+    run.mkdir()
+    before = sorted((Path(refresh.ROOT) / "lab").rglob("*"))
+
+    bound = ["csg=/c", "ftr=/f", "scr=/s", "plsr-python=/v/bin/python", "ftr-python=/v/bin/python"]
+
+    def refresh_from(providers, python="3.12.3"):
+        (run / "gate.json").write_text(json.dumps({"schema": "ciw.lab-clean-room-gate.v1", "providers": providers,
+                                                   "python": python}))
+        monkeypatch.setattr(sys, "argv", ["refresh_lab.py", "--from-run", str(run)])
+        with pytest.raises(SystemExit) as refused:
+            refresh.main()
+        return str(refused.value)
+
+    # A run without the PLSR and FTR interpreters (Python 3.11) differs from what CI reproduces.
+    assert "bound no plsr-python, ftr-python" in refresh_from(["csg=/c", "ftr=/f", "scr=/s"])
+    assert "Python 3.11.9" in refresh_from(bound, "3.11.9")
+    assert "Python unrecorded" in refresh_from(bound, None)
+    # check_lab.py's bindings pass; this run then lacks its reports.
+    assert "incomplete" in refresh_from(bound)
+    # Every role bound, but the PLSR interpreter could not run PLSR: its tasks are not CI's.
+    (run / "reports").mkdir()
+    (run / "artifacts").mkdir()
+    (run / "queue-state.json").write_text("{}")
+    (run / "REPORTS.md").write_text("")
+    (run / "reports" / "T100.json").write_text(json.dumps({"task_id": "T100", "state": "partial"}))
+    (run / "reports" / "T101.json").write_text(json.dumps({"task_id": "T101", "state": "partial", "unresolved_assumptions": [
+        "Provider plsr-python refused: PLSR_UNAVAILABLE: PackageNotFoundError: No package metadata"]}))
+    (run / "reports" / "T019.json").write_text(json.dumps({"task_id": "T019", "findings": [
+        {"value": {"refusal": "FTR_EXECUTION_FAILED", "message": "Provider subprocess did not complete"}}]}))
+    assert "refused to run in T019, T101" in refresh_from(bound)
+    assert sorted((Path(refresh.ROOT) / "lab").rglob("*")) == before
+
+
+def test_lab_docs_describe_the_gate_as_implemented(monkeypatch):
+    import re
+    docs = Path(__file__).resolve().parents[1] / "docs"
+    if not (docs / "lab" / "AUTHORING.md").is_file():
+        pytest.skip("docs/ is not available")
+
+    def text(*parts):
+        return " ".join(docs.joinpath(*parts).read_text(encoding="utf-8").split())
+
+    for guide in (text("DEVELOPMENT.md"), text("LAB.md")):
+        # Retained evidence comes from a clean-room run with every provider, never a local run into lab/.
+        assert not re.search(r"--output-dir\s+lab(?![\w/.-])", guide)
+        assert "scripts/refresh_lab.py" in guide and "scripts/check_lab.py" in guide and "Python 3.12+" in guide
+    authoring, lab = text("lab", "AUTHORING.md"), text("LAB.md")
+    assert "removes both variables" in authoring
+    # Provider-gated tests run in CI only for the roles check_lab.py binds; a new role needs provisioning there.
+    assert "add a new role there" not in authoring and "`scripts/check_lab.py` (`REPOSITORIES` and its pin)" in authoring
+    monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[1] / "scripts"))
+    check, reproduce = _script("check_lab"), _script("reproduce_lab")
+    gate_roles = [*check.REPOSITORIES, "plsr-python", "ftr-python"]  # the latter two on Python 3.12+
+    documented = re.search(r"The bindings `check_lab.py` makes set (.*?);", lab).group(1)
+    assert set(re.findall(r"CIW_LAB_\w+", documented)) == {reproduce.TEST_VARIABLES[role] for role in gate_roles}
+    assert all(f"`{name}`" in lab for name in reproduce.OPERATOR_CAPTURES)

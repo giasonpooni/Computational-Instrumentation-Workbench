@@ -192,24 +192,64 @@ each finding's declared regression tolerance. It exits 3 on any difference, on
 a task present on only one side, and when the retained directory is missing or
 holds no reports.
 
-`scripts/reproduce_lab.py` is the one-command clean-room reproduction: it
-builds a wheel, installs it with the lab extras into a new virtual
-environment, runs the lab tests with a JUnit record, runs the whole queue and
-verifies it against `lab/`. It refuses to start when the retained directory
-holds no reports unless `--no-compare` is given, and it runs the packaged
-queue only (`CIW_LAB_EXTENSIONS` and `CIW_LAB_MODULES` are removed). T164
-records a run as a clean-room reproduction only when the imported `ciw`
-package holds exactly the named wheel's files, byte for byte, inside an
-isolated interpreter; a marker naming any other file stays `not_established`.
+`scripts/check_lab.py` is the clean-room gate that CI runs and the way to
+reproduce the retained run. It provisions CSG, FTR and SCR checkouts at CIW's
+pins (cloned, or clean checkouts named `csg`, `ftr` and `scr` under
+`--stack-root`) and runs `scripts/reproduce_lab.py` with them bound, plus the
+clean-room interpreter, which has the pinned PLSR installed, as `plsr-python`
+and `ftr-python`. Reproducing the retained run needs Python 3.12+ (PLSR and
+FTR run there), Git, and those bound providers; on an older interpreter the
+gate refuses to compare, and with `--no-compare` the PLSR-backed Lyapunov
+tasks and the FTR comparison end partial.
+
+```sh
+python scripts/check_lab.py --output-dir results/lab-gate          # clones the pinned providers
+python scripts/check_lab.py --stack-root /trusted/lab-providers --output-dir results/lab-gate
+```
+
+`scripts/reproduce_lab.py` is the step underneath. It builds a wheel from the
+checkout (pip build isolation supplies the build backend), installs it with
+the requested extras into a new virtual environment outside the checkout, runs
+the lab tests with a JUnit record, runs the whole queue with the `--provider`
+bindings it is given (`@venv` names the clean-room interpreter) and verifies
+the fresh reports against `lab/`. Each binding also reaches the tests as the
+variable its provider-gated tests read, so those tests run instead of
+skipping. The bindings `check_lab.py` makes set `CIW_LAB_CSG_REPO`,
+`CIW_LAB_FTR_REPO`, `CIW_LAB_SCR_REPO`, `CIW_LAB_FTR_PYTHON` and
+`CIW_LAB_PLSR_PYTHON`; it binds no SET, PPDA or SCR exchange checkout, so
+their tests skip in CI and T097 stays partial. Run without the bindings
+`check_lab.py` makes, its comparison with `lab/` fails on the provider tasks.
+Paths are made absolute without following symlinks, so a virtual
+environment's interpreter stays bound as itself, and `gate.json` records the
+bindings as passed and the clean-room Python version. It refuses to start
+when the retained directory holds no reports unless `--no-compare` is given,
+and it runs the packaged queue only: `CIW_LAB_EXTENSIONS`, `CIW_LAB_MODULES`,
+the calling shell's provider-test variables and its operator hardware
+captures (`CIW_LAB_RAPL_LOG`, `CIW_LAB_ENERGY_LOG`, `CIW_LAB_NVIDIA_SMI_CSV`,
+`CIW_LAB_NVIDIA_SMI_UTC_OFFSET`) are removed. T164 records a run as a
+clean-room reproduction only when the imported `ciw` package holds exactly the
+named wheel's files, byte for byte, inside an isolated interpreter; a marker
+naming any other file stays `not_established`. The wheel digest stays in
+T164's runtime identity, out of the compared prose, because it changes with
+every build.
 
 ## Retained evidence
 
-Regenerate it only together with the change that alters it:
+Regenerate it only together with the change that alters it, and only from a
+clean-room gate run under Python 3.12+ with every provider bound; never write
+`ciw lab run` output into `lab/` (outside the clean room T164 is partial, the
+provider tasks differ, and the run log would be retained):
 
 ```sh
-python scripts/refresh_lab.py --stack-root /trusted/lab-providers   # csg, ftr, scr checkouts
+python scripts/refresh_lab.py --stack-root /trusted/lab-providers   # runs check_lab.py --no-compare
+python scripts/refresh_lab.py --from-run results/lab-gate           # or retains an existing gate run
 git diff --stat lab
 ```
+
+`refresh_lab.py` refuses a run whose gate record does not show Python 3.12+
+and bindings for CSG, FTR, SCR and the PLSR/FTR interpreter, or whose reports
+carry a CSG, FTR or PLSR refusal code (a bound provider that did not run), and
+keeps elapsed times, the JUnit record and the gate record out of `lab/`.
 
 `lab/` holds the retained run: `reports/T*.json`, `artifacts/T*/` (tables,
 SVG figures, drafts and ledgers), `queue-state.json` and `REPORTS.md`, the

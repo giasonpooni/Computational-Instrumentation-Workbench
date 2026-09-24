@@ -168,6 +168,31 @@ def test_clean_room_needs_the_installed_package_to_be_the_named_wheel(tmp_path, 
     assert report["state"] == "completed" and report["findings"][0]["evidence_status"] == "numerically_verified"
 
 
+def test_clean_room_prose_does_not_carry_the_wheel_digest(tmp_path, monkeypatch):
+    import hashlib
+    import shutil
+    import zipfile
+    import ciw
+    package = Path(ciw.__file__).resolve().parent
+    first = _wheel(tmp_path / "ciw-0-py3-none-any.whl", package)
+    # Another build of the same files: equal members, different bytes and digest (as file times do).
+    second = tmp_path / "rebuilt" / first.name
+    second.parent.mkdir()
+    shutil.copy2(first, second)
+    with zipfile.ZipFile(second, "a") as archive:
+        archive.comment = b"second build"
+    assert hashlib.sha256(first.read_bytes()).digest() != hashlib.sha256(second.read_bytes()).digest()
+    for wheel, run in ((first, "run1"), (second, "run2")):
+        _clean_room(monkeypatch, wheel)
+        report = _run("T164", tmp_path / run)
+        assert report["state"] == "completed"
+        assert report["provider_runtime_identity"]["wheel_sha256"] == hashlib.sha256(wheel.read_bytes()).hexdigest()
+        (tmp_path / run / "reports").mkdir(parents=True)
+        (tmp_path / run / "reports" / "T164.json").write_text(runner.dumps(report), encoding="utf-8")
+    # Compared prose is identical across builds; the digest stays in the runtime identity.
+    assert runner.compare(tmp_path / "run1", tmp_path / "run2")["problems"] == []
+
+
 def test_installed_package_is_compared_file_by_file_with_the_wheel(tmp_path):
     package = tmp_path / "site" / "ciw"
     (package / "lab" / "__pycache__").mkdir(parents=True)

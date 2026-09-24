@@ -148,19 +148,33 @@ checkouts can also provision older integration gates; [provider availability](PR
 documents their options and remaining public-source assumptions.
 
 The [computational experimentalist queue](LAB.md) has its own tests
-(`tests/test_lab_*.py`) and a clean-room gate that builds a wheel, runs the
-lab tests and every queue task, and compares the fresh reports with the
-retained ones in `lab/` within each finding's declared tolerance:
+(`tests/test_lab_*.py`) and a clean-room gate, `scripts/check_lab.py`. The gate
+provisions the pinned CSG, FTR and SCR checkouts (cloned, or clean checkouts
+named `csg`, `ftr` and `scr` under `--stack-root`) and runs
+`scripts/reproduce_lab.py` with them: it builds a wheel with pip build
+isolation, installs it into a new virtual environment, runs the lab tests with
+a JUnit record (the provider-gated tests against the bound providers), runs
+every queue task and compares the fresh reports with the retained ones in
+`lab/` within each finding's declared tolerance. The retained run also binds
+the Python 3.12 PLSR and FTR interpreter, so reproducing it needs Python 3.12+,
+Git and network access for the pinned providers and packages; on Python 3.11
+the gate refuses to compare and runs only with `--no-compare`. Until `lab/`
+holds a retained run, the comparison refuses and `--no-compare` is required.
 
 ```sh
 python -m pip install -e '.[dev,lab]'
 python -m pytest -q tests/test_lab_core.py
-python scripts/check_lab.py --output-dir results/lab-gate
+python scripts/check_lab.py --output-dir results/lab-gate     # Python 3.12+
 ```
 
 New lab tasks follow the [authoring contract](lab/AUTHORING.md). Regenerate
-the retained evidence with `ciw lab run --all --output-dir lab` only together
-with the code change that alters it, and review the `ciw lab verify` differences.
+the retained evidence only together with the code change that alters it, and
+only from a clean-room gate run under Python 3.12+ with every provider bound:
+`python scripts/refresh_lab.py --stack-root <checkouts>`, or
+`python scripts/refresh_lab.py --from-run <check_lab.py output>`. Never write
+`ciw lab run` output into `lab/`: outside the clean room T164 is partial, the
+provider tasks differ and the run log would be retained. Review `git diff lab`
+and the `ciw lab verify` differences.
 
 ## Documenting an integrated tool
 

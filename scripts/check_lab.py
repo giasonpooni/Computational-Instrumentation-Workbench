@@ -3,10 +3,13 @@
 Provisions the exact CSG, FTR and SCR revisions pinned by ``ciw.geodesic_reference``
 and ``ciw.declared_workload``,
 installs the pinned PLSR runtime through the ``plsr`` extra on Python 3.12+,
+where the clean-room interpreter also runs FTR,
 and delegates to ``scripts/reproduce_lab.py``: wheel build, clean virtual
-environment, lab tests with a JUnit record, the whole queue, and a
-tolerance-aware comparison with ``lab/``. Hardware-dependent tasks remain
-blocked; no physical measurement is acquired.
+environment, lab tests with a JUnit record (provider-gated tests against the
+bound providers), the whole queue, and a tolerance-aware comparison with
+``lab/``. The comparison needs Python 3.12+, like the retained run; older
+interpreters may only run with ``--no-compare``. Hardware-dependent tasks
+remain blocked; no physical measurement is acquired.
 """
 from __future__ import annotations
 
@@ -52,6 +55,12 @@ def main() -> int:
     parser.add_argument("--temporary-root", type=Path)
     parser.add_argument("--no-compare", action="store_true")
     args = parser.parse_args()
+    if args.temporary_root:
+        args.temporary_root = args.temporary_root.resolve()
+    if not args.no_compare and sys.version_info < (3, 12):
+        # Without the PLSR and FTR interpreters those tasks end partial, unlike the retained run.
+        raise SystemExit("Comparing with the retained run needs Python 3.12+, which hosts the PLSR and FTR "
+                         f"providers (this is {sys.version.split()[0]}); run under Python 3.12 or pass --no-compare")
     if not args.no_compare:
         # Refuse before provisioning providers: reproduce_lab.py would refuse after.
         reports = ROOT / "lab" / "reports"
