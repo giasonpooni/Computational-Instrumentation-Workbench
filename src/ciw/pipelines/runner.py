@@ -410,7 +410,10 @@ class PipelineRunner:
 
     def _unchanged(self, adapter, runtime, when):
         # The whole host-independent identity, so a field the provider stops reporting is a change too.
-        if canonical(self._runtime_projection(adapter.runtime_identity())) != canonical(self._runtime_projection(runtime)):
+        # Only declared extras bound beside the provider (a host executable), not reported by it, are skipped.
+        current = adapter.runtime_identity()
+        bound = {key: value for key, value in runtime.items() if key in current or key not in self.RUNTIME_EXTRA}
+        if canonical(self._runtime_projection(current)) != canonical(self._runtime_projection(bound)):
             raise ValueError(f"{self.LABEL} provider changed {when} execution")
 
     def _step(self, source, evidence_id, bound):

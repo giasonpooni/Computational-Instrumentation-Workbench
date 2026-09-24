@@ -171,6 +171,28 @@ def test_a_provider_that_stops_reporting_an_identity_field_has_changed():
     runner._step(json.loads(source_bytes()), "sha256:" + "0" * 64, (adapter, runtime, extra))
 
 
+class EngineRunner(ToyRunner):
+    """A provider bound beside a host executable its adapter does not report."""
+    RUNTIME_EXTRA = frozenset({"engine"})
+
+    def bind_extra(self, repositories, adapter, runtime):
+        runtime["engine"] = {"sha256": "sha256:" + "e" * 64}
+
+
+def test_a_declared_bound_extra_is_not_a_provider_change():
+    runner = EngineRunner()
+    bundle = runner.create_session(source_bytes(), {"toy": "/host/a"})
+    assert bundle["runtimes"]["toy"]["engine"] == {"sha256": "sha256:" + "e" * 64}
+    adapter, runtime, extra = runner._adapters({"toy": "/host/a"})
+    adapter.identity = {key: value for key, value in adapter.identity.items() if key != "dependencies"}
+    with pytest.raises(ValueError, match="changed before execution"):
+        runner._step(json.loads(source_bytes()), "sha256:" + "0" * 64, (adapter, runtime, extra))
+    # An extra the provider does report is its identity and must not change.
+    adapter.identity = runtime | {"engine": {"sha256": "sha256:" + "f" * 64}}
+    with pytest.raises(ValueError, match="changed before execution"):
+        runner._step(json.loads(source_bytes()), "sha256:" + "0" * 64, (adapter, runtime, extra))
+
+
 @pytest.mark.parametrize("path, value", [
     (("steps", 0, "result", "data", "sum"), 7),
     (("steps", 0, "result", "authority", "state_admission"), "performed"),
