@@ -1,0 +1,42 @@
+{
+  "schema": "ciw.pipeline-descriptor.v1",
+  "pipeline_id": "ciw.acquired-dataset.v1",
+  "source_kind": "acquired-dataset",
+  "session_schema": "ciw.acquired-dataset-session.v1",
+  "summary": "Bounded PPDA snapshot acquisition with retained source bytes and evidence graph",
+  "inputs": {
+    "source_schema": "ciw.acquired-dataset-source.v1",
+    "upstream_kinds": [],
+    "upstream_cardinality": "none",
+    "configuration": "in_source"
+  },
+  "steps": [
+    {
+      "role": "ppda",
+      "invocation": "pinned_subprocess",
+      "purpose": "acquisition projection",
+      "pin": {
+        "revision": "477d6cb454423a27543b16961d3b169709c40c31",
+        "source_tree": "5d7515101f00763cff7165aa4c61c0b4ae69e152",
+        "module": "daf.scheduling.runner",
+        "source_root": "."
+      }
+    }
+  ],
+  "verification": {
+    "method": "same_runtime_fresh_occurrence_reproduction",
+    "role": null
+  },
+  "refusals": [],
+  "domain_rules": [],
+  "investigations": [
+    "manufacturing-cycle"
+  ],
+  "surface": "entry",
+  "authority": "read_only",
+  "implementation": {
+    "module": "ciw.acquired_dataset",
+    "runner": "declared_workflow"
+  },
+  "guide": "docs/ACQUIRED_DATASET.md"
+}

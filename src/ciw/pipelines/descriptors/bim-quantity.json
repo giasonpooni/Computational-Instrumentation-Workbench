@@ -1,0 +1,41 @@
+{
+  "schema": "ciw.pipeline-descriptor.v1",
+  "pipeline_id": "ciw.bim-quantity.v1",
+  "source_kind": "bim-quantity",
+  "session_schema": "ciw.bim-quantity-session.v1",
+  "summary": "Condition a declared IFC quantity on an independent scalar observation",
+  "inputs": {
+    "source_schema": "ciw.bim-quantity-source.v1",
+    "upstream_kinds": [],
+    "upstream_cardinality": "none",
+    "configuration": "in_source"
+  },
+  "steps": [
+    {
+      "role": "cse",
+      "invocation": "pinned_subprocess",
+      "purpose": "construction state estimation",
+      "pin": {
+        "revision": "4b74abda40bba3277de69bf61e9e09283ae2d5b3",
+        "module": "gat.session",
+        "source_root": "."
+      }
+    }
+  ],
+  "verification": {
+    "method": "same_runtime_fresh_occurrence_reproduction",
+    "role": null
+  },
+  "refusals": [],
+  "domain_rules": [],
+  "investigations": [
+    "geometry-bim"
+  ],
+  "surface": "entry",
+  "authority": "read_only",
+  "implementation": {
+    "module": "ciw.bim_quantity",
+    "runner": "declared_workflow"
+  },
+  "guide": "docs/INTEGRATED_MODULES.md"
+}

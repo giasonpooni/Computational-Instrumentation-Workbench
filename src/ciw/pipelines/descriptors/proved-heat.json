@@ -1,0 +1,55 @@
+{
+  "schema": "ciw.pipeline-descriptor.v1",
+  "pipeline_id": "ciw.proved-heat.v1",
+  "source_kind": "proved-heat",
+  "session_schema": "ciw.proved-heat-session.v1",
+  "summary": "Registered SCR/SP1 heat computation with proof production and full-ELF verification",
+  "inputs": {
+    "source_schema": "ciw.proved-heat-source.v1",
+    "upstream_kinds": [],
+    "upstream_cardinality": "none",
+    "configuration": "in_source"
+  },
+  "steps": [
+    {
+      "role": "engine",
+      "invocation": "host_bound_binary",
+      "purpose": "operator-bound execution engine binary"
+    },
+    {
+      "role": "guest",
+      "invocation": "host_bound_binary",
+      "purpose": "registered SP1 guest ELF"
+    },
+    {
+      "role": "prover",
+      "invocation": "host_bound_binary",
+      "purpose": "operator-bound SP1 prover binary"
+    },
+    {
+      "role": "scr",
+      "invocation": "pinned_subprocess",
+      "purpose": "native registered computation",
+      "pin": {
+        "revision": "a59aba283b0304faeeb3e5d305087e7709e171ca",
+        "source_tree": "4068a711534932e8d89bb0d87d373376dafdf6cd",
+        "module": "execution.proving",
+        "source_root": "."
+      }
+    }
+  ],
+  "verification": {
+    "method": "fresh_registered_guest_verification",
+    "role": null
+  },
+  "refusals": [],
+  "domain_rules": [],
+  "investigations": [],
+  "surface": "certification",
+  "authority": "read_only",
+  "implementation": {
+    "module": "ciw.proved_heat",
+    "runner": "declared_workflow"
+  },
+  "guide": "docs/PROVED_HEAT.md"
+}

@@ -1,0 +1,42 @@
+{
+  "schema": "ciw.pipeline-descriptor.v1",
+  "pipeline_id": "ciw.curved-path-transfer.v1",
+  "source_kind": "curved-path-transfer",
+  "session_schema": "ciw.curved-path-transfer-session.v1",
+  "summary": "Native constant-curvature Jacobi transfer and declared covariance",
+  "inputs": {
+    "source_schema": "ciw.curved-path-transfer-source.v1",
+    "upstream_kinds": [],
+    "upstream_cardinality": "none",
+    "configuration": "in_source"
+  },
+  "steps": [
+    {
+      "role": "csg",
+      "invocation": "pinned_subprocess",
+      "purpose": "curved-surface Jacobi transfer",
+      "pin": {
+        "revision": "bbc535af29c30997e56fd120320c570830676462",
+        "source_tree": "181b6eb73288d001f45c39bb149b1a80a431f34b",
+        "module": "geodesic_testbed.jacobi",
+        "source_root": "src"
+      }
+    }
+  ],
+  "verification": {
+    "method": "same_runtime_fresh_occurrence_reproduction",
+    "role": null
+  },
+  "refusals": [],
+  "domain_rules": [],
+  "investigations": [
+    "geometry-bim"
+  ],
+  "surface": "inner",
+  "authority": "read_only",
+  "implementation": {
+    "module": "ciw.geodesic_reference",
+    "runner": "declared_workflow"
+  },
+  "guide": "docs/GEODESIC_REFERENCES.md"
+}

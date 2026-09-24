@@ -1,0 +1,28 @@
+{
+  "schema": "ciw.pipeline-descriptor.v1",
+  "pipeline_id": "ciw.energy-accuracy.v1",
+  "source_kind": "energy-accuracy",
+  "session_schema": "ciw.energy-accuracy-session.v1",
+  "summary": "Offline analysis of retained NVML energy logs against posterior accuracy",
+  "inputs": {
+    "source_schema": "ciw.energy-accuracy-log.v1",
+    "upstream_kinds": [],
+    "upstream_cardinality": "none",
+    "configuration": "in_source"
+  },
+  "steps": [],
+  "verification": {
+    "method": "same_runtime_fresh_occurrence_reproduction",
+    "role": null
+  },
+  "refusals": [],
+  "domain_rules": [],
+  "investigations": [],
+  "surface": "bench",
+  "authority": "read_only",
+  "implementation": {
+    "module": "ciw.energy_workflow",
+    "runner": "declared_workflow"
+  },
+  "guide": "docs/ENERGY_ACCURACY.md"
+}

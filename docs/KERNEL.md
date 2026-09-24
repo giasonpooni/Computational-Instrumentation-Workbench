@@ -84,5 +84,18 @@ The 25 kinds registered when the kernel was frozen are listed in
 `kernel.FROZEN_KINDS` (plus the source-only `geographic-context`). A new kind is
 not added until a project-graph operation exists or an investigation is
 delivered end to end with a held-out measurement; new work composes existing
-kinds. The descriptor layer that turns kinds into declared pipelines is the next
-compression step.
+kinds.
+
+## Declared pipelines and investigations
+
+Each frozen kind has a `ciw.pipeline-descriptor.v1` in
+[`src/ciw/pipelines/descriptors`](../src/ciw/pipelines/descriptors): operation
+identity, inputs and upstream kinds, provider steps with exact pins,
+verification, refusal vocabulary, the domain rules its implementation keeps,
+investigations, operator surface and implementation. `pipelines.check()` binds
+every descriptor to the code that executes it, including exact pin equality, so
+a descriptor cannot drift. Three investigations group the pipelines; the
+operator surface is `operation.list` with `{"view": "investigations"}`, while
+every pipeline stays executable and replayable. [PIPELINES.md](PIPELINES.md) is
+generated from the descriptors, including the provider pin matrix that keys
+provider gates.

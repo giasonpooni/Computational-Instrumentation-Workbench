@@ -1,0 +1,43 @@
+{
+  "schema": "ciw.pipeline-descriptor.v1",
+  "pipeline_id": "ciw.identified-stability.v1",
+  "source_kind": "identified-stability",
+  "session_schema": "ciw.identified-stability-session.v1",
+  "summary": "PLSR stability verdict for a selected identified model and GSIE prediction",
+  "inputs": {
+    "source_schema": "ciw.identified-stability-source.v1",
+    "upstream_kinds": [
+      "identified-design"
+    ],
+    "upstream_cardinality": "one",
+    "configuration": "in_source"
+  },
+  "steps": [
+    {
+      "role": "plsr",
+      "invocation": "pinned_subprocess",
+      "purpose": "Lyapunov stability verdict",
+      "pin": {
+        "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+        "module": "lyapunov.model_artifact",
+        "source_root": "src"
+      }
+    }
+  ],
+  "verification": {
+    "method": "same_runtime_fresh_occurrence_reproduction",
+    "role": null
+  },
+  "refusals": [],
+  "domain_rules": [],
+  "investigations": [
+    "manufacturing-cycle"
+  ],
+  "surface": "inner",
+  "authority": "read_only",
+  "implementation": {
+    "module": "ciw.identified_stability",
+    "runner": "declared_workflow"
+  },
+  "guide": "docs/REMAINING_MODULES.md"
+}

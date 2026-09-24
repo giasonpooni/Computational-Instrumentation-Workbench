@@ -1,0 +1,61 @@
+{
+  "schema": "ciw.pipeline-descriptor.v1",
+  "pipeline_id": "ciw.schematic-companions.v1",
+  "source_kind": "schematic-companions",
+  "session_schema": "ciw.schematic-companions-session.v1",
+  "summary": "Selected native JSPT/PLSR companion calls bound to a typed schematic",
+  "inputs": {
+    "source_schema": "ciw.schematic-companions-source.v1",
+    "upstream_kinds": [
+      "schematic-assessment"
+    ],
+    "upstream_cardinality": "one",
+    "configuration": "in_source"
+  },
+  "steps": [
+    {
+      "role": "jspt",
+      "invocation": "pinned_subprocess",
+      "purpose": "Jacobian covariance transport",
+      "pin": {
+        "revision": "7399ab03087b27683620b4c57f97b2ac14546c7f",
+        "module": "sensitivity.jacobian",
+        "source_root": "src"
+      }
+    },
+    {
+      "role": "plsr",
+      "invocation": "pinned_subprocess",
+      "purpose": "Lyapunov stability verdict",
+      "pin": {
+        "revision": "9d0e7b4a1162e038150a71c63d986945d78135d4",
+        "module": "lyapunov.runtime",
+        "source_root": "src"
+      }
+    },
+    {
+      "role": "sra",
+      "invocation": "pinned_subprocess",
+      "purpose": "schematic assessment",
+      "pin": {
+        "revision": "a6e79585950bb6860e5edce5ebd2cce39ea481f2",
+        "module": "schematics.eligibility",
+        "source_root": "src"
+      }
+    }
+  ],
+  "verification": {
+    "method": "same_runtime_fresh_occurrence_reproduction",
+    "role": null
+  },
+  "refusals": [],
+  "domain_rules": [],
+  "investigations": [],
+  "surface": "certification",
+  "authority": "read_only",
+  "implementation": {
+    "module": "ciw.schematic_companions",
+    "runner": "declared_workflow"
+  },
+  "guide": "docs/INTEGRATED_MODULES.md"
+}

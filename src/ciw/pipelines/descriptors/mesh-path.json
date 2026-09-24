@@ -1,0 +1,42 @@
+{
+  "schema": "ciw.pipeline-descriptor.v1",
+  "pipeline_id": "ciw.mesh-path.v1",
+  "source_kind": "mesh-path",
+  "session_schema": "ciw.mesh-path-session.v1",
+  "summary": "Bounded native mesh-edge path baseline",
+  "inputs": {
+    "source_schema": "ciw.mesh-path-source.v1",
+    "upstream_kinds": [],
+    "upstream_cardinality": "none",
+    "configuration": "in_source"
+  },
+  "steps": [
+    {
+      "role": "isgt",
+      "invocation": "pinned_subprocess",
+      "purpose": "intrinsic mesh path",
+      "pin": {
+        "revision": "ef4e64f3b73c83f9cb0e748dd029410fa0dbe76d",
+        "source_tree": "0c9c667ca038edd265d9cdb6522ac891f14f65b6",
+        "module": "intrinsic_surface_geodesics",
+        "source_root": "src"
+      }
+    }
+  ],
+  "verification": {
+    "method": "same_runtime_fresh_occurrence_reproduction",
+    "role": null
+  },
+  "refusals": [],
+  "domain_rules": [],
+  "investigations": [
+    "geometry-bim"
+  ],
+  "surface": "inner",
+  "authority": "read_only",
+  "implementation": {
+    "module": "ciw.geometry_research",
+    "runner": "declared_workflow"
+  },
+  "guide": "docs/GEOMETRY_RESEARCH.md"
+}

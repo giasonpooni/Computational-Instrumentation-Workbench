@@ -390,7 +390,16 @@ class Session:
                 self.results[result_id] = result
             return copy.deepcopy(result)
         if kind == "operation.list":
-            _keys(payload, set())
+            _keys(payload, {"view"})
+            view = payload.get("view", "all")
+            if view == "investigations":
+                # The operator's surface: named investigations over declared
+                # pipelines. Inner pipelines stay executable and replayable.
+                from .pipelines import operator_catalog
+                available = {item["operation_id"]: item["available"] for item in self.workbench.describe_operations()}
+                return {"investigations": operator_catalog(available)}
+            if view != "all":
+                raise ProtocolError("invalid_payload", "view must be all or investigations")
             return {"operations": self.operations.describe() + self.workbench.describe_operations()}
         if kind == "execution.list":
             _keys(payload, set())

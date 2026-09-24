@@ -1,0 +1,42 @@
+{
+  "schema": "ciw.pipeline-descriptor.v1",
+  "pipeline_id": "ciw.translation-flow.v1",
+  "source_kind": "translation-flow",
+  "session_schema": "ciw.translation-flow-session.v1",
+  "summary": "Bounded native square-tiled translation dynamics",
+  "inputs": {
+    "source_schema": "ciw.translation-flow-source.v1",
+    "upstream_kinds": [],
+    "upstream_cardinality": "none",
+    "configuration": "in_source"
+  },
+  "steps": [
+    {
+      "role": "tsde",
+      "invocation": "pinned_subprocess",
+      "purpose": "translation surface dynamics",
+      "pin": {
+        "revision": "5e72693e7e5722c47883ef1a68b2959afdf2e215",
+        "source_tree": "6f2ecbb21617d87c3a1e8b60fa722b109dd7ccc8",
+        "module": "translation_surface_dynamics",
+        "source_root": "src"
+      }
+    }
+  ],
+  "verification": {
+    "method": "same_runtime_fresh_occurrence_reproduction",
+    "role": null
+  },
+  "refusals": [],
+  "domain_rules": [],
+  "investigations": [
+    "geometry-bim"
+  ],
+  "surface": "inner",
+  "authority": "read_only",
+  "implementation": {
+    "module": "ciw.geometry_research",
+    "runner": "declared_workflow"
+  },
+  "guide": "docs/GEOMETRY_RESEARCH.md"
+}

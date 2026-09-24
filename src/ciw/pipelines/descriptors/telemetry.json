@@ -1,0 +1,82 @@
+{
+  "schema": "ciw.pipeline-descriptor.v1",
+  "pipeline_id": "ciw.telemetry.v1",
+  "source_kind": "telemetry",
+  "session_schema": "ciw.telemetry-session.v1",
+  "summary": "Scalar telemetry: acquired projection, causal window features, GSIE predict/update and SET replay verification",
+  "inputs": {
+    "source_schema": "ciw.telemetry-source.v1",
+    "upstream_kinds": [],
+    "upstream_cardinality": "none",
+    "configuration": "separate_operator_configuration"
+  },
+  "steps": [
+    {
+      "role": "cbsr",
+      "invocation": "pinned_subprocess",
+      "purpose": "constraint reconciliation",
+      "pin": {
+        "revision": "b543969cb80a69a5df1274eee10d22549bcea773",
+        "module": "cbsr",
+        "source_root": "src"
+      }
+    },
+    {
+      "role": "gsie",
+      "invocation": "pinned_subprocess",
+      "purpose": "state prediction and update",
+      "pin": {
+        "revision": "de38873db1ba98744d395dfa7df1d3b5b7bb3059",
+        "module": "geometric_state_inference.contracts",
+        "source_root": "src"
+      }
+    },
+    {
+      "role": "ppda",
+      "invocation": "pinned_subprocess",
+      "purpose": "acquisition projection",
+      "pin": {
+        "revision": "209985a8c7482aba037021035c2f0b550c9b1ddc",
+        "module": "instrumentation",
+        "source_root": "bridge",
+        "source_sha256": "d624bcda528165c7692d11846df0bd8a8c1402868f86c1fce407d5e2946963a1"
+      }
+    },
+    {
+      "role": "set",
+      "invocation": "pinned_subprocess",
+      "purpose": "verification of the retained bundle and replay",
+      "pin": {
+        "revision": "1467ec5058b3e7ebd6ba4a45f2d9b49148a2560d",
+        "module": "state_estimation_testbed.replay",
+        "source_root": "."
+      }
+    },
+    {
+      "role": "stfe",
+      "invocation": "pinned_subprocess",
+      "purpose": "causal window features",
+      "pin": {
+        "revision": "54dd43b657b92d87c2fc263dfd99437c664be353",
+        "module": "stfe",
+        "source_root": "."
+      }
+    }
+  ],
+  "verification": {
+    "method": "pinned_set_replay_verification",
+    "role": "set"
+  },
+  "refusals": [],
+  "domain_rules": [],
+  "investigations": [
+    "process-balance"
+  ],
+  "surface": "inner",
+  "authority": "read_only",
+  "implementation": {
+    "module": "ciw.telemetry",
+    "runner": "hand_written"
+  },
+  "guide": "docs/SHARED_TELEMETRY.md"
+}

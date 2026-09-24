@@ -1,0 +1,83 @@
+{
+  "schema": "ciw.pipeline-descriptor.v1",
+  "pipeline_id": "ciw.acquired-calibrated-window.v1",
+  "source_kind": "acquired-calibrated-window",
+  "session_schema": "ciw.acquired-calibrated-window-session.v1",
+  "summary": "Explicit PPDA record selection mapped into the calibrated window pipeline",
+  "inputs": {
+    "source_schema": "ciw.acquired-calibrated-window-source.v1",
+    "upstream_kinds": [
+      "acquired-dataset"
+    ],
+    "upstream_cardinality": "one",
+    "configuration": "in_source"
+  },
+  "steps": [
+    {
+      "role": "gsie",
+      "invocation": "pinned_subprocess",
+      "purpose": "state prediction and update",
+      "pin": {
+        "revision": "de38873db1ba98744d395dfa7df1d3b5b7bb3059",
+        "module": "geometric_state_inference.contracts",
+        "source_root": "src"
+      }
+    },
+    {
+      "role": "mcur",
+      "invocation": "pinned_subprocess",
+      "purpose": "calibration and uncertainty",
+      "pin": {
+        "revision": "49405ecd623474ddf601989b0a8195be401544e0",
+        "module": "mcur.core",
+        "source_root": "src"
+      }
+    },
+    {
+      "role": "set",
+      "invocation": "pinned_subprocess",
+      "purpose": "verification of the retained bundle and replay",
+      "pin": {
+        "revision": "2f838f4e196f453efc3a59045b0b3ec4b5680296",
+        "module": "state_estimation_testbed.replay",
+        "source_root": "."
+      }
+    },
+    {
+      "role": "stfe",
+      "invocation": "pinned_subprocess",
+      "purpose": "causal window features",
+      "pin": {
+        "revision": "54dd43b657b92d87c2fc263dfd99437c664be353",
+        "module": "stfe",
+        "source_root": "."
+      }
+    },
+    {
+      "role": "tbrt",
+      "invocation": "pinned_subprocess",
+      "purpose": "clock mapping",
+      "pin": {
+        "revision": "40507060ca7a9126a9d641999b994a757eef3bfd",
+        "module": "tbrt.clock",
+        "source_root": "src"
+      }
+    }
+  ],
+  "verification": {
+    "method": "pinned_set_replay_verification",
+    "role": "set"
+  },
+  "refusals": [],
+  "domain_rules": [],
+  "investigations": [
+    "manufacturing-cycle"
+  ],
+  "surface": "entry",
+  "authority": "read_only",
+  "implementation": {
+    "module": "ciw.acquired_window",
+    "runner": "hand_written"
+  },
+  "guide": "docs/ACQUIRED_STREAM.md"
+}

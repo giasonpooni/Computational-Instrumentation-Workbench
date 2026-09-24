@@ -1,0 +1,58 @@
+{
+  "schema": "ciw.investigation.v1",
+  "investigations": [
+    {
+      "investigation_id": "process-balance",
+      "title": "Process balance",
+      "question": "Does the calibrated, time-aligned measurement of a process close its declared balance, and are the residuals consistent with the declared uncertainty?",
+      "default_pipeline": [
+        "ciw.calibrated-observable.v1"
+      ],
+      "pipelines": [
+        "ciw.calibrated-observable.v1",
+        "ciw.telemetry.v1",
+        "ciw.measurement-chain.v1",
+        "ciw.calibrated-window.v1",
+        "ciw.residual-monitor.v1"
+      ]
+    },
+    {
+      "investigation_id": "manufacturing-cycle",
+      "title": "Manufacturing cycle",
+      "question": "Given acquired machine records, what state and dynamics do they support, which observation should come next, and do the residuals stay consistent?",
+      "default_pipeline": [
+        "ciw.acquired-dataset.v1",
+        "ciw.acquired-calibrated-window.v1",
+        "ciw.residual-monitor.v1"
+      ],
+      "pipelines": [
+        "ciw.acquired-dataset.v1",
+        "ciw.acquired-calibrated-window.v1",
+        "ciw.calibrated-window.v1",
+        "ciw.residual-monitor.v1",
+        "ciw.identified-design.v1",
+        "ciw.identified-stability.v1",
+        "ciw.encoder-position.v1",
+        "ciw.calibrated-observable.v1"
+      ]
+    },
+    {
+      "investigation_id": "geometry-bim",
+      "title": "Geometry and BIM",
+      "question": "Do observed positions and quantities agree with the declared geometry and building model within their covariance?",
+      "default_pipeline": [
+        "ciw.geometric-circle.v1",
+        "ciw.bim-quantity.v1"
+      ],
+      "pipelines": [
+        "ciw.geometric-circle.v1",
+        "ciw.bim-quantity.v1",
+        "ciw.flat-torus-reference.v1",
+        "ciw.curved-path-transfer.v1",
+        "ciw.covariance-geometry.v1",
+        "ciw.mesh-path.v1",
+        "ciw.translation-flow.v1"
+      ]
+    }
+  ]
+}

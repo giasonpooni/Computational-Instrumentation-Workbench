@@ -1,0 +1,30 @@
+{
+  "schema": "ciw.pipeline-descriptor.v1",
+  "pipeline_id": "ciw.encoder-position.v1",
+  "source_kind": "machine-manifest",
+  "session_schema": "ciw.machine-manifest-session.v1",
+  "summary": "Evidence-bound read-only machine asset, signal and model manifest",
+  "inputs": {
+    "source_schema": "ciw.machine-manifest-source.v1",
+    "upstream_kinds": [],
+    "upstream_cardinality": "none",
+    "configuration": "in_source"
+  },
+  "steps": [],
+  "verification": {
+    "method": "same_python_reference_fresh_occurrence_reproduction",
+    "role": null
+  },
+  "refusals": [],
+  "domain_rules": [],
+  "investigations": [
+    "manufacturing-cycle"
+  ],
+  "surface": "inner",
+  "authority": "read_only",
+  "implementation": {
+    "module": "ciw.machine_workflow",
+    "runner": "hand_written"
+  },
+  "guide": "docs/CONTRACT_FOUNDATIONS.md"
+}

@@ -1,0 +1,40 @@
+{
+  "schema": "ciw.pipeline-descriptor.v1",
+  "pipeline_id": "ciw.instrument-exchange.v1",
+  "source_kind": "instrument-exchange",
+  "session_schema": "ciw.instrument-exchange-session.v1",
+  "summary": "Pinned SET contract conformance of an exchange artifact",
+  "inputs": {
+    "source_schema": "ciw.instrument-exchange-source.v1",
+    "upstream_kinds": [],
+    "upstream_cardinality": "none",
+    "configuration": "in_source"
+  },
+  "steps": [
+    {
+      "role": "set",
+      "invocation": "verified_contract_file",
+      "purpose": "verification of the retained bundle and replay",
+      "pin": {
+        "revision": "542e672be512bf43b61253f2b2a43cd967cb3062",
+        "path": "state_estimation_testbed/contracts.py",
+        "sha256": "2385537daa6147ef2475d17bd75c026fe187077b90841515a9e9378e0246ae54",
+        "repository": "https://github.com/giasonpooni/State-Estimation-Evaluation-Testbed"
+      }
+    }
+  ],
+  "verification": {
+    "method": "pinned_set_contract_validation",
+    "role": "set"
+  },
+  "refusals": [],
+  "domain_rules": [],
+  "investigations": [],
+  "surface": "certification",
+  "authority": "read_only",
+  "implementation": {
+    "module": "ciw.exchange_adapter",
+    "runner": "hand_written"
+  },
+  "guide": "docs/EXCHANGE.md"
+}

@@ -130,6 +130,12 @@ def _workflow(kind):
     raise ValueError("Unknown workbench source kind")
 
 
+def _surface(kind):
+    from .pipelines import load
+    descriptor = load()[kind]
+    return {"surface": descriptor["surface"], "investigations": list(descriptor["investigations"])}
+
+
 def _canonical(value):
     from .telemetry import canonical
     return canonical(value)
@@ -602,6 +608,7 @@ class Workbench:
         with self._lock:
             return [{"operation_id": operation, "role": {"identified-design": "decision", "schematic-assessment": "schematic_assessment", "numerical-heat": "numerical_execution", "proved-heat": "proved_numerical_execution", "schematic-companions": "local_model_analysis", "bim-quantity": "construction_quantity", "acquired-dataset": "evidence_acquisition", "residual-monitor": "residual_diagnostics", "measurement-chain": "measurement_chain_testbed", "geometric-circle": "geometric_reconciliation", "identified-stability": "stability_assessment", "flat-torus-reference": "geometric_reference", "curved-path-transfer": "geometric_sensitivity", "covariance-geometry": "covariance_geometry", "mesh-path": "mesh_path_baseline", "translation-flow": "translation_dynamics", "variational-free-energy": "variational_inference", "energy-accuracy": "offline_energy_accuracy_analysis", "instrument-exchange": "typed_exchange_adapter", "thermal-observer": "thermal_observer_reference", "machine-manifest": "machine_manifest_reference"}.get(kind, "state_estimator"),
                      "source_kind": kind, "available": kind in self._bindings,
+                     **_surface(kind),
                      "requires_upstream_bundle": kind in UPSTREAM_KINDS,
                      **({"requires_upstream_bundles": "explicit_ordered_source_selection"} if kind == "residual-monitor" else {})}
                     for kind, operation in OPERATIONS.items()] + [

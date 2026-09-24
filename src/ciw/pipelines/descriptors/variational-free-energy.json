@@ -1,0 +1,62 @@
+{
+  "schema": "ciw.pipeline-descriptor.v1",
+  "pipeline_id": "ciw.variational-free-energy.v1",
+  "source_kind": "variational-free-energy",
+  "session_schema": "ciw.variational-free-energy-session.v1",
+  "summary": "Synthetic curved-surface Gaussian variational inference with native CSG/GSIE/PLSR checks",
+  "inputs": {
+    "source_schema": "ciw.variational-free-energy-source.v1",
+    "upstream_kinds": [],
+    "upstream_cardinality": "none",
+    "configuration": "in_source"
+  },
+  "steps": [
+    {
+      "role": "csg",
+      "invocation": "pinned_subprocess",
+      "purpose": "curved-surface Jacobi transfer",
+      "pin": {
+        "revision": "bbc535af29c30997e56fd120320c570830676462",
+        "source_tree": "181b6eb73288d001f45c39bb149b1a80a431f34b",
+        "module": "geodesic_testbed.jacobi",
+        "source_root": "src"
+      }
+    },
+    {
+      "role": "gsie",
+      "invocation": "pinned_subprocess",
+      "purpose": "state prediction and update",
+      "pin": {
+        "revision": "5241eee6dab434533bdf0cf0e824bc43b4a79831",
+        "source_tree": "375c031c07592d5bcb1d224780f18ceb886df4a1",
+        "module": "geometric_state_inference.contracts",
+        "source_root": "src"
+      }
+    },
+    {
+      "role": "plsr",
+      "invocation": "pinned_subprocess",
+      "purpose": "Lyapunov stability verdict",
+      "pin": {
+        "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+        "source_tree": "e261315f46851d99053e305ef2c03d4160f02a92",
+        "module": "lyapunov.model_artifact",
+        "source_root": "src"
+      }
+    }
+  ],
+  "verification": {
+    "method": "same_runtime_fresh_occurrence_reproduction",
+    "role": null
+  },
+  "refusals": [],
+  "domain_rules": [],
+  "investigations": [],
+  "surface": "bench",
+  "authority": "read_only",
+  "implementation": {
+    "module": "ciw.free_energy_workflow",
+    "runner": "declared_workflow"
+  },
+  "guide": "docs/VARIATIONAL_FREE_ENERGY.md"
+}

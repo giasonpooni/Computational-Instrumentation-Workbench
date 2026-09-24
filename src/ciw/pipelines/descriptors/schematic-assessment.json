@@ -1,0 +1,39 @@
+{
+  "schema": "ciw.pipeline-descriptor.v1",
+  "pipeline_id": "ciw.schematic-assessment.v1",
+  "source_kind": "schematic-assessment",
+  "session_schema": "ciw.schematic-assessment-session.v1",
+  "summary": "Declared eligibility, stale certificates and two-hop neighborhoods of a typed instrument schematic",
+  "inputs": {
+    "source_schema": "ciw.schematic-assessment-source.v1",
+    "upstream_kinds": [],
+    "upstream_cardinality": "none",
+    "configuration": "in_source"
+  },
+  "steps": [
+    {
+      "role": "sra",
+      "invocation": "pinned_subprocess",
+      "purpose": "schematic assessment",
+      "pin": {
+        "revision": "a6e79585950bb6860e5edce5ebd2cce39ea481f2",
+        "module": "schematics.eligibility",
+        "source_root": "src"
+      }
+    }
+  ],
+  "verification": {
+    "method": "same_runtime_fresh_occurrence_reproduction",
+    "role": null
+  },
+  "refusals": [],
+  "domain_rules": [],
+  "investigations": [],
+  "surface": "certification",
+  "authority": "read_only",
+  "implementation": {
+    "module": "ciw.declared_workload",
+    "runner": "declared_workflow"
+  },
+  "guide": "docs/DECLARED_WORKLOADS.md"
+}

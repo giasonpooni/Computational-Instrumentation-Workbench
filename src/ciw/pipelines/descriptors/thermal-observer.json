@@ -1,0 +1,28 @@
+{
+  "schema": "ciw.pipeline-descriptor.v1",
+  "pipeline_id": "ciw.thermal-observer.v1",
+  "source_kind": "thermal-observer",
+  "session_schema": "ciw.thermal-observer-session.v1",
+  "summary": "Two-capacity linear thermal observer Python reference with held-out prediction",
+  "inputs": {
+    "source_schema": "ciw.thermal-observer-source.v1",
+    "upstream_kinds": [],
+    "upstream_cardinality": "none",
+    "configuration": "in_source"
+  },
+  "steps": [],
+  "verification": {
+    "method": "same_python_reference_fresh_occurrence_reproduction",
+    "role": null
+  },
+  "refusals": [],
+  "domain_rules": [],
+  "investigations": [],
+  "surface": "bench",
+  "authority": "read_only",
+  "implementation": {
+    "module": "ciw.thermal_workflow",
+    "runner": "hand_written"
+  },
+  "guide": "docs/CONTRACT_FOUNDATIONS.md"
+}

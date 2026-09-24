@@ -1,0 +1,57 @@
+{
+  "schema": "ciw.pipeline-descriptor.v1",
+  "pipeline_id": "ciw.residual-monitor.v1",
+  "source_kind": "residual-monitor",
+  "session_schema": "ciw.residual-monitor-session.v1",
+  "summary": "FDIR/OIT assessment of an ordered sequence of retained window innovations",
+  "inputs": {
+    "source_schema": "ciw.residual-monitor-source.v1",
+    "upstream_kinds": [
+      "calibrated-window",
+      "acquired-calibrated-window"
+    ],
+    "upstream_cardinality": "ordered_many",
+    "configuration": "in_source"
+  },
+  "steps": [
+    {
+      "role": "fdir",
+      "invocation": "pinned_subprocess",
+      "purpose": "residual diagnostics",
+      "pin": {
+        "revision": "29e4b306492b793487d47a96b97a56548217aa12",
+        "source_tree": "c7dc21c64377368341a2029ecd4f3e2a70d31646",
+        "module": "fdir.diagnostics",
+        "source_root": "src"
+      }
+    },
+    {
+      "role": "oit",
+      "invocation": "pinned_subprocess",
+      "purpose": "observability and identifiability",
+      "pin": {
+        "revision": "db4c564bddbe1911f96585bd18f58659a0026fb7",
+        "source_tree": "3ba42834535b396a13395e5053c6fd5b4f1302c9",
+        "module": "oit.diagnostics",
+        "source_root": "src"
+      }
+    }
+  ],
+  "verification": {
+    "method": "same_runtime_fresh_occurrence_reproduction",
+    "role": null
+  },
+  "refusals": [],
+  "domain_rules": [],
+  "investigations": [
+    "manufacturing-cycle",
+    "process-balance"
+  ],
+  "surface": "entry",
+  "authority": "read_only",
+  "implementation": {
+    "module": "ciw.residual_monitor",
+    "runner": "declared_workflow"
+  },
+  "guide": "docs/ACQUIRED_STREAM.md"
+}

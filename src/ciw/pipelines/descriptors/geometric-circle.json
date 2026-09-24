@@ -1,0 +1,41 @@
+{
+  "schema": "ciw.pipeline-descriptor.v1",
+  "pipeline_id": "ciw.geometric-circle.v1",
+  "source_kind": "geometric-circle",
+  "session_schema": "ciw.geometric-circle-session.v1",
+  "summary": "GTE projection of 2D telemetry onto a declared circle with tangent covariance",
+  "inputs": {
+    "source_schema": "ciw.geometric-circle-source.v1",
+    "upstream_kinds": [],
+    "upstream_cardinality": "none",
+    "configuration": "in_source"
+  },
+  "steps": [
+    {
+      "role": "gte",
+      "invocation": "pinned_subprocess",
+      "purpose": "geometric projection",
+      "pin": {
+        "revision": "e55b8be2b3ba05f7e6c6a31807c77b3e42700f07",
+        "module": "geodesic_telemetry.ciw_adapter",
+        "source_root": "src"
+      }
+    }
+  ],
+  "verification": {
+    "method": "same_runtime_fresh_occurrence_reproduction",
+    "role": null
+  },
+  "refusals": [],
+  "domain_rules": [],
+  "investigations": [
+    "geometry-bim"
+  ],
+  "surface": "entry",
+  "authority": "read_only",
+  "implementation": {
+    "module": "ciw.geometric_circle",
+    "runner": "declared_workflow"
+  },
+  "guide": "docs/REMAINING_MODULES.md"
+}

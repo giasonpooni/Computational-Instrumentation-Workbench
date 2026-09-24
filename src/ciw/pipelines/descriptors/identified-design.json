@@ -1,0 +1,143 @@
+{
+  "schema": "ciw.pipeline-descriptor.v1",
+  "pipeline_id": "ciw.identified-design.v1",
+  "source_kind": "identified-design",
+  "session_schema": "ciw.identified-design-session.v1",
+  "summary": "Identify declared dynamics from a retained calibrated experiment and rank the next budgeted observation",
+  "inputs": {
+    "source_schema": "ciw.identified-design-input.v1",
+    "upstream_kinds": [
+      "calibrated-observable"
+    ],
+    "upstream_cardinality": "one",
+    "configuration": "in_source"
+  },
+  "steps": [
+    {
+      "role": "cbsr",
+      "invocation": "pinned_subprocess",
+      "purpose": "constraint reconciliation",
+      "pin": {
+        "revision": "daf43fc870ba926289c3bc4908db784691c7addd",
+        "module": "cbsr",
+        "source_root": "src"
+      }
+    },
+    {
+      "role": "edspt",
+      "invocation": "pinned_subprocess",
+      "purpose": "budgeted experiment design",
+      "pin": {
+        "revision": "89d5ea52f46676eabf13e906166e3ab701451680",
+        "module": "edspt.budgeted",
+        "source_root": "src"
+      }
+    },
+    {
+      "role": "fdir",
+      "invocation": "pinned_subprocess",
+      "purpose": "residual diagnostics",
+      "pin": {
+        "revision": "29e4b306492b793487d47a96b97a56548217aa12",
+        "module": "fdir.diagnostics",
+        "source_root": "src"
+      }
+    },
+    {
+      "role": "fsrt",
+      "invocation": "pinned_subprocess",
+      "purpose": "state reconstruction",
+      "pin": {
+        "revision": "d7c181fb9967883e085b3728d38096f59e54efbd",
+        "module": "set_lcm.bridge.calibrated_observable",
+        "source_root": "src"
+      }
+    },
+    {
+      "role": "gsie",
+      "invocation": "pinned_subprocess",
+      "purpose": "state prediction and update",
+      "pin": {
+        "revision": "5241eee6dab434533bdf0cf0e824bc43b4a79831",
+        "module": "geometric_state_inference.contracts",
+        "source_root": "src"
+      }
+    },
+    {
+      "role": "mcur",
+      "invocation": "pinned_subprocess",
+      "purpose": "calibration and uncertainty",
+      "pin": {
+        "revision": "49405ecd623474ddf601989b0a8195be401544e0",
+        "module": "mcur.core",
+        "source_root": "src"
+      }
+    },
+    {
+      "role": "oit",
+      "invocation": "pinned_subprocess",
+      "purpose": "observability and identifiability",
+      "pin": {
+        "revision": "db4c564bddbe1911f96585bd18f58659a0026fb7",
+        "module": "oit.diagnostics",
+        "source_root": "src"
+      }
+    },
+    {
+      "role": "set",
+      "invocation": "pinned_subprocess",
+      "purpose": "verification of the retained bundle and replay",
+      "pin": {
+        "revision": "5e7bda36f521a5c1b0082b512f35e29803bffafc",
+        "module": "state_estimation_testbed.replay",
+        "source_root": "."
+      }
+    },
+    {
+      "role": "sidt",
+      "invocation": "pinned_subprocess",
+      "purpose": "system identification",
+      "pin": {
+        "revision": "b7e81402d5f4e854b3c8bb0d0354afe4de9269c6",
+        "module": "sidt.declared",
+        "source_root": "src"
+      }
+    },
+    {
+      "role": "tbrt",
+      "invocation": "pinned_subprocess",
+      "purpose": "clock mapping",
+      "pin": {
+        "revision": "40507060ca7a9126a9d641999b994a757eef3bfd",
+        "module": "tbrt.clock",
+        "source_root": "src"
+      }
+    },
+    {
+      "role": "ywir",
+      "invocation": "pinned_subprocess",
+      "purpose": "computation-token advice",
+      "pin": {
+        "revision": "e1f4a8c128a9c14e5b82acad76696219a5b5b6a9",
+        "module": "ywir.integration",
+        "source_root": "src"
+      }
+    }
+  ],
+  "verification": {
+    "method": "pinned_set_replay_verification",
+    "role": "set"
+  },
+  "refusals": [],
+  "domain_rules": [],
+  "investigations": [
+    "manufacturing-cycle"
+  ],
+  "surface": "inner",
+  "authority": "read_only",
+  "implementation": {
+    "module": "ciw.identified_design",
+    "runner": "hand_written"
+  },
+  "guide": "docs/IDENTIFIED_DESIGN.md"
+}

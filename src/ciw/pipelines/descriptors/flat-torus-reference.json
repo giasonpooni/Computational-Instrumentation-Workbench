@@ -1,0 +1,42 @@
+{
+  "schema": "ciw.pipeline-descriptor.v1",
+  "pipeline_id": "ciw.flat-torus-reference.v1",
+  "source_kind": "flat-torus-reference",
+  "session_schema": "ciw.flat-torus-reference-session.v1",
+  "summary": "Native flat-torus lattice and winding trajectory reference",
+  "inputs": {
+    "source_schema": "ciw.flat-torus-reference-source.v1",
+    "upstream_kinds": [],
+    "upstream_cardinality": "none",
+    "configuration": "in_source"
+  },
+  "steps": [
+    {
+      "role": "ftr",
+      "invocation": "pinned_subprocess",
+      "purpose": "flat-torus reference",
+      "pin": {
+        "revision": "dc918562cd9e351a65475d29f46963c9f2fd7db8",
+        "source_tree": "1f082c6b443f2e301ac5889122912f26968ae756",
+        "module": "flat_torus.companion",
+        "source_root": "src"
+      }
+    }
+  ],
+  "verification": {
+    "method": "same_runtime_fresh_occurrence_reproduction",
+    "role": null
+  },
+  "refusals": [],
+  "domain_rules": [],
+  "investigations": [
+    "geometry-bim"
+  ],
+  "surface": "inner",
+  "authority": "read_only",
+  "implementation": {
+    "module": "ciw.geodesic_reference",
+    "runner": "declared_workflow"
+  },
+  "guide": "docs/GEODESIC_REFERENCES.md"
+}

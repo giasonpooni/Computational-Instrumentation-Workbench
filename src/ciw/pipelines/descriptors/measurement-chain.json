@@ -1,0 +1,64 @@
+{
+  "schema": "ciw.pipeline-descriptor.v1",
+  "pipeline_id": "ciw.measurement-chain.v1",
+  "source_kind": "measurement-chain",
+  "session_schema": "ciw.measurement-chain-session.v1",
+  "summary": "RCI calibration, FSRT reconstruction and JSPT covariance transport for one tank investigation",
+  "inputs": {
+    "source_schema": "ciw.measurement-chain-source.v1",
+    "upstream_kinds": [],
+    "upstream_cardinality": "none",
+    "configuration": "in_source"
+  },
+  "steps": [
+    {
+      "role": "fsrt",
+      "invocation": "pinned_subprocess",
+      "purpose": "state reconstruction",
+      "pin": {
+        "revision": "09a756dd9cdd3a9bb6cb14b5cd498f6259937ac2",
+        "source_tree": "c79c44f90d5ff3920e58a53e9c277104e7e07bd3",
+        "module": "set_lcm.bridge.ciw",
+        "source_root": "src"
+      }
+    },
+    {
+      "role": "jspt",
+      "invocation": "pinned_subprocess",
+      "purpose": "Jacobian covariance transport",
+      "pin": {
+        "revision": "d910f5a1d7f6dd5f2dd87dfca66990f714f97b18",
+        "source_tree": "5643cc8204b7aa6cbb73df6bf8984abdcec47d3b",
+        "module": "sensitivity.ciw_adapter",
+        "source_root": "src"
+      }
+    },
+    {
+      "role": "rci",
+      "invocation": "pinned_subprocess",
+      "purpose": "measurement-chain calibration",
+      "pin": {
+        "revision": "f863bdd69d49224e0cdc871943bbb052e5b0a975",
+        "source_tree": "038522430744d4a7027f9a48669834c46bd94987",
+        "module": "instrument_chain.ciw_adapter",
+        "source_root": "src"
+      }
+    }
+  ],
+  "verification": {
+    "method": "same_runtime_fresh_occurrence_reproduction",
+    "role": null
+  },
+  "refusals": [],
+  "domain_rules": [],
+  "investigations": [
+    "process-balance"
+  ],
+  "surface": "inner",
+  "authority": "read_only",
+  "implementation": {
+    "module": "ciw.measurement_chain",
+    "runner": "declared_workflow"
+  },
+  "guide": "docs/REMAINING_MODULES.md"
+}

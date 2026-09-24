@@ -1,0 +1,44 @@
+{
+  "schema": "ciw.pipeline-descriptor.v1",
+  "pipeline_id": "ciw.numerical-heat.v1",
+  "source_kind": "numerical-heat",
+  "session_schema": "ciw.numerical-heat-session.v1",
+  "summary": "Bounded native integer heat diffusion with exact byte commitments",
+  "inputs": {
+    "source_schema": "ciw.numerical-heat-source.v1",
+    "upstream_kinds": [],
+    "upstream_cardinality": "none",
+    "configuration": "in_source"
+  },
+  "steps": [
+    {
+      "role": "engine",
+      "invocation": "host_bound_binary",
+      "purpose": "operator-bound execution engine binary"
+    },
+    {
+      "role": "scr",
+      "invocation": "pinned_subprocess",
+      "purpose": "native registered computation",
+      "pin": {
+        "revision": "a59aba283b0304faeeb3e5d305087e7709e171ca",
+        "module": "execution.engine",
+        "source_root": "."
+      }
+    }
+  ],
+  "verification": {
+    "method": "same_runtime_fresh_occurrence_reproduction",
+    "role": null
+  },
+  "refusals": [],
+  "domain_rules": [],
+  "investigations": [],
+  "surface": "certification",
+  "authority": "read_only",
+  "implementation": {
+    "module": "ciw.declared_workload",
+    "runner": "declared_workflow"
+  },
+  "guide": "docs/DECLARED_WORKLOADS.md"
+}

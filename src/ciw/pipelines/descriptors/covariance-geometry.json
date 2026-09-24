@@ -1,0 +1,42 @@
+{
+  "schema": "ciw.pipeline-descriptor.v1",
+  "pipeline_id": "ciw.covariance-geometry.v1",
+  "source_kind": "covariance-geometry",
+  "session_schema": "ciw.covariance-geometry-session.v1",
+  "summary": "Bounded native SPD covariance geometry",
+  "inputs": {
+    "source_schema": "ciw.covariance-geometry-source.v1",
+    "upstream_kinds": [],
+    "upstream_cardinality": "none",
+    "configuration": "in_source"
+  },
+  "steps": [
+    {
+      "role": "cggt",
+      "invocation": "pinned_subprocess",
+      "purpose": "covariance geometry",
+      "pin": {
+        "revision": "510ad2bd0fb96faf77824b72e70ae1b4090646a0",
+        "source_tree": "b2535f95606b0a17eec46b543b7be069e2f8bb89",
+        "module": "covariance_geometry",
+        "source_root": "src"
+      }
+    }
+  ],
+  "verification": {
+    "method": "same_runtime_fresh_occurrence_reproduction",
+    "role": null
+  },
+  "refusals": [],
+  "domain_rules": [],
+  "investigations": [
+    "geometry-bim"
+  ],
+  "surface": "inner",
+  "authority": "read_only",
+  "implementation": {
+    "module": "ciw.geometry_research",
+    "runner": "declared_workflow"
+  },
+  "guide": "docs/GEOMETRY_RESEARCH.md"
+}
