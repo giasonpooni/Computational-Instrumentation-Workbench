@@ -1,25 +1,83 @@
 # Energy and GPU experiments (T115–T125)
 
 Section 8 of the computational-experimentalist queue. Implementation:
-`src/ciw/lab/energy_gpu.py` (tasks), `energy_gpu_kernels.py` (geodesic RK4 in
-any float dtype with an instrumented operation count, the embedded Rust
-kernel, reduction orders with order-specific error bounds, typed quantities)
-and `energy_gpu_telemetry.py` (RAPL helpers and the operator-run RAPL
-capture, fixture tampering, the operator-log acquisition gate, timestamped
-nvidia-smi parsing, Session replay). Tests: `tests/test_lab_energy_gpu.py`.
+`src/ciw/lab/energy_gpu.py` (tasks), `energy_gpu_workload.py` (the common
+Gaussian VI workload: NumPy reference in float64 and float32, exact fused
+multiply-add emulation, the embedded Rust port and the PTX kernel run),
+`energy_gpu_kernels.py` (geodesic RK4 in any float dtype with an instrumented
+operation count, the embedded sphere Rust kernel, reduction orders with
+order-specific error bounds, typed quantities) and `energy_gpu_telemetry.py`
+(the operator-run RAPL capture, fixture tampering, the operator-log
+acquisition gate, timestamped nvidia-smi parsing, Session replay). Tests:
+`tests/test_lab_energy_gpu.py`.
 
 ```
 python -m ciw lab run T115 T116 T117 T118 T119 T120 T121 T122 T123 T124 T125 --output-dir <dir>
 python -m ciw lab report T121 --retained <dir>
 ```
 
-The whole section runs in about 5 s on one core; the tests take about 10 s.
-T119, T123, T124 and T125 read `examples/energy-accuracy` through
-`ciw.lab.runner.repository_path`, so an installed package finds the fixtures
-when `CIW_LAB_REPOSITORY_ROOT` names a checkout. Without them T119, T124 and
-T125 report `blocked` (with their static answers and physical claims) and
-T123 reports `partial` with its energy-record field audit recorded as not
-run.
+The whole section runs in about 5 s on one core (T117 compiles two small Rust
+programs); the tests take about 16 s. T119, T123, T124 and T125 read
+`examples/energy-accuracy` through `ciw.lab.runner.repository_path`, so an
+installed package finds the fixtures when `CIW_LAB_REPOSITORY_ROOT` names a
+checkout. Without them T119, T124 and T125 report `blocked` (with their static
+answers and physical claims) and T123 reports `partial` with its energy-record
+field audit recorded as not run.
+
+## The common workload
+
+Every question of this section that compares devices, languages or precisions
+is asked of one computation that runs on the RTX 2080 host: the fixed-step
+Gaussian variational iteration that the PTX kernel `gaussian_vi` of
+`ciw.energy_cuda` executes and that `ciw energy record` captures (T116, T118,
+T119). The problem and solver settings are `examples/energy-accuracy/problem.json`
+(embedded in `energy_gpu_workload.SPEC`; a test checks the two are equal), the
+iteration count is the one `ciw energy record` plans (K = 38, the first
+iteration whose KL to the exact posterior meets the declared 1e-8 nats), and a
+batch is 4096 identical replicas. Per replica, from the prepared inputs of
+`ciw.energy_cuda._prepare`:
+
+```
+g_i  = ((P_i0 m_0) + (P_i1 m_1)) - b_i            m_i <- m_i - alpha g_i
+Q_ij <- ((1 - beta) Q_ij) + (beta P_ij)            (K iterations)
+det = (Q_00 Q_11) - (Q_01 Q_10);  C = [[Q_11, -Q_01], [-Q_10, Q_00]] / det
+```
+
+Every operation rounds to nearest with no fused multiply-add, which is what
+the kernel's explicit `.rn` instructions declare. The kernel has 24 arithmetic
+instructions per iteration and 7 in its output block; the NumPy reference,
+instrumented on counting arrays, performs the same 24 and 7 per replica in
+float64 and in float32 (T115 and T120 check this against the PTX text, and a
+test shows the check fails for a kernel with a fused instruction). One batch
+is therefore 4096 x (24 x 38 + 7) = 3,764,224 operations.
+
+The workload is defined by `ciw.energy_cuda` (the PTX text and `_prepare`),
+`ciw.energy_bench` (the planner that fixes K) and `ciw.free_energy_math` (the
+information system and the KL). Every task whose results depend on it (T115,
+T116 and T118 when a log is analyzed, T117, T119, T120, T121, T124 and T147)
+digests those three modules beside its own sources in its runtime identity
+(`energy_gpu_workload.SOURCES`) and records the declaration
+`energy_gpu_workload.workload()` (kernel, problem and prepared-input digests,
+K, replicas) under `common_workload`, so a changed kernel or planner changes
+the reports' identity.
+
+| Task | Uses the common workload for | Without the hardware |
+| --- | --- | --- |
+| T115 | CPU package energy per batch (RAPL bracket of the NumPy float64 reference) beside energy per geodesic trajectory | `not_established`: no rapl-log capture bound |
+| T116, T118, T119 | GPU device energy, telemetry and energy per accepted result (the kernel itself, via `ciw energy record`) | `blocked` (T116, T118) or `partial` (T119) |
+| T117 | NumPy reference against the Rust port (float64 and float32, bitwise) and against the PTX kernel on the GPU (bitwise, every replica); Rust and NumPy package energy per batch | GPU comparison `not_established`, naming the failed `hardware:nvidia-gpu` probe; energy `not_established` |
+| T120 | float32 against float64 of the same iteration: KL per iteration, operation counts, package energy per batch in each precision | energy `not_established`; the float32 GPU arm has no kernel |
+| T121 | the kernel's own reductions under fused multiply-add contraction and reassociation; the kernel's outputs on the GPU | GPU comparison `not_established` (probe); device-wide reduction has no kernel |
+| T147 | the CPU/GPU harness: T148's fixed-order policy (bitwise) on the kernel's outputs | GPU comparison `not_established` (probe) |
+
+The GPU parts that exist run wherever an NVIDIA GPU answers the probe: their
+findings are `not_established` here with the reason that no GPU probe
+succeeded, not that no implementation exists. Two GPU parts do not exist on
+any host, and one deferred research question owns both
+(`energy_gpu_workload.GPU_QUESTION`, named by T117, T120, T121, T147 and T148):
+a float32 rendering of the `gaussian_vi` kernel, and a device-wide reduction
+of its per-replica outputs (a fixed tree per T148's `REDUCTION_POLICY`, plus
+one atomicAdd variant).
 
 ## What this environment could and could not measure
 
@@ -27,22 +85,25 @@ The development host has no RAPL powercap counters, no NVIDIA GPU or NVML,
 no CUDA toolchain and no Julia. `rustc` is available. The lab runner acquires
 no energy measurement on any host: CPU and GPU energy come only from captures
 an operator makes outside the runner, which the tasks analyze read-only. Its
-only counter access is the `hardware:rapl` availability probe, which T115
-makes only when a capture is supplied: it reads one `energy_uj` value to
-confirm readability and discards it
+only counter access is the `hardware:rapl` availability probe, which T115,
+T117 and T120 make only when a capture is supplied: it reads one `energy_uj`
+value to confirm readability and discards it
 (`test_rapl_probe_is_the_only_counter_read` exercises the real probe on a
 simulated powercap tree). Consequently:
 
 | Quantity | Status here | Where it is recorded |
 | --- | --- | --- |
-| CPU package energy per trajectory (gross and idle-subtracted) | not measured (no capture) | T115 physical findings, `not_established` |
+| CPU package energy per geodesic trajectory and per common-workload batch (gross and idle-subtracted) | not measured (no capture) | T115 physical findings, `not_established` |
 | GPU energy per batch; NVML counter accuracy | not measured (no GPU) | T116 `blocked`; physical and sensor-performance findings, `not_established` |
 | RTX 2080 power, temperature, clock, utilization, steady state, batch and kernel time | not measured | T118 `blocked`; eight physical findings, `not_established` |
 | Physical energy per accepted result | not measured (no operator log) | T119 physical finding, `not_established` |
-| Energy of float32 versus float64 | not measurable: no capture path runs a float32 RK4 workload | T120 physical finding, `not_established`; deferred question |
-| Real GPU reduction orders | not observed | T121 physical finding, `not_established` |
-| Julia and GPU implementations of the sphere RK4 kernel | not written (on any host) | T117 findings, `not_established`; deferred question |
+| CPU energy of the Rust port against the NumPy reference | not measured (no capture) | T117 physical finding, `not_established` |
+| CPU energy of float32 against float64 | not measured (no capture) | T120 physical finding, `not_established` |
+| PTX kernel against the NumPy reference on the GPU | not run (no GPU probe succeeded) | T117, T121 and T147 numerical findings, `not_established` |
+| GPU energy of a float32 build; device-wide GPU reductions | not written (on any host) | T120 physical and T121 numerical findings, `not_established`; deferred question |
+| Julia implementation of the common workload | not written (on any host) | T117 finding, `not_established`; deferred question |
 | RTX 2080 kernel-only duration | not ingested (on any host) | T118 finding, `not_established`; deferred question |
+| Raw telemetry and identity of a real device | not retained (no operator log) | T124 `partial`; physical finding `not_established` |
 
 Every joule figure in this section comes from the synthetic fixtures in
 `examples/energy-accuracy` (`origin: synthetic_fixture`) and is a synthetic
@@ -57,30 +118,47 @@ value. Wall-clock and CPU times are retained only as artifacts
   the exact great circle; adaptive Dormand–Prince (rtol 1e-9) uses 295–487
   evaluations per trajectory (declared cross-platform allowance 12
   evaluations: two flipped accept/reject decisions of a 6-evaluation FSAL
-  step). Energy needs an operator capture (protocol below).
-- **T117 Python/Rust.** A std-only Rust RK4 kernel is embedded as
-  `energy_gpu_kernels.RUST_SOURCE`, compiled with `rustc -O -C
-  codegen-units=1` into a temporary directory (the scratch path is remapped,
-  so the binary digest is reproducible for a given rustc), and exchanges JSON
-  over stdin/stdout. Its `rhs()` counts its own calls (4NT = 6144 for the
-  six trajectories, a finding of its own). Its endpoints are bitwise
-  identical to the Python closed-form kernel on this
-  Linux host (same operation order, same glibc `sin`/`cos`); the finding
-  tolerance is 1e-12, and cross-platform bitwise identity is not claimed. The
-  task also sends the kernel a malformed and a nonfinite (pole) input and
-  records both refusals. Both agreements (Rust/Python and generic
-  Christoffel/closed form) are `cross_implementation` checks: declaring one
-  ciw kernel an independent check of another is refused by
-  `ciw.lab.evidence` (a regression test, not a finding), so the label is
+  step). A common-workload batch is 3,764,224 operations, the PTX kernel's
+  instruction count times K and the replicas. Energy needs an operator
+  capture (protocol below): the capture brackets the geodesic batches and the
+  common-workload batches separately, and T115 reports package energy per
+  trajectory and per batch.
+- **T117 Python, Rust, GPU and Julia.** Two std-only Rust programs are
+  embedded, compiled with `rustc -O -C codegen-units=1` into a temporary
+  directory (the scratch path is remapped, so each binary digest is
+  reproducible for a given rustc) and exchange JSON over stdin/stdout. The
+  sphere RK4 kernel (`energy_gpu_kernels.RUST_SOURCE`) is kept because it
+  exercises libm: its `rhs()` counts its own calls (4NT = 6144), its endpoints
+  are bitwise identical to the Python closed-form kernel on this Linux host
+  (same operation order, same glibc `sin`/`cos`; the finding tolerance is
+  1e-12, cross-platform bitwise identity is not claimed), and it refuses a
+  malformed and a nonfinite input. The Rust port of the common workload
+  (`energy_gpu_workload.RUST_SOURCE`) reproduces the NumPy reference bitwise
+  in float64 and in float32 (maximum ULP distance 0; the workload uses no
+  library function, so bitwise identity is expected on any IEEE platform),
+  counts its own iterations (K x 4096 = 155,648) and refuses three malformed
+  inputs. On a host where `hardware:nvidia-gpu` answers, the PTX kernel runs
+  through `ciw.energy_cuda` on the same prepared inputs (the worker's
+  prepared-input digest is compared) and its 4096 x 6 outputs are compared
+  bit for bit: the largest ULP distance, taken on an order-preserving map of
+  the bits so that a sign flip (a dropped `neg.f64`, or +0.0 against -0.0) is
+  a nonzero distance, and the count of values whose bits differ must both be
+  0. Tests with simulated devices that contract multiply-adds or flip the
+  sign of one output column show the finding is refuted, not hidden. Outputs
+  that `CudaGaussianWorker.solve()` rejects after the kernel ran (nonfinite,
+  out of bound, asymmetric or not positive definite covariance) are a failed
+  check, so the finding is refuted; only a kernel that produced no outputs
+  (driver, device, preparation or JIT failure, or a failed launch) leaves the
+  claim expected-unestablished with that reason. All agreements are
+  `cross_implementation` checks: declaring one ciw kernel an independent
+  check of another is refused by `ciw.lab.evidence`, so the label is
   `numerically_verified`, never `independently_verified`. The rustc version
-  and binary digest are in the report's runtime identity, so a label change
-  on a host without rustc can be attributed. No Julia or GPU implementation
-  of this sphere kernel exists in the repository (`src/ciw/energy_cuda.py` is
-  the Gaussian VI PTX kernel), so T117 stays `partial` on every host; its
-  Julia and GPU notes derive from the probes but always say no kernel was
-  written. Deferred research question: a CUDA/PTX RK4 kernel of this geodesic
-  (for example through the `ciw.energy_cuda` JIT path) and a Julia kernel
-  with the operation order of `step_rk4`.
+  and binary digests are in the report's runtime identity (and the GPU's
+  name, UUID and driver when it ran). No Julia port exists, so T117 stays
+  `partial` on every host; deferred research question: a Julia port behind
+  the SCR worker T145 plans. With a bound rapl-log capture that holds the
+  Rust bracket (built by the same rustc, so the binary digests match), T117
+  reports the Rust port's and the NumPy reference's package energy per batch.
 - **T119 energy per accepted result.** Definition:
   `E_acc = (counter(last measurement read) − counter(first measurement read)) / #accepted replica solves`,
   where a replica solve is accepted when its retained batch output has KL ≤
@@ -97,11 +175,12 @@ value. Wall-clock and CPU times are retained only as artifacts
   reset, missing-bracket and under-target fixtures, each for its declared
   defect. Counterexample: dividing gross energy by executed solves gives
   0.05 J/solve for the under-target fixture, which has zero accepted solves.
-  Widening the boundary to the whole run multiplies the metric by 7. When
-  `CIW_LAB_ENERGY_LOG` names an operator log, T119 recomputes energy per
-  accepted replica solve from its raw readings and outputs and reports it as
-  `hardware_measured` through the T116 acquisition gate (plus a GPU probe
-  that answers in T119); T119 is then `completed`.
+  Widening the boundary to the whole run multiplies the metric by 7. When an
+  operator log is bound (`--capture energy-log=PATH`, or `CIW_LAB_ENERGY_LOG`),
+  T119 recomputes energy per accepted replica solve of the common workload
+  from its raw readings and outputs and reports it as `hardware_measured`
+  through the T116 acquisition gate (plus a GPU probe that answers in T119);
+  T119 is then `completed`.
 - **T120 precision.** float64 RK4 converges at order 3.96 (N = 16..256).
   float32 reaches its minimum error 5.8e-7 at N = 64, the crossover of
   truncation and roundoff, and then sits on a roundoff plateau (median
@@ -116,17 +195,31 @@ value. Wall-clock and CPU times are retained only as artifacts
   censored at the grid minimum; every tabulated error clears its target by a
   factor of at least 1.4, so the table is compared exactly. Counterexample:
   float32 cannot reach 1e-7 at any N ≤ 2048, while float64 reaches it at
-  N = 128 — lower precision is not cheaper at every accuracy target. No
-  capture path measures a float32 RK4 workload (T115 brackets the float64
-  generic integrator, T116 the Gaussian VI kernel); a dtype-parameterized
-  capture of `rk4_batch` is the deferred research question.
+  N = 128 — lower precision is not cheaper at every accuracy target. The
+  energy comparison uses the common workload instead, where float32 and
+  float64 run the same iteration: both precisions meet the workload's
+  declared 1e-8 nat KL target at the planned iteration K = 38 (KL 6.9e-9
+  nats), and both execute the same 24 counted operations per replica
+  iteration with no result leaving the declared precision. float32 then
+  stalls at a KL floor of 2.4e-14 nats from iteration 66 on, set by float32
+  roundoff (about (2^-24)^2 relative), while float64 keeps converging (6e-32
+  after 256 iterations, where the binary64 reference's own rounding shows).
+  Counterexample: float32 cannot reach 1e-14 nats within 256 iterations,
+  while float64 reaches it at iteration 69. A bound rapl-log capture brackets
+  the NumPy reference in float64 and in float32, and T120 reports package
+  energy per batch in each precision (T120 is then `completed`); the GPU arm
+  (a float32 build of the kernel) has no implementation and is the shared
+  deferred research question.
 - **T122 bounded free energy.** On a declared two-latent Gaussian problem the
   identity F + log Z = KL holds at every iterate to 3e-14 nats; with the
   declared normalization (condition number 7.3) KL decreases monotonically to
   1e-21 nats in 93 of at most 512 iterations. Counterexamples: a mean step 1.2×
   the stability bound (spectral radius 1.4) makes KL grow to 5e18; unit scales
   (condition number 1.3e3) leave KL at 3.99 nats after 512 iterations, while
-  the raw-unit posterior itself is scale-invariant to 2e-15.
+  the raw-unit posterior itself is scale-invariant to 2e-15. Deferred research
+  question: a non-Gaussian posterior (a mixture likelihood, say), where the
+  identity still holds but KL has no closed form and must be checked against
+  a quadrature or Monte Carlo value with its own uncertainty.
 - **T123 nats versus joules.** A typed quantity algebra refuses to add,
   subtract, compare (including `==`) or convert information (nat, bit) and
   energy (J, mJ); power (W, mW) is energy per time and is refused against
@@ -140,9 +233,14 @@ value. Wall-clock and CPU times are retained only as artifacts
   changes by 999 E when E is expressed in mJ instead of J (from 8.6 to 208.4
   here). A computed check of that identity could not fail, so the finding is
   `analytic` and T123's headline, the weakest established label, is
-  `analytic`.
-- **T124 raw telemetry.** An audit of the energy-log format, not of a
-  hardware capture: the task retains the four fixtures' exact bytes as
+  `analytic`. Deferred research question: carry units in exchanged records;
+  `ciw.canonical-json.v1` (T146) encodes numbers without units, and CIW
+  records keep units only in field-name suffixes, which this audit relies on.
+- **T124 raw telemetry.** Without an operator log this is an audit of the
+  energy-log format, not a retention of real telemetry, and T124 is
+  `partial` ("Not performed: retaining raw telemetry and device/runtime
+  identity of a real device"), as T139 is without an acquisition. The task
+  retains the four fixtures' exact bytes as
   artifacts, and they hold 47 raw readings with monotonic and UTC brackets
   and the 14 device/runtime identity fields; 11 of the 14 hold placeholders
   (repeated-digit digests, the sequential fixture UUID, "fixture"/"synthetic"
@@ -153,13 +251,30 @@ value. Wall-clock and CPU times are retained only as artifacts
   Counterexamples: a log whose readings were doubled and then resealed
   validates (sealing is integrity, not authenticity), and relabelling a
   fixture as `physical_measurement` makes it eligible for physical comparison
-  (the origin field is a declaration).
+  (the origin field is a declaration). With an operator log bound on the GPU
+  host, T124 retains its exact bytes, checks that every reading is
+  timestamped and that none of the 14 identity fields is a placeholder, and
+  binds it through the T116 acquisition gate (declared physical measurement,
+  eligible analysis, the common workload, sensor identity equal to this
+  host's NVML identity, GPU probe answering in the task); the physical
+  finding is then `hardware_measured` and T124 `completed`. That finding
+  states what the gate establishes: the log *names* an NVML device present
+  on the analyzing host (its UUID, name, driver, NVML version and library
+  digest equal the host's). It does not state that the counter readings came
+  from that device: a resealed synthetic log with edited identity strings
+  passes the gate (the regression test does exactly that), which T124's
+  unresolved assumptions say. A relabelled fixture passes the host-identity
+  gate but not the placeholder rule.
 - **T125 replay.** Through a `ciw.session.Session`, every fixture keeps one
   `numerical_result_id` across original, reproduction and replay, each with
   fresh execution, result and bundle identities; the workspace restores
   exactly; an edited bundle is refused with stale digests
   (`Energy analysis bundle identity, schema or size differs`) and with
-  recomputed digests (`Retained energy analysis binding differs`).
+  recomputed digests (`Retained energy analysis binding differs`). Deferred
+  research question: replay a retained RTX 2080 log through a Session on a
+  second host; whether numerical ids agree across platforms is open, because
+  they hash binary64 analysis values and `ciw.core.identities` was not
+  migrated to `ciw.canonical-json.v1` (T146).
 
 ## Reduction-order findings (T121)
 
@@ -209,11 +324,29 @@ order). The generic γ₍ₙ₋₁₎ bound alone would miss a dropped element.
   the running build is retained in `reductions.json` with
   `platform.machine()` and the numpy version, never asserted.
 
-None of this shows what CUB, cuBLAS or a hand-written kernel does on an RTX
-2080; that is the physical-domain finding left `not_established`, and the
-follow-up is T148 (deterministic reduction policy) and T147 (CPU/GPU outputs).
+**The kernel's own reductions.** The common workload's reductions are fixed
+two-term dot products, the precision relaxation and a 2x2 determinant, which
+the PTX kernel evaluates unfused (`.rn` instructions). A compiler building the
+same source with contraction would fuse multiply-adds; T121 emulates two
+contraction rules exactly (a rational fused multiply-add rounded once) and one
+reassociation. After K = 38 iterations the contractions move the binary64
+outputs by 3 and 6 ULP (reassociation by 0 here), so a bitwise CPU/GPU
+comparison detects a contracting build (the counterexample to "a fixed-order
+reduction gives the same result whether or not the compiler contracts it"),
+while the KL of every variant is 6.85e-9 nats against the 1e-8 target: the
+acceptance decision is unchanged, with a KL change below 1e-6 of the 3.1e-9
+decision margin. Where `hardware:nvidia-gpu` answers, T121 runs the kernel and
+checks that its outputs equal the unfused reference bit for bit, which is the
+comparison T148's `REDUCTION_POLICY` prescribes for a fixed-order reduction
+evaluated in the same order. GPU sums are computational outputs, so these
+claims are numerical: the comparison is `not_established` here because no GPU
+probe succeeded. What CUB, cuBLAS, atomicAdd or a warp-shuffle tree does to a
+device-wide reduction of the kernel's per-replica outputs is not observable
+until such a reduction kernel exists; that numerical claim is recorded as
+`not_established` with the reason "implementation missing", and the kernel is
+the shared deferred research question.
 
-## Protocol for a RAPL host (T115)
+## Protocol for a RAPL host (T115, T117, T120)
 
 The capture is an operator action; `ciw lab run` acquires no measurement
 (its `hardware:rapl` probe reads one counter value to confirm readability and
@@ -221,36 +354,83 @@ discards it).
 
 1. On a Linux host whose `/sys/class/powercap/intel-rapl:*/energy_uj` is
    readable: `python -m ciw.lab.energy_gpu_telemetry rapl-capture
-   runs/rapl-<date>.json` (optional `--repeats N`, default 3). It brackets N
-   batches of the T115 workload (six sphere geodesics, RK4, N = 256) with
-   package counter reads, then brackets an idle interval of the same
-   monotonic length, and writes the raw counters, UTC and monotonic brackets,
-   the declared workload and the host identity (CPU model, platform, RAPL
-   zones). An existing file is refused.
-2. `CIW_LAB_RAPL_LOG=runs/rapl-<date>.json python -m ciw lab run T115
-   --output-dir <dir>` on the same host.
+   runs/rapl-<date>.json` (options `--repeats N`, 1 to 1000, default 3
+   geodesic batches; `--batches M`, 1 to 1000, default 500 common-workload
+   batches per bracket, the Rust port's own repeats limit; `--no-rust`). It
+   computes the common workload's prepared inputs once, before any bracket,
+   and runs the Rust port on one replica with the real `M` before
+   bracketing, so a refusal surfaces before any counter is read. It then
+   brackets, with package counter reads, four workloads in turn: the T115
+   sphere geodesics (`geodesic`, six trajectories per batch, RK4, N = 256),
+   the common workload's NumPy reference in float64
+   (`gaussian-vi-numpy-float64`) and in float32 (`gaussian-vi-numpy-float32`),
+   and the Rust port in float64 (`gaussian-vi-rust-float64`, one process for
+   all M batches, process start and JSON exchange included; skipped with its
+   reason when rustc cannot build it, and moved to `skipped` without losing
+   the other brackets if it fails inside its bracket). It then brackets an
+   idle interval as long as the longest workload bracket, and writes
+   (schema `ciw.lab.rapl-capture.v3`) the raw counters, UTC and monotonic
+   brackets, each bracket's unit count and unit name, each bracket's declared
+   workload (the common workload's declaration names the kernel digest, the
+   prepared-input digest, K, the replicas, the precision and the bracket's
+   work boundary; the Rust bracket also the rustc version and binary digest)
+   and the host identity (CPU model, platform, RAPL zones). The record holds
+   no host path. An existing file is refused.
 
-T115 retains the capture bytes as an artifact and reports gross package
-energy per trajectory (background-inclusive, idle not subtracted) and
-idle-subtracted energy per trajectory as `hardware_measured` only when the
-capture names this workload, its host identity equals the analyzing host's,
-and a RAPL probe answers in the task. The acquisition record says the capture
+   Work boundaries: no Gaussian VI bracket contains the preparation of the
+   inputs (the information system and the LAPACK solve of
+   `ciw.energy_cuda._prepare`), as the GPU worker's boundary excludes it
+   (`constructor_preparation_and_jit_excluded`). A NumPy batch rounds the 15
+   inputs to its precision, broadcasts them to the 4096 replica columns and
+   runs K iterations and the output block; the Rust bracket adds one process
+   start and one JSON exchange for all its batches, and each Rust replica
+   rounds its inputs itself. T117's `rust_over_numpy_idle_subtracted`
+   compares these bracket contents, not the arithmetic alone; T120's
+   `float32_over_float64_idle_subtracted` compares two brackets with the same
+   boundary.
+2. `ciw lab run T115 T117 T120 --capture rapl-log=runs/rapl-<date>.json
+   --output-dir results/rapl-<date>` on the same host (`--capture rapl-log`
+   sets `CIW_LAB_RAPL_LOG` for the run).
+3. `ciw lab hardware retain results/rapl-<date> --retained lab --run-id
+   rapl-<date> --host "<RAPL host>"`, review `git diff lab/hardware` and commit
+   it (docs/LAB.md, Hardware evidence).
+
+Each task retains the capture bytes as an artifact and reports gross package
+energy (background-inclusive, idle not subtracted) and idle-subtracted energy
+as `hardware_measured` only when every bracket it reads names the workload the
+task declares (boundary included), its unit count equals the capture's own
+repeats x 6 trajectories or batches and its unit name is the declared one, the
+capture's host identity equals the analyzing host's, and a RAPL probe answers
+in the task: T115 per geodesic trajectory and per
+common-workload batch, T120 per batch in float64 and in float32 (with their
+ratio), T117 per batch for the Rust port and the NumPy reference (with their
+ratio; the Rust bracket's binary digest must equal the port T117 builds, so
+the analysis needs the capture host's rustc). A bracket that fails leaves only
+its own findings `not_established`. The acquisition record says the capture
 is operator-made and unauthenticated; the calibration is `not_applied` (RAPL
-is a model-based counter).
+is a model-based counter). CPU energy per common-workload batch (T115) and
+GPU energy per batch (T116) are for the same computation (the RAPL gate and
+the NVML gate both require the common workload's declaration), but they are
+different counters with different scopes (package versus whole device) and
+different batch boundaries (the GPU batch includes launch, synchronization,
+copy and the worker's output check), and no finding combines them.
 
-## Protocol for the RTX 2080 host (T116, T118)
+## Protocol for the RTX 2080 host (T116–T121, T124, T147)
 
 The lab runner never acquires hardware data. On the GPU host the operator
-captures, then the lab analyzes (`R=runs/rtx2080-<date>`; `ciw energy record`
-refuses an existing output directory, so the capture goes into `$R/capture`):
+captures, then one lab run analyzes the capture and runs the common workload's
+PTX kernel for every task that compares it with the CPU
+(`R=runs/rtx2080-<date>`; `ciw energy record` refuses an existing output
+directory, so the capture goes into `$R/capture`):
 
 1. `mkdir -p $R` and `ciw energy probe --gpu-index 0` — must return a reading
    with `status: ok`. NVML documents `nvmlDeviceGetTotalEnergyConsumption`
    for Volta-or-newer *fully supported* devices; GeForce support is not
-   documented, so this probe must confirm the counter on the RTX 2080.
+   documented, so this probe must confirm the counter on the RTX 2080 (the
+   go/no-go for every energy claim below).
 2. Start the utilization sidecar in the background, in UTC:
    `TZ=UTC nvidia-smi --query-gpu=timestamp,uuid,name,utilization.gpu,utilization.memory,temperature.gpu,power.draw,clocks.sm,clocks.mem,pstate --format=csv,nounits -lms 100 -f $R/smi.csv`
-3. Capture:
+3. Capture the common workload:
    `ciw energy record --problem examples/energy-accuracy/problem.json --output-dir $R/capture --duration 10 --replicas 4096 --warmup-batches 2 --idle-duration 2 --gpu-index 0`
    and stop the sidecar.
 4. `ciw energy replay $R/capture/log.json` — offline recomputation.
@@ -260,12 +440,24 @@ refuses an existing output directory, so the capture goes into `$R/capture`):
    output; the lab does not ingest it yet (deferred research question:
    ingest it with its raw bytes retained and bound through the acquisition
    gate, so T118 can report kernel-only duration).
-6. `CIW_LAB_ENERGY_LOG=$R/capture/log.json CIW_LAB_NVIDIA_SMI_CSV=$R/smi.csv CIW_LAB_NVIDIA_SMI_UTC_OFFSET=+00:00 python -m ciw lab run T116 T118 T119 --output-dir <dir>`
+6. `CIW_LAB_NVIDIA_SMI_UTC_OFFSET=+00:00 ciw lab run T116 T117 T118 T119 T120 T121 T124 T147 --capture energy-log=$R/capture/log.json --capture nvidia-smi-csv=$R/smi.csv --output-dir results/rtx2080-<date>`
+   on the same host. If the host also has readable RAPL counters, capture
+   them first (protocol above) and add `T115` and `--capture rapl-log=...`.
+7. `ciw lab hardware retain results/rtx2080-<date> --retained lab --run-id rtx2080-<date> --host "<RTX 2080 host>"`,
+   review `git diff lab/hardware` and commit it. The retained run is verified
+   off the host for integrity only (docs/LAB.md, Hardware evidence);
+   re-analysing it needs this host.
 
-T116 then reports gross device energy per measured batch, and T119 the
-energy per accepted replica solve of the same log; the NVML counter's
+T116 then reports gross device energy per measured batch of the common
+workload, T119 the energy per accepted replica solve of the same log and T124
+the log's retention with its device and runtime identity; the NVML counter's
 accuracy and resolution stay `not_established` (undeclared by NVML, no
-external meter). T118 reports NVML power, temperature and graphics clock over
+external meter). T117, T121 and T147 run the PTX kernel on the common workload
+in the same run and compare its outputs with the NumPy reference bit for bit
+(T147 through `compare_outputs` under T148's fixed-order policy); T147 is then
+`completed`, T117 stays `partial` (no Julia port) and T121 `partial` (no
+device-wide reduction kernel). T118 reports NVML power, temperature and
+graphics clock over
 the measurement phase, host-bracketed batch durations (these include launch,
 synchronization and copy), sidecar utilization, and two steady-state criteria
 declared by the protocol: power coefficient of variation ≤ 0.10 and
@@ -280,7 +472,10 @@ row in the window, utilization is withheld. Kernel-only duration stays
 
 **Acquisition gate.** A physical finding from such a log is
 `hardware_measured` only when the log declares `physical_measurement`, its
-analysis is eligible, its raw bytes (and the sidecar's) are retained
+analysis is eligible, it names the common workload (its runtime workload's
+PTX kernel digest, problem digest, prepared-input digest, K and replicas equal
+`energy_gpu_workload.workload()` and its plan's KL target is the declared
+1e-8 nats; `energy_gpu_telemetry.workload_reasons`), its raw bytes (and the sidecar's) are retained
 byte-exactly as artifacts, and its sensor block (UUID, name, driver version,
 NVML version, NVML library SHA-256) equals the NVML identity of that device on
 the analyzing host; T118 also requires the name to contain "RTX 2080" and
@@ -290,7 +485,8 @@ record to hardware and software present on the host. It does **not**
 authenticate the capture: a relabelled synthetic log paired with a matching
 host identity passes (see
 `test_operator_log_gate_trust_boundary_is_the_host_identity` and the T124
-relabelling counterexample). Signed capture is the unresolved next step.
+relabelling counterexample; T124 additionally refuses placeholder identity
+values). Signed capture is the unresolved next step.
 Without a GPU, or on a GPU host without a log, T116 and T118 are `blocked`
 and record their physical claims as `not_established` findings with the same
 claim texts the operator path uses, so the regression gate can match them
@@ -299,10 +495,11 @@ across hosts.
 ## What these results do not show
 
 - No physical energy, power, temperature, utilization or kernel time was
-  measured; no efficiency ranking of Python, Rust, float32 or float64 follows
-  from this section.
-- Python/Rust agreement is agreement of two ciw implementations of one
-  algorithm, not independent verification.
+  measured; no efficiency ranking of Python, Rust, float32, float64, CPU or
+  GPU follows from this section until the protocols above are run and
+  retained.
+- Python/Rust/PTX agreement is agreement of ciw implementations of one
+  algorithm, not independent verification; the PTX kernel was not run here.
 - Emulated reduction orders are plausible GPU orders, not observed ones, and
   the counterexample witnesses were found by search: they show existence, not
   frequency.

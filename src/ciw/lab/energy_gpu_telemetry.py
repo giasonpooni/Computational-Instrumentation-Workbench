@@ -1,9 +1,14 @@
 """Telemetry helpers for the energy and GPU experiments (T115-T125).
 
 Scope: read-only probes of Linux RAPL powercap counters and an operator-run
-RAPL capture that executes outside the lab runner; loading and tampering the
-retained synthetic energy/accuracy fixtures; gating when a retained NVML log
-or RAPL capture may support a physical-domain finding; parsing timestamped
+RAPL capture that executes outside the lab runner (one bracket per declared
+workload: the T115 sphere geodesics and the common Gaussian VI workload of
+``energy_gpu_workload`` in NumPy float64 and float32 and in the Rust port,
+each declaring its work boundary, with the prepared inputs computed once
+outside every bracket); loading and tampering the retained synthetic
+energy/accuracy fixtures; gating when a retained NVML log (which must name
+the common workload) or RAPL capture (whose unit counts must match its own
+repeats and batches) may support a physical-domain finding; parsing timestamped
 nvidia-smi sidecar rows; and a replay of the offline energy-accuracy
 workflow through a ciw Session.
 
@@ -13,9 +18,9 @@ device identity in a log authenticates that a physical device produced it.
 The lab runner calls nothing here that reads an energy counter: counters are
 read only by ``python -m ciw.lab.energy_gpu_telemetry rapl-capture`` (an
 operator action) and by ``ciw energy record``. The runner's own
-``hardware:rapl`` availability probe (``ciw.lab.runner``), made by T115 only
-when a capture is supplied, reads one ``energy_uj`` value to confirm
-readability and discards it. Nothing here starts GPU work,
+``hardware:rapl`` availability probe (``ciw.lab.runner``), made by T115, T117
+and T120 only when a capture is supplied, reads one ``energy_uj`` value to
+confirm readability and discards it. Nothing here starts GPU work,
 changes device settings or estimates energy from time or utilization.
 """
 from __future__ import annotations
@@ -33,6 +38,8 @@ import sys
 import tempfile
 import time
 
+import numpy as np
+
 from . import runner
 
 FIXTURES = ("baseline", "reset", "missing", "under-target")
@@ -41,7 +48,7 @@ LOG_ENV = "CIW_LAB_ENERGY_LOG"
 SMI_ENV = "CIW_LAB_NVIDIA_SMI_CSV"
 SMI_OFFSET_ENV = "CIW_LAB_NVIDIA_SMI_UTC_OFFSET"
 RAPL_ENV = "CIW_LAB_RAPL_LOG"
-RAPL_SCHEMA = "ciw.lab.rapl-capture.v1"
+RAPL_SCHEMA = "ciw.lab.rapl-capture.v3"
 OPERATOR_NOTE = ("acquired by an operator outside the lab runner; the lab checked the identity binding and "
                  "retained the bytes, it did not authenticate the capture")
 
@@ -103,64 +110,182 @@ def _bracket(domains, action) -> dict:
             "elapsed_monotonic_ns": mono_end - mono_start}
 
 
-def capture_rapl(output, repeats=3, root=POWERCAP, separator=":", sleep=time.sleep) -> dict:
-    """Operator-run capture: bracket ``repeats`` batches of the T115 workload, then an idle interval of equal length.
+# One bracket per workload; the Gaussian VI brackets run the common workload of energy_gpu_workload.
+GEODESIC = "geodesic"
+VI_NUMPY64, VI_NUMPY32, VI_RUST64 = "gaussian-vi-numpy-float64", "gaussian-vi-numpy-float32", "gaussian-vi-rust-float64"
+BRACKETS = (GEODESIC, VI_NUMPY64, VI_NUMPY32, VI_RUST64)
+UNIT = {GEODESIC: "trajectory", VI_NUMPY64: "batch", VI_NUMPY32: "batch", VI_RUST64: "batch"}
 
-    This is the only function in the section that reads energy counters; the
-    lab runner never calls it. The record is written once (an existing file is
-    refused) and analyzed read-only by T115 through ``CIW_LAB_RAPL_LOG``.
+
+# What each Gaussian VI bracket contains per batch: the work boundary is part of the declaration, so a capture made
+# with other bracket contents does not name the same workload.
+NUMPY_BOUNDARY = ("prepared inputs computed once before the bracket (excluded); per batch: the 15 inputs rounded to "
+                  "the declared precision and broadcast to the replica columns, K iterations and the output block, "
+                  "vectorized across replicas in NumPy")
+RUST_BOUNDARY = ("prepared inputs computed once before the bracket (excluded); one process start of the compiled "
+                 "port and one JSON exchange included; per batch, inside that process: every replica rounds the 15 "
+                 "inputs and runs K iterations and the output block")
+# The Rust port refuses repeats outside [1, 1000] (RUST_SOURCE), so a Gaussian VI bracket holds at most 1000 batches.
+MAX_BATCHES = 1000
+MAX_REPEATS = 1000
+
+
+def declared_workloads(rust_identity: dict | None = None) -> dict:
+    """The workload each bracket declares; a task analyzes a bracket only when the capture names exactly this.
+
+    Each Gaussian VI declaration carries its bracket's work boundary. The Rust
+    bracket's declaration includes the compiled port's rustc version and
+    binary digest, so it is comparable only with a port built by the same
+    rustc (the binary is reproducible for a given rustc and target).
     """
     from . import energy_gpu_kernels as kernels
+    from . import energy_gpu_workload as common
+    declared = {GEODESIC: dict(kernels.WORKLOAD),
+                VI_NUMPY64: dict(common.workload("float64", "numpy"), boundary=NUMPY_BOUNDARY),
+                VI_NUMPY32: dict(common.workload("float32", "numpy"), boundary=NUMPY_BOUNDARY)}
+    if rust_identity is not None:
+        declared[VI_RUST64] = dict(common.workload("float64", "rust"), boundary=RUST_BOUNDARY,
+                                   rustc=rust_identity["rustc"], source_sha256=rust_identity["source_sha256"],
+                                   binary_sha256=rust_identity["binary_sha256"])
+    return declared
+
+
+def expected_units(record, name) -> int | None:
+    """Units a capture's bracket must count: trajectories (repeats x headings) or batches; None when unknowable."""
+    from . import energy_gpu_kernels as kernels
+    repeats, batches = record.get("repeats"), record.get("batches")
+    if name == GEODESIC:
+        return repeats * len(kernels.HEADINGS) if type(repeats) is int and 1 <= repeats <= MAX_REPEATS else None
+    return batches if type(batches) is int and 1 <= batches <= MAX_BATCHES else None
+
+
+def capture_rapl(output, repeats=3, batches=500, root=POWERCAP, separator=":", sleep=time.sleep, rust=True) -> dict:
+    """Operator-run capture: bracket each declared workload with package counter reads, then an idle interval.
+
+    Brackets: ``geodesic`` runs ``repeats`` batches of the T115 sphere
+    geodesics; ``gaussian-vi-numpy-float64`` and ``-float32`` run ``batches``
+    batches of the common Gaussian VI workload with the NumPy reference;
+    ``gaussian-vi-rust-float64`` runs the same batches in one process of the
+    compiled Rust port (process start and JSON exchange included) when rustc
+    builds it here, and is otherwise listed under ``skipped`` with the reason.
+    The prepared inputs are computed once, before any bracket, so no bracket
+    contains them (``NUMPY_BOUNDARY``, ``RUST_BOUNDARY``). Before bracketing,
+    the port runs one replica with the real ``repeats`` payload, so a refusal
+    surfaces before any counter is read; a port that fails inside its bracket
+    is moved to ``skipped`` and the other brackets are kept. The idle bracket
+    lasts as long as the longest workload bracket. This is the only function
+    in the section that reads energy counters; the lab runner never calls it.
+    The record is written once (an existing file is refused) and analyzed
+    read-only by T115, T117 and T120 through ``CIW_LAB_RAPL_LOG``
+    (``--capture rapl-log=PATH``). It holds no host path.
+    """
+    from . import energy_gpu_kernels as kernels
+    from . import energy_gpu_workload as common
     path = Path(output)
     if path.exists():
         raise ValueError("Refusing to overwrite an existing RAPL capture")
-    if type(repeats) is not int or not 1 <= repeats <= 1000:
-        raise ValueError("repeats must be an integer in [1, 1000]")
+    for name, value, high in (("repeats", repeats, MAX_REPEATS), ("batches", batches, MAX_BATCHES)):
+        if type(value) is not int or not 1 <= value <= high:
+            raise ValueError(f"{name} must be an integer in [1, {high}]")
     domains = rapl_domains(root, separator)
     if not domains:
         raise ValueError("No intel-rapl package domain with an energy_uj counter")
-
-    def work():
-        for _ in range(repeats):
-            kernels.fixed_step_batch()
-
-    workload = _bracket(domains, work)
-    idle = _bracket(domains, lambda: sleep(workload["elapsed_monotonic_ns"] / 1e9))
+    values = common.prepared_inputs()  # once, outside every bracket
+    common.plan_iterations()
+    work = {GEODESIC: lambda: [kernels.fixed_step_batch() for _ in range(repeats)],
+            VI_NUMPY64: lambda: [common.run_numpy(np.float64, values=values) for _ in range(batches)],
+            VI_NUMPY32: lambda: [common.run_numpy(np.float32, values=values) for _ in range(batches)]}
+    counts = {GEODESIC: repeats * len(kernels.HEADINGS), VI_NUMPY64: batches, VI_NUMPY32: batches}
+    skipped, rust_identity = {}, None
+    with tempfile.TemporaryDirectory() as scratch:
+        if rust:
+            try:
+                rust_identity = common.build_rust_port(scratch)
+                # The real repeats payload on one replica, before bracketing: a refusal cannot lose the capture.
+                common.run_rust_port(rust_identity["executable"], "float64", replicas=1, repeats=batches, values=values)
+            except kernels.NativeKernelUnavailable as exc:
+                rust_identity, skipped[VI_RUST64] = None, str(exc)
+        else:
+            skipped[VI_RUST64] = "not requested (--no-rust)"
+        if rust_identity is not None:
+            executable = rust_identity["executable"]
+            work[VI_RUST64] = lambda: common.run_rust_port(executable, "float64", repeats=batches, values=values)
+            counts[VI_RUST64] = batches
+        brackets = {}
+        for name, action in work.items():
+            try:
+                brackets[name] = _bracket(domains, action)
+            except kernels.NativeKernelUnavailable as exc:
+                if name != VI_RUST64:
+                    raise
+                skipped[name] = f"the Rust port failed inside its bracket: {exc}"
+                counts.pop(name)
+                rust_identity = None
+    longest = max(bracket["elapsed_monotonic_ns"] for bracket in brackets.values())
+    idle = _bracket(domains, lambda: sleep(longest / 1e9))
+    declared = declared_workloads(rust_identity)
     record = {"schema": RAPL_SCHEMA, "captured_by": "python -m ciw.lab.energy_gpu_telemetry rapl-capture",
-              "workload": dict(kernels.WORKLOAD), "repeats": repeats,
-              "trajectories_per_repeat": len(kernels.HEADINGS), "host": rapl_host_identity(root, separator),
-              "domains": domains, "workload_bracket": workload, "idle_bracket": idle}
+              "repeats": repeats, "batches": batches, "host": rapl_host_identity(root, separator),
+              "domains": [{key: d[key] for key in ("zone", "name", "max_energy_range_uj")} for d in domains],
+              "workloads": {name: declared[name] for name in brackets}, "units": dict(counts),
+              "unit_names": {name: UNIT[name] for name in brackets}, "brackets": brackets, "idle_bracket": idle,
+              "skipped": skipped}
     path.write_text(json.dumps(record, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     return record
 
 
-def rapl_capture_reasons(record, host_identity: dict, workload: dict) -> list:
-    """Why a capture cannot support a physical finding here (empty when it can)."""
-    reasons = []
+def _bracket_reasons(name, bracket, domains) -> list:
+    if not isinstance(bracket, dict) or len(bracket.get("before_uj") or []) != len(domains) \
+            or len(bracket.get("after_uj") or []) != len(domains) or not domains \
+            or not isinstance(bracket.get("elapsed_monotonic_ns"), int) or bracket["elapsed_monotonic_ns"] <= 0 \
+            or not all(str(bracket.get(key, "")).isdigit() for key in ("start_utc_ns", "end_utc_ns")):
+        return [f"capture {name} bracket is malformed"]
+    return []
+
+
+def rapl_capture_reasons(record, host_identity: dict, declared: dict) -> dict:
+    """Why each declared bracket cannot support a physical finding here: {bracket: [reasons]} (empty when it can).
+
+    ``declared`` maps bracket names to the workload the analyzing task
+    declares for them (:func:`declared_workloads`). A reason common to the
+    whole capture (schema, host, idle bracket) is listed under every bracket.
+    """
     if not isinstance(record, dict) or record.get("schema") != RAPL_SCHEMA:
-        return [f"capture is not a {RAPL_SCHEMA} record"]
-    if record.get("workload") != workload:
-        reasons.append("capture names a different workload than this task declares")
-    if type(record.get("repeats")) is not int or record["repeats"] < 1 or \
-            record.get("trajectories_per_repeat") != len(workload["headings_rad"]):
-        reasons.append("capture repeat or trajectory counts are malformed")
-    host = record.get("host") or {}
+        return {name: [f"capture is not a {RAPL_SCHEMA} record"] for name in declared}
+    common = []
+    host = record.get("host") if isinstance(record.get("host"), dict) else {}
     differing = [key for key in ("cpu_model", "machine", "system", "zones") if host.get(key) != host_identity.get(key)]
     if differing:
-        reasons.append("capture host differs from this host: " + ", ".join(differing))
+        common.append("capture host differs from this host: " + ", ".join(differing))
     domains = record.get("domains") or []
-    for name in ("workload_bracket", "idle_bracket"):
-        bracket = record.get(name) or {}
-        if len(bracket.get("before_uj") or []) != len(domains) or len(bracket.get("after_uj") or []) != len(domains) \
-                or not domains or not isinstance(bracket.get("elapsed_monotonic_ns"), int) \
-                or bracket["elapsed_monotonic_ns"] <= 0 \
-                or not all(str(bracket.get(key, "")).isdigit() for key in ("start_utc_ns", "end_utc_ns")):
-            reasons.append(f"capture {name} is malformed")
+    if not isinstance(domains, list) or not all(isinstance(d, dict) for d in domains):
+        return {name: ["capture domains are malformed"] for name in declared}
+    common += _bracket_reasons("idle", record.get("idle_bracket"), domains)
+    reasons = {}
+    workloads, units, unit_names, brackets, skipped = (
+        record.get(key) if isinstance(record.get(key), dict) else {}
+        for key in ("workloads", "units", "unit_names", "brackets", "skipped"))
+    for name, workload in declared.items():
+        own = list(common)
+        if name not in brackets:
+            why = skipped.get(name)
+            own.append(f"capture has no {name} bracket" + (f" ({why})" if why else ""))
+        else:
+            if workloads.get(name) != workload:
+                own.append(f"capture names a different {name} workload than this task declares")
+            if type(units.get(name)) is not int or units[name] < 1:
+                own.append(f"capture {name} unit count is malformed")
+            elif units[name] != expected_units(record, name):
+                own.append(f"capture {name} unit count disagrees with its repeats/batches")
+            if unit_names.get(name) != UNIT.get(name):
+                own.append(f"capture {name} unit name is not {UNIT.get(name)}")
+            own += _bracket_reasons(name, brackets[name], domains)
+        reasons[name] = own
     return reasons
 
 
-def rapl_capture_energy(record) -> dict:
-    """Gross and idle-subtracted package energy per trajectory (one wrap per bracket allowed)."""
+def rapl_capture_energy(record, name) -> dict:
+    """Gross and idle-subtracted package energy per unit of bracket ``name`` (one wrap per counter allowed)."""
     domains = record["domains"]
 
     def total(bracket):
@@ -168,17 +293,18 @@ def rapl_capture_energy(record) -> dict:
                   for b, a, d in zip(bracket["before_uj"], bracket["after_uj"], domains)]
         return sum(delta for delta, _ in deltas), [wrapped for _, wrapped in deltas]
 
-    gross_uj, wrapped = total(record["workload_bracket"])
+    bracket = record["brackets"][name]
+    gross_uj, wrapped = total(bracket)
     idle_uj, idle_wrapped = total(record["idle_bracket"])
-    work_s = record["workload_bracket"]["elapsed_monotonic_ns"] / 1e9
+    work_s = bracket["elapsed_monotonic_ns"] / 1e9
     idle_s = record["idle_bracket"]["elapsed_monotonic_ns"] / 1e9
-    trajectories = record["repeats"] * record["trajectories_per_repeat"]
+    units = record["units"][name]
     # Idle energy is rescaled to the workload interval before subtraction.
     idle_equivalent_uj = idle_uj * work_s / idle_s
-    return {"trajectories": trajectories, "gross_uj": gross_uj, "idle_uj": idle_uj, "workload_s": work_s,
-            "idle_s": idle_s, "wrapped": wrapped + idle_wrapped,
-            "gross_j_per_trajectory": gross_uj * 1e-6 / trajectories,
-            "idle_subtracted_j_per_trajectory": (gross_uj - idle_equivalent_uj) * 1e-6 / trajectories}
+    return {"units": units, "unit": record["unit_names"][name], "gross_uj": gross_uj, "idle_uj": idle_uj,
+            "workload_s": work_s, "idle_s": idle_s, "wrapped": wrapped + idle_wrapped,
+            "gross_j_per_unit": gross_uj * 1e-6 / units,
+            "idle_subtracted_j_per_unit": (gross_uj - idle_equivalent_uj) * 1e-6 / units}
 
 
 # Fixtures -------------------------------------------------------------------
@@ -340,21 +466,50 @@ def _utc(ns_decimal: str) -> str:
     return f"{stamp}.{remainder:09d}Z"
 
 
+# The fields of a log's runtime workload that must equal the common workload's declaration.
+WORKLOAD_FIELDS = ("kernel_sha256", "problem_sha256", "prepared_input_sha256", "iterations", "replicas")
+
+
+def workload_reasons(log) -> list:
+    """Why an operator NVML log does not name the common workload; empty when it does.
+
+    The log's runtime workload (PTX kernel digest, problem digest, prepared
+    input digest, K and replicas) must equal ``energy_gpu_workload.workload()``
+    and its plan's KL target must be the declared one, so an energy per batch
+    or per accepted result is for the computation the CPU brackets (T115,
+    T117, T120) and the CPU/GPU comparisons (T117, T121, T147) use.
+    """
+    from . import energy_gpu_workload as common
+    declared = common.workload()
+    runtime = log.get("runtime") if isinstance(log, dict) else None
+    work = runtime.get("workload") if isinstance(runtime, dict) else None
+    work = work if isinstance(work, dict) else {}
+    plan = log.get("plan") if isinstance(log, dict) and isinstance(log.get("plan"), dict) else {}
+    differing = [key for key in WORKLOAD_FIELDS if work.get(key) != declared[key]]
+    if plan.get("target_kl_nats") != common.SPEC["target_kl_nats"]:
+        differing.append("target_kl_nats")
+    return (["log names a different GPU workload than the common workload (examples/energy-accuracy/problem.json, "
+             f"K = {declared['iterations']}, {declared['replicas']} replicas, the gaussian_vi PTX kernel): "
+             + ", ".join(differing)] if differing else [])
+
+
 def physical_basis(raw: bytes, log, analysis, host_identity: dict | None,
                    required_name: str | None = None) -> tuple[dict, list]:
     """Acquisition basis for a physical finding, or a notes-only basis and the reasons it is withheld.
 
     A retained log supports a physical claim here only when it declares a
-    physical measurement, its analysis is eligible, and its sensor identity
-    (UUID, name, driver, NVML version and NVML library digest) equals the NVML
-    identity of that device on this host; optionally the device name must
-    contain ``required_name``. This binds the record to hardware and software
-    present on this host. It does not authenticate that the operator's capture
-    was genuine: no signature ties the readings to the device.
+    physical measurement, its analysis is eligible, it names the common
+    workload (:func:`workload_reasons`), and its sensor identity (UUID, name,
+    driver, NVML version and NVML library digest) equals the NVML identity of
+    that device on this host; optionally the device name must contain
+    ``required_name``. This binds the record to hardware and software present
+    on this host. It does not authenticate that the operator's capture was
+    genuine: no signature ties the readings to the device.
     """
     reasons = []
     if log["origin"] != "physical_measurement":
         reasons.append("log declares a synthetic fixture, not a physical measurement")
+    reasons += workload_reasons(log)
     if not analysis["comparison"]["eligible"]:
         reasons.extend(analysis["comparison"]["reasons"] or ["analysis is not eligible for comparison"])
     if host_identity is None:
@@ -532,22 +687,31 @@ def environment_log_path(variable=LOG_ENV) -> str | None:
 
 
 def main(argv=None) -> int:
-    """``python -m ciw.lab.energy_gpu_telemetry rapl-capture OUTPUT``: the operator-run T115 capture."""
+    """``python -m ciw.lab.energy_gpu_telemetry rapl-capture OUTPUT``: the operator-run RAPL capture."""
     import argparse
     parser = argparse.ArgumentParser(prog="python -m ciw.lab.energy_gpu_telemetry",
-                                     description="Operator-run RAPL capture for lab task T115 (outside the lab runner)")
+                                     description="Operator-run RAPL capture for lab tasks T115, T117 and T120 (outside "
+                                                 "the lab runner)")
     commands = parser.add_subparsers(dest="command", required=True)
-    capture = commands.add_parser("rapl-capture", help="bracket the T115 workload and an equal idle interval")
+    capture = commands.add_parser("rapl-capture", help="bracket the geodesic workload and the common Gaussian VI "
+                                                       "workload (NumPy float64 and float32, Rust float64), then an "
+                                                       "idle interval")
     capture.add_argument("output", help="new JSON file for the raw capture (an existing file is refused)")
-    capture.add_argument("--repeats", type=int, default=3)
+    capture.add_argument("--repeats", type=int, default=3,
+                         help=f"geodesic batches (six trajectories each; 1 to {MAX_REPEATS})")
+    capture.add_argument("--batches", type=int, default=500,
+                         help=f"common-workload batches per Gaussian VI bracket (1 to {MAX_BATCHES}, the Rust port's "
+                              "limit)")
+    capture.add_argument("--no-rust", action="store_true", help="skip the Rust port bracket")
     args = parser.parse_args(argv)
     try:
-        record = capture_rapl(args.output, args.repeats)
-    except (OSError, ValueError) as exc:
+        record = capture_rapl(args.output, args.repeats, args.batches, rust=not args.no_rust)
+    except (OSError, ValueError, RuntimeError) as exc:
         print(f"RAPL capture refused: {exc}", file=sys.stderr)
         return 2
-    print(json.dumps({"output": str(args.output), "zones": record["host"]["zones"],
-                      "then": f"{RAPL_ENV}={args.output} ciw lab run T115 --output-dir <dir>"}, indent=1))
+    print(json.dumps({"output": str(args.output), "zones": record["host"]["zones"], "brackets": sorted(record["brackets"]),
+                      "skipped": record["skipped"],
+                      "then": f"ciw lab run T115 T117 T120 --capture rapl-log={args.output} --output-dir <dir>"}, indent=1))
     return 0
 
 

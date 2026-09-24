@@ -9,7 +9,10 @@ harness), `implementation_targets_serial.py` (canonical JSON, Rust probe),
 `implementation_targets_architecture.py` (C++ inventory, import-graph scan),
 `implementation_targets_fpga.py` (telemetry frames, bitstream identity,
 compatibility, link simulation) and `implementation_targets_authority.py`
-(actuator write policy, control proposals). Tests:
+(actuator write policy, control proposals). T147 also uses the common Gaussian
+VI workload of the energy section (`energy_gpu_workload.py`, described in
+[ENERGY_GPU.md](ENERGY_GPU.md#the-common-workload)), whose PTX kernel is the
+one GPU implementation the workbench has. Tests:
 `tests/test_lab_implementation_targets.py`.
 
 Run the section with
@@ -41,15 +44,29 @@ production acceptance, machine safety, industrial readiness or actuator
 authority is recorded as a finding in its proper domain and is
 `not_established`.
 
+Independent checks name their ciw-side producer by package version and
+module digest (`{"implementation": ..., "revision": "ciw 0.1.0",
+"source_sha256": ...}`, T146, T148 and T149), as the checkers name theirs.
+
 Headline labels (weakest established computational label per task):
 `numerically_verified` for T142, T144, T146, T147 and T149-T154; `analytic`
 for T143 (a design inventory), T145 (the Julia pin procedure) and T148 (the
 reduction policy record is a derivation, although every number in T148 is
-exact). T145 and T147 are `partial`: neither task has a Julia or GPU
-execution path, so provisioning Julia or a CUDA host changes no finding until
-a Julia worker behind the SCR boundary, or a GPU implementation of the batched
-dot products feeding `compare_outputs`, is built (their recommended next
-tasks name that work).
+exact). T145 and T147 are `partial`. T145 has no Julia execution path, so
+provisioning Julia changes no finding until a Julia worker behind the SCR
+boundary is built (its recommended next task names that work). T147's GPU
+comparison runs the common workload's PTX kernel wherever an NVIDIA GPU
+answers the `hardware:nvidia-gpu` probe; here none did, so that finding is
+`not_established` for that reason, and T147 becomes `completed` in the RTX 2080
+host run of the energy section's protocol (retained with `ciw lab hardware
+retain`).
+
+Recommended next steps name the work that delivers, never a task that has
+already run: a completed task's next step is its own open question, marked
+"Deferred research question", or says what it already did (T142). T148's is
+the one deferred question that owns the missing GPU code of the common
+workload (a float32 rendering of the kernel and a device-wide reduction under
+`REDUCTION_POLICY`), shared with T117, T120, T121 and T147.
 
 ## Kernel ranking
 
@@ -102,7 +119,12 @@ the RK4 step without its right-hand side; keep the Kalman update in NumPy until
 filter rates justify it. A Rust port of the fused loop for the unit sphere
 (closed-form Christoffel symbols) reproduces `ciw.lab.jacobi.transfer` to
 4.4e-16 after 600 steps. Its retained timing ratio overstates what a generic
-port would gain, because the port is specialised to the sphere.
+port would gain, because the port is specialised to the sphere. Whether a
+Rust port saves time or energy on a target machine cannot be a finding from
+wall-clock timings; the reproducible route is a RAPL bracket, which
+`python -m ciw.lab.energy_gpu_telemetry rapl-capture` now makes for a Rust port
+and the NumPy reference of the common Gaussian VI workload (T117 reports it).
+A port of the ranked fused transfer loop itself would need its own bracket.
 
 Dispatch counts depend on the Python and NumPy versions (the event semantics
 used were checked identical on CPython 3.11-3.13), and array operators are not
@@ -327,8 +349,30 @@ flags nothing, and the fault and bitwise findings are refuted. What is checked:
   no fault escapes.
 
 The bitwise finding reports the bitwise policy's own violations (123 of 128
-rows), and a copy of the reference is not flagged. This task has no GPU kernel
-path, so CPU/GPU agreement is not established whatever host runs it.
+rows), and a copy of the reference is not flagged.
+
+The batched dot products have no GPU path and need none: the CPU/GPU
+comparison uses the common Gaussian VI workload of the energy section, whose
+PTX kernel (`ciw.energy_cuda`, entry `gaussian_vi`) exists. Its reductions are
+fixed two-term sums evaluated unfused in one declared order, so T148's policy
+prescribes a bitwise comparison (`FIXED_ORDER_POLICY`: `REDUCTION_POLICY`'s
+`fixed_layout_arrays` rule, same order on both sides). On the CPU the harness
+accepts a scalar Python-float evaluation of the declared order and flags both
+exact fused multiply-add contractions of it (the build a contracting compiler
+would produce), which shows the policy detects the difference a GPU compiler
+could introduce. Where `hardware:nvidia-gpu` answers, T147 runs the kernel on
+all 4096 replicas and judges its 24,576 outputs under the same policy; tests
+with simulated devices that contract multiply-adds or flip the sign of one
+output column show the finding is then refuted, not hidden. Outputs that
+`CudaGaussianWorker.solve()` rejects after the kernel ran (nonfinite, out of
+bound, asymmetric or not positive definite covariance) are recorded as a
+failed check, so the finding is refuted rather than filed as an expected gap;
+only a kernel that produced no outputs leaves it expected-unestablished. Here
+no GPU answered, so the finding is `not_established` with that reason and T147
+is `partial`. T147's runtime identity digests the modules that define the
+workload (`ciw.energy_cuda`, `ciw.energy_bench`, `ciw.free_energy_math`)
+beside its own sources and records the workload declaration
+(`common_workload`).
 
 ## Reduction policies
 
@@ -349,6 +393,13 @@ now part of the permutation study and the failure is retained as a
 counterexample. Kahan is checked against 2u S (Higham 2002, eq. 4.8) plus a
 declared second-order allowance 4n u^2 S; that constant is a policy choice
 without proof.
+
+T147 and T121 apply this policy to the common workload: a fixed-order
+reduction evaluated in the same order on both sides is compared bitwise
+(`FIXED_ORDER_POLICY`). A device-wide reduction of the workload's per-replica
+outputs following the pairwise rule, with one atomicAdd variant for contrast,
+is the deferred research question T148 names; parallel (multi-thread and
+device) reductions are not exercised here.
 
 Across 25 orders of five datasets, exact accumulation gave one result per
 dataset and matched `math.fsum` everywhere; fixed-tree pairwise gave 4
@@ -436,7 +487,12 @@ record is refused, and deployment of any record needs authority the lab does
 not hold. Which files of a vendor toolchain the installation manifest must
 cover is not specified here, and a change outside the supplied files is not
 detected. Reproducibility of the record across runs is left to the regression
-gate, which compares `record_sha256` exactly.
+gate, which compares `record_sha256` exactly. T150 is `completed` although its
+bitstream is a placeholder because it records identity and toolchain, a build
+artifact rather than a measurement of physical origin: the synthetic
+bitstream exercises every field and refusal of the record. Recording a real
+design's bitstream, and whether a vendor toolchain builds the same bytes
+twice, need a vendor toolchain and are its deferred research question.
 
 **Compatibility and rollback** (`ciw.fpga-compatibility.v1`,
 `ciw.fpga-rollback.v1`, T151): `compatible(b, h, r)` iff the host decoder

@@ -279,14 +279,25 @@ def rust_source_sha256() -> str:
 
 
 def build_rust_kernel(directory) -> dict:
-    """Compile the embedded source with rustc into ``directory``; return its identity."""
+    """Compile the embedded sphere RK4 source with rustc into ``directory``; return its identity."""
+    return build_rust_program(directory, RUST_SOURCE, "sphere_rk4", "ciw.lab.energy_gpu_kernels.RUST_SOURCE")
+
+
+def build_rust_program(directory, source_text: str, stem: str, implementation: str) -> dict:
+    """Compile a std-only Rust source with rustc into ``directory``; return its identity.
+
+    The identity holds the rustc version, the flags (the scratch path shown as
+    ``<scratch>``), the source and binary SHA-256 and the executable path; the
+    binary digest is reproducible for a given rustc and target because the
+    scratch path is remapped and one codegen unit is used.
+    """
     rustc = shutil.which("rustc")
     if rustc is None:
         raise NativeKernelUnavailable("rustc is not on PATH")
     directory = Path(directory)
-    source = directory / "sphere_rk4.rs"
-    source.write_text(RUST_SOURCE, encoding="utf-8", newline="\n")
-    executable = directory / ("sphere_rk4.exe" if sys.platform == "win32" else "sphere_rk4")
+    source = directory / f"{stem}.rs"
+    source.write_text(source_text, encoding="utf-8", newline="\n")
+    executable = directory / (f"{stem}.exe" if sys.platform == "win32" else stem)
     # Remapping the scratch path and one codegen unit make the binary digest
     # reproducible for a given rustc and target.
     flags = ["-O", "-C", "debuginfo=0", "-C", "codegen-units=1", "--edition", "2021"]
@@ -295,11 +306,13 @@ def build_rust_kernel(directory) -> dict:
         built = subprocess.run(command, capture_output=True, text=True, timeout=120)
         version = subprocess.run([rustc, "--version"], capture_output=True, text=True, timeout=30).stdout.strip()
     except (OSError, subprocess.TimeoutExpired) as exc:
-        raise NativeKernelUnavailable(f"rustc could not run: {exc}") from exc
+        # The exception type only: its message may name a host path, which a retained report must not hold.
+        raise NativeKernelUnavailable(f"rustc could not run: {type(exc).__name__}") from exc
     if built.returncode != 0 or not executable.is_file():
-        raise NativeKernelUnavailable("rustc failed: " + built.stderr.strip()[:2000])
-    return {"implementation": "ciw.lab.energy_gpu_kernels.RUST_SOURCE", "language": "rust", "rustc": version,
-            "flags": flags + ["--remap-path-prefix=<scratch>=."], "source_sha256": rust_source_sha256(),
+        raise NativeKernelUnavailable("rustc failed: " + built.stderr.replace(str(directory), "<scratch>").strip()[:2000])
+    return {"implementation": implementation, "language": "rust", "rustc": version,
+            "flags": flags + ["--remap-path-prefix=<scratch>=."],
+            "source_sha256": hashlib.sha256(source_text.encode("utf-8")).hexdigest(),
             "binary_sha256": hashlib.sha256(executable.read_bytes()).hexdigest(), "executable": str(executable)}
 
 
@@ -311,7 +324,7 @@ def run_rust_kernel(executable, states, length, steps) -> dict:
         done = subprocess.run([str(executable)], input=payload, capture_output=True, text=True, timeout=120,
                               env={**os.environ, "RUST_BACKTRACE": "0"})
     except (OSError, subprocess.TimeoutExpired) as exc:
-        raise NativeKernelUnavailable(f"Rust kernel could not run: {exc}") from exc
+        raise NativeKernelUnavailable(f"Rust kernel could not run: {type(exc).__name__}") from exc
     if done.returncode != 0:
         raise NativeKernelUnavailable("Rust kernel refused its input: " + done.stderr.strip()[:500])
     result = json.loads(done.stdout)
@@ -320,11 +333,36 @@ def run_rust_kernel(executable, states, length, steps) -> dict:
     return result
 
 
-def ulp_distance(a, b) -> int:
-    """Largest distance in units in the last place between two float64 arrays of equal sign."""
-    a = np.ascontiguousarray(a, dtype="<f8").view("<i8")
-    b = np.ascontiguousarray(b, dtype="<f8").view("<i8")
-    return int(np.max(np.abs(a - b))) if a.size else 0
+ULP_LAYOUTS = {np.dtype(np.float64): ("<f8", "<i8", (1 << 63) - 1), np.dtype(np.float32): ("<f4", "<i4", (1 << 31) - 1)}
+
+
+def ordered_bits(values, dtype=np.float64) -> np.ndarray:
+    """Map IEEE values of ``dtype`` to int64 keys in their total order, one key per bit pattern.
+
+    Nonnegative values keep their bits; a negative value of magnitude bits m
+    maps to -m - 1, so -0.0 sits one step below +0.0 and every other pair of
+    adjacent floats is one step apart. Distinct bit patterns get distinct keys.
+    """
+    float_code, int_code, magnitude = ULP_LAYOUTS[np.dtype(dtype)]
+    bits = np.ascontiguousarray(values, dtype=float_code).view(int_code).astype(np.int64)
+    return np.where(bits < 0, -(bits & magnitude) - 1, bits)
+
+
+def ulp_distance(a, b, dtype=np.float64) -> int:
+    """Largest distance in units in the last place between two arrays of ``dtype`` values, of any signs.
+
+    Zero exactly when the arrays are bitwise equal. The distance of two keys
+    can reach 2^64 - 1, beyond int64, so it is taken in uint64 from the larger
+    key, where the subtraction cannot wrap.
+    """
+    x, y = ordered_bits(a, dtype), ordered_bits(b, dtype)
+    if x.shape != y.shape:
+        raise ValueError("ULP distance needs arrays of equal shape")
+    if not x.size:
+        return 0
+    high, low = np.maximum(x, y).view(np.uint64), np.minimum(x, y).view(np.uint64)
+    with np.errstate(over="ignore"):
+        return int(np.max(high - low))
 
 
 # Reduction orders -------------------------------------------------------

@@ -8,7 +8,8 @@ import numpy as np
 import pytest
 
 from ciw.core.identities import canonical_json
-from ciw.lab import runner
+from ciw.lab import energy_gpu_workload as common
+from ciw.lab import planner, runner
 from ciw.lab import implementation_targets as targets
 from ciw.lab import implementation_targets_architecture as arch
 from ciw.lab import implementation_targets_authority as authority
@@ -325,9 +326,14 @@ def test_t147_harness_detects_differences(tmp_path):
     above = witness["above_bound"]
     assert (above["row"], above["column"]) == (14, 538) and 1.0 < above["ratio"] < 1.001
     assert value["max_undetected_ratio"] == above["ratio"] and value["undetected_above_bound"] == 1
-    gpu = findings["CPU and GPU outputs agree under the tolerance policy on GPU hardware"]
-    assert gpu["expected_not_established"] is True and "no GPU kernel path" in gpu["basis"]["notes"]
-    assert report["recommended_next_task"].startswith("Implement a GPU path")
+    gpu = findings[targets.GPU_CLAIM]
+    assert gpu["expected_not_established"] is True and gpu["basis"]["notes"] == [common.NO_GPU_PROBE]
+    harness = findings[targets.HARNESS_CLAIM]
+    assert harness["evidence_status"] == "numerically_verified"
+    assert harness["value"] == {"python-scalar": False, "fma-first": True, "fma-second": True}
+    assert "--capture energy-log=" in report["recommended_next_task"]
+    assert "ciw lab hardware retain" in report["recommended_next_task"]
+    assert common.GPU_QUESTION in report["recommended_next_task"]
     assert findings["GPU/CPU agreement establishes industrial readiness"]["evidence_status"] == "not_established"
     with pytest.raises(ValueError, match="equal shapes"):
         kernels.compare_outputs(np.zeros(2), np.zeros(3), {"mode": "bitwise"})
@@ -351,7 +357,7 @@ def test_t147_fault_study_is_judged_by_the_harness(tmp_path, monkeypatch, scale)
     monkeypatch.setattr(kernels, "compare_outputs", broken)
     report, _ = _run("T147", tmp_path)
     refuted = set(_refuted(report))
-    assert BITWISE_CLAIM in refuted and MISS_CLAIM in refuted
+    assert BITWISE_CLAIM in refuted and MISS_CLAIM in refuted and targets.HARNESS_CLAIM in refuted
     # A lenient harness (3x tolerance) misses faults above twice the true tolerance.
     assert (GUARANTEE_CLAIM in refuted) == (scale > 1)
     assert report["evidence_status"]["primary"] == "not_established"
@@ -573,3 +579,123 @@ def test_t154_control_outputs_are_proposals(tmp_path):
     with pytest.raises(authority.AuthorityRefusal) as refused:
         proposal.record()
     assert refused.value.code == "proposal_status_tampered"
+
+
+_REAL_RUN_GPU = common.run_gpu
+
+
+def _gpu_identity():
+    import hashlib
+    return {"device_name": "NVIDIA GeForce RTX 2080", "device_uuid": "GPU-5d3f9a2c-7e41-4b8a-9c06-1f2e3d4c5b6a",
+            "compute_capability": [7, 5], "cuda_driver_version": 12040, "kernel_sha256": common.kernel_sha256(),
+            "prepared_input_sha256": hashlib.sha256(common.prepared_inputs().tobytes()).hexdigest()}
+
+
+class _RejectingWorker:
+    """Stands in for ciw.energy_cuda.CudaGaussianWorker: the kernel ran, then solve()'s own output check raised."""
+
+    def __init__(self, problem, solver, iterations, replicas=4096, device_index=0):
+        pass
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+    def identity(self):
+        return _gpu_identity()
+
+    def solve(self):
+        raise ValueError("GPU covariance lost symmetry")
+
+
+def _simulated_gpu(monkeypatch, outputs=None, unavailable=None):
+    """A host whose nvidia-gpu probe answers and whose PTX kernel returns ``outputs`` (or fails with ``unavailable``)."""
+    monkeypatch.setattr(runner, "_probe_hardware", lambda name: name == "nvidia-gpu")
+    result = {"unavailable": unavailable} if unavailable else {"outputs": outputs, "identity": _gpu_identity()}
+    monkeypatch.setattr(common, "run_gpu", lambda: result)
+
+
+def test_t147_common_workload_comparison_follows_the_gpu_probe(tmp_path, monkeypatch):
+    """T147 judges the PTX kernel's outputs under T148's fixed-order policy where a GPU answers, and only there."""
+    monkeypatch.setattr(runner, "_probe_hardware", lambda name: False)
+    report, findings = _run("T147", tmp_path / "no-gpu")
+    assert report["state"] == "partial" and findings[targets.GPU_CLAIM]["expected_not_established"] is True
+    assert targets.FIXED_ORDER_POLICY["mode"] == "bitwise" and "fixed_layout_arrays" in targets.FIXED_ORDER_POLICY["rule"]
+    _simulated_gpu(monkeypatch, outputs=common.run_numpy(np.float64))
+    report, findings = _run("T147", tmp_path / "gpu")
+    gpu = findings[targets.GPU_CLAIM]
+    assert gpu["evidence_status"] == "numerically_verified"
+    assert gpu["value"] == {"elements": 6 * common.REPLICAS, "violations": 0, "max_ulp": 0.0, "policy": "bitwise"}
+    _assert_clean(report, "completed", "numerically_verified")
+    assert report["provider_runtime_identity"]["gpu"]["device_name"] == "NVIDIA GeForce RTX 2080"
+    # A device that contracted the kernel's multiply-adds violates the policy: refuted, not hidden.
+    _simulated_gpu(monkeypatch, outputs=np.tile(common.run_variant("fma-second"), (common.REPLICAS, 1)))
+    report, findings = _run("T147", tmp_path / "contracted")
+    assert targets.GPU_CLAIM in _refuted(report) and findings[targets.GPU_CLAIM]["value"]["violations"] > 0
+    assert report["state"] == "partial" and report["evidence_status"]["primary"] == "not_established"
+    _simulated_gpu(monkeypatch, outputs=common.run_numpy(np.float64)[:5])
+    report, findings = _run("T147", tmp_path / "short")
+    assert targets.GPU_CLAIM in _refuted(report) and report["state"] == "partial"
+    _simulated_gpu(monkeypatch, unavailable="the PTX kernel did not run: CudaError: simulated")
+    report, findings = _run("T147", tmp_path / "failed")
+    assert findings[targets.GPU_CLAIM]["basis"]["notes"] == ["the PTX kernel did not run: CudaError: simulated"]
+    assert report["state"] == "partial"
+    # A device that drops the kernel's neg.f64 flips the sign of one output column: every flipped value violates.
+    flipped = common.run_numpy(np.float64)
+    flipped[:, 3] = -flipped[:, 3]
+    _simulated_gpu(monkeypatch, outputs=flipped)
+    report, findings = _run("T147", tmp_path / "sign-flipped")
+    assert targets.GPU_CLAIM in _refuted(report) and findings[targets.GPU_CLAIM]["value"]["violations"] == common.REPLICAS
+    assert report["evidence_status"]["primary"] == "not_established"
+    # Outputs the CUDA worker rejected after the kernel ran (solve() raises ValueError after launch, sync and copy)
+    # are a refutation, never an expected gap.
+    from ciw import energy_cuda
+    monkeypatch.setattr(common, "run_gpu", _REAL_RUN_GPU)
+    monkeypatch.setattr(energy_cuda, "CudaGaussianWorker", _RejectingWorker)
+    report, findings = _run("T147", tmp_path / "rejected")
+    rejected = findings[targets.GPU_CLAIM]
+    assert targets.GPU_CLAIM in _refuted(report) and not rejected.get("expected_not_established")
+    assert rejected["value"]["rejected_by_worker"].endswith("GPU covariance lost symmetry")
+    assert report["state"] == "partial" and report["evidence_status"]["primary"] == "not_established"
+
+
+def test_t147_identity_digests_the_common_workload_sources(tmp_path, monkeypatch):
+    """The kernel, planner and information-system modules that define the workload are part of T147's identity."""
+    monkeypatch.setattr(runner, "_probe_hardware", lambda name: False)
+    report, _ = _run("T147", tmp_path)
+    identity = report["provider_runtime_identity"]
+    assert set(common.SOURCES) <= set(identity["sources"]) and all(len(identity["sources"][s]) == 64
+                                                                   for s in common.SOURCES)
+    assert identity["common_workload"] == common.workload()
+
+
+def test_ciw_producers_of_independent_checks_carry_a_revision(tmp_path):
+    """Every ciw-side producer of an independent check names the package version and its module digest (C7)."""
+    from ciw import __version__
+    for task_id in ("T145", "T146", "T148", "T149"):
+        report, _ = _run(task_id, tmp_path / task_id)
+        checks = [f["basis"]["independent_check"] for f in report["findings"] if "independent_check" in f["basis"]]
+        assert checks, task_id
+        for check in checks:
+            for side in ("producer", "checker"):
+                identity = check[side]
+                assert isinstance(identity.get("revision"), str) and identity["revision"], (task_id, side)
+            if check["producer"]["implementation"].startswith("ciw.") and task_id != "T145":
+                assert check["producer"]["revision"] == f"ciw {__version__}"
+                assert len(check["producer"]["source_sha256"]) == 64
+
+
+def test_next_steps_point_at_work_that_delivers(tmp_path):
+    """No next step points at a queue task (all of T142-T154 have run); open work is a named question."""
+    implementations = section_implementations("implementation-targets")
+    context = runner.Context(tmp_path)
+    for task_id in sorted(implementations):
+        report = runner.run_task(TASKS[task_id], implementations[task_id], context, {})
+        kept, stale = planner.next_step_items(report["recommended_next_task"], task_id, set(TASKS))
+        assert stale == [] and not [item for item in kept if item[0] == "pointer"], task_id
+    t142 = runner.run_task(TASKS["T142"], implementations["T142"], context, {})["recommended_next_task"]
+    assert t142.startswith("Done in this task") and "rapl-capture" in t142
+    t148 = runner.run_task(TASKS["T148"], implementations["T148"], context, {})["recommended_next_task"]
+    assert t148 == common.GPU_QUESTION

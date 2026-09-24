@@ -15,12 +15,13 @@ import sys
 import numpy as np
 import pytest
 
-from ciw import energy_records
+from ciw import energy_bench, energy_cuda, energy_records
 from ciw.lab import energy_gpu, energy_gpu_kernels as kernels, energy_gpu_telemetry as telemetry, runner
+from ciw.lab import energy_gpu_workload as common, planner
 from ciw.lab.evidence import COMPUTATIONAL_DOMAINS, PHYSICAL_DOMAINS, EvidenceRefusal, supported_label
 from ciw.lab.registry import load_queue, section_implementations
 from ciw.lab.report import validate_report
-from ciw.telemetry import canonical
+from ciw.telemetry import canonical, digest
 
 QUEUE = {t["id"]: t for t in load_queue()["tasks"]}
 IMPLEMENTATIONS = section_implementations("energy-gpu")
@@ -68,6 +69,12 @@ def by_claim(report, prefix):
     return matches[0]
 
 
+def pointers(report):
+    """Task pointers the planner reads in a report's next step: (pointers to other tasks, stale pointers)."""
+    kept, stale = planner.next_step_items(report["recommended_next_task"], report["task_id"], set(QUEUE))
+    return [item for item in kept if item[0] == "pointer"], stale
+
+
 def physical_labels(report):
     return {f["evidence_status"] for f in report["findings"] if f["domain"] in PHYSICAL_DOMAINS}
 
@@ -77,11 +84,42 @@ def artifact(report, context, name):
     return entry, (context.output_dir / entry["path"]).read_bytes()
 
 
-def relabelled_log(name=None):
-    """The baseline fixture declared as a physical measurement (optionally renamed) and resealed."""
+def common_workload_log(log):
+    """A fixture log rewritten to name the common workload: plan, runtime workload and every retained batch output.
+
+    The counter readings and clocks stay the fixture's; the outputs are the
+    NumPy reference of the common workload, so the log validates and its
+    analysis is eligible.
+    """
+    log = json.loads(json.dumps(log))
+    spec, declared = common.spec(), common.workload()
+    problem = spec["problem"]
+    log["plan"].update(problem=problem, solver=spec["solver"], iterations=declared["iterations"],
+                       replicas=declared["replicas"], target_kl_nats=spec["target_kl_nats"],
+                       problem_digest=digest(problem),
+                       model_digest=digest({key: value for key, value in problem.items() if key != "observations"}),
+                       observations_digest=digest(problem["observations"]))
+    log["runtime"]["workload"].update(iterations=declared["iterations"], replicas=declared["replicas"],
+                                      solver_settings=spec["solver"], problem_sha256=declared["problem_sha256"],
+                                      prepared_input_sha256=declared["prepared_input_sha256"],
+                                      kernel_sha256=declared["kernel_sha256"])
+    result = energy_records.encode_result(common.run_numpy(np.float64))
+    for phase in log["phases"]:
+        for batch in phase["batches"]:
+            batch["result"] = dict(result)
+    return telemetry.reseal(log)
+
+
+def relabelled_log(name=None, workload=True):
+    """The baseline fixture declared as a physical measurement (optionally renamed) and resealed.
+
+    With ``workload`` it names the common workload (``common_workload_log``);
+    without, it keeps the fixture's own problem, K = 128 and 4 replicas.
+    """
     log = json.loads(telemetry.fixture_bytes()["baseline"])
     sensor = dict(log["sensor"], name=name) if name else log["sensor"]
-    return telemetry.reseal(dict(log, origin="physical_measurement", sensor=sensor))
+    log = dict(log, origin="physical_measurement", sensor=sensor)
+    return common_workload_log(log) if workload else telemetry.reseal(log)
 
 
 def simulate_gpu_host(monkeypatch, tmp_path, log, smi=None, offset=None):
@@ -103,7 +141,9 @@ def test_every_section_task_is_registered_with_tests():
     assert sorted(IMPLEMENTATIONS) == TASK_IDS
     for implementation in IMPLEMENTATIONS.values():
         assert implementation.regression_tests
-        assert all(node.startswith("tests/test_lab_energy_gpu.py::") for node in implementation.regression_tests)
+        for node in implementation.regression_tests:
+            path, name = node.split("::")
+            assert path == "tests/test_lab_energy_gpu.py" and callable(globals()[name]), node
 
 
 def test_every_numerical_finding_declares_uncertainty_and_tolerance(lab):
@@ -128,10 +168,13 @@ def test_cpu_energy_task_counts_work_and_leaves_energy_unestablished(lab):
     assert work["evidence_status"] == "numerically_verified"
     accepted = by_claim(report, "The fixed-step trajectories are accepted")
     assert accepted["evidence_status"] == "numerically_verified" and accepted["value"] < 1e-8
-    for claim in (energy_gpu.GROSS_CPU, energy_gpu.IDLE_CPU):
+    for claim in (energy_gpu.GROSS_CPU, energy_gpu.IDLE_CPU, energy_gpu.GROSS_VI, energy_gpu.IDLE_VI):
         energy = by_claim(report, claim)
         assert energy["domain"] == "physical" and energy["evidence_status"] == "not_established"
         assert energy["value"] is None
+    work = by_claim(report, energy_gpu.VI_WORK)
+    assert work["evidence_status"] == "numerically_verified"
+    assert work["value"]["flops_per_batch"] == common.REPLICAS * (24 * common.plan_iterations() + 7)
     assert report["physical_validation_status"]["status"] == "not_established"
     names = {a["path"].rsplit("/", 1)[-1] for a in report["generated_artifacts"]}
     assert {"work-proxies.json", "timing.json", "rapl-probe.json"} <= names and "rapl-capture.json" not in names
@@ -148,21 +191,33 @@ def test_lab_run_acquires_no_energy_measurement(tmp_path, clean_environment):
     clean_environment.setattr(telemetry, "rapl_read", refuse)
     report = run("T115", runner.Context(tmp_path))
     assert report["state"] == "partial" and physical_labels(report) == {"not_established"}
-    assert "no RAPL capture was supplied" in by_claim(report, energy_gpu.GROSS_CPU)["basis"]["notes"][0]
+    assert "no rapl-log capture was bound" in by_claim(report, energy_gpu.GROSS_CPU)["basis"]["notes"][0]
+    assert "--capture rapl-log=" in report["recommended_next_task"]
+    assert "ciw lab hardware retain" in report["recommended_next_task"]
 
 
-def simulated_rapl_capture(tmp_path, monkeypatch, host):
-    """An operator capture made with simulated counters (1 -> 10 J over the workload, 0.5 J over the idle bracket)."""
+SIMULATED_BATCHES = 2
+
+
+def simulated_rapl_capture(tmp_path, monkeypatch, host, rust=False):
+    """An operator capture made with simulated counters.
+
+    Brackets in capture order: geodesic 1 -> 10 J, NumPy float64 10 -> 12 J,
+    NumPy float32 12 -> 13 J, (Rust float64 13 -> 14 J,) idle + 0.5 J.
+    Every bracket lasts 400 ms, so the idle rescaling is deterministic.
+    """
     domain = {"zone": "intel-rapl:0", "name": "package-0", "path": "unused", "max_energy_range_uj": 262143328850}
-    readings = iter([[1_000_000], [10_000_000], [10_000_000], [10_500_000]])
+    values = [1_000_000, 10_000_000, 10_000_000, 12_000_000, 12_000_000, 13_000_000]
+    values += [13_000_000, 14_000_000, 14_000_000, 14_500_000] if rust else [13_000_000, 13_500_000]
+    readings = iter([[value] for value in values])
     with monkeypatch.context() as patch:
         patch.setattr(telemetry, "rapl_domains", lambda root=None, separator=":": [domain])
         patch.setattr(telemetry, "rapl_read", lambda domains: next(readings))
         patch.setattr(telemetry, "rapl_host_identity", lambda root=None, separator=":": dict(host))
-        record = telemetry.capture_rapl(tmp_path / "captured.json", repeats=1, sleep=lambda seconds: None)
-    # Fix the brackets' durations so the idle rescaling is deterministic.
-    for bracket in ("workload_bracket", "idle_bracket"):
-        record[bracket]["elapsed_monotonic_ns"] = 400_000_000
+        record = telemetry.capture_rapl(tmp_path / "captured.json", repeats=1, batches=SIMULATED_BATCHES,
+                                        sleep=lambda seconds: None, rust=rust)
+    for bracket in list(record["brackets"].values()) + [record["idle_bracket"]]:
+        bracket["elapsed_monotonic_ns"] = 400_000_000
     capture = tmp_path / "capture.json"
     capture.write_text(json.dumps(record), encoding="utf-8")
     return record, capture
@@ -204,6 +259,7 @@ def test_rapl_probe_is_the_only_counter_read(tmp_path, clean_environment):
     gross = by_claim(report, energy_gpu.GROSS_CPU)
     assert gross["evidence_status"] == "hardware_measured"
     assert gross["value"] == pytest.approx(9.0 / len(kernels.HEADINGS))  # from the capture, not the probed counter
+    assert by_claim(report, energy_gpu.GROSS_VI)["value"] == pytest.approx(2.0 / SIMULATED_BATCHES)
     assert "987654321" not in json.dumps(report)
 
 
@@ -225,12 +281,18 @@ def test_rapl_helpers_read_counters_and_one_wrap(tmp_path):
 
 
 def test_rapl_capture_is_analyzed_read_only_and_gated(tmp_path, clean_environment):
-    """A simulated operator capture: gross and idle-subtracted energy, retained raw bytes, identity gate."""
+    """A simulated operator capture: gross and idle-subtracted energy per bracket, retained raw bytes, identity gate."""
     monkeypatch = clean_environment
     host = {"cpu_model": "Simulated CPU", "machine": "x86_64", "system": "Linux", "zones": ["intel-rapl:0 package-0"]}
     record, capture = simulated_rapl_capture(tmp_path, monkeypatch, host)
     with pytest.raises(ValueError, match="Refusing to overwrite"):
         telemetry.capture_rapl(tmp_path / "captured.json", repeats=1)
+    # The capture declares the common workload exactly as the analyzing tasks do, and holds no host path.
+    assert sorted(record["brackets"]) == sorted([telemetry.GEODESIC, telemetry.VI_NUMPY64, telemetry.VI_NUMPY32])
+    assert record["workloads"][telemetry.VI_NUMPY32] == dict(common.workload("float32", "numpy"),
+                                                             boundary=telemetry.NUMPY_BOUNDARY)
+    assert record["skipped"] == {telemetry.VI_RUST64: "not requested (--no-rust)"}
+    assert all("path" not in domain for domain in record["domains"])
     monkeypatch.setattr(telemetry, "rapl_host_identity", lambda root=None, separator=":": dict(host))
     monkeypatch.setenv(telemetry.RAPL_ENV, str(capture))
     monkeypatch.setattr(runner, "_probe_hardware", lambda name: name == "rapl")
@@ -239,23 +301,124 @@ def test_rapl_capture_is_analyzed_read_only_and_gated(tmp_path, clean_environmen
     gross, idle = by_claim(report, energy_gpu.GROSS_CPU), by_claim(report, energy_gpu.IDLE_CPU)
     trajectories = len(kernels.HEADINGS)
     assert gross["value"] == pytest.approx(9.0 / trajectories) and idle["value"] == pytest.approx(8.5 / trajectories)
-    assert {gross["evidence_status"], idle["evidence_status"]} == {"hardware_measured"}
+    gross_vi, idle_vi = by_claim(report, energy_gpu.GROSS_VI), by_claim(report, energy_gpu.IDLE_VI)
+    assert gross_vi["value"] == pytest.approx(1.0) and idle_vi["value"] == pytest.approx(0.75)
+    assert physical_labels(report) == {"hardware_measured"}
     assert report["state"] == "completed"
     acquisition = gross["basis"]["acquisition"]
     assert acquisition["calibration"].startswith("not_applied") and "unauthenticated" in acquisition["device"]
     entry, raw = artifact(report, context, "rapl-capture.json")
     assert raw == capture.read_bytes() and entry["sha256"] == acquisition["raw_sha256"]
+    # T120 reads the float64 and float32 brackets of the same capture: energy per batch by precision.
+    t120 = run("T120", runner.Context(tmp_path / "t120"))
+    precision = by_claim(t120, energy_gpu.PREC_ENERGY)
+    assert precision["evidence_status"] == "hardware_measured" and t120["state"] == "completed"
+    assert precision["value"]["float64"] == {"gross_j": pytest.approx(1.0), "idle_subtracted_j": pytest.approx(0.75)}
+    assert precision["value"]["float32_over_float64_idle_subtracted"] == pytest.approx(0.25 / 0.75)
+    assert by_claim(t120, energy_gpu.GPU_FLOAT32)["evidence_status"] == "not_established"
     # The gate withholds the label for another host, another workload or a host whose probe fails.
     monkeypatch.setattr(telemetry, "rapl_host_identity", lambda root=None, separator=":": dict(host, cpu_model="Other"))
     other_host = run("T115", runner.Context(tmp_path / "other-host"))
     assert physical_labels(other_host) == {"not_established"} and other_host["state"] == "partial"
     assert "cpu_model" in by_claim(other_host, energy_gpu.GROSS_CPU)["basis"]["notes"][0]
     monkeypatch.setattr(telemetry, "rapl_host_identity", lambda root=None, separator=":": dict(host))
-    capture.write_text(json.dumps(dict(record, workload=dict(record["workload"], steps=128))), encoding="utf-8")
-    assert physical_labels(run("T115", runner.Context(tmp_path / "other-workload"))) == {"not_established"}
+    edited = json.loads(json.dumps(record))
+    edited["workloads"][telemetry.GEODESIC]["steps"] = 128
+    capture.write_text(json.dumps(edited), encoding="utf-8")
+    other_workload = run("T115", runner.Context(tmp_path / "other-workload"))
+    assert by_claim(other_workload, energy_gpu.GROSS_CPU)["evidence_status"] == "not_established"
+    assert "different geodesic workload" in by_claim(other_workload, energy_gpu.GROSS_CPU)["basis"]["notes"][0]
+    assert by_claim(other_workload, energy_gpu.GROSS_VI)["evidence_status"] == "hardware_measured"
+    assert other_workload["state"] == "partial"
+    edited = json.loads(json.dumps(record))
+    edited["workloads"][telemetry.VI_NUMPY32]["iterations"] = 37
+    capture.write_text(json.dumps(edited), encoding="utf-8")
+    assert physical_labels(run("T120", runner.Context(tmp_path / "other-iterations"))) == {"not_established"}
+    # Unit counts must match the capture's own repeats and batches, and unit names the declared units: an edited
+    # count would rescale the per-unit energy.
+    edited = json.loads(json.dumps(record))
+    edited["units"][telemetry.GEODESIC] = 1  # repeats = 1 is six trajectories
+    edited["units"][telemetry.VI_NUMPY64] = 1000  # batches = 2
+    capture.write_text(json.dumps(edited), encoding="utf-8")
+    miscounted = run("T115", runner.Context(tmp_path / "miscounted"))
+    for claim, name in ((energy_gpu.GROSS_CPU, telemetry.GEODESIC), (energy_gpu.GROSS_VI, telemetry.VI_NUMPY64)):
+        withheld = by_claim(miscounted, claim)
+        assert withheld["evidence_status"] == "not_established" and miscounted["state"] == "partial"
+        assert f"capture {name} unit count disagrees with its repeats/batches" in withheld["basis"]["notes"]
+    edited = json.loads(json.dumps(record))
+    edited["unit_names"][telemetry.VI_NUMPY32] = "trajectory"
+    capture.write_text(json.dumps(edited), encoding="utf-8")
+    renamed = by_claim(run("T120", runner.Context(tmp_path / "renamed-unit")), energy_gpu.PREC_ENERGY)
+    assert renamed["evidence_status"] == "not_established"
+    assert "capture gaussian-vi-numpy-float32 unit name is not batch" in renamed["basis"]["notes"]
     capture.write_text(json.dumps(record), encoding="utf-8")
     monkeypatch.setattr(runner, "_probe_hardware", lambda name: False)
     assert physical_labels(run("T115", runner.Context(tmp_path / "no-probe"))) == {"not_established"}
+    assert physical_labels(run("T120", runner.Context(tmp_path / "no-probe-t120"))) == {"not_established"}
+
+
+def counting_rapl(monkeypatch, host):
+    """Simulated counters that also say whether a bracket is open (reads alternate open/close)."""
+    domain = {"zone": "intel-rapl:0", "name": "package-0", "path": "unused", "max_energy_range_uj": 262143328850}
+    state = {"inside": False, "reads": 0}
+
+    def read(domains):
+        state["inside"] = not state["inside"]
+        state["reads"] += 1
+        return [state["reads"] * 1000]
+
+    monkeypatch.setattr(telemetry, "rapl_domains", lambda root=None, separator=":": [domain])
+    monkeypatch.setattr(telemetry, "rapl_read", read)
+    monkeypatch.setattr(telemetry, "rapl_host_identity", lambda root=None, separator=":": dict(host))
+    return state
+
+
+def test_rapl_brackets_exclude_preparation_and_respect_the_port_limit(tmp_path, monkeypatch):
+    """No bracket prepares inputs; batches follow the Rust port's repeats limit; a failing port loses only its bracket."""
+    host = {"cpu_model": "Simulated CPU", "machine": "x86_64", "system": "Linux", "zones": ["intel-rapl:0 package-0"]}
+    state = counting_rapl(monkeypatch, host)
+    prepared, calls = common.prepared_inputs, []
+
+    def spy(*args, **kwargs):
+        calls.append(state["inside"])
+        return prepared(*args, **kwargs)
+
+    monkeypatch.setattr(common, "prepared_inputs", spy)
+    record = telemetry.capture_rapl(tmp_path / "numpy.json", repeats=1, batches=3, sleep=lambda seconds: None,
+                                    rust=False)
+    assert calls and not any(calls), "prepared_inputs ran inside a bracket"
+    for name in (telemetry.VI_NUMPY64, telemetry.VI_NUMPY32):
+        assert record["workloads"][name]["boundary"] == telemetry.NUMPY_BOUNDARY
+        assert record["units"][name] == 3
+    assert record["workloads"] == {name: telemetry.declared_workloads()[name] for name in record["brackets"]}
+    # The capture limit is the Rust port's repeats limit, refused before any counter is read.
+    assert f'integer(text, "repeats", 1.0, {telemetry.MAX_BATCHES}.0)' in common.RUST_SOURCE
+    reads = state["reads"]
+    with pytest.raises(ValueError, match=r"batches must be an integer in \[1, 1000\]"):
+        telemetry.capture_rapl(tmp_path / "too-many.json", repeats=1, batches=telemetry.MAX_BATCHES + 1)
+    assert state["reads"] == reads and not (tmp_path / "too-many.json").exists()
+    assert telemetry.main(["rapl-capture", str(tmp_path / "cli.json"), "--batches", "1001"]) == 2
+    assert state["reads"] == reads and not (tmp_path / "cli.json").exists()
+    # A port that fails inside its bracket is recorded under skipped; the other brackets are written.
+    smoke = []
+
+    def port(executable, precision="float64", iterations=None, replicas=common.REPLICAS, repeats=1, values=None,
+             payload=None):
+        smoke.append((replicas, repeats, values is not None))
+        if replicas != 1:
+            raise kernels.NativeKernelUnavailable("Rust port could not run: TimeoutExpired")
+        return {"outputs": np.zeros(6)}
+
+    monkeypatch.setattr(common, "build_rust_port", lambda directory: {"executable": "port", "rustc": "rustc 1.0",
+                                                                      "source_sha256": "a" * 64, "binary_sha256": "b" * 64})
+    monkeypatch.setattr(common, "run_rust_port", port)
+    record = telemetry.capture_rapl(tmp_path / "rust.json", repeats=1, batches=4, sleep=lambda seconds: None)
+    # Smoke run first with the real repeats on one replica, then the bracket with every replica.
+    assert smoke == [(1, 4, True), (common.REPLICAS, 4, True)]
+    assert record["skipped"] == {telemetry.VI_RUST64: "the Rust port failed inside its bracket: Rust port could not "
+                                                      "run: TimeoutExpired"}
+    assert telemetry.VI_RUST64 not in record["brackets"] and telemetry.VI_RUST64 not in record["units"]
+    assert json.loads((tmp_path / "rust.json").read_text(encoding="utf-8"))["brackets"].keys() == record["brackets"].keys()
 
 
 def test_gpu_tasks_are_blocked_with_the_recording_protocol(lab, tmp_path, clean_environment):
@@ -273,10 +436,14 @@ def test_gpu_tasks_are_blocked_with_the_recording_protocol(lab, tmp_path, clean_
     assert telemetry.SMI_OFFSET_ENV in t118["experiment"]
     # Kernel-only duration is a named deferred question, not another task's job.
     assert "nsys stats --report cuda_gpu_kern_sum" in t118["recommended_next_task"]
-    assert "T147" not in t118["recommended_next_task"]
-    # T116's protocol does not run T118 without the sidecar it needs.
-    t116_run = lab("T116")["experiment"].split("(4)")[1]
-    assert "ciw lab run T116 T119" in t116_run and "T118 additionally needs the nvidia-smi sidecar" in t116_run
+    # One lab run on the GPU host binds both captures by role and is retained with `ciw lab hardware retain`.
+    for task_id in ("T116", "T118", "T119"):
+        step = lab(task_id)["recommended_next_task"]
+        assert energy_gpu.GPU_LAB_RUN in step and energy_gpu.GPU_RETAIN in step
+        assert "--capture energy-log=" in step and "--capture nvidia-smi-csv=" in step
+    t116 = lab("T116")["experiment"]
+    assert energy_gpu.GPU_LAB_RUN in t116 and energy_gpu.GPU_RETAIN in t116
+    assert "T118 needs it; T116 and T119 do not" in t116
     assert {f["claim"] for f in t118["findings"]} == set(energy_gpu.T118_UNITS)
     assert {f["claim"] for f in lab("T116")["findings"]} == {energy_gpu.GPU_ENERGY, energy_gpu.NVML_ACCURACY}
     # A GPU host without an operator log, or with an unreadable one, blocks with the same claims.
@@ -452,20 +619,27 @@ def test_cross_language_agreement_is_not_independent(lab, tmp_path, clean_enviro
     report = lab("T117")
     assert all(f["evidence_status"] != "independently_verified" for f in report["findings"])
     assert not any(f["claim"].startswith("Declaring the Rust kernel") for f in report["findings"])
-    for prefix in ("A Julia implementation", "A GPU implementation"):
-        assert by_claim(report, prefix)["evidence_status"] == "not_established"
-        assert "was written" in by_claim(report, prefix)["basis"]["notes"][0]
-    # The missing Julia and GPU kernels are stated as such, not blamed on this host.
+    julia = by_claim(report, energy_gpu.JULIA_AGREE)
+    assert julia["evidence_status"] == "not_established" and julia["expected_not_established"] is True
+    assert julia["basis"]["notes"][0].startswith("implementation missing: no Julia implementation")
+    # The GPU comparison is blamed on the probe, not on a missing implementation: the PTX kernel exists.
+    gpu = by_claim(report, energy_gpu.GPU_AGREE)
+    assert gpu["evidence_status"] == "not_established" and gpu["basis"]["notes"] == [common.NO_GPU_PROBE]
     assert energy_gpu.NOT_WRITTEN in report["unresolved_assumptions"]
-    assert "T147" not in report["recommended_next_task"] and "Deferred research question" in report["recommended_next_task"]
-    assert "no NVIDIA GPU answered" in by_claim(report, "A GPU implementation")["basis"]["notes"][0]
-    # On a GPU host with julia on PATH the notes follow the probes and still say no kernel exists.
+    assert energy_gpu.JULIA_QUESTION in report["unresolved_assumptions"]
+    assert energy_gpu.GPU_LAB_RUN in report["recommended_next_task"]
+    assert energy_gpu.RAPL_LAB_RUN in report["recommended_next_task"]
+    # On a GPU host with julia on PATH whose driver fails, the notes follow the probe and the driver's reason.
     clean_environment.setattr(runner, "_probe_hardware", lambda name: name == "nvidia-gpu")
-    clean_environment.setattr(runner.shutil, "which", lambda name: "/usr/bin/julia" if name == "julia" else None)
+    clean_environment.setattr(common, "run_gpu", lambda: {"unavailable": "the PTX kernel did not run: CudaError: "
+                                                                        "simulated driver failure"})
+    which = runner.shutil.which
+    clean_environment.setattr(runner.shutil, "which",
+                              lambda name: "/usr/bin/julia" if name == "julia" else which(name))
     gpu_host = run("T117", runner.Context(tmp_path))
-    gpu_note = by_claim(gpu_host, "A GPU implementation")["basis"]["notes"][0]
-    assert "an NVIDIA GPU answered" in gpu_note and "no GPU implementation of this kernel was written" in gpu_note
-    assert "julia is on PATH here" in by_claim(gpu_host, "A Julia implementation")["basis"]["notes"][0]
+    gpu_note = by_claim(gpu_host, energy_gpu.GPU_AGREE)["basis"]["notes"][0]
+    assert gpu_note.endswith("simulated driver failure")
+    assert "julia is on PATH here" in by_claim(gpu_host, energy_gpu.JULIA_AGREE)["basis"]["notes"][0]
     assert gpu_host["provider_runtime_identity"]["requirement_probes"] == {"tool:julia": True,
                                                                           "hardware:nvidia-gpu": True}
     generic = by_claim(report, "Generic Christoffel-symbol RK4")
@@ -498,7 +672,7 @@ def test_energy_per_accepted_result_on_fixtures(lab):
     assert by_claim(report, "Widening the boundary")["value"] == pytest.approx(7.0)
     physical = by_claim(report, energy_gpu.T119_PHYSICAL)
     assert physical["evidence_status"] == "not_established" and "no operator NVML log" in physical["basis"]["notes"][0]
-    assert "ciw lab run T116 T119" in report["recommended_next_task"]
+    assert energy_gpu.GPU_LAB_RUN in report["recommended_next_task"]
 
 
 @needs_fixtures
@@ -508,7 +682,9 @@ def test_t119_operator_log_is_gated_like_t116(tmp_path, clean_environment):
     context = simulate_gpu_host(clean_environment, tmp_path, log)
     report = run("T119", context)
     physical = by_claim(report, energy_gpu.T119_PHYSICAL)
-    assert physical["evidence_status"] == "hardware_measured" and physical["value"] == pytest.approx(0.05)
+    # 0.2 J over one measured batch of the common workload's 4096 accepted replica solves.
+    assert physical["evidence_status"] == "hardware_measured"
+    assert physical["value"] == pytest.approx(0.2 / common.REPLICAS)
     assert [c["reference_kind"] for c in physical["basis"]["checks"]] == ["cross_implementation"] * 2
     entry, raw = artifact(report, context, "operator-log.json")
     assert raw == canonical(log) and entry["sha256"] == physical["basis"]["acquisition"]["raw_sha256"]
@@ -561,9 +737,12 @@ def test_precision_study_float32_floor_and_counterexample(lab):
         assert row["result_dtypes"] == [name] and row["state_bytes"] == 4 * itemsize
     assert len(ops["basis"]["checks"]) == 6
     assert physical_labels(report) == {"not_established"}
-    energy = by_claim(report, "float32 lowers the energy per accepted trajectory")
-    assert "no capture path measures a float32 workload" in energy["basis"]["notes"][0]
-    assert report["recommended_next_task"].startswith("Deferred research question: a dtype-parameterized capture")
+    energy = by_claim(report, energy_gpu.PREC_ENERGY)
+    assert energy["basis"]["notes"] == [energy_gpu.NO_RAPL]
+    gpu32 = by_claim(report, energy_gpu.GPU_FLOAT32)
+    assert gpu32["basis"]["notes"][0].startswith("implementation missing") and common.GPU_QUESTION in gpu32["basis"]["notes"][0]
+    assert energy_gpu.RAPL_PROTOCOL in report["recommended_next_task"]
+    assert common.GPU_QUESTION in report["recommended_next_task"]
     # float32 must stay float32 through the whole integration.
     assert kernels.rk4_batch(kernels.initial_states()[:1], 1.0, 4, np.float32).dtype == np.float32
 
@@ -611,7 +790,13 @@ def test_reduction_orders_bound_and_sign_counterexample(lab):
     assert observed["machine"] == platform.machine() and len(observed["signbits"]) == 2
     assert all(isinstance(bit, bool) for bit in observed["signbits"])
     assert by_claim(report, "Emulated atomicAdd completion orders")["value"] >= 2
-    assert physical_labels(report) == {"not_established"}
+    # GPU reductions are computational outputs: no physical claim; the missing device reduction kernel is named.
+    assert physical_labels(report) == set()
+    device = by_claim(report, energy_gpu.DEVICE_REDUCTION)
+    assert device["domain"] == "numerical" and device["expected_not_established"] is True
+    assert device["basis"]["notes"] == [energy_gpu.DEVICE_REDUCTION_NOTE]
+    assert pointers(report) == ([], [])
+    assert common.GPU_QUESTION in report["recommended_next_task"] and energy_gpu.GPU_LAB_RUN in report["recommended_next_task"]
     # Order-specific bounds detect a dropped element that the generic gamma_(n-1) bound would miss.
     rng = np.random.Generator(np.random.PCG64(3))
     x = (rng.random(1 << 14) * 1000).astype(np.float32)
@@ -710,13 +895,16 @@ def test_fixture_tasks_without_repository_files(tmp_path, clean_environment):
 @needs_fixtures
 def test_raw_telemetry_retention_and_tampering(lab):
     report = lab("T124")
-    assert report["state"] == "completed"
+    # Only synthetic fixtures were retained: the task says so and stays partial (as T139 does without an acquisition).
+    assert report["state"] == "partial"
+    assert energy_gpu.NOT_RETAINED_REAL in report["unresolved_assumptions"]
+    assert energy_gpu.NOT_RETAINED_REAL in report["numerical_result"]
     retained = by_claim(report, "Every fixture retains raw timestamped counter readings")
     assert retained["evidence_status"] == "numerically_verified" and retained["value"]["baseline"]["samples"] == 12
     # 11 placeholders: ten stand-in strings plus the compute capability given to the placeholder device.
     assert all(row["identity_fields_present"] == 14 and row["placeholder_values"] == 11
                for row in retained["value"].values())
-    inventory = json.loads(artifact(report, lab.context, "inventory.json")[1])
+    inventory = json.loads(artifact(report, lab.context, "inventory.json")[1])["fixtures"]
     assert "compute_capability" in inventory["baseline"]["placeholder_fields"]
     # The task retains the fixtures' exact bytes, not a re-serialized excerpt.
     for name, raw in telemetry.fixture_bytes().items():
@@ -752,3 +940,436 @@ def test_session_replay_keeps_numerical_result_id(lab):
     # reseal_bundle depends on this internal digest; fail loudly if it is renamed.
     from ciw import telemetry as ciw_telemetry
     assert callable(ciw_telemetry._bundle_digest)
+
+
+# ----------------------------------------------------------------- the common Gaussian VI workload
+def test_common_workload_matches_the_ptx_kernel_and_the_energy_problem(lab, monkeypatch):
+    """One workload for CPU energy, languages, precision, reductions and the CPU/GPU harness: the PTX kernel's own."""
+    problem = runner.repository_path("examples", "energy-accuracy", "problem.json")
+    if problem is not None and problem.is_file():
+        assert json.loads(problem.read_text(encoding="utf-8")) == common.SPEC
+    assert common.plan_iterations() == energy_bench.prepare_plan(common.spec())["iterations"] == 38
+    ptx = common.ptx_operation_counts()
+    assert ptx == {"iteration_flops": 24, "output_flops": 7, "output_negations": 2, "fused_instructions": 0}
+    for dtype in (np.float64, np.float32):
+        counted = common.counted_operations(dtype)
+        assert (counted["iteration_flops"], counted["output_flops"], counted["output_negations"]) == (24, 7, 2)
+        assert counted["results_outside_dtype"] == 0 and counted["result_dtypes"] == [np.dtype(dtype).name]
+    reference = common.run_numpy(np.float64)
+    assert reference.shape == (common.REPLICAS, 6) and np.all(reference == reference[0])
+    # A scalar Python-float evaluation of the declared order is bitwise the NumPy reference.
+    assert common.ulp_distance(common.run_variant("kernel"), reference[0]) == 0
+    assert common.run_numpy(np.float32, replicas=2).dtype == np.float32
+    declaration = common.workload()
+    assert declaration["kernel_sha256"] == hashlib.sha256(energy_cuda.PTX.encode("ascii")).hexdigest()
+    assert declaration["prepared_input_sha256"] == hashlib.sha256(common.prepared_inputs().tobytes()).hexdigest()
+    assert (declaration["iterations"], declaration["replicas"]) == (38, 4096)
+    # The exact FMA emulation rounds once: 0.1 * 10 - 1 is 0 in two roundings and 2^-54 in one.
+    assert 0.1 * 10.0 - 1.0 == 0.0 and common.fma(0.1, 10.0, -1.0) == 2.0 ** -54
+    # The operation-count check can fail: a kernel that fused a multiply-add would be refuted in T115.
+    monkeypatch.setattr(energy_cuda, "PTX", energy_cuda.PTX.replace("    mul.rn.f64 %d16, %d1, %d7;\n    add.rn.f64 "
+                                                                    "%d15, %d15, %d16;",
+                                                                    "    fma.rn.f64 %d15, %d1, %d7, %d15;", 1))
+    monkeypatch.setattr(runner, "_probe_hardware", lambda name: False)
+    fused = energy_gpu._vi_work_finding(energy_gpu._common_counts())
+    assert fused["evidence_status"] == "not_established"
+    assert [check["passed"] for check in fused["basis"]["checks"]] == [False, True, False]
+
+
+def rust_port(tmp_path):
+    try:
+        return common.build_rust_port(tmp_path)
+    except kernels.NativeKernelUnavailable as exc:
+        pytest.skip(f"Rust port unavailable: {exc}")
+
+
+def test_rust_port_of_the_common_workload_is_bitwise(lab, tmp_path):
+    identity = rust_port(tmp_path)
+    for precision in common.PRECISIONS:
+        dtype = np.dtype(precision).type
+        run_ = common.run_rust_port(identity["executable"], precision, replicas=8, repeats=2)
+        assert run_["outputs"].dtype == dtype and run_["replicas_identical"] is True
+        assert run_["iterations_executed"] == 38 * 8 * 2
+        assert common.ulp_distance(run_["outputs"], common.run_numpy(dtype, replicas=1)[0], dtype) == 0
+    with pytest.raises(kernels.NativeKernelUnavailable, match="precision must be float64 or float32"):
+        common.run_rust_port(identity["executable"], "float16")
+    report = lab("T117")
+    for precision in common.PRECISIONS:
+        agreement = by_claim(report, energy_gpu.PORT_AGREE.format(precision=precision))
+        assert agreement["evidence_status"] == "numerically_verified" and agreement["value"]["max_ulp"] == 0
+        assert agreement["value"]["iterations_executed"] == 38 * common.REPLICAS
+        assert agreement["basis"]["checks"][0]["reference_kind"] == "cross_implementation"
+    refusals = by_claim(report, energy_gpu.PORT_REFUSES)
+    assert refusals["evidence_status"] == "numerically_verified" and set(refusals["value"]) == set(energy_gpu.PORT_REFUSALS)
+    port = report["provider_runtime_identity"]["rust_port"]
+    assert port["source_sha256"] == common.rust_source_sha256() and port["binary_sha256"] == identity["binary_sha256"]
+    # The Rust energy comparison needs a capture with both brackets; without one it is withheld, not estimated.
+    energy = by_claim(report, energy_gpu.RUST_ENERGY)
+    assert energy["evidence_status"] == "not_established" and energy["basis"]["notes"] == [energy_gpu.NO_RAPL]
+
+
+def simulated_gpu(monkeypatch, outputs=None, unavailable=None):
+    """A host whose nvidia-gpu probe answers and whose PTX kernel returns ``outputs`` (or fails with ``unavailable``)."""
+    monkeypatch.setattr(runner, "_probe_hardware", lambda name: name == "nvidia-gpu")
+    identity = {"device_name": "NVIDIA GeForce RTX 2080", "device_uuid": "GPU-5d3f9a2c-7e41-4b8a-9c06-1f2e3d4c5b6a",
+                "compute_capability": [7, 5], "cuda_driver_version": 12040,
+                "kernel_sha256": common.kernel_sha256(), "arithmetic": "binary64_explicit_round_to_nearest",
+                "prepared_input_sha256": hashlib.sha256(common.prepared_inputs().tobytes()).hexdigest()}
+    result = {"unavailable": unavailable} if unavailable else {"outputs": outputs, "identity": identity}
+    monkeypatch.setattr(common, "run_gpu", lambda: result)
+
+
+def test_gpu_comparisons_follow_the_probe(lab, tmp_path, clean_environment):
+    """Without a GPU the comparisons name the probe; with one they are computed, and a mismatch refutes them."""
+    for task_id, claim in (("T117", energy_gpu.GPU_AGREE), ("T121", energy_gpu.KERNEL_GPU)):
+        record = by_claim(lab(task_id), claim)
+        assert record["evidence_status"] == "not_established" and record["expected_not_established"] is True
+        assert record["basis"]["notes"] == [common.NO_GPU_PROBE]
+    reference = common.run_numpy(np.float64)
+    simulated_gpu(clean_environment, outputs=reference.copy())
+    agreeing = {task_id: run(task_id, runner.Context(tmp_path / f"agree-{task_id}")) for task_id in ("T117", "T121")}
+    for task_id, claim in (("T117", energy_gpu.GPU_AGREE), ("T121", energy_gpu.KERNEL_GPU)):
+        record = by_claim(agreeing[task_id], claim)
+        assert record["evidence_status"] == "numerically_verified" and record["value"]["max_ulp"] == 0
+        assert record["value"]["replicas"] == common.REPLICAS and record["value"]["differing_values"] == 0
+        assert [c["reference_kind"] for c in record["basis"]["checks"]] == ["cross_implementation"] * 2 + [
+            "exact_arithmetic"]
+    assert agreeing["T117"]["provider_runtime_identity"]["gpu"]["device_name"] == "NVIDIA GeForce RTX 2080"
+    # A device that contracts multiply-adds is caught: the finding is refuted and the headline drops.
+    contracted = np.tile(common.run_variant("fma-first"), (common.REPLICAS, 1))
+    simulated_gpu(clean_environment, outputs=contracted)
+    for task_id, claim in (("T117", energy_gpu.GPU_AGREE), ("T121", energy_gpu.KERNEL_GPU)):
+        report = run(task_id, runner.Context(tmp_path / f"contracted-{task_id}"))
+        record = by_claim(report, claim)
+        assert record["evidence_status"] == "not_established" and not record.get("expected_not_established")
+        assert record["value"]["max_ulp"] >= 1 and report["evidence_status"]["primary"] == "not_established"
+        assert report["state"] == "partial"
+    # A device that drops the kernel's neg.f64 flips the sign of covariance_01: refuted by the ULP distance across
+    # signs and by the bitwise count, never reported as bitwise agreement.
+    flipped = reference.copy()
+    flipped[:, 3] = -flipped[:, 3]
+    simulated_gpu(clean_environment, outputs=flipped)
+    for task_id, claim in (("T117", energy_gpu.GPU_AGREE), ("T121", energy_gpu.KERNEL_GPU)):
+        report = run(task_id, runner.Context(tmp_path / f"sign-flipped-{task_id}"))
+        record = by_claim(report, claim)
+        assert record["evidence_status"] == "not_established" and not record.get("expected_not_established")
+        assert record["value"]["max_ulp"] > 0 and record["value"]["differing_values"] == common.REPLICAS
+        assert [c["passed"] for c in record["basis"]["checks"]] == [False, False, True]
+        assert report["evidence_status"]["primary"] == "not_established"
+    # Outputs of another shape are a failed comparison, not a crashed (blocked) task.
+    simulated_gpu(clean_environment, outputs=reference[:10].copy())
+    short = run("T121", runner.Context(tmp_path / "short"))
+    assert short["state"] == "partial" and by_claim(short, energy_gpu.KERNEL_GPU)["evidence_status"] == "not_established"
+    assert not by_claim(short, energy_gpu.KERNEL_GPU).get("expected_not_established")
+    # A driver failure is reported with its reason, never replaced by a CPU result.
+    simulated_gpu(clean_environment, unavailable="the PTX kernel did not run: CudaError: simulated")
+    failed = by_claim(run("T121", runner.Context(tmp_path / "failed")), energy_gpu.KERNEL_GPU)
+    assert failed["expected_not_established"] is True and failed["basis"]["notes"] == [
+        "the PTX kernel did not run: CudaError: simulated"]
+
+
+def test_ulp_distance_counts_across_signs():
+    """ULP distance is zero exactly for equal bits: a sign flip is far, and +0.0 against -0.0 is one step."""
+    for dtype in (np.float64, np.float32):
+        one, two = np.array([1.0], dtype=dtype), np.array([1.0, 2.0], dtype=dtype)
+        assert common.ulp_distance(one, -one, dtype) > 0
+        assert common.ulp_distance(two, np.array([1.0, -2.0], dtype=dtype), dtype) > 0
+        assert common.ulp_distance(np.array([0.0], dtype=dtype), np.array([-0.0], dtype=dtype), dtype) == 1
+        tiny = np.finfo(dtype).smallest_subnormal
+        assert common.ulp_distance(np.array([tiny], dtype=dtype), np.array([-tiny], dtype=dtype), dtype) == 3
+        assert common.ulp_distance(one, np.nextafter(one, dtype(2)), dtype) == 1
+        assert common.ulp_distance(-one, np.nextafter(-one, dtype(-2)), dtype) == 1
+        assert common.ulp_distance(two, two.copy(), dtype) == 0
+    # float64 +1 and -1 are 2 x 0x3FF0000000000000 + 1 steps apart; the largest distance exceeds int64.
+    assert common.ulp_distance([1.0], [-1.0]) == 2 * 0x3FF0000000000000 + 1
+    big = np.finfo(np.float64).max
+    assert common.ulp_distance([big], [-big]) == 2 * 0x7FEFFFFFFFFFFFFF + 1 > 2 ** 63
+    assert kernels.ulp_distance([1.0], [-1.0]) == common.ulp_distance([1.0], [-1.0])
+    assert common.differing_bits([0.0, 1.0], [-0.0, 1.0]) == 1
+
+
+class RejectingWorker:
+    """Stands in for ciw.energy_cuda.CudaGaussianWorker: the kernel ran, then solve()'s own output check raised."""
+
+    def __init__(self, problem, solver, iterations, replicas=4096, device_index=0):
+        pass
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+    def identity(self):
+        return {"device_name": "NVIDIA GeForce RTX 2080",
+                "prepared_input_sha256": hashlib.sha256(common.prepared_inputs().tobytes()).hexdigest()}
+
+    def solve(self):
+        raise ValueError("GPU covariance lost symmetry")
+
+
+def test_rejected_gpu_outputs_refute_the_comparisons(tmp_path, clean_environment):
+    """Outputs the CUDA worker rejects after the kernel ran are a failed check, never an expected gap."""
+    clean_environment.setattr(runner, "_probe_hardware", lambda name: name == "nvidia-gpu")
+    clean_environment.setattr(energy_cuda, "CudaGaussianWorker", RejectingWorker)
+    assert common.run_gpu()["invalid"] == ("the worker rejected the GPU outputs: ValueError: GPU covariance lost "
+                                           "symmetry")
+    for task_id, claim in (("T117", energy_gpu.GPU_AGREE), ("T121", energy_gpu.KERNEL_GPU)):
+        report = run(task_id, runner.Context(tmp_path / task_id))
+        record = by_claim(report, claim)
+        assert record["evidence_status"] == "not_established" and not record.get("expected_not_established")
+        assert record["value"]["rejected_by_worker"].endswith("GPU covariance lost symmetry")
+        assert record["basis"]["checks"][0]["reference"] == energy_gpu.GPU_REJECTED
+        assert report["evidence_status"]["primary"] == "not_established" and report["state"] == "partial"
+        assert "GPU comparison refuted" in report["numerical_result"]
+
+
+def test_run_gpu_drives_the_cuda_worker_on_the_common_workload(monkeypatch):
+    calls = []
+    reference = common.run_numpy(np.float64, replicas=4)
+
+    class Worker:
+        def __init__(self, problem, solver, iterations, replicas=4096, device_index=0):
+            calls.append((problem, solver, iterations, replicas, device_index))
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+        def identity(self):
+            return {"device_name": "fake"}
+
+        def solve(self):
+            return reference
+
+    monkeypatch.setattr(energy_cuda, "CudaGaussianWorker", Worker)
+    result = common.run_gpu(replicas=4)
+    assert calls == [(common.SPEC["problem"], common.SPEC["solver"], 38, 4, 0)]
+    assert np.array_equal(result["outputs"], reference) and result["identity"] == {"device_name": "fake"}
+
+    class Broken(Worker):
+        def __init__(self, *args, **kwargs):
+            raise energy_cuda.CudaError("CUDA driver library is unavailable; no GPU solve was performed")
+
+    monkeypatch.setattr(energy_cuda, "CudaGaussianWorker", Broken)
+    assert common.run_gpu()["unavailable"].startswith("the PTX kernel did not run: CudaError: CUDA driver library")
+
+    class Unprepared(Worker):
+        def __init__(self, *args, **kwargs):  # energy_cuda._prepare refuses before any GPU work
+            raise ValueError("Fixed GPU iterations exceed the declared solver budget")
+
+    monkeypatch.setattr(energy_cuda, "CudaGaussianWorker", Unprepared)
+    assert common.run_gpu()["unavailable"].startswith("the PTX kernel did not run: ValueError")
+
+    class LaunchFailure(Worker):
+        def solve(self):
+            raise energy_cuda.CudaError("cuLaunchKernel: CUDA_ERROR_LAUNCH_FAILED (719): unspecified launch failure")
+
+    monkeypatch.setattr(energy_cuda, "CudaGaussianWorker", LaunchFailure)
+    assert common.run_gpu()["unavailable"].startswith("the PTX kernel did not complete: CudaError")
+    monkeypatch.setattr(energy_cuda, "CudaGaussianWorker", RejectingWorker)
+    rejected = common.run_gpu()
+    assert "outputs" not in rejected and rejected["invalid"].endswith("ValueError: GPU covariance lost symmetry")
+
+
+def test_common_workload_precision_study(lab):
+    report = lab("T120")
+    same = by_claim(report, "float32 and float64 runs of the common Gaussian VI workload first meet")
+    assert same["value"] == {"float32": 38, "float64": 38, "planned_iterations": 38}
+    assert same["evidence_status"] == "numerically_verified"
+    floor = by_claim(report, "The float32 iteration stalls at a KL floor")
+    assert floor["evidence_status"] == "numerically_verified"
+    assert 3.6e-15 < floor["value"]["float32_floor_kl"] < 1e-13
+    assert floor["value"]["float64_kl_at_256"] < 1e-6 * floor["value"]["float32_floor_kl"]
+    counter = by_claim(report, "Lowering the common Gaussian VI workload to float32 cannot reach")
+    assert counter["value"]["float64_iteration"] == 69 and "counterexample" in counter
+    counts = by_claim(report, "Per replica iteration the float32 and float64 runs")
+    assert counts["evidence_status"] == "numerically_verified"
+    assert {p: counts["value"][p]["iteration_flops"] for p in common.PRECISIONS} == {"float64": 24, "float32": 24}
+
+
+def test_kernel_reductions_under_contraction(lab, tmp_path, clean_environment):
+    report = lab("T121")
+    fused = by_claim(report, energy_gpu.KERNEL_FMA)
+    assert fused["evidence_status"] == "numerically_verified" and "counterexample" in fused
+    assert min(fused["value"][v]["max_ulp"] for v in ("fma-first", "fma-second")) >= 1
+    decision = by_claim(report, energy_gpu.KERNEL_DECISION)
+    assert decision["evidence_status"] == "numerically_verified"
+    assert decision["value"]["kl_reference"] < decision["value"]["target_kl_nats"] == 1e-8
+    assert all(value < 1e-8 for value in decision["value"]["kl_nats"].values())
+    # The contraction check can fail: if contraction changed nothing, the finding would be refuted.
+    clean_environment.setattr(runner, "_probe_hardware", lambda name: False)
+    clean_environment.setattr(common, "run_variant", lambda variant, iterations=None, values=None:
+                              common.run_numpy(np.float64, replicas=1)[0])
+    refuted = by_claim(run("T121", runner.Context(tmp_path)), energy_gpu.KERNEL_FMA)
+    assert refuted["evidence_status"] == "not_established" and not refuted.get("expected_not_established")
+
+
+def realistic_log():
+    """A resealed fixture of the common workload that declares a physical measurement and has no placeholder identity."""
+    log = common_workload_log(json.loads(telemetry.fixture_bytes()["baseline"]))
+    sha = lambda text: hashlib.sha256(text.encode()).hexdigest()  # noqa: E731
+    uuid = "GPU-5d3f9a2c-7e41-4b8a-9c06-1f2e3d4c5b6a"
+    log["sensor"].update(device_uuid=uuid, name="NVIDIA GeForce RTX 2080", driver_version="550.54.14",
+                         nvml_version="12.550.54.14", library_sha256=sha("libnvidia-ml"))
+    log["runtime"]["workload"].update(device_uuid=uuid, device_name="NVIDIA GeForce RTX 2080",
+                                      compute_capability=[7, 5], kernel_sha256=common.kernel_sha256())
+    log["runtime"]["python"]["executable_sha256"] = sha("python")
+    log["runtime"]["implementation"]["code_sha256"] = sha("implementation")
+    log["clock"]["implementation"] = "clock_gettime(CLOCK_MONOTONIC)"
+    return telemetry.reseal(dict(log, origin="physical_measurement"))
+
+
+@needs_fixtures
+def test_t124_retains_an_operator_log_through_the_gate(lab, tmp_path, clean_environment):
+    """T124 completes only when a real-looking operator log is retained and bound through the acquisition gate."""
+    report = lab("T124")
+    inventory = by_claim(report, energy_gpu.T124_OPERATOR_INVENTORY)
+    assert inventory["evidence_status"] == "not_established" and inventory["expected_not_established"] is True
+    assert by_claim(report, energy_gpu.T124_OPERATOR_PHYSICAL)["evidence_status"] == "not_established"
+    assert energy_gpu.GPU_LAB_RUN in report["recommended_next_task"]
+    log = realistic_log()
+    context = simulate_gpu_host(clean_environment, tmp_path, log)
+    bound = run("T124", context)
+    physical = by_claim(bound, energy_gpu.T124_OPERATOR_PHYSICAL)
+    assert physical["evidence_status"] == "hardware_measured" and bound["state"] == "completed"
+    assert physical["value"]["device_name"] == "NVIDIA GeForce RTX 2080"
+    # The claim states the identity binding the gate establishes, not that the readings came from the device: this
+    # log's readings are the synthetic fixture's, which is why the origin caveat stays in the report.
+    assert "names an NVML device present on this analyzing host" in physical["claim"]
+    assert "come from" not in physical["claim"] and "unauthenticated" in physical["claim"]
+    assert energy_gpu.T124_ORIGIN_CAVEAT in bound["unresolved_assumptions"]
+    retained = by_claim(bound, energy_gpu.T124_OPERATOR_INVENTORY)
+    assert retained["evidence_status"] == "numerically_verified" and retained["value"]["placeholder_fields"] == []
+    entry, raw = artifact(bound, context, "operator-log.json")
+    assert raw == canonical(log) and entry["sha256"] == physical["basis"]["acquisition"]["raw_sha256"]
+    assert energy_gpu.NOT_RETAINED_REAL not in bound["unresolved_assumptions"]
+    # A relabelled synthetic fixture passes the host-identity gate but not T124's placeholder rule.
+    (tmp_path / "relabelled").mkdir()
+    relabelled = run("T124", simulate_gpu_host(clean_environment, tmp_path / "relabelled", relabelled_log()))
+    assert by_claim(relabelled, energy_gpu.T124_OPERATOR_PHYSICAL)["evidence_status"] == "not_established"
+    assert any("placeholder values" in note
+               for note in by_claim(relabelled, energy_gpu.T124_OPERATOR_PHYSICAL)["basis"]["notes"])
+    assert by_claim(relabelled, energy_gpu.T124_OPERATOR_INVENTORY)["evidence_status"] == "not_established"
+    assert relabelled["state"] == "partial"
+    # Without the GPU probe the same log is retained but not bound.
+    clean_environment.setattr(runner, "_probe_hardware", lambda name: False)
+    no_gpu = run("T124", runner.Context(tmp_path / "no-gpu"))
+    assert by_claim(no_gpu, energy_gpu.T124_OPERATOR_PHYSICAL)["evidence_status"] == "not_established"
+    assert no_gpu["state"] == "partial"
+
+
+def with_workload(log, iterations=None, replicas=None, kernel_sha256=None):
+    """A copy of a common-workload log that names another K, replica count or kernel, still valid and eligible."""
+    log = json.loads(json.dumps(log))
+    work, plan = log["runtime"]["workload"], log["plan"]
+    if iterations is not None:
+        work["iterations"] = plan["iterations"] = iterations
+    if replicas is not None:
+        work["replicas"] = plan["replicas"] = replicas
+        result = energy_records.encode_result(common.run_numpy(np.float64, replicas=replicas))
+        for phase in log["phases"]:
+            for batch in phase["batches"]:
+                batch["result"] = dict(result)
+    if kernel_sha256 is not None:
+        work["kernel_sha256"] = kernel_sha256
+    return telemetry.reseal(log)
+
+
+@needs_fixtures
+def test_operator_logs_of_another_workload_are_withheld(tmp_path, clean_environment):
+    """T116, T118, T119 and T124 label a log hardware_measured only when it names the common workload."""
+    other_kernel = hashlib.sha256(b"another PTX kernel").hexdigest()
+    variants = {"fixture problem, K 128, 4 replicas": (relabelled_log("NVIDIA GeForce RTX 2080", workload=False),
+                                                         "problem_sha256"),
+                "K 39": (with_workload(relabelled_log("NVIDIA GeForce RTX 2080"), iterations=39), "iterations"),
+                "2048 replicas": (with_workload(relabelled_log("NVIDIA GeForce RTX 2080"), replicas=2048), "replicas"),
+                "another kernel": (with_workload(realistic_log(), kernel_sha256=other_kernel), "kernel_sha256")}
+    for label, (log, field) in variants.items():
+        energy_records.validate_log(log)
+        assert energy_records.analyze(log)["comparison"]["eligible"], label
+        assert field in telemetry.workload_reasons(log)[0], label
+        directory = tmp_path / label.replace(" ", "-").replace(",", "")
+        directory.mkdir()
+        context = simulate_gpu_host(clean_environment, directory, log)
+        for task_id, claim in (("T116", energy_gpu.GPU_ENERGY), ("T118", energy_gpu.POWER),
+                               ("T119", energy_gpu.T119_PHYSICAL), ("T124", energy_gpu.T124_OPERATOR_PHYSICAL)):
+            report = run(task_id, runner.Context(directory / task_id))
+            record = by_claim(report, claim)
+            assert record["evidence_status"] == "not_established", (label, task_id)
+            assert any("different GPU workload than the common workload" in note and field in note
+                       for note in record["basis"]["notes"]), (label, task_id)
+            assert report["state"] == "partial", (label, task_id)
+    # The same log naming the common workload passes (the gate is not vacuous).
+    context = simulate_gpu_host(clean_environment, tmp_path, relabelled_log("NVIDIA GeForce RTX 2080"))
+    assert telemetry.workload_reasons(relabelled_log()) == []
+    assert by_claim(run("T116", context), energy_gpu.GPU_ENERGY)["evidence_status"] == "hardware_measured"
+
+
+def test_workload_tasks_digest_the_workload_sources(lab):
+    """Tasks whose results depend on the common workload digest the modules that define it and record it."""
+    for task_id in ("T115", "T117", "T119", "T120", "T121", "T124"):
+        identity = lab(task_id)["provider_runtime_identity"]
+        assert set(common.SOURCES) <= set(identity["sources"]), task_id
+        assert all(len(identity["sources"][name]) == 64 for name in common.SOURCES), task_id
+        assert identity["common_workload"] == common.workload(), task_id
+    assert common.SOURCES == ("src/ciw/energy_cuda.py", "src/ciw/energy_bench.py", "src/ciw/free_energy_math.py")
+
+
+def test_next_steps_name_work_that_delivers(lab):
+    """No next step points at a queue task; hardware steps name capture roles and the retention command."""
+    for task_id in TASK_IDS:
+        report = lab(task_id)
+        assert pointers(report) == ([], []), task_id
+    for task_id in ("T115", "T117", "T120"):
+        assert energy_gpu.RAPL_LAB_RUN in lab(task_id)["recommended_next_task"]
+        assert energy_gpu.RAPL_RETAIN in lab(task_id)["recommended_next_task"]
+    for task_id in ("T116", "T117", "T118", "T119", "T121", "T124"):
+        assert energy_gpu.GPU_RETAIN in lab(task_id)["recommended_next_task"], task_id
+    for task_id in ("T122", "T123", "T125"):
+        assert lab(task_id)["recommended_next_task"].startswith("Deferred research question:")
+
+
+def test_native_build_failures_name_no_host_path(tmp_path, monkeypatch):
+    """A failed rustc or kernel launch is reported by exception type: a retained report must hold no host path."""
+    secret = str(tmp_path / "operator" / "secret")
+
+    def refuse(*args, **kwargs):
+        raise OSError(f"[Errno 2] No such file or directory: '{secret}'")
+
+    monkeypatch.setattr(kernels.shutil, "which", lambda name: secret + "/rustc")
+    monkeypatch.setattr(kernels.subprocess, "run", refuse)
+    for build in (lambda: kernels.build_rust_kernel(tmp_path), lambda: common.build_rust_port(tmp_path),
+                  lambda: kernels.run_rust_kernel(secret, [[1.0, 0.0, 1.0, 0.0]], 1.0, 1),
+                  lambda: common.run_rust_port(secret, replicas=1)):
+        with pytest.raises(kernels.NativeKernelUnavailable) as refused:
+            build()
+        assert secret not in str(refused.value) and str(refused.value).endswith("OSError")
+
+
+def test_rust_energy_is_read_from_the_captures_rust_bracket(tmp_path, clean_environment):
+    """The Rust bracket binds to the port T117 builds (same rustc, same binary digest); then T117 reports it."""
+    monkeypatch = clean_environment
+    (tmp_path / "probe-build").mkdir()
+    built = rust_port(tmp_path / "probe-build")
+    host = {"cpu_model": "Simulated CPU", "machine": "x86_64", "system": "Linux", "zones": ["intel-rapl:0 package-0"]}
+    record, capture = simulated_rapl_capture(tmp_path, monkeypatch, host, rust=True)
+    assert record["skipped"] == {} and telemetry.VI_RUST64 in record["brackets"]
+    assert record["workloads"][telemetry.VI_RUST64]["binary_sha256"] == built["binary_sha256"]
+    monkeypatch.setattr(telemetry, "rapl_host_identity", lambda root=None, separator=":": dict(host))
+    monkeypatch.setenv(telemetry.RAPL_ENV, str(capture))
+    monkeypatch.setattr(runner, "_probe_hardware", lambda name: name == "rapl")
+    report = run("T117", runner.Context(tmp_path / "t117"))
+    energy = by_claim(report, energy_gpu.RUST_ENERGY)
+    assert energy["evidence_status"] == "hardware_measured"
+    assert energy["value"]["rust"] == {"gross_j": pytest.approx(0.5), "idle_subtracted_j": pytest.approx(0.25)}
+    assert energy["value"]["rust_over_numpy_idle_subtracted"] == pytest.approx(0.25 / 0.75)
+    # A capture whose Rust bracket names another binary (another rustc) is withheld, not compared.
+    edited = json.loads(json.dumps(record))
+    edited["workloads"][telemetry.VI_RUST64]["binary_sha256"] = "0" * 64
+    capture.write_text(json.dumps(edited), encoding="utf-8")
+    other = by_claim(run("T117", runner.Context(tmp_path / "other-binary")), energy_gpu.RUST_ENERGY)
+    assert other["evidence_status"] == "not_established"
+    assert "different gaussian-vi-rust-float64 workload" in " ".join(other["basis"]["notes"])

@@ -7,14 +7,17 @@ pure-Python stack exists) behind pinned subprocess boundaries, a source scan
 that evidence code stays in Python, the Julia pin plan, one
 canonical JSON encoding with a reference encoder independent of ``json``,
 checked against CIW's Python encoders and a Rust implementation compiled at
-run time, a CPU/GPU comparison harness exercised CPU-against-CPU (no GPU or
-Julia execution path exists here), deterministic reduction policies with
+run time, a CPU/GPU comparison harness exercised CPU-against-CPU and, where
+an NVIDIA GPU answers the probe, against the gaussian_vi PTX kernel on the
+common Gaussian VI workload of ``energy_gpu_workload`` (no Julia execution
+path exists), deterministic reduction policies with
 rigorous error bounds, a telemetry-only FPGA frame format with identity,
 compatibility and rollback records, a seeded link simulation, and the refusal
 boundary for actuator writes and control outputs, with source scans for
 machine write paths and control-like outputs.
 
-Non-claims: no GPU, FPGA, Julia runtime or industrial library runs here; all
+Non-claims: no FPGA, Julia runtime or industrial library runs here, and the GPU
+runs only on a host whose hardware:nvidia-gpu probe succeeds; all
 bitstreams and link statistics are synthetic; Rust agreement is same-origin
 (CIW-authored) evidence; no finding establishes physical performance, machine
 safety, industrial readiness, production acceptance or actuator authority.
@@ -120,6 +123,17 @@ def _passed(checks) -> int:
 def _source_digest(relative):
     from .runner import source_digest
     return source_digest(relative)
+
+
+def _gpu_question() -> str:
+    from .energy_gpu_workload import GPU_QUESTION
+    return GPU_QUESTION
+
+
+def _ciw_producer(implementation: str, source: str) -> dict:
+    """A ciw producer identity for an independent check: the package version plus the producing module's digest."""
+    from .. import __version__
+    return {"implementation": implementation, "revision": f"ciw {__version__}", "source_sha256": _source_digest(source)}
 
 
 def _rust_status(build, run):
@@ -303,7 +317,8 @@ RUST_SPHERE_CLAIM = "Rust fused RK4 loop reproduces ciw.lab.jacobi.transfer on t
 
 
 @task("T142", changed_files=(MODULE, KERNELS, SERIAL, DOC),
-      regression_tests=(f"{TESTS}::test_t142_kernel_counts_and_ranking", f"{TESTS}::test_rust_fused_sphere_loop"))
+      regression_tests=(f"{TESTS}::test_t142_kernel_counts_and_ranking", f"{TESTS}::test_rust_fused_sphere_loop",
+                        f"{TESTS}::test_next_steps_point_at_work_that_delivers"))
 def rust_kernels(ctx):
     profile = ctx.memo("t142-profile", kernel_profile)
     ranking = kernel_ranking(profile)
@@ -400,7 +415,12 @@ def rust_kernels(ctx):
         "fused loop matches the core trajectory to rounding level.",
         "Count operations of scalar restatements, compare them with the core kernels, profile dispatches, rank port "
         "units by removable dispatches, compile the Rust probe and compare its fused sphere loop.",
-        "T147 (compare a ported kernel against the CPU reference under the tolerance policy), then T148 for its reductions",
+        "Done in this task: the Rust fused RK4 loop reproduces ciw.lab.jacobi.transfer (cross_implementation check). "
+        "Remaining: whether a Rust port saves time or energy on the target machine, which wall-clock timings cannot "
+        "establish as a finding; `python -m ciw.lab.energy_gpu_telemetry rapl-capture` now brackets a Rust port and "
+        "the NumPy reference of the common Gaussian VI workload on a RAPL host, and the lab run it names reports "
+        "their package energy per batch (docs/lab/ENERGY_GPU.md); a port of the ranked fused transfer loop itself "
+        "would need its own bracket",
         numerical_result=(f"Flops per call: geodesic RHS {profile['counts']['geodesic_rhs']['flops']}, Jacobi RHS "
                           f"{profile['counts']['jacobi_rhs']['flops']}, RK4 step {profile['counts']['rk4_step']['flops']}, "
                           f"Kalman update {profile['counts']['kalman_update']['flops']}; dispatches per call "
@@ -508,7 +528,9 @@ def cpp_interfaces(ctx):
         "No library was linked or executed; availability is probed with importlib only.",
         "Every entry validates; every mutated entry is refused with its specific code.",
         f"Validate the inventory and {len(checks)} mutated entries; probe Python packages for the artifact.",
-        "T144 (verify the Python orchestration boundary in the package source)",
+        "Deferred research question: build the first provider executable behind a pinned subprocess boundary (none "
+        "exists for any entry), starting with an OPC UA client, and check vendor SDK licensing and platform support "
+        "and a passive TAP's inability to inject frames on real hardware, which this inventory assumes",
         numerical_result=(f"{len(entries)} interfaces inventoried ({len(necessity['required'])} requiring C/C++, "
                           f"{len(necessity['preferred'])} preferring it over pure-Python stacks); "
                           f"{findings[1]['value']}/{len(checks)} mutations refused."),
@@ -642,8 +664,8 @@ def python_orchestration(ctx):
         "rule; PATH-resolved spawners exist, so pinning is not established.",
         f"Scan the package, compute the evidence closure, evaluate the rules, replay {len(forged)} forged mutations "
         "and list spawners that resolve executables on PATH.",
-        "T146 (fix one canonical serialization for identities crossing the language boundary); pin the Rust probe "
-        "and other PATH-resolved tools against expected identities",
+        "Pin the Rust probe and other PATH-resolved tools against expected identities (a resolved rustc is recorded "
+        "by version and binary digest, not checked against a pin)",
         numerical_result=(f"Evidence closure {evidence}; {len(structural)} structural and {len(heuristic)} heuristic "
                           f"violations over {len(modules)} modules; {len(spawners)} spawning modules, "
                           f"{len(path_resolved)} of them PATH-resolved; {findings[3]['value']}/{len(forged)} forged "
@@ -869,7 +891,8 @@ RUST_TIES_CLAIM = "Rust's own shortest float formatting breaks exact decimal tie
 
 @task("T146", changed_files=(MODULE, SERIAL, DOC),
       regression_tests=(f"{TESTS}::test_t146_python_canonicalizers_and_vectors", f"{TESTS}::test_t146_rust_byte_identity",
-                        f"{TESTS}::test_t146_reference_float_rule"))
+                        f"{TESTS}::test_t146_reference_float_rule",
+                        f"{TESTS}::test_ciw_producers_of_independent_checks_carry_a_revision"))
 def canonical_serialization(ctx):
     study = serialization_study()
     build = serial.rust_build()
@@ -963,8 +986,8 @@ def canonical_serialization(ctx):
                             _check("constructed decimal ties in the corpus", len(study["ties"]), 1, "ge")],
                  "independent_check": dict(_check("NumPy digit/exponent mismatches against the exact rule",
                                                   study["numpy_mismatch"]),
-                                           producer={"implementation": "ciw.lab.implementation_targets_serial."
-                                                                       "shortest_digits"},
+                                           producer=_ciw_producer("ciw.lab.implementation_targets_serial."
+                                                                  "shortest_digits", SERIAL),
                                            checker={"implementation": "numpy.format_float_scientific(unique=True)",
                                                     "revision": np.__version__})},
                 uncertainty=EXACT_U, tolerance=EXACT),
@@ -1026,8 +1049,9 @@ def canonical_serialization(ctx):
         "Encode every vector and float with the reference encoder, both CIW encoders and the Rust probe compiled at "
         "run time; compare digits with CPython repr and NumPy Dragon4; run Rust's own {:e} on decimal ties; contrast "
         "with JCS formatting.",
-        "T150 (bind FPGA identity records to this encoding), then migrate ciw.core.identities with a versioned hash "
-        "change",
+        "Deferred research question: migrate ciw.core.identities.canonical_json to ciw.canonical-json.v1 with a "
+        "versioned hash change, so old and new identities coexist during the migration (every retained identity "
+        "would change), and run a Julia or C++ encoder against the vectors",
         numerical_result=(f"{n_vectors} vectors, set digest {study['set_digest'][:16]}...; telemetry mismatches "
                           f"{len(study['telemetry_mismatch'])} (vectors) and {study['float_telemetry_mismatch']} "
                           f"(floats); identities differs from the specification on {len(study['differs_from_spec'])} "
@@ -1058,11 +1082,74 @@ def canonical_serialization(ctx):
 
 
 # =================================================================== T147
-@task("T147", changed_files=(MODULE, KERNELS, DOC),
+COMMON = "src/ciw/lab/energy_gpu_workload.py"
+GPU_CLAIM = ("CPU and GPU outputs of the common Gaussian VI workload agree under T148's policy for fixed-order "
+             "reductions (bitwise) on GPU hardware")
+HARNESS_CLAIM = ("Under T148's fixed-order policy the harness accepts a second implementation of the common Gaussian VI "
+                 "workload and flags builds that contract its multiply-adds")
+
+
+def _common_workload_harness():
+    """The common workload's float64 reference and the candidates the fixed-order (bitwise) policy must judge."""
+    from . import energy_gpu_workload as common
+    reference = common.run_numpy(np.float64, replicas=1)
+    candidates = {"python-scalar": common.run_variant("kernel")}
+    candidates.update({variant: common.run_variant(variant) for variant in common.VARIANTS if variant.startswith("fma-")})
+    results = {name: kernels.compare_outputs(reference, candidate.reshape(reference.shape), FIXED_ORDER_POLICY)
+               for name, candidate in candidates.items()}
+    return {"iterations": common.plan_iterations(), "reference": reference[0].tolist(),
+            "results": {name: {k: v for k, v in result.items() if k not in ("ratios", "violating")}
+                        for name, result in results.items()}}
+
+
+def _gpu_comparison_finding(ctx):
+    """Compare the PTX kernel's outputs with the NumPy reference under the fixed-order policy, where a GPU answers."""
+    from . import energy_gpu_workload as common
+    gpu = common.gpu_run(ctx)
+    if not gpu["ran"]:
+        return finding(GPU_CLAIM, "numerical", None, {"notes": [gpu["reason"]]}, expected_not_established=True), gpu, None
+    size = int(np.asarray(gpu["reference"]).size)
+    if gpu.get("invalid"):
+        # The kernel ran and the worker rejected its outputs: a failed comparison, never an expected gap.
+        value = {"elements": size, "rejected_by_worker": gpu["invalid"], "policy": FIXED_ORDER_POLICY["mode"]}
+        checks = [_check("GPU outputs rejected by the CUDA worker's own output validation (1 = yes)", 1.0,
+                         kind="cross_implementation")]
+    else:
+        try:
+            result = kernels.compare_outputs(gpu["reference"], gpu["outputs"], FIXED_ORDER_POLICY)
+        except ValueError as exc:  # another shape or a nonfinite output: every value counts as a violation
+            result = {"elements": size, "violations": size, "max_ulp": float(2 ** 62), "refusal": str(exc)}
+        value = {"elements": result["elements"], "violations": result["violations"], "max_ulp": result["max_ulp"],
+                 "policy": FIXED_ORDER_POLICY["mode"]}
+        checks = [_check("compare_outputs violations under the fixed-order (bitwise) policy, every replica",
+                         result["violations"], kind="cross_implementation")]
+    checks.append(_check("GPU worker prepared-input digest differs from the reference's (1 = yes)",
+                         0.0 if gpu["input_matches"] else 1.0))
+    record = finding(
+        GPU_CLAIM, "numerical", value,
+        {"generator": {"name": "common Gaussian VI workload", "seed": None, "iterations": common.plan_iterations(),
+                       "replicas": common.REPLICAS},
+         "notes": ["the PTX kernel (ciw.energy_cuda) and the NumPy reference (ciw.lab.energy_gpu_workload) are both "
+                   "ciw code: agreement is cross-implementation evidence, not independent verification"],
+         "checks": checks},
+        uncertainty=EXACT_U, tolerance=EXACT)
+    identity = {key: gpu["identity"].get(key) for key in ("device_name", "device_uuid", "compute_capability",
+                                                          "cuda_driver_version", "kernel_sha256")}
+    return record, gpu, identity
+
+
+@task("T147", changed_files=(MODULE, KERNELS, COMMON, DOC),
       regression_tests=(f"{TESTS}::test_t147_harness_detects_differences",
-                        f"{TESTS}::test_t147_fault_study_is_judged_by_the_harness"))
+                        f"{TESTS}::test_t147_fault_study_is_judged_by_the_harness",
+                        f"{TESTS}::test_t147_common_workload_comparison_follows_the_gpu_probe",
+                        f"{TESTS}::test_t147_identity_digests_the_common_workload_sources"))
 def cpu_gpu_comparison(ctx):
+    from . import energy_gpu_workload as workload
+    from .energy_gpu import GPU_PROTOCOL
+    from .energy_gpu_workload import GPU_QUESTION
     study = ctx.memo("t147-dots", kernels.batched_dot_study)
+    harness = ctx.memo("t147-common-workload", _common_workload_harness)
+    gpu_finding, gpu, gpu_identity = _gpu_comparison_finding(ctx)
     out, bounds, exact = study["outputs"], study["bounds"], study["exact"]
     reference = out["f64-sequential"]
     f64_tolerance = bounds["f64-sequential"] + bounds["f64-blocked"]
@@ -1084,7 +1171,6 @@ def cpu_gpu_comparison(ctx):
     power64 = kernels.dropped_product_study(reference, out["f64-blocked"], products64, f64_tolerance, study["x"])
     power32 = kernels.dropped_product_study(reference, out["f32-blocked"], products32, f32_tolerance,
                                             x32.astype(np.float64))
-    gpu = ctx.available("hardware:nvidia-gpu")
     ulp = kernels.ulp_distance(reference, out["f64-blocked"])
     summary = {name: {k: v for k, v in result.items() if k not in ("ratios", "violating")} for name, result in (
         ("bitwise f64 sequential vs blocked", bitwise), ("bitwise reference vs itself", self_bitwise),
@@ -1094,8 +1180,12 @@ def cpu_gpu_comparison(ctx):
                                                   "dropped_product_study": {"float64 policy": power64,
                                                                             "float32 policy": power32},
                                                   "depths": study["depths"], "max_ulp_f64_reorder": float(np.max(ulp)),
-                                                  "gpu_present": gpu, "gpu_kernel_path": None, "rows": study["rows"],
-                                                  "n": study["n"], "lane_width": study["width"]})
+                                                  "rows": study["rows"], "n": study["n"], "lane_width": study["width"],
+                                                  "common_workload": dict(harness, policy=FIXED_ORDER_POLICY,
+                                                                          gpu={"probed": gpu["probed"], "ran": gpu["ran"],
+                                                                               "reason": gpu["reason"],
+                                                                               "invalid": gpu["invalid"],
+                                                                               "identity": gpu_identity})})
     series = []
     for name, result in (("f64 reorder / f64 bound", reorder), ("f32 / f64 bound", f32_under_f64),
                          ("f32 / f32 bound", f32_under_f32)):
@@ -1116,11 +1206,20 @@ def cpu_gpu_comparison(ctx):
                    "leaves undetected", power["undetected_above_twice_tolerance"], kind="analytic"),
             _check(f"{label} policy: dropped products larger than twice the row tolerance (the guarantee is not "
                    "vacuous)", power["above_twice_tolerance"], 1, "ge")]
-    gpu_note = ("This task has no GPU kernel path: the candidates are CPU reductions, and a CUDA host changes nothing "
-                "until a GPU implementation of the batched dot products feeds compare_outputs")
+    common_results = harness["results"]
+    fused = [name for name in common_results if name.startswith("fma-")]
     findings = [
-        finding("CPU and GPU outputs agree under the tolerance policy on GPU hardware", "numerical", None,
-                {"notes": gpu_note}, expected_not_established=True),
+        gpu_finding,
+        finding(HARNESS_CLAIM, "numerical", {name: bool(row["violations"]) for name, row in common_results.items()},
+                {"generator": {"name": "common Gaussian VI workload", "seed": None, "iterations": harness["iterations"],
+                               "replicas": 1},
+                 "notes": ["candidates: the scalar Python-float evaluation of the kernel's declared order, and the two "
+                           "exact fused multiply-add contraction rules of ciw.lab.energy_gpu_workload.VARIANTS"],
+                 "checks": [_check("elements the fixed-order policy flags for the scalar evaluation of the declared "
+                                   "order", common_results["python-scalar"]["violations"], kind="cross_implementation")]
+                           + [_check(f"elements the fixed-order policy flags for the {name} contraction",
+                                     common_results[name]["violations"], 1, "ge") for name in fused]},
+                uncertainty=EXACT_U, tolerance=EXACT),
         finding("Bitwise policy detects reduction-order differences between float64 CPU orders", "numerical",
                 bitwise["violations"],
                 {"generator": {"name": "PCG64 128x1024 uniform batched dot products", "seed": 147},
@@ -1188,8 +1287,10 @@ def cpu_gpu_comparison(ctx):
         "A comparison harness with an analytic tolerance policy separates legitimate reduction-order and precision "
         "differences from faults: once the fault-free candidate is within the policy, every fault larger than twice "
         "the tolerance is detected, detection switches at about the tolerance, and faults up to about the bound "
-        "escape as often as the fault-size distribution predicts. Exercised CPU-against-CPU: the task has no GPU "
-        "kernel path.",
+        "escape as often as the fault-size distribution predicts. On the common Gaussian VI workload, whose "
+        "reductions have a fixed order, T148's policy prescribes a bitwise comparison: it accepts a second "
+        "implementation of the declared order and flags a build that contracts multiply-adds, and on a GPU host "
+        "it compares the gaussian_vi PTX kernel's outputs with the CPU reference.",
         "For a sum of terms each passing through k roundings, |computed - exact| <= gamma_k * sum|a_j x_j| with "
         "gamma_k = k u/(1 - k u), u = 2^-53 (float64) or 2^-24 (float32, inputs rounded). The policy tolerance for two "
         "outputs is the sum of their bounds, so the fault-free candidate satisfies |c - r| <= tol; bitwise mode "
@@ -1198,7 +1299,10 @@ def cpu_gpu_comparison(ctx):
         "[-1, 1), P(|a_ij x_j| <= tol_i) = min(1, tol_i/|x_j|), whose sum over faults predicts the miss count.",
         ["128x1024 uniform[-1,1) matrix and vector, PCG64(147)", "orders: sequential, pairwise tree, 32-lane blocked "
          "(sequential lanes then tree); precisions float64 and float32", "exact dot products by TwoProduct + math.fsum",
-         "all 131072 single dropped products per policy, judged by compare_outputs"],
+         "all 131072 single dropped products per policy, judged by compare_outputs",
+         f"the common Gaussian VI workload (examples/energy-accuracy/problem.json, K = {harness['iterations']}): the "
+         "float64 NumPy reference, a scalar evaluation of the same order, two exact fused multiply-add contractions, "
+         "and on a GPU host the gaussian_vi PTX kernel's outputs for every replica"],
         "Elementwise absolute differences, bitwise equality and ratios to the policy bound, as reported by "
         "compare_outputs for the fault-free candidates and for every faulty candidate.",
         "Bitwise policy flags reordering and not a copy of the reference; bound policy accepts reordering; float32 "
@@ -1207,10 +1311,10 @@ def cpu_gpu_comparison(ctx):
         "Compute the dot products in four orders/precisions, compare with the harness under each policy, drop each "
         "partial product in turn from the float64 and float32 candidates and judge every faulty candidate with the "
         "harness, then compare detection with the operational guarantee, the threshold band and the predicted miss "
-        "count.",
-        "Implement a GPU path for the batched dot products (for example a PTX kernel loaded like ciw.energy_cuda's "
-        "worker) whose outputs feed compare_outputs; only then does rerunning T147 on a CUDA host "
-        "(hardware:nvidia-gpu) test CPU/GPU agreement",
+        "count. Judge the common workload's candidates under the fixed-order policy, and when an NVIDIA GPU answers "
+        "the probe run the PTX kernel and judge its outputs the same way.",
+        "Judge the PTX kernel's outputs for every replica under the fixed-order policy on the RTX 2080 host (protocol "
+        "in docs/lab/ENERGY_GPU.md): " + GPU_PROTOCOL + ". " + GPU_QUESTION,
         numerical_result=(f"{bitwise['violations']}/128 rows flagged by the bitwise policy between float64 orders (0 for "
                           f"a copy of the reference); max difference/bound "
                           f"{max(reorder['max_ratio'], pairwise['max_ratio']):.3g}; float32 violates the float64 policy "
@@ -1223,24 +1327,40 @@ def cpu_gpu_comparison(ctx):
                           f"predicted {power32['expected_undetected']:.1f} +/- {power32['sigma_undetected']:.1f}; largest "
                           f"missed |a_j x_j| {missed['magnitude'] if missed else 0:.3g} against row tolerance "
                           f"{missed['row_tolerance'] if missed else 0:.3g}; {power32['undetected_above_bound']} missed "
-                          f"above the row bound{', ratio %.6g' % above32['ratio'] if above32 else ''}). "
-                          f"GPU present: {gpu} (the task has no GPU kernel path)."),
+                          f"above the row bound{', ratio %.6g' % above32['ratio'] if above32 else ''}). Common workload "
+                          f"under the fixed-order policy: flagged {sorted(n for n, r in common_results.items() if r['violations'])}"
+                          f", accepted {sorted(n for n, r in common_results.items() if not r['violations'])}; "
+                          + (f"GPU comparison not run: {gpu['reason']}." if not gpu["ran"] else
+                             f"GPU comparison refuted: {gpu['invalid']}." if gpu["invalid"] else
+                             f"GPU outputs violate it on {gpu_finding['value']['violations']} of "
+                             f"{gpu_finding['value']['elements']} values.")),
         uncertainty="Bounds are worst-case (not probabilistic), so typical ratios are far below one; the twice-tolerance "
                     "guarantee needs only the policy's own premise (fault-free candidate within tolerance), while "
                     "faults up to about the bound escape at the rate the fault-size distribution predicts (4-sigma "
-                    "check); the harness has not seen GPU fused multiply-add or atomics ordering.",
+                    "check); on the common workload the bitwise policy is exact, and the emulated contractions are two "
+                    "plausible compiler rules, not those of a specific nvcc version.",
         failure_modes_checked=["reduction reordering", "precision reduction (float32)",
                                "every single dropped partial product, judged by the harness",
                                "bitwise mode flagging identical outputs", "detection threshold off the bound",
                                "miss count away from its prediction", "shape mismatch and nonfinite outputs "
-                               "(refused by the harness)"],
-        unresolved_assumptions=["No GPU kernel path exists in this task: the recommended rerun on a CUDA host needs a "
-                                "GPU implementation of the batched dot products first",
+                               "(refused by the harness)", "fused multiply-add contraction of the common workload "
+                               "(flagged by the fixed-order policy)", "GPU outputs differing from the reference (a "
+                               "refuted finding; regression test with a simulated contracting device)",
+                               "GPU outputs the CUDA worker rejects after the kernel ran (a refuted finding, not an "
+                               "expected gap; regression test with a simulated worker)"],
+        unresolved_assumptions=["The batched dot products have no GPU path and need none: the GPU comparison uses the "
+                                "common Gaussian VI workload, whose PTX kernel exists; a device-wide reduction kernel "
+                                "does not", GPU_QUESTION,
                                 "GPU reductions may use FMA and tree shapes not modelled by the 32-lane order",
                                 "Only single dropped products were injected; other fault classes (duplicated terms, "
-                                "wrong operands) have their own detection limits", "No GPU hardware or driver was "
-                                "exercised"])
-    return {"state": "partial", "fields": fields, "findings": findings}
+                                "wrong operands) have their own detection limits"]
+        + ([] if gpu["ran"] else [gpu["reason"]]),
+        # The workload's defining modules (PTX text and preparation, planner, information system) are digested
+        # beside this task's own sources, with the workload declaration they produce.
+        provider_runtime_identity=dict(_runtime_identity((MODULE, KERNELS, COMMON) + workload.SOURCES),
+                                       common_workload=workload.workload(),
+                                       **({"gpu": gpu_identity} if gpu_identity else {})))
+    return {"state": _state(findings, gpu["ran"]), "fields": fields, "findings": findings}
 
 
 # =================================================================== T148
@@ -1256,6 +1376,10 @@ REDUCTION_POLICY = {
                                "implementation-defined)", "Kahan without the Neumaier branch (fails on large "
                                "cancelling terms)"],
 }
+# The compare_outputs policy REDUCTION_POLICY prescribes for a fixed-order reduction evaluated in the same order on both
+# sides (fixed_layout_arrays: bitwise reproducible for the same order and length), as T147 and T121 apply it to the
+# common Gaussian VI workload, whose reductions are fixed two-term sums and must not be contracted.
+FIXED_ORDER_POLICY = {"mode": "bitwise", "rule": "REDUCTION_POLICY.fixed_layout_arrays, same order on both sides"}
 
 
 def _reduction_scaling() -> dict:
@@ -1282,7 +1406,10 @@ def _superseded_bound_witness(xs) -> dict:
             "ratio_to_superseded": float(error / Fraction(old)), "ratio_to_bound": float(error / Fraction(new))}
 
 
-@task("T148", changed_files=(MODULE, KERNELS, DOC), regression_tests=(f"{TESTS}::test_t148_reduction_policies",))
+@task("T148", changed_files=(MODULE, KERNELS, DOC),
+      regression_tests=(f"{TESTS}::test_t148_reduction_policies",
+                        f"{TESTS}::test_ciw_producers_of_independent_checks_carry_a_revision",
+                        f"{TESTS}::test_next_steps_point_at_work_that_delivers"))
 def reduction_policies(ctx):
     datasets = kernels.reduction_datasets()
     study = kernels.permutation_study(datasets)
@@ -1319,7 +1446,8 @@ def reduction_policies(ctx):
                  "checks": [_check("distinct results across permutations minus one", exact_distinct - 1)],
                  "independent_check": dict(_check("mismatches against math.fsum over every order and dataset",
                                                   fsum_mismatch),
-                                           producer={"implementation": "ciw.lab.implementation_targets_kernels.sum_exact"},
+                                           producer=_ciw_producer("ciw.lab.implementation_targets_kernels.sum_exact",
+                                                                  KERNELS),
                                            checker={"implementation": "cpython.math.fsum",
                                                     "revision": sys.version.split()[0]})},
                 unit="distinct results", uncertainty=EXACT_U, tolerance=EXACT),
@@ -1401,7 +1529,7 @@ def reduction_policies(ctx):
         "Sum each permutation with five algorithms; compare with exact rationals and math.fsum; walk the pairwise "
         "tree a second way (NumPy level-wise additions) on every order; test the earlier Neumaier bound on absorbed "
         "tiny terms; retain the policy.",
-        "T147 (use the policy to set GPU comparison tolerances), then T155 (formal specification of the policy)",
+        _gpu_question(),
         numerical_result=(f"Distinct results across 25 orders: exact {exact_distinct}, pairwise (uniform) "
                           f"{pairwise_distinct}; recursive/level-wise pairwise tree mismatches {tree_mismatches} of "
                           f"{len(pairwise_orders)} orders; exact vs math.fsum mismatches {fsum_mismatch}; Kahan on "
@@ -1426,7 +1554,9 @@ def reduction_policies(ctx):
 
 
 # =================================================================== T149
-@task("T149", changed_files=(MODULE, FPGA, DOC), regression_tests=(f"{TESTS}::test_t149_telemetry_only_frames",))
+@task("T149", changed_files=(MODULE, FPGA, DOC),
+      regression_tests=(f"{TESTS}::test_t149_telemetry_only_frames",
+                        f"{TESTS}::test_ciw_producers_of_independent_checks_carry_a_revision"))
 def fpga_telemetry(ctx):
     rng = np.random.Generator(np.random.PCG64(149))
     fpga.validate_interface(fpga.INTERFACE)
@@ -1526,7 +1656,7 @@ def fpga_telemetry(ctx):
                 {"checks": [_check("CRC-32(b'123456789') - 0xCBF43926", fpga.crc32(b"123456789") - 0xCBF43926,
                                    kind="analytic")],
                  "independent_check": dict(_check("mismatches against zlib.crc32 on random messages", crc_mismatch),
-                                           producer={"implementation": "ciw.lab.implementation_targets_fpga.crc32"},
+                                           producer=_ciw_producer("ciw.lab.implementation_targets_fpga.crc32", FPGA),
                                            checker={"implementation": "zlib.crc32", "revision": zlib.ZLIB_RUNTIME_VERSION})},
                 uncertainty=EXACT_U, tolerance=EXACT),
         finding("Every burst of at most 32 bits and every single-bit error in a frame is refused by the decoder",
@@ -1594,7 +1724,9 @@ def fpga_telemetry(ctx):
         "and a forged subclass with emit() and a transport handle is flagged.",
         "Encode/decode random frames, compare CRC implementations, flip every bit, compute window ranks for three "
         "layouts and extract escaping bursts, corrupt at random, forge command frames, headers and specs.",
-        "T152 (drive the decoder with a lossy, jittered stream)",
+        "Deferred research question: an HDL implementation of this frame format on an FPGA, driven over a physical "
+        "transmit-only link, to test the LSB-first burst guarantee and the unidirectional transport this task "
+        "assumes (the link simulation of this section is software only)",
         numerical_result=(f"Round-trip failures {roundtrip_failures}/400; CRC mismatches {crc_mismatch}/500; single-bit "
                           f"{single}/{bits} refused; rank-deficient 32-bit windows {len(bursts['deficient'])}/"
                           f"{bursts['windows']} (little-endian trailer), {len(bursts_be['deficient'])} (big-endian), "
@@ -1741,7 +1873,10 @@ def bitstream_identity(ctx):
         "installation manifest digest, constraint files and source tree, so that a change to any of them is detected "
         "when the changed artifact (bitstream, installed toolchain files and reported version, constraint or source "
         "files) is checked against the record. The installation digest binds exactly the toolchain files supplied; "
-        "which files of a vendor toolchain must be supplied is not specified here.",
+        "which files of a vendor toolchain must be supplied is not specified here. Scope: the task records identity "
+        "and toolchain, a build artifact rather than a measurement, so a synthetic placeholder bitstream exercises "
+        "every field and refusal of the record; recording a real design's bitstream needs a vendor toolchain and is "
+        "the deferred research question.",
         "record_sha256 = sha256(E(record without record_sha256)), E = ciw.canonical-json.v1; constraints_sha256 = "
         "sha256(E({file: sha256})); source tree = sha256(E({path: sha256})); installation_sha256 = "
         "sha256(E({toolchain file: sha256})); toolchain version must match "
@@ -1755,7 +1890,9 @@ def bitstream_identity(ctx):
         "record across runs is left to the regression gate, which compares record_sha256 exactly.",
         f"Build the record, validate it against the bitstream, constraint, source and toolchain files, apply "
         f"{len(mutations) - 1} mutations and one positive control, request a deployment decision.",
-        "T151 (compatibility and rollback records referencing these identities)",
+        "Deferred research question: toolchain determinism: build one design twice with a vendor toolchain whose "
+        "installation manifest is recorded and compare the bitstream digests, and specify which toolchain files the "
+        "installation digest must cover (no real bitstream, design or toolchain exists here)",
         numerical_result=f"record_sha256 {record['record_sha256'][:16]}...; {refused}/{len(mutations) - 1} mutations "
                          f"refused with their codes; {controls}/1 pinned pre-release accepted; deployment refused "
                          "(synthetic_bitstream).",
@@ -1863,7 +2000,8 @@ def fpga_rollback(ctx):
         "Validator outcomes; nothing was flashed or executed.",
         "Rule and set forms agree; every forged rollback is refused with its code; execution is always refused.",
         "Enumerate the matrix two ways, search previous-version rollbacks for incompatibility, validate forged records.",
-        "T152 (link behaviour after a rollback changes the frame format)",
+        "Deferred research question: qualify the compatibility matrix on real boards and decoder versions (it is "
+        "illustrative here) and establish how board revision and host decoder version are reported trustworthily",
         numerical_result=(f"{len(rule)}/{len(combos)} combinations compatible, {disagreements} disagreements; "
                           f"{len(unsafe_previous)} previous-version rollbacks incompatible (witness {witness}); "
                           f"{sum(c['passed'] for c in refusals)}/{len(refusals)} refusals."),
@@ -2069,7 +2207,8 @@ def link_simulation(ctx):
         "rate and mean latency within 4 sigma of the model.",
         "Simulate the link, run receivers with the declared and an estimated offset, compare with ground truth and "
         "predicted rates, run naive detectors, and check a long run against the model moments.",
-        "T153 (keep any response to telemetry gaps from reaching actuators)",
+        "Deferred research question: negative clock drift and loss-dependent latency (bursty congestion) in the link "
+        "simulation; both are assumed away here, and a negative drift would turn false staleness alarms into misses",
         numerical_result=(f"{len(true_lost)} losses detected exactly ({exact.reordered} reordered, {exact.duplicates} "
                           f"duplicates); declared offset: {declared['missed']} of {declared['stale']} stale frames "
                           f"missed, {declared['false_alarms']} false alarms (expected "
@@ -2237,7 +2376,9 @@ def actuator_writes(ctx):
         "undeclared network path in the package; every forged write path flagged.",
         "Attempt a write per channel on the default policy, try each enabling route, bypass the frozen dataclass, then "
         "scan the package for device and network write paths and replay forged ones.",
-        "T154 (treat control outputs as proposals behind the same authorization)",
+        "Deferred research question: enforce that any future write transport is routed through ActuatorWritePolicy "
+        "(the scan flags a new transport, routing is not enforced), with a real signature scheme for authorization "
+        "records; enforcement itself belongs in hardware interlocks outside this package",
         numerical_result=(f"{_passed(default_writes)}/{len(default_writes)} default writes refused; "
                           f"{_passed(routes)}/{len(routes)} enabling routes refused with their expected codes; "
                           "in-memory mutation succeeded but writes stayed refused; device paths "
@@ -2417,8 +2558,10 @@ def control_proposals(ctx):
         "output is in the inventory.",
         "Compute proposals, verify them by integration, then attempt construction as a command and conversion under "
         "each authorization route; check the control-output inventory against a keyword scan of the package.",
-        "Route the T114 servo-axis stop request through a proposal-and-authorization record (lyapunov section), then "
-        "T141 (keep production acceptance outside the system) and a hardware-in-the-loop authority design review",
+        "Deferred research question: a proposal-and-authorization record for stop requests to an independent safety "
+        "function (the servo-axis abort declared in ciw.lab.lyapunov_research is not a ControlProposal), and a "
+        "hardware-in-the-loop authority design review; production acceptance and actuation authority stay outside "
+        "the system",
         numerical_result=(f"Sphere proposal relative error {sphere_error:.2e}; residual orders corrected "
                           f"{study['corrected_order']:.3f}, uncorrected {study['uncorrected_order']:.3f}; "
                           f"{sum(c['passed'] for c in refusals)}/{len(refusals)} refusals; a status forced in memory "
