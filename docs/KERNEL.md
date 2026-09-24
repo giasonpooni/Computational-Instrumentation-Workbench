@@ -232,6 +232,17 @@ step envelopes stay the runner's (`_check_envelope`, `check_step`). Canonical
 record content and its identities live in
 [`ciw.core.canonical`](../src/ciw/core/canonical.py).
 
+Workflows that bind a selected upstream (schematic companions, residual
+monitor, identified stability) extend the runner directly and keep their own
+upstream-bound envelope, step and multi-provider runtime checks; their replay
+receipts go through the runner's `check_receipts` on every reopen. Kinds
+verified by a pinned provider set (telemetry, the calibrated windows and
+observable, the acquired window) keep the provider's own verification body,
+and every reopen checks their receipt envelope with `check_receipt_envelope`:
+one receipt, the kind's replay schema, this bundle's digest, a different source
+digest, a numerical match, no admission, content identities, and a verification
+whose subject is the replay source. The workbench runs the same check.
+
 ## Providers outside pipelines
 
 A provider that no frozen pipeline step names (the Julia model worker) is

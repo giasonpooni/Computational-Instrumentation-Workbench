@@ -78,16 +78,19 @@ def _declared_workload_code(module: str) -> list:
     """The DeclaredWorkflow code a runner-based implementation executes.
 
     Subclassing ``DeclaredWorkflow`` executes all of it; importing helpers
-    executes only those top-level functions.
+    executes only those top-level functions and what they call. An instance
+    used only to validate a retained upstream executes no provider.
     """
     import ast
     package = Path(__file__).resolve().parents[1]
     path = package / (module.removeprefix("ciw.").replace(".", "/") + ".py")
-    names = {alias.name for node in ast.walk(ast.parse(path.read_text(encoding="utf-8")))
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    names = {alias.name for node in ast.walk(tree)
              if isinstance(node, ast.ImportFrom) and node.level == 1 and node.module == "declared_workload"
              for alias in node.names}
     base = ast.parse((package / "declared_workload.py").read_text(encoding="utf-8"))
-    if "DeclaredWorkflow" in names:
+    if any(isinstance(node, ast.ClassDef) and any(isinstance(item, ast.Name) and item.id == "DeclaredWorkflow"
+                                                  for item in node.bases) for node in ast.walk(tree)):
         return [base]
     functions = {node.name: node for node in base.body if isinstance(node, ast.FunctionDef)}
     reached, pending = set(), [name for name in names if name in functions]

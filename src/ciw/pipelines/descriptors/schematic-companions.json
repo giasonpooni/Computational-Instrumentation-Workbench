@@ -50,7 +50,6 @@
     "role": null
   },
   "refusals": [
-    "DECLARED_WORKLOAD_REFUSED",
     "INPUT_LIMIT",
     "INVALID_INPUT",
     "MALFORMED_RESPONSE",

@@ -1,12 +1,10 @@
 """The retained workbench read as the project graph spine."""
-import base64
 from copy import deepcopy
 import json
 
 import pytest
 
 from ciw import project_graph, project_model, thermal_workflow
-from ciw.instruments import make_demo_run
 from ciw.session import Session
 from ciw.workbench import OPERATIONS
 

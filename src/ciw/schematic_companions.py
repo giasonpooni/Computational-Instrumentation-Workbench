@@ -16,11 +16,11 @@ import uuid
 
 from .adapters.protocol import AdapterRefusal
 from .adapters.subprocess import PinnedSubprocessAdapter, _json
-from .declared_workload import (AUTHORITY, DeclaredWorkflow, MAX_BYTES, RESULT_SCHEMA,
-                               SOURCE_LIMIT, _graph, _text, _verification)
+from .declared_workload import DeclaredWorkflow, SOURCE_LIMIT, _graph
 from .core.canonical import canonical, digest, byte_digest, bundle_digest, exact_keys, utc_now
 from .pipelines import pin_map
-from .pipelines.runner import check_receipts
+from .pipelines.runner import (AUTHORITY, MAX_BYTES, RESULT_SCHEMA, PipelineRunner, check_receipts, text as _text,
+                               verification as _verification)
 
 KIND = "schematic-companions"
 SOURCE_SCHEMA = "ciw.schematic-companions-source.v1"
@@ -326,7 +326,7 @@ def validate_upstream(bundle, upstream):
     return result["result"]["data"]["schematic"]
 
 
-class SchematicCompanionWorkflow(DeclaredWorkflow):
+class SchematicCompanionWorkflow(PipelineRunner):
     """The existing declared-workload lifecycle with three explicit provider pins."""
     ROLES = ROLES
     SOURCE_SCHEMA = SOURCE_SCHEMA

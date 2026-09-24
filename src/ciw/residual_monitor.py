@@ -16,11 +16,11 @@ import uuid
 from . import calibrated_window
 from .adapters.protocol import AdapterRefusal
 from .adapters.subprocess import PinnedSubprocessAdapter, _json
-from .declared_workload import (AUTHORITY, DeclaredWorkflow, RESULT_SCHEMA,
-                               SOURCE_LIMIT, _text, _verification)
+from .declared_workload import SOURCE_LIMIT
 from .core.canonical import canonical, digest, byte_digest, bundle_digest, exact_keys, utc_now, utc_instant
 from .pipelines import pin_map
-from .pipelines.runner import check_receipts
+from .pipelines.runner import (AUTHORITY, RESULT_SCHEMA, PipelineRunner, check_receipts, text as _text,
+                               verification as _verification)
 
 KIND = "residual-monitor"
 SOURCE_SCHEMA = "ciw.residual-monitor-source.v1"
@@ -344,7 +344,7 @@ def _check_data(request, data):
                 raise ValueError("FDIR must retain the exact GSIE residual, covariance and coordinate order")
 
 
-class ResidualMonitorWorkflow(DeclaredWorkflow):
+class ResidualMonitorWorkflow(PipelineRunner):
     MAX_BYTES, ROLES, SOURCE_SCHEMA = MAX_BYTES, ROLES, SOURCE_SCHEMA
 
     def __init__(self):
@@ -357,8 +357,8 @@ class ResidualMonitorWorkflow(DeclaredWorkflow):
 
     @staticmethod
     def _runtime_projection(runtime):
-        value = DeclaredWorkflow._runtime_projection(runtime)
-        value["companions"] = {"oit": DeclaredWorkflow._runtime_projection(runtime["companions"]["oit"])}
+        value = PipelineRunner._runtime_projection(runtime)
+        value["companions"] = {"oit": PipelineRunner._runtime_projection(runtime["companions"]["oit"])}
         return value
 
     def _adapters(self, repositories, expected=None):
@@ -381,7 +381,7 @@ class ResidualMonitorWorkflow(DeclaredWorkflow):
         for role in ROLES:
             retained = runtime if role == "fdir" else runtime["companions"]["oit"]
             current = adapters[role].runtime_identity()
-            if DeclaredWorkflow._runtime_projection(current) != DeclaredWorkflow._runtime_projection({k: v for k, v in retained.items() if k != "companions"}):
+            if PipelineRunner._runtime_projection(current) != PipelineRunner._runtime_projection({k: v for k, v in retained.items() if k != "companions"}):
                 raise ValueError("Native monitor provider changed before execution")
         code, raw = adapters["fdir"]._run(_BOOTSTRAP, [str(adapters["fdir"].source_root), str(adapters["oit"].source_root)], canonical(request))
         for adapter in adapters.values(): adapter.runtime_identity()

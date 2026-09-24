@@ -22,8 +22,9 @@ import numpy as np
 from . import identified_design, plsr_engine
 from .adapters.protocol import AdapterRefusal
 from .adapters.subprocess import _json
-from .declared_workload import (AUTHORITY, DeclaredWorkflow, MAX_BYTES, RESULT_SCHEMA,
-                               SOURCE_LIMIT, _text, _verification)
+from .declared_workload import SOURCE_LIMIT
+from .pipelines.runner import (AUTHORITY, MAX_BYTES, RESULT_SCHEMA, PipelineRunner, text as _text,
+                               verification as _verification)
 from .core.canonical import canonical, digest, byte_digest, bundle_digest, exact_keys, utc_now
 from .pipelines import pin_map
 
@@ -303,7 +304,7 @@ def validate_upstream(bundle, upstream):
     return binding
 
 
-class IdentifiedStabilityWorkflow(DeclaredWorkflow):
+class IdentifiedStabilityWorkflow(PipelineRunner):
     ROLES, SOURCE_SCHEMA = ROLES, SOURCE_SCHEMA
 
     def __init__(self):

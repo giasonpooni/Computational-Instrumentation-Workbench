@@ -159,11 +159,23 @@ def test_inspection_projector_is_descriptor_data():
 
 def test_refusals_follow_only_the_declared_workload_code_a_pipeline_executes():
     descriptors = pipelines.load()
-    # Subclassing DeclaredWorkflow executes its invoke; importing helpers executes only those helpers.
-    assert "DECLARED_WORKLOAD_REFUSED" in pipelines.code_refusals(descriptors["schematic-companions"], descriptors)
+    # Only DeclaredWorkflow.invoke raises this; importing helpers executes only those helpers, and an
+    # instance that validates a retained upstream executes no provider.
     proved = pipelines.code_refusals(descriptors["proved-heat"], descriptors)
     assert "DECLARED_WORKLOAD_REFUSED" not in proved and "RUNTIME_UNAVAILABLE" in proved
-    assert "DECLARED_WORKLOAD_REFUSED" not in pipelines.code_refusals(descriptors["measurement-chain"], descriptors)
+    for kind in ("measurement-chain", "schematic-companions", "residual-monitor", "identified-stability"):
+        assert "DECLARED_WORKLOAD_REFUSED" not in pipelines.code_refusals(descriptors[kind], descriptors), kind
+    assert "DECLARED_WORKLOAD_REFUSED" in pipelines.code_refusals(descriptors["numerical-heat"], descriptors)
+
+
+def test_upstream_bound_workflows_do_not_inherit_the_declared_workload_hooks():
+    from ciw.declared_workload import DeclaredWorkflow
+    from ciw.pipelines.runner import PipelineRunner
+    for kind in ("schematic-companions", "residual-monitor", "identified-stability"):
+        flow = pipelines.workflow(kind)
+        assert isinstance(flow, PipelineRunner) and not isinstance(flow, DeclaredWorkflow), kind
+        with pytest.raises(NotImplementedError):
+            flow.invoke({}, (None, None, None))
 
 
 @pytest.mark.parametrize("kind, path, value, message", [
