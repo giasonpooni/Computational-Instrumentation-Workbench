@@ -11,15 +11,15 @@ from copy import deepcopy
 from pathlib import Path
 import re
 import tempfile
-import uuid
 
 from .adapters.protocol import AdapterRefusal
 from .adapters.subprocess import _json
 from .covariance_workflow import MAP_FIELDS, execute_covariance
-from .declared_workload import DeclaredWorkflow, RESULT_SCHEMA, AUTHORITY, _text
+from .declared_workload import _text
+from .pipelines.runner import PipelineRunner, check_step, seal_step
 from .investigation import _runtime, _make_run, _validate_model_independence, create_investigation
 from .session import Session, read_json, write_json
-from .core.canonical import canonical, digest, byte_digest, bundle_digest, exact_keys
+from .core.canonical import canonical, exact_keys
 from .pipelines import pin_map
 
 MAX_BYTES = 4 * 1024 * 1024
@@ -269,7 +269,11 @@ def native_occurrences(bundle):
             for e in step["result"]["data"]["native_workspace"]["executions"]}
 
 
-class MeasurementChainWorkflow(DeclaredWorkflow):
+class MeasurementChainWorkflow(PipelineRunner):
+    """RCI and FSRT through an investigation, then JSPT over its covariance, as one retained step."""
+
+    LABEL = "Measurement-chain"
+
     FRESH_OCCURRENCE_MESSAGE = "Measurement chains must retain fresh native execution occurrences"
 
     def catalog_steps(self, bundle):
@@ -287,18 +291,16 @@ class MeasurementChainWorkflow(DeclaredWorkflow):
         return native_occurrences(bundle)
 
     def __init__(self):
-        self.kind, self.role = "measurement-chain", "rci"
-        self.ROLES, self.SOURCE_SCHEMA = ROLES, SOURCE_SCHEMA
-        self.schema, self.operation = "ciw.measurement-chain-session.v1", "ciw.measurement-chain.v1"
-        self.pin = PINS["rci"]
+        super().__init__("measurement-chain", {**PINS["rci"], "role": "rci"})
+        self.ROLES = frozenset(ROLES)
 
-    def _source(self, raw):
+    def parse_source(self, raw):
         return _source(raw)
 
     @staticmethod
     def _runtime_projection(runtime):
-        value = DeclaredWorkflow._runtime_projection(runtime)
-        value["companions"] = {r: DeclaredWorkflow._runtime_projection(v) for r, v in runtime["companions"].items()}
+        value = PipelineRunner._runtime_projection(runtime)
+        value["companions"] = {r: PipelineRunner._runtime_projection(v) for r, v in runtime["companions"].items()}
         return value
 
     def _adapters(self, repositories, expected=None):
@@ -337,72 +339,40 @@ class MeasurementChainWorkflow(DeclaredWorkflow):
         _check_data(source, data)
         if _runtime_records(data["native_workspace"]) != before:
             raise ValueError("Native records differ from the preflight runtime bindings")
-        occurrence = "execution-" + uuid.uuid4().hex
-        result = {"schema": RESULT_SCHEMA, "operation_id": self.operation, "execution_ref": occurrence,
-                  "input_refs": [evidence_id], "data": data, "authority": AUTHORITY}
-        result["result_id"] = digest(result)
-        numerical = _numerical(data)
-        return {"runtime_ref": self.role, "operation_id": self.operation, "execution_id": occurrence,
-                "input_refs": [evidence_id], "request": source, "request_sha256": digest(source),
-                "result": result, "result_sha256": digest(result), "result_id": result["result_id"],
-                "numerical_result": numerical, "numerical_result_id": digest(numerical)}
+        return seal_step(self.role, self.operation, source, [evidence_id], data, _numerical(data))
 
     def _validate_step(self, step, source, evidence_id):
-        exact_keys(step, {"runtime_ref", "operation_id", "execution_id", "input_refs", "request", "request_sha256", "result", "result_sha256", "result_id", "numerical_result", "numerical_result_id"})
-        if (step["runtime_ref"] != self.role or step["operation_id"] != self.operation or step["input_refs"] != [evidence_id]
-                or canonical(step["request"]) != canonical(source) or not isinstance(step["execution_id"], str)
-                or not re.fullmatch(r"execution-[a-f0-9]{32}", step["execution_id"])):
-            raise ValueError("Measurement-chain request/occurrence binding mismatch")
-        result = step["result"]
-        exact_keys(result, {"schema", "operation_id", "execution_ref", "input_refs", "data", "authority", "result_id"})
-        _check_data(source, result["data"])
-        if (result != {"schema": RESULT_SCHEMA, "operation_id": self.operation, "execution_ref": step["execution_id"],
-                       "input_refs": [evidence_id], "data": result["data"], "authority": AUTHORITY,
-                       "result_id": digest({k: v for k, v in result.items() if k != "result_id"})}
-                or result["result_id"] != step["result_id"] or canonical(step["numerical_result"]) != canonical(_numerical(result["data"]))):
-            raise ValueError("Measurement result, projection or authority binding mismatch")
+        check_step(step, role=self.role, operation=self.operation, source=source, input_refs=[evidence_id],
+                   check_data=_check_data, label=self.LABEL, numerical=_numerical(step["result"]["data"]))
         if step["execution_id"] in native_ids(step):
             raise ValueError("Outer and native occurrences must remain distinct")
-        for key, value in (("request_sha256", source), ("result_sha256", result), ("numerical_result_id", step["numerical_result"])):
-            if step[key] != digest(value):
-                raise ValueError("Measurement-chain content mismatch")
 
     def _check_verification(self, bundle, verification, source, evidence):
         super()._check_verification(bundle, verification, source, evidence)
         if native_ids(bundle["steps"][0]) & native_ids(verification["reproduction"]):
             raise ValueError("Verification must execute fresh native measurement occurrences")
 
+    def _check_runtimes(self, runtimes):
+        if set(runtimes) != {"rci"}:
+            raise ValueError("Measurement source or runtime binding mismatch")
+        primary = runtimes["rci"]
+        _check_runtime(primary, "rci", companions=True)
+        if set(primary["companions"]) != {"fsrt", "jspt"}:
+            raise ValueError("Missing native measurement companion runtimes")
+        for role, runtime in primary["companions"].items():
+            _check_runtime(runtime, role)
+
     def _validate(self, bundle):
+        raw = super()._validate(bundle)
         try:
-            exact_keys(bundle, {"schema", "session_id", "created_at", "source", "configuration", "runtimes", "steps", "bundle_digest", "verification"}, {"replay_receipts"})
-            if (len(canonical(bundle)) > MAX_BYTES or bundle["schema"] != self.schema
-                    or bundle["bundle_digest"] != bundle_digest(bundle)
-                    or not re.fullmatch(r"session-[a-f0-9]{32}", bundle["session_id"])):
-                raise ValueError("Measurement-chain bundle identity mismatch")
-            _text(bundle["created_at"])
-            evidence, = bundle["source"]["evidence"]
-            raw = base64.b64decode(evidence["bytes_b64"], validate=True)
-            source = _source(raw)
-            if (evidence != {"artifact_ref": byte_digest(raw), "sha256": byte_digest(raw), "bytes_b64": base64.b64encode(raw).decode()}
-                    or bundle["source"] != {"experiment_id": source["experiment_id"], "experiment_digest": digest(source), "evidence": [evidence]}
-                    or bundle["configuration"] != POLICY or set(bundle["runtimes"]) != {"rci"}):
-                raise ValueError("Measurement source or runtime binding mismatch")
             primary = bundle["runtimes"]["rci"]
-            _check_runtime(primary, "rci", companions=True)
-            if set(primary["companions"]) != {"fsrt", "jspt"}:
-                raise ValueError("Missing native measurement companion runtimes")
-            for role, runtime in primary["companions"].items():
-                _check_runtime(runtime, role)
-            step, = bundle["steps"]
-            self._validate_step(step, source, evidence["artifact_ref"])
-            self._check_verification(bundle, bundle["verification"], source, evidence["artifact_ref"])
             expected = {"rci": {k: v for k, v in primary.items() if k != "companions"}, **primary["companions"]}
-            for retained in (step, bundle["verification"]["reproduction"]):
+            for retained in (bundle["steps"][0], bundle["verification"]["reproduction"]):
                 if _runtime_records(retained["result"]["data"]["native_workspace"]) != expected:
                     raise ValueError("Outer and native measurement runtime bindings differ")
-            return raw
-        except (KeyError, TypeError, IndexError, AttributeError, OverflowError, RecursionError, StopIteration) as exc:
+        except (KeyError, TypeError, IndexError, AttributeError, StopIteration) as exc:
             raise ValueError("Malformed measurement-chain session") from exc
+        return raw
 
 
 workflow = MeasurementChainWorkflow()
