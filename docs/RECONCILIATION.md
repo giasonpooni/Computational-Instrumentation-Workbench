@@ -57,10 +57,14 @@ distinct from errors and from held results:
 calibration refusal at import writes no run, result or directory:
 `tests/test_investigation.py::test_invalid_calibration_creates_neither_result_nor_output_directory`.
 
-Partial: `operation.list` and `execution.list` are served, and no test sends
-them. Exit `2` on a calibration refusal and exit `0` on a retained in-session
-refusal are not asserted through the `ciw` process for the investigation
-command; `ciw covariance` and `ciw covariance-replay` are exercised through the
+`operation.list` and `execution.list` are sent in
+`tests/test_thermal_workflow.py`, `tests/test_retained_refusals.py` and
+`tests/test_machine_workflow.py`.
+
+Partial: `tests/test_cli_arguments.py` asserts exit `2` on calibration and
+provider refusals and the covariance argument parsing through `ciw.cli.main`
+in-process, not through a spawned `ciw` process, and exit `0` on a retained
+in-session refusal is not asserted there; `ciw covariance` and `ciw covariance-replay` are exercised through the
 Python API (`tests/test_covariance_integration.py`), not as processes.
 
 Not implemented: a `result.created` broadcast (only `selection.changed` is
@@ -88,8 +92,9 @@ GTE refuses an interval that does not contain its whole batch:
 Partial: an unsupported protocol major is rejected
 (`tests/test_protocol.py::SessionContractTests::test_bad_envelopes_and_unknown_operations_return_errors`);
 the additive requests and fields are declared within major 1 without a minor
-number, and the snapshot reports none. The 1 MiB incoming-message limit is
-enforced by the transport and untested.
+number, and the snapshot reports none. The transport admits incoming messages
+up to 8 MiB (a base64 source plus its envelope) and closes a larger one with
+code 1009 (`tests/test_message_limit.py`, against a live server).
 
 ## Runtime binding and persistence
 

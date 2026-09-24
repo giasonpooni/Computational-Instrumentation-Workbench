@@ -92,7 +92,7 @@ The scripted Godot check requires port 8765 to be free; it starts and stops its 
 
 - One small, uniformly sampled demo recording per session; q, v and energy channels. The oscillator demo has its own bounded record contract.
 - The terminal client currently emits JSON and event lines. Rich/Textual panels and in-terminal plots are not implemented.
-- Local native clients, text JSON, maximum 1 MiB incoming messages and 1,024 analysis results per session. No remote authentication, device acquisition or hard real-time control.
+- Local native clients, text JSON, maximum 8 MiB incoming messages and 1,024 analysis results per session. No remote authentication, device acquisition or hard real-time control.
 - Periodogram only; streaming telemetry, spectrograms, region occupancy, cancellation and binary arrays are not implemented.
 - Local JSON is prototype persistence. An instrument catalog and a worker supervisor remain integration work; no replacement database is introduced.
 - No uncertainty estimate or verification certificate is fabricated. Result records explicitly say `not_verified`.
