@@ -11,9 +11,10 @@ is recorded as a `not_established` finding in its physical or authority domain.
 
 Code: `src/ciw/lab/manufacturing.py` (task registrations),
 `manufacturing_geometry.py` (routes, curvature, standoff, coverage),
-`manufacturing_metrology.py` (sampling, registration, artifacts, frames, Gage
-R&R), `manufacturing_records.py` (protocols, retention, comparison, acceptance
-policy and acceptance-language screen). Tests: `tests/test_lab_manufacturing.py`.
+`manufacturing_metrology.py` (sampling, as-built dome fit, registration,
+artifacts, frames, Gage R&R), `manufacturing_records.py` (protocols, retention,
+separation and marker-pair comparators, acceptance policy and
+acceptance-language screen). Tests: `tests/test_lab_manufacturing.py`.
 
 ```sh
 ciw lab run T126 T127 T128 T129 T130 T131 T132 T133 T134 T135 T136 T137 T138 T139 T140 T141 --output-dir results/lab
@@ -43,10 +44,14 @@ fixture (3-2-1 kinematic nest); datum frames A (primary, 3 points), B
 marker layout; paths; instruments with **declared** standard uncertainties
 (`status: declared_not_verified`); required raw data; calibration artifacts
 (scale bar SB-1000, gauge sphere GS-25.4, step gauge SG-200); environment;
-procedure; predicted quantities (each copying the evidence label of the finding
+procedure (three repeats with the specimen re-seated in the fixture between
+them; the crossed Gage R&R and type-1 studies follow the separate T131
+procedure); predicted quantities (each copying the evidence label of the finding
 that produced it); acceptance criteria stated as **hypotheses**; an empty
 hardware slot `{"status": "not_acquired", "records": []}`; and
-`production_acceptance: "outside_system"`.
+`production_acceptance: "outside_system"`. Four protocols exist: the three
+controls MFG-FLAT-PLATE-01, MFG-CYLINDER-01 and MFG-COUPON-01, and the surface
+scan MFG-SCAN-01 (T129), which also carries a `scan_plan`.
 
 **Path realization.** A path that a robot traces from the model would only
 test the robot's reproduction of its own program. The protocols therefore
@@ -81,15 +86,20 @@ error of an offset tape (jig and laying): 0.05 mm lateral and 0.5 mrad heading
 240 mm, a 2 mm laterally offset path and a 5 mrad heading-offset path.
 
 Predictions: chord = geodesic for every marker pair. The geodesic distance is
-found by shooting (an RK4 geodesic from one marker; the arclength where its
-along-track coordinate passes the other marker), not from the chord formula:
-max |geodesic − chord| = 2.8e−14 mm over 47 pairs, and the geodesic of that
-length closes onto the target within 2e−14 mm. The Jacobi transfer is
+found by shooting: the launch heading starts 0.1 rad off the chord direction
+and Newton's method on the miss distance (with the Jacobi heading field as its
+derivative) solves for it; the distance is the arclength where the converged
+geodesic passes the other marker. Over 47 pairs the solved heading matches the
+chord direction to rounding, the arclength matches the chord to rounding, and
+the geodesic of that length closes onto the target. On the plane this is a
+zero-curvature sanity check of the shooting machinery (RK4 and the Jacobi field
+are exact there), not a test that could detect a curvature error. The Jacobi transfer is
 [[1, s], [0, 1]]; offset-path separation δ + s sin δθ (2 mm constant; 0.3, 0.6,
 0.9, 1.2 mm at 60…240 mm for 5 mrad). Hypotheses H1 (E_n ≤ 1 per marker pair)
 and H2 (the heading-offset slope equals the start heading difference measured
 by the CMM). The plate isolates instrument, frame and procedure error from
-curvature.
+curvature. Measured marker-pair distances will be compared pair by pair with
+the T138 pair comparator (`compare_pair_distances`).
 
 <a id="t127"></a>
 ## T127 — Rolled-cylinder control (MFG-CYLINDER-01)
@@ -108,7 +118,11 @@ gap(d) = d − 2R sin(d/2R) = d³/24R² − d⁵/1920R⁴ + …, zero on axial r
 Counterexample: "on a developable part the chord between markers equals their
 surface distance" fails at 90° (chord 141.42 vs geodesic 157.08 mm). Minimum
 circumferential separation whose gap reaches k·u_pair (k = 2): camera 23.9 mm,
-tracker 21.7 mm, CMM 11.1 mm.
+tracker 21.7 mm, CMM 11.1 mm. The two-term series is checked against the exact
+gap with its alternating-series remainder bound as a signed margin
+(|gap − series| − bound ≤ 0, retained with its negative value). Measured gaps
+will be compared with the T138 pair comparator, whose U_p is
+2 |∂gap/∂R| u_R for the declared radius tolerance.
 
 <a id="t128"></a>
 ## T128 — Domed coupon (MFG-COUPON-01)
@@ -151,9 +165,43 @@ stations 1–8, with U_p from dome tolerances, start-pose estimate and solver)
 and reject the flat-plate prediction at the last two stations.
 
 <a id="t129"></a>
-## T129 — Surface metrology: sampling density versus curvature
+## T129 — Surface metrology protocol: as-built dome and sampling density
 
-A least-squares fit z = a + b x + c x² over a centred window W with spacing d
+**Protocol MFG-SCAN-01** (`protocol-surface-scan.json`, validated and mutated
+like the other protocols) identifies the as-built coupon before MFG-COUPON-01.
+Setup: laser line scanner (declared 0.01 mm point noise, 0.05 mm native
+spacing, 100 mm standoff, incidence limit 30°; the coupon's steepest slope is
+16.9°), two orthogonal raster passes over the chart extent. Targets: six
+sphere-mounted registration targets off the dome (none occludes the crest
+windows), measured by the CMM in the PART frame; each pass is registered to
+them by Kabsch. Filtering: incidence and scanner flags only, no smoothing,
+fit residuals beyond 5σ rejected and counted. Retained raw data: native point
+clouds with scanner settings and digests, target coordinates, registration
+transforms and residuals, fit parameters, covariance and residual map.
+Hypotheses: H1 the coupon is a Gaussian dome of revolution (χ²/dof of the global
+fit ≤ 1 + 3.09 √(2/dof) = 1.086 on the 2601-point grid); H2 the fitted height and
+width lie within the forming tolerances; H3 the crest curvature of the local fit
+equals h/σ² of the global fit.
+
+**As-built identification.** The global fit
+z = z₀ + a_x x + a_y y + h exp(−((x − x₀)² + (y − y₀)²) / 2σ²) (Gauss–Newton from
+the nominal dome on the scan decimated to a 4 mm grid) recovers a perturbed dome
+(h = 10.15, σ = 19.7, centre (0.4, −0.3) mm, base offset and tilt) exactly
+without noise; on 200 seeded synthetic scans its spread matches σ²(JᵀJ)⁻¹ within
+four standard errors (largest difference 8%), its mean is unbiased and χ²/dof
+averages 1. The scan-derived covariance of (h, σ, x₀, y₀) adds a declared 20 ppm
+scanner scale term and the target registration term: standard uncertainties
+0.0016 mm (height), 0.0026 mm (width, correlation −0.59) and 0.005 mm (centre),
+against 0.115 and 0.289 mm from the declared tolerances; T138 and T140 use it
+for their scan-conditioned geometry terms. It holds only under the Gaussian
+model: an elliptical dome with σ_x = 20.5 and σ_y = 19.5 mm, inside the declared
+width tolerance, gives χ²/dof = 20.0 against the 1.086 threshold (counterexample
+to "a dome inside the forming tolerances is described by the nominal Gaussian
+model"), while the threshold flags 1 of 200 Gaussian scans (checked ≤ 2%). A
+rejected model needs a prediction on a surface fitted to the scan, which is not
+implemented.
+
+**Local curvature sampling.** A least-squares fit z = a + b x + c x² over a centred window W with spacing d
 estimates curvature 2c. For a profile with quartic term q x⁴ and white noise σ:
 
 * bias(2c) = 2q · (fitted x² coefficient of x⁴) → (3/7) q W² for dense uniform sampling;
@@ -174,9 +222,9 @@ Repeat scans at 0.05 mm native spacing on the coupon crest: 5% → 1, 2% → 5,
 Counterexamples: a window chosen from the osculating circle (quartic κ³/8)
 gives 1.96 × the tolerance in bias on the Gaussian crest, whose quartic is
 σ²/h² = 4 times larger; and a window of W/3 at the designed spacing has 4.8 × the
-RMS error. Registration of repeat scans (Kabsch, 6 targets): the residual has
-3N − 6 degrees of freedom and the rotation covariance σ²(Σ|p|²I − ppᵀ)⁻¹, both
-confirmed by Monte Carlo.
+RMS error. Registration of repeat scans on the six MFG-SCAN-01 targets (Kabsch):
+the residual has 3N − 6 degrees of freedom and the rotation covariance
+σ²(Σ|p|²I − ppᵀ)⁻¹, both confirmed by Monte Carlo.
 
 <a id="t130"></a>
 ## T130 — Calibration artifacts and datum frames
@@ -187,12 +235,17 @@ confirmed by Monte Carlo.
   and 1 µm offset exactly without noise; with noise the spread matches the
   linearized one within 3.2%.
 * 3-2-1 datum frame: orthonormal, rigid-motion equivariant; tracker probing
-  (0.015 mm) gives rotation std ≈ 100–130 µrad.
+  (0.015 mm) gives rotation std ≈ 100–130 µrad. Collinear primary points and a
+  secondary direction normal to the primary plane are refused (refusal checks
+  of the task).
 * Frame chain with left perturbations T = exp(ξ)T̄:
   C = Σ Ad(T₁…T_{k−1}) C_k Ad(…)ᵀ, point covariance [I, −(Tp)^] C [I, −(Tp)^]ᵀ.
   Coupon far-corner std ≈ (0.045, 0.040, 0.045) mm; the WORLD → FIXTURE link
   dominates (0.062 mm RSS) through its rotation lever arm. First order agrees
-  with exact SE(3) sampling within 3–4% (relative Frobenius).
+  with exact SE(3) sampling within 3–4% (relative Frobenius, the Monte Carlo
+  check); the stated uncertainty of the first-order std is its linearization
+  error in mm, estimated by symmetric sigma points pushed through the exact
+  SE(3) chain (4e−10 mm).
 
 <a id="t131"></a>
 ## T131 — Repeatability and Gage R&R (ANOVA method)
@@ -204,10 +257,27 @@ squares give σ²_e = MS_E, σ²_po = (MS_PO − MS_E)/r, σ²_o = (MS_O − MS_
 estimators are unbiased. True %GRR is 23.9%, but a single study's 90% interval
 is [16.5%, 38.9%]: the raw GRR estimate is a linear combination of independent
 scaled χ² mean squares, and its Monte Carlo mean and variance match the exact
-values Σc²·2E[MS]²/df within their standard errors. The operator component is
+values Σc²·2E[MS]²/df within their standard errors; the quantiles carry
+distribution-free 95% order-statistic intervals in %. The operator component is
 negative (truncated) in 10.8% of studies (F(2, 18) theory: 11.3%). Unbalanced or
 incomplete data are refused. No real gage capability is established, and the
 AIAG interaction-pooling rule is not applied.
+
+**Procedure** (`gage-rr-procedure.json`, a plan): each protocol has one
+specimen, so its ten "parts" are ten features of it whose true values span the
+measured range (plate: ten marker pairs; cylinder: the ten T127 pairs; coupon:
+the lateral-tape separations at stations 1–8 and the heading-tape separations
+at stations 4 and 8). Three operators, three replicate rounds; before every
+round the specimen is removed, re-seated in FX-321, the datums re-probed and the
+PART frame rebuilt; within a round each operator measures the parts in a
+SHA-256-keyed pseudo-random order (the operator order is keyed the same way),
+features are coded and operators do not see earlier readings. Because the
+between-part spread is a spread of measurands, not of a process, %GRR is
+reported against the declared tolerance (P/T = 6 s_GRR / T). Raw components are
+reported, negative ones truncated and flagged, without pooling. A separate
+type-1 study takes 25 readings of the SG-200 100 mm step by one operator in one
+setup (bias and repeatability). Thresholds are hypotheses: %GRR (P/T) ≤ 10%,
+ndc ≥ 5, Cg and Cgk ≥ 1.33.
 
 <a id="t132"></a>
 ## T132 — Fibre/tape placement on a cylindrical mandrel
@@ -263,11 +333,20 @@ standoff error −κ⊥e²/2 (≤ 1.8 µm here) and a tilt κ⊥e (≤ 8.7 mrad)
 ray casting (relative difference ≤ 9.4e−5, checked against 1e−3 of the series
 plus 1e−9 mm); the ray caster itself is checked on a Monge-form cylinder
 z = √(R² − y²) − R against R − √(R² − e²) (difference 9e−15 mm). The
-tool-centre-point path X + Hn has speed factor √((1 − Hκ_n)² + (Hτ_g)²): a
-15 mm welding torch sees 0.84–1.37; a 120 mm spray gun exceeds the 94.5 mm
-concave radius (at the route nodes) on the dome rim and its TCP path folds back
-(33 reversed segments) — a counterexample to "offset tool paths of smooth
-surface paths are smooth".
+tool-centre-point path X + Hn has speed factor √((1 − Hκ_n)² + (Hτ_g)²)
+(Weingarten: dn/ds = −κ_n t − τ_g N). It is checked at every node against
+|t + H dn/ds| with dn/ds from central differences of the unit normal one 1 µm
+RK4 geodesic step either side (largest difference 1.8e−8 against 1e−7, both
+tools), and segment by segment against the speed |ΔP|/Δs of the welding-torch
+polyline (2.4e−4 against 2e−3; wrong factors such as |1 + Hκ_n| or 1 miss by
+0.1 to 1). On the nominal route τ_g = 0 by symmetry, so the checks also run on a
+route launched 10° off the axis, where Hτ_g reaches 0.098 (torch) and 0.78
+(gun) and the τ_g term adds up to 4.7e−3 to the torch factor, far above the
+pointwise tolerance (checked); there the torch sees 0.86–1.32. On the nominal
+route a 15 mm welding torch sees 0.84–1.37;
+a 120 mm spray gun exceeds the 94.5 mm concave radius (at the route nodes) on
+the dome rim and its TCP path folds back (33 reversed segments) — a
+counterexample to "offset tool paths of smooth surface paths are smooth".
 
 <a id="t135"></a>
 ## T135 — Robotic inspection scan paths
@@ -303,7 +382,14 @@ not enough: at the (+, +) or (−, −) corner of the tolerance box the exactly
 perturbed 15°, 20° and 25° routes reach 1.0091, 1.0023 and 1.0003 × the spec
 (counterexample). All four corners of every box are evaluated exactly, and a
 route whose worst corner exceeds the spec has both tolerances derated by the
-worst ratio until every corner is within 0.9999 of the spec. The published
+worst ratio until every corner is within 0.9999 of the spec. That stop
+condition is a convergence diagnostic, not evidence: every corner of every
+derated box is re-evaluated by a second computation (base and perturbed
+geodesics by ciw's adaptive Dormand–Prince integrator at the route nodes, from
+an exp-map start coded separately from `jacobi.perturbed_start`, separation
+evaluated inline), which must agree with the RK4 ratios within 1e−4 (they agree
+to 2e−8) and stay within the spec. A wrong exact perturbation (for example scaled by 1.08) still
+meets the loop's stop condition but fails the agreement (tested). The published
 tolerances are the derated ones; at their corners the realized error is
 0.73–0.9999 × the spec.
 
@@ -324,7 +410,10 @@ start is not included.
 ## T137 — Ranking routes by focus margin
 
 Focus margin = (nearest focal or conjugate point along the route) / L, or
-horizon/L as a lower bound when none lies within the horizon.
+horizon/L as a lower bound when none lies within the horizon. Routes with only
+a lower bound are tied: the ranking is a list of tiers, with the unresolved
+15°, 20° and 25° routes sharing the first tier (checked to lead: their smallest
+lower bound exceeds every resolved margin).
 
 | Route | L (mm) | Nearest focus (mm) | Margin |
 | --- | --- | --- | --- |
@@ -337,7 +426,8 @@ Counterexample: the shortest candidate (0°) has the worst focus margin, and the
 calibration ranking (T136) puts the same route first. The straight route is
 nonetheless a local length minimum to the edge: the second variation of length
 equals the Jacobi index form j_head(L) j_head′(L) = 36.964 mm (Richardson finite
-differences: 36.963 mm, relative difference 1.6e−5 against a 2e−4 tolerance).
+differences: 36.963 mm, relative difference 1.6e−5 against a 2e−4 tolerance);
+the stated uncertainty is that residual in mm.
 
 <a id="t138"></a>
 ## T138 — Predicted versus measured path separation (partial)
@@ -356,6 +446,11 @@ route, and forward and central differences of every sensitivity agree within
   at the start, up to 0.320 mm at the end.
 * Conditioned on the CMM start pose (the prediction re-integrated from it):
   0.006 mm at the start, up to 0.300 mm at the end.
+* Conditioned also on the as-built scan (MFG-SCAN-01, T129): the geometry term
+  becomes gᵀCg with the dome sensitivities g (height, width, centre; the centre
+  by moving the start) and the scan-derived covariance C, which removes most of
+  the dome-tolerance term: 0.006 mm at the start, up to 0.045 mm at the end;
+  valid only if the scan passes the Gaussian model test.
 
 A correct model compared with a tape realized 0.1 mm off its nominal offset (2σ
 of the jig; the "measurement" is the exactly re-integrated route, model output
@@ -370,12 +465,24 @@ conditioned U_p.
 
 Comparison rule E_n = |m − p|/√(U_m² + U_p²) ≤ 1. **No measured separation
 exists**; `compare_separation` refuses absent measurements, a schema fixture (as
-is and relabelled as a measurement) and digest mismatches. The task stays
-`partial` until the protocol is executed, retained (T139) and parsed by a
+is and relabelled as a measurement) and digest mismatches. The same rule serves
+the plate and cylinder controls through the pair comparator
+`compare_pair_distances` (per marker pair: plate chord = geodesic with U_p = 0,
+the flatness term being second order; cylinder chord-geodesic gap with
+U_p = 2 |∂gap/∂R| u_R); T138 retains both pair tables and records their
+refusals without a measurement. The success path of both comparators (E_n,
+agreement, station and pair mismatches) is exercised by the tests on a
+synthetic measurement-kind record that is never retained. The task stays
+`partial` until the protocols are executed, retained (T139) and parsed by a
 registered reader.
 
 <a id="t139"></a>
-## T139 — Retention of raw measurements, calibration and frame metadata
+## T139 — Retention of raw measurements, calibration and frame metadata (partial)
+
+Only the retention mechanism is exercised: no acquisition exists, so no raw
+measurement, calibration record or frame metadata has been retained, and the
+task stays `partial` (as T138 does) until the first protocol is executed.
+
 
 `ciw.lab-measurement-retention.v1`: `record_kind` (measurement | schema_fixture),
 protocol id, raw files (name, SHA-256, bytes, media type), instrument (id, kind,
@@ -386,8 +493,12 @@ continuity, and clock (source, ISO 8601 time with explicit offset,
 synchronization, uncertainty). Eleven mutations are refused by code, including
 a calibration digest that is not SHA-256 hex and an acquisition time outside the
 calibration validity window. Covariance symmetry and positive semidefiniteness
-are tested relative to the matrix scale, so a valid rank-3 covariance with
-entries of 7e2 mm² (rounding-level eigenvalue −2e−14 mm²) is kept.
+are tested relative to the matrix scale: a rank-3 covariance with eigenvalues
+up to 1e6 mm² and an explicit −1e−8 mm² eigenvalue (1e−14 of the largest, a
+few times the eigensolver's rounding level of 1.3e−9 mm²) is kept although an
+absolute 1e−12 mm² threshold would refuse it (by a factor of 1e4, checked), and
+the same matrix with an
+eigenvalue of −1e−3 of the largest is refused.
 
 `to_acquisition` produces the acquisition fields of a `hardware_measured`
 finding only for a `measurement` record whose raw bytes are presented and
@@ -406,19 +517,25 @@ measurement is retained.
 ## T140 — Instrument-, geometry-, execution- or solver-limited
 
 u_c² = u_instrument² + u_geometry² + u_execution² + u_solver²; geometry from
-central differences over rectangular tolerances (u = a/√3); execution = start
-pose uncertainty × the Jacobi fields (declared jig error open loop, CMM estimate
-when conditioned); solver = |Q(h) − Q(2h)|/15 for a reported h-solution and
+central differences over rectangular tolerances (u = a/√3), or gᵀCg with the
+MFG-SCAN-01 dome covariance when conditioned on the as-built scan; execution =
+start pose uncertainty × the Jacobi fields (declared jig error open loop, CMM
+estimate when conditioned); solver = |Q(h) − Q(2h)|/15 for a reported h-solution and
 (16/15)|Q(h) − Q(2h)| only when the reported value is the coarse one (the 6-step
-control); the limiting term has a variance share > 50%, otherwise "mixed".
+control); the limiting term has a variance share > 50%, otherwise "mixed". Every
+statement below holds under the declared instrument, start-pose and dome
+uncertainties, which are themselves `not_established` calibration claims.
 
 | Quantity | Value | Instrument | Geometry | Execution | Solver | Limiting |
 | --- | --- | --- | --- | --- | --- | --- |
 | cylinder gap, 90° pair | 15.66 mm | 0.028 | 0.009 | 0 | 7e−14 | instrument |
 | coupon separation at L, 5 mrad, open loop | 0.540 mm | 0.028 | 0.023 | 0.060 | 5e−9 | execution |
 | coupon separation at L, 5 mrad, conditioned | 0.540 mm | 0.028 | 0.023 | 0.022 | 5e−9 | mixed |
+| coupon separation at L, 2 mm lateral, open loop | −1.037 mm | 0.028 | 0.148 | 0.060 | 3e−8 | geometry |
 | coupon separation at L, 2 mm lateral, conditioned | −1.037 mm | 0.028 | 0.148 | 0.022 | 3e−8 | geometry |
+| coupon separation at L, 2 mm lateral, conditioned and scanned | −1.037 mm | 0.028 | 0.0019 | 0.022 | 3e−8 | instrument |
 | coupon focal distance, conditioned | 153.4 mm | 1.3 | 4.4 | 0.83 | 9e−7 | geometry |
+| coupon focal distance, conditioned and scanned | 153.4 mm | 1.3 | 0.056 | 0.83 | 9e−7 | instrument |
 | plate separation at 240 mm, 5 mrad, open loop | 1.2 mm | 0.028 | 1.4e−7 | 0.130 | 0 | execution |
 | plate separation at 240 mm, 5 mrad, conditioned | 1.2 mm | 0.028 | 1.4e−7 | 0.048 | 0 | execution |
 | coarse-solver control (6 RK4 steps) | 0.625 mm | 0.028 | 0.023 | 0.022 | 0.094 | solver |
@@ -427,10 +544,17 @@ The plate geometry term models the declared 0.05 mm flatness as a Gaussian bump
 (u = 0.05/√3 mm, width 75 mm); its effect is second order. Over the 240 mm plate
 route even a CMM start-pose estimate leaves the 20 mm heading baseline dominant.
 The coarse control validates the solver estimate: the actual error against a
-256-step reference is 0.90 × the Richardson estimate. Counterexample: the
-focal-distance prediction is geometry-limited — a ±0.2 mm dome-height tolerance
-moves the focus by millimetres — so scanning the as-built coupon (T129) matters
-more than a better camera.
+256-step reference is 0.90 × the Richardson estimate. The start pose limits the
+heading-offset and plate separations open loop; the 2 mm lateral separation at
+the coupon route end is geometry-limited already open loop (from mid-route on,
+geometry outweighs the open-loop start-pose term). Counterexample: under the
+declared tolerances and instrument uncertainties the focal-distance prediction
+is geometry-limited — a ±0.2 mm dome-height tolerance moves the focus by
+millimetres — so scanning the as-built coupon (T129) matters more than a better
+camera. Conditioning on the MFG-SCAN-01 covariance shrinks the geometry term of
+both coupon quantities to 1.3% of the tolerance-based one (checked ≤ 10%), after
+which both are instrument-limited; this holds only while the scan passes its
+Gaussian model test and the declared scanner terms hold.
 
 <a id="t141"></a>
 ## T141 — Production acceptance stays outside the system
@@ -467,21 +591,25 @@ physical claim of this section can change label.
    instrument checks on SB-1000 and GS-25.4.
 2. MFG-CYLINDER-01: marker rings (camera, tracker), tube radius and roundness
    at three rings (CMM), helix and offset-helix tape start poses and centrelines.
-3. MFG-COUPON-01: as-built coupon scan (T129 design: 13.7 mm windows at
-   ≤ 0.65 mm spacing for 5% curvature), tape start poses (CMM), station targets
-   on the nominal, lateral and heading offset tapes, the crossing arclength of
-   the lateral offset tape.
+3. MFG-SCAN-01 and MFG-COUPON-01: the as-built coupon scan (registration
+   targets, both raster passes, the global dome fit with its model test and the
+   crest windows: 13.7 mm at ≤ 0.65 mm spacing for 5% curvature), tape start
+   poses (CMM), station targets on the nominal, lateral and heading offset
+   tapes, the crossing arclength of the lateral offset tape.
 4. Calibration records for the camera, tracker, CMM and scanner; gauge sphere,
    step gauge and scale bar certificates; the frame chain with its measured
    covariances; the realized start-pose error of the jig and tape laying.
-5. A real Gage R&R study (10 × 3 × 3) on the coupon features.
+5. A real Gage R&R study (10 × 3 × 3) and type-1 study following
+   `gage-rr-procedure.json` (T131).
 6. Process data for placement (tow positions, gaps/overlaps, wrinkling at the
    steering radius), winding (slip versus abs(κ_g/κ_n), friction coefficient)
    and coating/welding (standoff, lateral error, deposited thickness).
 7. Scanner footprint on the coupon at the planned standoff.
 
-Every measurement is retained through a T139 record and compared through T138;
-acceptance of parts or processes remains an external decision (T141).
+Every measurement is retained through a T139 record and compared through the
+T138 comparators (station separations on the coupon, marker pairs on the plate
+and cylinder); acceptance of parts or processes remains an external decision
+(T141).
 
 ## Counterexamples recorded
 
@@ -490,6 +618,7 @@ acceptance of parts or processes remains an external decision (T141).
 | T127 | On a developable part the chord between markers equals their surface distance |
 | T129 | A window from the osculating circle bounds the quadratic-fit bias on any convex profile |
 | T129 | A smaller fitting window always improves the curvature estimate |
+| T129 | A dome inside the declared forming tolerances is described by the nominal Gaussian model |
 | T132 | A helix programmed in machine angles is insensitive to mandrel radius error |
 | T133 | A constant winding angle is geodesic and slip-free on every mandrel of revolution |
 | T134 | The standoff tool path of a smooth surface path is itself smooth |

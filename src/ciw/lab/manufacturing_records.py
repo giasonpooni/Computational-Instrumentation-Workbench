@@ -276,6 +276,21 @@ def normalized_error(measured, predicted, u_measured, u_predicted) -> np.ndarray
     return np.abs(measured - predicted) / np.sqrt(np.asarray(u_measured) ** 2 + np.asarray(u_predicted) ** 2)
 
 
+def _compare(predicted_values, predicted_uncertainty, measured, labels=None, mismatch="stations_mismatch") -> dict:
+    """E_n item by item between a prediction and a measurement record; refuses without hardware evidence."""
+    if measured is None:
+        raise RecordRefusal("measurement_absent", "No measured value exists for this prediction")
+    acquisition = to_acquisition(measured.get("record"), measured.get("raw_bytes"))
+    predicted_values = np.asarray(predicted_values, dtype=float)
+    values = np.asarray(measured.get("values_mm", []), dtype=float)
+    u_measured = np.asarray(measured.get("expanded_uncertainty_mm", []), dtype=float)
+    if values.shape != predicted_values.shape or u_measured.shape not in ((), predicted_values.shape) \
+            or (labels is not None and list(measured.get("labels", [])) != list(labels)):
+        raise RecordRefusal(mismatch, "Measured values must be given at the predicted stations or marker pairs")
+    en = normalized_error(values, predicted_values, u_measured, predicted_uncertainty)
+    return {"acquisition": acquisition, "normalized_error": en.tolist(), "agrees": bool(np.all(en <= 1.0))}
+
+
 def compare_separation(predicted: dict, measured: dict | None) -> dict:
     """Compare predicted and measured separations station by station; refuses without hardware evidence.
 
@@ -283,15 +298,19 @@ def compare_separation(predicted: dict, measured: dict | None) -> dict:
     "values_mm": [...], "expanded_uncertainty_mm": [...]} at the predicted
     stations. The record must be a real measurement whose raw bytes match.
     """
-    if measured is None:
-        raise RecordRefusal("measurement_absent", "No measured separation exists for this prediction")
-    acquisition = to_acquisition(measured.get("record"), measured.get("raw_bytes"))
-    values = np.asarray(measured.get("values_mm", []), dtype=float)
-    if values.shape != np.asarray(predicted["separation_mm"]).shape:
-        raise RecordRefusal("stations_mismatch", "Measured values must be given at the predicted stations")
-    en = normalized_error(values, predicted["separation_mm"], measured["expanded_uncertainty_mm"],
-                          predicted["expanded_uncertainty_mm"])
-    return {"acquisition": acquisition, "normalized_error": en.tolist(), "agrees": bool(np.all(en <= 1.0))}
+    return _compare(predicted["separation_mm"], predicted["expanded_uncertainty_mm"], measured)
+
+
+def compare_pair_distances(predicted: dict, measured: dict | None) -> dict:
+    """Compare predicted and measured marker-pair quantities pair by pair (E_n); refuses without hardware evidence.
+
+    ``predicted`` = {"pairs": [...], "values_mm": [...], "expanded_uncertainty_mm": [...]}
+    (plate chords, which equal the geodesic distances, or cylinder chord-geodesic
+    gaps); ``measured`` adds "record" and "raw_bytes" as for
+    :func:`compare_separation` and must list the same pairs under "labels".
+    """
+    return _compare(predicted["values_mm"], predicted["expanded_uncertainty_mm"], measured, labels=predicted["pairs"],
+                    mismatch="pairs_mismatch")
 
 
 # Production acceptance -------------------------------------------------------

@@ -1,9 +1,10 @@
 """Manufacturing and robotic use cases T126-T141: protocols, path sensitivities, rankings and boundaries.
 
 Scope: machine-readable measurement protocols for a flat-plate, a rolled-
-cylinder and a domed-coupon control experiment; metrology procedures
-(curvature sampling, registration, calibration artifacts, datum frames, Gage
-R&R); model sensitivities of tape placement, filament winding, coating or
+cylinder and a domed-coupon control experiment and for the as-built scan of
+the coupon; metrology procedures (curvature sampling, as-built dome fit,
+registration, calibration artifacts, datum frames, Gage R&R and type-1
+procedures); model sensitivities of tape placement, filament winding, coating or
 welding and robotic inspection paths from the Jacobi transfer; path rankings
 by calibration tolerance and focus margin; uncertainty budgets; the retention
 schema for future measurements; and the production-acceptance boundary.
@@ -184,7 +185,7 @@ EXECUTION_CLAIM = ("The start jig and tape laying realize the relative start pos
 
 
 def build_protocol(task_id, protocol_id, title, purpose, specimen, markers, paths, predicted, criteria,
-                   instruments, procedure) -> dict:
+                   instruments, procedure, extra=None) -> dict:
     record = {"schema": rec.PROTOCOL_SCHEMA, "protocol_id": protocol_id, "task_id": task_id, "title": title,
               "purpose": purpose, "specimen": specimen,
               "fixtures": [{"id": "FX-321", "kind": "3-2-1 kinematic nest",
@@ -198,11 +199,14 @@ def build_protocol(task_id, protocol_id, title, purpose, specimen, markers, path
                             "Verify instruments on GS-25.4 and SB-1000 before and after; retain both checks.",
                             "Locate the specimen in FX-321; probe datums A, B, C and build the PART frame.",
                             *procedure,
-                            "Repeat the full acquisition three times with re-fixturing (T131 design) and retain "
-                            "every raw file through the T139 retention record."],
+                            "Repeat the full acquisition three times, removing and re-seating the specimen in FX-321 "
+                            "between repeats (repeatability replicates); the crossed Gage R&R and type-1 studies "
+                            "follow the separate T131 procedure (gage-rr-procedure.json). Retain every raw file "
+                            "through the T139 retention record."],
               "predicted_quantities": predicted, "acceptance_criteria": criteria,
               "hardware_measured": {"status": "not_acquired", "records": []},
               "production_acceptance": "outside_system"}
+    record.update(deepcopy(extra or {}))
     return rec.validate_protocol(record)
 
 
@@ -222,33 +226,63 @@ def _protocol_findings(protocol, claim):
 
 # T126 flat plate ---------------------------------------------------------------------
 PLATE_PITCH = 60.0
+# Shooting starts this far off the chord direction, so the heading is solved for, not assumed.
+SHOOTING_OFFSET_RAD = 0.1
+
+
+def shoot_geodesic(surface, a, b, heading, horizon, steps=8, iterations=20) -> dict:
+    """Heading and arclength of the geodesic from ``a`` through ``b`` by Newton on the miss distance (plane).
+
+    For a launch heading the geodesic and its Jacobi fields are integrated to
+    ``horizon``; s* is where the along-track coordinate (along the embedded
+    launch direction, which is constant on a plane) passes ``b`` and the miss m
+    is the signed offset of the path point at s* from ``b`` along the path
+    normal. The heading Jacobi field gives dm/dheading = j_head(s*), so the
+    Newton step is -m / j_head(s*). Valid for zero-curvature charts, where the
+    along-track direction does not turn.
+    """
+    a = np.asarray(a, dtype=float)
+    target = surface.embedding(np.asarray(b, dtype=float))
+    for count in range(1, iterations + 1):
+        path = jacobi.transfer(surface, a, heading, horizon, steps=steps)
+        direction = surface.embedding_jacobian(a) @ path.velocities[0]
+        along = np.array([(surface.embedding(u) - target) @ direction for u in path.points])
+        along_rate = np.array([(surface.embedding_jacobian(u) @ v) @ direction for u, v in zip(path.points, path.velocities)])
+        arclength = integrators.hermite_zeros(path.s, along, along_rate)[0]
+        hit = jacobi.transfer(surface, a, heading, arclength, steps=steps)
+        u, v = hit.points[-1], hit.velocities[-1]
+        miss = float((surface.embedding(u) - target) @ (surface.embedding_jacobian(u) @ surface.normal(u, v)))
+        step = -miss / hit.states[-1, 6]
+        heading += step
+        if abs(step) < 1e-12:  # Newton is cubic here (the step is -tan of the error): the next error is ~1e-16
+            break
+    closure = float(np.linalg.norm(surface.embedding(hit.points[-1]) - target))
+    return {"heading_rad": heading, "arclength_mm": arclength, "closure_mm": closure, "iterations": count}
 
 
 def plate_study() -> dict:
     coords = [-120.0, -60.0, 0.0, 60.0, 120.0]
     markers = [np.array([x, y]) for y in coords for x in coords]
     pairs = [(0, j) for j in range(1, 25)] + [(12, j) for j in range(25) if j not in (0, 12)]
-    rows, max_gap, max_closure = [], 0.0, 0.0
-    # The geodesic distance comes from shooting: integrate from marker a toward b over a fixed
-    # horizon longer than any pair (the plate diagonal) and find where the along-track
-    # coordinate of the embedded path passes b. The chord formula is not used for it.
-    horizon = 2.0 * math.sqrt(2.0) * 120.0
+    rows, max_gap, max_closure, max_heading = [], 0.0, 0.0, 0.0
+    # The geodesic distance comes from shooting: Newton on the miss distance from a launch heading
+    # 0.1 rad off the chord direction, over a fixed horizon half as long again as the plate diagonal.
+    # On the plane this is a zero-curvature sanity check of the shooting machinery (RK4 and the
+    # Jacobi heading field are exact there); the chord formula enters only the comparison.
+    horizon = 1.5 * 2.0 * math.sqrt(2.0) * 120.0
     for i, j in pairs:
         a, b = markers[i], markers[j]
         delta = b - a
-        path = jacobi.transfer(geo.PLATE, a, math.atan2(delta[1], delta[0]), horizon, steps=8)
-        target = geo.PLATE.embedding(b)
-        direction = geo.PLATE.embedding_jacobian(a) @ path.velocities[0]
-        along = np.array([(geo.PLATE.embedding(u) - target) @ direction for u in path.points])
-        along_rate = np.array([(geo.PLATE.embedding_jacobian(u) @ v) @ direction
-                               for u, v in zip(path.points, path.velocities)])
-        geodesic = integrators.hermite_zeros(path.s, along, along_rate)[0]
-        hit = jacobi.transfer(geo.PLATE, a, math.atan2(delta[1], delta[0]), geodesic, steps=8).points[-1]
-        chord = float(np.linalg.norm(target - geo.PLATE.embedding(a)))
-        closure = float(np.linalg.norm(geo.PLATE.embedding(hit) - target))
+        chord_heading = math.atan2(delta[1], delta[0])
+        shot = shoot_geodesic(geo.PLATE, a, b, chord_heading + SHOOTING_OFFSET_RAD, horizon)
+        geodesic, closure = shot["arclength_mm"], shot["closure_mm"]
+        chord = float(np.linalg.norm(geo.PLATE.embedding(b) - geo.PLATE.embedding(a)))
+        heading_error = abs(math.remainder(shot["heading_rad"] - chord_heading, 2.0 * math.pi))
         max_gap, max_closure = max(max_gap, abs(geodesic - chord)), max(max_closure, closure)
+        max_heading = max(max_heading, heading_error)
         rows.append({"pair": [f"M{i:02d}", f"M{j:02d}"], "geodesic_mm": geodesic, "chord_mm": chord,
-                     "rk4_closure_mm": closure})
+                     "rk4_closure_mm": closure, "shooting_iterations": shot["iterations"],
+                     "heading_minus_chord_direction_rad": heading_error})
     control = jacobi.transfer(geo.PLATE, [-120.0, 0.0], 0.0, 240.0, steps=24)
     phi = control.matrix()
     phi_error = float(np.max(np.abs(phi - np.array([[1.0, 240.0], [0.0, 1.0]]))))
@@ -259,7 +293,8 @@ def plate_study() -> dict:
     # On the plane the exactly rotated path separates as delta + s sin(dtheta).
     exact = lateral + control.s * math.sin(dheading)
     return {"markers": [{"id": f"M{k:02d}", "u_mm": m.tolist()} for k, m in enumerate(markers)], "pairs": rows,
-            "max_gap_mm": max_gap, "max_closure_mm": max_closure, "phi_end": phi.tolist(), "phi_error": phi_error,
+            "max_gap_mm": max_gap, "max_closure_mm": max_closure, "max_heading_error_rad": max_heading,
+            "phi_end": phi.tolist(), "phi_error": phi_error,
             "det_drift": float(np.max(np.abs(control.determinant() - 1.0))), "stations_mm": stations.tolist(),
             "lateral_separation_mm": (lateral * control.states[::6, 4]).tolist(),
             "heading_separation_mm": (dheading * control.states[::6, 6]).tolist(),
@@ -273,10 +308,13 @@ def flat_plate_control(ctx):
     f_gap = finding("Flat-plate control: chord and geodesic marker distances coincide", "numerical",
                     study["max_gap_mm"],
                     {"derivation": "Plane geodesics are straight segments, so chord = geodesic (docs/lab/MANUFACTURING.md#t126)",
-                     "checks": [_check("analytic", "max |shooting geodesic arclength - chord| over 47 marker pairs (mm)",
+                     "checks": [_check("analytic", "max |shooting geodesic arclength - chord| over 47 marker pairs, heading "
+                                       "solved by Newton from 0.1 rad off the chord direction (mm)",
                                        study["max_gap_mm"], 1e-9),
                                 _check("analytic", "RK4 geodesic of that arclength closes onto the target marker (mm)",
-                                       study["max_closure_mm"], 1e-9)]},
+                                       study["max_closure_mm"], 1e-9),
+                                _check("analytic", "max |solved launch heading - chord direction| (rad)",
+                                       study["max_heading_error_rad"], 1e-12)]},
                     unit="mm",
                     uncertainty=_u("roundoff", max(study["max_gap_mm"], study["max_closure_mm"]),
                                    "shooting arclength vs chord and RK4 closure onto the target marker (mm)"),
@@ -336,26 +374,37 @@ def flat_plate_control(ctx):
         "No observation. The protocol specifies camera/CMM observation of the markers, the tape start poses and the "
         "offset tapes; its hardware-evidence slot is empty.",
         "chord - geodesic = 0; det Phi = 1; separation of offset paths linear in s.",
-        "For 47 marker pairs, find the geodesic distance by shooting (RK4 geodesic from one marker, arclength where "
-        "it passes the other) and compare it with the chord; integrate the control path and its exact offset "
-        "paths; assemble and validate the ciw.lab-measurement-protocol.v1 record; mutate it nine ways and "
-        "confirm each mutation is refused.",
+        "For 47 marker pairs, find the geodesic distance by shooting (Newton on the miss distance with the Jacobi "
+        "heading field, launched 0.1 rad off the chord direction; the arclength where the converged geodesic passes "
+        "the other marker) and compare it with the chord; integrate the control path and its exact offset paths; "
+        "assemble and validate the ciw.lab-measurement-protocol.v1 record; mutate it nine ways and confirm each "
+        "mutation is refused.",
         f"max |chord - geodesic| = {study['max_gap_mm']:.3g} mm; max |Phi(240) - exact| = {study['phi_error']:.3g}; "
         f"heading-offset separation at 240 mm = {study['heading_separation_mm'][-1]:.4g} mm.",
         "Rounding only (flat metric, zero Christoffel symbols). Measurement uncertainty is declared, not known.",
-        ["RK4 closure onto the target marker", "Wronskian drift", "nonlinear vs linear offset separation",
+        ["shooting from a wrong launch heading (solved by Newton)", "RK4 closure onto the target marker",
+         "Wronskian drift", "nonlinear vs linear offset separation",
          "protocol with filled hardware slot but no acquisition", "acceptance criterion marked as a decision",
          "prediction labelled hardware_measured", "instrument uncertainty claimed verified"],
         ["Real plate flatness (declared 0.05 mm) and thermal state are not measured; their effect is bounded "
          "only by the declared tolerance.",
-         "Instrument uncertainties are declared planning values, not calibrated values."],
-        "Execute MFG-FLAT-PLATE-01 on hardware, retain it through the T139 record, then compare with T138.")
+         "Instrument uncertainties are declared planning values, not calibrated values.",
+         "On the plane the chord-geodesic comparison is a zero-curvature sanity check of the shooting machinery: "
+         "RK4 and the Jacobi heading field are exact there, so it cannot detect curvature errors."],
+        "Execute MFG-FLAT-PLATE-01 on hardware, retain it through a T139 measurement record, then compare the "
+        "marker-pair distances with the T138 pair comparator (compare_pair_distances, E_n per pair).")
     return {"state": "completed", "fields": fields, "findings": findings}
 
 
 # T127 rolled cylinder -------------------------------------------------------------------
 def gap_exact(distance, radius):
     return distance - 2.0 * radius * math.sin(distance / (2.0 * radius))
+
+
+def gap_radius_derivative(dphi, dz, radius):
+    """d(gap)/dR at fixed marker angles and heights: gap = hypot(R dphi, dz) - hypot(2 R sin(dphi / 2), dz)."""
+    geodesic, chord = math.hypot(radius * dphi, dz), math.hypot(2.0 * radius * math.sin(dphi / 2.0), dz)
+    return radius * dphi ** 2 / geodesic - 4.0 * radius * math.sin(dphi / 2.0) ** 2 / chord
 
 
 def resolvable_separation(radius, target_gap):
@@ -375,7 +424,8 @@ def cylinder_study() -> dict:
     pair_specs += [((0.0, 50.0), (0.0, 150.0), "axial 100 mm"), ((0.0, 50.0), (0.0, 250.0), "axial 200 mm"),
                    ((0.0, 50.0), (math.radians(60), 150.0), "helical 60 deg / 100 mm"),
                    ((0.0, 50.0), (math.radians(90), 250.0), "helical 90 deg / 200 mm")]
-    rows, max_closure, max_series = [], 0.0, 0.0
+    # max_series is the signed margin |series - gap| - bound (negative when the bound holds with room).
+    rows, max_closure, max_series = [], 0.0, -math.inf
     for a, b, name in pair_specs:
         a, b = np.array(a), np.array(b)
         arc, dz = radius * (b[0] - a[0]), b[1] - a[1]
@@ -384,7 +434,7 @@ def cylinder_study() -> dict:
         path = jacobi.transfer(geo.CYLINDER, a, math.atan2(dz, arc), geodesic, steps=16)
         closure = float(np.linalg.norm(geo.CYLINDER.embedding(path.points[-1]) - geo.CYLINDER.embedding(b)))
         row = {"pair": name, "geodesic_mm": geodesic, "chord_mm": chord, "gap_mm": geodesic - chord,
-               "rk4_closure_mm": closure}
+               "rk4_closure_mm": closure, "dphi_rad": float(b[0] - a[0]), "dz_mm": float(dz)}
         if dz == 0.0:
             d = arc
             series = d ** 3 / (24 * radius ** 2) - d ** 5 / (1920 * radius ** 4)
@@ -416,8 +466,9 @@ def rolled_cylinder_control(ctx):
     f_gap = finding("Rolled-cylinder chord-geodesic gaps for the protocol marker pairs", "numerical", gaps,
                     {"derivation": "geodesic = sqrt((R dphi)^2 + dz^2) on the development; chord = |X(b) - X(a)|",
                      "checks": [_check("analytic", "RK4 geodesic closure onto the target marker (mm)", study["max_closure_mm"], 1e-9),
-                                _check("analytic", "circumferential gap minus 2-term series beyond the alternating-series bound (mm)",
-                                       study["series_excess_mm"], 1e-12, "le"),
+                                _check("analytic", "max over circumferential pairs of |gap - 2-term series| minus the "
+                                       "alternating-series bound (signed margin, mm)",
+                                       study["series_excess_mm"], 0.0, "signed_le"),
                                 _check("invariant", "axial (ruling) pairs have zero gap (mm)", study["axial_gap_mm"], 1e-9)]},
                     unit="mm",
                     uncertainty=_u("roundoff", study["max_closure_mm"], "closed forms; RK4 closure onto the target marker"),
@@ -502,7 +553,8 @@ def rolled_cylinder_control(ctx):
          "protocol refusal matrix"],
         ["Seam weld and out-of-roundness are not modelled; a real tube is not a perfect cylinder.",
          "Marker centre offsets (target thickness) are not modelled."],
-        "Execute MFG-CYLINDER-01 and compare measured gaps in T138; budget the radius term with T140.")
+        "Execute MFG-CYLINDER-01, retain it through a T139 measurement record and compare the measured chord-geodesic "
+        "gaps with the T138 pair comparator (compare_pair_distances, E_n per pair); the radius term is budgeted in T140.")
     return {"state": "completed", "fields": fields, "findings": findings}
 
 
@@ -772,7 +824,8 @@ def curved_coupon(ctx):
          {"id": "L", "of": "N", "lateral_offset_mm": 2.0, "construction": "exp map along the start normal"},
          {"id": "H", "of": "N", "heading_offset_rad": 0.005}],
         predicted, criteria, ("camera", "tracker", "cmm", "scanner"),
-        ["Scan the coupon surface (T129 design) to identify the as-built dome before laying the tapes.",
+        ["Scan the coupon surface with protocol MFG-SCAN-01 (T129) to identify the as-built dome and its covariance "
+         "before laying the tapes.",
          PATH_PROCEDURE, START_POSE_PROCEDURE,
          "Place coded targets on the tape centrelines at the stations; measure them by photogrammetry; fit the crossing "
          "arclength of the lateral offset tape."])
@@ -822,7 +875,8 @@ def curved_coupon(ctx):
         ["step refinement of Phi and of the focal point", "Wronskian", "second- vs third-order remainder (symmetry)",
          "nonlinear crossing vs linear focal point", "plate signature vs combined uncertainty", "protocol refusal matrix",
          "circular test (a path drawn from its own program): paths are realized as unsteered tapes instead"],
-        ["The formed coupon will not be an exact Gaussian; T129 scanning identifies the as-built surface.",
+        ["The formed coupon will not be an exact Gaussian; the T129 scan protocol (MFG-SCAN-01) fits the as-built dome "
+         "and tests the Gaussian model by its residual, and a refuted model needs a prediction on the scanned surface.",
          "The tapes are assumed to follow geodesics; their realized start pose is measured and conditioned on (T138), "
          "while in-plane tape bending along the route is not modelled.",
          "Geometry independence (sympy) covers six points; elsewhere the geometry is checked against ciw finite differences only."],
@@ -834,6 +888,20 @@ def curved_coupon(ctx):
 SCAN_NOISE = INSTRUMENTS["scanner"]["declared_standard_uncertainty_mm"]
 NATIVE_SPACING = INSTRUMENTS["scanner"]["native_point_spacing_mm"]
 MIN_SAMPLES = 21
+# Registration targets of MFG-SCAN-01 (chart mm): off the dome, so none occludes the crest windows.
+SCAN_TARGETS_U = ((-50.0, -80.0), (-50.0, 80.0), (40.0, -80.0), (40.0, 80.0), (130.0, -80.0), (130.0, 80.0))
+# As-built dome identification: the global fit uses the scan decimated to a 4 mm grid; declared
+# systematic terms are a relative scanner scale uncertainty (after the SG-200 check) and the
+# target registration of the scan to the PART frame.
+SCAN_GRID_MM = 4.0
+SCAN_SCALE_U = 20e-6
+SCAN_TRIALS = 200
+SCAN_STANDOFF = {"standoff_mm": 100.0, "max_incidence_deg": 30.0, "status": "declared_not_verified"}
+# Synthetic as-built dome for the recovery test (height, sigma, x0, y0, z0, tilt_x, tilt_y) and an
+# elliptical dome within the declared width tolerance for the model test.
+AS_BUILT_TRUTH = (10.15, 19.7, 0.4, -0.3, 0.05, 2e-4, -1e-4)
+ELLIPTICAL_SIGMA_MM = (20.5, 19.5)
+CHI2_Z = 3.09  # one-sided 99.9% normal quantile for the chi2 / dof model test
 
 
 def crest_profile(x, height=geo.DOME_HEIGHT, sigma=geo.DOME_SIGMA):
@@ -914,8 +982,8 @@ def metrology_study() -> dict:
     single = 2.0 * (generator.normal(0.0, SCAN_NOISE, (trials, len(x))) @ row)
     averaged = 2.0 * (generator.normal(0.0, SCAN_NOISE, (trials, repeats, len(x))).mean(axis=1) @ row)
     repeat_ratio = float(averaged.std(ddof=1) / single.std(ddof=1))
-    # Rigid registration of repeat scans on six coupon targets.
-    targets_u = [(-50.0, -80.0), (-50.0, 80.0), (40.0, -80.0), (40.0, 80.0), (130.0, -80.0), (0.0, 0.0)]
+    # Rigid registration of repeat scans on the six MFG-SCAN-01 targets.
+    targets_u = list(SCAN_TARGETS_U)
     reference = geo.embed(geo.COUPON, targets_u)
     rotation = met.exp_so3(np.array([0.1, 0.2, 0.3]))
     translation = np.array([500.0, -200.0, 100.0])
@@ -949,7 +1017,136 @@ def metrology_study() -> dict:
                              "lever_arm_error_mm": lever * math.sqrt(float(np.max(np.linalg.eigvalsh(predicted_cov))))}}
 
 
-@_task("T129", ("test_metrology_sampling_design_and_counterexamples",))
+def _scan_grid():
+    """Chart points of the decimated global-fit grid over the coupon extent."""
+    xs = np.arange(geo.COUPON_X[0], geo.COUPON_X[1] + 0.5 * SCAN_GRID_MM, SCAN_GRID_MM)
+    ys = np.arange(geo.COUPON_Y[0], geo.COUPON_Y[1] + 0.5 * SCAN_GRID_MM, SCAN_GRID_MM)
+    grid_x, grid_y = np.meshgrid(xs, ys)
+    return grid_x.ravel(), grid_y.ravel()
+
+
+@functools.lru_cache(maxsize=1)
+def as_built_study() -> dict:
+    """Synthetic verification of the MFG-SCAN-01 dome fit and the scan-derived dome covariance (shared with T138, T140).
+
+    The covariance over (height, sigma, x0, y0) that T138 and T140 use is the
+    first-order white-noise covariance at the nominal dome on the 4 mm grid,
+    plus the declared scanner scale term on height and width and the target
+    registration term on the dome centre. It is valid only while the Gaussian
+    model holds, which the chi2 / dof test of the protocol decides.
+    """
+    x, y = _scan_grid()
+    names = met.DOME_PARAMETERS[:4]
+    nominal = np.array([geo.DOME_HEIGHT, geo.DOME_SIGMA, 0.0, 0.0, 0.0, 0.0, 0.0])
+    truth = np.array(AS_BUILT_TRUTH)
+    dof = len(x) - len(met.DOME_PARAMETERS)
+    threshold = 1.0 + CHI2_Z * math.sqrt(2.0 / dof)
+    clean = met.dome_surface(truth, x, y)
+    recovered, _, _ = met.fit_dome(x, y, clean, nominal)
+    jac = met.dome_jacobian(truth, x, y)
+    linear_std = SCAN_NOISE * np.sqrt(np.diag(np.linalg.inv(jac.T @ jac)))
+    generator = met.rng(SEED + 9)
+    fits, chi2 = np.empty((SCAN_TRIALS, len(truth))), np.empty(SCAN_TRIALS)
+    for n in range(SCAN_TRIALS):
+        params, _, residual = met.fit_dome(x, y, clean + generator.normal(0.0, SCAN_NOISE, len(x)), nominal)
+        fits[n], chi2[n] = params, float(residual @ residual) / (SCAN_NOISE ** 2 * dof)
+    mc_std = fits.std(axis=0, ddof=1)
+    # Model test: an elliptical dome inside the declared width tolerance is not a Gaussian of revolution.
+    sx, sy = ELLIPTICAL_SIGMA_MM
+    elliptical = geo.DOME_HEIGHT * np.exp(-x ** 2 / (2.0 * sx ** 2) - y ** 2 / (2.0 * sy ** 2))
+    elliptical_fit, _, residual = met.fit_dome(x, y, elliptical + generator.normal(0.0, SCAN_NOISE, len(x)), nominal)
+    elliptical_chi2 = float(residual @ residual) / (SCAN_NOISE ** 2 * dof)
+    # Scan-derived covariance at the nominal dome: white noise + declared scale + target registration.
+    jac_nominal = met.dome_jacobian(nominal, x, y)
+    white = SCAN_NOISE ** 2 * np.linalg.inv(jac_nominal.T @ jac_nominal)[:4, :4]
+    shape = np.array([geo.DOME_HEIGHT, geo.DOME_SIGMA, 0.0, 0.0])
+    scale = SCAN_SCALE_U ** 2 * np.outer(shape, shape)
+    targets = geo.embed(geo.COUPON, SCAN_TARGETS_U)
+    lever = geo.COUPON.embedding(np.zeros(2)) - targets.mean(axis=0)
+    centre = (SCAN_NOISE ** 2 / len(SCAN_TARGETS_U) * np.eye(3)
+              + met.hat(lever) @ met.registration_rotation_covariance(targets, SCAN_NOISE) @ met.hat(lever).T)
+    registration = np.zeros((4, 4))
+    registration[2:, 2:] = centre[:2, :2]
+    covariance = white + scale + registration
+    std = np.sqrt(np.diag(covariance))
+    return {"grid_mm": SCAN_GRID_MM, "points": int(len(x)), "dof": int(dof), "trials": SCAN_TRIALS,
+            "truth": truth.tolist(), "recovered": recovered.tolist(),
+            "recovery_error": float(np.max(np.abs(recovered - truth))),
+            "linear_std": linear_std.tolist(), "mc_std": mc_std.tolist(), "mc_mean": fits.mean(axis=0).tolist(),
+            "std_rel_difference": float(np.max(np.abs(mc_std[:4] / linear_std[:4] - 1.0))),
+            "std_abs_difference_mm": float(np.max(np.abs(mc_std[:4] - linear_std[:4]))),
+            "bias_in_se": float(np.max(np.abs(fits.mean(axis=0)[:4] - truth[:4]) / (linear_std[:4] / math.sqrt(SCAN_TRIALS)))),
+            "chi2_mean": float(chi2.mean()), "chi2_threshold": threshold,
+            "false_alarm_fraction": float(np.mean(chi2 > threshold)),
+            "elliptical_sigma_mm": list(ELLIPTICAL_SIGMA_MM), "elliptical_chi2": elliptical_chi2,
+            "elliptical_fit": elliptical_fit.tolist(),
+            "parameters": list(names), "covariance_mm2": covariance.tolist(),
+            "standard_uncertainty_mm": {name: float(value) for name, value in zip(names, std)},
+            "components_mm": {"white_noise": dict(zip(names, np.sqrt(np.diag(white)).tolist())),
+                              "scale": dict(zip(names, np.sqrt(np.diag(scale)).tolist())),
+                              "registration": dict(zip(names, np.sqrt(np.diag(registration)).tolist()))},
+            "correlation_height_sigma": float(covariance[0, 1] / (std[0] * std[1])),
+            "declared": {"noise_mm": SCAN_NOISE, "scale_relative": SCAN_SCALE_U, "targets_u_mm": [list(t) for t in SCAN_TARGETS_U],
+                         "status": "declared_not_verified"}}
+
+
+def scan_protocol(f_design, f_fit, f_model, scan, crest) -> dict:
+    """MFG-SCAN-01: the surface metrology protocol that identifies the as-built coupon for T128, T138 and T140."""
+    max_slope_deg = math.degrees(math.atan(geo.DOME_HEIGHT / geo.DOME_SIGMA * math.exp(-0.5)))
+    predicted = [
+        _predicted("D1", "scan-derived standard uncertainty of the fitted dome height, width and centre (4 mm grid)",
+                   _r(scan["standard_uncertainty_mm"]), "mm", f_fit),
+        _predicted("D2", "chi2 / dof threshold of the Gaussian model test (99.9%, independent point noise)",
+                   _r(scan["chi2_threshold"]), "1", f_model),
+        _predicted("C1", "crest curvature window and maximum spacing for 5% at k = 2",
+                   _r({"window_mm": crest["window_mm"], "spacing_mm": crest["used_spacing_mm"]}), "mm", f_design)]
+    criteria = [
+        {"id": "H1", "status": "hypothesis", "statement": "The formed coupon is a Gaussian dome of revolution within the "
+         "scanner noise", "test": f"chi2 / dof of the global fit residual <= {scan['chi2_threshold']:.3f}"},
+        {"id": "H2", "status": "hypothesis", "statement": "The fitted height and width lie within the declared forming "
+         "tolerances (10 +/- 0.2 mm, 20 +/- 0.5 mm)", "test": "|fitted - nominal| + 2 u <= tolerance, u from D1"},
+        {"id": "H3", "status": "hypothesis", "statement": "The crest curvature of the local-window fit equals h / sigma^2 of "
+         "the fitted dome", "test": "E_n <= 1 with U from the T129 sampling design and the fit covariance"}]
+    plan = {"scan_plan": {
+        "instrument_setup": dict(SCAN_STANDOFF, scanner="laser line scanner (declared 0.01 mm point noise, 0.05 mm native "
+                                                         "spacing)", coupon_max_slope_deg=max_slope_deg,
+                                 passes="two orthogonal raster passes over x in [-60, 140], y in [-100, 100] mm"),
+        "targets": "six sphere-mounted targets off the dome, measured by the CMM in the PART frame and by the scanner",
+        "sampling": {"global_fit_grid_mm": SCAN_GRID_MM,
+                     "crest_windows": {"window_mm": crest["window_mm"], "max_spacing_mm": crest["used_spacing_mm"]}},
+        "filtering": "reject points above the incidence limit or flagged by the scanner; no smoothing before either fit; "
+                     "reject fit residuals beyond 5 sigma and report their count",
+        "surface_fit": {"model": "z = z0 + a_x x + a_y y + h exp(-((x - x0)^2 + (y - y0)^2) / (2 sigma^2))",
+                        "parameters": list(met.DOME_PARAMETERS), "method": "Gauss-Newton least squares from the nominal dome",
+                        "covariance": "sigma^2 (J^T J)^-1 plus the declared scanner scale term on height and width and "
+                                      "the target registration term on the centre",
+                        "model_test": "chi2 / dof against the 99.9% threshold (H1)",
+                        "consumers": ["MFG-COUPON-01 (T128): the as-built coupon under the tapes",
+                                      "T138 scan-conditioned U_p", "T140 scan-conditioned geometry terms"]},
+        "retained_raw_data": ["native point clouds of both passes with scanner settings and SHA-256 digests",
+                              "target coordinates from the CMM and the scanner", "registration transforms and residuals",
+                              "fit parameters, covariance, residual map and outlier count"]}}
+    return build_protocol(
+        "T129", "MFG-SCAN-01", "Surface metrology: as-built scan of the domed coupon",
+        "Identify the as-built dome (height, width, centre) with its covariance and test the Gaussian model before the "
+        "coupon separations of MFG-COUPON-01 are predicted and compared.",
+        {"kind": "domed coupon", "surface_model": geo.COUPON.describe(),
+         "chart_extent_mm": {"x": list(geo.COUPON_X), "y": list(geo.COUPON_Y)},
+         "declared_height_tolerance_mm": 0.2, "declared_sigma_tolerance_mm": 0.5},
+        [{"id": f"RT{k + 1}", "u_mm": list(u), "kind": "sphere-mounted registration target"} for k, u in enumerate(SCAN_TARGETS_U)],
+        [{"id": "RASTER-X", "kind": "scan pass", "direction": "+x"}, {"id": "RASTER-Y", "kind": "scan pass", "direction": "+y"}],
+        predicted, criteria, ("scanner", "cmm"),
+        ["Measure the six registration targets with the CMM in the PART frame.",
+         f"Set the scanner to the declared {SCAN_STANDOFF['standoff_mm']:g} mm standoff; scan both raster passes at the "
+         f"native spacing, rejecting points with incidence above {SCAN_STANDOFF['max_incidence_deg']:g} deg.",
+         "Register each pass to the targets (Kabsch) and retain the transform and its residual.",
+         "Fit the as-built dome on the 4 mm grid; fit the crest curvature in the T129 windows at full density.",
+         "Report the fitted parameters with their covariance and the chi2 / dof model test (H1) before any tape is laid."],
+        extra=plan)
+
+
+@_task("T129", ("test_metrology_sampling_design_and_counterexamples", "test_scan_protocol_and_as_built_fit",
+                "test_protocols_refuse_filled_slots_and_decisions"))
 def surface_metrology(ctx):
     study = ctx.memo("mfg.metrology", metrology_study)
     designs, sweep, crest = study["designs"], study["sweep"], study["designs"]["coupon crest"]
@@ -1025,6 +1222,49 @@ def surface_metrology(ctx):
                                           v["exact_worst_error_per_mm"] - v["tolerance_per_mm"], 0.0, "signed_le")
                                    for k, v in study["ladder"].items()]},
                        unit="scans", uncertainty=EXACT, tolerance={"abs": 0, "rel": 0})
+    scan = ctx.memo("mfg.as-built", as_built_study)
+    scan_generator = _generator("synthetic coupon scans", seed=SEED + 9, grid_mm=SCAN_GRID_MM, noise_mm=SCAN_NOISE,
+                                trials=SCAN_TRIALS)
+    u_scan = scan["standard_uncertainty_mm"]
+    f_fit = finding("The as-built dome fit (height, width, centre, base plane) recovers a perturbed dome and has its "
+                    "linearized covariance on synthetic scans", "numerical",
+                    {"scan_standard_uncertainty_mm": u_scan, "correlation_height_sigma": scan["correlation_height_sigma"],
+                     "white_noise_std_mm": scan["components_mm"]["white_noise"], "points": scan["points"]},
+                    {"generator": scan_generator,
+                     "checks": [_check("analytic", "noise-free recovery of a perturbed as-built dome from the nominal start "
+                                       "(max |parameter error|)", scan["recovery_error"], 1e-8),
+                                _check("analytic", "max over height, width and centre of |MC std / linearized std - 1| "
+                                       "(tolerance 4 standard errors, 4 / sqrt(2 (n - 1)))", scan["std_rel_difference"],
+                                       4.0 / math.sqrt(2.0 * (SCAN_TRIALS - 1))),
+                                _check("analytic", "max over height, width and centre of |MC mean - truth| in standard "
+                                       "errors of the mean", scan["bias_in_se"], 4.0, "le"),
+                                _check("analytic", "(mean chi2 / dof of the Gaussian scans - 1) / (4 SE)",
+                                       (scan["chi2_mean"] - 1.0) / (4.0 * math.sqrt(2.0 / (scan["dof"] * SCAN_TRIALS))), 1.0)]},
+                    unit="mm",
+                    uncertainty=_u("reference_error", scan["std_abs_difference_mm"],
+                                   "max |MC std - linearized std| over height, width and centre (mm); MC sampling bounded"),
+                    tolerance={"abs": 1e-9, "rel": 1e-6})
+    f_model = finding("The fit residual flags an elliptical as-built dome inside the declared width tolerance "
+                      "(chi2 model test)", "numerical",
+                      {"elliptical_chi2_per_dof": scan["elliptical_chi2"], "threshold": scan["chi2_threshold"],
+                       "false_alarm_fraction": scan["false_alarm_fraction"]},
+                      {"generator": scan_generator,
+                       "checks": [_check("analytic", "chi2 / dof of the elliptical dome (sigma_x 20.5, sigma_y 19.5 mm) "
+                                         "over the 99.9% threshold", scan["elliptical_chi2"] / scan["chi2_threshold"], 1.0, "ge"),
+                                  _check("analytic", "fraction of Gaussian scans the threshold flags (false alarms)",
+                                         scan["false_alarm_fraction"], 0.02, "le")]},
+                      uncertainty=_u("monte_carlo_95ci",
+                                     1.96 * math.sqrt((2.0 + 4.0 * max(scan["elliptical_chi2"] - 1.0, 0.0)) / scan["dof"]),
+                                     "95% half-width of the noise spread of the elliptical chi2 / dof (non-central chi-square)"),
+                      tolerance={"abs": 1e-6, "rel": 1e-6},
+                      counterexample={"statement": "A dome inside the declared forming tolerances is described by the "
+                                                   "nominal Gaussian model, so its parameters alone fix the prediction",
+                                      "witness": {"sigma_x_mm": ELLIPTICAL_SIGMA_MM[0], "sigma_y_mm": ELLIPTICAL_SIGMA_MM[1],
+                                                  "chi2_per_dof": scan["elliptical_chi2"],
+                                                  "threshold": scan["chi2_threshold"]}})
+    protocol = scan_protocol(f_design, f_fit, f_model, scan, crest)
+    ctx.artifact_json("protocol-surface-scan.json", protocol)
+    ctx.artifact_json("as-built-fit.json", _r(scan))
     ctx.artifact_json("metrology-design.json", _r({k: study[k] for k in ("designs", "ladder", "circle_rule", "sweep", "repeat", "registration")}))
     windows = [v["window_mm"] for v in sweep.values()]
     ctx.artifact_text("curvature-window-sweep.svg", svg.line_plot(
@@ -1032,35 +1272,62 @@ def surface_metrology(ctx):
          ("exact sqrt(bias^2 + std^2)", windows, [math.hypot(v["exact_bias"], v["exact_std"]) for v in sweep.values()]),
          ("tolerance", [windows[0], windows[-1]], [crest["tolerance_per_mm"]] * 2)],
         title="Coupon crest: curvature error vs fitting window", xlabel="window W (mm)", ylabel="error (1/mm)", logy=True))
-    findings = [f_design, f_mc, f_circle, f_window, f_reg, f_ladder,
+    findings = [f_design, f_mc, f_circle, f_window, f_reg, f_ladder, f_fit, f_model,
+                _protocol_findings(protocol, "Surface-scan protocol record validates and refuses malformed variants"),
                 _not_measured("A real laser line scanner achieves the declared 0.01 mm point noise on the coupon surface "
-                              "(finish, incidence angle, speckle)", "sensor_performance")]
+                              "(finish, incidence angle, speckle)", "sensor_performance"),
+                _not_measured("The formed coupon passes the Gaussian model test and its fitted height and width lie within "
+                              "the declared forming tolerances"),
+                _not_measured("The declared scanner scale (20 ppm) and target registration uncertainties hold for the scan",
+                              "calibration")]
     ladder = study["ladder"]
     fields = _fields(
-        "The sampling needed to resolve curvature follows from two terms of a local quadratic fit: a bias set by "
-        "the quartic profile term and a noise term that grows as the window shrinks; the window must be chosen "
-        "from the actual profile, not from its osculating circle.",
-        "Least-squares z = a + b x + c x^2 over a centred window W with spacing d: bias(2c) = (3/7) q W^2, "
+        "A surface metrology protocol for the coupon needs two things: the sampling that resolves curvature (a local "
+        "quadratic fit whose bias is set by the quartic profile term and whose noise grows as the window shrinks, so "
+        "the window must come from the actual profile, not from its osculating circle), and an identification of the "
+        "as-built dome (height, width, centre) with a covariance that can replace the declared forming tolerances in "
+        "T138 and T140, valid only while a residual test accepts the Gaussian model.",
+        "Local fit: least-squares z = a + b x + c x^2 over a centred window W with spacing d: bias(2c) = (3/7) q W^2, "
         "std(2c) = sigma sqrt(720 d) W^(-5/2) (large-n); tolerance split half bias, half k = 2 noise. "
-        "Registration: Kabsch; E[SSR] = sigma^2 (3N - 6); rotation covariance sigma^2 (sum |p|^2 I - p p^T)^-1.",
-        ["Declared scanner noise 0.01 mm per point, native spacing 0.05 mm",
+        "Global fit: z = z0 + a_x x + a_y y + h exp(-((x - x0)^2 + (y - y0)^2) / (2 sigma^2)) by Gauss-Newton; "
+        "covariance sigma^2 (J^T J)^-1 plus declared scale and registration terms; model test chi2 / dof <= "
+        "1 + 3.09 sqrt(2 / dof). Registration: Kabsch; E[SSR] = sigma^2 (3N - 6); rotation covariance "
+        "sigma^2 (sum |p|^2 I - p p^T)^-1.",
+        ["Declared scanner noise 0.01 mm per point, native spacing 0.05 mm, relative scale uncertainty 20 ppm, standoff "
+         "100 mm, incidence limit 30 deg",
          "Profiles: coupon crest (Gaussian), cylinder circumference (R = 100 mm), flat plate",
-         f"Seeded synthetic noise (PCG64 seed {SEED}), 4000 fits per window, 2000 registrations"],
-        "Synthetic scans only; no scanner was used.",
+         "Six registration targets off the dome; global fit grid 4 mm over the coupon extent",
+         f"Seeded synthetic noise (PCG64 seeds {SEED} and {SEED + 9}), 4000 fits per window, 2000 registrations, "
+         f"{SCAN_TRIALS} synthetic coupon scans"],
+        "Synthetic scans only; no scanner was used. MFG-SCAN-01 specifies the scan, its registration, the fits and the "
+        "retained raw data; its hardware-evidence slot is empty.",
         "Exact design error <= tolerance; MC mean and spread equal the exact bias and noise; registration residual "
-        "has 3N - 6 degrees of freedom.",
-        "Derive the design, evaluate it exactly (discrete normal equations), verify by Monte Carlo, sweep the window "
-        "at fixed spacing, compare the circle rule with the actual profile, simulate repeat-scan registration.",
+        "has 3N - 6 degrees of freedom; the dome fit is exact without noise, its MC spread equals the linearized "
+        "covariance, and the model test flags a non-Gaussian dome.",
+        "Derive the local-fit design, evaluate it exactly (discrete normal equations), verify by Monte Carlo, sweep the "
+        "window at fixed spacing, compare the circle rule with the actual profile, simulate repeat-scan registration; fit "
+        "a perturbed as-built dome without noise and on seeded synthetic scans, test an elliptical dome against the chi2 "
+        "threshold, assemble the scan-derived dome covariance, and build, validate and mutate the MFG-SCAN-01 protocol.",
         f"Coupon crest at 5%: window {crest['window_mm']:.2f} mm, spacing {crest['used_spacing_mm']:.3f} mm; repeats at "
         f"0.05 mm native spacing: 5% -> {ladder['5%']['repeats_at_native_spacing']}, 2% -> {ladder['2%']['repeats_at_native_spacing']}, "
-        f"1% -> {ladder['1%']['repeats_at_native_spacing']}; circle rule gives bias {circle['bias_over_tolerance']:.2f} x tolerance.",
-        "Monte Carlo standard errors are stated in the checks; the design rules are exact for the declared profiles.",
+        f"1% -> {ladder['1%']['repeats_at_native_spacing']}; circle rule gives bias {circle['bias_over_tolerance']:.2f} x tolerance. "
+        f"As-built fit on {scan['points']} points: scan-derived standard uncertainty height {u_scan['height_mm']:.2g} mm, "
+        f"width {u_scan['sigma_mm']:.2g} mm, centre ({u_scan['x0_mm']:.2g}, {u_scan['y0_mm']:.2g}) mm (declared tolerances: "
+        f"{0.2 / math.sqrt(3.0):.3f} and {0.5 / math.sqrt(3.0):.3f} mm); the elliptical dome gives chi2 / dof "
+        f"{scan['elliptical_chi2']:.1f} against a threshold of {scan['chi2_threshold']:.3f}.",
+        "Monte Carlo standard errors are stated in the checks; the design rules are exact for the declared profiles; the "
+        "scan-derived covariance is first order and holds only under the Gaussian model and the declared scanner terms.",
         ["circle-rule window on a non-circular crest", "window too small (noise) and too large (bias)",
-         "continuum vs discrete noise formula", "repeat averaging", "registration residual degrees of freedom"],
+         "continuum vs discrete noise formula", "repeat averaging", "registration residual degrees of freedom",
+         "non-Gaussian (elliptical) as-built dome flagged by the residual test", "false alarms of the model test",
+         "scan protocol refusal matrix"],
         ["Surface finish, incidence angle and scanner nonlinearity are not modelled; noise is white and Gaussian.",
          "Profiles are taken through the principal direction at the vertex; slope correction is neglected.",
-         "At 1% tolerance a quadratic fit needs about 100 repeat scans: a higher-order local fit is a deferred research question."],
-        "T130: calibrate the scanner scale and frames on artifacts before executing the T128 coupon scan.")
+         "At 1% tolerance a quadratic fit needs about 100 repeat scans: a higher-order local fit is a deferred research question.",
+         "If the model test rejects the Gaussian dome, the scan-derived covariance does not apply and the prediction must "
+         "be re-integrated on a surface fitted to the scan (not implemented)."],
+        "T130: calibrate the scanner scale and frames on artifacts before executing MFG-SCAN-01 and the T128 coupon "
+        "measurement.")
     return {"state": "completed", "fields": fields, "findings": findings}
 
 
@@ -1069,6 +1336,15 @@ DATUM_POINTS = {"A": [[10.0, 10.0, 0.0], [190.0, 10.0, 0.0], [100.0, 190.0, 0.0]
                 "B": [[20.0, 0.0, 5.0], [180.0, 0.0, 5.0]], "C": [0.0, 100.0, 5.0]}
 TRACKER_NOISE = INSTRUMENTS["tracker"]["declared_standard_uncertainty_mm"]
 CMM_NOISE = INSTRUMENTS["cmm"]["declared_standard_uncertainty_mm"]
+
+
+def _metrology_refusal(function, *args):
+    """Run ``function`` and return the MetrologyRefusal code it raised, or None if it returned."""
+    try:
+        function(*args)
+    except met.MetrologyRefusal as exc:
+        return exc.code
+    return None
 
 
 def _datum_measure(pose, noise=None, generator=None):
@@ -1128,6 +1404,13 @@ def artifacts_study() -> dict:
     samples = np.array([met.pose_difference(frame_of(moved + generator.normal(0.0, TRACKER_NOISE, moved.shape)), frame)
                         for _ in range(3000)])
     datum_rel = float(np.linalg.norm(np.cov(samples.T) - datum_cov) / np.linalg.norm(datum_cov))
+    # Degenerate datum features are refused: collinear primary points, and a secondary direction
+    # normal to the primary plane (its projection into A vanishes).
+    refusals = {"collinear_primary": _metrology_refusal(
+                    met.datum_frame_321, [[10.0, 10.0, 0.0], [100.0, 10.0, 0.0], [190.0, 10.0, 0.0]],
+                    DATUM_POINTS["B"], DATUM_POINTS["C"]),
+                "secondary_normal_to_primary": _metrology_refusal(
+                    met.datum_frame_321, DATUM_POINTS["A"], [[20.0, 0.0, 5.0], [20.0, 0.0, 25.0]], DATUM_POINTS["C"])}
     # Frame chain INSTRUMENT -> WORLD -> FIXTURE -> PART -> CAD.
     def diag(translation, rotation):
         return np.diag([translation ** 2] * 3 + [rotation ** 2] * 3)
@@ -1142,7 +1425,11 @@ def artifacts_study() -> dict:
     for label, point in (("cad_origin", np.zeros(3)), ("coupon_far_corner", np.array([200.0, 200.0, 10.0]))):
         linear = met.point_covariance(pose, chain_cov, point)
         mc = met.sample_chain_point(links, point, generator, 3000)
+        # Linearization error of the first-order std: sigma points through the exact SE(3) products.
+        sigma_std = np.sqrt(np.diag(met.sigma_point_chain_covariance(links, point)))
         chain[label] = {"linear_std_mm": np.sqrt(np.diag(linear)).tolist(), "mc_std_mm": mc.std(axis=0, ddof=1).tolist(),
+                        "sigma_point_std_mm": sigma_std.tolist(),
+                        "linearization_mm": float(np.max(np.abs(sigma_std - np.sqrt(np.diag(linear))))),
                         "rel_frobenius": float(np.linalg.norm(np.cov(mc.T) - linear) / np.linalg.norm(linear))}
     contributions = {}
     for k, name in enumerate(names):
@@ -1152,8 +1439,10 @@ def artifacts_study() -> dict:
     return {"sphere": sphere, "step_gauge": step, "datum": {"orthonormality": orthonormal, "equivariance": equivariance,
                                                             "recovery": recovery, "covariance_rel_frobenius": datum_rel,
                                                             "std_translation_mm": np.sqrt(np.diag(datum_cov)[:3]).tolist(),
-                                                            "std_rotation_urad": (1e6 * np.sqrt(np.diag(datum_cov)[3:])).tolist()},
+                                                            "std_rotation_urad": (1e6 * np.sqrt(np.diag(datum_cov)[3:])).tolist(),
+                                                            "refusals": refusals},
             "chain": chain, "contributions_rss_mm": contributions,
+            "chain_linearization_mm": max(v["linearization_mm"] for v in chain.values()),
             "links": [{"parent_child": n, "rotation": p[:3, :3].tolist(), "translation_mm": p[:3, 3].tolist(),
                        "covariance": c.tolist()} for n, (p, c) in zip(names, links)]}
 
@@ -1170,15 +1459,20 @@ def calibration_artifacts(ctx):
                        "checks": [_check("analytic", f"relative Frobenius difference MC vs first order, {k}", v["rel_frobenius"], 0.1)
                                   for k, v in chain.items()]},
                       unit="mm",
-                      uncertainty=_u("monte_carlo_95ci", 1.96 * math.sqrt(2.0 / 3000),
-                                     "relative 95% half-width of MC covariance entries"),
+                      uncertainty=_u("truncation_bound", study["chain_linearization_mm"],
+                                     "linearization error of the first-order std: symmetric sigma points through the exact "
+                                     "SE(3) chain minus first order, max over points and axes (mm)"),
                       tolerance={"abs": 1e-12, "rel": 1e-9})
+    refused = datum["refusals"]
     f_datum = finding("The 3-2-1 datum frame is orthonormal, equivariant under rigid motion and has the propagated covariance",
                       "numerical", {"std_translation_mm": datum["std_translation_mm"], "std_rotation_urad": datum["std_rotation_urad"]},
                       {"checks": [_check("exact_arithmetic", "max |R^T R - I|", datum["orthonormality"], 1e-12),
                                   _check("exact_arithmetic", "max |frame(M points) - M frame(points)|", datum["equivariance"], 1e-9),
                                   _check("exact_arithmetic", "noise-free recovery of the part pose", datum["recovery"], 1e-9),
-                                  _check("analytic", "relative Frobenius difference MC vs Jacobian covariance", datum["covariance_rel_frobenius"], 0.1)]},
+                                  _check("analytic", "relative Frobenius difference MC vs Jacobian covariance", datum["covariance_rel_frobenius"], 0.1),
+                                  _refusal("collinear primary datum points (A)", "datum_degenerate", refused["collinear_primary"]),
+                                  _refusal("secondary datum direction (B) normal to the primary plane (A)", "datum_degenerate",
+                                           refused["secondary_normal_to_primary"])]},
                       uncertainty=_u("monte_carlo_95ci", 1.96 * math.sqrt(2.0 / 3000),
                                      "relative 95% half-width of MC covariance entries"),
                       tolerance={"abs": 1e-9, "rel": 1e-6})
@@ -1230,7 +1524,8 @@ def calibration_artifacts(ctx):
         f"Coupon far-corner std (linear) {[round(v, 4) for v in corner['linear_std_mm']]} mm; largest link contribution "
         f"{dominant} ({study['contributions_rss_mm'][dominant]:.4f} mm RSS); datum rotation std "
         f"{[round(v, 1) for v in datum['std_rotation_urad']]} urad.",
-        "Monte Carlo sampling error of covariances is about sqrt(2 / N); first-order neglects O(sigma^2) terms.",
+        f"Monte Carlo sampling error of covariances is about sqrt(2 / N); the first-order stds neglect higher-order terms, "
+        f"which symmetric sigma points through the exact SE(3) chain estimate at {study['chain_linearization_mm']:.1e} mm.",
         ["collinear primary datum and B normal to A (refused)", "rigid-motion equivariance", "cap-only sphere probing",
          "linearization of the chain vs exact SE(3) sampling"],
         ["All link covariances are declared; real ones come from the instrument and fixture calibration records (T139).",
@@ -1285,7 +1580,71 @@ def gage_study() -> dict:
             "ndc_true": 1.41 * math.sqrt(truth["part"] / grr_true), "example": example, "studies": studies,
             "recovery": recovery, "identity": identity, "grr_spread": grr_spread,
             "percent_grr_quantiles": {q: float(np.quantile(percent, float(q))) for q in ("0.05", "0.5", "0.95")},
+            "percent_grr_quantile_halfwidth": {q: _quantile_halfwidth(percent, float(q)) for q in ("0.05", "0.5", "0.95")},
             "operator_truncation_fraction": truncated_operator / studies, "operator_truncation_theory": truncation_theory}
+
+
+def _quantile_halfwidth(sample, level, z=1.96) -> float:
+    """Half-width (in the sample's units) of the distribution-free 95% interval of a sample quantile.
+
+    The interval runs between the order statistics of rank n p -+ z sqrt(n p (1 - p))
+    (normal approximation to the binomial count below the quantile).
+    """
+    ordered = np.sort(np.asarray(sample, dtype=float))
+    n = len(ordered)
+    spread = z * math.sqrt(n * level * (1.0 - level))
+    lo = min(max(int(math.floor(n * level - spread)) - 1, 0), n - 1)
+    hi = min(max(int(math.ceil(n * level + spread)) - 1, 0), n - 1)
+    return 0.5 * float(ordered[hi] - ordered[lo])
+
+
+# The procedure of a real study. Each protocol has one specimen, so the ten "parts" are ten features of
+# it whose true values span the measured range; %GRR is therefore reported against the declared
+# tolerance (P/T), not only against the between-feature spread, which is not a process variation.
+GAGE_PARTS = {
+    "MFG-FLAT-PLATE-01": ["M00-M01", "M00-M02", "M00-M03", "M00-M04", "M00-M06", "M00-M12", "M00-M18", "M00-M24",
+                          "M12-M13", "M12-M18"],
+    "MFG-CYLINDER-01": ["circumferential 30 deg", "circumferential 60 deg", "circumferential 90 deg",
+                        "circumferential 120 deg", "circumferential 150 deg", "circumferential 180 deg", "axial 100 mm",
+                        "axial 200 mm", "helical 60 deg / 100 mm", "helical 90 deg / 200 mm"],
+    "MFG-COUPON-01": [f"lateral tape L{k} to nominal N{k}" for k in range(1, 9)]
+                     + ["heading tape H4 to nominal N4", "heading tape H8 to nominal N8"],
+}
+
+
+def gage_procedure() -> dict:
+    """Machine-readable Gage R&R and type-1 procedure (a plan; the thresholds are hypotheses)."""
+    p, o, r = GAGE_DESIGN
+    operators = [f"O{k + 1}" for k in range(o)]
+    studies = {}
+    for protocol, parts in GAGE_PARTS.items():
+        rounds = []
+        for replicate in range(1, r + 1):
+            # Seeded, platform-independent randomization: order each operator's block by a SHA-256 key.
+            blocks = [{"operator": operator,
+                       "order": sorted(parts, key=lambda part: hashlib.sha256(
+                           f"{protocol}|{replicate}|{operator}|{part}".encode("utf-8")).hexdigest())}
+                      for operator in sorted(operators, key=lambda name: hashlib.sha256(
+                          f"{protocol}|{replicate}|{name}".encode("utf-8")).hexdigest())]
+            rounds.append({"replicate": replicate, "before": "remove the specimen from FX-321, re-seat it, re-probe "
+                                                             "datums A, B, C and rebuild the PART frame",
+                           "blocks": blocks})
+        studies[protocol] = {"parts": [{"id": f"P{k + 1:02d}", "feature": part} for k, part in enumerate(parts)],
+                             "operators": operators, "replicates": r, "rounds": rounds}
+    return {"schema": "ciw.lab-gage-rr-procedure.v1", "design": {"parts": p, "operators": o, "replicates": r},
+            "studies": studies,
+            "blinding": "features are presented by coded identity; operators do not see earlier readings or other "
+                        "operators' results; a recorder enters readings",
+            "reference_variation": "declared tolerance of each measurand (P/T = 6 s_GRR / T); %GRR against the "
+                                   "between-feature spread is reported but is not a process variation",
+            "type1_study": {"reference": "SG-200 step at 100 mm (certificate value)", "readings": 25,
+                            "operator": "O1", "setup": "one setup, no re-fixturing between readings",
+                            "report": "bias against the certificate and repeatability s",
+                            "hypothesis": "Cg = 0.2 T / (6 s) >= 1.33 and Cgk = (0.1 T - |bias|) / (3 s) >= 1.33"},
+            "analysis": "ANOVA method (T131); raw components are reported, negative ones truncated at zero and flagged; "
+                        "no interaction pooling",
+            "hypotheses": ["%GRR (P/T) <= 10%", "ndc >= 5"],
+            "status": "plan: no study has been performed"}
 
 
 @_task("T131", ("test_gage_rr_recovers_components_and_refuses_unbalanced",))
@@ -1315,8 +1674,9 @@ def gage_rr(ctx):
                                           min(study["percent_grr_true"] - quant["0.05"], quant["0.95"] - study["percent_grr_true"]),
                                           0.0, "signed_ge")]},
                        unit="%",
-                       uncertainty=_u("monte_carlo_95ci", 1.96 * math.sqrt(0.05 * 0.95 / study["studies"]),
-                                      "95% half-width of the 5% and 95% quantile levels (probability)"),
+                       uncertainty=_u("monte_carlo_95ci", study["percent_grr_quantile_halfwidth"],
+                                      "half-widths of the distribution-free 95% order-statistic intervals of the sample "
+                                      "%GRR quantiles (%); the true %GRR is exact"),
                        tolerance={"abs": 1e-9, "rel": 1e-6})
     fraction, theory = study["operator_truncation_fraction"], study["operator_truncation_theory"]
     f_trunc = finding("Fraction of 10 x 3 x 3 studies whose raw operator component is negative (truncated to zero)",
@@ -1345,32 +1705,44 @@ def gage_rr(ctx):
                        sum(check["passed"] for check in refusals), {"checks": refusals},
                        unit="refusals", uncertainty=EXACT, tolerance={"abs": 0, "rel": 0})
     ctx.artifact_json("gage-rr.json", _r({k: study[k] for k in ("design", "sigma", "percent_grr_true", "ndc_true", "recovery",
-                                                                 "percent_grr_quantiles", "grr_spread",
-                                                                 "operator_truncation_fraction", "example")}))
+                                                                 "percent_grr_quantiles", "percent_grr_quantile_halfwidth",
+                                                                 "grr_spread", "operator_truncation_fraction", "example")}))
+    ctx.artifact_json("gage-rr-procedure.json", gage_procedure())
     findings = [f_recovery, f_spread, f_trunc, f_refuse,
                 _not_measured("The real gage (instrument, fixture and operators) has %GRR below 10% on the coupon features",
                               "sensor_performance"),
                 finding("The measurement system is approved for production use", "production_acceptance", "not_performed", {})]
     fields = _fields(
         "The ANOVA method recovers the variance components of a balanced crossed study without bias (before "
-        "truncation), and a single 10 x 3 x 3 study estimates %GRR only within a wide sampling interval.",
+        "truncation), and a single 10 x 3 x 3 study estimates %GRR only within a wide sampling interval; the procedure "
+        "of a real study must therefore fix its parts, run order, blinding, re-fixturing and reference variation in "
+        "advance.",
         "y_ijk = mu + P_i + O_j + (PO)_ij + e_ijk; expected mean squares give s_e^2 = MS_E, s_po^2 = (MS_PO - MS_E)/r, "
-        "s_o^2 = (MS_O - MS_PO)/(p r), s_p^2 = (MS_P - MS_PO)/(o r); %GRR = 100 sqrt(GRR / total); ndc = 1.41 s_p / s_GRR.",
+        "s_o^2 = (MS_O - MS_PO)/(p r), s_p^2 = (MS_P - MS_PO)/(o r); %GRR = 100 sqrt(GRR / total); ndc = 1.41 s_p / s_GRR; "
+        "type-1 study Cg = 0.2 T / (6 s), Cgk = (0.1 T - |bias|) / (3 s).",
         ["Declared synthetic truth (mm): part 0.050, operator 0.006, interaction 0.004, repeatability 0.010",
-         f"Design 10 parts x 3 operators x 3 replicates; {study['studies']} simulated studies (seed {SEED + 2})"],
+         f"Design 10 parts x 3 operators x 3 replicates; {study['studies']} simulated studies (seed {SEED + 2})",
+         "Procedure (gage-rr-procedure.json): the ten parts of each protocol are ten features of its specimen (plate "
+         "marker pairs, cylinder marker pairs, coupon target separations); SHA-256-keyed run order per replicate and "
+         "operator; re-fixturing before every replicate round; blinded coded features; a type-1 study on the SG-200 "
+         "100 mm step"],
         "Synthetic readings only; no gage, operator or part was involved.",
         "SS_total = SS_P + SS_O + SS_PO + SS_E exactly; raw component estimators are unbiased.",
         "Simulate studies, estimate components, compare means with truth in standard errors, record the %GRR "
-        "sampling distribution and the truncation frequency, and check refusals of unbalanced data.",
+        "sampling distribution and the truncation frequency, check refusals of unbalanced data, and write the "
+        "procedure of the real crossed and type-1 studies with their thresholds as hypotheses.",
         f"True %GRR {study['percent_grr_true']:.2f}% (ndc {study['ndc_true']:.2f}); single-study 90% interval "
         f"[{quant['0.05']:.1f}%, {quant['0.95']:.1f}%]; operator component truncated in "
         f"{100 * study['operator_truncation_fraction']:.1f}% of studies (F-distribution: "
         f"{100 * study['operator_truncation_theory']:.1f}%).",
-        "Monte Carlo standard errors are in the checks; quantiles are sample quantiles of 2000 studies.",
+        "Monte Carlo standard errors are in the checks; quantiles are sample quantiles of 2000 studies with "
+        "distribution-free 95% order-statistic intervals (in %).",
         ["SS decomposition", "negative variance estimates (truncation)", "unbalanced or missing data (refused)",
          "wide single-study interval"],
         ["AIAG interaction pooling (p > 0.25) is not applied; components are reported unpooled.",
-         "Normal random effects; real operator effects may be systematic or drift in time."],
+         "Normal random effects; real operator effects may be systematic or drift in time.",
+         "Features of one specimen stand in for parts, so the between-part variance is a spread of measurands, not of "
+         "a process; the procedure reports %GRR against the declared tolerance (P/T) for that reason."],
         "T140: feed measured repeatability into the uncertainty budget once a real study exists (retained via T139).")
     return {"state": "completed", "fields": fields, "findings": findings}
 
@@ -1811,6 +2183,66 @@ def _tangent_frame(surface, u, velocity):
     return t, surface.normal(u, t)
 
 
+# The off-axis route exercises the geodesic-torsion term (tau_g = 0 on the symmetry axis); the unit
+# normal is differenced one RK4 geodesic step of 1 um either side of each node.
+OFF_AXIS_DEG = 10.0
+NORMAL_STEP_MM = 1e-3
+
+
+def _route_frame(surface, y):
+    """(X, n, t, kappa_n, tau_g, dn/ds) at one geodesic state, all in R^3 except the two curvatures.
+
+    kappa_n = II(t, t) and tau_g = II(t, N) come from the second fundamental form; dn/ds comes from
+    central differences of the embedded unit normal along the geodesic, so it shares neither the
+    second fundamental form nor the speed-factor formula.
+    """
+    u, v = y[:2], y[2:4]
+    t, n = _tangent_frame(surface, u, v)
+    second = geo.second_fundamental_form(surface, u)
+    state = np.asarray(y[:4], dtype=float)
+    ahead = integrators.step_rk4(surface.geodesic_rhs, state, NORMAL_STEP_MM)
+    behind = integrators.step_rk4(surface.geodesic_rhs, state, -NORMAL_STEP_MM)
+    dn = (surface.unit_normal3(ahead[:2]) - surface.unit_normal3(behind[:2])) / (2.0 * NORMAL_STEP_MM)
+    return (surface.embedding(u), surface.unit_normal3(u), surface.embedding_jacobian(u) @ t,
+            float(t @ second @ t), float(t @ second @ n), dn)
+
+
+def _tcp_tools(surface, transfer):
+    """TCP paths P = X + H n of both tools along a sampled geodesic, with two derivations of |dP/ds|.
+
+    Returns ({tool: summary}, kappa_n at the nodes). Pointwise, |t + H dn/ds| is compared
+    with the closed-form factor sqrt((1 - H kappa_n)^2 + (H tau_g)^2) at every node;
+    segment-wise, |P(k+1) - P(k)| / ds (the speed of the polyline a robot would follow) is
+    compared with the mean factor at the segment ends where 1 - H kappa_n keeps its sign.
+    """
+    frames = [_route_frame(surface, y) for y in transfer.states]
+    base, normals, tangents = (np.array([f[k] for f in frames]) for k in range(3))
+    kappa_n, tau_g = np.array([f[3] for f in frames]), np.array([f[4] for f in frames])
+    dn = np.array([f[5] for f in frames])
+    ds = np.diff(transfer.s)
+    tools = {}
+    for name, standoff in TOOLS.items():
+        signed = 1.0 - standoff * kappa_n
+        factors = np.hypot(signed, standoff * tau_g)
+        points = base + standoff * normals
+        chords = np.diff(points, axis=0)
+        smooth = np.sign(signed[1:]) == np.sign(signed[:-1])
+        segment_error = np.abs(np.linalg.norm(chords, axis=1) / ds - 0.5 * (factors[1:] + factors[:-1]))
+        tools[name] = {"standoff_mm": standoff, "polyline_length_mm": geo.polyline_length(points),
+                       "integral_length_mm": float(np.sum(0.5 * (factors[1:] + factors[:-1]) * ds)),
+                       "speed_factor_min": float(factors.min()), "speed_factor_max": float(factors.max()),
+                       "max_H_tau_g": float(np.max(np.abs(standoff * tau_g))),
+                       "tau_term_max": float(np.max(factors - np.abs(signed))),
+                       "pointwise_max_difference": float(np.max(np.abs(np.linalg.norm(tangents + standoff * dn, axis=1)
+                                                                       - factors))),
+                       "segment_max_difference": float(np.max(segment_error[smooth], initial=0.0)),
+                       "smooth_segments": int(np.sum(smooth)),
+                       "sign_changes_of_1_minus_H_kn": int(np.sum(np.diff(np.sign(signed)) != 0)),
+                       "reversed_segments": int(np.sum(np.einsum("ij,ij->i", chords, tangents[:-1]) < 0)),
+                       "profile": {"s": transfer.s[::4].tolist(), "factor": factors[::4].tolist()}}
+    return tools, kappa_n
+
+
 @functools.lru_cache(maxsize=1)
 def coating_study() -> dict:
     surface = geo.COUPON
@@ -1842,30 +2274,11 @@ def coating_study() -> dict:
         standoff_rows.append({"s_mm": float(transfer.s[index]), "lateral_error_mm": e, "kappa_lateral_per_mm": kappa_lateral,
                               "standoff_error_exact_mm": exact, "standoff_error_series_mm": approx,
                               "tilt_rad": abs(kappa_lateral) * e})
-    # Tool-centre-point path P = X + H n: speed factor sqrt((1 - H kn)^2 + (H tau_g)^2).
-    frames = []
-    for y in transfer.states:
-        u, v = y[:2], y[2:4]
-        t, n = _tangent_frame(surface, u, v)
-        second = geo.second_fundamental_form(surface, u)
-        frames.append((surface.embedding(u), surface.unit_normal3(u), surface.embedding_jacobian(u) @ t,
-                       float(t @ second @ t), float(t @ second @ n)))
-    kn_all = np.array([f[3] for f in frames])
-    tau_all = np.array([f[4] for f in frames])
-    tangents3 = np.array([f[2] for f in frames])
-    tools = {}
-    for name, standoff in TOOLS.items():
-        factors = np.hypot(1.0 - standoff * kn_all, standoff * tau_all)
-        points = np.array([x + standoff * n for x, n, *_ in frames])
-        signed = 1.0 - standoff * kn_all
-        steps_along = np.einsum("ij,ij->i", np.diff(points, axis=0), tangents3[:-1])
-        integral = float(np.sum(0.5 * (factors[1:] + factors[:-1]) * np.diff(transfer.s)))
-        tools[name] = {"standoff_mm": standoff, "polyline_length_mm": geo.polyline_length(points),
-                       "integral_length_mm": integral, "speed_factor_min": float(factors.min()),
-                       "speed_factor_max": float(factors.max()),
-                       "sign_changes_of_1_minus_H_kn": int(np.sum(np.diff(np.sign(signed)) != 0)),
-                       "reversed_segments": int(np.sum(steps_along < 0)),
-                       "profile": {"s": transfer.s[::4].tolist(), "factor": factors[::4].tolist()}}
+    # Tool-centre-point path P = X + H n: speed factor sqrt((1 - H kn)^2 + (H tau_g)^2), on the nominal
+    # route (tau_g = 0 by symmetry) and on an off-axis route where the tau_g term is exercised.
+    tools, kn_all = _tcp_tools(surface, transfer)
+    off_axis = jacobi.transfer(surface, geo.STATION, math.radians(OFF_AXIS_DEG), length, steps=steps)
+    off_axis_tools, _ = _tcp_tools(surface, off_axis)
     concave_radius = float(1.0 / kn_all.max())
     # Cylinder control through the same ray caster on a Monge-form cylinder: a ray parallel to a
     # radius at distance e meets the circle sqrt(R^2 - e^2) from the axis, so the error is R - sqrt(R^2 - e^2).
@@ -1882,8 +2295,8 @@ def coating_study() -> dict:
                 "exact_mm_at_1mm": radius - math.sqrt(radius ** 2 - 1.0)}
     return {"length_mm": length, "envelope_max_mm": float(envelope.max()),
             "envelope_argmax_mm": float(transfer.s[int(np.argmax(envelope))]), "vertex_max_mm": vertex_max,
-            "standoff": standoff_rows, "standoff_excess": worst_rel, "tools": tools,
-            "min_concave_radius_mm": concave_radius, "cylinder_control": cylinder}
+            "standoff": standoff_rows, "standoff_excess": worst_rel, "tools": tools, "off_axis_tools": off_axis_tools,
+            "off_axis_heading_deg": OFF_AXIS_DEG, "min_concave_radius_mm": concave_radius, "cylinder_control": cylinder}
 
 
 @_task("T134", ("test_coating_standoff_and_offset_cusp",))
@@ -1912,13 +2325,28 @@ def trajectory_sensitivity(ctx):
                          unit="mm",
                          uncertainty=_u("roundoff", 1e-14, "Newton ray casting converged to 1e-14 relative"),
                          tolerance={"abs": 1e-10, "rel": 1e-7})
+    off = study["off_axis_tools"]
+    both = [*study["tools"].values(), *off.values()]
+    pointwise = max(t["pointwise_max_difference"] for t in both)
+    segment = max(study["tools"]["welding torch"]["segment_max_difference"], off["welding torch"]["segment_max_difference"])
     f_offset = finding("Tool-centre-point path length element is sqrt((1 - H kappa_n)^2 + (H tau_g)^2)", "numerical",
                        {"welding_speed_factor_range": [weld["speed_factor_min"], weld["speed_factor_max"]],
-                        "spray_speed_factor_range": [spray["speed_factor_min"], spray["speed_factor_max"]]},
-                       {"checks": [_check("analytic", "welding TCP polyline length vs integral (relative)",
-                                          weld["polyline_length_mm"] / weld["integral_length_mm"] - 1.0, 1e-3)]},
-                       uncertainty=_u("truncation_bound", abs(weld["polyline_length_mm"] / weld["integral_length_mm"] - 1.0),
-                                      "polyline vs trapezoid discretization at the route nodes (relative)"),
+                        "spray_speed_factor_range": [spray["speed_factor_min"], spray["speed_factor_max"]],
+                        "off_axis_welding_speed_factor_range": [off["welding torch"]["speed_factor_min"],
+                                                                off["welding torch"]["speed_factor_max"]],
+                        "off_axis_spray_speed_factor_range": [off["spray gun"]["speed_factor_min"],
+                                                              off["spray gun"]["speed_factor_max"]],
+                        "off_axis_max_H_tau_g": {name: t["max_H_tau_g"] for name, t in off.items()}},
+                       {"checks": [_check("analytic", "max over the nodes of both routes (on axis and 10 deg off axis) and "
+                                          "both tools of | |t + H dn/ds| - factor |, dn/ds from central differences of the "
+                                          "unit normal", pointwise, 1e-7),
+                                   _check("analytic", "welding torch, both routes: max over segments of | |P(k+1) - P(k)| / ds "
+                                          "- mean factor at the segment ends |", segment, 2e-3),
+                                   _check("analytic", "off-axis welding route: max of factor - |1 - H kappa_n| (the tau_g "
+                                          "term the pointwise check resolves)", off["welding torch"]["tau_term_max"], 1e-5, "ge")]},
+                       uncertainty=_u("truncation_bound", pointwise,
+                                      "central-difference derivative of the unit normal (1 um RK4 steps) vs the closed-form "
+                                      "factor, max over nodes, routes and tools"),
                        tolerance={"abs": 1e-9, "rel": 1e-7})
     f_cusp = finding("A spray standoff beyond the concave radius of curvature folds the tool-centre-point path", "numerical",
                      {"spray_standoff_mm": spray["standoff_mm"], "min_concave_radius_mm": study["min_concave_radius_mm"],
@@ -1932,34 +2360,48 @@ def trajectory_sensitivity(ctx):
                                      "witness": {"standoff_mm": spray["standoff_mm"],
                                                  "min_concave_radius_mm": study["min_concave_radius_mm"],
                                                  "route": "coupon nominal route across the dome rim"}})
-    ctx.artifact_json("trajectory.json", _r({k: v for k, v in study.items() if k != "tools"}
-                                            | {"tools": {n: {k: v for k, v in t.items() if k != "profile"} for n, t in study["tools"].items()}}))
+    ctx.artifact_json("trajectory.json", _r({k: v for k, v in study.items() if k not in ("tools", "off_axis_tools")}
+                                            | {key: {n: {k: v for k, v in t.items() if k != "profile"} for n, t in study[key].items()}
+                                               for key in ("tools", "off_axis_tools")}))
     ctx.artifact_text("tcp-speed-factor.svg", svg.line_plot(
-        [(f"{name} (H = {tool['standoff_mm']:g} mm)", tool["profile"]["s"], tool["profile"]["factor"])
-         for name, tool in study["tools"].items()],
-        title="Coupon route: TCP speed per surface speed", xlabel="arclength s (mm)", ylabel="|dP/ds|", markers=False))
+        [(f"{name} (H = {tool['standoff_mm']:g} mm){suffix}", tool["profile"]["s"], tool["profile"]["factor"])
+         for key, suffix in (("tools", ""), ("off_axis_tools", f", {OFF_AXIS_DEG:g} deg off axis"))
+         for name, tool in study[key].items()],
+        title="Coupon routes: TCP speed per surface speed", xlabel="arclength s (mm)", ylabel="|dP/ds|", markers=False))
     findings = [f_env, f_standoff, f_offset, f_cusp,
                 _not_measured("The torch or gun on a real cell stays within the predicted lateral and standoff band"),
                 finding("The trajectory is safe to execute on a welding or coating robot cell", "machine_safety", None, {})]
     fields = _fields(
         "Along a trajectory across the dome, lateral registration errors propagate by the Jacobi transfer, produce "
         "a second-order standoff error -kappa e^2 / 2 and a first-order tilt kappa e, and the tool-centre-point path "
-        "X + H n has speed factor |1 - H kappa_n| that vanishes where the standoff equals the concave radius.",
+        "X + H n has speed factor sqrt((1 - H kappa_n)^2 + (H tau_g)^2), which on the symmetry axis (tau_g = 0) is "
+        "|1 - H kappa_n| and vanishes where the standoff equals the concave radius.",
         "e(s) = delta j_lat + dtheta j_head; standoff error by ray casting along the programmed axis; TCP path "
-        "P = X + H n with |P'| = sqrt((1 - H kappa_n)^2 + (H tau_g)^2).",
-        ["Coupon nominal route (T128)", "Declared registration box |delta| <= 0.3 mm, |dtheta| <= 2 mrad",
+        "P = X + H n with dn/ds = -kappa_n t - tau_g N (Weingarten), so |P'| = sqrt((1 - H kappa_n)^2 + (H tau_g)^2).",
+        ["Coupon nominal route (T128) and a route launched 10 deg off the symmetry axis (tau_g != 0)",
+         "Declared registration box |delta| <= 0.3 mm, |dtheta| <= 2 mrad",
          "Declared standoffs: welding torch 15 mm, spray gun 120 mm"],
         "No observation: trajectories are modelled, not executed.",
-        "Envelope equals the sup over box vertices to second order; standoff series within 0.1% (+ 1e-9 mm); TCP length element "
-        "matches the polyline length; no cusp while H < concave radius.",
+        "Envelope equals the sup over box vertices to second order; standoff series within 0.1% (+ 1e-9 mm); |dP/ds| "
+        "equals the closed-form factor at every node and the polyline speed segment by segment; no cusp while "
+        "H < concave radius.",
         "Integrate the route with Jacobi fields, perturb at the box vertices exactly, ray-cast standoff at nine "
-        "stations, build the TCP path for both tools and count reversals.",
+        "stations, build the TCP path for both tools on the nominal and the off-axis route, compare |t + H dn/ds| "
+        "(central differences of the unit normal) with the factor at every node and the polyline speed with it "
+        "segment by segment, and count reversals.",
         f"max lateral error {study['envelope_max_mm']:.3f} mm at s = {study['envelope_argmax_mm']:.1f} mm; max standoff "
         f"error {abs(worst['standoff_error_exact_mm']):.2e} mm; welding TCP speed factor "
-        f"[{weld['speed_factor_min']:.3f}, {weld['speed_factor_max']:.3f}]; spray path folds ({spray['reversed_segments']} "
+        f"[{weld['speed_factor_min']:.3f}, {weld['speed_factor_max']:.3f}] on axis and "
+        f"[{off['welding torch']['speed_factor_min']:.3f}, {off['welding torch']['speed_factor_max']:.3f}] off axis "
+        f"(max H tau_g {off['welding torch']['max_H_tau_g']:.3f}); |dP/ds| vs factor {pointwise:.1e} pointwise and "
+        f"{segment:.1e} per segment; spray path folds ({spray['reversed_segments']} "
         f"reversed segments; concave radius {study['min_concave_radius_mm']:.1f} mm < 120 mm).",
-        "Linear-envelope accuracy is second order in the box size; ray casting converges to 1e-14.",
-        ["box-vertex nonlinear check", "ray casting vs series", "TCP length element vs polyline",
+        "Linear-envelope accuracy is second order in the box size; ray casting converges to 1e-14; the pointwise "
+        "speed check is limited by the O(h^2) central difference of the normal, the segment check by the polyline "
+        "discretization (O(ds^2)).",
+        ["box-vertex nonlinear check", "ray casting vs series",
+         "TCP speed factor vs |t + H dn/ds| at every node, on and off the symmetry axis (tau_g term exercised)",
+         "TCP polyline speed vs factor segment by segment",
          "cusp detection by two routes (sign of 1 - H kappa_n and reversed segments)"],
         ["Deposition footprint, spray cone and heat input are not modelled; the speed factor is a kinematic proxy.",
          "Robot joint limits and singularities are not checked."],
@@ -2170,13 +2612,70 @@ def _corner_errors(route, delta, theta) -> dict:
     return out
 
 
+def _adaptive_at_nodes(surface, y0, nodes, rtol=1e-9, atol=1e-10) -> np.ndarray:
+    """Geodesic states at the given arclength nodes by ciw's adaptive Dormand-Prince 5(4), restarted per interval.
+
+    Each restart tries the step count the previous interval needed, so few steps are rejected.
+    """
+    states, pieces = [np.asarray(y0, dtype=float)], 1
+    for span in np.diff(nodes):
+        _, piece, stats = integrators.integrate_adaptive(surface.geodesic_rhs, states[-1], float(span), rtol=rtol,
+                                                         atol=atol, h0=float(span) / pieces)
+        states.append(piece[-1])
+        pieces = max(1, int(stats["accepted_steps"]))
+    return np.array(states)
+
+
+def _offset_start(surface, u0, heading, lateral, dheading) -> np.ndarray:
+    """Exactly offset start, coded separately from jacobi.perturbed_start.
+
+    The lateral start is the end of the normal geodesic of length |lateral|
+    (adaptive integration). On an oriented surface the rotation J by +90
+    degrees commutes with parallel transport, so the transported tangent is
+    -sign(lateral) J(w) with w the normal geodesic's end velocity; no transport
+    equation is integrated. The heading change then rotates that tangent.
+    """
+    u0 = np.asarray(u0, dtype=float)
+    t = surface.unit_tangent(u0, heading)
+    if lateral:
+        sign = math.copysign(1.0, lateral)
+        start = np.concatenate([u0, sign * surface.normal(u0, t)])
+        _, states, _ = integrators.integrate_adaptive(surface.geodesic_rhs, start, abs(lateral), rtol=1e-12, atol=1e-14)
+        u0, t = states[-1, :2], -sign * surface.normal(states[-1, :2], states[-1, 2:4])
+    n = surface.normal(u0, t)
+    return np.concatenate([u0, math.cos(dheading) * t + math.sin(dheading) * n])
+
+
+def independent_corner_ratios(route, delta, theta) -> dict:
+    """The corner ratios of :func:`_corner_errors` by a second computation of the exact perturbation.
+
+    Base and perturbed geodesics are integrated with the adaptive Dormand-Prince
+    integrator at the route's nodes (not RK4), from a separately coded exp-map
+    start, and the normal separation g(u_p - u, N) is evaluated inline. Only the
+    surface geometry is shared, so an error in the RK4 perturbation path shows
+    up as a disagreement.
+    """
+    surface, u0 = geo.COUPON, np.asarray(geo.STATION, dtype=float)
+    nodes = route.transfer.s
+    base = _adaptive_at_nodes(surface, np.concatenate([u0, surface.unit_tangent(u0, route.heading)]), nodes)
+    out = {}
+    for sign_delta, sign_theta in itertools.product((1.0, -1.0), repeat=2):
+        start = _offset_start(surface, u0, route.heading, sign_delta * delta, sign_theta * theta)
+        perturbed = _adaptive_at_nodes(surface, start, nodes)
+        separation = [surface.inner(y[:2], z[:2] - y[:2], surface.normal(y[:2], y[2:4])) for y, z in zip(base, perturbed)]
+        out[f"{sign_delta:+.0f}{sign_theta:+.0f}"] = max(abs(value) for value in separation) / LATERAL_SPEC_MM
+    return out
+
+
 def calibration_ranking(fan) -> dict:
     """First-order tolerance allocation, then derated until the exact perturbation meets the spec at every corner.
 
     Off-axis routes have no odd symmetry, so all four corners of the (delta,
     dtheta) box are evaluated. Derating scales both tolerances of a route by
     DERATE_TARGET / (worst ratio); with a positive second-order excess one step
-    suffices, and the loop repeats until every corner is within the target.
+    suffices, and the loop repeats until every corner is within the target. The
+    loop's stop condition is a convergence diagnostic, not evidence: the derated
+    corners are re-evaluated by :func:`independent_corner_ratios`.
     """
     rows = []
     for route in fan["routes"]:
@@ -2195,7 +2694,9 @@ def calibration_ranking(fan) -> dict:
                      "first_order_corner_ratios": first, "derating": factor,
                      "lateral_tolerance_mm": factor * delta1, "heading_tolerance_mrad": 1e3 * factor * theta1,
                      "flat_plate_heading_tolerance_mrad": 1e3 * LATERAL_SPEC_MM / (2 * route.length),
-                     "corner_ratios": corners, "realized_max_error_mm": LATERAL_SPEC_MM * max(corners.values())})
+                     "corner_ratios": corners, "derating_converged": max(corners.values()) <= DERATE_TARGET,
+                     "independent_corner_ratios": independent_corner_ratios(route, factor * delta1, factor * theta1),
+                     "realized_max_error_mm": LATERAL_SPEC_MM * max(corners.values())})
     ranking = [r["route"] for r in sorted(rows, key=lambda r: (-r["heading_tolerance_mrad"], r["route"]))]
     coarse = {c["route"]: c for c in fan["coarse"]}
     richardson = max(abs(r["max_abs_j_head_mm"] - coarse[r["route"]]["max_abs_j_head_mm"]) / (15.0 * r["max_abs_j_head_mm"])
@@ -2209,11 +2710,16 @@ def calibration_table() -> dict:
     return calibration_ranking(fan_study())
 
 
-@_task("T136", ("test_rankings_by_calibration_tolerance_and_focus_margin",))
+@_task("T136", ("test_rankings_by_calibration_tolerance_and_focus_margin",
+                "test_ranking_evidence_detects_a_wrong_exact_perturbation"))
 def rank_by_calibration(ctx):
     table = ctx.memo("mfg.calibration", calibration_table)
     rows = table["rows"]
-    ratios = [max(r["corner_ratios"].values()) for r in rows]
+    # Evidence comes from the independent re-evaluation of the derated corners; the derating loop's own
+    # ratios (its stop condition) are compared with it, not checked against the spec by themselves.
+    ratios = [max(r["independent_corner_ratios"].values()) for r in rows]
+    agreement = max(abs(r["independent_corner_ratios"][corner] - value) for r in rows
+                    for corner, value in r["corner_ratios"].items())
     first_ratios = [max(r["first_order_corner_ratios"].values()) for r in rows]
     f_rank = finding("Candidate coupon routes ranked by the heading calibration tolerance that keeps the exactly perturbed "
                      "route within a 0.5 mm lateral spec", "numerical",
@@ -2223,9 +2729,14 @@ def rank_by_calibration(ctx):
                       "derating": {r["route"]: r["derating"] for r in rows}},
                      {"derivation": "first order: tolerance = spec / (2 max |j|) per error source (half the spec each, "
                                     "worst case); then derated by the worst exact corner ratio",
-                      "checks": [_check("invariant", "max realized / spec over the four corners of every route's derated "
-                                        "tolerance box (exact perturbation)", max(ratios), 1.0, "le"),
-                                 _check("invariant", "min realized / spec (the allocation is not vacuous)", min(ratios), 0.5, "ge"),
+                      "checks": [_check("cross_implementation", "max over the four corners of every derated box of |corner "
+                                        "ratio from the RK4 exact perturbation - corner ratio re-evaluated with adaptive "
+                                        "Dormand-Prince geodesics from a separately coded exp-map start|", agreement, 1e-4),
+                                 _check("invariant", "max realized / spec minus one over the four corners of every route's "
+                                        "derated box, re-evaluated independently of the derating loop", max(ratios) - 1.0,
+                                        0.0, "signed_le"),
+                                 _check("invariant", "min over routes of the worst re-evaluated corner ratio (the allocation "
+                                        "is not vacuous)", min(ratios), 0.5, "ge"),
                                  _check("self_convergence", "Richardson estimate of max |j_head| (relative)",
                                         table["richardson_rel"], 1e-6, "le")]},
                      uncertainty=_u("truncation_bound", table["richardson_rel"],
@@ -2273,15 +2784,17 @@ def rank_by_calibration(ctx):
         "No observation: required tolerances are model outputs.",
         "At all four corners of each route's derated tolerance box the exactly perturbed route stays within the spec.",
         "Integrate each route with Jacobi fields, allocate tolerances to first order, evaluate the exact perturbation at "
-        "the four box corners, derate where a corner exceeds the spec, re-verify, rank.",
+        "the four box corners (RK4), derate where a corner exceeds the spec, re-evaluate every corner of the derated "
+        "boxes with adaptive Dormand-Prince geodesics from a separately coded exp-map start, rank.",
         "Ranking by heading tolerance: " + ", ".join(f"{r['route']} {r['heading_tolerance_mrad']:.3f} mrad" for r in
                                                     sorted(rows, key=lambda r: -r["heading_tolerance_mrad"]))
         + f". First-order corner ratios reach {max(first_ratios):.4f} ({', '.join(r['route'] for r in exceed)} derated by "
         + ", ".join(f"{1 - r['derating']:.2%}" for r in exceed) + ").",
-        f"Exact perturbation at the corners of the derated boxes gives realized / spec in [{min(ratios):.3f}, "
-        f"{max(ratios):.5f}] (derating aims at {DERATE_TARGET}); max |j_head| Richardson error "
-        f"{table['richardson_rel']:.1e} relative.",
+        f"Re-evaluated at the corners of the derated boxes the realized / spec lies in [{min(ratios):.3f}, "
+        f"{max(ratios):.5f}] (derating aims at {DERATE_TARGET}) and agrees with the derating loop's RK4 ratios to "
+        f"{agreement:.1e}; max |j_head| Richardson error {table['richardson_rel']:.1e} relative.",
         ["exact perturbation at all four box corners", "first-order allocation exceeding the spec (derated)",
+         "derated corners re-evaluated by a second computation (an error in the RK4 perturbation path would disagree)",
          "flat-plate reference", "mirror symmetry (T137)"],
         ["Tolerances are allocated half to lateral and half to heading error; other splits rescale every heading "
          "tolerance by the same factor and leave the first-order ranking unchanged.",
@@ -2292,29 +2805,50 @@ def rank_by_calibration(ctx):
     return {"state": "completed", "fields": fields, "findings": findings}
 
 
-def _margin_key(summary):
-    return (-(summary["focus_margin"] if not summary["margin_is_lower_bound"] else float("inf")), summary["route"])
+def focus_tiers(summaries) -> list:
+    """Routes in tiers of decreasing focus margin; routes with no focus within the horizon share one unresolved tier.
+
+    Their margins are lower bounds (horizon / L), so they are tied, not ordered;
+    the tier leads only if every lower bound exceeds every resolved margin, which
+    the task checks.
+    """
+    unresolved = sorted(s["route"] for s in summaries if s["margin_is_lower_bound"])
+    resolved = sorted((s for s in summaries if not s["margin_is_lower_bound"]), key=lambda s: (-s["focus_margin"], s["route"]))
+    return ([unresolved] if unresolved else []) + [[s["route"]] for s in resolved]
+
+
+def _tier_text(tiers, unresolved) -> str:
+    return " > ".join("{" + ", ".join(tier) + "} (no focus within the horizon: lower bounds, tied)"
+                      if set(tier) <= set(unresolved) else ", ".join(tier) for tier in tiers)
 
 
 @_task("T137", ("test_rankings_by_calibration_tolerance_and_focus_margin",))
 def rank_by_focus_margin(ctx):
     fan = ctx.memo("mfg.fan", fan_study)
     summaries, coarse = fan["summaries"], {c["route"]: c for c in fan["coarse"]}
-    ranking = [s["route"] for s in sorted(summaries, key=_margin_key)]
+    # Tiers, not a strict order: routes without a focus inside the horizon have only lower-bound margins.
+    ranking = focus_tiers(summaries)
+    unresolved = sorted(s["route"] for s in summaries if s["margin_is_lower_bound"])
+    resolved_margins = [s["focus_margin"] for s in summaries if not s["margin_is_lower_bound"]]
+    bound_lead = (min(s["focus_margin"] for s in summaries if s["margin_is_lower_bound"]) - max(resolved_margins)
+                  if unresolved and resolved_margins else 0.0)
     focus_drift = max(abs(s["nearest_focus_mm"] - coarse[s["route"]]["nearest_focus_mm"])
                       for s in summaries if s["nearest_focus_mm"] is not None)
     bound_agree = all(s["margin_is_lower_bound"] == coarse[s["route"]]["margin_is_lower_bound"] for s in summaries)
     shortest = min(summaries, key=lambda s: s["length_mm"])
-    worst = ranking[-1]
+    worst = ranking[-1][0] if len(ranking[-1]) == 1 and ranking[-1][0] not in unresolved else None
     mirror = fan["mirror"]
     plus5 = next(s for s in summaries if s["route"] == "fan+5deg")
     f_rank = finding("Candidate coupon routes ranked by focus margin (nearest focal or conjugate point / route length)",
-                     "numerical", {"ranking": ranking, "margin": {s["route"]: s["focus_margin"] for s in summaries},
+                     "numerical", {"ranking": ranking, "unresolved_tier": unresolved,
+                                   "margin": {s["route"]: s["focus_margin"] for s in summaries},
                                    "lower_bound": {s["route"]: s["margin_is_lower_bound"] for s in summaries}},
                      {"checks": [_check("self_convergence", "nearest-focus distance at h = 1 vs 2 mm (mm)", focus_drift, 1e-2),
                                  _check("exact_arithmetic", "focus-found flags agree at h = 1 and 2 mm", 0.0 if bound_agree else 1.0, 0.0),
                                  _check("invariant", "mirror route -5 deg has the +5 deg margin",
-                                        mirror["focus_margin"] - plus5["focus_margin"], 1e-9)]},
+                                        mirror["focus_margin"] - plus5["focus_margin"], 1e-9),
+                                 _check("analytic", "smallest lower-bound margin of the unresolved tier minus the largest "
+                                        "resolved margin (the tied tier leads)", bound_lead, 0.0, "signed_ge")]},
                      uncertainty=_u("truncation_bound", focus_drift / 15.0,
                                     "RK4 Richardson estimate of focus locations (mm)"),
                      tolerance={"abs": 1e-6, "rel": 1e-6})
@@ -2344,8 +2878,9 @@ def rank_by_focus_margin(ctx):
                                              extrapolated / predicted - 1.0, 2e-4),
                                       _check("analytic", "straight route is a local length minimum (L'' > 0)", predicted, 0.0, "ge")]},
                           unit="mm",
-                          uncertainty=_u("truncation_bound", abs(d[1.0] - d[2.0]) / 3.0,
-                                         "Richardson correction of the finite difference (mm)"),
+                          uncertainty=_u("reference_error", abs(extrapolated - predicted),
+                                         "residual of the Richardson-extrapolated finite difference against the index "
+                                         "form (mm)"),
                           tolerance={"abs": 1e-6, "rel": 1e-5})
     calibration = ctx.memo("mfg.calibration", calibration_table)["ranking"]
     f_conflict = finding("The calibration-tolerance ranking and the focus-margin ranking put the straight route at opposite ends",
@@ -2375,7 +2910,7 @@ def rank_by_focus_margin(ctx):
         "Focus locations and focus-found flags stable under step halving; mirror symmetry; index form = second variation.",
         "Locate focal/conjugate points by Hermite zeros, rank, compare with lengths and with the T136 ranking, and "
         "verify the Jacobi second-variation formula by Richardson finite differences of route length.",
-        f"ranking {ranking}; shortest {shortest['route']} ({shortest['length_mm']:.4f} mm) has margin "
+        f"ranking {_tier_text(ranking, unresolved)}; shortest {shortest['route']} ({shortest['length_mm']:.4f} mm) has margin "
         f"{shortest['focus_margin']:.3f} with a {shortest['nearest_focus_kind']} point at {shortest['nearest_focus_mm']:.2f} mm; "
         f"L''(0) finite difference {extrapolated:.4f} mm vs index form {predicted:.4f} mm.",
         f"Focus locations agree to {focus_drift:.1e} mm between step sizes; lower-bound margins depend on the horizon.",
@@ -2391,34 +2926,60 @@ def rank_by_focus_margin(ctx):
 DOME_TOLERANCE = {"height_mm": 0.2, "sigma_mm": 0.5}
 
 
+DOME_CENTRE_STEP_MM = 0.1
+
+
 @functools.lru_cache(maxsize=1)
 def sensitivity_study() -> dict:
-    """Geometry sensitivity of the nominal-route predictions to the dome height and width."""
+    """Geometry sensitivity of the nominal-route predictions to the dome height, width and centre.
+
+    Height and width are differenced at their declared-tolerance standard
+    uncertainties (so "central" is the tolerance-based standard uncertainty);
+    the centre (x0, y0) at 0.1 mm, by moving the start the other way. The
+    derivative is central / step (see "steps"), which the scan-conditioned terms use.
+    """
     nominal = nominal_study()
     length = nominal["length_mm"]
     steps = NOMINAL_STATIONS * 26
     stride = steps // NOMINAL_STATIONS
     standard = {"height_mm": DOME_TOLERANCE["height_mm"] / math.sqrt(3.0), "sigma_mm": DOME_TOLERANCE["sigma_mm"] / math.sqrt(3.0)}
+    differences = dict(standard, x0_mm=DOME_CENTRE_STEP_MM, y0_mm=DOME_CENTRE_STEP_MM)
 
-    def evaluate(height, sigma):
-        transfer = jacobi.transfer(geo.coupon(height, sigma), geo.STATION, 0.0, 2 * length, steps=2 * steps)
+    def evaluate(height, sigma, x0=0.0, y0=0.0):
+        start = (geo.STATION[0] - x0, geo.STATION[1] - y0)  # a dome moved by (x0, y0) is a start moved the other way
+        transfer = jacobi.transfer(geo.coupon(height, sigma), start, 0.0, 2 * length, steps=2 * steps)
         focal = transfer.focal_points()[0]
         stations = transfer.states[:steps + 1:stride]
         return {"lateral": 2.0 * stations[:, 4], "heading_end": 0.005 * stations[-1, 6], "focal": focal,
                 "j_lat_prime_focal": float(np.interp(focal, transfer.s, transfer.states[:, 5]))}
 
+    def moved(name, amount):
+        return evaluate(geo.DOME_HEIGHT + (amount if name == "height_mm" else 0.0),
+                        geo.DOME_SIGMA + (amount if name == "sigma_mm" else 0.0),
+                        amount if name == "x0_mm" else 0.0, amount if name == "y0_mm" else 0.0)
+
     center = evaluate(geo.DOME_HEIGHT, geo.DOME_SIGMA)
-    out = {"standard_uncertainty": standard, "center": {k: (v.tolist() if isinstance(v, np.ndarray) else v) for k, v in center.items()}}
-    for name, (dh, ds) in {"height_mm": (1.0, 0.0), "sigma_mm": (0.0, 1.0)}.items():
-        step = standard[name]
-        plus = evaluate(geo.DOME_HEIGHT + dh * step, geo.DOME_SIGMA + ds * step)
-        minus = evaluate(geo.DOME_HEIGHT - dh * step, geo.DOME_SIGMA - ds * step)
+    out = {"standard_uncertainty": standard, "steps": differences,
+           "center": {k: (v.tolist() if isinstance(v, np.ndarray) else v) for k, v in center.items()}}
+    for name, step in differences.items():
+        plus, minus = moved(name, step), moved(name, -step)
         out[name] = {key: {"central": ((plus[key] - minus[key]) / 2.0).tolist() if isinstance(plus[key], np.ndarray)
                                       else (plus[key] - minus[key]) / 2.0,
                            "forward": ((plus[key] - center[key])).tolist() if isinstance(plus[key], np.ndarray)
                                       else plus[key] - center[key]}
                      for key in ("lateral", "heading_end", "focal")}
     return out
+
+
+def scan_geometry(sensitivity, key, covariance):
+    """Standard uncertainty of a prediction from the scan-derived dome covariance: sqrt(g^T C g), g = central / step.
+
+    ``covariance`` is over (height, sigma, x0, y0) as returned by :func:`as_built_study`.
+    """
+    names = ("height_mm", "sigma_mm", "x0_mm", "y0_mm")
+    gradient = [np.asarray(sensitivity[name][key]["central"], dtype=float) / sensitivity["steps"][name] for name in names]
+    variance = sum(covariance[i][j] * gradient[i] * gradient[j] for i in range(4) for j in range(4))
+    return np.sqrt(np.maximum(variance, 0.0))
 
 
 def _linearity(forward, central, floor=1e-6) -> float:
@@ -2464,11 +3025,15 @@ def separation_prediction() -> dict:
         return np.hypot(u["lateral_mm"] * start["lateral"]["central"], u["heading_rad"] * start["heading"]["central"])
 
     execution, conditioning = start_term(EXECUTION), start_term(START_POSE_U)
+    # After the MFG-SCAN-01 scan (T129) the dome tolerances give way to the scan-derived dome covariance.
+    geometry_scan = scan_geometry(sensitivity, "lateral", as_built_study()["covariance_mm2"])
     return {"stations_mm": nominal["stations_mm"], "separation_mm": center.tolist(), "offset_mm": lateral,
             "geometry_mm": geometry.tolist(), "solver_mm": solver.tolist(), "execution_mm": execution.tolist(),
-            "conditioning_mm": conditioning.tolist(),
+            "conditioning_mm": conditioning.tolist(), "geometry_scan_mm": geometry_scan.tolist(),
             "open_loop_expanded_mm": (COVERAGE_K * np.sqrt(geometry ** 2 + solver ** 2 + execution ** 2)).tolist(),
             "conditioned_expanded_mm": (COVERAGE_K * np.sqrt(geometry ** 2 + solver ** 2 + conditioning ** 2)).tolist(),
+            "scan_conditioned_expanded_mm": (COVERAGE_K * np.sqrt(geometry_scan ** 2 + solver ** 2
+                                                                  + conditioning ** 2)).tolist(),
             "start_sensitivity": {k: {kk: vv.tolist() for kk, vv in v.items()} for k, v in start.items()},
             "linearity": {"geometry/height_mm": _linearity(sensitivity["height_mm"]["lateral"]["forward"],
                                                            sensitivity["height_mm"]["lateral"]["central"]),
@@ -2534,7 +3099,27 @@ def _schema_fixture():
     return record, {"fixture.txt": raw}
 
 
-@_task("T138", ("test_predicted_separation_has_no_measured_counterpart",))
+def pair_predictions(plate, cylinder) -> dict:
+    """Predicted marker-pair quantities for the pair comparator (manufacturing_records.compare_pair_distances).
+
+    Plate: the chord of every T126 pair equals its geodesic distance; the declared
+    flatness enters at second order (T140), so U_p = 0. Cylinder: the T127
+    chord-geodesic gaps with U_p = k |d gap / dR| u_R for the declared radius
+    tolerance (u_R = 0.1 / sqrt(3) mm).
+    """
+    u_radius = 0.1 / math.sqrt(3.0)
+    return {"MFG-FLAT-PLATE-01": {"pairs": ["-".join(r["pair"]) for r in plate["pairs"]],
+                                  "values_mm": [r["geodesic_mm"] for r in plate["pairs"]],
+                                  "expanded_uncertainty_mm": [0.0] * len(plate["pairs"])},
+            "MFG-CYLINDER-01": {"pairs": [r["pair"] for r in cylinder["pairs"]],
+                                "values_mm": [r["gap_mm"] for r in cylinder["pairs"]],
+                                "expanded_uncertainty_mm": [
+                                    COVERAGE_K * abs(gap_radius_derivative(r["dphi_rad"], r["dz_mm"], geo.CYLINDER_RADIUS))
+                                    * u_radius for r in cylinder["pairs"]]}}
+
+
+@_task("T138", ("test_predicted_separation_has_no_measured_counterpart",
+                "test_comparators_compute_normalized_errors_for_a_measurement_record"))
 def predicted_vs_measured(ctx):
     prediction = ctx.memo("mfg.prediction", separation_prediction)
     scenario = ctx.memo("mfg.start-scenario", start_error_scenario)
@@ -2542,9 +3127,11 @@ def predicted_vs_measured(ctx):
     open_loop, conditioned = np.array(prediction["open_loop_expanded_mm"]), np.array(prediction["conditioned_expanded_mm"])
     predicted = {"stations_mm": prediction["stations_mm"], "separation_mm": prediction["separation_mm"],
                  "expanded_uncertainty_mm": prediction["open_loop_expanded_mm"], "offset_mm": prediction["offset_mm"]}
+    scan_conditioned = np.array(prediction["scan_conditioned_expanded_mm"])
     f_pred = finding("Predicted separation of the 2 mm offset route at the MFG-COUPON-01 stations", "numerical",
                      {"separation_mm": prediction["separation_mm"], "open_loop_expanded_mm": prediction["open_loop_expanded_mm"],
-                      "conditioned_expanded_mm": prediction["conditioned_expanded_mm"]},
+                      "conditioned_expanded_mm": prediction["conditioned_expanded_mm"],
+                      "scan_conditioned_expanded_mm": prediction["scan_conditioned_expanded_mm"]},
                      {"checks": [_check("self_convergence", "Richardson solver error estimate, max over stations (mm)",
                                         max(prediction["solver_mm"]), 1e-6)]
                       + [_check("self_convergence", f"sensitivity linearity max |forward / central - 1|, {name}", value, 0.1)
@@ -2586,10 +3173,25 @@ def predicted_vs_measured(ctx):
                                                                              "raw_bytes": {"fixture.txt": b"altered"},
                                                                              "values_mm": predicted["separation_mm"],
                                                                              "expanded_uncertainty_mm": [0.06] * 9})}
+    # The pair comparator serves the plate (chord = geodesic per marker pair) and the cylinder (chord-geodesic
+    # gap per pair); it refuses in the same way until a measurement record exists.
+    pairs = pair_predictions(ctx.memo("mfg.plate", plate_study), ctx.memo("mfg.cylinder", cylinder_study))
+    plate_fixture = {"record": fixture, "raw_bytes": fixture_raw, "labels": pairs["MFG-FLAT-PLATE-01"]["pairs"],
+                     "values_mm": pairs["MFG-FLAT-PLATE-01"]["values_mm"],
+                     "expanded_uncertainty_mm": COVERAGE_K * PAIR_U}
+    codes.update({"plate": rec.refusal_code(rec.compare_pair_distances, pairs["MFG-FLAT-PLATE-01"], None),
+                  "cylinder": rec.refusal_code(rec.compare_pair_distances, pairs["MFG-CYLINDER-01"], None),
+                  "plate fixture": rec.refusal_code(rec.compare_pair_distances, pairs["MFG-FLAT-PLATE-01"], plate_fixture)})
     refusals = [_refusal("no measured separation exists", "measurement_absent", codes["absent"]),
                 _refusal("schema fixture offered as a measurement", "fixture_is_not_measurement", codes["fixture"]),
                 _refusal("schema fixture relabelled as a measurement", "fixture_is_not_measurement", codes["relabelled"]),
-                _refusal("measurement record whose raw bytes do not match", "raw_digest_mismatch", codes["digest"])]
+                _refusal("measurement record whose raw bytes do not match", "raw_digest_mismatch", codes["digest"]),
+                _refusal("no measured plate marker-pair distance exists (pair comparator)", "measurement_absent",
+                         codes["plate"]),
+                _refusal("no measured cylinder chord-geodesic gap exists (pair comparator)", "measurement_absent",
+                         codes["cylinder"]),
+                _refusal("schema fixture offered as plate marker-pair measurements", "fixture_is_not_measurement",
+                         codes["plate fixture"])]
     f_refuse = finding("The comparison refuses to run without acquired hardware evidence", "computational_pipeline",
                        sum(check["passed"] for check in refusals), {"checks": refusals},
                        unit="refusals", uncertainty=EXACT, tolerance={"abs": 0, "rel": 0})
@@ -2598,6 +3200,7 @@ def predicted_vs_measured(ctx):
     ctx.artifact_json("predicted-separation.json", _r(dict(prediction, protocol="MFG-COUPON-01", start_error_scenario=scenario,
                                                            execution_declared=EXECUTION, start_pose_uncertainty=START_POSE_U,
                                                            measured="none: no hardware record exists")))
+    ctx.artifact_json("pair-predictions.json", _r(dict(pairs, measured="none: no hardware record exists")))
     fields = _fields(
         "The predicted separation of the 2 mm offset tape (and its crossing near s = 154 mm) can be compared with "
         "measurement by the normalized error E_n, provided the prediction uncertainty includes the realized start pose "
@@ -2606,41 +3209,58 @@ def predicted_vs_measured(ctx):
         "E_n = |m - p| / sqrt(U_m^2 + U_p^2), U = 2 u. Open loop: u_p^2 = u_geometry^2 + u_solver^2 + u_start^2 with "
         "u_start from the declared jig error (0.05 mm, 0.5 mrad) times central-difference start sensitivities of the "
         "exactly re-integrated offset route. Conditioned: p is re-integrated from the CMM start pose and u_start uses "
-        "its estimate uncertainty (offset sqrt(2) u_cmm, heading 2 u_cmm / 20 mm).",
+        "its estimate uncertainty (offset sqrt(2) u_cmm, heading 2 u_cmm / 20 mm). Scan-conditioned: u_geometry^2 = "
+        "g^T C g with g the dome sensitivities (height, width, centre) and C the MFG-SCAN-01 covariance (T129) instead of "
+        "the declared tolerances. Pair comparator: E_n per plate marker pair (chord = geodesic) or cylinder pair "
+        "(chord-geodesic gap, U_p = 2 |d gap / dR| u_R).",
         ["Nominal route and offset stations from T128 (k L / 8)", "Declared dome tolerances height +/- 0.2 mm, sigma +/- 0.5 mm",
+         "Scan-derived dome covariance of MFG-SCAN-01 (T129, synthetic verification; declared scanner terms)",
          "Declared relative start-pose error of the offset tape 0.05 mm and 0.5 mrad (1 sigma); CMM 0.002 mm",
-         "No measured separation (none exists)"],
+         "Plate and cylinder marker-pair predictions (T126, T127); declared radius tolerance +/- 0.1 mm",
+         "No measured separation, distance or gap (none exists)"],
         "No observation: the measurement slot of MFG-COUPON-01 is empty. The planned observation is photogrammetry of "
         "coded targets on the tape centrelines at the nine stations plus CMM probing of the start pose.",
-        "The comparator refuses absent measurements, schema fixtures (also when relabelled) and digest mismatches; "
+        "The comparators refuse absent measurements, schema fixtures (also when relabelled) and digest mismatches; "
         "start-pose and geometry sensitivities are linear over their declared steps.",
-        "Compute the prediction and its uncertainty components; evaluate a correct model against a tape realized 0.1 mm "
-        "off its nominal offset with and without the start-pose term, and against the prediction re-integrated from a "
-        "CMM start-pose estimate at the four 2-sigma corners; attempt the comparison with no measurement, with "
-        "a schema fixture (as is and relabelled) and with a tampered record, and record the refusals.",
+        "Compute the prediction and its uncertainty components (open loop, conditioned on the start pose, and also on "
+        "the as-built scan); evaluate a correct model against a tape realized 0.1 mm off its nominal offset with and "
+        "without the start-pose term, and against the prediction re-integrated from a CMM start-pose estimate at the "
+        "four 2-sigma corners; attempt the separation and pair comparisons with no measurement, with a schema fixture "
+        "(as is and relabelled) and with a tampered record, and record the refusals.",
         "Predicted separation (mm) at stations: " + ", ".join(f"{v:.3f}" for v in prediction["separation_mm"])
-        + f"; k = 2 uncertainty up to {open_loop.max():.3f} mm open loop and {conditioned.max():.3f} mm conditioned on the "
-        f"measured start pose; a 0.1 mm start error gives max E_n {en_bare:.2f} without the start-pose term, "
+        + f"; k = 2 uncertainty up to {open_loop.max():.3f} mm open loop, {conditioned.max():.3f} mm conditioned on the "
+        f"measured start pose and {scan_conditioned.max():.3f} mm conditioned also on the as-built scan; a 0.1 mm start "
+        f"error gives max E_n {en_bare:.2f} without the start-pose term, "
         f"{en_open:.2f} with it (open loop) and {en_cond:.2f} when the prediction is re-integrated from a CMM start-pose "
         f"estimate 2 sigma off in offset and heading (conditioned U_p). No measured value exists.",
-        "Prediction uncertainty only (geometry dominates beyond mid-route; start pose dominates near the start in the "
-        "open-loop case); measurement uncertainty is declared until the protocol is executed.",
+        "Prediction uncertainty only (under the declared tolerances geometry dominates beyond mid-route; start pose "
+        "dominates near the start in the open-loop case); the scan-conditioned uncertainty holds only if the as-built "
+        "coupon passes the MFG-SCAN-01 model test; measurement uncertainty is declared until the protocol is executed.",
         ["absent measurement (refused)", "schema fixture as measurement, also relabelled (refused)",
-         "raw digest mismatch (refused)", "start-pose error outside the prediction uncertainty",
-         "linearity of geometry and start-pose sensitivities"],
+         "raw digest mismatch (refused)", "plate and cylinder pair comparisons without a measurement (refused)",
+         "start-pose error outside the prediction uncertainty", "linearity of geometry and start-pose sensitivities"],
         ["The physical comparison has not been performed; its outcome is unknown.",
          "The tapes are assumed to follow geodesics after their measured start; in-plane tape bending is not budgeted.",
-         "A registered reader that parses separations from raw photogrammetry files does not exist yet."],
-        "Execute MFG-COUPON-01 on hardware, retain it with a T139 measurement record, add a raw-file reader, and rerun T138.")
+         "A registered reader that parses separations or marker coordinates from raw photogrammetry files does not "
+         "exist yet."],
+        "Execute MFG-SCAN-01 and MFG-COUPON-01 on hardware, retain them with T139 measurement records, add a raw-file "
+        "reader, and rerun T138 (the plate and cylinder protocols use its pair comparator).")
     return {"state": "partial", "fields": fields, "findings": [f_pred, f_start, f_refuse, f_measured,
                                                               _not_measured(EXECUTION_CLAIM, "calibration")]}
 
 
 # T139 retention of raw measurements -------------------------------------------------------------
-def _rank_deficient_covariance():
-    """A valid 6 x 6 covariance of rank 3 at robot lever arms (entries of order 1e2 mm^2)."""
-    jac = met.rng(SEED + 7).normal(0.0, 1000.0, (6, 3))
-    return jac @ np.diag([1e-4] * 3) @ jac.T
+# Eigenvalues (mm^2) of the scale test: rank 3 at a 1e6 mm^2 scale, with an explicit -1e-8 mm^2
+# eigenvalue. Relative to the largest that is 1e-14, a few times the eigensolver's rounding
+# level (6 eps max|lambda| ~ 1.3e-9 mm^2), yet four orders above an absolute 1e-12 threshold.
+SCALE_TEST_EIGENVALUES = (1e6, 2e5, 5e4, 0.0, 0.0, -1e-8)
+ABSOLUTE_THRESHOLD = 1e-12
+
+
+def _rank_deficient_covariance(negative=SCALE_TEST_EIGENVALUES[-1]):
+    """A 6 x 6 rank-3 covariance at a 1e6 mm^2 scale with one small negative eigenvalue ``negative``."""
+    basis, _ = np.linalg.qr(met.rng(SEED + 7).normal(0.0, 1.0, (6, 6)))
+    return basis @ np.diag([*SCALE_TEST_EIGENVALUES[:-1], negative]) @ basis.T
 
 
 @_task("T139", ("test_retention_schema_refusals_and_fixture_boundary",))
@@ -2685,17 +3305,27 @@ def retention_schema(ctx):
                        uncertainty=EXACT, tolerance={"abs": 0, "rel": 0})
     covariance = _rank_deficient_covariance()
     lever = mutate(lambda r: r["frame_chain"][0].update(covariance=covariance.tolist()))
-    eigenvalues = np.linalg.eigvalsh(covariance)
-    f_scale = finding("The retention schema keeps a valid rank-deficient frame covariance at 1e2 mm^2 scale",
+    eigenvalues = np.linalg.eigvalsh(0.5 * (covariance + covariance.T))
+    # What an absolute rule would see: the asymmetry and the negative eigenvalue against 1e-12 mm^2.
+    residue = max(float(np.max(np.abs(covariance - covariance.T))), -float(eigenvalues[0]))
+    invalid = mutate(lambda r: r["frame_chain"][0].update(
+        covariance=_rank_deficient_covariance(-1e-3 * SCALE_TEST_EIGENVALUES[0]).tolist()))
+    f_scale = finding("The retention schema keeps a rank-deficient frame covariance whose rounding-level negative "
+                      "eigenvalue an absolute threshold would refuse, and still refuses a negative one at the same scale",
                       "computational_pipeline", {"min_eigenvalue_mm2": float(eigenvalues[0]),
-                                                 "max_entry_mm2": float(np.max(np.abs(covariance)))},
-                      {"checks": [_refusal("rank-3 PSD covariance with rounding-level negative eigenvalues", "none",
-                                           rec.refusal_code(rec.validate_retention, lever, raw)),
-                                  _check("analytic", "rounding-level negative eigenvalue relative to the largest",
-                                         abs(min(float(eigenvalues[0]), 0.0)) / float(eigenvalues[-1]), 1e-12, "le")]},
-                      unit="mm^2", uncertainty=_u("roundoff", float(abs(min(eigenvalues[0], 0.0))),
-                                                  "rounding of the rank-deficient product (mm^2)"),
-                      tolerance={"abs": 1e-9, "rel": 1e-6})
+                                                 "max_eigenvalue_mm2": float(eigenvalues[-1])},
+                      {"checks": [_refusal("rank-3 covariance at a 1e6 mm^2 scale with a -1e-8 mm^2 eigenvalue (kept by the "
+                                           "scale-aware rule)", "none", rec.refusal_code(rec.validate_retention, lever, raw)),
+                                  _check("analytic", "rounding residue (max of asymmetry and -min eigenvalue) over an absolute "
+                                         "1e-12 mm^2 threshold: an absolute rule would refuse this covariance",
+                                         residue / ABSOLUTE_THRESHOLD, 1.0, "ge"),
+                                  _check("analytic", "negative eigenvalue relative to the largest (rounding level)",
+                                         abs(min(float(eigenvalues[0]), 0.0)) / float(eigenvalues[-1]), 1e-12, "le"),
+                                  _refusal("same scale with an eigenvalue of -1e-3 times the largest", "frame_covariance_invalid",
+                                           rec.refusal_code(rec.validate_retention, invalid, raw))]},
+                      unit="mm^2", uncertainty=_u("roundoff", 6.0 * float(np.finfo(float).eps) * float(eigenvalues[-1]),
+                                                  "eigensolver rounding, 6 eps max|lambda| (mm^2)"),
+                      tolerance={"abs": 5e-9, "rel": 1e-6})
     reordered = {key: fixture[key] for key in reversed(list(fixture))}
     altered = deepcopy(fixture)
     altered["raw"][0]["sha256"] = "f" * 64
@@ -2750,25 +3380,35 @@ def retention_schema(ctx):
         "identity = SHA-256 of canonical JSON; to_acquisition maps a valid measurement record to device / raw_sha256 "
         "(SHA-256 of the raw manifest) / acquired_at / calibration.",
         ["Schema fixture with explicit 'SCHEMA FIXTURE - NOT A MEASUREMENT' raw bytes (not retained)",
-         f"{len(cases)} refused mutations and one valid rank-deficient covariance"],
+         f"{len(cases)} refused mutations, one rank-deficient covariance at a 1e6 mm^2 scale with a -1e-8 mm^2 "
+         "eigenvalue and one with a negative eigenvalue of -1e-3 of its largest",
+         "No acquisition: nothing exists to retain"],
         "No observation: no instrument produced data. The validators read only the declared schema fixture and its "
         "mutations.",
-        "Valid records validate; each mutation is refused with its code; a record of kind schema_fixture, or one "
-        "carrying the fixture's bytes, serial or zero calibration digest, is refused as hardware evidence.",
-        f"Validate the fixture, mutate it {len(cases)} ways, check a rank-deficient covariance at lever-arm scale, "
-        "check identity invariance and the fixture/measurement boundary.",
+        "Valid records validate; each mutation is refused with its code; covariance tolerances scale with the matrix; "
+        "a record of kind schema_fixture, or one carrying the fixture's bytes, serial or zero calibration digest, is "
+        "refused as hardware evidence.",
+        f"Partial: only the retention mechanism was exercised. Validate the fixture, mutate it {len(cases)} ways, keep a "
+        "rank-deficient covariance that an absolute threshold would refuse and refuse a negative one at the same scale, "
+        "check identity invariance and the fixture/measurement boundary. Not performed: retaining raw measurements, "
+        "calibration and frame metadata, because no acquisition exists.",
         f"{matched}/{len(cases)} mutations refused with the expected code; rank-deficient covariance kept (min eigenvalue "
-        f"{eigenvalues[0]:.1e} mm^2 against a largest of {eigenvalues[-1]:.1e} mm^2); retained real measurements: 0.",
+        f"{eigenvalues[0]:.1e} mm^2 against a largest of {eigenvalues[-1]:.1e} mm^2, {residue / ABSOLUTE_THRESHOLD:.0e} "
+        f"times an absolute 1e-12 mm^2 threshold); retained real measurements: 0.",
         "Exact: the outcomes are booleans and refusal codes of deterministic validators; the only floating-point "
         "quantity is the rounding-level eigenvalue of the rank-deficient covariance.",
         ["digest mismatch", "calibration digest and validity window", "broken frame chain",
-         "invalid rotation or covariance", "scale of covariance tolerances", "clock without timezone",
-         "fixture promoted or relabelled as a measurement", "measurement without raw bytes"],
-        ["Media-type-specific readers (images, point clouds) are not defined; digests cover bytes, not content semantics.",
+         "invalid rotation or covariance",
+         "scale of covariance tolerances (kept above an absolute threshold, refused when negative at scale)",
+         "clock without timezone", "fixture promoted or relabelled as a measurement", "measurement without raw bytes"],
+        ["No acquisition exists, so no raw measurement, calibration record or frame metadata has been retained: the task "
+         "stays partial until the first protocol is executed.",
+         "Media-type-specific readers (images, point clouds) are not defined; digests cover bytes, not content semantics.",
          "The validators cannot tell whether raw bytes came from an instrument; the runner also requires a hardware "
          "probe in the task that cites them."],
-        "Retain the first MFG-FLAT-PLATE-01 acquisition with this schema, then rerun T138.")
-    return {"state": "completed", "fields": fields, "findings": findings}
+        "Retain the first MFG-FLAT-PLATE-01 acquisition with this schema, then rerun T138, whose pair comparator "
+        "(compare_pair_distances) compares its marker-pair distances.")
+    return {"state": "partial", "fields": fields, "findings": findings}
 
 
 # T140 uncertainty budget -----------------------------------------------------------------------
@@ -2815,21 +3455,31 @@ def budget_study() -> dict:
             "value": heading_end, "unit": "mm",
             "components": {"instrument": u_pair, "geometry": geometry_q2,
                            "execution": _start_term(u, j_lat_end, j_head_end), "solver": solver_q2}}
-    # Q3: coupon separation at the route end for the 2 mm lateral offset (the T138 quantity).
-    budget["coupon separation at L, 2 mm lateral offset (conditioned on the measured start pose)"] = {
-        "value": prediction["separation_mm"][-1], "unit": "mm",
-        "components": {"instrument": u_pair, "geometry": prediction["geometry_mm"][-1],
-                       "execution": prediction["conditioning_mm"][-1], "solver": prediction["solver_mm"][-1]}}
+    # Q3: coupon separation at the route end for the 2 mm lateral offset (the T138 quantity): open loop,
+    # conditioned on the measured start pose, and conditioned also on the as-built scan (T129).
+    scan_covariance = as_built_study()["covariance_mm2"]
+    for label, execution, geometry in (
+            ("open-loop start", prediction["execution_mm"][-1], prediction["geometry_mm"][-1]),
+            ("conditioned on the measured start pose", prediction["conditioning_mm"][-1], prediction["geometry_mm"][-1]),
+            ("conditioned on the start pose and the as-built scan", prediction["conditioning_mm"][-1],
+             prediction["geometry_scan_mm"][-1])):
+        budget[f"coupon separation at L, 2 mm lateral offset ({label})"] = {
+            "value": prediction["separation_mm"][-1], "unit": "mm",
+            "components": {"instrument": u_pair, "geometry": geometry, "execution": execution,
+                           "solver": prediction["solver_mm"][-1]}}
     # Q4: arclength of the first focal point; a start heading error moves the zero of
     # delta j_lat + dtheta j_head by dtheta j_head(s_f) / (delta |j_lat'(s_f)|).
     slope = abs(2.0 * sensitivity["center"]["j_lat_prime_focal"])
     j_head_focal = float(np.interp(nominal["focal_mm"], nominal["profile_s"], nominal["profile_j_head"]))
     geometry_q4 = math.hypot(sensitivity["height_mm"]["focal"]["central"], sensitivity["sigma_mm"]["focal"]["central"])
-    budget["coupon focal distance (conditioned on the measured start pose)"] = {
-        "value": nominal["focal_mm"], "unit": "mm",
-        "components": {"instrument": u_pair / slope, "geometry": geometry_q4,
-                       "execution": START_POSE_U["heading_rad"] * abs(j_head_focal) / slope,
-                       "solver": abs(nominal["focal_mm"] - nominal["focal_h2_mm"]) / 15.0}}
+    for label, geometry in (("conditioned on the measured start pose", geometry_q4),
+                            ("conditioned on the start pose and the as-built scan",
+                             float(scan_geometry(sensitivity, "focal", scan_covariance)))):
+        budget[f"coupon focal distance ({label})"] = {
+            "value": nominal["focal_mm"], "unit": "mm",
+            "components": {"instrument": u_pair / slope, "geometry": geometry,
+                           "execution": START_POSE_U["heading_rad"] * abs(j_head_focal) / slope,
+                           "solver": abs(nominal["focal_mm"] - nominal["focal_h2_mm"]) / 15.0}}
     # Q5: flat-plate control, heading-offset separation at 240 mm. Geometry: the declared flatness as a
     # bump; its effect is second order in the deviation, so the difference from the plane is used.
     plate_value = plate["heading_separation_mm"][-1]
@@ -2882,7 +3532,8 @@ def uncertainty_budget(ctx):
                                       "forward vs central geometry sensitivity (relative)"),
                        tolerance={"abs": 1e-7, "rel": 1e-5})
     focal = budget["coupon focal distance (conditioned on the measured start pose)"]
-    f_counter = finding("The coupon focal-distance prediction is geometry-limited, not instrument-limited", "numerical",
+    f_counter = finding("The coupon focal-distance prediction is geometry-limited, not instrument-limited, under the "
+                        "declared dome tolerances, instrument and start-pose uncertainties", "numerical",
                         focal["dominant_share"],
                         {"checks": [_check("analytic", "geometry share of the focal-distance variance minus one half", focal["dominant_share"] - 0.5, 1e-9, "ge"),
                                     _check("exact_arithmetic", "dominant term is geometry", 0.0 if focal["dominant"] == "geometry" else 1.0, 0.0)]},
@@ -2896,7 +3547,8 @@ def uncertainty_budget(ctx):
     open_q2 = budget["coupon separation at L, 5 mrad heading offset (open-loop start)"]
     cond_q2 = budget["coupon separation at L, 5 mrad heading offset (conditioned on the measured start pose)"]
     f_start = finding("On the coupon, the heading-offset separation at the route end is limited by the start pose open "
-                      "loop, and a CMM start-pose measurement removes that limit", "numerical",
+                      "loop, and a CMM start-pose measurement removes that limit, under the declared instrument and "
+                      "start-pose uncertainties", "numerical",
                       {"open_loop_share": open_q2["dominant_share"], "open_loop_dominant": open_q2["dominant"],
                        "conditioned_execution_share": cond_q2["components"]["execution"] ** 2 / cond_q2["combined_standard_mm"] ** 2},
                       {"checks": [_check("exact_arithmetic", "open-loop dominant term is execution (start pose)",
@@ -2906,6 +3558,27 @@ def uncertainty_budget(ctx):
                       uncertainty=_u("reference_error", max(study["linearity"].values()),
                                      "forward vs central geometry sensitivity (relative)"),
                       tolerance={"abs": 1e-9, "rel": 1e-6})
+    scan_rows = {"focal distance": ("coupon focal distance (conditioned on the measured start pose)",
+                                    "coupon focal distance (conditioned on the start pose and the as-built scan)"),
+                 "2 mm lateral separation at L": (
+                     "coupon separation at L, 2 mm lateral offset (conditioned on the measured start pose)",
+                     "coupon separation at L, 2 mm lateral offset (conditioned on the start pose and the as-built scan)")}
+    reduction = {quantity: budget[scanned]["components"]["geometry"] / budget[declared]["components"]["geometry"]
+                 for quantity, (declared, scanned) in scan_rows.items()}
+    f_scan = finding("Conditioning on the as-built scan (T129) shrinks the geometry term of the coupon focal distance and "
+                     "of the 2 mm lateral separation at L at least tenfold, under the declared scanner uncertainties and "
+                     "the Gaussian dome model", "numerical",
+                     {quantity: {"geometry_declared_tolerances_mm": budget[declared]["components"]["geometry"],
+                                 "geometry_as_built_scan_mm": budget[scanned]["components"]["geometry"],
+                                 "limiting_after_scan": budget[scanned]["dominant"]}
+                      for quantity, (declared, scanned) in scan_rows.items()},
+                     {"checks": [_check("analytic", f"geometry term with the scan-derived dome covariance / with the declared "
+                                        f"tolerances, {quantity}", ratio, 0.1, "le")
+                                 for quantity, ratio in sorted(reduction.items())]},
+                     unit="mm",
+                     uncertainty=_u("reference_error", max(study["linearity"].values()),
+                                    "forward vs central geometry sensitivity (relative); the scan covariance is first order"),
+                     tolerance={"abs": 1e-9, "rel": 1e-6})
     control = budget["coarse-solver control (6 RK4 steps)"]
     f_control = finding("The classification detects a solver-limited prediction in the coarse-solver control", "numerical",
                         control["dominant"],
@@ -2920,38 +3593,47 @@ def uncertainty_budget(ctx):
         lines.append(f"| {name} | {e['value']:.4g} {e['unit']} | {c['instrument']:.2e} | {c['geometry']:.2e} | "
                      f"{c['execution']:.2e} | {c['solver']:.2e} | {e['dominant']} ({100 * e['dominant_share']:.0f}%) |")
     ctx.artifact_text("uncertainty-budget.md", "\n".join(lines) + "\n")
-    findings = [f_budget, f_counter, f_start, f_control,
+    findings = [f_budget, f_counter, f_start, f_scan, f_control,
                 _not_measured("The declared instrument uncertainties are the uncertainties of the instruments used",
                               "calibration"),
                 _not_measured(EXECUTION_CLAIM, "calibration"),
                 _not_measured("The budget contains every significant physical error source (thermal, fixturing, tape "
                               "bending along the route, target centring)")]
     fields = _fields(
-        "Each predicted quantity has a limiting uncertainty term; extrinsic chord-geodesic gaps are instrument-limited, "
-        "path separations open loop are limited by the realized start pose (a CMM start-pose measurement removes that "
-        "limit on the coupon but not over the 240 mm plate route, where the 20 mm heading baseline still dominates), and "
-        "the location of a Jacobi focus is geometry-limited because it depends sensitively on the dome shape.",
+        "Under the declared instrument, start-pose and dome uncertainties each predicted quantity has a limiting "
+        "uncertainty term: extrinsic chord-geodesic gaps are instrument-limited; heading-offset separations and the "
+        "plate separation are limited open loop by the realized start pose (a CMM start-pose measurement removes that "
+        "limit on the coupon but not over the 240 mm plate route, where the 20 mm heading baseline still dominates); the "
+        "2 mm lateral-offset separation at the coupon route end and the location of a Jacobi focus are geometry-limited "
+        "under the declared dome tolerances, because they depend sensitively on the dome shape; conditioning on an "
+        "as-built scan (T129) replaces those tolerances by the scan-derived dome covariance and shrinks the geometry term.",
         "u_c^2 = u_instrument^2 + u_geometry^2 + u_execution^2 + u_solver^2; u_geometry from central differences over "
-        "rectangular tolerances (u = a / sqrt 3); u_execution = start-pose uncertainty times the Jacobi fields "
+        "rectangular tolerances (u = a / sqrt 3), or g^T C g with the MFG-SCAN-01 dome covariance C over height, width "
+        "and centre when conditioned on the scan; u_execution = start-pose uncertainty times the Jacobi fields "
         "(declared jig error open loop, CMM estimate when conditioned); u_solver = |Q(h) - Q(2h)| / 15 for a reported "
         "h-solution and (16/15) |Q(h) - Q(2h)| when the reported value is the coarse one (the 6-step control); "
         "u_instrument(focal) = u_pair / |d sep / ds|; limiting term = variance share > 50%, otherwise mixed.",
         ["Declared camera pair uncertainty sqrt(2) x 0.02 mm", "Declared tolerances: cylinder radius +/- 0.1 mm, dome height "
          "+/- 0.2 mm, dome sigma +/- 0.5 mm, plate flatness 0.05 mm",
          "Declared start-pose error 0.05 mm / 0.5 mrad (open loop); CMM start-pose estimate 0.0028 mm / 0.2 mrad",
+         "Scan-derived dome covariance of MFG-SCAN-01 (T129: synthetic verification, declared scanner noise, scale and "
+         "registration)",
          "Predictions from T126, T127, T128 and T138"],
         "No observation: declared instrument noise, declared start-pose errors and model sensitivities only.",
         "Forward and central sensitivities agree (linear regime); the Richardson estimate brackets the actual solver error.",
-        "Compute each component, classify, compare open-loop and conditioned start poses, and validate the solver estimate "
-        "against a 256-step reference in a deliberately coarse control.",
+        "Compute each component, classify, compare open-loop and conditioned start poses and the declared-tolerance and "
+        "scan-derived geometry terms, and validate the solver estimate against a 256-step reference in a deliberately "
+        "coarse control.",
         "; ".join(f"{name} = {e['value']:.4g} mm, u (instrument, geometry, execution, solver) = ("
                   f"{e['components']['instrument']:.2g}, {e['components']['geometry']:.2g}, "
                   f"{e['components']['execution']:.2g}, {e['components']['solver']:.2g}) mm -> {e['dominant']}"
                   for name, e in budget.items()) + ".",
         "Components are standard uncertainties; classification uses variance shares.",
         ["nonlinear geometry sensitivity (lateral, heading, focal)", "Richardson estimate validity",
-         "solver-limited control", "start pose open loop vs conditioned", "plate flatness as a second-order geometry term"],
+         "solver-limited control", "start pose open loop vs conditioned (heading and lateral offsets)",
+         "declared dome tolerances vs scan-derived dome covariance", "plate flatness as a second-order geometry term"],
         ["Instrument and start-pose uncertainties are declared; the real budget needs calibration records (T130/T139).",
+         "The scan-derived geometry terms hold only if the as-built coupon passes the MFG-SCAN-01 model test.",
          "In-plane tape bending along the route, thermal drift and target centring are not budgeted."],
         "T141: keep production acceptance outside the system and record it as not performed.")
     return {"state": "completed", "fields": fields, "findings": findings}

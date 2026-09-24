@@ -1,11 +1,13 @@
 """Metrology models for the manufacturing use cases: sampling, registration, artifacts, frames, Gage R&R.
 
 Scope: closed-form design rules for resolving curvature from sampled profiles,
-rigid registration (Kabsch) and its residual statistics, least-squares sphere
-and step-gauge fits with linearized covariance, 3-2-1 datum frames, first-order
-covariance propagation along a chain of rigid frames, and the ANOVA method for
-a balanced crossed Gage R&R study. Each is exercised on seeded synthetic data
-with known truth.
+rigid registration (Kabsch) and its residual statistics, a least-squares fit of
+the as-built dome (height, width, centre, base plane) with its linearized
+covariance, least-squares sphere and step-gauge fits with linearized
+covariance, 3-2-1 datum frames, first-order and sigma-point covariance
+propagation along a chain of rigid frames, and the ANOVA method for a balanced
+crossed Gage R&R study. Each is exercised on seeded synthetic data with known
+truth.
 
 Non-claims: instrument noise figures are declared inputs, not measured
 properties of any device. Recovering known synthetic components shows that the
@@ -173,6 +175,34 @@ def point_covariance(pose, covariance, point) -> np.ndarray:
     return jac @ covariance @ jac.T
 
 
+def sigma_point_chain_covariance(links, point) -> np.ndarray:
+    """Point covariance from symmetric sigma points pushed through the exact chain of left-perturbed links.
+
+    Every link covariance is factored by its eigenvectors; the 2n points
+    +-sqrt(n) sqrt(lambda) v (n positive eigenvalues over all links, weights
+    1 / 2n) reproduce the first-order covariance exactly for a linear map, so
+    their difference from :func:`point_covariance` comes from the nonlinearity
+    of the SE(3) products. The n scaling overweights fourth-order terms, which
+    makes the difference a conservative linearization-error estimate.
+    """
+    directions = []
+    for index, (_, covariance) in enumerate(links):
+        covariance = np.asarray(covariance, dtype=float)
+        values, vectors = np.linalg.eigh(0.5 * (covariance + covariance.T))
+        directions += [(index, math.sqrt(float(value)) * vectors[:, k]) for k, value in enumerate(values) if value > 0.0]
+    scale = math.sqrt(len(directions))
+    homogeneous = np.append(np.asarray(point, dtype=float), 1.0)
+    outputs = []
+    for index, direction in directions:
+        for sign in (1.0, -1.0):
+            pose = np.eye(4)
+            for k, (link_pose, _) in enumerate(links):
+                pose = pose @ (exp_se3(sign * scale * direction) @ link_pose if k == index else link_pose)
+            outputs.append((pose @ homogeneous)[:3])
+    centred = np.array(outputs) - np.mean(outputs, axis=0)
+    return centred.T @ centred / (2 * len(directions))
+
+
 def sample_chain_point(links, point, generator, count) -> np.ndarray:
     """Monte Carlo: perturb every link by exp(xi), xi ~ N(0, C), and transform the point."""
     factors = [np.linalg.cholesky(np.asarray(c) + 1e-30 * np.eye(6)) for _, c in links]
@@ -256,6 +286,50 @@ def step_gauge_fit(nominal, measured) -> tuple[np.ndarray, np.ndarray]:
     design = np.column_stack([nominal, np.ones_like(nominal)])
     solution, *_ = np.linalg.lstsq(design, np.asarray(measured, dtype=float) - nominal, rcond=None)
     return solution, np.linalg.inv(design.T @ design)
+
+
+# As-built surface identification ---------------------------------------------
+DOME_PARAMETERS = ("height_mm", "sigma_mm", "x0_mm", "y0_mm", "z0_mm", "tilt_x", "tilt_y")
+
+
+def dome_surface(params, x, y) -> np.ndarray:
+    """As-built dome z = z0 + a_x x + a_y y + h exp(-((x - x0)^2 + (y - y0)^2) / (2 sigma^2)).
+
+    ``params`` follow :data:`DOME_PARAMETERS`; the base plane absorbs the
+    registration tilt and offset of the scan.
+    """
+    h, sigma, x0, y0, z0, ax, ay = (float(v) for v in params)
+    x, y = np.asarray(x, dtype=float), np.asarray(y, dtype=float)
+    return z0 + ax * x + ay * y + h * np.exp(-((x - x0) ** 2 + (y - y0) ** 2) / (2.0 * sigma ** 2))
+
+
+def dome_jacobian(params, x, y) -> np.ndarray:
+    """Exact derivatives of :func:`dome_surface` with respect to its seven parameters (columns)."""
+    h, sigma, x0, y0 = (float(v) for v in params[:4])
+    x, y = np.asarray(x, dtype=float), np.asarray(y, dtype=float)
+    dx, dy = x - x0, y - y0
+    bump = np.exp(-(dx ** 2 + dy ** 2) / (2.0 * sigma ** 2))
+    return np.column_stack([bump, h * bump * (dx ** 2 + dy ** 2) / sigma ** 3, h * bump * dx / sigma ** 2,
+                            h * bump * dy / sigma ** 2, np.ones_like(x), x, y])
+
+
+def fit_dome(x, y, z, start, iterations=50) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Gauss-Newton least-squares fit of the as-built dome; returns parameters, (J^T J)^-1 and residuals.
+
+    The parameter covariance for independent point noise sigma is
+    sigma^2 (J^T J)^-1 at the solution (first order).
+    """
+    x, y, z = (np.asarray(v, dtype=float).ravel() for v in (x, y, z))
+    if not (x.shape == y.shape == z.shape) or len(z) <= len(DOME_PARAMETERS):
+        raise MetrologyRefusal("fit_underdetermined", "A dome fit needs more points than its seven parameters")
+    params = np.asarray(start, dtype=float).copy()
+    for _ in range(iterations):
+        step, *_ = np.linalg.lstsq(dome_jacobian(params, x, y), z - dome_surface(params, x, y), rcond=None)
+        params = params + step
+        if np.max(np.abs(step)) < 1e-12 * max(1.0, float(np.max(np.abs(params)))):
+            break
+    jac = dome_jacobian(params, x, y)
+    return params, np.linalg.inv(jac.T @ jac), z - dome_surface(params, x, y)
 
 
 # Gage R&R (ANOVA method, balanced crossed design) ----------------------------

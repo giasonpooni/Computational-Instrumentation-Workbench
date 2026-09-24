@@ -41,11 +41,29 @@ def _labels(report):
     return {f["claim"]: f["evidence_status"] for f in report["findings"]}
 
 
+def _gap_at(row, radius):
+    """Chord-geodesic gap of a cylinder marker pair at another radius (same angles and heights)."""
+    return math.hypot(radius * row["dphi_rad"], row["dz_mm"]) - math.hypot(2 * radius * math.sin(row["dphi_rad"] / 2),
+                                                                         row["dz_mm"])
+
+
+def _measurement_record(data):
+    """A retention record of kind measurement that is not the schema fixture (synthetic bytes, never retained)."""
+    fixture, _ = mfg._schema_fixture()
+    record = deepcopy(fixture)
+    record.update(record_kind="measurement", instrument=dict(fixture["instrument"], serial="SN-1"),
+                  raw=[{"name": name, "sha256": hashlib.sha256(value).hexdigest(), "bytes": len(value),
+                        "media_type": "application/octet-stream"} for name, value in data.items()])
+    record["calibration"] = dict(fixture["calibration"], sha256="c" * 64)
+    return record
+
+
 def test_every_task_is_registered_and_reports_honestly(section):
     _, reports = section
     assert set(section_implementations("manufacturing")) == set(TASK_IDS)
     for task_id, report in reports.items():
-        expected = "partial" if task_id == "T138" else "completed"
+        # T138 has no measurement to compare and T139 none to retain: both are partial until hardware exists.
+        expected = "partial" if task_id in ("T138", "T139") else "completed"
         assert report["state"] == expected, (task_id, report["experiment"])
         assert report["physical_validation_status"]["status"] == "not_established"
         assert not report.get("tests_failed")
@@ -80,12 +98,19 @@ def test_flat_plate_protocol_is_a_zero_curvature_control(section):
     heading = next(q for q in protocol["predicted_quantities"] if q["id"] == "P3")
     assert heading["value"][-1] == pytest.approx(1.2, abs=1e-12)
     assert heading["evidence_status"] == phi["evidence_status"]
+    # The geodesic distance is solved for: Newton starts 0.1 rad off the chord direction and converges onto it.
+    rows = mfg.plate_study()["pairs"]
+    assert min(r["shooting_iterations"] for r in rows) >= 3
+    assert max(r["heading_minus_chord_direction_rad"] for r in rows) < 1e-12
+    shot = mfg.shoot_geodesic(geo.PLATE, [0.0, 0.0], [30.0, 40.0], 0.0, 100.0)
+    assert shot["arclength_mm"] == pytest.approx(50.0, abs=1e-9)
+    assert shot["heading_rad"] == pytest.approx(math.atan2(40.0, 30.0), abs=1e-12)
 
 
 def test_protocols_refuse_filled_slots_and_decisions(section):
     directory, reports = section
     for task_id, name in (("T126", "protocol-flat-plate.json"), ("T127", "protocol-rolled-cylinder.json"),
-                          ("T128", "protocol-domed-coupon.json")):
+                          ("T128", "protocol-domed-coupon.json"), ("T129", "protocol-surface-scan.json")):
         protocol = json.loads((directory / "artifacts" / task_id / name).read_text(encoding="utf-8"))
         matrix = rec.protocol_refusal_matrix(protocol)
         assert all(case["observed"] == case["expected"] for case in matrix.values()), matrix
@@ -109,8 +134,16 @@ def test_protocols_refuse_filled_slots_and_decisions(section):
 def test_cylinder_protocol_predicts_chord_geodesic_gaps(section):
     _, reports = section
     report = reports["T127"]
-    gaps = _finding(report, "Rolled-cylinder chord-geodesic gaps")["value"]
+    gap_finding = _finding(report, "Rolled-cylinder chord-geodesic gaps")
+    gaps = gap_finding["value"]
+    # The series check is a signed margin: negative when the alternating-series bound holds with room.
+    series = [c for c in gap_finding["basis"]["checks"] if "alternating-series bound" in c["reference"]]
+    assert len(series) == 1 and series[0]["comparison"] == "signed_le" and series[0]["observed"] < 0.0
     radius = geo.CYLINDER_RADIUS
+    for row in mfg.cylinder_study()["pairs"]:
+        step = 1e-4
+        numeric = (_gap_at(row, radius + step) - _gap_at(row, radius - step)) / (2 * step)
+        assert mfg.gap_radius_derivative(row["dphi_rad"], row["dz_mm"], radius) == pytest.approx(numeric, abs=1e-8)
     assert gaps["circumferential 90 deg"] == pytest.approx(radius * math.pi / 2 - 2 * radius * math.sin(math.pi / 4), rel=1e-12)
     assert gaps["axial 100 mm"] == pytest.approx(0.0, abs=1e-12)
     counter = _finding(report, "A marker chord differs from the surface distance")
@@ -194,6 +227,43 @@ def test_metrology_sampling_design_and_counterexamples(section):
     assert 2 * met.curvature_noise_std_continuum(rule["window_mm"], rule["max_spacing_mm"], 0.01) == pytest.approx(2.5e-4)
 
 
+def test_scan_protocol_and_as_built_fit(section):
+    directory, reports = section
+    report = reports["T129"]
+    fit = _finding(report, "The as-built dome fit")
+    assert fit["evidence_status"] == "numerically_verified" and fit["uncertainty"]["value"] >= 0.0
+    model = _finding(report, "The fit residual flags an elliptical as-built dome")
+    assert model["evidence_status"] == "numerically_verified" and "counterexample" in model
+    assert _finding(report, "Surface-scan protocol record validates")["value"] == 9
+    assert _labels(report)["The formed coupon passes the Gaussian model test and its fitted height and width lie within "
+                           "the declared forming tolerances"] == "not_established"
+    protocol = rec.validate_protocol(json.loads(
+        (directory / "artifacts" / "T129" / "protocol-surface-scan.json").read_text(encoding="utf-8")))
+    assert protocol["protocol_id"] == "MFG-SCAN-01" and protocol["hardware_measured"]["records"] == []
+    plan = protocol["scan_plan"]
+    assert plan["instrument_setup"]["coupon_max_slope_deg"] < plan["instrument_setup"]["max_incidence_deg"]
+    assert "model_test" in plan["surface_fit"] and plan["retained_raw_data"]
+    study = mfg.as_built_study()
+    assert study["recovery_error"] < 1e-8
+    covariance = np.array(study["covariance_mm2"])
+    assert np.allclose(covariance, covariance.T) and np.linalg.eigvalsh(covariance).min() > 0.0
+    # The scan identifies height and width far better than the declared forming tolerances do.
+    u = study["standard_uncertainty_mm"]
+    assert u["height_mm"] < 0.1 * 0.2 / math.sqrt(3.0) and u["sigma_mm"] < 0.1 * 0.5 / math.sqrt(3.0)
+    assert study["elliptical_chi2"] > study["chi2_threshold"] > 1.0 and study["false_alarm_fraction"] <= 0.02
+    # The fit itself: exact on noise-free data from the nominal start, refused when underdetermined.
+    x, y = np.meshgrid(np.linspace(-60, 140, 21), np.linspace(-100, 100, 21))
+    truth = [10.1, 19.8, 0.2, -0.1, 0.0, 0.0, 1e-4]
+    params, _, residual = met.fit_dome(x, y, met.dome_surface(truth, x, y), [10.0, 20.0, 0, 0, 0, 0, 0])
+    assert np.allclose(params, truth, atol=1e-9) and float(np.max(np.abs(residual))) < 1e-9
+    with pytest.raises(met.MetrologyRefusal) as refused:
+        met.fit_dome([0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [10.0, 20.0, 0, 0, 0, 0, 0])
+    assert refused.value.code == "fit_underdetermined"
+    # T138 carries the scan-conditioned uncertainty; it is smaller than the tolerance-based one.
+    prediction = mfg.separation_prediction()
+    assert max(prediction["scan_conditioned_expanded_mm"]) < max(prediction["conditioned_expanded_mm"])
+
+
 def test_artifacts_datum_frames_and_chain_covariance(section):
     _, reports = section
     report = reports["T130"]
@@ -204,13 +274,27 @@ def test_artifacts_datum_frames_and_chain_covariance(section):
     with pytest.raises(met.MetrologyRefusal) as refused:
         met.datum_frame_321([[0, 0, 0], [1, 0, 0], [2, 0, 0]], [[0, 0, 0], [1, 0, 0]], [0, 1, 0])
     assert refused.value.code == "datum_degenerate"
+    with pytest.raises(met.MetrologyRefusal) as refused:
+        met.datum_frame_321([[0, 0, 0], [1, 0, 0], [0, 1, 0]], [[0, 0, 0], [0, 0, 1]], [0, 1, 0])
+    assert refused.value.code == "datum_degenerate"
+    # Both degenerate datums are refusal checks of the task, not only of this test.
+    datum_checks = {c["reference"]: c for c in _finding(report, "The 3-2-1 datum frame")["basis"]["checks"]}
+    assert datum_checks["collinear primary datum points (A)"]["observed_refusal"] == "datum_degenerate"
+    assert datum_checks["secondary datum direction (B) normal to the primary plane (A)"]["passed"]
+    # The chain std's uncertainty is a linearization estimate in mm, far below the std itself.
+    chain = _finding(report, "First-order covariance of the INSTRUMENT->CAD")
+    assert chain["uncertainty"]["kind"] == "truncation_bound"
+    assert 0.0 <= chain["uncertainty"]["value"] < 1e-3 * min(chain["value"]["coupon_far_corner"])
+    links = [(met.transform(np.eye(3), [100.0, 0.0, 0.0]), np.diag([1e-4] * 3 + [1e-10] * 3))]
+    linear = met.point_covariance(*met.compose_chain(links), np.array([10.0, 0.0, 0.0]))
+    assert np.allclose(met.sigma_point_chain_covariance(links, [10.0, 0.0, 0.0]), linear, rtol=1e-6, atol=1e-15)
     pose = met.transform(met.exp_so3([0.1, -0.2, 0.3]), [1.0, 2.0, 3.0])
     assert np.allclose(met.pose_difference(met.exp_se3(np.array([1e-4, 0, 0, 0, 0, 2e-5])) @ pose, pose),
                        [1e-4, 0, 0, 0, 0, 2e-5], atol=1e-8)  # first order: the left Jacobian adds 1e-9
 
 
 def test_gage_rr_recovers_components_and_refuses_unbalanced(section):
-    _, reports = section
+    directory, reports = section
     report = reports["T131"]
     recovery = _finding(report, "ANOVA Gage R&R recovers")
     assert recovery["evidence_status"] == "numerically_verified"
@@ -219,8 +303,26 @@ def test_gage_rr_recovers_components_and_refuses_unbalanced(section):
     assert spread["0.05"] < spread["true"] < spread["0.95"] and spread["true"] == pytest.approx(23.94, abs=0.01)
     refused = _finding(report, "Gage R&R refuses")
     assert refused["value"] == 2 and refused["evidence_status"] == "numerically_verified"
-    spread_checks = _finding(report, "Sampling spread of %GRR")["basis"]["checks"]
+    spread_finding = _finding(report, "Sampling spread of %GRR")
+    spread_checks = spread_finding["basis"]["checks"]
     assert all(check["passed"] for check in spread_checks) and len(spread_checks) == 3
+    # The uncertainty is in % (order-statistic intervals of the quantiles), like the value.
+    halfwidth = spread_finding["uncertainty"]["value"]
+    assert set(halfwidth) == {"0.05", "0.5", "0.95"} and all(0.0 < v < 5.0 for v in halfwidth.values())
+    assert mfg._quantile_halfwidth(np.arange(1.0, 2001.0), 0.5) == pytest.approx(0.5 * (1044 - 956), abs=1.0)
+    # The procedure of a real study: parts are features, every cell once per replicate round, re-fixturing between.
+    procedure = json.loads((directory / "artifacts" / "T131" / "gage-rr-procedure.json").read_text(encoding="utf-8"))
+    assert procedure["status"].startswith("plan") and procedure["type1_study"]["readings"] == 25
+    for protocol_id, study in procedure["studies"].items():
+        parts = [p["feature"] for p in study["parts"]]
+        assert len(parts) == 10 and len(study["rounds"]) == 3, protocol_id
+        for round_ in study["rounds"]:
+            assert "re-seat" in round_["before"]
+            assert sorted(b["operator"] for b in round_["blocks"]) == ["O1", "O2", "O3"]
+            assert all(sorted(b["order"]) == sorted(parts) for b in round_["blocks"])
+    plate_pairs = {"-".join(r["pair"]) for r in mfg.plate_study()["pairs"]}
+    assert set(mfg.GAGE_PARTS["MFG-FLAT-PLATE-01"]) <= plate_pairs
+    assert set(mfg.GAGE_PARTS["MFG-CYLINDER-01"]) == {r["pair"] for r in mfg.cylinder_study()["pairs"]}
     assert _labels(report)["The measurement system is approved for production use"] == "not_established"
     exact = np.zeros((2, 2, 2))
     exact[1] += 1.0
@@ -283,6 +385,17 @@ def test_coating_standoff_and_offset_cusp(section):
     standoff = _finding(report, "Standoff error from a lateral tool offset")
     tight = [c for c in standoff["basis"]["checks"] if c["reference"].startswith("max over stations of abs(ray-cast")]
     assert len(tight) == 1 and "1e-3 abs(series)" in tight[0]["reference"] and tight[0]["passed"]
+    # The TCP speed factor is checked pointwise against |t + H dn/ds| and per polyline segment, on the symmetry
+    # axis (tau_g = 0) and off it, where the tau_g term is large enough for the pointwise check to resolve.
+    offset = _finding(report, "Tool-centre-point path length element")
+    assert offset["evidence_status"] == "numerically_verified" and len(offset["basis"]["checks"]) == 3
+    assert study["tools"]["welding torch"]["max_H_tau_g"] < 1e-12
+    off = study["off_axis_tools"]["welding torch"]
+    assert off["max_H_tau_g"] > 1e-2 and off["tau_term_max"] > 100 * 1e-7
+    for tools in (study["tools"], study["off_axis_tools"]):
+        for tool in tools.values():
+            assert tool["pointwise_max_difference"] < 1e-7
+        assert tools["welding torch"]["segment_max_difference"] < 2e-3
     u = np.array([-20.0, 5.0])
     t = geo.COUPON.unit_tangent(u, 0.3)
     exact = geo.standoff_error_exact(geo.COUPON, u, geo.lateral_direction3(geo.COUPON, u, t), 0.01, 15.0)
@@ -313,21 +426,42 @@ def test_rankings_by_calibration_tolerance_and_focus_margin(section):
     assert calibration["value"]["ranking"][0] == "fan+0deg"
     table = mfg.calibration_table()
     for row in table["rows"]:
-        assert len(row["corner_ratios"]) == 4
+        assert len(row["corner_ratios"]) == 4 and row["derating_converged"]
         assert max(row["corner_ratios"].values()) <= mfg.DERATE_TARGET + 1e-9, row["route"]
         assert row["realized_max_error_mm"] <= mfg.LATERAL_SPEC_MM
+        # The evidence: a second computation of the derated corners agrees and stays within the spec.
+        assert max(row["independent_corner_ratios"].values()) <= 1.0, row["route"]
+        assert all(abs(row["independent_corner_ratios"][c] - v) < 1e-4 for c, v in row["corner_ratios"].items())
+    kinds = {c["reference_kind"] for c in calibration["basis"]["checks"]}
+    assert "cross_implementation" in kinds
     first = _finding(reports["T136"], "The first-order tolerance allocation exceeds the spec")
     assert first["evidence_status"] == "numerically_verified" and "counterexample" in first
     assert first["value"]["fan+25deg"] > 1.0 and first["value"]["fan+0deg"] < 1.0
     focus = _finding(reports["T137"], "Candidate coupon routes ranked by focus margin")
-    assert focus["value"]["ranking"][-1] == "fan+0deg"
+    # Routes without a focus inside the horizon have lower-bound margins only: one tied tier, not an order.
+    assert focus["value"]["ranking"][0] == ["fan+15deg", "fan+20deg", "fan+25deg"]
+    assert focus["value"]["ranking"][-1] == ["fan+0deg"] and all(len(t) == 1 for t in focus["value"]["ranking"][1:])
+    assert focus["value"]["unresolved_tier"] == ["fan+15deg", "fan+20deg", "fan+25deg"]
     assert focus["value"]["margin"]["fan+0deg"] == pytest.approx(0.7588, abs=1e-4)
     counter = _finding(reports["T137"], "The shortest candidate route has the worst focus margin")
     assert counter["evidence_status"] == "numerically_verified"
     assert counter["counterexample"]["witness"]["route"] == "fan+0deg"
-    variation = _finding(reports["T137"], "The second variation of route length")["value"]
+    variation_finding = _finding(reports["T137"], "The second variation of route length")
+    variation = variation_finding["value"]
     assert variation["finite_difference_mm"] == pytest.approx(variation["index_form_mm"], rel=2e-4)
+    assert variation_finding["uncertainty"]["value"] == pytest.approx(
+        abs(variation["finite_difference_mm"] - variation["index_form_mm"]), abs=1e-12)
     assert _finding(reports["T136"], "The robot, fixture and frame calibration")["evidence_status"] == "not_established"
+
+
+def test_ranking_evidence_detects_a_wrong_exact_perturbation(monkeypatch):
+    """A wrong exact perturbation still satisfies the derating loop's stop condition but disagrees with the re-evaluation."""
+    fan = mfg.fan_study()
+    real = geo.separation_nonlinear
+    monkeypatch.setattr(geo, "separation_nonlinear", lambda *args, **kwargs: 1.08 * real(*args, **kwargs))
+    row = mfg.calibration_ranking({"routes": fan["routes"][:1], "coarse": fan["coarse"]})["rows"][0]
+    assert max(row["corner_ratios"].values()) <= mfg.DERATE_TARGET + 1e-9
+    assert max(abs(row["independent_corner_ratios"][c] - v) for c, v in row["corner_ratios"].items()) > 1e-2
 
 
 def test_predicted_separation_has_no_measured_counterpart(section):
@@ -339,7 +473,8 @@ def test_predicted_separation_has_no_measured_counterpart(section):
     assert predicted["value"]["separation_mm"][0] == pytest.approx(2.0, abs=1e-6)
     assert predicted["value"]["separation_mm"][-1] == pytest.approx(-1.0374, abs=1e-4)
     refused = _finding(report, "The comparison refuses")
-    assert refused["value"] == 4 and refused["evidence_status"] == "numerically_verified"
+    assert refused["value"] == 7 and refused["evidence_status"] == "numerically_verified"
+    assert "scan_conditioned_expanded_mm" in predicted["value"]
     assert _finding(report, "Measured separation on the coupon agrees")["evidence_status"] == "not_established"
     start = _finding(report, "A 2-sigma start offset of the declared jig")
     assert start["value"]["max_en_without_execution"] > 1.0 >= start["value"]["max_en_open_loop"]
@@ -358,6 +493,39 @@ def test_predicted_separation_has_no_measured_counterpart(section):
     assert rec.normalized_error([1.1], [1.0], [0.06], [0.08])[0] == pytest.approx(1.0)
 
 
+def test_comparators_compute_normalized_errors_for_a_measurement_record():
+    """The success path of both comparators on a synthetic measurement-kind record (never retained, never cited)."""
+    data = {"targets.csv": b"station,separation\n"}
+    record = _measurement_record(data)
+    predicted = {"stations_mm": [0.0, 100.0, 200.0], "separation_mm": [2.0, 1.0, -1.0],
+                 "expanded_uncertainty_mm": [0.08, 0.08, 0.08]}
+    result = rec.compare_separation(predicted, {"record": record, "raw_bytes": data, "values_mm": [2.03, 1.08, -1.0],
+                                                "expanded_uncertainty_mm": [0.06, 0.06, 0.06]})
+    assert result["normalized_error"] == pytest.approx([0.3, 0.8, 0.0], abs=1e-9) and result["agrees"] is True
+    assert result["acquisition"]["raw_sha256"] == hashlib.sha256(rec.raw_manifest(record)).hexdigest()
+    disagree = rec.compare_separation(predicted, {"record": record, "raw_bytes": data, "values_mm": [2.0, 1.2, -1.0],
+                                                  "expanded_uncertainty_mm": [0.06, 0.06, 0.06]})
+    assert disagree["normalized_error"][1] == pytest.approx(2.0, abs=1e-9) and disagree["agrees"] is False
+    with pytest.raises(rec.RecordRefusal) as refused:
+        rec.compare_separation(predicted, {"record": record, "raw_bytes": data, "values_mm": [2.0, 1.0],
+                                           "expanded_uncertainty_mm": [0.06, 0.06]})
+    assert refused.value.code == "stations_mismatch"
+    pairs = mfg.pair_predictions(mfg.plate_study(), mfg.cylinder_study())
+    plate = pairs["MFG-FLAT-PLATE-01"]
+    measured = {"record": record, "raw_bytes": data, "labels": plate["pairs"],
+                "values_mm": [v + 0.01 for v in plate["values_mm"]], "expanded_uncertainty_mm": 0.05}
+    result = rec.compare_pair_distances(plate, measured)
+    assert result["normalized_error"] == pytest.approx([0.2] * len(plate["pairs"]), abs=1e-9) and result["agrees"]
+    with pytest.raises(rec.RecordRefusal) as refused:
+        rec.compare_pair_distances(plate, dict(measured, labels=list(reversed(plate["pairs"]))))
+    assert refused.value.code == "pairs_mismatch"
+    cylinder = pairs["MFG-CYLINDER-01"]
+    ninety = cylinder["pairs"].index("circumferential 90 deg")
+    assert cylinder["expanded_uncertainty_mm"][ninety] == pytest.approx(
+        2 * abs(math.pi / 2 - 2 * math.sin(math.pi / 4)) * 0.1 / math.sqrt(3.0), rel=1e-9)
+    assert cylinder["expanded_uncertainty_mm"][cylinder["pairs"].index("axial 100 mm")] == 0.0
+
+
 def test_retention_schema_refusals_and_fixture_boundary(section, tmp_path):
     _, reports = section
     report = reports["T139"]
@@ -365,8 +533,9 @@ def test_retention_schema_refusals_and_fixture_boundary(section, tmp_path):
     assert schema["value"] == 11 and schema["evidence_status"] == "numerically_verified"
     boundary = _finding(report, "A schema fixture (as is or relabelled as a measurement)")
     assert boundary["value"] == 3 and boundary["evidence_status"] == "numerically_verified"
-    assert _finding(report, "The retention schema keeps a valid rank-deficient")["evidence_status"] == "numerically_verified"
+    assert _finding(report, "The retention schema keeps a rank-deficient")["evidence_status"] == "numerically_verified"
     assert _finding(report, "A real measurement with raw bytes")["evidence_status"] == "not_established"
+    assert report["state"] == "partial" and "no acquisition exists" in report["experiment"]
     assert not any(a["path"].endswith("fixture.txt") for a in report["generated_artifacts"])
     fixture, raw = mfg._schema_fixture()
     assert rec.refusal_code(rec.to_acquisition, fixture, raw) == "fixture_is_not_measurement"
@@ -393,6 +562,15 @@ def test_retention_schema_refusals_and_fixture_boundary(section, tmp_path):
     lever = deepcopy(fixture)
     lever["frame_chain"][0]["covariance"] = (jac @ np.diag([1e-4] * 3) @ jac.T).tolist()
     assert rec.refusal_code(rec.validate_retention, lever, raw) is None
+    # The scale test: kept by the relative rule although an absolute 1e-12 rule would refuse it; a negative
+    # eigenvalue at the same scale is still refused.
+    covariance = mfg._rank_deficient_covariance()
+    eigenvalues = np.linalg.eigvalsh(0.5 * (covariance + covariance.T))
+    assert eigenvalues[0] < -mfg.ABSOLUTE_THRESHOLD and eigenvalues[-1] == pytest.approx(1e6, rel=1e-9)
+    lever["frame_chain"][0]["covariance"] = covariance.tolist()
+    assert rec.refusal_code(rec.validate_retention, lever, raw) is None
+    lever["frame_chain"][0]["covariance"] = mfg._rank_deficient_covariance(-1e3).tolist()
+    assert rec.refusal_code(rec.validate_retention, lever, raw) == "frame_covariance_invalid"
 
 
 def test_uncertainty_budget_classifies_limiting_terms(section):
@@ -411,8 +589,18 @@ def test_uncertainty_budget_classifies_limiting_terms(section):
     nominal = mfg.nominal_study()
     assert focal["solver"] == pytest.approx(abs(nominal["focal_mm"] - nominal["focal_h2_mm"]) / 15.0, rel=1e-12)
     counter = _finding(report, "The coupon focal-distance prediction is geometry-limited")
-    assert counter["value"] > 0.5 and "counterexample" in counter
+    assert counter["value"] > 0.5 and "counterexample" in counter and "declared" in counter["claim"]
     assert mfg._classify({"instrument": 1.0, "geometry": 1.0, "solver": 0.0})[0] == "mixed (largest: instrument)"
+    # The lateral T138 quantity is budgeted open loop too: geometry, not the start pose, limits it at L.
+    assert budget["coupon separation at L, 2 mm lateral offset (open-loop start)"]["dominant"] == "geometry"
+    assert "declared instrument and start-pose uncertainties" in _finding(report, "On the coupon, the heading-offset")["claim"]
+    # Conditioning on the as-built scan (T129) replaces the dome tolerances and shrinks the geometry term.
+    scan = _finding(report, "Conditioning on the as-built scan")
+    assert scan["evidence_status"] == "numerically_verified"
+    for key in ("coupon focal distance", "coupon separation at L, 2 mm lateral offset"):
+        declared = budget[f"{key} (conditioned on the measured start pose)"]["geometry"]
+        scanned = budget[f"{key} (conditioned on the start pose and the as-built scan)"]["geometry"]
+        assert 0.0 < scanned < 0.1 * declared, key
 
 
 def test_production_acceptance_stays_outside_the_system(section):
