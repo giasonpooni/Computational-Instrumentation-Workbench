@@ -1,5 +1,10 @@
 # Workbench protocol v1
 
+The frozen kernel surface (verbs, envelopes, admission, persistence and the
+project graph) is specified once in [KERNEL.md](KERNEL.md). The sections below
+record the transport and the domain payloads that grew on protocol version 1;
+they do not add kernel verbs.
+
 ## Shared experiment projection
 
 `experiment.inspect` accepts exactly `{"bundle_id":"<retained identity>"}` and

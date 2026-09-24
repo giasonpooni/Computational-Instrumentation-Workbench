@@ -23,6 +23,7 @@ imports `ciw`, and the command-line entry point is also `ciw`.
 
 ## Contracts and operations
 
+- [Kernel surface (frozen)](KERNEL.md)
 - [Protocol and record identities](PROTOCOL.md)
 - [Contract foundations and typed exchange](CONTRACT_FOUNDATIONS.md)
 - [Generic adapters](ADAPTERS.md)
