@@ -171,6 +171,13 @@ whose OpenBLAS kernels are the SkylakeX set; `OPENBLAS_CORETYPE=Haswell` or
 `python tests/fixtures/retained/generate.py` only when the retained format
 changes on purpose, and say so in the commit; a silent regeneration hides
 exactly the incompatibility the gate exists to catch.
+`python scripts/check_reference_mutants.py` is the mutation gate for the same
+module: it removes one identity check at a time (evidence binding, request
+and numerical commitments, bundle digest, session identity shape, code
+digest shape, fresh-occurrence and self-referencing receipt rules, runtime
+identity comparison, tolerance and kernel probe) and requires the reference
+tests to fail for every one. `tests/test_reference_identity_checks.py` holds
+the guarding cases; a surviving mutant means a check has lost its test.
 Covariance CLI argument parsing and the pre-execution refusal of non-object
 parameters are asserted by
 `tests/test_adapter_cli.py::test_covariance_verbs_parse_and_refuse_non_object_parameters_before_execution`;
