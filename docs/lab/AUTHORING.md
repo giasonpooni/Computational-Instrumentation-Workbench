@@ -89,7 +89,8 @@ is its leading ASCII name token after NFKC normalization, casefolded
 rule is symmetric, so a pinned provider's result checked by a `ciw` reference
 counts as independent just as `ciw` checked by the provider does. The
 recognised external families are `scipy`, `sympy`, `mpmath`, `numpy`,
-`cpython`, `zlib`, `git` and the pinned providers (`curved-surface-geodesic-sensitivity-runtime`,
+`cpython`, `zlib`, `git`, the mesh-geodesic libraries `pygeodesic` and
+`potpourri3d`, and the pinned providers (`curved-surface-geodesic-sensitivity-runtime`,
 `flat-torus-geodesic-reference`, `parameterized-lyapunov-stability-runtime`,
 `scientific-computation-runtime`). Unknown families, non-ASCII look-alikes and
 names that embed `ciw` (`ciw-rust`, `python:ciw`) are refused, so independence

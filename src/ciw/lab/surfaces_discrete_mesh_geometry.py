@@ -1,16 +1,17 @@
 """Triangle meshes, their refusal states and intrinsic geodesics (NumPy only).
 
 Scope: deterministic mesh generators (icosphere, latitude-longitude sphere,
-prism cylinder, Schwarz lantern, planar grid, torus grid), a validator that
-names every structural defect it refuses (and, for a mesh declared
-star-shaped about a centre, every face oriented towards that centre),
-straightest geodesics traced by unfolding across edges (Polthier-Schmies:
-straight inside a face, equal angles on both sides of an edge), graph
-distances on the edge graph and on a Steiner-point graph, a direct
-heat-method distance for small meshes, angle-defect Gaussian curvature,
-batched one-ring vertex normals, linearized per-vertex standard deviations of
-normals and curvature under a declared vertex covariance, and the planar
-unfolding of a face strip.
+prism cylinder, Schwarz lantern, planar grid, torus grid, refined cube), a
+validator that names every structural defect it refuses (and, for a mesh
+declared star-shaped about a centre, every face oriented towards that
+centre), straightest geodesics traced by unfolding across edges
+(Polthier-Schmies: straight inside a face, equal angles on both sides of an
+edge), graph distances on the edge graph and on a Steiner-point graph, a
+direct heat-method distance for small meshes, angle-defect Gaussian
+curvature, batched one-ring vertex normals, linearized per-vertex standard
+deviations of normals and curvature under a declared vertex covariance, and
+the planar unfolding of a face strip. Exact polyhedral distances are in
+``surfaces_discrete_mesh_exact``.
 
 Declared rules: a traced geodesic that reaches a vertex (within a relative
 edge-parameter tolerance) is refused with ``vertex_hit`` rather than continued
@@ -428,6 +429,32 @@ def plane_mesh(nx: int, ny: int, width: float = 1.0, height: float = 1.0, shear:
             faces += [[a, b, c], [a, c, d]]
     return TriMesh(vertices, np.array(faces), f"plane-{nx}x{ny}",
                    {"nx": nx, "ny": ny, "width": width, "height": height, "shear": shear})
+
+
+def cube_mesh(k: int, size: float = 1.0) -> TriMesh:
+    """Closed cube [0, size]^3 with a k x k grid on every face, each square split along a diagonal, outward."""
+    index, vertices, faces = {}, [], []
+
+    def vertex(key):
+        if key not in index:
+            index[key] = len(vertices)
+            vertices.append(key)
+        return index[key]
+
+    for axis in range(3):
+        u, v = (axis + 1) % 3, (axis + 2) % 3  # (u, v, axis) is right-handed
+        for side in (0, k):
+            for i in range(k):
+                for j in range(k):
+                    corners = []
+                    for di, dj in ((0, 0), (1, 0), (1, 1), (0, 1)):
+                        key = [0, 0, 0]
+                        key[axis], key[u], key[v] = side, i + di, j + dj
+                        corners.append(vertex(tuple(key)))
+                    a, b, c, d = corners
+                    faces += [[a, b, c], [a, c, d]] if side == k else [[a, c, b], [a, d, c]]
+    return TriMesh(size * np.array(vertices, dtype=float) / k, np.array(faces), f"cube-{k}",
+                   {"k": k, "size": size})
 
 
 def torus_mesh(n_phi: int, n_theta: int, major: float = 2.0, minor: float = 1.0) -> TriMesh:

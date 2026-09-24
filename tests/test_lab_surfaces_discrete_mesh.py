@@ -6,6 +6,7 @@ import pytest
 
 from ciw.lab import runner
 from ciw.lab import surfaces_discrete_mesh as M
+from ciw.lab import surfaces_discrete_mesh_exact as E
 from ciw.lab import surfaces_discrete_mesh_geometry as G
 from ciw.lab import surfaces_discrete_mesh_studies as S
 from ciw.lab.evidence import COMPUTATIONAL_DOMAINS, validate_finding
@@ -16,6 +17,14 @@ TASKS = ("T038", "T039", "T040", "T041", "T042", "T043", "T044")
 IMPLEMENTATIONS = module_implementations("surfaces_discrete_mesh")
 DIJKSTRA_CLAIM = ("Heap Dijkstra edge-graph distances agree with a dense Floyd-Warshall recomputation (and "
                   "scipy.sparse.csgraph when installed)")
+PYGEODESIC_CLAIM = ("Exact polyhedral distances from three sources are symmetric between the sources (and agree at "
+                    "every vertex with pygeodesic's exact MMP implementation when installed) on icosphere levels 1-4 "
+                    "and a torus with saddle vertices")
+FLIPOUT_CLAIM = ("Edge-graph paths and FlipOut edge-flip geodesics (potpourri3d, when installed) between vertex pairs "
+                 "are never shorter than the exact distance")
+# The memoized studies T038 reads (surfaces_discrete_mesh:<name>).
+T038_STUDIES = ("sphere-traces", "cylinder", "plane", "steiner-nested", "dijkstra-independent", "exact-distances",
+                "exact-independent", "exact-comparison", "traced-exact", "exact-analytic", "exact-insertion")
 RANK_CLAIM = ("Maximum radius ratio is positively rank-correlated with the mixed-Voronoi curvature error and the "
               "geodesic error across the pooled valid 642-vertex meshes, but not within the latitude-longitude family")
 
@@ -106,33 +115,197 @@ def test_graph_distances_and_steiner_sandwich():
 
 def test_solver_task_report(reports):
     report = reports["T038"]
-    # Partial: an exact two-point polyhedral geodesic (MMP/ICH) is not delivered, and the report says so.
-    _completed_with_unestablished_physics(report, state="partial")
-    assert any(a.startswith("Partial delivery") for a in report["unresolved_assumptions"])
+    # Completed: the exact polyhedral distance is delivered and every computational finding is established.
+    _completed_with_unestablished_physics(report)
+    assert any("back-tracing the path" in a for a in report["unresolved_assumptions"])
     steiner = _value(report, "Nested Steiner-graph distances never increase with k")
     assert steiner["value"]["edges_outside_faces"] == 0
     assert "chord" not in " ".join(c["reference"] for c in steiner["basis"]["checks"])
     labels = _labels(report)
     scipy_present = S.optional_version("scipy") is not None
     assert labels[DIJKSTRA_CLAIM] == ("independently_verified" if scipy_present else "numerically_verified")
+    assert labels[PYGEODESIC_CLAIM] == ("independently_verified" if S.package_version("pygeodesic")
+                                        else "numerically_verified")
+    assert labels[FLIPOUT_CLAIM] == ("independently_verified" if S.package_version("potpourri3d")
+                                     else "numerically_verified")
     floyd = _value(report, "Heap Dijkstra")["basis"]["checks"][0]
     assert floyd["reference_kind"] == "cross_implementation"
     plane = "Straightest geodesics on sheared planar meshes coincide with straight lines"
     assert labels[plane] == "numerically_verified"
+    for prefix in ("Exact polyhedral distances on sheared planar", "On an L-shaped planar mesh",
+                   "Exact polyhedral distances on prism-cylinder", "Exact distances between the corners of a refined"):
+        record = _value(report, prefix)
+        assert [c["reference_kind"] for c in record["basis"]["checks"]] == ["analytic"], prefix
+        assert record["evidence_status"] == "numerically_verified"
+    cube = _value(report, "Exact distances between the corners of a refined")["value"]
+    assert cube["corner_distances"][-1] == pytest.approx(math.sqrt(5), abs=1e-12)
+    assert cube["edge_graph_far_corner"] > cube["corner_distances"][-1] + 0.1  # the edge graph misses the unfolding
+    # Traced geodesics below pi that are not shortest paths: a counterexample on every level, shrinking.
+    traced = _value(report, "Traced straightest geodesics are never shorter than the exact distance")
+    assert traced["counterexample"]["witness"]["excess"] > 1e-6
+    assert all(s < t for s, t in zip(traced["value"]["shortest"], traced["value"]["traces"]))
+    assert traced["value"]["min_excess"] >= -1e-12
+    assert traced["value"]["max_excess"] == sorted(traced["value"]["max_excess"], reverse=True)
+    heat = _value(report, "The largest heat-method error")["value"]["max_abs_error"]
+    assert heat == sorted(heat, reverse=True)
+    assert "Complete T038" not in report["recommended_next_task"]
     physical = [f for f in report["findings"] if f["domain"] == "physical"]
     assert physical and physical[0]["evidence_status"] == "not_established"
     assert any(a["path"].endswith("sphere-traces.json") for a in report["generated_artifacts"])
+    assert any(a["path"].endswith("exact-distances.json") for a in report["generated_artifacts"])
 
 
-def test_dijkstra_check_falls_back_without_scipy(monkeypatch, tmp_path, reports):
+def test_ciw_producers_of_t038_independent_checks_carry_a_revision(reports):
+    """Every ciw producer of an independent check names the package version and its module digest."""
+    from ciw import __version__
+    for record in reports["T038"]["findings"]:
+        check = record["basis"].get("independent_check")
+        if check is None:
+            continue
+        assert check["producer"]["revision"] == f"ciw {__version__}", record["claim"]
+        assert len(check["producer"]["source_sha256"]) == 64, record["claim"]
+        assert check["checker"]["revision"] not in ("", "working tree", "unknown"), record["claim"]
+
+
+def _t038_without(monkeypatch, tmp_path, mesh_ctx, recomputed, absent=()):
+    """T038 in a fresh context seeded with the section run's studies except ``recomputed``.
+
+    ``absent`` names version helpers of ``S`` that report their optional packages as not installed.
+    """
+    for helper in absent:
+        monkeypatch.setattr(S, helper, lambda package: None)
+    ctx = runner.Context(tmp_path)
+    for name in T038_STUDIES:
+        if name not in recomputed:
+            key = f"surfaces_discrete_mesh:{name}"
+            value = mesh_ctx.memo(key, lambda: pytest.fail(f"{key} was not computed by the section run"))
+            ctx.memo(key, lambda value=value: value)
+    return _run("T038", ctx)
+
+
+def test_dijkstra_check_falls_back_without_scipy(monkeypatch, tmp_path, reports, mesh_ctx):
     monkeypatch.setattr(S, "optional_version", lambda name: None)
     result = S.dijkstra_independent(level=1)
     assert "scipy_max_abs" not in result and result["floyd_max_abs"] <= 1e-12
-    report = _run("T038", runner.Context(tmp_path))
+    report = _t038_without(monkeypatch, tmp_path, mesh_ctx, ("dijkstra-independent",))
     assert _labels(report)[DIJKSTRA_CLAIM] == "numerically_verified"
     assert report["evidence_status"]["primary"] == "numerically_verified"
     # The prose must not change with the optional checker, or the regression gate flags wording.
     assert runner._skeleton(report["numerical_result"]) == runner._skeleton(reports["T038"]["numerical_result"])
+
+
+def test_exact_checks_fall_back_without_external_packages(monkeypatch, tmp_path, reports, mesh_ctx):
+    """Without pygeodesic and potpourri3d the same claims rest on same-origin checks; claims and prose are unchanged."""
+    report = _t038_without(monkeypatch, tmp_path, mesh_ctx, ("exact-independent",), absent=("package_version",))
+    assert S.package_version("pygeodesic") is None and S.package_version("potpourri3d") is None
+    labels = _labels(report)
+    assert labels[PYGEODESIC_CLAIM] == labels[FLIPOUT_CLAIM] == "numerically_verified"
+    for claim in (PYGEODESIC_CLAIM, FLIPOUT_CLAIM):
+        record = _value(report, claim)
+        assert "independent_check" not in record["basis"] and record["basis"]["checks"]
+    assert _value(report, FLIPOUT_CLAIM)["value"]["flipout"] is None
+    assert report["state"] == "completed" and report["evidence_status"]["primary"] == "numerically_verified"
+    assert set(labels) == set(_labels(reports["T038"]))
+    for field in ("numerical_result", "uncertainty", "unresolved_assumptions"):
+        assert runner._skeleton(report[field]) == runner._skeleton(reports["T038"][field]), field
+    # The origins of the two external checkers are recognised, so an installed checker yields independence.
+    from ciw.lab.evidence import supported_label
+    base = {"reference_kind": "exact_arithmetic", "reference": "r", "observed": 0.0, "tolerance": 1e-12,
+            "comparison": "abs_le", "passed": True}
+    for checker in ("pygeodesic.geodesic.PyGeodesicAlgorithmExact", "potpourri3d.EdgeFlipGeodesicSolver"):
+        independent = dict(base, producer=M._ciw_producer("ciw.lab.surfaces_discrete_mesh_exact.ExactGeodesic",
+                                                          M.SOLVER),
+                           checker={"implementation": checker, "revision": "0.1"})
+        assert supported_label({"independent_check": independent}, "numerical") == "independently_verified"
+
+
+def test_exact_distances_match_closed_forms():
+    study = S.exact_analytic_study(shears=(0.0, 1.5), size=4, ns=(8,), height=2.0)
+    assert study["plane_max_error"] <= 1e-12 and study["cylinder_max_error"] <= 1e-12
+    assert study["l_shape"]["max_error"] <= 1e-12 and study["l_shape"]["bent_targets"] > 0
+    cube = study["cube"]
+    assert cube["max_error"] <= 1e-12
+    assert sorted(cube["closed_forms"]) == pytest.approx([0, 1, 1, 1, math.sqrt(2)] + [math.sqrt(2)] * 2
+                                                         + [math.sqrt(5)])
+    # The L-shape needs its reflex corner as a pseudo-source: it is the only one, and paths bend there.
+    shape = S._l_shape(4)
+    solver = E.ExactGeodesic(shape)
+    assert [shape.vertices[v].tolist() for v in np.flatnonzero(solver.pseudo)] == [[0.5, 0.5, 0.0]]
+    far = int(np.argmin(np.linalg.norm(shape.vertices - [0.5, 1.0, 0.0], axis=1)))
+    source = int(np.argmin(np.linalg.norm(shape.vertices - [1.0, 0.0, 0.0], axis=1)))
+    assert solver.distances(source)[far] == pytest.approx(math.sqrt(0.5) + 0.5, abs=1e-12)
+    # Globally shortest, not locally straight: every edge-graph distance on the cube is an upper bound.
+    box = G.cube_mesh(2)
+    assert G.inspect(box.vertices, box.faces, require_closed=True, center=np.full(3, 0.5)) == []
+    exact = E.ExactGeodesic(box).distances(0)
+    assert np.all(G.edge_distances(box, 0) >= exact - 1e-12)
+
+
+def test_point_insertion_leaves_distances_unchanged():
+    study = S.insertion_study()
+    assert study["max_abs_change"] <= 1e-12
+    assert all(r["issues"] == [] and r["faces_added"] == 4 for r in study["rows"])
+    mesh = G.icosphere(1)
+    corner = mesh.faces[3]
+    # A point at a vertex is that vertex; a point on an edge splits both faces at the edge.
+    same, ids = E.insert_points(mesh, [(3, mesh.vertices[corner[1]])])
+    assert ids == [int(corner[1])] and len(same.faces) == len(mesh.faces)
+    edge_point = mesh.point(3, [0.5, 0.5, 0.0])
+    split, (new,) = E.insert_points(mesh, [(3, edge_point)])
+    assert len(split.faces) == len(mesh.faces) + 2 and np.sum(np.any(split.faces == new, axis=1)) == 4
+    assert G.inspect(split.vertices, split.faces, require_closed=True) == []
+    before, after = E.ExactGeodesic(mesh).distances(0), E.ExactGeodesic(split).distances(0)
+    assert np.max(np.abs(after[:len(mesh.vertices)] - before)) <= 1e-12
+    # From the inserted point: symmetric with the distances to it.
+    from_point = E.ExactGeodesic(split).distances(new)
+    assert from_point[0] == pytest.approx(after[new], abs=1e-12)
+    with pytest.raises(G.MeshRefusal) as refused:
+        E.insert_points(mesh, [(3, 2 * edge_point)])
+    assert refused.value.code == "point_outside_face"
+
+
+def test_exact_distances_agree_with_pygeodesic():
+    geodesic = pytest.importorskip("pygeodesic.geodesic")
+    exact = S.exact_distance_study(levels=(1, 2), torus=(12, 6), flipout=())
+    for mesh, row in zip(S.exact_meshes((1, 2), (12, 6)), exact["rows"]):
+        algorithm = geodesic.PyGeodesicAlgorithmExact(mesh.vertices, mesh.faces.astype(np.int32))
+        for source, distances in zip(row["sources"], row["distances"]):
+            reference, _ = algorithm.geodesicDistances(np.array([source], dtype=np.int32), None)
+            assert np.max(np.abs(reference - distances)) <= 1e-12, (row["mesh"], source)
+    assert exact["rows"][-1]["pseudo_source_vertices"] > 0  # the torus exercises saddle pseudo-sources
+    external = S.exact_independent_study(exact)
+    assert external["pygeodesic_max_abs"] <= 1e-12
+    assert external["pygeodesic_compared"] == sum(3 * r["vertices"] for r in exact["rows"])
+
+
+def test_flipout_geodesics_are_never_shorter():
+    pytest.importorskip("potpourri3d")
+    exact = S.exact_distance_study(levels=(2,), torus=(12, 6), flipout=("icosphere-2", "torus-12x6"))
+    flipout = S.exact_independent_study(exact)["flipout"]
+    assert [r["mesh"] for r in flipout] == ["icosphere-2", "torus-12x6"]
+    for row in flipout:
+        assert row["min_excess"] >= -1e-12, row
+        assert 0 < row["shortest"] <= row["pairs"]
+    # Locally shortest is not globally shortest: some FlipOut geodesics on the icosphere are longer.
+    assert flipout[0]["shortest"] < flipout[0]["pairs"] and flipout[0]["max_excess"] > 1e-6
+
+
+def test_paths_and_approximations_never_beat_the_exact_distance():
+    exact = S.exact_distance_study(levels=(1, 2), torus=(12, 6), flipout=("icosphere-2",))
+    assert all(r["symmetry_max_abs"] <= 1e-12 and r["edge_excess"] <= 1e-12 for r in exact["rows"])
+    assert exact["rows"][1]["edge_graph_min_excess"] >= -1e-12
+    comparison = S.exact_comparison_study(exact, steiner_levels=(2,), ks=(1, 3), heat_levels=(1, 2))
+    assert min(r["min_excess"] for r in comparison["edge_graph"]) >= -1e-12
+    steiner = comparison["steiner"][0]
+    assert min(steiner["min_excess"]) >= -1e-12 and steiner["mean_excess"][1] < steiner["mean_excess"][0]
+    heat = comparison["heat"]
+    assert heat[1]["max_abs_error"] < heat[0]["max_abs_error"]
+    traced = S.traced_exact_study(configs=((1, 2.0), (2, 2.0)))
+    rows = [r for r in traced["rows"] if r["status"] == "completed"]
+    assert len(rows) == 12 and min(r["excess"] for r in rows) >= -1e-12
+    for level in (1, 2):  # some traces below pi are shortest paths and some are not
+        shortest = [r["shortest"] for r in rows if r["level"] == level]
+        assert 0 < sum(shortest) < len(shortest)
 
 
 # ---------------------------------------------------------------- T039
@@ -502,8 +675,11 @@ def test_next_steps_name_forward_work(reports):
         assert text == M.NEXT_STEPS[task_id], task_id
         if report["state"] == "completed":
             assert text.startswith("Deferred research question: "), (task_id, text)
-    assert reports["T038"]["recommended_next_task"].startswith("Complete T038: ")
-    assert "T039" not in reports["T038"]["recommended_next_task"]
+    # T038 delivered the exact solver; its next step names the work it leaves open, not the solver again.
+    step = reports["T038"]["recommended_next_task"]
+    assert reports["T038"]["state"] == "completed"
+    assert "Polthier-Schmies" in step and "polyline" in step and "cut locus" in step
+    assert "T039" not in step and "exact two-point" not in step
     # T045 now carries the split for model-derived distances on parametric surfaces; T044 hands out only the
     # part still open there (the mesh form of geometry_m2), naming T045 and T140 as partial deliverers.
     step = M.NEXT_STEPS["T044"]

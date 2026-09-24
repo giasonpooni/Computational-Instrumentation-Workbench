@@ -432,8 +432,9 @@ has its own exact inputs, source pins, operating examples, validation and
 limitations.
 
 The base package needs Python 3.11 or newer, NumPy and websockets. Optional
-extras: `dev` (pytest), `lab` (SciPy, SymPy and mpmath as independent lab
-references, and jsonschema for report schema checks), `mcp` (the lab MCP
+extras: `dev` (pytest), `lab` (SciPy, SymPy, mpmath, pygeodesic and
+potpourri3d as independent lab references, and jsonschema for report schema
+checks), `mcp` (the lab MCP
 server), `plsr` (the pinned Lyapunov runtime; Python 3.12 or newer) and
 `bench-models` (jsonschema for the free-energy and remaining-module benches).
 

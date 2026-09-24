@@ -5,8 +5,9 @@ computational-experimentalist queue: the algorithms, the convergence results,
 the named refusal states and, above all, what the results do not establish.
 
 **Scope.** Generated meshes only (icosphere, latitude–longitude sphere, prism
-cylinder, Schwarz lantern, planar grids, torus grids) in normalized units, with
-smooth references from `ciw.lab.surfaces` and `ciw.lab.jacobi`.
+cylinder, Schwarz lantern, planar grids, an L-shaped grid, torus grids, a
+refined cube) in normalized units, with smooth references from
+`ciw.lab.surfaces` and `ciw.lab.jacobi`.
 
 **Non-claims.** No scanned surface, scanner, tracker or tape was measured. Every
 statement about real scanned surfaces, real sensors or production thresholds is
@@ -21,20 +22,20 @@ spread of pairwise local orders) and a regression tolerance.
 | File | Contents |
 | --- | --- |
 | `src/ciw/lab/surfaces_discrete_mesh_geometry.py` | mesh type, generators, validator, tracer, distances, curvature, strip unfolding |
+| `src/ciw/lab/surfaces_discrete_mesh_exact.py` | exact polyhedral distances (window propagation), surface points inserted as vertices |
 | `src/ciw/lab/surfaces_discrete_mesh_studies.py` | deterministic studies (plain numbers) |
 | `src/ciw/lab/surfaces_discrete_mesh.py` | task registrations T038–T044, findings and report fields |
-| `tests/test_lab_surfaces_discrete_mesh.py` | regression tests (about 25 s) |
+| `tests/test_lab_surfaces_discrete_mesh.py` | regression tests (about 40 s) |
 
 ## Algorithms
 
 ### Straightest geodesics (T038)
 
-T038 is **partial**. It delivers an initial-value tracer (straightest
-geodesics from a point and a heading) and approximate distances (edge graph,
-Steiner graph, heat method). It does not deliver an exact two-point
-polyhedral geodesic (MMP, ICH or iterative edge flipping), so no shortest path
-between two given points is solved exactly and the approximate distances are
-never compared with an exact polyhedral distance.
+T038 delivers an initial-value tracer (straightest geodesics from a point and
+a heading), approximate distances (edge graph, Steiner graph, heat method) and
+the exact polyhedral distance between two surface points (below), against
+which the others are compared. The exact solver returns distances, not the
+shortest path polyline.
 
 A geodesic is traced as an initial-value problem in the Polthier–Schmies
 sense: straight inside a face, and at an edge with unit direction `ê` the
@@ -59,6 +60,64 @@ Declared rules:
 - **Boundaries stop the trace** (`boundary_reached`) and the partial path and
   its length are retained.
 
+### Exact polyhedral distance (T038)
+
+`ExactGeodesic(mesh).distances(source)` returns the length of the globally
+shortest surface path from a vertex to every vertex, exact up to rounding. It
+propagates *windows* in the manner of Chen and Han (1990) as improved by Xin
+and Wang (2009, "ICH"). A window is an interval `[b0, b1]` of an edge
+together with the position of its source unfolded into the plane of the next
+face (below the edge) and the source's own distance `σ`; a point `x` of the
+interval is reached at distance `σ + |s − x|`.
+
+- **Order.** Windows are processed in increasing order of the smallest
+  distance they carry, so vertex distances settle as in Dijkstra's algorithm,
+  and a two-point query (`targets=`) stops once no queued window can carry
+  less than the target's distance.
+- **Propagation.** A window crossing a face sends its rays to the two far
+  edges, split at the apex when the apex is in view (the ray through it
+  crosses the interval, with a `1e-12` relative slack); a ray through the apex
+  gives the apex its distance.
+- **Pseudo-sources.** Shortest paths bend only at saddle vertices (angle sum
+  above `2π`) and at reflex boundary vertices (angle sum above `π`). Such a
+  vertex, once reached, starts windows of its own on the far edges of its
+  faces, with `σ` its distance. Flat vertices (within `1e-9` of `2π`, or `π`
+  on the boundary) are passed on both sides as limit rays of their
+  neighbouring windows.
+- **Pruning.** Along an edge `PQ`, `σ + |s − x| − |P x|` never increases away
+  from `P` and `σ + |s − x| − |Q x|` never decreases towards `Q`, so each
+  endpoint cuts one end of the interval at a single root of a linear
+  equation. The apex of either face drops a window only when it beats both
+  ends by a margin `c ≥ 0`, because the points it beats by more than `c ≥ 0`
+  form a convex set. A point is cut only when a path through a vertex beats
+  it by more than `1e-10` of the mean edge. That is sound: a subpath of a
+  shortest path is shortest, so a point on a shortest path is never beaten by
+  a vertex path, and the window carrying it survives.
+- **Points on the surface.** `insert_points(mesh, [(face, xyz)])` makes each
+  point a vertex: a point inside a face splits it 1-to-3, a point within
+  `1e-9` (barycentric) of an edge splits both faces at the edge 1-to-2, and a
+  point at a vertex is that vertex. The new faces lie in the old face planes,
+  so the polyhedral metric, and every distance, is unchanged; the refined
+  mesh stays closed and consistently oriented.
+
+The loop is plain Python. Icosphere-4 (2562 vertices) propagates about 141000
+windows per source; the studies stop there. The solver returns distances only:
+back-tracing the path polyline through the windows is not implemented.
+
+**Independent implementations.** When installed (the `lab` extra pins both),
+two C++ libraries check the solver: `pygeodesic` 0.1.11, a wrapper of
+Kirsanov's implementation of the exact MMP algorithm (Surazhsky et al. 2005),
+compared at every vertex from the same sources; and `potpourri3d` 1.4.0, whose
+`EdgeFlipGeodesicSolver` (geometry-central's FlipOut, Sharp and Crane 2020)
+shortens the edge-graph path between two vertices to a *locally* shortest
+geodesic, so its length is at least the exact distance and equals it when that
+geodesic is also globally shortest. Their origins (`pygeodesic`,
+`potpourri3d`) are recognised independent families, and the ciw side of each
+check names `ciw <version>` and the solver module's source digest. Without a
+package its finding keeps the same claim and prose and rests on same-origin
+checks (source symmetry, the edge Lipschitz bound, edge-graph paths), so it
+is `numerically_verified` instead of `independently_verified`.
+
 ### Distances
 
 - **Edge Dijkstra** (heap based): shortest edge path, an upper bound on the
@@ -69,7 +128,7 @@ Declared rules:
   report prose are the same in both environments.
 - **Steiner graph**: `k` equally spaced points per edge, all node pairs inside
   each face joined. Every graph edge is a straight segment in a face, so graph
-  distances are upper bounds on the (uncomputed) polyhedral distance; with
+  distances are upper bounds on the polyhedral distance; with
   `k = 2^j − 1` the node sets are nested and distances cannot increase with
   `k`. That every edge lies in a face is checked by a point-in-face test
   (plane offset and barycentric coordinates) that does not use the graph
@@ -197,9 +256,50 @@ although it does not overlap itself and no face points inward.
 | Nested Steiner distances, k = 0, 1, 3, 7 | never increase; 0 of 115740 graph edges leave a face |
 | Steiner distance − traced length (level 2, length 1) | mean 3.0e-2 (k=1), 1.3e-2 (k=3), 5.3e-3 (k=7), all positive |
 
-The Steiner sandwich is consistent with the traced geodesics being shortest
-paths; it does not prove it, and no exact polyhedral distance is computed to
-settle it (T038 is partial for that reason).
+Exact polyhedral distances:
+
+| Check | Result |
+| --- | --- |
+| Sheared planar meshes, from a vertex and an inserted interior point: exact vs Euclidean | `2.4e-15` |
+| L-shaped grid (reflex corner at (0.5, 0.5)), two sources: exact vs segment or path bent at the corner | `1.1e-15`; 20 targets reached around the corner |
+| Prism cylinder, n = 8, 16, 32, from a boundary vertex and an inserted point: exact vs development over periodic images | `7.1e-15` |
+| Refined cube (4 × 4 squares per face), corner to corners: exact vs 1, √2, √5 | `8.9e-16`; the edge graph gives 1 + √2 = 2.414214 for √5 = 2.236068 |
+| Face point and edge point inserted as vertices (icosphere-2, torus 12 × 6): change of distances between original vertices | `1.8e-15` |
+| Three sources on icosphere levels 1–4 and a 24 × 12 torus (120 saddles): source symmetry and pygeodesic (11088 distances) | `8.0e-15` (`independently_verified` with pygeodesic) |
+| FlipOut geodesic − exact over 3267 vertex pairs (icosphere-2, icosphere-3, torus) | smallest −4.4e-15; shortest in 404 of 483, 1475 of 1923, 795 of 861 pairs; largest excess 7.5e-3, 4.9e-3, 0.14 |
+
+Compared with the exact distance from vertex 0 (valence 5):
+
+| Method | Level 1 | Level 2 | Level 3 | Level 4 |
+| --- | --- | --- | --- | --- |
+| Edge graph, largest relative excess | 0.181 | 0.220 | 0.232 | 0.235 |
+| Steiner k = 1, 3, 7, mean excess | — | 1.9e-2, 7.1e-3, 2.4e-3 | 2.1e-2, 7.8e-3, 2.3e-3 | — |
+| Heat method (t = h²), largest error | 0.096 | 0.066 | 0.043 | — |
+| Exact − great-circle distance, largest | 0.115 | 0.031 | 0.0079 | — |
+
+- No graph path, FlipOut geodesic or traced geodesic is shorter than the
+  exact distance (the smallest excess is rounding, down to −4.4e-15). The edge
+  graph's relative excess approaches the valence-5 floor `√5 − 2 = 0.236` of
+  T039, now measured against the polyhedral distance instead of the sphere.
+- The heat method's error against the exact polyhedral distance falls at
+  every level, but at a fitted order of 0.60, below its order 1.01 against the
+  great circle (T039): on coarse meshes part of its error against the sphere
+  cancels the polyhedral metric's own `O(h²)` shortfall (last row).
+- **Straightest geodesics are often not shortest paths.** Of the six declared
+  length-2 traces (below π), 2, 3, 3 and 2 are shortest paths on levels 1–4
+  (within `1e-10` of the exact distance); the others are longer by up to
+  1.3e-2, 1.6e-3, 1.4e-4 and 3.7e-5, and never by less than 4.6e-6. On level 2
+  one of the six length-1 traces of the Steiner comparison is longer than the
+  exact distance by 1.1e-4, so the Steiner-over-traced ordering above is not a
+  sandwich of the distance: for large enough k the Steiner distance would fall
+  below that traced length. This is a counterexample to "a straightest
+  geodesic shorter than π on a mesh inscribed in the sphere is a shortest
+  path". It is consistent with the structure of the cut locus of a point on a
+  convex polyhedron, a tree with a leaf at every vertex: a straightest
+  geodesic passing a vertex closely crosses the branch that ends there, after
+  which the path around the vertex's other side is shorter. The excess falls
+  with refinement because the curvature concentrated at each vertex does.
+  Where a trace crosses the cut locus is observed per trace, not predicted.
 
 ### Convergence under refinement (T039)
 
@@ -532,9 +632,11 @@ Residual `r = y − d(V_nominal)` with `y = d(V_nominal + η) + ε`,
 - Pointwise convergence of the barycentric angle-defect curvature anywhere on
   the icosphere family (valence-5 vertices and mirror-plane valence-6 vertices
   are counterexamples; the off-mirror maximum stalls at level 7).
-- That traced geodesics are globally shortest (the Steiner sandwich is
-  consistent with it only), or any exact two-point polyhedral distance (none is
-  implemented; T038 is partial).
+- That traced geodesics are globally shortest: many are not (T038), and where
+  one stops being shortest is observed, not predicted. The exact solver gives
+  distances only, not the shortest path itself, and is exact only up to
+  rounding and the `1e-10` pruning margin; its speed limits it to meshes of a
+  few thousand vertices.
 - Detection of self-intersections, unwelded seams, duplicate faces or other
   defects outside the catalogue. Detection of inverted faces with small bends
   when no centre is declared. Freedom from false `folded_face` refusals on
@@ -551,9 +653,10 @@ Residual `r = y − d(V_nominal)` with `y = d(V_nominal + η) + ε`,
 
 ## Open questions and next tasks
 
-1. Complete T038: implement an exact two-point polyhedral distance (MMP or
-   ICH, or iterative edge flipping) as a reference for the Steiner,
-   heat-method and traced lengths.
+1. Back-trace the shortest path polyline from the exact solver's windows, and
+   locate where straightest geodesics stop being shortest (their crossing of
+   the start point's cut locus) as a function of refinement and of the
+   distance to the nearest vertex.
 2. Implement the Polthier–Schmies vertex rule and measure how often generic
    traces need it on irregular meshes.
 3. Re-trace per Monte Carlo sample to quantify geodesic-distance uncertainty

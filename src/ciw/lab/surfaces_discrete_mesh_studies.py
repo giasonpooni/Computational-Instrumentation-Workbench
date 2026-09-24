@@ -3,7 +3,9 @@
 Each study returns plain numbers and lists; the task module turns them into
 findings. Smooth references come from ``ciw.lab.surfaces`` (great circles,
 helices, closed-form curvature) and ``ciw.lab.jacobi`` (the smooth transfer
-matrix). Random inputs use seeded PCG64 generators only.
+matrix); exact polyhedral distances come from
+``ciw.lab.surfaces_discrete_mesh_exact`` and are compared with pygeodesic and
+potpourri3d when they import. Random inputs use seeded PCG64 generators only.
 
 Non-claims: the meshes are generated from declared formulas in normalized
 units and the noise models are declared Gaussian models. Nothing here is a
@@ -12,6 +14,8 @@ agreement between two computations on the same declared model.
 """
 from __future__ import annotations
 
+import importlib
+import importlib.metadata
 import importlib.util
 import math
 
@@ -20,6 +24,7 @@ import numpy as np
 from . import jacobi
 from .integrators import observed_order
 from .surfaces import Sphere, Torus
+from . import surfaces_discrete_mesh_exact as E
 from . import surfaces_discrete_mesh_geometry as G
 
 SEED = 20260938
@@ -313,6 +318,263 @@ def dijkstra_independent(level=3):
     result["floyd_level"] = min(level, 2)
     result["floyd_max_abs"] = float(np.max(np.abs(dense[0] - G.dijkstra(ip, ix, w, 0))))
     return result
+
+
+# ---------------------------------------------------------------- exact polyhedral distances
+# Meshes of the exact-distance study, three sources each (vertex 0 of an icosphere has valence 5). The
+# torus has 120 saddle vertices (angle sum above 2 pi), where shortest paths may bend.
+EXACT_LEVELS = (1, 2, 3, 4)
+EXACT_TORUS = (24, 12)
+FLIPOUT_MESHES = ("icosphere-2", "icosphere-3", "torus-24x12")
+STEINER_LEVELS = (2, 3)
+HEAT_LEVELS = (1, 2, 3)
+# Traced geodesics compared with the exact distance between their endpoints, as (level, length): length 2 is the
+# convergence study's trace length, and the length-1 traces on level 2 are those of the Steiner comparison.
+TRACED_EXACT = ((1, 2.0), (2, 2.0), (3, 2.0), (4, 2.0), (2, 1.0))
+# A path within this of the exact distance is a shortest path; rounding stays below 1e-14 on these meshes.
+SHORTEST = 1e-10
+
+
+def package_version(name: str) -> str | None:
+    """Distribution version of an optional package that imports here (potpourri3d has no ``__version__``)."""
+    if importlib.util.find_spec(name) is None:
+        return None
+    try:
+        importlib.import_module(name)
+        return importlib.metadata.version(name)
+    except Exception:  # installed but not importable here: absent
+        return None
+
+
+def exact_sources(mesh) -> tuple:
+    n = len(mesh.vertices)
+    return 0, n // 3, 2 * n // 3
+
+
+def exact_meshes(levels=EXACT_LEVELS, torus=EXACT_TORUS) -> list:
+    return [G.icosphere(level) for level in levels] + [G.torus_mesh(*torus)]
+
+
+def exact_distance_study(levels=EXACT_LEVELS, torus=EXACT_TORUS, flipout=FLIPOUT_MESHES):
+    """ciw exact distances from three sources to every vertex, with the checks that need no other implementation.
+
+    Symmetry compares d(a -> b) with d(b -> a) between the sources, which propagate different windows; the edge
+    excess max(|d(u) - d(v)| - |uv|) over edges is at most 0 for a distance (the edge is a surface path); and on
+    the ``flipout`` meshes the edge-graph path from each source to every other vertex is never shorter.
+    """
+    rows = []
+    for mesh in exact_meshes(levels, torus):
+        solver = E.ExactGeodesic(mesh)
+        sources = exact_sources(mesh)
+        solved = [solver.solve(source) for source in sources]
+        d = np.array([distances for distances, _ in solved])
+        a, b = mesh.edges[:, 0], mesh.edges[:, 1]
+        row = {"mesh": mesh.name, "vertices": len(mesh.vertices), "h": mesh.mean_edge(), "sources": list(sources),
+               "pseudo_source_vertices": int(sum(solver.pseudo)), "distances": d,
+               "windows": [counters["windows"] for _, counters in solved],
+               "symmetry_max_abs": float(max(abs(d[i, sources[j]] - d[j, sources[i]])
+                                             for i in range(3) for j in range(i + 1, 3))),
+               "edge_excess": float(np.max(np.abs(d[:, a] - d[:, b]) - mesh.edge_lengths[None])),
+               "unreached": int(np.sum(~np.isfinite(d)))}
+        if mesh.name in flipout:
+            gaps = [np.delete(G.edge_distances(mesh, source) - distances, source)
+                    for source, distances in zip(sources, d)]
+            row["pairs"] = int(sum(len(g) for g in gaps))
+            row["edge_graph_min_excess"] = float(min(np.min(g) for g in gaps))
+        rows.append(row)
+    return {"levels": list(levels), "torus": list(torus), "flipout": list(flipout), "rows": rows}
+
+
+def exact_independent_study(exact):
+    """pygeodesic (Kirsanov's exact MMP) and potpourri3d (geometry-central's FlipOut) on the same meshes.
+
+    A package is compared only when it imports here. pygeodesic returns exact distances from each source to
+    every vertex. FlipOut shortens the edge-graph path between two vertices to a locally shortest geodesic,
+    whose length is at least the exact distance and equals it when that geodesic is globally shortest.
+    """
+    result = {"pygeodesic": package_version("pygeodesic"), "potpourri3d": package_version("potpourri3d")}
+    meshes = exact_meshes(exact["levels"], exact["torus"])
+    if result["pygeodesic"]:
+        from pygeodesic.geodesic import PyGeodesicAlgorithmExact
+        worst, compared = 0.0, 0
+        for mesh, row in zip(meshes, exact["rows"]):
+            algorithm = PyGeodesicAlgorithmExact(mesh.vertices, mesh.faces.astype(np.int32))
+            for source, distances in zip(row["sources"], row["distances"]):
+                reference, _ = algorithm.geodesicDistances(np.array([source], dtype=np.int32), None)
+                worst = max(worst, float(np.max(np.abs(np.asarray(reference) - distances))))
+                compared += len(distances)
+        result.update(pygeodesic_max_abs=worst, pygeodesic_compared=compared)
+    if result["potpourri3d"] and exact["flipout"]:
+        from potpourri3d import EdgeFlipGeodesicSolver
+        per_mesh = []
+        for mesh, row in zip(meshes, exact["rows"]):
+            if row["mesh"] not in exact["flipout"]:
+                continue
+            solver = EdgeFlipGeodesicSolver(mesh.vertices, mesh.faces)
+            excess = np.array([float(np.sum(np.linalg.norm(np.diff(solver.find_geodesic_path(source, target), axis=0),
+                                                           axis=1))) - distances[target]
+                               for source, distances in zip(row["sources"], row["distances"])
+                               for target in range(len(mesh.vertices)) if target != source])
+            per_mesh.append({"mesh": row["mesh"], "pairs": len(excess), "min_excess": float(excess.min()),
+                             "max_excess": float(excess.max()), "shortest": int(np.sum(np.abs(excess) <= SHORTEST))})
+        result["flipout"] = per_mesh
+        result["flipout_min_excess"] = min(r["min_excess"] for r in per_mesh)
+    return result
+
+
+def exact_comparison_study(exact, steiner_levels=STEINER_LEVELS, ks=(1, 3, 7), heat_levels=HEAT_LEVELS):
+    """Edge-graph, Steiner-graph and heat-method distances from vertex 0 against the exact distances."""
+    spheres = {mesh.params["level"]: (mesh, row["distances"][0])
+               for mesh, row in zip(exact_meshes(exact["levels"], exact["torus"]), exact["rows"])
+               if mesh.name.startswith("icosphere")}
+    edge_rows = []
+    for level, (mesh, d) in sorted(spheres.items()):
+        edge = G.edge_distances(mesh, 0)[1:]
+        edge_rows.append({"level": level, "h": mesh.mean_edge(), "min_excess": float(np.min(edge - d[1:])),
+                          "max_relative_excess": float(np.max(edge / d[1:] - 1))})
+    steiner_rows = []
+    for level in steiner_levels:
+        mesh, d = spheres[level]
+        row = {"level": level, "ks": list(ks), "min_excess": [], "mean_excess": [], "max_relative_excess": []}
+        for k in ks:
+            (indptr, indices, weights), _, _ = G.steiner_graph(mesh, k)
+            steiner = G.dijkstra(indptr, indices, weights, 0)[1:len(d)]
+            row["min_excess"].append(float(np.min(steiner - d[1:])))
+            row["mean_excess"].append(float(np.mean(steiner - d[1:])))
+            row["max_relative_excess"].append(float(np.max(steiner / d[1:] - 1)))
+        steiner_rows.append(row)
+    heat_rows = []
+    for level in heat_levels:
+        mesh, d = spheres[level]
+        heat = G.heat_distance(mesh, 0)
+        smooth = np.arccos(np.clip(mesh.vertices @ mesh.vertices[0], -1, 1))
+        heat_rows.append({"level": level, "h": mesh.mean_edge(), "max_abs_error": float(np.max(np.abs(heat - d))),
+                          "rms_error": float(np.sqrt(np.mean((heat - d) ** 2))),
+                          "exact_minus_smooth_max": float(np.max(np.abs(d - smooth)))})
+    return {"source": "vertex 0 (valence 5)", "edge_graph": edge_rows, "steiner": steiner_rows, "heat": heat_rows}
+
+
+def traced_exact_study(configs=TRACED_EXACT, starts=STARTS):
+    """Straightest geodesics against the exact distance between their endpoints, both inserted as vertices."""
+    rows = []
+    for level, length in configs:
+        mesh = G.icosphere(level)
+        for index, (u0, heading) in enumerate(starts):
+            start = sphere_start(mesh, u0, heading)
+            tr = G.trace(mesh, start["face"], start["point"], start["direction"], length)
+            row = {"level": level, "length": length, "start": index, "status": tr.status}
+            if tr.completed:
+                refined, (a, b) = E.insert_points(mesh, [(start["face"], start["point"]),
+                                                         (tr.end_face, tr.end_point)])
+                exact = float(E.ExactGeodesic(refined).distances(a, targets=[b])[b])
+                row.update(traced=tr.length, exact=exact, excess=tr.length - exact,
+                           shortest=bool(abs(tr.length - exact) <= SHORTEST))
+            rows.append(row)
+    return {"configs": [list(c) for c in configs], "shortest_tolerance": SHORTEST, "rows": rows}
+
+
+def _l_shape(size=8) -> G.TriMesh:
+    """The unit-square grid without its upper-right quadrant: one reflex boundary corner, at (0.5, 0.5)."""
+    plane = G.plane_mesh(size, size)
+    centroid = plane.vertices[plane.faces].mean(axis=1)
+    faces = plane.faces[~((centroid[:, 0] > 0.5) & (centroid[:, 1] > 0.5))]
+    used = np.unique(faces)
+    index = np.full(len(plane.vertices), -1)
+    index[used] = np.arange(len(used))
+    return G.TriMesh.build(plane.vertices[used], index[faces], f"l-shape-{size}", params={"size": size})
+
+
+def _l_distance(source, target, corner=(0.5, 0.5)) -> tuple:
+    """(distance, bent) in the L-shape: the segment when it avoids the open removed quadrant, else via the corner."""
+    lo, hi = 0.0, 1.0
+    for axis in (0, 1):
+        a, b = source[axis], target[axis]
+        if a == b:
+            lo, hi = (lo, hi) if a > corner[axis] else (1.0, 0.0)
+        elif b > a:
+            lo = max(lo, (corner[axis] - a) / (b - a))
+        else:
+            hi = min(hi, (corner[axis] - a) / (b - a))
+    if lo >= hi:
+        return float(np.linalg.norm(target[:2] - source[:2])), False
+    c = np.asarray(corner, dtype=float)
+    return float(np.linalg.norm(c - source[:2]) + np.linalg.norm(target[:2] - c)), True
+
+
+def exact_analytic_study(shears=(0.0, 0.5, 1.0, 1.5), size=8, ns=(8, 16, 32), radius=1.0, height=4.0, z0=0.5,
+                         sector=1, cube=4):
+    """Exact distances where the polyhedral distance has a closed form.
+
+    Sheared planar grids are convex, so distances are Euclidean; in the L-shape a hidden target is reached
+    through the reflex corner; the prism cylinder develops to a flat strip of circumference 2 n R sin(pi / n),
+    so a distance is the shortest segment to the periodic images; and on the unit cube the corner distances are
+    1, sqrt 2 and sqrt 5 (two faces unfolded). Sources are a vertex and a point inserted inside a face.
+    """
+    planes = []
+    for shear in shears:
+        mesh = G.plane_mesh(size, size, shear=shear)
+        point = np.array([0.5 + 0.5 * shear + 0.013, 0.5 + 0.007, 0.0])  # plane_study's start
+        refined, (inserted,) = E.insert_points(mesh, [(mesh.locate(point)[0], point)])
+        solver = E.ExactGeodesic(refined)
+        planes.append({"shear": shear, "max_error": max(
+            float(np.max(np.abs(solver.distances(s) - np.linalg.norm(refined.vertices - refined.vertices[s], axis=1))))
+            for s in (0, inserted))})
+    shape = _l_shape(size)
+    solver = E.ExactGeodesic(shape)
+    l_errors, bent = [], 0
+    for corner in ((1.0, 0.0, 0.0), (0.0, 1.0, 0.0)):
+        source = int(np.argmin(np.linalg.norm(shape.vertices - corner, axis=1)))
+        reference = [_l_distance(shape.vertices[source], v) for v in shape.vertices]
+        bent += sum(b for _, b in reference)
+        l_errors.append(float(np.max(np.abs(solver.distances(source) - np.array([d for d, _ in reference])))))
+    cylinders = []
+    for n in ns:
+        m = max(4, int(round(height / (2 * radius * math.sin(math.pi / n)))))  # as in cylinder_study
+        mesh = G.cylinder_mesh(n, m, radius, height)
+        chord = 2 * radius * math.sin(math.pi / n)
+        mid = 2 * math.pi * (sector + 0.5) / n
+        inset = radius * math.cos(math.pi / n)
+        point = np.array([inset * math.cos(mid), inset * math.sin(mid), z0])
+        refined, (inserted,) = E.insert_points(mesh, [(mesh.locate(point)[0], point)])
+        # Development: ring j, column i at (i chord, j H / m); the inserted chord midpoint at
+        # ((sector + 1/2) chord, z0).
+        index = np.arange(len(mesh.vertices))
+        along = np.r_[(index % n) * chord, (sector + 0.5) * chord]
+        up = np.r_[(index // n) * height / m, z0]
+        solver = E.ExactGeodesic(refined)
+        errors = []
+        for source in (0, inserted):
+            reference = np.min([np.hypot(along - along[source] + k * n * chord, up - up[source]) for k in (-1, 0, 1)],
+                               axis=0)
+            errors.append(float(np.max(np.abs(solver.distances(source) - reference))))
+        cylinders.append({"n": n, "rings": m + 1, "max_error": max(errors)})
+    box = G.cube_mesh(cube)
+    corners = [int(np.flatnonzero(np.all(box.vertices == c, axis=1))[0])
+               for c in np.array(np.meshgrid([0, 1], [0, 1], [0, 1], indexing="ij")).reshape(3, -1).T]
+    closed = [(0.0, 1.0, math.sqrt(2.0), math.sqrt(5.0))[int(box.vertices[c].sum())] for c in corners]
+    d = E.ExactGeodesic(box).distances(corners[0])
+    return {"planes": planes, "plane_max_error": max(r["max_error"] for r in planes),
+            "l_shape": {"vertices": len(shape.vertices), "bent_targets": int(bent), "max_error": max(l_errors)},
+            "cylinders": cylinders, "cylinder_max_error": max(r["max_error"] for r in cylinders),
+            "cube": {"k": cube, "corner_distances": [float(d[c]) for c in corners], "closed_forms": closed,
+                     "max_error": float(max(abs(d[c] - r) for c, r in zip(corners, closed))),
+                     "edge_graph_far_corner": float(G.edge_distances(box, corners[0])[corners[-1]])}}
+
+
+def insertion_study(level=2, torus=(12, 6)):
+    """Exact distances between original vertices before and after inserting a face point and an edge point."""
+    rows = []
+    for mesh in (G.icosphere(level), G.torus_mesh(*torus)):
+        f = len(mesh.faces) // 2
+        points = [(f, mesh.point(f, [0.2, 0.3, 0.5])), (f + 1, mesh.point(f + 1, [0.35, 0.65, 0.0]))]
+        refined, ids = E.insert_points(mesh, points)
+        n = len(mesh.vertices)
+        before, after = E.ExactGeodesic(mesh), E.ExactGeodesic(refined)
+        worst = max(float(np.max(np.abs(after.distances(s)[:n] - before.distances(s)))) for s in (0, n // 2))
+        rows.append({"mesh": mesh.name, "inserted": ids, "faces_added": len(refined.faces) - len(mesh.faces),
+                     "issues": [code for code, _ in G.inspect(refined.vertices, refined.faces, require_closed=True)],
+                     "max_abs_change": worst})
+    return {"rows": rows, "max_abs_change": max(r["max_abs_change"] for r in rows)}
 
 
 # ---------------------------------------------------------------- Jacobi fields and curvature

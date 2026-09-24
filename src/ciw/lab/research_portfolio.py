@@ -322,9 +322,10 @@ def _earlier(number: int) -> str:
 SPEC_PHYSICAL = frozenset({"physical", "calibration", "sensor_performance"})
 SPEC_AUTHORITY = frozenset({"machine_safety", "industrial_readiness", "customer_demand", "actuator_authority",
                             "production_acceptance"})
-SPEC_FAMILIES = frozenset({"ciw", "scipy", "sympy", "mpmath", "numpy", "cpython", "zlib", "git",
-                           "curved-surface-geodesic-sensitivity-runtime", "flat-torus-geodesic-reference",
-                           "parameterized-lyapunov-stability-runtime", "scientific-computation-runtime"})
+SPEC_FAMILIES = frozenset({"ciw", "scipy", "sympy", "mpmath", "numpy", "cpython", "zlib", "git", "pygeodesic",
+                           "potpourri3d", "curved-surface-geodesic-sensitivity-runtime",
+                           "flat-torus-geodesic-reference", "parameterized-lyapunov-stability-runtime",
+                           "scientific-computation-runtime"})
 RULE_BRANCHES = ("1 authority domain", "2 failed check", "3 no acquisition", "3 acquisition with I",
                  "3 acquisition", "4 acquisition refused", "4 I", "4 C", "4 P", "4 G", "4 D", "4 no basis",
                  "5 cross_implementation is not I", "5 unknown family", "5 ciw inside another family",

@@ -291,10 +291,11 @@ def _identity(value, name):
 # one of these, one of these against ciw, or two of these. An origin outside
 # this set cannot take part, and ciw never checks ciw. numpy counts only for
 # routines the compared ciw code does not itself call; reviewers check that
-# per finding.
+# per finding. pygeodesic (Kirsanov's exact MMP geodesics) and potpourri3d
+# (geometry-central, including FlipOut) are C++ mesh-geodesic libraries.
 CIW_ORIGIN = "ciw"
 INDEPENDENT_ORIGINS = frozenset({
-    "scipy", "sympy", "mpmath", "numpy", "cpython", "zlib", "git",
+    "scipy", "sympy", "mpmath", "numpy", "cpython", "zlib", "git", "pygeodesic", "potpourri3d",
     "curved-surface-geodesic-sensitivity-runtime", "flat-torus-geodesic-reference",
     "parameterized-lyapunov-stability-runtime", "scientific-computation-runtime",
 })

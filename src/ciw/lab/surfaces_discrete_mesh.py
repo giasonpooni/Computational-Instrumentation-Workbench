@@ -2,7 +2,9 @@
 
 Scope: straightest geodesics traced by edge unfolding on generated triangle
 meshes (icosphere, prism cylinder, Schwarz lantern, planar grids, torus),
-edge-graph, Steiner-graph and heat-method distances, their convergence to the
+exact polyhedral distances by window propagation checked against closed forms
+and external exact and edge-flip implementations, edge-graph, Steiner-graph
+and heat-method distances, their convergence to the
 smooth ``ciw.lab.surfaces`` references, finite-difference mesh Jacobi fields
 against the smooth ``ciw.lab.jacobi`` transfer, angle-defect curvature,
 mesh-quality effects, named refusal states for invalid surface data, and the
@@ -23,13 +25,14 @@ import math
 import numpy as np
 
 from . import svg
-from .evidence import finding, holds
+from .evidence import COMPUTATIONAL_DOMAINS, finding, holds
 from .registry import task
 from . import surfaces_discrete_mesh_studies as S
 
 MODULE = "src/ciw/lab/surfaces_discrete_mesh.py"
 GEOMETRY = "src/ciw/lab/surfaces_discrete_mesh_geometry.py"
 STUDIES = "src/ciw/lab/surfaces_discrete_mesh_studies.py"
+SOLVER = "src/ciw/lab/surfaces_discrete_mesh_exact.py"
 DOC = "docs/lab/MESH_GEODESICS.md"
 TESTS = "tests/test_lab_surfaces_discrete_mesh.py"
 FILES = (MODULE, GEOMETRY, STUDIES, DOC)
@@ -38,6 +41,7 @@ NEXT_STEP_TEST = f"{TESTS}::test_next_steps_name_forward_work"
 PRODUCER = "ciw.lab.surfaces_discrete_mesh"
 GEOM = "ciw.lab.surfaces_discrete_mesh_geometry"
 STUD = "ciw.lab.surfaces_discrete_mesh_studies"
+SOLV = "ciw.lab.surfaces_discrete_mesh_exact"
 TIGHT = {"abs": 1e-9, "rel": 1e-6}
 RATE = {"abs": 1e-6, "rel": 1e-6}
 EXACT_TOLERANCE = {"abs": 0, "rel": 0}
@@ -101,6 +105,13 @@ def generator(qualified, **params) -> dict:
     return {"name": qualified, **jsonable(params)}
 
 
+def _ciw_producer(implementation: str, source: str) -> dict:
+    """A ciw producer identity for an independent check: the package version plus the producing module's digest."""
+    from .. import __version__
+    from .runner import source_digest
+    return {"implementation": implementation, "revision": f"ciw {__version__}", "source_sha256": source_digest(source)}
+
+
 def fields(hypothesis, model, inputs, observation, invariant, experiment, result, uncertainty, failure_modes,
            assumptions, next_task) -> dict:
     return {"hypothesis": hypothesis, "mathematical_model": model, "input_data": inputs,
@@ -111,8 +122,11 @@ def fields(hypothesis, model, inputs, observation, invariant, experiment, result
 
 # Each task's next step names its own open question, never a queue task that has already run.
 NEXT_STEPS = {
-    "T038": ("Complete T038: implement an exact two-point polyhedral geodesic (MMP or ICH, or iterative edge flipping) "
-             "and compare it with the Steiner, heat-method and traced lengths."),
+    "T038": ("Deferred research question: continue traced geodesics through vertices by the Polthier-Schmies rule "
+             "(they are refused as vertex_hit now) and measure how often generic traces need it on irregular meshes; "
+             "back-trace the shortest path polyline from the exact solver's windows, which return distances only; and "
+             "locate where straightest geodesics stop being shortest (the cut locus of the start point, whose branches "
+             "end at vertices) as a function of refinement and of the distance to the nearest vertex."),
     "T039": ("Deferred research question: measure the heat-method convergence rate for time steps t = m h^2 over a "
              "range of m (only m = 1, as Crane et al. recommend, is used here) and the endpoint-error order for "
              "geodesic directions sampled over their angle to the lattice rows, on which the retained empirical order "
@@ -213,11 +227,216 @@ def _missing_witness(claim, reference):
 
 
 # ---------------------------------------------------------------- T038
-@task("T038", changed_files=FILES, regression_tests=(
+# Rounding allowance for a signed gap between a path length and the exact distance (observed rounding stays
+# below 1e-14 on these meshes).
+ROUNDING = 1e-12
+
+
+def task_state(findings) -> str:
+    """Completed when no computational finding is refuted; a refuted one leaves the task partial."""
+    refuted = any(f["domain"] in COMPUTATIONAL_DOMAINS and f["evidence_status"] == "not_established"
+                  and not f.get("expected_not_established") for f in findings)
+    return "partial" if refuted else "completed"
+
+
+def traced_summary(traced) -> dict:
+    """Completed traces of the traced-exact study grouped by level (length 2), plus the length-1 traces."""
+    done = [r for r in traced["rows"] if r["status"] == "completed"]
+    main = [r for r in done if r["length"] == S.TRACE_LENGTH]
+    levels = sorted({r["level"] for r in main})
+    return {"done": done, "levels": levels, "per_level": [[r for r in main if r["level"] == level] for level in levels],
+            "short": [r for r in done if r["length"] != S.TRACE_LENGTH],
+            "longer": [r for r in done if not r["shortest"]]}
+
+
+def _exact_findings(exact, external, comparison, traced, analytic, insertion):
+    """Findings of the exact polyhedral distance: closed forms, invariants, external checks and comparisons."""
+    roundoff = _u("roundoff", 1e-14, "double-precision rounding of the unfoldings (largest disagreement with the "
+                                     "closed forms observed below 1e-14)")
+    closed = {"abs": 1e-12, "rel": 0.0}
+    producer = _ciw_producer(f"{SOLV}.ExactGeodesic", SOLVER)
+    findings = [
+        finding("Exact polyhedral distances on sheared planar meshes equal Euclidean distances, from a vertex and from "
+                "a point inserted inside a face", "numerical", analytic["plane_max_error"],
+                {"generator": generator(f"{GEOM}.plane_mesh", shears=[r["shear"] for r in analytic["planes"]]),
+                 "checks": [check("Euclidean distance |x - y| on the convex sheared domain",
+                                  analytic["plane_max_error"], 1e-12, kind="analytic")]},
+                unit="normalized length", uncertainty=roundoff, tolerance=closed),
+        finding("On an L-shaped planar mesh exact distances equal the Euclidean distance to visible vertices and the "
+                "path bent at the reflex corner to hidden ones", "numerical", analytic["l_shape"],
+                {"generator": generator(f"{STUD}._l_shape", vertices=analytic["l_shape"]["vertices"]),
+                 "checks": [check("|x - y| when the segment avoids the removed quadrant, else |x - c| + |c - y| "
+                                  "through the reflex corner c = (0.5, 0.5)", analytic["l_shape"]["max_error"],
+                                  1e-12, kind="analytic")]},
+                unit="normalized length", uncertainty=roundoff, tolerance=closed),
+        finding("Exact polyhedral distances on prism-cylinder meshes equal the shortest segment to the periodic images "
+                "of the planar development, from a boundary vertex and from an inserted surface point", "numerical",
+                analytic["cylinder_max_error"],
+                {"generator": generator(f"{GEOM}.cylinder_mesh", n=[r["n"] for r in analytic["cylinders"]]),
+                 "checks": [check("min over k of |(s - s0 + k C, z - z0)| on the development, circumference "
+                                  "C = 2 n R sin(pi/n)", analytic["cylinder_max_error"], 1e-12, kind="analytic")]},
+                unit="normalized length", uncertainty=roundoff, tolerance=closed),
+        finding("Exact distances between the corners of a refined cube equal the closed forms 1, sqrt 2 and sqrt 5",
+                "numerical", analytic["cube"],
+                {"generator": generator(f"{GEOM}.cube_mesh", k=analytic["cube"]["k"]),
+                 "checks": [check("corner distances on the unit cube: an edge, a face diagonal, and sqrt 5 across two "
+                                  "unfolded faces", analytic["cube"]["max_error"], 1e-12, kind="analytic")]},
+                unit="normalized length", uncertainty=roundoff, tolerance=closed),
+        finding("Inserting a face point and an edge point as vertices by planar splits leaves exact distances between "
+                "the original vertices unchanged", "numerical", insertion["max_abs_change"],
+                {"generator": generator(f"{STUD}.insertion_study", meshes=[r["mesh"] for r in insertion["rows"]]),
+                 "checks": [check("largest |d_refined - d_original| at the original vertices, two sources per mesh",
+                                  insertion["max_abs_change"], 1e-12, kind="invariant"),
+                            check("validation issues of the refined meshes (closed, consistently oriented)",
+                                  sum(len(r["issues"]) for r in insertion["rows"]), 0.0, "le",
+                                  kind="exact_arithmetic")]},
+                unit="normalized length", uncertainty=roundoff, tolerance=closed)]
+
+    rows = exact["rows"]
+    symmetry = max(r["symmetry_max_abs"] for r in rows)
+    # The claim and prose are the same with and without pygeodesic; only the basis (and label) records it.
+    reference_basis = {
+        "generator": generator(f"{STUD}.exact_meshes", levels=exact["levels"], torus=exact["torus"],
+                               sources=[r["sources"] for r in rows]),
+        "checks": [check("largest |d(a -> b) - d(b -> a)| between the three sources of each mesh", symmetry, 1e-12,
+                         kind="invariant"),
+                   check("largest |d(u) - d(v)| - |uv| over edges and sources (a distance changes by at most the "
+                         "length of an edge along it; 1e-12 rounding allowance)", max(r["edge_excess"] for r in rows),
+                         1e-12, "signed_le", kind="invariant"),
+                   check("vertices left unreached on the connected meshes", sum(r["unreached"] for r in rows), 0.0,
+                         "le", kind="exact_arithmetic")]}
+    reference_value = symmetry
+    if external.get("pygeodesic_max_abs") is not None:
+        reference_value = max(reference_value, external["pygeodesic_max_abs"])
+        reference_basis["independent_check"] = dict(
+            check("pygeodesic.geodesic.PyGeodesicAlgorithmExact (Kirsanov's exact MMP) from the same sources to every "
+                  f"vertex of the same {len(rows)} meshes (equal up to rounding)", external["pygeodesic_max_abs"],
+                  1e-12, kind="exact_arithmetic"),
+            producer=producer,
+            checker={"implementation": "pygeodesic.geodesic.PyGeodesicAlgorithmExact",
+                     "revision": external["pygeodesic"]})
+    findings.append(finding(
+        "Exact polyhedral distances from three sources are symmetric between the sources (and agree at every vertex "
+        "with pygeodesic's exact MMP implementation when installed) on icosphere levels 1-4 and a torus with saddle "
+        "vertices", "numerical",
+        {"meshes": [r["mesh"] for r in rows], "vertices": [r["vertices"] for r in rows],
+         "pseudo_source_vertices": [r["pseudo_source_vertices"] for r in rows], "max_abs_difference": reference_value},
+        reference_basis, unit="normalized length", uncertainty=roundoff, tolerance=TIGHT))
+
+    paired = [r for r in rows if "pairs" in r]
+    pairs = sum(r["pairs"] for r in paired)
+    edge_min = min(r["edge_graph_min_excess"] for r in paired)
+    path_basis = {"generator": generator(f"{STUD}.exact_meshes", meshes=[r["mesh"] for r in paired]),
+                  "checks": [check("smallest edge-graph path length minus exact distance over the vertex pairs, plus a "
+                                   "1e-12 rounding allowance", edge_min + ROUNDING, 0.0, "signed_ge",
+                                   kind="invariant")]}
+    smallest = edge_min
+    if external.get("flipout") is not None:
+        smallest = min(smallest, external["flipout_min_excess"])
+        path_basis["independent_check"] = dict(
+            check(f"potpourri3d.EdgeFlipGeodesicSolver (FlipOut) geodesic length minus exact distance over the same "
+                  f"{pairs} pairs, plus a 1e-12 rounding allowance (a locally shortest path is never shorter than a "
+                  "shortest one)", external["flipout_min_excess"] + ROUNDING, 0.0, "signed_ge", kind="invariant"),
+            producer=producer,
+            checker={"implementation": "potpourri3d.EdgeFlipGeodesicSolver", "revision": external["potpourri3d"]})
+    findings.append(finding(
+        "Edge-graph paths and FlipOut edge-flip geodesics (potpourri3d, when installed) between vertex pairs are never "
+        "shorter than the exact distance", "numerical",
+        {"pairs": pairs, "meshes": [r["mesh"] for r in paired], "edge_graph_min_excess": edge_min,
+         "flipout": external.get("flipout")},
+        path_basis, unit="normalized length", uncertainty=roundoff, tolerance=TIGHT))
+
+    edges = comparison["edge_graph"]
+    edge_floor = min(r["min_excess"] for r in edges)
+    steiner = comparison["steiner"]
+    steiner_min = min(min(r["min_excess"]) for r in steiner)
+    steiner_step = min(a - b for r in steiner for a, b in zip(r["mean_excess"], r["mean_excess"][1:]))
+    heat = comparison["heat"]
+    heat_errors = [r["max_abs_error"] for r in heat]
+    heat_order = orders([r["h"] for r in heat], heat_errors)
+    findings += [
+        finding("Edge-graph Dijkstra distances from vertex 0 are never below the exact polyhedral distance on "
+                "icosphere levels 1-4", "numerical",
+                {"levels": [r["level"] for r in edges], "min_excess": edge_floor,
+                 "max_relative_excess": [r["max_relative_excess"] for r in edges],
+                 "valence5_floor": S.EDGE_GRAPH_FLOOR},
+                {"generator": generator(f"{GEOM}.icosphere", levels=[r["level"] for r in edges]),
+                 "checks": [check("smallest edge-graph distance minus exact distance over vertices and levels, plus a "
+                                  "1e-12 rounding allowance", edge_floor + ROUNDING, 0.0, "signed_ge",
+                                  kind="invariant")]},
+                unit="normalized length", uncertainty=roundoff, tolerance=TIGHT),
+        finding("Steiner-graph distances from vertex 0 are never below the exact polyhedral distance, and their mean "
+                "excess shrinks as k grows (k = 1, 3, 7 on icosphere levels 2 and 3)", "numerical",
+                {"levels": [r["level"] for r in steiner], "ks": steiner[0]["ks"], "min_excess": steiner_min,
+                 "mean_excess": {str(r["level"]): r["mean_excess"] for r in steiner},
+                 "max_relative_excess": {str(r["level"]): r["max_relative_excess"] for r in steiner}},
+                {"generator": generator(f"{GEOM}.steiner_graph", levels=[r["level"] for r in steiner],
+                                        ks=steiner[0]["ks"]),
+                 "checks": [check("smallest Steiner distance minus exact distance over vertices, k and levels, plus a "
+                                  "1e-12 rounding allowance", steiner_min + ROUNDING, 0.0, "signed_ge",
+                                  kind="invariant"),
+                            check("smallest decrease of the mean excess between consecutive k", steiner_step, 0.0,
+                                  "signed_ge", kind="self_convergence")]},
+                unit="normalized length", uncertainty=roundoff, tolerance=TIGHT),
+        finding("The largest heat-method error (t = h^2) against the exact polyhedral distance falls at every "
+                "refinement level (icosphere levels 1-3)", "numerical",
+                {"levels": [r["level"] for r in heat], "h": [r["h"] for r in heat], "max_abs_error": heat_errors,
+                 "rms_error": [r["rms_error"] for r in heat], "fitted_order": heat_order["fit"],
+                 "local_orders": heat_order["local"],
+                 "exact_minus_smooth_max": [r["exact_minus_smooth_max"] for r in heat]},
+                {"generator": generator(f"{GEOM}.heat_distance", levels=[r["level"] for r in heat], t_factor=1.0),
+                 "checks": [check("largest increase of the maximum heat-method error from one level to the next",
+                                  max(b - a for a, b in zip(heat_errors, heat_errors[1:])), 0.0, "signed_le",
+                                  kind="self_convergence")]},
+                unit="normalized length", uncertainty=_order_uncertainty(heat_order), tolerance=TIGHT)]
+
+    summary = traced_summary(traced)
+    levels, per_level, short = summary["levels"], summary["per_level"], summary["short"]
+    claim = ("Traced straightest geodesics are never shorter than the exact distance between their endpoints, yet on "
+             "every icosphere level 1-4 some of length 2 (below pi) are not shortest paths, by an excess that falls "
+             "with refinement")
+    longer = [r for r in summary["longer"] if r["length"] == S.TRACE_LENGTH]
+    if not longer:
+        findings.append(_missing_witness(claim, "length-2 traces that exceed the exact distance by more than 1e-10"))
+        return findings
+    worst = [max(r["excess"] for r in group) for group in per_level]
+    witness = max(longer, key=lambda r: (r["level"], r["excess"]))  # the finest level's largest excess
+    smallest = min(r["excess"] for r in summary["done"])
+    findings.append(finding(
+        claim, "numerical",
+        {"length": S.TRACE_LENGTH, "levels": levels, "traces": [len(group) for group in per_level],
+         "shortest": [sum(r["shortest"] for r in group) for group in per_level], "max_excess": worst,
+         "min_excess": smallest,
+         "length_1_level_2": {"traces": len(short), "shortest": sum(r["shortest"] for r in short),
+                              "max_excess": max((r["excess"] for r in short), default=None)}},
+        {"generator": generator(f"{STUD}.traced_exact_study", configs=traced["configs"],
+                                shortest_tolerance=traced["shortest_tolerance"]),
+         "checks": [check("smallest traced length minus exact endpoint distance over all traces, plus a 1e-12 "
+                          "rounding allowance", smallest + ROUNDING, 0.0, "signed_ge", kind="invariant"),
+                    check("fewest length-2 traces per level that exceed the exact distance by more than 1e-10",
+                          min(sum(not r["shortest"] for r in group) for group in per_level), 1.0, "ge",
+                          kind="exact_arithmetic"),
+                    check("largest increase of the maximum excess from one level to the next",
+                          max(b - a for a, b in zip(worst, worst[1:])), 0.0, "signed_le", kind="self_convergence")]},
+        unit="normalized length", uncertainty=roundoff, tolerance=TIGHT,
+        counterexample={"statement": "A straightest geodesic shorter than pi on a mesh inscribed in the unit sphere "
+                                     "is a shortest path between its endpoints",
+                        "witness": {"level": witness["level"], "start": witness["start"], "traced": witness["traced"],
+                                    "exact": witness["exact"], "excess": witness["excess"]}}))
+    return findings
+
+
+@task("T038", changed_files=FILES + (SOLVER,), regression_tests=(
     NEXT_STEP_TEST,
     f"{TESTS}::test_tracer_is_exact_on_developable_meshes",
     f"{TESTS}::test_graph_distances_and_steiner_sandwich",
     f"{TESTS}::test_dijkstra_check_falls_back_without_scipy",
+    f"{TESTS}::test_exact_distances_match_closed_forms",
+    f"{TESTS}::test_point_insertion_leaves_distances_unchanged",
+    f"{TESTS}::test_exact_distances_agree_with_pygeodesic",
+    f"{TESTS}::test_flipout_geodesics_are_never_shorter",
+    f"{TESTS}::test_paths_and_approximations_never_beat_the_exact_distance",
+    f"{TESTS}::test_exact_checks_fall_back_without_external_packages",
     f"{TESTS}::test_solver_task_report"))
 def mesh_geodesic_solver(ctx):
     traces = _memo(ctx, "sphere-traces", S.sphere_trace_study)
@@ -225,6 +444,12 @@ def mesh_geodesic_solver(ctx):
     plane = _memo(ctx, "plane", S.plane_study)
     nested = _memo(ctx, "steiner-nested", S.steiner_nested_study)
     independent = _memo(ctx, "dijkstra-independent", S.dijkstra_independent)
+    exact = _memo(ctx, "exact-distances", S.exact_distance_study)
+    external = _memo(ctx, "exact-independent", lambda: S.exact_independent_study(exact))
+    comparison = _memo(ctx, "exact-comparison", lambda: S.exact_comparison_study(exact))
+    traced = _memo(ctx, "traced-exact", S.traced_exact_study)
+    analytic = _memo(ctx, "exact-analytic", S.exact_analytic_study)
+    insertion = _memo(ctx, "exact-insertion", S.insertion_study)
     statuses = sorted({t["status"] for row in traces["rows"] for t in row["traces"]})
     completed = sum(r["completed"] for r in traces["rows"])
     plane_error = max(r["max_trace_error"] for r in plane["rows"])
@@ -237,6 +462,10 @@ def mesh_geodesic_solver(ctx):
     ctx.artifact_json("sphere-traces.json", jsonable(traces))
     ctx.artifact_json("cylinder-and-plane.json", jsonable({"cylinder": cylinder, "plane": plane}))
     ctx.artifact_json("graph-distances.json", jsonable({"steiner_nested": nested, "dijkstra_independent": independent}))
+    ctx.artifact_json("exact-distances.json", jsonable({
+        "exact": dict(exact, rows=[{k: v for k, v in r.items() if k != "distances"} for r in exact["rows"]]),
+        "independent": external, "comparison": comparison, "traced": traced, "analytic": analytic,
+        "insertion": insertion}))
 
     # The claim and prose are the same with and without scipy; only the basis (and label) records scipy.
     dijkstra_basis = {"generator": generator(f"{GEOM}.icosphere", level=independent["level"]),
@@ -248,7 +477,7 @@ def mesh_geodesic_solver(ctx):
         dijkstra_basis["independent_check"] = dict(
             check(f"scipy.sparse.csgraph.dijkstra on the same icosphere-{independent['level']} edge weights "
                   "(equal up to summation order)", independent["scipy_max_abs"], 1e-12, kind="exact_arithmetic"),
-            producer={"implementation": PRODUCER, "revision": "working tree"},
+            producer=_ciw_producer(f"{GEOM}.dijkstra", GEOMETRY),
             checker={"implementation": "scipy.sparse.csgraph.dijkstra", "revision": independent["scipy"]})
     roundoff = _u("roundoff", 1e-15, "double-precision rounding of deterministic geometry (observed 1e-15 relative)")
     findings = [
@@ -283,7 +512,7 @@ def mesh_geodesic_solver(ctx):
                 {"derivation": "With k = 2^j - 1 the node sets are nested and every face keeps all node pairs, so each "
                                "coarser graph edge is an edge of the finer graph; a segment between two points of one "
                                "planar convex face lies in that face, so every graph path is a surface path and graph "
-                               "distances bound the (uncomputed) polyhedral distance from above",
+                               "distances bound the polyhedral distance from above",
                  "checks": [check("max over vertices of distance(k') - distance(k) for nested k' > k",
                                   nested["max_increase_with_k"], 1e-12, "signed_le", kind="invariant"),
                             check("graph edges (k = 0, 1, 3, 7, with traced endpoints) whose end nodes share no face, "
@@ -291,7 +520,10 @@ def mesh_geodesic_solver(ctx):
                                   "independent of the graph construction", nested["edges_outside_faces"], 0.0, "le",
                                   kind="exact_arithmetic")]},
                 uncertainty=roundoff, tolerance=TIGHT),
-        finding("Steiner distances between traced endpoints stay above the traced length and approach it as k grows",
+        # Not a sandwich: the exact solver finds a length-1 trace that is not shortest, so the Steiner distance
+        # would fall below its traced length for large enough k.
+        finding("Steiner distances between traced endpoints (k = 1, 3, 7) stay above the traced length, and their "
+                "mean excess shrinks as k grows",
                 "numerical", {"min_gap": nested["min_gap"], "mean_gap_by_k": {str(k): v for k, v in mean_gap.items()}},
                 {"generator": generator(f"{GEOM}.steiner_graph", level=nested["level"],
                                         traced=len(nested["traced_lengths"])),
@@ -300,49 +532,113 @@ def mesh_geodesic_solver(ctx):
                             check("smallest decrease of the mean gap between consecutive nested k",
                                   min(gap_steps), 0.0, "signed_ge", kind="self_convergence")]},
                 unit="normalized length", uncertainty=roundoff, tolerance=TIGHT),
-        _physical("Straightest geodesics on a mesh reconstructed from a real scan reproduce the geodesics of the "
-                  "scanned physical surface"),
     ]
+    findings += _exact_findings(exact, external, comparison, traced, analytic, insertion)
+    findings.append(_physical("Straightest geodesics on a mesh reconstructed from a real scan reproduce the "
+                              "geodesics of the scanned physical surface"))
+
+    rows = exact["rows"]
+    reference = max(r["symmetry_max_abs"] for r in rows)
+    if external.get("pygeodesic_max_abs") is not None:
+        reference = max(reference, external["pygeodesic_max_abs"])
+    paired = [r for r in rows if "pairs" in r]
+    smallest = min(r["edge_graph_min_excess"] for r in paired)
+    if external.get("flipout") is not None:
+        smallest = min(smallest, external["flipout_min_excess"])
+    closed = max(analytic["plane_max_error"], analytic["l_shape"]["max_error"], analytic["cylinder_max_error"],
+                 analytic["cube"]["max_error"])
+    heat = comparison["heat"]
+    heat_order = orders([r["h"] for r in heat], [r["max_abs_error"] for r in heat])
+    summary = traced_summary(traced)
+    per_level, short = summary["per_level"], summary["short"]
+    longer_short = [r for r in short if not r["shortest"]]
+    if longer_short:
+        ordering = (f"The Steiner-over-traced ordering is not a sandwich of the distance: the exact distance falls "
+                    f"below {len(longer_short)} of the {len(short)} length-1 traces on level 2 (by up to "
+                    f"{max(r['excess'] for r in longer_short):.1e}), so for large enough k the Steiner distance would "
+                    "fall below them too.")
+    else:
+        ordering = (f"All {len(short)} length-1 traces on level 2 are shortest, so there the Steiner-over-traced "
+                    "ordering is a sandwich of the distance.")
+    separation = min((r["excess"] for r in summary["longer"]), default=math.inf)
     result = (f"Plane traces exact to {plane_error:.1e}; prism-cylinder traces match the development to "
               f"{development:.1e}; unfolded strip length equals traced length to {unfold:.1e} over {completed} "
               f"sphere traces (statuses {statuses}); edge Dijkstra agrees with its reference shortest-path "
               f"implementations to {dijkstra_value:.1e}; Steiner distances to traced endpoints exceed the traced "
               f"length by mean " + ", ".join(f"{mean_gap[k]:.2e} (k={k})" for k in ks) + f"; "
               f"{nested['edges_outside_faces']} of {nested['edges_checked']} Steiner-graph edges leave a face. "
-              "Delivered: an initial-value straightest-geodesic tracer and approximate edge-graph, Steiner and "
-              "heat-method distances. Not delivered: an exact two-point polyhedral distance (MMP, ICH or edge "
-              "flipping), so no polyhedral distance is computed to compare these with.")
-    # Partial: the task asks for a geodesic solver; the exact two-point (shortest-path) solver was not implemented.
-    return {"state": "partial", "findings": findings, "fields": fields(
+              f"Exact polyhedral distances (window propagation) equal their closed forms to {closed:.1e} on sheared "
+              f"planes, an L-shape ({analytic['l_shape']['bent_targets']} targets reached around its reflex corner), "
+              f"prism cylinders and cube corners (sqrt 5 = {analytic['cube']['corner_distances'][-1]:.6f} where the "
+              f"edge graph gives {analytic['cube']['edge_graph_far_corner']:.6f}); inserting points as vertices "
+              f"changes distances by at most {insertion['max_abs_change']:.1e}; distances from three sources on "
+              f"icosphere levels 1-4 and a torus with {sum(r['pseudo_source_vertices'] for r in rows)} saddle vertices "
+              "agree with their references (source symmetry, and pygeodesic's exact MMP when installed) to "
+              f"{reference:.1e}; no edge-graph path or edge-flip geodesic between {sum(r['pairs'] for r in paired)} vertex pairs is "
+              f"shorter than the exact distance (smallest excess {smallest:.1e}). Against the exact distance from "
+              "vertex 0 the edge graph's largest relative excess is "
+              + ", ".join(f"{r['max_relative_excess']:.3f}" for r in comparison["edge_graph"])
+              + f" on levels 1-4 (valence-5 floor sqrt 5 - 2 = {S.EDGE_GRAPH_FLOOR:.3f}); the Steiner mean excess "
+              "(k = 1, 3, 7) is "
+              + " and ".join(", ".join(f"{v:.1e}" for v in r["mean_excess"]) + f" on level {r['level']}"
+                             for r in comparison["steiner"])
+              + "; the heat-method maximum error is " + ", ".join(f"{r['max_abs_error']:.3f}" for r in heat)
+              + f" on levels 1-3 (fitted order {heat_order['fit']:.2f}). Traced length-2 geodesics are shortest paths "
+              "in " + ", ".join(f"{sum(t['shortest'] for t in r)} of {len(r)}" for r in per_level)
+              + " traces on levels 1-4, and the largest excess of a trace over the exact distance is "
+              + ", ".join(f"{max(t['excess'] for t in r):.1e}" for r in per_level)
+              + f"; {sum(r['shortest'] for r in short)} of {len(short)} length-1 traces on level 2 are shortest.")
+    return {"state": task_state(findings), "findings": findings, "fields": fields(
         "Unfolding across edges (straight in faces, equal angles at edges) yields exact straightest geodesics on "
-        "developable meshes, and Steiner-graph paths are surface paths (every graph edge lies in one face), so their "
-        "lengths are upper bounds on the polyhedral distance; the polyhedral distance itself is not computed here.",
+        "developable meshes. Window propagation (Chen-Han with the Xin-Wang priority queue, saddle and reflex-boundary "
+        "pseudo-sources and pruning against vertex distances) yields the exact polyhedral distance, the length of the "
+        "globally shortest surface path, so that edge-graph, Steiner-graph and locally shortest paths never fall below "
+        "it; whether traced straightest geodesics shorter than pi are shortest paths is tested against it.",
         "Straightest geodesic: in each face a straight segment; at an edge the direction keeps its edge component and "
-        "the magnitude of its perpendicular component (rotation about the edge). Distances: Dijkstra on the edge "
-        "graph and on the graph of k Steiner points per edge (all pairs inside each face); vertex hits are refused.",
-        ["icosphere levels 1-7 (unit sphere)", "prism cylinder R=1, n=8..128 sectors",
-         "sheared planar 8x8 grids (shear 0-1.5)", "six declared sphere geodesics (chart point, heading)"],
-        "No physical observation; traced endpoints, lengths and graph distances in normalized units.",
-        "Planar and prism meshes are intrinsically flat, so traces must equal straight lines of the development; "
+        "the magnitude of its perpendicular component (rotation about the edge). Exact distance: windows (an edge "
+        "interval with its source unfolded into the plane and the source's own distance) propagated face by face in "
+        "increasing order of the smallest distance they carry; a window part that a path through a vertex of its edge "
+        "or faces beats by more than a rounding margin is pruned; surface points become vertices by planar face and "
+        "edge splits. Graph distances: Dijkstra on the edge graph and on the graph of k Steiner points per edge; "
+        "vertex hits are refused by the tracer.",
+        ["icosphere levels 1-7 (unit sphere) for traces, 1-4 with three sources each for exact distances",
+         "torus 24x12 (R = 2, r = 1; 120 saddle vertices)", "prism cylinder R=1, n=8..128 sectors (traces), "
+         "n = 8, 16, 32 (exact)", "sheared planar 8x8 grids (shear 0-1.5) and an L-shaped 8x8 grid",
+         "refined cube, 4x4 squares per face", "six declared sphere geodesics (chart point, heading)"],
+        "No physical observation; traced endpoints, lengths, exact and graph distances in normalized units.",
+        "Planar and prism meshes are intrinsically flat, so traces must equal straight lines of the development and "
+        "exact distances the shortest segments of the development (bent at the L-shape's reflex corner); cube corners "
+        "are 1, sqrt 2 and sqrt 5 apart; exact distances are symmetric, change by at most an edge length along an "
+        "edge, do not change when points are inserted as vertices and never exceed the length of any surface path; "
         "Steiner distances with nested point sets are nonincreasing in k, and every graph edge joins two points of "
         "one face.",
         "Trace declared geodesics; compare with exact developments; re-derive lengths by a second ciw implementation "
         "(strip layout from edge lengths); compare Dijkstra with a dense Floyd-Warshall and, when installed, "
-        "scipy.sparse.csgraph; test every Steiner-graph edge for a common face; sandwich traced lengths by Steiner "
-        "distances.",
+        "scipy.sparse.csgraph; test every Steiner-graph edge for a common face; compute exact distances on meshes with "
+        "closed forms, from three sources on icospheres and a torus (compared with pygeodesic when installed) and "
+        "between vertex pairs (compared with potpourri3d's FlipOut when installed); compare the edge graph, Steiner "
+        "graphs, the heat method and traced lengths with them.",
         result,
-        "Deterministic computation; floating-point rounding only (differences at 1e-15 relative). The strip layout "
-        "and Floyd-Warshall are ciw code (same origin); only the scipy comparison is independent. The Steiner "
-        "sandwich is consistent with, but does not prove, that the traced geodesics are shortest paths.",
+        "Deterministic computation; floating-point rounding only (exact distances agree with the closed forms to "
+        "about 1e-14). The strip layout, Floyd-Warshall, source symmetry and edge Lipschitz checks are "
+        "ciw code (same origin); the scipy, pygeodesic and potpourri3d comparisons are independent. " + ordering
+        + " A trace counts as shortest when it is within 1e-10 of the exact distance; the others exceed it by at "
+        f"least {separation:.1e}.",
         ["vertex hits (refused, none occurred in the declared set)", "boundary reached", "tracing through a face "
          "without an exit edge", "strip unfolding sign conventions", "graph duplicates from shared face edges",
-         "scipy absent (Floyd-Warshall only; the Dijkstra finding is then numerically_verified)"],
-        ["Partial delivery: the solver is an initial-value tracer (straightest geodesics from a point and heading) "
-         "plus approximate distances. No exact two-point polyhedral geodesic (MMP, ICH or iterative edge flipping) "
-         "is implemented, so no shortest path between two given points is solved exactly and the graph and heat "
-         "distances are not compared with an exact polyhedral distance.",
+         "saddle vertices (torus) and a reflex boundary corner (L-shape) as pseudo-sources of the exact solver",
+         "rays through vertices on regular grids (planes, cylinders, cube)",
+         "points inserted inside a face and on an edge", "scipy absent (Floyd-Warshall only; the Dijkstra finding is "
+         "then numerically_verified)", "pygeodesic or potpourri3d absent (their findings then rest on the same-origin "
+         "checks and are numerically_verified)"],
+        ["The exact solver returns distances, not the shortest path polyline: back-tracing the path from its windows "
+         "is not implemented, so the shortest path itself is not drawn or compared.",
+         "Exactness holds in exact arithmetic; computed distances carry rounding, and the pruning margin (1e-10 of "
+         "the mean edge) keeps near-ties. The solver is a Python loop meant for meshes of a few thousand vertices; "
+         "the largest here has 2562.",
          "Vertex hits are refused rather than continued by the Polthier-Schmies angle-bisection rule.",
-         "Traced geodesics are shortest paths only when no shorter corridor exists; not proved here."],
+         "Where a straightest geodesic stops being shortest (where it crosses the cut locus of its start point) is "
+         "observed per trace, not predicted."],
         NEXT_STEPS["T038"])}
 
 
