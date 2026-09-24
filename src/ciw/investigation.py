@@ -19,7 +19,7 @@ from .adapters.protocol import AdapterRefusal, InstrumentManifest
 from .adapters.subprocess import PinnedSubprocessAdapter
 from .core.identities import digest, evidence_id
 from .operations.registry import Operation
-from .session import Session
+from .session import Session, _reject_constant
 
 
 RCI_OPERATION = "rci.calibrate.v1"
@@ -61,7 +61,7 @@ def _validate_batch(batch, request):
     if record.get("raw_record_b64") != request["inputs"]["records"][0]["raw_record_b64"]:
         raise ValueError("Adapter changed raw observation bytes")
     raw = base64.b64decode(record["raw_record_b64"], validate=True)
-    native = json.loads(raw)
+    native = json.loads(raw, parse_constant=_reject_constant)
     if (record["raw"] != {"value": native["raw"], "unit": native["raw_unit"]}
             or record["observation_id"] != native["observation_id"]
             or record["observed_at"] != request["inputs"]["records"][0]["observed_at"]):

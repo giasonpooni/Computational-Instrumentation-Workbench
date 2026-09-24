@@ -2,6 +2,8 @@
 
 import base64
 import logging
+
+import pytest
 from pathlib import Path
 
 
@@ -47,3 +49,11 @@ def test_the_operation_catalogue_page_indexes_every_operation():
         assert f"`{operation}`" in catalogue and f"`{kind}`" in catalogue, operation
     for code in ("invalid_request", "invalid_payload", "unsupported_version", "internal_error", "storage_error", "read_only_view"):
         assert f"`{code}`" in protocol, code
+
+
+def test_retained_provider_bytes_are_decoded_with_the_same_nonfinite_guard_as_the_wire():
+    from ciw import geodesic, investigation
+    with pytest.raises(ValueError, match="Nonfinite JSON number"):
+        geodesic._parse(b'{"schema": "gte.circle-request.v1", "observations": [NaN], "constraint": {}, "policy": {}}')
+    import inspect
+    assert "_reject_constant" in inspect.getsource(investigation._validate_batch)

@@ -15,7 +15,7 @@ from .core.identities import digest, evidence_id
 from .core.records import finite_tree, mapping, number, string
 from .investigation import _runtime
 from .operations.registry import Operation
-from .session import Session
+from .session import Session, _reject_constant
 
 
 GTE_OPERATION = "gte.project-circle.v1"
@@ -34,7 +34,7 @@ def _parse(raw: bytes) -> dict:
             result[key] = value
         return result
 
-    value = json.loads(raw.decode("utf-8"), object_pairs_hook=pairs)
+    value = json.loads(raw.decode("utf-8"), object_pairs_hook=pairs, parse_constant=_reject_constant)
     mapping(value, "GTE request")
     finite_tree(value, "GTE request")
     return value
