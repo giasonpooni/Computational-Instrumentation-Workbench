@@ -497,7 +497,7 @@ CI has three jobs ([`ci.yml`](../.github/workflows/ci.yml)): `descriptors` binds
 
 | Gate | Pin key | Pipelines and providers | Pins | Platforms |
 | --- | --- | --- | --- | --- |
-| `adapters` | `d65e47fc81ce` | adapter-runtimes.json (terminal) | fsrt, gte, jspt, rci | ubuntu, windows · py3.12 |
+| `adapters` | `273a8d55641d` | adapter-runtimes.json (terminal) | fsrt, gte, jspt, rci | ubuntu, windows · py3.12 |
 | `plsr-terminal` | `302c8c323142` | plsr-runtime.json (terminal) | plsr | ubuntu, windows · py3.12 |
 | `calibrated-observable` | `2f9253582318` | `ciw.calibrated-observable.v1` | cbsr, fdir, fsrt, gsie, mcur, oit, set, tbrt | ubuntu · py3.11/3.12 |
 | `calibrated-window` | `b709dc3e02ed` | `ciw.calibrated-window.v1` | gsie, mcur, set, stfe, tbrt | ubuntu · py3.11/3.12 |

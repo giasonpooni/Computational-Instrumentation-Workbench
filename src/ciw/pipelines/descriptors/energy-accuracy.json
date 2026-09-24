@@ -17,6 +17,7 @@
   },
   "refusals": [
     "DECLARED_WORKLOAD_REFUSED",
+    "RUNTIME_UNAVAILABLE",
     "operation_unavailable",
     "workbench_capacity"
   ],

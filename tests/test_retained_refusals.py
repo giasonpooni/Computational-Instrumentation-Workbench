@@ -136,3 +136,53 @@ def test_malformed_requests_are_rejected_before_an_execution_exists(tmp_path):
         assert reply["type"] == "error"
     assert session.workbench.refused_executions() == []
     assert json.loads(json.dumps(session.workbench.serialize()))["schema"] == "ciw.retained-workbench.v1"
+
+
+def test_restore_refuses_lineage_the_runtime_cannot_produce(tmp_path):
+    session, source = _session_with_source(tmp_path)
+    completed = _call(session, "operation.execute", {"operation_id": "ciw.thermal-observer.v1",
+                                                     "parameters": {"source_id": source["source_id"]}})
+    calibrated = _calibrated_source(session)
+    _refuse(session, calibrated)
+    saved = session.workbench.serialize()
+    record = saved["refusals"][0]
+    record["upstream_bundle_ids"] = [completed["bundle_id"], completed["bundle_id"]]
+    record["record_digest"] = digest({k: v for k, v in record.items() if k != "record_digest"})
+    with pytest.raises(ValueError, match="lineage|upstream"):
+        Workbench.restore(saved)
+
+
+def test_restore_refuses_a_refusal_reusing_a_reproduction_identity(tmp_path):
+    session, source = _session_with_source(tmp_path)
+    completed = _call(session, "operation.execute", {"operation_id": "ciw.thermal-observer.v1",
+                                                     "parameters": {"source_id": source["source_id"]}})
+    _refuse(session, _calibrated_source(session))
+    saved = session.workbench.serialize()
+    bundle, = saved["bundles"]
+    reproduction = bundle["native"]["verification"]["reproduction"]["execution_id"]
+    assert reproduction not in {step["execution_id"] for step in bundle["native"]["steps"]}
+    record = saved["refusals"][0]
+    record["execution_id"] = reproduction
+    record["record_digest"] = digest({k: v for k, v in record.items() if k != "record_digest"})
+    with pytest.raises(ValueError, match="Duplicate refused-execution identity"):
+        Workbench.restore(saved)
+    assert completed["bundle_id"] == bundle["bundle_id"]
+
+
+def test_refusal_capacity_protects_other_runs_reservations(tmp_path, monkeypatch):
+    session = Session(make_demo_run(), tmp_path)
+    source = _calibrated_source(session)
+    bench = session.workbench
+    monkeypatch.setattr(bench, "_reserved_bytes", wb.MAX_BYTES)
+    reply = session.handle({"protocol_version": 1, "request_id": "r", "type": "operation.execute",
+                            "payload": {"operation_id": CALIBRATED, "parameters": {"source_id": source["source_id"]}}})
+    assert reply["type"] == "error" and reply["payload"]["code"] == "workbench_capacity"
+    assert bench.refused_executions() == []
+
+
+def test_an_unreadable_bound_executable_is_an_unavailable_runtime(tmp_path):
+    from ciw.adapters.protocol import AdapterRefusal
+    from ciw.declared_workload import _read_bound
+    with pytest.raises(AdapterRefusal) as caught:
+        _read_bound(tmp_path / "missing-engine", 1024)
+    assert caught.value.code == "RUNTIME_UNAVAILABLE" and str(tmp_path) not in str(caught.value)

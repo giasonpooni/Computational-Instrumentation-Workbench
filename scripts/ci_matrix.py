@@ -13,7 +13,7 @@ matrix row and a new cache key.
     python scripts/ci_matrix.py check            # coverage and single definition of every pin
     python scripts/ci_matrix.py matrix           # GitHub matrices (kernel surfaces, provider gates)
     python scripts/ci_matrix.py pins GATE        # the exact pins a gate binds
-    python scripts/ci_matrix.py run GATE [--phase provision|run]
+    python scripts/ci_matrix.py run GATE [--phase preflight|provision|run]
 
 Gate scripts read pins from the descriptors, runtime manifests and
 ``ci/gates.json`` and never from a moving branch; ``check`` refuses any
@@ -37,8 +37,9 @@ PROVIDERS = ROOT / "src" / "ciw" / "pipelines" / "providers"
 PACKAGE = ROOT / "src" / "ciw"
 WORKFLOWS = ROOT / ".github" / "workflows"
 GATE_FIELDS = {"gate", "summary", "kinds", "providers", "manifests", "extra_pins", "os", "python", "timeout", "run", "provision",
-               "artifacts", "artifacts_always", "rust", "node", "apt", "env", "cache", "linux_only_reason"}
-SURFACE_FIELDS = {"gate", "summary", "os", "python", "timeout", "run", "artifacts"}
+               "preflight", "artifacts", "artifacts_always", "artifact_name", "rust", "node", "apt", "apt_recommends", "env",
+               "cache", "linux_only_reason"}
+SURFACE_FIELDS = {"gate", "summary", "os", "python", "timeout", "run", "artifacts", "artifact_name"}
 _HEX40 = re.compile(r"(?<![0-9a-f])[0-9a-f]{40}(?![0-9a-f])")
 
 
@@ -66,14 +67,20 @@ def provider_pins(name: str) -> list[dict]:
              for item in value["boundary"]])
 
 
-def manifest_pins(name: str) -> dict:
-    """Terminal instrument pins from a package runtime manifest, by role."""
+def manifest_pins(name: str) -> list[dict]:
+    """Terminal instrument pins from a package runtime manifest, including historical revisions a gate checks out."""
     value = json.loads((PACKAGE / name).read_text(encoding="utf-8"))
     if "commit" in value:  # plsr-runtime.json names one instrument
-        return {"plsr": {"repository": value["repository"], "revision": value["commit"]}}
-    if "revision" in value:  # esm-runtime.json names one repository
-        return {"esm": {"repository": value["repository"], "revision": value["revision"]}}
-    return {role: {"repository": pin["repository"], "revision": pin["revision"]} for role, pin in sorted(value.items())}
+        entries = {"plsr": value | {"revision": value["commit"]}}
+    elif "revision" in value:  # esm-runtime.json names one repository
+        entries = {"esm": value}
+    else:
+        entries = value
+    pins = []
+    for role, pin in sorted(entries.items()):
+        for revision in [pin["revision"], *(item["revision"] for item in pin.get("historical", []))]:
+            pins.append({"role": role, "repository": pin["repository"], "revision": revision})
+    return pins
 
 
 def gate_pins(gate: dict, registry: dict, pipelines: dict | None = None) -> list[dict]:
@@ -89,8 +96,8 @@ def gate_pins(gate: dict, registry: dict, pipelines: dict | None = None) -> list
         for pin in provider_pins(name):
             pins[(pin["role"], pin["revision"])] = pin
     for name in gate.get("manifests", []):
-        for role, pin in manifest_pins(name).items():
-            pins[(role, pin["revision"])] = {"role": role, "revision": pin["revision"], "source": f"manifest:{name}"}
+        for pin in manifest_pins(name):
+            pins[(pin["role"], pin["revision"])] = {"role": pin["role"], "revision": pin["revision"], "source": f"manifest:{name}"}
     for name in gate.get("extra_pins", []):
         pin = registry["extra_pins"][name]
         pins[(name, pin["revision"])] = {"role": name, "revision": pin["revision"], "source": "ci/gates.json"}
@@ -109,6 +116,15 @@ def _script_paths(entry: dict) -> set[Path]:
             if isinstance(word, str) and word.startswith("scripts/") and word.endswith(".py"):
                 paths.add(ROOT / word)
     return paths
+
+
+def _literal(path: Path, name: str):
+    """A module-level literal, read without importing the module."""
+    import ast
+    for statement in ast.parse(path.read_text(encoding="utf-8")).body:
+        if isinstance(statement, ast.Assign) and any(isinstance(t, ast.Name) and t.id == name for t in statement.targets):
+            return ast.literal_eval(statement.value)
+    raise ValueError(f"{path.relative_to(ROOT)} declares no literal {name}")
 
 
 def check(registry: dict | None = None, pipelines: dict | None = None) -> dict:
@@ -147,6 +163,11 @@ def check(registry: dict | None = None, pipelines: dict | None = None) -> dict:
     used_manifests = {name for gate in registry["gates"] for name in gate.get("manifests", [])}
     if set(registry["extra_pins"]) - used_extra or set(registry["manifests"]) - used_manifests:
         raise ValueError("Every declared extra pin and manifest is bound by a gate")
+    for name, pin in registry["extra_pins"].items():
+        if "defined_by" in pin:
+            path, _, constant = pin["defined_by"].partition(":")
+            if _literal(ROOT / path, constant) != pin["revision"]:
+                raise ValueError(f"Extra pin {name} differs from its definition {pin['defined_by']}")
     # Pins live only in the JSON registries (descriptors, manifests, ci/gates.json):
     # a revision literal in a gate script or workflow is a second definition.
     scanned = {*WORKFLOWS.glob("*.yml"), *(path for entry in registry["surfaces"] + registry["gates"] for path in _script_paths(entry))}
@@ -176,6 +197,10 @@ def matrix(registry: dict | None = None) -> dict:
                         "gate": entry["gate"], "os": os_name, "python": python, "timeout": entry["timeout"],
                         "pin_key": key, "rust": entry.get("rust", ""), "node": entry.get("node", ""),
                         "apt": " ".join(entry.get("apt", [])),
+                        "apt_flags": "" if entry.get("apt_recommends") else "--no-install-recommends",
+                        "preflight": bool(entry.get("preflight")),
+                        "artifact_name": entry.get("artifact_name", "").replace("{os}", os_name).replace("{python}", python)
+                        or f"{'kernel' if kind == 'surface' else 'gate'}-{entry['gate']}-{os_name}-py{python}",
                         "artifacts": entry.get("artifacts", "").replace("{output}", f"results/{entry['gate']}"),
                         "artifacts_always": bool(entry.get("artifacts_always")),
                         "provision": bool(entry.get("provision")),
@@ -257,7 +282,7 @@ def main(argv=None) -> None:
     commands.add_parser("pins").add_argument("gate")
     runner = commands.add_parser("run")
     runner.add_argument("gate")
-    runner.add_argument("--phase", choices=("provision", "run"), default="run")
+    runner.add_argument("--phase", choices=("preflight", "provision", "run"), default="run")
     args = parser.parse_args(argv)
     if args.command == "check":
         registry = check()

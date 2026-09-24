@@ -19,9 +19,9 @@ import uuid
 from .adapters.protocol import AdapterRefusal
 from .adapters.subprocess import PinnedSubprocessAdapter, _json
 from .declared_workload import (
-    AUTHORITY, DeclaredWorkflow, HEAT_POLICY, RESULT_SCHEMA, _check_data, _commit, _text,
+    AUTHORITY, DeclaredWorkflow, HEAT_POLICY, RESULT_SCHEMA, _check_data, _commit, _read_bound, _text,
 )
-from .exchange import _identity, _read
+from .exchange import _identity
 from .core.canonical import canonical, digest, byte_digest, bundle_digest, utc_now, exact_keys
 
 MAX_BYTES = 24 * 1024 * 1024
@@ -230,7 +230,7 @@ class ProvedHeatWorkflow(DeclaredWorkflow):
     def _adapters(self, repositories, expected=None):
         if set(repositories) != self.ROLES:
             raise ValueError("Bind SCR, execution engine, SP1 prover and registered heat guest")
-        binaries = {role: _read(Path(repositories[role]), limit) for role, limit in BINARY_LIMITS.items()}
+        binaries = {role: _read_bound(repositories[role], limit) for role, limit in BINARY_LIMITS.items()}
         if any(not value for value in binaries.values()) or sha256(binaries["guest"]).hexdigest() != GUEST_SHA256:
             raise ValueError("Require nonempty executables and the registered SP1 heat guest")
         retained = expected["scr"] if expected else {}
@@ -294,12 +294,12 @@ class ProvedHeatWorkflow(DeclaredWorkflow):
                 [str(adapter.source_root), str(paths["engine"]), str(paths["prover"]), str(paths["guest"]),
                  str(proof_path), "create" if retained is None else "verify"], canonical(request))
             for role, path in paths.items():
-                if _read(path, BINARY_LIMITS[role]) != binaries[role]:
+                if _read_bound(path, BINARY_LIMITS[role]) != binaries[role]:
                     raise ValueError("A private proof runtime snapshot changed during execution")
             if code:
                 raise AdapterRefusal("PROVED_HEAT_REFUSED", "Pinned SCR proof generation or registered-guest verification failed")
             answer = _json(raw)
-            proof = _read(proof_path, PROOF_LIMIT)
+            proof = _read_bound(proof_path, PROOF_LIMIT)
             if proof != _proof_bytes(answer["proof"] if retained is None else retained["proof"]):
                 raise ValueError("Proof file differs from retained exact artifact bytes")
         _same(self._runtime_projection(adapter.runtime_identity()), self._runtime_projection(provider), "SCR changed during execution")

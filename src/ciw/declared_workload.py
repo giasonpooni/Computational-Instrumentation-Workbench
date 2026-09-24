@@ -74,6 +74,14 @@ def _graph(graph):
     return nodes
 
 
+def _read_bound(path, limit):
+    """Read an operator-bound executable; a missing or unreadable one is an unavailable runtime."""
+    try:
+        return _read(Path(path), limit)
+    except OSError as exc:
+        raise AdapterRefusal("RUNTIME_UNAVAILABLE", "Cannot read a bound executable") from exc
+
+
 def _source(kind, raw):
     if not isinstance(raw, bytes) or len(raw) > SOURCE_LIMIT:
         raise ValueError("Declared workload source exceeds byte budget")
@@ -207,7 +215,7 @@ class DeclaredWorkflow(PipelineRunner):
     def bind_extra(self, repositories, adapter, runtime):
         if self.role != "scr":
             return None
-        engine = _read(Path(repositories["engine"]), 32 * 1024 * 1024)
+        engine = _read_bound(repositories["engine"], 32 * 1024 * 1024)
         runtime["engine"] = {"sha256": byte_digest(engine), "byte_count": len(engine),
                              "source_binding": "operator_asserted_not_attested"}
         return engine
@@ -232,7 +240,7 @@ class DeclaredWorkflow(PipelineRunner):
                 executable.write_bytes(engine)
                 executable.chmod(0o700)
             code, raw = adapter._run(_BOOTSTRAP, [self.role, str(adapter.source_root), str(executable)], canonical(source))
-            if engine is not None and _read(executable, 32 * 1024 * 1024) != engine:
+            if engine is not None and _read_bound(executable, 32 * 1024 * 1024) != engine:
                 raise ValueError("Native executable changed during execution")
         # Re-verify the provider before its outcome is classified.
         self._unchanged(adapter, bound[1], "during")

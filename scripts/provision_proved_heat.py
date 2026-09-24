@@ -1,6 +1,7 @@
 """Provision the proved-heat gate: exact SCR and SP1 sources, the verified guest and native hosts.
 
-Run after the host-build cache is restored and before it is saved. The guest
+Run ``--resources-only`` first, before packages and the host-build cache
+arrive, then run again after the cache is restored and before it is saved. The guest
 recipe rebuild and every source check run on every call, cache hit or not; the
 native hosts are built only when the restored cache does not already hold
 them. No proof, verdict or acceptance receipt is ever cached.
@@ -138,10 +139,15 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--stack", required=True, type=Path, help="Gate stack directory (host builds are cached by pin)")
     parser.add_argument("--output-dir", required=True, type=Path, help="Evidence directory for resource, build and source reports")
+    parser.add_argument("--resources-only", action="store_true",
+                        help="Only measure the memory and disk budget; run before packages and cached builds arrive")
     args = parser.parse_args(argv)
     stack, output = args.stack.expanduser().resolve(), args.output_dir.resolve()
     output.mkdir(parents=True, exist_ok=True)
-    resources(stack, output)
+    if args.resources_only:
+        resources(stack, output)
+        print("PASS: proved-heat resource budget")
+        return
     call(sys.executable, "-m", "pip", "install", "setuptools>=77", "wheel")
     call("rustup", "toolchain", "install", RUST, "--profile", "minimal")
     checkout(SCR_REPOSITORY, SCR_REVISION, stack / "scr")

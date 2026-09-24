@@ -108,3 +108,32 @@ def test_provider_descriptor_binds_the_julia_worker():
     with pytest.raises(ValueError, match="operations"):
         pipelines.check_providers(broken)
     assert json.loads((ROOT / "ci" / "gates.json").read_text())["gates"]  # registry stays readable JSON
+
+
+def test_manifest_pins_include_historical_checkouts():
+    registry = ci_matrix.load()
+    gate, = (entry for entry in registry["gates"] if entry["gate"] == "adapters")
+    pins = {(pin["role"], pin["revision"]) for pin in ci_matrix.gate_pins(gate, registry)}
+    manifest = json.loads((ROOT / "src/ciw/adapter-runtimes.json").read_text())
+    for role, pin in manifest.items():
+        for historical in pin.get("historical", []):
+            assert (role, historical["revision"]) in pins
+
+
+def test_an_extra_pin_defined_in_package_code_must_equal_it():
+    registry = ci_matrix.load()
+    assert registry["extra_pins"]["scout"]["defined_by"].endswith(":VENDOR_REVISION")
+    moved = deepcopy(registry)
+    moved["extra_pins"]["scout"]["revision"] = "c" * 40
+    with pytest.raises(ValueError, match="differs from its definition"):
+        ci_matrix.check(moved)
+
+
+def test_proved_heat_measures_resources_before_packages_and_keeps_recommends():
+    rows = {row["gate"]: row for row in ci_matrix.matrix()["providers"]["include"]}
+    assert rows["proved-heat"]["preflight"] is True and rows["proved-heat"]["apt_flags"] == ""
+    assert rows["model-core"]["apt_flags"] == "--no-install-recommends"
+    text = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    assert text.index("--phase preflight") < text.index("apt-get install") < text.index("actions/cache/restore")
+    kernel = {row["gate"]: row for row in ci_matrix.matrix()["kernel"]["include"]}
+    assert kernel["installed-package"]["artifact_name"] == "ciw-python-wheel"

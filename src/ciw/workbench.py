@@ -159,6 +159,22 @@ def _text(value, name):
         raise ValueError(f"{name} must be a nonempty bounded string")
 
 
+def _execution_ids(value):
+    """Every execution identity a retained record names, at any depth."""
+    found, pending = set(), [value]
+    while pending:
+        node = pending.pop()
+        if isinstance(node, dict):
+            for key, item in node.items():
+                if key in {"execution_id", "execution_ref"} and isinstance(item, str):
+                    found.add(item)
+                else:
+                    pending.append(item)
+        elif isinstance(node, list):
+            pending.extend(node)
+    return found
+
+
 def _refusal_record(action, kind, source, upstream_ids, subject, exc):
     """A refused execution occurrence: an identity and a reason, never a result."""
     from uuid import uuid4
@@ -853,7 +869,7 @@ class Workbench:
             self._revision += 1
             return deepcopy(_summary(record))
 
-    def _retain_refusal(self, action, kind, source, upstream_ids, subject, exc):
+    def _retain_refusal(self, action, kind, source, upstream_ids, subject, exc, reserved=0):
         """Retain an unbound, unsupported or failed execution as a refused occurrence.
 
         Capacity exhaustion is a rejection, never a retained refusal: it is
@@ -865,7 +881,9 @@ class Workbench:
         size = len(_canonical(record))
         with self._lock:
             self._validate_refusal(record)
-            if len(self._refusals) >= MAX_REFUSALS or self._used_bytes + size + _OVERHEAD > MAX_BYTES:
+            # Other runs' reservations stay protected; this run's own is being released.
+            if (len(self._refusals) >= MAX_REFUSALS or
+                    self._used_bytes + self._reserved_bytes - reserved + size + _OVERHEAD > MAX_BYTES):
                 raise AdapterRefusal("workbench_capacity", "Refused-execution capacity exceeded; save and start a new session") from exc
             self._refusals[record["execution_id"]] = record
             self._used_bytes += size
@@ -893,12 +911,25 @@ class Workbench:
                 any(not isinstance(item, str) or item not in self._bundles for item in upstream)):
             raise ValueError("Refused execution names an unretained upstream bundle")
         subject = record["subject_bundle_id"]
+        kind = record["source_kind"]
         if record["action"] == "replay":
             bundle = self._bundles.get(subject) if isinstance(subject, str) else None
-            if bundle is None or bundle["kind"] != record["source_kind"] or bundle["source_id"] != record["source_id"]:
+            if bundle is None or bundle["kind"] != kind or bundle["source_id"] != record["source_id"]:
                 raise ValueError("Refused replay names another retained bundle")
+            expected = self._upstream_ids(bundle)
         elif subject is not None:
             raise ValueError("A refused execution has no subject bundle")
+        elif kind == "residual-monitor":
+            expected = _workflow(kind).requested_upstream_ids(base64.b64decode(source["bytes_b64"], validate=True))
+        elif kind in UPSTREAM_KINDS:
+            if len(upstream) != 1 or self._bundles[upstream[0]]["kind"] != UPSTREAM_KINDS[kind]:
+                raise ValueError("Refused execution names an upstream bundle of another kind")
+            expected = upstream
+        else:
+            expected = []
+        # The lineage is exactly what the runtime would have recorded.
+        if list(upstream) != list(expected):
+            raise ValueError("Refused execution lineage differs from its source and subject")
         refusal = record["refusal"]
         _keys(refusal, {"code", "message"}, {"reason_code"})
         for key, value in refusal.items():
@@ -969,7 +1000,7 @@ class Workbench:
                 native = workflow.create_session(raw, bindings) if upstream is None else workflow.create_session(raw, upstream, bindings)
             return self._retain(kind, source, upstream_id, native)
         except _FAILED as exc:
-            return self._retain_refusal("execute", kind, source, upstream_ids, None, exc)
+            return self._retain_refusal("execute", kind, source, upstream_ids, None, exc, reserved)
         finally:
             with self._lock:
                 self._pending -= 1
@@ -983,7 +1014,7 @@ class Workbench:
                 raise ValueError("Unknown retained workbench bundle")
             record = deepcopy(self._bundles[payload["bundle_id"]])
             source = deepcopy(self._sources[record["source_id"]])
-            upstream_ids = [record["upstream_bundle_id"]] if record["upstream_bundle_id"] is not None else []
+            upstream_ids = self._upstream_ids(record)
             try:
                 bindings, reserved = self._reserve(record["kind"])
             except AdapterRefusal as exc:
@@ -1002,7 +1033,7 @@ class Workbench:
             summary = self._retain(record["kind"], source, record["upstream_bundle_id"], native)
             return {"bundle": summary, "replay_receipt": deepcopy(receipt)}
         except _FAILED as exc:
-            return self._retain_refusal("replay", record["kind"], source, upstream_ids, record["bundle_id"], exc)
+            return self._retain_refusal("replay", record["kind"], source, upstream_ids, record["bundle_id"], exc, reserved)
         finally:
             with self._lock:
                 self._pending -= 1
@@ -1237,6 +1268,11 @@ class Workbench:
                 occurrences.add(record["execution_id"])
                 restored._candidates[record["candidate_id"]] = record
                 restored._used_bytes += len(_canonical(record))
+            # A refusal is a fresh occurrence: it may reuse no execution identity
+            # that appears anywhere in retained bundles, reproductions or receipts.
+            occurrences |= {identity for identity, (role, _) in restored._identities.items()
+                            if role in {"execution", "verification_execution"}}
+            occurrences |= {identity for record in restored._bundles.values() for identity in _execution_ids(record["native"])}
             for record in refusals:
                 restored._validate_refusal(record)
                 if record["execution_id"] in occurrences:
