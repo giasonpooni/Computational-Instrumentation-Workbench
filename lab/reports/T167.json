@@ -90,7 +90,7 @@
     "value": 0
    },
    "unit": "tasks",
-   "value": 19
+   "value": 17
   },
   {
    "assigned_by": "ciw.lab.evidence",
@@ -178,14 +178,14 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 142207,
+   "bytes": 143608,
    "path": "artifacts/T167/unmeasured.json",
-   "sha256": "95bb877cc596c79bc048ec631e53ae054121a6aecd52403007f3f9162d4a9b9e"
+   "sha256": "3dcd15bd6e54078ebf93a6952f3179f0a2b5468d870954157bf2e3087f6d0f82"
   },
   {
-   "bytes": 102762,
+   "bytes": 104019,
    "path": "artifacts/T167/UNMEASURED.md",
-   "sha256": "4c8bd18d169fbf16ba172edf7b3f6cfd903f4f536b9df8e910a30e1d9a70fc62"
+   "sha256": "be882d705e8bce68aab89095ede9670e1a8820935ddb32010d549adfc094f0c0"
   }
  ],
  "hypothesis": "Everything that remains physically unmeasured or unrun is enumerable from the retained reports, with what each open claim needs: an acquisition on a named route, a run on a named route's host, code that does not exist yet, a reference instrument, or an instrument probe.",
@@ -196,7 +196,7 @@
  ],
  "mathematical_model": "Unmeasured = physical/authority-domain findings not established; blocked, deferred and partial tasks with what they leave unresolved; open physical claims and open computational claims that name hardware, each classified from its own claim and basis notes and its task's statements (implementation missing, including code its task says was not run or written; reference instrument missing; a claim about synthetic fixtures, whose origin no acquisition changes; a computational comparison that runs only on the host of its task's acquisition route; a physical quantity filed under a computational domain; hardware:<probe> when its task is on that acquisition route and the claim names the route's device, else no instrument probe), the classifier checked on hand-labelled probe records first; acquisition routes ranked by the physical claims they address, then by the comparisons that run only on their host; the computational boundary per domain; cross-cutting open items.",
  "number": 167,
- "numerical_result": "Scope T001-T166: 152 physical/authority claims not established; 19 unfinished tasks {'blocked': 2, 'partial': 17}; open claims by need {'execution:hardware:nvidia-gpu': 3, 'fixture_origin': 1, 'hardware:nvidia-gpu': 10, 'hardware:rapl': 6, 'implementation': 6, 'no_probe': 94, 'reference_instrument': 1}; ready acquisitions hardware:nvidia-gpu (10 physical claims: T116, T118, T119, T124; 3 host-only comparisons: T117, T121, T147), hardware:rapl (6 physical claims: T115, T117, T120; 0 host-only comparisons: -); classifier probe records wrong 0 of 14; 0 hardware-measured findings; open items key-custody 31 tasks, telemetry-provisioning 7 tasks, cross-platform 10 tasks.",
+ "numerical_result": "Scope T001-T166: 152 physical/authority claims not established; 17 unfinished tasks {'blocked': 2, 'partial': 15}; open claims by need {'execution:hardware:nvidia-gpu': 3, 'fixture_origin': 1, 'hardware:nvidia-gpu': 10, 'hardware:rapl': 6, 'implementation': 6, 'no_probe': 94, 'reference_instrument': 1}; ready acquisitions hardware:nvidia-gpu (10 physical claims: T116, T118, T119, T124; 3 host-only comparisons: T117, T121, T147), hardware:rapl (6 physical claims: T115, T117, T120; 0 host-only comparisons: -); classifier probe records wrong 0 of 14; 0 hardware-measured findings; open items key-custody 32 tasks, telemetry-provisioning 7 tasks, cross-platform 11 tasks.",
  "observation_model": "No physical observation; reads retained computational records only.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -207,15 +207,17 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/research_portfolio.py": "145b8ee8456e1dd57bf2a05fa20e1ce55bd33356522436d8901eb1adfb60fc7a"
+   "src/ciw/lab/research_portfolio.py": "36d03762abf5cb7a900d4572ec3f8aa8e7bc55cb61331711dce910a334b3acf8"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "On the RTX 2080 host: `ciw energy probe --gpu-index 0` must report status ok; then run T116, T117, T118, T119, T121, T124, T147 there into a fresh output directory following their protocols (10 open physical claims name this route's device; 3 computational comparisons (T117, T121, T147) run only on this host) and retain the run with `ciw lab hardware retain`; next, hardware:rapl: an intel-rapl energy_uj counter under /sys/class/powercap must read as a number (the runner's hardware:rapl probe); `python -m ciw.lab.energy_gpu_telemetry rapl-capture` then records the capture. Claims needing implementation first, and those with no instrument probe, need code before hardware.",
- "report_id": "sha256:b942c03cb3b1cffe9f108e2a2c2f98982d8602a69c30462eb33bf4e21c047036",
+ "report_id": "sha256:c36fd8818a9e689459ed9cf22e9c0ec3adb0262514ee61e29f4f1d8bde2cd8f2",
  "schema": "ciw.lab-task-report.v1",
  "section": "research-portfolio",
  "state": "completed",

@@ -1,0 +1,252 @@
+{
+ "binding": "proved-heat-record",
+ "files": 9,
+ "note": "Retained proved-heat gate records are verified for integrity only: every retained file matches the manifest and no unrecorded file is present, the gate passed with its required native tests, its SCR and SP1 revisions and trees, guest recipe, guest ELF and compiler archive are the pins CIW declares, and the retained bundles, replay receipt and re-verification report pass CIW's offline proved-heat validation. No proof is re-verified and nothing is re-executed; the digests are unkeyed.",
+ "problems": [],
+ "run_id": "local-2026-09-24",
+ "state": "valid",
+ "summary": {
+  "build": {
+   "compiler_archive_sha256": "12c94435d41bfe4e20131bbcce40b35abd32270ad792befc653af4e3fabc192f",
+   "elf_sha256": "a14e3750da7e221d31842bd6cf983fcc8c0f530b2811537e2a9a9fe803dacf82",
+   "guest_build": "verified_against_committed_registry",
+   "recipe_identity": "6e5d1687bcc55243d712553a2b7768b6c587a76418bb48a7a2c44224470d423d",
+   "sp1_revision": "b38b61209e45e969289e70d5cf79dc763460bc41",
+   "toolchain_identity": "commit-hash: unknown; host: x86_64-unknown-linux-gnu; release: 1.94.0-dev"
+  },
+  "bundles": {
+   "bundle_digests": [
+    "sha256:0bb64bea5e5453e018b9ba82110a320f3f90423d9d9de8bd60709b0dc2c0de13",
+    "sha256:8229345a3ca18fdcfbe017d60bea68608efac9761edc390ec822c074c563acde"
+   ],
+   "initial_values": [
+    0,
+    100,
+    200,
+    100,
+    0
+   ],
+   "proof_sha256": [
+    "sha256:0210830d8fdef9e22a0e2072a86b4682cefb8cb56bf1bfdb336da576b60aa0de",
+    "sha256:f8c7f642ea3f986b7c6a2417cf087ac497e8fa9ff6dc326d8878c308f45e10df"
+   ],
+   "replay_numerical_match": true,
+   "replay_values": [
+    0,
+    65,
+    92,
+    65,
+    0
+   ],
+   "reverification_outcome": "passed",
+   "steps": 4,
+   "values": [
+    0,
+    65,
+    92,
+    65,
+    0
+   ],
+   "verifier_outcomes": [
+    "verified",
+    "verified"
+   ]
+  },
+  "date": "2026-09-24",
+  "gate": {
+   "execution": "real_sp1_proof_fresh_replay_and_verification",
+   "host_executable_binding": "operator_asserted_not_attested",
+   "installed_wheel": {
+    "byte_count": 1543921,
+    "filename": "computational_instrumentation_workbench-0.1.0-py3-none-any.whl",
+    "sha256": "b85197c9d740f7618ec7a89b8cf7ce638857dd91a185e6dbe5412e5e494db905"
+   },
+   "native_artifacts": {
+    "engine": {
+     "byte_count": 509160,
+     "sha256": "636b24475b64d1aa7892ebd8f07871e1adaed3325344e41085f08b6b08cc212e"
+    },
+    "guest": {
+     "byte_count": 50264,
+     "sha256": "a14e3750da7e221d31842bd6cf983fcc8c0f530b2811537e2a9a9fe803dacf82"
+    },
+    "prover": {
+     "byte_count": 55555664,
+     "sha256": "c6889f4d9f2dc3b689f599155b3dd0766a53b48ea67b89015f461589d193c95b"
+    }
+   },
+   "scr": {
+    "revision": "a59aba283b0304faeeb3e5d305087e7709e171ca",
+    "tree": "4068a711534932e8d89bb0d87d373376dafdf6cd"
+   },
+   "sp1": {
+    "revision": "b38b61209e45e969289e70d5cf79dc763460bc41",
+    "tree": "7deca3aced8d8eb84dfcede98285a192c862ea4c"
+   },
+   "status": "passed",
+   "tests_passed": 111
+  },
+  "host": "Linux x86-64 container, 4 CPUs, 16 GiB memory, Ubuntu 24.04",
+  "manifest_sha256": "3866f8b4cb50b91070c1e4c853a0cf52b00b611a0b850e269afd1f12d5490cdc",
+  "measurements": {
+   "original": {
+    "memory": {
+     "bytes": 10067357696,
+     "scope": "max_waited_child_peak_rss",
+     "status": "measured",
+     "unit": "byte"
+    },
+    "native_seconds": 0.001877836000858224,
+    "proof_byte_count": 2778024,
+    "prove_and_verify_seconds": 354.45507419500063,
+    "reverify_seconds": 92.09879494199959
+   },
+   "replay": {
+    "memory": {
+     "bytes": 10066411520,
+     "scope": "max_waited_child_peak_rss",
+     "status": "measured",
+     "unit": "byte"
+    },
+    "native_seconds": 0.0018099770004482707,
+    "proof_byte_count": 2778024,
+    "prove_and_verify_seconds": 480.6547993490003,
+    "reverify_seconds": 172.87093776899928
+   }
+  },
+  "native_tests": [
+   "test_native_proved_heat_shared_session",
+   "test_native_tampered_proof_fails_fresh_verification",
+   "test_native_retained_proof_can_be_reverified_without_reexecution"
+  ],
+  "observations": {
+   "execution_cli_toolchain_experiment": {
+    "builds": [
+     {
+      "sha256": "636b24475b64d1aa7892ebd8f07871e1adaed3325344e41085f08b6b08cc212e",
+      "source": "<scr>",
+      "toolchain": "rustc 1.94.0 (4a4ef493e 2026-03-02)"
+     },
+     {
+      "sha256": "636b24475b64d1aa7892ebd8f07871e1adaed3325344e41085f08b6b08cc212e",
+      "source": "<proved-heat-stack>/scr, the gate's link to <scr>",
+      "toolchain": "rustc 1.94.0 (4a4ef493e 2026-03-02)"
+     },
+     {
+      "sha256": "636b24475b64d1aa7892ebd8f07871e1adaed3325344e41085f08b6b08cc212e",
+      "source": "<scr>, built again",
+      "toolchain": "rustc 1.94.0 (4a4ef493e 2026-03-02)"
+     },
+     {
+      "sha256": "b9f40b3094ecf4b793676c766ffd559dc69abc4fada564c1bde94e79c6f0b201",
+      "source": "<scr>",
+      "toolchain": "rustc 1.94.1 (e408947bf 2026-03-25)"
+     },
+     {
+      "sha256": "b9f40b3094ecf4b793676c766ffd559dc69abc4fada564c1bde94e79c6f0b201",
+      "source": "a second clone of SCR at the pin, at another path",
+      "toolchain": "rustc 1.94.1 (e408947bf 2026-03-25)"
+     }
+    ],
+    "command": "cargo +<toolchain> build --release --locked --offline --manifest-path <source>/crates/Cargo.toml -p execution-cli, with a fresh CARGO_TARGET_DIR per build",
+    "kind": "operator_observation",
+    "result": "On this host the execution-cli digest depends on the toolchain and not on the source path: rustc 1.94.0 gives the engine gate/gate.json names, rustc 1.94.1 another digest.",
+    "scr_revision": "a59aba283b0304faeeb3e5d305087e7709e171ca"
+   }
+  },
+  "procedure": {
+   "cargo_build_jobs": "2",
+   "driver": "scripts/run_proved_heat_locally.py",
+   "driver_sha256": null,
+   "job": "native-proof",
+   "kind": "local_workflow_replay",
+   "outcome": "passed",
+   "workflow": ".github/workflows/proved-heat.yml",
+   "workflow_sha256": "3351eecb2f288a1c7dbcf2b3602cd0622508f9253e4c716e9a3e3c79270219e3"
+  },
+  "record_origin": "written_after_the_run",
+  "run_id": "local-2026-09-24",
+  "steps": [
+   {
+    "name": "actions/checkout@v4",
+    "reason": "the gate ran from the operator's CIW checkout",
+    "status": "not_run"
+   },
+   {
+    "name": "actions/setup-python@v5",
+    "reason": "the host's Python 3.12.3 was `python` for every step",
+    "status": "not_run"
+   },
+   {
+    "name": "Check Linux resource budget",
+    "reason": "not run by the driver then in use, so no resources.json was written; the host's total memory is in host_facts and the gate's measured peak RSS in gate/gate.json",
+    "status": "not_run"
+   },
+   {
+    "name": "Install native build dependencies",
+    "reason": "provisioned by the operator: the workflow's apt packages, and rustup toolchain 1.94.0 (minimal profile)",
+    "status": "not_run"
+   },
+   {
+    "name": "Check out exact SCR and upstream SP1 sources",
+    "reason": "provisioned by the operator: an existing clean SCR checkout at the pin and a fresh clone of upstream SP1 checked out at the pin, linked into the stack",
+    "status": "not_run"
+   },
+   {
+    "name": "Restore exact pinned host builds and Cargo downloads",
+    "reason": "no build cache: a miss, so the build step ran",
+    "status": "not_run"
+   },
+   {
+    "name": "Install the recipe's exact Succinct compiler archive",
+    "reason": "provisioned by the operator: the archive was downloaded from the workflow's URL, its SHA-256 checked against the pin, extracted and linked as the succinct toolchain",
+    "status": "not_run"
+   },
+   {
+    "exit_code": 0,
+    "name": "Rebuild and verify the committed heat ELF recipe",
+    "seconds": 83,
+    "status": "ran"
+   },
+   {
+    "exit_code": 0,
+    "name": "Build native execution and CPU proving hosts",
+    "seconds": 970,
+    "status": "ran"
+   },
+   {
+    "exit_code": 0,
+    "name": "Check build source bytes and provision clean SP1 reference",
+    "seconds": 2,
+    "status": "ran"
+   },
+   {
+    "name": "Save completed pinned hosts before running proof tests",
+    "reason": "no build cache",
+    "status": "not_run"
+   },
+   {
+    "exit_code": 0,
+    "name": "Exercise actual proofs through an isolated installed CIW wheel",
+    "seconds": 1331,
+    "status": "ran"
+   },
+   {
+    "name": "actions/upload-artifact@v4",
+    "reason": "the outputs stayed in the local output directory",
+    "status": "not_run"
+   }
+  ],
+  "toolchains": {
+   "cargo": "cargo 1.94.0 (85eff7c80 2026-01-15)",
+   "clang": "Ubuntu clang version 18.1.3 (1ubuntu1)",
+   "default_rustc": "rustc 1.94.1 (e408947bf 2026-03-25)",
+   "git": null,
+   "protoc": "libprotoc 3.21.12",
+   "python": "3.12.3",
+   "rustc": "rustc 1.94.0 (4a4ef493e 2026-03-02)",
+   "rustc_succinct": "rustc 1.94.0-dev (commit-hash unknown)",
+   "rustup": "rustup 1.29.0 (28d1352db 2026-03-05)"
+  }
+ }
+}

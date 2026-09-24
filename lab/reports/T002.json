@@ -435,6 +435,8 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "requirement_probes": {
    "module:mpmath": true,
@@ -449,7 +451,7 @@
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: an integrator-independent 34-digit reference: integrate the sympy-derived equations with mpmath's own Taylor-series solver (mpmath.odefun) instead of the ciw-authored Gragg-Bulirsch-Stoer integrator and check that it agrees with the retained references within their empirical error estimates, so that both the equations and the integrator of the reference are independent of ciw",
- "report_id": "sha256:7e267ae013282fff52eafad433a4d34c778e2759ee52fa43848575d3b0532ae5",
+ "report_id": "sha256:c2d51bae9c2d90c26601f255bc21967229a2fd833a483bdc06190eee6577b955",
  "schema": "ciw.lab-task-report.v1",
  "section": "geodesic-jacobi",
  "state": "completed",

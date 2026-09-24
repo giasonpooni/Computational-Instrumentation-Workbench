@@ -413,10 +413,12 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/observation.py": "ef75c3ea4cad06bcbc68592440b3d55a92786a729d5a731b87ece207511ddffb",
+   "src/ciw/lab/observation.py": "2a6812aa800277efdf1243187221123c8c7d15df4b298371e07f87f756e2a461",
    "src/ciw/lab/observation_modes.py": "14fcc803e9543fa4a6891775dfac6633ca15ade648e6125e2f71fde4c4201c90",
    "src/ciw/lab/sensor_fusion_bench.py": "f373849a4c6836fa20685c59ce7a6fe6bf732f6df9d6a49646cdc017262dd656",
    "src/ciw/lab/sensor_fusion_intake.py": "e8919ac1c921ec4c8e21e80924b493bfa4773071492a6c33a17a4c9990d1cde2",
@@ -425,7 +427,7 @@
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: give ClockMapping an uncertain rate and offset (a declared drift covariance) and carry it into the fusion intake as extra measurement covariance (velocity times time uncertainty), then test NEES consistency against a drifting synthetic clock; the intake today refuses any stamp that a static, exact mapping does not put on the tick grid.",
- "report_id": "sha256:8c4a63c9fe6775b3801834afcf094a7c3ab14ec41971dea827f195948bd696a6",
+ "report_id": "sha256:8d563583bb62e001ffe2116279f94bb155b48d65227cb09b751e390ceebcf4f8",
  "schema": "ciw.lab-task-report.v1",
  "section": "observation",
  "state": "completed",

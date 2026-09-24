@@ -1,4 +1,160 @@
 {
+ "energy_numerical_result": {
+  "data": {
+   "comparison": {
+    "accuracy_basis": "all_retained_fixed_iteration_batch_outputs_meet_same_declared_KL_target",
+    "claim": "amortized_background_inclusive_energy_not_first_attainment_or_minimum_energy",
+    "classification": "synthetic_only",
+    "eligible": false,
+    "reasons": []
+   },
+   "hardware_provenance": "synthetic_fixture_no_physical_verification",
+   "log_digest": "sha256:7d9639af0758fd56b9f6ec5664d098cf806139016505c1a778321284d2cdb803",
+   "measurement": {
+    "amortized_domain_energy_j_per_qualified_solve": 0.05,
+    "batch_count": 1,
+    "gross_energy_j": 0.2,
+    "max_covariance_abs_error": 3.469446951953614e-18,
+    "max_kl_nats": 6.187876734451435e-32,
+    "max_mean_abs_error": 2.220446049250313e-16,
+    "minimum_duration_met": true,
+    "qualified_solves": 4,
+    "target_kl_nats": 1e-08,
+    "target_met": true,
+    "total_solves": 4
+   },
+   "measurement_scope": {
+    "accuracy_j": null,
+    "background_inclusive": true,
+    "counter_continuity": "no_observed_decrease",
+    "device_uuid": "GPU-01234567-89ab-cdef-0123-456789abcdef",
+    "domain": "gpu_device",
+    "estimator": "gross_counter_difference_over_host_call_brackets",
+    "idle_subtracted": false,
+    "resolution_j": null,
+    "update_interval_s": null,
+    "workload_device_matches": true
+   },
+   "origin": "synthetic_fixture",
+   "phases": [
+    {
+     "alignment_overhead_s": 3.9999999978945766e-08,
+     "batches": [],
+     "bracket_elapsed_s": 0.20000004,
+     "counter_delta_mj": "200",
+     "elapsed_s": 0.2,
+     "energy_status": "ok",
+     "gross_energy_j": 0.2,
+     "name": "startup",
+     "reasons": [],
+     "utc_reversal_detected": false
+    },
+    {
+     "alignment_overhead_s": 3.9999999978945766e-08,
+     "batches": [
+      {
+       "batch_index": 0,
+       "covariance_max_abs_error": 3.469446951953614e-18,
+       "kl_nats": 6.187876734451435e-32,
+       "mean_max_abs_error": 2.220446049250313e-16,
+       "replicas": 4,
+       "target_met": true
+      }
+     ],
+     "bracket_elapsed_s": 0.20000004,
+     "counter_delta_mj": "200",
+     "elapsed_s": 0.2,
+     "energy_status": "ok",
+     "gross_energy_j": 0.2,
+     "name": "warmup",
+     "reasons": [],
+     "utc_reversal_detected": false
+    },
+    {
+     "alignment_overhead_s": 3.9999999978945766e-08,
+     "batches": [],
+     "bracket_elapsed_s": 0.20000004,
+     "counter_delta_mj": "200",
+     "elapsed_s": 0.2,
+     "energy_status": "ok",
+     "gross_energy_j": 0.2,
+     "name": "idle_before",
+     "reasons": [],
+     "utc_reversal_detected": false
+    },
+    {
+     "alignment_overhead_s": 3.9999999978945766e-08,
+     "batches": [
+      {
+       "batch_index": 0,
+       "covariance_max_abs_error": 3.469446951953614e-18,
+       "kl_nats": 6.187876734451435e-32,
+       "mean_max_abs_error": 2.220446049250313e-16,
+       "replicas": 4,
+       "target_met": true
+      }
+     ],
+     "bracket_elapsed_s": 1.00000004,
+     "counter_delta_mj": "200",
+     "elapsed_s": 1.0,
+     "energy_status": "ok",
+     "gross_energy_j": 0.2,
+     "name": "measurement",
+     "reasons": [],
+     "utc_reversal_detected": false
+    },
+    {
+     "alignment_overhead_s": 3.9999999978945766e-08,
+     "batches": [],
+     "bracket_elapsed_s": 0.20000004,
+     "counter_delta_mj": "200",
+     "elapsed_s": 0.2,
+     "energy_status": "ok",
+     "gross_energy_j": 0.2,
+     "name": "idle_after",
+     "reasons": [],
+     "utc_reversal_detected": false
+    }
+   ],
+   "reference": {
+    "covariance": [
+     [
+      0.4987468671679198,
+      -0.025062656641604016
+     ],
+     [
+      -0.025062656641604016,
+      0.4987468671679198
+     ]
+    ],
+    "covariance_method": "joseph_conditional_covariance",
+    "evidence_normalization": 2.5297726818602313,
+    "innovation": [
+     1.0,
+     2.0
+    ],
+    "innovation_covariance": [
+     [
+      2.04,
+      0.30000000000000004
+     ],
+     [
+      0.30000000000000004,
+      2.0
+     ]
+    ],
+    "innovation_quadratic": 2.245614035087719,
+    "log_evidence": -3.652579699404091,
+    "mean": [
+     0.3508771929824561,
+     1.0175438596491226
+    ],
+    "method": "observation_space_conditioning"
+   },
+   "schema": "ciw.energy-accuracy-analysis.v1"
+  },
+  "operation_id": "ciw.energy-accuracy.v1"
+ },
  "energy_numerical_result_id": "sha256:a928a6f8a5b5c1318e61b0a716ce4887c4d2d0fe5e86ec451a148efd023a8199",
  "metadata_variant": {
   "data_keys_differing_from_baseline": [

@@ -553,6 +553,8 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
@@ -564,7 +566,7 @@
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: a bounded free-energy example with a non-Gaussian posterior (for example a two-component mixture likelihood), where F + log Z = KL still holds but KL has no closed form, so the identity must be checked against a quadrature or Monte Carlo KL with its own stated uncertainty",
- "report_id": "sha256:4397df00aa158030ca7a1741ab57e3bedbd242a0299240527cd9642ef8b81abd",
+ "report_id": "sha256:020cd41874b0dd43dd08e57f83b51afd937561aabee3549994dc73596837c3f4",
  "schema": "ciw.lab-task-report.v1",
  "section": "energy-gpu",
  "state": "completed",

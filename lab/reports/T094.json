@@ -2,6 +2,7 @@
  "changed_files": [
   "src/ciw/lab/exchange_provenance_bundles.py",
   "src/ciw/lab/exchange_provenance_bundles_fixtures.py",
+  "src/ciw/lab/blas_probe.py",
   "tests/fixtures/lab/golden"
  ],
  "evidence_status": {
@@ -10,14 +11,14 @@
    "hardware_measured": 0,
    "independently_verified": 0,
    "not_established": 1,
-   "numerically_verified": 5,
+   "numerically_verified": 6,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "All digests match, all reopen, zero execution attempts, replay numerical identity preserved, retained heat values equal the integer reference.",
- "experiment": "Hash each golden file, reopen it into a temporary directory under the guard, inspect its bundles, compare the retained heat field with the integer reference and its runtime identity with CIW's pins, and attempt an unbound replay.",
+ "expected_invariant": "All digests match; every workspace reopens with the energy recomputation compared to rounding tolerance, with zero execution attempts and replay numerical identity preserved; every recomputed float within the tolerance and every other field equal; every unmodified reopen ends as predicted; on the platform that wrote the goldens every recomputation is bit-identical; retained heat values equal the integer reference.",
+ "experiment": "Hash each golden file, reopen it into temporary directories under the guard with the tolerant energy comparison and unmodified, inspect its bundles, compare each energy recomputation with the retained analysis, compare the retained heat field with the integer reference and its runtime identity with CIW's pins, and attempt an unbound replay.",
  "failure_modes_checked": [
   "fixture drift (digest)",
   "schema or validator drift breaking reopen",
@@ -25,7 +26,9 @@
   "replay identity drift",
   "unbound replay of a provider-backed golden bundle",
   "retained runtime identity differing from CIW's pins",
-  "floating-point recomputation drift"
+  "floating-point recomputation drift beyond rounding",
+  "a platform refusal other than the named one, or one where no bit differs",
+  "bit-exact recomputation lost on the platform that wrote the goldens"
  ],
  "findings": [
   {
@@ -44,7 +47,7 @@
       "comparison": "abs_le",
       "observed": 0.0,
       "passed": true,
-      "reference": "golden workspaces refused or missing",
+      "reference": "golden workspaces refused or missing, the energy recomputation compared to ENERGY_ROUNDING_TOLERANCE",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
      },
@@ -52,7 +55,7 @@
       "comparison": "abs_le",
       "observed": 0.0,
       "passed": true,
-      "reference": "execution entry points reached while reopening",
+      "reference": "execution entry points reached while reopening (both reopens)",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
      },
@@ -66,7 +69,7 @@
      }
     ]
    },
-   "claim": "The golden retained workspaces reopen and validate with the current code without execution",
+   "claim": "The golden retained workspaces reopen and validate with the current code without execution, the energy recomputation compared to rounding tolerance instead of bit for bit",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
    "origin": [
@@ -151,16 +154,45 @@
    "basis": {
     "checks": [
      {
+      "expected_refusal": "none",
+      "observed_refusal": "none",
+      "passed": true,
+      "reference": "unmodified reopen of golden/energy-accuracy-workspace.json, predicted from the bitwise comparison of its energy recomputations with the retained analysis",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "none",
+      "observed_refusal": "none",
+      "passed": true,
+      "reference": "unmodified reopen of golden/numerical-heat-workspace.json, predicted from the bitwise comparison of its energy recomputations with the retained analysis",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "none",
+      "observed_refusal": "none",
+      "passed": true,
+      "reference": "unmodified reopen of golden/oscillator-workspace.json, predicted from the bitwise comparison of its energy recomputations with the retained analysis",
+      "reference_kind": "refusal"
+     },
+     {
+      "comparison": "ge",
+      "observed": 7.0,
+      "passed": true,
+      "reference": "energy recomputations compared with the retained analysis",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     },
+     {
       "comparison": "abs_le",
       "observed": 0.0,
       "passed": true,
-      "reference": "golden workspaces refused with 'Retained energy analysis binding differs'",
+      "reference": "energy recomputations differing in any bit on the platform that wrote the goldens (platform_fingerprint() equal to GOLDEN_PLATFORM)",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
      }
     ]
    },
-   "claim": "Reopening recomputes the golden energy analysis bit for bit on this platform",
+   "claim": "Unmodified reopen accepts the golden energy analysis only where it recomputes bit for bit, as on the platform that wrote it, and otherwise refuses it by name as platform-dependent",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
    "origin": [
@@ -171,13 +203,76 @@
     "rel": 0
    },
    "uncertainty": {
-    "basis": "bit-exact canonical JSON comparison of a LAPACK-backed recomputation; depends on the NumPy/LAPACK build and CPU kernels (fingerprint in golden.json)",
+    "basis": "bit-exact canonical JSON comparison, as CIW makes it, of LAPACK-backed recomputations; which of them differ depends on the NumPy/LAPACK build and the OpenBLAS kernel. The platform fingerprint, whether it equals GOLDEN_PLATFORM and each unmodified outcome are in golden.json.",
     "kind": "roundoff",
     "value": 0
    },
    "unit": null,
    "value": {
-    "refused_as_platform_dependent": []
+    "outcomes_as_predicted": 3,
+    "refusal_where_a_bit_differs": "Retained energy analysis binding differs",
+    "workspaces_reopened_unmodified": 3
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 7.0,
+      "passed": true,
+      "reference": "energy recomputations compared with the retained analysis",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "recomputations without a retained analysis of the same log",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "recomputed floats outside ENERGY_ROUNDING_TOLERANCE",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "recomputed non-float fields or structure differing",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "The golden energy analysis recomputed with the current code agrees with the retained analysis to 1e-14 absolute plus 1e-14 relative in every float and exactly in every other field",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "Per-float tolerance 1e-14 absolute plus 1e-14 relative, set from the spread measured with the golden energy workspace on one x86-64 host under three OpenBLAS kernels: SkylakeX, which wrote it, recomputes it bit for bit; under Haswell and Sandybridge the reference mean and covariance (order-one results of 2x2 LAPACK solves) move by at most 2 ulps (2.8e-16 relative) and the error fields derived from them, which cancel to near zero, by at most 2.2e-16 absolute. The two terms are summed, as ciw lab verify sums them: where the largest difference, 2.2e-16, was measured the bound is 45 times it at the error fields (the absolute term, 45 ulps of the order-one quantities they are differences of) and 91 times at reference.mean[1] (bound 2.0e-14); fields that moved less sit further inside it (at the covariance entries and their error fields about 190 to 1500 times their largest difference, the absolute term dominating). This run's differences are in golden.json.",
+    "kind": "roundoff",
+    "value": 1e-14
+   },
+   "unit": null,
+   "value": {
+    "float_fields_each": 47,
+    "other_fields_each": 51,
+    "outside_tolerance": 0,
+    "recomputations": 7
    }
   },
   {
@@ -288,21 +383,21 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 1782,
+   "bytes": 4013,
    "path": "artifacts/T094/golden.json",
-   "sha256": "7f015859a8a974afa7b74cf8b68836a362224cc658be59454338e81b876332da"
+   "sha256": "2cb788d98ee3ec2d355b13821d3cab746503f085d8556743f335991a146ac5f9"
   }
  ],
- "hypothesis": "Workspaces saved by CIW earlier (golden fixtures) still reopen and validate with the current code, with no provider binding and no execution.",
+ "hypothesis": "Workspaces saved by CIW earlier (golden fixtures) still reopen and validate with the current code, with no provider binding and no execution, on any platform; the bit-for-bit recomputation of the energy analysis that reopen also requires holds only where the platform rounds as the one that wrote them, and elsewhere reopen refuses it by name.",
  "input_data": [
   "tests/fixtures/lab/golden/energy-accuracy-workspace.json",
   "tests/fixtures/lab/golden/numerical-heat-workspace.json",
   "tests/fixtures/lab/golden/oscillator-workspace.json"
  ],
- "mathematical_model": "Golden = exact saved bytes recorded in GOLDEN_MANIFEST; validation = Session.from_workspace (structure, identities, commitments, energy-analysis recomputation) under the execution guard.",
+ "mathematical_model": "Golden = exact saved bytes recorded in GOLDEN_MANIFEST; validation = Session.from_workspace (structure, identities, commitments, energy-analysis recomputation) under the execution guard, run twice: with the recomputed energy analysis compared to the retained one per float within |retained - fresh| <= 1e-14 + 1e-14 |retained| (every other field exactly), and unmodified, where CIW compares it bit for bit. Bitwise prediction: the unmodified reopen ends as the first, except that a recomputation differing from the retained analysis in any bit is refused as 'Retained energy analysis binding differs'.",
  "number": 94,
- "numerical_result": "3 golden workspaces reopened, 0 failures (0 platform-dependent energy recomputations), 0 digest mismatches; retained heat values [0, 16, 24, 16, 0].",
- "observation_model": "SHA-256 of each file; reopen outcome; retained replay receipts; retained SCR values and runtime identity.",
+ "numerical_result": "3 golden workspaces reopen and validate with the energy recomputation compared to rounding tolerance (0 failures, 0 digest mismatches); 7 energy recomputations, 0 of them differing from the retained analysis in some bit on this platform and 0 outside the tolerance; 3 of 3 unmodified reopens end as predicted; retained heat values [0, 16, 24, 16, 0].",
+ "observation_model": "SHA-256 of each file; both reopen outcomes; retained replay receipts; each energy recomputation compared with the retained analysis bit for bit and per float; the platform fingerprint (system, NumPy, BLAS and LAPACK builds, the OpenBLAS kernel in use, SIMD) against GOLDEN_PLATFORM; retained SCR values and runtime identity.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
   "status": "not_established"
@@ -312,27 +407,38 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/exchange_provenance_bundles.py": "7e841b781d966fe75d5a86bd61e1ef32150c4087393893be788c2b7eff69f3d4",
-   "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "435727947e827d1d601802a5e860f04d578f7b879301c7f5615fb7d6e523500e"
+   "src/ciw/lab/blas_probe.py": "3e83785edecc0884a2a2c93779cb5cfb03a4dbe08934a8b0010092f45b0b454f",
+   "src/ciw/lab/exchange_provenance_bundles.py": "289185340068210691a0ccc526655eadb241855566c88003eedf97eef22b7085",
+   "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "28f726a725f7219ef0afccd34545104b5dc0a36e27723281fe6bd1fbde467fa2"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "Deferred research question: reopen the golden workspaces on a second platform (Windows x86-64, macOS arm64 or another NumPy/LAPACK build) to learn whether the bit-for-bit energy recomputation refuses the energy golden there, as the platform fingerprint in golden.json anticipates; and retain golden workspaces for provider kinds other than numerical-heat, produced by their pinned providers, so that validator drift in those kinds is caught at reopen.",
- "report_id": "sha256:bad336a36b03056285532a8943eca1635bc43502c23b9467da4009116a6fbac2",
+ "recommended_next_task": "Deferred research question: reopen the golden workspaces on Windows x86-64, macOS arm64 and a NumPy built on another LAPACK to learn whether the energy recomputation stays within the rounding tolerance measured across three OpenBLAS kernels on one x86-64 host; decide, as a CIW design question, whether reopen should compare the energy recomputation within a declared tolerance instead of bit for bit, so that a workspace written on one platform reopens on another; and retain golden workspaces for provider kinds other than numerical-heat, produced by their pinned providers, so that validator drift in those kinds is caught at reopen.",
+ "report_id": "sha256:dd7df03a6843b17252953a2d82fcbf69b6aacebd97b342545cdc3b0984ff1c79",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "completed",
  "task_id": "T094",
  "tests_passed": [
-  "check: The golden retained workspaces reopen and validate with the current code without execution vs golden files differing from GOLDEN_MANIFEST",
-  "check: The golden retained workspaces reopen and validate with the current code without execution vs golden workspaces refused or missing",
-  "check: The golden retained workspaces reopen and validate with the current code without execution vs execution entry points reached while reopening",
-  "check: The golden retained workspaces reopen and validate with the current code without execution vs replays whose numerical identity differs from their original",
+  "check: The golden retained workspaces reopen and validate with the current code without execution, the energy recomputation compared to rounding tolerance instead of bit for bit vs golden files differing from GOLDEN_MANIFEST",
+  "check: The golden retained workspaces reopen and validate with the current code without execution, the energy recomputation compared to rounding tolerance instead of bit for bit vs golden workspaces refused or missing, the energy recomputation compared to ENERGY_ROUNDING_TOLERANCE",
+  "check: The golden retained workspaces reopen and validate with the current code without execution, the energy recomputation compared to rounding tolerance instead of bit for bit vs execution entry points reached while reopening (both reopens)",
+  "check: The golden retained workspaces reopen and validate with the current code without execution, the energy recomputation compared to rounding tolerance instead of bit for bit vs replays whose numerical identity differs from their original",
   "check: Golden fixture SHA-256 digests vs digests differing from the recorded manifest",
-  "check: Reopening recomputes the golden energy analysis bit for bit on this platform vs golden workspaces refused with 'Retained energy analysis binding differs'",
+  "check: Unmodified reopen accepts the golden energy analysis only where it recomputes bit for bit, as on the platform that wrote it, and otherwise refuses it by name as platform-dependent vs unmodified reopen of golden/energy-accuracy-workspace.json, predicted from the bitwise comparison of its energy recomputations with the retained analysis",
+  "check: Unmodified reopen accepts the golden energy analysis only where it recomputes bit for bit, as on the platform that wrote it, and otherwise refuses it by name as platform-dependent vs unmodified reopen of golden/numerical-heat-workspace.json, predicted from the bitwise comparison of its energy recomputations with the retained analysis",
+  "check: Unmodified reopen accepts the golden energy analysis only where it recomputes bit for bit, as on the platform that wrote it, and otherwise refuses it by name as platform-dependent vs unmodified reopen of golden/oscillator-workspace.json, predicted from the bitwise comparison of its energy recomputations with the retained analysis",
+  "check: Unmodified reopen accepts the golden energy analysis only where it recomputes bit for bit, as on the platform that wrote it, and otherwise refuses it by name as platform-dependent vs energy recomputations compared with the retained analysis",
+  "check: Unmodified reopen accepts the golden energy analysis only where it recomputes bit for bit, as on the platform that wrote it, and otherwise refuses it by name as platform-dependent vs energy recomputations differing in any bit on the platform that wrote the goldens (platform_fingerprint() equal to GOLDEN_PLATFORM)",
+  "check: The golden energy analysis recomputed with the current code agrees with the retained analysis to 1e-14 absolute plus 1e-14 relative in every float and exactly in every other field vs energy recomputations compared with the retained analysis",
+  "check: The golden energy analysis recomputed with the current code agrees with the retained analysis to 1e-14 absolute plus 1e-14 relative in every float and exactly in every other field vs recomputations without a retained analysis of the same log",
+  "check: The golden energy analysis recomputed with the current code agrees with the retained analysis to 1e-14 absolute plus 1e-14 relative in every float and exactly in every other field vs recomputed floats outside ENERGY_ROUNDING_TOLERANCE",
+  "check: The golden energy analysis recomputed with the current code agrees with the retained analysis to 1e-14 absolute plus 1e-14 relative in every float and exactly in every other field vs recomputed non-float fields or structure differing",
   "check: The retained golden numerical-heat bundle names the pinned SCR revision, tree and recorded engine digest, and its values equal the integer Jacobi reference vs retained SCR revision differs from ciw.declared_workload.PINS[numerical-heat]",
   "check: The retained golden numerical-heat bundle names the pinned SCR revision, tree and recorded engine digest, and its values equal the integer Jacobi reference vs retained SCR source tree differs from ciw.proved_heat.PIN",
   "check: The retained golden numerical-heat bundle names the pinned SCR revision, tree and recorded engine digest, and its values equal the integer Jacobi reference vs retained engine digest differs from the digest recorded with the golden fixtures",
@@ -343,9 +449,10 @@
  ],
  "tests_skipped": [],
  "title": "Add golden retained bundles.",
- "uncertainty": "Exact.",
+ "uncertainty": "Exact counts and digests. The energy recomputation is compared to 1e-14 absolute plus 1e-14 relative per float, summed: 45 times the largest difference measured across three OpenBLAS kernels at the near-zero error fields and 91 times at the order-one reference mean, further where a field moved less; and bit for bit where CIW compares it.",
  "unresolved_assumptions": [
-  "Reopen recomputes the retained energy analysis in floating point and compares it bit for bit; a platform whose NumPy/LAPACK rounds differently refuses the golden energy workspace. The platform fingerprint of this run and of the golden's origin are retained in golden.json.",
+  "Bit-exact reopen of the energy golden is only available on the platform that wrote it (GOLDEN_PLATFORM: Linux x86_64, NumPy 2.4.3, scipy-openblas 0.3.31.dev running its SkylakeX kernels). CIW compares the recomputed analysis bit for bit, and a platform whose NumPy/LAPACK build or OpenBLAS kernel rounds differently refuses the workspace as 'Retained energy analysis binding differs'; forced to the Haswell or Sandybridge kernels on the same host it does. T094 then shows that the recomputation agrees to rounding tolerance, which CIW's reopen does not accept. The platform fingerprints and which branch applied are retained in golden.json.",
+  "The rounding tolerance was measured on one x86-64 host under three OpenBLAS kernels; other LAPACK builds, operating systems and architectures have not been measured. An equal platform fingerprint does not guarantee equal rounding, and outside NumPy's bundled OpenBLAS the kernel is not named.",
   "The retained runtime identity is metadata written by the saving run: it is compared with CIW's pins, but reopen cannot show that the named engine produced the values.",
   "The golden numerical-heat workspace records host paths of the machine that produced it; they are identity metadata, never bindings."
  ]

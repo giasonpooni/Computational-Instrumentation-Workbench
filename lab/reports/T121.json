@@ -750,6 +750,8 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "requirement_probes": {
    "hardware:nvidia-gpu": false
@@ -767,7 +769,7 @@
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Check on the RTX 2080 host (protocol in docs/lab/ENERGY_GPU.md) that the PTX kernel keeps its in-kernel reductions unfused: `mkdir -p runs/rtx2080-<date>`; `ciw energy probe --gpu-index 0` must return a reading with status ok; start `TZ=UTC nvidia-smi --query-gpu=timestamp,uuid,name,utilization.gpu,utilization.memory,temperature.gpu,power.draw,clocks.sm,clocks.mem,pstate --format=csv,nounits -lms 100 -f runs/rtx2080-<date>/smi.csv` in the background; `ciw energy record --problem examples/energy-accuracy/problem.json --output-dir runs/rtx2080-<date>/capture --duration 10 --replicas 4096 --warmup-batches 2 --idle-duration 2 --gpu-index 0`; stop the sidecar; `ciw energy replay runs/rtx2080-<date>/capture/log.json`; then `CIW_LAB_NVIDIA_SMI_UTC_OFFSET=+00:00 ciw lab run T116 T117 T118 T119 T120 T121 T124 T147 --capture energy-log=runs/rtx2080-<date>/capture/log.json --capture nvidia-smi-csv=runs/rtx2080-<date>/smi.csv --output-dir results/rtx2080-<date>` on the same host and `ciw lab hardware retain results/rtx2080-<date> --retained lab --run-id rtx2080-<date> --host \"<RTX 2080 host>\"`. Deferred research question: extend the common workload's GPU path beyond the binary64 gaussian_vi PTX kernel of ciw.energy_cuda: a float32 rendering of the same kernel, and a device-wide reduction of its per-replica outputs (a fixed tree over the stored order per T148's REDUCTION_POLICY, plus one atomicAdd variant), each compared with the NumPy reference by compare_outputs on the RTX 2080 host and captured with `ciw energy record` for energy; until then those claims stay not_established on every host",
- "report_id": "sha256:e5bdc42f4252e93594aefe6235b29da1cff8ff2417bc6b3a404ba2e6b853c13b",
+ "report_id": "sha256:207b4ae9f2e28eea41908c6f71f488afed7448979348c64afbf7bc026854d1ff",
  "schema": "ciw.lab-task-report.v1",
  "section": "energy-gpu",
  "state": "partial",

@@ -444,17 +444,19 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/observation.py": "ef75c3ea4cad06bcbc68592440b3d55a92786a729d5a731b87ece207511ddffb",
+   "src/ciw/lab/observation.py": "2a6812aa800277efdf1243187221123c8c7d15df4b298371e07f87f756e2a461",
    "src/ciw/lab/observation_chord.py": "cfbaaaf604b32b686178ea036d27c153d8eebc7d290444c60d7699c1fc60faf5",
    "src/ciw/lab/observation_modes.py": "14fcc803e9543fa4a6891775dfac6633ca15ade648e6125e2f71fde4c4201c90"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: a mesh-reconstruction conversion that fills geometry_m2 = sigma_vertex^2 |grad d|^2 from T043's linearized vertex-noise gain (valid only while the unfolded segment stays in its face corridor), checked against T044's nested Monte Carlo, so a reconstructed_surface_distance derived from a scanned mesh carries the same split as one derived from a parametric model. A physical check of the split needs paired chord and tape readings. The runner can retain their raw export as an operator capture (ciw lab run --capture ROLE=PATH), but no section-4 task reads a capture or parses a camera, tracker or tape export, so a capture parser for chord and tape readings is missing; and a capture is unauthenticated, so without an instrument probe or a signed-capture trust anchor for these roles its physical findings stay not_established. No hardware_measured observation exists.",
- "report_id": "sha256:79a7d86675d8dee42abc47021844d140c5ee9b3a336c2447ba8097c74621a9aa",
+ "report_id": "sha256:cc7c6bbff1e72e0bc7dce4f0df7fa2cdde8a4e304a42c84ef30a3ed61fdd18bc",
  "schema": "ciw.lab-task-report.v1",
  "section": "observation",
  "state": "completed",

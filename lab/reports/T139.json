@@ -344,6 +344,8 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "requirement_probes": {
    "capture:retention": false
@@ -358,7 +360,7 @@
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: a signed-capture trust anchor (instrument-held keys that sign each export) or a hardware:metrology probe, without which a retained record supports no physical label. Meanwhile retain the first real acquisition of a control protocol: run ciw lab run T139 --capture retention=<record.json> with its raw files bound under their roles (--capture photogrammetry=<targets.csv> --capture cmm=<start-pose.csv> ...), the record listing each file with its SHA-256, instrument serial, calibration certificate and validity window, frame chain with covariances and clock; then retain the run with ciw lab hardware retain.",
- "report_id": "sha256:2eee6df773fddbe8b5a1051a78b0b304591da55b77a768830d4bad75a3e09cfb",
+ "report_id": "sha256:4b2b2382b21c42193f28121b6d7cd4c298ee89dc9c893fe285fa328b110a73b3",
  "schema": "ciw.lab-task-report.v1",
  "section": "manufacturing",
  "state": "partial",

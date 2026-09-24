@@ -66,7 +66,7 @@
   "xmlrpc",
   "zmq"
  ],
- "package_sha256": "bd2ecfd61676c5b6e1c5586c49dddc9b286cde6bacc02a1bf681efc5d63a97d0",
+ "package_sha256": "4b7df3616b8ad18f88bafd98a7a867b987d02d2b2561500440b7d5b7fa63f7c5",
  "paths": {
   "declared_network": {
    "ciw.cli": [

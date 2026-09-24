@@ -593,17 +593,19 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/surfaces_discrete_mesh.py": "bd83d5f82c82c46a746fe77b3877a010e998d1ef219a90a2dc01bbf7f3c82455",
-   "src/ciw/lab/surfaces_discrete_mesh_geometry.py": "b14d56fae8413d78853e96be27a1f11eac369afa0b7a3dbb53bc821511ba4d97",
-   "src/ciw/lab/surfaces_discrete_mesh_studies.py": "618ea9848e8b750e333f81a395a7544c8b5127e53f4aae27d59b4f27e9967dfa"
+   "src/ciw/lab/surfaces_discrete_mesh.py": "6d6f03cf6afcc2ecbdce3da635c4c38b96a3c77c0a6209c510b589b009c10c3b",
+   "src/ciw/lab/surfaces_discrete_mesh_geometry.py": "eb8124863335556f8aaa6f47f599a137f5925ef9210b5d7878bb8c7416a4dad3",
+   "src/ciw/lab/surfaces_discrete_mesh_studies.py": "1d274cab4fa8572f2304e3bff48b546936762ba151732df04f6bbae949f85086"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: derive the mechanism of the valence-6 curvature plateau (about 2.6e-3) on the icosahedral mirror planes, for example by testing whether a smooth refinement (Loop subdivision projected to the sphere) instead of the recursive midpoint map removes it, and establish or refute pointwise convergence off the planes beyond level 7 and on irregular torus meshes.",
- "report_id": "sha256:e393f108225b9b00604a13ad9a89862b405b5f2f2b68a3f9566add29eb5cb60f",
+ "report_id": "sha256:f6324e9e9ff18f337fd9df1e98a8e2e6f46b823567ba42b7ee543184b0c81797",
  "schema": "ciw.lab-task-report.v1",
  "section": "surfaces-discrete",
  "state": "completed",

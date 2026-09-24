@@ -359,6 +359,8 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
@@ -370,7 +372,7 @@
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: a truth-free consistency monitor built from NIS and its lag-one autocorrelation over a sliding window, with its detection power against a declared R understatement computed exactly (noncentral chi-square) as a function of window length.",
- "report_id": "sha256:8f108f209fe0e7a5690044c807e1c6ee11df49d66d6c3e143131c38f38d7be50",
+ "report_id": "sha256:c7d51236e8a561f21f80ea3b522b602eecdc1b4abd19384fb3e2920dd6791937",
  "schema": "ciw.lab-task-report.v1",
  "section": "sensor-fusion",
  "state": "completed",

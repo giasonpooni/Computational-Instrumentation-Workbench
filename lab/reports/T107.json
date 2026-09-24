@@ -9,7 +9,7 @@
   "counts": {
    "analytic": 0,
    "hardware_measured": 0,
-   "independently_verified": 3,
+   "independently_verified": 6,
    "not_established": 0,
    "numerically_verified": 3,
    "provider_backed": 1,
@@ -17,13 +17,16 @@
   },
   "primary": "provider_backed"
  },
- "expected_invariant": "No certifying code unless the exact form is negative definite; certified beyond -2 res; resolved beyond +2 res; with the declared margin no CERTIFIED_WITH_MARGIN within the band. Without a declared margin, exactly negative definite band cases may be certified (soundly) or left inconclusive.",
- "experiment": "Generate cases, bin their exact spectra, evaluate with PLSR at both margins and tabulate codes per bin.",
+ "expected_invariant": "No certifying code unless the exact form is negative definite; every window case gets the code its exact window predicts (certified below -res, MARGIN_LOW between -3 res and -res under the declared margin, inconclusive within one resolution, not definite or not certified beyond +res); straddle cases get CERTIFIED_WITH_MARGIN or NUMERICAL_INCONCLUSIVE at -res and DECREASE_NOT_DEFINITE, NOT_CERTIFIED or NUMERICAL_INCONCLUSIVE at +res. Without a declared margin, exactly negative definite band cases may be certified (soundly) or left inconclusive.",
+ "experiment": "Generate the cases in exact arithmetic, bin and bracket their exact spectra, evaluate with PLSR at both margins, compare every window code with its prediction, measure the realized eigenvalue error and tabulate codes per bin.",
  "failure_modes_checked": [
   "certifying code on a form that is not exactly negative definite",
+  "window code differing from its exact window",
+  "realized eigenvalue error reaching the declared distance",
   "unresolved sign beyond two resolutions",
   "CERTIFIED_WITH_MARGIN inside the band under a declared margin",
   "MARGIN_LOW inconsistent with the declared margin",
+  "straddle code outside the codes its threshold admits",
   "CERTIFIED_WITH_MARGIN inside the band at required_margin 0 (searched as counterexample)"
  ],
  "findings": [
@@ -73,8 +76,69 @@
    },
    "unit": null,
    "value": {
-    "cases": 102,
+    "cases": 114,
     "violations": 0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 0.009584056958089615,
+      "passed": true,
+      "reference": "largest |computed - exact| max eig(M) over all cases, in resolutions (exact bracket of width 2e-6 res)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.1875
+     }
+    ],
+    "independent_check": {
+     "checker": {
+      "implementation": "ciw.lab.lyapunov_reference",
+      "revision": "0.1.0"
+     },
+     "comparison": "abs_le",
+     "observed": 0.0,
+     "passed": true,
+     "producer": {
+      "implementation": "Parameterized-Lyapunov-Stability-Runtime@19ea69670601",
+      "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196"
+     },
+     "reference": "window cases whose codes at required_margin 0 and 3 res differ from those implied by the exact window and the exact sign of x^T M x - res |x|^2",
+     "reference_kind": "exact_arithmetic",
+     "tolerance": 0.0
+    },
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "Every window case receives the code its exact window predicts, PLSR's computed max eig(M) erring by less than the 3/16 res that separates each window from the code thresholds",
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check",
+    "provider",
+    "reference_checks"
+   ],
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "largest realized error of PLSR's computed max eig(M) against the exact value, in resolutions; it differs between BLAS kernels at its own size and is not a compared value",
+    "kind": "roundoff",
+    "value": 0.009584056958089615
+   },
+   "unit": null,
+   "value": {
+    "mismatches": 0,
+    "window_cases": 90
    }
   },
   {
@@ -113,13 +177,13 @@
     "provider"
    ],
    "regression_tolerance": {
-    "abs": 2.0,
+    "abs": 0.0,
     "rel": 0.0
    },
    "uncertainty": {
-    "basis": "counts near two resolutions may shift between BLAS builds",
-    "kind": "reference_error",
-    "value": 2.0
+    "basis": "exact counts: each counted outcome is decided at a threshold at least 3/16 res from the case's exact max eig(M), beyond the realized eigenvalue error, so they do not move between BLAS kernels",
+    "kind": "roundoff",
+    "value": 0.0
    },
    "unit": null,
    "value": {
@@ -163,17 +227,17 @@
     "provider"
    ],
    "regression_tolerance": {
-    "abs": 2.0,
+    "abs": 0.0,
     "rel": 0.0
    },
    "uncertainty": {
-    "basis": "counts near the band edge may shift between BLAS builds",
-    "kind": "reference_error",
-    "value": 2.0
+    "basis": "exact counts: each counted outcome is decided at a threshold at least 3/16 res from the case's exact max eig(M), beyond the realized eigenvalue error, so they do not move between BLAS kernels",
+    "kind": "roundoff",
+    "value": 0.0
    },
    "unit": null,
    "value": {
-    "band_cases": 66,
+    "band_cases": 78,
     "certified": 0
    }
   },
@@ -183,9 +247,9 @@
     "checks": [
      {
       "comparison": "ge",
-      "observed": 18.0,
+      "observed": 12.0,
       "passed": true,
-      "reference": "band cases certified at required_margin 0",
+      "reference": "window band cases certified at required_margin 0",
       "reference_kind": "invariant",
       "tolerance": 1.0
      },
@@ -193,7 +257,7 @@
       "comparison": "abs_le",
       "observed": 0.0,
       "passed": true,
-      "reference": "band certificates whose exact decrease form is not negative definite",
+      "reference": "band certificates (window and straddle) whose exact decrease form is not negative definite",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
      }
@@ -213,12 +277,12 @@
     "witness": {
      "A_hex": [
       [
-       "-0x1.e636e83aa265ap-2",
-       "-0x1.748d1cc4dece5p+4"
+       "-0x1.70a3d70a3e676p-3",
+       "-0x1.37f5c28f5c29ap+6"
       ],
       [
-       "0x1.7b8d5b5ad374dp+4",
-       "-0x1.9ce6d32eaa8fdp-4"
+       "0x1.390a3d70a3d66p+6",
+       "-0x1.9eb851eb888c1p-4"
       ]
      ],
      "P_hex": [
@@ -235,11 +299,15 @@
      "code_at_required_margin_0": "CERTIFIED_WITH_MARGIN",
      "exact_bin": "[-2, -1) res",
      "exact_class": "negative_definite",
-     "margin_ratio": 1.8230956069042017,
+     "exact_window_over_res": [
+      -1.8125,
+      -1.6875
+     ],
+     "margin_ratio": 1.7781685645713132,
      "n": 2,
      "x": [
-      0.5817207569849171,
-      -0.7165189568447908
+      -1.53125,
+      1.9375
      ]
     }
    },
@@ -250,20 +318,143 @@
     "reference_checks"
    ],
    "regression_tolerance": {
-    "abs": 4.0,
+    "abs": 0.03,
     "rel": 0.0
    },
    "uncertainty": {
-    "basis": "which band cases resolve depends on last-bit rounding; the [-2, -1) res certifications are robust",
-    "kind": "reference_error",
-    "value": 4.0
+    "basis": "the counts are exact; the witness's computed margin ratio carries the realized eigenvalue error of its BLAS kernel on window cases (at most 0.0096 res here; 0.0096 res on the SkylakeX and Haswell OpenBLAS kernels, 0.0116 res on Sandybridge, Nehalem and Prescott), so two kernels differ by at most twice the largest realized error; across those five kernels the margin ratios of band certificates differed by at most 0.0018 on window cases and 0.0025 with the straddle certificates, and the witness's not at all; the regression tolerance abs 0.03 res covers twice the largest window error, is 12 times that measured spread and admits no change of a count",
+    "kind": "roundoff",
+    "value": 0.009584056958089615
    },
    "unit": null,
    "value": {
-    "band_cases": 66,
-    "certified": 18,
-    "certified_within_one_resolution": 2,
+    "band_cases": 78,
+    "certified_window_cases": 12,
     "unsound": 0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "straddle pairs whose exact max eig(M) does not cross -res",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "independent_check": {
+     "checker": {
+      "implementation": "ciw.lab.lyapunov_reference",
+      "revision": "0.1.0"
+     },
+     "comparison": "abs_le",
+     "observed": 0.0,
+     "passed": true,
+     "producer": {
+      "implementation": "Parameterized-Lyapunov-Stability-Runtime@19ea69670601",
+      "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196"
+     },
+     "reference": "straddle codes other than CERTIFIED_WITH_MARGIN or NUMERICAL_INCONCLUSIVE (the codes an exact max eig(M) in (-2 res, 0) admits)",
+     "reference_kind": "exact_arithmetic",
+     "tolerance": 0.0
+    },
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "Straddle cases within rounding of -res receive CERTIFIED_WITH_MARGIN or NUMERICAL_INCONCLUSIVE on either exact side of the threshold",
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check",
+    "provider",
+    "reference_checks"
+   ],
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "largest exact distance of a straddle case from -res, in resolutions; which of them are certified is decided by the rounding of the computed eigenvalue (realized error up to 0.0026 res here), may differ between BLAS kernels and LAPACK builds, and is retained per case in inconclusive-band.json, not compared",
+    "kind": "reference_error",
+    "value": 0.008192062377929688
+   },
+   "unit": null,
+   "value": {
+    "cases": 12,
+    "exactly_beyond": 6,
+    "other_codes": 0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "straddle pairs whose exact max eig(M) does not cross +res",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "independent_check": {
+     "checker": {
+      "implementation": "ciw.lab.lyapunov_reference",
+      "revision": "0.1.0"
+     },
+     "comparison": "abs_le",
+     "observed": 0.0,
+     "passed": true,
+     "producer": {
+      "implementation": "Parameterized-Lyapunov-Stability-Runtime@19ea69670601",
+      "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196"
+     },
+     "reference": "straddle codes other than DECREASE_NOT_DEFINITE, NOT_CERTIFIED or NUMERICAL_INCONCLUSIVE (the codes an exact max eig(M) in (0, 2 res) admits)",
+     "reference_kind": "exact_arithmetic",
+     "tolerance": 0.0
+    },
+    "provider": {
+     "executed": true,
+     "package_version": "0.1.0rc1",
+     "repository": "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime",
+     "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+     "role": "plsr-python",
+     "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
+    }
+   },
+   "claim": "Straddle cases within rounding of +res receive DECREASE_NOT_DEFINITE, NOT_CERTIFIED or NUMERICAL_INCONCLUSIVE on either exact side of the threshold",
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check",
+    "provider",
+    "reference_checks"
+   ],
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "largest exact distance of a straddle case from +res, in resolutions; which of them are DECREASE_NOT_DEFINITE is decided by the rounding of the computed eigenvalue (realized error up to 0.0032 res here), may differ between BLAS kernels and LAPACK builds, and is retained per case in inconclusive-band.json, not compared",
+    "kind": "reference_error",
+    "value": 0.0061817169189453125
+   },
+   "unit": null,
+   "value": {
+    "cases": 12,
+    "exactly_beyond": 6,
+    "other_codes": 0
    }
   },
   {
@@ -280,7 +471,7 @@
      },
      {
       "comparison": "ge",
-      "observed": 27.0,
+      "observed": 22.0,
       "passed": true,
       "reference": "MARGIN_LOW verdicts observed",
       "reference_kind": "invariant",
@@ -330,24 +521,24 @@
      "runtime_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7"
     }
    },
-   "claim": "Share of exactly negative definite band cases answered NUMERICAL_INCONCLUSIVE without a declared margin",
+   "claim": "Share of exactly negative definite band window cases answered NUMERICAL_INCONCLUSIVE without a declared margin",
    "domain": "numerical",
    "evidence_status": "provider_backed",
    "origin": [
     "provider"
    ],
    "regression_tolerance": {
-    "abs": 0.2,
+    "abs": 0.0,
     "rel": 0.0
    },
    "uncertainty": {
-    "basis": "the share of resolved band cases depends on last-bit rounding",
-    "kind": "reference_error",
-    "value": 0.2
+    "basis": "a ratio of exact counts decided by the exact windows",
+    "kind": "roundoff",
+    "value": 0.0
    },
    "unit": null,
    "value": {
-    "inconclusive_share": 0.4375
+    "inconclusive_share": 0.5384615384615384
    }
   },
   {
@@ -361,6 +552,14 @@
       "reference": "exact bins without a case (six bins from below -2 res to above 2 res)",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "window cases whose exact max eig(M) lies outside (kappa +- 1/16) res",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
      }
     ],
     "generator": {
@@ -368,7 +567,7 @@
      "seed": 107
     }
    },
-   "claim": "The near-boundary family populates every exact resolution bin of max eig(M)",
+   "claim": "The near-boundary family populates every exact resolution bin of max eig(M), each window case within res/16 of its target",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
    "origin": [
@@ -376,50 +575,52 @@
     "synthetic_inputs"
    ],
    "regression_tolerance": {
-    "abs": 2.0,
+    "abs": 0.0,
     "rel": 0.0
    },
    "uncertainty": {
-    "basis": "bins of razor-edge cases may shift between BLAS builds",
-    "kind": "reference_error",
-    "value": 2.0
+    "basis": "exact rational bins and windows of matrices built without BLAS: the same on every kernel",
+    "kind": "roundoff",
+    "value": 0.0
    },
    "unit": null,
    "value": {
     "bins": {
-     "[-1, 0) res": 16,
-     "[-2, -1) res": 16,
-     "[0, 1) res": 16,
+     "[-1, 0) res": 20,
+     "[-2, -1) res": 18,
+     "[0, 1) res": 22,
      "[1, 2) res": 18,
      "at or above 2 res": 18,
      "below -2 res": 18
     },
-    "cases": 102
+    "cases": 114,
+    "outside_window": 0
    }
   }
  ],
  "generated_artifacts": [
   {
-   "bytes": 7540,
+   "bytes": 58859,
    "path": "artifacts/T107/inconclusive-band.json",
-   "sha256": "3e344e7a189c4b76e95226037570fb3964e322e3a24afb0fd1d5c300eb9133e0"
+   "sha256": "0d92910de59bd5d46596cc2bf12482321dbb3636475c5187adf1e56f6fa388cd"
   },
   {
-   "bytes": 9144,
+   "bytes": 10008,
    "path": "artifacts/T107/ratio-vs-target.svg",
-   "sha256": "3092b772595956edf1329ba1d4d3cb701458c7af082e426cdcd9772d3c33a900"
+   "sha256": "b0afb3b593caeb4e8bb62ee7928f9c62df949a989f62dc5c1477ea02e9046a32"
   }
  ],
- "hypothesis": "PLSR never gives a certifying code to a near-boundary decrease form that is not exactly negative definite; beyond two resolutions from zero it always resolves the sign; under a declared margin of three resolutions no case within two resolutions is CERTIFIED_WITH_MARGIN. A stronger candidate statement formulated for this experiment (it is not quoted from the runtime's documentation) -- that near-boundary spectra yield NUMERICAL_INCONCLUSIVE or MARGIN_LOW rather than CERTIFIED_WITH_MARGIN -- is tested at required_margin 0 as a candidate counterexample.",
+ "hypothesis": "PLSR never gives a certifying code to a near-boundary decrease form that is not exactly negative definite; on forms whose exact max eig(M) keeps 3/16 of a resolution from its code thresholds it gives the code that exact position predicts, so beyond two resolutions from zero it always resolves the sign and under a declared margin of three resolutions no case within two resolutions is CERTIFIED_WITH_MARGIN; within rounding of -res the code is CERTIFIED_WITH_MARGIN or NUMERICAL_INCONCLUSIVE on either exact side, and within rounding of +res DECREASE_NOT_DEFINITE, NOT_CERTIFIED or NUMERICAL_INCONCLUSIVE. A stronger candidate statement formulated for this experiment (it is not quoted from the runtime's documentation) -- that near-boundary spectra yield NUMERICAL_INCONCLUSIVE or MARGIN_LOW rather than CERTIFIED_WITH_MARGIN -- is tested at required_margin 0 as a candidate counterexample.",
  "input_data": [
-  "90 continuous cases (PCG64 seed 107): n in {2, 3, 4}, P = I or SPD, kappa in [-8.0, -3.0, -2.2, -1.8, -1.2, -0.8, -0.4, 0.0, 0.4, 0.8, 1.2, 1.8, 2.2, 3.0, 8.0] (target max eig = kappa * resolution)",
-  "12 razor-edge cases (seed 1071) with computed |max eig| / resolution just above 1",
+  "90 window cases (PCG64 seed 107): n in {2, 3, 4}, P = I or a rational SPD P with eigenvalues 1 to 10 rounded entrywise, target kappa in [-8.0, -3.5, -2.5, -1.75, -1.25, -0.75, -0.25, 0.0, 0.25, 0.75, 1.25, 1.75, 2.5, 3.5, 8.0] (target max eig = kappa * resolution); A = P^-1 (N/2 + K) with skew part 100, solved in exact rational arithmetic from integer draws and rounded once, so every BLAS kernel declares the same A; exact max eig(M) within res/16 of the target",
+  "24 straddle cases (seed 1071 at -res, seed 1072 at +res): for each threshold, n and kind of P, the A of two adjacent float targets between which the exact max eig(M) crosses the threshold (bisection on exact Sylvester tests)",
+  "States x in 32nds of [-2, 2], redrawn until the exact x^T M x / |x|^2 keeps 3/16 res from res",
   "Each case evaluated with required_margin 0 and 3 * resolution"
  ],
- "mathematical_model": "If the resolution bounds the float64 error e of max eig(M) (|e| <= res), then exact lambda < -2 res gives margin > res (certified), exact lambda >= 2 res gives max eig > res (not definite), and exact lambda >= 0 can never give margin > res. With required margin 3 res, certification needs margin > 3 res, impossible for exact lambda >= -2 res.",
+ "mathematical_model": "If the resolution bounds the float64 error e of max eig(M) (|e| <= res), then exact lambda < -2 res gives margin > res (certified), exact lambda >= 2 res gives max eig > res (not definite), and exact lambda >= 0 can never give margin > res. With required margin 3 res, certification needs margin > 3 res, impossible for exact lambda >= -2 res. When the realized |e| and the error of the computed x^T M x stay below the distance between a case's exact window and the thresholds -3 res, -res and +res, the code is a function of the exact window alone, and so the same on every BLAS kernel.",
  "number": 107,
- "numerical_result": "102 cases; codes by exact bin at required_margin 0: {'below -2 res': {'CERTIFIED_WITH_MARGIN': 18}, '[-2, -1) res': {'CERTIFIED_WITH_MARGIN': 16}, '[-1, 0) res': {'NUMERICAL_INCONCLUSIVE': 14, 'CERTIFIED_WITH_MARGIN': 2}, '[0, 1) res': {'NUMERICAL_INCONCLUSIVE': 16}, '[1, 2) res': {'DECREASE_NOT_DEFINITE': 18}, 'at or above 2 res': {'DECREASE_NOT_DEFINITE': 18}}. Unsound certifications: 0. Unresolved beyond two resolutions: 0. Certified within the band under the declared margin: 0. At required_margin 0, 18 of 66 band cases were CERTIFIED_WITH_MARGIN (2 within one resolution), 0 of them unsound. Exactly negative definite band cases: 32, of which 14 inconclusive (44%) and 18 certified. MARGIN_LOW rule mismatches: 0. Conclusion: every certificate is exactly sound and the sign is resolved beyond two resolutions; the declared margin of three resolutions keeps the band out of CERTIFIED_WITH_MARGIN; without a declared margin the band is not uniformly inconclusive, which refutes the stronger candidate statement (the certifications are sound).",
- "observation_model": "PLSR code and margin; exact bin of max eig(M) from Sylvester tests on M - t I at t = -2, -1, 0, 1, 2 resolutions in exact dyadic arithmetic.",
+ "numerical_result": "114 cases (90 window, 24 straddle); window codes by exact bin at required_margin 0: {'below -2 res': {'CERTIFIED_WITH_MARGIN': 18}, '[-2, -1) res': {'CERTIFIED_WITH_MARGIN': 12}, '[-1, 0) res': {'NUMERICAL_INCONCLUSIVE': 14}, '[0, 1) res': {'NUMERICAL_INCONCLUSIVE': 16}, '[1, 2) res': {'DECREASE_NOT_DEFINITE': 12}, 'at or above 2 res': {'DECREASE_NOT_DEFINITE': 18}}. Window codes differing from their exact window: 0; largest realized eigenvalue error 0.00958 res on window cases and 0.00322 res on straddle cases (declared distance 0.1875 res). Unsound certifications: 0. Unresolved beyond two resolutions: 0. Certified within the band under the declared margin: 0. At required_margin 0, 12 of 54 window band cases were CERTIFIED_WITH_MARGIN, 0 band certificates unsound. Exactly negative definite window band cases: 26, of which 14 inconclusive (54%) and 12 certified. Straddle cases within 0.0082 res of -res: 4 of 6 exactly beyond -res and 0 of 6 exactly inside were certified, the rest inconclusive (0 other codes); within 0.0062 res of +res: 6 of 6 exactly beyond +res and 1 of 6 exactly inside were DECREASE_NOT_DEFINITE and 0 NOT_CERTIFIED, the rest inconclusive (0 other codes); which straddle cases resolve is decided by rounding. MARGIN_LOW rule mismatches: 0. Conclusion: every certificate is exactly sound, every window case gets the code its exact position predicts and the sign is resolved beyond two resolutions; the declared margin of three resolutions keeps the band out of CERTIFIED_WITH_MARGIN; without a declared margin the band is not uniformly inconclusive, which refutes the stronger candidate statement (the certifications are sound).",
+ "observation_model": "PLSR code and margin; exact bin of max eig(M) from Sylvester tests on M - t I at t = -2, -1, 0, 1, 2 resolutions and an exact bisection bracket of max eig(M) / res, in exact dyadic arithmetic; res is the documented resolution with max|M| read from the correctly rounded exact form.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
   "status": "not_established"
@@ -429,6 +630,7 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
   "provider": {
    "commit": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
    "entry": "lyapunov.verdict / lyapunov.solve_lyapunov / lyapunov.decrease_resolution",
@@ -443,42 +645,53 @@
    "source_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7",
    "verification": "package version and per-file sha256 checked in the subprocess before use"
   },
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "requirement_probes": {
    "provider:plsr-python": true
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/lyapunov.py": "dcda8ba21661667cc03bb126a393e93158a306b4991d0a2450d8e18abe62cb27",
+   "src/ciw/lab/lyapunov.py": "d343889fe69789b9551ef6e36029c1f969c6bf04c4cdb4618b9f506539831665",
    "src/ciw/lab/lyapunov_provider.py": "da3465b48b5f5efc47bfe6ab8379cf2cf2bc23e4835dc7ff047252e77fa6ef17",
-   "src/ciw/lab/lyapunov_reference.py": "bdf0bb5074ae2caca6c8a5d8e63a15e346b007098e6def6b058d077719bc1336"
+   "src/ciw/lab/lyapunov_reference.py": "831ae8bd144c10e255cb9f2b54e0c219e2f98a59d01a07b5255046ae70b9b431"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: how much of the [-2, 0) res inconclusive band would a less conservative eigensolver term (p(n) = n instead of n^2) recover without losing soundness against the exact bins?",
- "report_id": "sha256:91e46325d69042ce0a335edac4ddd812edebd3de258e6990b0562ed472c9a368",
+ "report_id": "sha256:6f2fa1691b90c1aa7c2755567b450acd7c2e2ee59bb1bcae3165909725abcfb6",
  "schema": "ciw.lab-task-report.v1",
  "section": "lyapunov",
  "state": "completed",
  "task_id": "T107",
  "tests_passed": [
   "independent: No near-boundary case receives a certifying code unless its exact decrease form is negative definite vs ciw.lab.lyapunov_reference",
+  "check: Every window case receives the code its exact window predicts, PLSR's computed max eig(M) erring by less than the 3/16 res that separates each window from the code thresholds vs largest |computed - exact| max eig(M) over all cases, in resolutions (exact bracket of width 2e-6 res)",
+  "independent: Every window case receives the code its exact window predicts, PLSR's computed max eig(M) erring by less than the 3/16 res that separates each window from the code thresholds vs ciw.lab.lyapunov_reference",
   "independent: Beyond two resolutions from zero PLSR always resolves the sign vs ciw.lab.lyapunov_reference",
   "independent: With a declared margin of three resolutions no case within two resolutions of zero is CERTIFIED_WITH_MARGIN vs ciw.lab.lyapunov_reference",
-  "check: At required_margin 0 near-boundary spectra within two resolutions of zero receive CERTIFIED_WITH_MARGIN, and every such certificate is exactly sound vs band cases certified at required_margin 0",
-  "check: At required_margin 0 near-boundary spectra within two resolutions of zero receive CERTIFIED_WITH_MARGIN, and every such certificate is exactly sound vs band certificates whose exact decrease form is not negative definite",
+  "check: At required_margin 0 near-boundary spectra within two resolutions of zero receive CERTIFIED_WITH_MARGIN, and every such certificate is exactly sound vs window band cases certified at required_margin 0",
+  "check: At required_margin 0 near-boundary spectra within two resolutions of zero receive CERTIFIED_WITH_MARGIN, and every such certificate is exactly sound vs band certificates (window and straddle) whose exact decrease form is not negative definite",
+  "check: Straddle cases within rounding of -res receive CERTIFIED_WITH_MARGIN or NUMERICAL_INCONCLUSIVE on either exact side of the threshold vs straddle pairs whose exact max eig(M) does not cross -res",
+  "independent: Straddle cases within rounding of -res receive CERTIFIED_WITH_MARGIN or NUMERICAL_INCONCLUSIVE on either exact side of the threshold vs ciw.lab.lyapunov_reference",
+  "check: Straddle cases within rounding of +res receive DECREASE_NOT_DEFINITE, NOT_CERTIFIED or NUMERICAL_INCONCLUSIVE on either exact side of the threshold vs straddle pairs whose exact max eig(M) does not cross +res",
+  "independent: Straddle cases within rounding of +res receive DECREASE_NOT_DEFINITE, NOT_CERTIFIED or NUMERICAL_INCONCLUSIVE on either exact side of the threshold vs ciw.lab.lyapunov_reference",
   "check: MARGIN_LOW appears exactly when the resolvable margin does not exceed the declared margin vs codes differing from the declared-margin rule",
   "check: MARGIN_LOW appears exactly when the resolvable margin does not exceed the declared margin vs MARGIN_LOW verdicts observed",
-  "check: The near-boundary family populates every exact resolution bin of max eig(M) vs exact bins without a case (six bins from below -2 res to above 2 res)",
+  "check: The near-boundary family populates every exact resolution bin of max eig(M), each window case within res/16 of its target vs exact bins without a case (six bins from below -2 res to above 2 res)",
+  "check: The near-boundary family populates every exact resolution bin of max eig(M), each window case within res/16 of its target vs window cases whose exact max eig(M) lies outside (kappa +- 1/16) res",
   "pytest: tests/test_lab_lyapunov.py::test_t107_inconclusive_band",
+  "pytest: tests/test_lab_lyapunov.py::test_boundary_family_is_exact_and_kernel_free",
+  "pytest: tests/test_lab_lyapunov.py::test_checks_are_unconditional_and_observed_values_are_computed",
   "pytest: tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider",
   "pytest: tests/test_lab_lyapunov.py::test_next_steps_name_forward_work"
  ],
  "tests_skipped": [],
  "title": "Verify numerical inconclusive behavior.",
- "uncertainty": "Exact bins are exact; which band cases resolve depends on last-bit rounding and may differ between BLAS builds (share tolerance 0.2, count tolerance 4).",
+ "uncertainty": "Exact bins and windows are exact and identical on every BLAS kernel. Window codes follow from them because the realized eigenvalue error stays below the declared distance of 3/16 res; margin ratios carry that error and are retained in the artifact. Which straddle cases resolve depends on last-bit rounding and may differ between BLAS kernels; it is reported in the numerical result and the artifact, not compared.",
  "unresolved_assumptions": [
-  "Exact bins describe the declared binary64 matrices; the targets kappa are only approximately realised because A is rounded.",
+  "Exact bins and windows describe the declared binary64 matrices; the targets kappa are realised within res/16 (checked exactly), not exactly.",
+  "Which straddle cases resolve the sign (certified at -res, DECREASE_NOT_DEFINITE at +res) is decided by the last-bit rounding of the computed eigenvalue and may differ between BLAS kernels and LAPACK builds; it is retained per case in inconclusive-band.json and stated in the numerical result, not compared.",
   "The band refusal rate depends on the generator and is not a property of plants in general."
  ]
 }

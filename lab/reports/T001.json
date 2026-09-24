@@ -749,6 +749,8 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "requirement_probes": {
    "module:sympy": true
@@ -761,7 +763,7 @@
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: parse the hand table in docs/lab/GEODESIC_JACOBI.md itself (not its Python transcription hand_geometry), evaluate it at more than 8 points per chart and add polar cylinders of radius other than 1, so that a table edit that diverges from ciw.lab.surfaces fails a check instead of resting on review",
- "report_id": "sha256:cfb7120d0c0c9fed91cc18f594db3b806a4293dbe8b42d477aaef302d4897568",
+ "report_id": "sha256:1812f85646b1bc85bcd7e8145413e2fc4fc56ac789a28fdc74f190b71c51e72b",
  "schema": "ciw.lab-task-report.v1",
  "section": "geodesic-jacobi",
  "state": "completed",

@@ -753,6 +753,8 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "requirement_probes": {
    "module:sympy": true
@@ -765,7 +767,7 @@
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: characterize the leading RK4 determinant coefficient -(4 k0^3 - k0 k2 + 2 k1^2 + 4 k0 (e2 + e3))/288 along whole paths (stage offsets included), and measure the determinant defect on a path through a curvature discontinuity (for example a cylinder joined to a spherical cap), where the O(h^6) per-step derivation for smooth K(s) does not apply",
- "report_id": "sha256:2ef658b57fbecf45fa042561b699fb127aa1f3e74a6728d672ccb1daefc2c41b",
+ "report_id": "sha256:f62be9efdb310c25661e98c832ff1a8bf934acf7da2e1edf1f5e819ce27af6a7",
  "schema": "ciw.lab-task-report.v1",
  "section": "geodesic-jacobi",
  "state": "completed",

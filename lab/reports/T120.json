@@ -796,6 +796,8 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
@@ -810,7 +812,7 @@
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Measure float32 and float64 package energy per batch of the common workload on a Linux host with readable intel-rapl counters (docs/lab/ENERGY_GPU.md): `python -m ciw.lab.energy_gpu_telemetry rapl-capture runs/rapl-<date>.json`, then `ciw lab run T115 T117 T120 --capture rapl-log=runs/rapl-<date>.json --output-dir results/rapl-<date>` on the same host, then `ciw lab hardware retain results/rapl-<date> --retained lab --run-id rapl-<date> --host \"<RAPL host>\"`. Deferred research question: extend the common workload's GPU path beyond the binary64 gaussian_vi PTX kernel of ciw.energy_cuda: a float32 rendering of the same kernel, and a device-wide reduction of its per-replica outputs (a fixed tree over the stored order per T148's REDUCTION_POLICY, plus one atomicAdd variant), each compared with the NumPy reference by compare_outputs on the RTX 2080 host and captured with `ciw energy record` for energy; until then those claims stay not_established on every host",
- "report_id": "sha256:ba7760fd79bf02804f1110f4cb59369585a4a0921a7566d287a3183ae8472f9e",
+ "report_id": "sha256:d95b0ca6da7f1c38f8e807b5ae942bc4c79b19dca0a6997e7f73750324bf1879",
  "schema": "ciw.lab-task-report.v1",
  "section": "energy-gpu",
  "state": "partial",

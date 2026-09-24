@@ -441,16 +441,18 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/exchange_provenance.py": "0871a5e3e3a27b365a326036c869338b11e5aa3bc4af3ca60db29e81bedbba36",
+   "src/ciw/lab/exchange_provenance.py": "6c5c6d9b49043664ad9cea8f4bc2ff5d9fc367aea6194e2e7608c98bfd5c54f4",
    "src/ciw/lab/exchange_provenance_common.py": "17ab892e3f285ac475b44c240155acf45f8bbdbefca28a345980aba548c6d1a9"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: mutate the pinned-provider subprocess runtime identities (ciw.subprocess-runtime.v1) once a provider checkout is bound to a declared-workload or telemetry workflow, and label a retained runtime that differs from the current analysis identity as historical and unverified on reopen (a CIW change), so that energy-runtime.all-bundles and energy-runtime.python-version no longer reopen as current.",
- "report_id": "sha256:3aa3fc86bb01908bf74645332526b642453ecabf0e49254a2145e1202e947994",
+ "report_id": "sha256:8ccf785487490885cd715fad92f3f74c94de51e3291e77777c7b51cd1965bd7a",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "completed",
@@ -472,11 +474,10 @@
   "check: Surviving mutant energy-runtime.python-version: forged dependency versions reopen vs reopened bundle retains the forged python_version (0 = shown)",
   "check: A consistently forged energy runtime identity is detected only when a replay recomputes the current analysis identity vs bundle.replay on the reopened forged workspace",
   "pytest: tests/test_lab_exchange_provenance.py::test_admission_and_runtime_mutations",
-  "pytest: tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work"
+  "pytest: tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work",
+  "pytest: tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply"
  ],
- "tests_skipped": [
-  "pytest: tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply (skipped)"
- ],
+ "tests_skipped": [],
  "title": "Mutate provider runtime identity.",
  "uncertainty": "Outcomes are exact (accepted or a refusal message). Only kill/survive is a prediction; refusal messages are regression pins recorded from observed runs. Survivors are demonstrated forgeries; kills show only that these particular edits are detected, not that every edit of this field is.",
  "unresolved_assumptions": [

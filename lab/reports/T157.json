@@ -51,19 +51,19 @@
     "value": 0
    },
    "unit": "counterexamples",
-   "value": 213
+   "value": 214
   }
  ],
  "generated_artifacts": [
   {
-   "bytes": 135922,
+   "bytes": 136746,
    "path": "artifacts/T157/counterexamples.json",
-   "sha256": "daf165f5ec60b45647b1126008d9185de421df9d89a2efca7f5f1f1f3f367594"
+   "sha256": "1d699f731bbd887961f577918fd9ec446764d9e51ce26bccc7c6c2a61c0bcabf"
   },
   {
-   "bytes": 85839,
+   "bytes": 86565,
    "path": "artifacts/T157/COUNTEREXAMPLES.md",
-   "sha256": "cf038afba795c1cb616d50ddb594dc2496297ab7c6841353aa06cdb7418b4674"
+   "sha256": "bf0b75b93be7a52b83626dc6e5af1d7a6d793b12c6615841dfc30ba2f0260cdd"
   }
  ],
  "hypothesis": "Every counterexample recorded by a queue task can be collected with its witness and evidence status.",
@@ -72,7 +72,7 @@
  ],
  "mathematical_model": "Catalogue = all retained findings carrying a counterexample statement, keyed by task and claim.",
  "number": 157,
- "numerical_result": "213 counterexamples from 111 tasks; labels {'analytic': 2, 'independently_verified': 4, 'numerically_verified': 207}.",
+ "numerical_result": "214 counterexamples from 112 tasks; labels {'analytic': 2, 'independently_verified': 4, 'numerically_verified': 208}.",
  "observation_model": "No physical observation; reads retained computational records only.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -83,15 +83,17 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/research_portfolio.py": "145b8ee8456e1dd57bf2a05fa20e1ce55bd33356522436d8901eb1adfb60fc7a"
+   "src/ciw/lab/research_portfolio.py": "36d03762abf5cb7a900d4572ec3f8aa8e7bc55cb61331711dce910a334b3acf8"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Counterexamples are compared with a fresh run by ciw lab verify in CI (scripts/check_lab.py); optional: name one pytest witness per counterexample in each section's tests, so a counterexample is also guarded outside the clean-room comparison.",
- "report_id": "sha256:37257dd8630d7f4b94efffdba984a69c8267f1566be718178ad4c89fef6d6791",
+ "report_id": "sha256:f2a3eaaa727563989ec236005a80b404255e12fc06630842195f523e19ec5408",
  "schema": "ciw.lab-task-report.v1",
  "section": "research-portfolio",
  "state": "completed",

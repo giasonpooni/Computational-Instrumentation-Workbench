@@ -263,9 +263,9 @@
    "sha256": "8b64e1f21faea8576689e19e22efc813089e095d357768eb03848e4e38b6e8d3"
   },
   {
-   "bytes": 111765,
+   "bytes": 113049,
    "path": "artifacts/T155/specification-coverage.json",
-   "sha256": "be1af19b44b187621cac10f9ed5fda5aa63c7382ca44ed63a913085909416dbb"
+   "sha256": "5a97e98a0c0516118161ffb5785272a162d450a06d94152b21ed2d4239120d00"
   }
  ],
  "hypothesis": "The label function agrees with rules 1-5 of the specification on every basis of a finite grammar, the authority-wording screen closes T141's computational-domain loophole as rule 10 states, the specification states its evidence rules including that boundary, every computational queue task is named by a specification document, and every specification document is exercised by retained established findings.",
@@ -277,7 +277,7 @@
  ],
  "mathematical_model": "Label function L(basis, domain) from ciw.lab.evidence against a reference oracle restating rules 1-5 of docs/lab/SPECIFICATIONS.md; evidence.finding against a rule 10 oracle (refuse an asserted authority outcome in a computational or physical domain, else the rules 1-5 label) on hand-classified claims; specification units = its sections plus the family pages it lists as specifications of record, each with the counterexample statements that its named tasks' retained findings refute.",
  "number": 155,
- "numerical_result": "9216 label cases, 0 disagreements with the rules 1-5 oracle, 0 unexercised rule branches; 168 rule 10 probe cases, 0 disagreements (63 refused); 12 evidence rules stated; 21 specification units name 154/154 computational tasks; 21/21 units have established findings; 21 units name tasks that refute 327 general statements by counterexample, listed per unit for review.",
+ "numerical_result": "9216 label cases, 0 disagreements with the rules 1-5 oracle, 0 unexercised rule branches; 168 rule 10 probe cases, 0 disagreements (63 refused); 12 evidence rules stated; 21 specification units name 154/154 computational tasks; 21/21 units have established findings; 21 units name tasks that refute 330 general statements by counterexample, listed per unit for review.",
  "observation_model": "No physical observation; reads retained computational records only.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -288,15 +288,17 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/research_portfolio.py": "145b8ee8456e1dd57bf2a05fa20e1ce55bd33356522436d8901eb1adfb60fc7a"
+   "src/ciw/lab/research_portfolio.py": "36d03762abf5cb7a900d4572ec3f8aa8e7bc55cb61331711dce910a334b3acf8"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Prove the label rules off the finite grammar, for example with property-based tests over unbounded bases or in Lean (the grammar itself is already enumerated exhaustively here), and have a reviewer confirm that no specification unit restates a counterexample statement listed for it in specification-coverage.json.",
- "report_id": "sha256:5062acd4631fec94b3878c1363aef168b9d56a7ab232c25f4b0d8f8334b1ca7b",
+ "report_id": "sha256:f964be7ea6e1b7fc38785159fed0dad6bc76c2f4cf8b5983b9782812a3334b03",
  "schema": "ciw.lab-task-report.v1",
  "section": "research-portfolio",
  "state": "completed",

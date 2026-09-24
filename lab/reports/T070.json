@@ -497,6 +497,8 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
@@ -508,7 +510,7 @@
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: an out-of-sequence measurement update (retrodiction) for readings older than the session clock, compared with this task's refusal and with the batch posterior, so a late reading can be used rather than refused; the session and the intake refuse such readings today.",
- "report_id": "sha256:2337a7425b56b62e7e5247cb4741e92e68e8fde36376522445807611117b8345",
+ "report_id": "sha256:37f35d777e7e2695426680ba43642a549326275971a5a8aca5bacc48a4a353e2",
  "schema": "ciw.lab-task-report.v1",
  "section": "sensor-fusion",
  "state": "completed",

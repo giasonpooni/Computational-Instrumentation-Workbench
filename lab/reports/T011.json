@@ -313,6 +313,8 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
@@ -322,7 +324,7 @@
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: fit how the fold amplification scales with mu (error versus mu over a declared mu sequence; measured here, not fitted) and reparametrize the intrinsic HyperbolicPlane chart, which is exercised here only through embedded observables",
- "report_id": "sha256:b823d0795232eab4659d586edff58cd3615ae5620ac9a886d139ed5eeafa403a",
+ "report_id": "sha256:beedb340bb9e9ec435f813cf4ba828e9a97cf677420c37135955997f10ed79e0",
  "schema": "ciw.lab-task-report.v1",
  "section": "geodesic-jacobi",
  "state": "completed",

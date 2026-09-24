@@ -399,16 +399,18 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/implementation_targets.py": "0ea1ac76f50f1c65b47155a6791a0ea74c3ebf57d0b254a4a6615dabb930b5e7",
+   "src/ciw/lab/implementation_targets.py": "146ab24ea35b8e6fc4883e3f7d872e70dbf7b719e85d881d31865e4f8201f30d",
    "src/ciw/lab/implementation_targets_fpga.py": "7af2bda8190c93108f5bac0d8b28ffd057267b6b428af3d8f820d0f594ea5e00"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: negative clock drift and loss-dependent latency (bursty congestion) in the link simulation; both are assumed away here, and a negative drift would turn false staleness alarms into misses",
- "report_id": "sha256:9fe6b20f0732c08d732e7722d093f9d64be54f39089f5001675de2b00eda9b93",
+ "report_id": "sha256:550e2b087aa97890725403f673abdab902767d98d96e5f9441ebad424018e1d3",
  "schema": "ciw.lab-task-report.v1",
  "section": "implementation-targets",
  "state": "completed",

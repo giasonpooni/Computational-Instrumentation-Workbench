@@ -294,6 +294,30 @@
       "reference": "focus-margin group of the shortest route (0 = best group)",
       "reference_kind": "exact_arithmetic",
       "tolerance": 1.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 0.0033434080658388526,
+      "passed": true,
+      "reference": "smallest relative gap between routes adjacent by length, against ten times the relative length uncertainty (endpoint distance to the lift of q, chart units, times R + r, over the shortest length)",
+      "reference_kind": "invariant",
+      "tolerance": 1.6153085559115693e-06
+     },
+     {
+      "comparison": "ge",
+      "observed": 0.017763231821128298,
+      "passed": true,
+      "reference": "smallest relative gap between routes adjacent by amplification, against ten times the relative amplification uncertainty (batch RK4 and, when available, scipy/sympy j_head(L) differences)",
+      "reference_kind": "invariant",
+      "tolerance": 2.4204352242225e-06
+     },
+     {
+      "comparison": "ge",
+      "observed": 0.38567890397294047,
+      "passed": true,
+      "reference": "smallest gap between adjacent focus-margin groups (length units; a censored group at its smallest margin lower bound), against ten times the focus-margin uncertainty (conjugate-point change under a halved ciw.lab.jacobi step or, when larger, the scipy/sympy conjugate-point difference, plus the length uncertainty)",
+      "reference_kind": "invariant",
+      "tolerance": 1.5016165359310686e-05
      }
     ]
    },
@@ -390,10 +414,10 @@
    ],
    "regression_tolerance": {
     "abs": 0,
-    "rel": 0
+    "rel": 1e-13
    },
    "uncertainty": {
-    "basis": "orderings of the route values; adjacent values differ far more than their uncertainty",
+    "basis": "orderings of the route values, decided by gaps of at least 3.3e-03 relative in length, 1.8e-02 relative in amplification and 0.39 in focus margin, each checked against ten times the uncertainty of its quantity. The witness quotes route values, which differ between OpenBLAS kernels in their last digits (BLAS dot products of 3-vectors in the surface metric and its derivatives): across the SkylakeX, Haswell, Sandybridge, Nehalem and Katmai kernels only route 8's amplification and targeting condition vary among the witness entries, by at most 1.4e-15 relative, with lengths, headings, focus margins of routes 0 and 2 and rankings identical (outside the witness, the focus margins of routes 6 and 7 vary by at most 1.5e-14, 3.8e-15 relative). The regression tolerance, 1e-13 relative, is about 75 times the witness spread",
     "kind": "exact",
     "value": 0.0
    },
@@ -517,6 +541,8 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "requirement_probes": {
    "module:scipy": true,
@@ -524,13 +550,13 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/flat_torus_topology.py": "2c05c13905cc51906d41b89219b001396634a9d3bb8bda9bd32ac75a5523fdb1",
+   "src/ciw/lab/flat_torus_topology.py": "5df97db5dd7bd077290291777f248e152ff7f716c174f0ec4c8c4cb7a49b334f",
    "src/ciw/lab/flat_torus_topology_routes.py": "733568202260c5432d01d01976ee1b1a8a4d69b23e6d3c089ca00d1c46f2ab61"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: report each route's focus margin at q as well (conjugate points of q along the reversed route) and bound the completeness of the route set up to length 11, for example by interval shooting over all headings (the fan search does not prove completeness)",
- "report_id": "sha256:a8a060f909622c608789e840b112f6b6c5b133ec603ca20df1ce88aa9383f8fb",
+ "report_id": "sha256:3077efdd77de065ceba38260a1f2eabe10dd7d70c7955a9640a6e7fbd6334696",
  "schema": "ciw.lab-task-report.v1",
  "section": "flat-torus-topology",
  "state": "completed",
@@ -546,6 +572,9 @@
   "check: The torus route set is unchanged when the fan density doubles (1440 to 2880 headings) vs routes found at only one of the two densities",
   "check: Rankings by length, amplification |j_head(L)| and focus margin s_c - L (s_c the first zero of j_head) disagree: the shortest route is neither the least amplifying nor in the best focus-margin group vs rank of the shortest route by amplification (0 = least amplifying)",
   "check: Rankings by length, amplification |j_head(L)| and focus margin s_c - L (s_c the first zero of j_head) disagree: the shortest route is neither the least amplifying nor in the best focus-margin group vs focus-margin group of the shortest route (0 = best group)",
+  "check: Rankings by length, amplification |j_head(L)| and focus margin s_c - L (s_c the first zero of j_head) disagree: the shortest route is neither the least amplifying nor in the best focus-margin group vs smallest relative gap between routes adjacent by length, against ten times the relative length uncertainty (endpoint distance to the lift of q, chart units, times R + r, over the shortest length)",
+  "check: Rankings by length, amplification |j_head(L)| and focus margin s_c - L (s_c the first zero of j_head) disagree: the shortest route is neither the least amplifying nor in the best focus-margin group vs smallest relative gap between routes adjacent by amplification, against ten times the relative amplification uncertainty (batch RK4 and, when available, scipy/sympy j_head(L) differences)",
+  "check: Rankings by length, amplification |j_head(L)| and focus margin s_c - L (s_c the first zero of j_head) disagree: the shortest route is neither the least amplifying nor in the best focus-margin group vs smallest gap between adjacent focus-margin groups (length units; a censored group at its smallest margin lower bound), against ten times the focus-margin uncertainty (conjugate-point change under a halved ciw.lab.jacobi step or, when larger, the scipy/sympy conjugate-point difference, plus the length uncertainty)",
   "check: A flat torus has no conjugate points: j_head(s) = s > 0 has no zero, so the focus margin s_c - L is infinite vs min j_head(s)/s - 1 on (0, 20] (ciw.lab.jacobi, plane)",
   "pytest: tests/test_lab_flat_torus_topology.py::test_t024_t025_route_ranking_and_front",
   "pytest: tests/test_lab_flat_torus_topology.py::test_route_helpers",
@@ -558,7 +587,7 @@
  ],
  "tests_skipped": [],
  "title": "Add focus-margin-aware route ranking.",
- "uncertainty": "Endpoint residual <= 3.1e-07; Wronskian drift <= 5.2e-09; Clairaut drift <= 2.4e-08; batch-vs-transfer amplification difference <= 2.4e-07 (relative); scipy/sympy re-integration: j_head 2.4e-07 (relative), conjugate points 5.6e-07, endpoint 7.4e-09.",
+ "uncertainty": "Endpoint residual <= 3.1e-07; Wronskian drift <= 5.2e-09; Clairaut drift <= 2.4e-08; batch-vs-transfer amplification difference <= 2.4e-07 (relative); scipy/sympy re-integration: j_head 2.4e-07 (relative), conjugate points 5.6e-07, endpoint 7.4e-09. The rankings are decided by gaps of at least 3.3e-03 relative in length, 1.8e-02 relative in amplification and 0.39 in focus margin, each checked against ten times its uncertainty (a halved ciw.lab.jacobi step moves conjugate points by at most 5.2e-07); route values differ between OpenBLAS kernels only in their last digits.",
  "unresolved_assumptions": [
   "The candidate set is what the fan found up to length 11 and is stable under doubling the density; completeness is not proven.",
   "Focus margin uses conjugate points of p only; conjugate points of q along the reversed route are not separately reported.",

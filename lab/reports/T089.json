@@ -299,16 +299,18 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/exchange_provenance.py": "0871a5e3e3a27b365a326036c869338b11e5aa3bc4af3ca60db29e81bedbba36",
+   "src/ciw/lab/exchange_provenance.py": "6c5c6d9b49043664ad9cea8f4bc2ff5d9fc367aea6194e2e7608c98bfd5c54f4",
    "src/ciw/lab/exchange_provenance_common.py": "17ab892e3f285ac475b44c240155acf45f8bbdbefca28a345980aba548c6d1a9"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: define a signed admission authorization record (signer, key custody, scope of the admitted result) that CIW would require before any state_admission other than not_performed, and re-run to check that oscillator-admission.injected is refused (admission itself stays an authority decision, a production_acceptance claim never established here).",
- "report_id": "sha256:f61733fc294b3815deb9089669a64a896c142b09afccfd82da1dc04e910ab4a5",
+ "report_id": "sha256:14ad7257a63ef08b1c09c721b381f31577a6d5ac20d9818971936023cdbfef7d",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "completed",
@@ -326,11 +328,10 @@
   "check: Surviving mutant oscillator-admission.injected: a sealed result carrying an injected state_admission reopens vs oscillator-admission.injected: accepted (1 = accepted)",
   "check: Surviving mutant oscillator-admission.injected: a sealed result carrying an injected state_admission reopens vs reopened result.get returns the injected state_admission beside verification_status not_verified (0 = shown)",
   "pytest: tests/test_lab_exchange_provenance.py::test_admission_and_runtime_mutations",
-  "pytest: tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work"
+  "pytest: tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work",
+  "pytest: tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply"
  ],
- "tests_skipped": [
-  "pytest: tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply (skipped)"
- ],
+ "tests_skipped": [],
  "title": "Mutate admission status.",
  "uncertainty": "Outcomes are exact (accepted or a refusal message). Only kill/survive is a prediction; refusal messages are regression pins recorded from observed runs. Survivors are demonstrated forgeries; kills show only that these particular edits are detected, not that every edit of this field is.",
  "unresolved_assumptions": [

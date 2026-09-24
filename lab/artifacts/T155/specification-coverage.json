@@ -256,12 +256,12 @@
     "T091": 4,
     "T092": 3,
     "T093": 3,
-    "T094": 5,
+    "T094": 6,
     "T095": 7,
     "T096": 4,
     "T097": 6,
     "T098": 7,
-    "T099": 3,
+    "T099": 8,
     "T100": 11
    }
   },
@@ -967,6 +967,7 @@
     }
    ],
    "established_findings": {
+    "T094": 6,
     "T114": 8,
     "T117": 8,
     "T120": 9,
@@ -1080,11 +1081,11 @@
     "T104": 5,
     "T105": 10,
     "T106": 9,
-    "T107": 7,
+    "T107": 10,
     "T108": 5,
     "T109": 7,
     "T110": 6,
-    "T111": 8,
+    "T111": 9,
     "T112": 6,
     "T113": 8,
     "T114": 8
@@ -1238,6 +1239,12 @@
   "MESH_GEODESICS.md": {
    "counterexample_statements": [
     {
+     "claim": "Traced straightest geodesics are never shorter than the exact distance between their endpoints, yet on every icosphere level 1-4 some of length 2 (below pi) are not shortest paths, by an excess that falls with refinement",
+     "evidence_status": "numerically_verified",
+     "statement": "A straightest geodesic shorter than pi on a mesh inscribed in the unit sphere is a shortest path between its endpoints",
+     "task_id": "T038"
+    },
+    {
      "claim": "Edge-graph Dijkstra distance from a valence-5 vertex keeps a relative-error floor that tends to sqrt(5) - 2",
      "evidence_status": "numerically_verified",
      "statement": "Edge-graph shortest paths converge to the geodesic distance under mesh refinement",
@@ -1383,7 +1390,7 @@
     }
    ],
    "established_findings": {
-    "T038": 6,
+    "T038": 17,
     "T039": 6,
     "T040": 7,
     "T041": 15,
@@ -2206,13 +2213,13 @@
      "task_id": "T036"
     },
     {
-     "claim": "At 400 RK4 steps chart A alone crosses both poles on the exact meridian to within 1e-10",
+     "claim": "From a declared angular-momentum seed of 1e-12, chart A alone crosses both poles of the meridian at 400 RK4 steps to within 1e-6",
      "evidence_status": "numerically_verified",
-     "statement": "Single-chart integration exactly through a coordinate pole always fails",
+     "statement": "Fixed-step integration in a single polar chart across its pole always fails",
      "task_id": "T036"
     },
     {
-     "claim": "On the exact meridian chart A alone fails or loses accuracy whenever a step point lands within 1e-4 of a pole (350 to 450 RK4 steps)",
+     "claim": "Across declared seeds from 1e-15 to 1e-10, chart A alone fails on the meridian whenever an RK4 stage point lands within 0.9 d* of a pole and never beyond 1.5 d*, d* = (L0 h^4)^(1/5), but no single multiple of d* separates the outcomes at every seed (350 to 450 RK4 steps at 1e-12, the step counts within 2 d* at the other half-decade seeds)",
      "evidence_status": "numerically_verified",
      "statement": "A single-chart integration that crosses a pole accurately at one step count stays accurate at nearby step counts",
      "task_id": "T036"
@@ -2294,16 +2301,29 @@
      "evidence_status": "numerically_verified",
      "statement": "Refining the mesh reduces the error of angle-defect curvature",
      "task_id": "T043"
+    },
+    {
+     "claim": "Some process spawns run a PATH-resolved executable without comparing it to a pinned identity",
+     "evidence_status": "numerically_verified",
+     "statement": "Numerical providers are invoked only through pinned executables",
+     "task_id": "T144"
+    },
+    {
+     "claim": "Text search for 'subprocess' finds modules that spawn no process",
+     "evidence_status": "numerically_verified",
+     "statement": "A text search for 'subprocess' identifies the process-spawning modules",
+     "task_id": "T144"
     }
    ],
    "established_findings": {
     "T033": 10,
     "T034": 9,
     "T035": 7,
-    "T036": 10,
+    "T036": 12,
     "T037": 13,
     "T042": 6,
-    "T043": 11
+    "T043": 11,
+    "T144": 6
    }
   }
  },

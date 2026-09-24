@@ -504,6 +504,8 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "requirement_probes": {
    "capture:cmm": false,
@@ -520,7 +522,7 @@
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: define a signed-capture trust anchor (instrument-held signing keys and their verification) or a hardware:metrology probe, without which no capture can support a physical label. Meanwhile acquire MFG-COUPON-01 and bind its exports (ciw lab run T138 --capture photogrammetry=<targets.csv> --capture cmm=<start-pose.csv>), then retain the run with ciw lab hardware retain.",
- "report_id": "sha256:d8ce81bf805c69b4dfb73f5aabc1e6d75cbc6f434e28772250a1f7da96930108",
+ "report_id": "sha256:1d26de387d5ffe436e4da16ffdba3cc801e8009b4a5bf3390e49723f53fa7cee",
  "schema": "ciw.lab-task-report.v1",
  "section": "manufacturing",
  "state": "partial",

@@ -594,6 +594,7 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
   "provider": {
    "commit": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
    "entry": "lyapunov.verdict / lyapunov.solve_lyapunov / lyapunov.decrease_resolution",
@@ -608,20 +609,21 @@
    "source_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7",
    "verification": "package version and per-file sha256 checked in the subprocess before use"
   },
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "requirement_probes": {
    "provider:plsr-python": true
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/lyapunov.py": "dcda8ba21661667cc03bb126a393e93158a306b4991d0a2450d8e18abe62cb27",
+   "src/ciw/lab/lyapunov.py": "d343889fe69789b9551ef6e36029c1f969c6bf04c4cdb4618b9f506539831665",
    "src/ciw/lab/lyapunov_provider.py": "da3465b48b5f5efc47bfe6ab8379cf2cf2bc23e4835dc7ff047252e77fa6ef17",
-   "src/ciw/lab/lyapunov_reference.py": "bdf0bb5074ae2caca6c8a5d8e63a15e346b007098e6def6b058d077719bc1336"
+   "src/ciw/lab/lyapunov_reference.py": "831ae8bd144c10e255cb9f2b54e0c219e2f98a59d01a07b5255046ae70b9b431"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: do outward-rounded parameter boxes (a guard band declared by the host) remove the boundary collisions between unit conventions, and should PLSR document that margin ratios are unit-dependent under non-uniform unit changes? Re-run the unit-scale comparison with outward-rounded boxes to find out.",
- "report_id": "sha256:181464ccb13f6611b12785a6e6cb0c6f12601dd8dbb4c01acca9ed3d35d05192",
+ "report_id": "sha256:45937bbd05874f79bd72941661b3a9f5cb4e12e01420f20682f88813d9a48c13",
  "schema": "ciw.lab-task-report.v1",
  "section": "lyapunov",
  "state": "completed",

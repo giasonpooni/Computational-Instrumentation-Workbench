@@ -1,621 +1,745 @@
 {
- "drift": {
+ "at_steps": {
+  "error": 1.0334416975894007e-07,
+  "failure": null,
+  "failure_radius": 0.00014351453944188647,
+  "max_abs_momentum": 1.0339018940867423e-07,
+  "momentum_after_crossings": 1.0339018940440484e-07,
+  "rerun_error": 1.0334399111499501e-08,
+  "rerun_seed": 1e-13,
+  "stage_distance": 0.0025443324852405524,
+  "steps": 400
+ },
+ "failure_radius": "(L0 h^4)^(1/5)",
+ "natural": {
+  "blas_kernel": {
+   "blas": "scipy-openblas 0.3.31.dev",
+   "openblas_coretype": null,
+   "simd_found": [
+    "AVX512_ICL",
+    "AVX512_SPR",
+    "X86_V3",
+    "X86_V4"
+   ]
+  },
+  "error": 7.419744198533214e-14,
   "g12_at_start": 1.4653034249551195e-17,
-  "grid_distance": 0.005309649148733886,
   "max_abs_momentum": 7.350170740135669e-14,
   "max_abs_v_phi": 2.4692436105680155e-10,
+  "momentum_before_first_crossing": 7.635409361092765e-19,
   "steps": 400,
   "v_phi_at_start": 0.0
  },
- "near_pole": 0.0001,
  "rows": [
   {
-   "error": 1.5432524357306513e-14,
+   "error": 6.884522571783751e-08,
    "failure": null,
-   "grid_distance": 0.005309649148733442,
+   "failure_radius": 0.00015969431623414525,
+   "stage_distance": 0.0036663298615228213,
    "steps": 350
   },
   {
-   "error": 1.244659869742975e-13,
+   "error": 2.0907441590349834e-07,
    "failure": null,
-   "grid_distance": 0.002445519094179005,
+   "failure_radius": 0.00015933023676948402,
+   "stage_distance": 0.002445519094179005,
    "steps": 351
   },
   {
-   "error": 6.674518536675094e-11,
+   "error": 0.003556318012683321,
    "failure": null,
-   "grid_distance": 0.00040233749415641284,
+   "failure_radius": 0.0001589680196045784,
+   "stage_distance": 0.00040233749415641284,
    "steps": 352
   },
   {
-   "error": 1.6786135233326974e-14,
+   "error": 9.969737192082004e-08,
    "failure": null,
-   "grid_distance": 0.0032340589176861334,
+   "failure_radius": 0.00015860764996345218,
+   "stage_distance": 0.0032340589176861334,
    "steps": 353
   },
   {
-   "error": 2.9150966360207644e-14,
+   "error": 1.2347484372137238e-07,
    "failure": null,
-   "grid_distance": 0.006049781915093533,
+   "failure_radius": 0.0001582491132287864,
+   "stage_distance": 0.002824773603521624,
    "steps": 354
   },
   {
    "error": null,
-   "failure": "FloatingPointError: rk4 produced a nonfinite state at step 236",
-   "grid_distance": 8.491367164964458e-08,
+   "failure": "FloatingPointError: rk4 produced a nonfinite state at step 59",
+   "failure_radius": 0.00015789239493977324,
+   "stage_distance": 8.491367153862228e-08,
    "steps": 355
   },
   {
-   "error": 2.192966255365862e-14,
+   "error": 1.0756328900923242e-07,
    "failure": null,
-   "grid_distance": 0.006015625025944882,
+   "failure_radius": 0.00015753748079000538,
+   "stage_distance": 0.002809073439194898,
    "steps": 356
   },
   {
-   "error": 1.8793312341931574e-14,
+   "error": 1.0056441316748414e-07,
    "failure": null,
-   "grid_distance": 0.0031976540874969483,
+   "failure_radius": 0.00015718435662539923,
+   "stage_distance": 0.0031976540874969483,
    "steps": 357
   },
   {
-   "error": 1.1071486579678443e-10,
+   "error": 0.003681345450052264,
    "failure": null,
-   "grid_distance": 0.0003954260034531032,
+   "failure_radius": 0.00015683300844215222,
+   "stage_distance": 0.0003954260034531032,
    "steps": 358
   },
   {
-   "error": 3.704828747224066e-14,
+   "error": 2.066899281303269e-07,
    "failure": null,
-   "grid_distance": 0.002391190782071395,
+   "failure_radius": 0.0001564834223847329,
+   "stage_distance": 0.002391190782071284,
    "steps": 359
   },
   {
-   "error": 5.649173809957249e-14,
+   "error": 8.00538022779197e-08,
    "failure": null,
-   "grid_distance": 0.005162326363231884,
+   "failure_radius": 0.00015613558474390326,
+   "stage_distance": 0.003564319896739221,
    "steps": 360
   },
   {
-   "error": 3.496008195282308e-12,
+   "error": 1.1145802978960905e-05,
    "failure": null,
-   "grid_distance": 0.0007843633319293275,
+   "failure_radius": 0.00015578948195477325,
+   "stage_distance": 0.0007843633319286614,
    "steps": 361
   },
   {
-   "error": 5.061997294779438e-14,
+   "error": 2.733014827490747e-07,
    "failure": null,
-   "grid_distance": 0.00669819838788932,
+   "failure_radius": 0.00015544510059488598,
+   "stage_distance": 0.0019802343568331437,
    "steps": 362
   },
   {
-   "error": 2.937961439044964e-14,
+   "error": 7.172042382583462e-08,
    "failure": null,
-   "grid_distance": 0.0039249251140938135,
+   "failure_radius": 0.0001551024273823341,
+   "stage_distance": 0.0039249251140938135,
    "steps": 363
   },
   {
-   "error": 7.026241158403011e-13,
+   "error": 3.03643227415319e-06,
    "failure": null,
-   "grid_distance": 0.001166889605538124,
+   "failure_radius": 0.00015476144917390557,
+   "stage_distance": 0.001166889605538124,
    "steps": 364
   },
   {
-   "error": 6.762610947577893e-13,
+   "error": 7.711503206167472e-07,
    "failure": null,
-   "grid_distance": 0.0015760333796822623,
+   "failure_radius": 0.0001544221529632595,
+   "stage_distance": 0.0015760333796821513,
    "steps": 365
   },
   {
-   "error": 3.807308565594421e-14,
+   "error": 7.389444013421702e-08,
    "failure": null,
-   "grid_distance": 0.004303967714710311,
+   "failure_radius": 0.00015408452587913044,
+   "stage_distance": 0.004279618770507643,
    "steps": 366
   },
   {
-   "error": 3.6188538730417357e-13,
+   "error": 8.237044681177303e-07,
    "failure": null,
-   "grid_distance": 0.0015431620436130444,
+   "failure_radius": 0.00015374855518356125,
+   "stage_distance": 0.0015431620436126003,
    "steps": 367
   },
   {
-   "error": 3.045009506939659e-13,
+   "error": 1.5812685200937233e-06,
    "failure": null,
-   "grid_distance": 0.007358513922813614,
+   "failure_radius": 0.000153414228270164,
+   "stage_distance": 0.0011784226358537708,
    "steps": 368
   },
   {
-   "error": 4.912976517429197e-14,
+   "error": 7.112951923264392e-08,
    "failure": null,
-   "grid_distance": 0.0038852561788464968,
+   "failure_radius": 0.0001530815326624078,
+   "stage_distance": 0.0038852561788461637,
    "steps": 369
   },
   {
-   "error": 2.0856546115993845e-13,
+   "error": 4.6124740901070237e-07,
    "failure": null,
-   "grid_distance": 0.0019133327664746513,
+   "failure_radius": 0.00015275045601193383,
+   "stage_distance": 0.0019133327664746513,
    "steps": 370
   },
   {
-   "error": 7.277662348221456e-12,
+   "error": 9.819305937681788e-06,
    "failure": null,
-   "grid_distance": 0.0007872422544592528,
+   "failure_radius": 0.0001524209860968967,
+   "stage_distance": 0.0007872422544590307,
    "steps": 371
   },
   {
-   "error": 3.694412578761876e-14,
+   "error": 9.3665099204474e-08,
    "failure": null,
-   "grid_distance": 0.0034732980548505266,
+   "failure_radius": 0.00015209311082033127,
+   "stage_distance": 0.0034732980548505266,
    "steps": 372
   },
   {
-   "error": 2.141989681430417e-14,
+   "error": 2.1566237679932633e-07,
    "failure": null,
-   "grid_distance": 0.0022775490004969257,
+   "failure_radius": 0.0001517668182085456,
+   "stage_distance": 0.0022775490004969257,
    "steps": 373
   },
   {
-   "error": 9.882510654708607e-11,
+   "error": 0.0006197032597008479,
    "failure": null,
-   "grid_distance": 0.00799764286303506,
+   "failure_radius": 0.00015144209640953807,
+   "stage_distance": 0.00040233749415685693,
    "steps": 374
   },
   {
-   "error": 5.472292633587703e-14,
+   "error": 9.810952475129249e-08,
    "failure": null,
-   "grid_distance": 0.003067931260839707,
+   "failure_radius": 0.00015111893369143943,
+   "stage_distance": 0.0030679312608390408,
    "steps": 375
   },
   {
-   "error": 2.0782106558399215e-14,
+   "error": 1.5600265022639806e-07,
    "failure": null,
-   "grid_distance": 0.0026359532733382096,
+   "failure_radius": 0.0001507973184409789,
+   "stage_distance": 0.0026359532733382096,
    "steps": 376
   },
   {
-   "error": 1.5442316517919937e-06,
-   "failure": null,
-   "grid_distance": 2.3558539057888517e-05,
+   "error": null,
+   "failure": "FloatingPointError: rk4 produced a nonfinite state at step 251",
+   "failure_radius": 0.00015047723916197353,
+   "stage_distance": 2.3558539057888517e-05,
    "steps": 377
   },
   {
-   "error": 3.606256532952957e-14,
+   "error": 1.667421366076375e-07,
    "failure": null,
-   "grid_distance": 0.002668998860382743,
+   "failure_radius": 0.00015015868447384125,
+   "stage_distance": 0.002668998860382743,
    "steps": 378
   },
   {
-   "error": 4.3544243493354736e-14,
+   "error": 1.0226083893539857e-07,
    "failure": null,
-   "grid_distance": 0.00298868359990756,
+   "failure_radius": 0.00014984164311013614,
+   "stage_distance": 0.00298868359990756,
    "steps": 379
   },
   {
-   "error": 1.1931208892476426e-10,
+   "error": 0.0016910116764792462,
    "failure": null,
-   "grid_distance": 0.00791810939269677,
+   "failure_radius": 0.00014952610391710661,
+   "stage_distance": 0.0003492396956974453,
    "steps": 380
   },
   {
-   "error": 1.328380653305487e-13,
+   "error": 2.0050922047358326e-07,
    "failure": null,
-   "grid_distance": 0.0022763488599339965,
+   "failure_radius": 0.00014921205585227492,
+   "stage_distance": 0.0022763488599339965,
    "steps": 381
   },
   {
-   "error": 2.3859465138216253e-14,
+   "error": 8.37571592192726e-08,
    "failure": null,
-   "grid_distance": 0.0033358736595674454,
+   "failure_radius": 0.00014889948798303896,
+   "stage_distance": 0.0033358736595674454,
    "steps": 382
   },
   {
-   "error": 4.411662153334368e-12,
+   "error": 1.261409157072438e-05,
    "failure": null,
-   "grid_distance": 0.0007161977492291527,
+   "failure_radius": 0.00014858838948529458,
+   "stage_distance": 0.0007161977492291527,
    "steps": 383
   },
   {
-   "error": 8.220651991267915e-14,
+   "error": 4.628347138768582e-07,
    "failure": null,
-   "grid_distance": 0.0018898340157428306,
+   "failure_radius": 0.00014827874964207916,
+   "stage_distance": 0.0018898340157428306,
    "steps": 384
   },
   {
-   "error": 3.594432772709238e-14,
+   "error": 7.214132756183144e-08,
    "failure": null,
-   "grid_distance": 0.0036776529650515144,
+   "failure_radius": 0.00014797055784223547,
+   "stage_distance": 0.0036776529650508483,
    "steps": 385
   },
   {
-   "error": 6.017019108187676e-14,
+   "error": 1.9833886850194863e-06,
    "failure": null,
-   "grid_distance": 0.0070613892799098466,
+   "failure_radius": 0.00014766380357909546,
+   "stage_distance": 0.001077451791566375,
    "steps": 386
   },
   {
-   "error": 1.347635419462317e-13,
+   "error": 7.304945989218461e-07,
    "failure": null,
-   "grid_distance": 0.0015093116497562065,
+   "failure_radius": 0.00014735847644918416,
+   "stage_distance": 0.0015093116497557624,
    "steps": 387
   },
   {
-   "error": 3.437445960052691e-14,
+   "error": 6.396876791739358e-08,
    "failure": null,
-   "grid_distance": 0.004014147023542192,
+   "failure_radius": 0.00014705456615094265,
+   "stage_distance": 0.004014147023542192,
    "steps": 388
   },
   {
-   "error": 1.2769317883738951e-13,
+   "error": 8.713497326041772e-07,
    "failure": null,
-   "grid_distance": 0.001433133792119179,
+   "failure_radius": 0.00014675206248346997,
+   "stage_distance": 0.001433133792119179,
    "steps": 389
   },
   {
-   "error": 1.5415740779562208e-13,
+   "error": 2.7469136912896862e-06,
    "failure": null,
-   "grid_distance": 0.001134643474014485,
+   "failure_radius": 0.00014645095534528425,
+   "stage_distance": 0.001134643474014485,
    "steps": 390
   },
   {
-   "error": 3.1332403890338754e-14,
+   "error": 7.083552513373251e-08,
    "failure": null,
-   "grid_distance": 0.003689286329579655,
+   "failure_radius": 0.00014615123473310173,
+   "stage_distance": 0.003689286329579211,
    "steps": 391
   },
   {
-   "error": 2.2331657610060936e-13,
+   "error": 3.3043527849644957e-07,
    "failure": null,
-   "grid_distance": 0.006230895293024674,
+   "failure_radius": 0.00014585289074063403,
+   "stage_distance": 0.0017833716804185329,
    "steps": 392
   },
   {
-   "error": 4.511603835599013e-12,
+   "error": 8.744233241111015e-06,
    "failure": null,
-   "grid_distance": 0.0007656954230945701,
+   "failure_radius": 0.00014555591355740316,
+   "stage_distance": 0.0007656954230939039,
    "steps": 393
   },
   {
-   "error": 2.048752578579731e-14,
+   "error": 6.783878807830973e-08,
    "failure": null,
-   "grid_distance": 0.004671762315517469,
+   "failure_radius": 0.00014526029346757406,
+   "stage_distance": 0.003301823099684853,
    "steps": 394
   },
   {
-   "error": 1.433329928553442e-13,
+   "error": 2.2253107982531067e-07,
    "failure": null,
-   "grid_distance": 0.0021282894995289237,
+   "failure_radius": 0.00014496602084880424,
+   "stage_distance": 0.0021282894995289237,
    "steps": 395
   },
   {
-   "error": 4.457064934252654e-11,
+   "error": 0.0017669004536805604,
    "failure": null,
-   "grid_distance": 0.00040233749415641284,
+   "failure_radius": 0.00014467308617111004,
+   "stage_distance": 0.00040233749415641284,
    "steps": 396
   },
   {
-   "error": 2.925612782841567e-14,
+   "error": 9.664656106526446e-08,
    "failure": null,
-   "grid_distance": 0.002920215737244436,
+   "failure_radius": 0.00014438147999574997,
+   "stage_distance": 0.002920215737243659,
    "steps": 397
   },
   {
-   "error": 3.334670700904408e-14,
+   "error": 1.2867145314318656e-07,
    "failure": null,
-   "grid_distance": 0.005425441325844105,
+   "failure_radius": 0.00014409119297412377,
+   "stage_distance": 0.002468007552521634,
    "steps": 398
   },
   {
-   "error": 3.105872600465375e-07,
-   "failure": null,
-   "grid_distance": 4.444359422617339e-05,
+   "error": null,
+   "failure": "FloatingPointError: rk4 produced a nonfinite state at step 266",
+   "failure_radius": 0.00014380221584668788,
+   "stage_distance": 4.444359422617339e-05,
    "steps": 399
   },
   {
-   "error": 7.419744198533214e-14,
+   "error": 1.0334416975894007e-07,
    "failure": null,
-   "grid_distance": 0.005309649148733886,
+   "failure_radius": 0.00014351453944188647,
+   "stage_distance": 0.0025443324852405524,
    "steps": 400
   },
   {
-   "error": 8.608583012735407e-14,
+   "error": 1.0398459953473211e-07,
    "failure": null,
-   "grid_distance": 0.002802642542377942,
+   "failure_radius": 0.00014322815467509784,
+   "stage_distance": 0.002802642542377942,
    "steps": 401
   },
   {
-   "error": 5.6387897078005736e-11,
+   "error": 0.013474509580453826,
    "failure": null,
-   "grid_distance": 0.00030810860570529286,
+   "failure_radius": 0.00014294305254759632,
+   "stage_distance": 0.00030810860570529286,
    "steps": 402
   },
   {
-   "error": 1.7114030306697675e-14,
+   "error": 1.9474141568754316e-07,
    "failure": null,
-   "grid_distance": 0.0021740455099416023,
+   "failure_radius": 0.00014265922414552883,
+   "stage_distance": 0.0021740455099416023,
    "steps": 403
   },
   {
-   "error": 2.4921365899204667e-14,
+   "error": 8.137347883176907e-08,
    "failure": null,
-   "grid_distance": 0.004643911733926975,
+   "failure_radius": 0.0001423766606389062,
+   "stage_distance": 0.00313230770565176,
    "steps": 404
   },
   {
-   "error": 3.926915640686241e-12,
+   "error": 1.9985538572481208e-05,
    "failure": null,
-   "grid_distance": 0.000655437810082482,
+   "failure_radius": 0.00014209535328060918,
+   "stage_distance": 0.00065543781008226,
    "steps": 405
   },
   {
-   "error": 7.058567245449745e-14,
+   "error": 2.5314046828789094e-07,
    "failure": null,
-   "grid_distance": 0.005928682183923506,
+   "failure_radius": 0.00014181529340540817,
+   "stage_distance": 0.0018092307559524068,
    "steps": 406
   },
   {
-   "error": 1.87637750235242e-14,
+   "error": 7.255088398721413e-08,
    "failure": null,
-   "grid_distance": 0.003457112940228768,
+   "failure_radius": 0.00014153647242899745,
+   "stage_distance": 0.003457112940228768,
    "steps": 407
   },
   {
-   "error": 1.1073891566465348e-13,
+   "error": 3.5768898681090403e-06,
    "failure": null,
-   "grid_distance": 0.0009976592320419808,
+   "failure_radius": 0.00014125888184704274,
+   "stage_distance": 0.0009976592320419808,
    "steps": 408
   },
   {
-   "error": 1.3040067053831366e-13,
+   "error": 6.930815039564843e-07,
    "failure": null,
-   "grid_distance": 0.0014497678076452747,
+   "failure_radius": 0.00014098251323424257,
+   "stage_distance": 0.0014497678076450526,
    "steps": 409
   },
   {
-   "error": 6.131210955452005e-14,
+   "error": 7.359528087974327e-08,
    "failure": null,
-   "grid_distance": 0.0038852561788461637,
+   "failure_radius": 0.00014070735824340267,
+   "stage_distance": 0.0037771649274702668,
    "steps": 410
   },
   {
-   "error": 4.58557611361003e-13,
+   "error": 9.227867691791968e-07,
    "failure": null,
-   "grid_distance": 0.0013348847208343173,
+   "failure_radius": 0.0001404334086045236,
+   "stage_distance": 0.0013348847208343173,
    "steps": 411
   },
   {
-   "error": 2.381989391816981e-13,
+   "error": 1.3637951684928114e-06,
    "failure": null,
-   "grid_distance": 0.00652968513070995,
+   "failure_radius": 0.00014016065612390118,
+   "stage_distance": 0.0010955397566432268,
    "steps": 412
   },
   {
-   "error": 2.1941726123212246e-14,
+   "error": 7.052501128028067e-08,
    "failure": null,
-   "grid_distance": 0.0035141946240608846,
+   "failure_radius": 0.00013988909268323953,
+   "stage_distance": 0.0035141946240607735,
    "steps": 413
   },
   {
-   "error": 6.208653637048345e-14,
+   "error": 5.040830322367084e-07,
    "failure": null,
-   "grid_distance": 0.0016672228837020242,
+   "failure_radius": 0.00013961871023877655,
+   "stage_distance": 0.0016672228837020242,
    "steps": 414
   },
   {
-   "error": 2.505214940145159e-12,
+   "error": 7.817052079697308e-06,
    "failure": null,
-   "grid_distance": 0.0007464330750537318,
+   "failure_radius": 0.0001393495008204217,
+   "stage_distance": 0.0007464330750535098,
    "steps": 415
   },
   {
-   "error": 7.52835814745123e-14,
+   "error": 9.144996093264438e-08,
    "failure": null,
-   "grid_distance": 0.0031484849186234065,
+   "failure_radius": 0.00013908145653090568,
+   "stage_distance": 0.0031484849186234065,
    "steps": 416
   },
   {
-   "error": 7.019961035718115e-14,
+   "error": 2.297906035529483e-07,
    "failure": null,
-   "grid_distance": 0.0019947792024996858,
+   "failure_radius": 0.00013881456954494193,
+   "stage_distance": 0.0019947792024996858,
    "steps": 417
   },
   {
-   "error": 2.534370664177196e-12,
+   "error": 0.000322577198360354,
    "failure": null,
-   "grid_distance": 0.007113434404383057,
+   "failure_radius": 0.0001385488321084,
+   "stage_distance": 0.0004023374941567459,
    "steps": 418
   },
   {
-   "error": 2.1671297674103912e-14,
+   "error": 9.518705722381563e-08,
    "failure": null,
-   "grid_distance": 0.0027880121063423857,
+   "failure_radius": 0.00013828423653749014,
+   "stage_distance": 0.0027880121063423857,
    "steps": 419
   },
   {
-   "error": 1.143018906263516e-13,
+   "error": 1.644443457576517e-07,
    "failure": null,
-   "grid_distance": 0.0023176561453150946,
+   "failure_radius": 0.0001380207752179591,
+   "stage_distance": 0.0023176561453150946,
    "steps": 420
   },
   {
-   "error": 2.100344682764241e-08,
-   "failure": null,
-   "grid_distance": 6.314588828437717e-05,
+   "error": null,
+   "failure": "ValueError: math domain error",
+   "failure_radius": 0.00013775844060429722,
+   "stage_distance": 6.314588828437717e-05,
    "steps": 421
   },
   {
-   "error": 8.193583818455251e-14,
+   "error": 1.5907000822257991e-07,
    "failure": null,
-   "grid_distance": 0.0024326644999232983,
+   "failure_radius": 0.0001374972252189564,
+   "stage_distance": 0.0024326644999232983,
    "steps": 422
   },
   {
-   "error": 6.223164870074554e-14,
+   "error": 1.0581339175499837e-07,
    "failure": null,
-   "grid_distance": 0.0026359532733382096,
+   "failure_radius": 0.0001372371216515786,
+   "stage_distance": 0.0026359532733382096,
    "steps": 423
   },
   {
-   "error": 4.407766804657663e-11,
+   "error": 0.006591729531412898,
    "failure": null,
-   "grid_distance": 0.007138170799452115,
+   "failure_radius": 0.00013697812255823513,
+   "stage_distance": 0.0002712458363729464,
    "steps": 424
   },
   {
-   "error": 2.44291956632088e-14,
+   "error": 1.8913720161621215e-07,
    "failure": null,
-   "grid_distance": 0.0020823335655952846,
+   "failure_radius": 0.000136720220660676,
+   "stage_distance": 0.0020823335655950626,
    "steps": 425
   },
   {
-   "error": 4.064634674418625e-14,
+   "error": 8.615772134436828e-08,
    "failure": null,
-   "grid_distance": 0.0029497673432201665,
+   "failure_radius": 0.00013646340874558994,
+   "stage_distance": 0.0029497673432201665,
    "steps": 426
   },
   {
-   "error": 2.3785842048232564e-12,
+   "error": 2.2365552574051142e-05,
    "failure": null,
-   "grid_distance": 0.0006009388482715039,
+   "failure_radius": 0.0001362076796638742,
+   "stage_distance": 0.0006009388482715039,
    "steps": 427
   },
   {
-   "error": 3.2052594901285366e-14,
+   "error": 4.269872353717136e-07,
    "failure": null,
-   "grid_distance": 0.0017369138125891137,
+   "failure_radius": 0.00013595302632991412,
+   "stage_distance": 0.0017369138125891137,
    "steps": 428
   },
   {
-   "error": 2.1069923631608864e-14,
+   "error": 7.301828284417084e-08,
    "failure": null,
-   "grid_distance": 0.003259192405132616,
+   "failure_radius": 0.0001356994417208728,
+   "stage_distance": 0.003259192405132172,
    "steps": 429
   },
   {
-   "error": 1.1908478010641633e-13,
+   "error": 2.329339200438117e-06,
    "failure": null,
-   "grid_distance": 0.006379997934391035,
+   "failure_radius": 0.00013544691887599008,
+   "stage_distance": 0.000926031492561874,
    "steps": 430
   },
   {
-   "error": 1.252296533198451e-13,
+   "error": 6.579295309157865e-07,
    "failure": null,
-   "grid_distance": 0.001396302687235007,
+   "failure_radius": 0.000135195450895891,
+   "stage_distance": 0.001396302687235007,
    "steps": 431
   },
   {
-   "error": 2.9299004382198737e-14,
+   "error": 6.44548894362484e-08,
    "failure": null,
-   "grid_distance": 0.003564319896739221,
+   "failure_radius": 0.0001349450309419036,
+   "stage_distance": 0.003564319896739221,
    "steps": 432
   },
   {
-   "error": 6.014082961596447e-13,
+   "error": 9.78300954344011e-07,
    "failure": null,
-   "grid_distance": 0.0012466193888946986,
+   "failure_radius": 0.000134695652235386,
+   "stage_distance": 0.0012466193888946986,
    "steps": 433
   },
   {
-   "error": 1.5148341221328687e-14,
+   "error": 2.371463739801884e-06,
    "failure": null,
-   "grid_distance": 0.0010604004714482862,
+   "failure_radius": 0.00013444730805706206,
+   "stage_distance": 0.0010604004714482862,
    "steps": 434
   },
   {
-   "error": 3.2909758509651295e-14,
+   "error": 7.027298363624063e-08,
    "failure": null,
-   "grid_distance": 0.003356813343927789,
+   "failure_radius": 0.0001341999917463663,
+   "stage_distance": 0.003356813343927789,
    "steps": 435
   },
   {
-   "error": 7.055176056637598e-14,
+   "error": 3.5837904750100887e-07,
    "failure": null,
-   "grid_distance": 0.005642692212404654,
+   "failure_radius": 0.00013395369670079747,
+   "stage_distance": 0.0015627955251860115,
    "steps": 436
   },
   {
-   "error": 1.0435830838299465e-12,
+   "error": 7.010027737416245e-06,
    "failure": null,
-   "grid_distance": 0.0007291101853974524,
+   "failure_radius": 0.00013370841637528043,
+   "stage_distance": 0.0007291101853974524,
    "steps": 437
   },
   {
-   "error": 3.20933677380605e-14,
+   "error": 6.693978590508799e-08,
    "failure": null,
-   "grid_distance": 0.004162035393997954,
+   "failure_radius": 0.00013346414428153683,
+   "stage_distance": 0.0030105505731015114,
    "steps": 438
   },
   {
-   "error": 6.034209606484858e-14,
+   "error": 2.3736401013038732e-07,
    "failure": null,
-   "grid_distance": 0.001874650347542195,
+   "failure_radius": 0.00013322087398746397,
+   "stage_distance": 0.001874650347541973,
    "steps": 439
   },
   {
-   "error": 2.2769037409121032e-11,
+   "error": 0.0009463534260239656,
    "failure": null,
-   "grid_distance": 0.0004023374941567459,
+   "failure_radius": 0.00013297859911652168,
+   "stage_distance": 0.0004023374941567459,
    "steps": 440
   },
   {
-   "error": 3.7700409699607045e-14,
+   "error": 9.383075274480137e-08,
    "failure": null,
-   "grid_distance": 0.002668998860383187,
+   "failure_radius": 0.0001327373133471276,
+   "stage_distance": 0.002668998860382743,
    "steps": 441
   },
   {
-   "error": 4.846114166294441e-14,
+   "error": 1.3432015365462147e-07,
    "failure": null,
-   "grid_distance": 0.004925403840337017,
+   "failure_radius": 0.00013249701041206008,
+   "stage_distance": 0.002182271846517203,
    "steps": 442
   },
   {
-   "error": 3.515604036849246e-08,
-   "failure": null,
-   "grid_distance": 7.999061814700781e-05,
+   "error": null,
+   "failure": "FloatingPointError: rk4 produced a nonfinite state at step 295",
+   "failure_radius": 0.00013225768409786916,
+   "stage_distance": 7.999061814700781e-05,
    "steps": 443
   },
   {
-   "error": 2.243739707408395e-14,
+   "error": 9.947004266979176e-08,
    "failure": null,
-   "grid_distance": 0.00474359641835731,
+   "failure_radius": 0.00013201932824429496,
+   "stage_distance": 0.0023320627113490033,
    "steps": 444
   },
   {
-   "error": 1.874863965694112e-14,
+   "error": 1.076753235835306e-07,
    "failure": null,
-   "grid_distance": 0.0024857456398890143,
+   "failure_radius": 0.000131781936743694,
+   "stage_distance": 0.0024857456398885702,
    "steps": 445
   },
   {
-   "error": 5.5827372459159774e-11,
+   "error": 0.05699431680429122,
    "failure": null,
-   "grid_distance": 0.00023801975280401955,
+   "failure_radius": 0.0001315455035404727,
+   "stage_distance": 0.00023801975280401955,
    "steps": 446
   },
   {
-   "error": 4.70114972959823e-14,
+   "error": 1.8387532490109245e-07,
    "failure": null,
-   "grid_distance": 0.0019996491951886908,
+   "failure_radius": 0.00013131002263052827,
+   "stage_distance": 0.0019996491951886908,
    "steps": 447
   },
   {
-   "error": 2.372275396537245e-14,
+   "error": 8.28211351955374e-08,
    "failure": null,
-   "grid_distance": 0.004227328549663789,
+   "failure_radius": 0.000131075488060697,
+   "stage_distance": 0.0027851550520991974,
    "steps": 448
   },
   {
-   "error": 7.766685840814448e-12,
+   "error": 4.0271629874806475e-05,
    "failure": null,
-   "grid_distance": 0.0005517805419605892,
+   "failure_radius": 0.00013084189392820962,
+   "stage_distance": 0.0005517805419605892,
    "steps": 449
   },
   {
-   "error": 9.174212312142812e-14,
+   "error": 2.3513866055205852e-07,
    "failure": null,
-   "grid_distance": 0.005309649148733886,
+   "failure_radius": 0.00013060923438015348,
+   "stage_distance": 0.001671667859243442,
    "steps": 450
   }
  ],
+ "seed": 1e-12,
  "step_counts": [
   350,
   351,
@@ -718,5 +842,667 @@
   448,
   449,
   450
- ]
+ ],
+ "sweep": [
+  {
+   "rows": [
+    {
+     "error": null,
+     "failure": "FloatingPointError: rk4 produced a nonfinite state at step 237",
+     "failure_radius": 3.966077644877683e-05,
+     "stage_distance": 8.491367153862228e-08,
+     "steps": 355
+    },
+    {
+     "error": null,
+     "failure": "FloatingPointError: rk4 produced a nonfinite state at step 253",
+     "failure_radius": 3.779817353019833e-05,
+     "stage_distance": 2.3558539057888517e-05,
+     "steps": 377
+    },
+    {
+     "error": 0.039826454524735516,
+     "failure": null,
+     "failure_radius": 3.612148348063072e-05,
+     "stage_distance": 4.444359422617339e-05,
+     "steps": 399
+    },
+    {
+     "error": 0.0014731709371765915,
+     "failure": null,
+     "failure_radius": 3.460335577798525e-05,
+     "stage_distance": 6.314588828437717e-05,
+     "steps": 421
+    }
+   ],
+   "seed": 1e-15
+  },
+  {
+   "rows": [
+    {
+     "error": null,
+     "failure": "FloatingPointError: rk4 produced a nonfinite state at step 234",
+     "failure_radius": 4.940665631141574e-05,
+     "stage_distance": 8.491367153862228e-08,
+     "steps": 355
+    },
+    {
+     "error": null,
+     "failure": "FloatingPointError: rk4 produced a nonfinite state at step 252",
+     "failure_radius": 4.7086354227524343e-05,
+     "stage_distance": 2.3558539057888517e-05,
+     "steps": 377
+    },
+    {
+     "error": 0.36935548128497236,
+     "failure": null,
+     "failure_radius": 4.49976495566325e-05,
+     "stage_distance": 4.444359422617339e-05,
+     "steps": 399
+    },
+    {
+     "error": 0.013290941550270365,
+     "failure": null,
+     "failure_radius": 4.310647090715961e-05,
+     "stage_distance": 6.314588828437717e-05,
+     "steps": 421
+    },
+    {
+     "error": 0.0017308990991976724,
+     "failure": null,
+     "failure_radius": 4.1385210131619784e-05,
+     "stage_distance": 7.999061814700781e-05,
+     "steps": 443
+    }
+   ],
+   "seed": 3e-15
+  },
+  {
+   "rows": [
+    {
+     "error": null,
+     "failure": "ValueError: math domain error",
+     "failure_radius": 6.285809460138845e-05,
+     "stage_distance": 8.491367153862228e-08,
+     "steps": 355
+    },
+    {
+     "error": null,
+     "failure": "FloatingPointError: rk4 produced a nonfinite state at step 252",
+     "failure_radius": 5.990606791547519e-05,
+     "stage_distance": 2.3558539057888517e-05,
+     "steps": 377
+    },
+    {
+     "error": null,
+     "failure": "FloatingPointError: rk4 produced a nonfinite state at step 268",
+     "failure_radius": 5.72486932700482e-05,
+     "stage_distance": 4.444359422617339e-05,
+     "steps": 399
+    },
+    {
+     "error": 0.1553260711311002,
+     "failure": null,
+     "failure_radius": 5.484262300883877e-05,
+     "stage_distance": 6.314588828437717e-05,
+     "steps": 421
+    },
+    {
+     "error": 0.019246195481901297,
+     "failure": null,
+     "failure_radius": 5.2652732400160955e-05,
+     "stage_distance": 7.999061814700781e-05,
+     "steps": 443
+    }
+   ],
+   "seed": 1e-14
+  },
+  {
+   "rows": [
+    {
+     "error": null,
+     "failure": "FloatingPointError: rk4 produced a nonfinite state at step 61",
+     "failure_radius": 7.830427325022872e-05,
+     "stage_distance": 8.491367153862228e-08,
+     "steps": 355
+    },
+    {
+     "error": null,
+     "failure": "FloatingPointError: rk4 produced a nonfinite state at step 251",
+     "failure_radius": 7.46268422730159e-05,
+     "stage_distance": 2.3558539057888517e-05,
+     "steps": 377
+    },
+    {
+     "error": null,
+     "failure": "ValueError: math domain error",
+     "failure_radius": 7.131646845905768e-05,
+     "stage_distance": 4.444359422617339e-05,
+     "steps": 399
+    },
+    {
+     "error": null,
+     "failure": "FloatingPointError: rk4 produced a nonfinite state at step 377",
+     "failure_radius": 6.831915229178031e-05,
+     "stage_distance": 6.314588828437717e-05,
+     "steps": 421
+    },
+    {
+     "error": 0.17572964964450533,
+     "failure": null,
+     "failure_radius": 6.55911378061769e-05,
+     "stage_distance": 7.999061814700781e-05,
+     "steps": 443
+    }
+   ],
+   "seed": 3e-14
+  },
+  {
+   "rows": [
+    {
+     "error": null,
+     "failure": "FloatingPointError: rk4 produced a nonfinite state at step 60",
+     "failure_radius": 9.962336622481723e-05,
+     "stage_distance": 8.491367153862228e-08,
+     "steps": 355
+    },
+    {
+     "error": null,
+     "failure": "FloatingPointError: rk4 produced a nonfinite state at step 251",
+     "failure_radius": 9.494471922634976e-05,
+     "stage_distance": 2.3558539057888517e-05,
+     "steps": 377
+    },
+    {
+     "error": null,
+     "failure": "FloatingPointError: rk4 produced a nonfinite state at step 266",
+     "failure_radius": 9.073306424099375e-05,
+     "stage_distance": 4.444359422617339e-05,
+     "steps": 399
+    },
+    {
+     "error": null,
+     "failure": "FloatingPointError: rk4 produced a nonfinite state at step 281",
+     "failure_radius": 8.69196998634198e-05,
+     "stage_distance": 6.314588828437717e-05,
+     "steps": 421
+    },
+    {
+     "error": null,
+     "failure": "ValueError: math domain error",
+     "failure_radius": 8.34489571454918e-05,
+     "stage_distance": 7.999061814700781e-05,
+     "steps": 443
+    }
+   ],
+   "seed": 1e-13
+  },
+  {
+   "rows": [
+    {
+     "error": null,
+     "failure": "ValueError: math domain error",
+     "failure_radius": 0.00012410390961490236,
+     "stage_distance": 8.491367153862228e-08,
+     "steps": 355
+    },
+    {
+     "error": null,
+     "failure": "FloatingPointError: rk4 produced a nonfinite state at step 251",
+     "failure_radius": 0.00011827557429337216,
+     "stage_distance": 2.3558539057888517e-05,
+     "steps": 377
+    },
+    {
+     "error": null,
+     "failure": "FloatingPointError: rk4 produced a nonfinite state at step 266",
+     "failure_radius": 0.00011302898537112826,
+     "stage_distance": 4.444359422617339e-05,
+     "steps": 399
+    },
+    {
+     "error": null,
+     "failure": "ValueError: math domain error",
+     "failure_radius": 0.00010827855938195669,
+     "stage_distance": 6.314588828437717e-05,
+     "steps": 421
+    },
+    {
+     "error": null,
+     "failure": "ValueError: math domain error",
+     "failure_radius": 0.00010395494779478855,
+     "stage_distance": 7.999061814700781e-05,
+     "steps": 443
+    }
+   ],
+   "seed": 3e-13
+  },
+  {
+   "rows": [
+    {
+     "error": null,
+     "failure": "FloatingPointError: rk4 produced a nonfinite state at step 59",
+     "failure_radius": 0.00019669144150646808,
+     "stage_distance": 8.491367153862228e-08,
+     "steps": 355
+    },
+    {
+     "error": null,
+     "failure": "ValueError: math domain error",
+     "failure_radius": 0.0001874541525319942,
+     "stage_distance": 2.3558539057888517e-05,
+     "steps": 377
+    },
+    {
+     "error": 0.015290189717017413,
+     "failure": null,
+     "failure_radius": 0.00018626929392970471,
+     "stage_distance": 0.0003492396956974453,
+     "steps": 380
+    },
+    {
+     "error": null,
+     "failure": "FloatingPointError: rk4 produced a nonfinite state at step 266",
+     "failure_radius": 0.00017913886946548796,
+     "stage_distance": 4.444359422617339e-05,
+     "steps": 399
+    },
+    {
+     "error": 0.12240817700616774,
+     "failure": null,
+     "failure_radius": 0.00017806858316162744,
+     "stage_distance": 0.00030810860570529286,
+     "steps": 402
+    },
+    {
+     "error": null,
+     "failure": "FloatingPointError: rk4 produced a nonfinite state at step 280",
+     "failure_radius": 0.0001716099516539596,
+     "stage_distance": 6.314588828437717e-05,
+     "steps": 421
+    },
+    {
+     "error": 0.060642238382995754,
+     "failure": null,
+     "failure_radius": 0.00017063788532123973,
+     "stage_distance": 0.0002712458363729464,
+     "steps": 424
+    },
+    {
+     "error": null,
+     "failure": "FloatingPointError: rk4 produced a nonfinite state at step 295",
+     "failure_radius": 0.0001647574890826108,
+     "stage_distance": 7.999061814700781e-05,
+     "steps": 443
+    },
+    {
+     "error": 0.5364025022371816,
+     "failure": null,
+     "failure_radius": 0.00016387030372766941,
+     "stage_distance": 0.00023801975280401955,
+     "steps": 446
+    }
+   ],
+   "seed": 3e-12
+  },
+  {
+   "rows": [
+    {
+     "error": 0.36874378041415257,
+     "failure": null,
+     "failure_radius": 0.00025194733209032115,
+     "stage_distance": 0.00040233749415641284,
+     "steps": 352
+    },
+    {
+     "error": null,
+     "failure": "FloatingPointError: rk4 produced a nonfinite state at step 59",
+     "failure_radius": 0.0002502425818814282,
+     "stage_distance": 8.491367153862228e-08,
+     "steps": 355
+    },
+    {
+     "error": 0.38050682733919894,
+     "failure": null,
+     "failure_radius": 0.0002485635674331634,
+     "stage_distance": 0.0003954260034531032,
+     "steps": 358
+    },
+    {
+     "error": 0.06304003374993472,
+     "failure": null,
+     "failure_radius": 0.0002400195476515165,
+     "stage_distance": 0.00040233749415685693,
+     "steps": 374
+    },
+    {
+     "error": null,
+     "failure": "FloatingPointError: rk4 produced a nonfinite state at step 251",
+     "failure_radius": 0.00023849035196815474,
+     "stage_distance": 2.3558539057888517e-05,
+     "steps": 377
+    },
+    {
+     "error": 0.18141772514983473,
+     "failure": null,
+     "failure_radius": 0.0002369829041934553,
+     "stage_distance": 0.0003492396956974453,
+     "steps": 380
+    },
+    {
+     "error": 0.1796004960588796,
+     "failure": null,
+     "failure_radius": 0.00022929138940493238,
+     "stage_distance": 0.00040233749415641284,
+     "steps": 396
+    },
+    {
+     "error": null,
+     "failure": "FloatingPointError: rk4 produced a nonfinite state at step 266",
+     "failure_radius": 0.0002279111529562393,
+     "stage_distance": 4.444359422617339e-05,
+     "steps": 399
+    },
+    {
+     "error": null,
+     "failure": "ValueError: math domain error",
+     "failure_radius": 0.00022654947089229663,
+     "stage_distance": 0.00030810860570529286,
+     "steps": 402
+    },
+    {
+     "error": 0.03243239124366106,
+     "failure": null,
+     "failure_radius": 0.00021958510083204094,
+     "stage_distance": 0.0004023374941567459,
+     "steps": 418
+    },
+    {
+     "error": null,
+     "failure": "FloatingPointError: rk4 produced a nonfinite state at step 280",
+     "failure_radius": 0.00021833241471780928,
+     "stage_distance": 6.314588828437717e-05,
+     "steps": 421
+    },
+    {
+     "error": 0.8606465646985012,
+     "failure": null,
+     "failure_radius": 0.00021709569395865093,
+     "stage_distance": 0.0002712458363729464,
+     "steps": 424
+    },
+    {
+     "error": 0.09536351063001514,
+     "failure": null,
+     "failure_radius": 0.00021075687648279066,
+     "stage_distance": 0.0004023374941567459,
+     "steps": 440
+    },
+    {
+     "error": null,
+     "failure": "ValueError: math domain error",
+     "failure_radius": 0.0002096143031773853,
+     "stage_distance": 7.999061814700781e-05,
+     "steps": 443
+    },
+    {
+     "error": null,
+     "failure": "FloatingPointError: rk4 produced a nonfinite state at step 298",
+     "failure_radius": 0.00020848557306016446,
+     "stage_distance": 0.00023801975280401955,
+     "steps": 446
+    }
+   ],
+   "seed": 1e-11
+  },
+  {
+   "rows": [
+    {
+     "error": null,
+     "failure": "FloatingPointError: rk4 produced a nonfinite state at step 238",
+     "failure_radius": 0.00031385858673849853,
+     "stage_distance": 0.00040233749415641284,
+     "steps": 352
+    },
+    {
+     "error": null,
+     "failure": "FloatingPointError: rk4 produced a nonfinite state at step 59",
+     "failure_radius": 0.0003117349266589646,
+     "stage_distance": 8.491367153862228e-08,
+     "steps": 355
+    },
+    {
+     "error": null,
+     "failure": "FloatingPointError: rk4 produced a nonfinite state at step 241",
+     "failure_radius": 0.0003096433264126997,
+     "stage_distance": 0.0003954260034531032,
+     "steps": 358
+    },
+    {
+     "error": 0.6645021330062402,
+     "failure": null,
+     "failure_radius": 0.0002989997766220151,
+     "stage_distance": 0.00040233749415685693,
+     "steps": 374
+    },
+    {
+     "error": null,
+     "failure": "FloatingPointError: rk4 produced a nonfinite state at step 252",
+     "failure_radius": 0.00029709481024652485,
+     "stage_distance": 2.3558539057888517e-05,
+     "steps": 377
+    },
+    {
+     "error": 1.698873151109517,
+     "failure": null,
+     "failure_radius": 0.0002952169359137272,
+     "stage_distance": 0.0003492396956974453,
+     "steps": 380
+    },
+    {
+     "error": null,
+     "failure": "FloatingPointError: rk4 produced a nonfinite state at step 354",
+     "failure_radius": 0.00028563537796915387,
+     "stage_distance": 0.00040233749415641284,
+     "steps": 396
+    },
+    {
+     "error": null,
+     "failure": "FloatingPointError: rk4 produced a nonfinite state at step 265",
+     "failure_radius": 0.0002839159747210319,
+     "stage_distance": 4.444359422617339e-05,
+     "steps": 399
+    },
+    {
+     "error": null,
+     "failure": "ValueError: math domain error",
+     "failure_radius": 0.000282219685244059,
+     "stage_distance": 0.00030810860570529286,
+     "steps": 402
+    },
+    {
+     "error": 0.3170719767454627,
+     "failure": null,
+     "failure_radius": 0.00027354395398506646,
+     "stage_distance": 0.0004023374941567459,
+     "steps": 418
+    },
+    {
+     "error": null,
+     "failure": "FloatingPointError: rk4 produced a nonfinite state at step 280",
+     "failure_radius": 0.0002719834441349414,
+     "stage_distance": 6.314588828437717e-05,
+     "steps": 421
+    },
+    {
+     "error": null,
+     "failure": "ValueError: math domain error",
+     "failure_radius": 0.000270442822821593,
+     "stage_distance": 0.0002712458363729464,
+     "steps": 424
+    },
+    {
+     "error": 0.950261891465739,
+     "failure": null,
+     "failure_radius": 0.0002625463617713383,
+     "stage_distance": 0.0004023374941567459,
+     "steps": 440
+    },
+    {
+     "error": null,
+     "failure": "FloatingPointError: rk4 produced a nonfinite state at step 295",
+     "failure_radius": 0.0002611230228540161,
+     "stage_distance": 7.999061814700781e-05,
+     "steps": 443
+    },
+    {
+     "error": null,
+     "failure": "FloatingPointError: rk4 produced a nonfinite state at step 298",
+     "failure_radius": 0.0002597169288245183,
+     "stage_distance": 0.00023801975280401955,
+     "steps": 446
+    }
+   ],
+   "seed": 3e-11
+  },
+  {
+   "rows": [
+    {
+     "error": null,
+     "failure": "FloatingPointError: rk4 produced a nonfinite state at step 236",
+     "failure_radius": 0.0003993096114886894,
+     "stage_distance": 0.00040233749415641284,
+     "steps": 352
+    },
+    {
+     "error": null,
+     "failure": "FloatingPointError: rk4 produced a nonfinite state at step 59",
+     "failure_radius": 0.00039660776448776833,
+     "stage_distance": 8.491367153862228e-08,
+     "steps": 355
+    },
+    {
+     "error": null,
+     "failure": "ValueError: math domain error",
+     "failure_radius": 0.0003939467059186696,
+     "stage_distance": 0.0003954260034531032,
+     "steps": 358
+    },
+    {
+     "error": null,
+     "failure": "FloatingPointError: rk4 produced a nonfinite state at step 251",
+     "failure_radius": 0.00038040534713048435,
+     "stage_distance": 0.00040233749415685693,
+     "steps": 374
+    },
+    {
+     "error": null,
+     "failure": "FloatingPointError: rk4 produced a nonfinite state at step 250",
+     "failure_radius": 0.00037798173530198336,
+     "stage_distance": 2.3558539057888517e-05,
+     "steps": 377
+    },
+    {
+     "error": null,
+     "failure": "FloatingPointError: rk4 produced a nonfinite state at step 254",
+     "failure_radius": 0.0003755925915858716,
+     "stage_distance": 0.0003492396956974453,
+     "steps": 380
+    },
+    {
+     "error": 0.10314639003793658,
+     "failure": null,
+     "failure_radius": 0.00037323715942797224,
+     "stage_distance": 0.0007161977492291527,
+     "steps": 383
+    },
+    {
+     "error": null,
+     "failure": "ValueError: math domain error",
+     "failure_radius": 0.0003634023621578276,
+     "stage_distance": 0.00040233749415641284,
+     "steps": 396
+    },
+    {
+     "error": null,
+     "failure": "ValueError: math domain error",
+     "failure_radius": 0.00036121483480630725,
+     "stage_distance": 4.444359422617339e-05,
+     "steps": 399
+    },
+    {
+     "error": null,
+     "failure": "FloatingPointError: rk4 produced a nonfinite state at step 268",
+     "failure_radius": 0.00035905671417286815,
+     "stage_distance": 0.00030810860570529286,
+     "steps": 402
+    },
+    {
+     "error": 0.18853607038870468,
+     "failure": null,
+     "failure_radius": 0.0003569273898861225,
+     "stage_distance": 0.00065543781008226,
+     "steps": 405
+    },
+    {
+     "error": null,
+     "failure": "FloatingPointError: rk4 produced a nonfinite state at step 280",
+     "failure_radius": 0.0003480189314745889,
+     "stage_distance": 0.0004023374941567459,
+     "steps": 418
+    },
+    {
+     "error": null,
+     "failure": "FloatingPointError: rk4 produced a nonfinite state at step 280",
+     "failure_radius": 0.00034603355777985256,
+     "stage_distance": 6.314588828437717e-05,
+     "steps": 421
+    },
+    {
+     "error": null,
+     "failure": "FloatingPointError: rk4 produced a nonfinite state at step 283",
+     "failure_radius": 0.00034407348746768717,
+     "stage_distance": 0.0002712458363729464,
+     "steps": 424
+    },
+    {
+     "error": 0.22787311610516128,
+     "failure": null,
+     "failure_radius": 0.000342138222415089,
+     "stage_distance": 0.0006009388482715039,
+     "steps": 427
+    },
+    {
+     "error": null,
+     "failure": "FloatingPointError: rk4 produced a nonfinite state at step 294",
+     "failure_radius": 0.00033402713880194263,
+     "stage_distance": 0.0004023374941567459,
+     "steps": 440
+    },
+    {
+     "error": null,
+     "failure": "ValueError: math domain error",
+     "failure_radius": 0.0003322162821483179,
+     "stage_distance": 7.999061814700781e-05,
+     "steps": 443
+    },
+    {
+     "error": null,
+     "failure": "FloatingPointError: rk4 produced a nonfinite state at step 297",
+     "failure_radius": 0.0003304273654694088,
+     "stage_distance": 0.00023801975280401955,
+     "steps": 446
+    },
+    {
+     "error": 0.40459304783688843,
+     "failure": null,
+     "failure_radius": 0.0003286599780312855,
+     "stage_distance": 0.0005517805419605892,
+     "steps": 449
+    }
+   ],
+   "seed": 1e-10
+  }
+ ],
+ "sweep_band": 2.0
 }

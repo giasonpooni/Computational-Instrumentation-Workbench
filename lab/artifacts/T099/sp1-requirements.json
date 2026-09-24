@@ -1,7 +1,8 @@
 {
  "attempted": false,
+ "outcome_from_proved_heat_record": "local-2026-09-24",
  "probes": {
-  "protoc": false,
+  "protoc": true,
   "sp1_bound": false,
   "zk_manifest": true
  },

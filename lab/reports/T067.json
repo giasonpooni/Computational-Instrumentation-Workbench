@@ -423,6 +423,8 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
@@ -434,7 +436,7 @@
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: bound the closed-loop gate excess (the rejection rate above 1 - p caused by the gate's feedback on the state) analytically, or with a Monte Carlo large enough that its interval either excludes zero or bounds the excess below 0.1 percentage point; this task finds it inside the sampling interval, not zero.",
- "report_id": "sha256:67598d92de6d2db320e317e8cc1eb75dc2df4b63bdbe15a645bf32dc0e88b4ce",
+ "report_id": "sha256:e58449a86b9a6b4968d50a97eddd3874e40e07b342427fe8b83bb90b76fe459f",
  "schema": "ciw.lab-task-report.v1",
  "section": "sensor-fusion",
  "state": "completed",

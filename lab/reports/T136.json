@@ -247,6 +247,8 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
@@ -258,7 +260,7 @@
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Open: optimize the lateral/heading tolerance split per route instead of half each, and add path-following error after the start, which the corner evaluation omits.",
- "report_id": "sha256:bdbd47af995d5887ffeb86daa5ae1d80b059ae449dffd1fcc482679b6c9bca55",
+ "report_id": "sha256:df8b48a15ad8688b89920f869913468a1cd6afd8a81792fec8b12f8eb10ae471",
  "schema": "ciw.lab-task-report.v1",
  "section": "manufacturing",
  "state": "completed",

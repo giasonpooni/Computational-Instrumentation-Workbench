@@ -20,26 +20,26 @@
   "core_jacobi_error": 1.5459494795422302e-11,
   "length": 3.0,
   "max_abs_difference": 4.440892098500626e-16,
-  "python_seconds": 0.13654404200497083,
+  "python_seconds": 0.1681257789969095,
   "rust_jacobi_error": 1.5459494795422302e-11,
-  "rust_seconds": 6.008900000000001e-05,
+  "rust_seconds": 6.449400000000001e-05,
   "steps": 600
  },
  "timings": {
   "note": "Wall-clock timings on the machine that ran this report; not reproducible, never used in findings.",
   "ns_per_flop": {
-   "geodesic_rhs": 265.38543338548243,
-   "jacobi_rhs": 484.96240680238014,
-   "jacobi_transfer_200_steps": 261.5110713537821,
-   "kalman_update": 43.44085789351675,
-   "rk4_step": 440.72136746023546
+   "geodesic_rhs": 288.60821530350427,
+   "jacobi_rhs": 286.69535395381763,
+   "jacobi_transfer_200_steps": 281.979194287149,
+   "kalman_update": 40.788649603844675,
+   "rk4_step": 252.7517169896344
   },
   "seconds_per_call": {
-   "geodesic_rhs": 4.5911679975688455e-05,
-   "jacobi_rhs": 8.632330841082366e-05,
-   "jacobi_transfer_200_steps": 0.04283577499882085,
-   "kalman_update": 1.9678708625763086e-05,
-   "rk4_step": 0.00036095079994993287
+   "geodesic_rhs": 4.992922124750624e-05,
+   "jacobi_rhs": 5.103177300377954e-05,
+   "jacobi_transfer_200_steps": 0.04618847400342929,
+   "kalman_update": 1.8477258270541637e-05,
+   "rk4_step": 0.00020700365621451056
   }
  }
 }

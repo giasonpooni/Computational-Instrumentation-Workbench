@@ -622,6 +622,8 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
@@ -633,7 +635,7 @@
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Acquire MFG-SCAN-01 and MFG-COUPON-01 and bind the station-target and start-pose exports to T138 (ciw lab run T138 --capture photogrammetry=<targets.csv> --capture cmm=<start-pose.csv>), then retain the run with ciw lab hardware retain; the comparison is computational until a metrology instrument probe or a signed-capture trust anchor exists (deferred research question). Open: predict the separation on a surface fitted to the scan when the Gaussian model test rejects the as-built dome, which is not implemented.",
- "report_id": "sha256:018530baa32b78f8723146e37b5b06a208a391f6c64ad915ee5437434172ff67",
+ "report_id": "sha256:5ec3fc966244e19e80217200e6fba504215bcde8e70ca0f14760becf390a1f6f",
  "schema": "ciw.lab-task-report.v1",
  "section": "manufacturing",
  "state": "completed",

@@ -2,6 +2,14 @@
  "contributions": [
   {
    "description": null,
+   "file": "src/ciw/lab/blas_probe.py",
+   "present": true,
+   "tasks": [
+    "T094"
+   ]
+  },
+  {
+   "description": null,
    "file": "src/ciw/lab/energy_gpu.py",
    "present": true,
    "tasks": [
@@ -617,6 +625,14 @@
    ]
   },
   {
+   "description": null,
+   "file": "src/ciw/lab/proved_heat_records.py",
+   "present": true,
+   "tasks": [
+    "T099"
+   ]
+  },
+  {
    "description": "Nineteen-question task report with derived evidence and physical status",
    "file": "src/ciw/lab/report.py",
    "present": true,
@@ -835,6 +851,14 @@
     "T042",
     "T043",
     "T044"
+   ]
+  },
+  {
+   "description": null,
+   "file": "src/ciw/lab/surfaces_discrete_mesh_exact.py",
+   "present": true,
+   "tasks": [
+    "T038"
    ]
   },
   {
@@ -1283,11 +1307,13 @@
   "T038": {
    "sources": [
     "src/ciw/lab/surfaces_discrete_mesh.py",
+    "src/ciw/lab/surfaces_discrete_mesh_exact.py",
     "src/ciw/lab/surfaces_discrete_mesh_geometry.py",
     "src/ciw/lab/surfaces_discrete_mesh_studies.py"
    ],
    "textbook": [
-    "Fast marching and Dijkstra shortest paths"
+    "Fast marching and Dijkstra shortest paths",
+    "Floating-point arithmetic, rounding and exact rational reference arithmetic"
    ]
   },
   "T039": {
@@ -1874,11 +1900,13 @@
   },
   "T094": {
    "sources": [
+    "src/ciw/lab/blas_probe.py",
     "src/ciw/lab/exchange_provenance_bundles.py",
     "src/ciw/lab/exchange_provenance_bundles_fixtures.py"
    ],
    "textbook": [
     "Jacobi equation j'' + K j = 0; conjugate and focal points",
+    "Floating-point arithmetic, rounding and exact rational reference arithmetic",
     "Cryptographic digests and canonical serialization"
    ]
   },
@@ -1919,9 +1947,12 @@
    "sources": [
     "src/ciw/lab/exchange_provenance_bundles.py",
     "src/ciw/lab/exchange_provenance_bundles_fixtures.py",
-    "src/ciw/lab/exchange_provenance_bundles_providers.py"
+    "src/ciw/lab/exchange_provenance_bundles_providers.py",
+    "src/ciw/lab/proved_heat_records.py"
    ],
-   "textbook": []
+   "textbook": [
+    "Cryptographic digests and canonical serialization"
+   ]
   },
   "T100": {
    "sources": [
@@ -2004,7 +2035,9 @@
    ],
    "textbook": [
     "Lyapunov equation, Hurwitz stability and Sylvester equations",
-    "Floating-point arithmetic, rounding and exact rational reference arithmetic"
+    "Matrix factorizations and least squares (Cholesky, QR, SVD, eigenvalues)",
+    "Floating-point arithmetic, rounding and exact rational reference arithmetic",
+    "Root finding by bisection and Newton iteration"
    ]
   },
   "T108": {
@@ -2865,6 +2898,7 @@
     "T063",
     "T105",
     "T106",
+    "T107",
     "T109",
     "T110",
     "T111",
@@ -2892,6 +2926,7 @@
     "T034",
     "T035",
     "T036",
+    "T038",
     "T046",
     "T047",
     "T048",
@@ -2900,6 +2935,7 @@
     "T058",
     "T065",
     "T074",
+    "T094",
     "T101",
     "T102",
     "T103",
@@ -3001,6 +3037,7 @@
     "T094",
     "T096",
     "T098",
+    "T099",
     "T131",
     "T139",
     "T146",
@@ -3017,6 +3054,7 @@
     "T031",
     "T032",
     "T102",
+    "T107",
     "T126",
     "T127",
     "T129",

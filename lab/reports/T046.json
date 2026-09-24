@@ -392,19 +392,21 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "requirement_probes": {
    "module:sympy": true
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/observation.py": "ef75c3ea4cad06bcbc68592440b3d55a92786a729d5a731b87ece207511ddffb",
+   "src/ciw/lab/observation.py": "2a6812aa800277efdf1243187221123c8c7d15df4b298371e07f87f756e2a461",
    "src/ciw/lab/observation_chord.py": "cfbaaaf604b32b686178ea036d27c153d8eebc7d290444c60d7699c1fc60faf5"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: estimate kappa0 and kappa0' from the chords of three or more markers along one geodesic (inverting the series derived here) and propagate their estimation error into the chord correction, so the correction no longer needs a curvature known in advance; T047 validates the coefficient only for a known cylinder.",
- "report_id": "sha256:29e74fcf48baa17c48197c36b90eaa614cbd740d0671a237fba2aec8aa77a93a",
+ "report_id": "sha256:0980e9b96ce0f8272fd79026f5dc4b8ace3d371ecb39cf8b6acd9fb4fc578d42",
  "schema": "ciw.lab-task-report.v1",
  "section": "observation",
  "state": "completed",

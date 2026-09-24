@@ -22,21 +22,22 @@ Generated from retained lab reports. Textbook attribution matches names in repor
 | Compensated and pairwise summation | Kahan (1965); Neumaier (1974); Higham (2002), ch. 4 | T025, T039, T041, T079, T121, T147, T148 |
 | Fast marching and Dijkstra shortest paths | Sethian (1996); Dijkstra (1959) | T030, T038, T039 |
 | Monte Carlo estimation and binomial confidence intervals | Metropolis and Ulam (1949); Wilson (1927) | T043, T044, T045, T048, T051, T053, T054, T055, T057, T061, T062, T063, T064, T065, T066, T067, T069, T072, T073, T074, T129, T130 |
-| Matrix factorizations and least squares (Cholesky, QR, SVD, eigenvalues) | Golub and Van Loan (2013) | T016, T017, T047, T052, T057, T060, T062, T063, T105, T106, T109, T110, T111, T127, T129, T139 |
-| Floating-point arithmetic, rounding and exact rational reference arithmetic | IEEE 754-2019; Goldberg (1991); Higham (2002) | T001, T002, T003, T004, T012, T018, T020, T022, T028, T029, T031, T033, T034, T035, T036, T046, T047, T048, T051, T052, T058, T065, T074, T101, T102, T103, T104, T105, T106, T107, T109, T111, T114, T115, T116, T117, T120, T121, T123, T133, T139, T142, T145, T146, T147, T148, T149 |
+| Matrix factorizations and least squares (Cholesky, QR, SVD, eigenvalues) | Golub and Van Loan (2013) | T016, T017, T047, T052, T057, T060, T062, T063, T105, T106, T107, T109, T110, T111, T127, T129, T139 |
+| Floating-point arithmetic, rounding and exact rational reference arithmetic | IEEE 754-2019; Goldberg (1991); Higham (2002) | T001, T002, T003, T004, T012, T018, T020, T022, T028, T029, T031, T033, T034, T035, T036, T038, T046, T047, T048, T051, T052, T058, T065, T074, T094, T101, T102, T103, T104, T105, T106, T107, T109, T111, T114, T115, T116, T117, T120, T121, T123, T133, T139, T142, T145, T146, T147, T148, T149 |
 | Finite differences and step-size selection | Nocedal and Wright (2006), ch. 8 | T001, T006, T009, T035, T040, T043, T045, T049, T128, T137 |
 | Automatic differentiation with dual numbers | Griewank and Walther (2008) | T034 |
 | Pinhole camera model and lens distortion | Hartley and Zisserman (2004); Brown (1966) | T048, T049, T050 |
 | Rigid registration (Kabsch) | Kabsch (1976) | T129 |
 | Interpolation and quadrature (Hermite, trapezoid, Gauss) | Burden and Faires (2010) | T008, T011, T024, T037, T054, T064, T112, T133, T137, T138 |
 | Measurement uncertainty (GUM) and tolerance stacking | JCGM 100:2008 (GUM) | T132 |
-| Cryptographic digests and canonical serialization | FIPS 180-4 (SHA-256); RFC 8785 (JSON canonicalization) | T077, T079, T080, T081, T083, T093, T094, T096, T098, T131, T139, T146, T149, T150 |
-| Root finding by bisection and Newton iteration | Burden and Faires (2010), ch. 2 | T016, T024, T031, T032, T102, T126, T127, T129, T146 |
+| Cryptographic digests and canonical serialization | FIPS 180-4 (SHA-256); RFC 8785 (JSON canonicalization) | T077, T079, T080, T081, T083, T093, T094, T096, T098, T099, T131, T139, T146, T149, T150 |
+| Root finding by bisection and Newton iteration | Burden and Faires (2010), ch. 2 | T016, T024, T031, T032, T102, T107, T126, T127, T129, T146 |
 | Roofline model and operation counts | Williams, Waterman and Patterson (2009) | T115, T142 |
 | Sampling and aliasing | Shannon (1949) | T079, T080 |
 
 | Implementation file | Contribution | Tasks |
 | --- | --- | --- |
+| `src/ciw/lab/blas_probe.py` | (implementation artifact) | T094 |
 | `src/ciw/lab/energy_gpu.py` | (implementation artifact) | T115, T116, T117, T118, T119, T120, T121, T122, T123, T124, T125 |
 | `src/ciw/lab/energy_gpu_kernels.py` | (implementation artifact) | T115, T116, T117, T118, T119, T120, T121, T122, T123, T124, T125 |
 | `src/ciw/lab/energy_gpu_telemetry.py` | (implementation artifact) | T115, T116, T117, T118, T119, T120, T121, T122, T123, T124, T125 |
@@ -77,6 +78,7 @@ Generated from retained lab reports. Textbook attribution matches names in repor
 | `src/ciw/lab/observation_chord.py` | (implementation artifact) | T045, T046, T047, T048 |
 | `src/ciw/lab/observation_modes.py` | (implementation artifact) | T045, T048, T054, T055, T056, T058, T059, T075, T076 |
 | `src/ciw/lab/observation_signals.py` | (implementation artifact) | T051, T052, T053, T054, T055, T057 |
+| `src/ciw/lab/proved_heat_records.py` | (implementation artifact) | T099 |
 | `src/ciw/lab/report.py` | Nineteen-question task report with derived evidence and physical status | none |
 | `src/ciw/lab/research_portfolio.py` | Retained-evidence aggregation with second-path checks | T155 |
 | `src/ciw/lab/runner.py` | Queue runner that reports blocked, deferred and failed tasks instead of hiding them | none |
@@ -95,6 +97,7 @@ Generated from retained lab reports. Textbook attribution matches names in repor
 | `src/ciw/lab/surfaces_discrete_charts.py` | (implementation artifact) | T036, T037 |
 | `src/ciw/lab/surfaces_discrete_geometry.py` | (implementation artifact) | T033, T034, T035, T036, T037 |
 | `src/ciw/lab/surfaces_discrete_mesh.py` | (implementation artifact) | T038, T039, T040, T041, T042, T043, T044 |
+| `src/ciw/lab/surfaces_discrete_mesh_exact.py` | (implementation artifact) | T038 |
 | `src/ciw/lab/surfaces_discrete_mesh_geometry.py` | (implementation artifact) | T038, T039, T040, T041, T042, T043, T044 |
 | `src/ciw/lab/surfaces_discrete_mesh_studies.py` | (implementation artifact) | T038, T039, T040, T041, T042, T043, T044 |
 | `src/ciw/lab/svg.py` | Deterministic SVG figures | none |

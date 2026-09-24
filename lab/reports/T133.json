@@ -450,6 +450,8 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
@@ -461,7 +463,7 @@
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Open: model how a winding machine corrects the path between layers, which decides whether the secular heading-error growth accumulates in a physical winding, and compare the slippage ratio with slip observed under real fibre tension and friction (no such data exists here).",
- "report_id": "sha256:6279d425f918f4a27a8ff9332f7064321154449fe4daed77d34c4497cc14f194",
+ "report_id": "sha256:75e5c57685743a61988470b2dc91c1d4dd05ad1661378f37c5e9d2c7901d1542",
  "schema": "ciw.lab-task-report.v1",
  "section": "manufacturing",
  "state": "completed",

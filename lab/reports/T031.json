@@ -236,19 +236,21 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "requirement_probes": {
    "module:sympy": true
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/flat_torus_topology.py": "2c05c13905cc51906d41b89219b001396634a9d3bb8bda9bd32ac75a5523fdb1",
+   "src/ciw/lab/flat_torus_topology.py": "5df97db5dd7bd077290291777f248e152ff7f716c174f0ec4c8c4cb7a49b334f",
    "src/ciw/lab/flat_torus_topology_lattice.py": "15a33fcd29591e43dec16fa3b9ad26d6b6b86846872e9e6bf815508fb0dade63"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: repeat the route-switch study with a spatially varying metric perturbation (for example eps cos(2 pi x) added to g11 on the square torus), where routes bend continuously and the switch threshold need not be eps* = 4 delta",
- "report_id": "sha256:b8342f6a1eef11387d7c99c9539cd84ee7fa67885ab5e54da3e2bd38950329c0",
+ "report_id": "sha256:dad127f1f8eee47b0bd7da8c3ab82b3a951a51271ebe5ef4c0868e0e36ce325f",
  "schema": "ciw.lab-task-report.v1",
  "section": "flat-torus-topology",
  "state": "completed",

@@ -323,7 +323,7 @@
      "certificate": "scipy.linalg.solve_continuous_lyapunov@1.16.2",
      "certificate_condition": 496874100465.51154,
      "name": "Jordan n=4, lambda=2^-6",
-     "solver_error": "Lyapunov residual 5.875e-04 exceeds tolerance 1.000e-06; the equation is not resolvable in float64 at this scale",
+     "solver_gate": "Lyapunov residual",
      "verdict_with_certificate": "CERTIFIED_WITH_MARGIN"
     }
    },
@@ -335,12 +335,12 @@
    ],
    "regression_tolerance": {
     "abs": 0.0,
-    "rel": 0.0
+    "rel": 0.0008826257066827586
    },
    "uncertainty": {
-    "basis": "depends on the independent solver's P for a cond ~5e11 plant; exact validity of that P is decided in rational arithmetic",
-    "kind": "reference_error",
-    "value": 0.0
+    "basis": "first-order heuristic u cond(P) for the relative change of the witness's certificate condition cond(P) = 4.97e+11, valid for a solve that moves P by about u ||P|| (Weyl), which the ill-conditioned Lyapunov operator of this plant (condition about 3e13) does not guarantee; five OpenBLAS kernels (SkylakeX, Haswell, Sandybridge, Nehalem, Prescott) gave conditions within 1.2e-4 of each other, about twice that size. The regression tolerance n^2 u cond(P) = 0.00088 is 7 times that measured spread; the count and the plants are exact, and exact validity of the independent P is decided in rational arithmetic",
+    "kind": "roundoff",
+    "value": 5.516410666767241e-05
    },
    "unit": null,
    "value": {
@@ -393,9 +393,9 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 10748,
+   "bytes": 10652,
    "path": "artifacts/T109/adversarial.json",
-   "sha256": "7a7fc21a01b3ab4f8f94e6f661d2e8e7c42450b1cedb9c9411ddc2ba9110b017"
+   "sha256": "07a157219e8bb54f449debb208eb6aa219faa54c286f0d476067383945292367"
   },
   {
    "bytes": 4504,
@@ -423,6 +423,7 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
   "provider": {
    "commit": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
    "entry": "lyapunov.verdict / lyapunov.solve_lyapunov / lyapunov.decrease_resolution",
@@ -437,20 +438,21 @@
    "source_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7",
    "verification": "package version and per-file sha256 checked in the subprocess before use"
   },
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "requirement_probes": {
    "provider:plsr-python": true
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/lyapunov.py": "dcda8ba21661667cc03bb126a393e93158a306b4991d0a2450d8e18abe62cb27",
+   "src/ciw/lab/lyapunov.py": "d343889fe69789b9551ef6e36029c1f969c6bf04c4cdb4618b9f506539831665",
    "src/ciw/lab/lyapunov_provider.py": "da3465b48b5f5efc47bfe6ab8379cf2cf2bc23e4835dc7ff047252e77fa6ef17",
-   "src/ciw/lab/lyapunov_reference.py": "bdf0bb5074ae2caca6c8a5d8e63a15e346b007098e6def6b058d077719bc1336"
+   "src/ciw/lab/lyapunov_reference.py": "831ae8bd144c10e255cb9f2b54e0c219e2f98a59d01a07b5255046ae70b9b431"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: an exact-arithmetic Lyapunov solve (rational Bartels-Stewart) to decide the defective and clustered cases that PLSR's residual gate refuses, and an upstream proposal that solve_lyapunov report the residual gate separately from definiteness.",
- "report_id": "sha256:da85d376913a805980759c7aa14a002211bc4db9297048fb1201c68e2eda5df8",
+ "report_id": "sha256:be32f04fe68e565abd521a1cc9cd3e4eed92984f786ffd4a26045f8e4427bc87",
  "schema": "ciw.lab-task-report.v1",
  "section": "lyapunov",
  "state": "completed",
@@ -472,7 +474,7 @@
  ],
  "tests_skipped": [],
  "title": "Add adversarial eigenvalue cases.",
- "uncertainty": "Exact checks are exact. Solver agreement scales with cond(P) (retained per case). numpy eigenvalues of defective matrices vary at the eps^(1/n) level between builds, so the count of wrong signs may change and is retained in the artifact only; the misplacement beyond 1e3 eps does not.",
+ "uncertainty": "Exact checks are exact. Solver agreement scales with cond(P) (retained per case). numpy eigenvalues of defective matrices vary at the eps^(1/n) level between builds, so the count of wrong signs may change and is retained in the artifact only; the misplacement beyond 1e3 eps does not. Which documented gate refuses an exactly defective plant, and the residual a refusal quotes, are rounding outcomes that differ between BLAS kernels; they are retained per plant in the artifact, and the counterexample records the gate. Its certificate condition is compared within n^2 u cond(P).",
  "unresolved_assumptions": [
   "Jordan and clustered plants are synthetic stress cases, not identified plant models.",
   "The independent solver is SciPy when installed. Without SciPy the CIW Kronecker solve stands in, but it solves the same Kronecker system with numpy.linalg.solve as PLSR's solve_lyapunov, so agreement with it is then recorded as an ordinary check, not an independent one."

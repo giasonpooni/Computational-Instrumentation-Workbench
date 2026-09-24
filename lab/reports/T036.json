@@ -11,20 +11,22 @@
    "hardware_measured": 0,
    "independently_verified": 0,
    "not_established": 1,
-   "numerically_verified": 10,
+   "numerically_verified": 12,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "Atlas error independent of delta and fourth order in the step; transitions exact to rounding; single-chart error grows or the integration fails for small delta > 0; on the exact meridian the single chart is accurate only when no step point lands near a pole.",
- "experiment": "Integrate each geodesic with chart switching and in the singular chart alone; verify transitions by round trip, speed preservation and difference Jacobians; convergence at delta = 0; scan the step count of the exact meridian in chart A alone and record the drift of v_phi.",
+ "expected_invariant": "Atlas error independent of delta and fourth order in the step; transitions exact to rounding; single-chart error grows or the integration fails for small delta > 0; on the seeded meridian the single chart fails when an RK4 stage point lands within about d* of a pole, and on the 400-step grid, far from d*, its error is proportional to the seed.",
+ "experiment": "Integrate each geodesic with chart switching and in the singular chart alone; verify transitions by round trip, speed preservation and difference Jacobians; convergence at delta = 0; scan the step count of the seeded meridian in chart A alone, sweep the seed over half decades on the grids near a pole, rerun the 400-step grid at a tenth of the seed, and record the natural seed of the unseeded meridian.",
  "failure_modes_checked": [
   "geodesic exactly through a pole or the apex",
   "geodesics 1e-1..1e-12 from a pole",
   "chattering between charts (bound 1/2 > threshold 1/4)",
   "longitude wrap-around in transition differences",
-  "step grids landing near a pole on the exact meridian",
+  "RK4 stage points (step points and half steps) landing near a pole on the meridian",
+  "a failure radius that holds at one seed only (swept over five decades of the seed)",
+  "rounding-level angular momentum on the unseeded meridian (bounded, and dominated by the declared seed)",
   "nonfinite single-chart states and math domain errors (recorded with their message; any other exception propagates instead of counting as a failure)"
  ],
  "findings": [
@@ -296,19 +298,20 @@
     "checks": [
      {
       "comparison": "le",
-      "observed": 7.419744198533214e-14,
+      "observed": 1.0334416975894007e-07,
       "passed": true,
-      "reference": "chart A alone, delta = 0, 400 steps: max |X - X_exact|",
+      "reference": "chart A alone, seed 1e-12, 400 steps: max |X - X_exact| against the great circle of the seeded initial state",
       "reference_kind": "analytic",
-      "tolerance": 1e-10
+      "tolerance": 1e-06
      }
     ]
    },
-   "claim": "At 400 RK4 steps chart A alone crosses both poles on the exact meridian to within 1e-10",
+   "claim": "From a declared angular-momentum seed of 1e-12, chart A alone crosses both poles of the meridian at 400 RK4 steps to within 1e-6",
    "counterexample": {
-    "statement": "Single-chart integration exactly through a coordinate pole always fails",
+    "statement": "Fixed-step integration in a single polar chart across its pole always fails",
     "witness": {
-     "log10_error": -13.13,
+     "error": 1.03344e-07,
+     "seed": 1e-12,
      "steps": 400
     }
    },
@@ -318,20 +321,18 @@
     "reference_checks"
    ],
    "regression_tolerance": {
-    "abs": 1.0,
-    "rel": 0.0
+    "abs": 0.0,
+    "rel": 0.0001
    },
    "uncertainty": {
-    "basis": "the error is rounding level at this step count; v_phi is not exactly zero (rounding in g_12 seeds sin^2(theta) v_phi), and the result depends on the step grid",
+    "basis": "the error is linear in the seed on this grid, so the natural seed (at most 1e-16, 0.0001 of the declared one) moves it by at most 0.0001 relative. Across the SkylakeX, Haswell and Sandybridge OpenBLAS kernels it agreed to 2.0e-7 relative, since their natural seeds (at most 1.1e-18) lie far below the bound; the regression tolerance is the derived bound, 0.0001 relative, so any kernel within it reproduces the value",
     "kind": "roundoff",
-    "value": 1e-13
+    "value": 1e-11
    },
-   "unit": "log10 of each quantity",
+   "unit": "length",
    "value": {
-    "log10_closest_step_to_pole": -2.275,
-    "log10_error": -13.13,
-    "log10_max_abs_momentum": -13.13,
-    "log10_max_abs_v_phi": -9.607
+    "closest_stage_to_pole": 0.00254433,
+    "error": 1.03344e-07
    }
   },
   {
@@ -339,41 +340,88 @@
    "basis": {
     "checks": [
      {
-      "comparison": "ge",
-      "observed": 2.100344682764241e-08,
+      "comparison": "le",
+      "observed": 1.7286340805444667e-06,
       "passed": true,
-      "reference": "smallest error of the runs with a step point within 1e-4 of a pole (a failure counts as 2R)",
+      "reference": "|e(1e-12) / (10 e(1e-13)) - 1| at 400 steps (first order in the seed)",
       "reference_kind": "analytic",
-      "tolerance": 1e-09
+      "tolerance": 0.01
+     }
+    ]
+   },
+   "claim": "At 400 RK4 steps the meridian error of chart A alone is proportional to the declared seed: 10 times the error from a seed of 1e-13 matches the error from 1e-12 to within 1e-2",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0011
+   },
+   "uncertainty": {
+    "basis": "the natural seed (at most 1e-16) is at most 0.001 of the smaller seed and 0.0001 of the larger, so it moves the ratio of the two errors, each linear in its seed, by at most 0.0011 relative. Across the SkylakeX, Haswell and Sandybridge OpenBLAS kernels the ratio agreed to 1.7e-6 relative, since their natural seeds (at most 1.1e-18) lie far below the bound; the regression tolerance is the derived bound, so any kernel within it reproduces the value",
+    "kind": "roundoff",
+    "value": 0.0011
+   },
+   "unit": null,
+   "value": {
+    "error_ratio": 10.0,
+    "seed_ratio": 10
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "swept runs with an RK4 stage point within 0.9 d* of a pole that did not fail (d*: exponent from the scaling argument, constant 1 fitted)",
+      "reference_kind": "analytic",
+      "tolerance": 0.0
      },
      {
       "comparison": "le",
-      "observed": 1.1931208892476426e-10,
+      "observed": 0.0,
       "passed": true,
-      "reference": "largest error of the other runs",
+      "reference": "swept runs with no RK4 stage point within 1.5 d* of a pole that failed",
       "reference_kind": "analytic",
-      "tolerance": 1e-09
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "signed_le",
+      "observed": -0.4208832282134658,
+      "passed": true,
+      "reference": "smallest d/d* of a swept run that did not fail minus the largest of a failure (negative when the outcomes overlap)",
+      "reference_kind": "analytic",
+      "tolerance": 0.0
      },
      {
       "comparison": "ge",
       "observed": 5.0,
       "passed": true,
-      "reference": "step counts with a step point within the near-pole distance",
+      "reference": "step counts with an RK4 stage point within d* of a pole at 1e-12",
       "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 3.0,
+      "passed": true,
+      "reference": "step counts that fail at 1e-12 but not at a smaller swept seed (d* shrinks with the seed)",
+      "reference_kind": "analytic",
       "tolerance": 1.0
      }
     ]
    },
-   "claim": "On the exact meridian chart A alone fails or loses accuracy whenever a step point lands within 1e-4 of a pole (350 to 450 RK4 steps)",
+   "claim": "Across declared seeds from 1e-15 to 1e-10, chart A alone fails on the meridian whenever an RK4 stage point lands within 0.9 d* of a pole and never beyond 1.5 d*, d* = (L0 h^4)^(1/5), but no single multiple of d* separates the outcomes at every seed (350 to 450 RK4 steps at 1e-12, the step counts within 2 d* at the other half-decade seeds)",
    "counterexample": {
     "statement": "A single-chart integration that crosses a pole accurately at one step count stays accurate at nearby step counts",
     "witness": {
+     "error_at_400": 1.03344e-07,
      "failed_steps": [
-      355
-     ],
-     "log10_error_at_399": -6.508,
-     "log10_error_at_400": -13.13,
-     "steps_near_pole": [
       355,
       377,
       399,
@@ -388,21 +436,77 @@
     "reference_checks"
    ],
    "regression_tolerance": {
-    "abs": 1.0,
+    "abs": 0.0,
+    "rel": 0.0001
+   },
+   "uncertainty": {
+    "basis": "the constant of d* is fitted, and failed and completed runs overlap over this width in d/d*. Stage distances, d* and their ratios are exact arithmetic on the step grid, and the outcomes are set by the declared seed: moving every swept seed by +-1e-16, the natural seed's bound, changed no outcome, even at 1e-15 where the bound is 0.1 of the seed, and across the SkylakeX, Haswell and Sandybridge OpenBLAS kernels they were identical. The swept runs' errors are recorded, not compared: at the smallest seeds the natural seed is a larger share, and they spread by 1.2e-3 relative across those kernels. The regression tolerance, 0.0001 relative, is the natural seed's largest share of the 400-step error in the witness, which is linear in the seed; the ratios, counts and step lists must match",
+    "kind": "fit",
+    "value": 0.421
+   },
+   "unit": null,
+   "value": {
+    "at_declared_seed": {
+     "failed": 5,
+     "largest_ratio_failed": 0.604809,
+     "smallest_ratio_not_failed": 1.80941,
+     "within_d_star": 5
+    },
+    "failed": 64,
+    "failed_at_declared_seed_not_at_smaller_seed": [
+     399,
+     421,
+     443
+    ],
+    "largest_ratio_failed": 1.40857,
+    "runs": 188,
+    "seeds": 11,
+    "smallest_ratio_not_failed": 0.987687,
+    "step_counts": 101
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 1.4653034249551195e-17,
+      "passed": true,
+      "reference": "|g_12| at the start (0 in exact arithmetic)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-16
+     },
+     {
+      "comparison": "le",
+      "observed": 7.635409361092765e-19,
+      "passed": true,
+      "reference": "max |sin^2(theta) v_phi| over the step points before the first pole crossing (0 in exact arithmetic on the meridian)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-16
+     }
+    ]
+   },
+   "claim": "Without a declared seed, rounding seeds at most 1e-16 of angular momentum on the meridian before its first pole crossing (400 RK4 steps)",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
+   "regression_tolerance": {
+    "abs": 1e-16,
     "rel": 0.0
    },
    "uncertainty": {
-    "basis": "near-pole errors amplify a rounding-level angular momentum, so their size may move by about a decade across platforms; grid distances are exact arithmetic",
-    "kind": "reference_error",
-    "value": 1.0
+    "basis": "the values are rounding residues of quantities that vanish exactly (g_12 = x_theta . x_phi sums two products of size up to R^2/2) and depend on the BLAS kernel, whose selection the runtime identity records. Across the SkylakeX, Haswell and Sandybridge kernels they spread by up to 1.1e-18 (v_phi 0 or 1.1e-18 at the start; momentum 5.8e-35 to 7.8e-19); the regression tolerance is the claimed bound 1e-16, about 90 times that spread",
+    "kind": "roundoff",
+    "value": 1e-16
    },
-   "unit": "log10 length",
+   "unit": null,
    "value": {
-    "failed": 1,
-    "log10_max_other_error": -9.923,
-    "log10_min_near_pole_error": -7.678,
-    "near_pole": 5,
-    "step_counts": 101
+    "g12_at_start": 1.47e-17,
+    "momentum_before_first_crossing": 7.64e-19,
+    "v_phi_at_start": 0.0
    }
   },
   {
@@ -548,9 +652,9 @@
    "sha256": "ec086802a0402f377c1000241641f11adc712443ca9eda46cd2325e6b1fb2680"
   },
   {
-   "bytes": 13442,
+   "bytes": 37143,
    "path": "artifacts/T036/meridian-steps.json",
-   "sha256": "a0d942d629fcff441b916bf1364344abcfe29a631f8fb641e939734aab53cf83"
+   "sha256": "3665b084f2d7ffe04073b788caaebc0db1a4c10fd8fc4223a8ee037cebcef3a3"
   },
   {
    "bytes": 2512,
@@ -568,47 +672,59 @@
    "sha256": "3154ff556bedb092ecf82b57fbadc62c84521d6215f86a9f4e04ae9e39b28d95"
   },
   {
-   "bytes": 16935,
+   "bytes": 24505,
    "path": "artifacts/T036/meridian-steps.svg",
-   "sha256": "d7e32d301e5a629e01ec9a7a7356575861ba9c6a4ffea84ac8ce96852a9c0d61"
+   "sha256": "ee3d895f68918e33fcac643603fccdec295ecd4adaca39e56bb92dc304f5c5b6"
   }
  ],
  "hypothesis": "An atlas of charts with exact transitions through the embedding integrates geodesics through or near a chart's coordinate singularity with an accuracy that does not depend on how close they pass, while a single chart loses accuracy or fails near its singular point. Shown for the two-chart polar atlas of the sphere (great circles through and near a pole) and for the Monge-plus-polar atlas of the Gaussian bump built from a ChartMap (geodesics through and near the apex).",
  "input_data": [
   "unit sphere; great circles with closest approach delta in [0.0, 0.1, 0.01, 0.001, 0.0001, 1e-06, 1e-08, 1e-10, 1e-12] to the north pole, azimuth 1.3, full length 2 pi",
   "RK4, 400 steps (convergence: 200/400/800)",
-  "exact meridian in chart A alone at 101 step counts (350..450)",
+  "meridian (delta = 0) in chart A alone from the declared angular-momentum seed L0 = sin^2(theta0) v_phi0 = 1e-12 at 101 step counts (350..450); at the other half-decade seeds from 1e-15 to 1e-10 the step counts whose closest RK4 stage point lies within 2 d* of a pole; 400 steps also at L0 / 10; unseeded at 400 steps",
   "switch threshold: regularity < 0.25",
   "256 + 4096 seeded sphere points for transitions and covering (seed 3337)",
   "Gaussian bump h = 0.5, sigma = 1: geodesics from x = -1.5 at offset delta in [0.0, 0.1, 0.01, 0.001, 0.0001, 1e-06, 1e-08] from the apex, length 3.0, RK4 200 steps, reference Monge chart alone at 800 steps; 256 seeded points of the Monge disc of radius 2.0 (seed 3661)",
   "interface under test: ciw.lab.surfaces and ciw.lab.integrators at the source digests recorded in provider_runtime_identity.sources"
  ],
- "mathematical_model": "Atlas: charts X_c with closed-form inverses; u_B = X_B^{-1}(X_A(u_A)), v_B = g_B^{-1} J_B^T J_A v_A; regularity lambda_min / lambda_max of g (scale free); switch between RK4 steps when the active chart's regularity < 1/4. Sphere: chart A X = R(sin t cos p, sin t sin p, cos t), chart B = R_y(pi/2) X_A; regularity sin^2 theta = det g / R^4 in each chart and sin^2 theta_A + sin^2 theta_B = 1 + y^2/R^2 >= 1, so the better chart always has regularity >= 1/2. Graph z = f(x, y): Monge chart g = I + grad f grad f^T with regularity 1/(1 + |grad f|^2), and the polar chart (r, t) pulled back through PolarChart, singular at r = 0.",
+ "mathematical_model": "Atlas: charts X_c with closed-form inverses; u_B = X_B^{-1}(X_A(u_A)), v_B = g_B^{-1} J_B^T J_A v_A; regularity lambda_min / lambda_max of g (scale free); switch between RK4 steps when the active chart's regularity < 1/4. Sphere: chart A X = R(sin t cos p, sin t sin p, cos t), chart B = R_y(pi/2) X_A; regularity sin^2 theta = det g / R^4 in each chart and sin^2 theta_A + sin^2 theta_B = 1 + y^2/R^2 >= 1, so the better chart always has regularity >= 1/2. Meridian in chart A: angular momentum L = sin^2(theta) v_phi (0 on the meridian, sin(delta) on a unit-speed great circle passing delta from the pole) starts at a declared seed L0; near a pole the chart is the plane's polar chart, so the outcome depends on d/h and L0/h only (d the closest RK4 stage point's distance to the pole); a crossing multiplies L by a factor proportional to (h/d)^2 and turns nonlinear once L h^2/d^3 reaches order 1, so two crossings fail within about d* = (L0 h^4)^(1/5) (exponent from this argument, constant fitted). Graph z = f(x, y): Monge chart g = I + grad f grad f^T with regularity 1/(1 + |grad f|^2), and the polar chart (r, t) pulled back through PolarChart, singular at r = 0.",
  "number": 36,
- "numerical_result": "sphere atlas through the pole: error 4.86e-08, 4 switches (A->B, B->A, A->B, B->A); atlas error spread over delta 1.21x; orders 4.16, 3.96; single chart failed for 4 and degraded (>10x atlas) for 7 of 8 delta > 0; exact meridian in chart A alone at 400 steps: error 7.42e-14 with |v_phi| up to 2.47e-10 from rounding; over 101 step counts the 5 runs with a step point within 1e-4 of a pole fail (1) or err >= 2.1e-08, the others err <= 1.19e-10; transitions round trip 6.5e-16, speed 5.25e-16, Jacobian 3.72e-10; covering bound 0.502. Gaussian-bump atlas: error <= 4.05e-09 for every delta (Monge chart alone 6.11e-11), polar chart alone failed for 2 and degraded for 6 of 6 delta > 0; transitions round trip 6e-16, speed 8.17e-16, Jacobian 3.02e-10.",
+ "numerical_result": "sphere atlas through the pole: error 4.86e-08, 4 switches (A->B, B->A, A->B, B->A); atlas error spread over delta 1.21x; orders 4.16, 3.96; single chart failed for 4 and degraded (>10x atlas) for 7 of 8 delta > 0; meridian in chart A alone from the seed 1e-12: 400-step error 1.03e-07 (10 times the error from a seed of 1e-13 is 1.03e-07), the two crossings amplifying L to 1.03e-07; over 101 step counts 5 runs have an RK4 stage point within d* of a pole and 5 fail, the largest d/d* of a failure 0.605 and the smallest of any other run 1.81; the runs beyond d* err 6.4e-08 to 0.057; across 11 seeds from 1e-15 to 1e-10 (188 runs, 64 failures) the largest d/d* of a failure is 1.41 and the smallest of a run that did not fail 0.988; unseeded, g_12 = 1.47e-17 and v_phi = 0 at the start and |L| <= 7.64e-19 before the first crossing, amplified to 7.35e-14 with error 7.42e-14 at 400 steps; transitions round trip 6.5e-16, speed 5.25e-16, Jacobian 3.72e-10; covering bound 0.502. Gaussian-bump atlas: error <= 4.05e-09 for every delta (Monge chart alone 6.11e-11), polar chart alone failed for 2 and degraded for 6 of 6 delta > 0; transitions round trip 6e-16, speed 8.17e-16, Jacobian 3.02e-10.",
  "observation_model": "Ambient error max_s |X_num(s) - X_ref(s)|: exact great circle cos(s) X0 + sin(s) T0 on the sphere, the refined Monge-chart run on the bump.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
   "status": "not_established"
  },
  "provider_runtime_identity": {
+  "blas_kernel": {
+   "blas": "scipy-openblas 0.3.31.dev",
+   "openblas_coretype": null,
+   "simd_found": [
+    "AVX512_ICL",
+    "AVX512_SPR",
+    "X86_V3",
+    "X86_V4"
+   ]
+  },
   "ciw_version": "0.1.0",
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
    "src/ciw/lab/integrators.py": "a8cd5b2c5042c70970ae27975ef9387c4492ac981132cd9096bf8eafa8dc6084",
    "src/ciw/lab/surfaces.py": "e8f264c182743d0177d93b961a49d7ddf78f30d79a7a75b9fea4018b10d4eef0",
-   "src/ciw/lab/surfaces_discrete.py": "9b277c6212ac8d7c563e3b2257c75438b37f5a73c992f6b9b7ec53a26ec4106f",
+   "src/ciw/lab/surfaces_discrete.py": "69aab93e2eb89b4cb3c2a5e559151449c00371f316464abe806190664ecea984",
    "src/ciw/lab/surfaces_discrete_charts.py": "e1d7e0b8514c7795f0e41b26d993d44ae3f032ea67191b068194ec284f227e71",
    "src/ciw/lab/surfaces_discrete_geometry.py": "d4445a253778e1dff32b68a903a9caf560affa08ca5a7110207e54c8e1baa60e"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question (queue extension after T168): locate the chart-switch crossing with event detection in the adaptive integrator (switching now happens between steps), and drive switching from the T037 require_regular refusal codes instead of a fixed regularity threshold.",
- "report_id": "sha256:b64d05310f24c15f01ae657828a514b5f9c761502a7f07fa7b6ba61f94b6569a",
+ "report_id": "sha256:c792ae692d4e05868c673f45094eb603f1f3d37aad340d3d9b465051156496dd",
  "schema": "ciw.lab-task-report.v1",
  "section": "surfaces-discrete",
  "state": "completed",
@@ -625,10 +741,15 @@
   "check: The better chart of the atlas always has det g / R^4 >= 1/2, so switching never chatters vs min regularity right after a switch",
   "check: A single polar chart fails or loses accuracy on great circles passing near its pole vs delta > 0 cases where chart A alone fails or errs > 10x the atlas",
   "check: A single polar chart fails or loses accuracy on great circles passing near its pole vs delta > 0 cases where chart A alone fails outright",
-  "check: At 400 RK4 steps chart A alone crosses both poles on the exact meridian to within 1e-10 vs chart A alone, delta = 0, 400 steps: max |X - X_exact|",
-  "check: On the exact meridian chart A alone fails or loses accuracy whenever a step point lands within 1e-4 of a pole (350 to 450 RK4 steps) vs smallest error of the runs with a step point within 1e-4 of a pole (a failure counts as 2R)",
-  "check: On the exact meridian chart A alone fails or loses accuracy whenever a step point lands within 1e-4 of a pole (350 to 450 RK4 steps) vs largest error of the other runs",
-  "check: On the exact meridian chart A alone fails or loses accuracy whenever a step point lands within 1e-4 of a pole (350 to 450 RK4 steps) vs step counts with a step point within the near-pole distance",
+  "check: From a declared angular-momentum seed of 1e-12, chart A alone crosses both poles of the meridian at 400 RK4 steps to within 1e-6 vs chart A alone, seed 1e-12, 400 steps: max |X - X_exact| against the great circle of the seeded initial state",
+  "check: At 400 RK4 steps the meridian error of chart A alone is proportional to the declared seed: 10 times the error from a seed of 1e-13 matches the error from 1e-12 to within 1e-2 vs |e(1e-12) / (10 e(1e-13)) - 1| at 400 steps (first order in the seed)",
+  "check: Across declared seeds from 1e-15 to 1e-10, chart A alone fails on the meridian whenever an RK4 stage point lands within 0.9 d* of a pole and never beyond 1.5 d*, d* = (L0 h^4)^(1/5), but no single multiple of d* separates the outcomes at every seed (350 to 450 RK4 steps at 1e-12, the step counts within 2 d* at the other half-decade seeds) vs swept runs with an RK4 stage point within 0.9 d* of a pole that did not fail (d*: exponent from the scaling argument, constant 1 fitted)",
+  "check: Across declared seeds from 1e-15 to 1e-10, chart A alone fails on the meridian whenever an RK4 stage point lands within 0.9 d* of a pole and never beyond 1.5 d*, d* = (L0 h^4)^(1/5), but no single multiple of d* separates the outcomes at every seed (350 to 450 RK4 steps at 1e-12, the step counts within 2 d* at the other half-decade seeds) vs swept runs with no RK4 stage point within 1.5 d* of a pole that failed",
+  "check: Across declared seeds from 1e-15 to 1e-10, chart A alone fails on the meridian whenever an RK4 stage point lands within 0.9 d* of a pole and never beyond 1.5 d*, d* = (L0 h^4)^(1/5), but no single multiple of d* separates the outcomes at every seed (350 to 450 RK4 steps at 1e-12, the step counts within 2 d* at the other half-decade seeds) vs smallest d/d* of a swept run that did not fail minus the largest of a failure (negative when the outcomes overlap)",
+  "check: Across declared seeds from 1e-15 to 1e-10, chart A alone fails on the meridian whenever an RK4 stage point lands within 0.9 d* of a pole and never beyond 1.5 d*, d* = (L0 h^4)^(1/5), but no single multiple of d* separates the outcomes at every seed (350 to 450 RK4 steps at 1e-12, the step counts within 2 d* at the other half-decade seeds) vs step counts with an RK4 stage point within d* of a pole at 1e-12",
+  "check: Across declared seeds from 1e-15 to 1e-10, chart A alone fails on the meridian whenever an RK4 stage point lands within 0.9 d* of a pole and never beyond 1.5 d*, d* = (L0 h^4)^(1/5), but no single multiple of d* separates the outcomes at every seed (350 to 450 RK4 steps at 1e-12, the step counts within 2 d* at the other half-decade seeds) vs step counts that fail at 1e-12 but not at a smaller swept seed (d* shrinks with the seed)",
+  "check: Without a declared seed, rounding seeds at most 1e-16 of angular momentum on the meridian before its first pole crossing (400 RK4 steps) vs |g_12| at the start (0 in exact arithmetic)",
+  "check: Without a declared seed, rounding seeds at most 1e-16 of angular momentum on the meridian before its first pole crossing (400 RK4 steps) vs max |sin^2(theta) v_phi| over the step points before the first pole crossing (0 in exact arithmetic on the meridian)",
   "check: The Monge-plus-polar atlas of a graph surface has exact transitions and covers the plane with regularity above the analytic Monge bound vs polar -> Monge -> polar round trip, max |X' - X|",
   "check: The Monge-plus-polar atlas of a graph surface has exact transitions and covers the plane with regularity above the analytic Monge bound vs relative speed change under the velocity pushforward",
   "check: The Monge-plus-polar atlas of a graph surface has exact transitions and covers the plane with regularity above the analytic Monge bound vs pushforward vs central difference of the point transition (h = 1e-6)",
@@ -645,10 +766,11 @@
  ],
  "tests_skipped": [],
  "title": "Add chart-transition support.",
- "uncertainty": "Atlas errors are RK4 truncation errors (order 4); the 400-step sphere error differs from the fourth-order predictions of the 200- and 800-step runs by 11.7%. Single-chart errors for small delta come from the unresolved azimuthal rate 1/sin(delta) at a fixed step; the failure steps and the errors for delta <= 1e-8 depend on rounding and may differ across platforms. On the exact meridian the single-chart result depends on the step grid: rounding in g_12 seeds an angular momentum sin^2(theta) v_phi that each pole crossing amplifies, so the 400-step success is a property of that grid (closest step point 0.00531 from a pole), not of the chart.",
+ "uncertainty": "Atlas errors are RK4 truncation errors (order 4); the 400-step sphere error differs from the fourth-order predictions of the 200- and 800-step runs by 11.7%. Single-chart errors for small delta come from the unresolved azimuthal rate 1/sin(delta) at a fixed step; the failure steps and the errors for delta <= 1e-8 depend on rounding and may differ across platforms. On the meridian the single-chart result depends on the step grid and on the angular momentum L = sin^2(theta) v_phi that each pole crossing amplifies, so the 400-step success is a property of that grid (closest RK4 stage point 0.00254 from a pole) and of the seed, not of the chart. Unseeded, L comes from the rounding of g_12, which depends on the BLAS kernel (the BLAS build and the inputs of the OpenBLAS kernel choice are recorded in the runtime identity and in meridian-steps.json), so the meridian runs from a declared seed of 1e-12: the natural seed is at most 1e-16, 0.0001 of the declared one. It moves an error linear in the seed (the 400-step grid) by at most 0.0001 relative, an error quadratic in it (grids within a few d*, where perturbing the seed gave exponents up to 2.01) by at most about 0.0002, and the 400-step error from a seed of 1e-13 by at most 0.001; that error differs from proportionality by 1.73e-06. At the smallest swept seeds the bound is a larger share (up to 0.1 at 1e-15), so of the swept runs only the outcomes are compared. The failure radius d* takes its exponent from the scaling argument and its constant 1 from a fit; across the seed sweep the largest d/d* of a failure is 1.41 and the smallest of a run that did not fail 0.988.",
  "unresolved_assumptions": [
   "An atlas needs an embedding and a closed-form inverse for each chart; atlases are built here for the sphere (rotated polar charts) and for graph surfaces (Monge chart and its polar ChartMap); intrinsic charts such as the hyperbolic plane are not covered.",
   "Switching happens between steps; an adaptive integrator would need event location at the threshold.",
-  "The recorded minimum regularity of the active chart restates the switch threshold and the covering bound; it is reported, not checked."
+  "The recorded minimum regularity of the active chart restates the switch threshold and the covering bound; it is reported, not checked.",
+  "The failure radius d* = (L0 h^4)^(1/5) takes its exponent from the scaling argument and its constant 1 from a fit. It is checked on one path at half-decade seeds from 1e-15 to 1e-10, beyond 2 d* at the declared seed only; finer seed steps or other paths may widen the band of d/d* in which failed and completed runs overlap. Near d* a run that does not fail can still err by order 1."
  ]
 }

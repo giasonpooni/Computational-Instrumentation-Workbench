@@ -426,6 +426,8 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
@@ -437,7 +439,7 @@
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: an uncertain extrinsic, a rotation angle with a declared variance, adding J_theta Sigma_theta J_theta^T to the transformed covariance, checked by Monte Carlo over the angle and carried through the fusion intake's frame mapping, which today treats every mapping as exact.",
- "report_id": "sha256:21d51cd1ef864433c4ce790b2c0a970f9deced890ecc5949ac06c7afaafbdda3",
+ "report_id": "sha256:79dc4080cd9fbc7378d69c067936ba76cdce63bc25856be25a77640c197756bc",
  "schema": "ciw.lab-task-report.v1",
  "section": "sensor-fusion",
  "state": "completed",

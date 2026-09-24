@@ -488,6 +488,8 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "requirement_probes": {
    "hardware:nvidia-gpu": false
@@ -498,13 +500,13 @@
    "src/ciw/energy_cuda.py": "9b4b86809e47cba7683dc0c238b0b052b6785fd09e629224c5f8f37b6d5a0e64",
    "src/ciw/free_energy_math.py": "4f096c281c548e92ed7bb1d49a8fd58f3a4d6b48ababef2958331ca13f088a6e",
    "src/ciw/lab/energy_gpu_workload.py": "5cdaf9fe9f25194dae561e060abf471567cfd3bb8df6c1836630a54c5085a9de",
-   "src/ciw/lab/implementation_targets.py": "0ea1ac76f50f1c65b47155a6791a0ea74c3ebf57d0b254a4a6615dabb930b5e7",
+   "src/ciw/lab/implementation_targets.py": "146ab24ea35b8e6fc4883e3f7d872e70dbf7b719e85d881d31865e4f8201f30d",
    "src/ciw/lab/implementation_targets_kernels.py": "daf3fe697f5b8f7627119fe299a270fe6de19d2394eade688624d28526b04785"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Judge the PTX kernel's outputs for every replica under the fixed-order policy on the RTX 2080 host (protocol in docs/lab/ENERGY_GPU.md): `mkdir -p runs/rtx2080-<date>`; `ciw energy probe --gpu-index 0` must return a reading with status ok; start `TZ=UTC nvidia-smi --query-gpu=timestamp,uuid,name,utilization.gpu,utilization.memory,temperature.gpu,power.draw,clocks.sm,clocks.mem,pstate --format=csv,nounits -lms 100 -f runs/rtx2080-<date>/smi.csv` in the background; `ciw energy record --problem examples/energy-accuracy/problem.json --output-dir runs/rtx2080-<date>/capture --duration 10 --replicas 4096 --warmup-batches 2 --idle-duration 2 --gpu-index 0`; stop the sidecar; `ciw energy replay runs/rtx2080-<date>/capture/log.json`; then `CIW_LAB_NVIDIA_SMI_UTC_OFFSET=+00:00 ciw lab run T116 T117 T118 T119 T120 T121 T124 T147 --capture energy-log=runs/rtx2080-<date>/capture/log.json --capture nvidia-smi-csv=runs/rtx2080-<date>/smi.csv --output-dir results/rtx2080-<date>` on the same host and `ciw lab hardware retain results/rtx2080-<date> --retained lab --run-id rtx2080-<date> --host \"<RTX 2080 host>\"`. Deferred research question: extend the common workload's GPU path beyond the binary64 gaussian_vi PTX kernel of ciw.energy_cuda: a float32 rendering of the same kernel, and a device-wide reduction of its per-replica outputs (a fixed tree over the stored order per T148's REDUCTION_POLICY, plus one atomicAdd variant), each compared with the NumPy reference by compare_outputs on the RTX 2080 host and captured with `ciw energy record` for energy; until then those claims stay not_established on every host",
- "report_id": "sha256:5404b3a7d6d8f6184b9fbedad4302b16cd1395a19dce025d09c7d21b9b798734",
+ "report_id": "sha256:e1b300f6ac454ff30f5531aeba5de98958a34654896862d25e170b24d3e95f60",
  "schema": "ciw.lab-task-report.v1",
  "section": "implementation-targets",
  "state": "partial",

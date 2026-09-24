@@ -571,6 +571,8 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
@@ -585,7 +587,7 @@
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: make the audit structural rather than enumerated, a shared authority type that every lab estimator must construct its records through and that refuses any state_admission value outside the vocabulary, so a new estimator cannot bypass the check; today the audit lists the estimators by hand.",
- "report_id": "sha256:3d2cc3f6a96b9315a653a54395fc508a61b1ccc3118708e9b871c8eb9ddba0ea",
+ "report_id": "sha256:86a9c65b723adc2b28fbef0e7beb90268322a179a26ca3ecca38b766b887dfd1",
  "schema": "ciw.lab-task-report.v1",
  "section": "sensor-fusion",
  "state": "completed",

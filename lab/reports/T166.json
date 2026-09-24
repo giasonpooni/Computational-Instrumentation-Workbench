@@ -61,7 +61,7 @@
     "value": 0
    },
    "unit": "assumptions",
-   "value": 452
+   "value": 458
   },
   {
    "assigned_by": "ciw.lab.evidence",
@@ -98,19 +98,19 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 102247,
+   "bytes": 105965,
    "path": "artifacts/T166/unresolved-assumptions.json",
-   "sha256": "35a482edbea816f0e88033b05104bffdc876c1c143ff1c5e71899acac87e6e55"
+   "sha256": "48e21b094054fbfd211c6e9026c1c4b116f9b2d3e0703dbbbac9668d4e12f428"
   },
   {
-   "bytes": 48183,
+   "bytes": 51126,
    "path": "artifacts/T166/open-items.json",
-   "sha256": "b82f27991ccc908d8362be87b2b95b1c8e611961efcac5d159703ab28f495f2c"
+   "sha256": "73fe8921abb93a55a4399bc277d1237be4aacac7db85ac91bf8f867153314f60"
   },
   {
-   "bytes": 112619,
+   "bytes": 118716,
    "path": "artifacts/T166/UNRESOLVED_ASSUMPTIONS.md",
-   "sha256": "2c7a9f961ed4c537020d474a29e71be840f94de31b77fc6ec0aa5a64f2aa4eed"
+   "sha256": "f34122f78b63bf1a493193a3ae7e6eac7b915e1d02187a237591c24346ef90d5"
   }
  ],
  "hypothesis": "Every unresolved assumption stated by any task can be listed in one ledger with its source task, and the open items that cut across tasks can be grouped from the tasks' own statements.",
@@ -119,7 +119,7 @@
  ],
  "mathematical_model": "Ledger = union over reports of unresolved_assumptions, deduplicated by exact wording, with task references. Open items = key custody and signatures, telemetry provider provisioning and cross-platform reproduction, each with the assumptions, next steps and unestablished claims whose wording raises it.",
  "number": 166,
- "numerical_result": "452 distinct unresolved assumptions (501 statements) from 165 reports; 0 reports state none; open items: Key custody and signatures 60 statements from 31 tasks; Telemetry provider provisioning 17 statements from 7 tasks; Cross-platform reproduction 12 statements from 10 tasks.",
+ "numerical_result": "458 distinct unresolved assumptions (507 statements) from 165 reports; 0 reports state none; open items: Key custody and signatures 61 statements from 32 tasks; Telemetry provider provisioning 17 statements from 7 tasks; Cross-platform reproduction 13 statements from 11 tasks.",
  "observation_model": "No physical observation; reads retained computational records only.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -130,15 +130,17 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/research_portfolio.py": "145b8ee8456e1dd57bf2a05fa20e1ce55bd33356522436d8901eb1adfb60fc7a"
+   "src/ciw/lab/research_portfolio.py": "36d03762abf5cb7a900d4572ec3f8aa8e7bc55cb61331711dce910a334b3acf8"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Attach each assumption to the experiment that would resolve it and track closure, and open a queue extension for each of the three open items this ledger groups, which no queue task closes.",
- "report_id": "sha256:b5b0afb8d7288c94c55260d698fdeb5911824f596c16fd0c9858444dce182a06",
+ "report_id": "sha256:f308d96269f58411aafd04a3981089a2f517c906de2ce177e857cc92983a464f",
  "schema": "ciw.lab-task-report.v1",
  "section": "research-portfolio",
  "state": "completed",

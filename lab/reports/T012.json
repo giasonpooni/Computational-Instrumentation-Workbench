@@ -426,6 +426,8 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
@@ -435,7 +437,7 @@
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: implement Mobius isometries of HyperbolicPlane as a ChartMap and check that Jacobi columns and endpoint distances are invariant under them (only tangent-basis changes are tested there now), and extend the ambient tests to translations and reflections of the embedding",
- "report_id": "sha256:69eb8ecb939dae98d33b491ff0042129545f9b99b80d1689f614fafde22e3d3a",
+ "report_id": "sha256:6f146697c58ee0fba7ffdd9cd1757ae473229ffeab1eab3bc5a9fe4198565f75",
  "schema": "ciw.lab-task-report.v1",
  "section": "geodesic-jacobi",
  "state": "completed",

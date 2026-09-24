@@ -264,17 +264,19 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/observation.py": "ef75c3ea4cad06bcbc68592440b3d55a92786a729d5a731b87ece207511ddffb",
+   "src/ciw/lab/observation.py": "2a6812aa800277efdf1243187221123c8c7d15df4b298371e07f87f756e2a461",
    "src/ciw/lab/observation_modes.py": "14fcc803e9543fa4a6891775dfac6633ca15ade648e6125e2f71fde4c4201c90",
    "src/ciw/lab/observation_signals.py": "19e94cb28160a07e5a285b5a4acd76e3820deb37ee5ed180f5c7bf1975a56793"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: estimate a drifting clock offset (random-walk offset and rate) online from paired stamps and report its identifiability against jitter; this task's offset is constant and its jitter white.",
- "report_id": "sha256:dc73f82b5c4547d87199429c4af802a6a8f8366c7b94eabc73738d30cb68e1bd",
+ "report_id": "sha256:ecc105cb7c40b625016fa20836eff9e31f93026ec76cfdba29b30448f7c3e7fe",
  "schema": "ciw.lab-task-report.v1",
  "section": "observation",
  "state": "completed",

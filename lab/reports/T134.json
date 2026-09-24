@@ -292,6 +292,8 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
@@ -303,7 +305,7 @@
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Open: check robot joint limits and singularities along the tool-centre-point paths, and model the deposition footprint (spray cone, heat input), which the kinematic speed factor does not capture.",
- "report_id": "sha256:7ff4f97703499f0db7200cb7edabc92465ea6bfd239a849d08cc2ded7736516f",
+ "report_id": "sha256:68edd937d1af2d33caf0affe43261b3665c5482547d36ebc075d58a1de034078",
  "schema": "ciw.lab-task-report.v1",
  "section": "manufacturing",
  "state": "completed",

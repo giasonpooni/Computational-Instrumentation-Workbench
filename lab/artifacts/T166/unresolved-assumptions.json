@@ -1,12 +1,5 @@
 [
  {
-  "assumption": "1 numerical findings record an unestablished claim with no basis: T099: The SP1 proved-heat locked build was not attempted",
-  "open_items": [],
-  "tasks": [
-   "T159"
-  ]
- },
- {
   "assumption": "41 figure tasks (77 figures) were not re-executed within the section's time budget: T001, T002, T003, T004, T005, T006, T007, T008, T009, T010, T011, T012, T014, T015, T016, T017, T018, T025, T036, T039, T040, T041, T043, T044, T046, T047, T051, T064, T067, T068, T097, T101, T107, T109, T126, T128, T133, T134, T135, T136, T137",
   "open_items": [],
   "tasks": [
@@ -93,7 +86,7 @@
   ]
  },
  {
-  "assumption": "A transition is judged at the resolution of the path's steps: 'direct' means consecutive steps whose transcribed gate vectors differ by one crossing. Rounding at the crossing itself is not probed (T107 covers the resolution threshold).",
+  "assumption": "A transition is judged at the resolution of the path's steps: 'direct' means consecutive steps whose transcribed gate vectors differ by one crossing. Rounding at the crossing itself is not probed here: T107 probes the eigenvalue thresholds -res and +res within rounding, and T111 the coincident crossing of the scalar gate and the eigenvalue route at a top eigenvector.",
   "open_items": [],
   "tasks": [
    "T106"
@@ -236,6 +229,13 @@
   ]
  },
  {
+  "assumption": "At the coincident crossing whether the scalar gate, the eigenvalue route, both or neither fire is decided by the rounding of the formed M and may differ between BLAS kernels; it is retained per sample in routes.json and stated in the numerical result, not compared.",
+  "open_items": [],
+  "tasks": [
+   "T111"
+  ]
+ },
+ {
   "assumption": "Authorization record format and signature scheme are placeholders",
   "open_items": [
    "key-custody"
@@ -270,6 +270,13 @@
   "open_items": [],
   "tasks": [
    "T053"
+  ]
+ },
+ {
+  "assumption": "Bit-exact reopen of the energy golden is only available on the platform that wrote it (GOLDEN_PLATFORM: Linux x86_64, NumPy 2.4.3, scipy-openblas 0.3.31.dev running its SkylakeX kernels). CIW compares the recomputed analysis bit for bit, and a platform whose NumPy/LAPACK build or OpenBLAS kernel rounds differently refuses the workspace as 'Retained energy analysis binding differs'; forced to the Haswell or Sandybridge kernels on the same host it does. T094 then shows that the recomputation agrees to rounding tolerance, which CIW's reopen does not accept. The platform fingerprints and which branch applied are retained in golden.json.",
+  "open_items": [],
+  "tasks": [
+   "T094"
   ]
  },
  {
@@ -322,7 +329,7 @@
   ]
  },
  {
-  "assumption": "Byte identity is established on one platform; Windows and other BLAS builds are not compared.",
+  "assumption": "Byte identity is established on this platform only; the second-platform (Windows) comparison is made outside the queue by scripts/check_figures.py and is not part of this report.",
   "open_items": [
    "cross-platform"
   ],
@@ -489,15 +496,6 @@
   ]
  },
  {
-  "assumption": "Deferred research question (cross-platform reproduction): run T081 on Windows x86-64 and macOS arm64 besides the retained Linux x86-64 run and check that every float-valued numerical_result_id of the energy-accuracy bundles (originals, sibling, replays, replay after reopen, separate session) equals the retained energy_numerical_result_id exactly (kept in T081's numerical-identity.json and in its identity finding's value, which ciw lab verify compares exactly); a mismatch would mean the canonical float serialization or the analysis arithmetic depends on the platform, and no second platform has been compared.",
-  "open_items": [
-   "cross-platform"
-  ],
-  "tasks": [
-   "T081"
-  ]
- },
- {
   "assumption": "Deferred research question (cross-platform reproduction): run T101 and T102 against the pinned PLSR on Windows x86-64, on macOS arm64 and on Linux x86-64 with a LAPACK other than the retained OpenBLAS build (for example MKL), and check that the PLSR codes below the normal range (the subnormal witness's code included; resolution-floor.json) and the outside-window code flips and scaled-witness code (scaling-invariance.json) match the retained ones case for case, and that every finding value matches within its regression tolerance; these codes are retained as artifacts only because LAPACK/BLAS builds may decide them differently, and no second build has been compared.",
   "open_items": [
    "cross-platform"
@@ -505,6 +503,15 @@
   "tasks": [
    "T101",
    "T102"
+  ]
+ },
+ {
+  "assumption": "Deferred research question (cross-platform reproduction): the energy numerical_result_id hashes the analysed floats bit for bit, so it links occurrences on one arithmetic platform only (five OpenBLAS kernels on one Linux x86-64 host gave three ids, each shared by every occurrence of its run). Run T081 on Windows x86-64 and macOS arm64 and compare it with the retained run by ciw lab verify, which checks that each run again has one numerical_result_id over its occurrences and compares the energy numerical result that id hashes leaf by leaf within 2e-14 absolute, about 90 times the spread between those kernels (the retained run does not record its kernel): do all differences stay at rounding level, and should CIW link occurrences across platforms by such a tolerance comparison, or by an identity over declared-precision data, instead of the bit-exact id (a CIW change, not made here)?",
+  "open_items": [
+   "cross-platform"
+  ],
+  "tasks": [
+   "T081"
   ]
  },
  {
@@ -701,7 +708,7 @@
   ]
  },
  {
-  "assumption": "Exact bins describe the declared binary64 matrices; the targets kappa are only approximately realised because A is rounded.",
+  "assumption": "Exact bins and windows describe the declared binary64 matrices; the targets kappa are realised within res/16 (checked exactly), not exactly.",
   "open_items": [],
   "tasks": [
    "T107"
@@ -719,6 +726,13 @@
   "open_items": [],
   "tasks": [
    "T078"
+  ]
+ },
+ {
+  "assumption": "Exactness holds in exact arithmetic; computed distances carry rounding, and the pruning margin (1e-10 of the mean edge) keeps near-ties. The solver is a Python loop meant for meshes of a few thousand vertices; the largest here has 2562.",
+  "open_items": [],
+  "tasks": [
+   "T038"
   ]
  },
  {
@@ -852,7 +866,7 @@
   ]
  },
  {
-  "assumption": "Hardware energy probes (ciw.energy_cuda, ciw.energy_nvml) load drivers in-process by declared exception",
+  "assumption": "Hardware probes load native code in-process by declared exception: the energy probes (ciw.energy_cuda, ciw.energy_nvml) load drivers, and ciw.lab.blas_probe opens the OpenBLAS NumPy already loaded, through ctypes, only to read which kernel it runs",
   "open_items": [],
   "tasks": [
    "T144"
@@ -1579,13 +1593,6 @@
   ]
  },
  {
-  "assumption": "Partial delivery: the solver is an initial-value tracer (straightest geodesics from a point and heading) plus approximate distances. No exact two-point polyhedral geodesic (MMP, ICH or iterative edge flipping) is implemented, so no shortest path between two given points is solved exactly and the graph and heat distances are not compared with an exact polyhedral distance.",
-  "open_items": [],
-  "tasks": [
-   "T038"
-  ]
- },
- {
   "assumption": "Partial: ESM candidate_id and candidate execution identities (they need an operator-bound ESM adapter and a telemetry or calibrated bundle) and pinned-provider runtime identities (ciw.subprocess-runtime.v1; they need a provider checkout bound to a declared-workload or telemetry workflow) are planned matrix rows that the offline path cannot exercise; their predictions are read from the code, not observed.",
   "open_items": [
    "telemetry-provisioning"
@@ -1748,13 +1755,6 @@
   "open_items": [],
   "tasks": [
    "T142"
-  ]
- },
- {
-  "assumption": "Reopen recomputes the retained energy analysis in floating point and compares it bit for bit; a platform whose NumPy/LAPACK rounds differently refuses the golden energy workspace. The platform fingerprint of this run and of the golden's origin are retained in golden.json.",
-  "open_items": [],
-  "tasks": [
-   "T094"
   ]
  },
  {
@@ -2111,13 +2111,6 @@
   ]
  },
  {
-  "assumption": "The SP1 proved-heat build needs crates.io and GitHub release downloads, the SP1 checkout, the Succinct compiler archive, protoc and >= 7 GiB RAM / 20 GiB disk (.github/workflows/proved-heat.yml); host probes are in sp1-requirements.json.",
-  "open_items": [],
-  "tasks": [
-   "T099"
-  ]
- },
- {
   "assumption": "The SciPy cross-check shares ciw's right-hand side and is independent in the integrator only",
   "open_items": [],
   "tasks": [
@@ -2174,7 +2167,7 @@
   ]
  },
  {
-  "assumption": "The binary digest depends on the Rust toolchain recorded in provider_runtime_identity; CI pins rustc 1.94.0 for the proved-heat gate, and other toolchains may produce different digests.",
+  "assumption": "The bound record is the gate's outcome as retained: T099 checks its digests, pins and bundle consistency but re-verifies no proof, and the manifest digests are unkeyed, so a fabricated record that copies CIW's public pins and recomputes every digest would pass.",
   "open_items": [],
   "tasks": [
    "T099"
@@ -2279,6 +2272,13 @@
   ]
  },
  {
+  "assumption": "The engine digest depends on the Rust toolchain and not on the checkout path, as the bound record's run.json observes on its recording host (3 builds with rustc 1.94.0 (4a4ef493e 2026-03-02) gave the gate's engine digest; 2 builds with rustc 1.94.1 (e408947bf 2026-03-25) gave one other digest; the sources of those builds are in proved-heat-record.json); here the pinned-toolchain rebuild gave the gate's engine digest; another host's linker or C library may still change it, which that rebuild tests wherever T099 runs; this run's digests are in pinned-toolchain-build.json.",
+  "open_items": [],
+  "tasks": [
+   "T099"
+  ]
+ },
+ {
   "assumption": "The envelope comparison assumes K(rho) on the bump decreases up to its flank minimum and increases beyond (checked on a grid, not proved)",
   "open_items": [],
   "tasks": [
@@ -2300,6 +2300,13 @@
   ]
  },
  {
+  "assumption": "The exact solver returns distances, not the shortest path polyline: back-tracing the path from its windows is not implemented, so the shortest path itself is not drawn or compared.",
+  "open_items": [],
+  "tasks": [
+   "T038"
+  ]
+ },
+ {
   "assumption": "The exchange stage stops before the SET validator; conformance of well-formed artifacts needs SET (T097).",
   "open_items": [],
   "tasks": [
@@ -2318,6 +2325,13 @@
   "open_items": [],
   "tasks": [
    "T092"
+  ]
+ },
+ {
+  "assumption": "The failure radius d* = (L0 h^4)^(1/5) takes its exponent from the scaling argument and its constant 1 from a fit. It is checked on one path at half-decade seeds from 1e-15 to 1e-10, beyond 2 d* at the declared seed only; finer seed steps or other paths may widen the band of d/d* in which failed and completed runs overlap. Near d* a run that does not fail can still err by order 1.",
+  "open_items": [],
+  "tasks": [
+   "T036"
   ]
  },
  {
@@ -2401,6 +2415,13 @@
   "open_items": [],
   "tasks": [
    "T058"
+  ]
+ },
+ {
+  "assumption": "The gate bound its engine and prover as operator_asserted_not_attested executables: the record shows which bytes ran, not that they were built from the pinned sources. The pinned-toolchain rebuild shows the engine bytes are reproducible from the pinned source where T099 runs; nothing here rebuilds the prover.",
+  "open_items": [],
+  "tasks": [
+   "T099"
   ]
  },
  {
@@ -2701,6 +2722,13 @@
   ]
  },
  {
+  "assumption": "The recorded gate was run locally by replaying the workflow's gate steps (scripts/run_proved_heat_locally.py), not by CI, and its times, memory and proof sizes are measurements of its recording host.",
+  "open_items": [],
+  "tasks": [
+   "T099"
+  ]
+ },
+ {
   "assumption": "The recorded minimum regularity of the active chart restates the switch threshold and the covering bound; it is reported, not checked.",
   "open_items": [],
   "tasks": [
@@ -2758,6 +2786,13 @@
  },
  {
   "assumption": "The retained runtime identity is metadata written by the saving run: it is compared with CIW's pins, but reopen cannot show that the named engine produced the values.",
+  "open_items": [],
+  "tasks": [
+   "T094"
+  ]
+ },
+ {
+  "assumption": "The rounding tolerance was measured on one x86-64 host under three OpenBLAS kernels; other LAPACK builds, operating systems and architectures have not been measured. An equal platform fingerprint does not guarantee equal rounding, and outside NumPy's bundled OpenBLAS the kernel is not named.",
   "open_items": [],
   "tasks": [
    "T094"
@@ -3006,13 +3041,6 @@
   ]
  },
  {
-  "assumption": "Traced geodesics are shortest paths only when no shorter corridor exists; not proved here.",
-  "open_items": [],
-  "tasks": [
-   "T038"
-  ]
- },
- {
   "assumption": "Transitions the documented order excludes (every path between the two codes passes through a third code): CERTIFIED_WITH_MARGIN <-> DECREASE_NOT_DEFINITE (differ in at least certified, not_definite); CERTIFIED_WITH_MARGIN <-> NOT_CERTIFIED (differ in at least scalar_positive, certified, not_definite); MARGIN_LOW <-> DECREASE_NOT_DEFINITE (differ in at least certified, margin_low, not_definite); MARGIN_LOW <-> NOT_CERTIFIED (differ in at least scalar_positive, certified, margin_low, not_definite).",
   "open_items": [],
   "tasks": [
@@ -3083,10 +3111,17 @@
   ]
  },
  {
-  "assumption": "Wall-clock timing figures are recognized by a retained JSON artifact of their task that mentions wall-clock or elapsed time; a timing figure without such a note counts as a mismatch.",
+  "assumption": "Wall-clock timing figures are those their tasks declare when writing them (wall_clock_timing in the report's generated artifacts); a figure plotting wall-clock time without the declaration counts as a mismatch, and whether a declared figure's data depends on the clock is a review question.",
   "open_items": [],
   "tasks": [
    "T158"
+  ]
+ },
+ {
+  "assumption": "Where a straightest geodesic stops being shortest (where it crosses the cut locus of its start point) is observed per trace, not predicted.",
+  "open_items": [],
+  "tasks": [
+   "T038"
   ]
  },
  {
@@ -3121,6 +3156,13 @@
   "open_items": [],
   "tasks": [
    "T044"
+  ]
+ },
+ {
+  "assumption": "Which straddle cases resolve the sign (certified at -res, DECREASE_NOT_DEFINITE at +res) is decided by the last-bit rounding of the computed eigenvalue and may differ between BLAS kernels and LAPACK builds; it is retained per case in inconclusive-band.json and stated in the numerical result, not compared.",
+  "open_items": [],
+  "tasks": [
+   "T107"
   ]
  },
  {

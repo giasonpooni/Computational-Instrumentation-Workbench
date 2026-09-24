@@ -793,6 +793,7 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
   "provider": {
    "commit": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
    "entry": "lyapunov.verdict / lyapunov.solve_lyapunov / lyapunov.decrease_resolution",
@@ -807,20 +808,21 @@
    "source_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7",
    "verification": "package version and per-file sha256 checked in the subprocess before use"
   },
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "requirement_probes": {
    "provider:plsr-python": true
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/lyapunov.py": "dcda8ba21661667cc03bb126a393e93158a306b4991d0a2450d8e18abe62cb27",
+   "src/ciw/lab/lyapunov.py": "d343889fe69789b9551ef6e36029c1f969c6bf04c4cdb4618b9f506539831665",
    "src/ciw/lab/lyapunov_provider.py": "da3465b48b5f5efc47bfe6ab8379cf2cf2bc23e4835dc7ff047252e77fa6ef17",
-   "src/ciw/lab/lyapunov_reference.py": "bdf0bb5074ae2caca6c8a5d8e63a15e346b007098e6def6b058d077719bc1336"
+   "src/ciw/lab/lyapunov_reference.py": "831ae8bd144c10e255cb9f2b54e0c219e2f98a59d01a07b5255046ae70b9b431"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question (upstream PLSR change): pin one witness per runtime code and per allowed transition in PLSR's own tests, and decide whether a P(theta) that loses definiteness inside the box should return CERTIFICATE_NOT_POSITIVE rather than raise, which would make the eight transitions involving that code reachable.",
- "report_id": "sha256:088532334f70a0951f501b2da5a0e24ee757a8317d36d44e189e35a4c1edae3d",
+ "report_id": "sha256:7dcae277b97806e1aa5252fe15b1d178a51c9e42861cb4938f8421ef2c47fd3a",
  "schema": "ciw.lab-task-report.v1",
  "section": "lyapunov",
  "state": "completed",
@@ -865,7 +867,7 @@
  "unresolved_assumptions": [
   "Transitions the documented order excludes (every path between the two codes passes through a third code): CERTIFIED_WITH_MARGIN <-> DECREASE_NOT_DEFINITE (differ in at least certified, not_definite); CERTIFIED_WITH_MARGIN <-> NOT_CERTIFIED (differ in at least scalar_positive, certified, not_definite); MARGIN_LOW <-> DECREASE_NOT_DEFINITE (differ in at least certified, margin_low, not_definite); MARGIN_LOW <-> NOT_CERTIFIED (differ in at least scalar_positive, certified, margin_low, not_definite).",
   "The 8 transitions involving CERTIFICATE_NOT_POSITIVE are not exercised: QuadraticCertificate and every P(theta) of an AffineCertificate refuse min eig(P) <= 0 when built (an affine P(theta) that loses definiteness inside the box raises ValueError, probed here), so the code needs V < 0 at the scaled state for a P whose computed eigenvalues are positive, which only rounding produces. The eight exactly indefinite witnesses may reach it; their codes depend on eigvalsh and dot-product rounding and are retained in the artifact.",
-  "A transition is judged at the resolution of the path's steps: 'direct' means consecutive steps whose transcribed gate vectors differ by one crossing. Rounding at the crossing itself is not probed (T107 covers the resolution threshold).",
+  "A transition is judged at the resolution of the path's steps: 'direct' means consecutive steps whose transcribed gate vectors differ by one crossing. Rounding at the crossing itself is not probed here: T107 probes the eigenvalue thresholds -res and +res within rounding, and T111 the coincident crossing of the scalar gate and the eigenvalue route at a top eigenvector.",
   "The CIW transcription shares the documented specification with the runtime, so it checks implementation against specification (a same-specification check), not the specification itself."
  ]
 }

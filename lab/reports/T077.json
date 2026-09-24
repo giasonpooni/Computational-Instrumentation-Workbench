@@ -602,16 +602,18 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/exchange_provenance.py": "0871a5e3e3a27b365a326036c869338b11e5aa3bc4af3ca60db29e81bedbba36",
+   "src/ciw/lab/exchange_provenance.py": "6c5c6d9b49043664ad9cea8f4bc2ff5d9fc367aea6194e2e7608c98bfd5c54f4",
    "src/ciw/lab/exchange_provenance_common.py": "17ab892e3f285ac475b44c240155acf45f8bbdbefca28a345980aba548c6d1a9"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Complete T077: observe the ESM candidate, candidate execution and pinned-provider runtime identity rows, now read from code, once the telemetry provider stack is provisioned and bound (the deferred research question among the unresolved assumptions), and, as CIW changes, add a numerical_result_id to oscillator operation results and bind replay receipts into a catalog-level seal.",
- "report_id": "sha256:c6badf21d4c5d7c0e6136bce4a2f1aa1a74332eb60f1b26b851e0ce4d4bbb59e",
+ "report_id": "sha256:d1b82f63f4e0fe5190a2dafffbe4d4ce6bb17632a74e60863de7ebe1edc2ed22",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "partial",
@@ -660,11 +662,10 @@
   "check: The energy replay bundle identity excludes its replay receipt and verification vs bundle digest recomputed by CIW without replay_receipts differs from the retained one",
   "check: The energy replay bundle identity excludes its replay receipt and verification vs bundle digest recomputed by CIW with the verification replaced differs from the retained one",
   "pytest: tests/test_lab_exchange_provenance.py::test_identity_matrix",
-  "pytest: tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work"
+  "pytest: tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work",
+  "pytest: tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply"
  ],
- "tests_skipped": [
-  "pytest: tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply (skipped)"
- ],
+ "tests_skipped": [],
  "title": "Build an identity matrix for: source evidence; operation; execution; result; numerical result; verification; bundle; replay; external producer IDs.",
  "uncertainty": "Exact equality tests on digests, UUID draws and exact refusal messages; a uuid4 collision among the fewer than 40 fresh uuid4 draws has probability below 1e-33. Properties are sampled on one fixture, not proved for all inputs. Checks that could not fail by construction (identifier prefix tests, a lab-set ESM digest, label-driven source_id counts, the fixture's placeholder hashes) are not counted as properties.",
  "unresolved_assumptions": [

@@ -491,16 +491,18 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/implementation_targets.py": "0ea1ac76f50f1c65b47155a6791a0ea74c3ebf57d0b254a4a6615dabb930b5e7",
+   "src/ciw/lab/implementation_targets.py": "146ab24ea35b8e6fc4883e3f7d872e70dbf7b719e85d881d31865e4f8201f30d",
    "src/ciw/lab/implementation_targets_kernels.py": "daf3fe697f5b8f7627119fe299a270fe6de19d2394eade688624d28526b04785"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: extend the common workload's GPU path beyond the binary64 gaussian_vi PTX kernel of ciw.energy_cuda: a float32 rendering of the same kernel, and a device-wide reduction of its per-replica outputs (a fixed tree over the stored order per T148's REDUCTION_POLICY, plus one atomicAdd variant), each compared with the NumPy reference by compare_outputs on the RTX 2080 host and captured with `ciw energy record` for energy; until then those claims stay not_established on every host",
- "report_id": "sha256:d5d744bd0ad566b773deaf0a435efc12003dc2695291f94715909c7ee8b18e6c",
+ "report_id": "sha256:a2d305ee8231ca67e54b17a5a0831cab8d0cecd28bd877ff1ba3e616b8378ab0",
  "schema": "ciw.lab-task-report.v1",
  "section": "implementation-targets",
  "state": "completed",

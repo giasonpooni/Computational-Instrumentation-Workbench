@@ -382,7 +382,7 @@
   {
    "bytes": 1621,
    "path": "artifacts/T153/write-path-scan.json",
-   "sha256": "0ce1a7a61cb40c8781728a6d1910ad8b6a76b42a1a686aeecebd551cfedfeedc"
+   "sha256": "65be4b95906960ae93eab2b272f4b41e9540842506f346465d610bb240a0dd2d"
   }
  ],
  "hypothesis": "A deny-by-default write policy refuses every write; enabling needs an externally issued, signed, in-scope, unexpired authorization verified against a trust anchor the lab does not hold, so no route opens it here; and a source scan finds no device, serial or fieldbus write path in the package and network paths only in the declared workbench servers, so no other code path reaches a machine that the scan can see.",
@@ -390,7 +390,7 @@
   "one write per declared channel (five)",
   "twelve enabling routes",
   "fixed instant 2026-09-23T00:00:00Z",
-  "143 parsed modules of the installed ciw package (source text only; package digest in write-path-scan.json)",
+  "146 parsed modules of the installed ciw package (source text only; package digest in write-path-scan.json)",
   "5 forged write-path modules"
  ],
  "mathematical_model": "Gate(channel) = refuse unless enabled and verify(authorization, channel, now) passes; verify checks type, issuer, timestamp form (ISO-8601 with a UTC offset, parsed to instants), validity window, scope, signature and trust anchor in that order; the lab build has no trust anchor. Write paths: a module is a device path if it imports a device, serial, fieldbus, industrial-protocol or instrument library or names a device node (/dev/..., \\\\.\\..., COMn), and a network path if it imports a network library or calls a connection or server constructor; network paths are allowed only in declared modules.",
@@ -406,17 +406,19 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/implementation_targets.py": "0ea1ac76f50f1c65b47155a6791a0ea74c3ebf57d0b254a4a6615dabb930b5e7",
-   "src/ciw/lab/implementation_targets_architecture.py": "3c0ba23187cae208b492ff7adbceba135e2d7e071c6a4c978bbe5e3b2ac0ad62",
+   "src/ciw/lab/implementation_targets.py": "146ab24ea35b8e6fc4883e3f7d872e70dbf7b719e85d881d31865e4f8201f30d",
+   "src/ciw/lab/implementation_targets_architecture.py": "a50c1efad35ec18f5307d48a9fe2243df6707ab8a494fdf2cb46f8459a2ebcca",
    "src/ciw/lab/implementation_targets_authority.py": "d1e8750a38aab38f856203f46b2be0ac975963403c1789a04d4763415eff778f"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: enforce that any future write transport is routed through ActuatorWritePolicy (the scan flags a new transport, routing is not enforced), with a real signature scheme for authorization records; enforcement itself belongs in hardware interlocks outside this package",
- "report_id": "sha256:de6b093a412f4963cadd401a7e5b2a6e229562585ec9361c816266db9ca97587",
+ "report_id": "sha256:12b277a5fc176db11859fba6b8aa359f06e35b01eed30aa517b765f5e5c1dda0",
  "schema": "ciw.lab-task-report.v1",
  "section": "implementation-targets",
  "state": "completed",

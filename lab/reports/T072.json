@@ -399,6 +399,8 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
@@ -410,7 +412,7 @@
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: a calibration that degrades gradually (R inflated, or a drift growing with time since calibration) instead of expiring at a hard tick, and whether readings retained after expiry may be re-fused under a renewed calibration with their original digests preserved.",
- "report_id": "sha256:010c59634ed29e80fc379230e731b1a9a9f8ee9161c3768259b67978ec783660",
+ "report_id": "sha256:b4c442ef011be2d3e7f84c12272f565ff04b995cb802aa6e00d1c772b1d3774d",
  "schema": "ciw.lab-task-report.v1",
  "section": "sensor-fusion",
  "state": "completed",

@@ -316,6 +316,8 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
@@ -327,7 +329,7 @@
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: make a claim's domain derivable from the claim instead of declared by its author (a claim grammar with typed subjects, or a classifier whose misses are themselves recorded), so that paraphrased authority outcomes such as the one recorded here are refused as reliably as screened phrases.",
- "report_id": "sha256:7ddccd842785efe2f4354bf8aa0facf9fb5bb47f4efa4f9d9a19f455528b8c9f",
+ "report_id": "sha256:99adfa49211107ca9911016b31d7fc9bfe84f8ab47575970ab95747a159f4226",
  "schema": "ciw.lab-task-report.v1",
  "section": "manufacturing",
  "state": "completed",

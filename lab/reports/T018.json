@@ -452,6 +452,8 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
@@ -461,7 +463,7 @@
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: resolvability-aware step selection: choose each method's step from the measured curvature-signal-to-integrator-error ratio and check that the lateral column and the conjugate-point locations (only j_head(L) is compared here) are then resolved on the weak-curvature paths (sensor-level resolvability needs a measured noise floor and is hardware-gated)",
- "report_id": "sha256:79b70e9421b8e0cf0f45cdabf5792d7c10c2e5125b92dfb482e4a0b94bb13cfa",
+ "report_id": "sha256:062cae40cad8a453081677f17c37ffa85fc3362d31a3bb97791692a7cd59ae91",
  "schema": "ciw.lab-task-report.v1",
  "section": "geodesic-jacobi",
  "state": "completed",

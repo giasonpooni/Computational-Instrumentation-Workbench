@@ -1,4 +1,83 @@
 {
+ "energy_recomputations": [
+  {
+   "bit_identical": true,
+   "float_fields": 47,
+   "floats_differing": 0,
+   "floats_outside_tolerance": 0,
+   "max_abs_difference": 0.0,
+   "other_fields": 51,
+   "other_fields_differing": 0,
+   "retained": true,
+   "within_tolerance": true
+  },
+  {
+   "bit_identical": true,
+   "float_fields": 47,
+   "floats_differing": 0,
+   "floats_outside_tolerance": 0,
+   "max_abs_difference": 0.0,
+   "other_fields": 51,
+   "other_fields_differing": 0,
+   "retained": true,
+   "within_tolerance": true
+  },
+  {
+   "bit_identical": true,
+   "float_fields": 47,
+   "floats_differing": 0,
+   "floats_outside_tolerance": 0,
+   "max_abs_difference": 0.0,
+   "other_fields": 51,
+   "other_fields_differing": 0,
+   "retained": true,
+   "within_tolerance": true
+  },
+  {
+   "bit_identical": true,
+   "float_fields": 47,
+   "floats_differing": 0,
+   "floats_outside_tolerance": 0,
+   "max_abs_difference": 0.0,
+   "other_fields": 51,
+   "other_fields_differing": 0,
+   "retained": true,
+   "within_tolerance": true
+  },
+  {
+   "bit_identical": true,
+   "float_fields": 47,
+   "floats_differing": 0,
+   "floats_outside_tolerance": 0,
+   "max_abs_difference": 0.0,
+   "other_fields": 51,
+   "other_fields_differing": 0,
+   "retained": true,
+   "within_tolerance": true
+  },
+  {
+   "bit_identical": true,
+   "float_fields": 47,
+   "floats_differing": 0,
+   "floats_outside_tolerance": 0,
+   "max_abs_difference": 0.0,
+   "other_fields": 51,
+   "other_fields_differing": 0,
+   "retained": true,
+   "within_tolerance": true
+  },
+  {
+   "bit_identical": true,
+   "float_fields": 47,
+   "floats_differing": 0,
+   "floats_outside_tolerance": 0,
+   "max_abs_difference": 0.0,
+   "other_fields": 51,
+   "other_fields_differing": 0,
+   "retained": true,
+   "within_tolerance": true
+  }
+ ],
  "execution_attempts": [],
  "failures": [],
  "golden_platform": {
@@ -6,6 +85,7 @@
   "lapack": "scipy-openblas 0.3.31.dev",
   "machine": "x86_64",
   "numpy": "2.4.3",
+  "openblas_core": "SkylakeX",
   "simd_found": [
    "AVX512_ICL",
    "AVX512_SPR",
@@ -55,6 +135,7 @@
   "lapack": "scipy-openblas 0.3.31.dev",
   "machine": "x86_64",
   "numpy": "2.4.3",
+  "openblas_core": "SkylakeX",
   "simd_found": [
    "AVX512_ICL",
    "AVX512_SPR",
@@ -63,6 +144,25 @@
   ],
   "system": "Linux"
  },
+ "platform_is_golden": true,
  "platform_refusals": [],
- "root": "tests/fixtures/lab"
+ "root": "tests/fixtures/lab",
+ "tolerance": {
+  "abs": 1e-14,
+  "rel": 1e-14
+ },
+ "unmodified_reopen": {
+  "golden/energy-accuracy-workspace.json": {
+   "outcome": null,
+   "predicted": null
+  },
+  "golden/numerical-heat-workspace.json": {
+   "outcome": null,
+   "predicted": null
+  },
+  "golden/oscillator-workspace.json": {
+   "outcome": null,
+   "predicted": null
+  }
+ }
 }

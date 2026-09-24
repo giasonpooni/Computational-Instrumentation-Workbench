@@ -12,7 +12,7 @@
    "certificate": "scipy.linalg.solve_continuous_lyapunov@1.16.2",
    "certificate_condition": 496874100465.51154,
    "name": "Jordan n=4, lambda=2^-6",
-   "solver_error": "Lyapunov residual 5.875e-04 exceeds tolerance 1.000e-06; the equation is not resolvable in float64 at this scale",
+   "solver_gate": "Lyapunov residual",
    "verdict_with_certificate": "CERTIFIED_WITH_MARGIN"
   }
  ],

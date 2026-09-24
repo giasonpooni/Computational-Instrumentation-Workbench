@@ -141,6 +141,8 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "requirement_probes": {
    "module:sympy": true,
@@ -148,12 +150,12 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/implementation_targets.py": "0ea1ac76f50f1c65b47155a6791a0ea74c3ebf57d0b254a4a6615dabb930b5e7"
+   "src/ciw/lab/implementation_targets.py": "146ab24ea35b8e6fc4883e3f7d872e70dbf7b719e85d881d31865e4f8201f30d"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Implement the Julia worker behind the SCR boundary (docs/JULIA_SP1.md: handshake, operation allowlist, retained bytes) and a T145 path that dispatches the oscillator fixtures to it; then provision Julia 1.10.12 LTS and rerun T145. Until both exist a Julia host changes no finding",
- "report_id": "sha256:df603ebac1ee14f01331ce4e4d308b18a2f051323f9d0bea0f306657910a4035",
+ "report_id": "sha256:05dad9c392b94f73a22101ac4084aa4a6a257b7838860242e5b045f771fa8289",
  "schema": "ciw.lab-task-report.v1",
  "section": "implementation-targets",
  "state": "partial",

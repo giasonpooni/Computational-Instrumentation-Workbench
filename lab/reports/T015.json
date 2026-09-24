@@ -633,6 +633,8 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
@@ -642,7 +644,7 @@
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: sample resonant and chaotic geodesics (two geodesics now) beyond the horizon 320 the run budget allows, fit asymptotic drift laws, and compare a symmetric integrator on the same horizons",
- "report_id": "sha256:61b8fdc2498d985eacff86ec393ec4c586fbe9dd3ff7ee78d641d6ad4874a496",
+ "report_id": "sha256:17a0765e348515a69fbb3f17903e85854bbe5a7c29b48c0a914e5378ea216004",
  "schema": "ciw.lab-task-report.v1",
  "section": "geodesic-jacobi",
  "state": "completed",

@@ -62,7 +62,7 @@
     "value": 0
    },
    "unit": "findings",
-   "value": 689
+   "value": 710
   },
   {
    "assigned_by": "ciw.lab.evidence",
@@ -107,14 +107,14 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 466474,
+   "bytes": 491060,
    "path": "artifacts/T159/uncertainty-budget.json",
-   "sha256": "9a733e83f01e62db79e82d4b19212ddec42754ea7091adf4a15465ae75b2f175"
+   "sha256": "11e2ce20f31ff3ccf16ed31bf9c097d6eef4cfa8355503cb3049972aee9b1884"
   },
   {
-   "bytes": 265527,
+   "bytes": 281329,
    "path": "artifacts/T159/uncertainty-budget.md",
-   "sha256": "f9cd53c4ba52495148efbdfdac8e85be3b2515e2360a1c86f8c5ab48e0dd555b"
+   "sha256": "3f43735978a74ec533d0f22dbc457b04d475629bed697f07efa7df5a9f53607f"
   }
  ],
  "hypothesis": "Every numerical finding either declares an uncertainty or is identified as lacking one.",
@@ -123,7 +123,7 @@
  ],
  "mathematical_model": "Table rows = every finding whose value contains a number: (task, claim, value, unit, uncertainty kind, value and basis, evidence status). A listing of per-finding components, not a combined budget. A finding whose basis declares no component (evidence.basis_origin is empty) measured nothing: it records an unestablished claim, and its value is listed with the kind 'none (no basis: nothing measured)'.",
  "number": 159,
- "numerical_result": "1031 findings, 689 numerical (value contains a number); 688 declare a per-finding uncertainty, 0 measured ones do not, and 1 record an unestablished claim with no basis (nothing measured); kinds {'collision_bound': 1, 'exact': 65, 'fit': 17, 'fit_residual': 3, 'fit_spread': 17, 'grid_resolution': 1, 'method_error': 1, 'model_truncation': 5, 'monte_carlo_95ci': 90, 'none (no basis: nothing measured)': 1, 'platform_spread': 1, 'quantization': 1, 'reference_error': 91, 'roundoff': 293, 'step_quantization': 1, 'step_sequence': 2, 'truncation_bound': 99}.",
+ "numerical_result": "1054 findings, 710 numerical (value contains a number); 710 declare a per-finding uncertainty, 0 measured ones do not, and 0 record an unestablished claim with no basis (nothing measured); kinds {'collision_bound': 1, 'exact': 64, 'fit': 18, 'fit_residual': 3, 'fit_spread': 17, 'grid_resolution': 1, 'method_error': 1, 'model_truncation': 5, 'monte_carlo_95ci': 90, 'platform_spread': 1, 'quantization': 1, 'reference_error': 87, 'roundoff': 319, 'step_quantization': 1, 'step_sequence': 2, 'truncation_bound': 99}.",
  "observation_model": "No physical observation; reads retained computational records only.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -134,15 +134,17 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/research_portfolio.py": "145b8ee8456e1dd57bf2a05fa20e1ce55bd33356522436d8901eb1adfb60fc7a"
+   "src/ciw/lab/research_portfolio.py": "36d03762abf5cb7a900d4572ec3f8aa8e7bc55cb61331711dce910a334b3acf8"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "None open in this listing: every measured numerical finding declares an uncertainty. Deferred research question: combine per-quantity components into budgets where one predicted quantity has several sources, in the form T140 uses.",
- "report_id": "sha256:078300771cae28c034a366a59aff10ca4b2f0bef914d0b2655367ad6414c9d8f",
+ "report_id": "sha256:bff19814a8fadfdefa1ca8916cc4c64378da2298af615e3adf72716d69d9fb52",
  "schema": "ciw.lab-task-report.v1",
  "section": "research-portfolio",
  "state": "completed",
@@ -163,7 +165,6 @@
  "unresolved_assumptions": [
   "Components are listed per finding and not combined across findings: the findings of one task measure different quantities in different units, so a root-sum-square across them has no meaning. Budgets of one quantity's components are declared inside the findings of T140 (an uncertainty budget per quantity) and are listed as their values declare them.",
   "A numerical finding whose basis declares no component is a record of an unestablished claim, not a measurement; it is listed with its value but not counted as a measured finding without uncertainty.",
-  "Findings of T160-T168 run after this table; the section's regression test asserts that each numerical one declares an uncertainty.",
-  "1 numerical findings record an unestablished claim with no basis: T099: The SP1 proved-heat locked build was not attempted"
+  "Findings of T160-T168 run after this table; the section's regression test asserts that each numerical one declares an uncertainty."
  ]
 }

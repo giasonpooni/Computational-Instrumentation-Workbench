@@ -324,16 +324,18 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/exchange_provenance.py": "0871a5e3e3a27b365a326036c869338b11e5aa3bc4af3ca60db29e81bedbba36",
+   "src/ciw/lab/exchange_provenance.py": "6c5c6d9b49043664ad9cea8f4bc2ff5d9fc367aea6194e2e7608c98bfd5c54f4",
    "src/ciw/lab/exchange_provenance_common.py": "17ab892e3f285ac475b44c240155acf45f8bbdbefca28a345980aba548c6d1a9"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: do Unicode escape variants of the same JSON text (\\u0041 versus A, escaped versus literal non-ASCII characters) retain distinct bytes and source identities under one label, as the eight whitespace and spelling variants do, and should the BOM refusal name the source bytes rather than a bound runtime (a CIW message change, reported and not made here)?",
- "report_id": "sha256:884134a472f338fd1f1ee7d014a5f5f4bf32ce8ff71ada466b6e8a0f70ded0a2",
+ "report_id": "sha256:b348a3d698d75b8cd50e0b9ea94cb3ebfb6cba6d6e9c99b7576a08d492010eee",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "completed",
@@ -353,11 +355,10 @@
   "check: A partial int-for-float rewrite of one copy of the solver settings is refused by CIW's cross-field solver check vs first '1.0,' (runtime.workload.solver_settings) rewritten as '1,': source.add refusal",
   "check: A UTF-8 byte-order-mark variant with equal content is refused vs BOM-prefixed baseline: source.add refusal",
   "pytest: tests/test_lab_exchange_provenance.py::test_whitespace_variants",
-  "pytest: tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work"
+  "pytest: tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work",
+  "pytest: tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply"
  ],
- "tests_skipped": [
-  "pytest: tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply (skipped)"
- ],
+ "tests_skipped": [],
  "title": "Test whitespace-preserving evidence retention.",
  "uncertainty": "Exact equality of digests; the variant set samples whitespace, order and float spelling but not every lexical freedom JSON allows (for example escaped string characters).",
  "unresolved_assumptions": [

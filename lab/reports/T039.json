@@ -480,17 +480,19 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/surfaces_discrete_mesh.py": "bd83d5f82c82c46a746fe77b3877a010e998d1ef219a90a2dc01bbf7f3c82455",
-   "src/ciw/lab/surfaces_discrete_mesh_geometry.py": "b14d56fae8413d78853e96be27a1f11eac369afa0b7a3dbb53bc821511ba4d97",
-   "src/ciw/lab/surfaces_discrete_mesh_studies.py": "618ea9848e8b750e333f81a395a7544c8b5127e53f4aae27d59b4f27e9967dfa"
+   "src/ciw/lab/surfaces_discrete_mesh.py": "6d6f03cf6afcc2ecbdce3da635c4c38b96a3c77c0a6209c510b589b009c10c3b",
+   "src/ciw/lab/surfaces_discrete_mesh_geometry.py": "eb8124863335556f8aaa6f47f599a137f5925ef9210b5d7878bb8c7416a4dad3",
+   "src/ciw/lab/surfaces_discrete_mesh_studies.py": "1d274cab4fa8572f2304e3bff48b546936762ba151732df04f6bbae949f85086"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: measure the heat-method convergence rate for time steps t = m h^2 over a range of m (only m = 1, as Crane et al. recommend, is used here) and the endpoint-error order for geodesic directions sampled over their angle to the lattice rows, on which the retained empirical order depends.",
- "report_id": "sha256:33fa15fbb436f3de868f37b0543cfe88131053b130171e90d0b3618ffde9e037",
+ "report_id": "sha256:c7aa6b235a8dbde05d959c24ee245bfab18f6445d2ce0ec0ea9a76d521da17f6",
  "schema": "ciw.lab-task-report.v1",
  "section": "surfaces-discrete",
  "state": "completed",

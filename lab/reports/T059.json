@@ -673,10 +673,12 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/observation.py": "ef75c3ea4cad06bcbc68592440b3d55a92786a729d5a731b87ece207511ddffb",
+   "src/ciw/lab/observation.py": "2a6812aa800277efdf1243187221123c8c7d15df4b298371e07f87f756e2a461",
    "src/ciw/lab/observation_modes.py": "14fcc803e9543fa4a6891775dfac6633ca15ade648e6125e2f71fde4c4201c90",
    "src/ciw/lab/sensor_fusion_bench.py": "f373849a4c6836fa20685c59ce7a6fe6bf732f6df9d6a49646cdc017262dd656",
    "src/ciw/lab/sensor_fusion_intake.py": "e8919ac1c921ec4c8e21e80924b493bfa4773071492a6c33a17a4c9990d1cde2",
@@ -685,7 +687,7 @@
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: record who or what decided each ledger admission (an operator review record bound to the observation digest) and refuse fusion of an admission without one; today the decision is a declared free-text string, so the ledger shows that a record was admitted but not on whose review.",
- "report_id": "sha256:6380663ba3bc3bdc694182d87d0be61bf7edce048462068934afad1280e145df",
+ "report_id": "sha256:94daa4c0d519977eec0efa77ace96152910b8bbabda001b7c2d269b11f9ca302",
  "schema": "ciw.lab-task-report.v1",
  "section": "observation",
  "state": "completed",

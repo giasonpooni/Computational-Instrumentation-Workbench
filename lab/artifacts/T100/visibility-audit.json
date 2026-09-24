@@ -514,7 +514,7 @@
   },
   {
    "declared_sources": [],
-   "findings": 11,
+   "findings": 13,
    "labels": [
     "not_established",
     "numerically_verified"
@@ -538,7 +538,7 @@
    "declared_sources": [
     "synthetic_inputs"
    ],
-   "findings": 7,
+   "findings": 18,
    "labels": [
     "independently_verified",
     "not_established",
@@ -1232,7 +1232,7 @@
   },
   {
    "declared_sources": [],
-   "findings": 6,
+   "findings": 7,
    "labels": [
     "not_established",
     "numerically_verified"
@@ -1298,11 +1298,12 @@
    "declared_sources": [
     "provider"
    ],
-   "findings": 5,
+   "findings": 10,
    "labels": [
     "independently_verified",
     "not_established",
-    "numerically_verified"
+    "numerically_verified",
+    "provider_backed"
    ],
    "physical_or_authority": 1,
    "pipe_claims": 0,

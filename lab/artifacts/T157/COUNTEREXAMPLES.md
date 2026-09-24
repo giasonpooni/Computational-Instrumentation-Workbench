@@ -314,17 +314,17 @@ Generated from retained lab reports. Each entry refutes the quoted general state
 - Evidence status: `numerically_verified`
 - Witness: `{"log10_delta_0.1_atlas_error": -7.246, "log10_delta_0.1_single_error": -5.141, "log10_delta_failed[0]": -2, "log10_delta_failed[1]": -3 …(+2)}`
 
-## T036: Single-chart integration exactly through a coordinate pole always fails
+## T036: Fixed-step integration in a single polar chart across its pole always fails
 
-- Finding: At 400 RK4 steps chart A alone crosses both poles on the exact meridian to within 1e-10
+- Finding: From a declared angular-momentum seed of 1e-12, chart A alone crosses both poles of the meridian at 400 RK4 steps to within 1e-6
 - Evidence status: `numerically_verified`
-- Witness: `{"log10_error": -13.13, "steps": 400}`
+- Witness: `{"error": 1.03344e-07, "seed": 1e-12, "steps": 400}`
 
 ## T036: A single-chart integration that crosses a pole accurately at one step count stays accurate at nearby step counts
 
-- Finding: On the exact meridian chart A alone fails or loses accuracy whenever a step point lands within 1e-4 of a pole (350 to 450 RK4 steps)
+- Finding: Across declared seeds from 1e-15 to 1e-10, chart A alone fails on the meridian whenever an RK4 stage point lands within 0.9 d* of a pole and never beyond 1.5 d*, d* = (L0 h^4)^(1/5), but no single multiple of d* separates the outcomes at every seed (350 to 450 RK4 steps at 1e-12, the step counts within 2 d* at the other half-decade seeds)
 - Evidence status: `numerically_verified`
-- Witness: `{"log10_error_at_399": -6.508, "log10_error_at_400": -13.13, "failed_steps[0]": 355, "steps_near_pole[0]": 355 …(+4)}`
+- Witness: `{"error_at_400": 1.03344e-07, "failed_steps[0]": 355, "failed_steps[1]": 377, "failed_steps[2]": 399 …(+2)}`
 
 ## T037: The scan detects every coordinate singularity, that is every det g -> 0 or cond g -> infinity at finite distance with bounded K
 
@@ -361,6 +361,12 @@ Generated from retained lab reports. Each entry refutes the quoted general state
 - Finding: Cartesian loops around the sphere pole in the polar chart make a coordinate singularity read as a conical point
 - Evidence status: `numerically_verified`
 - Witness: `{"cartesian_loops": "conical_singularity", "point": "sphere north pole, chart A", "polar_loops": "coordinate_singularity"}`
+
+## T038: A straightest geodesic shorter than pi on a mesh inscribed in the unit sphere is a shortest path between its endpoints
+
+- Finding: Traced straightest geodesics are never shorter than the exact distance between their endpoints, yet on every icosphere level 1-4 some of length 2 (below pi) are not shortest paths, by an excess that falls with refinement
+- Evidence status: `numerically_verified`
+- Witness: `{"exact": 1.9999625298889687, "excess": 3.747011103172326e-05, "level": 4, "start": 1 …(+1)}`
 
 ## T039: Edge-graph shortest paths converge to the geodesic distance under mesh refinement
 
@@ -984,13 +990,13 @@ Generated from retained lab reports. Each entry refutes the quoted general state
 
 - Finding: At required_margin 0 near-boundary spectra within two resolutions of zero receive CERTIFIED_WITH_MARGIN, and every such certificate is exactly sound
 - Evidence status: `numerically_verified`
-- Witness: `{"case": 3, "code_at_required_margin_0": "CERTIFIED_WITH_MARGIN", "exact_bin": "[-2, -1) res", "exact_class": "negative_definite" …(+12)}`
+- Witness: `{"case": 3, "code_at_required_margin_0": "CERTIFIED_WITH_MARGIN", "exact_bin": "[-2, -1) res", "exact_class": "negative_definite" …(+14)}`
 
 ## T109: PLSR's solve_lyapunov refuses only plants for which no valid quadratic certificate is available in float64
 
 - Finding: solve_lyapunov refuses an exactly Hurwitz plant for which an exactly valid quadratic certificate exists and PLSR's own verdict certifies it
 - Evidence status: `numerically_verified`
-- Witness: `{"certificate": "scipy.linalg.solve_continuous_lyapunov@1.16.2", "certificate_condition": 496874100465.51154, "name": "Jordan n=4, lambda=2^-6", "solver_error": "Lyapunov residual 5.875e-04 exceeds tolerance 1.000e-06 …" …(+1)}`
+- Witness: `{"certificate": "scipy.linalg.solve_continuous_lyapunov@1.16.2", "certificate_condition": 496874100465.51154, "name": "Jordan n=4, lambda=2^-6", "solver_gate": "Lyapunov residual" …(+1)}`
 
 ## T111: A negative sampled scalar decrease at every tested state implies a negative definite decrease form
 

@@ -365,23 +365,23 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 76938,
+   "bytes": 78905,
    "path": "artifacts/T144/import-graph.json",
-   "sha256": "e9da29bbf73507057f10ebc9fdb9859a38f17a9e6319632541857807676aae28"
+   "sha256": "674cb362e928084ee79de1e8103be5150b09170dad2d35407deb49cba02da637"
   },
   {
-   "bytes": 2619,
+   "bytes": 2679,
    "path": "artifacts/T144/architecture-scan.json",
-   "sha256": "e81342346808134e329c5a007c46dd00f8f692b36f0cf7016b4f7f5af00d62bb"
+   "sha256": "b97268f0f247142500c5941f142336af696c187e0bba97b08707817cbff3cc8b"
   }
  ],
  "hypothesis": "The evidence and identity layer (ciw.lab.evidence, ciw.lab.report, ciw.core.identities, their ciw imports and the packages whose __init__ runs when they are imported) is pure standard-library Python; process spawns use argument vectors without a shell; native loading is confined to declared hardware probes. Whether spawned providers are pinned is not decidable from source and is tested only by a heuristic plus counterexample search.",
  "input_data": [
-  "143 parsed modules of the installed ciw package (source text only, not imported); package digest in the provider/runtime identity"
+  "146 parsed modules of the installed ciw package (source text only, not imported); package digest in the provider/runtime identity"
  ],
  "mathematical_model": "Directed import graph over parsed modules; transitive closure from the evidence roots, adding each visited module's ancestor packages (Python executes their __init__ first); structural rules {closure stdlib-only, no native/spawn in closure, native loading within allowlist, no shell (shell=True, os.system/popen, asyncio.create_subprocess_shell), no compiled extensions}; heuristic rule: a spawning module names an identity token in identifiers or non-docstring strings.",
  "number": 144,
- "numerical_result": "Evidence closure ['ciw', 'ciw.core', 'ciw.core.identities', 'ciw.lab', 'ciw.lab.evidence', 'ciw.lab.report']; 0 structural and 0 heuristic violations over 143 modules; 10 spawning modules, 4 of them PATH-resolved; 11/11 forged mutations detected.",
+ "numerical_result": "Evidence closure ['ciw', 'ciw.core', 'ciw.core.identities', 'ciw.lab', 'ciw.lab.evidence', 'ciw.lab.report']; 0 structural and 0 heuristic violations over 146 modules; 10 spawning modules, 4 of them PATH-resolved; 11/11 forged mutations detected.",
  "observation_model": "Static source analysis with ast; nothing from the scanned modules is imported or executed.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -392,18 +392,20 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
-  "scanned_files": 143,
-  "scanned_package_sha256": "bd2ecfd61676c5b6e1c5586c49dddc9b286cde6bacc02a1bf681efc5d63a97d0",
+  "scanned_files": 146,
+  "scanned_package_sha256": "4b7df3616b8ad18f88bafd98a7a867b987d02d2b2561500440b7d5b7fa63f7c5",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/implementation_targets.py": "0ea1ac76f50f1c65b47155a6791a0ea74c3ebf57d0b254a4a6615dabb930b5e7",
-   "src/ciw/lab/implementation_targets_architecture.py": "3c0ba23187cae208b492ff7adbceba135e2d7e071c6a4c978bbe5e3b2ac0ad62"
+   "src/ciw/lab/implementation_targets.py": "146ab24ea35b8e6fc4883e3f7d872e70dbf7b719e85d881d31865e4f8201f30d",
+   "src/ciw/lab/implementation_targets_architecture.py": "a50c1efad35ec18f5307d48a9fe2243df6707ab8a494fdf2cb46f8459a2ebcca"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Pin the Rust probe and other PATH-resolved tools against expected identities (a resolved rustc is recorded by version and binary digest, not checked against a pin)",
- "report_id": "sha256:7899baa10f9faa2842df011481d680a173ae28acf2a42bce6b53de709591c395",
+ "report_id": "sha256:ba5d709de3e169f208ee3f536e16d5951972f330b04698e835ad8aaf440042a0",
  "schema": "ciw.lab-task-report.v1",
  "section": "implementation-targets",
  "state": "completed",
@@ -434,6 +436,6 @@
  "uncertainty": "Static scan: dynamic imports, exec, importlib and spawns through third-party libraries are not seen; the identity-token rule shows that a name appears in code, not that the spawned binary is pinned.",
  "unresolved_assumptions": [
   "Modules added concurrently by other sections are scanned as found at run time (identified by the package digest)",
-  "Hardware energy probes (ciw.energy_cuda, ciw.energy_nvml) load drivers in-process by declared exception"
+  "Hardware probes load native code in-process by declared exception: the energy probes (ciw.energy_cuda, ciw.energy_nvml) load drivers, and ciw.lab.blas_probe opens the OpenBLAS NumPy already loaded, through ctypes, only to read which kernel it runs"
  ]
 }

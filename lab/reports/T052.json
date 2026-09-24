@@ -312,16 +312,18 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/observation.py": "ef75c3ea4cad06bcbc68592440b3d55a92786a729d5a731b87ece207511ddffb",
+   "src/ciw/lab/observation.py": "2a6812aa800277efdf1243187221123c8c7d15df4b298371e07f87f756e2a461",
    "src/ciw/lab/observation_signals.py": "19e94cb28160a07e5a285b5a4acd76e3820deb37ee5ed180f5c7bf1975a56793"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: estimate encoder scale, bias and backlash jointly against a reference instrument that has its own declared noise (errors in variables), and report whether backlash stays identifiable from direction reversals; this task assumes the reference position is exact.",
- "report_id": "sha256:d5ae33ffde4dedb6f7318adb58d90934dfc397ad85d07075ba9ed0779452a02d",
+ "report_id": "sha256:2ae52f66eb5a362e72fe6c6137858920a8e2f8b1712790ee7fee6935912adf4f",
  "schema": "ciw.lab-task-report.v1",
  "section": "observation",
  "state": "completed",

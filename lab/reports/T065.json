@@ -305,6 +305,8 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
@@ -316,7 +318,7 @@
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: the transient (time-varying) cross-covariance between successive estimates from initialization to steady state, and its size under a mismatched q where the innovations are no longer white; this task analyses only the steady state under the exact model.",
- "report_id": "sha256:be7dd287da074d219ab48430aaea9f0f302c77509588c0d06f2d6069a089d3ff",
+ "report_id": "sha256:8bf5d494dc60f162d28f000ee5842e24a6189744bbd0039e222d2f3f3bd68056",
  "schema": "ciw.lab-task-report.v1",
  "section": "sensor-fusion",
  "state": "completed",

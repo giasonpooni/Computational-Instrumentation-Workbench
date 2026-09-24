@@ -303,16 +303,18 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/exchange_provenance.py": "0871a5e3e3a27b365a326036c869338b11e5aa3bc4af3ca60db29e81bedbba36",
+   "src/ciw/lab/exchange_provenance.py": "6c5c6d9b49043664ad9cea8f4bc2ff5d9fc367aea6194e2e7608c98bfd5c54f4",
    "src/ciw/lab/exchange_provenance_common.py": "17ab892e3f285ac475b44c240155acf45f8bbdbefca28a345980aba548c6d1a9"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question (CIW change): refuse undeclared keys in sealed oscillator records (a closed key set needs no key) and re-run to check that oscillator-subject.injected, oscillator-method.injected, oscillator-independent.injected and oscillator-admission.injected are refused on reopen.",
- "report_id": "sha256:3cac874ea4637c8d937c0a1ac91938609f9515e68183a6f0702de9a852fd15bc",
+ "report_id": "sha256:a8e2e7b6bcd10d43c36029fcc6a54d2d764f6dc3e23a9c5a3ab632a13663cd1a",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "completed",
@@ -330,11 +332,10 @@
   "check: Surviving mutant oscillator-subject.injected: a sealed result carrying an injected verification subject naming its sibling result reopens vs reopened result.get returns the injected subject_ref beside verification_status not_verified (0 = shown)",
   "check: The verification subject moves with the receipt source: T084's surviving mutant receipt-source.sibling-execution rebinds both to a sibling execution and reopens vs T084 sibling-execution row accepted with subject and source both naming the sibling (0 = observed)",
   "pytest: tests/test_lab_exchange_provenance.py::test_verification_mutations",
-  "pytest: tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work"
+  "pytest: tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work",
+  "pytest: tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply"
  ],
- "tests_skipped": [
-  "pytest: tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply (skipped)"
- ],
+ "tests_skipped": [],
  "title": "Mutate verification subject.",
  "uncertainty": "Outcomes are exact (accepted or a refusal message). Only kill/survive is a prediction; refusal messages are regression pins recorded from observed runs. Survivors are demonstrated forgeries; kills show only that these particular edits are detected, not that every edit of this field is.",
  "unresolved_assumptions": [

@@ -734,6 +734,8 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
@@ -743,7 +745,7 @@
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: sample genericity on the torus: fit the chord exponent at s* and the 1/|s - s*| divergence slope over a seeded sample of torus geodesics (one generic path now) and for lateral perturbation families, which are not fitted on the torus here",
- "report_id": "sha256:b384e7f9eed7d958cb032a0bbeea2a42cce6ce54f8eff5570f5bf522c5339d66",
+ "report_id": "sha256:5de900415a1883415d9489ede30aa3445db7b250fd140072e86942a9ca8a29b4",
  "schema": "ciw.lab-task-report.v1",
  "section": "geodesic-jacobi",
  "state": "completed",

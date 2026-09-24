@@ -21,8 +21,14 @@
   "task_id": "T001",
   "tied": [
    "tests/test_lab_geodesic_jacobi.py::test_t001_symbolic_derivations_match_surfaces",
+   "tests/test_lab_geodesic_jacobi.py::test_t001_without_sympy_is_partial",
+   "tests/test_lab_geodesic_jacobi.py::test_every_next_step_is_a_deferred_research_question"
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_geodesic_jacobi.py::test_t001_symbolic_derivations_match_surfaces",
    "tests/test_lab_geodesic_jacobi.py::test_t001_without_sympy_is_partial"
-  ]
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -44,8 +50,14 @@
   "task_id": "T002",
   "tied": [
    "tests/test_lab_geodesic_jacobi.py::test_t002_references_agree",
+   "tests/test_lab_geodesic_jacobi.py::test_t002_without_optional_modules",
+   "tests/test_lab_geodesic_jacobi.py::test_every_next_step_is_a_deferred_research_question"
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_geodesic_jacobi.py::test_t002_references_agree",
    "tests/test_lab_geodesic_jacobi.py::test_t002_without_optional_modules"
-  ]
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -66,8 +78,13 @@
   "state": "completed",
   "task_id": "T003",
   "tied": [
+   "tests/test_lab_geodesic_jacobi.py::test_t003_integrator_orders",
+   "tests/test_lab_geodesic_jacobi.py::test_every_next_step_is_a_deferred_research_question"
+  ],
+  "tied_naming_the_task": [
    "tests/test_lab_geodesic_jacobi.py::test_t003_integrator_orders"
-  ]
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -88,8 +105,13 @@
   "state": "completed",
   "task_id": "T004",
   "tied": [
+   "tests/test_lab_geodesic_jacobi.py::test_t004_speed_drift_and_no_renormalization",
+   "tests/test_lab_geodesic_jacobi.py::test_every_next_step_is_a_deferred_research_question"
+  ],
+  "tied_naming_the_task": [
    "tests/test_lab_geodesic_jacobi.py::test_t004_speed_drift_and_no_renormalization"
-  ]
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -121,7 +143,15 @@
    "tests/test_lab_geodesic_jacobi.py::test_csg_checkout_refusals",
    "tests/test_lab_geodesic_jacobi.py::test_csg_execution_refusals_are_expected_from_their_stage",
    "tests/test_lab_geodesic_jacobi.py::test_every_next_step_is_a_deferred_research_question"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_geodesic_jacobi.py::test_t005_separation_law",
+   "tests/test_lab_geodesic_jacobi.py::test_t005_csg_provider_agreement",
+   "tests/test_lab_geodesic_jacobi.py::test_csg_checkout_refusals",
+   "tests/test_lab_geodesic_jacobi.py::test_csg_execution_refusals_are_expected_from_their_stage",
+   "tests/test_lab_geodesic_jacobi.py::test_every_next_step_is_a_deferred_research_question"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -142,8 +172,13 @@
   "state": "completed",
   "task_id": "T006",
   "tied": [
+   "tests/test_lab_geodesic_jacobi.py::test_t006_finite_differences",
+   "tests/test_lab_geodesic_jacobi.py::test_every_next_step_is_a_deferred_research_question"
+  ],
+  "tied_naming_the_task": [
    "tests/test_lab_geodesic_jacobi.py::test_t006_finite_differences"
-  ]
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -164,8 +199,13 @@
   "state": "completed",
   "task_id": "T007",
   "tied": [
+   "tests/test_lab_geodesic_jacobi.py::test_t007_determinant",
+   "tests/test_lab_geodesic_jacobi.py::test_every_next_step_is_a_deferred_research_question"
+  ],
+  "tied_naming_the_task": [
    "tests/test_lab_geodesic_jacobi.py::test_t007_determinant"
-  ]
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -194,8 +234,16 @@
   "tied": [
    "tests/test_lab_geodesic_jacobi.py::test_t008_conjugate_and_focal_points",
    "tests/test_lab_geodesic_jacobi.py::test_t008_missing_witness_is_recorded_not_raised",
+   "tests/test_lab_geodesic_jacobi.py::test_csg_checkout_refusals",
+   "tests/test_lab_geodesic_jacobi.py::test_csg_execution_refusals_are_expected_from_their_stage",
+   "tests/test_lab_geodesic_jacobi.py::test_every_next_step_is_a_deferred_research_question"
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_geodesic_jacobi.py::test_t008_conjugate_and_focal_points",
+   "tests/test_lab_geodesic_jacobi.py::test_t008_missing_witness_is_recorded_not_raised",
    "tests/test_lab_geodesic_jacobi.py::test_csg_checkout_refusals"
-  ]
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -214,8 +262,13 @@
   "state": "completed",
   "task_id": "T009",
   "tied": [
+   "tests/test_lab_geodesic_jacobi.py::test_t009_columns_rank_paths_differently",
+   "tests/test_lab_geodesic_jacobi.py::test_every_next_step_is_a_deferred_research_question"
+  ],
+  "tied_naming_the_task": [
    "tests/test_lab_geodesic_jacobi.py::test_t009_columns_rank_paths_differently"
-  ]
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -232,8 +285,14 @@
   "state": "completed",
   "task_id": "T010",
   "tied": [
-   "tests/test_lab_geodesic_jacobi_limits.py::test_t010_near_focus_and_post_focus_counterexamples"
-  ]
+   "tests/test_lab_geodesic_jacobi_limits.py::test_t010_near_focus_and_post_focus_counterexamples",
+   "tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work"
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_geodesic_jacobi_limits.py::test_t010_near_focus_and_post_focus_counterexamples",
+   "tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -250,8 +309,14 @@
   "state": "completed",
   "task_id": "T011",
   "tied": [
-   "tests/test_lab_geodesic_jacobi_limits.py::test_t011_chart_invariance_and_fold_amplification"
-  ]
+   "tests/test_lab_geodesic_jacobi_limits.py::test_t011_chart_invariance_and_fold_amplification",
+   "tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work"
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_geodesic_jacobi_limits.py::test_t011_chart_invariance_and_fold_amplification",
+   "tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -266,8 +331,14 @@
   "state": "completed",
   "task_id": "T012",
   "tied": [
-   "tests/test_lab_geodesic_jacobi_limits.py::test_t012_frame_invariance_and_refusal"
-  ]
+   "tests/test_lab_geodesic_jacobi_limits.py::test_t012_frame_invariance_and_refusal",
+   "tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work"
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_geodesic_jacobi_limits.py::test_t012_frame_invariance_and_refusal",
+   "tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -282,8 +353,14 @@
   "state": "completed",
   "task_id": "T013",
   "tied": [
-   "tests/test_lab_geodesic_jacobi_limits.py::test_t013_flat_limit"
-  ]
+   "tests/test_lab_geodesic_jacobi_limits.py::test_t013_flat_limit",
+   "tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work"
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_geodesic_jacobi_limits.py::test_t013_flat_limit",
+   "tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -300,8 +377,14 @@
   "state": "completed",
   "task_id": "T014",
   "tied": [
-   "tests/test_lab_geodesic_jacobi_limits.py::test_t014_reversal_and_truncation"
-  ]
+   "tests/test_lab_geodesic_jacobi_limits.py::test_t014_reversal_and_truncation",
+   "tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work"
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_geodesic_jacobi_limits.py::test_t014_reversal_and_truncation",
+   "tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -316,8 +399,14 @@
   "state": "completed",
   "task_id": "T015",
   "tied": [
-   "tests/test_lab_geodesic_jacobi_limits.py::test_t015_long_horizon_drift"
-  ]
+   "tests/test_lab_geodesic_jacobi_limits.py::test_t015_long_horizon_drift",
+   "tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work"
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_geodesic_jacobi_limits.py::test_t015_long_horizon_drift",
+   "tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -331,7 +420,15 @@
   ],
   "state": "completed",
   "task_id": "T016",
-  "tied": []
+  "tied": [
+   "tests/test_lab_geodesic_jacobi_limits.py::test_t016_negative_curvature_is_not_stiffness",
+   "tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work"
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_geodesic_jacobi_limits.py::test_t016_negative_curvature_is_not_stiffness",
+   "tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -348,8 +445,14 @@
   "state": "completed",
   "task_id": "T017",
   "tied": [
-   "tests/test_lab_geodesic_jacobi_limits.py::test_t017_validity_domains"
-  ]
+   "tests/test_lab_geodesic_jacobi_limits.py::test_t017_validity_domains",
+   "tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work"
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_geodesic_jacobi_limits.py::test_t017_validity_domains",
+   "tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -366,8 +469,14 @@
   "state": "completed",
   "task_id": "T018",
   "tied": [
-   "tests/test_lab_geodesic_jacobi_limits.py::test_t018_resolvability_report"
-  ]
+   "tests/test_lab_geodesic_jacobi_limits.py::test_t018_resolvability_report",
+   "tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work"
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_geodesic_jacobi_limits.py::test_t018_resolvability_report",
+   "tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -398,8 +507,15 @@
   "tied": [
    "tests/test_lab_flat_torus_topology.py::test_ftr_refusal_makes_task_partial",
    "tests/test_lab_flat_torus_topology.py::test_ftr_provider_agreement",
+   "tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
    "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_flat_torus_topology.py::test_ftr_refusal_makes_task_partial",
+   "tests/test_lab_flat_torus_topology.py::test_ftr_provider_agreement",
+   "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -427,7 +543,13 @@
    "tests/test_lab_flat_torus_topology.py::test_ftr_provider_agreement",
    "tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
    "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_flat_torus_topology.py::test_ftr_provider_agreement",
+   "tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
+   "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -450,7 +572,12 @@
   "tied": [
    "tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
    "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
+   "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -471,8 +598,13 @@
   "state": "completed",
   "task_id": "T022",
   "tied": [
+   "tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
    "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -491,8 +623,13 @@
   "state": "completed",
   "task_id": "T023",
   "tied": [
+   "tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
    "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -519,9 +656,17 @@
   "state": "completed",
   "task_id": "T024",
   "tied": [
+   "tests/test_lab_flat_torus_topology.py::test_route_helpers",
+   "tests/test_lab_flat_torus_topology.py::test_independent_disagreement_makes_t024_partial_not_blocked",
+   "tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
+   "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_flat_torus_topology.py::test_route_helpers",
    "tests/test_lab_flat_torus_topology.py::test_independent_disagreement_makes_t024_partial_not_blocked",
    "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
-  ]
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -544,8 +689,14 @@
   "state": "completed",
   "task_id": "T025",
   "tied": [
+   "tests/test_lab_flat_torus_topology.py::test_route_helpers",
+   "tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
    "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -571,8 +722,14 @@
   "task_id": "T026",
   "tied": [
    "tests/test_lab_flat_torus_topology.py::test_ftr_provider_agreement",
+   "tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
    "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_flat_torus_topology.py::test_ftr_provider_agreement",
+   "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -595,8 +752,13 @@
   "state": "completed",
   "task_id": "T027",
   "tied": [
+   "tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
    "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -617,8 +779,13 @@
   "state": "completed",
   "task_id": "T028",
   "tied": [
+   "tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
    "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -642,8 +809,14 @@
   "task_id": "T029",
   "tied": [
    "tests/test_lab_flat_torus_topology.py::test_gauss_bonnet_check_detects_wrong_vertex_classes",
+   "tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
    "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_flat_torus_topology.py::test_gauss_bonnet_check_detects_wrong_vertex_classes",
+   "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -663,8 +836,14 @@
   "task_id": "T030",
   "tied": [
    "tests/test_lab_flat_torus_topology.py::test_t030_grid_metrication",
+   "tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
    "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_flat_torus_topology.py::test_t030_grid_metrication",
+   "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -685,8 +864,13 @@
   "state": "completed",
   "task_id": "T031",
   "tied": [
+   "tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
    "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -711,8 +895,14 @@
   "state": "completed",
   "task_id": "T032",
   "tied": [
+   "tests/test_lab_flat_torus_topology.py::test_route_helpers",
+   "tests/test_lab_flat_torus_topology.py::test_every_task_is_registered_and_completes",
    "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_flat_torus_topology.py::test_every_finding_has_its_expected_label"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -736,7 +926,11 @@
   "task_id": "T033",
   "tied": [
    "tests/test_lab_surfaces_discrete.py::test_t033_report"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_surfaces_discrete.py::test_t033_report"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -759,7 +953,12 @@
   "tied": [
    "tests/test_lab_surfaces_discrete.py::test_t034_report",
    "tests/test_lab_surfaces_discrete.py::test_t034_degrades_without_sympy"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_surfaces_discrete.py::test_t034_report",
+   "tests/test_lab_surfaces_discrete.py::test_t034_degrades_without_sympy"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -777,7 +976,11 @@
   "task_id": "T035",
   "tied": [
    "tests/test_lab_surfaces_discrete.py::test_t035_report"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_surfaces_discrete.py::test_t035_report"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -801,7 +1004,11 @@
   "task_id": "T036",
   "tied": [
    "tests/test_lab_surfaces_discrete.py::test_t036_report"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_surfaces_discrete.py::test_t036_report"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -823,13 +1030,26 @@
   "task_id": "T037",
   "tied": [
    "tests/test_lab_surfaces_discrete.py::test_t037_report"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_surfaces_discrete.py::test_t037_report"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
+   "tests/test_lab_surfaces_discrete_mesh.py::test_ciw_producers_of_t038_independent_checks_carry_a_revision": "passed",
    "tests/test_lab_surfaces_discrete_mesh.py::test_dijkstra_check_falls_back_without_scipy": "passed",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_exact_checks_fall_back_without_external_packages": "passed",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_exact_distances_agree_with_pygeodesic": "passed",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_exact_distances_match_closed_forms": "passed",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_exact_distances_on_a_perturbed_cube_agree_with_pygeodesic": "passed",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_flipout_geodesics_are_never_shorter": "passed",
    "tests/test_lab_surfaces_discrete_mesh.py::test_graph_distances_and_steiner_sandwich": "passed",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_nearly_flat_saddles_leave_no_shadow": "passed",
    "tests/test_lab_surfaces_discrete_mesh.py::test_next_steps_name_forward_work": "passed",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_paths_and_approximations_never_beat_the_exact_distance": "passed",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_point_insertion_leaves_distances_unchanged": "passed",
    "tests/test_lab_surfaces_discrete_mesh.py::test_solver_task_report": "passed",
    "tests/test_lab_surfaces_discrete_mesh.py::test_tracer_is_exact_on_developable_meshes": "passed"
   },
@@ -839,15 +1059,33 @@
    "tests/test_lab_surfaces_discrete_mesh.py::test_tracer_is_exact_on_developable_meshes",
    "tests/test_lab_surfaces_discrete_mesh.py::test_graph_distances_and_steiner_sandwich",
    "tests/test_lab_surfaces_discrete_mesh.py::test_dijkstra_check_falls_back_without_scipy",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_exact_distances_match_closed_forms",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_point_insertion_leaves_distances_unchanged",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_exact_distances_agree_with_pygeodesic",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_nearly_flat_saddles_leave_no_shadow",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_exact_distances_on_a_perturbed_cube_agree_with_pygeodesic",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_flipout_geodesics_are_never_shorter",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_paths_and_approximations_never_beat_the_exact_distance",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_exact_checks_fall_back_without_external_packages",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_ciw_producers_of_t038_independent_checks_carry_a_revision",
    "tests/test_lab_surfaces_discrete_mesh.py::test_solver_task_report"
   ],
-  "state": "partial",
+  "state": "completed",
   "task_id": "T038",
   "tied": [
    "tests/test_lab_surfaces_discrete_mesh.py::test_next_steps_name_forward_work",
    "tests/test_lab_surfaces_discrete_mesh.py::test_dijkstra_check_falls_back_without_scipy",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_exact_distances_match_closed_forms",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_exact_checks_fall_back_without_external_packages",
    "tests/test_lab_surfaces_discrete_mesh.py::test_solver_task_report"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_surfaces_discrete_mesh.py::test_next_steps_name_forward_work",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_dijkstra_check_falls_back_without_scipy",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_exact_checks_fall_back_without_external_packages",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_solver_task_report"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -866,7 +1104,12 @@
   "tied": [
    "tests/test_lab_surfaces_discrete_mesh.py::test_next_steps_name_forward_work",
    "tests/test_lab_surfaces_discrete_mesh.py::test_convergence_task_report"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_surfaces_discrete_mesh.py::test_next_steps_name_forward_work",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_convergence_task_report"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -885,7 +1128,12 @@
   "tied": [
    "tests/test_lab_surfaces_discrete_mesh.py::test_next_steps_name_forward_work",
    "tests/test_lab_surfaces_discrete_mesh.py::test_jacobi_task_report"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_surfaces_discrete_mesh.py::test_next_steps_name_forward_work",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_jacobi_task_report"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -908,7 +1156,12 @@
   "tied": [
    "tests/test_lab_surfaces_discrete_mesh.py::test_next_steps_name_forward_work",
    "tests/test_lab_surfaces_discrete_mesh.py::test_quality_task_report"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_surfaces_discrete_mesh.py::test_next_steps_name_forward_work",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_quality_task_report"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -929,7 +1182,12 @@
   "tied": [
    "tests/test_lab_surfaces_discrete_mesh.py::test_next_steps_name_forward_work",
    "tests/test_lab_surfaces_discrete_mesh.py::test_refusal_task_report"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_surfaces_discrete_mesh.py::test_next_steps_name_forward_work",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_refusal_task_report"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -957,7 +1215,13 @@
    "tests/test_lab_surfaces_discrete_mesh.py::test_next_steps_name_forward_work",
    "tests/test_lab_surfaces_discrete_mesh.py::test_uncertainty_task_report",
    "tests/test_lab_surfaces_discrete_mesh.py::test_t043_says_when_the_two_declared_strip_estimates_differ"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_surfaces_discrete_mesh.py::test_next_steps_name_forward_work",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_uncertainty_task_report",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_t043_says_when_the_two_declared_strip_estimates_differ"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -979,7 +1243,13 @@
    "tests/test_lab_surfaces_discrete_mesh.py::test_next_steps_name_forward_work",
    "tests/test_lab_surfaces_discrete_mesh.py::test_variance_split_task_report",
    "tests/test_lab_surfaces_discrete_mesh.py::test_t044_next_step_names_what_t045_leaves_open"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_surfaces_discrete_mesh.py::test_next_steps_name_forward_work",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_variance_split_task_report",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_t044_next_step_names_what_t045_leaves_open"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -996,7 +1266,12 @@
   "tied": [
    "tests/test_lab_observation.py::test_t045_modes_and_refusals",
    "tests/test_lab_observation.py::test_reconstructed_distance_carries_the_t044_split"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_observation.py::test_t045_modes_and_refusals",
+   "tests/test_lab_observation.py::test_reconstructed_distance_carries_the_t044_split"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -1013,7 +1288,12 @@
   "tied": [
    "tests/test_lab_observation.py::test_t046_chord_expansion",
    "tests/test_lab_observation.py::test_chord_derivation_degrades_without_sympy"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_observation.py::test_t046_chord_expansion",
+   "tests/test_lab_observation.py::test_chord_derivation_degrades_without_sympy"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -1030,7 +1310,12 @@
   "tied": [
    "tests/test_lab_observation.py::test_t047_cylinder_coefficient",
    "tests/test_lab_observation.py::test_chord_derivation_degrades_without_sympy"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_observation.py::test_t047_cylinder_coefficient",
+   "tests/test_lab_observation.py::test_chord_derivation_degrades_without_sympy"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -1044,7 +1329,11 @@
   "task_id": "T048",
   "tied": [
    "tests/test_lab_observation.py::test_t048_synthetic_camera"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_observation.py::test_t048_synthetic_camera"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -1058,7 +1347,11 @@
   "task_id": "T049",
   "tied": [
    "tests/test_lab_observation.py::test_t049_calibration_perturbations"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_observation.py::test_t049_calibration_perturbations"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -1075,7 +1368,12 @@
   "tied": [
    "tests/test_lab_observation.py::test_t050_lens_distortion",
    "tests/test_lab_observation.py::test_t050_perspective_markers"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_observation.py::test_t050_lens_distortion",
+   "tests/test_lab_observation.py::test_t050_perspective_markers"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -1089,7 +1387,11 @@
   "task_id": "T051",
   "tied": [
    "tests/test_lab_observation.py::test_t051_quantization_noise"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_observation.py::test_t051_quantization_noise"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -1103,7 +1405,11 @@
   "task_id": "T052",
   "tied": [
    "tests/test_lab_observation.py::test_t052_encoder_backlash"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_observation.py::test_t052_encoder_backlash"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -1117,7 +1423,11 @@
   "task_id": "T053",
   "tied": [
    "tests/test_lab_observation.py::test_t053_imu_drift"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_observation.py::test_t053_imu_drift"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -1131,7 +1441,11 @@
   "task_id": "T054",
   "tied": [
    "tests/test_lab_observation.py::test_t054_asynchronous_timestamps"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_observation.py::test_t054_asynchronous_timestamps"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -1145,7 +1459,11 @@
   "task_id": "T055",
   "tied": [
    "tests/test_lab_observation.py::test_t055_dropped_observations"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_observation.py::test_t055_dropped_observations"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -1159,7 +1477,11 @@
   "task_id": "T056",
   "tied": [
    "tests/test_lab_observation.py::test_t056_stale_observations"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_observation.py::test_t056_stale_observations"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -1173,7 +1495,11 @@
   "task_id": "T057",
   "tied": [
    "tests/test_lab_observation.py::test_t057_filter_and_smoother"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_observation.py::test_t057_filter_and_smoother"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -1192,7 +1518,12 @@
   "tied": [
    "tests/test_lab_observation.py::test_t058_frame_and_clock_basis",
    "tests/test_lab_observation.py::test_intake_maps_frames_and_clocks_or_refuses"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_observation.py::test_t058_frame_and_clock_basis",
+   "tests/test_lab_observation.py::test_intake_maps_frames_and_clocks_or_refuses"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -1219,7 +1550,14 @@
    "tests/test_lab_observation.py::test_state_store_defaults_to_read_only",
    "tests/test_lab_observation.py::test_state_update_takes_the_declared_variance",
    "tests/test_lab_observation.py::test_intake_refuses_unadmitted_records"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_observation.py::test_t059_retained_without_admission",
+   "tests/test_lab_observation.py::test_state_store_defaults_to_read_only",
+   "tests/test_lab_observation.py::test_state_update_takes_the_declared_variance",
+   "tests/test_lab_observation.py::test_intake_refuses_unadmitted_records"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -1235,7 +1573,11 @@
   "task_id": "T060",
   "tied": [
    "tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T060]"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T060]"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -1252,7 +1594,12 @@
   "tied": [
    "tests/test_lab_sensor_fusion.py::test_declared_covariance_matches_and_power_is_quantified",
    "tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T061]"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_sensor_fusion.py::test_declared_covariance_matches_and_power_is_quantified",
+   "tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T061]"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -1268,7 +1615,11 @@
   "task_id": "T062",
   "tied": [
    "tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T062]"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T062]"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -1284,7 +1635,11 @@
   "task_id": "T063",
   "tied": [
    "tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T063]"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T063]"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -1300,7 +1655,11 @@
   "task_id": "T064",
   "tied": [
    "tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T064]"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T064]"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -1316,7 +1675,11 @@
   "task_id": "T065",
   "tied": [
    "tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T065]"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T065]"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -1332,7 +1695,11 @@
   "task_id": "T066",
   "tied": [
    "tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T066]"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T066]"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -1350,7 +1717,11 @@
   "task_id": "T067",
   "tied": [
    "tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T067]"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T067]"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -1368,7 +1739,11 @@
   "task_id": "T068",
   "tied": [
    "tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T068]"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T068]"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -1384,7 +1759,11 @@
   "task_id": "T069",
   "tied": [
    "tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T069]"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T069]"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -1402,7 +1781,11 @@
   "task_id": "T070",
   "tied": [
    "tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T070]"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T070]"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -1418,7 +1801,11 @@
   "task_id": "T071",
   "tied": [
    "tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T071]"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T071]"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -1434,7 +1821,11 @@
   "task_id": "T072",
   "tied": [
    "tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T072]"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T072]"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -1452,7 +1843,11 @@
   "task_id": "T073",
   "tied": [
    "tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T073]"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T073]"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -1468,7 +1863,11 @@
   "task_id": "T074",
   "tied": [
    "tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T074]"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T074]"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -1493,7 +1892,12 @@
   "tied": [
    "tests/test_lab_sensor_fusion.py::test_observation_to_admission_pipeline_end_to_end",
    "tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T075]"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_sensor_fusion.py::test_observation_to_admission_pipeline_end_to_end",
+   "tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T075]"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -1513,13 +1917,19 @@
    "tests/test_lab_sensor_fusion.py::test_defaults_are_read_only_and_not_performed",
    "tests/test_lab_sensor_fusion.py::test_no_lab_estimator_leaves_the_admission_vocabulary",
    "tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T076]"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_sensor_fusion.py::test_defaults_are_read_only_and_not_performed",
+   "tests/test_lab_sensor_fusion.py::test_no_lab_estimator_leaves_the_admission_vocabulary",
+   "tests/test_lab_sensor_fusion.py::test_section_reports_labels_and_states[T076]"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
    "tests/test_lab_exchange_provenance.py::test_identity_matrix": "passed",
    "tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work": "passed",
-   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply": "skipped"
+   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply": "passed"
   },
   "missing": [],
   "regression_tests": [
@@ -1531,13 +1941,17 @@
   "task_id": "T077",
   "tied": [
    "tests/test_lab_exchange_provenance.py::test_identity_matrix"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_exchange_provenance.py::test_identity_matrix"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
    "tests/test_lab_exchange_provenance.py::test_exact_source_bytes": "passed",
    "tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work": "passed",
-   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply": "skipped"
+   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply": "passed"
   },
   "missing": [],
   "regression_tests": [
@@ -1549,12 +1963,16 @@
   "task_id": "T078",
   "tied": [
    "tests/test_lab_exchange_provenance.py::test_exact_source_bytes"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_exchange_provenance.py::test_exact_source_bytes"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
    "tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work": "passed",
-   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply": "skipped",
+   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply": "passed",
    "tests/test_lab_exchange_provenance.py::test_whitespace_variants": "passed"
   },
   "missing": [],
@@ -1567,13 +1985,17 @@
   "task_id": "T079",
   "tied": [
    "tests/test_lab_exchange_provenance.py::test_whitespace_variants"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_exchange_provenance.py::test_whitespace_variants"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
    "tests/test_lab_exchange_provenance.py::test_identity_separation": "passed",
    "tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work": "passed",
-   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply": "skipped"
+   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply": "passed"
   },
   "missing": [],
   "regression_tests": [
@@ -1585,13 +2007,17 @@
   "task_id": "T080",
   "tied": [
    "tests/test_lab_exchange_provenance.py::test_identity_separation"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_exchange_provenance.py::test_identity_separation"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
    "tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work": "passed",
    "tests/test_lab_exchange_provenance.py::test_numerical_identity": "passed",
-   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply": "skipped",
+   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply": "passed",
    "tests/test_lab_exchange_provenance.py::test_t081_defers_cross_platform_reproduction_as_one_question": "passed"
   },
   "missing": [],
@@ -1605,13 +2031,17 @@
   "task_id": "T081",
   "tied": [
    "tests/test_lab_exchange_provenance.py::test_numerical_identity"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_exchange_provenance.py::test_numerical_identity"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
    "tests/test_lab_exchange_provenance.py::test_fresh_occurrences": "passed",
    "tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work": "passed",
-   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply": "skipped"
+   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply": "passed"
   },
   "missing": [],
   "regression_tests": [
@@ -1623,13 +2053,17 @@
   "task_id": "T082",
   "tied": [
    "tests/test_lab_exchange_provenance.py::test_fresh_occurrences"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_exchange_provenance.py::test_fresh_occurrences"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
    "tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work": "passed",
    "tests/test_lab_exchange_provenance.py::test_replay_receipt_binding": "passed",
-   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply": "skipped"
+   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply": "passed"
   },
   "missing": [],
   "regression_tests": [
@@ -1641,13 +2075,17 @@
   "task_id": "T083",
   "tied": [
    "tests/test_lab_exchange_provenance.py::test_replay_receipt_binding"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_exchange_provenance.py::test_replay_receipt_binding"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
    "tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work": "passed",
    "tests/test_lab_exchange_provenance.py::test_receipt_digest_mutations": "passed",
-   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply": "skipped"
+   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply": "passed"
   },
   "missing": [],
   "regression_tests": [
@@ -1659,13 +2097,17 @@
   "task_id": "T084",
   "tied": [
    "tests/test_lab_exchange_provenance.py::test_receipt_digest_mutations"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_exchange_provenance.py::test_receipt_digest_mutations"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
    "tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work": "passed",
    "tests/test_lab_exchange_provenance.py::test_receipt_digest_mutations": "passed",
-   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply": "skipped"
+   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply": "passed"
   },
   "missing": [],
   "regression_tests": [
@@ -1677,12 +2119,16 @@
   "task_id": "T085",
   "tied": [
    "tests/test_lab_exchange_provenance.py::test_receipt_digest_mutations"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_exchange_provenance.py::test_receipt_digest_mutations"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
    "tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work": "passed",
-   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply": "skipped",
+   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply": "passed",
    "tests/test_lab_exchange_provenance.py::test_verification_mutations": "passed"
   },
   "missing": [],
@@ -1695,12 +2141,16 @@
   "task_id": "T086",
   "tied": [
    "tests/test_lab_exchange_provenance.py::test_verification_mutations"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_exchange_provenance.py::test_verification_mutations"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
    "tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work": "passed",
-   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply": "skipped",
+   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply": "passed",
    "tests/test_lab_exchange_provenance.py::test_verification_mutations": "passed"
   },
   "missing": [],
@@ -1713,12 +2163,16 @@
   "task_id": "T087",
   "tied": [
    "tests/test_lab_exchange_provenance.py::test_verification_mutations"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_exchange_provenance.py::test_verification_mutations"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
    "tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work": "passed",
-   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply": "skipped",
+   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply": "passed",
    "tests/test_lab_exchange_provenance.py::test_verification_mutations": "passed"
   },
   "missing": [],
@@ -1731,13 +2185,17 @@
   "task_id": "T088",
   "tied": [
    "tests/test_lab_exchange_provenance.py::test_verification_mutations"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_exchange_provenance.py::test_verification_mutations"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
    "tests/test_lab_exchange_provenance.py::test_admission_and_runtime_mutations": "passed",
    "tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work": "passed",
-   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply": "skipped"
+   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply": "passed"
   },
   "missing": [],
   "regression_tests": [
@@ -1749,13 +2207,17 @@
   "task_id": "T089",
   "tied": [
    "tests/test_lab_exchange_provenance.py::test_admission_and_runtime_mutations"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_exchange_provenance.py::test_admission_and_runtime_mutations"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
    "tests/test_lab_exchange_provenance.py::test_admission_and_runtime_mutations": "passed",
    "tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work": "passed",
-   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply": "skipped"
+   "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply": "passed"
   },
   "missing": [],
   "regression_tests": [
@@ -1767,7 +2229,11 @@
   "task_id": "T090",
   "tied": [
    "tests/test_lab_exchange_provenance.py::test_admission_and_runtime_mutations"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_exchange_provenance.py::test_admission_and_runtime_mutations"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -1783,7 +2249,11 @@
   "task_id": "T091",
   "tied": [
    "tests/test_lab_exchange_provenance_bundles.py::test_t091_reopen_needs_no_provider_and_reaches_no_execution_path"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_exchange_provenance_bundles.py::test_t091_reopen_needs_no_provider_and_reaches_no_execution_path"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -1801,7 +2271,11 @@
   "task_id": "T092",
   "tied": [
    "tests/test_lab_exchange_provenance_bundles.py::test_t092_unbound_replay_and_execution_are_refused"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_exchange_provenance_bundles.py::test_t092_unbound_replay_and_execution_are_refused"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -1815,7 +2289,11 @@
   "task_id": "T093",
   "tied": [
    "tests/test_lab_exchange_provenance_bundles.py::test_t093_refusals_leave_workspace_and_state_unchanged"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_exchange_provenance_bundles.py::test_t093_refusals_leave_workspace_and_state_unchanged"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -1831,7 +2309,11 @@
   "task_id": "T094",
   "tied": [
    "tests/test_lab_exchange_provenance_bundles.py::test_t094_golden_workspaces_reopen_with_current_code"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_exchange_provenance_bundles.py::test_t094_golden_workspaces_reopen_with_current_code"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -1847,7 +2329,11 @@
   "task_id": "T095",
   "tied": [
    "tests/test_lab_exchange_provenance_bundles.py::test_t095_malformed_fixtures_are_refused_with_retained_text"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_exchange_provenance_bundles.py::test_t095_malformed_fixtures_are_refused_with_retained_text"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -1861,7 +2347,11 @@
   "task_id": "T096",
   "tied": [
    "tests/test_lab_exchange_provenance_bundles.py::test_t096_provider_free_conformance"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_exchange_provenance_bundles.py::test_t096_provider_free_conformance"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -1886,7 +2376,14 @@
    "tests/test_lab_exchange_provenance_bundles.py::test_t097_is_blocked_without_scr",
    "tests/test_lab_exchange_provenance_bundles.py::test_t097_keeps_set_results_when_the_engine_is_missing",
    "tests/test_lab_exchange_provenance_bundles.py::test_t097_names_each_executed_provider_beside_its_label"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_exchange_provenance_bundles.py::test_t097_scr_numerical_heat_integration",
+   "tests/test_lab_exchange_provenance_bundles.py::test_t097_is_blocked_without_scr",
+   "tests/test_lab_exchange_provenance_bundles.py::test_t097_keeps_set_results_when_the_engine_is_missing",
+   "tests/test_lab_exchange_provenance_bundles.py::test_t097_names_each_executed_provider_beside_its_label"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -1904,27 +2401,62 @@
   "task_id": "T098",
   "tied": [
    "tests/test_lab_exchange_provenance_bundles.py::test_t098_provider_identities",
+   "tests/test_lab_exchange_provenance_bundles.py::test_t098_refuses_an_unpinned_checkout_and_is_location_independent",
+   "tests/test_lab_exchange_provenance_bundles.py::test_tree_recomputation_matches_git_on_a_synthetic_repository"
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_exchange_provenance_bundles.py::test_t098_provider_identities",
    "tests/test_lab_exchange_provenance_bundles.py::test_t098_refuses_an_unpinned_checkout_and_is_location_independent"
-  ]
+  ],
+  "undeclared": []
  },
  {
   "junit": {
    "tests/test_lab_exchange_provenance_bundles.py::test_t097_t099_refuse_a_non_repository_scr_binding": "passed",
    "tests/test_lab_exchange_provenance_bundles.py::test_t099_locked_offline_scr_build": "passed",
-   "tests/test_lab_exchange_provenance_bundles.py::test_t099_names_the_built_checkout_beside_its_label": "passed"
+   "tests/test_lab_exchange_provenance_bundles.py::test_t099_names_the_built_checkout_beside_its_label": "passed",
+   "tests/test_lab_proved_heat_records.py::test_t099_labels_a_valid_proved_heat_record_provider_backed": "passed",
+   "tests/test_lab_proved_heat_records.py::test_t099_rebuilds_the_gate_engine_with_the_pinned_toolchain": "passed",
+   "tests/test_lab_proved_heat_records.py::test_t099_refuses_a_tampered_proved_heat_record_by_name": "passed",
+   "tests/test_lab_proved_heat_records.py::test_t099_refutes_a_pinned_rebuild_that_differs_from_the_gate_engine": "passed",
+   "tests/test_lab_proved_heat_records.py::test_t099_without_a_record_or_the_pinned_toolchain": "passed",
+   "tests/test_lab_proved_heat_records.py::test_t099_words_the_pinned_rebuild_and_the_toolchain_observation_by_what_happened": "passed"
   },
   "missing": [],
   "regression_tests": [
    "tests/test_lab_exchange_provenance_bundles.py::test_t099_locked_offline_scr_build",
    "tests/test_lab_exchange_provenance_bundles.py::test_t097_t099_refuse_a_non_repository_scr_binding",
-   "tests/test_lab_exchange_provenance_bundles.py::test_t099_names_the_built_checkout_beside_its_label"
+   "tests/test_lab_exchange_provenance_bundles.py::test_t099_names_the_built_checkout_beside_its_label",
+   "tests/test_lab_proved_heat_records.py::test_t099_labels_a_valid_proved_heat_record_provider_backed",
+   "tests/test_lab_proved_heat_records.py::test_t099_refuses_a_tampered_proved_heat_record_by_name",
+   "tests/test_lab_proved_heat_records.py::test_t099_without_a_record_or_the_pinned_toolchain",
+   "tests/test_lab_proved_heat_records.py::test_t099_refutes_a_pinned_rebuild_that_differs_from_the_gate_engine",
+   "tests/test_lab_proved_heat_records.py::test_t099_words_the_pinned_rebuild_and_the_toolchain_observation_by_what_happened",
+   "tests/test_lab_proved_heat_records.py::test_t099_rebuilds_the_gate_engine_with_the_pinned_toolchain"
   ],
-  "state": "partial",
+  "state": "completed",
   "task_id": "T099",
   "tied": [
    "tests/test_lab_exchange_provenance_bundles.py::test_t099_locked_offline_scr_build",
-   "tests/test_lab_exchange_provenance_bundles.py::test_t099_names_the_built_checkout_beside_its_label"
-  ]
+   "tests/test_lab_exchange_provenance_bundles.py::test_t099_names_the_built_checkout_beside_its_label",
+   "tests/test_lab_proved_heat_records.py::test_t099_labels_a_valid_proved_heat_record_provider_backed",
+   "tests/test_lab_proved_heat_records.py::test_t099_refuses_a_tampered_proved_heat_record_by_name",
+   "tests/test_lab_proved_heat_records.py::test_t099_without_a_record_or_the_pinned_toolchain",
+   "tests/test_lab_proved_heat_records.py::test_t099_refutes_a_pinned_rebuild_that_differs_from_the_gate_engine",
+   "tests/test_lab_proved_heat_records.py::test_t099_words_the_pinned_rebuild_and_the_toolchain_observation_by_what_happened",
+   "tests/test_lab_proved_heat_records.py::test_t099_rebuilds_the_gate_engine_with_the_pinned_toolchain"
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_exchange_provenance_bundles.py::test_t099_locked_offline_scr_build",
+   "tests/test_lab_exchange_provenance_bundles.py::test_t099_names_the_built_checkout_beside_its_label",
+   "tests/test_lab_proved_heat_records.py::test_t099_labels_a_valid_proved_heat_record_provider_backed",
+   "tests/test_lab_proved_heat_records.py::test_t099_refuses_a_tampered_proved_heat_record_by_name",
+   "tests/test_lab_proved_heat_records.py::test_t099_without_a_record_or_the_pinned_toolchain",
+   "tests/test_lab_proved_heat_records.py::test_t099_refutes_a_pinned_rebuild_that_differs_from_the_gate_engine",
+   "tests/test_lab_proved_heat_records.py::test_t099_words_the_pinned_rebuild_and_the_toolchain_observation_by_what_happened",
+   "tests/test_lab_proved_heat_records.py::test_t099_rebuilds_the_gate_engine_with_the_pinned_toolchain"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -1956,8 +2488,18 @@
    "tests/test_lab_exchange_provenance_bundles.py::test_t100_flags_a_rendered_row_that_hides_its_generator_or_provider",
    "tests/test_lab_exchange_provenance_bundles.py::test_t100_classifier_study_separates_an_invented_tree_from_a_copied_pin",
    "tests/test_lab_exchange_provenance_bundles.py::test_t100_flags_an_unaccepted_acquisition_shown_as_hardware_acquisition",
+   "tests/test_lab_exchange_provenance_bundles.py::test_basis_audit_compares_the_whole_cell",
    "tests/test_lab_exchange_provenance_bundles.py::test_render_markdown_pipe_probe_matches_the_renderer"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_exchange_provenance_bundles.py::test_t100_labels_and_origins_stay_distinct",
+   "tests/test_lab_exchange_provenance_bundles.py::test_t100_flags_a_retained_report_whose_label_leaves_its_column",
+   "tests/test_lab_exchange_provenance_bundles.py::test_t100_flags_a_rendered_row_that_hides_its_generator_or_provider",
+   "tests/test_lab_exchange_provenance_bundles.py::test_t100_classifier_study_separates_an_invented_tree_from_a_copied_pin",
+   "tests/test_lab_exchange_provenance_bundles.py::test_t100_flags_an_unaccepted_acquisition_shown_as_hardware_acquisition",
+   "tests/test_lab_exchange_provenance_bundles.py::test_render_markdown_pipe_probe_matches_the_renderer"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -1985,8 +2527,15 @@
   "task_id": "T101",
   "tied": [
    "tests/test_lab_lyapunov.py::test_t101_resolution_floor",
+   "tests/test_lab_lyapunov.py::test_t101_threshold_is_analytic",
+   "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider",
+   "tests/test_lab_lyapunov.py::test_next_steps_name_forward_work"
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_lyapunov.py::test_t101_resolution_floor",
    "tests/test_lab_lyapunov.py::test_t101_threshold_is_analytic"
-  ]
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -2011,8 +2560,14 @@
   "state": "completed",
   "task_id": "T102",
   "tied": [
+   "tests/test_lab_lyapunov.py::test_t102_power_of_two_scaling",
+   "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider",
+   "tests/test_lab_lyapunov.py::test_next_steps_name_forward_work"
+  ],
+  "tied_naming_the_task": [
    "tests/test_lab_lyapunov.py::test_t102_power_of_two_scaling"
-  ]
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -2037,8 +2592,14 @@
   "state": "completed",
   "task_id": "T103",
   "tied": [
+   "tests/test_lab_lyapunov.py::test_t103_overflow_underflow",
+   "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider",
+   "tests/test_lab_lyapunov.py::test_next_steps_name_forward_work"
+  ],
+  "tied_naming_the_task": [
    "tests/test_lab_lyapunov.py::test_t103_overflow_underflow"
-  ]
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -2059,8 +2620,14 @@
   "state": "completed",
   "task_id": "T104",
   "tied": [
+   "tests/test_lab_lyapunov.py::test_t104_semidefinite_edges",
+   "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider",
+   "tests/test_lab_lyapunov.py::test_next_steps_name_forward_work"
+  ],
+  "tied_naming_the_task": [
    "tests/test_lab_lyapunov.py::test_t104_semidefinite_edges"
-  ]
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -2079,8 +2646,14 @@
   "state": "completed",
   "task_id": "T105",
   "tied": [
+   "tests/test_lab_lyapunov.py::test_t105_unit_scales",
+   "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider",
+   "tests/test_lab_lyapunov.py::test_next_steps_name_forward_work"
+  ],
+  "tied_naming_the_task": [
    "tests/test_lab_lyapunov.py::test_t105_unit_scales"
-  ]
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -2106,11 +2679,20 @@
   "task_id": "T106",
   "tied": [
    "tests/test_lab_lyapunov.py::test_t106_status_coverage",
+   "tests/test_lab_lyapunov.py::test_t106_offline_findings_without_the_provider",
+   "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider",
+   "tests/test_lab_lyapunov.py::test_next_steps_name_forward_work"
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_lyapunov.py::test_t106_status_coverage",
    "tests/test_lab_lyapunov.py::test_t106_offline_findings_without_the_provider"
-  ]
+  ],
+  "undeclared": []
  },
  {
   "junit": {
+   "tests/test_lab_lyapunov.py::test_boundary_family_is_exact_and_kernel_free": "passed",
+   "tests/test_lab_lyapunov.py::test_checks_are_unconditional_and_observed_values_are_computed": "passed",
    "tests/test_lab_lyapunov.py::test_next_steps_name_forward_work": "passed",
    "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider": "passed",
    "tests/test_lab_lyapunov.py::test_t107_inconclusive_band": "passed"
@@ -2118,14 +2700,24 @@
   "missing": [],
   "regression_tests": [
    "tests/test_lab_lyapunov.py::test_t107_inconclusive_band",
+   "tests/test_lab_lyapunov.py::test_boundary_family_is_exact_and_kernel_free",
+   "tests/test_lab_lyapunov.py::test_checks_are_unconditional_and_observed_values_are_computed",
    "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider",
    "tests/test_lab_lyapunov.py::test_next_steps_name_forward_work"
   ],
   "state": "completed",
   "task_id": "T107",
   "tied": [
-   "tests/test_lab_lyapunov.py::test_t107_inconclusive_band"
-  ]
+   "tests/test_lab_lyapunov.py::test_t107_inconclusive_band",
+   "tests/test_lab_lyapunov.py::test_boundary_family_is_exact_and_kernel_free",
+   "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider",
+   "tests/test_lab_lyapunov.py::test_next_steps_name_forward_work"
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_lyapunov.py::test_t107_inconclusive_band",
+   "tests/test_lab_lyapunov.py::test_boundary_family_is_exact_and_kernel_free"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -2144,8 +2736,14 @@
   "state": "completed",
   "task_id": "T108",
   "tied": [
+   "tests/test_lab_lyapunov.py::test_t108_margin_monotonicity",
+   "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider",
+   "tests/test_lab_lyapunov.py::test_next_steps_name_forward_work"
+  ],
+  "tied_naming_the_task": [
    "tests/test_lab_lyapunov.py::test_t108_margin_monotonicity"
-  ]
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -2166,8 +2764,14 @@
   "state": "completed",
   "task_id": "T109",
   "tied": [
+   "tests/test_lab_lyapunov.py::test_t109_adversarial_eigenvalues",
+   "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider",
+   "tests/test_lab_lyapunov.py::test_next_steps_name_forward_work"
+  ],
+  "tied_naming_the_task": [
    "tests/test_lab_lyapunov.py::test_t109_adversarial_eigenvalues"
-  ]
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -2184,8 +2788,14 @@
   "state": "completed",
   "task_id": "T110",
   "tied": [
+   "tests/test_lab_lyapunov.py::test_t110_time_interpretation",
+   "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider",
+   "tests/test_lab_lyapunov.py::test_next_steps_name_forward_work"
+  ],
+  "tied_naming_the_task": [
    "tests/test_lab_lyapunov.py::test_t110_time_interpretation"
-  ]
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -2202,8 +2812,14 @@
   "state": "completed",
   "task_id": "T111",
   "tied": [
+   "tests/test_lab_lyapunov.py::test_t111_routes",
+   "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider",
+   "tests/test_lab_lyapunov.py::test_next_steps_name_forward_work"
+  ],
+  "tied_naming_the_task": [
    "tests/test_lab_lyapunov.py::test_t111_routes"
-  ]
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -2223,7 +2839,13 @@
    "tests/test_lab_lyapunov.py::test_t112_iss_branch",
    "tests/test_lab_lyapunov.py::test_research_tasks_without_optional_modules",
    "tests/test_lab_lyapunov.py::test_next_steps_name_forward_work"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_lyapunov.py::test_t112_iss_branch",
+   "tests/test_lab_lyapunov.py::test_research_tasks_without_optional_modules",
+   "tests/test_lab_lyapunov.py::test_next_steps_name_forward_work"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -2245,7 +2867,13 @@
    "tests/test_lab_lyapunov.py::test_t113_residual_adapter",
    "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider",
    "tests/test_lab_lyapunov.py::test_next_steps_name_forward_work"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_lyapunov.py::test_t113_residual_adapter",
+   "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider",
+   "tests/test_lab_lyapunov.py::test_next_steps_name_forward_work"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -2273,7 +2901,15 @@
    "tests/test_lab_lyapunov.py::test_research_tasks_without_optional_modules",
    "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider",
    "tests/test_lab_lyapunov.py::test_next_steps_name_forward_work"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_lyapunov.py::test_t114_servo_pilot_spec",
+   "tests/test_lab_lyapunov.py::test_t114_level_set_and_monitor",
+   "tests/test_lab_lyapunov.py::test_research_tasks_without_optional_modules",
+   "tests/test_lab_lyapunov.py::test_provider_tasks_are_partial_without_the_provider",
+   "tests/test_lab_lyapunov.py::test_next_steps_name_forward_work"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -2308,8 +2944,17 @@
    "tests/test_lab_energy_gpu.py::test_rapl_capture_is_analyzed_read_only_and_gated",
    "tests/test_lab_energy_gpu.py::test_lab_run_acquires_no_energy_measurement",
    "tests/test_lab_energy_gpu.py::test_rapl_probe_is_the_only_counter_read",
+   "tests/test_lab_energy_gpu.py::test_common_workload_matches_the_ptx_kernel_and_the_energy_problem",
+   "tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance"
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_energy_gpu.py::test_cpu_energy_task_counts_work_and_leaves_energy_unestablished",
+   "tests/test_lab_energy_gpu.py::test_rapl_capture_is_analyzed_read_only_and_gated",
+   "tests/test_lab_energy_gpu.py::test_lab_run_acquires_no_energy_measurement",
+   "tests/test_lab_energy_gpu.py::test_rapl_probe_is_the_only_counter_read",
    "tests/test_lab_energy_gpu.py::test_common_workload_matches_the_ptx_kernel_and_the_energy_problem"
-  ]
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -2335,8 +2980,16 @@
    "tests/test_lab_energy_gpu.py::test_gpu_tasks_are_blocked_with_the_recording_protocol",
    "tests/test_lab_energy_gpu.py::test_operator_log_gate_withholds_physical_labels_from_synthetic_logs",
    "tests/test_lab_energy_gpu.py::test_operator_log_gate_trust_boundary_is_the_host_identity",
+   "tests/test_lab_energy_gpu.py::test_operator_logs_of_another_workload_are_withheld",
+   "tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance"
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_energy_gpu.py::test_gpu_tasks_are_blocked_with_the_recording_protocol",
+   "tests/test_lab_energy_gpu.py::test_operator_log_gate_withholds_physical_labels_from_synthetic_logs",
+   "tests/test_lab_energy_gpu.py::test_operator_log_gate_trust_boundary_is_the_host_identity",
    "tests/test_lab_energy_gpu.py::test_operator_logs_of_another_workload_are_withheld"
-  ]
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -2380,8 +3033,19 @@
    "tests/test_lab_energy_gpu.py::test_gpu_comparisons_follow_the_probe",
    "tests/test_lab_energy_gpu.py::test_rust_energy_is_read_from_the_captures_rust_bracket",
    "tests/test_lab_energy_gpu.py::test_cross_language_agreement_is_not_independent",
+   "tests/test_lab_energy_gpu.py::test_rejected_gpu_outputs_refute_the_comparisons",
+   "tests/test_lab_energy_gpu.py::test_common_workload_matches_the_ptx_kernel_and_the_energy_problem",
+   "tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance"
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_energy_gpu.py::test_rust_kernel_matches_python_kernel",
+   "tests/test_lab_energy_gpu.py::test_rust_port_of_the_common_workload_is_bitwise",
+   "tests/test_lab_energy_gpu.py::test_gpu_comparisons_follow_the_probe",
+   "tests/test_lab_energy_gpu.py::test_rust_energy_is_read_from_the_captures_rust_bracket",
+   "tests/test_lab_energy_gpu.py::test_cross_language_agreement_is_not_independent",
    "tests/test_lab_energy_gpu.py::test_rejected_gpu_outputs_refute_the_comparisons"
-  ]
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -2407,8 +3071,16 @@
    "tests/test_lab_energy_gpu.py::test_gpu_tasks_are_blocked_with_the_recording_protocol",
    "tests/test_lab_energy_gpu.py::test_operator_log_gate_withholds_physical_labels_from_synthetic_logs",
    "tests/test_lab_energy_gpu.py::test_t118_sidecar_rows_are_restricted_to_the_measurement_window",
+   "tests/test_lab_energy_gpu.py::test_operator_logs_of_another_workload_are_withheld",
+   "tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance"
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_energy_gpu.py::test_gpu_tasks_are_blocked_with_the_recording_protocol",
+   "tests/test_lab_energy_gpu.py::test_operator_log_gate_withholds_physical_labels_from_synthetic_logs",
+   "tests/test_lab_energy_gpu.py::test_t118_sidecar_rows_are_restricted_to_the_measurement_window",
    "tests/test_lab_energy_gpu.py::test_operator_logs_of_another_workload_are_withheld"
-  ]
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -2438,8 +3110,16 @@
    "tests/test_lab_energy_gpu.py::test_energy_per_accepted_result_on_fixtures",
    "tests/test_lab_energy_gpu.py::test_t119_operator_log_is_gated_like_t116",
    "tests/test_lab_energy_gpu.py::test_operator_logs_of_another_workload_are_withheld",
+   "tests/test_lab_energy_gpu.py::test_fixture_tasks_without_repository_files",
+   "tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance"
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_energy_gpu.py::test_energy_per_accepted_result_on_fixtures",
+   "tests/test_lab_energy_gpu.py::test_t119_operator_log_is_gated_like_t116",
+   "tests/test_lab_energy_gpu.py::test_operator_logs_of_another_workload_are_withheld",
    "tests/test_lab_energy_gpu.py::test_fixture_tasks_without_repository_files"
-  ]
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -2468,8 +3148,16 @@
   "tied": [
    "tests/test_lab_energy_gpu.py::test_precision_study_float32_floor_and_counterexample",
    "tests/test_lab_energy_gpu.py::test_common_workload_precision_study",
+   "tests/test_lab_energy_gpu.py::test_rapl_capture_is_analyzed_read_only_and_gated",
+   "tests/test_lab_energy_gpu.py::test_common_workload_matches_the_ptx_kernel_and_the_energy_problem",
+   "tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance"
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_energy_gpu.py::test_precision_study_float32_floor_and_counterexample",
+   "tests/test_lab_energy_gpu.py::test_common_workload_precision_study",
    "tests/test_lab_energy_gpu.py::test_rapl_capture_is_analyzed_read_only_and_gated"
-  ]
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -2501,8 +3189,17 @@
    "tests/test_lab_energy_gpu.py::test_reduction_orders_bound_and_sign_counterexample",
    "tests/test_lab_energy_gpu.py::test_kernel_reductions_under_contraction",
    "tests/test_lab_energy_gpu.py::test_gpu_comparisons_follow_the_probe",
+   "tests/test_lab_energy_gpu.py::test_rejected_gpu_outputs_refute_the_comparisons",
+   "tests/test_lab_energy_gpu.py::test_common_workload_matches_the_ptx_kernel_and_the_energy_problem",
+   "tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance"
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_energy_gpu.py::test_reduction_orders_bound_and_sign_counterexample",
+   "tests/test_lab_energy_gpu.py::test_kernel_reductions_under_contraction",
+   "tests/test_lab_energy_gpu.py::test_gpu_comparisons_follow_the_probe",
    "tests/test_lab_energy_gpu.py::test_rejected_gpu_outputs_refute_the_comparisons"
-  ]
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -2519,8 +3216,13 @@
   "state": "completed",
   "task_id": "T122",
   "tied": [
+   "tests/test_lab_energy_gpu.py::test_bounded_free_energy_identity_and_counterexamples",
+   "tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance"
+  ],
+  "tied_naming_the_task": [
    "tests/test_lab_energy_gpu.py::test_bounded_free_energy_identity_and_counterexamples"
-  ]
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -2540,8 +3242,14 @@
   "task_id": "T123",
   "tied": [
    "tests/test_lab_energy_gpu.py::test_typed_quantities_refuse_nats_plus_joules",
+   "tests/test_lab_energy_gpu.py::test_fixture_tasks_without_repository_files",
+   "tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance"
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_energy_gpu.py::test_typed_quantities_refuse_nats_plus_joules",
    "tests/test_lab_energy_gpu.py::test_fixture_tasks_without_repository_files"
-  ]
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -2569,8 +3277,16 @@
    "tests/test_lab_energy_gpu.py::test_raw_telemetry_retention_and_tampering",
    "tests/test_lab_energy_gpu.py::test_t124_retains_an_operator_log_through_the_gate",
    "tests/test_lab_energy_gpu.py::test_operator_logs_of_another_workload_are_withheld",
+   "tests/test_lab_energy_gpu.py::test_fixture_tasks_without_repository_files",
+   "tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance"
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_energy_gpu.py::test_raw_telemetry_retention_and_tampering",
+   "tests/test_lab_energy_gpu.py::test_t124_retains_an_operator_log_through_the_gate",
+   "tests/test_lab_energy_gpu.py::test_operator_logs_of_another_workload_are_withheld",
    "tests/test_lab_energy_gpu.py::test_fixture_tasks_without_repository_files"
-  ]
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -2590,8 +3306,14 @@
   "task_id": "T125",
   "tied": [
    "tests/test_lab_energy_gpu.py::test_session_replay_keeps_numerical_result_id",
+   "tests/test_lab_energy_gpu.py::test_fixture_tasks_without_repository_files",
+   "tests/test_lab_energy_gpu.py::test_every_numerical_finding_declares_uncertainty_and_tolerance"
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_energy_gpu.py::test_session_replay_keeps_numerical_result_id",
    "tests/test_lab_energy_gpu.py::test_fixture_tasks_without_repository_files"
-  ]
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -2611,7 +3333,13 @@
    "tests/test_lab_manufacturing.py::test_flat_plate_protocol_is_a_zero_curvature_control",
    "tests/test_lab_manufacturing.py::test_protocols_refuse_filled_slots_and_decisions",
    "tests/test_lab_manufacturing.py::test_every_task_is_registered_and_reports_honestly"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_manufacturing.py::test_flat_plate_protocol_is_a_zero_curvature_control",
+   "tests/test_lab_manufacturing.py::test_protocols_refuse_filled_slots_and_decisions",
+   "tests/test_lab_manufacturing.py::test_every_task_is_registered_and_reports_honestly"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -2631,7 +3359,13 @@
    "tests/test_lab_manufacturing.py::test_cylinder_protocol_predicts_chord_geodesic_gaps",
    "tests/test_lab_manufacturing.py::test_protocols_refuse_filled_slots_and_decisions",
    "tests/test_lab_manufacturing.py::test_every_task_is_registered_and_reports_honestly"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_manufacturing.py::test_cylinder_protocol_predicts_chord_geodesic_gaps",
+   "tests/test_lab_manufacturing.py::test_protocols_refuse_filled_slots_and_decisions",
+   "tests/test_lab_manufacturing.py::test_every_task_is_registered_and_reports_honestly"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -2654,7 +3388,14 @@
    "tests/test_lab_manufacturing.py::test_coupon_report_wording_does_not_depend_on_optional_modules",
    "tests/test_lab_manufacturing.py::test_protocols_refuse_filled_slots_and_decisions",
    "tests/test_lab_manufacturing.py::test_every_task_is_registered_and_reports_honestly"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_manufacturing.py::test_coupon_protocol_predicts_focal_crossing",
+   "tests/test_lab_manufacturing.py::test_coupon_report_wording_does_not_depend_on_optional_modules",
+   "tests/test_lab_manufacturing.py::test_protocols_refuse_filled_slots_and_decisions",
+   "tests/test_lab_manufacturing.py::test_every_task_is_registered_and_reports_honestly"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -2675,8 +3416,15 @@
   "tied": [
    "tests/test_lab_manufacturing.py::test_metrology_sampling_design_and_counterexamples",
    "tests/test_lab_manufacturing.py::test_scan_protocol_and_as_built_fit",
+   "tests/test_lab_manufacturing.py::test_protocols_refuse_filled_slots_and_decisions",
+   "tests/test_lab_manufacturing.py::test_every_task_is_registered_and_reports_honestly"
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_manufacturing.py::test_metrology_sampling_design_and_counterexamples",
+   "tests/test_lab_manufacturing.py::test_scan_protocol_and_as_built_fit",
    "tests/test_lab_manufacturing.py::test_protocols_refuse_filled_slots_and_decisions"
-  ]
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -2691,8 +3439,13 @@
   "state": "completed",
   "task_id": "T130",
   "tied": [
+   "tests/test_lab_manufacturing.py::test_artifacts_datum_frames_and_chain_covariance",
+   "tests/test_lab_manufacturing.py::test_every_task_is_registered_and_reports_honestly"
+  ],
+  "tied_naming_the_task": [
    "tests/test_lab_manufacturing.py::test_artifacts_datum_frames_and_chain_covariance"
-  ]
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -2707,8 +3460,13 @@
   "state": "completed",
   "task_id": "T131",
   "tied": [
+   "tests/test_lab_manufacturing.py::test_gage_rr_recovers_components_and_refuses_unbalanced",
+   "tests/test_lab_manufacturing.py::test_every_task_is_registered_and_reports_honestly"
+  ],
+  "tied_naming_the_task": [
    "tests/test_lab_manufacturing.py::test_gage_rr_recovers_components_and_refuses_unbalanced"
-  ]
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -2723,8 +3481,13 @@
   "state": "completed",
   "task_id": "T132",
   "tied": [
+   "tests/test_lab_manufacturing.py::test_placement_curvature_stack_and_radius_counterexample",
+   "tests/test_lab_manufacturing.py::test_every_task_is_registered_and_reports_honestly"
+  ],
+  "tied_naming_the_task": [
    "tests/test_lab_manufacturing.py::test_placement_curvature_stack_and_radius_counterexample"
-  ]
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -2739,8 +3502,13 @@
   "state": "completed",
   "task_id": "T133",
   "tied": [
+   "tests/test_lab_manufacturing.py::test_winding_clairaut_sensitivity_and_slippage",
+   "tests/test_lab_manufacturing.py::test_every_task_is_registered_and_reports_honestly"
+  ],
+  "tied_naming_the_task": [
    "tests/test_lab_manufacturing.py::test_winding_clairaut_sensitivity_and_slippage"
-  ]
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -2755,8 +3523,13 @@
   "state": "completed",
   "task_id": "T134",
   "tied": [
+   "tests/test_lab_manufacturing.py::test_coating_standoff_and_offset_cusp",
+   "tests/test_lab_manufacturing.py::test_every_task_is_registered_and_reports_honestly"
+  ],
+  "tied_naming_the_task": [
    "tests/test_lab_manufacturing.py::test_coating_standoff_and_offset_cusp"
-  ]
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -2771,8 +3544,13 @@
   "state": "completed",
   "task_id": "T135",
   "tied": [
+   "tests/test_lab_manufacturing.py::test_scan_plans_coverage_and_counterexample",
+   "tests/test_lab_manufacturing.py::test_every_task_is_registered_and_reports_honestly"
+  ],
+  "tied_naming_the_task": [
    "tests/test_lab_manufacturing.py::test_scan_plans_coverage_and_counterexample"
-  ]
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -2789,8 +3567,13 @@
   "state": "completed",
   "task_id": "T136",
   "tied": [
+   "tests/test_lab_manufacturing.py::test_rankings_by_calibration_tolerance_and_focus_margin",
+   "tests/test_lab_manufacturing.py::test_every_task_is_registered_and_reports_honestly"
+  ],
+  "tied_naming_the_task": [
    "tests/test_lab_manufacturing.py::test_rankings_by_calibration_tolerance_and_focus_margin"
-  ]
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -2805,8 +3588,13 @@
   "state": "completed",
   "task_id": "T137",
   "tied": [
+   "tests/test_lab_manufacturing.py::test_rankings_by_calibration_tolerance_and_focus_margin",
+   "tests/test_lab_manufacturing.py::test_every_task_is_registered_and_reports_honestly"
+  ],
+  "tied_naming_the_task": [
    "tests/test_lab_manufacturing.py::test_rankings_by_calibration_tolerance_and_focus_margin"
-  ]
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -2824,8 +3612,14 @@
   "task_id": "T138",
   "tied": [
    "tests/test_lab_manufacturing.py::test_predicted_separation_has_no_measured_counterpart",
+   "tests/test_lab_manufacturing.py::test_comparators_compute_normalized_errors_for_a_measurement_record",
    "tests/test_lab_manufacturing.py::test_every_task_is_registered_and_reports_honestly"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_manufacturing.py::test_predicted_separation_has_no_measured_counterpart",
+   "tests/test_lab_manufacturing.py::test_every_task_is_registered_and_reports_honestly"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -2845,7 +3639,13 @@
    "tests/test_lab_manufacturing.py::test_retention_schema_refusals_and_fixture_boundary",
    "tests/test_lab_manufacturing.py::test_bound_retention_record_is_validated_against_its_raw_bytes",
    "tests/test_lab_manufacturing.py::test_every_task_is_registered_and_reports_honestly"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_manufacturing.py::test_retention_schema_refusals_and_fixture_boundary",
+   "tests/test_lab_manufacturing.py::test_bound_retention_record_is_validated_against_its_raw_bytes",
+   "tests/test_lab_manufacturing.py::test_every_task_is_registered_and_reports_honestly"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -2860,8 +3660,13 @@
   "state": "completed",
   "task_id": "T140",
   "tied": [
+   "tests/test_lab_manufacturing.py::test_uncertainty_budget_classifies_limiting_terms",
+   "tests/test_lab_manufacturing.py::test_every_task_is_registered_and_reports_honestly"
+  ],
+  "tied_naming_the_task": [
    "tests/test_lab_manufacturing.py::test_uncertainty_budget_classifies_limiting_terms"
-  ]
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -2878,7 +3683,12 @@
   "tied": [
    "tests/test_lab_manufacturing.py::test_production_acceptance_stays_outside_the_system",
    "tests/test_lab_manufacturing.py::test_every_task_is_registered_and_reports_honestly"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_manufacturing.py::test_production_acceptance_stays_outside_the_system",
+   "tests/test_lab_manufacturing.py::test_every_task_is_registered_and_reports_honestly"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -2896,7 +3706,11 @@
   "task_id": "T142",
   "tied": [
    "tests/test_lab_implementation_targets.py::test_t142_kernel_counts_and_ranking"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_implementation_targets.py::test_t142_kernel_counts_and_ranking"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -2910,7 +3724,11 @@
   "task_id": "T143",
   "tied": [
    "tests/test_lab_implementation_targets.py::test_t143_interface_inventory"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_implementation_targets.py::test_t143_interface_inventory"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -2924,7 +3742,11 @@
   "task_id": "T144",
   "tied": [
    "tests/test_lab_implementation_targets.py::test_t144_architecture_scan"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_implementation_targets.py::test_t144_architecture_scan"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -2940,7 +3762,11 @@
   "task_id": "T145",
   "tied": [
    "tests/test_lab_implementation_targets.py::test_t145_julia_partial_with_plan"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_implementation_targets.py::test_t145_julia_partial_with_plan"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -2960,7 +3786,11 @@
   "task_id": "T146",
   "tied": [
    "tests/test_lab_implementation_targets.py::test_t146_python_canonicalizers_and_vectors"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_implementation_targets.py::test_t146_python_canonicalizers_and_vectors"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -2982,7 +3812,13 @@
    "tests/test_lab_implementation_targets.py::test_t147_harness_detects_differences",
    "tests/test_lab_implementation_targets.py::test_t147_fault_study_is_judged_by_the_harness",
    "tests/test_lab_implementation_targets.py::test_t147_common_workload_comparison_follows_the_gpu_probe"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_implementation_targets.py::test_t147_harness_detects_differences",
+   "tests/test_lab_implementation_targets.py::test_t147_fault_study_is_judged_by_the_harness",
+   "tests/test_lab_implementation_targets.py::test_t147_common_workload_comparison_follows_the_gpu_probe"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -3000,7 +3836,11 @@
   "task_id": "T148",
   "tied": [
    "tests/test_lab_implementation_targets.py::test_t148_reduction_policies"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_implementation_targets.py::test_t148_reduction_policies"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -3016,7 +3856,11 @@
   "task_id": "T149",
   "tied": [
    "tests/test_lab_implementation_targets.py::test_t149_telemetry_only_frames"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_implementation_targets.py::test_t149_telemetry_only_frames"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -3030,7 +3874,11 @@
   "task_id": "T150",
   "tied": [
    "tests/test_lab_implementation_targets.py::test_t150_bitstream_identity"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_implementation_targets.py::test_t150_bitstream_identity"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -3044,7 +3892,11 @@
   "task_id": "T151",
   "tied": [
    "tests/test_lab_implementation_targets.py::test_t151_compatibility_and_rollback"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_implementation_targets.py::test_t151_compatibility_and_rollback"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -3058,7 +3910,11 @@
   "task_id": "T152",
   "tied": [
    "tests/test_lab_implementation_targets.py::test_t152_loss_latency_staleness"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_implementation_targets.py::test_t152_loss_latency_staleness"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -3072,7 +3928,11 @@
   "task_id": "T153",
   "tied": [
    "tests/test_lab_implementation_targets.py::test_t153_writes_disabled_by_default"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_implementation_targets.py::test_t153_writes_disabled_by_default"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -3086,7 +3946,11 @@
   "task_id": "T154",
   "tied": [
    "tests/test_lab_implementation_targets.py::test_t154_control_outputs_are_proposals"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_implementation_targets.py::test_t154_control_outputs_are_proposals"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -3107,11 +3971,19 @@
   "state": "completed",
   "task_id": "T155",
   "tied": [
+   "tests/test_lab_research_portfolio.py::test_label_function_matches_the_reference_oracle_exhaustively",
    "tests/test_lab_research_portfolio.py::test_formal_specifications_cover_the_queue",
    "tests/test_lab_research_portfolio.py::test_rule_10_screen_closes_the_computational_domain_loophole",
    "tests/test_lab_research_portfolio.py::test_specification_units_list_the_counterexamples_of_their_tasks",
    "tests/test_lab_research_portfolio.py::test_next_steps_name_open_work_rather_than_work_done_elsewhere"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_research_portfolio.py::test_formal_specifications_cover_the_queue",
+   "tests/test_lab_research_portfolio.py::test_rule_10_screen_closes_the_computational_domain_loophole",
+   "tests/test_lab_research_portfolio.py::test_specification_units_list_the_counterexamples_of_their_tasks",
+   "tests/test_lab_research_portfolio.py::test_next_steps_name_open_work_rather_than_work_done_elsewhere"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -3125,7 +3997,11 @@
   "task_id": "T156",
   "tied": [
    "tests/test_lab_research_portfolio.py::test_textbook_and_contribution_ledger"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_research_portfolio.py::test_textbook_and_contribution_ledger"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -3142,24 +4018,38 @@
   "tied": [
    "tests/test_lab_research_portfolio.py::test_counterexample_catalogue",
    "tests/test_lab_research_portfolio.py::test_next_steps_name_open_work_rather_than_work_done_elsewhere"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_research_portfolio.py::test_counterexample_catalogue",
+   "tests/test_lab_research_portfolio.py::test_next_steps_name_open_work_rather_than_work_done_elsewhere"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
    "tests/test_lab_research_portfolio.py::test_a_changed_figure_is_a_mismatch_and_a_timing_figure_a_counterexample": "passed",
-   "tests/test_lab_research_portfolio.py::test_figures_are_reproducible": "passed"
+   "tests/test_lab_research_portfolio.py::test_figures_are_reproducible": "passed",
+   "tests/test_lab_research_portfolio.py::test_only_declared_timing_figures_are_exempt_from_the_byte_comparison": "passed"
   },
   "missing": [],
   "regression_tests": [
    "tests/test_lab_research_portfolio.py::test_figures_are_reproducible",
-   "tests/test_lab_research_portfolio.py::test_a_changed_figure_is_a_mismatch_and_a_timing_figure_a_counterexample"
+   "tests/test_lab_research_portfolio.py::test_a_changed_figure_is_a_mismatch_and_a_timing_figure_a_counterexample",
+   "tests/test_lab_research_portfolio.py::test_only_declared_timing_figures_are_exempt_from_the_byte_comparison"
   ],
   "state": "partial",
   "task_id": "T158",
   "tied": [
    "tests/test_lab_research_portfolio.py::test_figures_are_reproducible",
-   "tests/test_lab_research_portfolio.py::test_a_changed_figure_is_a_mismatch_and_a_timing_figure_a_counterexample"
-  ]
+   "tests/test_lab_research_portfolio.py::test_a_changed_figure_is_a_mismatch_and_a_timing_figure_a_counterexample",
+   "tests/test_lab_research_portfolio.py::test_only_declared_timing_figures_are_exempt_from_the_byte_comparison"
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_research_portfolio.py::test_figures_are_reproducible",
+   "tests/test_lab_research_portfolio.py::test_a_changed_figure_is_a_mismatch_and_a_timing_figure_a_counterexample",
+   "tests/test_lab_research_portfolio.py::test_only_declared_timing_figures_are_exempt_from_the_byte_comparison"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -3182,7 +4072,14 @@
    "tests/test_lab_research_portfolio.py::test_uncertainty_listing_separates_unmeasured_records",
    "tests/test_lab_research_portfolio.py::test_uncertainty_listing_names_the_per_quantity_budgets_it_holds",
    "tests/test_lab_research_portfolio.py::test_raw_recounts_derive_the_components_of_findings_retained_without_origin"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_research_portfolio.py::test_uncertainty_table_restates_every_numerical_finding",
+   "tests/test_lab_research_portfolio.py::test_uncertainty_listing_separates_unmeasured_records",
+   "tests/test_lab_research_portfolio.py::test_uncertainty_listing_names_the_per_quantity_budgets_it_holds",
+   "tests/test_lab_research_portfolio.py::test_raw_recounts_derive_the_components_of_findings_retained_without_origin"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -3199,7 +4096,12 @@
   "tied": [
    "tests/test_lab_research_portfolio.py::test_paper_drafts_trace_to_reports",
    "tests/test_lab_research_portfolio.py::test_paper_drafts_have_a_structure_and_qualify_their_labels"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_research_portfolio.py::test_paper_drafts_trace_to_reports",
+   "tests/test_lab_research_portfolio.py::test_paper_drafts_have_a_structure_and_qualify_their_labels"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -3219,7 +4121,13 @@
    "tests/test_lab_research_portfolio.py::test_paper_drafts_trace_to_reports",
    "tests/test_lab_research_portfolio.py::test_paper_drafts_have_a_structure_and_qualify_their_labels",
    "tests/test_lab_research_portfolio.py::test_drafts_carry_every_qualification_of_independently_verified_rows"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_research_portfolio.py::test_paper_drafts_trace_to_reports",
+   "tests/test_lab_research_portfolio.py::test_paper_drafts_have_a_structure_and_qualify_their_labels",
+   "tests/test_lab_research_portfolio.py::test_drafts_carry_every_qualification_of_independently_verified_rows"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -3239,7 +4147,13 @@
    "tests/test_lab_research_portfolio.py::test_paper_drafts_trace_to_reports",
    "tests/test_lab_research_portfolio.py::test_paper_drafts_have_a_structure_and_qualify_their_labels",
    "tests/test_lab_research_portfolio.py::test_draft_next_step_names_completed_tasks_with_open_physical_claims"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_research_portfolio.py::test_paper_drafts_trace_to_reports",
+   "tests/test_lab_research_portfolio.py::test_paper_drafts_have_a_structure_and_qualify_their_labels",
+   "tests/test_lab_research_portfolio.py::test_draft_next_step_names_completed_tasks_with_open_physical_claims"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -3256,7 +4170,12 @@
   "tied": [
    "tests/test_lab_research_portfolio.py::test_portfolio_shows_every_label_in_use",
    "tests/test_lab_research_portfolio.py::test_portfolio_qualifies_labels_and_states_customer_demand"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_research_portfolio.py::test_portfolio_shows_every_label_in_use",
+   "tests/test_lab_research_portfolio.py::test_portfolio_qualifies_labels_and_states_customer_demand"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -3276,7 +4195,13 @@
    "tests/test_lab_research_portfolio.py::test_clean_room_marker_is_recognized",
    "tests/test_lab_research_portfolio.py::test_clean_room_needs_the_installed_package_to_be_the_named_wheel",
    "tests/test_lab_research_portfolio.py::test_clean_room_prose_does_not_carry_the_wheel_digest"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_research_portfolio.py::test_clean_room_marker_is_recognized",
+   "tests/test_lab_research_portfolio.py::test_clean_room_needs_the_installed_package_to_be_the_named_wheel",
+   "tests/test_lab_research_portfolio.py::test_clean_room_prose_does_not_carry_the_wheel_digest"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -3296,7 +4221,13 @@
    "tests/test_lab_research_portfolio.py::test_release_report_inventories_nested_runtimes",
    "tests/test_lab_research_portfolio.py::test_release_report_lists_each_runtime_once_and_states_its_scope",
    "tests/test_lab_research_portfolio.py::test_raw_recounts_derive_the_components_of_findings_retained_without_origin"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_research_portfolio.py::test_release_report_inventories_nested_runtimes",
+   "tests/test_lab_research_portfolio.py::test_release_report_lists_each_runtime_once_and_states_its_scope",
+   "tests/test_lab_research_portfolio.py::test_raw_recounts_derive_the_components_of_findings_retained_without_origin"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -3313,7 +4244,12 @@
   "tied": [
    "tests/test_lab_research_portfolio.py::test_unresolved_assumption_ledger",
    "tests/test_lab_research_portfolio.py::test_ledgers_list_cross_cutting_open_items"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_research_portfolio.py::test_unresolved_assumption_ledger",
+   "tests/test_lab_research_portfolio.py::test_ledgers_list_cross_cutting_open_items"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -3336,7 +4272,14 @@
    "tests/test_lab_research_portfolio.py::test_unmeasured_ledger_separates_code_from_hardware",
    "tests/test_lab_research_portfolio.py::test_unmeasured_classifier_is_checked_on_probe_records",
    "tests/test_lab_research_portfolio.py::test_ledgers_list_cross_cutting_open_items"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_research_portfolio.py::test_unmeasured_ledger",
+   "tests/test_lab_research_portfolio.py::test_unmeasured_ledger_separates_code_from_hardware",
+   "tests/test_lab_research_portfolio.py::test_unmeasured_classifier_is_checked_on_probe_records",
+   "tests/test_lab_research_portfolio.py::test_ledgers_list_cross_cutting_open_items"
+  ],
+  "undeclared": []
  },
  {
   "junit": {
@@ -3353,6 +4296,11 @@
   "tied": [
    "tests/test_lab_research_portfolio.py::test_regression_coverage_is_checked",
    "tests/test_lab_research_portfolio.py::test_regression_outcomes_add_up_and_name_the_own_node"
-  ]
+  ],
+  "tied_naming_the_task": [
+   "tests/test_lab_research_portfolio.py::test_regression_coverage_is_checked",
+   "tests/test_lab_research_portfolio.py::test_regression_outcomes_add_up_and_name_the_own_node"
+  ],
+  "undeclared": []
  }
 ]

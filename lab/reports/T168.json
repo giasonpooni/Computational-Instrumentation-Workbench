@@ -8,18 +8,20 @@
    "hardware_measured": 0,
    "independently_verified": 0,
    "not_established": 0,
-   "numerically_verified": 4,
+   "numerically_verified": 7,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "No completed or partial task lacks a registered test; every registered node resolves; no registered node failed in the JUnit record; every task-to-node registration has a recorded outcome except T168's own, which its own run's JUnit record cannot hold.",
- "experiment": "Resolve every registered node id against the test functions under tests/, analyze each node's source for its task and a label assertion (the analysis is checked on probe cases first), and fold the JUnit outcomes the reports recorded.",
+ "expected_invariant": "No completed or partial task lacks a registered test; every registered node resolves and its lab_task marker names every task that registers it, and no marker names another task; every task has a declared test that asserts an evidence label; no registered node failed in the JUnit record; every task-to-node registration has a recorded outcome except T168's own, which its own run's JUnit record cannot hold.",
+ "experiment": "Resolve every registered node id against the test functions under tests/, read each test's lab_task markers from its decorators and its source for a label assertion (the analysis is checked on probe cases first), and fold the JUnit outcomes the reports recorded.",
  "failure_modes_checked": [
   "registered node ids that do not resolve",
-  "tests registered for a task they never run",
+  "registrations the test's lab_task marker does not declare",
+  "lab_task markers naming a task that does not register the test",
   "tests asserting values only",
+  "tests registered for a task they never run (advisory: no tied test names the task)",
   "registered tests failing or not run",
   "registrations without a recorded outcome dropped from the totals"
  ],
@@ -102,7 +104,7 @@
      }
     ]
    },
-   "claim": "Tasks without a registered test that both names the task and asserts an evidence label",
+   "claim": "Tasks without a registered test that both declares the task with a lab_task marker and asserts an evidence label",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
    "origin": [
@@ -118,7 +120,103 @@
     "value": 0
    },
    "unit": "tasks",
-   "value": 1
+   "value": 0
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "tie-analysis probe cases classified wrongly",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Task-to-node registrations whose test's lab_task marker does not name the task",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "integer count from a static source analysis; see the unresolved assumptions for what it cannot see",
+    "kind": "exact",
+    "value": 0
+   },
+   "unit": "registrations",
+   "value": 0
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "tie-analysis probe cases classified wrongly",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Declarations in lab_task markers naming a task that does not register the test",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "integer count from a static source analysis; see the unresolved assumptions for what it cannot see",
+    "kind": "exact",
+    "value": 0
+   },
+   "unit": "declarations",
+   "value": 0
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "tie-analysis probe cases classified wrongly",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "Tied tasks none of whose tied tests names the task or its function (advisory, not a completion condition)",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "integer count from a static source analysis; see the unresolved assumptions for what it cannot see",
+    "kind": "exact",
+    "value": 0
+   },
+   "unit": "tasks",
+   "value": 0
   },
   {
    "assigned_by": "ciw.lab.evidence",
@@ -155,20 +253,20 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 157383,
+   "bytes": 204874,
    "path": "artifacts/T168/regression-coverage.json",
-   "sha256": "86cf06f025a5a5f37c352ac464e0216c45214905952c163e0b816a108b9f4add"
+   "sha256": "8d67474ea0e9f649e40a82776e4bbed8c92d8cf8a02aaeb5d71fecc3b4063512"
   }
  ],
- "hypothesis": "Every completed or partial experiment is backed by at least one registered pytest regression test that runs the task and asserts its evidence labels, and those tests pass.",
+ "hypothesis": "Every completed or partial experiment is backed by at least one registered pytest regression test that declares the task it guards and asserts its evidence labels, and those tests pass.",
  "input_data": [
   "Retained reports of T001-T167 in the same output directory (this section's T155-T167 included)",
   "Registered regression node ids of T001-T168",
   "tests/ of the repository (CIW_LAB_REPOSITORY_ROOT in the clean room)"
  ],
- "mathematical_model": "Per task: registered node ids resolved against test functions (AST); a task is tied when one of its nodes names the task (id in node id, test name or source, or the task function) and asserts an evidence label; JUnit outcomes per node as recorded in the reports.",
+ "mathematical_model": "Per task: registered node ids resolved against test functions (AST); a registration is declared when a lab_task marker on the test (its class, or its pytest.param case) names the task; a task is tied when one of its declared nodes asserts an evidence label (source text); marker declarations naming a task that does not register what they mark are counted; tied tasks whose tied tests never name the task are counted as advisory; JUnit outcomes per node as recorded in the reports.",
  "number": 168,
- "numerical_result": "168 tasks, 608 task-to-node registrations (370 distinct node ids); 0 completed/partial tasks without regression tests; 0 dangling node ids; 1 tasks without a tied test; JUnit: 592 passed, 0 failed, 14 skipped or not run, 2 not recorded (2 of them T168's own nodes, which its own run's record cannot hold).",
+ "numerical_result": "168 tasks, 626 task-to-node registrations (387 distinct node ids), 626 declared by a lab_task marker; 0 registrations whose marker does not name the task; 0 marker declarations naming a task that does not register the test; 0 completed/partial tasks without regression tests; 0 dangling node ids; 0 tasks without a tied test; 0 tied tasks whose tied tests never name the task (advisory); JUnit: 624 passed, 0 failed, 0 skipped or not run, 2 not recorded (2 of them T168's own nodes, which its own run's record cannot hold).",
  "observation_model": "No physical observation; reads retained computational records only.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -179,33 +277,38 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/research_portfolio.py": "145b8ee8456e1dd57bf2a05fa20e1ce55bd33356522436d8901eb1adfb60fc7a"
+   "src/ciw/lab/research_portfolio.py": "36d03762abf5cb7a900d4572ec3f8aa8e7bc55cb61331711dce910a334b3acf8"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "Assert evidence labels in tests/test_lab_geodesic_jacobi_limits.py::test_t016_negative_curvature_is_not_stiffness, tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work (the registered tests of T016, which assert values only), then mark each regression test with the task identities it guards (a pytest marker), so the tie between tests and tasks is declared rather than inferred from source text.",
- "report_id": "sha256:6052109259a6fb3a03a4237ce95863bb2e9cb713e8622bddc7c4d609bf963df6",
+ "recommended_next_task": "Record the evidence labels each lab_task-marked test asserts when it runs (for example as JUnit properties written by a fixture that wraps report access), so a label assertion is observed in the record rather than inferred from the test's source text.",
+ "report_id": "sha256:f5aa5de8513f6d62c6be4e4b24938325d12eee2f8a9ef727c5c42c27d390640c",
  "schema": "ciw.lab-task-report.v1",
  "section": "research-portfolio",
- "state": "partial",
+ "state": "completed",
  "task_id": "T168",
  "tests_passed": [
   "check: Completed or partial tasks lacking a regression test vs completed or partial tasks with no registered regression test",
   "check: Registered regression node ids that do not resolve to a test function vs dangling node ids",
-  "check: Tasks without a registered test that both names the task and asserts an evidence label vs tie-analysis probe cases classified wrongly",
+  "check: Tasks without a registered test that both declares the task with a lab_task marker and asserts an evidence label vs tie-analysis probe cases classified wrongly",
+  "check: Task-to-node registrations whose test's lab_task marker does not name the task vs tie-analysis probe cases classified wrongly",
+  "check: Declarations in lab_task markers naming a task that does not register the test vs tie-analysis probe cases classified wrongly",
+  "check: Tied tasks none of whose tied tests names the task or its function (advisory, not a completion condition) vs tie-analysis probe cases classified wrongly",
   "check: Registered regression tests failing in the JUnit record of this run vs registered nodes recorded as failed",
   "pytest: tests/test_lab_research_portfolio.py::test_regression_coverage_is_checked",
   "pytest: tests/test_lab_research_portfolio.py::test_regression_outcomes_add_up_and_name_the_own_node"
  ],
  "tests_skipped": [],
  "title": "Convert successful experiments into permanent regression tests.",
- "uncertainty": "Exact counts; ties are inferred statically from source text.",
+ "uncertainty": "Exact counts; declarations are read from lab_task decorators, label assertions and (advisory) task naming inferred from source text.",
  "unresolved_assumptions": [
-  "Tasks without a registered test that names the task and asserts a label: T016",
-  "The tie analysis reads source text: a task id computed at run time (for example from a range) is not seen, and mentioning a label is taken as asserting it.",
+  "Declarations are read from literal task ids in lab_task decorators of the test or its class, and in the marks of the pytest.param literals of its one parametrize decorator for that case: a module-level pytestmark or a task id computed at run time is not read, and such a registration counts as undeclared.",
+  "A label assertion is inferred from source text: mentioning a label is taken as asserting it. Whether a tied test runs its task is not established: a marker declares the tie, and the advisory count only checks that some tied test names the task or its function.",
   "The tolerance-aware comparison with retained reports (ciw lab verify, run by scripts/check_lab.py in CI) is outside this report."
  ]
 }

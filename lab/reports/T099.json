@@ -2,7 +2,8 @@
  "changed_files": [
   "src/ciw/lab/exchange_provenance_bundles.py",
   "src/ciw/lab/exchange_provenance_bundles_fixtures.py",
-  "src/ciw/lab/exchange_provenance_bundles_providers.py"
+  "src/ciw/lab/exchange_provenance_bundles_providers.py",
+  "src/ciw/lab/proved_heat_records.py"
  ],
  "evidence_status": {
   "counts": {
@@ -10,21 +11,26 @@
    "hardware_measured": 0,
    "independently_verified": 1,
    "not_established": 2,
-   "numerically_verified": 2,
-   "provider_backed": 0,
+   "numerically_verified": 4,
+   "provider_backed": 3,
    "synthetic": 0
   },
-  "primary": "numerically_verified"
+  "primary": "provider_backed"
  },
- "expected_invariant": "Exit 0; lock unchanged; clean checkout; equal digests; output equals the integer reference.",
- "experiment": "Bind --provider scr=<checkout> with cargo on PATH; command: CARGO_TARGET_DIR=<tmp> cargo build --release --locked --offline --manifest-path <scr>/crates/Cargo.toml -p execution-cli. The SP1 proved-heat build is recorded as blocked with its requirements and never attempted.",
+ "expected_invariant": "Exit 0; lock unchanged; clean checkout; equal digests; output equals the integer reference; record digests equal its manifest and its identities equal CIW's pins; the pinned-toolchain engine digest equals the record's engine digest.",
+ "experiment": "Bind --provider scr=<checkout> with cargo on PATH; command: CARGO_TARGET_DIR=<tmp> cargo build --release --locked --offline --manifest-path <scr>/crates/Cargo.toml -p execution-cli. Bind --provider proved-heat-record=lab/proved-heat/<run-id> (scripts/check_lab.py binds the repository's latest record) to read a retained run of the SP1 proved-heat gate; with rustup toolchain 1.94.0 installed, execution-cli is also built once with cargo +1.94.0 into a fresh target directory. T099 never runs the SP1 build, prover or verifier itself.",
  "failure_modes_checked": [
   "lockfile rewrite",
   "network access (--offline)",
   "writes into the checkout",
   "non-deterministic build output",
   "engine output drift",
-  "build timeout"
+  "build timeout",
+  "proved-heat record files missing, unrecorded or differing from the manifest",
+  "record naming another SCR, SP1, guest recipe, guest ELF or compiler archive than CIW's pins",
+  "failed, skipped or missing native gate tests",
+  "bundles, replay receipt or re-verification inconsistent with each other or the gate",
+  "toolchain-dependent engine digest"
  ],
  "findings": [
   {
@@ -213,52 +219,336 @@
   },
   {
    "assigned_by": "ciw.lab.evidence",
-   "basis": {},
-   "claim": "The SP1 proved-heat locked build was not attempted",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "record problems (integrity)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "record problems (run_record)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "record problems (gate)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "record problems (pins)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "record problems (bundles)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "notes": {
+     "executed_in": "the retained proved-heat gate run, not in this task run",
+     "host_executable_binding": "operator_asserted_not_attested",
+     "native_artifacts": {
+      "engine": "636b24475b64d1aa7892ebd8f07871e1adaed3325344e41085f08b6b08cc212e",
+      "guest": "a14e3750da7e221d31842bd6cf983fcc8c0f530b2811537e2a9a9fe803dacf82",
+      "prover": "c6889f4d9f2dc3b689f599155b3dd0766a53b48ea67b89015f461589d193c95b"
+     },
+     "proved_heat_record": "local-2026-09-24",
+     "sp1": {
+      "repository": "https://github.com/succinctlabs/sp1.git",
+      "revision": "b38b61209e45e969289e70d5cf79dc763460bc41",
+      "tree": "7deca3aced8d8eb84dfcede98285a192c862ea4c"
+     }
+    },
+    "provider": {
+     "executed": true,
+     "repository": "giasonpooni/Scientific-Computation-Runtime",
+     "revision": "a59aba283b0304faeeb3e5d305087e7709e171ca",
+     "source_tree": "4068a711534932e8d89bb0d87d373376dafdf6cd"
+    }
+   },
+   "claim": "The bound SP1 proved-heat gate record matches its manifest digests, records a passing gate with its required native tests, names CIW's pinned SCR, SP1, guest recipe, guest ELF and compiler archive, and holds bundles that pass CIW's offline validation",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "provider",
+    "reference_checks"
+   ],
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact counts, digests and string comparisons; no rounding is involved",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": {
+    "problems": 0,
+    "retained_files": 9,
+    "run_id": "local-2026-09-24"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": {
+     "executed_in": "the retained proved-heat gate run, not in this task run",
+     "host_executable_binding": "operator_asserted_not_attested",
+     "native_artifacts": {
+      "engine": "636b24475b64d1aa7892ebd8f07871e1adaed3325344e41085f08b6b08cc212e",
+      "guest": "a14e3750da7e221d31842bd6cf983fcc8c0f530b2811537e2a9a9fe803dacf82",
+      "prover": "c6889f4d9f2dc3b689f599155b3dd0766a53b48ea67b89015f461589d193c95b"
+     },
+     "proved_heat_record": "local-2026-09-24",
+     "sp1": {
+      "repository": "https://github.com/succinctlabs/sp1.git",
+      "revision": "b38b61209e45e969289e70d5cf79dc763460bc41",
+      "tree": "7deca3aced8d8eb84dfcede98285a192c862ea4c"
+     }
+    },
+    "provider": {
+     "executed": true,
+     "repository": "giasonpooni/Scientific-Computation-Runtime",
+     "revision": "a59aba283b0304faeeb3e5d305087e7709e171ca",
+     "source_tree": "4068a711534932e8d89bb0d87d373376dafdf6cd"
+    }
+   },
+   "claim": "The SP1 proved-heat gate rebuilt the guest ELF from the committed recipe and it equals the registered guest",
    "domain": "computational_pipeline",
+   "evidence_status": "provider_backed",
+   "origin": [
+    "provider"
+   ],
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact counts, digests and string comparisons; no rounding is involved",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": {
+    "guest_build": "verified_against_committed_registry",
+    "guest_sha256": "a14e3750da7e221d31842bd6cf983fcc8c0f530b2811537e2a9a9fe803dacf82",
+    "recipe_identity": "6e5d1687bcc55243d712553a2b7768b6c587a76418bb48a7a2c44224470d423d",
+    "sp1_revision": "b38b61209e45e969289e70d5cf79dc763460bc41"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": {
+     "executed_in": "the retained proved-heat gate run, not in this task run",
+     "host_executable_binding": "operator_asserted_not_attested",
+     "native_artifacts": {
+      "engine": "636b24475b64d1aa7892ebd8f07871e1adaed3325344e41085f08b6b08cc212e",
+      "guest": "a14e3750da7e221d31842bd6cf983fcc8c0f530b2811537e2a9a9fe803dacf82",
+      "prover": "c6889f4d9f2dc3b689f599155b3dd0766a53b48ea67b89015f461589d193c95b"
+     },
+     "proved_heat_record": "local-2026-09-24",
+     "sp1": {
+      "repository": "https://github.com/succinctlabs/sp1.git",
+      "revision": "b38b61209e45e969289e70d5cf79dc763460bc41",
+      "tree": "7deca3aced8d8eb84dfcede98285a192c862ea4c"
+     }
+    },
+    "provider": {
+     "executed": true,
+     "repository": "giasonpooni/Scientific-Computation-Runtime",
+     "revision": "a59aba283b0304faeeb3e5d305087e7709e171ca",
+     "source_tree": "4068a711534932e8d89bb0d87d373376dafdf6cd"
+    }
+   },
+   "claim": "The SP1 proved-heat gate proved and verified the heat result with real SP1, and a fresh replay reproduced it with its own verified proof",
+   "domain": "computational_pipeline",
+   "evidence_status": "provider_backed",
+   "origin": [
+    "provider"
+   ],
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact int64 arithmetic compared cell by cell",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": {
+    "execution": "real_sp1_proof_fresh_replay_and_verification",
+    "gate_status": "passed",
+    "heat_values": [
+     0,
+     65,
+     92,
+     65,
+     0
+    ],
+    "native_tests": [
+     "test_native_proved_heat_shared_session"
+    ],
+    "replay_numerical_match": true,
+    "replay_values": [
+     0,
+     65,
+     92,
+     65,
+     0
+    ],
+    "tests_passed": 111,
+    "verifier_outcomes": [
+     "verified",
+     "verified"
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": {
+     "executed_in": "the retained proved-heat gate run, not in this task run",
+     "host_executable_binding": "operator_asserted_not_attested",
+     "native_artifacts": {
+      "engine": "636b24475b64d1aa7892ebd8f07871e1adaed3325344e41085f08b6b08cc212e",
+      "guest": "a14e3750da7e221d31842bd6cf983fcc8c0f530b2811537e2a9a9fe803dacf82",
+      "prover": "c6889f4d9f2dc3b689f599155b3dd0766a53b48ea67b89015f461589d193c95b"
+     },
+     "proved_heat_record": "local-2026-09-24",
+     "sp1": {
+      "repository": "https://github.com/succinctlabs/sp1.git",
+      "revision": "b38b61209e45e969289e70d5cf79dc763460bc41",
+      "tree": "7deca3aced8d8eb84dfcede98285a192c862ea4c"
+     }
+    },
+    "provider": {
+     "executed": true,
+     "repository": "giasonpooni/Scientific-Computation-Runtime",
+     "revision": "a59aba283b0304faeeb3e5d305087e7709e171ca",
+     "source_tree": "4068a711534932e8d89bb0d87d373376dafdf6cd"
+    }
+   },
+   "claim": "The SP1 proved-heat gate re-verified the retained proof without re-execution and rejected a tampered proof",
+   "domain": "computational_pipeline",
+   "evidence_status": "provider_backed",
+   "origin": [
+    "provider"
+   ],
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact counts, digests and string comparisons; no rounding is involved",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": {
+    "native_tests": [
+     "test_native_retained_proof_can_be_reverified_without_reexecution",
+     "test_native_tampered_proof_fails_fresh_verification"
+    ],
+    "reverification_outcome": "passed"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": {
+     "engine": "rebuilt from the pinned source with the CI-pinned toolchain where T099 runs, equal byte for byte to the gate's engine (the pinned-toolchain finding); a reproducible build is not an attestation",
+     "proved_heat_record": "local-2026-09-24",
+     "prover": "not rebuilt by T099"
+    }
+   },
+   "claim": "The engine and prover the SP1 proved-heat gate bound are attested builds of the pinned sources",
+   "domain": "provenance",
    "evidence_status": "not_established",
    "expected_not_established": true,
    "origin": [],
    "uncertainty": null,
    "unit": null,
-   "value": {
-    "attempted": false,
-    "requirements": {
-     "command": "cargo +1.94.0 build --release --locked --manifest-path <scr>/zk/Cargo.toml --target-dir <proof-target> -p sp1-adapter --bin sp1-host",
-     "gate": "scripts/check_proved_heat.py via .github/workflows/proved-heat.yml",
-     "guest_recipe": {
-      "identity": "6e5d1687bcc55243d712553a2b7768b6c587a76418bb48a7a2c44224470d423d",
-      "path": "zk/recipes/sp1-heat.recipe",
-      "verify": "execution.build.verify_build(recipe, <guest sha256>, repo_root=<scr>)"
+   "value": "operator_asserted_not_attested"
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "pinned-toolchain builds with a nonzero or missing exit code or no binary",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
      },
-     "guest_sha256": "a14e3750da7e221d31842bd6cf983fcc8c0f530b2811537e2a9a9fe803dacf82",
-     "network": "crates.io and git dependencies (the zk workspace is not --offline), github.com clones of SCR and SP1, and the github.com release download of the Succinct compiler archive",
-     "resources": {
-      "available_memory_bytes_at_least": 7516192768,
-      "free_disk_bytes_at_least": 21474836480
-     },
-     "source": ".github/workflows/proved-heat.yml",
-     "sp1_checkout": {
-      "path": "<scr>/../notationsystems/SP1-zero-knowledge-virtual-machine",
-      "repository": "https://github.com/succinctlabs/sp1.git",
-      "revision": "b38b61209e45e969289e70d5cf79dc763460bc41",
-      "tree": "7deca3aced8d8eb84dfcede98285a192c862ea4c"
-     },
-     "succinct_compiler_archive": {
-      "install": "tar -xzf <archive> -C <dir>; rustup toolchain link succinct <dir>; rustc +succinct -vV",
-      "sha256": "12c94435d41bfe4e20131bbcce40b35abd32270ad792befc653af4e3fabc192f",
-      "url": "https://github.com/succinctlabs/rust/releases/download/succinct-1.94.0-64bit/rust-toolchain-x86_64-unknown-linux-gnu.tar.gz"
-     },
-     "system_packages": [
-      "build-essential",
-      "clang",
-      "libclang-dev",
-      "libssl-dev",
-      "pkg-config",
-      "protobuf-compiler"
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "pinned-toolchain engine digests differing from the engine the SP1 gate proved against",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "notes": {
+     "cargo": "cargo 1.94.0 (85eff7c80 2026-01-15)",
+     "engine_sha256": [
+      "636b24475b64d1aa7892ebd8f07871e1adaed3325344e41085f08b6b08cc212e"
      ],
-     "toolchain": "rustup toolchain 1.94.0 (minimal profile) plus the linked succinct toolchain"
+     "gate_engine_sha256": "636b24475b64d1aa7892ebd8f07871e1adaed3325344e41085f08b6b08cc212e",
+     "proved_heat_record": "local-2026-09-24",
+     "rustc": "rustc 1.94.0 (4a4ef493e 2026-03-02)"
+    },
+    "provider": {
+     "executed": true,
+     "repository": "giasonpooni/Scientific-Computation-Runtime",
+     "revision": "a59aba283b0304faeeb3e5d305087e7709e171ca",
+     "source_tree": "4068a711534932e8d89bb0d87d373376dafdf6cd"
     }
+   },
+   "claim": "The CI-pinned toolchain rebuilds the engine the SP1 gate proved against byte for byte",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "provider",
+    "reference_checks"
+   ],
+   "regression_tolerance": {
+    "abs": 0,
+    "rel": 0
+   },
+   "uncertainty": {
+    "basis": "exact counts, digests and string comparisons; no rounding is involved",
+    "kind": "roundoff",
+    "value": 0
+   },
+   "unit": null,
+   "value": {
+    "builds": 1,
+    "equal_to_gate_engine": true,
+    "toolchain": "1.94.0"
    }
   },
   {
@@ -277,23 +567,35 @@
   {
    "bytes": 1231,
    "path": "artifacts/T099/cargo-build.json",
-   "sha256": "55c06b985cacf1d45282b59ca3f815a38c0fae4b3cc1ba34e3694a922a4137e4"
+   "sha256": "b534d3ea6e736ac26aaf549b42a9e44a258857053c2045ac60682adbb52badaf"
   },
   {
-   "bytes": 1890,
+   "bytes": 1945,
    "path": "artifacts/T099/sp1-requirements.json",
-   "sha256": "daf1c53c6cf7e195b93b8ba6b1de63bb91b1cd1c0b21e46265ffec41883b552b"
+   "sha256": "3b3cee2094ffade32223b1131f954df4de43a7eb7fabc47413fe87984d586661"
+  },
+  {
+   "bytes": 8782,
+   "path": "artifacts/T099/proved-heat-record.json",
+   "sha256": "8d606783e8f4795b0125dd769a5252928aacc6c6e66128fce959c75ae2907d30"
+  },
+  {
+   "bytes": 1535,
+   "path": "artifacts/T099/pinned-toolchain-build.json",
+   "sha256": "312375118ed16d10362bbed07fa7f88291b0d8e1f3fee9c62c6dd3074536679b"
   }
  ],
- "hypothesis": "The pinned SCR execution engine builds with cargo build --release --locked --offline, leaves the checkout and Cargo.lock unchanged, is reproducible across target directories and executes the heat kernel correctly.",
+ "hypothesis": "The pinned SCR execution engine builds with cargo build --release --locked --offline, leaves the checkout and Cargo.lock unchanged, is reproducible across target directories and executes the heat kernel correctly; a retained run of the SP1 proved-heat gate is intact and names CIW's pins, and the CI-pinned Rust toolchain rebuilds the engine that gate proved against byte for byte.",
  "input_data": [
   "SCR checkout at a59aba283b0304faeeb3e5d305087e7709e171ca",
-  "Rust toolchain (cargo, rustc)"
+  "Rust toolchain (cargo, rustc)",
+  "retained SP1 proved-heat gate record lab/proved-heat/<run-id> (optional; role proved-heat-record)",
+  "rustup toolchain 1.94.0 (optional)"
  ],
- "mathematical_model": "Cargo resolution fixed by crates/Cargo.lock (no external crates); determinism = equal binary digests.",
+ "mathematical_model": "Cargo resolution fixed by crates/Cargo.lock (no external crates); determinism = equal binary digests; record integrity = the SHA-256 of every retained file equal to its manifest entry.",
  "number": 99,
- "numerical_result": "2/2 locked offline builds succeeded; distinct binary digests 1; Cargo.lock 24b1db68d762d3457eb40465dae6c3edc8a2da2925d42f3f794d090d18a5f2bc; survey output [0, 219, 313, 219, 0]; SP1 build not attempted.",
- "observation_model": "cargo exit codes, Cargo.lock digests, binary digests, checkout cleanliness, engine output.",
+ "numerical_result": "2/2 locked offline builds succeeded; distinct binary digests 1; Cargo.lock 24b1db68d762d3457eb40465dae6c3edc8a2da2925d42f3f794d090d18a5f2bc; survey output [0, 219, 313, 219, 0]; proved-heat record local-2026-09-24: gate passed with 111 tests, guest ELF a14e3750da7e rebuilt from recipe 6e5d1687bcc5, heat [0, 65, 92, 65, 0] proved, verified, replayed and re-verified; gate measurements on its recording host (host-specific, not compared): proof 2778024 bytes, prove and verify 354 s, re-verification 92 s, peak RSS 10067357696 bytes; cargo +1.94.0 rebuilt the engine equal to the gate's; T099 never runs the SP1 build itself.",
+ "observation_model": "cargo exit codes, Cargo.lock digests, binary digests, checkout cleanliness, engine output; the record's manifest digests, gate outcome, test record and pinned identities, and CIW's offline validation of its bundles.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
   "status": "not_established"
@@ -304,32 +606,58 @@
    "implementation": "ciw.lab",
    "mpmath": "1.3.0",
    "numpy": "2.4.3",
+   "potpourri3d": "1.4.0",
+   "pygeodesic": "0.1.11",
    "python": "3.12.3",
    "scipy": "1.16.2",
    "sources": {
-    "src/ciw/lab/exchange_provenance_bundles.py": "7e841b781d966fe75d5a86bd61e1ef32150c4087393893be788c2b7eff69f3d4",
-    "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "435727947e827d1d601802a5e860f04d578f7b879301c7f5615fb7d6e523500e",
-    "src/ciw/lab/exchange_provenance_bundles_providers.py": "5e149f2463bd1f30bcfb61d719d84fcc19f84cd0ec201b5c95512c7a17f150b7"
+    "src/ciw/lab/exchange_provenance_bundles.py": "289185340068210691a0ccc526655eadb241855566c88003eedf97eef22b7085",
+    "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "28f726a725f7219ef0afccd34545104b5dc0a36e27723281fe6bd1fbde467fa2",
+    "src/ciw/lab/exchange_provenance_bundles_providers.py": "8c9c0104ce2ba1082c7b1c6e2dc2ad0728013e5cae6f5aa9b9f981e02da49690",
+    "src/ciw/lab/proved_heat_records.py": "e4a4729eeb5f3090e6b7da83d1b9a8b7359a0ff3e80e3d067dfac261d1648823"
    },
    "sympy": "1.14.0"
   },
+  "proved_heat_record": {
+   "manifest_sha256": "3866f8b4cb50b91070c1e4c853a0cf52b00b611a0b850e269afd1f12d5490cdc",
+   "native_artifacts": {
+    "engine": "636b24475b64d1aa7892ebd8f07871e1adaed3325344e41085f08b6b08cc212e",
+    "guest": "a14e3750da7e221d31842bd6cf983fcc8c0f530b2811537e2a9a9fe803dacf82",
+    "prover": "c6889f4d9f2dc3b689f599155b3dd0766a53b48ea67b89015f461589d193c95b"
+   },
+   "run_id": "local-2026-09-24",
+   "scr": {
+    "revision": "a59aba283b0304faeeb3e5d305087e7709e171ca",
+    "tree": "4068a711534932e8d89bb0d87d373376dafdf6cd"
+   },
+   "sp1": {
+    "revision": "b38b61209e45e969289e70d5cf79dc763460bc41",
+    "tree": "7deca3aced8d8eb84dfcede98285a192c862ea4c"
+   },
+   "state": "valid"
+  },
   "requirement_probes": {
+   "provider:proved-heat-record": true,
    "provider:scr": true,
-   "tool:cargo": true
+   "tool:cargo": true,
+   "tool:cargo+1.94.0": true
   },
   "scr": {
    "cargo": "cargo 1.94.1 (29ea6fb6a 2026-03-24)",
    "engine_sha256": "b9f40b3094ecf4b793676c766ffd559dc69abc4fada564c1bde94e79c6f0b201",
    "head": "a59aba283b0304faeeb3e5d305087e7709e171ca",
+   "pinned_toolchain": "1.94.0",
+   "pinned_toolchain_engine_sha256": "636b24475b64d1aa7892ebd8f07871e1adaed3325344e41085f08b6b08cc212e",
+   "pinned_toolchain_rustc": "rustc 1.94.0 (4a4ef493e 2026-03-02)",
    "rustc": "rustc 1.94.1 (e408947bf 2026-03-25)",
    "tree": "4068a711534932e8d89bb0d87d373376dafdf6cd"
   }
  },
- "recommended_next_task": "Run the SP1 proved-heat gate (scripts/check_proved_heat.py) on a machine that meets its recorded requirements (network access to crates.io and GitHub releases, the SP1 checkout b38b612, protoc, at least 7 GiB of RAM and 20 GiB of disk) and retain its outcome; and rebuild execution-cli with CI's pinned rustc 1.94.0 beside this run's toolchain to find whether the engine digest depends on the toolchain.",
- "report_id": "sha256:f793a0ec746092eb57660d31836fbbebc6b27eceee434a40ed67cec84e716153",
+ "recommended_next_task": "Deferred research question: retain the output of a CI run of the SP1 proved-heat gate (.github/workflows/proved-heat.yml runs it and uploads proved-heat-native-evidence, which nothing retains) as a second record beside the local one, extending ciw lab proved-heat retain to accept that artifact, which has no local-run.json, so that the gate's outcome no longer rests on one operator host; attest the engine and prover the gate binds (build them from the pinned sources in the same job and record that build, or sign them), so that host_executable_binding is no longer operator_asserted_not_attested; and rebuild sp1-host with the CI-pinned toolchain on a second host to learn whether the prover digest, like the engine's on the recording host, depends only on the toolchain.",
+ "report_id": "sha256:3411d3c4924e85385743f68bdd8be2ea39f04bb233bcd8ca975f7b0998d79d84",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
- "state": "partial",
+ "state": "completed",
  "task_id": "T099",
  "tests_passed": [
   "check: cargo build --release --locked --offline of SCR execution-cli succeeds at the pinned revision vs builds with a nonzero or missing exit code",
@@ -339,15 +667,30 @@
   "check: The locked build leaves Cargo.lock and the checkout unchanged and is bit-reproducible across fresh target directories vs builds that failed",
   "check: The locked build leaves Cargo.lock and the checkout unchanged and is bit-reproducible across fresh target directories vs distinct binary digests beyond one",
   "independent: The freshly built engine's heat output equals an independent integer reference vs ciw.lab.exchange_provenance_bundles_fixtures.heat_reference",
+  "check: The bound SP1 proved-heat gate record matches its manifest digests, records a passing gate with its required native tests, names CIW's pinned SCR, SP1, guest recipe, guest ELF and compiler archive, and holds bundles that pass CIW's offline validation vs record problems (integrity)",
+  "check: The bound SP1 proved-heat gate record matches its manifest digests, records a passing gate with its required native tests, names CIW's pinned SCR, SP1, guest recipe, guest ELF and compiler archive, and holds bundles that pass CIW's offline validation vs record problems (run_record)",
+  "check: The bound SP1 proved-heat gate record matches its manifest digests, records a passing gate with its required native tests, names CIW's pinned SCR, SP1, guest recipe, guest ELF and compiler archive, and holds bundles that pass CIW's offline validation vs record problems (gate)",
+  "check: The bound SP1 proved-heat gate record matches its manifest digests, records a passing gate with its required native tests, names CIW's pinned SCR, SP1, guest recipe, guest ELF and compiler archive, and holds bundles that pass CIW's offline validation vs record problems (pins)",
+  "check: The bound SP1 proved-heat gate record matches its manifest digests, records a passing gate with its required native tests, names CIW's pinned SCR, SP1, guest recipe, guest ELF and compiler archive, and holds bundles that pass CIW's offline validation vs record problems (bundles)",
+  "check: The CI-pinned toolchain rebuilds the engine the SP1 gate proved against byte for byte vs pinned-toolchain builds with a nonzero or missing exit code or no binary",
+  "check: The CI-pinned toolchain rebuilds the engine the SP1 gate proved against byte for byte vs pinned-toolchain engine digests differing from the engine the SP1 gate proved against",
   "pytest: tests/test_lab_exchange_provenance_bundles.py::test_t099_locked_offline_scr_build",
   "pytest: tests/test_lab_exchange_provenance_bundles.py::test_t097_t099_refuse_a_non_repository_scr_binding",
-  "pytest: tests/test_lab_exchange_provenance_bundles.py::test_t099_names_the_built_checkout_beside_its_label"
+  "pytest: tests/test_lab_exchange_provenance_bundles.py::test_t099_names_the_built_checkout_beside_its_label",
+  "pytest: tests/test_lab_proved_heat_records.py::test_t099_labels_a_valid_proved_heat_record_provider_backed",
+  "pytest: tests/test_lab_proved_heat_records.py::test_t099_refuses_a_tampered_proved_heat_record_by_name",
+  "pytest: tests/test_lab_proved_heat_records.py::test_t099_without_a_record_or_the_pinned_toolchain",
+  "pytest: tests/test_lab_proved_heat_records.py::test_t099_refutes_a_pinned_rebuild_that_differs_from_the_gate_engine",
+  "pytest: tests/test_lab_proved_heat_records.py::test_t099_words_the_pinned_rebuild_and_the_toolchain_observation_by_what_happened",
+  "pytest: tests/test_lab_proved_heat_records.py::test_t099_rebuilds_the_gate_engine_with_the_pinned_toolchain"
  ],
  "tests_skipped": [],
  "title": "Verify `cargo build --locked`.",
- "uncertainty": "Exact digests and integers; the binary digest depends on the Rust toolchain and is recorded as provenance.",
+ "uncertainty": "Exact digests and integers; the binary digest depends on the Rust toolchain and is recorded as provenance, except the pinned-toolchain digest, compared exactly with the gate record's engine; the gate's measurements belong to its recording host and are reported, not compared.",
  "unresolved_assumptions": [
-  "The binary digest depends on the Rust toolchain recorded in provider_runtime_identity; CI pins rustc 1.94.0 for the proved-heat gate, and other toolchains may produce different digests.",
-  "The SP1 proved-heat build needs crates.io and GitHub release downloads, the SP1 checkout, the Succinct compiler archive, protoc and >= 7 GiB RAM / 20 GiB disk (.github/workflows/proved-heat.yml); host probes are in sp1-requirements.json."
+  "The engine digest depends on the Rust toolchain and not on the checkout path, as the bound record's run.json observes on its recording host (3 builds with rustc 1.94.0 (4a4ef493e 2026-03-02) gave the gate's engine digest; 2 builds with rustc 1.94.1 (e408947bf 2026-03-25) gave one other digest; the sources of those builds are in proved-heat-record.json); here the pinned-toolchain rebuild gave the gate's engine digest; another host's linker or C library may still change it, which that rebuild tests wherever T099 runs; this run's digests are in pinned-toolchain-build.json.",
+  "The bound record is the gate's outcome as retained: T099 checks its digests, pins and bundle consistency but re-verifies no proof, and the manifest digests are unkeyed, so a fabricated record that copies CIW's public pins and recomputes every digest would pass.",
+  "The gate bound its engine and prover as operator_asserted_not_attested executables: the record shows which bytes ran, not that they were built from the pinned sources. The pinned-toolchain rebuild shows the engine bytes are reproducible from the pinned source where T099 runs; nothing here rebuilds the prover.",
+  "The recorded gate was run locally by replaying the workflow's gate steps (scripts/run_proved_heat_locally.py), not by CI, and its times, memory and proof sizes are measurements of its recording host."
  ]
 }

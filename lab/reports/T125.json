@@ -294,7 +294,7 @@
   {
    "bytes": 5530,
    "path": "artifacts/T125/session-replay.json",
-   "sha256": "adc01fd69cedf4ec1b999e323114eaf641375a437d3922704587ed6b13cd744e"
+   "sha256": "27a8c87530f9473d9daa266b8709ab45df620d942aad9b0b6c053f2c7e553a20"
   }
  ],
  "hypothesis": "Replaying a retained energy analysis through a ciw Session recomputes the same numerical result (stable numerical_result_id) under fresh execution and result identities.",
@@ -314,6 +314,8 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
@@ -325,7 +327,7 @@
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: replay a retained RTX 2080 log (lab/hardware/<run-id>/artifacts/T116/operator-log.json, once a GPU run is retained) through a Session on a second host and compare its numerical_result_id; whether the ids agree across platforms is open, because they hash binary64 analysis values and ciw.core.identities was not migrated to ciw.canonical-json.v1 (T146 kept the ASCII variant)",
- "report_id": "sha256:1a69f3e2c505bb9ad138f4a766fdf450352156e58f9ba2e7af030b5e4a05dfb4",
+ "report_id": "sha256:9dae5a286bc3060722a84eeffd0b5e5c2080491c1fcd16e22c611f2a30c2fa48",
  "schema": "ciw.lab-task-report.v1",
  "section": "energy-gpu",
  "state": "completed",

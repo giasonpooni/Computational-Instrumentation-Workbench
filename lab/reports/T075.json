@@ -898,6 +898,8 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
@@ -911,7 +913,7 @@
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: an intrinsic surface-chart channel, a record mode that delivers a two-component chart position with its geometry/sensor split (for example a pair of tape readings along declared geodesics, or a tracker position unrolled through a declared surface model as T045 does for chords), so the intrinsic session has an admissible input instead of only a refusal; then repeat this pipeline on it.",
- "report_id": "sha256:170397ee6093ea0b641ee0d13506f0001f7e5bf74b57fe6e26e28ea2c658cd4f",
+ "report_id": "sha256:54b868f5fe4a7c8dc70951c2ad1848eb538807a56c15053873fe8e11d26db964",
  "schema": "ciw.lab-task-report.v1",
  "section": "sensor-fusion",
  "state": "completed",

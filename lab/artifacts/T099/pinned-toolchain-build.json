@@ -1,0 +1,35 @@
+{
+ "default": {
+  "cargo": "cargo 1.94.1 (29ea6fb6a 2026-03-24)",
+  "engine_sha256": [
+   "b9f40b3094ecf4b793676c766ffd559dc69abc4fada564c1bde94e79c6f0b201"
+  ],
+  "rustc": "rustc 1.94.1 (e408947bf 2026-03-25)"
+ },
+ "default_differs_from_gate_engine": true,
+ "default_differs_from_pinned": true,
+ "gate_engine_sha256": "636b24475b64d1aa7892ebd8f07871e1adaed3325344e41085f08b6b08cc212e",
+ "note": "The default toolchain's engine digest is a host-specific observation, reported and not compared; the pinned-toolchain digest is compared exactly with the engine the bound gate record names.",
+ "pinned": {
+  "builds": [
+   {
+    "binary_sha256": "636b24475b64d1aa7892ebd8f07871e1adaed3325344e41085f08b6b08cc212e",
+    "byte_count": 509160,
+    "log_tail": [
+     "   Compiling execution-core v0.1.0 (<scr>/crates/execution-core)",
+     "   Compiling execution-cli v0.1.0 (<scr>/crates/execution-cli)",
+     "    Finished `release` profile [optimized] target(s) in 0.69s"
+    ],
+    "returncode": 0
+   }
+  ],
+  "cargo": "cargo 1.94.0 (85eff7c80 2026-01-15)",
+  "cargo_lock_sha256_after": "24b1db68d762d3457eb40465dae6c3edc8a2da2925d42f3f794d090d18a5f2bc",
+  "cargo_lock_sha256_before": "24b1db68d762d3457eb40465dae6c3edc8a2da2925d42f3f794d090d18a5f2bc",
+  "cargo_target_dir": "fresh temporary directory per build",
+  "command": "cargo +1.94.0 build --release --locked --offline --manifest-path <scr>/crates/Cargo.toml -p execution-cli",
+  "rustc": "rustc 1.94.0 (4a4ef493e 2026-03-02)",
+  "toolchain": "1.94.0"
+ },
+ "toolchain": "1.94.0"
+}

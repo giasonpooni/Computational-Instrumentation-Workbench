@@ -618,6 +618,8 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "requirement_probes": {
    "module:mpmath": true,
@@ -631,7 +633,7 @@
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: extend the no-renormalization scan from the listed functions to every function reachable from the integrator step (the metric evaluations called from the right-hand side included), for example by walking the call graph with the ast module, with the start-state normalization declared as the one allowed exception",
- "report_id": "sha256:97e3c555fe7df8caf627b61579955ea09010105d5d2953107845f4d913ac7217",
+ "report_id": "sha256:87c19788b3b6644a131310378036c6bb99be20292137f215f72fc6d57296971f",
  "schema": "ciw.lab-task-report.v1",
  "section": "geodesic-jacobi",
  "state": "completed",

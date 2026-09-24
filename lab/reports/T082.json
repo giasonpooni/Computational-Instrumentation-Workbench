@@ -341,16 +341,18 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/exchange_provenance.py": "0871a5e3e3a27b365a326036c869338b11e5aa3bc4af3ca60db29e81bedbba36",
+   "src/ciw/lab/exchange_provenance.py": "6c5c6d9b49043664ad9cea8f4bc2ff5d9fc367aea6194e2e7608c98bfd5c54f4",
    "src/ciw/lab/exchange_provenance_common.py": "17ab892e3f285ac475b44c240155acf45f8bbdbefca28a345980aba548c6d1a9"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question (CIW change): keyed or externally timestamped execution records (for example an RFC 3161 timestamp over the execution record digest) so that created_at carries evidential weight, and a registry of occurrences across workspaces so that two workspaces reusing one occurrence identity are detected.",
- "report_id": "sha256:726e2d4c934bbf05d7d2219d6fd8c2bd3f7e278889872cf77276585b529c15cd",
+ "report_id": "sha256:dada824909030eb193027d97bcb0d0e018b5c5c46a19833b3dbfadc429dcc97b",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "completed",
@@ -372,11 +374,10 @@
   "check: Surviving mutant fresh.created-at-shift: a backdated execution and result pair reopens vs fresh.created-at-shift: accepted (1 = accepted)",
   "check: Surviving mutant fresh.created-at-shift: a backdated execution and result pair reopens vs reopened execution dated 2001 (0 = shown)",
   "pytest: tests/test_lab_exchange_provenance.py::test_fresh_occurrences",
-  "pytest: tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work"
+  "pytest: tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work",
+  "pytest: tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply"
  ],
- "tests_skipped": [
-  "pytest: tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply (skipped)"
- ],
+ "tests_skipped": [],
  "title": "Test fresh replay execution and result identities.",
  "uncertainty": "61 identities: 27 uuid4 draws, whose collision probability is below 6.6e-35, and 34 SHA-256 digests over records containing those draws; freshness is checked within one workspace, not globally across workspaces.",
  "unresolved_assumptions": [

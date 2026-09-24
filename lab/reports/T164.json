@@ -75,10 +75,10 @@
   "ciw_version": "0.1.0",
   "implementation": "ciw.lab",
   "python": "3.12.3",
-  "wheel_sha256": "a088c4a60b5545ebd74ba48ac728bda192f6aa18f64f678ab0d36377b78a60c5"
+  "wheel_sha256": "f6d6dbbeb2f45cf435bb368a70f5d311b45539d3291c81860aef5546068d7b4b"
  },
  "recommended_next_task": "Run scripts/check_lab.py under Python 3.12 on Windows and on a second Linux host and retain both gate records.",
- "report_id": "sha256:f4a2e8ae1733223cabb8d7a75d277905dc290e5333119e30adca72e92fe8c6dd",
+ "report_id": "sha256:3757ec7ffad9e4a3e2e091c08f9293b8e510fea2d52346aef99bce9d60494fc7",
  "schema": "ciw.lab-task-report.v1",
  "section": "research-portfolio",
  "state": "completed",

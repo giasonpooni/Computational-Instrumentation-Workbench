@@ -233,16 +233,18 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/exchange_provenance.py": "0871a5e3e3a27b365a326036c869338b11e5aa3bc4af3ca60db29e81bedbba36",
+   "src/ciw/lab/exchange_provenance.py": "6c5c6d9b49043664ad9cea8f4bc2ff5d9fc367aea6194e2e7608c98bfd5c54f4",
    "src/ciw/lab/exchange_provenance_common.py": "17ab892e3f285ac475b44c240155acf45f8bbdbefca28a345980aba548c6d1a9"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question (CIW change): refuse a replay whose created_at precedes its source's, or date replays with an external timestamp, and re-run these mutations to check that receipt-replayed.reidentified-bundle is refused while every killed mutant keeps its pinned message.",
- "report_id": "sha256:1003289381cdba63c788682f06bbeef76193b150fa73f977b470e6abda866cda",
+ "report_id": "sha256:d6beac2ef2e4022a517d537ed81cba4b597d6ff300a747b641834f622007acd9",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "completed",
@@ -257,11 +259,10 @@
   "check: Surviving mutant receipt-replayed.reidentified-bundle: a replay re-sessioned and dated before its source, with recomputed digests, reopens vs receipt-replayed.reidentified-bundle: accepted (1 = accepted)",
   "check: Surviving mutant receipt-replayed.reidentified-bundle: a replay re-sessioned and dated before its source, with recomputed digests, reopens vs reopened replay dated before its source bundle (0 = shown)",
   "pytest: tests/test_lab_exchange_provenance.py::test_receipt_digest_mutations",
-  "pytest: tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work"
+  "pytest: tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work",
+  "pytest: tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply"
  ],
- "tests_skipped": [
-  "pytest: tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply (skipped)"
- ],
+ "tests_skipped": [],
  "title": "Mutate replay receipt replayed digest.",
  "uncertainty": "Outcomes are exact (accepted or a refusal message). Only kill/survive is a prediction; refusal messages are regression pins recorded from observed runs. Survivors are demonstrated forgeries; kills show only that these particular edits are detected, not that every edit of this field is.",
  "unresolved_assumptions": [

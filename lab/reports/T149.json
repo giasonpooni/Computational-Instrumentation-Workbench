@@ -610,16 +610,18 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/implementation_targets.py": "0ea1ac76f50f1c65b47155a6791a0ea74c3ebf57d0b254a4a6615dabb930b5e7",
+   "src/ciw/lab/implementation_targets.py": "146ab24ea35b8e6fc4883e3f7d872e70dbf7b719e85d881d31865e4f8201f30d",
    "src/ciw/lab/implementation_targets_fpga.py": "7af2bda8190c93108f5bac0d8b28ffd057267b6b428af3d8f820d0f594ea5e00"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: an HDL implementation of this frame format on an FPGA, driven over a physical transmit-only link, to test the LSB-first burst guarantee and the unidirectional transport this task assumes (the link simulation of this section is software only)",
- "report_id": "sha256:af71838e1c0ed533a166ee6d5d04390d37c48f116d191616df9fcb744a7ff375",
+ "report_id": "sha256:7b6bc86bd0871d3ada0a72a8f2b033146c8a887fb13775027011a3046d7c3258",
  "schema": "ciw.lab-task-report.v1",
  "section": "implementation-targets",
  "state": "completed",

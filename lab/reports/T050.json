@@ -17,7 +17,7 @@
   "primary": "numerically_verified"
  },
  "expected_invariant": "Implemented displacement equals f(k1 r^3 + k2 r^5); first-order bias law with slopes 2 (radius) and 1 (k1); zero bias after correct undistortion inside the fold radius; marker centre offset equal to the dual-conic closed form, zero for fronto-parallel markers and weak perspective, chord bias J_pix delta with slope 2 in marker radius.",
- "experiment": "Implementation consistency scan of the displacement; chord bias against the pixel-Jacobian prediction and log-log slopes across image radius and k1; correction with the generating model; fold counterexample with converged undistortion; perspective: conic centres of projected circular-marker rims against the closed form and the projected centres, fronto-parallel and weak-perspective controls, and chord bias against J_pix delta over three marker radii.",
+ "experiment": "Implementation consistency scan of the displacement; chord bias against the pixel-Jacobian prediction and log-log slopes across image radius and k1; correction with the generating model; fold counterexample with converged undistortion; perspective: conic centres of projected circular-marker rims against the closed form and the projected centres, fronto-parallel and weak-perspective controls, and chord bias against J_pix delta over three marker radii. J_pix is taken by central differences with a 0.01 px step.",
  "failure_modes_checked": [
   "sign of k1 (odd symmetry)",
   "markers leaving the image at large shifts",
@@ -69,7 +69,7 @@
     "checks": [
      {
       "comparison": "abs_le",
-      "observed": 0.0030165229150497593,
+      "observed": 0.0030165244245241025,
       "passed": true,
       "reference": "max |direct - J_pix delta_pix| / |direct| for |k1| <= 0.1",
       "reference_kind": "analytic",
@@ -158,16 +158,16 @@
     "rel": 1e-06
    },
    "uncertainty": {
-    "basis": "radius slope: largest departure of a pairwise slope from the fitted one (higher-order terms of f k1 ((r + dr)^3 - r^3) and the changing pixel Jacobian of the shifted markers); first order: the O(k1 r^2) residual itself",
+    "basis": "radius slope: largest departure of a pairwise slope from the fitted one (higher-order terms of f k1 ((r + dr)^3 - r^3) and the changing pixel Jacobian of the shifted markers); first order: the O(k1 r^2) residual itself. Its rounding part, the triangulation's rounding over the 0.01 px central-difference step of J_pix, differs between the SkylakeX, Haswell, Sandybridge, Nehalem and Katmai OpenBLAS kernels by at most 2.6e-8 relative; the regression tolerance (1e-6 relative) is about 40 times that spread",
     "kind": "truncation_bound",
     "value": {
-     "first_order_relative_residual": 0.0030165229150497593,
+     "first_order_relative_residual": 0.0030165244245241025,
      "radius_slope": 0.14487506402273898
     }
    },
    "unit": null,
    "value": {
-    "first_order_relative_residual": 0.0030165229150497593,
+    "first_order_relative_residual": 0.0030165244245241025,
     "k1_slope_max_error": 8.015442625597391e-05,
     "mean_abs_bias_k1_0.01_m": [
      5.911715593521587e-06,
@@ -411,7 +411,7 @@
     "checks": [
      {
       "comparison": "abs_le",
-      "observed": 0.0003846412357328385,
+      "observed": 0.00038463697250602904,
       "passed": true,
       "reference": "max |direct - J_pix delta_pix| / max |direct| over the 24 pairs and 3 radii",
       "reference_kind": "analytic",
@@ -446,16 +446,16 @@
     "rel": 1e-06
    },
    "uncertainty": {
-    "basis": "the first-order law omits O(delta^2) terms; the recorded residual is that truncation",
+    "basis": "the first-order law omits O(delta^2) terms; the recorded residual is that truncation. Its rounding part, the triangulation's rounding over the 0.01 px central-difference step of J_pix, differs between the SkylakeX, Haswell, Sandybridge, Nehalem and Katmai OpenBLAS kernels by at most 5.6e-8 relative; the regression tolerance (1e-6 relative) is about 18 times that spread",
     "kind": "truncation_bound",
     "value": {
-     "first_order_relative_residual": 0.0003846412357328385
+     "first_order_relative_residual": 0.00038463697250602904
     }
    },
    "unit": "m",
    "value": {
     "bias_radius_slope": 2.000064369420803,
-    "first_order_relative_residual": 0.0003846412357328385,
+    "first_order_relative_residual": 0.00038463697250602904,
     "marker_radii_m": [
      0.002,
      0.004,
@@ -499,12 +499,12 @@
   {
    "bytes": 5570,
    "path": "artifacts/T050/distortion-study.json",
-   "sha256": "1980ffae15c73ac15a852d221d481d93db114f90b1c5fa055e4f34db08febb53"
+   "sha256": "b8ca913c29afeba7929e4826a033ea6c74176cee5b55e73fd40449a881c68a7a"
   },
   {
-   "bytes": 3674,
+   "bytes": 3676,
    "path": "artifacts/T050/perspective-markers.json",
-   "sha256": "a203a5ef4cb1ca855bfae22f4921f6b70a116c88c8f791f7c6905b202418eb11"
+   "sha256": "c61801538c67f7f760c93f9077b34a585eb5ef3fdeed3ac464f4dcd958d55ab0"
   },
   {
    "bytes": 1939,
@@ -546,16 +546,18 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/observation.py": "ef75c3ea4cad06bcbc68592440b3d55a92786a729d5a731b87ece207511ddffb",
+   "src/ciw/lab/observation.py": "2a6812aa800277efdf1243187221123c8c7d15df4b298371e07f87f756e2a461",
    "src/ciw/lab/observation_camera.py": "130cf51175050a5eb947b8d434553bdfa19bd102a33108f414d7a5fa9c651bce"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: give each camera its own distortion model and a distortion centre offset from the principal point, and measure how much chord error an unmodelled centre offset adds to T050's shared-model case.",
- "report_id": "sha256:9236d34a19827cc314aafcefb1d77b1e3acba735a3c94bfd8624061fab3cea39",
+ "report_id": "sha256:aa2ac3c74d4652dd050791573f1bc07c7589d37ca63c827aa2561d9a95be84e5",
  "schema": "ciw.lab-task-report.v1",
  "section": "observation",
  "state": "completed",
@@ -586,7 +588,7 @@
  ],
  "tests_skipped": [],
  "title": "Add perspective and lens-distortion perturbations.",
- "uncertainty": "Deterministic; the first-order residual is O(k1 r^2) and bounded by the stated tolerance; the distortion radius slope departs from 2 through the higher-order terms of f k1 ((r + dr)^3 - r^3) and the changing pixel Jacobian and displacement directions of the shifted markers, which are not separated (pairwise slopes up to 2.18 at the largest radius); marker-centre offsets are exact to rounding (closed form against conic fit), and the marker chord bias carries its first-order residual.",
+ "uncertainty": "Deterministic; the first-order residual is O(k1 r^2) and bounded by the stated tolerance; the distortion radius slope departs from 2 through the higher-order terms of f k1 ((r + dr)^3 - r^3) and the changing pixel Jacobian and displacement directions of the shifted markers, which are not separated (pairwise slopes up to 2.18 at the largest radius); marker-centre offsets are exact to rounding (closed form against conic fit), and the marker chord bias carries its first-order residual. Both first-order residuals also carry the triangulation's rounding over the central-difference step of J_pix, which differs between OpenBLAS kernels by less than 1e-7 relative.",
  "unresolved_assumptions": [
   "Both cameras share one distortion model",
   "Principal point equals distortion centre",

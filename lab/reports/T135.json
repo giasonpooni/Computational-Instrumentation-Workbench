@@ -328,6 +328,8 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
@@ -339,7 +341,7 @@
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Open: bound uncovered slivers below the sampling resolution (about 1e-4 of the coupon area) with an exact footprint union instead of area sampling, and add occlusion, incidence and depth-of-field limits to the footprint.",
- "report_id": "sha256:ccf92bbb6a66f621db9f84d9bbaa2c81402828eb0d10f3775e84036a3d0c84cd",
+ "report_id": "sha256:019791229cce0a175dd107299009ea7e052aa733cba8b5dbce53658a0f430e8a",
  "schema": "ciw.lab-task-report.v1",
  "section": "manufacturing",
  "state": "completed",

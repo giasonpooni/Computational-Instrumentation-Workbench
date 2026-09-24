@@ -146,9 +146,9 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 295088,
+   "bytes": 295089,
    "path": "artifacts/T160/instrument-methods-draft.md",
-   "sha256": "d993b8326184726446c54a43c18fa71048eb6f8a15cdb1259db50ecea12fcac9"
+   "sha256": "25611c80b065793e9cbd88e2754f408e5afc70f21577468e98dda90d3318afc5"
   }
  ],
  "hypothesis": "An instrument methods draft with a thesis, introduction, methods, results, discussion, limitations and outstanding work can be generated from retained findings alone: every number traceable to a report identity, every label defined and shown with its basis, and every limitation drawn from not_established findings and the unfinished tasks' own statements.",
@@ -170,15 +170,17 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/research_portfolio.py": "145b8ee8456e1dd57bf2a05fa20e1ce55bd33356522436d8901eb1adfb60fc7a"
+   "src/ciw/lab/research_portfolio.py": "36d03762abf5cb7a900d4572ec3f8aa8e7bc55cb61331711dce910a334b3acf8"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Write the parts the lab cannot write (the thesis in the authors' words, the related-work discussion, the interpretation of the counterexamples and the conclusions) and submit the draft for external review; then the unfinished tasks' own next steps (T115: Measure package energy per geodesic trajectory and per common-workload batch on a Linux host with readable intel-rapl counters (docs/lab/ENERGY_GPU.md) …; T116: Measure gross device energy per batch of the common Gaussian VI workload on the RTX 2080 host (protocol in docs/lab/ENERGY_GPU.md), hardware_measured through …; T117: Compare the PTX kernel's outputs with the NumPy reference bit for bit on the RTX 2080 host (protocol in docs/lab/ENERGY_GPU.md): `mkdir -p …; T118: Record power, temperature, clock and utilization of the common workload on the RTX 2080 host (protocol in docs/lab/ENERGY_GPU.md): `mkdir -p …; T119: Measure energy per accepted replica solve of the common Gaussian VI workload on the RTX 2080 host (protocol in docs/lab/ENERGY_GPU.md), through the same …; T120: Measure float32 and float64 package energy per batch of the common workload on a Linux host with readable intel-rapl counters (docs/lab/ENERGY_GPU.md): `python …; T121: Check on the RTX 2080 host (protocol in docs/lab/ENERGY_GPU.md) that the PTX kernel keeps its in-kernel reductions unfused: `mkdir -p runs/rtx2080-<date>` …; T124: Retain the first RTX 2080 log with its device and runtime identity through the acquisition gate on the RTX 2080 host (protocol in docs/lab/ENERGY_GPU.md) …; T138: Deferred research question: define a signed-capture trust anchor (instrument-held signing keys and their verification) or a hardware:metrology probe, without …; T139: Deferred research question: a signed-capture trust anchor (instrument-held keys that sign each export) or a hardware:metrology probe, without which a retained …); 57 physical, calibration or sensor claims of completed tasks (T045, T046, T047, T048, T049, T050, T051, T052, T053, T054, T055, T056, T057, T058, T060, T061, T062, T063, T064, T065, T066, T067, T068, T069, T070, T071, T072, T074, T075, T122, T123, T125, T126, T127, T128, T129, T130, T131, T132, T133, T134, T135, T136, T137, T140) stay not established, and each task's own next step is listed under Outstanding work; 9 authority-domain claims stay not established on any evidence.",
- "report_id": "sha256:32bfbd606e87e0552316a56859e43dab53d1762ded57e77b67e798a89bd9f848",
+ "report_id": "sha256:85ec6cb774ed44d1ff8d33bf70e8db5e36bc2d36c3be0229eddf0cf5d0b8e9fa",
  "schema": "ciw.lab-task-report.v1",
  "section": "research-portfolio",
  "state": "partial",

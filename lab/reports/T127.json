@@ -520,6 +520,8 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
@@ -531,7 +533,7 @@
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Acquire MFG-CYLINDER-01 and bind its exports to T138 (ciw lab run T138 --capture photogrammetry=<targets.csv> --capture film=<film.csv>), then retain the run with ciw lab hardware retain; T138's comparison of the captured gaps and chords is computational, and a physical label needs a metrology instrument probe or a signed-capture trust anchor (deferred research question). Open: model the seam weld and out-of-roundness, which the cylinder prediction omits.",
- "report_id": "sha256:40f38fd04dd493d6864d54da46a5500962aad5a28a201ecbc3946327c77fdd44",
+ "report_id": "sha256:935cd32ac3dd78d1cbf915d02c22e4044df0c0bed0776b1f3616e8df010a51a0",
  "schema": "ciw.lab-task-report.v1",
  "section": "manufacturing",
  "state": "completed",

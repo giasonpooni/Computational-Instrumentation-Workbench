@@ -338,17 +338,19 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/lyapunov.py": "dcda8ba21661667cc03bb126a393e93158a306b4991d0a2450d8e18abe62cb27",
-   "src/ciw/lab/lyapunov_reference.py": "bdf0bb5074ae2caca6c8a5d8e63a15e346b007098e6def6b058d077719bc1336",
+   "src/ciw/lab/lyapunov.py": "d343889fe69789b9551ef6e36029c1f969c6bf04c4cdb4618b9f506539831665",
+   "src/ciw/lab/lyapunov_reference.py": "831ae8bd144c10e255cb9f2b54e0c219e2f98a59d01a07b5255046ae70b9b431",
    "src/ciw/lab/lyapunov_research.py": "8e6e5b4ac0a8ba3b12d4ee13ced778fe5070b43f6766752ffc8c5b88f1a4baef"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: specify a resolution-aware float64 ISS inequality (open question 1 in the retained spec) before any runtime integration (acquiring an evidenced disturbance bound is hardware-gated).",
- "report_id": "sha256:832f8cc1ddb8367ce9df40cf6d2fedaf49ad287b5f8233c719b4403fd2f831ca",
+ "report_id": "sha256:2aef704a3deb1088e88275c19b2f366b10482308c47b24b1a1046cbab7d016a3",
  "schema": "ciw.lab-task-report.v1",
  "section": "lyapunov",
  "state": "completed",

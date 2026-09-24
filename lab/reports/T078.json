@@ -297,16 +297,18 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/exchange_provenance.py": "0871a5e3e3a27b365a326036c869338b11e5aa3bc4af3ca60db29e81bedbba36",
+   "src/ciw/lab/exchange_provenance.py": "6c5c6d9b49043664ad9cea8f4bc2ff5d9fc367aea6194e2e7608c98bfd5c54f4",
    "src/ciw/lab/exchange_provenance_common.py": "17ab892e3f285ac475b44c240155acf45f8bbdbefca28a345980aba548c6d1a9"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: exercise exact byte retention for the source kinds other than energy-accuracy (they share workbench._source but have their own parsers), and retain the oscillator recording's input bytes, which are supplied as parsed JSON and so do not exist to retain.",
- "report_id": "sha256:6e64a0d597ac23ce0e9d47ec5c39036726907bacba4e60c30a25aa9ccf276ed2",
+ "report_id": "sha256:c699910029f63110d43801c6840229525bc25c4d230c8038bcbf93c4d0b1033d",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "completed",
@@ -326,11 +328,10 @@
   "check: Evidence identity depends only on bytes: one byte string under two labels shares evidence_id while source_id differs vs distinct source ids for two labels (observed 2, predicted 2)",
   "check: The oscillator recording path retains canonical content, not caller bytes: its file is a CIW re-serialization named by a content digest vs recording file (newlines LF-normalized) differs from the json.dumps(run, indent=2) re-serialization",
   "pytest: tests/test_lab_exchange_provenance.py::test_exact_source_bytes",
-  "pytest: tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work"
+  "pytest: tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work",
+  "pytest: tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply"
  ],
- "tests_skipped": [
-  "pytest: tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply (skipped)"
- ],
+ "tests_skipped": [],
  "title": "Test exact source-byte retention.",
  "uncertainty": "Exact byte equality; no numerical tolerance is involved. The sample is fourteen byte strings of one schema, not every possible source kind.",
  "unresolved_assumptions": [

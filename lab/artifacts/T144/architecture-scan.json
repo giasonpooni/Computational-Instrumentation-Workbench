@@ -8,7 +8,7 @@
   "ciw.lab.evidence",
   "ciw.lab.report"
  ],
- "files": 143,
+ "files": 146,
  "mention_subprocess_without_spawn": [
   "ciw.acquired_dataset",
   "ciw.acquired_window",
@@ -45,7 +45,7 @@
   "ciw.telemetry",
   "ciw.workbench"
  ],
- "modules_scanned": 143,
+ "modules_scanned": 146,
  "native_loading": {
   "ciw.energy_cuda": [
    "ctypes"
@@ -53,9 +53,12 @@
   "ciw.energy_nvml": [
    "ctypes",
    "ctypes.util"
+  ],
+  "ciw.lab.blas_probe": [
+   "ctypes"
   ]
  },
- "package_sha256": "bd2ecfd61676c5b6e1c5586c49dddc9b286cde6bacc02a1bf681efc5d63a97d0",
+ "package_sha256": "4b7df3616b8ad18f88bafd98a7a867b987d02d2b2561500440b7d5b7fa63f7c5",
  "path_resolved_spawners": {
   "ciw.lab.energy_gpu_kernels": {
    "spawn_lines": [
@@ -69,15 +72,15 @@
   },
   "ciw.lab.exchange_provenance_bundles_providers": {
    "spawn_lines": [
-    137,
-    302,
-    346,
-    370,
-    419,
-    544
+    140,
+    305,
+    355,
+    386,
+    436,
+    561
    ],
    "which_lines": [
-    568
+    585
    ]
   },
   "ciw.lab.implementation_targets_serial": {
@@ -92,12 +95,13 @@
   },
   "ciw.lab.runner": {
    "spawn_lines": [
-    117,
-    273
+    123,
+    291,
+    307
    ],
    "which_lines": [
-    211,
-    270
+    284,
+    304
    ]
   }
  },
@@ -114,15 +118,15 @@
    466
   ],
   "ciw.lab.exchange_provenance_bundles": [
-   2277
+   2388
   ],
   "ciw.lab.exchange_provenance_bundles_providers": [
-   137,
-   302,
-   346,
-   370,
-   419,
-   544
+   140,
+   305,
+   355,
+   386,
+   436,
+   561
   ],
   "ciw.lab.flat_torus_topology_provider": [
    140
@@ -140,8 +144,9 @@
    187
   ],
   "ciw.lab.runner": [
-   117,
-   273
+   123,
+   291,
+   307
   ]
  },
  "unparsed_modules": [],

@@ -599,6 +599,7 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
   "provider": {
    "commit": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
    "entry": "lyapunov.verdict / lyapunov.solve_lyapunov / lyapunov.decrease_resolution",
@@ -613,20 +614,21 @@
    "source_digest": "a6fee6b3b4eb7852b31f5a285fe8c50b535f25762e1daf82e36720ef8dd1b7c7",
    "verification": "package version and per-file sha256 checked in the subprocess before use"
   },
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "requirement_probes": {
    "provider:plsr-python": true
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/lyapunov.py": "dcda8ba21661667cc03bb126a393e93158a306b4991d0a2450d8e18abe62cb27",
+   "src/ciw/lab/lyapunov.py": "d343889fe69789b9551ef6e36029c1f969c6bf04c4cdb4618b9f506539831665",
    "src/ciw/lab/lyapunov_provider.py": "da3465b48b5f5efc47bfe6ab8379cf2cf2bc23e4835dc7ff047252e77fa6ef17",
-   "src/ciw/lab/lyapunov_reference.py": "bdf0bb5074ae2caca6c8a5d8e63a15e346b007098e6def6b058d077719bc1336"
+   "src/ciw/lab/lyapunov_reference.py": "831ae8bd144c10e255cb9f2b54e0c219e2f98a59d01a07b5255046ae70b9b431"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question (upstream PLSR change): decide the level gate by comparing exponents (log2 V = 2 e + log2 scaled_value) instead of forming s^2, and report NUMERICAL_OVERFLOW instead of raising when A(theta) overflows, then re-run this near-limit scan to check that no exceedance is missed or spurious and that no in-box theta raises.",
- "report_id": "sha256:171fc5b5d38c041d365eaf73ddfb141033d1777de2e9f332c8e0ba5eda912557",
+ "report_id": "sha256:3fddb3ad58dfcdd1139b3965ce06f4164e81e810cd7c6ebadca98e34d7890020",
  "schema": "ciw.lab-task-report.v1",
  "section": "lyapunov",
  "state": "completed",

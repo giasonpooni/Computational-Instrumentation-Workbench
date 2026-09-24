@@ -359,6 +359,8 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
@@ -370,7 +372,7 @@
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: carry units in exchanged records, so a joule and a nat cannot collide after serialization; the canonical JSON fixed by T146 (ciw.canonical-json.v1) encodes numbers without units, and CIW records keep the unit only in field-name suffixes (_j, _mj, _mw, _nats), which this task's audit relies on",
- "report_id": "sha256:07a21f2c483bc9c3a9270830552ea3a0e445b0274363b619e7effbc436ff3f1e",
+ "report_id": "sha256:5c76d93baac17d8d0a0c7ea0d47833939496435f936157b1d512785605733117",
  "schema": "ciw.lab-task-report.v1",
  "section": "energy-gpu",
  "state": "completed",

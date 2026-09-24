@@ -236,16 +236,18 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/flat_torus_topology.py": "2c05c13905cc51906d41b89219b001396634a9d3bb8bda9bd32ac75a5523fdb1",
+   "src/ciw/lab/flat_torus_topology.py": "5df97db5dd7bd077290291777f248e152ff7f716c174f0ec4c8c4cb7a49b334f",
    "src/ciw/lab/flat_torus_topology_surfaces.py": "da9f9a8e304f9fd8a72044525c78fdd66d2f188ef3d65cfa0d38af31b9f798b2"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: recognize cone angles exactly for polygons whose corner angles are not multiples of pi/24 (from exact algebraic vertex coordinates) and test on a declared polygon with such an angle (recognition here assumes the pi/24 grid)",
- "report_id": "sha256:593bfa4158f8a5770175acaa3a23c18f83b1ea66f24451f71019baba3955c9c7",
+ "report_id": "sha256:d9c0692f233ca6994e7a74eaed772a380a6b481b460a957379b5a0d0427f9c5d",
  "schema": "ciw.lab-task-report.v1",
  "section": "flat-torus-topology",
  "state": "completed",

@@ -364,6 +364,8 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
@@ -375,7 +377,7 @@
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: repeat the covariance-moment test on heavy-tailed (Student-t) and autocorrelated residuals, with the kurtosis-corrected variance of S_ij, and measure how far the Gaussian-law z-test's false-alarm rate and power drift; this task's residuals are Gaussian and independent by construction.",
- "report_id": "sha256:f412fe9f83d41100491a145ab8bca494a548dc596c71a6ef261b3bdaa3bf50aa",
+ "report_id": "sha256:82beb59878c16612148ca42f0d304808555256f1796136ff47fb2cb0db1fc9a4",
  "schema": "ciw.lab-task-report.v1",
  "section": "sensor-fusion",
  "state": "completed",

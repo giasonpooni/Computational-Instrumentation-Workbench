@@ -538,6 +538,8 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
@@ -549,7 +551,7 @@
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: a slowly varying common-mode bias (first-order Gauss-Markov) shared by camera and tracker, fused with and without an augmented bias state, and its detection from NIS alone (no ground truth); this task covers only white common-mode error.",
- "report_id": "sha256:8497a469f372a3f1e6633703cd68470d59720d8ba0990067808013eddb45050a",
+ "report_id": "sha256:92ddc520552865aab7d37d597f9a13036875436ec88e8d922f86dfd508552078",
  "schema": "ciw.lab-task-report.v1",
  "section": "sensor-fusion",
  "state": "completed",

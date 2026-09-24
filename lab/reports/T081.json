@@ -69,19 +69,174 @@
     "reference_checks"
    ],
    "regression_tolerance": {
-    "abs": 0.0,
+    "abs": 2e-14,
     "rel": 0.0
    },
    "uncertainty": {
-    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
-    "kind": "exact",
-    "value": 0.0
+    "basis": "counts, strings and integers are exact; the analysed floats of the numerical result differ between OpenBLAS kernels in their last bits: across the SkylakeX, Haswell, Sandybridge, Nehalem and Katmai kernels on one Linux x86-64 host by at most 2.2e-16 absolute (reference mean and covariance by at most 2.8e-16 relative, filter errors at rounding level). The regression tolerance, 2e-14 absolute, is about 90 times that spread",
+    "kind": "roundoff",
+    "value": 2.2e-16
    },
    "unit": null,
    "value": {
     "distinct_numerical_result_ids": 1,
     "distinct_result_ids": 12,
-    "energy_numerical_result_id": "sha256:a928a6f8a5b5c1318e61b0a716ce4887c4d2d0fe5e86ec451a148efd023a8199",
+    "numerical_result": {
+     "data": {
+      "comparison": {
+       "accuracy_basis": "all_retained_fixed_iteration_batch_outputs_meet_same_declared_KL_target",
+       "claim": "amortized_background_inclusive_energy_not_first_attainment_or_minimum_energy",
+       "classification": "synthetic_only",
+       "eligible": false,
+       "reasons": []
+      },
+      "hardware_provenance": "synthetic_fixture_no_physical_verification",
+      "log_digest": "sha256:7d9639af0758fd56b9f6ec5664d098cf806139016505c1a778321284d2cdb803",
+      "measurement": {
+       "amortized_domain_energy_j_per_qualified_solve": 0.05,
+       "batch_count": 1,
+       "gross_energy_j": 0.2,
+       "max_covariance_abs_error": 3.469446951953614e-18,
+       "max_kl_nats": 6.187876734451435e-32,
+       "max_mean_abs_error": 2.220446049250313e-16,
+       "minimum_duration_met": true,
+       "qualified_solves": 4,
+       "target_kl_nats": 1e-08,
+       "target_met": true,
+       "total_solves": 4
+      },
+      "measurement_scope": {
+       "accuracy_j": null,
+       "background_inclusive": true,
+       "counter_continuity": "no_observed_decrease",
+       "device_uuid": "GPU-01234567-89ab-cdef-0123-456789abcdef",
+       "domain": "gpu_device",
+       "estimator": "gross_counter_difference_over_host_call_brackets",
+       "idle_subtracted": false,
+       "resolution_j": null,
+       "update_interval_s": null,
+       "workload_device_matches": true
+      },
+      "origin": "synthetic_fixture",
+      "phases": [
+       {
+        "alignment_overhead_s": 3.9999999978945766e-08,
+        "batches": [],
+        "bracket_elapsed_s": 0.20000004,
+        "counter_delta_mj": "200",
+        "elapsed_s": 0.2,
+        "energy_status": "ok",
+        "gross_energy_j": 0.2,
+        "name": "startup",
+        "reasons": [],
+        "utc_reversal_detected": false
+       },
+       {
+        "alignment_overhead_s": 3.9999999978945766e-08,
+        "batches": [
+         {
+          "batch_index": 0,
+          "covariance_max_abs_error": 3.469446951953614e-18,
+          "kl_nats": 6.187876734451435e-32,
+          "mean_max_abs_error": 2.220446049250313e-16,
+          "replicas": 4,
+          "target_met": true
+         }
+        ],
+        "bracket_elapsed_s": 0.20000004,
+        "counter_delta_mj": "200",
+        "elapsed_s": 0.2,
+        "energy_status": "ok",
+        "gross_energy_j": 0.2,
+        "name": "warmup",
+        "reasons": [],
+        "utc_reversal_detected": false
+       },
+       {
+        "alignment_overhead_s": 3.9999999978945766e-08,
+        "batches": [],
+        "bracket_elapsed_s": 0.20000004,
+        "counter_delta_mj": "200",
+        "elapsed_s": 0.2,
+        "energy_status": "ok",
+        "gross_energy_j": 0.2,
+        "name": "idle_before",
+        "reasons": [],
+        "utc_reversal_detected": false
+       },
+       {
+        "alignment_overhead_s": 3.9999999978945766e-08,
+        "batches": [
+         {
+          "batch_index": 0,
+          "covariance_max_abs_error": 3.469446951953614e-18,
+          "kl_nats": 6.187876734451435e-32,
+          "mean_max_abs_error": 2.220446049250313e-16,
+          "replicas": 4,
+          "target_met": true
+         }
+        ],
+        "bracket_elapsed_s": 1.00000004,
+        "counter_delta_mj": "200",
+        "elapsed_s": 1.0,
+        "energy_status": "ok",
+        "gross_energy_j": 0.2,
+        "name": "measurement",
+        "reasons": [],
+        "utc_reversal_detected": false
+       },
+       {
+        "alignment_overhead_s": 3.9999999978945766e-08,
+        "batches": [],
+        "bracket_elapsed_s": 0.20000004,
+        "counter_delta_mj": "200",
+        "elapsed_s": 0.2,
+        "energy_status": "ok",
+        "gross_energy_j": 0.2,
+        "name": "idle_after",
+        "reasons": [],
+        "utc_reversal_detected": false
+       }
+      ],
+      "reference": {
+       "covariance": [
+        [
+         0.4987468671679198,
+         -0.025062656641604016
+        ],
+        [
+         -0.025062656641604016,
+         0.4987468671679198
+        ]
+       ],
+       "covariance_method": "joseph_conditional_covariance",
+       "evidence_normalization": 2.5297726818602313,
+       "innovation": [
+        1.0,
+        2.0
+       ],
+       "innovation_covariance": [
+        [
+         2.04,
+         0.30000000000000004
+        ],
+        [
+         0.30000000000000004,
+         2.0
+        ]
+       ],
+       "innovation_quadratic": 2.245614035087719,
+       "log_evidence": -3.652579699404091,
+       "mean": [
+        0.3508771929824561,
+        1.0175438596491226
+       ],
+       "method": "observation_space_conditioning"
+      },
+      "schema": "ciw.energy-accuracy-analysis.v1"
+     },
+     "operation_id": "ciw.energy-accuracy.v1"
+    },
     "occurrences": 12,
     "recomputation_mismatches": 0
    }
@@ -629,9 +784,9 @@
    "sha256": "78469067cf71bbf8df7a5dade4f032c1cd76fbdee770411f3de54215dbf93698"
   },
   {
-   "bytes": 1318,
+   "bytes": 5577,
    "path": "artifacts/T081/numerical-identity.json",
-   "sha256": "620472326c5470e8a2c5309eb18309f5f03f04423995ad850cb31cffe49ec260"
+   "sha256": "855162c53c980aa78db77f6eef8e067249d153fb9ae9749cdc45dc6690902b3e"
   }
  ],
  "hypothesis": "The energy numerical_result_id is a content identity of the analysed data, and that data includes the retained log's identity (data.log_digest, origin and device_uuid), so it is equal across every occurrence of a canonically identical log (original, sibling, replay, replay after reopen, replay of a replay, separate session in the same process and code) and changes under a resealed metadata-only edit. Re-analysis on reopen refuses numerical edits that leave the retained source bytes unchanged, but not a forger who rewrites and reseals the source log itself. Oscillator results lack a numerical identity and their statistics are only bounds-checked.",
@@ -641,7 +796,7 @@
   "Workspaces saved by Session.save_workspace and reopened by Session.from_workspace in temporary directories",
   "baseline.json with the sensor name renamed and log_digest resealed (variant fixture)"
  ],
- "mathematical_model": "numerical_result_id = sha256(canon({operation_id, data})) with data = analyze(parse(bytes)) deterministic in-process; data.log_digest = sha256(canon(log without log_digest)). For statistics, |mean| <= rms <= max(|min|, |max|) holds for every sample set (Cauchy-Schwarz and the maximum bound).",
+ "mathematical_model": "numerical_result_id = sha256(canon({operation_id, data})) with data = analyze(parse(bytes)) deterministic in-process, its last float bits set by the BLAS kernel; data.log_digest = sha256(canon(log without log_digest)). For statistics, |mean| <= rms <= max(|min|, |max|) holds for every sample set (Cauchy-Schwarz and the maximum bound).",
  "number": 81,
  "numerical_result": "12 baseline occurrences -> 1 numerical_result_id, 12 result_id; metadata variant data differs only in ['log_digest']; statistics max relative difference 0.0e+00; mutants: 8 rows (8 workspace mutants, 0 pure-validator rows): 4 refused; 4 surviving forgeries (energy-source.resealed, oscillator-stats.resealed, oscillator-stats.impossible-moments, oscillator-stats.legacy); kill/survive predictions matched 8/8; refusal messages matched their regression pins 4/4",
  "observation_model": "No physical observation. The observed objects are CIW records (sessions, executions, results, bundles, receipts, saved workspace JSON) produced offline by the unmodified CIW code; the energy logs are synthetic fixtures and no hardware was sampled.",
@@ -654,16 +809,18 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/exchange_provenance.py": "0871a5e3e3a27b365a326036c869338b11e5aa3bc4af3ca60db29e81bedbba36",
+   "src/ciw/lab/exchange_provenance.py": "6c5c6d9b49043664ad9cea8f4bc2ff5d9fc367aea6194e2e7608c98bfd5c54f4",
    "src/ciw/lab/exchange_provenance_common.py": "17ab892e3f285ac475b44c240155acf45f8bbdbefca28a345980aba548c6d1a9"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question (CIW change): give oscillator operation results a content-level numerical_result_id so their replays can be linked, recompute statistics (or at least the moment inequalities) on reopen, and repeat the stability test in a separate process on a second host, since the separate session here shares the process and code.",
- "report_id": "sha256:d4a18878905dc779ea9e1c30924af9cbb1ae4cdbc2685b509a9f3b767c5749b8",
+ "report_id": "sha256:64b20c9d2da3648e667438148b7e9da21f00307cb6be3b5eb1caea87efcf19fd",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "completed",
@@ -696,15 +853,14 @@
   "check: Surviving mutant oscillator-stats.legacy: an edit to an unsealed legacy result reopens vs reopened mean is the interval midpoint and differs from the computed mean (0 = shown)",
   "pytest: tests/test_lab_exchange_provenance.py::test_numerical_identity",
   "pytest: tests/test_lab_exchange_provenance.py::test_t081_defers_cross_platform_reproduction_as_one_question",
-  "pytest: tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work"
+  "pytest: tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work",
+  "pytest: tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply"
  ],
- "tests_skipped": [
-  "pytest: tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply (skipped)"
- ],
+ "tests_skipped": [],
  "title": "Test stable numerical-result identity.",
- "uncertainty": "Stability was observed within one process and platform; numerical_result_id hashes floats, so a different BLAS or NumPy build could change the last bits of analysed data and therefore the identity across platforms (not tested here). Value integrity after reopen is relative to the retained source bytes, which are themselves unauthenticated.",
+ "uncertainty": "Stability was observed within one process on one arithmetic platform. numerical_result_id hashes the analysed floats bit for bit, and their last bits depend on the BLAS kernel: regenerating T081 on one Linux x86-64 host under the OpenBLAS kernels SkylakeX, Haswell, Sandybridge, Nehalem and Katmai (OPENBLAS_CORETYPE, NumPy 2.4.3) gave one id over the 12 occurrences of each run but three different ids (Nehalem and Katmai matched Sandybridge bit for bit), because up to 13 of the 47 analysed floats differed between kernels, by at most 2.2e-16 (the reference mean and covariance entries by at most 2.8e-16 relative; the others are filter errors at rounding level). The identity finding therefore compares the counts exactly and the numerical result the id hashes within 2e-14 absolute, about 90 times that spread; this run's id is retained beside that result in numerical-identity.json. The run does not record which kernel produced its values, so a retained id cannot be attributed to a kernel. Value integrity after reopen is relative to the retained source bytes, which are themselves unauthenticated.",
  "unresolved_assumptions": [
-  "Deferred research question (cross-platform reproduction): run T081 on Windows x86-64 and macOS arm64 besides the retained Linux x86-64 run and check that every float-valued numerical_result_id of the energy-accuracy bundles (originals, sibling, replays, replay after reopen, separate session) equals the retained energy_numerical_result_id exactly (kept in T081's numerical-identity.json and in its identity finding's value, which ciw lab verify compares exactly); a mismatch would mean the canonical float serialization or the analysis arithmetic depends on the platform, and no second platform has been compared.",
+  "Deferred research question (cross-platform reproduction): the energy numerical_result_id hashes the analysed floats bit for bit, so it links occurrences on one arithmetic platform only (five OpenBLAS kernels on one Linux x86-64 host gave three ids, each shared by every occurrence of its run). Run T081 on Windows x86-64 and macOS arm64 and compare it with the retained run by ciw lab verify, which checks that each run again has one numerical_result_id over its occurrences and compares the energy numerical result that id hashes leaf by leaf within 2e-14 absolute, about 90 times the spread between those kernels (the retained run does not record its kernel): do all differences stay at rounding level, and should CIW link occurrences across platforms by such a tolerance comparison, or by an identity over declared-precision data, instead of the bit-exact id (a CIW change, not made here)?",
   "Oscillator results have no numerical identity, so their replays cannot be linked.",
   "The separate session runs in the same process with the same code; it is not an independent reproduction.",
   "Deferred research question (key custody and signatures): which key signs CIW workspace records, replay receipts and execution records, who holds it, how is it provisioned, rotated and revoked, and how does a verifier obtain its public key? Every seal and identity on these paths is an unkeyed SHA-256, so 'Retained workspace records are authenticated' stays not_established until records are signed (for example Ed25519 over the canonical record bytes, with an RFC 3161 timestamp for created_at) and T077 and T080-T090 are re-run against the signed records to check that every surviving forgery is refused."

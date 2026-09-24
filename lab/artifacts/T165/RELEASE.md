@@ -4,7 +4,7 @@ Scope: the reports of T001-T164, retained before this task ran. T165 reads only 
 
 - CIW version: 0.1.0
 - Queue: 168 tasks; 164 reported; not reported: T165, T166, T167, T168
-- Release digest: `sha256:51a4c874f05acef9ee59e1a4c12682ab0dc419bb2f3e74eaf32e52071c7e1763` (unsigned; covers task states, headline labels, finding claims and finding labels; sha256 over the UTF-8 bytes of ciw.core.identities.canonical_json (sorted keys, no whitespace, ASCII escapes, NaN refused; the encoding of report identities) of the list [[task, state, headline label, [[claim, label], ...]], ...] in queue order)
+- Release digest: `sha256:18fdd36b2ddeb44409b393f3e4fe81620551bb0084384cab6cc255628194841e` (unsigned; covers task states, headline labels, finding claims and finding labels; sha256 over the UTF-8 bytes of ciw.core.identities.canonical_json (sorted keys, no whitespace, ASCII escapes, NaN refused; the encoding of report identities) of the list [[task, state, headline label, [[claim, label], ...]], ...] in queue order)
 - Physical validation: `not_established`
 
 | Section | Tasks | Reported |
@@ -24,17 +24,17 @@ Scope: the reports of T001-T164, retained before this task ran. T165 reads only 
 | State | Tasks |
 | --- | --- |
 | blocked | 2 |
-| completed | 145 |
-| partial | 17 |
+| completed | 147 |
+| partial | 15 |
 
 | Evidence label | Findings |
 | --- | --- |
 | `analytic` | 11 |
 | `synthetic` | 0 |
-| `numerically_verified` | 791 |
-| `provider_backed` | 3 |
+| `numerically_verified` | 805 |
+| `provider_backed` | 6 |
 | `hardware_measured` | 0 |
-| `independently_verified` | 57 |
+| `independently_verified` | 63 |
 | `not_established` | 187 |
 
 A passing check outranks provenance in the label rules, so the basis components each finding declares are counted beside the labels (a finding counts once per component it declares):
@@ -43,10 +43,10 @@ A passing check outranks provenance in the label rules, so the basis components 
 | --- | --- |
 | `acquisition` | 0 |
 | `derivation` | 142 |
-| `independent_check` | 57 |
-| `provider` | 83 |
-| `reference_checks` | 823 |
-| `synthetic_inputs` | 339 |
+| `independent_check` | 63 |
+| `provider` | 92 |
+| `reference_checks` | 843 |
+| `synthetic_inputs` | 350 |
 | `none` | 165 |
 
 | Runtime | Revision | Tree or digest | Tasks |
@@ -59,3 +59,4 @@ A passing check outranks provenance in the label rules, so the basis components 
 | scr | `a59aba283b0304faeeb3e5d305087e7709e171ca` | `4068a711534932e8d89bb0d87d373376dafdf6cd` | T097, T098, T099 |
 | scr-exchange | `5f0409743e0098a0691a88302a9b3dcdcbcf25fd` | `4b9ba4bf1f95562d299714d4ed4bf7b9d0c6e913` | T097, T098 |
 | set | `542e672be512bf43b61253f2b2a43cd967cb3062` | `25c667fc507eb8404e1f077d46e87ed2fc6abc3d` | T097, T098 |
+| sp1 | `b38b61209e45e969289e70d5cf79dc763460bc41` | `7deca3aced8d8eb84dfcede98285a192c862ea4c` | T099 |

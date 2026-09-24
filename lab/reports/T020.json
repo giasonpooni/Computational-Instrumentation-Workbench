@@ -405,6 +405,7 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
   "producer": "ciw.lab.flat_torus_topology",
   "provider": {
    "dirty": false,
@@ -422,20 +423,21 @@
    "revision": "dc918562cd9e351a65475d29f46963c9f2fd7db8",
    "source_tree": "1f082c6b443f2e301ac5889122912f26968ae756"
   },
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "requirement_probes": {
    "module:mpmath": true
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/flat_torus_topology.py": "2c05c13905cc51906d41b89219b001396634a9d3bb8bda9bd32ac75a5523fdb1",
+   "src/ciw/lab/flat_torus_topology.py": "5df97db5dd7bd077290291777f248e152ff7f716c174f0ec4c8c4cb7a49b334f",
    "src/ciw/lab/flat_torus_topology_lattice.py": "15a33fcd29591e43dec16fa3b9ad26d6b6b86846872e9e6bf815508fb0dade63",
    "src/ciw/lab/flat_torus_topology_provider.py": "30fa38e51a20bc8d01beea0e5c44da69f22d7059c04c92c1fea520e5cf6f8806"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: measure how fast the primitive fraction of winding vectors approaches 6/pi^2 (its deviation over a doubling sequence of radii against the O(log R / R) error of the classical estimate), which is recorded here only as a limit, without a rate",
- "report_id": "sha256:10498628631f4c24a51ff0ca69b34d711031fc73a8c693586000f7159932c9ee",
+ "report_id": "sha256:ff25ffadcedd07d4175a86aa4b5f0a9dc89cde5a97866d86a058886889d50954",
  "schema": "ciw.lab-task-report.v1",
  "section": "flat-torus-topology",
  "state": "completed",

@@ -3011,7 +3011,7 @@
   "measured": true,
   "task_id": "T024",
   "uncertainty": {
-   "basis": "orderings of the route values; adjacent values differ far more than their uncertainty",
+   "basis": "orderings of the route values, decided by gaps of at least 3.3e-03 relative in length, 1.8e-02 relative in amplification and 0.39 in focus margin, each checked against ten times the uncertainty of its quantity. The witness quotes route values, which differ between OpenBLAS kernels in their last digits (BLAS dot products of 3-vectors in the surface metric and its derivatives): across the SkylakeX, Haswell, Sandybridge, Nehalem and Katmai kernels only route 8's amplification and targeting condition vary among the witness entries, by at most 1.4e-15 relative, with lengths, headings, focus margins of routes 0 and 2 and rankings identical (outside the witness, the focus margins of routes 6 and 7 vary by at most 1.5e-14, 3.8e-15 relative). The regression tolerance, 1e-13 relative, is about 75 times the witness spread",
    "kind": "exact",
    "value": 0.0
   },
@@ -4144,40 +4144,83 @@
   }
  },
  {
-  "claim": "At 400 RK4 steps chart A alone crosses both poles on the exact meridian to within 1e-10",
+  "claim": "From a declared angular-momentum seed of 1e-12, chart A alone crosses both poles of the meridian at 400 RK4 steps to within 1e-6",
   "evidence_status": "numerically_verified",
   "measured": true,
   "task_id": "T036",
   "uncertainty": {
-   "basis": "the error is rounding level at this step count; v_phi is not exactly zero (rounding in g_12 seeds sin^2(theta) v_phi), and the result depends on the step grid",
+   "basis": "the error is linear in the seed on this grid, so the natural seed (at most 1e-16, 0.0001 of the declared one) moves it by at most 0.0001 relative. Across the SkylakeX, Haswell and Sandybridge OpenBLAS kernels it agreed to 2.0e-7 relative, since their natural seeds (at most 1.1e-18) lie far below the bound; the regression tolerance is the derived bound, 0.0001 relative, so any kernel within it reproduces the value",
    "kind": "roundoff",
-   "value": 1e-13
+   "value": 1e-11
   },
-  "unit": "log10 of each quantity",
+  "unit": "length",
   "value": {
-   "log10_closest_step_to_pole": -2.275,
-   "log10_error": -13.13,
-   "log10_max_abs_momentum": -13.13,
-   "log10_max_abs_v_phi": -9.607
+   "closest_stage_to_pole": 0.00254433,
+   "error": 1.03344e-07
   }
  },
  {
-  "claim": "On the exact meridian chart A alone fails or loses accuracy whenever a step point lands within 1e-4 of a pole (350 to 450 RK4 steps)",
+  "claim": "At 400 RK4 steps the meridian error of chart A alone is proportional to the declared seed: 10 times the error from a seed of 1e-13 matches the error from 1e-12 to within 1e-2",
   "evidence_status": "numerically_verified",
   "measured": true,
   "task_id": "T036",
   "uncertainty": {
-   "basis": "near-pole errors amplify a rounding-level angular momentum, so their size may move by about a decade across platforms; grid distances are exact arithmetic",
-   "kind": "reference_error",
-   "value": 1.0
+   "basis": "the natural seed (at most 1e-16) is at most 0.001 of the smaller seed and 0.0001 of the larger, so it moves the ratio of the two errors, each linear in its seed, by at most 0.0011 relative. Across the SkylakeX, Haswell and Sandybridge OpenBLAS kernels the ratio agreed to 1.7e-6 relative, since their natural seeds (at most 1.1e-18) lie far below the bound; the regression tolerance is the derived bound, so any kernel within it reproduces the value",
+   "kind": "roundoff",
+   "value": 0.0011
   },
-  "unit": "log10 length",
+  "unit": null,
   "value": {
-   "failed": 1,
-   "log10_max_other_error": -9.923,
-   "log10_min_near_pole_error": -7.678,
-   "near_pole": 5,
+   "error_ratio": 10.0,
+   "seed_ratio": 10
+  }
+ },
+ {
+  "claim": "Across declared seeds from 1e-15 to 1e-10, chart A alone fails on the meridian whenever an RK4 stage point lands within 0.9 d* of a pole and never beyond 1.5 d*, d* = (L0 h^4)^(1/5), but no single multiple of d* separates the outcomes at every seed (350 to 450 RK4 steps at 1e-12, the step counts within 2 d* at the other half-decade seeds)",
+  "evidence_status": "numerically_verified",
+  "measured": true,
+  "task_id": "T036",
+  "uncertainty": {
+   "basis": "the constant of d* is fitted, and failed and completed runs overlap over this width in d/d*. Stage distances, d* and their ratios are exact arithmetic on the step grid, and the outcomes are set by the declared seed: moving every swept seed by +-1e-16, the natural seed's bound, changed no outcome, even at 1e-15 where the bound is 0.1 of the seed, and across the SkylakeX, Haswell and Sandybridge OpenBLAS kernels they were identical. The swept runs' errors are recorded, not compared: at the smallest seeds the natural seed is a larger share, and they spread by 1.2e-3 relative across those kernels. The regression tolerance, 0.0001 relative, is the natural seed's largest share of the 400-step error in the witness, which is linear in the seed; the ratios, counts and step lists must match",
+   "kind": "fit",
+   "value": 0.421
+  },
+  "unit": null,
+  "value": {
+   "at_declared_seed": {
+    "failed": 5,
+    "largest_ratio_failed": 0.604809,
+    "smallest_ratio_not_failed": 1.80941,
+    "within_d_star": 5
+   },
+   "failed": 64,
+   "failed_at_declared_seed_not_at_smaller_seed": [
+    399,
+    421,
+    443
+   ],
+   "largest_ratio_failed": 1.40857,
+   "runs": 188,
+   "seeds": 11,
+   "smallest_ratio_not_failed": 0.987687,
    "step_counts": 101
+  }
+ },
+ {
+  "claim": "Without a declared seed, rounding seeds at most 1e-16 of angular momentum on the meridian before its first pole crossing (400 RK4 steps)",
+  "evidence_status": "numerically_verified",
+  "measured": true,
+  "task_id": "T036",
+  "uncertainty": {
+   "basis": "the values are rounding residues of quantities that vanish exactly (g_12 = x_theta . x_phi sums two products of size up to R^2/2) and depend on the BLAS kernel, whose selection the runtime identity records. Across the SkylakeX, Haswell and Sandybridge kernels they spread by up to 1.1e-18 (v_phi 0 or 1.1e-18 at the start; momentum 5.8e-35 to 7.8e-19); the regression tolerance is the claimed bound 1e-16, about 90 times that spread",
+   "kind": "roundoff",
+   "value": 1e-16
+  },
+  "unit": null,
+  "value": {
+   "g12_at_start": 1.47e-17,
+   "momentum_before_first_crossing": 7.64e-19,
+   "v_phi_at_start": 0.0
   }
  },
  {
@@ -4528,7 +4571,7 @@
   }
  },
  {
-  "claim": "Steiner distances between traced endpoints stay above the traced length and approach it as k grows",
+  "claim": "Steiner distances between traced endpoints (k = 1, 3, 7) stay above the traced length, and their mean excess shrinks as k grows",
   "evidence_status": "numerically_verified",
   "measured": true,
   "task_id": "T038",
@@ -4545,6 +4588,328 @@
     "7": 0.005299587716630953
    },
    "min_gap": 0.0017535599433380344
+  }
+ },
+ {
+  "claim": "Exact polyhedral distances on sheared planar meshes equal Euclidean distances, from a vertex and from a point inserted inside a face",
+  "evidence_status": "numerically_verified",
+  "measured": true,
+  "task_id": "T038",
+  "uncertainty": {
+   "basis": "double-precision rounding of the unfoldings (largest disagreement with the closed forms observed below 1e-14)",
+   "kind": "roundoff",
+   "value": 1e-14
+  },
+  "unit": "normalized length",
+  "value": 2.6645352591003757e-15
+ },
+ {
+  "claim": "On an L-shaped planar mesh exact distances equal the Euclidean distance to visible vertices and the path bent at the reflex corner to hidden ones",
+  "evidence_status": "numerically_verified",
+  "measured": true,
+  "task_id": "T038",
+  "uncertainty": {
+   "basis": "double-precision rounding of the unfoldings (largest disagreement with the closed forms observed below 1e-14)",
+   "kind": "roundoff",
+   "value": 1e-14
+  },
+  "unit": "normalized length",
+  "value": {
+   "bent_targets": 20,
+   "max_error": 1.1102230246251565e-15,
+   "vertices": 65
+  }
+ },
+ {
+  "claim": "Exact polyhedral distances on prism-cylinder meshes equal the shortest segment to the periodic images of the planar development, from a boundary vertex and from an inserted surface point",
+  "evidence_status": "numerically_verified",
+  "measured": true,
+  "task_id": "T038",
+  "uncertainty": {
+   "basis": "double-precision rounding of the unfoldings (largest disagreement with the closed forms observed below 1e-14)",
+   "kind": "roundoff",
+   "value": 1e-14
+  },
+  "unit": "normalized length",
+  "value": 7.105427357601002e-15
+ },
+ {
+  "claim": "Exact distances between the corners of a refined cube equal the closed forms 1, sqrt 2 and sqrt 5",
+  "evidence_status": "numerically_verified",
+  "measured": true,
+  "task_id": "T038",
+  "uncertainty": {
+   "basis": "double-precision rounding of the unfoldings (largest disagreement with the closed forms observed below 1e-14)",
+   "kind": "roundoff",
+   "value": 1e-14
+  },
+  "unit": "normalized length",
+  "value": {
+   "closed_forms": [
+    0.0,
+    1.0,
+    1.0,
+    1.4142135623730951,
+    1.0,
+    1.4142135623730951,
+    1.4142135623730951,
+    2.23606797749979
+   ],
+   "corner_distances": [
+    0.0,
+    0.9999999999999998,
+    0.9999999999999998,
+    1.414213562373095,
+    0.9999999999999998,
+    1.414213562373095,
+    1.414213562373095,
+    2.236067977499789
+   ],
+   "edge_graph_far_corner": 2.414213562373095,
+   "k": 4,
+   "max_error": 8.881784197001252e-16
+  }
+ },
+ {
+  "claim": "Inserting a face point and an edge point as vertices by planar splits leaves exact distances between the original vertices unchanged",
+  "evidence_status": "numerically_verified",
+  "measured": true,
+  "task_id": "T038",
+  "uncertainty": {
+   "basis": "double-precision rounding of the unfoldings (largest disagreement with the closed forms observed below 1e-14)",
+   "kind": "roundoff",
+   "value": 1e-14
+  },
+  "unit": "normalized length",
+  "value": 1.3322676295501878e-15
+ },
+ {
+  "claim": "Exact polyhedral distances from three sources are symmetric between the sources (and agree at every vertex with pygeodesic's exact MMP implementation when installed) on icosphere levels 1-4 and a torus with saddle vertices",
+  "evidence_status": "independently_verified",
+  "measured": true,
+  "task_id": "T038",
+  "uncertainty": {
+   "basis": "double-precision rounding of the unfoldings (largest disagreement with the closed forms observed below 1e-14)",
+   "kind": "roundoff",
+   "value": 1e-14
+  },
+  "unit": "normalized length",
+  "value": {
+   "max_abs_difference": 7.993605777301127e-15,
+   "meshes": [
+    "icosphere-1",
+    "icosphere-2",
+    "icosphere-3",
+    "icosphere-4",
+    "torus-24x12"
+   ],
+   "pseudo_source_vertices": [
+    0,
+    0,
+    0,
+    0,
+    168
+   ],
+   "saddle_vertices": [
+    0,
+    0,
+    0,
+    0,
+    120
+   ],
+   "vertices": [
+    42,
+    162,
+    642,
+    2562,
+    288
+   ]
+  }
+ },
+ {
+  "claim": "FlipOut edge-flip geodesics between vertex pairs (potpourri3d; without it, the edge-graph paths FlipOut starts from) are never shorter than the exact distance",
+  "evidence_status": "independently_verified",
+  "measured": true,
+  "task_id": "T038",
+  "uncertainty": {
+   "basis": "double-precision rounding of the unfoldings (largest disagreement with the closed forms observed below 1e-14)",
+   "kind": "roundoff",
+   "value": 1e-14
+  },
+  "unit": "normalized length",
+  "value": {
+   "meshes": [
+    "icosphere-2",
+    "icosphere-3",
+    "torus-24x12"
+   ],
+   "min_excess": -4.440892098500626e-15,
+   "pairs": 3267
+  }
+ },
+ {
+  "claim": "Edge-graph Dijkstra distances from vertex 0 are never below the exact polyhedral distance on icosphere levels 1-4",
+  "evidence_status": "numerically_verified",
+  "measured": true,
+  "task_id": "T038",
+  "uncertainty": {
+   "basis": "double-precision rounding of the unfoldings (largest disagreement with the closed forms observed below 1e-14)",
+   "kind": "roundoff",
+   "value": 1e-14
+  },
+  "unit": "normalized length",
+  "value": {
+   "levels": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_relative_excess": [
+    0.1810810719066578,
+    0.2195149660037028,
+    0.23174303152050846,
+    0.23497493782599288
+   ],
+   "min_excess": 0.0,
+   "valence5_floor": 0.2360679774997898
+  }
+ },
+ {
+  "claim": "Steiner-graph distances from vertex 0 are never below the exact polyhedral distance, and their mean excess shrinks as k grows (k = 1, 3, 7 on icosphere levels 2 and 3)",
+  "evidence_status": "numerically_verified",
+  "measured": true,
+  "task_id": "T038",
+  "uncertainty": {
+   "basis": "double-precision rounding of the unfoldings (largest disagreement with the closed forms observed below 1e-14)",
+   "kind": "roundoff",
+   "value": 1e-14
+  },
+  "unit": "normalized length",
+  "value": {
+   "ks": [
+    1,
+    3,
+    7
+   ],
+   "levels": [
+    2,
+    3
+   ],
+   "max_relative_excess": {
+    "2": [
+     0.03691936620220737,
+     0.012960702167987392,
+     0.003281159944370504
+    ],
+    "3": [
+     0.04679664792902649,
+     0.013379757840538131,
+     0.003314517492803759
+    ]
+   },
+   "mean_excess": {
+    "2": [
+     0.01929551390491476,
+     0.007134812061985468,
+     0.002446647624971064
+    ],
+    "3": [
+     0.021432149051182608,
+     0.00779254510617964,
+     0.0023251467695876694
+    ]
+   },
+   "min_excess": -1.1102230246251565e-16
+  }
+ },
+ {
+  "claim": "The largest heat-method error (t = h^2) against the exact polyhedral distance falls at every refinement level (icosphere levels 1-3)",
+  "evidence_status": "numerically_verified",
+  "measured": true,
+  "task_id": "T038",
+  "uncertainty": {
+   "basis": "largest deviation of a pairwise local order from the least-squares order",
+   "kind": "reference_error",
+   "value": 0.030047734434889728
+  },
+  "unit": "normalized length",
+  "value": {
+   "exact_minus_smooth_max": [
+    0.11539464076467532,
+    0.030899184647534828,
+    0.007921051266832624
+   ],
+   "fitted_order": 0.596727577562718,
+   "h": [
+    0.5822835232876192,
+    0.2993320753185587,
+    0.1507297051948821
+   ],
+   "levels": [
+    1,
+    2,
+    3
+   ],
+   "local_orders": [
+    0.5666798431278283,
+    0.6255748770688293
+   ],
+   "max_abs_error": [
+    0.09574831930440414,
+    0.06567064973512471,
+    0.04275417412151139
+   ],
+   "rms_error": [
+    0.05617629681685034,
+    0.03251304352512584,
+    0.01961516459669825
+   ]
+  }
+ },
+ {
+  "claim": "Traced straightest geodesics are never shorter than the exact distance between their endpoints, yet on every icosphere level 1-4 some of length 2 (below pi) are not shortest paths, by an excess that falls with refinement",
+  "evidence_status": "numerically_verified",
+  "measured": true,
+  "task_id": "T038",
+  "uncertainty": {
+   "basis": "double-precision rounding of the unfoldings (largest disagreement with the closed forms observed below 1e-14)",
+   "kind": "roundoff",
+   "value": 1e-14
+  },
+  "unit": "normalized length",
+  "value": {
+   "length": 2.0,
+   "length_1_level_2": {
+    "max_excess": 0.00011148586495834945,
+    "shortest": 5,
+    "traces": 6
+   },
+   "levels": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_excess": [
+    0.012981715248456593,
+    0.0016330595136704318,
+    0.00013584973098490494,
+    3.747011103172326e-05
+   ],
+   "min_excess": -8.881784197001252e-16,
+   "shortest": [
+    2,
+    3,
+    3,
+    2
+   ],
+   "traces": [
+    6,
+    6,
+    6,
+    6
+   ]
   }
  },
  {
@@ -6767,16 +7132,16 @@
   "measured": true,
   "task_id": "T050",
   "uncertainty": {
-   "basis": "radius slope: largest departure of a pairwise slope from the fitted one (higher-order terms of f k1 ((r + dr)^3 - r^3) and the changing pixel Jacobian of the shifted markers); first order: the O(k1 r^2) residual itself",
+   "basis": "radius slope: largest departure of a pairwise slope from the fitted one (higher-order terms of f k1 ((r + dr)^3 - r^3) and the changing pixel Jacobian of the shifted markers); first order: the O(k1 r^2) residual itself. Its rounding part, the triangulation's rounding over the 0.01 px central-difference step of J_pix, differs between the SkylakeX, Haswell, Sandybridge, Nehalem and Katmai OpenBLAS kernels by at most 2.6e-8 relative; the regression tolerance (1e-6 relative) is about 40 times that spread",
    "kind": "truncation_bound",
    "value": {
-    "first_order_relative_residual": 0.0030165229150497593,
+    "first_order_relative_residual": 0.0030165244245241025,
     "radius_slope": 0.14487506402273898
    }
   },
   "unit": null,
   "value": {
-   "first_order_relative_residual": 0.0030165229150497593,
+   "first_order_relative_residual": 0.0030165244245241025,
    "k1_slope_max_error": 8.015442625597391e-05,
    "mean_abs_bias_k1_0.01_m": [
     5.911715593521587e-06,
@@ -6876,16 +7241,16 @@
   "measured": true,
   "task_id": "T050",
   "uncertainty": {
-   "basis": "the first-order law omits O(delta^2) terms; the recorded residual is that truncation",
+   "basis": "the first-order law omits O(delta^2) terms; the recorded residual is that truncation. Its rounding part, the triangulation's rounding over the 0.01 px central-difference step of J_pix, differs between the SkylakeX, Haswell, Sandybridge, Nehalem and Katmai OpenBLAS kernels by at most 5.6e-8 relative; the regression tolerance (1e-6 relative) is about 18 times that spread",
    "kind": "truncation_bound",
    "value": {
-    "first_order_relative_residual": 0.0003846412357328385
+    "first_order_relative_residual": 0.00038463697250602904
    }
   },
   "unit": "m",
   "value": {
    "bias_radius_slope": 2.000064369420803,
-   "first_order_relative_residual": 0.0003846412357328385,
+   "first_order_relative_residual": 0.00038463697250602904,
    "marker_radii_m": [
     0.002,
     0.004,
@@ -10147,15 +10512,170 @@
   "measured": true,
   "task_id": "T081",
   "uncertainty": {
-   "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
-   "kind": "exact",
-   "value": 0.0
+   "basis": "counts, strings and integers are exact; the analysed floats of the numerical result differ between OpenBLAS kernels in their last bits: across the SkylakeX, Haswell, Sandybridge, Nehalem and Katmai kernels on one Linux x86-64 host by at most 2.2e-16 absolute (reference mean and covariance by at most 2.8e-16 relative, filter errors at rounding level). The regression tolerance, 2e-14 absolute, is about 90 times that spread",
+   "kind": "roundoff",
+   "value": 2.2e-16
   },
   "unit": null,
   "value": {
    "distinct_numerical_result_ids": 1,
    "distinct_result_ids": 12,
-   "energy_numerical_result_id": "sha256:a928a6f8a5b5c1318e61b0a716ce4887c4d2d0fe5e86ec451a148efd023a8199",
+   "numerical_result": {
+    "data": {
+     "comparison": {
+      "accuracy_basis": "all_retained_fixed_iteration_batch_outputs_meet_same_declared_KL_target",
+      "claim": "amortized_background_inclusive_energy_not_first_attainment_or_minimum_energy",
+      "classification": "synthetic_only",
+      "eligible": false,
+      "reasons": []
+     },
+     "hardware_provenance": "synthetic_fixture_no_physical_verification",
+     "log_digest": "sha256:7d9639af0758fd56b9f6ec5664d098cf806139016505c1a778321284d2cdb803",
+     "measurement": {
+      "amortized_domain_energy_j_per_qualified_solve": 0.05,
+      "batch_count": 1,
+      "gross_energy_j": 0.2,
+      "max_covariance_abs_error": 3.469446951953614e-18,
+      "max_kl_nats": 6.187876734451435e-32,
+      "max_mean_abs_error": 2.220446049250313e-16,
+      "minimum_duration_met": true,
+      "qualified_solves": 4,
+      "target_kl_nats": 1e-08,
+      "target_met": true,
+      "total_solves": 4
+     },
+     "measurement_scope": {
+      "accuracy_j": null,
+      "background_inclusive": true,
+      "counter_continuity": "no_observed_decrease",
+      "device_uuid": "GPU-01234567-89ab-cdef-0123-456789abcdef",
+      "domain": "gpu_device",
+      "estimator": "gross_counter_difference_over_host_call_brackets",
+      "idle_subtracted": false,
+      "resolution_j": null,
+      "update_interval_s": null,
+      "workload_device_matches": true
+     },
+     "origin": "synthetic_fixture",
+     "phases": [
+      {
+       "alignment_overhead_s": 3.9999999978945766e-08,
+       "batches": [],
+       "bracket_elapsed_s": 0.20000004,
+       "counter_delta_mj": "200",
+       "elapsed_s": 0.2,
+       "energy_status": "ok",
+       "gross_energy_j": 0.2,
+       "name": "startup",
+       "reasons": [],
+       "utc_reversal_detected": false
+      },
+      {
+       "alignment_overhead_s": 3.9999999978945766e-08,
+       "batches": [
+        {
+         "batch_index": 0,
+         "covariance_max_abs_error": 3.469446951953614e-18,
+         "kl_nats": 6.187876734451435e-32,
+         "mean_max_abs_error": 2.220446049250313e-16,
+         "replicas": 4,
+         "target_met": true
+        }
+       ],
+       "bracket_elapsed_s": 0.20000004,
+       "counter_delta_mj": "200",
+       "elapsed_s": 0.2,
+       "energy_status": "ok",
+       "gross_energy_j": 0.2,
+       "name": "warmup",
+       "reasons": [],
+       "utc_reversal_detected": false
+      },
+      {
+       "alignment_overhead_s": 3.9999999978945766e-08,
+       "batches": [],
+       "bracket_elapsed_s": 0.20000004,
+       "counter_delta_mj": "200",
+       "elapsed_s": 0.2,
+       "energy_status": "ok",
+       "gross_energy_j": 0.2,
+       "name": "idle_before",
+       "reasons": [],
+       "utc_reversal_detected": false
+      },
+      {
+       "alignment_overhead_s": 3.9999999978945766e-08,
+       "batches": [
+        {
+         "batch_index": 0,
+         "covariance_max_abs_error": 3.469446951953614e-18,
+         "kl_nats": 6.187876734451435e-32,
+         "mean_max_abs_error": 2.220446049250313e-16,
+         "replicas": 4,
+         "target_met": true
+        }
+       ],
+       "bracket_elapsed_s": 1.00000004,
+       "counter_delta_mj": "200",
+       "elapsed_s": 1.0,
+       "energy_status": "ok",
+       "gross_energy_j": 0.2,
+       "name": "measurement",
+       "reasons": [],
+       "utc_reversal_detected": false
+      },
+      {
+       "alignment_overhead_s": 3.9999999978945766e-08,
+       "batches": [],
+       "bracket_elapsed_s": 0.20000004,
+       "counter_delta_mj": "200",
+       "elapsed_s": 0.2,
+       "energy_status": "ok",
+       "gross_energy_j": 0.2,
+       "name": "idle_after",
+       "reasons": [],
+       "utc_reversal_detected": false
+      }
+     ],
+     "reference": {
+      "covariance": [
+       [
+        0.4987468671679198,
+        -0.025062656641604016
+       ],
+       [
+        -0.025062656641604016,
+        0.4987468671679198
+       ]
+      ],
+      "covariance_method": "joseph_conditional_covariance",
+      "evidence_normalization": 2.5297726818602313,
+      "innovation": [
+       1.0,
+       2.0
+      ],
+      "innovation_covariance": [
+       [
+        2.04,
+        0.30000000000000004
+       ],
+       [
+        0.30000000000000004,
+        2.0
+       ]
+      ],
+      "innovation_quadratic": 2.245614035087719,
+      "log_evidence": -3.652579699404091,
+      "mean": [
+       0.3508771929824561,
+       1.0175438596491226
+      ],
+      "method": "observation_space_conditioning"
+     },
+     "schema": "ciw.energy-accuracy-analysis.v1"
+    },
+    "operation_id": "ciw.energy-accuracy.v1"
+   },
    "occurrences": 12,
    "recomputation_mismatches": 0
   }
@@ -10400,7 +10920,7 @@
   }
  },
  {
-  "claim": "The golden retained workspaces reopen and validate with the current code without execution",
+  "claim": "The golden retained workspaces reopen and validate with the current code without execution, the energy recomputation compared to rounding tolerance instead of bit for bit",
   "evidence_status": "numerically_verified",
   "measured": true,
   "task_id": "T094",
@@ -10436,6 +10956,41 @@
     "results": 3,
     "sha256": "68e63248edcb7bb6660734cbf0efe751c53ede53c5029873b4e21fb598a1586d"
    }
+  }
+ },
+ {
+  "claim": "Unmodified reopen accepts the golden energy analysis only where it recomputes bit for bit, as on the platform that wrote it, and otherwise refuses it by name as platform-dependent",
+  "evidence_status": "numerically_verified",
+  "measured": true,
+  "task_id": "T094",
+  "uncertainty": {
+   "basis": "bit-exact canonical JSON comparison, as CIW makes it, of LAPACK-backed recomputations; which of them differ depends on the NumPy/LAPACK build and the OpenBLAS kernel. The platform fingerprint, whether it equals GOLDEN_PLATFORM and each unmodified outcome are in golden.json.",
+   "kind": "roundoff",
+   "value": 0
+  },
+  "unit": null,
+  "value": {
+   "outcomes_as_predicted": 3,
+   "refusal_where_a_bit_differs": "Retained energy analysis binding differs",
+   "workspaces_reopened_unmodified": 3
+  }
+ },
+ {
+  "claim": "The golden energy analysis recomputed with the current code agrees with the retained analysis to 1e-14 absolute plus 1e-14 relative in every float and exactly in every other field",
+  "evidence_status": "numerically_verified",
+  "measured": true,
+  "task_id": "T094",
+  "uncertainty": {
+   "basis": "Per-float tolerance 1e-14 absolute plus 1e-14 relative, set from the spread measured with the golden energy workspace on one x86-64 host under three OpenBLAS kernels: SkylakeX, which wrote it, recomputes it bit for bit; under Haswell and Sandybridge the reference mean and covariance (order-one results of 2x2 LAPACK solves) move by at most 2 ulps (2.8e-16 relative) and the error fields derived from them, which cancel to near zero, by at most 2.2e-16 absolute. The two terms are summed, as ciw lab verify sums them: where the largest difference, 2.2e-16, was measured the bound is 45 times it at the error fields (the absolute term, 45 ulps of the order-one quantities they are differences of) and 91 times at reference.mean[1] (bound 2.0e-14); fields that moved less sit further inside it (at the covariance entries and their error fields about 190 to 1500 times their largest difference, the absolute term dominating). This run's differences are in golden.json.",
+   "kind": "roundoff",
+   "value": 1e-14
+  },
+  "unit": null,
+  "value": {
+   "float_fields_each": 47,
+   "other_fields_each": 51,
+   "outside_tolerance": 0,
+   "recomputations": 7
   }
  },
  {
@@ -10892,50 +11447,76 @@
   ]
  },
  {
-  "claim": "The SP1 proved-heat locked build was not attempted",
-  "evidence_status": "not_established",
-  "measured": false,
+  "claim": "The bound SP1 proved-heat gate record matches its manifest digests, records a passing gate with its required native tests, names CIW's pinned SCR, SP1, guest recipe, guest ELF and compiler archive, and holds bundles that pass CIW's offline validation",
+  "evidence_status": "numerically_verified",
+  "measured": true,
   "task_id": "T099",
-  "uncertainty": null,
+  "uncertainty": {
+   "basis": "exact counts, digests and string comparisons; no rounding is involved",
+   "kind": "roundoff",
+   "value": 0
+  },
   "unit": null,
   "value": {
-   "attempted": false,
-   "requirements": {
-    "command": "cargo +1.94.0 build --release --locked --manifest-path <scr>/zk/Cargo.toml --target-dir <proof-target> -p sp1-adapter --bin sp1-host",
-    "gate": "scripts/check_proved_heat.py via .github/workflows/proved-heat.yml",
-    "guest_recipe": {
-     "identity": "6e5d1687bcc55243d712553a2b7768b6c587a76418bb48a7a2c44224470d423d",
-     "path": "zk/recipes/sp1-heat.recipe",
-     "verify": "execution.build.verify_build(recipe, <guest sha256>, repo_root=<scr>)"
-    },
-    "guest_sha256": "a14e3750da7e221d31842bd6cf983fcc8c0f530b2811537e2a9a9fe803dacf82",
-    "network": "crates.io and git dependencies (the zk workspace is not --offline), github.com clones of SCR and SP1, and the github.com release download of the Succinct compiler archive",
-    "resources": {
-     "available_memory_bytes_at_least": 7516192768,
-     "free_disk_bytes_at_least": 21474836480
-    },
-    "source": ".github/workflows/proved-heat.yml",
-    "sp1_checkout": {
-     "path": "<scr>/../notationsystems/SP1-zero-knowledge-virtual-machine",
-     "repository": "https://github.com/succinctlabs/sp1.git",
-     "revision": "b38b61209e45e969289e70d5cf79dc763460bc41",
-     "tree": "7deca3aced8d8eb84dfcede98285a192c862ea4c"
-    },
-    "succinct_compiler_archive": {
-     "install": "tar -xzf <archive> -C <dir>; rustup toolchain link succinct <dir>; rustc +succinct -vV",
-     "sha256": "12c94435d41bfe4e20131bbcce40b35abd32270ad792befc653af4e3fabc192f",
-     "url": "https://github.com/succinctlabs/rust/releases/download/succinct-1.94.0-64bit/rust-toolchain-x86_64-unknown-linux-gnu.tar.gz"
-    },
-    "system_packages": [
-     "build-essential",
-     "clang",
-     "libclang-dev",
-     "libssl-dev",
-     "pkg-config",
-     "protobuf-compiler"
-    ],
-    "toolchain": "rustup toolchain 1.94.0 (minimal profile) plus the linked succinct toolchain"
-   }
+   "problems": 0,
+   "retained_files": 9,
+   "run_id": "local-2026-09-24"
+  }
+ },
+ {
+  "claim": "The SP1 proved-heat gate proved and verified the heat result with real SP1, and a fresh replay reproduced it with its own verified proof",
+  "evidence_status": "provider_backed",
+  "measured": true,
+  "task_id": "T099",
+  "uncertainty": {
+   "basis": "exact int64 arithmetic compared cell by cell",
+   "kind": "roundoff",
+   "value": 0
+  },
+  "unit": null,
+  "value": {
+   "execution": "real_sp1_proof_fresh_replay_and_verification",
+   "gate_status": "passed",
+   "heat_values": [
+    0,
+    65,
+    92,
+    65,
+    0
+   ],
+   "native_tests": [
+    "test_native_proved_heat_shared_session"
+   ],
+   "replay_numerical_match": true,
+   "replay_values": [
+    0,
+    65,
+    92,
+    65,
+    0
+   ],
+   "tests_passed": 111,
+   "verifier_outcomes": [
+    "verified",
+    "verified"
+   ]
+  }
+ },
+ {
+  "claim": "The CI-pinned toolchain rebuilds the engine the SP1 gate proved against byte for byte",
+  "evidence_status": "numerically_verified",
+  "measured": true,
+  "task_id": "T099",
+  "uncertainty": {
+   "basis": "exact counts, digests and string comparisons; no rounding is involved",
+   "kind": "roundoff",
+   "value": 0
+  },
+  "unit": null,
+  "value": {
+   "builds": 1,
+   "equal_to_gate_engine": true,
+   "toolchain": "1.94.0"
   }
  },
  {
@@ -11001,9 +11582,9 @@
   },
   "unit": null,
   "value": {
-   "generator_findings": 245,
+   "generator_findings": 256,
    "not_shown": 0,
-   "provider_findings": 14,
+   "provider_findings": 19,
    "reports_absent_of_T001_T099": 0,
    "reports_checked": 99
   }
@@ -11680,8 +12261,24 @@
   },
   "unit": null,
   "value": {
-   "cases": 102,
+   "cases": 114,
    "violations": 0
+  }
+ },
+ {
+  "claim": "Every window case receives the code its exact window predicts, PLSR's computed max eig(M) erring by less than the 3/16 res that separates each window from the code thresholds",
+  "evidence_status": "independently_verified",
+  "measured": true,
+  "task_id": "T107",
+  "uncertainty": {
+   "basis": "largest realized error of PLSR's computed max eig(M) against the exact value, in resolutions; it differs between BLAS kernels at its own size and is not a compared value",
+   "kind": "roundoff",
+   "value": 0.009584056958089615
+  },
+  "unit": null,
+  "value": {
+   "mismatches": 0,
+   "window_cases": 90
   }
  },
  {
@@ -11690,9 +12287,9 @@
   "measured": true,
   "task_id": "T107",
   "uncertainty": {
-   "basis": "counts near two resolutions may shift between BLAS builds",
-   "kind": "reference_error",
-   "value": 2.0
+   "basis": "exact counts: each counted outcome is decided at a threshold at least 3/16 res from the case's exact max eig(M), beyond the realized eigenvalue error, so they do not move between BLAS kernels",
+   "kind": "roundoff",
+   "value": 0.0
   },
   "unit": null,
   "value": {
@@ -11706,13 +12303,13 @@
   "measured": true,
   "task_id": "T107",
   "uncertainty": {
-   "basis": "counts near the band edge may shift between BLAS builds",
-   "kind": "reference_error",
-   "value": 2.0
+   "basis": "exact counts: each counted outcome is decided at a threshold at least 3/16 res from the case's exact max eig(M), beyond the realized eigenvalue error, so they do not move between BLAS kernels",
+   "kind": "roundoff",
+   "value": 0.0
   },
   "unit": null,
   "value": {
-   "band_cases": 66,
+   "band_cases": 78,
    "certified": 0
   }
  },
@@ -11722,16 +12319,49 @@
   "measured": true,
   "task_id": "T107",
   "uncertainty": {
-   "basis": "which band cases resolve depends on last-bit rounding; the [-2, -1) res certifications are robust",
-   "kind": "reference_error",
-   "value": 4.0
+   "basis": "the counts are exact; the witness's computed margin ratio carries the realized eigenvalue error of its BLAS kernel on window cases (at most 0.0096 res here; 0.0096 res on the SkylakeX and Haswell OpenBLAS kernels, 0.0116 res on Sandybridge, Nehalem and Prescott), so two kernels differ by at most twice the largest realized error; across those five kernels the margin ratios of band certificates differed by at most 0.0018 on window cases and 0.0025 with the straddle certificates, and the witness's not at all; the regression tolerance abs 0.03 res covers twice the largest window error, is 12 times that measured spread and admits no change of a count",
+   "kind": "roundoff",
+   "value": 0.009584056958089615
   },
   "unit": null,
   "value": {
-   "band_cases": 66,
-   "certified": 18,
-   "certified_within_one_resolution": 2,
+   "band_cases": 78,
+   "certified_window_cases": 12,
    "unsound": 0
+  }
+ },
+ {
+  "claim": "Straddle cases within rounding of -res receive CERTIFIED_WITH_MARGIN or NUMERICAL_INCONCLUSIVE on either exact side of the threshold",
+  "evidence_status": "independently_verified",
+  "measured": true,
+  "task_id": "T107",
+  "uncertainty": {
+   "basis": "largest exact distance of a straddle case from -res, in resolutions; which of them are certified is decided by the rounding of the computed eigenvalue (realized error up to 0.0026 res here), may differ between BLAS kernels and LAPACK builds, and is retained per case in inconclusive-band.json, not compared",
+   "kind": "reference_error",
+   "value": 0.008192062377929688
+  },
+  "unit": null,
+  "value": {
+   "cases": 12,
+   "exactly_beyond": 6,
+   "other_codes": 0
+  }
+ },
+ {
+  "claim": "Straddle cases within rounding of +res receive DECREASE_NOT_DEFINITE, NOT_CERTIFIED or NUMERICAL_INCONCLUSIVE on either exact side of the threshold",
+  "evidence_status": "independently_verified",
+  "measured": true,
+  "task_id": "T107",
+  "uncertainty": {
+   "basis": "largest exact distance of a straddle case from +res, in resolutions; which of them are DECREASE_NOT_DEFINITE is decided by the rounding of the computed eigenvalue (realized error up to 0.0032 res here), may differ between BLAS kernels and LAPACK builds, and is retained per case in inconclusive-band.json, not compared",
+   "kind": "reference_error",
+   "value": 0.0061817169189453125
+  },
+  "unit": null,
+  "value": {
+   "cases": 12,
+   "exactly_beyond": 6,
+   "other_codes": 0
   }
  },
  {
@@ -11751,41 +12381,42 @@
   }
  },
  {
-  "claim": "Share of exactly negative definite band cases answered NUMERICAL_INCONCLUSIVE without a declared margin",
+  "claim": "Share of exactly negative definite band window cases answered NUMERICAL_INCONCLUSIVE without a declared margin",
   "evidence_status": "provider_backed",
   "measured": true,
   "task_id": "T107",
   "uncertainty": {
-   "basis": "the share of resolved band cases depends on last-bit rounding",
-   "kind": "reference_error",
-   "value": 0.2
+   "basis": "a ratio of exact counts decided by the exact windows",
+   "kind": "roundoff",
+   "value": 0.0
   },
   "unit": null,
   "value": {
-   "inconclusive_share": 0.4375
+   "inconclusive_share": 0.5384615384615384
   }
  },
  {
-  "claim": "The near-boundary family populates every exact resolution bin of max eig(M)",
+  "claim": "The near-boundary family populates every exact resolution bin of max eig(M), each window case within res/16 of its target",
   "evidence_status": "numerically_verified",
   "measured": true,
   "task_id": "T107",
   "uncertainty": {
-   "basis": "bins of razor-edge cases may shift between BLAS builds",
-   "kind": "reference_error",
-   "value": 2.0
+   "basis": "exact rational bins and windows of matrices built without BLAS: the same on every kernel",
+   "kind": "roundoff",
+   "value": 0.0
   },
   "unit": null,
   "value": {
    "bins": {
-    "[-1, 0) res": 16,
-    "[-2, -1) res": 16,
-    "[0, 1) res": 16,
+    "[-1, 0) res": 20,
+    "[-2, -1) res": 18,
+    "[0, 1) res": 22,
     "[1, 2) res": 18,
     "at or above 2 res": 18,
     "below -2 res": 18
    },
-   "cases": 102
+   "cases": 114,
+   "outside_window": 0
   }
  },
  {
@@ -11920,9 +12551,9 @@
   "measured": true,
   "task_id": "T109",
   "uncertainty": {
-   "basis": "depends on the independent solver's P for a cond ~5e11 plant; exact validity of that P is decided in rational arithmetic",
-   "kind": "reference_error",
-   "value": 0.0
+   "basis": "first-order heuristic u cond(P) for the relative change of the witness's certificate condition cond(P) = 4.97e+11, valid for a solve that moves P by about u ||P|| (Weyl), which the ill-conditioned Lyapunov operator of this plant (condition about 3e13) does not guarantee; five OpenBLAS kernels (SkylakeX, Haswell, Sandybridge, Nehalem, Prescott) gave conditions within 1.2e-4 of each other, about twice that size. The regression tolerance n^2 u cond(P) = 0.00088 is 7 times that measured spread; the count and the plants are exact, and exact validity of the independent P is decided in rational arithmetic",
+   "kind": "roundoff",
+   "value": 5.516410666767241e-05
   },
   "unit": null,
   "value": {
@@ -12047,21 +12678,21 @@
   }
  },
  {
-  "claim": "PLSR's scalar NOT_CERTIFIED gate fires only where the exact x^T M x is positive and its eigenvalue route finds max eig(M) above the resolution, on the route family and on T107's near-threshold forms",
+  "claim": "PLSR's scalar NOT_CERTIFIED gate fires only where the exact x^T M x is positive and its eigenvalue route finds max eig(M) above the resolution, on the route family and on T107's window and -res straddle forms",
   "evidence_status": "independently_verified",
   "measured": true,
   "task_id": "T111",
   "uncertainty": {
-   "basis": "counts are exact (abs 0.05 admits no integer change); near-threshold agreement shares move with last-bit rounding by a few of the 408 samples",
-   "kind": "reference_error",
-   "value": 0.05
+   "basis": "exact counts and shares: on T107's window and -res straddle forms every scalar-gate and eigenvalue-route decision lies at least 0.23 res from its threshold, beyond the realized error of either (about 0.015 res), and the exact signs are decided in rationals; the values were identical on five OpenBLAS kernels. The rounding-decided coincident crossing is the next finding",
+   "kind": "roundoff",
+   "value": 0.0
   },
   "unit": null,
   "value": {
    "agreement": {
     "near threshold": {
      "eigen_vs_exact_class": 0.8431372549019608,
-     "scalar_vs_eigen": 0.7352941176470589,
+     "scalar_vs_eigen": 0.7794117647058824,
      "scalar_vs_exact_sample_sign": 0.9607843137254902
     },
     "route family": {
@@ -12071,7 +12702,7 @@
     }
    },
    "not_certified_share": {
-    "near threshold": 0.08823529411764706,
+    "near threshold": 0.07352941176470588,
     "route family": 0.1475
    },
    "route_disagreements": {
@@ -12086,6 +12717,26 @@
     "certified_where_exact_x_M_x_positive": 0,
     "eigen_route_on_exactly_negative_definite_form": 0,
     "not_certified_without_eigen_route": 0,
+    "not_certified_without_exact_increase": 0
+   }
+  }
+ },
+ {
+  "claim": "At the top eigenvector of T107's forms straddling +res, where PLSR's scalar gate and eigenvalue route cross together, its x^T M x / |x|^2 exceeds its max eig(M) by less than their rounding bound and NOT_CERTIFIED fires only where the exact x^T M x is positive",
+  "evidence_status": "independently_verified",
+  "measured": true,
+  "task_id": "T111",
+  "uncertainty": {
+   "basis": "largest excess of PLSR's x^T M x / |x|^2 over its max eig(M), in units of the rounding bound; whether the scalar gate, the eigenvalue route, both or neither fire at a sample is decided by the rounding of the formed M (here both at 7, neither at 5, the scalar gate alone at 0 and the eigenvalue route alone at 0 of 12), may differ between BLAS kernels and is retained per sample in routes.json, not compared",
+   "kind": "reference_error",
+   "value": 0.04588329465296129
+  },
+  "unit": null,
+  "value": {
+   "samples": 12,
+   "violations": {
+    "certified": 0,
+    "excess_beyond_bound": 0,
     "not_certified_without_exact_increase": 0
    }
   }
@@ -15949,10 +16600,10 @@
    "value": 0
   },
   "unit": "counterexamples",
-  "value": 213
+  "value": 214
  },
  {
-  "claim": "Re-executed figure tasks without wall-clock timings regenerate byte-identical figures",
+  "claim": "Re-executed figure tasks regenerate their retained figures, byte-identical unless declared as wall-clock timing figures",
   "evidence_status": "numerically_verified",
   "measured": true,
   "task_id": "T158",
@@ -15965,7 +16616,7 @@
   "value": 0
  },
  {
-  "claim": "Re-executed figures that plot wall-clock timings differ from their retained bytes",
+  "claim": "Re-executed figures declared as wall-clock timing figures differ from their retained bytes",
   "evidence_status": "numerically_verified",
   "measured": true,
   "task_id": "T158",

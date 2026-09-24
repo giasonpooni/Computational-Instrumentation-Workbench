@@ -2,20 +2,20 @@
  "basis_components": {
   "acquisition": 0,
   "derivation": 142,
-  "independent_check": 57,
+  "independent_check": 63,
   "none": 165,
-  "provider": 83,
-  "reference_checks": 823,
-  "synthetic_inputs": 339
+  "provider": 92,
+  "reference_checks": 843,
+  "synthetic_inputs": 350
  },
  "ciw_version": "0.1.0",
  "labels": {
   "analytic": 11,
   "hardware_measured": 0,
-  "independently_verified": 57,
+  "independently_verified": 63,
   "not_established": 187,
-  "numerically_verified": 791,
-  "provider_backed": 3,
+  "numerically_verified": 805,
+  "provider_backed": 6,
   "synthetic": 0
  },
  "physical_validation": "not_established",
@@ -96,7 +96,7 @@
   ],
   "tasks": 168
  },
- "release_digest": "sha256:51a4c874f05acef9ee59e1a4c12682ab0dc419bb2f3e74eaf32e52071c7e1763",
+ "release_digest": "sha256:18fdd36b2ddeb44409b393f3e4fe81620551bb0084384cab6cc255628194841e",
  "release_digest_covers": "task states, headline labels, finding claims and finding labels",
  "release_digest_encoding": "sha256 over the UTF-8 bytes of ciw.core.identities.canonical_json (sorted keys, no whitespace, ASCII escapes, NaN refused; the encoding of report identities) of the list [[task, state, headline label, [[claim, label], ...]], ...] in queue order",
  "reports": 164,
@@ -281,13 +281,28 @@
     "T097",
     "T098"
    ]
+  },
+  {
+   "identities": [
+    {
+     "revision": "b38b61209e45e969289e70d5cf79dc763460bc41",
+     "tasks": [
+      "T099"
+     ],
+     "tree": "7deca3aced8d8eb84dfcede98285a192c862ea4c"
+    }
+   ],
+   "runtime": "sp1",
+   "tasks": [
+    "T099"
+   ]
   }
  ],
  "schema": "ciw.lab-release-report.v3",
  "scope": "T001-T164",
  "states": {
   "blocked": 2,
-  "completed": 145,
-  "partial": 17
+  "completed": 147,
+  "partial": 15
  }
 }

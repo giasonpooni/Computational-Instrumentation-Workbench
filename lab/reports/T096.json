@@ -284,16 +284,18 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/exchange_provenance_bundles.py": "7e841b781d966fe75d5a86bd61e1ef32150c4087393893be788c2b7eff69f3d4",
-   "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "435727947e827d1d601802a5e860f04d578f7b879301c7f5615fb7d6e523500e"
+   "src/ciw/lab/exchange_provenance_bundles.py": "289185340068210691a0ccc526655eadb241855566c88003eedf97eef22b7085",
+   "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "28f726a725f7219ef0afccd34545104b5dc0a36e27723281fe6bd1fbde467fa2"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: explore combined mutations that restore consistency (two or more fields changed together, including a recomputed identity) against exchange._identity and candidate_evidence.validate_response, which single-field mutations cannot reach; and, as CIW changes, bind observation-batch identities to their content and refuse unknown ESM response fields, then re-run to check that both counterexamples become refusals.",
- "report_id": "sha256:b5b9476d10536f8d59dcf73fb8be5b984b11b42bfd4fa864e3d7faca680a0f72",
+ "report_id": "sha256:de7d4f016f5bc817516e2f478b5b98609b1e2ede4bd1619ec5a35d1b0c76170c",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "completed",

@@ -700,6 +700,8 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "requirement_probes": {
    "module:mpmath": true,
@@ -713,7 +715,7 @@
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: separate the adaptive effective order from the step-size controller by re-measuring it with a second controller and start step on the same references (for example scipy's RK45 and DOP853 at matched tolerances), since the retained effective orders hold for integrators.integrate_adaptive only and the half-way thresholds do not certify the exact order of the pair",
- "report_id": "sha256:653999afa8c81062715c1e0f9738b8ca530558f0189c1489e7aa18628cd7e4bd",
+ "report_id": "sha256:5212317dad00b09520dbd28bde0a40a35d047454ac7b81b7e4b10e28385b3acb",
  "schema": "ciw.lab-task-report.v1",
  "section": "geodesic-jacobi",
  "state": "completed",

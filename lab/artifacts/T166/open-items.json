@@ -216,6 +216,12 @@
     "text": "A matching HEAD, tree and lock digest authenticates the upstream repository, toolchain and built engine"
    },
    {
+    "kind": "next step",
+    "phrase": "sign the",
+    "task_id": "T099",
+    "text": "Deferred research question: retain the output of a CI run of the SP1 proved-heat gate (.github/workflows/proved-heat.yml runs it and uploads proved-heat-native-evidence, which nothing retains) as a second record beside the local one, extending ciw lab proved-heat retain to accept that artifact, which has no local-run.json, so that the gate's outcome no longer rests on one operator host; attest the engine and prover the gate binds (build them from the pinned sources in the same job and record that build, or sign them), so that host_executable_binding is no longer operator_asserted_not_attested; and rebuild sp1-host with the CI-pinned toolchain on a second host to learn whether the prover digest, like the engine's on the recording host, depends only on the toolchain."
+   },
+   {
     "kind": "assumption",
     "phrase": "authenticat",
     "task_id": "T100",
@@ -384,6 +390,7 @@
    "T089",
    "T090",
    "T098",
+   "T099",
    "T100",
    "T113",
    "T114",
@@ -535,7 +542,7 @@
     "kind": "assumption",
     "phrase": "cross-platform",
     "task_id": "T081",
-    "text": "Deferred research question (cross-platform reproduction): run T081 on Windows x86-64 and macOS arm64 besides the retained Linux x86-64 run and check that every float-valued numerical_result_id of the energy-accuracy bundles (originals, sibling, replays, replay after reopen, separate session) equals the retained energy_numerical_result_id exactly (kept in T081's numerical-identity.json and in its identity finding's value, which ciw lab verify compares exactly); a mismatch would mean the canonical float serialization or the analysis arithmetic depends on the platform, and no second platform has been compared."
+    "text": "Deferred research question (cross-platform reproduction): the energy numerical_result_id hashes the analysed floats bit for bit, so it links occurrences on one arithmetic platform only (five OpenBLAS kernels on one Linux x86-64 host gave three ids, each shared by every occurrence of its run). Run T081 on Windows x86-64 and macOS arm64 and compare it with the retained run by ciw lab verify, which checks that each run again has one numerical_result_id over its occurrences and compares the energy numerical result that id hashes leaf by leaf within 2e-14 absolute, about 90 times the spread between those kernels (the retained run does not record its kernel): do all differences stay at rounding level, and should CIW link occurrences across platforms by such a tolerance comparison, or by an identity over declared-precision data, instead of the bit-exact id (a CIW change, not made here)?"
    },
    {
     "kind": "next step",
@@ -547,7 +554,13 @@
     "kind": "next step",
     "phrase": "Windows",
     "task_id": "T094",
-    "text": "Deferred research question: reopen the golden workspaces on a second platform (Windows x86-64, macOS arm64 or another NumPy/LAPACK build) to learn whether the bit-for-bit energy recomputation refuses the energy golden there, as the platform fingerprint in golden.json anticipates; and retain golden workspaces for provider kinds other than numerical-heat, produced by their pinned providers, so that validator drift in those kinds is caught at reopen."
+    "text": "Deferred research question: reopen the golden workspaces on Windows x86-64, macOS arm64 and a NumPy built on another LAPACK to learn whether the energy recomputation stays within the rounding tolerance measured across three OpenBLAS kernels on one x86-64 host; decide, as a CIW design question, whether reopen should compare the energy recomputation within a declared tolerance instead of bit for bit, so that a workspace written on one platform reopens on another; and retain golden workspaces for provider kinds other than numerical-heat, produced by their pinned providers, so that validator drift in those kinds is caught at reopen."
+   },
+   {
+    "kind": "next step",
+    "phrase": "second host",
+    "task_id": "T099",
+    "text": "Deferred research question: retain the output of a CI run of the SP1 proved-heat gate (.github/workflows/proved-heat.yml runs it and uploads proved-heat-native-evidence, which nothing retains) as a second record beside the local one, extending ciw lab proved-heat retain to accept that artifact, which has no local-run.json, so that the gate's outcome no longer rests on one operator host; attest the engine and prover the gate binds (build them from the pinned sources in the same job and record that build, or sign them), so that host_executable_binding is no longer operator_asserted_not_attested; and rebuild sp1-host with the CI-pinned toolchain on a second host to learn whether the prover digest, like the engine's on the recording host, depends only on the toolchain."
    },
    {
     "kind": "assumption",
@@ -581,15 +594,15 @@
    },
    {
     "kind": "assumption",
-    "phrase": "one platform",
+    "phrase": "Windows",
     "task_id": "T158",
-    "text": "Byte identity is established on one platform; Windows and other BLAS builds are not compared."
+    "text": "Byte identity is established on this platform only; the second-platform (Windows) comparison is made outside the queue by scripts/check_figures.py and is not part of this report."
    },
    {
     "kind": "next step",
     "phrase": "Windows",
     "task_id": "T158",
-    "text": "Have figure tasks declare timing figures in their reports, and re-execute every figure task on a second platform (Windows CI) outside the section's time budget."
+    "text": "Compare the figures on Windows, the second platform, with scripts/check_figures.py: on a windows-latest runner with Python 3.12, install the checkout whose lab/ is retained (python -m pip install -e \".[dev,lab,plsr]\") and run python scripts/check_figures.py --retained lab --output-dir results/figures-windows with --provider ROLE=PATH for every provider the retained figure tasks used (csg, plsr-python, ppda, scr, scr-exchange, set in this run), at the pins scripts/check_lab.py provisions and with plsr-python bound to that Python. It re-executes every figure task without the section's time budget and records each figure's outcome with the platform in figure-check.json; fix every figure it reports as a mismatch, declaring one only when its plotted data are wall-clock timings."
    },
    {
     "kind": "next step",
@@ -602,6 +615,7 @@
    "T014",
    "T081",
    "T094",
+   "T099",
    "T101",
    "T102",
    "T117",

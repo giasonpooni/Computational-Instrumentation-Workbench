@@ -389,16 +389,18 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/exchange_provenance.py": "0871a5e3e3a27b365a326036c869338b11e5aa3bc4af3ca60db29e81bedbba36",
+   "src/ciw/lab/exchange_provenance.py": "6c5c6d9b49043664ad9cea8f4bc2ff5d9fc367aea6194e2e7608c98bfd5c54f4",
    "src/ciw/lab/exchange_provenance_common.py": "17ab892e3f285ac475b44c240155acf45f8bbdbefca28a345980aba548c6d1a9"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question (CIW change): persist the selection history or drop selection_revision from sealed records, and bind oscillator result identities to their content so the execution that produced a result is verifiable, then repeat the re-pairing test across operations with different parameters and data.",
- "report_id": "sha256:ef265aa4e68c0e722d2361f0b4a9d9a94c8a1ae3c97e85e5b5c9b51ca71eb4f7",
+ "report_id": "sha256:254ceb9adb49cce522ef7beb6330de18cafbfbeb6cdc14f1ad8d08b0b79ae498",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "completed",
@@ -422,11 +424,10 @@
   "check: Surviving mutant revision.gap: a workspace whose selection revision jumps to 1000, with records claiming revision 999, reopens vs revision.gap: accepted (1 = accepted)",
   "check: Surviving mutant revision.gap: a workspace whose selection revision jumps to 1000, with records claiming revision 999, reopens vs reopened selection revision 1000 with the execution claiming 999 (0 = shown)",
   "pytest: tests/test_lab_exchange_provenance.py::test_identity_separation",
-  "pytest: tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work"
+  "pytest: tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work",
+  "pytest: tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply"
  ],
- "tests_skipped": [
-  "pytest: tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply (skipped)"
- ],
+ "tests_skipped": [],
  "title": "Test operation/execution/result identity separation.",
  "uncertainty": "Exact comparisons. The saved selection history is not retained, so revision claims cannot be checked by any validator. Kills show only that these particular aliases are detected; the re-pairing survivor is harmless in this fixture only because R1 and R2 carry equal data.",
  "unresolved_assumptions": [

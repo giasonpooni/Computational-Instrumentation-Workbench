@@ -1,7 +1,7 @@
 {
  "bias_radius_slope": 2.000064369420803,
  "closed_form_gap_px": 2.2737367544323206e-13,
- "first_order_relative_residual": 0.0003846412357328385,
+ "first_order_relative_residual": 0.00038463697250602904,
  "fronto_parallel_offset_px": 2.2737367544323206e-13,
  "marker_radii_m": [
   0.002,
@@ -44,7 +44,7 @@
      7.567120454549103e-07
     ]
    },
-   "first_order_relative_residual": 2.4022823160069392e-05,
+   "first_order_relative_residual": 2.4018559622123364e-05,
    "max_abs_chord_bias_m": 4.99841494527864e-06,
    "max_offset_px": 0.011141768114797014,
    "radius_m": 0.002,
@@ -90,7 +90,7 @@
      3.026934563332695e-06
     ]
    },
-   "first_order_relative_residual": 9.610506422943482e-05,
+   "first_order_relative_residual": 9.610080075359351e-05,
    "max_abs_chord_bias_m": 1.9994016584257146e-05,
    "max_offset_px": 0.04456758124446721,
    "radius_m": 0.004,
@@ -136,7 +136,7 @@
      1.2109120552411534e-05
     ]
    },
-   "first_order_relative_residual": 0.0003846412357328385,
+   "first_order_relative_residual": 0.00038463697250602904,
    "max_abs_chord_bias_m": 7.998177597701162e-05,
    "max_offset_px": 0.17827846601409686,
    "radius_m": 0.008,

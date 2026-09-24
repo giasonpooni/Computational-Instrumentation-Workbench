@@ -4,7 +4,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T001",
-   "report_id": "sha256:cfb7120d0c0c9fed91cc18f594db3b806a4293dbe8b42d477aaef302d4897568",
+   "report_id": "sha256:1812f85646b1bc85bcd7e8145413e2fc4fc56ac789a28fdc74f190b71c51e72b",
    "section": "geodesic-jacobi",
    "state": "completed",
    "title": "Re-derive the geodesic equation for the plane, sphere, cylinder, saddle, torus, and variable-curvature surfaces."
@@ -12,7 +12,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T002",
-   "report_id": "sha256:7e267ae013282fff52eafad433a4d34c778e2759ee52fa43848575d3b0532ae5",
+   "report_id": "sha256:c2d51bae9c2d90c26601f255bc21967229a2fd833a483bdc06190eee6577b955",
    "section": "geodesic-jacobi",
    "state": "completed",
    "title": "Build high-precision reference solutions for each surface."
@@ -20,7 +20,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T003",
-   "report_id": "sha256:653999afa8c81062715c1e0f9738b8ca530558f0189c1489e7aa18628cd7e4bd",
+   "report_id": "sha256:5212317dad00b09520dbd28bde0a40a35d047454ac7b81b7e4b10e28385b3acb",
    "section": "geodesic-jacobi",
    "state": "completed",
    "title": "Verify Euler, midpoint, RK4, and adaptive integrator orders."
@@ -28,7 +28,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T004",
-   "report_id": "sha256:97e3c555fe7df8caf627b61579955ea09010105d5d2953107845f4d913ac7217",
+   "report_id": "sha256:87c19788b3b6644a131310378036c6bb99be20292137f215f72fc6d57296971f",
    "section": "geodesic-jacobi",
    "state": "completed",
    "title": "Measure unit-speed drift without hidden renormalization."
@@ -36,7 +36,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T005",
-   "report_id": "sha256:3e15b34603f403db3ccac9588fd72db0b8e93e423ed39dc57cbabcb70318615c",
+   "report_id": "sha256:65f3c07843ff4bbbf804cc24b72f16359d5ddfa08881354750914fc2ace30caf",
    "section": "geodesic-jacobi",
    "state": "completed",
    "title": "Verify the Jacobi separation law across positive, zero, and negative curvature."
@@ -44,7 +44,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T006",
-   "report_id": "sha256:414604e5496e2e7c4c5322d669b0ba97b34b9a7e48df94199d3e65edf95486f3",
+   "report_id": "sha256:f1f63df700905d92da403f6832a3057047dba0fea38ecd35c6539776e9d2e1b8",
    "section": "geodesic-jacobi",
    "state": "completed",
    "title": "Compare integrated Jacobi fields with finite-difference flow perturbations."
@@ -52,7 +52,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T007",
-   "report_id": "sha256:2ef658b57fbecf45fa042561b699fb127aa1f3e74a6728d672ccb1daefc2c41b",
+   "report_id": "sha256:f62be9efdb310c25661e98c832ff1a8bf934acf7da2e1edf1f5e819ce27af6a7",
    "section": "geodesic-jacobi",
    "state": "completed",
    "title": "Measure the Wronskian and transfer-matrix determinant."
@@ -60,7 +60,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T008",
-   "report_id": "sha256:658952d58847f62969f42253deedb6d69fd311a1d88b94375b4d10f2ca6a2253",
+   "report_id": "sha256:f8f5f99c2caaab31bc2cbd71099ee0a40937ecd054d79ca834802cade37f438c",
    "section": "geodesic-jacobi",
    "state": "completed",
    "title": "Locate conjugate and focal points numerically."
@@ -68,7 +68,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T009",
-   "report_id": "sha256:030a8d662aa7687633e1efe8e3d138364da2c836e7a42c24e85b817c2aef0480",
+   "report_id": "sha256:c6005f2196f55931cbbd521eaa82e6c025e1837da882ad859e4c84a2d13294ac",
    "section": "geodesic-jacobi",
    "state": "completed",
    "title": "Compare lateral-displacement and heading-perturbation columns separately."
@@ -76,7 +76,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T010",
-   "report_id": "sha256:b384e7f9eed7d958cb032a0bbeea2a42cce6ce54f8eff5570f5bf522c5339d66",
+   "report_id": "sha256:5de900415a1883415d9489ede30aa3445db7b250fd140072e86942a9ca8a29b4",
    "section": "geodesic-jacobi",
    "state": "completed",
    "title": "Generate near-focus and post-focus counterexamples."
@@ -84,7 +84,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T011",
-   "report_id": "sha256:b823d0795232eab4659d586edff58cd3615ae5620ac9a886d139ed5eeafa403a",
+   "report_id": "sha256:beedb340bb9e9ec435f813cf4ba828e9a97cf677420c37135955997f10ed79e0",
    "section": "geodesic-jacobi",
    "state": "completed",
    "title": "Test coordinate-change invariance under nonlinear parameterizations."
@@ -92,7 +92,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T012",
-   "report_id": "sha256:69eb8ecb939dae98d33b491ff0042129545f9b99b80d1689f614fafde22e3d3a",
+   "report_id": "sha256:6f146697c58ee0fba7ffdd9cd1757ae473229ffeab1eab3bc5a9fe4198565f75",
    "section": "geodesic-jacobi",
    "state": "completed",
    "title": "Test frame-change invariance under rotations and tangent-basis changes."
@@ -100,7 +100,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T013",
-   "report_id": "sha256:462a4d621a5889d494c5022e73a7a606c8cbfcf8d759ec18b6a8bc43d66fe912",
+   "report_id": "sha256:b4d50a0290650557c5f3c5cec2a61472abb77b3e378708d29f73a26a6053a189",
    "section": "geodesic-jacobi",
    "state": "completed",
    "title": "Quantify the flat-cylinder/developable-surface limit."
@@ -108,7 +108,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T014",
-   "report_id": "sha256:399c6a3adf63fa89ec826a4386a5f64c9e6af5e2e60373b8b5232e6e4210fb5a",
+   "report_id": "sha256:7b08f6bb04cb21d2c923ff8e8689cfcad48220383a970111b5e42bae3448d60a",
    "section": "geodesic-jacobi",
    "state": "completed",
    "title": "Test geodesic reversal and path truncation."
@@ -116,7 +116,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T015",
-   "report_id": "sha256:61b8fdc2498d985eacff86ec393ec4c586fbe9dd3ff7ee78d641d6ad4874a496",
+   "report_id": "sha256:17a0765e348515a69fbb3f17903e85854bbe5a7c29b48c0a914e5378ea216004",
    "section": "geodesic-jacobi",
    "state": "completed",
    "title": "Explore long-horizon numerical drift."
@@ -124,7 +124,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T016",
-   "report_id": "sha256:1210719bf3cd0ddadbe3cc228f62fea62088533bf064ef0d5603dfebb3180706",
+   "report_id": "sha256:ba9b516c208567f74bd9fd344349071786080c46406712dfa44d7df735ec3bfa",
    "section": "geodesic-jacobi",
    "state": "completed",
    "title": "Study stiff behavior on strongly negative-curvature surfaces."
@@ -132,7 +132,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T017",
-   "report_id": "sha256:1b026ae96517024266167f9a5a1b8ac1a65e21f068dd03f864b518cda2ca5f5a",
+   "report_id": "sha256:4cea98c3a1fdbcf05294b55d3a34e189247f02a2a371173f9f2bb10b9400cfa8",
    "section": "geodesic-jacobi",
    "state": "completed",
    "title": "Derive validity domains for the first-order approximation."
@@ -140,7 +140,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T018",
-   "report_id": "sha256:79b70e9421b8e0cf0f45cdabf5792d7c10c2e5125b92dfb482e4a0b94bb13cfa",
+   "report_id": "sha256:062cae40cad8a453081677f17c37ffa85fc3362d31a3bb97791692a7cd59ae91",
    "section": "geodesic-jacobi",
    "state": "completed",
    "title": "Generate a report comparing intrinsic curvature effects with integrator error."
@@ -148,7 +148,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T019",
-   "report_id": "sha256:d8974360269f7e3e73e47c128f78f0aeb81326b18c5c47b4032584d9c908fc9e",
+   "report_id": "sha256:2df292f1df6a2b2178211644826722daf87e789b7fa63fe8ffe978d014e5a59f",
    "section": "flat-torus-topology",
    "state": "completed",
    "title": "Enumerate equivalent lattice representatives."
@@ -156,7 +156,7 @@
   {
    "evidence_status": "analytic",
    "id": "T020",
-   "report_id": "sha256:10498628631f4c24a51ff0ca69b34d711031fc73a8c693586000f7159932c9ee",
+   "report_id": "sha256:ff25ffadcedd07d4175a86aa4b5f0a9dc89cde5a97866d86a058886889d50954",
    "section": "flat-torus-topology",
    "state": "completed",
    "title": "Classify geodesics by winding vector."
@@ -164,7 +164,7 @@
   {
    "evidence_status": "analytic",
    "id": "T021",
-   "report_id": "sha256:f86b2f6d045b356f13f914eaa582297cea9fa54ae82f93086cec6e31b8f0e355",
+   "report_id": "sha256:96dbb27f1a8f2559690ca7fe6b679b407a3545f4f04f47189283a1f0fd65e5ac",
    "section": "flat-torus-topology",
    "state": "completed",
    "title": "Compare shortest path against least-sensitive path."
@@ -172,7 +172,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T022",
-   "report_id": "sha256:fce66ef3fafaf7853cd8cc7ac2fdf14be071d1b59c71033ded9dde0231f05155",
+   "report_id": "sha256:05358fda12be28727896b5554d191e3aec491e73b878d98c772aac334de6b102",
    "section": "flat-torus-topology",
    "state": "completed",
    "title": "Detect degenerate shortest representatives."
@@ -180,7 +180,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T023",
-   "report_id": "sha256:149cdef39a25d669b2a1d540578a89978e2176b7a75e1114918126720a2326ac",
+   "report_id": "sha256:00c1130f0590263ad2274c31f2e0ec3e2bbb4772d77a85bd6d0119e37ffe4544",
    "section": "flat-torus-topology",
    "state": "completed",
    "title": "Compute sensitivity across all starting headings."
@@ -188,7 +188,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T024",
-   "report_id": "sha256:a8a060f909622c608789e840b112f6b6c5b133ec603ca20df1ce88aa9383f8fb",
+   "report_id": "sha256:3077efdd77de065ceba38260a1f2eabe10dd7d70c7955a9640a6e7fbd6334696",
    "section": "flat-torus-topology",
    "state": "completed",
    "title": "Add focus-margin-aware route ranking."
@@ -196,7 +196,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T025",
-   "report_id": "sha256:95445422294b81d64045d70b8d0b47e04e841b48428ae688e4e8815ea6ee32ae",
+   "report_id": "sha256:a62c47a641071adcf26be61df7810025432d7d6406d49b699e514b17902add02",
    "section": "flat-torus-topology",
    "state": "completed",
    "title": "Generate Pareto fronts for length, amplification, and focus margin."
@@ -204,7 +204,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T026",
-   "report_id": "sha256:b28f09912ac638bb2fd8d735c864e21b40bb07b14358e1f4d9b65116985f82ec",
+   "report_id": "sha256:805b022410b5869227ca7ecc942c68c8dc5447a090b764eb9829905b2ea85225",
    "section": "flat-torus-topology",
    "state": "completed",
    "title": "Test modular-reduction invariance."
@@ -212,7 +212,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T027",
-   "report_id": "sha256:972d3189388965f8a5dc5db3547bf08d55487dc792e926d50c7417c3ce9f04ad",
+   "report_id": "sha256:2e1cd69a961eaa15921aa081ce301d86a789db598d8fd29b89d2708cd341d7ab",
    "section": "flat-torus-topology",
    "state": "completed",
    "title": "Build polygonal translation-surface examples."
@@ -220,7 +220,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T028",
-   "report_id": "sha256:2c8c29f00e441afc3521bbdc4462d86db76e867662184bec82e3efb78f8a6566",
+   "report_id": "sha256:bc8ed7417b703c1381049a3a6e6031d5aae6ae9092194d581301ecf48bbbda42",
    "section": "flat-torus-topology",
    "state": "completed",
    "title": "Trace geodesics across glued edges."
@@ -228,7 +228,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T029",
-   "report_id": "sha256:593bfa4158f8a5770175acaa3a23c18f83b1ea66f24451f71019baba3955c9c7",
+   "report_id": "sha256:d9c0692f233ca6994e7a74eaed772a380a6b481b460a957379b5a0d0427f9c5d",
    "section": "flat-torus-topology",
    "state": "completed",
    "title": "Detect cone singularities."
@@ -236,7 +236,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T030",
-   "report_id": "sha256:66c5a65f0ac0432220298ffaaefb3f3369fd75f147e92da2c0d9ce42dc622123",
+   "report_id": "sha256:6db3817aefc701dfb136be77520554049c5698179ff1a4b1fead7cec2516df4c",
    "section": "flat-torus-topology",
    "state": "completed",
    "title": "Compare smooth and discrete geodesic approximations."
@@ -244,7 +244,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T031",
-   "report_id": "sha256:b8342f6a1eef11387d7c99c9539cd84ee7fa67885ab5e54da3e2bd38950329c0",
+   "report_id": "sha256:dad127f1f8eee47b0bd7da8c3ab82b3a951a51271ebe5ef4c0868e0e36ce325f",
    "section": "flat-torus-topology",
    "state": "completed",
    "title": "Study route changes under small metric perturbations."
@@ -252,7 +252,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T032",
-   "report_id": "sha256:e93d7fee7f90640adc826ee9e199c98874c4c358c05470e07ae98918f2447132",
+   "report_id": "sha256:391a554633a438ed627f15ba1af0b738356536d5ec25b968cbbe95b8ca713204",
    "section": "flat-torus-topology",
    "state": "completed",
    "title": "Create a counterexample library for “shortest means safest.”"
@@ -260,7 +260,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T033",
-   "report_id": "sha256:7634eed23d5b9c753477d32b4766297ceb48770acf77b2c4a394bba302a75b4f",
+   "report_id": "sha256:1519a9dd5eaa5ea6c5153867b1cb0e7c42eb2b0e53e4fb9abb1cce9ab30546b8",
    "section": "surfaces-discrete",
    "state": "completed",
    "title": "Implement a reusable metric/Christoffel/curvature surface interface."
@@ -268,7 +268,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T034",
-   "report_id": "sha256:19dfeda633be2510148326f84e03d111adf84dfa04bbee7a23569d3af3d97b32",
+   "report_id": "sha256:8d1862f31ca84a8163da93d0d7af104f213395359939b1a7b1cbd76d1ecd9579",
    "section": "surfaces-discrete",
    "state": "completed",
    "title": "Add automatic differentiation or symbolic derivative checks."
@@ -276,7 +276,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T035",
-   "report_id": "sha256:883d2f975e1613ea597e2c5d1c44831a623f5093f729d2a4948d9ad942bca1c5",
+   "report_id": "sha256:03b61d0e4e607b8708d0bd73d435dd6b8a93e266775ad03d540cf06f3cf5e39b",
    "section": "surfaces-discrete",
    "state": "completed",
    "title": "Compare analytic and finite-difference metric derivatives."
@@ -284,7 +284,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T036",
-   "report_id": "sha256:b64d05310f24c15f01ae657828a514b5f9c761502a7f07fa7b6ba61f94b6569a",
+   "report_id": "sha256:c792ae692d4e05868c673f45094eb603f1f3d37aad340d3d9b465051156496dd",
    "section": "surfaces-discrete",
    "state": "completed",
    "title": "Add chart-transition support."
@@ -292,7 +292,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T037",
-   "report_id": "sha256:845a79b0d5273f7d55eb6c43b306d5ec115300efc034fa48a163deb4bdee9a83",
+   "report_id": "sha256:9d60a00ab5fbb9ca4333092ebc4b837de2e76833244cb35f5199e305beae1f41",
    "section": "surfaces-discrete",
    "state": "completed",
    "title": "Detect coordinate singularities."
@@ -300,15 +300,15 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T038",
-   "report_id": "sha256:e7ccb316bf1b373bc8802bf545a6c00b72d738abf03435f499efcc12604fd959",
+   "report_id": "sha256:75b82d9e399b71f9f2f20df53fc3d3e2505d94e956ad11cbfa0498d43d4eebc7",
    "section": "surfaces-discrete",
-   "state": "partial",
+   "state": "completed",
    "title": "Build a triangle-mesh intrinsic geodesic solver."
   },
   {
    "evidence_status": "numerically_verified",
    "id": "T039",
-   "report_id": "sha256:33fa15fbb436f3de868f37b0543cfe88131053b130171e90d0b3618ffde9e037",
+   "report_id": "sha256:c7aa6b235a8dbde05d959c24ee245bfab18f6445d2ce0ec0ea9a76d521da17f6",
    "section": "surfaces-discrete",
    "state": "completed",
    "title": "Measure convergence under mesh refinement."
@@ -316,7 +316,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T040",
-   "report_id": "sha256:e393f108225b9b00604a13ad9a89862b405b5f2f2b68a3f9566add29eb5cb60f",
+   "report_id": "sha256:f6324e9e9ff18f337fd9df1e98a8e2e6f46b823567ba42b7ee543184b0c81797",
    "section": "surfaces-discrete",
    "state": "completed",
    "title": "Compare smooth and mesh Jacobi approximations."
@@ -324,7 +324,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T041",
-   "report_id": "sha256:930991058a2fa3a4c57680b66ec75bcbf450e671ff0dc4a62e75b764e5277218",
+   "report_id": "sha256:9178171a216c67f2a2ff2a6809e9631eb1ac28433e20a4d3073ee333018b21cc",
    "section": "surfaces-discrete",
    "state": "completed",
    "title": "Quantify mesh-quality effects."
@@ -332,7 +332,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T042",
-   "report_id": "sha256:32db2bf2bf36901ff564fe0aedcbbcf70ef7c1b6cf3325edb37c52c2122beee5",
+   "report_id": "sha256:00dcebe6f6f442d1694d013accbb601c83dd37bc8cc01ed40dc041596a83609b",
    "section": "surfaces-discrete",
    "state": "completed",
    "title": "Define refusal states for invalid or incomplete surface data."
@@ -340,7 +340,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T043",
-   "report_id": "sha256:d6be3fab13b647813c35e100b32bd90f23c941610a0f92555d1c9521bcce15a4",
+   "report_id": "sha256:667bca9ebf5ef113e94b80668a29ff43b6a0a19e29ddd53a642a73b226966b21",
    "section": "surfaces-discrete",
    "state": "completed",
    "title": "Add uncertainty on vertices, normals, and curvature."
@@ -348,7 +348,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T044",
-   "report_id": "sha256:4e83b8be314e2205cfa93a3f9ba5291bb29b1a5d340a40628178a76477a2d9bc",
+   "report_id": "sha256:d4fb7a1edec6baf502b641deca21496a2035bd2eaf9ceafe4437ac916e05dafa",
    "section": "surfaces-discrete",
    "state": "completed",
    "title": "Test geometry uncertainty separately from sensor uncertainty."
@@ -356,7 +356,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T045",
-   "report_id": "sha256:79a7d86675d8dee42abc47021844d140c5ee9b3a336c2447ba8097c74621a9aa",
+   "report_id": "sha256:cc7c6bbff1e72e0bc7dce4f0df7fa2cdde8a4e304a42c84ef30a3ed61fdd18bc",
    "section": "observation",
    "state": "completed",
    "title": "Define typed observation modes: intrinsic geodesic distance; camera chord distance; reconstructed surface distance; encoder displacement; tracker measurement; image residual; IMU orientation."
@@ -364,7 +364,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T046",
-   "report_id": "sha256:29e74fcf48baa17c48197c36b90eaa614cbd740d0671a237fba2aec8aa77a93a",
+   "report_id": "sha256:0980e9b96ce0f8272fd79026f5dc4b8ace3d371ecb39cf8b6acd9fb4fc578d42",
    "section": "observation",
    "state": "completed",
    "title": "Derive the chord-versus-geodesic correction."
@@ -372,7 +372,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T047",
-   "report_id": "sha256:151d9826ee25c7b7649d26ebed90134cc6f59d7f6efdeb2ab94edc2694d8f0bc",
+   "report_id": "sha256:452e1b56c74d7334c8e4579ff9661b2a4c9e8484a022b11e73f02784b430833b",
    "section": "observation",
    "state": "completed",
    "title": "Validate the cylinder chord coefficient analytically and numerically."
@@ -380,7 +380,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T048",
-   "report_id": "sha256:927dffe80a30c9ccea55316afd3717890ce89689974ab2ecbe3e96056cc00d5b",
+   "report_id": "sha256:161edd48b9213c33b2143c22a1fac1f74222090891a5cd43d8bcede814c95cd3",
    "section": "observation",
    "state": "completed",
    "title": "Generate synthetic camera measurements."
@@ -388,7 +388,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T049",
-   "report_id": "sha256:4e6596effd970b77a5ad6daad77ce8009798ca49e7f4a28eed7e2de9e3c13301",
+   "report_id": "sha256:a4d104645c00de319f598c413a095dded05d2fabd66506df546cdb5f6b2c2bc4",
    "section": "observation",
    "state": "completed",
    "title": "Add camera calibration perturbations."
@@ -396,7 +396,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T050",
-   "report_id": "sha256:9236d34a19827cc314aafcefb1d77b1e3acba735a3c94bfd8624061fab3cea39",
+   "report_id": "sha256:aa2ac3c74d4652dd050791573f1bc07c7589d37ca63c827aa2561d9a95be84e5",
    "section": "observation",
    "state": "completed",
    "title": "Add perspective and lens-distortion perturbations."
@@ -404,7 +404,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T051",
-   "report_id": "sha256:0c5190b0f959b3e392ef13bcb8b28e3fc00e1904a1ff949165674b0c3bb3f791",
+   "report_id": "sha256:b5510095aac2792d3ba10ab3f38767e277afcde095775c26e0646bdabff3b57c",
    "section": "observation",
    "state": "completed",
    "title": "Add quantization and pixel noise."
@@ -412,7 +412,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T052",
-   "report_id": "sha256:d5ae33ffde4dedb6f7318adb58d90934dfc397ad85d07075ba9ed0779452a02d",
+   "report_id": "sha256:2ae52f66eb5a362e72fe6c6137858920a8e2f8b1712790ee7fee6935912adf4f",
    "section": "observation",
    "state": "completed",
    "title": "Add encoder bias, scale, and backlash."
@@ -420,7 +420,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T053",
-   "report_id": "sha256:66fb754162ce654fbb0c0365c434d0e6498c71d0b2b6fd4bc2fcc2e54ae87430",
+   "report_id": "sha256:b7bc9e661889f3181e990b0d361fc92ab183f6a973aa63979a82c47cad0f545e",
    "section": "observation",
    "state": "completed",
    "title": "Add IMU drift and orientation noise."
@@ -428,7 +428,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T054",
-   "report_id": "sha256:dc73f82b5c4547d87199429c4af802a6a8f8366c7b94eabc73738d30cb68e1bd",
+   "report_id": "sha256:ecc105cb7c40b625016fa20836eff9e31f93026ec76cfdba29b30448f7c3e7fe",
    "section": "observation",
    "state": "completed",
    "title": "Add asynchronous timestamps."
@@ -436,7 +436,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T055",
-   "report_id": "sha256:f8b80993305ee601c8bbe9e262ddf44215d9a59b6ca6d0684e0cf42e22734644",
+   "report_id": "sha256:0af911281262f425a57661c11d237185ea04d6583e3886329a2ca45c075fa4f0",
    "section": "observation",
    "state": "completed",
    "title": "Add dropped observations."
@@ -444,7 +444,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T056",
-   "report_id": "sha256:a02ed377f321bbe166161b9f244fce0906a0056d381aba980a997b217a427768",
+   "report_id": "sha256:1e14af9ba0be387e68e12306c4e81ee7571cfaf1013d9c8d1a8823b0e64a5127",
    "section": "observation",
    "state": "completed",
    "title": "Add stale-state observations."
@@ -452,7 +452,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T057",
-   "report_id": "sha256:89b682602faae2524fecbf7202416bec505eedbda0da5ff3a94c08d0737038a3",
+   "report_id": "sha256:27e531ca2d95502b14d5d66041448401a4bb72bb271d730ab79ebf74d60b7776",
    "section": "observation",
    "state": "completed",
    "title": "Compare raw, filtered, and smoothed measurements."
@@ -460,7 +460,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T058",
-   "report_id": "sha256:8c4a63c9fe6775b3801834afcf094a7c3ab14ec41971dea827f195948bd696a6",
+   "report_id": "sha256:8d563583bb62e001ffe2116279f94bb155b48d65227cb09b751e390ceebcf4f8",
    "section": "observation",
    "state": "completed",
    "title": "Track the exact observation frame and clock basis."
@@ -468,7 +468,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T059",
-   "report_id": "sha256:6380663ba3bc3bdc694182d87d0be61bf7edce048462068934afad1280e145df",
+   "report_id": "sha256:94daa4c0d519977eec0efa77ace96152910b8bbabda001b7c2d269b11f9ca302",
    "section": "observation",
    "state": "completed",
    "title": "Test whether each observation can be retained without being admitted as state."
@@ -476,7 +476,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T060",
-   "report_id": "sha256:7ad4523f748d498a0cf4226939cb1aaee84c0c526ec5860f2cab9a3b48bd072c",
+   "report_id": "sha256:a855932b10bdef4bd4c1335b03a257d30ac29570e9df894b870e638f68a76ff4",
    "section": "sensor-fusion",
    "state": "completed",
    "title": "Build a deterministic multi-sensor synthetic bench."
@@ -484,7 +484,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T061",
-   "report_id": "sha256:f412fe9f83d41100491a145ab8bca494a548dc596c71a6ef261b3bdaa3bf50aa",
+   "report_id": "sha256:82beb59878c16612148ca42f0d304808555256f1796136ff47fb2cb0db1fc9a4",
    "section": "sensor-fusion",
    "state": "completed",
    "title": "Generate known ground truth and known covariance."
@@ -492,7 +492,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T062",
-   "report_id": "sha256:8497a469f372a3f1e6633703cd68470d59720d8ba0990067808013eddb45050a",
+   "report_id": "sha256:92ddc520552865aab7d37d597f9a13036875436ec88e8d922f86dfd508552078",
    "section": "sensor-fusion",
    "state": "completed",
    "title": "Test independent-noise and correlated-noise cases."
@@ -500,7 +500,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T063",
-   "report_id": "sha256:21d51cd1ef864433c4ce790b2c0a970f9deced890ecc5949ac06c7afaafbdda3",
+   "report_id": "sha256:79dc4080cd9fbc7378d69c067936ba76cdce63bc25856be25a77640c197756bc",
    "section": "sensor-fusion",
    "state": "completed",
    "title": "Propagate covariance through frame transforms."
@@ -508,7 +508,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T064",
-   "report_id": "sha256:5173ac2797c3f23f9e304fd0f43c28a74e7a8f33c874e45bb9df72220b2cb905",
+   "report_id": "sha256:44e47fcdab9970fbe9665c24478d2c746c88012a14fc3a11adf877c192c411d5",
    "section": "sensor-fusion",
    "state": "completed",
    "title": "Propagate covariance through the Jacobi transfer matrix."
@@ -516,7 +516,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T065",
-   "report_id": "sha256:be7dd287da074d219ab48430aaea9f0f302c77509588c0d06f2d6069a089d3ff",
+   "report_id": "sha256:8bf5d494dc60f162d28f000ee5842e24a6189744bbd0039e222d2f3f3bd68056",
    "section": "sensor-fusion",
    "state": "completed",
    "title": "Model filter-induced correlation."
@@ -524,7 +524,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T066",
-   "report_id": "sha256:8f108f209fe0e7a5690044c807e1c6ee11df49d66d6c3e143131c38f38d7be50",
+   "report_id": "sha256:c7d51236e8a561f21f80ea3b522b602eecdc1b4abd19384fb3e2920dd6791937",
    "section": "sensor-fusion",
    "state": "completed",
    "title": "Verify that filtered residuals use filter covariance, not raw sensor covariance."
@@ -532,7 +532,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T067",
-   "report_id": "sha256:67598d92de6d2db320e317e8cc1eb75dc2df4b63bdbe15a645bf32dc0e88b4ce",
+   "report_id": "sha256:e58449a86b9a6b4968d50a97eddd3874e40e07b342427fe8b83bb90b76fe459f",
    "section": "sensor-fusion",
    "state": "completed",
    "title": "Add Mahalanobis gating."
@@ -540,7 +540,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T068",
-   "report_id": "sha256:7bd4b67123e752d4caeaade83d1fc7ab01f30abc767f54418e3f595d12c651cf",
+   "report_id": "sha256:3d5b5724f78777013203c72c0b0d9542f8cfa2038fc08bc06ea45a5500a061ab",
    "section": "sensor-fusion",
    "state": "completed",
    "title": "Add outlier rejection."
@@ -548,7 +548,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T069",
-   "report_id": "sha256:62f174bf2eb65516ca2329592c2d1aa2eba1d3aa0fe477e5259af48f818a9fbc",
+   "report_id": "sha256:62bf1f307764924fd6815b0049e8d94582b74af35f56fd9dabae6b47967d3e7e",
    "section": "sensor-fusion",
    "state": "completed",
    "title": "Add missing-data behavior."
@@ -556,7 +556,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T070",
-   "report_id": "sha256:2337a7425b56b62e7e5247cb4741e92e68e8fde36376522445807611117b8345",
+   "report_id": "sha256:37f35d777e7e2695426680ba43642a549326275971a5a8aca5bacc48a4a353e2",
    "section": "sensor-fusion",
    "state": "completed",
    "title": "Add stale-clock behavior."
@@ -564,7 +564,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T071",
-   "report_id": "sha256:2f8bbf9307440305e5646036566da1364be835e826c6eb876c6ccce36538de48",
+   "report_id": "sha256:5e072c1be41ea310b1ec134a3c1b495201a843e568b24f8331f662ba2017932c",
    "section": "sensor-fusion",
    "state": "completed",
    "title": "Add frame mismatch behavior."
@@ -572,7 +572,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T072",
-   "report_id": "sha256:010c59634ed29e80fc379230e731b1a9a9f8ee9161c3768259b67978ec783660",
+   "report_id": "sha256:b4c442ef011be2d3e7f84c12272f565ff04b995cb802aa6e00d1c772b1d3774d",
    "section": "sensor-fusion",
    "state": "completed",
    "title": "Add calibration-expiry behavior."
@@ -580,7 +580,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T073",
-   "report_id": "sha256:759c1c24347ab04006a6f035cc44574e4a8f847829da8d59640471e8a1fd10e3",
+   "report_id": "sha256:c27f1c8ac99f2ba08482fa7ecf43b35a138f1346b6826b27b15a9e7402d513b1",
    "section": "sensor-fusion",
    "state": "completed",
    "title": "Add sensor-track-lost behavior."
@@ -588,7 +588,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T074",
-   "report_id": "sha256:6ba8964e01a28f2feb090ed09c95e7ed91e82f470285677f9e94427a2585ed62",
+   "report_id": "sha256:f94e1bd6685a2a7c4cc0fd2873f227ccb042efa3691aa86364d28bed7788b896",
    "section": "sensor-fusion",
    "state": "completed",
    "title": "Compare fused state against analytic ground truth."
@@ -596,7 +596,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T075",
-   "report_id": "sha256:170397ee6093ea0b641ee0d13506f0001f7e5bf74b57fe6e26e28ea2c658cd4f",
+   "report_id": "sha256:54b868f5fe4a7c8dc70951c2ad1848eb538807a56c15053873fe8e11d26db964",
    "section": "sensor-fusion",
    "state": "completed",
    "title": "Keep observation, candidate state, and admitted state as separate objects."
@@ -604,7 +604,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T076",
-   "report_id": "sha256:3d2cc3f6a96b9315a653a54395fc508a61b1ccc3118708e9b871c8eb9ddba0ea",
+   "report_id": "sha256:86a9c65b723adc2b28fbef0e7beb90268322a179a26ca3ecca38b766b887dfd1",
    "section": "sensor-fusion",
    "state": "completed",
    "title": "Ensure fusion defaults to read-only and `not_performed`."
@@ -612,7 +612,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T077",
-   "report_id": "sha256:c6badf21d4c5d7c0e6136bce4a2f1aa1a74332eb60f1b26b851e0ce4d4bbb59e",
+   "report_id": "sha256:d1b82f63f4e0fe5190a2dafffbe4d4ce6bb17632a74e60863de7ebe1edc2ed22",
    "section": "exchange-provenance",
    "state": "partial",
    "title": "Build an identity matrix for: source evidence; operation; execution; result; numerical result; verification; bundle; replay; external producer IDs."
@@ -620,7 +620,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T078",
-   "report_id": "sha256:6e64a0d597ac23ce0e9d47ec5c39036726907bacba4e60c30a25aa9ccf276ed2",
+   "report_id": "sha256:c699910029f63110d43801c6840229525bc25c4d230c8038bcbf93c4d0b1033d",
    "section": "exchange-provenance",
    "state": "completed",
    "title": "Test exact source-byte retention."
@@ -628,7 +628,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T079",
-   "report_id": "sha256:884134a472f338fd1f1ee7d014a5f5f4bf32ce8ff71ada466b6e8a0f70ded0a2",
+   "report_id": "sha256:b348a3d698d75b8cd50e0b9ea94cb3ebfb6cba6d6e9c99b7576a08d492010eee",
    "section": "exchange-provenance",
    "state": "completed",
    "title": "Test whitespace-preserving evidence retention."
@@ -636,7 +636,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T080",
-   "report_id": "sha256:ef265aa4e68c0e722d2361f0b4a9d9a94c8a1ae3c97e85e5b5c9b51ca71eb4f7",
+   "report_id": "sha256:254ceb9adb49cce522ef7beb6330de18cafbfbeb6cdc14f1ad8d08b0b79ae498",
    "section": "exchange-provenance",
    "state": "completed",
    "title": "Test operation/execution/result identity separation."
@@ -644,7 +644,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T081",
-   "report_id": "sha256:d4a18878905dc779ea9e1c30924af9cbb1ae4cdbc2685b509a9f3b767c5749b8",
+   "report_id": "sha256:64b20c9d2da3648e667438148b7e9da21f00307cb6be3b5eb1caea87efcf19fd",
    "section": "exchange-provenance",
    "state": "completed",
    "title": "Test stable numerical-result identity."
@@ -652,7 +652,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T082",
-   "report_id": "sha256:726e2d4c934bbf05d7d2219d6fd8c2bd3f7e278889872cf77276585b529c15cd",
+   "report_id": "sha256:dada824909030eb193027d97bcb0d0e018b5c5c46a19833b3dbfadc429dcc97b",
    "section": "exchange-provenance",
    "state": "completed",
    "title": "Test fresh replay execution and result identities."
@@ -660,7 +660,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T083",
-   "report_id": "sha256:0613f5ce2b482b8b2df23016b014dbbcd38841c9dc5b614eb64218f5f9a8daee",
+   "report_id": "sha256:1c1e397d3a53c416d1a160589cd809a27922a3b64cd1d2f5e15ad1c5827989db",
    "section": "exchange-provenance",
    "state": "completed",
    "title": "Test replay receipt binding."
@@ -668,7 +668,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T084",
-   "report_id": "sha256:5f289a8fae5272c5e18d8f04c61fb3650f594018ce77ac9fc23f110b8d0f3b1a",
+   "report_id": "sha256:5b030362b70c576873656148e10b6b2f85c4b80a3fb72ce2c153eb4478826771",
    "section": "exchange-provenance",
    "state": "completed",
    "title": "Mutate replay receipt source digest."
@@ -676,7 +676,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T085",
-   "report_id": "sha256:1003289381cdba63c788682f06bbeef76193b150fa73f977b470e6abda866cda",
+   "report_id": "sha256:d6beac2ef2e4022a517d537ed81cba4b597d6ff300a747b641834f622007acd9",
    "section": "exchange-provenance",
    "state": "completed",
    "title": "Mutate replay receipt replayed digest."
@@ -684,7 +684,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T086",
-   "report_id": "sha256:3cac874ea4637c8d937c0a1ac91938609f9515e68183a6f0702de9a852fd15bc",
+   "report_id": "sha256:a8e2e7b6bcd10d43c36029fcc6a54d2d764f6dc3e23a9c5a3ab632a13663cd1a",
    "section": "exchange-provenance",
    "state": "completed",
    "title": "Mutate verification subject."
@@ -692,7 +692,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T087",
-   "report_id": "sha256:5a0b92e07933e96d63aa47715cb1f17ca223930e809624db793b04ed5275d1dd",
+   "report_id": "sha256:8f6248aa49fb2de5cfdc0ac0fe4723b0ec29b9f2cf0ae1d39b4d75fbcc03c666",
    "section": "exchange-provenance",
    "state": "completed",
    "title": "Mutate verification method."
@@ -700,7 +700,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T088",
-   "report_id": "sha256:11e9bf3212fff2b8b60849d6a37d7b78e4179c2d4befb68c7a8b71ce899e0f86",
+   "report_id": "sha256:e59a1389113fd6d3779a150f1157582ea569ee91c1bc5aa24cdd6340f4fa748e",
    "section": "exchange-provenance",
    "state": "completed",
    "title": "Mutate independence flag."
@@ -708,7 +708,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T089",
-   "report_id": "sha256:f61733fc294b3815deb9089669a64a896c142b09afccfd82da1dc04e910ab4a5",
+   "report_id": "sha256:14ad7257a63ef08b1c09c721b381f31577a6d5ac20d9818971936023cdbfef7d",
    "section": "exchange-provenance",
    "state": "completed",
    "title": "Mutate admission status."
@@ -716,7 +716,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T090",
-   "report_id": "sha256:3aa3fc86bb01908bf74645332526b642453ecabf0e49254a2145e1202e947994",
+   "report_id": "sha256:8ccf785487490885cd715fad92f3f74c94de51e3291e77777c7b51cd1965bd7a",
    "section": "exchange-provenance",
    "state": "completed",
    "title": "Mutate provider runtime identity."
@@ -724,7 +724,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T091",
-   "report_id": "sha256:17b4ebcbacd03dc2649489cd2fd8edb7ee808accb15bdd54e062ce4e9d021b33",
+   "report_id": "sha256:ad4e33191859e9e4b554225510ce7e42c8ff9be60fcd0e6fd5b00c09f27b4fbf",
    "section": "exchange-provenance",
    "state": "completed",
    "title": "Test save/reopen without provider access."
@@ -732,7 +732,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T092",
-   "report_id": "sha256:0595dbc5227a9b17019b24c4cd353bdcce4a801e65bf0801a9f788e0620dd13c",
+   "report_id": "sha256:c05333e5295f23af989043a08091ac4df597c70a68ca9a6111c188a7395d0d9f",
    "section": "exchange-provenance",
    "state": "completed",
    "title": "Test replay refusal without provider binding."
@@ -740,7 +740,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T093",
-   "report_id": "sha256:ecf3a6fcedb95b43e331faeb2c44d1d86e3e6235b0499f50b214d5fa9fb62ca2",
+   "report_id": "sha256:7423c918cab90a2bdc5256d34cfce559e8a87855c73e9578b38beb7abf0e9695",
    "section": "exchange-provenance",
    "state": "completed",
    "title": "Test unchanged workspace after refusal."
@@ -748,7 +748,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T094",
-   "report_id": "sha256:bad336a36b03056285532a8943eca1635bc43502c23b9467da4009116a6fbac2",
+   "report_id": "sha256:dd7df03a6843b17252953a2d82fcbf69b6aacebd97b342545cdc3b0984ff1c79",
    "section": "exchange-provenance",
    "state": "completed",
    "title": "Add golden retained bundles."
@@ -756,7 +756,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T095",
-   "report_id": "sha256:f8a186a0d1db5aa8492b3659a0d106adeb4c0bd3deb79b3d3cd81eb7c323051f",
+   "report_id": "sha256:78a9bd5c64a95161d7a0b04cb43e80fcd27a153263ccd8d65c7a71e1fe82e259",
    "section": "exchange-provenance",
    "state": "completed",
    "title": "Add malformed exchange fixtures."
@@ -764,7 +764,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T096",
-   "report_id": "sha256:b5b9476d10536f8d59dcf73fb8be5b984b11b42bfd4fa864e3d7faca680a0f72",
+   "report_id": "sha256:de7d4f016f5bc817516e2f478b5b98609b1e2ede4bd1619ec5a35d1b0c76170c",
    "section": "exchange-provenance",
    "state": "completed",
    "title": "Add provider-free conformance tests."
@@ -772,7 +772,7 @@
   {
    "evidence_status": "provider_backed",
    "id": "T097",
-   "report_id": "sha256:3395185a76d07b33dca8b5bacdcaed25339a1e416ae4847168ccd7758d9774fb",
+   "report_id": "sha256:3b0aea81dcc5d48965cbf0000b6ddb3fa30e5d6344f56a009f4bd91d590946bf",
    "section": "exchange-provenance",
    "state": "completed",
    "title": "Add exact SET/SCR/PPDA integration tests when checkouts are available."
@@ -780,23 +780,23 @@
   {
    "evidence_status": "provider_backed",
    "id": "T098",
-   "report_id": "sha256:c5cb9b44abf3a9c34eafbabebddd6745bd6c69ef79717428585d8b9c71f077cd",
+   "report_id": "sha256:91542ab0048ee6875345a6889135808c24d29953e31c275cea2b8b2ee62da425",
    "section": "exchange-provenance",
    "state": "completed",
    "title": "Record provider HEAD, tree, source hash, lockfile, and engine digest."
   },
   {
-   "evidence_status": "numerically_verified",
+   "evidence_status": "provider_backed",
    "id": "T099",
-   "report_id": "sha256:f793a0ec746092eb57660d31836fbbebc6b27eceee434a40ed67cec84e716153",
+   "report_id": "sha256:3411d3c4924e85385743f68bdd8be2ea39f04bb233bcd8ca975f7b0998d79d84",
    "section": "exchange-provenance",
-   "state": "partial",
+   "state": "completed",
    "title": "Verify `cargo build --locked`."
   },
   {
    "evidence_status": "numerically_verified",
    "id": "T100",
-   "report_id": "sha256:1597530088d6b6e708f1eb1940a01efae6a92eb3127e3628290fc0e98bfc9b06",
+   "report_id": "sha256:32861ceb4f4b09bbcc545f1ad1c13ba0256d0794d65359b5ccfa5d249c7cd560",
    "section": "exchange-provenance",
    "state": "completed",
    "title": "Keep synthetic, provider-backed, and physical results visibly distinct."
@@ -804,7 +804,7 @@
   {
    "evidence_status": "analytic",
    "id": "T101",
-   "report_id": "sha256:3a2e72fc2324eec25b7fc7525b673506a3e73003b0ebd7ea53797040830ed828",
+   "report_id": "sha256:90fc44770b334d5d9cd3924ff2e37f7962bc3060c036a7dc9b0dca08b2f3dff2",
    "section": "lyapunov",
    "state": "completed",
    "title": "Test the resolution floor over many matrix scales."
@@ -812,7 +812,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T102",
-   "report_id": "sha256:4fd40e7be16c366878d0b88df1c0ed0a981adb68f52beb13a798188b191b83bb",
+   "report_id": "sha256:508c964ecf0adef8f9caddefe81e988f7929ba116b3f21533823fe55d5db194b",
    "section": "lyapunov",
    "state": "completed",
    "title": "Test power-of-two homogeneous scaling."
@@ -820,7 +820,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T103",
-   "report_id": "sha256:171fc5b5d38c041d365eaf73ddfb141033d1777de2e9f332c8e0ba5eda912557",
+   "report_id": "sha256:3fddb3ad58dfcdd1139b3965ce06f4164e81e810cd7c6ebadca98e34d7890020",
    "section": "lyapunov",
    "state": "completed",
    "title": "Test overflow and underflow state evaluation."
@@ -828,7 +828,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T104",
-   "report_id": "sha256:e514e55144efbc104dab940baeffbc6f303956c5e533c6cc79770b6984b9cf08",
+   "report_id": "sha256:5b320a25f2b283ee644be9c9471839cfb3921118cac833c495f8449aac2ad321",
    "section": "lyapunov",
    "state": "completed",
    "title": "Test semidefinite and skew-symmetric edge cases."
@@ -836,7 +836,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T105",
-   "report_id": "sha256:181464ccb13f6611b12785a6e6cb0c6f12601dd8dbb4c01acca9ed3d35d05192",
+   "report_id": "sha256:45937bbd05874f79bd72941661b3a9f5cb4e12e01420f20682f88813d9a48c13",
    "section": "lyapunov",
    "state": "completed",
    "title": "Test parameter-box comparisons across unit scales."
@@ -844,7 +844,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T106",
-   "report_id": "sha256:088532334f70a0951f501b2da5a0e24ee757a8317d36d44e189e35a4c1edae3d",
+   "report_id": "sha256:7dcae277b97806e1aa5252fe15b1d178a51c9e42861cb4938f8421ef2c47fd3a",
    "section": "lyapunov",
    "state": "completed",
    "title": "Test every runtime status transition."
@@ -852,7 +852,7 @@
   {
    "evidence_status": "provider_backed",
    "id": "T107",
-   "report_id": "sha256:91e46325d69042ce0a335edac4ddd812edebd3de258e6990b0562ed472c9a368",
+   "report_id": "sha256:6f2fa1691b90c1aa7c2755567b450acd7c2e2ee59bb1bcae3165909725abcfb6",
    "section": "lyapunov",
    "state": "completed",
    "title": "Verify numerical inconclusive behavior."
@@ -860,7 +860,7 @@
   {
    "evidence_status": "analytic",
    "id": "T108",
-   "report_id": "sha256:97512b973b895881b64d6ed3449711be601b1ea87b8a04b85a5b31d539953ba5",
+   "report_id": "sha256:0665e4faf9d1fea6b3b33e1acf76ad7c4c765a9493b1eb8bbb95ab8213fa0711",
    "section": "lyapunov",
    "state": "completed",
    "title": "Verify required-margin monotonicity."
@@ -868,7 +868,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T109",
-   "report_id": "sha256:da85d376913a805980759c7aa14a002211bc4db9297048fb1201c68e2eda5df8",
+   "report_id": "sha256:be32f04fe68e565abd521a1cc9cd3e4eed92984f786ffd4a26045f8e4427bc87",
    "section": "lyapunov",
    "state": "completed",
    "title": "Add adversarial eigenvalue cases."
@@ -876,7 +876,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T110",
-   "report_id": "sha256:806547ea924ec658aecc64a141ba96b748b51baeb21659869766ff9772d9a5e1",
+   "report_id": "sha256:45ca7fc0b2e65c0815372f8593fc2b0da2124c143ebb4f8c37364cb1d0797807",
    "section": "lyapunov",
    "state": "completed",
    "title": "Test discrete-time versus continuous-time interpretation."
@@ -884,7 +884,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T111",
-   "report_id": "sha256:2f8268da6d9f2b49659cbc5dd1bd8c78d10d2d11b8f2bc1e284f39dfbf8b0f31",
+   "report_id": "sha256:d5d55d9912602664821a99dbeecbf42e41bfb4f230b1b2cd7c48559ffdf180a0",
    "section": "lyapunov",
    "state": "completed",
    "title": "Compare scalar quadratic and matrix-eigenvalue routes."
@@ -892,7 +892,7 @@
   {
    "evidence_status": "analytic",
    "id": "T112",
-   "report_id": "sha256:832f8cc1ddb8367ce9df40cf6d2fedaf49ad287b5f8233c719b4403fd2f831ca",
+   "report_id": "sha256:2aef704a3deb1088e88275c19b2f366b10482308c47b24b1a1046cbab7d016a3",
    "section": "lyapunov",
    "state": "completed",
    "title": "Define a separate disturbance-aware/ISS research branch."
@@ -900,7 +900,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T113",
-   "report_id": "sha256:5564fec23ccd3fcd3e2ff7540700af7c01078837a37096ec793920f0d97eb714",
+   "report_id": "sha256:5fb99c0349b9435daa4837ad5116e47300194a8339fab7390403b008df0abd8e",
    "section": "lyapunov",
    "state": "completed",
    "title": "Connect filtered residuals without putting sensors inside the kernel."
@@ -908,7 +908,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T114",
-   "report_id": "sha256:3ecb67f2c4e9ff87cf0beb25ab535ab76b45d79d77544d994950c6c9b805f3b1",
+   "report_id": "sha256:4663ef05d11ca01d560c1417055194052d55eb50d6df168df2eab730adbdc476",
    "section": "lyapunov",
    "state": "completed",
    "title": "Prepare a non-production servo-axis pilot specification."
@@ -916,7 +916,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T115",
-   "report_id": "sha256:c648a2b4ee7a80082282719c0cfd9a7d614228db468ce5b365bc4bbc804350f3",
+   "report_id": "sha256:b6a062040fe133ac267afc8790290703a95f0d9871af16b6d0e0271a18139203",
    "section": "energy-gpu",
    "state": "partial",
    "title": "Measure CPU energy per geodesic trajectory."
@@ -924,7 +924,7 @@
   {
    "evidence_status": "not_established",
    "id": "T116",
-   "report_id": "sha256:42c8f3f4630c193c1369ced441616022f2edbbe4f0a40c58f043fe0e045aa76e",
+   "report_id": "sha256:560a0302a2034f8d7c2e9d1e8a95e8cd9453c4eb07bb7002909832bb2411ae4c",
    "section": "energy-gpu",
    "state": "blocked",
    "title": "Measure GPU energy per batch."
@@ -932,7 +932,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T117",
-   "report_id": "sha256:2731c3534d06df6ee5e8f92d07f23ec0f527871e99d1b671f144d158069a9850",
+   "report_id": "sha256:88eeabc4b19de96ae8992803a1ab2df6e9b70946b2c53749a0e5a1ffc8ad65e1",
    "section": "energy-gpu",
    "state": "partial",
    "title": "Compare Python, Rust, Julia, and GPU implementations."
@@ -940,7 +940,7 @@
   {
    "evidence_status": "not_established",
    "id": "T118",
-   "report_id": "sha256:5e39ae6c21cc6b7d0c6f923266e190c86b893b7d92ff43bff5517bebc5a9a340",
+   "report_id": "sha256:8da363268545199c281c3a1c21c5bdd5dc8d08816b47dde8d76b312fbe16b553",
    "section": "energy-gpu",
    "state": "blocked",
    "title": "Record RTX 2080 utilization, temperature, power, and kernel duration."
@@ -948,7 +948,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T119",
-   "report_id": "sha256:32661e2a4bc39e4f1fdaa0a198086cdfc60770f7e4354f93a74b68919d4458c7",
+   "report_id": "sha256:0646a06ceb9da0e5afc57d2eb438015bc38e134499501d9c1094854d480d1906",
    "section": "energy-gpu",
    "state": "partial",
    "title": "Measure energy per accepted numerical result."
@@ -956,7 +956,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T120",
-   "report_id": "sha256:ba7760fd79bf02804f1110f4cb59369585a4a0921a7566d287a3183ae8472f9e",
+   "report_id": "sha256:d95b0ca6da7f1c38f8e807b5ae942bc4c79b19dca0a6997e7f73750324bf1879",
    "section": "energy-gpu",
    "state": "partial",
    "title": "Compare precision versus energy cost."
@@ -964,7 +964,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T121",
-   "report_id": "sha256:e5bdc42f4252e93594aefe6235b29da1cff8ff2417bc6b3a404ba2e6b853c13b",
+   "report_id": "sha256:207b4ae9f2e28eea41908c6f71f488afed7448979348c64afbf7bc026854d1ff",
    "section": "energy-gpu",
    "state": "partial",
    "title": "Detect whether GPU reductions alter numerical conclusions."
@@ -972,7 +972,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T122",
-   "report_id": "sha256:4397df00aa158030ca7a1741ab57e3bedbd242a0299240527cd9642ef8b81abd",
+   "report_id": "sha256:020cd41874b0dd43dd08e57f83b51afd937561aabee3549994dc73596837c3f4",
    "section": "energy-gpu",
    "state": "completed",
    "title": "Build a bounded free-energy-style computational example."
@@ -980,7 +980,7 @@
   {
    "evidence_status": "analytic",
    "id": "T123",
-   "report_id": "sha256:07a21f2c483bc9c3a9270830552ea3a0e445b0274363b619e7effbc436ff3f1e",
+   "report_id": "sha256:5c76d93baac17d8d0a0c7ea0d47833939496435f936157b1d512785605733117",
    "section": "energy-gpu",
    "state": "completed",
    "title": "Keep numerical free energy distinct from physical energy."
@@ -988,7 +988,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T124",
-   "report_id": "sha256:a0b87b1599dcaaab7efdb6def1fbc98b33e45bd7600550992e444ad2295e44f7",
+   "report_id": "sha256:3868289f1206e0d3c9546bca65bd69fb9486acdc3f0b88eab32b479ee32841de",
    "section": "energy-gpu",
    "state": "partial",
    "title": "Retain raw telemetry and device/runtime identity."
@@ -996,7 +996,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T125",
-   "report_id": "sha256:1a69f3e2c505bb9ad138f4a766fdf450352156e58f9ba2e7af030b5e4a05dfb4",
+   "report_id": "sha256:9dae5a286bc3060722a84eeffd0b5e5c2080491c1fcd16e22c611f2a30c2fa48",
    "section": "energy-gpu",
    "state": "completed",
    "title": "Test replay of energy telemetry reports."
@@ -1004,7 +1004,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T126",
-   "report_id": "sha256:940201dd20cde23ebc9e03feee9e7da88cf3ee7e78a6902e1f7ecc3fb7a9f931",
+   "report_id": "sha256:c423a1c1ace8ceb72c1952f6abfc0bb5debc75525526aa78ea85ab17cefe08cd",
    "section": "manufacturing",
    "state": "completed",
    "title": "Design a flat-plate control experiment."
@@ -1012,7 +1012,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T127",
-   "report_id": "sha256:40f38fd04dd493d6864d54da46a5500962aad5a28a201ecbc3946327c77fdd44",
+   "report_id": "sha256:935cd32ac3dd78d1cbf915d02c22e4044df0c0bed0776b1f3616e8df010a51a0",
    "section": "manufacturing",
    "state": "completed",
    "title": "Design a rolled-cylinder control experiment."
@@ -1020,7 +1020,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T128",
-   "report_id": "sha256:018530baa32b78f8723146e37b5b06a208a391f6c64ad915ee5437434172ff67",
+   "report_id": "sha256:5ec3fc966244e19e80217200e6fba504215bcde8e70ca0f14760becf390a1f6f",
    "section": "manufacturing",
    "state": "completed",
    "title": "Design a curved coupon experiment."
@@ -1028,7 +1028,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T129",
-   "report_id": "sha256:2b4f5a3b7d7a80597589f0e6bc1fa7db722765d3fd4565b4c46d1c44bf320546",
+   "report_id": "sha256:a0097a7ae876c222c51c86eb95ac2ee030e2e28361850622a9ef4163bbd874d8",
    "section": "manufacturing",
    "state": "completed",
    "title": "Define a surface metrology protocol."
@@ -1036,7 +1036,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T130",
-   "report_id": "sha256:3007a9067554a6f7a5e583fd127c36f3ff38647f5ac61b2cd71e5c592bcddd0b",
+   "report_id": "sha256:f3f6118a5818c74770f8480bfd5786864d34627949b9a8f6d0ad262734a1c580",
    "section": "manufacturing",
    "state": "completed",
    "title": "Define calibration artifacts and datum frames."
@@ -1044,7 +1044,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T131",
-   "report_id": "sha256:9b606955bc5bebfeddc58a11f6abb6c8ceba8da42a196f74f4de6eb5d393d888",
+   "report_id": "sha256:fc94a87a0cdae4312375c73fb4718dcd6ee945a71b05b162dcb8f8d6f89ac2da",
    "section": "manufacturing",
    "state": "completed",
    "title": "Define repeatability and Gage R&R procedures."
@@ -1052,7 +1052,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T132",
-   "report_id": "sha256:ef37b66dc20f6fb05b2b47a0d1d014aa59e2aa52015ae8c92b469c0d2eb1c6f0",
+   "report_id": "sha256:410ab6c74a325bfc6181358d0833e8b68f1cec5013b313b43ae6dc4aca9281b4",
    "section": "manufacturing",
    "state": "completed",
    "title": "Model fibre/tape placement path tolerance."
@@ -1060,7 +1060,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T133",
-   "report_id": "sha256:6279d425f918f4a27a8ff9332f7064321154449fe4daed77d34c4497cc14f194",
+   "report_id": "sha256:75e5c57685743a61988470b2dc91c1d4dd05ad1661378f37c5e9d2c7901d1542",
    "section": "manufacturing",
    "state": "completed",
    "title": "Model winding path sensitivity."
@@ -1068,7 +1068,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T134",
-   "report_id": "sha256:7ff4f97703499f0db7200cb7edabc92465ea6bfd239a849d08cc2ded7736516f",
+   "report_id": "sha256:68edd937d1af2d33caf0affe43261b3665c5482547d36ebc075d58a1de034078",
    "section": "manufacturing",
    "state": "completed",
    "title": "Model coating or welding trajectory sensitivity."
@@ -1076,7 +1076,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T135",
-   "report_id": "sha256:ccf92bbb6a66f621db9f84d9bbaa2c81402828eb0d10f3775e84036a3d0c84cd",
+   "report_id": "sha256:019791229cce0a175dd107299009ea7e052aa733cba8b5dbce53658a0f430e8a",
    "section": "manufacturing",
    "state": "completed",
    "title": "Model robotic inspection scan paths."
@@ -1084,7 +1084,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T136",
-   "report_id": "sha256:bdbd47af995d5887ffeb86daa5ae1d80b059ae449dffd1fcc482679b6c9bca55",
+   "report_id": "sha256:df8b48a15ad8688b89920f869913468a1cd6afd8a81792fec8b12f8eb10ae471",
    "section": "manufacturing",
    "state": "completed",
    "title": "Rank paths by calibration tolerance."
@@ -1092,7 +1092,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T137",
-   "report_id": "sha256:6556d506e96604066843e9800683c6221b94577b1689ce954f9bffe79a6f51f5",
+   "report_id": "sha256:e6f77ff2b7d867c35c1f5b27c2fcbf3cc54b86f5f7146b1bd25ce6ee69b506a9",
    "section": "manufacturing",
    "state": "completed",
    "title": "Rank paths by focus margin."
@@ -1100,7 +1100,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T138",
-   "report_id": "sha256:d8ce81bf805c69b4dfb73f5aabc1e6d75cbc6f434e28772250a1f7da96930108",
+   "report_id": "sha256:1d26de387d5ffe436e4da16ffdba3cc801e8009b4a5bf3390e49723f53fa7cee",
    "section": "manufacturing",
    "state": "partial",
    "title": "Compare predicted and measured path separation."
@@ -1108,7 +1108,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T139",
-   "report_id": "sha256:2eee6df773fddbe8b5a1051a78b0b304591da55b77a768830d4bad75a3e09cfb",
+   "report_id": "sha256:4b2b2382b21c42193f28121b6d7cd4c298ee89dc9c893fe285fa328b110a73b3",
    "section": "manufacturing",
    "state": "partial",
    "title": "Retain raw measurements, calibration, and frame metadata."
@@ -1116,7 +1116,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T140",
-   "report_id": "sha256:2efdb7e330ef33c20f4f0bf17293efa7eeaef8fd5969f57a1d750718f817fcec",
+   "report_id": "sha256:1e188a61a40871ccd7e4aa0f7a9e00a0497c3537fd224ade172b6f19703ea00f",
    "section": "manufacturing",
    "state": "completed",
    "title": "Report whether uncertainty is instrument-, geometry-, or solver-limited."
@@ -1124,7 +1124,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T141",
-   "report_id": "sha256:7ddccd842785efe2f4354bf8aa0facf9fb5bb47f4efa4f9d9a19f455528b8c9f",
+   "report_id": "sha256:99adfa49211107ca9911016b31d7fc9bfe84f8ab47575970ab95747a159f4226",
    "section": "manufacturing",
    "state": "completed",
    "title": "Keep production acceptance outside the system until independently validated."
@@ -1132,7 +1132,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T142",
-   "report_id": "sha256:f12e7f1a608bb9410ff8b06fded14f6124747dafbbb192070322c3369e534e32",
+   "report_id": "sha256:3bd6941d823dac0a0067b45972b913f6cd00d5c19b34bda59e7ce56555ac6408",
    "section": "implementation-targets",
    "state": "completed",
    "title": "Identify kernels suitable for Rust."
@@ -1140,7 +1140,7 @@
   {
    "evidence_status": "analytic",
    "id": "T143",
-   "report_id": "sha256:5008b0bd1d71cec44028a514736cd1e23be608b09bbe18d5ead34b2c5dc2e51b",
+   "report_id": "sha256:056ac7e2aef94d5e7c5ce6c2ba70bb9cdf6c36b6da0b93cd19076a2b45276f72",
    "section": "implementation-targets",
    "state": "completed",
    "title": "Identify interfaces requiring C++ industrial libraries."
@@ -1148,7 +1148,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T144",
-   "report_id": "sha256:7899baa10f9faa2842df011481d680a173ae28acf2a42bce6b53de709591c395",
+   "report_id": "sha256:ba5d709de3e169f208ee3f536e16d5951972f330b04698e835ad8aaf440042a0",
    "section": "implementation-targets",
    "state": "completed",
    "title": "Keep Python as orchestration and evidence layer."
@@ -1156,7 +1156,7 @@
   {
    "evidence_status": "analytic",
    "id": "T145",
-   "report_id": "sha256:df603ebac1ee14f01331ce4e4d308b18a2f051323f9d0bea0f306657910a4035",
+   "report_id": "sha256:05dad9c392b94f73a22101ac4084aa4a6a257b7838860242e5b045f771fa8289",
    "section": "implementation-targets",
    "state": "partial",
    "title": "Use Julia for symbolic, optimization, and exploratory work."
@@ -1164,7 +1164,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T146",
-   "report_id": "sha256:b076877af2782871857f41bf5e5e65ff6d38e22e031c9976624b59884250d7c5",
+   "report_id": "sha256:c914768135de0fd1b6c2036207ccd4cff435f85d318659c7bf1856b20b3e6820",
    "section": "implementation-targets",
    "state": "completed",
    "title": "Define one canonical serialization across languages."
@@ -1172,7 +1172,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T147",
-   "report_id": "sha256:5404b3a7d6d8f6184b9fbedad4302b16cd1395a19dce025d09c7d21b9b798734",
+   "report_id": "sha256:e1b300f6ac454ff30f5531aeba5de98958a34654896862d25e170b24d3e95f60",
    "section": "implementation-targets",
    "state": "partial",
    "title": "Compare CPU and GPU outputs."
@@ -1180,7 +1180,7 @@
   {
    "evidence_status": "analytic",
    "id": "T148",
-   "report_id": "sha256:d5d744bd0ad566b773deaf0a435efc12003dc2695291f94715909c7ee8b18e6c",
+   "report_id": "sha256:a2d305ee8231ca67e54b17a5a0831cab8d0cecd28bd877ff1ba3e616b8378ab0",
    "section": "implementation-targets",
    "state": "completed",
    "title": "Add deterministic reduction policies."
@@ -1188,7 +1188,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T149",
-   "report_id": "sha256:af71838e1c0ed533a166ee6d5d04390d37c48f116d191616df9fcb744a7ff375",
+   "report_id": "sha256:7b6bc86bd0871d3ada0a72a8f2b033146c8a887fb13775027011a3046d7c3258",
    "section": "implementation-targets",
    "state": "completed",
    "title": "Define FPGA telemetry-only interfaces."
@@ -1196,7 +1196,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T150",
-   "report_id": "sha256:defc0658b5ad27611eb74c4e95804df9ff2bfc0cbbda01c833a7ac3a7d72f880",
+   "report_id": "sha256:e2e6ea90afe0c415304c15cdf15b0c9c3e274def725264b78c824d97da804dba",
    "section": "implementation-targets",
    "state": "completed",
    "title": "Record bitstream identity and toolchain."
@@ -1204,7 +1204,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T151",
-   "report_id": "sha256:310997752a83d36705c90088f7397ab1e09bc2f795451fb2b70f8a90bf4373a6",
+   "report_id": "sha256:820f2fd06ab1ed342b65daa259df9216dbf73a2f00be29f0117461b0631ab375",
    "section": "implementation-targets",
    "state": "completed",
    "title": "Add FPGA rollback and compatibility metadata."
@@ -1212,7 +1212,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T152",
-   "report_id": "sha256:9fe6b20f0732c08d732e7722d093f9d64be54f39089f5001675de2b00eda9b93",
+   "report_id": "sha256:550e2b087aa97890725403f673abdab902767d98d96e5f9441ebad424018e1d3",
    "section": "implementation-targets",
    "state": "completed",
    "title": "Simulate packet loss, latency, and stale telemetry."
@@ -1220,7 +1220,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T153",
-   "report_id": "sha256:de6b093a412f4963cadd401a7e5b2a6e229562585ec9361c816266db9ca97587",
+   "report_id": "sha256:12b277a5fc176db11859fba6b8aa359f06e35b01eed30aa517b765f5e5c1dda0",
    "section": "implementation-targets",
    "state": "completed",
    "title": "Keep actuator writes disabled by default."
@@ -1228,7 +1228,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T154",
-   "report_id": "sha256:25251b8ce763d85e5268183703872c9bb667ab36a377d59f83264f6b810bb1dd",
+   "report_id": "sha256:84ba6f05fb50c3604bbec1db98048a9c72463b5dfd4ea4b74b100a7498d8dd20",
    "section": "implementation-targets",
    "state": "completed",
    "title": "Treat control outputs as proposals until separately authorized."
@@ -1236,7 +1236,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T155",
-   "report_id": "sha256:5062acd4631fec94b3878c1363aef168b9d56a7ab232c25f4b0d8f8334b1ca7b",
+   "report_id": "sha256:f964be7ea6e1b7fc38785159fed0dad6bc76c2f4cf8b5983b9782812a3334b03",
    "section": "research-portfolio",
    "state": "completed",
    "title": "Write formal mathematical specifications."
@@ -1244,7 +1244,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T156",
-   "report_id": "sha256:179ee953929e587f19264dbdb201254f572fd891dbcf55f0115d14ef0711b151",
+   "report_id": "sha256:dd387ac373e82754d26a58bad4c616ce6dd590fa32634bd974c83b8793302646",
    "section": "research-portfolio",
    "state": "completed",
    "title": "Separate textbook results from implementation contributions."
@@ -1252,7 +1252,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T157",
-   "report_id": "sha256:37257dd8630d7f4b94efffdba984a69c8267f1566be718178ad4c89fef6d6791",
+   "report_id": "sha256:f2a3eaaa727563989ec236005a80b404255e12fc06630842195f523e19ec5408",
    "section": "research-portfolio",
    "state": "completed",
    "title": "Maintain a counterexample catalogue."
@@ -1260,7 +1260,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T158",
-   "report_id": "sha256:790428e29b19df27ea38cc9910d337cb7c5957c7bba87fd42e40b985958251a3",
+   "report_id": "sha256:edf0f971024a585d896f7efcbbd895ddd932751c94494cba6ce7631277d84a56",
    "section": "research-portfolio",
    "state": "partial",
    "title": "Generate reproducible figures."
@@ -1268,7 +1268,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T159",
-   "report_id": "sha256:078300771cae28c034a366a59aff10ca4b2f0bef914d0b2655367ad6414c9d8f",
+   "report_id": "sha256:bff19814a8fadfdefa1ca8916cc4c64378da2298af615e3adf72716d69d9fb52",
    "section": "research-portfolio",
    "state": "completed",
    "title": "Generate uncertainty-budget tables."
@@ -1276,7 +1276,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T160",
-   "report_id": "sha256:32bfbd606e87e0552316a56859e43dab53d1762ded57e77b67e798a89bd9f848",
+   "report_id": "sha256:85ec6cb774ed44d1ff8d33bf70e8db5e36bc2d36c3be0229eddf0cf5d0b8e9fa",
    "section": "research-portfolio",
    "state": "partial",
    "title": "Write an instrument-methods paper."
@@ -1284,7 +1284,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T161",
-   "report_id": "sha256:4738fc86eb4e75cf7a6b5b6cf8c8902fe53ecaef7993cf1dbd8a58f338fb9f06",
+   "report_id": "sha256:5a4834e46f689fb5de127215880007841d21fe5795d30c98e45db6481afde6fd",
    "section": "research-portfolio",
    "state": "partial",
    "title": "Write a geometry-methods paper."
@@ -1292,7 +1292,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T162",
-   "report_id": "sha256:e2eb141164a4e4d22e69156111cc8abc9e84dba697bd8152d251b32571078b76",
+   "report_id": "sha256:7246fc8052961a33e12fa9c2c6551224117f5e36181d472b61f5c61533cf1889",
    "section": "research-portfolio",
    "state": "partial",
    "title": "Write an evidence/provenance methods note."
@@ -1300,7 +1300,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T163",
-   "report_id": "sha256:ddfeec659bef3298877e89ccd78c646a34663c469f77b76fed5491dc52ebe5d8",
+   "report_id": "sha256:26a8e5bfaf92c4cac03e691b5672b8c4b5046fa3f993954e64af4dd675d31c0e",
    "section": "research-portfolio",
    "state": "completed",
    "title": "Create a masters-portfolio demonstration."
@@ -1308,7 +1308,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T164",
-   "report_id": "sha256:f4a2e8ae1733223cabb8d7a75d277905dc290e5333119e30adca72e92fe8c6dd",
+   "report_id": "sha256:3757ec7ffad9e4a3e2e091c08f9293b8e510fea2d52346aef99bce9d60494fc7",
    "section": "research-portfolio",
    "state": "completed",
    "title": "Produce a one-command clean-room reproduction."
@@ -1316,7 +1316,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T165",
-   "report_id": "sha256:17c6cdeca156e06922e86187b81351399384256a7bb2d8635a40eb8920d9b4db",
+   "report_id": "sha256:25261bf4a9be4a16a026e6b022a59e574b555070febb3de3ccf9c7dc6323d81b",
    "section": "research-portfolio",
    "state": "completed",
    "title": "Generate a release report from machine-readable metadata."
@@ -1324,7 +1324,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T166",
-   "report_id": "sha256:b5b0afb8d7288c94c55260d698fdeb5911824f596c16fd0c9858444dce182a06",
+   "report_id": "sha256:f308d96269f58411aafd04a3981089a2f517c906de2ce177e857cc92983a464f",
    "section": "research-portfolio",
    "state": "completed",
    "title": "Record every unresolved assumption."
@@ -1332,7 +1332,7 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T167",
-   "report_id": "sha256:b942c03cb3b1cffe9f108e2a2c2f98982d8602a69c30462eb33bf4e21c047036",
+   "report_id": "sha256:c36fd8818a9e689459ed9cf22e9c0ec3adb0262514ee61e29f4f1d8bde2cd8f2",
    "section": "research-portfolio",
    "state": "completed",
    "title": "Document what remains unmeasured."
@@ -1340,9 +1340,9 @@
   {
    "evidence_status": "numerically_verified",
    "id": "T168",
-   "report_id": "sha256:6052109259a6fb3a03a4237ce95863bb2e9cb713e8622bddc7c4d609bf963df6",
+   "report_id": "sha256:f5aa5de8513f6d62c6be4e4b24938325d12eee2f8a9ef727c5c42c27d390640c",
    "section": "research-portfolio",
-   "state": "partial",
+   "state": "completed",
    "title": "Convert successful experiments into permanent regression tests."
   }
  ]

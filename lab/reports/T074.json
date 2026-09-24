@@ -294,6 +294,8 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
@@ -305,7 +307,7 @@
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: extend the batch-posterior reference to the nonlinear encoder-speed and IMU heading-rate readings (a Gauss-Newton MAP over the window) and measure how far an EKF's estimate and covariance depart from it; equality with the batch posterior is established here only for linear position readings.",
- "report_id": "sha256:6ba8964e01a28f2feb090ed09c95e7ed91e82f470285677f9e94427a2585ed62",
+ "report_id": "sha256:f94e1bd6685a2a7c4cc0fd2873f227ccb042efa3691aa86364d28bed7788b896",
  "schema": "ciw.lab-task-report.v1",
  "section": "sensor-fusion",
  "state": "completed",

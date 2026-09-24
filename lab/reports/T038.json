@@ -3,29 +3,35 @@
   "src/ciw/lab/surfaces_discrete_mesh.py",
   "src/ciw/lab/surfaces_discrete_mesh_geometry.py",
   "src/ciw/lab/surfaces_discrete_mesh_studies.py",
-  "docs/lab/MESH_GEODESICS.md"
+  "docs/lab/MESH_GEODESICS.md",
+  "src/ciw/lab/surfaces_discrete_mesh_exact.py"
  ],
  "evidence_status": {
   "counts": {
    "analytic": 0,
    "hardware_measured": 0,
-   "independently_verified": 1,
+   "independently_verified": 3,
    "not_established": 1,
-   "numerically_verified": 5,
+   "numerically_verified": 14,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "Planar and prism meshes are intrinsically flat, so traces must equal straight lines of the development; Steiner distances with nested point sets are nonincreasing in k, and every graph edge joins two points of one face.",
- "experiment": "Trace declared geodesics; compare with exact developments; re-derive lengths by a second ciw implementation (strip layout from edge lengths); compare Dijkstra with a dense Floyd-Warshall and, when installed, scipy.sparse.csgraph; test every Steiner-graph edge for a common face; sandwich traced lengths by Steiner distances.",
+ "expected_invariant": "Planar and prism meshes are intrinsically flat, so traces must equal straight lines of the development and exact distances the shortest segments of the development (bent at the L-shape's reflex corner); cube corners are 1, sqrt 2 and sqrt 5 apart; exact distances are symmetric, change by at most an edge length along an edge, do not change when points are inserted as vertices and never exceed the length of any surface path; Steiner distances with nested point sets are nonincreasing in k, and every graph edge joins two points of one face.",
+ "experiment": "Trace declared geodesics; compare with exact developments; re-derive lengths by a second ciw implementation (strip layout from edge lengths); compare Dijkstra with a dense Floyd-Warshall and, when installed, scipy.sparse.csgraph; test every Steiner-graph edge for a common face; compute exact distances on meshes with closed forms, from three sources on icospheres and a torus (compared with pygeodesic when installed) and between vertex pairs (compared with potpourri3d's FlipOut when installed); compare the edge graph, Steiner graphs, the heat method and traced lengths with them.",
  "failure_modes_checked": [
   "vertex hits (refused, none occurred in the declared set)",
   "boundary reached",
   "tracing through a face without an exit edge",
   "strip unfolding sign conventions",
   "graph duplicates from shared face edges",
-  "scipy absent (Floyd-Warshall only; the Dijkstra finding is then numerically_verified)"
+  "saddle vertices (torus) and a reflex boundary corner (L-shape) as pseudo-sources of the exact solver",
+  "flat vertices (planes, cylinders, the torus's flat rings, inserted points) as pseudo-sources",
+  "rays through vertices on regular grids (planes, cylinders, cube)",
+  "points inserted inside a face and on an edge",
+  "scipy absent (Floyd-Warshall only; the Dijkstra finding is then numerically_verified)",
+  "pygeodesic or potpourri3d absent (their findings then rest on the same-origin checks and are numerically_verified)"
  ],
  "findings": [
   {
@@ -189,8 +195,9 @@
      "observed": 0.0,
      "passed": true,
      "producer": {
-      "implementation": "ciw.lab.surfaces_discrete_mesh",
-      "revision": "working tree"
+      "implementation": "ciw.lab.surfaces_discrete_mesh_geometry.dijkstra",
+      "revision": "ciw 0.1.0",
+      "source_sha256": "eb8124863335556f8aaa6f47f599a137f5925ef9210b5d7878bb8c7416a4dad3"
      },
      "reference": "scipy.sparse.csgraph.dijkstra on the same icosphere-3 edge weights (equal up to summation order)",
      "reference_kind": "exact_arithmetic",
@@ -238,7 +245,7 @@
       "tolerance": 0.0
      }
     ],
-    "derivation": "With k = 2^j - 1 the node sets are nested and every face keeps all node pairs, so each coarser graph edge is an edge of the finer graph; a segment between two points of one planar convex face lies in that face, so every graph path is a surface path and graph distances bound the (uncomputed) polyhedral distance from above"
+    "derivation": "With k = 2^j - 1 the node sets are nested and every face keeps all node pairs, so each coarser graph edge is an edge of the finer graph; a segment between two points of one planar convex face lies in that face, so every graph path is a surface path and graph distances bound the polyhedral distance from above"
    },
    "claim": "Nested Steiner-graph distances never increase with k, and every Steiner-graph edge lies inside one mesh face",
    "domain": "numerical",
@@ -296,7 +303,7 @@
      "traced": 6
     }
    },
-   "claim": "Steiner distances between traced endpoints stay above the traced length and approach it as k grows",
+   "claim": "Steiner distances between traced endpoints (k = 1, 3, 7) stay above the traced length, and their mean excess shrinks as k grows",
    "domain": "numerical",
    "evidence_status": "numerically_verified",
    "origin": [
@@ -320,6 +327,778 @@
      "7": 0.005299587716630953
     },
     "min_gap": 0.0017535599433380344
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 2.6645352591003757e-15,
+      "passed": true,
+      "reference": "Euclidean distance |x - y| on the convex sheared domain",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     }
+    ],
+    "generator": {
+     "name": "ciw.lab.surfaces_discrete_mesh_geometry.plane_mesh",
+     "shears": [
+      0.0,
+      0.5,
+      1.0,
+      1.5
+     ]
+    }
+   },
+   "claim": "Exact polyhedral distances on sheared planar meshes equal Euclidean distances, from a vertex and from a point inserted inside a face",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "double-precision rounding of the unfoldings (largest disagreement with the closed forms observed below 1e-14)",
+    "kind": "roundoff",
+    "value": 1e-14
+   },
+   "unit": "normalized length",
+   "value": 2.6645352591003757e-15
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 1.1102230246251565e-15,
+      "passed": true,
+      "reference": "|x - y| when the segment avoids the removed quadrant, else |x - c| + |c - y| through the reflex corner c = (0.5, 0.5)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     }
+    ],
+    "generator": {
+     "name": "ciw.lab.surfaces_discrete_mesh_studies._l_shape",
+     "vertices": 65
+    }
+   },
+   "claim": "On an L-shaped planar mesh exact distances equal the Euclidean distance to visible vertices and the path bent at the reflex corner to hidden ones",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "double-precision rounding of the unfoldings (largest disagreement with the closed forms observed below 1e-14)",
+    "kind": "roundoff",
+    "value": 1e-14
+   },
+   "unit": "normalized length",
+   "value": {
+    "bent_targets": 20,
+    "max_error": 1.1102230246251565e-15,
+    "vertices": 65
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 7.105427357601002e-15,
+      "passed": true,
+      "reference": "min over k of |(s - s0 + k C, z - z0)| on the development, circumference C = 2 n R sin(pi/n)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     }
+    ],
+    "generator": {
+     "n": [
+      8,
+      16,
+      32
+     ],
+     "name": "ciw.lab.surfaces_discrete_mesh_geometry.cylinder_mesh"
+    }
+   },
+   "claim": "Exact polyhedral distances on prism-cylinder meshes equal the shortest segment to the periodic images of the planar development, from a boundary vertex and from an inserted surface point",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "double-precision rounding of the unfoldings (largest disagreement with the closed forms observed below 1e-14)",
+    "kind": "roundoff",
+    "value": 1e-14
+   },
+   "unit": "normalized length",
+   "value": 7.105427357601002e-15
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 8.881784197001252e-16,
+      "passed": true,
+      "reference": "corner distances on the unit cube: an edge, a face diagonal, and sqrt 5 across two unfolded faces",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     }
+    ],
+    "generator": {
+     "k": 4,
+     "name": "ciw.lab.surfaces_discrete_mesh_geometry.cube_mesh"
+    }
+   },
+   "claim": "Exact distances between the corners of a refined cube equal the closed forms 1, sqrt 2 and sqrt 5",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "double-precision rounding of the unfoldings (largest disagreement with the closed forms observed below 1e-14)",
+    "kind": "roundoff",
+    "value": 1e-14
+   },
+   "unit": "normalized length",
+   "value": {
+    "closed_forms": [
+     0.0,
+     1.0,
+     1.0,
+     1.4142135623730951,
+     1.0,
+     1.4142135623730951,
+     1.4142135623730951,
+     2.23606797749979
+    ],
+    "corner_distances": [
+     0.0,
+     0.9999999999999998,
+     0.9999999999999998,
+     1.414213562373095,
+     0.9999999999999998,
+     1.414213562373095,
+     1.414213562373095,
+     2.236067977499789
+    ],
+    "edge_graph_far_corner": 2.414213562373095,
+    "k": 4,
+    "max_error": 8.881784197001252e-16
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 1.3322676295501878e-15,
+      "passed": true,
+      "reference": "largest |d_refined - d_original| at the original vertices, two sources per mesh",
+      "reference_kind": "invariant",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "validation issues of the refined meshes (closed, consistently oriented)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "meshes": [
+      "icosphere-2",
+      "torus-12x6"
+     ],
+     "name": "ciw.lab.surfaces_discrete_mesh_studies.insertion_study"
+    }
+   },
+   "claim": "Inserting a face point and an edge point as vertices by planar splits leaves exact distances between the original vertices unchanged",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "double-precision rounding of the unfoldings (largest disagreement with the closed forms observed below 1e-14)",
+    "kind": "roundoff",
+    "value": 1e-14
+   },
+   "unit": "normalized length",
+   "value": 1.3322676295501878e-15
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 2.6645352591003757e-15,
+      "passed": true,
+      "reference": "largest |d(a -> b) - d(b -> a)| between the three sources of each mesh",
+      "reference_kind": "invariant",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "signed_le",
+      "observed": 4.440892098500626e-16,
+      "passed": true,
+      "reference": "largest |d(u) - d(v)| - |uv| over edges and sources (a distance changes by at most the length of an edge along it; 1e-12 rounding allowance)",
+      "reference_kind": "invariant",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "vertices left unreached on the connected meshes",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "levels": [
+      1,
+      2,
+      3,
+      4
+     ],
+     "name": "ciw.lab.surfaces_discrete_mesh_studies.exact_meshes",
+     "sources": [
+      [
+       0,
+       14,
+       28
+      ],
+      [
+       0,
+       54,
+       108
+      ],
+      [
+       0,
+       214,
+       428
+      ],
+      [
+       0,
+       854,
+       1708
+      ],
+      [
+       0,
+       96,
+       192
+      ]
+     ],
+     "torus": [
+      24,
+      12
+     ]
+    },
+    "independent_check": {
+     "checker": {
+      "implementation": "pygeodesic.geodesic.PyGeodesicAlgorithmExact",
+      "revision": "0.1.11"
+     },
+     "comparison": "abs_le",
+     "observed": 7.993605777301127e-15,
+     "passed": true,
+     "producer": {
+      "implementation": "ciw.lab.surfaces_discrete_mesh_exact.ExactGeodesic",
+      "revision": "ciw 0.1.0",
+      "source_sha256": "a1e500e5792e8cd3f788c4a4f2f7df2cd2c4a2d6d1b712d4cbb68f8daa09291a"
+     },
+     "reference": "pygeodesic.geodesic.PyGeodesicAlgorithmExact (Kirsanov's exact MMP) from the same sources to every vertex of the same 5 meshes (equal up to rounding)",
+     "reference_kind": "exact_arithmetic",
+     "tolerance": 1e-12
+    }
+   },
+   "claim": "Exact polyhedral distances from three sources are symmetric between the sources (and agree at every vertex with pygeodesic's exact MMP implementation when installed) on icosphere levels 1-4 and a torus with saddle vertices",
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check",
+    "reference_checks",
+    "synthetic_inputs"
+   ],
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "double-precision rounding of the unfoldings (largest disagreement with the closed forms observed below 1e-14)",
+    "kind": "roundoff",
+    "value": 1e-14
+   },
+   "unit": "normalized length",
+   "value": {
+    "max_abs_difference": 7.993605777301127e-15,
+    "meshes": [
+     "icosphere-1",
+     "icosphere-2",
+     "icosphere-3",
+     "icosphere-4",
+     "torus-24x12"
+    ],
+    "pseudo_source_vertices": [
+     0,
+     0,
+     0,
+     0,
+     168
+    ],
+    "saddle_vertices": [
+     0,
+     0,
+     0,
+     0,
+     120
+    ],
+    "vertices": [
+     42,
+     162,
+     642,
+     2562,
+     288
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "signed_ge",
+      "observed": 1e-12,
+      "passed": true,
+      "reference": "smallest edge-graph path length minus exact distance over the vertex pairs, plus a 1e-12 rounding allowance",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "meshes": [
+      "icosphere-2",
+      "icosphere-3",
+      "torus-24x12"
+     ],
+     "name": "ciw.lab.surfaces_discrete_mesh_studies.exact_meshes"
+    },
+    "independent_check": {
+     "checker": {
+      "implementation": "potpourri3d.EdgeFlipGeodesicSolver",
+      "revision": "1.4.0"
+     },
+     "comparison": "signed_ge",
+     "observed": 9.955591079014994e-13,
+     "passed": true,
+     "producer": {
+      "implementation": "ciw.lab.surfaces_discrete_mesh_exact.ExactGeodesic",
+      "revision": "ciw 0.1.0",
+      "source_sha256": "a1e500e5792e8cd3f788c4a4f2f7df2cd2c4a2d6d1b712d4cbb68f8daa09291a"
+     },
+     "reference": "potpourri3d.EdgeFlipGeodesicSolver (FlipOut) geodesic length minus exact distance over the same 3267 pairs, plus a 1e-12 rounding allowance (a locally shortest path is never shorter than a shortest one)",
+     "reference_kind": "invariant",
+     "tolerance": 0.0
+    }
+   },
+   "claim": "FlipOut edge-flip geodesics between vertex pairs (potpourri3d; without it, the edge-graph paths FlipOut starts from) are never shorter than the exact distance",
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check",
+    "reference_checks",
+    "synthetic_inputs"
+   ],
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "double-precision rounding of the unfoldings (largest disagreement with the closed forms observed below 1e-14)",
+    "kind": "roundoff",
+    "value": 1e-14
+   },
+   "unit": "normalized length",
+   "value": {
+    "meshes": [
+     "icosphere-2",
+     "icosphere-3",
+     "torus-24x12"
+    ],
+    "min_excess": -4.440892098500626e-15,
+    "pairs": 3267
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "signed_ge",
+      "observed": 1e-12,
+      "passed": true,
+      "reference": "smallest edge-graph distance minus exact distance over vertices and levels, plus a 1e-12 rounding allowance",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "levels": [
+      1,
+      2,
+      3,
+      4
+     ],
+     "name": "ciw.lab.surfaces_discrete_mesh_geometry.icosphere"
+    }
+   },
+   "claim": "Edge-graph Dijkstra distances from vertex 0 are never below the exact polyhedral distance on icosphere levels 1-4",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "double-precision rounding of the unfoldings (largest disagreement with the closed forms observed below 1e-14)",
+    "kind": "roundoff",
+    "value": 1e-14
+   },
+   "unit": "normalized length",
+   "value": {
+    "levels": [
+     1,
+     2,
+     3,
+     4
+    ],
+    "max_relative_excess": [
+     0.1810810719066578,
+     0.2195149660037028,
+     0.23174303152050846,
+     0.23497493782599288
+    ],
+    "min_excess": 0.0,
+    "valence5_floor": 0.2360679774997898
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "signed_ge",
+      "observed": 9.998889776975375e-13,
+      "passed": true,
+      "reference": "smallest Steiner distance minus exact distance over vertices, k and levels, plus a 1e-12 rounding allowance",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "signed_ge",
+      "observed": 0.004688164437014404,
+      "passed": true,
+      "reference": "smallest decrease of the mean excess between consecutive k",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "ks": [
+      1,
+      3,
+      7
+     ],
+     "levels": [
+      2,
+      3
+     ],
+     "name": "ciw.lab.surfaces_discrete_mesh_geometry.steiner_graph"
+    }
+   },
+   "claim": "Steiner-graph distances from vertex 0 are never below the exact polyhedral distance, and their mean excess shrinks as k grows (k = 1, 3, 7 on icosphere levels 2 and 3)",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "double-precision rounding of the unfoldings (largest disagreement with the closed forms observed below 1e-14)",
+    "kind": "roundoff",
+    "value": 1e-14
+   },
+   "unit": "normalized length",
+   "value": {
+    "ks": [
+     1,
+     3,
+     7
+    ],
+    "levels": [
+     2,
+     3
+    ],
+    "max_relative_excess": {
+     "2": [
+      0.03691936620220737,
+      0.012960702167987392,
+      0.003281159944370504
+     ],
+     "3": [
+      0.04679664792902649,
+      0.013379757840538131,
+      0.003314517492803759
+     ]
+    },
+    "mean_excess": {
+     "2": [
+      0.01929551390491476,
+      0.007134812061985468,
+      0.002446647624971064
+     ],
+     "3": [
+      0.021432149051182608,
+      0.00779254510617964,
+      0.0023251467695876694
+     ]
+    },
+    "min_excess": -1.1102230246251565e-16
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "signed_le",
+      "observed": -0.02291647561361332,
+      "passed": true,
+      "reference": "largest increase of the maximum heat-method error from one level to the next",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "levels": [
+      1,
+      2,
+      3
+     ],
+     "name": "ciw.lab.surfaces_discrete_mesh_geometry.heat_distance",
+     "t_factor": 1.0
+    }
+   },
+   "claim": "The largest heat-method error (t = h^2) against the exact polyhedral distance falls at every refinement level (icosphere levels 1-3)",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "largest deviation of a pairwise local order from the least-squares order",
+    "kind": "reference_error",
+    "value": 0.030047734434889728
+   },
+   "unit": "normalized length",
+   "value": {
+    "exact_minus_smooth_max": [
+     0.11539464076467532,
+     0.030899184647534828,
+     0.007921051266832624
+    ],
+    "fitted_order": 0.596727577562718,
+    "h": [
+     0.5822835232876192,
+     0.2993320753185587,
+     0.1507297051948821
+    ],
+    "levels": [
+     1,
+     2,
+     3
+    ],
+    "local_orders": [
+     0.5666798431278283,
+     0.6255748770688293
+    ],
+    "max_abs_error": [
+     0.09574831930440414,
+     0.06567064973512471,
+     0.04275417412151139
+    ],
+    "rms_error": [
+     0.05617629681685034,
+     0.03251304352512584,
+     0.01961516459669825
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "signed_ge",
+      "observed": 9.991118215802999e-13,
+      "passed": true,
+      "reference": "smallest traced length minus exact endpoint distance over all traces, plus a 1e-12 rounding allowance",
+      "reference_kind": "invariant",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 3.0,
+      "passed": true,
+      "reference": "fewest length-2 traces per level that exceed the exact distance by more than 1e-10",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "signed_le",
+      "observed": -9.837961995318167e-05,
+      "passed": true,
+      "reference": "largest increase of the maximum excess from one level to the next",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "configs": [
+      [
+       1,
+       2.0
+      ],
+      [
+       2,
+       2.0
+      ],
+      [
+       3,
+       2.0
+      ],
+      [
+       4,
+       2.0
+      ],
+      [
+       2,
+       1.0
+      ]
+     ],
+     "name": "ciw.lab.surfaces_discrete_mesh_studies.traced_exact_study",
+     "shortest_tolerance": 1e-10
+    }
+   },
+   "claim": "Traced straightest geodesics are never shorter than the exact distance between their endpoints, yet on every icosphere level 1-4 some of length 2 (below pi) are not shortest paths, by an excess that falls with refinement",
+   "counterexample": {
+    "statement": "A straightest geodesic shorter than pi on a mesh inscribed in the unit sphere is a shortest path between its endpoints",
+    "witness": {
+     "exact": 1.9999625298889687,
+     "excess": 3.747011103172326e-05,
+     "level": 4,
+     "start": 1,
+     "traced": 2.0000000000000004
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "double-precision rounding of the unfoldings (largest disagreement with the closed forms observed below 1e-14)",
+    "kind": "roundoff",
+    "value": 1e-14
+   },
+   "unit": "normalized length",
+   "value": {
+    "length": 2.0,
+    "length_1_level_2": {
+     "max_excess": 0.00011148586495834945,
+     "shortest": 5,
+     "traces": 6
+    },
+    "levels": [
+     1,
+     2,
+     3,
+     4
+    ],
+    "max_excess": [
+     0.012981715248456593,
+     0.0016330595136704318,
+     0.00013584973098490494,
+     3.747011103172326e-05
+    ],
+    "min_excess": -8.881784197001252e-16,
+    "shortest": [
+     2,
+     3,
+     3,
+     2
+    ],
+    "traces": [
+     6,
+     6,
+     6,
+     6
+    ]
    }
   },
   {
@@ -351,19 +1130,26 @@
    "bytes": 1162,
    "path": "artifacts/T038/graph-distances.json",
    "sha256": "cff30fee0d3bec714603a5c939df81fc01dbb5e2e26b5db9034036345af5e892"
+  },
+  {
+   "bytes": 12715,
+   "path": "artifacts/T038/exact-distances.json",
+   "sha256": "a2352136d4d794358a9fcb24d371413a5ef5b18aaf5bc58df75a05bc612c2765"
   }
  ],
- "hypothesis": "Unfolding across edges (straight in faces, equal angles at edges) yields exact straightest geodesics on developable meshes, and Steiner-graph paths are surface paths (every graph edge lies in one face), so their lengths are upper bounds on the polyhedral distance; the polyhedral distance itself is not computed here.",
+ "hypothesis": "Unfolding across edges (straight in faces, equal angles at edges) yields exact straightest geodesics on developable meshes. Window propagation (Chen-Han with the Xin-Wang priority queue, saddle, reflex-boundary and flat pseudo-sources and pruning against vertex distances) yields the exact polyhedral distance, the length of the globally shortest surface path, so that edge-graph, Steiner-graph and locally shortest paths never fall below it; whether traced straightest geodesics shorter than pi are shortest paths is tested against it.",
  "input_data": [
-  "icosphere levels 1-7 (unit sphere)",
-  "prism cylinder R=1, n=8..128 sectors",
-  "sheared planar 8x8 grids (shear 0-1.5)",
+  "icosphere levels 1-7 (unit sphere) for traces, 1-4 with three sources each for exact distances",
+  "torus 24x12 (R = 2, r = 1; 120 saddle vertices)",
+  "prism cylinder R=1, n=8..128 sectors (traces), n = 8, 16, 32 (exact)",
+  "sheared planar 8x8 grids (shear 0-1.5) and an L-shaped 8x8 grid",
+  "refined cube, 4x4 squares per face",
   "six declared sphere geodesics (chart point, heading)"
  ],
- "mathematical_model": "Straightest geodesic: in each face a straight segment; at an edge the direction keeps its edge component and the magnitude of its perpendicular component (rotation about the edge). Distances: Dijkstra on the edge graph and on the graph of k Steiner points per edge (all pairs inside each face); vertex hits are refused.",
+ "mathematical_model": "Straightest geodesic: in each face a straight segment; at an edge the direction keeps its edge component and the magnitude of its perpendicular component (rotation about the edge). Exact distance: windows (an edge interval with its source unfolded into the plane and the source's own distance) propagated face by face in increasing order of the smallest distance they carry; every vertex whose angle sum is not below flat by more than 1e-9 re-emits windows as a pseudo-source; a window part that a path through a vertex of its edge or faces beats by more than a rounding margin is pruned; surface points become vertices by planar face and edge splits. Graph distances: Dijkstra on the edge graph and on the graph of k Steiner points per edge; vertex hits are refused by the tracer.",
  "number": 38,
- "numerical_result": "Plane traces exact to 8.9e-16; prism-cylinder traces match the development to 8.0e-15; unfolded strip length equals traced length to 3.1e-15 over 42 sphere traces (statuses ['completed']); edge Dijkstra agrees with its reference shortest-path implementations to 8.9e-16; Steiner distances to traced endpoints exceed the traced length by mean 3.01e-02 (k=1), 1.29e-02 (k=3), 5.30e-03 (k=7); 0 of 115740 Steiner-graph edges leave a face. Delivered: an initial-value straightest-geodesic tracer and approximate edge-graph, Steiner and heat-method distances. Not delivered: an exact two-point polyhedral distance (MMP, ICH or edge flipping), so no polyhedral distance is computed to compare these with.",
- "observation_model": "No physical observation; traced endpoints, lengths and graph distances in normalized units.",
+ "numerical_result": "Plane traces exact to 8.9e-16; prism-cylinder traces match the development to 8.0e-15; unfolded strip length equals traced length to 3.1e-15 over 42 sphere traces (statuses ['completed']); edge Dijkstra agrees with its reference shortest-path implementations to 8.9e-16; Steiner distances to traced endpoints exceed the traced length by mean 3.01e-02 (k=1), 1.29e-02 (k=3), 5.30e-03 (k=7); 0 of 115740 Steiner-graph edges leave a face. Exact polyhedral distances (window propagation) equal their closed forms to 7.1e-15 on sheared planes, an L-shape (20 targets reached around its reflex corner), prism cylinders and cube corners (sqrt 5 = 2.236068 where the edge graph gives 2.414214); inserting points as vertices changes distances by at most 1.3e-15; distances from three sources on icosphere levels 1-4 and a torus with 120 saddle vertices agree with their references (source symmetry, and pygeodesic's exact MMP when installed) to 8.0e-15; no edge-graph path (nor, when potpourri3d is installed, FlipOut edge-flip geodesic) between 3267 vertex pairs is shorter than the exact distance (smallest excess -4.4e-15). Against the exact distance from vertex 0 the edge graph's largest relative excess is 0.181, 0.220, 0.232, 0.235 on levels 1-4 (valence-5 floor sqrt 5 - 2 = 0.236); the Steiner mean excess (k = 1, 3, 7) is 1.9e-02, 7.1e-03, 2.4e-03 on level 2 and 2.1e-02, 7.8e-03, 2.3e-03 on level 3; the heat-method maximum error is 0.096, 0.066, 0.043 on levels 1-3 (fitted order 0.60). Traced length-2 geodesics are shortest paths in 2 of 6, 3 of 6, 3 of 6, 2 of 6 traces on levels 1-4, and the largest excess of a trace over the exact distance is 1.3e-02, 1.6e-03, 1.4e-04, 3.7e-05; 5 of 6 length-1 traces on level 2 are shortest.",
+ "observation_model": "No physical observation; traced endpoints, lengths, exact and graph distances in normalized units.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
   "status": "not_established"
@@ -373,20 +1159,23 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/surfaces_discrete_mesh.py": "bd83d5f82c82c46a746fe77b3877a010e998d1ef219a90a2dc01bbf7f3c82455",
-   "src/ciw/lab/surfaces_discrete_mesh_geometry.py": "b14d56fae8413d78853e96be27a1f11eac369afa0b7a3dbb53bc821511ba4d97",
-   "src/ciw/lab/surfaces_discrete_mesh_studies.py": "618ea9848e8b750e333f81a395a7544c8b5127e53f4aae27d59b4f27e9967dfa"
+   "src/ciw/lab/surfaces_discrete_mesh.py": "6d6f03cf6afcc2ecbdce3da635c4c38b96a3c77c0a6209c510b589b009c10c3b",
+   "src/ciw/lab/surfaces_discrete_mesh_exact.py": "a1e500e5792e8cd3f788c4a4f2f7df2cd2c4a2d6d1b712d4cbb68f8daa09291a",
+   "src/ciw/lab/surfaces_discrete_mesh_geometry.py": "eb8124863335556f8aaa6f47f599a137f5925ef9210b5d7878bb8c7416a4dad3",
+   "src/ciw/lab/surfaces_discrete_mesh_studies.py": "1d274cab4fa8572f2304e3bff48b546936762ba151732df04f6bbae949f85086"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "Complete T038: implement an exact two-point polyhedral geodesic (MMP or ICH, or iterative edge flipping) and compare it with the Steiner, heat-method and traced lengths.",
- "report_id": "sha256:e7ccb316bf1b373bc8802bf545a6c00b72d738abf03435f499efcc12604fd959",
+ "recommended_next_task": "Deferred research question: continue traced geodesics through vertices by the Polthier-Schmies rule (they are refused as vertex_hit now) and measure how often generic traces need it on irregular meshes; back-trace the shortest path polyline from the exact solver's windows, which return distances only; and locate where straightest geodesics stop being shortest (the cut locus of the start point, whose branches end at vertices) as a function of refinement and of the distance to the nearest vertex.",
+ "report_id": "sha256:75b82d9e399b71f9f2f20df53fc3d3e2505d94e956ad11cbfa0498d43d4eebc7",
  "schema": "ciw.lab-task-report.v1",
  "section": "surfaces-discrete",
- "state": "partial",
+ "state": "completed",
  "task_id": "T038",
  "tests_passed": [
   "check: Straightest geodesics on sheared planar meshes coincide with straight lines vs exact line start + s * direction",
@@ -396,20 +1185,49 @@
   "independent: Heap Dijkstra edge-graph distances agree with a dense Floyd-Warshall recomputation (and scipy.sparse.csgraph when installed) vs scipy.sparse.csgraph.dijkstra",
   "check: Nested Steiner-graph distances never increase with k, and every Steiner-graph edge lies inside one mesh face vs max over vertices of distance(k') - distance(k) for nested k' > k",
   "check: Nested Steiner-graph distances never increase with k, and every Steiner-graph edge lies inside one mesh face vs graph edges (k = 0, 1, 3, 7, with traced endpoints) whose end nodes share no face, by a point-in-face test (plane offset and barycentric coordinates within 1e-12) independent of the graph construction",
-  "check: Steiner distances between traced endpoints stay above the traced length and approach it as k grows vs smallest gap (Steiner distance - traced length) plus a 1e-12 rounding allowance",
-  "check: Steiner distances between traced endpoints stay above the traced length and approach it as k grows vs smallest decrease of the mean gap between consecutive nested k",
+  "check: Steiner distances between traced endpoints (k = 1, 3, 7) stay above the traced length, and their mean excess shrinks as k grows vs smallest gap (Steiner distance - traced length) plus a 1e-12 rounding allowance",
+  "check: Steiner distances between traced endpoints (k = 1, 3, 7) stay above the traced length, and their mean excess shrinks as k grows vs smallest decrease of the mean gap between consecutive nested k",
+  "check: Exact polyhedral distances on sheared planar meshes equal Euclidean distances, from a vertex and from a point inserted inside a face vs Euclidean distance |x - y| on the convex sheared domain",
+  "check: On an L-shaped planar mesh exact distances equal the Euclidean distance to visible vertices and the path bent at the reflex corner to hidden ones vs |x - y| when the segment avoids the removed quadrant, else |x - c| + |c - y| through the reflex corner c = (0.5, 0.5)",
+  "check: Exact polyhedral distances on prism-cylinder meshes equal the shortest segment to the periodic images of the planar development, from a boundary vertex and from an inserted surface point vs min over k of |(s - s0 + k C, z - z0)| on the development, circumference C = 2 n R sin(pi/n)",
+  "check: Exact distances between the corners of a refined cube equal the closed forms 1, sqrt 2 and sqrt 5 vs corner distances on the unit cube: an edge, a face diagonal, and sqrt 5 across two unfolded faces",
+  "check: Inserting a face point and an edge point as vertices by planar splits leaves exact distances between the original vertices unchanged vs largest |d_refined - d_original| at the original vertices, two sources per mesh",
+  "check: Inserting a face point and an edge point as vertices by planar splits leaves exact distances between the original vertices unchanged vs validation issues of the refined meshes (closed, consistently oriented)",
+  "check: Exact polyhedral distances from three sources are symmetric between the sources (and agree at every vertex with pygeodesic's exact MMP implementation when installed) on icosphere levels 1-4 and a torus with saddle vertices vs largest |d(a -> b) - d(b -> a)| between the three sources of each mesh",
+  "check: Exact polyhedral distances from three sources are symmetric between the sources (and agree at every vertex with pygeodesic's exact MMP implementation when installed) on icosphere levels 1-4 and a torus with saddle vertices vs largest |d(u) - d(v)| - |uv| over edges and sources (a distance changes by at most the length of an edge along it; 1e-12 rounding allowance)",
+  "check: Exact polyhedral distances from three sources are symmetric between the sources (and agree at every vertex with pygeodesic's exact MMP implementation when installed) on icosphere levels 1-4 and a torus with saddle vertices vs vertices left unreached on the connected meshes",
+  "independent: Exact polyhedral distances from three sources are symmetric between the sources (and agree at every vertex with pygeodesic's exact MMP implementation when installed) on icosphere levels 1-4 and a torus with saddle vertices vs pygeodesic.geodesic.PyGeodesicAlgorithmExact",
+  "check: FlipOut edge-flip geodesics between vertex pairs (potpourri3d; without it, the edge-graph paths FlipOut starts from) are never shorter than the exact distance vs smallest edge-graph path length minus exact distance over the vertex pairs, plus a 1e-12 rounding allowance",
+  "independent: FlipOut edge-flip geodesics between vertex pairs (potpourri3d; without it, the edge-graph paths FlipOut starts from) are never shorter than the exact distance vs potpourri3d.EdgeFlipGeodesicSolver",
+  "check: Edge-graph Dijkstra distances from vertex 0 are never below the exact polyhedral distance on icosphere levels 1-4 vs smallest edge-graph distance minus exact distance over vertices and levels, plus a 1e-12 rounding allowance",
+  "check: Steiner-graph distances from vertex 0 are never below the exact polyhedral distance, and their mean excess shrinks as k grows (k = 1, 3, 7 on icosphere levels 2 and 3) vs smallest Steiner distance minus exact distance over vertices, k and levels, plus a 1e-12 rounding allowance",
+  "check: Steiner-graph distances from vertex 0 are never below the exact polyhedral distance, and their mean excess shrinks as k grows (k = 1, 3, 7 on icosphere levels 2 and 3) vs smallest decrease of the mean excess between consecutive k",
+  "check: The largest heat-method error (t = h^2) against the exact polyhedral distance falls at every refinement level (icosphere levels 1-3) vs largest increase of the maximum heat-method error from one level to the next",
+  "check: Traced straightest geodesics are never shorter than the exact distance between their endpoints, yet on every icosphere level 1-4 some of length 2 (below pi) are not shortest paths, by an excess that falls with refinement vs smallest traced length minus exact endpoint distance over all traces, plus a 1e-12 rounding allowance",
+  "check: Traced straightest geodesics are never shorter than the exact distance between their endpoints, yet on every icosphere level 1-4 some of length 2 (below pi) are not shortest paths, by an excess that falls with refinement vs fewest length-2 traces per level that exceed the exact distance by more than 1e-10",
+  "check: Traced straightest geodesics are never shorter than the exact distance between their endpoints, yet on every icosphere level 1-4 some of length 2 (below pi) are not shortest paths, by an excess that falls with refinement vs largest increase of the maximum excess from one level to the next",
   "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_next_steps_name_forward_work",
   "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_tracer_is_exact_on_developable_meshes",
   "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_graph_distances_and_steiner_sandwich",
   "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_dijkstra_check_falls_back_without_scipy",
+  "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_exact_distances_match_closed_forms",
+  "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_point_insertion_leaves_distances_unchanged",
+  "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_exact_distances_agree_with_pygeodesic",
+  "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_nearly_flat_saddles_leave_no_shadow",
+  "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_exact_distances_on_a_perturbed_cube_agree_with_pygeodesic",
+  "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_flipout_geodesics_are_never_shorter",
+  "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_paths_and_approximations_never_beat_the_exact_distance",
+  "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_exact_checks_fall_back_without_external_packages",
+  "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_ciw_producers_of_t038_independent_checks_carry_a_revision",
   "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_solver_task_report"
  ],
  "tests_skipped": [],
  "title": "Build a triangle-mesh intrinsic geodesic solver.",
- "uncertainty": "Deterministic computation; floating-point rounding only (differences at 1e-15 relative). The strip layout and Floyd-Warshall are ciw code (same origin); only the scipy comparison is independent. The Steiner sandwich is consistent with, but does not prove, that the traced geodesics are shortest paths.",
+ "uncertainty": "Deterministic computation; floating-point rounding only (exact distances agree with the closed forms to about 1e-14). The strip layout, Floyd-Warshall, source symmetry, edge Lipschitz and edge-graph path checks are ciw code (same origin); the scipy, pygeodesic and potpourri3d comparisons are independent. The Steiner-over-traced ordering is not a sandwich of the distance: the exact distance falls below 1 of the 6 length-1 traces on level 2 (by up to 1.1e-04), so for large enough k the Steiner distance would fall below them too. A trace counts as shortest when it is within 1e-10 of the exact distance; the others exceed it by at least 4.6e-06.",
  "unresolved_assumptions": [
-  "Partial delivery: the solver is an initial-value tracer (straightest geodesics from a point and heading) plus approximate distances. No exact two-point polyhedral geodesic (MMP, ICH or iterative edge flipping) is implemented, so no shortest path between two given points is solved exactly and the graph and heat distances are not compared with an exact polyhedral distance.",
+  "The exact solver returns distances, not the shortest path polyline: back-tracing the path from its windows is not implemented, so the shortest path itself is not drawn or compared.",
+  "Exactness holds in exact arithmetic; computed distances carry rounding, and the pruning margin (1e-10 of the mean edge) keeps near-ties. The solver is a Python loop meant for meshes of a few thousand vertices; the largest here has 2562.",
   "Vertex hits are refused rather than continued by the Polthier-Schmies angle-bisection rule.",
-  "Traced geodesics are shortest paths only when no shorter corridor exists; not proved here."
+  "Where a straightest geodesic stops being shortest (where it crosses the cut locus of its start point) is observed per trace, not predicted."
  ]
 }

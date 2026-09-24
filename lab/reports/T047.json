@@ -345,19 +345,21 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "requirement_probes": {
    "module:sympy": true
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/observation.py": "ef75c3ea4cad06bcbc68592440b3d55a92786a729d5a731b87ece207511ddffb",
+   "src/ciw/lab/observation.py": "2a6812aa800277efdf1243187221123c8c7d15df4b298371e07f87f756e2a461",
    "src/ciw/lab/observation_chord.py": "cfbaaaf604b32b686178ea036d27c153d8eebc7d290444c60d7699c1fc60faf5"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: bound the cylinder chord correction when the part departs from an exact cylinder (a declared radius taper or ovality) or the markers sit a declared lateral offset off the geodesic, and report through the T045 geometry/sensor split which term then dominates the chord-derived distance.",
- "report_id": "sha256:151d9826ee25c7b7649d26ebed90134cc6f59d7f6efdeb2ab94edc2694d8f0bc",
+ "report_id": "sha256:452e1b56c74d7334c8e4579ff9661b2a4c9e8484a022b11e73f02784b430833b",
  "schema": "ciw.lab-task-report.v1",
  "section": "observation",
  "state": "completed",

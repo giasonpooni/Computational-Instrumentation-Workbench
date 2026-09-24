@@ -119,7 +119,7 @@
     "value": 0
    },
    "unit": "runtimes",
-   "value": 8
+   "value": 9
   },
   {
    "assigned_by": "ciw.lab.evidence",
@@ -136,14 +136,14 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 5492,
+   "bytes": 5743,
    "path": "artifacts/T165/release-report.json",
-   "sha256": "cba02c4c2337b38625baa2774afca14ed0b3f35b204b8547d43fa7ea477f1f42"
+   "sha256": "f462bfd6d356053782212dc17050f49caf7cc1736a1d94fb9175391651b23606"
   },
   {
-   "bytes": 3282,
+   "bytes": 3387,
    "path": "artifacts/T165/RELEASE.md",
-   "sha256": "4dac47380c06cb430d4c6c56f8f7452d7840a403419323d70173bb4ec16a3801"
+   "sha256": "483e479fe8dfce1a8b7b8aa8fc43e078f6603bb544846a4e7204ccd5ceb9c69e"
   }
  ],
  "hypothesis": "A release report of the tasks before T165 (T001-T164) can be generated entirely from machine-readable queue metadata and their retained reports.",
@@ -153,7 +153,7 @@
  ],
  "mathematical_model": "Scope T001-T164: T165 reads only earlier reports, so T165-T168 are not in it; queue-state.json and the dashboard cover the whole run. Totals over states, labels and basis components; queue coverage per section; runtime inventory = revision- or tree-bearing entries anywhere in each provider/runtime identity, one row per runtime with each identity it recorded (a revision recorded without its tree is merged with the entry that records that revision's tree); release digest = sha256 over the UTF-8 bytes of ciw.core.identities.canonical_json (sorted keys, no whitespace, ASCII escapes, NaN refused; the encoding of report identities) of the list [[task, state, headline label, [[claim, label], ...]], ...] in queue order.",
  "number": 165,
- "numerical_result": "Release report of T001-T164: 164 of 168 queue tasks reported; states {'blocked': 2, 'completed': 145, 'partial': 17}; labels {'analytic': 11, 'numerically_verified': 791, 'provider_backed': 3, 'independently_verified': 57, 'not_established': 187}; basis components {'derivation': 142, 'independent_check': 57, 'provider': 83, 'reference_checks': 823, 'synthetic_inputs': 339, 'none': 165}; 8 runtimes (csg, ftr, plsr, ppda, rust, scr, scr-exchange, set) with 10 identities.",
+ "numerical_result": "Release report of T001-T164: 164 of 168 queue tasks reported; states {'blocked': 2, 'completed': 147, 'partial': 15}; labels {'analytic': 11, 'numerically_verified': 805, 'provider_backed': 6, 'independently_verified': 63, 'not_established': 187}; basis components {'derivation': 142, 'independent_check': 63, 'provider': 92, 'reference_checks': 843, 'synthetic_inputs': 350, 'none': 165}; 9 runtimes (csg, ftr, plsr, ppda, rust, scr, scr-exchange, set, sp1) with 11 identities.",
  "observation_model": "No physical observation; reads retained computational records only.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -164,15 +164,17 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/research_portfolio.py": "145b8ee8456e1dd57bf2a05fa20e1ce55bd33356522436d8901eb1adfb60fc7a"
+   "src/ciw/lab/research_portfolio.py": "36d03762abf5cb7a900d4572ec3f8aa8e7bc55cb61331711dce910a334b3acf8"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Sign the release digest with a project key once key custody is defined (a cross-cutting open item of T166 and T167, owned by no queue task); a whole-run release record, including T165-T168, is computed outside the queue with research_portfolio.release_record over all retained reports.",
- "report_id": "sha256:17c6cdeca156e06922e86187b81351399384256a7bb2d8635a40eb8920d9b4db",
+ "report_id": "sha256:25261bf4a9be4a16a026e6b022a59e574b555070febb3de3ccf9c7dc6323d81b",
  "schema": "ciw.lab-task-report.v1",
  "section": "research-portfolio",
  "state": "completed",

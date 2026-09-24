@@ -314,6 +314,8 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
@@ -325,7 +327,7 @@
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Open: read the 10 x 3 x 3 readings of a real study run by gage-rr-procedure.json into gage_rr_anova (no reader of study exports exists) and replace T140's declared instrument terms by the measured repeatability; decide whether to apply the AIAG interaction-pooling rule, which is not applied.",
- "report_id": "sha256:9b606955bc5bebfeddc58a11f6abb6c8ceba8da42a196f74f4de6eb5d393d888",
+ "report_id": "sha256:fc94a87a0cdae4312375c73fb4718dcd6ee945a71b05b162dcb8f8d6f89ac2da",
  "schema": "ciw.lab-task-report.v1",
  "section": "manufacturing",
  "state": "completed",

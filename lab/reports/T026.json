@@ -387,6 +387,7 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
   "producer": "ciw.lab.flat_torus_topology",
   "provider": {
    "dirty": false,
@@ -404,17 +405,18 @@
    "revision": "dc918562cd9e351a65475d29f46963c9f2fd7db8",
    "source_tree": "1f082c6b443f2e301ac5889122912f26968ae756"
   },
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/flat_torus_topology.py": "2c05c13905cc51906d41b89219b001396634a9d3bb8bda9bd32ac75a5523fdb1",
+   "src/ciw/lab/flat_torus_topology.py": "5df97db5dd7bd077290291777f248e152ff7f716c174f0ec4c8c4cb7a49b334f",
    "src/ciw/lab/flat_torus_topology_lattice.py": "15a33fcd29591e43dec16fa3b9ad26d6b6b86846872e9e6bf815508fb0dade63",
    "src/ciw/lab/flat_torus_topology_provider.py": "30fa38e51a20bc8d01beea0e5c44da69f22d7059c04c92c1fea520e5cf6f8806"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: find the word length at which binary64 area-one spectra of SL(2,Z) images first disagree with the exact spectrum beyond tolerance (matrix entries grow with the word length; 10-letter words are used here), and extend the exact comparison beyond R^2 = 60",
- "report_id": "sha256:b28f09912ac638bb2fd8d735c864e21b40bb07b14358e1f4d9b65116985f82ec",
+ "report_id": "sha256:805b022410b5869227ca7ecc942c68c8dc5447a090b764eb9829905b2ea85225",
  "schema": "ciw.lab-task-report.v1",
  "section": "flat-torus-topology",
  "state": "completed",

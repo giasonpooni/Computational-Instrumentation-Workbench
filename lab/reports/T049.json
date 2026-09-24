@@ -391,16 +391,18 @@
   "implementation": "ciw.lab",
   "mpmath": "1.3.0",
   "numpy": "2.4.3",
+  "potpourri3d": "1.4.0",
+  "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/observation.py": "ef75c3ea4cad06bcbc68592440b3d55a92786a729d5a731b87ece207511ddffb",
+   "src/ciw/lab/observation.py": "2a6812aa800277efdf1243187221123c8c7d15df4b298371e07f87f756e2a461",
    "src/ciw/lab/observation_camera.py": "130cf51175050a5eb947b8d434553bdfa19bd102a33108f414d7a5fa9c651bce"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: propagate a declared calibration covariance (intrinsics and extrinsic rotation, including the aspect ratio and skew held fixed here) to the chord variance and attach it as a calibration component beside T045's geometry/sensor split, instead of evaluating fixed perturbations one at a time.",
- "report_id": "sha256:4e6596effd970b77a5ad6daad77ce8009798ca49e7f4a28eed7e2de9e3c13301",
+ "report_id": "sha256:a4d104645c00de319f598c413a095dded05d2fabd66506df546cdb5f6b2c2bc4",
  "schema": "ciw.lab-task-report.v1",
  "section": "observation",
  "state": "completed",
