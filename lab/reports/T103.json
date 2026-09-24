@@ -621,14 +621,14 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/lyapunov.py": "d343889fe69789b9551ef6e36029c1f969c6bf04c4cdb4618b9f506539831665",
+   "src/ciw/lab/lyapunov.py": "bac453e41cfaf4c8e83f82cc2eee826543cba08d732cba1e430a6a61fe2c1147",
    "src/ciw/lab/lyapunov_provider.py": "da3465b48b5f5efc47bfe6ab8379cf2cf2bc23e4835dc7ff047252e77fa6ef17",
    "src/ciw/lab/lyapunov_reference.py": "831ae8bd144c10e255cb9f2b54e0c219e2f98a59d01a07b5255046ae70b9b431"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question (upstream PLSR change): decide the level gate by comparing exponents (log2 V = 2 e + log2 scaled_value) instead of forming s^2, and report NUMERICAL_OVERFLOW instead of raising when A(theta) overflows, then re-run this near-limit scan to check that no exceedance is missed or spurious and that no in-box theta raises.",
- "report_id": "sha256:3fddb3ad58dfcdd1139b3965ce06f4164e81e810cd7c6ebadca98e34d7890020",
+ "report_id": "sha256:c386639fba7c882085160460d711ca1af27f81fb0c66cbdf363fdd4f3ba68be2",
  "schema": "ciw.lab-task-report.v1",
  "section": "lyapunov",
  "state": "completed",

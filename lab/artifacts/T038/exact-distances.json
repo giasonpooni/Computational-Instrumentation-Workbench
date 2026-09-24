@@ -373,8 +373,63 @@
   ],
   "rows": [
    {
+    "cut": {
+     "arclength": 1.4982522746293867,
+     "bracket": [
+      1.315279191304715,
+      1.7846213949435585
+     ],
+     "enclosed": [
+      18
+     ],
+     "enclosed_defect": 0.30934133337933467,
+     "endpoint_window_minus_vertex": 0.0,
+     "max_excess_decrease": 8.326672684688674e-17,
+     "nearest": {
+      "angle_defect": 0.30934133337933467,
+      "arclength": 1.2756135765260035,
+      "distance_over_h": 0.050601264701012914,
+      "vertex": 18
+     },
+     "probes": {
+      "arclengths": [
+       1.4982522742799183,
+       1.4982522749788552
+      ],
+      "distances": [
+       1.4982522742799183,
+       1.4982522749669995
+      ],
+      "points": [
+       [
+        0.11272204975428049,
+        0.7404508070183438,
+        -0.584871116169846
+       ],
+       [
+        0.11272204919320233,
+        0.7404508067564285,
+        -0.5848711164940443
+       ]
+      ],
+      "segments": [
+       7,
+       7
+      ]
+     },
+     "resolution": 3.4946851055586683e-11,
+     "samples": 9,
+     "trigger": {
+      "angle_defect": 0.30934133337933467,
+      "arclength": 1.2756135765260035,
+      "distance_over_h": 0.050601264701012914,
+      "prediction": 1.4982522746344533,
+      "vertex": 18
+     }
+    },
     "exact": 1.9870182847515434,
     "excess": 0.012981715248456593,
+    "h": 0.5822835232876192,
     "length": 2.0,
     "level": 1,
     "shortest": false,
@@ -383,8 +438,63 @@
     "traced": 2.0
    },
    {
+    "cut": {
+     "arclength": 1.3316623744480398,
+     "bracket": [
+      1.126197033863327,
+      1.5152920148159097
+     ],
+     "enclosed": [
+      34
+     ],
+     "enclosed_defect": 0.30934133337933645,
+     "endpoint_window_minus_vertex": -4.440892098500626e-16,
+     "max_excess_decrease": 2.220446049250313e-16,
+     "nearest": {
+      "angle_defect": 0.30934133337933645,
+      "arclength": 0.4036026567131077,
+      "distance_over_h": 0.07493399903333724,
+      "vertex": 34
+     },
+     "probes": {
+      "arclengths": [
+       1.3316623718654845,
+       1.331662377030595
+      ],
+      "distances": [
+       1.331662371865485,
+       1.3316623770193403
+      ],
+      "points": [
+       [
+        -0.5543565316226163,
+        -0.5398404970637534,
+        0.5238369600635253
+       ],
+       [
+        -0.5543565302863753,
+        -0.5398405011959796,
+        0.5238369572675401
+       ]
+      ],
+      "segments": [
+       5,
+       5
+      ]
+     },
+     "resolution": 2.5825551707718527e-10,
+     "samples": 8,
+     "trigger": {
+      "angle_defect": 0.30934133337933645,
+      "arclength": 0.4036026567131077,
+      "distance_over_h": 0.07493399903333724,
+      "prediction": 1.331662374479008,
+      "vertex": 34
+     }
+    },
     "exact": 1.9980360999360218,
     "excess": 0.0019639000639781745,
+    "h": 0.5822835232876192,
     "length": 2.0,
     "level": 1,
     "shortest": false,
@@ -393,8 +503,63 @@
     "traced": 2.0
    },
    {
+    "cut": {
+     "arclength": 1.8628259596257144,
+     "bracket": [
+      1.793860285734603,
+      2.0000000000000004
+     ],
+     "enclosed": [
+      15
+     ],
+     "enclosed_defect": 0.30934133337933467,
+     "endpoint_window_minus_vertex": -6.661338147750939e-16,
+     "max_excess_decrease": 2.220446049250313e-16,
+     "nearest": {
+      "angle_defect": 0.30934133337933467,
+      "arclength": 1.2851221897484688,
+      "distance_over_h": 0.10616763199758318,
+      "vertex": 15
+     },
+     "probes": {
+      "arclengths": [
+       1.8628259591500176,
+       1.8628259601014112
+      ],
+      "distances": [
+       1.8628259591500174,
+       1.8628259600907122
+      ],
+      "points": [
+       [
+        -0.40746235559551236,
+        0.8617942948368017,
+        -0.10879204275067443
+       ],
+       [
+        -0.4074623547535743,
+        0.8617942951422213,
+        -0.10879204242972433
+       ]
+      ],
+      "segments": [
+       8,
+       8
+      ]
+     },
+     "resolution": 4.7569687082827666e-11,
+     "samples": 9,
+     "trigger": {
+      "angle_defect": 0.30934133337933467,
+      "arclength": 1.2851221897484688,
+      "distance_over_h": 0.10616763199758318,
+      "prediction": 1.862825959628882,
+      "vertex": 15
+     }
+    },
     "exact": 1.9971049459830272,
     "excess": 0.0028950540169727645,
+    "h": 0.5822835232876192,
     "length": 2.0,
     "level": 1,
     "shortest": false,
@@ -403,8 +568,33 @@
     "traced": 2.0
    },
    {
+    "cut": {
+     "arclength": null,
+     "bracket": null,
+     "enclosed": null,
+     "enclosed_defect": null,
+     "endpoint_window_minus_vertex": -4.440892098500626e-16,
+     "max_excess_decrease": 2.220446049250313e-16,
+     "nearest": {
+      "angle_defect": 0.30934133337933645,
+      "arclength": 1.0872426193674616,
+      "distance_over_h": 0.13714503217579727,
+      "vertex": 36
+     },
+     "probes": null,
+     "resolution": null,
+     "samples": 9,
+     "trigger": {
+      "angle_defect": 0.30934133337933645,
+      "arclength": 1.0872426193674616,
+      "distance_over_h": 0.13714503217579727,
+      "prediction": 2.0666913715258164,
+      "vertex": 36
+     }
+    },
     "exact": 2.000000000000001,
     "excess": -8.881784197001252e-16,
+    "h": 0.5822835232876192,
     "length": 2.0,
     "level": 1,
     "shortest": true,
@@ -413,8 +603,63 @@
     "traced": 2.0
    },
    {
+    "cut": {
+     "arclength": 1.7725428827364333,
+     "bracket": [
+      1.6953858255143612,
+      1.8830243187642357
+     ],
+     "enclosed": [
+      32
+     ],
+     "enclosed_defect": 0.30934133337933556,
+     "endpoint_window_minus_vertex": -4.440892098500626e-16,
+     "max_excess_decrease": 1.1102230246251565e-16,
+     "nearest": {
+      "angle_defect": 0.30934133337933556,
+      "arclength": 1.1493914226943502,
+      "distance_over_h": 0.10760537054250299,
+      "vertex": 32
+     },
+     "probes": {
+      "arclengths": [
+       1.7725428822043214,
+       1.7725428832685453
+      ],
+      "distances": [
+       1.7725428822043212,
+       1.7725428832579537
+      ],
+      "points": [
+       [
+        -0.6755797368559625,
+        -0.6107668416991596,
+        0.292738442865161
+       ],
+       [
+        -0.6755797370717133,
+        -0.6107668419561325,
+        0.29273844185521597
+       ]
+      ],
+      "segments": [
+       7,
+       7
+      ]
+     },
+     "resolution": 5.321119225232455e-11,
+     "samples": 9,
+     "trigger": {
+      "angle_defect": 0.30934133337933556,
+      "arclength": 1.1493914226943502,
+      "distance_over_h": 0.10760537054250299,
+      "prediction": 1.7725428827394114,
+      "vertex": 32
+     }
+    },
     "exact": 1.995960607245926,
     "excess": 0.004039392754073834,
+    "h": 0.5822835232876192,
     "length": 2.0,
     "level": 1,
     "shortest": false,
@@ -423,8 +668,33 @@
     "traced": 1.9999999999999998
    },
    {
+    "cut": {
+     "arclength": null,
+     "bracket": null,
+     "enclosed": null,
+     "enclosed_defect": null,
+     "endpoint_window_minus_vertex": 0.0,
+     "max_excess_decrease": 4.440892098500626e-16,
+     "nearest": {
+      "angle_defect": 0.30934133337933467,
+      "arclength": 0.5684321339496965,
+      "distance_over_h": 0.24893305296348395,
+      "vertex": 15
+     },
+     "probes": null,
+     "resolution": null,
+     "samples": 9,
+     "trigger": {
+      "angle_defect": 0.30934133337933467,
+      "arclength": 1.587248839058056,
+      "distance_over_h": 0.31388884311576093,
+      "prediction": 6.151237491125951,
+      "vertex": 13
+     }
+    },
     "exact": 2.000000000000001,
     "excess": -8.881784197001252e-16,
+    "h": 0.5822835232876192,
     "length": 2.0,
     "level": 1,
     "shortest": true,
@@ -433,8 +703,33 @@
     "traced": 2.0
    },
    {
+    "cut": {
+     "arclength": null,
+     "bracket": null,
+     "enclosed": null,
+     "enclosed_defect": null,
+     "endpoint_window_minus_vertex": -6.661338147750939e-16,
+     "max_excess_decrease": 2.220446049250313e-16,
+     "nearest": {
+      "angle_defect": 0.07419035213797809,
+      "arclength": 0.784513157817543,
+      "distance_over_h": 0.0595558319893408,
+      "vertex": 50
+     },
+     "probes": null,
+     "resolution": null,
+     "samples": 17,
+     "trigger": {
+      "angle_defect": 0.07419035213797809,
+      "arclength": 0.784513157817543,
+      "distance_over_h": 0.0595558319893408,
+      "prediction": 2.0245237346062837,
+      "vertex": 50
+     }
+    },
     "exact": 1.9999999999999993,
     "excess": 2.220446049250313e-16,
+    "h": 0.2993320753185587,
     "length": 2.0,
     "level": 2,
     "shortest": true,
@@ -443,8 +738,63 @@
     "traced": 1.9999999999999996
    },
    {
+    "cut": {
+     "arclength": 1.4724455310548796,
+     "bracket": [
+      1.2405880666527307,
+      1.5030683084148113
+     ],
+     "enclosed": [
+      99
+     ],
+     "enclosed_defect": 0.07419035213797809,
+     "endpoint_window_minus_vertex": -2.220446049250313e-16,
+     "max_excess_decrease": 1.1102230246251565e-16,
+     "nearest": {
+      "angle_defect": 0.07419035213797809,
+      "arclength": 0.9334525310843156,
+      "distance_over_h": 0.04235072318260636,
+      "vertex": 99
+     },
+     "probes": {
+      "arclengths": [
+       1.472445521820766,
+       1.4724455402889933
+      ],
+      "distances": [
+       1.472445521820765,
+       1.4724455402788037
+      ],
+      "points": [
+       [
+        -0.6579073286798458,
+        -0.6102991705721214,
+        0.41058733475503284
+       ],
+       [
+        -0.6579073251237118,
+        -0.6102991845989107,
+        0.410587323279907
+       ]
+      ],
+      "segments": [
+       11,
+       11
+      ]
+     },
+     "resolution": 9.234113710473305e-10,
+     "samples": 16,
+     "trigger": {
+      "angle_defect": 0.07419035213797809,
+      "arclength": 0.9334525310843156,
+      "distance_over_h": 0.04235072318260636,
+      "prediction": 1.4724455310745164,
+      "vertex": 99
+     }
+    },
     "exact": 1.999570488366184,
     "excess": 0.0004295116338157712,
+    "h": 0.2993320753185587,
     "length": 2.0,
     "level": 2,
     "shortest": false,
@@ -453,8 +803,33 @@
     "traced": 1.9999999999999998
    },
    {
+    "cut": {
+     "arclength": null,
+     "bracket": null,
+     "enclosed": null,
+     "enclosed_defect": null,
+     "endpoint_window_minus_vertex": -8.881784197001252e-16,
+     "max_excess_decrease": 2.220446049250313e-16,
+     "nearest": {
+      "angle_defect": 0.07419035213797898,
+      "arclength": 0.529638989926747,
+      "distance_over_h": 0.10537983965107083,
+      "vertex": 93
+     },
+     "probes": null,
+     "resolution": null,
+     "samples": 17,
+     "trigger": {
+      "angle_defect": 0.0782394104636186,
+      "arclength": 1.3133339867634093,
+      "distance_over_h": 0.10833045161349317,
+      "prediction": 3.5596877774232256,
+      "vertex": 15
+     }
+    },
     "exact": 1.9999999999999993,
     "excess": 6.661338147750939e-16,
+    "h": 0.2993320753185587,
     "length": 2.0,
     "level": 2,
     "shortest": true,
@@ -463,8 +838,33 @@
     "traced": 2.0
    },
    {
+    "cut": {
+     "arclength": null,
+     "bracket": null,
+     "enclosed": null,
+     "enclosed_defect": null,
+     "endpoint_window_minus_vertex": -8.881784197001252e-16,
+     "max_excess_decrease": 4.440892098500626e-16,
+     "nearest": {
+      "angle_defect": 0.07419035213797809,
+      "arclength": 0.007759630028804608,
+      "distance_over_h": 0.03295129716647151,
+      "vertex": 61
+     },
+     "probes": null,
+     "resolution": null,
+     "samples": 16,
+     "trigger": {
+      "angle_defect": 0.0782394104636186,
+      "arclength": 1.1193499067434556,
+      "distance_over_h": 0.07734058358021718,
+      "prediction": 2.374621626235002,
+      "vertex": 36
+     }
+    },
     "exact": 2.000000000000001,
     "excess": -8.881784197001252e-16,
+    "h": 0.2993320753185587,
     "length": 2.0,
     "level": 2,
     "shortest": true,
@@ -473,8 +873,63 @@
     "traced": 2.0
    },
    {
+    "cut": {
+     "arclength": 0.11290106070967741,
+     "bracket": [
+      0.07590312599343355,
+      0.3564749077894589
+     ],
+     "enclosed": [
+      70
+     ],
+     "enclosed_defect": 0.07419035213797898,
+     "endpoint_window_minus_vertex": -4.440892098500626e-16,
+     "max_excess_decrease": 3.469446951953614e-17,
+     "nearest": {
+      "angle_defect": 0.07419035213797898,
+      "arclength": 0.07181056914799339,
+      "distance_over_h": 0.0032393415523571095,
+      "vertex": 70
+     },
+     "probes": {
+      "arclengths": [
+       0.11290103234406396,
+       0.11290108907529087
+      ],
+      "distances": [
+       0.11290103234406401,
+       0.11290108904587462
+      ],
+      "points": [
+       [
+        0.23216778705369534,
+        0.40687746428739446,
+        0.8764938074527783
+       ],
+       [
+        0.23216774975997645,
+        0.4068774260941202,
+        0.8764938266591428
+       ]
+      ],
+      "segments": [
+       4,
+       4
+      ]
+     },
+     "resolution": 2.836561345706054e-09,
+     "samples": 18,
+     "trigger": {
+      "angle_defect": 0.07419035213797898,
+      "arclength": 0.07181056914799339,
+      "distance_over_h": 0.0032393415523571095,
+      "prediction": 0.11290106264742998,
+      "vertex": 70
+     }
+    },
     "exact": 1.999881422828101,
     "excess": 0.00011857717189855954,
+    "h": 0.2993320753185587,
     "length": 2.0,
     "level": 2,
     "shortest": false,
@@ -483,8 +938,64 @@
     "traced": 1.9999999999999996
    },
    {
+    "cut": {
+     "arclength": 1.1709509040694328,
+     "bracket": [
+      1.120134330940329,
+      1.3324528782681428
+     ],
+     "enclosed": [
+      92,
+      112
+     ],
+     "enclosed_defect": 0.15646146002302963,
+     "endpoint_window_minus_vertex": -4.440892098500626e-16,
+     "max_excess_decrease": 0.0,
+     "nearest": {
+      "angle_defect": 0.07419035213797898,
+      "arclength": 0.3456120301889311,
+      "distance_over_h": 0.031613518282415966,
+      "vertex": 92
+     },
+     "probes": {
+      "arclengths": [
+       1.1709509006845202,
+       1.1709509074543454
+      ],
+      "distances": [
+       1.1709509006845191,
+       1.170950907443099
+      ],
+      "points": [
+       [
+        -0.7170919477674798,
+        0.6229653631392633,
+        0.267402838318621
+       ],
+       [
+        -0.7170919442074243,
+        0.6229653642909941,
+        0.267402843960434
+       ]
+      ],
+      "segments": [
+       9,
+       9
+      ]
+     },
+     "resolution": 3.3849126366298686e-10,
+     "samples": 16,
+     "trigger": {
+      "angle_defect": 0.07419035213797898,
+      "arclength": 0.3456120301889311,
+      "distance_over_h": 0.031613518282415966,
+      "prediction": 1.3189570176010945,
+      "vertex": 92
+     }
+    },
     "exact": 1.9983669404863296,
     "excess": 0.0016330595136704318,
+    "h": 0.2993320753185587,
     "length": 2.0,
     "level": 2,
     "shortest": false,
@@ -493,8 +1004,63 @@
     "traced": 2.0
    },
    {
+    "cut": {
+     "arclength": 0.43970695471273197,
+     "bracket": [
+      0.39456112329952364,
+      0.5228417168759507
+     ],
+     "enclosed": [
+      273
+     ],
+     "enclosed_defect": 0.020357396889208346,
+     "endpoint_window_minus_vertex": -4.440892098500626e-16,
+     "max_excess_decrease": 5.551115123125783e-17,
+     "nearest": {
+      "angle_defect": 0.020357396889208346,
+      "arclength": 0.39398739079201756,
+      "distance_over_h": 0.002766465649502353,
+      "vertex": 273
+     },
+     "probes": {
+      "arclengths": [
+       0.43970688323493323,
+       0.4397070261905307
+      ],
+      "distances": [
+       0.43970688323493323,
+       0.43970702617882906
+      ],
+      "points": [
+       [
+        0.8279800733256364,
+        0.5429053216148543,
+        0.11925266044726264
+       ],
+       [
+        0.8279800345509524,
+        0.5429053964007191,
+        0.11925254494877281
+       ]
+      ],
+      "segments": [
+       8,
+       8
+      ]
+     },
+     "resolution": 7.1477798743541525e-09,
+     "samples": 33,
+     "trigger": {
+      "angle_defect": 0.020357396889208346,
+      "arclength": 0.39398739079201756,
+      "distance_over_h": 0.002766465649502353,
+      "prediction": 0.4397069558492612,
+      "vertex": 273
+     }
+    },
     "exact": 1.9998641502690142,
     "excess": 0.00013584973098490494,
+    "h": 0.1507297051948821,
     "length": 2.0,
     "level": 3,
     "shortest": false,
@@ -503,8 +1069,63 @@
     "traced": 1.9999999999999991
    },
    {
+    "cut": {
+     "arclength": 1.0992784650474203,
+     "bracket": [
+      1.0819936021785734,
+      1.2200058301085466
+     ],
+     "enclosed": [
+      576
+     ],
+     "enclosed_defect": 0.01889749080767711,
+     "endpoint_window_minus_vertex": -1.1102230246251565e-15,
+     "max_excess_decrease": 2.220446049250313e-16,
+     "nearest": {
+      "angle_defect": 0.01889749080767711,
+      "arclength": 1.081853920675165,
+      "distance_over_h": 0.001075003718564073,
+      "vertex": 576
+     },
+     "probes": {
+      "arclengths": [
+       1.0992784008714964,
+       1.0992785292233442
+      ],
+      "distances": [
+       1.0992784008714966,
+       1.0992785292123557
+      ],
+      "points": [
+       [
+        -0.7019855509845001,
+        -0.3111363635432116,
+        0.6387769008213324
+       ],
+       [
+        -0.7019855477820822,
+        -0.3111364754164069,
+        0.6387768379855978
+       ]
+      ],
+      "segments": [
+       18,
+       18
+      ]
+     },
+     "resolution": 6.417592394969544e-09,
+     "samples": 31,
+     "trigger": {
+      "angle_defect": 0.01889749080767711,
+      "arclength": 1.081853920675165,
+      "distance_over_h": 0.001075003718564073,
+      "prediction": 1.0992784656797432,
+      "vertex": 576
+     }
+    },
     "exact": 1.999914382065287,
     "excess": 8.561793471351109e-05,
+    "h": 0.1507297051948821,
     "length": 2.0,
     "level": 3,
     "shortest": false,
@@ -513,8 +1134,33 @@
     "traced": 2.0000000000000004
    },
    {
+    "cut": {
+     "arclength": null,
+     "bracket": null,
+     "enclosed": null,
+     "enclosed_defect": null,
+     "endpoint_window_minus_vertex": 0.0,
+     "max_excess_decrease": 4.440892098500626e-16,
+     "nearest": {
+      "angle_defect": 0.018300080461511214,
+      "arclength": 0.7986194908100548,
+      "distance_over_h": 0.033794909082930986,
+      "vertex": 216
+     },
+     "probes": null,
+     "resolution": null,
+     "samples": 32,
+     "trigger": {
+      "angle_defect": 0.018300080461511214,
+      "arclength": 0.7986194908100548,
+      "distance_over_h": 0.033794909082930986,
+      "prediction": 2.63640618510718,
+      "vertex": 216
+     }
+    },
     "exact": 2.0,
     "excess": 0.0,
+    "h": 0.1507297051948821,
     "length": 2.0,
     "level": 3,
     "shortest": true,
@@ -523,8 +1169,63 @@
     "traced": 2.0
    },
    {
+    "cut": {
+     "arclength": 1.166168623395108,
+     "bracket": [
+      1.1653919828403756,
+      1.2534301664145373
+     ],
+     "enclosed": [
+      369
+     ],
+     "enclosed_defect": 0.020357396889208346,
+     "endpoint_window_minus_vertex": -4.440892098500626e-16,
+     "max_excess_decrease": 2.220446049250313e-16,
+     "nearest": {
+      "angle_defect": 0.020357396889208346,
+      "arclength": 0.9759238909439854,
+      "distance_over_h": 0.010751510745522533,
+      "vertex": 369
+     },
+     "probes": {
+      "arclengths": [
+       1.1661685493269536,
+       1.1661686974632626
+      ],
+      "distances": [
+       1.1661685493269525,
+       1.166168697452589
+      ],
+      "points": [
+       [
+        0.5066197790234436,
+        -0.25259678693990173,
+        -0.8208156716572614
+       ],
+       [
+        0.5066196958168786,
+        -0.2525966883784421,
+        -0.8208157445041713
+       ]
+      ],
+      "segments": [
+       18,
+       18
+      ]
+     },
+     "resolution": 7.406815457234801e-09,
+     "samples": 31,
+     "trigger": {
+      "angle_defect": 0.020357396889208346,
+      "arclength": 0.9759238909439854,
+      "distance_over_h": 0.010751510745522533,
+      "prediction": 1.1661686239151798,
+      "vertex": 369
+     }
+    },
     "exact": 1.999929445107269,
     "excess": 7.055489273088966e-05,
+    "h": 0.1507297051948821,
     "length": 2.0,
     "level": 3,
     "shortest": false,
@@ -533,8 +1234,33 @@
     "traced": 2.0
    },
    {
+    "cut": {
+     "arclength": null,
+     "bracket": null,
+     "enclosed": null,
+     "enclosed_defect": null,
+     "endpoint_window_minus_vertex": -4.440892098500626e-16,
+     "max_excess_decrease": 4.440892098500626e-16,
+     "nearest": {
+      "angle_defect": 0.018600188624487757,
+      "arclength": 0.07160820056540286,
+      "distance_over_h": 0.009485774759771139,
+      "vertex": 70
+     },
+     "probes": null,
+     "resolution": null,
+     "samples": 32,
+     "trigger": {
+      "angle_defect": 0.022760839995839888,
+      "arclength": 1.6084439752250583,
+      "distance_over_h": 0.050679941256635636,
+      "prediction": 2.7604080598524328,
+      "vertex": 613
+     }
+    },
     "exact": 1.999999999999999,
     "excess": 1.5543122344752192e-15,
+    "h": 0.1507297051948821,
     "length": 2.0,
     "level": 3,
     "shortest": true,
@@ -543,8 +1269,33 @@
     "traced": 2.0000000000000004
    },
    {
+    "cut": {
+     "arclength": null,
+     "bracket": null,
+     "enclosed": null,
+     "enclosed_defect": null,
+     "endpoint_window_minus_vertex": 0.0,
+     "max_excess_decrease": 4.440892098500626e-16,
+     "nearest": {
+      "angle_defect": 0.01860018862448598,
+      "arclength": 0.3477978583925025,
+      "distance_over_h": 0.04956393261747474,
+      "vertex": 92
+     },
+     "probes": null,
+     "resolution": null,
+     "samples": 32,
+     "trigger": {
+      "angle_defect": 0.018897490807677997,
+      "arclength": 1.7959245927811498,
+      "distance_over_h": 0.08530339607137988,
+      "prediction": 7.411978691681664,
+      "vertex": 480
+     }
+    },
     "exact": 1.9999999999999993,
     "excess": 1.5543122344752192e-15,
+    "h": 0.1507297051948821,
     "length": 2.0,
     "level": 3,
     "shortest": true,
@@ -553,8 +1304,63 @@
     "traced": 2.000000000000001
    },
    {
+    "cut": {
+     "arclength": 0.563326734705913,
+     "bracket": [
+      0.5236345124717847,
+      0.5758827804366858
+     ],
+     "enclosed": [
+      273
+     ],
+     "enclosed_defect": 0.0050931841206782735,
+     "endpoint_window_minus_vertex": 0.0,
+     "max_excess_decrease": 1.1102230246251565e-16,
+     "nearest": {
+      "angle_defect": 0.0050931841206782735,
+      "arclength": 0.39464184219035925,
+      "distance_over_h": 0.00398599661808183,
+      "vertex": 273
+     },
+     "probes": {
+      "arclengths": [
+       0.5633251287456572,
+       0.5633283406661688
+      ],
+      "distances": [
+       0.5633251287456573,
+       0.5633283406559683
+      ],
+      "points": [
+       [
+        0.7944884559919778,
+        0.6058075834416908,
+        0.01924215198094504
+       ],
+       [
+        0.7944874188564375,
+        0.6058091059560227,
+        0.019239520872176327
+       ]
+      ],
+      "segments": [
+       17,
+       17
+      ]
+     },
+     "resolution": 1.6059602557376514e-07,
+     "samples": 63,
+     "trigger": {
+      "angle_defect": 0.0050931841206782735,
+      "arclength": 0.39464184219035925,
+      "distance_over_h": 0.00398599661808183,
+      "prediction": 0.56332673815955,
+      "vertex": 273
+     }
+    },
     "exact": 1.9999902187427154,
     "excess": 9.781257284569023e-06,
+    "h": 0.07549909830150697,
     "length": 2.0,
     "level": 4,
     "shortest": false,
@@ -563,8 +1369,63 @@
     "traced": 2.0
    },
    {
+    "cut": {
+     "arclength": 0.8545776194328006,
+     "bracket": [
+      0.8079844679386745,
+      0.8766865695693052
+     ],
+     "enclosed": [
+      2499
+     ],
+     "enclosed_defect": 0.004840899021976597,
+     "endpoint_window_minus_vertex": -6.661338147750939e-16,
+     "max_excess_decrease": 1.1102230246251565e-16,
+     "nearest": {
+      "angle_defect": 0.004840899021976597,
+      "arclength": 0.8078403505646762,
+      "distance_over_h": 0.0014164210036881665,
+      "vertex": 2499
+     },
+     "probes": {
+      "arclengths": [
+       0.8545766396678038,
+       0.8545785991977974
+      ],
+      "distances": [
+       0.8545766396678043,
+       0.8545785991875646
+      ],
+      "points": [
+       [
+        -0.6766011536233233,
+        -0.08454672609381658,
+        0.730193187885799
+       ],
+       [
+        -0.6766015319285553,
+        -0.08454856692673585,
+        0.7301926329289443
+       ]
+      ],
+      "segments": [
+       26,
+       26
+      ]
+     },
+     "resolution": 9.797649967531124e-08,
+     "samples": 61,
+     "trigger": {
+      "angle_defect": 0.004840899021976597,
+      "arclength": 0.8078403505646762,
+      "distance_over_h": 0.0014164210036881665,
+      "prediction": 0.8545776218291343,
+      "vertex": 2499
+     }
+    },
     "exact": 1.9999625298889687,
     "excess": 3.747011103172326e-05,
+    "h": 0.07549909830150697,
     "length": 2.0,
     "level": 4,
     "shortest": false,
@@ -573,8 +1434,63 @@
     "traced": 2.0000000000000004
    },
    {
+    "cut": {
+     "arclength": 0.6646141177184551,
+     "bracket": [
+      0.6373104595587096,
+      0.6673567302587803
+     ],
+     "enclosed": [
+      778
+     ],
+     "enclosed_defect": 0.005075023854809402,
+     "endpoint_window_minus_vertex": -4.440892098500626e-16,
+     "max_excess_decrease": 5.551115123125783e-17,
+     "nearest": {
+      "angle_defect": 0.005075023854809402,
+      "arclength": 0.2917945553943967,
+      "distance_over_h": 0.005501395727087909,
+      "vertex": 778
+     },
+     "probes": {
+      "arclengths": [
+       0.6646100732324877,
+       0.6646181622044226
+      ],
+      "distances": [
+       0.6646100732324874,
+       0.6646181621943869
+      ],
+      "points": [
+       [
+        -0.90112159294522,
+        -0.13444132811089138,
+        -0.41120143945442283
+       ],
+       [
+        -0.9011229275056354,
+        -0.13443335046557936,
+        -0.4112015265792636
+       ]
+      ],
+      "segments": [
+       20,
+       20
+      ]
+     },
+     "resolution": 4.0444859674475117e-07,
+     "samples": 62,
+     "trigger": {
+      "angle_defect": 0.005075023854809402,
+      "arclength": 0.2917945553943967,
+      "distance_over_h": 0.005501395727087909,
+      "prediction": 0.6646141193017572,
+      "vertex": 778
+     }
+    },
     "exact": 1.9999954351524518,
     "excess": 4.56484754907116e-06,
+    "h": 0.07549909830150697,
     "length": 2.0,
     "level": 4,
     "shortest": false,
@@ -583,8 +1499,27 @@
     "traced": 2.000000000000001
    },
    {
+    "cut": {
+     "arclength": null,
+     "bracket": null,
+     "enclosed": null,
+     "enclosed_defect": null,
+     "endpoint_window_minus_vertex": -8.881784197001252e-16,
+     "max_excess_decrease": 3.3306690738754696e-16,
+     "nearest": {
+      "angle_defect": 0.005093184120677385,
+      "arclength": 0.9778045327883449,
+      "distance_over_h": 0.03650993475140172,
+      "vertex": 369
+     },
+     "probes": null,
+     "resolution": null,
+     "samples": 58,
+     "trigger": null
+    },
     "exact": 1.9999999999999996,
     "excess": 2.220446049250313e-16,
+    "h": 0.07549909830150697,
     "length": 2.0,
     "level": 4,
     "shortest": true,
@@ -593,8 +1528,33 @@
     "traced": 1.9999999999999998
    },
    {
+    "cut": {
+     "arclength": null,
+     "bracket": null,
+     "enclosed": null,
+     "enclosed_defect": null,
+     "endpoint_window_minus_vertex": -2.220446049250313e-16,
+     "max_excess_decrease": 4.440892098500626e-16,
+     "nearest": {
+      "angle_defect": 0.005694894188511768,
+      "arclength": 1.6114565784255273,
+      "distance_over_h": 0.016468462863009795,
+      "vertex": 613
+     },
+     "probes": null,
+     "resolution": null,
+     "samples": 60,
+     "trigger": {
+      "angle_defect": 0.005694894188511768,
+      "arclength": 1.6114565784255273,
+      "distance_over_h": 0.016468462863009795,
+      "prediction": 2.2104097476763482,
+      "vertex": 613
+     }
+    },
     "exact": 1.9999999999999993,
     "excess": 2.220446049250313e-16,
+    "h": 0.07549909830150697,
     "length": 2.0,
     "level": 4,
     "shortest": true,
@@ -603,8 +1563,63 @@
     "traced": 1.9999999999999996
    },
    {
+    "cut": {
+     "arclength": 1.2011962927931534,
+     "bracket": [
+      1.195735525289718,
+      1.2605548048635338
+     ],
+     "enclosed": [
+      1305
+     ],
+     "enclosed_defect": 0.004715213826867348,
+     "endpoint_window_minus_vertex": -4.440892098500626e-16,
+     "max_excess_decrease": 3.3306690738754696e-16,
+     "nearest": {
+      "angle_defect": 0.004715213826867348,
+      "arclength": 0.9269944679337169,
+      "distance_over_h": 0.006607900884158697,
+      "vertex": 1305
+     },
+     "probes": {
+      "arclengths": [
+       1.2011947077236305,
+       1.2011978778626764
+      ],
+      "distances": [
+       1.2011947077236313,
+       1.2011978778522316
+      ],
+      "points": [
+       [
+        -0.7003496946257552,
+        0.6591829741861458,
+        0.27274453399972626
+       ],
+       [
+        -0.7003479510748206,
+        0.6591835982877915,
+        0.2727471069958095
+       ]
+      ],
+      "segments": [
+       39,
+       39
+      ]
+     },
+     "resolution": 1.5850695230601828e-07,
+     "samples": 63,
+     "trigger": {
+      "angle_defect": 0.004715213826867348,
+      "arclength": 0.9269944679337169,
+      "distance_over_h": 0.006607900884158697,
+      "prediction": 1.201196300309804,
+      "vertex": 1305
+     }
+    },
     "exact": 1.9999760910377498,
     "excess": 2.390896225024086e-05,
+    "h": 0.07549909830150697,
     "length": 2.0,
     "level": 4,
     "shortest": false,
@@ -613,8 +1628,33 @@
     "traced": 2.0
    },
    {
+    "cut": {
+     "arclength": null,
+     "bracket": null,
+     "enclosed": null,
+     "enclosed_defect": null,
+     "endpoint_window_minus_vertex": 0.0,
+     "max_excess_decrease": 2.220446049250313e-16,
+     "nearest": {
+      "angle_defect": 0.07419035213797809,
+      "arclength": 0.784513157817543,
+      "distance_over_h": 0.0595558319893408,
+      "vertex": 50
+     },
+     "probes": null,
+     "resolution": null,
+     "samples": 9,
+     "trigger": {
+      "angle_defect": 0.07419035213797809,
+      "arclength": 0.784513157817543,
+      "distance_over_h": 0.0595558319893408,
+      "prediction": 2.0245237346062837,
+      "vertex": 50
+     }
+    },
     "exact": 1.0,
     "excess": 2.220446049250313e-16,
+    "h": 0.2993320753185587,
     "length": 1.0,
     "level": 2,
     "shortest": true,
@@ -623,8 +1663,33 @@
     "traced": 1.0000000000000002
    },
    {
+    "cut": {
+     "arclength": null,
+     "bracket": null,
+     "enclosed": null,
+     "enclosed_defect": null,
+     "endpoint_window_minus_vertex": 0.0,
+     "max_excess_decrease": 1.1102230246251565e-16,
+     "nearest": {
+      "angle_defect": 0.07419035213797809,
+      "arclength": 0.9334525310843156,
+      "distance_over_h": 0.04235072318260636,
+      "vertex": 99
+     },
+     "probes": null,
+     "resolution": null,
+     "samples": 9,
+     "trigger": {
+      "angle_defect": 0.07419035213797809,
+      "arclength": 0.9334525310843156,
+      "distance_over_h": 0.04235072318260636,
+      "prediction": 1.4724455310745164,
+      "vertex": 99
+     }
+    },
     "exact": 0.9999999999999998,
     "excess": 4.440892098500626e-16,
+    "h": 0.2993320753185587,
     "length": 1.0,
     "level": 2,
     "shortest": true,
@@ -633,8 +1698,27 @@
     "traced": 1.0000000000000002
    },
    {
+    "cut": {
+     "arclength": null,
+     "bracket": null,
+     "enclosed": null,
+     "enclosed_defect": null,
+     "endpoint_window_minus_vertex": -2.220446049250313e-16,
+     "max_excess_decrease": 1.1102230246251565e-16,
+     "nearest": {
+      "angle_defect": 0.07419035213797898,
+      "arclength": 0.529638989926747,
+      "distance_over_h": 0.10537983965107083,
+      "vertex": 93
+     },
+     "probes": null,
+     "resolution": null,
+     "samples": 9,
+     "trigger": null
+    },
     "exact": 1.0,
     "excess": 0.0,
+    "h": 0.2993320753185587,
     "length": 1.0,
     "level": 2,
     "shortest": true,
@@ -643,8 +1727,27 @@
     "traced": 1.0
    },
    {
+    "cut": {
+     "arclength": null,
+     "bracket": null,
+     "enclosed": null,
+     "enclosed_defect": null,
+     "endpoint_window_minus_vertex": -1.1102230246251565e-16,
+     "max_excess_decrease": 0.0,
+     "nearest": {
+      "angle_defect": 0.07419035213797809,
+      "arclength": 0.007759630028804608,
+      "distance_over_h": 0.03295129716647151,
+      "vertex": 61
+     },
+     "probes": null,
+     "resolution": null,
+     "samples": 8,
+     "trigger": null
+    },
     "exact": 1.0,
     "excess": 0.0,
+    "h": 0.2993320753185587,
     "length": 1.0,
     "level": 2,
     "shortest": true,
@@ -653,8 +1756,63 @@
     "traced": 1.0
    },
    {
+    "cut": {
+     "arclength": 0.11290106070967741,
+     "bracket": [
+      0.07590312599343355,
+      0.3564749077894589
+     ],
+     "enclosed": [
+      70
+     ],
+     "enclosed_defect": 0.07419035213797898,
+     "endpoint_window_minus_vertex": -1.1102230246251565e-16,
+     "max_excess_decrease": 3.469446951953614e-17,
+     "nearest": {
+      "angle_defect": 0.07419035213797898,
+      "arclength": 0.07181056914799339,
+      "distance_over_h": 0.0032393415523571095,
+      "vertex": 70
+     },
+     "probes": {
+      "arclengths": [
+       0.11290103234406396,
+       0.11290108907529087
+      ],
+      "distances": [
+       0.11290103234406401,
+       0.11290108904587462
+      ],
+      "points": [
+       [
+        0.23216778705369534,
+        0.40687746428739446,
+        0.8764938074527783
+       ],
+       [
+        0.23216774975997645,
+        0.4068774260941202,
+        0.8764938266591428
+       ]
+      ],
+      "segments": [
+       4,
+       4
+      ]
+     },
+     "resolution": 2.836561345706054e-09,
+     "samples": 11,
+     "trigger": {
+      "angle_defect": 0.07419035213797898,
+      "arclength": 0.07181056914799339,
+      "distance_over_h": 0.0032393415523571095,
+      "prediction": 0.11290106264742998,
+      "vertex": 70
+     }
+    },
     "exact": 0.9998885141350415,
     "excess": 0.00011148586495834945,
+    "h": 0.2993320753185587,
     "length": 1.0,
     "level": 2,
     "shortest": false,
@@ -663,8 +1821,33 @@
     "traced": 0.9999999999999999
    },
    {
+    "cut": {
+     "arclength": null,
+     "bracket": null,
+     "enclosed": null,
+     "enclosed_defect": null,
+     "endpoint_window_minus_vertex": -2.220446049250313e-16,
+     "max_excess_decrease": 0.0,
+     "nearest": {
+      "angle_defect": 0.07419035213797898,
+      "arclength": 0.3456120301889311,
+      "distance_over_h": 0.031613518282415966,
+      "vertex": 92
+     },
+     "probes": null,
+     "resolution": null,
+     "samples": 9,
+     "trigger": {
+      "angle_defect": 0.07419035213797898,
+      "arclength": 0.3456120301889311,
+      "distance_over_h": 0.031613518282415966,
+      "prediction": 1.3189570176010945,
+      "vertex": 92
+     }
+    },
     "exact": 0.9999999999999994,
     "excess": 5.551115123125783e-16,
+    "h": 0.2993320753185587,
     "length": 1.0,
     "level": 2,
     "shortest": true,

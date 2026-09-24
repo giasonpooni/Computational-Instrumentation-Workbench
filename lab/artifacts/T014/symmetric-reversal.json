@@ -1,0 +1,234 @@
+{
+ "reference_uncertainty": {
+  "hyperbolic-plane": 0.0,
+  "sphere": 0.0,
+  "torus": 2.28660370884e-13
+ },
+ "rows": [
+  {
+   "forward_order": 1.99915735789,
+   "forward_order_spread": 0.0011607110309,
+   "forward_position_errors": [
+    0.000660557366813,
+    0.000165368816552,
+    4.13567757815e-05,
+    1.03401082677e-05
+   ],
+   "iterations_per_step": [
+    9.9,
+    8.2125,
+    6.68125,
+    5.371875
+   ],
+   "max_state": 2.33573347943,
+   "method": "implicit-midpoint",
+   "return_errors": [
+    2.29261054585e-14,
+    2.39808173319e-14,
+    6.66133814775e-14,
+    1.19348975147e-14
+   ],
+   "surface": "sphere"
+  },
+  {
+   "forward_order": 3.99937671314,
+   "forward_order_spread": 0.000871313923865,
+   "forward_position_errors": [
+    4.26194154812e-07,
+    2.66647444689e-08,
+    1.66697902256e-09,
+    1.0419224704e-10
+   ],
+   "iterations_per_step": [
+    8.825,
+    7.225,
+    6.15625,
+    5.059375
+   ],
+   "max_state": 2.33574261634,
+   "method": "gauss-legendre-2",
+   "return_errors": [
+    3.35287353437e-14,
+    6.10622663544e-15,
+    1.13242748512e-14,
+    1.55431223448e-15
+   ],
+   "surface": "sphere"
+  },
+  {
+   "forward_order": 1.99922104568,
+   "forward_order_spread": 0.0010812211546,
+   "forward_position_errors": [
+    0.00120184826337,
+    0.000300849724098,
+    7.52366798041e-05,
+    1.88106858184e-05
+   ],
+   "iterations_per_step": [
+    10.15,
+    8.125,
+    6.8,
+    6.00625
+   ],
+   "max_state": 2.35774885097,
+   "method": "implicit-midpoint",
+   "return_errors": [
+    3.82471831983e-14,
+    1.50573997715e-14,
+    2.24265050974e-14,
+    1.33226762955e-15
+   ],
+   "surface": "torus"
+  },
+  {
+   "forward_order": 3.99509697576,
+   "forward_order_spread": 0.00902532160603,
+   "forward_position_errors": [
+    3.97344451587e-08,
+    2.50749467988e-09,
+    1.57071893627e-10,
+    9.80394611589e-12
+   ],
+   "iterations_per_step": [
+    8.9,
+    7.2125,
+    6.075,
+    5.003125
+   ],
+   "max_state": 2.35778661063,
+   "method": "gauss-legendre-2",
+   "return_errors": [
+    3.99680288865e-15,
+    1.7763568394e-15,
+    6.66133814775e-15,
+    2.22044604925e-16
+   ],
+   "surface": "torus"
+  },
+  {
+   "forward_order": 1.99948326043,
+   "forward_order_spread": 0.000717104457341,
+   "forward_position_errors": [
+    0.00126552775135,
+    0.000316652634645,
+    7.91800937356e-05,
+    1.97960821392e-05
+   ],
+   "iterations_per_step": [
+    10.45,
+    8.15,
+    7.00625,
+    6.015625
+   ],
+   "max_state": 2.35243300866,
+   "method": "implicit-midpoint",
+   "return_errors": [
+    3.21964677141e-14,
+    1.68753899743e-14,
+    1.11022302463e-15,
+    1.44328993201e-15
+   ],
+   "surface": "hyperbolic-plane"
+  },
+  {
+   "forward_order": 4.00011243046,
+   "forward_order_spread": 0.000178776165359,
+   "forward_position_errors": [
+    4.39332256859e-07,
+    2.74527241881e-08,
+    1.71571274512e-09,
+    1.07232711863e-10
+   ],
+   "iterations_per_step": [
+    9.0,
+    7.375,
+    6.125,
+    5.003125
+   ],
+   "max_state": 2.35240961521,
+   "method": "gauss-legendre-2",
+   "return_errors": [
+    6.93889390391e-16,
+    2.61596300177e-15,
+    1.16573417586e-14,
+    7.77156117238e-16
+   ],
+   "surface": "hyperbolic-plane"
+  }
+ ],
+ "solve_tol": 1e-13,
+ "tolerance_sweep": [
+  {
+   "method": "implicit-midpoint",
+   "return_errors": [
+    3.77811654885e-05,
+    4.59978288281e-06
+   ],
+   "solve_tol": 0.0001,
+   "steps": [
+    20,
+    80
+   ]
+  },
+  {
+   "method": "implicit-midpoint",
+   "return_errors": [
+    5.2566358022e-07,
+    1.3108558683e-09
+   ],
+   "solve_tol": 1e-06,
+   "steps": [
+    20,
+    80
+   ]
+  },
+  {
+   "method": "implicit-midpoint",
+   "return_errors": [
+    1.90441795667e-09,
+    1.05134323469e-09
+   ],
+   "solve_tol": 1e-08,
+   "steps": [
+    20,
+    80
+   ]
+  },
+  {
+   "method": "gauss-legendre-2",
+   "return_errors": [
+    2.56242039697e-05,
+    1.56493898329e-06
+   ],
+   "solve_tol": 0.0001,
+   "steps": [
+    20,
+    80
+   ]
+  },
+  {
+   "method": "gauss-legendre-2",
+   "return_errors": [
+    6.20657664152e-10,
+    1.2196748389e-07
+   ],
+   "solve_tol": 1e-06,
+   "steps": [
+    20,
+    80
+   ]
+  },
+  {
+   "method": "gauss-legendre-2",
+   "return_errors": [
+    1.28340088557e-10,
+    3.71647157493e-14
+   ],
+   "solve_tol": 1e-08,
+   "steps": [
+    20,
+    80
+   ]
+  }
+ ]
+}

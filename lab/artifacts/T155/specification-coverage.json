@@ -179,6 +179,30 @@
      "task_id": "T001"
     },
     {
+     "claim": "The energy replay bundle identity excludes its replay receipt and verification",
+     "evidence_status": "numerically_verified",
+     "statement": "A retained bundle identity binds every provenance record stored in the bundle",
+     "task_id": "T077"
+    },
+    {
+     "claim": "A telemetry bundle whose GSIE runtime revision is forged, with every unkeyed digest over it recomputed, reopens, and a replay on the bound stack refuses it",
+     "evidence_status": "numerically_verified",
+     "statement": "Reopening a workspace checks every retained provider runtime identity against CIW's pin",
+     "task_id": "T077"
+    },
+    {
+     "claim": "A telemetry bundle whose GSIE runtime identity carries a forged adapter_version and an injected key, with every unkeyed digest over it recomputed, reopens, and the runtime identity comparison a replay makes before executing accepts it",
+     "evidence_status": "numerically_verified",
+     "statement": "A telemetry replay compares every retained runtime identity field except the host paths",
+     "task_id": "T077"
+    },
+    {
+     "claim": "A saved telemetry workspace retains the host paths of the bound provider checkouts and interpreter in its runtime identities",
+     "evidence_status": "numerically_verified",
+     "statement": "A saved workspace carries no host path of an operator-bound provider checkout",
+     "task_id": "T077"
+    },
+    {
      "claim": "Reopening recomputes the retained energy analysis to validate content",
      "evidence_status": "numerically_verified",
      "statement": "Reopening a saved workspace performs no numerical recomputation",
@@ -253,6 +277,7 @@
    ],
    "established_findings": {
     "T001": 8,
+    "T077": 11,
     "T091": 4,
     "T092": 3,
     "T093": 3,
@@ -268,15 +293,27 @@
   "EXCHANGE_PROVENANCE.md": {
    "counterexample_statements": [
     {
-     "claim": "Oscillator operation results carry no replay-stable numerical-result identity",
-     "evidence_status": "numerically_verified",
-     "statement": "Every retained CIW operation result carries a replay-stable numerical-result identity",
-     "task_id": "T077"
-    },
-    {
      "claim": "The energy replay bundle identity excludes its replay receipt and verification",
      "evidence_status": "numerically_verified",
      "statement": "A retained bundle identity binds every provenance record stored in the bundle",
+     "task_id": "T077"
+    },
+    {
+     "claim": "A telemetry bundle whose GSIE runtime revision is forged, with every unkeyed digest over it recomputed, reopens, and a replay on the bound stack refuses it",
+     "evidence_status": "numerically_verified",
+     "statement": "Reopening a workspace checks every retained provider runtime identity against CIW's pin",
+     "task_id": "T077"
+    },
+    {
+     "claim": "A telemetry bundle whose GSIE runtime identity carries a forged adapter_version and an injected key, with every unkeyed digest over it recomputed, reopens, and the runtime identity comparison a replay makes before executing accepts it",
+     "evidence_status": "numerically_verified",
+     "statement": "A telemetry replay compares every retained runtime identity field except the host paths",
+     "task_id": "T077"
+    },
+    {
+     "claim": "A saved telemetry workspace retains the host paths of the bound provider checkouts and interpreter in its runtime identities",
+     "evidence_status": "numerically_verified",
+     "statement": "A saved workspace carries no host path of an operator-bound provider checkout",
      "task_id": "T077"
     },
     {
@@ -340,13 +377,19 @@
      "task_id": "T083"
     },
     {
-     "claim": "Surviving mutant receipt.deleted: a replay bundle reopens without its replay receipt, listed with no receipt like an original execution",
+     "claim": "Surviving mutant receipt.deleted-resealed: a replay bundle reopens without its replay receipt once the unkeyed catalog receipt seal is recomputed, listed with no receipt like an original execution",
      "evidence_status": "numerically_verified",
      "statement": "A replay bundle cannot be retained without its replay receipt",
      "task_id": "T083"
     },
     {
-     "claim": "Surviving mutant receipt-source.sibling-execution: a receipt re-pointed, with its verification subject, at a sibling execution of the same bytes reopens",
+     "claim": "Surviving mutant receipt.deleted-seal-removed: a replay bundle reopens without its replay receipt when the catalog receipt seal is removed too, as from a workspace saved before the seal existed",
+     "evidence_status": "numerically_verified",
+     "statement": "A workspace saved with a replay-receipt seal cannot reopen without it",
+     "task_id": "T083"
+    },
+    {
+     "claim": "Surviving mutant receipt-source.sibling-execution-resealed: a receipt re-pointed, with its verification subject, at a sibling execution of the same bytes reopens once the catalog receipt seal is recomputed",
      "evidence_status": "numerically_verified",
      "statement": "Unkeyed record seals detect every replay-provenance forgery",
      "task_id": "T084"
@@ -401,20 +444,21 @@
     }
    ],
    "established_findings": {
-    "T077": 3,
+    "T077": 11,
     "T078": 4,
     "T079": 5,
     "T080": 4,
     "T081": 9,
     "T082": 3,
-    "T083": 5,
+    "T083": 6,
     "T084": 2,
     "T085": 2,
     "T086": 3,
     "T087": 2,
     "T088": 3,
     "T089": 2,
-    "T090": 5
+    "T090": 5,
+    "T094": 6
    }
   },
   "FLAT_TORUS_TOPOLOGY.md": {
@@ -647,7 +691,7 @@
    ],
    "established_findings": {
     "T001": 8,
-    "T002": 5,
+    "T002": 8,
     "T003": 7,
     "T004": 5,
     "T005": 6,
@@ -740,6 +784,12 @@
      "task_id": "T014"
     },
     {
+     "claim": "Symmetric implicit methods (implicit midpoint, 2-stage Gauss-Legendre; fixed-point stage solve to 1e-13) return from forward-then-reversed integration at rounding level at every step size",
+     "evidence_status": "numerically_verified",
+     "statement": "The forward-then-reversed return error of an integrator measures its global error",
+     "task_id": "T014"
+    },
+    {
      "claim": "Fixed-step RK4 sphere position error is cross-track: the precessing orbit plane, not the speed error, sets it",
      "evidence_status": "numerically_verified",
      "statement": "The fixed-step RK4 position error on the sphere is the phase error of its speed error (a constant speed error gives position error ~ L)",
@@ -770,6 +820,24 @@
      "task_id": "T016"
     },
     {
+     "claim": "The constant-curvature Jacobi error constants do not carry over to the nonlinear hyperbolic geodesic: Gauss-Legendre's end-point and speed errors are not 1/6 of RK4's",
+     "evidence_status": "numerically_verified",
+     "statement": "An integrator with a six times smaller error constant on the constant-curvature Jacobi equation is correspondingly more accurate for the geodesic itself",
+     "task_id": "T016"
+    },
+    {
+     "claim": "On ridge and oblique saddle-surface geodesics (full nonlinear system) Gauss-Legendre and RK4 both converge at order 4, but their j_head error ratio depends on the geodesic instead of being the constant-curvature 1/6, while Gauss-Legendre's speed error is several times smaller at equal steps",
+     "evidence_status": "numerically_verified",
+     "statement": "Gauss-Legendre's constant-curvature advantage over RK4 (j_head error 1/6 of RK4's) holds on variable-curvature geodesics",
+     "task_id": "T016"
+    },
+    {
+     "claim": "On escaping geodesics (hyperbolic plane, oblique saddle geodesic) RK4's speed error does not drift either: it saturates like the symmetric methods', so boundedness there does not distinguish them",
+     "evidence_status": "numerically_verified",
+     "statement": "Over long horizons RK4's speed error drifts while a symmetric integrator's stays bounded",
+     "task_id": "T016"
+    },
+    {
      "claim": "Unit sphere, pure heading: C2 = 0, C3 = -|sin s| cos^2 s / 24, and the domain does not shrink at s = pi",
      "evidence_status": "numerically_verified",
      "statement": "The validity domain of the first-order approximation shrinks to zero at every conjugate point",
@@ -794,9 +862,9 @@
     "T011": 4,
     "T012": 7,
     "T013": 5,
-    "T014": 5,
+    "T014": 8,
     "T015": 9,
-    "T016": 6,
+    "T016": 12,
     "T017": 6,
     "T018": 5
    }
@@ -1245,6 +1313,18 @@
      "task_id": "T038"
     },
     {
+     "claim": "At a saddle vertex every end direction between the one-sided limits of the geodesics passing it is reached by a shortest path through the vertex, at a cone vertex none is, and the Polthier-Schmies continuation bisects the two limits",
+     "evidence_status": "numerically_verified",
+     "statement": "A straightest geodesic through a vertex is the limit of the straightest geodesics that pass it on either side",
+     "task_id": "T038"
+    },
+    {
+     "claim": "A straightest geodesic can stop being shortest before every single vertex's isolated-cone prediction, when the digon between it and the other shortest path encloses several vertices",
+     "evidence_status": "numerically_verified",
+     "statement": "The first cut point of a straightest geodesic on a convex polyhedral surface is where it crosses the cut ray of one vertex, as if that vertex carried all the curvature",
+     "task_id": "T038"
+    },
+    {
      "claim": "Edge-graph Dijkstra distance from a valence-5 vertex keeps a relative-error floor that tends to sqrt(5) - 2",
      "evidence_status": "numerically_verified",
      "statement": "Edge-graph shortest paths converge to the geodesic distance under mesh refinement",
@@ -1390,7 +1470,7 @@
     }
    ],
    "established_findings": {
-    "T038": 17,
+    "T038": 25,
     "T039": 6,
     "T040": 7,
     "T041": 15,
@@ -1718,7 +1798,7 @@
     }
    ],
    "established_findings": {
-    "T002": 5,
+    "T002": 8,
     "T006": 3,
     "T044": 6,
     "T045": 5,
@@ -2139,12 +2219,62 @@
      "evidence_status": "numerically_verified",
      "statement": "A computed geodesic whose speed stays exactly 1 is accurate",
      "task_id": "T004"
+    },
+    {
+     "claim": "Reversal error orders are 1 (Euler), 3 (midpoint) and 5 (RK4): even-order methods gain one order",
+     "evidence_status": "numerically_verified",
+     "statement": "Forward-then-reversed integration with a method of order p returns to the start with error proportional to h^p",
+     "task_id": "T014"
+    },
+    {
+     "claim": "With decimal truncation lengths the step sizes differ in the last bit and bitwise reproduction fails",
+     "evidence_status": "numerically_verified",
+     "statement": "Truncate-and-continue reproduces fixed-step integration bit for bit for any truncation length",
+     "task_id": "T014"
+    },
+    {
+     "claim": "Symmetric implicit methods (implicit midpoint, 2-stage Gauss-Legendre; fixed-point stage solve to 1e-13) return from forward-then-reversed integration at rounding level at every step size",
+     "evidence_status": "numerically_verified",
+     "statement": "The forward-then-reversed return error of an integrator measures its global error",
+     "task_id": "T014"
+    },
+    {
+     "claim": "A-stable implicit methods do not remove the growth of the required steps with k (implicit midpoint ~ k^(3/2), 2-stage Gauss-Legendre ~ k^(5/4)); implicit midpoint is qualitatively wrong beyond kh = 2",
+     "evidence_status": "numerically_verified",
+     "statement": "An implicit (A-stable) integrator removes the growth of the step count with k on strongly negatively curved surfaces",
+     "task_id": "T016"
+    },
+    {
+     "claim": "Saddle(c): peak |K| = c^2 but Jacobi growth is polynomial in c; the local exponent of j_head(L) decreases toward sqrt(2)",
+     "evidence_status": "numerically_verified",
+     "statement": "Jacobi growth is exponential in sqrt(peak |K|) times the length",
+     "task_id": "T016"
+    },
+    {
+     "claim": "The constant-curvature Jacobi error constants do not carry over to the nonlinear hyperbolic geodesic: Gauss-Legendre's end-point and speed errors are not 1/6 of RK4's",
+     "evidence_status": "numerically_verified",
+     "statement": "An integrator with a six times smaller error constant on the constant-curvature Jacobi equation is correspondingly more accurate for the geodesic itself",
+     "task_id": "T016"
+    },
+    {
+     "claim": "On ridge and oblique saddle-surface geodesics (full nonlinear system) Gauss-Legendre and RK4 both converge at order 4, but their j_head error ratio depends on the geodesic instead of being the constant-curvature 1/6, while Gauss-Legendre's speed error is several times smaller at equal steps",
+     "evidence_status": "numerically_verified",
+     "statement": "Gauss-Legendre's constant-curvature advantage over RK4 (j_head error 1/6 of RK4's) holds on variable-curvature geodesics",
+     "task_id": "T016"
+    },
+    {
+     "claim": "On escaping geodesics (hyperbolic plane, oblique saddle geodesic) RK4's speed error does not drift either: it saturates like the symmetric methods', so boundedness there does not distinguish them",
+     "evidence_status": "numerically_verified",
+     "statement": "Over long horizons RK4's speed error drifts while a symmetric integrator's stays bounded",
+     "task_id": "T016"
     }
    ],
    "established_findings": {
-    "T002": 5,
+    "T002": 8,
     "T003": 7,
-    "T004": 5
+    "T004": 5,
+    "T014": 8,
+    "T016": 12
    }
   },
   "SPECIFICATIONS.md: Jacobi equation, transfer matrix and Wronskian": {

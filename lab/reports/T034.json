@@ -154,7 +154,7 @@
      "passed": true,
      "producer": {
       "implementation": "ciw.lab.surfaces_discrete._declared_curvature",
-      "revision": "surfaces_discrete.py sha256 69aab93e2eb89b4cb3c2a5e559151449c00371f316464abe806190664ecea984"
+      "revision": "surfaces_discrete.py sha256 b8cb7efd2e05e2b4ec77aa0f2f74387ebcddcd1358561209f4e74705958171a6"
      },
      "reference": "restated closed forms whose difference from the diffgeom curvature does not simplify to 0",
      "reference_kind": "exact_arithmetic",
@@ -408,14 +408,14 @@
   "scipy": "1.16.2",
   "sources": {
    "src/ciw/lab/surfaces.py": "e8f264c182743d0177d93b961a49d7ddf78f30d79a7a75b9fea4018b10d4eef0",
-   "src/ciw/lab/surfaces_discrete.py": "69aab93e2eb89b4cb3c2a5e559151449c00371f316464abe806190664ecea984",
+   "src/ciw/lab/surfaces_discrete.py": "b8cb7efd2e05e2b4ec77aa0f2f74387ebcddcd1358561209f4e74705958171a6",
    "src/ciw/lab/surfaces_discrete_ad.py": "a76cc131eeadc83d5c64a788dd8c0a1453a0c0ffc89a5f49e79cbb1bf35559c0",
    "src/ciw/lab/surfaces_discrete_geometry.py": "d4445a253778e1dff32b68a903a9caf560affa08ca5a7110207e54c8e1baa60e"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: an independent assembly of the connection and curvature for gaussian-bump, gaussian-bump-shear and rotated-torus (for example sympy.diffgeom as for the other seven surfaces, or a second computer algebra system), where ciw-written assembly of sympy derivatives gives only same-origin evidence, and complex-step derivatives once the core surfaces accept complex coordinates.",
- "report_id": "sha256:8d1862f31ca84a8163da93d0d7af104f213395359939b1a7b1cbd76d1ecd9579",
+ "report_id": "sha256:8a43fcf06df9aa433e1897a8aa8ddc7e008268df527821fd1ceaf88b09616e5f",
  "schema": "ciw.lab-task-report.v1",
  "section": "surfaces-discrete",
  "state": "completed",

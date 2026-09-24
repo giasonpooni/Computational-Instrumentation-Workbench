@@ -460,9 +460,10 @@
    "sha256": "a244a6da2f2c66d02d93a895e6ef454b4695d2f2c47719f5f941682dad98742d"
   },
   {
-   "bytes": 5793,
+   "bytes": 7759,
    "path": "artifacts/T033/conformance-residuals.svg",
-   "sha256": "8293bef3e7b6676055246470f4491c3ee3a1dfbc13e1b047b06663c2b92ffc2b"
+   "rounding_level": true,
+   "sha256": "ef05c9118d55ff6d21055dd201b22e475c2561f005470ae13e38d2a43d6a6cfe"
   }
  ],
  "hypothesis": "Every catalogue surface, the reparametrized charts plane-polar and gaussian-bump-shear and a rigidly rotated torus satisfy the interface identities on their declared domains, and the Gauss equation holds: curvature recomputed from the metric alone equals the supplied K.",
@@ -491,13 +492,13 @@
   "scipy": "1.16.2",
   "sources": {
    "src/ciw/lab/surfaces.py": "e8f264c182743d0177d93b961a49d7ddf78f30d79a7a75b9fea4018b10d4eef0",
-   "src/ciw/lab/surfaces_discrete.py": "69aab93e2eb89b4cb3c2a5e559151449c00371f316464abe806190664ecea984",
+   "src/ciw/lab/surfaces_discrete.py": "b8cb7efd2e05e2b4ec77aa0f2f74387ebcddcd1358561209f4e74705958171a6",
    "src/ciw/lab/surfaces_discrete_geometry.py": "d4445a253778e1dff32b68a903a9caf560affa08ca5a7110207e54c8e1baa60e"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question (queue extension after T168): make this conformance suite the admission gate for smooth surface data, run on every Surface before a lab task integrates on it and refusing a nonconforming one with a named code per failed identity (the seeded defects are refused only inside T033 today, the refusal states that T042 defines (MESH_CODES, TRACE_CODES and QUERY_CODES in surfaces_discrete_mesh_geometry.py) are for triangle meshes and do not use this suite).",
- "report_id": "sha256:1519a9dd5eaa5ea6c5153867b1cb0e7c42eb2b0e53e4fb9abb1cce9ab30546b8",
+ "report_id": "sha256:656e80c226a9de0379003dbd2c42efa48f6614dfd8fbc8e3f91a293823569589",
  "schema": "ciw.lab-task-report.v1",
  "section": "surfaces-discrete",
  "state": "completed",

@@ -106,7 +106,7 @@
   },
   {
    "declared_sources": [],
-   "findings": 5,
+   "findings": 8,
    "labels": [
     "independently_verified",
     "numerically_verified"
@@ -258,7 +258,7 @@
    "declared_sources": [
     "synthetic_inputs"
    ],
-   "findings": 5,
+   "findings": 8,
    "labels": [
     "numerically_verified"
    ],
@@ -282,7 +282,7 @@
    "declared_sources": [
     "synthetic_inputs"
    ],
-   "findings": 6,
+   "findings": 12,
    "labels": [
     "numerically_verified"
    ],
@@ -538,7 +538,7 @@
    "declared_sources": [
     "synthetic_inputs"
    ],
-   "findings": 18,
+   "findings": 26,
    "labels": [
     "independently_verified",
     "not_established",
@@ -1047,11 +1047,14 @@
    "task_id": "T076"
   },
   {
-   "declared_sources": [],
-   "findings": 5,
+   "declared_sources": [
+    "provider"
+   ],
+   "findings": 13,
    "labels": [
     "not_established",
-    "numerically_verified"
+    "numerically_verified",
+    "provider_backed"
    ],
    "physical_or_authority": 1,
    "pipe_claims": 0,
@@ -1113,7 +1116,7 @@
   },
   {
    "declared_sources": [],
-   "findings": 7,
+   "findings": 8,
    "labels": [
     "not_established",
     "numerically_verified"

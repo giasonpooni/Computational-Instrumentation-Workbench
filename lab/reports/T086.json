@@ -3,7 +3,10 @@
   "src/ciw/lab/exchange_provenance.py",
   "src/ciw/lab/exchange_provenance_common.py",
   "tests/test_lab_exchange_provenance.py",
-  "docs/lab/EXCHANGE_PROVENANCE.md"
+  "docs/lab/EXCHANGE_PROVENANCE.md",
+  "src/ciw/operations/runner.py",
+  "src/ciw/session.py",
+  "src/ciw/workbench.py"
  ],
  "evidence_status": {
   "counts": {
@@ -17,7 +20,7 @@
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "Every predicted refusal is observed; the injected subject_ref is returned by result.get after reopen; T084's sibling-execution survivor shows the energy subject and source moved together; the harness controls hold.",
+ "expected_invariant": "Every predicted refusal is observed; the injected subject_ref is returned by result.get after reopen; T084's sibling-execution-resealed survivor shows the energy subject and source moved together; the harness controls hold.",
  "experiment": "Edit the saved workspace (verification subject), recompute none, local or all unkeyed digests, write it and reopen with Session.from_workspace; pure ESM and exchange validators are also run on synthetic records. Rows retained as verification-subject-mutations.json/.md.",
  "failure_modes_checked": [
   "receipt-subject.naive: verification subject set to the replay bundle",
@@ -215,13 +218,13 @@
       "comparison": "abs_le",
       "observed": 0.0,
       "passed": true,
-      "reference": "T084 sibling-execution row accepted with subject and source both naming the sibling (0 = observed)",
+      "reference": "T084 sibling-execution-resealed row accepted with subject and source both naming the sibling (0 = observed)",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
      }
     ]
    },
-   "claim": "The verification subject moves with the receipt source: T084's surviving mutant receipt-source.sibling-execution rebinds both to a sibling execution and reopens",
+   "claim": "The verification subject moves with the receipt source: T084's surviving mutant receipt-source.sibling-execution-resealed rebinds both to a sibling execution and reopens",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
    "origin": [
@@ -238,7 +241,7 @@
    },
    "unit": null,
    "value": {
-    "mutant": "receipt-source.sibling-execution",
+    "mutant": "receipt-source.sibling-execution-resealed",
     "post_reopen": {
      "receipt_source": "bundle:B0b",
      "replay_bundle": "bundle:B1",
@@ -282,7 +285,7 @@
    "sha256": "a052b916ad82660868f01636409e98ed71368a92b2fa6ac7dc19ec69bd0a623d"
   }
  ],
- "hypothesis": "Predicted kills: a receipt verification subject edited with or without recomputed ids (reopen rebuilds the expected verification with subject = receipt source); a bundle verification subject other than the bundle's own digest; oscillator verification fields (protocol v1 fixes them); an ESM candidate naming another bundle; an exchange subject edit without a recomputed verification_id. On the energy path the subject can move only together with the receipt source, which is T084's receipt-source.sibling-execution (cross-referenced here, not re-run). Predicted survivor: oscillator-subject.injected, because sealed oscillator records do not refuse extra keys and their seal is unkeyed (as for the method, independence and admission injections of T087-T089).",
+ "hypothesis": "Predicted kills: a receipt verification subject edited with or without recomputed ids (reopen rebuilds the expected verification with subject = receipt source); a bundle verification subject other than the bundle's own digest; oscillator verification fields (protocol v1 fixes them); an ESM candidate naming another bundle; an exchange subject edit without a recomputed verification_id. On the energy path the subject can move only together with the receipt source, which is T084's receipt-source.sibling-execution-resealed (cross-referenced here, not re-run). Predicted survivor: oscillator-subject.injected, because sealed oscillator records do not refuse extra keys and their seal is unkeyed (as for the method, independence and admission injections of T087-T089).",
  "input_data": [
   "make_demo_run() damped-oscillator recording; statistics.v1 on channel v over [1, 2] s, twice, plus one legacy analysis.stats result",
   "examples/energy-accuracy/{baseline,reset}.json (origin synthetic_fixture): two original executions of baseline, one of reset, replays, and a separate session in the same process",
@@ -308,13 +311,16 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/exchange_provenance.py": "6c5c6d9b49043664ad9cea8f4bc2ff5d9fc367aea6194e2e7608c98bfd5c54f4",
-   "src/ciw/lab/exchange_provenance_common.py": "17ab892e3f285ac475b44c240155acf45f8bbdbefca28a345980aba548c6d1a9"
+   "src/ciw/lab/exchange_provenance.py": "52c65161fc650193a7df1a20919c1f962ce52f8efc12153e7a105658d4ab04d5",
+   "src/ciw/lab/exchange_provenance_common.py": "726ccccfe1beae025183069704cab05b35189515f6cdfffa0dd82f6e5ec3e8cb",
+   "src/ciw/operations/runner.py": "428d6a6e77123f5609125e7432a7158d0ecee015b1c53c2555206250c1d9f080",
+   "src/ciw/session.py": "0489eb0d4780f1f66b08aa6febdb966cc7b3c67dcdb5cfa1c431723e65781ff8",
+   "src/ciw/workbench.py": "79a7e5c2c30605c21a04578d9048d844edae577213125812ecf0885e17d40f80"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question (CIW change): refuse undeclared keys in sealed oscillator records (a closed key set needs no key) and re-run to check that oscillator-subject.injected, oscillator-method.injected, oscillator-independent.injected and oscillator-admission.injected are refused on reopen.",
- "report_id": "sha256:a8e2e7b6bcd10d43c36029fcc6a54d2d764f6dc3e23a9c5a3ab632a13663cd1a",
+ "report_id": "sha256:25709b3957f02f3d946bbe528398b44fc143d78b9ccd7cf899aa3c6b382797ea",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "completed",
@@ -330,7 +336,7 @@
   "check: Verification subject forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs harness control: the unedited saved workspace reopens",
   "check: Surviving mutant oscillator-subject.injected: a sealed result carrying an injected verification subject naming its sibling result reopens vs oscillator-subject.injected: accepted (1 = accepted)",
   "check: Surviving mutant oscillator-subject.injected: a sealed result carrying an injected verification subject naming its sibling result reopens vs reopened result.get returns the injected subject_ref beside verification_status not_verified (0 = shown)",
-  "check: The verification subject moves with the receipt source: T084's surviving mutant receipt-source.sibling-execution rebinds both to a sibling execution and reopens vs T084 sibling-execution row accepted with subject and source both naming the sibling (0 = observed)",
+  "check: The verification subject moves with the receipt source: T084's surviving mutant receipt-source.sibling-execution-resealed rebinds both to a sibling execution and reopens vs T084 sibling-execution-resealed row accepted with subject and source both naming the sibling (0 = observed)",
   "pytest: tests/test_lab_exchange_provenance.py::test_verification_mutations",
   "pytest: tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work",
   "pytest: tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply"
@@ -342,7 +348,7 @@
   "The forger model recomputes only unkeyed SHA-256 digests with CIW's public canonicalization; no key exists to steal.",
   "Pure-validator rows run candidate_evidence.validate_response on a synthetic telemetry-shaped record (schema, digest, three step occurrences) that no telemetry workflow validated, without an ESM process, and exchange._identity without the pinned exchange validator.",
   "Whether a reader of a forged workspace would be misled depends on how the record is displayed; not assessed.",
-  "Deferred research question (telemetry provider stack): provision the telemetry stack pinned in src/ciw/telemetry-runtimes.json (ppda, stfe, gsie, set, cbsr; scripts/check_lab.py provisions only ppda and set of these, and scripts/reproduce_lab.py TEST_VARIABLES has no variable for stfe, gsie or cbsr), bind it to a telemetry or declared-workload workflow, and observe the ESM candidate, candidate execution and ciw.subprocess-runtime.v1 identity rows and telemetry-validated records that are now read from code or replaced by a synthetic telemetry-shaped record.",
+  "Deferred research question (ESM candidate binding): bind the ESM runtime pinned in src/ciw/esm-runtime.json (giasonpooni/Evidence-and-State-Management at 7c0642ebbcd95c301470e4be556342ab73c819cb, its built workbench-candidate artifact and replay helper at their pinned SHA-256, a node binary, and a CIW checkout at the replay revision e0af0472d9731eff603c13568325f15d14d2de5b) to the telemetry session that T077 runs on the telemetry-stack binding, and observe the ESM candidate_id and candidate execution identities, now read from code, and the ESM validator rows on a telemetry-validated bundle instead of the synthetic telemetry-shaped record. scripts/check_lab.py provisions none of these (scripts/check_workbench_candidates.py exercises them outside the queue), and an ESM action runs ESM's replay helper against that CIW checkout and the provider checkouts, for up to 330 s in CIW's candidate adapter.",
   "Deferred research question (key custody and signatures): which key signs CIW workspace records, replay receipts and execution records, who holds it, how is it provisioned, rotated and revoked, and how does a verifier obtain its public key? Every seal and identity on these paths is an unkeyed SHA-256, so 'Retained workspace records are authenticated' stays not_established until records are signed (for example Ed25519 over the canonical record bytes, with an RFC 3161 timestamp for created_at) and T077 and T080-T090 are re-run against the signed records to check that every surviving forgery is refused."
  ]
 }

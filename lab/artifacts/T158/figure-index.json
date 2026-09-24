@@ -3,6 +3,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T001/curvature-along-paths.svg",
+   "rounding_level": false,
    "sha256": "2b3aba78c6f86d1c1b6c6fee04515f171d617a0fdc8a4696e9797f0fa713783f",
    "task_id": "T001",
    "wall_clock_timing": false,
@@ -10,8 +11,18 @@
   },
   {
    "digest_matches": true,
+   "path": "artifacts/T002/binary64-gaps.svg",
+   "rounding_level": true,
+   "sha256": "1fbbba12472b475fca69fa1e28b08db4fce5ac04caa5f556c6cca27c77f5943e",
+   "task_id": "T002",
+   "wall_clock_timing": false,
+   "well_formed": true
+  },
+  {
+   "digest_matches": true,
    "path": "artifacts/T002/agreement.svg",
-   "sha256": "5406809d5f4d7f28c673c491375ec9d4058acf669852953cbe9979ed3b4c258a",
+   "rounding_level": false,
+   "sha256": "a7a5b247665ce1f761fa62927225251e74607d851408dca97ac1b5cf3c51b4c2",
    "task_id": "T002",
    "wall_clock_timing": false,
    "well_formed": true
@@ -19,6 +30,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T002/clairaut.svg",
+   "rounding_level": false,
    "sha256": "166017ef8c78dfbfabe73288a8a948e89838e19919ad8c62cda462697bd24ff1",
    "task_id": "T002",
    "wall_clock_timing": false,
@@ -27,6 +39,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T003/orders-sphere.svg",
+   "rounding_level": false,
    "sha256": "4fcd6c212c6a0cbd6f57d71c7090f5b71f141cee152ecc265f305e69b2fadcf5",
    "task_id": "T003",
    "wall_clock_timing": false,
@@ -35,6 +48,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T003/orders-saddle.svg",
+   "rounding_level": false,
    "sha256": "9ae5ed4a79954fcd50c38a437d9ee79fecb99e3bbe0f40b2fffa29a871f9b619",
    "task_id": "T003",
    "wall_clock_timing": false,
@@ -43,6 +57,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T003/orders-torus.svg",
+   "rounding_level": false,
    "sha256": "5e51c9898cb8e65b5ac41ade561d67712104b1d520cd74cb9136901e3e659852",
    "task_id": "T003",
    "wall_clock_timing": false,
@@ -51,6 +66,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T003/orders-gaussian-bump.svg",
+   "rounding_level": false,
    "sha256": "07f8a6c40503956095da5cf1442f67e9376e7bb97448ee251a1f58ad1d5b23d3",
    "task_id": "T003",
    "wall_clock_timing": false,
@@ -59,6 +75,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T003/orders-hyperbolic-plane.svg",
+   "rounding_level": false,
    "sha256": "2cd70724721fcaf3b9f43756e6188aa62bd79602fe71c222b7607c397bdef36d",
    "task_id": "T003",
    "wall_clock_timing": false,
@@ -67,6 +84,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T003/orders-plane-polar.svg",
+   "rounding_level": false,
    "sha256": "7271d6407da46f58cff57e86c7a22f2085ef1b2480e39d01652ea0b7b0d8a5c8",
    "task_id": "T003",
    "wall_clock_timing": false,
@@ -75,6 +93,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T003/orders-cylinder-polar.svg",
+   "rounding_level": false,
    "sha256": "cfe319c96dade1554b56f550798886c40ab5548afdae303de5c5930253be297d",
    "task_id": "T003",
    "wall_clock_timing": false,
@@ -83,7 +102,8 @@
   {
    "digest_matches": true,
    "path": "artifacts/T003/adaptive.svg",
-   "sha256": "1f26133c6135b8de9d558a212e66a0655d2a5e7e1ff9d7f9379613215b0e91e7",
+   "rounding_level": true,
+   "sha256": "dfb1448f75842597f84a701f7b73016924b727252f5cba1c27e7ebdb353b8717",
    "task_id": "T003",
    "wall_clock_timing": false,
    "well_formed": true
@@ -91,6 +111,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T004/drift-euler.svg",
+   "rounding_level": false,
    "sha256": "e7ddb64204c9874ad715e92e7ee06713610159a0978bf33aef800a12199b1519",
    "task_id": "T004",
    "wall_clock_timing": false,
@@ -99,6 +120,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T004/drift-midpoint.svg",
+   "rounding_level": false,
    "sha256": "77e1dfd4465eca0d3c2a8eea702d0e893089d0a86bac7a360fc4ff972dbf9a1d",
    "task_id": "T004",
    "wall_clock_timing": false,
@@ -107,6 +129,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T004/drift-rk4.svg",
+   "rounding_level": false,
    "sha256": "f7bc8cc6ccb4ede2597ebf16355f326519fa04b445045caea033cbe8d7eefdbc",
    "task_id": "T004",
    "wall_clock_timing": false,
@@ -115,6 +138,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T004/drift-along-sphere.svg",
+   "rounding_level": false,
    "sha256": "4a9bb1f0212b6c1182c223e6765314b748a706054605c0454ad02d0ec08f5d48",
    "task_id": "T004",
    "wall_clock_timing": false,
@@ -123,6 +147,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T005/heading-column.svg",
+   "rounding_level": false,
    "sha256": "b5f2693002252e50f5d4f3958555cce71cbab1a359de9e6c021e92520116b3b4",
    "task_id": "T005",
    "wall_clock_timing": false,
@@ -131,6 +156,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T005/heading-error.svg",
+   "rounding_level": false,
    "sha256": "08fde4c54e7750e6546f54b0082aa1dad76aee520a3397873caddf730bd3c914",
    "task_id": "T005",
    "wall_clock_timing": false,
@@ -139,6 +165,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T006/fd-sphere.svg",
+   "rounding_level": false,
    "sha256": "45e3c56b25c109821d9b24b1ab9fe6fb04b4b7e26da8a1e4c17d5e2128f28de5",
    "task_id": "T006",
    "wall_clock_timing": false,
@@ -147,6 +174,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T006/fd-torus.svg",
+   "rounding_level": false,
    "sha256": "9392f7e0c7f6a27e8cc1bc98915ad8cc21026bbc3a93c39c4ada7d3293fc6199",
    "task_id": "T006",
    "wall_clock_timing": false,
@@ -155,6 +183,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T006/fd-gaussian-bump.svg",
+   "rounding_level": false,
    "sha256": "bf5f45434ac89eb02933a6c9260fb45ccf00fbf0ba62fad75a9a8c9e2b307165",
    "task_id": "T006",
    "wall_clock_timing": false,
@@ -163,6 +192,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T006/fd-roundoff.svg",
+   "rounding_level": false,
    "sha256": "313af0656d44fd213f332efefb0a8832d5b0476c596ea07f2e39bce8f5744660",
    "task_id": "T006",
    "wall_clock_timing": false,
@@ -171,6 +201,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T007/det-euler-constant.svg",
+   "rounding_level": false,
    "sha256": "72424194aa6038158bb376345ba111db8a27e10d9d1a6eca049273bfc9e5c08c",
    "task_id": "T007",
    "wall_clock_timing": false,
@@ -179,6 +210,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T007/det-euler-variable.svg",
+   "rounding_level": false,
    "sha256": "2cce9f7cacc9f1e0a2ab8df097ac073ea629eb92bcf593f94d1c2af50f9bbf5a",
    "task_id": "T007",
    "wall_clock_timing": false,
@@ -187,6 +219,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T007/det-midpoint-constant.svg",
+   "rounding_level": false,
    "sha256": "89170503a85d427457425d6110835e7e09ac091e886db3da2de6a9afc3f4495e",
    "task_id": "T007",
    "wall_clock_timing": false,
@@ -195,6 +228,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T007/det-midpoint-variable.svg",
+   "rounding_level": false,
    "sha256": "00959cc565eb259ac7131d68b8f0c81bcad7c3e9826451aaa48e9ef4bcf20558",
    "task_id": "T007",
    "wall_clock_timing": false,
@@ -203,6 +237,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T007/det-rk4-constant.svg",
+   "rounding_level": false,
    "sha256": "594f29e17d635171b78bbc88d5d98e88c38b9c9e58cf7d398ea726567b9a0d72",
    "task_id": "T007",
    "wall_clock_timing": false,
@@ -211,6 +246,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T007/det-rk4-variable.svg",
+   "rounding_level": false,
    "sha256": "163649df54b043bd9d69c745e2f62e06ef955612f03d172877fc45777e75185f",
    "task_id": "T007",
    "wall_clock_timing": false,
@@ -219,6 +255,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T007/det-along-sphere.svg",
+   "rounding_level": false,
    "sha256": "bea1ef7eccb34fd1b7fd9d4f8c6f28276e8d4698d2c31b6a41366dbade7c71dd",
    "task_id": "T007",
    "wall_clock_timing": false,
@@ -227,6 +264,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T008/location-accuracy.svg",
+   "rounding_level": false,
    "sha256": "9b04c3c8ab21fb5fbc87b0f0a3deb2ef91a7fff8498900f8d1f8057e27f8927a",
    "task_id": "T008",
    "wall_clock_timing": false,
@@ -235,6 +273,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T008/columns-outer-equator.svg",
+   "rounding_level": false,
    "sha256": "83d291c6ca653606c43428eb973b4044ffc8c1e2f9abbf264fd3fd82a0e60dfa",
    "task_id": "T008",
    "wall_clock_timing": false,
@@ -243,6 +282,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T009/ranking.svg",
+   "rounding_level": false,
    "sha256": "0f4fa6f9665cf63aace6a73fee1e200b47e6dd5c5a76fb06bea23fcc575625e2",
    "task_id": "T009",
    "wall_clock_timing": false,
@@ -251,6 +291,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T009/witness-columns.svg",
+   "rounding_level": false,
    "sha256": "a19cc1bf13991e2793690afb72598b29fd546327b8918d99b43167b97c636a3e",
    "task_id": "T009",
    "wall_clock_timing": false,
@@ -259,6 +300,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T009/kernels.svg",
+   "rounding_level": false,
    "sha256": "20d509a89a01c92f1e971d67ec8e21c96899c239e2234cd80a85846863034503",
    "task_id": "T009",
    "wall_clock_timing": false,
@@ -267,6 +309,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T010/relative-first-order-error.svg",
+   "rounding_level": false,
    "sha256": "cafe594c07e6f197af1722e8569586c7a7cfc206ee59a4e4b7a9707a9983fc92",
    "task_id": "T010",
    "wall_clock_timing": false,
@@ -275,6 +318,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T010/separation-at-conjugate-point.svg",
+   "rounding_level": false,
    "sha256": "1218af1ce4af9b1ed49870096c5119d38e6876719fe10fa73e03f71fed66fe9e",
    "task_id": "T010",
    "wall_clock_timing": false,
@@ -283,6 +327,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T011/chart-error.svg",
+   "rounding_level": false,
    "sha256": "0dd9ca17084431b24439d28bd3ed78120f21589878bddcff9c52f710d158548f",
    "task_id": "T011",
    "wall_clock_timing": false,
@@ -291,7 +336,8 @@
   {
    "digest_matches": true,
    "path": "artifacts/T012/frame-invariance.svg",
-   "sha256": "6b9bf01afebba1097135932417b10f6b3a2735ac8e18e661cb80ebf2475d08db",
+   "rounding_level": true,
+   "sha256": "e3b2302d2a125c89afb44094f44bc70f1f3baabcf44df7ec881eee9233e5ed23",
    "task_id": "T012",
    "wall_clock_timing": false,
    "well_formed": true
@@ -299,6 +345,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T012/orientation-separation.svg",
+   "rounding_level": false,
    "sha256": "29e7b13ec07993e06ec93735f34048fb3979c86011eb9bb2d2e786528ad4e70c",
    "task_id": "T012",
    "wall_clock_timing": false,
@@ -307,6 +354,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T013/flat-limit.svg",
+   "rounding_level": false,
    "sha256": "08e4a87c5dd7a179c23b2aed2b92d542992d0fb4c9923f3d776c3c38a7a79995",
    "task_id": "T013",
    "wall_clock_timing": false,
@@ -315,6 +363,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T014/reversal.svg",
+   "rounding_level": false,
    "sha256": "400ebb4e5db1c7d1a9cb15485072f9e14d8d1f8892d15a380820f5d3811a0f48",
    "task_id": "T014",
    "wall_clock_timing": false,
@@ -323,6 +372,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T015/energy-drift.svg",
+   "rounding_level": false,
    "sha256": "75d08760a06d31be40b35d647abea241a811a235df4bfb53b7cf57488abf022d",
    "task_id": "T015",
    "wall_clock_timing": false,
@@ -331,6 +381,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T015/sphere-position-drift.svg",
+   "rounding_level": false,
    "sha256": "d0acc03c356f93a518ab6123ebdc02b80fd94d32fe82595e49e18288e13b3ded",
    "task_id": "T015",
    "wall_clock_timing": false,
@@ -338,7 +389,17 @@
   },
   {
    "digest_matches": true,
+   "path": "artifacts/T016/speed-drift.svg",
+   "rounding_level": false,
+   "sha256": "3d9f19f276639c5de3b5599523d7f2776e65a389a26768d1952e70e72a3f43f2",
+   "task_id": "T016",
+   "wall_clock_timing": false,
+   "well_formed": true
+  },
+  {
+   "digest_matches": true,
    "path": "artifacts/T016/steps-versus-k.svg",
+   "rounding_level": false,
    "sha256": "bbcc3fcbc6da2c6ad9b350b200110ed63fdfac34b368eb17aeb01acad7c073da",
    "task_id": "T016",
    "wall_clock_timing": false,
@@ -347,6 +408,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T016/saddle-growth.svg",
+   "rounding_level": false,
    "sha256": "2310d5114d263a4ec0bd5779a1f709708159ea272db0448e30fbb336bf9c0660",
    "task_id": "T016",
    "wall_clock_timing": false,
@@ -355,6 +417,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T017/validity-domains.svg",
+   "rounding_level": false,
    "sha256": "aacbd7709a1407b19b398fd334fafea9975c3c0cb48c00e5b402e9eebb707fc0",
    "task_id": "T017",
    "wall_clock_timing": false,
@@ -363,6 +426,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T018/resolvability-rk4.svg",
+   "rounding_level": false,
    "sha256": "a48b8d5091f43dd89ab7e9b9f3479ca0efe9250ee020ff224f8306a53b406ac0",
    "task_id": "T018",
    "wall_clock_timing": false,
@@ -371,6 +435,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T018/resolvability-euler.svg",
+   "rounding_level": false,
    "sha256": "4cd0555134c88f7c092f6446b316c1cd8ebcfb5198582fad824e1d5b45e41fe3",
    "task_id": "T018",
    "wall_clock_timing": false,
@@ -379,6 +444,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T020/golden-return-gaps.svg",
+   "rounding_level": false,
    "sha256": "5f083a37c48b87dcd12f036ce36d3919b2c7580a7c519f184f3dd27283d9eddd",
    "task_id": "T020",
    "wall_clock_timing": false,
@@ -387,6 +453,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T023/return-distance.svg",
+   "rounding_level": false,
    "sha256": "8e02bfd32939722f902b4fa4293e3502a798559d4aaeaf38c41778d3484ae3d6",
    "task_id": "T023",
    "wall_clock_timing": false,
@@ -395,6 +462,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T025/pareto-length-amplification.svg",
+   "rounding_level": false,
    "sha256": "853c42921bf8ff9286e35a7e334f70b47c00d3a82236e477a6258e1152967f4e",
    "task_id": "T025",
    "wall_clock_timing": false,
@@ -403,6 +471,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T030/metrication.svg",
+   "rounding_level": false,
    "sha256": "6e9f52cf09ccacb4940fca3b4b6d6d393edbfcb938def528163bcaba7b8a556f",
    "task_id": "T030",
    "wall_clock_timing": false,
@@ -411,6 +480,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T030/fast-marching-error.svg",
+   "rounding_level": false,
    "sha256": "75d0d7483ab4cc9efa8c758f1a3d1b7f5690dbdb8e131c79d7ffe424fa48c5d2",
    "task_id": "T030",
    "wall_clock_timing": false,
@@ -419,6 +489,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T031/route-switch.svg",
+   "rounding_level": false,
    "sha256": "52aba05f119b6174bbb0264ca6b0fbf36883a1167b0ca639dd9b00ab7b1f4fcd",
    "task_id": "T031",
    "wall_clock_timing": false,
@@ -427,7 +498,8 @@
   {
    "digest_matches": true,
    "path": "artifacts/T033/conformance-residuals.svg",
-   "sha256": "8293bef3e7b6676055246470f4491c3ee3a1dfbc13e1b047b06663c2b92ffc2b",
+   "rounding_level": true,
+   "sha256": "ef05c9118d55ff6d21055dd201b22e475c2561f005470ae13e38d2a43d6a6cfe",
    "task_id": "T033",
    "wall_clock_timing": false,
    "well_formed": true
@@ -435,7 +507,8 @@
   {
    "digest_matches": true,
    "path": "artifacts/T035/fd-v-shape.svg",
-   "sha256": "c47dd94587bdc700163d07999d07f0b78bf1d7c8b6e3bc53f7890a29f4da13cd",
+   "rounding_level": true,
+   "sha256": "f8e9452bb83e5571550c54f42724de69744ee5a0a737670ccd42c548cfdabff9",
    "task_id": "T035",
    "wall_clock_timing": false,
    "well_formed": true
@@ -443,6 +516,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T036/atlas-vs-single-chart.svg",
+   "rounding_level": false,
    "sha256": "37d6a4fe61ac6d939232b6096d0eb6ee1ce3699a259b65c4dac73848576b9bb9",
    "task_id": "T036",
    "wall_clock_timing": false,
@@ -451,6 +525,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T036/regularity-profile.svg",
+   "rounding_level": false,
    "sha256": "3154ff556bedb092ecf82b57fbadc62c84521d6215f86a9f4e04ae9e39b28d95",
    "task_id": "T036",
    "wall_clock_timing": false,
@@ -459,6 +534,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T036/meridian-steps.svg",
+   "rounding_level": false,
    "sha256": "ee3d895f68918e33fcac643603fccdec295ecd4adaca39e56bb92dc304f5c5b6",
    "task_id": "T036",
    "wall_clock_timing": false,
@@ -467,6 +543,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T037/singularity-scan.svg",
+   "rounding_level": false,
    "sha256": "58e12c58133b978f45ade00a12172aba7aaeb4e2ca4f5cc8ba4d98b8b7d1fb8a",
    "task_id": "T037",
    "wall_clock_timing": false,
@@ -475,6 +552,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T039/convergence.svg",
+   "rounding_level": false,
    "sha256": "6364cf912053480488911892b885dad169ab99143babe75d334ae94504ed7634",
    "task_id": "T039",
    "wall_clock_timing": false,
@@ -483,6 +561,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T040/jacobi-curvature.svg",
+   "rounding_level": false,
    "sha256": "48d777b3e23a2be7e82e2c244be00c2d56d4e83d95c12b20e7e4ab91542a60ea",
    "task_id": "T040",
    "wall_clock_timing": false,
@@ -491,6 +570,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T041/schwarz-lantern.svg",
+   "rounding_level": false,
    "sha256": "d7cc428a6394f80ba2a2ff45e096f498eac10df661c4bd7b3d31da9323d7cb03",
    "task_id": "T041",
    "wall_clock_timing": false,
@@ -499,6 +579,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T041/jitter.svg",
+   "rounding_level": false,
    "sha256": "a812f7c2b23e447c21005e4c299615f84f03080e2b904e00f89ee5ea2186295a",
    "task_id": "T041",
    "wall_clock_timing": false,
@@ -507,6 +588,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T043/linearization-ratio.svg",
+   "rounding_level": false,
    "sha256": "f064dad4509a90d9d311774f2412a6591d087f07d27d72fcd8186293169d4f95",
    "task_id": "T043",
    "wall_clock_timing": false,
@@ -515,6 +597,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T044/averaging.svg",
+   "rounding_level": false,
    "sha256": "82ab72b99bdaf26d508a2448eec055ea8a1065cfc20d215418b901123abe04c6",
    "task_id": "T044",
    "wall_clock_timing": false,
@@ -523,6 +606,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T046/sphere-chord-deficit.svg",
+   "rounding_level": false,
    "sha256": "e57399ccc0b1d7214294c5dcfbef0a46d83a2253fe91aabdd8f6d07fb275382c",
    "task_id": "T046",
    "wall_clock_timing": false,
@@ -531,6 +615,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T046/torus-remainder.svg",
+   "rounding_level": false,
    "sha256": "661f6683e0a80f1e08381be3987eaa7cb48d09b655453ea78704fd16ef864beb",
    "task_id": "T046",
    "wall_clock_timing": false,
@@ -539,6 +624,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T047/coefficient-vs-angle.svg",
+   "rounding_level": false,
    "sha256": "f11824432603b2a1488bb34ef228173fafb7b1e46cdfc99792bd3741357e9fb2",
    "task_id": "T047",
    "wall_clock_timing": false,
@@ -547,6 +633,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T048/substitution-bias-vs-noise.svg",
+   "rounding_level": false,
    "sha256": "92cc8f9d521b56eadd42156b343978fb119da4e72c3d3ab61861b698187ad21e",
    "task_id": "T048",
    "wall_clock_timing": false,
@@ -555,6 +642,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T049/linearization-residual.svg",
+   "rounding_level": false,
    "sha256": "08a40b18aa8eb387f7747cdc3344c543f27893656b1c3dfb1cf7c6c617ec8a2f",
    "task_id": "T049",
    "wall_clock_timing": false,
@@ -563,6 +651,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T050/marker-perspective-bias.svg",
+   "rounding_level": false,
    "sha256": "a3a0650241b46d688892ad60ea033dd12326d39426a859a036949cd822f636b0",
    "task_id": "T050",
    "wall_clock_timing": false,
@@ -571,6 +660,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T050/radial-displacement.svg",
+   "rounding_level": false,
    "sha256": "a055517ec6befc0d7cf379b8f8e4070d4afdf5157d887ac70a3b455b5acc7008",
    "task_id": "T050",
    "wall_clock_timing": false,
@@ -579,6 +669,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T050/chord-bias-vs-radius.svg",
+   "rounding_level": false,
    "sha256": "d20f003cdfd2a695d94900e62740203dd88bd3afd05ce7bb54ef88edb0287cc1",
    "task_id": "T050",
    "wall_clock_timing": false,
@@ -587,6 +678,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T051/error-variance-vs-sigma.svg",
+   "rounding_level": false,
    "sha256": "dba9141c60e9388257dfc1ce2f393ff11633193bf909b15b39ab7f6a0ac90e40",
    "task_id": "T051",
    "wall_clock_timing": false,
@@ -595,6 +687,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T052/backlash-error.svg",
+   "rounding_level": false,
    "sha256": "43b284c5542f5cd0e16d6cc4d258127f6ea4965c12f0b29ddf537f089d509db1",
    "task_id": "T052",
    "wall_clock_timing": false,
@@ -603,6 +696,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T053/heading-error-moments.svg",
+   "rounding_level": false,
    "sha256": "2db747098df17135ec8e152f93574d621272f66c3c7243b87e9633b301cd0e4e",
    "task_id": "T053",
    "wall_clock_timing": false,
@@ -611,6 +705,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T054/offset-residual.svg",
+   "rounding_level": false,
    "sha256": "132c2947b3f399dafa50243b7df76c6c485eac03afdc9a87a7577266b8d766de",
    "task_id": "T054",
    "wall_clock_timing": false,
@@ -619,6 +714,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T055/hold-error-by-channel.svg",
+   "rounding_level": false,
    "sha256": "014604b1c628e4af767c851ea8ac564fadb915166ef2a6f761b6a7624953f71e",
    "task_id": "T055",
    "wall_clock_timing": false,
@@ -627,6 +723,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T056/stale-error-vs-age.svg",
+   "rounding_level": false,
    "sha256": "071aab723ac4e7e4892d89e9b9378a2a72825985f519b6ca760ddab5c9aa8670",
    "task_id": "T056",
    "wall_clock_timing": false,
@@ -635,6 +732,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T057/rmse-by-step.svg",
+   "rounding_level": false,
    "sha256": "5cac58c6579807740c1bbea45ed179fc1e45cfb2f456c5b4877842e7c44263ac",
    "task_id": "T057",
    "wall_clock_timing": false,
@@ -643,6 +741,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T057/nees-by-step.svg",
+   "rounding_level": false,
    "sha256": "814a0c8c45e994c995deb10a142afdcee22dff8a3daebad87c7e61990de954de",
    "task_id": "T057",
    "wall_clock_timing": false,
@@ -651,6 +750,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T060/trajectory.svg",
+   "rounding_level": false,
    "sha256": "995ac32ba1b45186352ca7b60721bc991f66c6c1589f36315740c8392f810d07",
    "task_id": "T060",
    "wall_clock_timing": false,
@@ -659,6 +759,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T061/zscores.svg",
+   "rounding_level": false,
    "sha256": "709f154b680b8840ad0c93668695ce81be1f6e51cc0da9a0ff56d82b8e383371",
    "task_id": "T061",
    "wall_clock_timing": false,
@@ -667,6 +768,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T062/anees.svg",
+   "rounding_level": false,
    "sha256": "b3f4a017fb5b2f164620bf4c950b0012f06285aac1f385a646f805d5940b8a12",
    "task_id": "T062",
    "wall_clock_timing": false,
@@ -675,6 +777,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T063/transform_z.svg",
+   "rounding_level": false,
    "sha256": "0eed6a84fa50d9c95e8d75c4ee959d507cef629553c17bf5d25e809b5ded1374",
    "task_id": "T063",
    "wall_clock_timing": false,
@@ -683,6 +786,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T064/sphere_lateral_variance.svg",
+   "rounding_level": false,
    "sha256": "9a81e9da0af9d80c679907e5f4972b653fa1fb139ee94aa92d6d89fee61b4e08",
    "task_id": "T064",
    "wall_clock_timing": false,
@@ -691,6 +795,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T064/sphere_linearization.svg",
+   "rounding_level": false,
    "sha256": "cdc38fcbf6f9d3e3edf9554a4a0c55bff55b710d275391ed50b2d29887f77b1a",
    "task_id": "T064",
    "wall_clock_timing": false,
@@ -699,6 +804,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T064/hyperbolic_lateral_variance.svg",
+   "rounding_level": false,
    "sha256": "b97b6a93356e5839c7ef8addbcfe5b670c26737f2cbe9dc16d2a78acfeadf565",
    "task_id": "T064",
    "wall_clock_timing": false,
@@ -707,6 +813,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T064/hyperbolic_linearization.svg",
+   "rounding_level": false,
    "sha256": "fcc8c5d2df9daae3150b7b8cec86b021d57aa7ba81d45617bc34429293348deb",
    "task_id": "T064",
    "wall_clock_timing": false,
@@ -715,6 +822,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T065/error_autocovariance.svg",
+   "rounding_level": false,
    "sha256": "1edc45e2ce5f6b3a5117aa08f13f28bfa5ee6ee6a98bce9df8a6d6d7ad8cfd13",
    "task_id": "T065",
    "wall_clock_timing": false,
@@ -723,6 +831,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T066/anis_normalizers.svg",
+   "rounding_level": false,
    "sha256": "8056ef8143776f092c43872ed7b152e8223d6cf829f02b277d30930754a09aa0",
    "task_id": "T066",
    "wall_clock_timing": false,
@@ -731,6 +840,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T067/false_rejection.svg",
+   "rounding_level": false,
    "sha256": "bd93f77402e9ec9a22b7f9583b575b6f32d74ab0d921ca427cae40d3c376032f",
    "task_id": "T067",
    "wall_clock_timing": false,
@@ -739,6 +849,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T068/rmse.svg",
+   "rounding_level": false,
    "sha256": "c85d56ba13e7632703aa818cf2c831104f4cabe6a92aa0d7b182f72ad0324e92",
    "task_id": "T068",
    "wall_clock_timing": false,
@@ -747,6 +858,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T069/anees_gap.svg",
+   "rounding_level": false,
    "sha256": "7e37b327ea5f96d44ae03a04b6ff753c2d9921cb325c8573ae9cda0cb9753efd",
    "task_id": "T069",
    "wall_clock_timing": false,
@@ -755,6 +867,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T070/tau_estimate.svg",
+   "rounding_level": false,
    "sha256": "9420069349d222f507c26a4e3992b4e20494d6d921c032fe193c96c6cfa5386b",
    "task_id": "T070",
    "wall_clock_timing": false,
@@ -763,6 +876,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T071/anis_frames.svg",
+   "rounding_level": false,
    "sha256": "fe81588cb227a1834b5cc65f739cf120c8e19cd1b0ab6faece355e1012edb563",
    "task_id": "T071",
    "wall_clock_timing": false,
@@ -771,6 +885,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T072/anees_expiry.svg",
+   "rounding_level": false,
    "sha256": "ce2d64ad390764226a6fb1eab2a1cabf1561a73b5b3066612cb97c27a5da7d7c",
    "task_id": "T072",
    "wall_clock_timing": false,
@@ -779,6 +894,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T073/turn_nees.svg",
+   "rounding_level": false,
    "sha256": "8f60e3b3c38e2462c67e5c79ca9d988a90b9e1d0fd4d7548a3326d8102681621",
    "task_id": "T073",
    "wall_clock_timing": false,
@@ -787,6 +903,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T074/anees_fused.svg",
+   "rounding_level": false,
    "sha256": "2dff62b64b8c565ea50e28a7c7f4c35cddada3872cc8287a0a076bf5c1dc5be9",
    "task_id": "T074",
    "wall_clock_timing": false,
@@ -795,6 +912,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T097/heat-fields.svg",
+   "rounding_level": false,
    "sha256": "4f4b36ca7257d8d24d8da1d00b6daea8ccad0ffe3cf3a28470259dc12c644f38",
    "task_id": "T097",
    "wall_clock_timing": false,
@@ -803,6 +921,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T101/codes-vs-scale.svg",
+   "rounding_level": false,
    "sha256": "224df686ee95704979b15b2ec0c203340bb52d0678c993f64125671192743e60",
    "task_id": "T101",
    "wall_clock_timing": false,
@@ -811,7 +930,8 @@
   {
    "digest_matches": true,
    "path": "artifacts/T107/ratio-vs-target.svg",
-   "sha256": "b0afb3b593caeb4e8bb62ee7928f9c62df949a989f62dc5c1477ea02e9046a32",
+   "rounding_level": true,
+   "sha256": "e50c3de6bac1807309df9e4f4244b14d11dfa7586d015c8b72120c5f57c9751c",
    "task_id": "T107",
    "wall_clock_timing": false,
    "well_formed": true
@@ -819,7 +939,8 @@
   {
    "digest_matches": true,
    "path": "artifacts/T109/solver-agreement.svg",
-   "sha256": "9d9722cbad9ad27bc9b0a695856483692fc276af08a0ff2268549396fb97784d",
+   "rounding_level": true,
+   "sha256": "99bf60f4a8babd1dc5be9df10f2cd54c975c4f5a82fe06205aeb256037276aa4",
    "task_id": "T109",
    "wall_clock_timing": false,
    "well_formed": true
@@ -827,6 +948,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T112/iss-ratios.svg",
+   "rounding_level": false,
    "sha256": "75b954926ee559cff0ab39a04cc59727e58df4c14d2d87adc0dac3d79e1f12d5",
    "task_id": "T112",
    "wall_clock_timing": false,
@@ -835,6 +957,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T120/precision.svg",
+   "rounding_level": false,
    "sha256": "85a212120901eb6c5c3f0c46ad09ab45c2a8584631bed5da138c1506baacea21",
    "task_id": "T120",
    "wall_clock_timing": false,
@@ -843,7 +966,8 @@
   {
    "digest_matches": true,
    "path": "artifacts/T120/common-workload-precision.svg",
-   "sha256": "d34fc262be9ec1db97ae81adcf910e087bb5df415c4c023f75b242a074f77d50",
+   "rounding_level": true,
+   "sha256": "8e1c45ff0f8fa816751b496cc2f5ffc2c2a70e7072446cc03a5bf582d177a322",
    "task_id": "T120",
    "wall_clock_timing": false,
    "well_formed": true
@@ -851,6 +975,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T121/reduction-errors.svg",
+   "rounding_level": false,
    "sha256": "944209c7fa8c94e88a1b579b7b78f46e7e1e0647197e583b684033e3cbb00e62",
    "task_id": "T121",
    "wall_clock_timing": false,
@@ -859,7 +984,8 @@
   {
    "digest_matches": true,
    "path": "artifacts/T122/free-energy.svg",
-   "sha256": "17bcbc7eae74099081d2507cb673047970d8214c49197280f1d33e0d3238d363",
+   "rounding_level": true,
+   "sha256": "c5e12cd8af5d43298570e80da4a559b6a63b944098ec4b0a0946d07b65d038cb",
    "task_id": "T122",
    "wall_clock_timing": false,
    "well_formed": true
@@ -867,6 +993,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T126/plate-separation.svg",
+   "rounding_level": false,
    "sha256": "0fc7743533365780e0e4b294f80723497bbe4ff30907b277161b05d59ac39d57",
    "task_id": "T126",
    "wall_clock_timing": false,
@@ -875,6 +1002,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T127/cylinder-gap.svg",
+   "rounding_level": false,
    "sha256": "5ef13f317fc118bb8f4d359a15a1e9cc559c4e9fd0761ddb73067b1b04832d13",
    "task_id": "T127",
    "wall_clock_timing": false,
@@ -883,6 +1011,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T128/coupon-separation.svg",
+   "rounding_level": false,
    "sha256": "213cb86146afdd84e31a7e94b39eed3c8806b76cd6adbb426a3d8e17f73880d9",
    "task_id": "T128",
    "wall_clock_timing": false,
@@ -891,6 +1020,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T129/curvature-window-sweep.svg",
+   "rounding_level": false,
    "sha256": "bf6ce252a06d8ede2abfe12db626990e77adba46d2c901a15c20e018d7722490",
    "task_id": "T129",
    "wall_clock_timing": false,
@@ -899,6 +1029,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T132/placement-stack.svg",
+   "rounding_level": false,
    "sha256": "81ba01f91eeef24e11e9ee7602432cd322303de5b0f0b9cefd3dcfb2c6b50705",
    "task_id": "T132",
    "wall_clock_timing": false,
@@ -907,6 +1038,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T133/winding-heading-sensitivity.svg",
+   "rounding_level": false,
    "sha256": "365d4db558017433f997d56b1464eb078a42416326ddb3534d811744a78be46c",
    "task_id": "T133",
    "wall_clock_timing": false,
@@ -915,6 +1047,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T134/tcp-speed-factor.svg",
+   "rounding_level": false,
    "sha256": "d239c075f9c6bf64af8df18ae255e6ceb9493398ece3a569b40336db273fcee5",
    "task_id": "T134",
    "wall_clock_timing": false,
@@ -923,6 +1056,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T135/coverage-vs-length.svg",
+   "rounding_level": false,
    "sha256": "6a613bb1ce49fa355fddac11e69e504665c0162c7ccd957154c8e046d9d22d57",
    "task_id": "T135",
    "wall_clock_timing": false,
@@ -931,6 +1065,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T136/heading-tolerance.svg",
+   "rounding_level": false,
    "sha256": "f779bb6a89c2d88ec39980e1aba9294db667e4b32dc21da7f8fcede9285f4ecd",
    "task_id": "T136",
    "wall_clock_timing": false,
@@ -939,6 +1074,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T137/margin-vs-length.svg",
+   "rounding_level": false,
    "sha256": "b1d4eb5afb03c600c8e52f3571e62404319efc92e82cbfb74973cda4d92cfe63",
    "task_id": "T137",
    "wall_clock_timing": false,
@@ -947,7 +1083,8 @@
   {
    "digest_matches": true,
    "path": "artifacts/T142/kernel-timings.svg",
-   "sha256": "38a5e8cef8ef7a09a62bdb29d12470104b0a0018ffcb0313a98944226eaccc78",
+   "rounding_level": false,
+   "sha256": "5a7bc1ddec0a864df0e521311752f918954e3add6b670fe8e81eb3f511f88887",
    "task_id": "T142",
    "wall_clock_timing": true,
    "well_formed": true
@@ -955,6 +1092,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T147/difference-over-bound.svg",
+   "rounding_level": false,
    "sha256": "47199e1409b8e3a3993c9b1bc7b66c25f58027d10ee2c5e38a903e831d8b3764",
    "task_id": "T147",
    "wall_clock_timing": false,
@@ -963,6 +1101,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T148/error-scaling.svg",
+   "rounding_level": false,
    "sha256": "a7e36164ccde15a1b9c8a78f2861a5f5833394a7ac5a2398eccb8a2117d93dc4",
    "task_id": "T148",
    "wall_clock_timing": false,
@@ -971,6 +1110,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T152/age-distribution.svg",
+   "rounding_level": false,
    "sha256": "0cc71a803b0529cb6c4e447c7a8c0e921b7b77c53a9317a54be4004f9bace8ef",
    "task_id": "T152",
    "wall_clock_timing": false,
@@ -979,6 +1119,7 @@
   {
    "digest_matches": true,
    "path": "artifacts/T154/proposal-residual.svg",
+   "rounding_level": false,
    "sha256": "0c53ed9a967d8c8e9e0523bbf2fdf68f3a48cd909bb01a600f33587aaa24fbfa",
    "task_id": "T154",
    "wall_clock_timing": false,
@@ -1033,279 +1174,336 @@
   {
    "outcome": "identical",
    "path": "artifacts/T013/flat-limit.svg",
+   "rounding_level": false,
    "task_id": "T013",
    "wall_clock_timing": false
   },
   {
    "outcome": "identical",
    "path": "artifacts/T020/golden-return-gaps.svg",
+   "rounding_level": false,
    "task_id": "T020",
    "wall_clock_timing": false
   },
   {
    "outcome": "identical",
    "path": "artifacts/T023/return-distance.svg",
+   "rounding_level": false,
    "task_id": "T023",
    "wall_clock_timing": false
   },
   {
    "outcome": "identical",
    "path": "artifacts/T030/metrication.svg",
+   "rounding_level": false,
    "task_id": "T030",
    "wall_clock_timing": false
   },
   {
    "outcome": "identical",
    "path": "artifacts/T030/fast-marching-error.svg",
+   "rounding_level": false,
    "task_id": "T030",
    "wall_clock_timing": false
   },
   {
    "outcome": "identical",
    "path": "artifacts/T031/route-switch.svg",
+   "rounding_level": false,
    "task_id": "T031",
    "wall_clock_timing": false
   },
   {
    "outcome": "identical",
    "path": "artifacts/T033/conformance-residuals.svg",
+   "rounding_level": true,
    "task_id": "T033",
    "wall_clock_timing": false
   },
   {
    "outcome": "identical",
    "path": "artifacts/T035/fd-v-shape.svg",
+   "rounding_level": true,
    "task_id": "T035",
    "wall_clock_timing": false
   },
   {
    "outcome": "identical",
    "path": "artifacts/T037/singularity-scan.svg",
+   "rounding_level": false,
    "task_id": "T037",
    "wall_clock_timing": false
   },
   {
    "outcome": "identical",
    "path": "artifacts/T048/substitution-bias-vs-noise.svg",
+   "rounding_level": false,
    "task_id": "T048",
    "wall_clock_timing": false
   },
   {
    "outcome": "identical",
    "path": "artifacts/T049/linearization-residual.svg",
+   "rounding_level": false,
    "task_id": "T049",
    "wall_clock_timing": false
   },
   {
    "outcome": "identical",
    "path": "artifacts/T050/marker-perspective-bias.svg",
+   "rounding_level": false,
    "task_id": "T050",
    "wall_clock_timing": false
   },
   {
    "outcome": "identical",
    "path": "artifacts/T050/radial-displacement.svg",
+   "rounding_level": false,
    "task_id": "T050",
    "wall_clock_timing": false
   },
   {
    "outcome": "identical",
    "path": "artifacts/T050/chord-bias-vs-radius.svg",
+   "rounding_level": false,
    "task_id": "T050",
    "wall_clock_timing": false
   },
   {
    "outcome": "identical",
    "path": "artifacts/T052/backlash-error.svg",
+   "rounding_level": false,
    "task_id": "T052",
    "wall_clock_timing": false
   },
   {
    "outcome": "identical",
    "path": "artifacts/T053/heading-error-moments.svg",
+   "rounding_level": false,
    "task_id": "T053",
    "wall_clock_timing": false
   },
   {
    "outcome": "identical",
    "path": "artifacts/T054/offset-residual.svg",
+   "rounding_level": false,
    "task_id": "T054",
    "wall_clock_timing": false
   },
   {
    "outcome": "identical",
    "path": "artifacts/T055/hold-error-by-channel.svg",
+   "rounding_level": false,
    "task_id": "T055",
    "wall_clock_timing": false
   },
   {
    "outcome": "identical",
    "path": "artifacts/T056/stale-error-vs-age.svg",
+   "rounding_level": false,
    "task_id": "T056",
    "wall_clock_timing": false
   },
   {
    "outcome": "identical",
    "path": "artifacts/T057/rmse-by-step.svg",
+   "rounding_level": false,
    "task_id": "T057",
    "wall_clock_timing": false
   },
   {
    "outcome": "identical",
    "path": "artifacts/T057/nees-by-step.svg",
+   "rounding_level": false,
    "task_id": "T057",
    "wall_clock_timing": false
   },
   {
    "outcome": "identical",
    "path": "artifacts/T060/trajectory.svg",
+   "rounding_level": false,
    "task_id": "T060",
    "wall_clock_timing": false
   },
   {
    "outcome": "identical",
    "path": "artifacts/T061/zscores.svg",
+   "rounding_level": false,
    "task_id": "T061",
    "wall_clock_timing": false
   },
   {
    "outcome": "identical",
    "path": "artifacts/T062/anees.svg",
+   "rounding_level": false,
    "task_id": "T062",
    "wall_clock_timing": false
   },
   {
    "outcome": "identical",
    "path": "artifacts/T063/transform_z.svg",
+   "rounding_level": false,
    "task_id": "T063",
    "wall_clock_timing": false
   },
   {
    "outcome": "identical",
    "path": "artifacts/T065/error_autocovariance.svg",
+   "rounding_level": false,
    "task_id": "T065",
    "wall_clock_timing": false
   },
   {
    "outcome": "identical",
    "path": "artifacts/T066/anis_normalizers.svg",
+   "rounding_level": false,
    "task_id": "T066",
    "wall_clock_timing": false
   },
   {
    "outcome": "identical",
    "path": "artifacts/T069/anees_gap.svg",
+   "rounding_level": false,
    "task_id": "T069",
    "wall_clock_timing": false
   },
   {
    "outcome": "identical",
    "path": "artifacts/T070/tau_estimate.svg",
+   "rounding_level": false,
    "task_id": "T070",
    "wall_clock_timing": false
   },
   {
    "outcome": "identical",
    "path": "artifacts/T071/anis_frames.svg",
+   "rounding_level": false,
    "task_id": "T071",
    "wall_clock_timing": false
   },
   {
    "outcome": "identical",
    "path": "artifacts/T072/anees_expiry.svg",
+   "rounding_level": false,
    "task_id": "T072",
    "wall_clock_timing": false
   },
   {
    "outcome": "identical",
    "path": "artifacts/T073/turn_nees.svg",
+   "rounding_level": false,
    "task_id": "T073",
    "wall_clock_timing": false
   },
   {
    "outcome": "identical",
    "path": "artifacts/T074/anees_fused.svg",
+   "rounding_level": false,
    "task_id": "T074",
    "wall_clock_timing": false
   },
   {
    "outcome": "identical",
    "path": "artifacts/T112/iss-ratios.svg",
+   "rounding_level": false,
    "task_id": "T112",
    "wall_clock_timing": false
   },
   {
    "outcome": "identical",
    "path": "artifacts/T120/precision.svg",
+   "rounding_level": false,
    "task_id": "T120",
    "wall_clock_timing": false
   },
   {
    "outcome": "identical",
    "path": "artifacts/T120/common-workload-precision.svg",
+   "rounding_level": true,
    "task_id": "T120",
    "wall_clock_timing": false
   },
   {
    "outcome": "identical",
    "path": "artifacts/T121/reduction-errors.svg",
+   "rounding_level": false,
    "task_id": "T121",
    "wall_clock_timing": false
   },
   {
    "outcome": "identical",
    "path": "artifacts/T122/free-energy.svg",
+   "rounding_level": true,
    "task_id": "T122",
    "wall_clock_timing": false
   },
   {
    "outcome": "identical",
    "path": "artifacts/T127/cylinder-gap.svg",
+   "rounding_level": false,
    "task_id": "T127",
    "wall_clock_timing": false
   },
   {
    "outcome": "identical",
    "path": "artifacts/T129/curvature-window-sweep.svg",
+   "rounding_level": false,
    "task_id": "T129",
    "wall_clock_timing": false
   },
   {
    "outcome": "identical",
    "path": "artifacts/T132/placement-stack.svg",
+   "rounding_level": false,
    "task_id": "T132",
    "wall_clock_timing": false
   },
   {
    "outcome": "same structure",
    "path": "artifacts/T142/kernel-timings.svg",
+   "rounding_level": false,
    "task_id": "T142",
    "wall_clock_timing": true
   },
   {
    "outcome": "identical",
    "path": "artifacts/T147/difference-over-bound.svg",
+   "rounding_level": false,
    "task_id": "T147",
    "wall_clock_timing": false
   },
   {
    "outcome": "identical",
    "path": "artifacts/T148/error-scaling.svg",
+   "rounding_level": false,
    "task_id": "T148",
    "wall_clock_timing": false
   },
   {
    "outcome": "identical",
    "path": "artifacts/T152/age-distribution.svg",
+   "rounding_level": false,
    "task_id": "T152",
    "wall_clock_timing": false
   },
   {
    "outcome": "identical",
    "path": "artifacts/T154/proposal-residual.svg",
+   "rounding_level": false,
    "task_id": "T154",
    "wall_clock_timing": false
   }
+ ],
+ "rounding_level_tasks": [
+  "T002",
+  "T003",
+  "T012",
+  "T033",
+  "T035",
+  "T107",
+  "T109",
+  "T120",
+  "T122"
  ],
  "wall_clock_timing_tasks": [
   "T142"

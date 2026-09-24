@@ -413,13 +413,13 @@
   "scipy": "1.16.2",
   "sources": {
    "src/ciw/lab/blas_probe.py": "3e83785edecc0884a2a2c93779cb5cfb03a4dbe08934a8b0010092f45b0b454f",
-   "src/ciw/lab/exchange_provenance_bundles.py": "289185340068210691a0ccc526655eadb241855566c88003eedf97eef22b7085",
+   "src/ciw/lab/exchange_provenance_bundles.py": "f75ee7cccf320b68e75983ee2e5e974cea6a77e87f765cd22e8501ea04635007",
    "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "28f726a725f7219ef0afccd34545104b5dc0a36e27723281fe6bd1fbde467fa2"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: reopen the golden workspaces on Windows x86-64, macOS arm64 and a NumPy built on another LAPACK to learn whether the energy recomputation stays within the rounding tolerance measured across three OpenBLAS kernels on one x86-64 host; decide, as a CIW design question, whether reopen should compare the energy recomputation within a declared tolerance instead of bit for bit, so that a workspace written on one platform reopens on another; and retain golden workspaces for provider kinds other than numerical-heat, produced by their pinned providers, so that validator drift in those kinds is caught at reopen.",
- "report_id": "sha256:dd7df03a6843b17252953a2d82fcbf69b6aacebd97b342545cdc3b0984ff1c79",
+ "report_id": "sha256:0308607eedbbf3a6d7fab86368fea350ac3622b68fa4f211d1f3b5e4a4784f01",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "completed",

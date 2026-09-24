@@ -365,14 +365,14 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 78905,
+   "bytes": 80536,
    "path": "artifacts/T144/import-graph.json",
-   "sha256": "674cb362e928084ee79de1e8103be5150b09170dad2d35407deb49cba02da637"
+   "sha256": "bf7abf03a48bb6db0edd52884fc14d4d341fab1ccb6155cb425db8c5bda74e03"
   },
   {
-   "bytes": 2679,
+   "bytes": 2696,
    "path": "artifacts/T144/architecture-scan.json",
-   "sha256": "b97268f0f247142500c5941f142336af696c187e0bba97b08707817cbff3cc8b"
+   "sha256": "6971397396b32dc0bbbd4eb5021dafcb807bd979a8870f2cca7b188074afd62e"
   }
  ],
  "hypothesis": "The evidence and identity layer (ciw.lab.evidence, ciw.lab.report, ciw.core.identities, their ciw imports and the packages whose __init__ runs when they are imported) is pure standard-library Python; process spawns use argument vectors without a shell; native loading is confined to declared hardware probes. Whether spawned providers are pinned is not decidable from source and is tested only by a heuristic plus counterexample search.",
@@ -396,7 +396,7 @@
   "pygeodesic": "0.1.11",
   "python": "3.12.3",
   "scanned_files": 146,
-  "scanned_package_sha256": "4b7df3616b8ad18f88bafd98a7a867b987d02d2b2561500440b7d5b7fa63f7c5",
+  "scanned_package_sha256": "d6c90126c58c191df8d75938b6fff480c155e147a81ba7e643ab2dc14fc24279",
   "scipy": "1.16.2",
   "sources": {
    "src/ciw/lab/implementation_targets.py": "146ab24ea35b8e6fc4883e3f7d872e70dbf7b719e85d881d31865e4f8201f30d",
@@ -405,7 +405,7 @@
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Pin the Rust probe and other PATH-resolved tools against expected identities (a resolved rustc is recorded by version and binary digest, not checked against a pin)",
- "report_id": "sha256:ba5d709de3e169f208ee3f536e16d5951972f330b04698e835ad8aaf440042a0",
+ "report_id": "sha256:81870736579fd4addf8cb58b86e9adb05a4003051145c5dceb5767c0e1c99d53",
  "schema": "ciw.lab-task-report.v1",
  "section": "implementation-targets",
  "state": "completed",

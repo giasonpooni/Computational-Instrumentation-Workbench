@@ -3,7 +3,10 @@
   "src/ciw/lab/exchange_provenance.py",
   "src/ciw/lab/exchange_provenance_common.py",
   "tests/test_lab_exchange_provenance.py",
-  "docs/lab/EXCHANGE_PROVENANCE.md"
+  "docs/lab/EXCHANGE_PROVENANCE.md",
+  "src/ciw/operations/runner.py",
+  "src/ciw/session.py",
+  "src/ciw/workbench.py"
  ],
  "evidence_status": {
   "counts": {
@@ -575,7 +578,7 @@
    "counterexample": {
     "statement": "Unkeyed record seals detect every edit to a retained numerical result",
     "witness": {
-     "description": "statistics mean moved to the midpoint of [minimum, maximum]; resealed",
+     "description": "statistics mean moved to the midpoint of [minimum, maximum]; numerical_result_id and seal recomputed",
      "name": "oscillator-stats.resealed",
      "observed": "accepted",
      "post_reopen": {
@@ -632,7 +635,7 @@
    "counterexample": {
     "statement": "Saved statistics satisfy |mean| <= rms <= max(|min|, |max|)",
     "witness": {
-     "description": "R1 mean set to its maximum and rms to half of it (|mean| > rms); R2 rms set to ten times max(|min|, |max|) (rms > max|x|); both resealed",
+     "description": "R1 mean set to its maximum and rms to half of it (|mean| > rms); R2 rms set to ten times max(|min|, |max|) (rms > max|x|); numerical_result_id and seal of both recomputed",
      "name": "oscillator-stats.impossible-moments",
      "observed": "accepted",
      "post_reopen": {
@@ -774,9 +777,9 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 5637,
+   "bytes": 5733,
    "path": "artifacts/T081/numerical-mutations.json",
-   "sha256": "963da216c5765e25ccf23b5f9d02be57ce67f203b1fe95bea50b7cd02f1ed694"
+   "sha256": "e9a8aae0dcdf88bcd3767f109e00746555cf06b0f339e63e3e69d8b19c93a322"
   },
   {
    "bytes": 1432,
@@ -789,7 +792,7 @@
    "sha256": "855162c53c980aa78db77f6eef8e067249d153fb9ae9749cdc45dc6690902b3e"
   }
  ],
- "hypothesis": "The energy numerical_result_id is a content identity of the analysed data, and that data includes the retained log's identity (data.log_digest, origin and device_uuid), so it is equal across every occurrence of a canonically identical log (original, sibling, replay, replay after reopen, replay of a replay, separate session in the same process and code) and changes under a resealed metadata-only edit. Re-analysis on reopen refuses numerical edits that leave the retained source bytes unchanged, but not a forger who rewrites and reseals the source log itself. Oscillator results lack a numerical identity and their statistics are only bounds-checked.",
+ "hypothesis": "The energy numerical_result_id is a content identity of the analysed data, and that data includes the retained log's identity (data.log_digest, origin and device_uuid), so it is equal across every occurrence of a canonically identical log (original, sibling, replay, replay after reopen, replay of a replay, separate session in the same process and code) and changes under a resealed metadata-only edit. Re-analysis on reopen refuses numerical edits that leave the retained source bytes unchanged, but not a forger who rewrites and reseals the source log itself. Oscillator results carry a numerical_result_id that reopen recomputes from the retained numbers, so it refuses a stale identity but not a resealed edit, and their statistics are only bounds-checked.",
  "input_data": [
   "make_demo_run() damped-oscillator recording; statistics.v1 on channel v over [1, 2] s, twice, plus one legacy analysis.stats result",
   "examples/energy-accuracy/{baseline,reset}.json (origin synthetic_fixture): two original executions of baseline, one of reset, replays, and a separate session in the same process",
@@ -814,13 +817,16 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/exchange_provenance.py": "6c5c6d9b49043664ad9cea8f4bc2ff5d9fc367aea6194e2e7608c98bfd5c54f4",
-   "src/ciw/lab/exchange_provenance_common.py": "17ab892e3f285ac475b44c240155acf45f8bbdbefca28a345980aba548c6d1a9"
+   "src/ciw/lab/exchange_provenance.py": "52c65161fc650193a7df1a20919c1f962ce52f8efc12153e7a105658d4ab04d5",
+   "src/ciw/lab/exchange_provenance_common.py": "726ccccfe1beae025183069704cab05b35189515f6cdfffa0dd82f6e5ec3e8cb",
+   "src/ciw/operations/runner.py": "428d6a6e77123f5609125e7432a7158d0ecee015b1c53c2555206250c1d9f080",
+   "src/ciw/session.py": "0489eb0d4780f1f66b08aa6febdb966cc7b3c67dcdb5cfa1c431723e65781ff8",
+   "src/ciw/workbench.py": "79a7e5c2c30605c21a04578d9048d844edae577213125812ecf0885e17d40f80"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "Deferred research question (CIW change): give oscillator operation results a content-level numerical_result_id so their replays can be linked, recompute statistics (or at least the moment inequalities) on reopen, and repeat the stability test in a separate process on a second host, since the separate session here shares the process and code.",
- "report_id": "sha256:64b20c9d2da3648e667438148b7e9da21f00307cb6be3b5eb1caea87efcf19fd",
+ "recommended_next_task": "Deferred research question (CIW change): recompute statistics (or at least the moment inequalities) on reopen, which the oscillator numerical_result_id does not do (reopen recomputes it from the retained numbers, so an edit that recomputes it too survives), and repeat the stability test in a separate process on a second host, since the separate session here shares the process and code.",
+ "report_id": "sha256:027d72a62497a402a9e591758038aa940c0d8c9bd546b6df0e96bf66014ca612",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "completed",
@@ -861,7 +867,7 @@
  "uncertainty": "Stability was observed within one process on one arithmetic platform. numerical_result_id hashes the analysed floats bit for bit, and their last bits depend on the BLAS kernel: regenerating T081 on one Linux x86-64 host under the OpenBLAS kernels SkylakeX, Haswell, Sandybridge, Nehalem and Katmai (OPENBLAS_CORETYPE, NumPy 2.4.3) gave one id over the 12 occurrences of each run but three different ids (Nehalem and Katmai matched Sandybridge bit for bit), because up to 13 of the 47 analysed floats differed between kernels, by at most 2.2e-16 (the reference mean and covariance entries by at most 2.8e-16 relative; the others are filter errors at rounding level). The identity finding therefore compares the counts exactly and the numerical result the id hashes within 2e-14 absolute, about 90 times that spread; this run's id is retained beside that result in numerical-identity.json. The run does not record which kernel produced its values, so a retained id cannot be attributed to a kernel. Value integrity after reopen is relative to the retained source bytes, which are themselves unauthenticated.",
  "unresolved_assumptions": [
   "Deferred research question (cross-platform reproduction): the energy numerical_result_id hashes the analysed floats bit for bit, so it links occurrences on one arithmetic platform only (five OpenBLAS kernels on one Linux x86-64 host gave three ids, each shared by every occurrence of its run). Run T081 on Windows x86-64 and macOS arm64 and compare it with the retained run by ciw lab verify, which checks that each run again has one numerical_result_id over its occurrences and compares the energy numerical result that id hashes leaf by leaf within 2e-14 absolute, about 90 times the spread between those kernels (the retained run does not record its kernel): do all differences stay at rounding level, and should CIW link occurrences across platforms by such a tolerance comparison, or by an identity over declared-precision data, instead of the bit-exact id (a CIW change, not made here)?",
-  "Oscillator results have no numerical identity, so their replays cannot be linked.",
+  "The oscillator numerical_result_id links results with equal numbers and is recomputed on reopen from the retained numbers; it does not check that the numbers are statistics of the recording.",
   "The separate session runs in the same process with the same code; it is not an independent reproduction.",
   "Deferred research question (key custody and signatures): which key signs CIW workspace records, replay receipts and execution records, who holds it, how is it provisioned, rotated and revoked, and how does a verifier obtain its public key? Every seal and identity on these paths is an unkeyed SHA-256, so 'Retained workspace records are authenticated' stays not_established until records are signed (for example Ed25519 over the canonical record bytes, with an RFC 3161 timestamp for created_at) and T077 and T080-T090 are re-run against the signed records to check that every surviving forgery is refused."
  ]

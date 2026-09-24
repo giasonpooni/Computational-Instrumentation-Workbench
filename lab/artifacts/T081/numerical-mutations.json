@@ -74,7 +74,7 @@
    "task": "T081"
   },
   {
-   "description": "statistics mean moved above the maximum; resealed",
+   "description": "statistics mean moved above the maximum; numerical_result_id and seal recomputed",
    "error": "ValueError",
    "killed": true,
    "kind": "workspace",
@@ -90,7 +90,7 @@
    "task": "T081"
   },
   {
-   "description": "statistics mean moved to the midpoint of [minimum, maximum]; resealed",
+   "description": "statistics mean moved to the midpoint of [minimum, maximum]; numerical_result_id and seal recomputed",
    "error": null,
    "killed": false,
    "kind": "workspace",
@@ -110,7 +110,7 @@
    "task": "T081"
   },
   {
-   "description": "R1 mean set to its maximum and rms to half of it (|mean| > rms); R2 rms set to ten times max(|min|, |max|) (rms > max|x|); both resealed",
+   "description": "R1 mean set to its maximum and rms to half of it (|mean| > rms); R2 rms set to ten times max(|min|, |max|) (rms > max|x|); numerical_result_id and seal of both recomputed",
    "error": null,
    "killed": false,
    "kind": "workspace",

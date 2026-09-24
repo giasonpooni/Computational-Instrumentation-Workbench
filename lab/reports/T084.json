@@ -3,7 +3,10 @@
   "src/ciw/lab/exchange_provenance.py",
   "src/ciw/lab/exchange_provenance_common.py",
   "tests/test_lab_exchange_provenance.py",
-  "docs/lab/EXCHANGE_PROVENANCE.md"
+  "docs/lab/EXCHANGE_PROVENANCE.md",
+  "src/ciw/operations/runner.py",
+  "src/ciw/session.py",
+  "src/ciw/workbench.py"
  ],
  "evidence_status": {
   "counts": {
@@ -17,7 +20,7 @@
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "Every predicted refusal is observed; receipt-source.sibling-execution reopens with its receipt and verification subject naming the sibling; the harness controls hold.",
+ "expected_invariant": "Every predicted refusal is observed; receipt-source.sibling-execution-resealed reopens with its receipt and verification subject naming the sibling; the harness controls hold.",
  "experiment": "Edit the saved workspace (replay receipt source digest), recompute none, local or all unkeyed digests, write it and reopen with Session.from_workspace. Rows retained as receipt-source-mutations.json/.md.",
  "failure_modes_checked": [
   "receipt-source.naive: source_bundle_digest set to a fixed forged digest",
@@ -25,7 +28,8 @@
   "receipt-source.subject-rebound: forged source digest and verification subject; verification_id and replay_id recomputed",
   "receipt-source.self: source digest and subject set to the replay bundle itself; ids recomputed",
   "receipt-source.other-source: receipt re-pointed at a retained bundle of a different source log; verification rebuilt",
-  "receipt-source.sibling-execution: receipt source and verification subject moved together to a sibling execution of the same source bytes; verification rebuilt"
+  "receipt-source.sibling-execution: receipt source and verification subject moved together to a sibling execution of the same source bytes; verification and replay_id rebuilt, the catalog receipt seal kept",
+  "receipt-source.sibling-execution-resealed: receipt source and verification subject moved together to a sibling execution of the same source bytes; verification, replay_id and catalog receipt seal rebuilt"
  ],
  "findings": [
   {
@@ -65,6 +69,13 @@
       "observed_refusal": "Replay source must already belong to this workbench",
       "passed": true,
       "reference": "receipt-source.other-source (local recompute): refusal on reopen",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "Retained replay receipt seal differs",
+      "observed_refusal": "Retained replay receipt seal differs",
+      "passed": true,
+      "reference": "receipt-source.sibling-execution (local recompute): refusal on reopen",
       "reference_kind": "refusal"
      },
      {
@@ -131,6 +142,12 @@
      "mutant": "receipt-source.other-source",
      "observed": "Replay source must already belong to this workbench",
      "recompute": "local"
+    },
+    {
+     "kind": "workspace",
+     "mutant": "receipt-source.sibling-execution",
+     "observed": "Retained replay receipt seal differs",
+     "recompute": "local"
     }
    ]
   },
@@ -142,7 +159,7 @@
       "comparison": "ge",
       "observed": 1.0,
       "passed": true,
-      "reference": "receipt-source.sibling-execution: accepted (1 = accepted)",
+      "reference": "receipt-source.sibling-execution-resealed: accepted (1 = accepted)",
       "reference_kind": "invariant",
       "tolerance": 1.0
      },
@@ -156,19 +173,19 @@
      }
     ]
    },
-   "claim": "Surviving mutant receipt-source.sibling-execution: a receipt re-pointed, with its verification subject, at a sibling execution of the same bytes reopens",
+   "claim": "Surviving mutant receipt-source.sibling-execution-resealed: a receipt re-pointed, with its verification subject, at a sibling execution of the same bytes reopens once the catalog receipt seal is recomputed",
    "counterexample": {
     "statement": "Unkeyed record seals detect every replay-provenance forgery",
     "witness": {
-     "description": "receipt source and verification subject moved together to a sibling execution of the same source bytes; verification rebuilt",
-     "name": "receipt-source.sibling-execution",
+     "description": "receipt source and verification subject moved together to a sibling execution of the same source bytes; verification, replay_id and catalog receipt seal rebuilt",
+     "name": "receipt-source.sibling-execution-resealed",
      "observed": "accepted",
      "post_reopen": {
       "receipt_source": "bundle:B0b",
       "replay_bundle": "bundle:B1",
       "verification_subject": "bundle:B0b"
      },
-     "recompute": "local",
+     "recompute": "full",
      "target": "energy replay receipt"
     }
    },
@@ -188,7 +205,7 @@
    },
    "unit": null,
    "value": {
-    "mutant": "receipt-source.sibling-execution",
+    "mutant": "receipt-source.sibling-execution-resealed",
     "observed": "accepted"
    }
   },
@@ -210,24 +227,24 @@
    "unit": null,
    "value": {
     "surviving_mutants_in_this_task": [
-     "receipt-source.sibling-execution"
+     "receipt-source.sibling-execution-resealed"
     ]
    }
   }
  ],
  "generated_artifacts": [
   {
-   "bytes": 3525,
+   "bytes": 4220,
    "path": "artifacts/T084/receipt-source-mutations.json",
-   "sha256": "f9385d2c96cf655883591631a51ff07396588eb241289e4ff5f366b2ca727491"
+   "sha256": "7127ce6717076648cb98eee14e33fcf8c0d2388d654d05de3082c1dd7be636c7"
   },
   {
-   "bytes": 1239,
+   "bytes": 1431,
    "path": "artifacts/T084/receipt-source-mutations.md",
-   "sha256": "3e977f0aa8011cc54e6141a7a7b1bf1a399a5b169d93dac8a294fbd1fad5e1fb"
+   "sha256": "00425584c359181e2bc42a804c36c202d424f4db610848e408122054aec1c423"
   }
  ],
- "hypothesis": "Predicted kills: a source digest edited without resealing (stale replay_id); resealed to a forged digest (the energy workflow rebuilds the receipt verification with subject = source and refuses the stale subject); re-pointed together with its subject at a digest that is not retained, at the replay itself, or at a bundle of another source log (workbench._validate_links requires a retained source bundle of the same kind, source_id and upstream). Predicted survivor: receipt-source.sibling-execution, because a sibling execution of the same source bytes satisfies every one of those checks and every digest is unkeyed.",
+ "hypothesis": "Predicted kills: a source digest edited without resealing (stale replay_id); resealed to a forged digest (the energy workflow rebuilds the receipt verification with subject = source and refuses the stale subject); re-pointed together with its subject at a digest that is not retained, at the replay itself, or at a bundle of another source log (workbench._validate_links requires a retained source bundle of the same kind, source_id and upstream); re-pointed at a sibling execution of the same source bytes with the catalog receipt seal left stale (receipt-source.sibling-execution). Predicted survivor: receipt-source.sibling-execution-resealed, because the sibling satisfies every one of those checks and every digest, the catalog seal included, is unkeyed.",
  "input_data": [
   "make_demo_run() damped-oscillator recording; statistics.v1 on channel v over [1, 2] s, twice, plus one legacy analysis.stats result",
   "examples/energy-accuracy/{baseline,reset}.json (origin synthetic_fixture): two original executions of baseline, one of reset, replays, and a separate session in the same process",
@@ -235,7 +252,7 @@
  ],
  "mathematical_model": "Each record seal or identity d = sha256(canon(record \\ d)) is unkeyed, so any holder can recompute d after an edit. Reopen kills a mutant only if some check compares the edited field with an independently recomputed, fixed or cross-referenced value; otherwise a consistent recomputation survives.",
  "number": 84,
- "numerical_result": "6 rows (6 workspace mutants, 0 pure-validator rows): 5 refused; 1 surviving forgery (receipt-source.sibling-execution); kill/survive predictions matched 6/6; refusal messages matched their regression pins 5/5",
+ "numerical_result": "7 rows (7 workspace mutants, 0 pure-validator rows): 6 refused; 1 surviving forgery (receipt-source.sibling-execution-resealed); kill/survive predictions matched 7/7; refusal messages matched their regression pins 6/6",
  "observation_model": "No physical observation. The observed objects are CIW records (sessions, executions, results, bundles, receipts, saved workspace JSON) produced offline by the unmodified CIW code; the energy logs are synthetic fixtures and no hardware was sampled.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -251,13 +268,16 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/exchange_provenance.py": "6c5c6d9b49043664ad9cea8f4bc2ff5d9fc367aea6194e2e7608c98bfd5c54f4",
-   "src/ciw/lab/exchange_provenance_common.py": "17ab892e3f285ac475b44c240155acf45f8bbdbefca28a345980aba548c6d1a9"
+   "src/ciw/lab/exchange_provenance.py": "52c65161fc650193a7df1a20919c1f962ce52f8efc12153e7a105658d4ab04d5",
+   "src/ciw/lab/exchange_provenance_common.py": "726ccccfe1beae025183069704cab05b35189515f6cdfffa0dd82f6e5ec3e8cb",
+   "src/ciw/operations/runner.py": "428d6a6e77123f5609125e7432a7158d0ecee015b1c53c2555206250c1d9f080",
+   "src/ciw/session.py": "0489eb0d4780f1f66b08aa6febdb966cc7b3c67dcdb5cfa1c431723e65781ff8",
+   "src/ciw/workbench.py": "79a7e5c2c30605c21a04578d9048d844edae577213125812ecf0885e17d40f80"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "Deferred research question (CIW change): bind each replay receipt to the source execution's own identity as well as its bytes, or sign it under a defined key custody, and re-run these mutations to check that receipt-source.sibling-execution is refused while every killed mutant keeps its pinned message.",
- "report_id": "sha256:5b030362b70c576873656148e10b6b2f85c4b80a3fb72ce2c153eb4478826771",
+ "recommended_next_task": "Deferred research question (CIW change): bind each replay receipt to the source execution's own identity as well as its bytes, or sign it under a defined key custody, and re-run these mutations to check that receipt-source.sibling-execution-resealed is refused while every killed mutant keeps its pinned message.",
+ "report_id": "sha256:2ead9d6d79b0de9e4824bd183d526d6c24e01c963037ded471c4ada32ca028d4",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "completed",
@@ -268,10 +288,11 @@
   "check: Replay receipt source digest forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs receipt-source.subject-rebound (local recompute): refusal on reopen",
   "check: Replay receipt source digest forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs receipt-source.self (local recompute): refusal on reopen",
   "check: Replay receipt source digest forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs receipt-source.other-source (local recompute): refusal on reopen",
+  "check: Replay receipt source digest forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs receipt-source.sibling-execution (local recompute): refusal on reopen",
   "check: Replay receipt source digest forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs harness control: the forger's recomputation of the unedited workspace reproduces every CIW digest",
   "check: Replay receipt source digest forgeries that leave a digest stale or contradict a recomputed, fixed or cross-referenced value are refused with the pinned message vs harness control: the unedited saved workspace reopens",
-  "check: Surviving mutant receipt-source.sibling-execution: a receipt re-pointed, with its verification subject, at a sibling execution of the same bytes reopens vs receipt-source.sibling-execution: accepted (1 = accepted)",
-  "check: Surviving mutant receipt-source.sibling-execution: a receipt re-pointed, with its verification subject, at a sibling execution of the same bytes reopens vs reopened receipt source and verification subject both name the sibling bundle:B0b (0 = shown)",
+  "check: Surviving mutant receipt-source.sibling-execution-resealed: a receipt re-pointed, with its verification subject, at a sibling execution of the same bytes reopens once the catalog receipt seal is recomputed vs receipt-source.sibling-execution-resealed: accepted (1 = accepted)",
+  "check: Surviving mutant receipt-source.sibling-execution-resealed: a receipt re-pointed, with its verification subject, at a sibling execution of the same bytes reopens once the catalog receipt seal is recomputed vs reopened receipt source and verification subject both name the sibling bundle:B0b (0 = shown)",
   "pytest: tests/test_lab_exchange_provenance.py::test_receipt_digest_mutations",
   "pytest: tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work",
   "pytest: tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply"

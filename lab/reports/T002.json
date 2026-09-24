@@ -9,7 +9,7 @@
   "counts": {
    "analytic": 0,
    "hardware_measured": 0,
-   "independently_verified": 3,
+   "independently_verified": 6,
    "not_established": 0,
    "numerically_verified": 2,
    "provider_backed": 0,
@@ -17,12 +17,16 @@
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "ciw Richardson RK4 (200/400 steps) and scipy DOP853 (rtol 1e-13) agree with each reference to about 1e-12; the mpmath reference changes by less than 1e-18 between 10 and 20 macro-steps; Clairaut's integral is conserved on the torus.",
- "experiment": "Build each reference, integrate the ciw joint geodesic + Jacobi system with Richardson RK4 and with scipy DOP853, and compare end states; check the torus Clairaut integral.",
+ "expected_invariant": "ciw Richardson RK4 (200/400 steps) and scipy DOP853 (rtol 1e-13) agree with each reference to about 1e-12; the mpmath reference changes by less than 1e-18 between 10 and 20 macro-steps, and mpmath.odefun agrees with it within that difference, about 2^16 - 1 times below it (observed order within 1 of 16); Clairaut's integral is conserved on the torus.",
+ "experiment": "Build each reference, integrate the ciw joint geodesic + Jacobi system with Richardson RK4 and with scipy DOP853, and compare end states; integrate the sympy-derived system over the full path lengths again with mpmath.odefun at 34 digits (Taylor degree 30 instead of mpmath's default 54, for run time) and compare it with the Gragg-Bulirsch-Stoer references, whose 20 macro-steps are rerun at 44 digits to measure their rounding; check the torus Clairaut integral.",
  "failure_modes_checked": [
   "reference and integrator start from the same binary64 state",
   "reference equations derived independently of ciw.lab.surfaces (sympy)",
   "extrapolation self-consistency (macro-step halving)",
+  "ciw-authored reference integrator against mpmath.odefun on the same equations (an error estimate that understates the reference error fails)",
+  "an extrapolation below its nominal order (observed order log2(estimate / gap + 1) within 1 of 16; an order-14 extrapolation fails)",
+  "34-digit rounding of the reference end state (measured against a 44-digit rerun, not assumed)",
+  "first integrals g(u', u') and det Phi of the mpmath.odefun end state",
   "missing or wrong Richardson extrapolation (gap must be far below the RK4 estimate)",
   "Clairaut invariant on the torus"
  ],
@@ -358,6 +362,222 @@
    "basis": {
     "checks": [
      {
+      "comparison": "le",
+      "observed": 1.8311115984001913e-29,
+      "passed": true,
+      "reference": "largest end-state difference between the Gragg-Bulirsch-Stoer reference and mpmath.odefun on saddle (absolute)",
+      "reference_kind": "high_precision",
+      "tolerance": 1e-18
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.26176212824023537,
+      "passed": true,
+      "reference": "observed order log2(estimate / gap + 1) on saddle minus the nominal order 16 of 8 modified-midpoint stages extrapolated in h^2 (the gap of the same 20 macro-steps at 44 digits to mpmath.odefun; an order-14 extrapolation gives about -2)",
+      "reference_kind": "analytic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "le",
+      "observed": 2.407412430484045e-35,
+      "passed": true,
+      "reference": "first integrals of the mpmath.odefun end state on saddle: larger of the g(u', u') drift from its start value and |det Phi - 1|",
+      "reference_kind": "invariant",
+      "tolerance": 1e-30
+     }
+    ],
+    "independent_check": {
+     "checker": {
+      "implementation": "mpmath.odefun",
+      "revision": "1.3.0"
+     },
+     "comparison": "le",
+     "observed": 1.2735416361889095e-05,
+     "passed": true,
+     "producer": {
+      "implementation": "ciw.lab.geodesic_jacobi_common.gbs_integrate",
+      "revision": "ciw 0.1.0",
+      "source_sha256": "9a6f433f386493a5f2a24c072bf7cff1e1a3fd5572b1c676ab4a80fda9109ff2"
+     },
+     "reference": "largest end-state difference (geodesic state and both Jacobi columns) between the ciw Gragg-Bulirsch-Stoer reference (20 macro-steps) and mpmath.odefun (Taylor series of degree 30), both at 34 digits on the same sympy-derived equations from the same binary64 start on saddle, over the reference's 10 vs 20 macro-step error estimate; the integrators differ in origin, mpmath supplies the arithmetic of both",
+     "reference_kind": "high_precision",
+     "tolerance": 1.0
+    }
+   },
+   "claim": "The 34-digit Gragg-Bulirsch-Stoer reference on the saddle path agrees with mpmath.odefun (Taylor series) on the same sympy-derived equations within its error estimate, which overstates the gap by the factor its order-16 extrapolation predicts",
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check",
+    "reference_checks"
+   ],
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.01
+   },
+   "uncertainty": {
+    "basis": "measured rounding of the 34-digit reference end state: its largest distance from the same 20 macro-steps rerun at 44 digits (1.2e-32, 0.00066 of the gap). The gap is the difference of the two integrators' own errors, which neither reports separately (odefun gives no error estimate; its own rounding is not rerun here)",
+    "kind": "roundoff",
+    "value": 1.2046350500728475e-32
+   },
+   "unit": null,
+   "value": {
+    "gap_over_estimate": 1.2735416361889095e-05,
+    "gbs_error_estimate": 1.4378105484480408e-24,
+    "gbs_minus_odefun": 1.8311115984001913e-29,
+    "guarded_gbs_minus_odefun": 1.8299069633501184e-29,
+    "observed_order": 16.261762128240235
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 6.8448134021036755e-28,
+      "passed": true,
+      "reference": "largest end-state difference between the Gragg-Bulirsch-Stoer reference and mpmath.odefun on torus (absolute)",
+      "reference_kind": "high_precision",
+      "tolerance": 1e-18
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.04334479345110509,
+      "passed": true,
+      "reference": "observed order log2(estimate / gap + 1) on torus minus the nominal order 16 of 8 modified-midpoint stages extrapolated in h^2 (the gap of the same 20 macro-steps at 44 digits to mpmath.odefun; an order-14 extrapolation gives about -2)",
+      "reference_kind": "analytic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "le",
+      "observed": 4.81482486096809e-35,
+      "passed": true,
+      "reference": "first integrals of the mpmath.odefun end state on torus: larger of the g(u', u') drift from its start value and |det Phi - 1|",
+      "reference_kind": "invariant",
+      "tolerance": 1e-30
+     }
+    ],
+    "independent_check": {
+     "checker": {
+      "implementation": "mpmath.odefun",
+      "revision": "1.3.0"
+     },
+     "comparison": "le",
+     "observed": 1.5724234436422844e-05,
+     "passed": true,
+     "producer": {
+      "implementation": "ciw.lab.geodesic_jacobi_common.gbs_integrate",
+      "revision": "ciw 0.1.0",
+      "source_sha256": "9a6f433f386493a5f2a24c072bf7cff1e1a3fd5572b1c676ab4a80fda9109ff2"
+     },
+     "reference": "largest end-state difference (geodesic state and both Jacobi columns) between the ciw Gragg-Bulirsch-Stoer reference (20 macro-steps) and mpmath.odefun (Taylor series of degree 30), both at 34 digits on the same sympy-derived equations from the same binary64 start on torus, over the reference's 10 vs 20 macro-step error estimate; the integrators differ in origin, mpmath supplies the arithmetic of both",
+     "reference_kind": "high_precision",
+     "tolerance": 1.0
+    }
+   },
+   "claim": "The 34-digit Gragg-Bulirsch-Stoer reference on the torus path agrees with mpmath.odefun (Taylor series) on the same sympy-derived equations within its error estimate, which overstates the gap by the factor its order-16 extrapolation predicts",
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check",
+    "reference_checks"
+   ],
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.01
+   },
+   "uncertainty": {
+    "basis": "measured rounding of the 34-digit reference end state: its largest distance from the same 20 macro-steps rerun at 44 digits (8.6e-33, 1.3e-05 of the gap). The gap is the difference of the two integrators' own errors, which neither reports separately (odefun gives no error estimate; its own rounding is not rerun here)",
+    "kind": "roundoff",
+    "value": 8.622995186211526e-33
+   },
+   "unit": null,
+   "value": {
+    "gap_over_estimate": 1.5724234436422844e-05,
+    "gbs_error_estimate": 4.3530344385152934e-23,
+    "gbs_minus_odefun": 6.8448134021036755e-28,
+    "guarded_gbs_minus_odefun": 6.844899632055538e-28,
+    "observed_order": 15.956655206548895
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 8.056888047769428e-27,
+      "passed": true,
+      "reference": "largest end-state difference between the Gragg-Bulirsch-Stoer reference and mpmath.odefun on gaussian-bump (absolute)",
+      "reference_kind": "high_precision",
+      "tolerance": 1e-18
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.2763765152229283,
+      "passed": true,
+      "reference": "observed order log2(estimate / gap + 1) on gaussian-bump minus the nominal order 16 of 8 modified-midpoint stages extrapolated in h^2 (the gap of the same 20 macro-steps at 44 digits to mpmath.odefun; an order-14 extrapolation gives about -2)",
+      "reference_kind": "analytic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "le",
+      "observed": 2.407412430484045e-35,
+      "passed": true,
+      "reference": "first integrals of the mpmath.odefun end state on gaussian-bump: larger of the g(u', u') drift from its start value and |det Phi - 1|",
+      "reference_kind": "invariant",
+      "tolerance": 1e-30
+     }
+    ],
+    "independent_check": {
+     "checker": {
+      "implementation": "mpmath.odefun",
+      "revision": "1.3.0"
+     },
+     "comparison": "le",
+     "observed": 1.2598761752389642e-05,
+     "passed": true,
+     "producer": {
+      "implementation": "ciw.lab.geodesic_jacobi_common.gbs_integrate",
+      "revision": "ciw 0.1.0",
+      "source_sha256": "9a6f433f386493a5f2a24c072bf7cff1e1a3fd5572b1c676ab4a80fda9109ff2"
+     },
+     "reference": "largest end-state difference (geodesic state and both Jacobi columns) between the ciw Gragg-Bulirsch-Stoer reference (20 macro-steps) and mpmath.odefun (Taylor series of degree 30), both at 34 digits on the same sympy-derived equations from the same binary64 start on gaussian-bump, over the reference's 10 vs 20 macro-step error estimate; the integrators differ in origin, mpmath supplies the arithmetic of both",
+     "reference_kind": "high_precision",
+     "tolerance": 1.0
+    }
+   },
+   "claim": "The 34-digit Gragg-Bulirsch-Stoer reference on the gaussian-bump path agrees with mpmath.odefun (Taylor series) on the same sympy-derived equations within its error estimate, which overstates the gap by the factor its order-16 extrapolation predicts",
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check",
+    "reference_checks"
+   ],
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.01
+   },
+   "uncertainty": {
+    "basis": "measured rounding of the 34-digit reference end state: its largest distance from the same 20 macro-steps rerun at 44 digits (2.1e-33, 2.6e-07 of the gap). The gap is the difference of the two integrators' own errors, which neither reports separately (odefun gives no error estimate; its own rounding is not rerun here)",
+    "kind": "roundoff",
+    "value": 2.1347197172142798e-33
+   },
+   "unit": null,
+   "value": {
+    "gap_over_estimate": 1.2598761752389642e-05,
+    "gbs_error_estimate": 6.39498405169957e-22,
+    "gbs_minus_odefun": 8.056888047769428e-27,
+    "guarded_gbs_minus_odefun": 8.056889094206366e-27,
+    "observed_order": 16.27637651522293
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
       "comparison": "abs_le",
       "observed": 6.750155989720952e-14,
       "passed": true,
@@ -407,9 +627,20 @@
    "sha256": "759a8f60f43772c7e2986a77a9cb91817a3d0120fa885f0aee7b14685dfb9b87"
   },
   {
-   "bytes": 2941,
+   "bytes": 3986,
+   "path": "artifacts/T002/binary64-gaps.svg",
+   "rounding_level": true,
+   "sha256": "1fbbba12472b475fca69fa1e28b08db4fce5ac04caa5f556c6cca27c77f5943e"
+  },
+  {
+   "bytes": 3875,
+   "path": "artifacts/T002/odefun.json",
+   "sha256": "34e898bd67a0131f60e59f0f7e30561bd9516d655e887391e33aaf653abeb3ec"
+  },
+  {
+   "bytes": 3059,
    "path": "artifacts/T002/agreement.svg",
-   "sha256": "5406809d5f4d7f28c673c491375ec9d4058acf669852953cbe9979ed3b4c258a"
+   "sha256": "a7a5b247665ce1f761fa62927225251e74607d851408dca97ac1b5cf3c51b4c2"
   },
   {
    "bytes": 7306,
@@ -417,15 +648,15 @@
    "sha256": "166017ef8c78dfbfabe73288a8a948e89838e19919ad8c62cda462697bd24ff1"
   }
  ],
- "hypothesis": "Every declared standard path has a reference end state accurate far beyond the integrators under test: closed forms on constant-curvature charts and a 34-digit extrapolated integration on the saddle, torus and gaussian bump.",
+ "hypothesis": "Every declared standard path has a reference end state accurate far beyond the integrators under test: closed forms on constant-curvature charts and a 34-digit extrapolated integration on the saddle, torus and gaussian bump, whose ciw-authored integrator agrees with mpmath's own Taylor-series integrator within its error estimate, and below it by the factor 2^p - 1 of its order p = 16 extrapolation.",
  "input_data": [
   "Standard paths: plane (L=2.0), sphere (L=2.0), cylinder (L=3.0), saddle (L=1.5), torus (L=3.0), gaussian-bump (L=2.5), hyperbolic-plane (L=1.5), plane-polar (L=2.0), cylinder-polar (L=2.5)",
   "Start states are the binary64 states used by the ciw integrators, converted exactly"
  ],
- "mathematical_model": "Great circle X(s) = cos(s/R) X0 + R sin(s/R) T0; helix and polar lines through the flat development; hyperbolic semicircles; transfer matrices cn_K, sn_K; otherwise the sympy-derived geodesic + Jacobi system integrated by Gragg-Bulirsch-Stoer in mpmath.",
+ "mathematical_model": "Great circle X(s) = cos(s/R) X0 + R sin(s/R) T0; helix and polar lines through the flat development; hyperbolic semicircles; transfer matrices cn_K, sn_K; otherwise the sympy-derived geodesic + Jacobi system integrated by Gragg-Bulirsch-Stoer in mpmath, and again by mpmath.odefun (Taylor series of degree 30 at 34 digits) as an integrator of another origin.",
  "number": 2,
- "numerical_result": "Largest ciw-vs-reference gap 6.38e-14; variable-curvature references saddle mpmath (self-estimate 1.44e-24), torus mpmath (self-estimate 4.35e-23), gaussian-bump mpmath (self-estimate 6.39e-22); Clairaut drift of the ciw end state 6.75e-14.",
- "observation_model": "Euclidean distance of embedded end points (chart distance on the hyperbolic plane) and max-abs difference of the 2x2 transfer matrix.",
+ "numerical_result": "Largest ciw-vs-reference gap 6.38e-14; variable-curvature references saddle mpmath (self-estimate 1.44e-24), torus mpmath (self-estimate 4.35e-23), gaussian-bump mpmath (self-estimate 6.39e-22); Clairaut drift of the ciw end state 6.75e-14; mpmath.odefun (degree 30, 34 digits) differs from the Gragg-Bulirsch-Stoer references by saddle 1.8e-29, torus 6.8e-28, gaussian-bump 8.1e-27, 1.3e-05 to 1.6e-05 of their 10 vs 20 macro-step estimates; the observed orders log2(estimate / gap + 1), with the gap of the same macro-steps at 44 digits, are saddle 16.26, torus 15.96, gaussian-bump 16.28 against the nominal 16 of 8 modified-midpoint stages, so each estimate measures the error of the 10-step result, about 2^p - 1 times that of the retained 20-step one.",
+ "observation_model": "Euclidean distance of embedded end points (chart distance on the hyperbolic plane) and max-abs difference of the 2x2 transfer matrix; between the two 34-digit integrations, the largest difference of the eight state components.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
   "status": "not_established"
@@ -445,13 +676,13 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/geodesic_jacobi.py": "a3abaeabd7605e4a100c304efb6066d2b656644122bf602c06cb97691415a419",
-   "src/ciw/lab/geodesic_jacobi_common.py": "7cb215a28e357a37f1c42cef6bdcb40e22abf7804ae9d58c4818fa40aa52da53"
+   "src/ciw/lab/geodesic_jacobi.py": "407edba2b834982772d95d52990aec86a4c1466d927f40dcf8edf1258456e05b",
+   "src/ciw/lab/geodesic_jacobi_common.py": "9a6f433f386493a5f2a24c072bf7cff1e1a3fd5572b1c676ab4a80fda9109ff2"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "Deferred research question: an integrator-independent 34-digit reference: integrate the sympy-derived equations with mpmath's own Taylor-series solver (mpmath.odefun) instead of the ciw-authored Gragg-Bulirsch-Stoer integrator and check that it agrees with the retained references within their empirical error estimates, so that both the equations and the integrator of the reference are independent of ciw",
- "report_id": "sha256:c2d51bae9c2d90c26601f255bc21967229a2fd833a483bdc06190eee6577b955",
+ "recommended_next_task": "Deferred research question: a proved error bound for the 34-digit references: enclose the sympy-derived geodesic and Jacobi flow with a validated integrator (interval Taylor models in mpmath interval arithmetic with a rigorous remainder bound), so that each reference end state carries an enclosure instead of the empirical agreement of two integrators",
+ "report_id": "sha256:b4dce11f429bfda4509edda5624d2b77cf99745899eea1547044120a9b79ac8b",
  "schema": "ciw.lab-task-report.v1",
  "section": "geodesic-jacobi",
  "state": "completed",
@@ -477,9 +708,24 @@
   "check: ciw Richardson RK4 matches a 34-digit integration of the sympy-derived equations on the gaussian-bump path vs gap over the Richardson error estimate on gaussian-bump (about 1 without extrapolation)",
   "check: ciw Richardson RK4 matches a 34-digit integration of the sympy-derived equations on the gaussian-bump path vs scipy DOP853 vs the 34-digit reference",
   "independent: ciw Richardson RK4 matches a 34-digit integration of the sympy-derived equations on the gaussian-bump path vs sympy.lambdify(derived geodesic and Jacobi equations)",
+  "check: The 34-digit Gragg-Bulirsch-Stoer reference on the saddle path agrees with mpmath.odefun (Taylor series) on the same sympy-derived equations within its error estimate, which overstates the gap by the factor its order-16 extrapolation predicts vs largest end-state difference between the Gragg-Bulirsch-Stoer reference and mpmath.odefun on saddle (absolute)",
+  "check: The 34-digit Gragg-Bulirsch-Stoer reference on the saddle path agrees with mpmath.odefun (Taylor series) on the same sympy-derived equations within its error estimate, which overstates the gap by the factor its order-16 extrapolation predicts vs observed order log2(estimate / gap + 1) on saddle minus the nominal order 16 of 8 modified-midpoint stages extrapolated in h^2 (the gap of the same 20 macro-steps at 44 digits to mpmath.odefun; an order-14 extrapolation gives about -2)",
+  "check: The 34-digit Gragg-Bulirsch-Stoer reference on the saddle path agrees with mpmath.odefun (Taylor series) on the same sympy-derived equations within its error estimate, which overstates the gap by the factor its order-16 extrapolation predicts vs first integrals of the mpmath.odefun end state on saddle: larger of the g(u', u') drift from its start value and |det Phi - 1|",
+  "independent: The 34-digit Gragg-Bulirsch-Stoer reference on the saddle path agrees with mpmath.odefun (Taylor series) on the same sympy-derived equations within its error estimate, which overstates the gap by the factor its order-16 extrapolation predicts vs mpmath.odefun",
+  "check: The 34-digit Gragg-Bulirsch-Stoer reference on the torus path agrees with mpmath.odefun (Taylor series) on the same sympy-derived equations within its error estimate, which overstates the gap by the factor its order-16 extrapolation predicts vs largest end-state difference between the Gragg-Bulirsch-Stoer reference and mpmath.odefun on torus (absolute)",
+  "check: The 34-digit Gragg-Bulirsch-Stoer reference on the torus path agrees with mpmath.odefun (Taylor series) on the same sympy-derived equations within its error estimate, which overstates the gap by the factor its order-16 extrapolation predicts vs observed order log2(estimate / gap + 1) on torus minus the nominal order 16 of 8 modified-midpoint stages extrapolated in h^2 (the gap of the same 20 macro-steps at 44 digits to mpmath.odefun; an order-14 extrapolation gives about -2)",
+  "check: The 34-digit Gragg-Bulirsch-Stoer reference on the torus path agrees with mpmath.odefun (Taylor series) on the same sympy-derived equations within its error estimate, which overstates the gap by the factor its order-16 extrapolation predicts vs first integrals of the mpmath.odefun end state on torus: larger of the g(u', u') drift from its start value and |det Phi - 1|",
+  "independent: The 34-digit Gragg-Bulirsch-Stoer reference on the torus path agrees with mpmath.odefun (Taylor series) on the same sympy-derived equations within its error estimate, which overstates the gap by the factor its order-16 extrapolation predicts vs mpmath.odefun",
+  "check: The 34-digit Gragg-Bulirsch-Stoer reference on the gaussian-bump path agrees with mpmath.odefun (Taylor series) on the same sympy-derived equations within its error estimate, which overstates the gap by the factor its order-16 extrapolation predicts vs largest end-state difference between the Gragg-Bulirsch-Stoer reference and mpmath.odefun on gaussian-bump (absolute)",
+  "check: The 34-digit Gragg-Bulirsch-Stoer reference on the gaussian-bump path agrees with mpmath.odefun (Taylor series) on the same sympy-derived equations within its error estimate, which overstates the gap by the factor its order-16 extrapolation predicts vs observed order log2(estimate / gap + 1) on gaussian-bump minus the nominal order 16 of 8 modified-midpoint stages extrapolated in h^2 (the gap of the same 20 macro-steps at 44 digits to mpmath.odefun; an order-14 extrapolation gives about -2)",
+  "check: The 34-digit Gragg-Bulirsch-Stoer reference on the gaussian-bump path agrees with mpmath.odefun (Taylor series) on the same sympy-derived equations within its error estimate, which overstates the gap by the factor its order-16 extrapolation predicts vs first integrals of the mpmath.odefun end state on gaussian-bump: larger of the g(u', u') drift from its start value and |det Phi - 1|",
+  "independent: The 34-digit Gragg-Bulirsch-Stoer reference on the gaussian-bump path agrees with mpmath.odefun (Taylor series) on the same sympy-derived equations within its error estimate, which overstates the gap by the factor its order-16 extrapolation predicts vs mpmath.odefun",
   "check: Clairaut's integral rho^2 phi' is conserved along the torus reference path vs Clairaut drift of the ciw Richardson end state",
   "check: Clairaut's integral rho^2 phi' is conserved along the torus reference path vs Clairaut drift of the mpmath reference end state",
   "pytest: tests/test_lab_geodesic_jacobi.py::test_t002_references_agree",
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_t002_reference_integrator_agrees_with_mpmath_odefun",
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_odefun_order_check_refutes_a_lower_order_extrapolation",
+  "pytest: tests/test_lab_geodesic_jacobi.py::test_odefun_reference_follows_the_closed_form_on_the_sphere",
   "pytest: tests/test_lab_geodesic_jacobi.py::test_t002_without_optional_modules",
   "pytest: tests/test_lab_geodesic_jacobi.py::test_every_numerical_finding_declares_uncertainty_and_tolerance",
   "pytest: tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space",
@@ -487,9 +733,9 @@
  ],
  "tests_skipped": [],
  "title": "Build high-precision reference solutions for each surface.",
- "uncertainty": "The 34-digit references change by at most 6.39e-22 between 10 and 20 macro-steps, but the reported end states and gaps are binary64, so each per-finding uncertainty is at least their binary64 rounding (about 1e-15); closed forms carry rounding only; the ciw Richardson error estimate is retained per path.",
+ "uncertainty": "The 34-digit references change by at most 6.39e-22 between 10 and 20 macro-steps; mpmath.odefun, which gives no estimate of its own, differs from them by at most 8.1e-27, inside every estimate, and the 34-digit end states carry measured rounding of at most 1.2e-32 (the same macro-steps at 44 digits), the uncertainty of each odefun gap; the reported reference end states and RK4 gaps are binary64, so each of those per-finding uncertainties is at least their binary64 rounding (about 1e-15); closed forms carry rounding only; the ciw Richardson error estimate is retained per path.",
  "unresolved_assumptions": [
   "The 34-digit reference is an extrapolated integration, not a closed form; its error estimate is empirical",
-  "Only the equations of the 34-digit reference are independent of ciw (sympy derives them); its Gragg-Bulirsch-Stoer integrator is ciw-authored and mpmath supplies the arithmetic. The scipy DOP853 comparison integrates the ciw equations, so only its integrator is independent"
+  "The Gragg-Bulirsch-Stoer integrator of the 34-digit reference is ciw-authored; wherever sympy and mpmath are installed its end states are checked against mpmath.odefun on the same sympy-derived equations, so the reference rests on equations (sympy) and a second integrator (mpmath) of origins other than ciw. mpmath supplies the arithmetic of both integrations, and neither gives a proved error bound: their agreement is empirical. The scipy DOP853 comparison integrates the ciw equations, so only its integrator is independent"
  ]
 }

@@ -116,9 +116,9 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 28306,
+   "bytes": 30179,
    "path": "artifacts/T163/PORTFOLIO.md",
-   "sha256": "90f026d0edf9b67c2037f1a8bc3b780d8f847c96ac667cf19172f78c8b832881"
+   "sha256": "1c6482e79c1b7d84613fb2816eb5d1224edab9dbc6edc5dd03b1c4b90dedd301"
   }
  ],
  "hypothesis": "A short tour of retained experiments can show every evidence label in use, with its basis and its definition, and what each result does not prove.",
@@ -128,7 +128,7 @@
  ],
  "mathematical_model": "Curated panels plus, for every label in use that they do not show, the first retained task holding it; each panel shows its headline findings with their bases and every not_established finding; the page defines the labels, qualifies independently_verified, and lists the computational boundary and customer demand as limitations.",
  "number": 163,
- "numerical_result": "12 panels (10 of 10 curated retained, added T020 (analytic), T097 (provider_backed)); labels in use: analytic, numerically_verified, provider_backed, independently_verified, not_established; labels shown: analytic, numerically_verified, provider_backed, independently_verified, not_established; 0 shown findings without their basis; 0 label or boundary statements missing.",
+ "numerical_result": "12 panels (10 of 10 curated retained, added T020 (analytic), T077 (provider_backed)); labels in use: analytic, numerically_verified, provider_backed, independently_verified, not_established; labels shown: analytic, numerically_verified, provider_backed, independently_verified, not_established; 0 shown findings without their basis; 0 label or boundary statements missing.",
  "observation_model": "No physical observation; reads retained computational records only.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -144,12 +144,12 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/research_portfolio.py": "36d03762abf5cb7a900d4572ec3f8aa8e7bc55cb61331711dce910a334b3acf8"
+   "src/ciw/lab/research_portfolio.py": "e495d96130ff4578b64c09537d871ac59cf727595bbec93f4bacfdad5ca7874d"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Add panels for a retained hardware run's findings beside the clean-room ones once one exists; hardware runs are aggregated outside the queue by `ciw lab unmeasured`, and this page reads only the clean-room reports.",
- "report_id": "sha256:26a8e5bfaf92c4cac03e691b5672b8c4b5046fa3f993954e64af4dd675d31c0e",
+ "report_id": "sha256:00d1dd91defd61992a3ea6c91904436e89757a9a25996cf559eac60c45980169",
  "schema": "ciw.lab-task-report.v1",
  "section": "research-portfolio",
  "state": "completed",

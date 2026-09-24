@@ -398,9 +398,10 @@
    "sha256": "07a157219e8bb54f449debb208eb6aa219faa54c286f0d476067383945292367"
   },
   {
-   "bytes": 4504,
+   "bytes": 6101,
    "path": "artifacts/T109/solver-agreement.svg",
-   "sha256": "9d9722cbad9ad27bc9b0a695856483692fc276af08a0ff2268549396fb97784d"
+   "rounding_level": true,
+   "sha256": "99bf60f4a8babd1dc5be9df10f2cd54c975c4f5a82fe06205aeb256037276aa4"
   }
  ],
  "hypothesis": "On highly non-normal, exactly defective and clustered Hurwitz plants PLSR either certifies soundly (the exact decrease form of its P is negative definite and P is exactly positive definite) or refuses; its Lyapunov solutions agree with an independent solver to within conditioning; its solver may refuse plants that do have a valid quadratic certificate; floating-point eigenvalues may misjudge stability where the exact certificate route does not.",
@@ -445,14 +446,14 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/lyapunov.py": "d343889fe69789b9551ef6e36029c1f969c6bf04c4cdb4618b9f506539831665",
+   "src/ciw/lab/lyapunov.py": "bac453e41cfaf4c8e83f82cc2eee826543cba08d732cba1e430a6a61fe2c1147",
    "src/ciw/lab/lyapunov_provider.py": "da3465b48b5f5efc47bfe6ab8379cf2cf2bc23e4835dc7ff047252e77fa6ef17",
    "src/ciw/lab/lyapunov_reference.py": "831ae8bd144c10e255cb9f2b54e0c219e2f98a59d01a07b5255046ae70b9b431"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: an exact-arithmetic Lyapunov solve (rational Bartels-Stewart) to decide the defective and clustered cases that PLSR's residual gate refuses, and an upstream proposal that solve_lyapunov report the residual gate separately from definiteness.",
- "report_id": "sha256:be32f04fe68e565abd521a1cc9cd3e4eed92984f786ffd4a26045f8e4427bc87",
+ "report_id": "sha256:315b5e78ede7b7085066496b6bd6478cf45975d3e6d501ed8f56eeaef92156f9",
  "schema": "ciw.lab-task-report.v1",
  "section": "lyapunov",
  "state": "completed",

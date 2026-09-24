@@ -602,7 +602,7 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/lyapunov.py": "d343889fe69789b9551ef6e36029c1f969c6bf04c4cdb4618b9f506539831665",
+   "src/ciw/lab/lyapunov.py": "bac453e41cfaf4c8e83f82cc2eee826543cba08d732cba1e430a6a61fe2c1147",
    "src/ciw/lab/lyapunov_provider.py": "da3465b48b5f5efc47bfe6ab8379cf2cf2bc23e4835dc7ff047252e77fa6ef17",
    "src/ciw/lab/lyapunov_reference.py": "831ae8bd144c10e255cb9f2b54e0c219e2f98a59d01a07b5255046ae70b9b431",
    "src/ciw/lab/lyapunov_research.py": "8e6e5b4ac0a8ba3b12d4ee13ced778fe5070b43f6766752ffc8c5b88f1a4baef"
@@ -610,7 +610,7 @@
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question (hardware-gated): identify J, friction and delay on the bench, replace the placeholder interval, re-run this check with an affine over-approximation suitable for PLSR's box semantics, then run T113's adapter on acquired encoder data. Route: T114 would read the servo bench log as an operator capture (ctx.capture('servo-bench-log'), bound with ciw lab run T114 --capture servo-bench-log=PATH) and identify the J, friction and delay interval from it as a computational finding; its physical and calibration findings need, besides an acquisition record (device, raw_sha256 of the captured bytes, acquired_at, calibration), a probe of the bench instrument on the analysing host that succeeds in T114 (runner.CAPTURE_INSTRUMENTS has no entry for servo-bench-log) or a signed-capture trust anchor, and the run is retained with ciw lab hardware retain under lab/hardware/<run-id>. Neither the capture reader nor a probe of the bench instrument exists, so they stay not_established even when such data exist.",
- "report_id": "sha256:4663ef05d11ca01d560c1417055194052d55eb50d6df168df2eab730adbdc476",
+ "report_id": "sha256:c48d4a83bfcb1e402ce5fb84faf3b78d6cefe4a248ba9f0a7eb968df45ae8a2a",
  "schema": "ciw.lab-task-report.v1",
  "section": "lyapunov",
  "state": "completed",

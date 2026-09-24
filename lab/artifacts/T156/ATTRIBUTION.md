@@ -4,13 +4,13 @@ Generated from retained lab reports. Textbook attribution matches names in repor
 
 | Textbook result | Reference | Tasks |
 | --- | --- | --- |
-| Geodesic equation and Christoffel symbols | do Carmo (1976), Differential Geometry of Curves and Surfaces, ch. 4 | T001, T003, T004, T005, T012, T033, T034, T037, T064, T117, T128, T145 |
+| Geodesic equation and Christoffel symbols | do Carmo (1976), Differential Geometry of Curves and Surfaces, ch. 4 | T001, T003, T004, T005, T012, T016, T033, T034, T037, T064, T117, T128, T145 |
 | Jacobi equation j'' + K j = 0; conjugate and focal points | do Carmo (1992), Riemannian Geometry, ch. 5 | T002, T004, T005, T006, T007, T008, T009, T010, T011, T012, T013, T014, T016, T017, T018, T021, T024, T025, T032, T040, T048, T049, T050, T051, T064, T094, T126, T127, T128, T132, T133, T134, T135, T136, T137, T138, T140, T142, T154 |
 | Clairaut relation on surfaces of revolution | do Carmo (1976), section 4-4 | T002, T015, T024, T133 |
 | Gauss-Bonnet theorem; cone angles | do Carmo (1976), section 4-5; Troyanov (1986) | T028, T029, T040 |
 | Chord-arc expansion c = s - kappa^2 s^3/24 to leading order (with start-point curvature an s^4 term -kappa kappa' s^4/24 follows; 2 sin(kappa s/2)/kappa holds for a plane circle, not a helix) | Taylor expansion of a space curve (do Carmo 1976, ch. 1) | T008, T010, T013, T017, T039, T045, T046, T047, T048, T049, T050, T051, T059, T126, T127, T138, T140 |
 | Explicit Runge-Kutta methods (Euler, midpoint, RK4, Dormand-Prince 5(4)) | Hairer, Norsett and Wanner (1993), Solving ODEs I | T002, T003, T004, T005, T006, T007, T008, T010, T011, T012, T013, T014, T015, T016, T017, T018, T024, T036, T046, T047, T048, T064, T115, T117, T120, T126, T127, T128, T136, T142, T154 |
-| Implicit and A-stable integrators; stiffness | Hairer and Wanner (1996), Solving ODEs II | T016, T037, T105 |
+| Implicit and A-stable integrators; stiffness | Hairer and Wanner (1996), Solving ODEs II | T014, T016, T037, T105 |
 | Richardson extrapolation and observed order of convergence | Richardson (1911); Roache (1998) | T002, T003, T013, T015, T039, T050, T128, T137, T140 |
 | Kalman filter, extended Kalman filter and Rauch-Tung-Striebel smoother | Kalman (1960); Rauch, Tung and Striebel (1965) | T057, T059, T062, T065, T066, T067, T070, T074, T075, T113, T142 |
 | NEES/NIS chi-square consistency, gating and Mahalanobis distance | Bar-Shalom, Li and Kirubarajan (2001) | T057, T061, T062, T063, T066, T067, T068, T069, T071, T072, T073, T074, T113, T129 |
@@ -23,7 +23,7 @@ Generated from retained lab reports. Textbook attribution matches names in repor
 | Fast marching and Dijkstra shortest paths | Sethian (1996); Dijkstra (1959) | T030, T038, T039 |
 | Monte Carlo estimation and binomial confidence intervals | Metropolis and Ulam (1949); Wilson (1927) | T043, T044, T045, T048, T051, T053, T054, T055, T057, T061, T062, T063, T064, T065, T066, T067, T069, T072, T073, T074, T129, T130 |
 | Matrix factorizations and least squares (Cholesky, QR, SVD, eigenvalues) | Golub and Van Loan (2013) | T016, T017, T047, T052, T057, T060, T062, T063, T105, T106, T107, T109, T110, T111, T127, T129, T139 |
-| Floating-point arithmetic, rounding and exact rational reference arithmetic | IEEE 754-2019; Goldberg (1991); Higham (2002) | T001, T002, T003, T004, T012, T018, T020, T022, T028, T029, T031, T033, T034, T035, T036, T038, T046, T047, T048, T051, T052, T058, T065, T074, T094, T101, T102, T103, T104, T105, T106, T107, T109, T111, T114, T115, T116, T117, T120, T121, T123, T133, T139, T142, T145, T146, T147, T148, T149 |
+| Floating-point arithmetic, rounding and exact rational reference arithmetic | IEEE 754-2019; Goldberg (1991); Higham (2002) | T001, T002, T003, T004, T012, T014, T018, T020, T022, T028, T029, T031, T033, T034, T035, T036, T038, T046, T047, T048, T051, T052, T058, T065, T074, T094, T101, T102, T103, T104, T105, T106, T107, T109, T111, T114, T115, T116, T117, T120, T121, T123, T133, T139, T142, T145, T146, T147, T148, T149 |
 | Finite differences and step-size selection | Nocedal and Wright (2006), ch. 8 | T001, T006, T009, T035, T040, T043, T045, T049, T128, T137 |
 | Automatic differentiation with dual numbers | Griewank and Walther (2008) | T034 |
 | Pinhole camera model and lens distortion | Hartley and Zisserman (2004); Brown (1966) | T048, T049, T050 |
@@ -64,6 +64,7 @@ Generated from retained lab reports. Textbook attribution matches names in repor
 | `src/ciw/lab/implementation_targets_fpga.py` | (implementation artifact) | T149, T150, T151, T152 |
 | `src/ciw/lab/implementation_targets_kernels.py` | (implementation artifact) | T142, T147, T148 |
 | `src/ciw/lab/implementation_targets_serial.py` | (implementation artifact) | T142, T144, T146, T150 |
+| `src/ciw/lab/integrators.py` | (implementation artifact) | T014, T016 |
 | `src/ciw/lab/jacobi.py` | Joint geodesic/Jacobi transfer integration without renormalization | none |
 | `src/ciw/lab/lyapunov.py` | (implementation artifact) | T101, T102, T103, T104, T105, T106, T107, T108, T109, T110, T111, T112, T113, T114 |
 | `src/ciw/lab/lyapunov_provider.py` | (implementation artifact) | T101, T102, T103, T104, T105, T106, T107, T108, T109, T110, T111, T113, T114 |
@@ -101,3 +102,6 @@ Generated from retained lab reports. Textbook attribution matches names in repor
 | `src/ciw/lab/surfaces_discrete_mesh_geometry.py` | (implementation artifact) | T038, T039, T040, T041, T042, T043, T044 |
 | `src/ciw/lab/surfaces_discrete_mesh_studies.py` | (implementation artifact) | T038, T039, T040, T041, T042, T043, T044 |
 | `src/ciw/lab/svg.py` | Deterministic SVG figures | none |
+| `src/ciw/operations/runner.py` | (implementation artifact) | T077, T078, T079, T080, T081, T082, T083, T084, T085, T086, T087, T088, T089, T090 |
+| `src/ciw/session.py` | (implementation artifact) | T077, T078, T079, T080, T081, T082, T083, T084, T085, T086, T087, T088, T089, T090 |
+| `src/ciw/workbench.py` | (implementation artifact) | T077, T078, T079, T080, T081, T082, T083, T084, T085, T086, T087, T088, T089, T090 |

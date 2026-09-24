@@ -293,21 +293,30 @@
    ]
   },
   {
-   "across_reopen": "absent",
-   "across_replay": "absent",
-   "binds": "nothing; equal numbers from two executions are not linked",
-   "derivation": "none: results carry data but no content-level numerical identity",
-   "derivation_class": "absent",
+   "across_reopen": "stable",
+   "across_replay": "stable for equal data",
+   "binds": "operation name and analysed numbers only (not parameters, selection, time or occurrence), so equal numbers from two executions share it; legacy analysis.stats results carry none",
+   "derivation": "sha256 over canonical JSON of {operation_id, data}, the scheme of the native workflows' numerical_result_id; inside the record seal",
+   "derivation_class": "content_hash",
    "exercised": true,
-   "identity": "oscillator numerical-result identity",
+   "identity": "oscillator numerical_result_id",
+   "observed_refusals": {
+    "numerical_result_id_stale": "Saved operation numerical_result_id differs from its data"
+   },
    "properties": {
-    "absent": true,
-    "absent_after_reopen": true,
-    "equal_data_distinct_ids": true
+    "identity_recomputed_with_forged_data_reopens": true,
+    "legacy_result_has_none": true,
+    "recomputed_from_operation_and_data": true,
+    "shared_by_equal_data_from_two_executions": true,
+    "stable_across_reopen": true,
+    "stale_identity_refused_on_reopen": true
    },
    "scope": "oscillator result",
    "validated_at": [
-    "(no validator)"
+    "src/ciw/operations/runner.py:numerical_result_id",
+    "src/ciw/operations/runner.py:execute",
+    "src/ciw/operations/runner.py:check_numerical_result_id",
+    "src/ciw/session.py:_validate_saved_result"
    ]
   },
   {
@@ -352,7 +361,7 @@
   {
    "across_reopen": "stable",
    "across_replay": "fresh",
-   "binds": "session_id, created_at, source bytes, configuration, runtimes and steps; NOT verification or receipts",
+   "binds": "session_id, created_at, source bytes, configuration, runtimes and steps; NOT verification or receipts (the catalog replay_receipt_seal binds which bundle holds which receipt)",
    "derivation": "sha256 over the bundle without bundle_digest, verification and replay_receipts",
    "derivation_class": "content_hash_of_fresh_occurrence",
    "exercised": true,
@@ -426,6 +435,32 @@
    "validated_at": [
     "src/ciw/workbench.py:_validate_receipts",
     "src/ciw/energy_workflow.py:EnergyAccuracyWorkflow._validate"
+   ]
+  },
+  {
+   "across_reopen": "stable",
+   "across_replay": "fresh (changes when a replay adds a receipt)",
+   "binds": "which retained bundle holds which replay receipt; anyone can recompute it, and a catalog without it is accepted as one saved before it existed",
+   "derivation": "sha256 over canonical JSON of {schema ciw.replay-receipt-seal.v1, receipts: [{bundle_id, replay_id}] in catalog order}, written by every save",
+   "derivation_class": "unkeyed_seal",
+   "exercised": true,
+   "identity": "workbench replay_receipt_seal",
+   "observed_refusals": {
+    "receipt_deleted_under_stale_seal": "Retained replay receipt seal differs"
+   },
+   "properties": {
+    "changes_when_a_replay_adds_a_receipt": true,
+    "recomputed_from_catalog_receipts": true,
+    "recomputed_seal_accepts_a_deleted_receipt": true,
+    "removed_seal_accepts_a_deleted_receipt": true,
+    "stable_across_reopen": true,
+    "stale_seal_refuses_a_deleted_receipt": true
+   },
+   "scope": "workbench catalog",
+   "validated_at": [
+    "src/ciw/workbench.py:receipt_seal",
+    "src/ciw/workbench.py:Workbench.serialize",
+    "src/ciw/workbench.py:Workbench.restore"
    ]
   },
   {
@@ -581,19 +616,40 @@
    ]
   },
   {
-   "across_reopen": "pin and format checked",
-   "across_replay": "compared on replay (runtime projection without host paths)",
-   "binds": "the pinned provider revision plus host-measured tree and interpreter digests (format-checked on reopen)",
-   "derivation": "revision, module and source_root must equal CIW's pin; source_tree (40 hex), python_sha256 (64 hex), python_version and dependencies are reported by the host adapter",
+   "across_reopen": "stable; bound by bundle_digest, and the pin is not re-checked on reopen",
+   "across_replay": "compared field by field on replay: revision, source_tree, module, source_root, python_sha256, python_version, dependencies (PPDA also source_sha256 and execution_scope); a forged revision is refused, while schema, adapter_version and unknown keys are not compared (a forged adapter_version with an injected key passes)",
+   "binds": "the pinned provider revision plus host-measured tree, interpreter digest and versions, and the host's checkout and interpreter paths",
+   "derivation": "revision, module and source_root are CIW's pin (ciw/telemetry-runtimes.json); source_tree is Git's HEAD tree of the bound checkout; python_sha256 hashes the bound interpreter, whose version and dependency versions are probed; repository_root and python_executable are the host's paths",
    "derivation_class": "provider_pinned",
-   "exercised": false,
+   "exercised": true,
    "identity": "pinned-provider runtime identity (ciw.subprocess-runtime.v1)",
-   "properties": {},
-   "scope": "provider-backed bundle runtime",
+   "observed_refusals": {
+    "forged_adapter_version_and_injected_key_reopen": "accepted",
+    "forged_adapter_version_and_injected_key_replay_comparison": "accepted",
+    "forged_revision_reopen": "accepted",
+    "forged_revision_replay": "Telemetry replay runtime identity mismatch"
+   },
+   "properties": {
+    "classified_provider_backed_by_ciw_lab_classify": true,
+    "forged_adapter_version_and_injected_key_pass_the_replay_comparison": true,
+    "forged_revision_refused_by_replay": true,
+    "pin_not_rechecked_on_reopen": true,
+    "ppda_standalone_source_digest_is_pinned": true,
+    "recomputed_python_sha256_of_the_bound_interpreter": true,
+    "recomputed_source_tree_from_checkout_working_bytes": true,
+    "records_the_host_checkout_and_interpreter_paths": true,
+    "revision_module_source_root_are_the_manifest_pins": true,
+    "schema_and_adapter_version": true,
+    "source_tree_is_the_bound_checkout_head_tree": true,
+    "stable_across_reopen": true,
+    "stable_across_replay": true
+   },
+   "scope": "telemetry bundle runtimes (ppda, stfe, gsie, set)",
    "validated_at": [
-    "src/ciw/declared_workload.py:DeclaredWorkflow._validate",
-    "src/ciw/declared_workload.py:DeclaredWorkflow._runtime_projection",
-    "src/ciw/workbench.py:_validate_links"
+    "src/ciw/adapters/subprocess.py:PinnedSubprocessAdapter.runtime_identity",
+    "src/ciw/telemetry.py:_runtime",
+    "src/ciw/telemetry.py:_validate_retained",
+    "src/ciw/workbench.py:Workbench.bind_workflow"
    ]
   }
  ],

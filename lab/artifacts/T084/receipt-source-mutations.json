@@ -81,12 +81,28 @@
    "task": "T084"
   },
   {
-   "description": "receipt source and verification subject moved together to a sibling execution of the same source bytes; verification rebuilt",
+   "description": "receipt source and verification subject moved together to a sibling execution of the same source bytes; verification and replay_id rebuilt, the catalog receipt seal kept",
+   "error": "ValueError",
+   "killed": true,
+   "kind": "workspace",
+   "message_matches_pin": true,
+   "name": "receipt-source.sibling-execution",
+   "observed": "Retained replay receipt seal differs",
+   "observed_outcome": "killed",
+   "outcome_matches_prediction": true,
+   "pinned_message": "Retained replay receipt seal differs",
+   "predicted_outcome": "killed",
+   "recompute": "local",
+   "target": "energy replay receipt",
+   "task": "T084"
+  },
+  {
+   "description": "receipt source and verification subject moved together to a sibling execution of the same source bytes; verification, replay_id and catalog receipt seal rebuilt",
    "error": null,
    "killed": false,
    "kind": "workspace",
    "message_matches_pin": true,
-   "name": "receipt-source.sibling-execution",
+   "name": "receipt-source.sibling-execution-resealed",
    "observed": "accepted",
    "observed_outcome": "accepted",
    "outcome_matches_prediction": true,
@@ -97,7 +113,7 @@
     "verification_subject": "bundle:B0b"
    },
    "predicted_outcome": "accepted",
-   "recompute": "local",
+   "recompute": "full",
    "target": "energy replay receipt",
    "task": "T084"
   }

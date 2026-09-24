@@ -51,19 +51,19 @@
     "value": 0
    },
    "unit": "counterexamples",
-   "value": 214
+   "value": 223
   }
  ],
  "generated_artifacts": [
   {
-   "bytes": 136746,
+   "bytes": 144017,
    "path": "artifacts/T157/counterexamples.json",
-   "sha256": "1d699f731bbd887961f577918fd9ec446764d9e51ce26bccc7c6c2a61c0bcabf"
+   "sha256": "e0694a95dfacf8ef31674b91c0f62effe7474a0fb014537de914ea92ac183582"
   },
   {
-   "bytes": 86565,
+   "bytes": 91764,
    "path": "artifacts/T157/COUNTEREXAMPLES.md",
-   "sha256": "bf0b75b93be7a52b83626dc6e5af1d7a6d793b12c6615841dfc30ba2f0260cdd"
+   "sha256": "962c17cf10983569ede17518be0f4f6d41cd7163a7bacee8dcd4b372226c2760"
   }
  ],
  "hypothesis": "Every counterexample recorded by a queue task can be collected with its witness and evidence status.",
@@ -72,7 +72,7 @@
  ],
  "mathematical_model": "Catalogue = all retained findings carrying a counterexample statement, keyed by task and claim.",
  "number": 157,
- "numerical_result": "214 counterexamples from 112 tasks; labels {'analytic': 2, 'independently_verified': 4, 'numerically_verified': 208}.",
+ "numerical_result": "223 counterexamples from 112 tasks; labels {'analytic': 2, 'independently_verified': 4, 'numerically_verified': 217}.",
  "observation_model": "No physical observation; reads retained computational records only.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -88,12 +88,12 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/research_portfolio.py": "36d03762abf5cb7a900d4572ec3f8aa8e7bc55cb61331711dce910a334b3acf8"
+   "src/ciw/lab/research_portfolio.py": "e495d96130ff4578b64c09537d871ac59cf727595bbec93f4bacfdad5ca7874d"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Counterexamples are compared with a fresh run by ciw lab verify in CI (scripts/check_lab.py); optional: name one pytest witness per counterexample in each section's tests, so a counterexample is also guarded outside the clean-room comparison.",
- "report_id": "sha256:f2a3eaaa727563989ec236005a80b404255e12fc06630842195f523e19ec5408",
+ "report_id": "sha256:37d7f699bf9555b086acff7bf4cd0cc0c5e928372b1aecc12337460dd4377bcb",
  "schema": "ciw.lab-task-report.v1",
  "section": "research-portfolio",
  "state": "completed",

@@ -73,7 +73,7 @@
     "value": 0
    },
    "unit": "findings",
-   "value": 342
+   "value": 351
   },
   {
    "assigned_by": "ciw.lab.evidence",
@@ -137,7 +137,7 @@
     "value": 0
    },
    "unit": "statements",
-   "value": 22
+   "value": 23
   },
   {
    "assigned_by": "ciw.lab.evidence",
@@ -202,9 +202,9 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 247281,
+   "bytes": 255284,
    "path": "artifacts/T162/evidence-provenance-note-draft.md",
-   "sha256": "1c3ac033761c369135e983ccfc131dbbac20fc7329af01515fe7dbacf9a35e86"
+   "sha256": "0433d8c6c3788323ef25db8f31adeca8d6ab68bab1b485f865ca5e60454e49ab"
   }
  ],
  "hypothesis": "An evidence provenance note draft with a thesis, introduction, methods, results, discussion, limitations and outstanding work can be generated from retained findings alone: every number traceable to a report identity, every label defined and shown with its basis, and every limitation drawn from not_established findings and the unfinished tasks' own statements.",
@@ -218,7 +218,7 @@
  ],
  "mathematical_model": "Draft = generated Markdown: a thesis restating counts and counterexamples of the retained findings; an introduction listing the tasks' questions; methods (label definitions, the independence qualification; the specification's evidence rules and the T100 and T141 boundary findings, task hypotheses and models, the assumptions that limit independence); results (one selected finding and figure per task); a discussion listing each counterexample with its witness; limitations (the computational boundary, not_established findings, what each unfinished task is missing); outstanding work; references from the T156 textbook ledger; an appendix with every finding, its label and its basis.",
  "number": 162,
- "numerical_result": "Draft cites 342 findings from 51 reports (51 selected, 10 figures, 66 counterexamples discussed, 3 unfinished tasks, 7 independence qualifications); 0 table rows differ from their source; 0 label or boundary statements missing; 0 required assumptions absent.",
+ "numerical_result": "Draft cites 351 findings from 51 reports (51 selected, 10 figures, 69 counterexamples discussed, 3 unfinished tasks, 7 independence qualifications); 0 table rows differ from their source; 0 label or boundary statements missing; 0 required assumptions absent.",
  "observation_model": "No physical observation; reads retained computational records only.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -234,12 +234,12 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/research_portfolio.py": "36d03762abf5cb7a900d4572ec3f8aa8e7bc55cb61331711dce910a334b3acf8"
+   "src/ciw/lab/research_portfolio.py": "e495d96130ff4578b64c09537d871ac59cf727595bbec93f4bacfdad5ca7874d"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "Write the parts the lab cannot write (the thesis in the authors' words, the related-work discussion, the interpretation of the counterexamples and the conclusions) and submit the draft for external review; then the unfinished tasks' own next steps (T077: Complete T077: observe the ESM candidate, candidate execution and pinned-provider runtime identity rows, now read from code, once the telemetry provider stack …; T145: Implement the Julia worker behind the SCR boundary (docs/JULIA_SP1.md: handshake, operation allowlist, retained bytes) and a T145 path that dispatches the …; T147: Judge the PTX kernel's outputs for every replica under the fixed-order policy on the RTX 2080 host (protocol in docs/lab/ENERGY_GPU.md): `mkdir -p …); 15 physical, calibration or sensor claims of completed tasks (T078, T097, T100, T105, T112, T113, T114, T143, T149, T150, T152) stay not established, and each task's own next step is listed under Outstanding work; 22 authority-domain claims stay not established on any evidence.",
- "report_id": "sha256:7246fc8052961a33e12fa9c2c6551224117f5e36181d472b61f5c61533cf1889",
+ "recommended_next_task": "Write the parts the lab cannot write (the thesis in the authors' words, the related-work discussion, the interpretation of the counterexamples and the conclusions) and submit the draft for external review; then the unfinished tasks' own next steps (T077: Complete T077: observe the ESM candidate_id and candidate execution identity rows, still read from code, by binding the pinned ESM runtime and its CIW replay …; T145: Implement the Julia worker behind the SCR boundary (docs/JULIA_SP1.md: handshake, operation allowlist, retained bytes) and a T145 path that dispatches the …; T147: Judge the PTX kernel's outputs for every replica under the fixed-order policy on the RTX 2080 host (protocol in docs/lab/ENERGY_GPU.md): `mkdir -p …); 15 physical, calibration or sensor claims of completed tasks (T078, T097, T100, T105, T112, T113, T114, T143, T149, T150, T152) stay not established, and each task's own next step is listed under Outstanding work; 22 authority-domain claims stay not established on any evidence.",
+ "report_id": "sha256:8fe28d3c155c111255780e411ca291e5275a2377b68a62d83a5b700f2dac98e3",
  "schema": "ciw.lab-task-report.v1",
  "section": "research-portfolio",
  "state": "partial",

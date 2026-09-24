@@ -5,4 +5,5 @@
 | T084 | receipt-source.subject-rebound | workspace | energy replay receipt | local | killed | Replay source must already belong to this workbench | Replay source must already belong to this workbench | killed |
 | T084 | receipt-source.self | workspace | energy replay receipt | local | killed | Invalid retained energy replay receipt | Invalid retained energy replay receipt | killed |
 | T084 | receipt-source.other-source | workspace | energy replay receipt | local | killed | Replay source must already belong to this workbench | Replay source must already belong to this workbench | killed |
-| T084 | receipt-source.sibling-execution | workspace | energy replay receipt | local | accepted | accepted | accepted | SURVIVED |
+| T084 | receipt-source.sibling-execution | workspace | energy replay receipt | local | killed | Retained replay receipt seal differs | Retained replay receipt seal differs | killed |
+| T084 | receipt-source.sibling-execution-resealed | workspace | energy replay receipt | full | accepted | accepted | accepted | SURVIVED |

@@ -761,9 +761,10 @@
    "sha256": "85a212120901eb6c5c3f0c46ad09ab45c2a8584631bed5da138c1506baacea21"
   },
   {
-   "bytes": 38838,
+   "bytes": 64890,
    "path": "artifacts/T120/common-workload-precision.svg",
-   "sha256": "d34fc262be9ec1db97ae81adcf910e087bb5df415c4c023f75b242a074f77d50"
+   "rounding_level": true,
+   "sha256": "8e1c45ff0f8fa816751b496cc2f5ffc2c2a70e7072446cc03a5bf582d177a322"
   }
  ],
  "hypothesis": "Lower precision buys nothing once roundoff dominates: float32 RK4 matches float64 until truncation error reaches float32 roundoff, and the float32 Gaussian VI iteration meets the workload's declared KL target as early as float64 but stalls at a roundoff floor below it; the counted operations per step or iteration are precision-independent, so any energy difference comes from how the hardware executes them, which only a capture can show.",
@@ -804,15 +805,15 @@
    "src/ciw/energy_bench.py": "bd50806ba3128ff85a1d240bc9670db04082196ec050c51597ec0cc725e45046",
    "src/ciw/energy_cuda.py": "9b4b86809e47cba7683dc0c238b0b052b6785fd09e629224c5f8f37b6d5a0e64",
    "src/ciw/free_energy_math.py": "4f096c281c548e92ed7bb1d49a8fd58f3a4d6b48ababef2958331ca13f088a6e",
-   "src/ciw/lab/energy_gpu.py": "f49195ce5a78ced3c8da1562f4412f2fdc65d8cc2749dd4fbe0b25bc0334e773",
-   "src/ciw/lab/energy_gpu_kernels.py": "1198886637535f3f8ec26601aa70cdc16d1c175dc4286aa9807edec3910005d2",
+   "src/ciw/lab/energy_gpu.py": "a77a30ee8439752ff3da38d742a823ac16d0cea5ea189bf030c2d52233ef5706",
+   "src/ciw/lab/energy_gpu_kernels.py": "967807416e80c2fd746babe8e52419a20f68e9285c0a4aad452a4b6758d3e786",
    "src/ciw/lab/energy_gpu_telemetry.py": "6935331e622266868a97ee78f8e34d185aa69009a62fedc8ea8273b3a9312bfc",
    "src/ciw/lab/energy_gpu_workload.py": "5cdaf9fe9f25194dae561e060abf471567cfd3bb8df6c1836630a54c5085a9de"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Measure float32 and float64 package energy per batch of the common workload on a Linux host with readable intel-rapl counters (docs/lab/ENERGY_GPU.md): `python -m ciw.lab.energy_gpu_telemetry rapl-capture runs/rapl-<date>.json`, then `ciw lab run T115 T117 T120 --capture rapl-log=runs/rapl-<date>.json --output-dir results/rapl-<date>` on the same host, then `ciw lab hardware retain results/rapl-<date> --retained lab --run-id rapl-<date> --host \"<RAPL host>\"`. Deferred research question: extend the common workload's GPU path beyond the binary64 gaussian_vi PTX kernel of ciw.energy_cuda: a float32 rendering of the same kernel, and a device-wide reduction of its per-replica outputs (a fixed tree over the stored order per T148's REDUCTION_POLICY, plus one atomicAdd variant), each compared with the NumPy reference by compare_outputs on the RTX 2080 host and captured with `ciw energy record` for energy; until then those claims stay not_established on every host",
- "report_id": "sha256:d95b0ca6da7f1c38f8e807b5ae942bc4c79b19dca0a6997e7f73750324bf1879",
+ "report_id": "sha256:5e75a1c2d38a4ff44e531f270ef671dc1fdc75bc032347ae679e455a003428fb",
  "schema": "ciw.lab-task-report.v1",
  "section": "energy-gpu",
  "state": "partial",

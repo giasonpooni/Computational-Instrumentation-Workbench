@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420" font-family="sans-serif" font-size="11">
+<rect width="640" height="420" fill="#ffffff"/>
+<text x="78" y="22" font-size="13" font-weight="bold">Speed-error envelope, fixed step h = 0.25</text>
+<rect x="78" y="40" width="392" height="322" fill="none" stroke="#333"/>
+<line x1="78.00" y1="40" x2="78.00" y2="362" stroke="#e5e7eb"/>
+<text x="78.00" y="378" text-anchor="middle">1e0</text>
+<line x1="255.85" y1="40" x2="255.85" y2="362" stroke="#e5e7eb"/>
+<text x="255.85" y="378" text-anchor="middle">1e1</text>
+<line x1="433.70" y1="40" x2="433.70" y2="362" stroke="#e5e7eb"/>
+<text x="433.70" y="378" text-anchor="middle">1e2</text>
+<line x1="78" y1="297.21" x2="470" y2="297.21" stroke="#e5e7eb"/>
+<text x="72" y="301.21" text-anchor="end">1e-5</text>
+<line x1="78" y1="216.42" x2="470" y2="216.42" stroke="#e5e7eb"/>
+<text x="72" y="220.42" text-anchor="end">1e-4</text>
+<line x1="78" y1="135.63" x2="470" y2="135.63" stroke="#e5e7eb"/>
+<text x="72" y="139.63" text-anchor="end">1e-3</text>
+<line x1="78" y1="54.84" x2="470" y2="54.84" stroke="#e5e7eb"/>
+<text x="72" y="58.84" text-anchor="end">1e-2</text>
+<text x="274.00" y="406" text-anchor="middle">L</text>
+<text x="16" y="201.00" text-anchor="middle" transform="rotate(-90 16 201.00)">max |g(v, v) - 1|</text>
+<path d="M78.00,265.40 L131.54,265.40 L185.08,265.40 L238.61,265.40 L292.15,265.40 L345.69,265.40" fill="none" stroke="#1f5fa8" stroke-width="1.8"/>
+<circle cx="78.00" cy="265.40" r="2.6" fill="#1f5fa8"/>
+<circle cx="131.54" cy="265.40" r="2.6" fill="#1f5fa8"/>
+<circle cx="185.08" cy="265.40" r="2.6" fill="#1f5fa8"/>
+<circle cx="238.61" cy="265.40" r="2.6" fill="#1f5fa8"/>
+<circle cx="292.15" cy="265.40" r="2.6" fill="#1f5fa8"/>
+<circle cx="345.69" cy="265.40" r="2.6" fill="#1f5fa8"/>
+<line x1="482" y1="52" x2="502" y2="52" stroke="#1f5fa8" stroke-width="2"/>
+<text x="508" y="56">hyperbolic-plane rk4</text>
+<path d="M78.00,81.42 L131.54,66.78 L185.08,52.14 L238.61,51.93 L292.15,51.93 L345.69,51.93" fill="none" stroke="#c2410c" stroke-width="1.8"/>
+<circle cx="78.00" cy="81.42" r="2.6" fill="#c2410c"/>
+<circle cx="131.54" cy="66.78" r="2.6" fill="#c2410c"/>
+<circle cx="185.08" cy="52.14" r="2.6" fill="#c2410c"/>
+<circle cx="238.61" cy="51.93" r="2.6" fill="#c2410c"/>
+<circle cx="292.15" cy="51.93" r="2.6" fill="#c2410c"/>
+<circle cx="345.69" cy="51.93" r="2.6" fill="#c2410c"/>
+<line x1="482" y1="70" x2="502" y2="70" stroke="#c2410c" stroke-width="2"/>
+<text x="508" y="74">hyperbolic-plane implicit-midpoint</text>
+<path d="M78.00,304.61 L131.54,289.94 L185.08,275.73 L238.61,275.48 L292.15,275.48 L345.69,275.48" fill="none" stroke="#15803d" stroke-width="1.8"/>
+<circle cx="78.00" cy="304.61" r="2.6" fill="#15803d"/>
+<circle cx="131.54" cy="289.94" r="2.6" fill="#15803d"/>
+<circle cx="185.08" cy="275.73" r="2.6" fill="#15803d"/>
+<circle cx="238.61" cy="275.48" r="2.6" fill="#15803d"/>
+<circle cx="292.15" cy="275.48" r="2.6" fill="#15803d"/>
+<circle cx="345.69" cy="275.48" r="2.6" fill="#15803d"/>
+<line x1="482" y1="88" x2="502" y2="88" stroke="#15803d" stroke-width="2"/>
+<text x="508" y="92">hyperbolic-plane gauss-legendre-2</text>
+<path d="M78.00,254.09 L131.54,254.09 L185.08,254.09 L238.61,254.09 L292.15,254.09 L345.69,254.09" fill="none" stroke="#7e22ce" stroke-width="1.8"/>
+<circle cx="78.00" cy="254.09" r="2.6" fill="#7e22ce"/>
+<circle cx="131.54" cy="254.09" r="2.6" fill="#7e22ce"/>
+<circle cx="185.08" cy="254.09" r="2.6" fill="#7e22ce"/>
+<circle cx="238.61" cy="254.09" r="2.6" fill="#7e22ce"/>
+<circle cx="292.15" cy="254.09" r="2.6" fill="#7e22ce"/>
+<circle cx="345.69" cy="254.09" r="2.6" fill="#7e22ce"/>
+<line x1="482" y1="106" x2="502" y2="106" stroke="#7e22ce" stroke-width="2"/>
+<text x="508" y="110">saddle-oblique rk4</text>
+<path d="M78.00,87.10 L131.54,87.10 L185.08,87.10 L238.61,87.10 L292.15,87.10 L345.69,87.10" fill="none" stroke="#b91c1c" stroke-width="1.8"/>
+<circle cx="78.00" cy="87.10" r="2.6" fill="#b91c1c"/>
+<circle cx="131.54" cy="87.10" r="2.6" fill="#b91c1c"/>
+<circle cx="185.08" cy="87.10" r="2.6" fill="#b91c1c"/>
+<circle cx="238.61" cy="87.10" r="2.6" fill="#b91c1c"/>
+<circle cx="292.15" cy="87.10" r="2.6" fill="#b91c1c"/>
+<circle cx="345.69" cy="87.10" r="2.6" fill="#b91c1c"/>
+<line x1="482" y1="124" x2="502" y2="124" stroke="#b91c1c" stroke-width="2"/>
+<text x="508" y="128">saddle-oblique implicit-midpoint</text>
+<path d="M78.00,302.90 L131.54,302.90 L185.08,302.90 L238.61,302.90 L292.15,302.90 L345.69,302.90" fill="none" stroke="#0f766e" stroke-width="1.8"/>
+<circle cx="78.00" cy="302.90" r="2.6" fill="#0f766e"/>
+<circle cx="131.54" cy="302.90" r="2.6" fill="#0f766e"/>
+<circle cx="185.08" cy="302.90" r="2.6" fill="#0f766e"/>
+<circle cx="238.61" cy="302.90" r="2.6" fill="#0f766e"/>
+<circle cx="292.15" cy="302.90" r="2.6" fill="#0f766e"/>
+<circle cx="345.69" cy="302.90" r="2.6" fill="#0f766e"/>
+<line x1="482" y1="142" x2="502" y2="142" stroke="#0f766e" stroke-width="2"/>
+<text x="508" y="146">saddle-oblique gauss-legendre-2</text>
+<path d="M202.31,271.25 L255.85,271.25 L309.39,263.85 L362.92,231.70 L416.46,207.37 L470.00,181.33" fill="none" stroke="#a16207" stroke-width="1.8"/>
+<circle cx="202.31" cy="271.25" r="2.6" fill="#a16207"/>
+<circle cx="255.85" cy="271.25" r="2.6" fill="#a16207"/>
+<circle cx="309.39" cy="263.85" r="2.6" fill="#a16207"/>
+<circle cx="362.92" cy="231.70" r="2.6" fill="#a16207"/>
+<circle cx="416.46" cy="207.37" r="2.6" fill="#a16207"/>
+<circle cx="470.00" cy="181.33" r="2.6" fill="#a16207"/>
+<line x1="482" y1="160" x2="502" y2="160" stroke="#a16207" stroke-width="2"/>
+<text x="508" y="164">torus-winding rk4</text>
+<path d="M202.31,126.67 L255.85,126.67 L309.39,126.67 L362.92,126.67 L416.46,126.67 L470.00,126.67" fill="none" stroke="#475569" stroke-width="1.8"/>
+<circle cx="202.31" cy="126.67" r="2.6" fill="#475569"/>
+<circle cx="255.85" cy="126.67" r="2.6" fill="#475569"/>
+<circle cx="309.39" cy="126.67" r="2.6" fill="#475569"/>
+<circle cx="362.92" cy="126.67" r="2.6" fill="#475569"/>
+<circle cx="416.46" cy="126.67" r="2.6" fill="#475569"/>
+<circle cx="470.00" cy="126.67" r="2.6" fill="#475569"/>
+<line x1="482" y1="178" x2="502" y2="178" stroke="#475569" stroke-width="2"/>
+<text x="508" y="182">torus-winding implicit-midpoint</text>
+<path d="M202.31,350.07 L255.85,350.07 L309.39,350.07 L362.92,350.07 L416.46,350.07 L470.00,350.07" fill="none" stroke="#1f5fa8" stroke-width="1.8"/>
+<circle cx="202.31" cy="350.07" r="2.6" fill="#1f5fa8"/>
+<circle cx="255.85" cy="350.07" r="2.6" fill="#1f5fa8"/>
+<circle cx="309.39" cy="350.07" r="2.6" fill="#1f5fa8"/>
+<circle cx="362.92" cy="350.07" r="2.6" fill="#1f5fa8"/>
+<circle cx="416.46" cy="350.07" r="2.6" fill="#1f5fa8"/>
+<circle cx="470.00" cy="350.07" r="2.6" fill="#1f5fa8"/>
+<line x1="482" y1="196" x2="502" y2="196" stroke="#1f5fa8" stroke-width="2"/>
+<text x="508" y="200">torus-winding gauss-legendre-2</text>
+</svg>

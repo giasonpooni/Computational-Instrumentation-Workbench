@@ -3,7 +3,10 @@
   "src/ciw/lab/exchange_provenance.py",
   "src/ciw/lab/exchange_provenance_common.py",
   "tests/test_lab_exchange_provenance.py",
-  "docs/lab/EXCHANGE_PROVENANCE.md"
+  "docs/lab/EXCHANGE_PROVENANCE.md",
+  "src/ciw/operations/runner.py",
+  "src/ciw/session.py",
+  "src/ciw/workbench.py"
  ],
  "evidence_status": {
   "counts": {
@@ -11,14 +14,14 @@
    "hardware_measured": 0,
    "independently_verified": 0,
    "not_established": 2,
-   "numerically_verified": 3,
-   "provider_backed": 0,
+   "numerically_verified": 7,
+   "provider_backed": 4,
    "synthetic": 0
   },
-  "primary": "numerically_verified"
+  "primary": "provider_backed"
  },
- "expected_invariant": "Every exercised identity shows its predicted properties: content identities recompute exactly and are stable when their content is; event identities are distinct per occurrence; declared identities are copied, not derived; every identity predicted stable across reopen has the same value after the saved workspace is reopened and saved again.",
- "experiment": "Build an oscillator session and energy-accuracy bundles offline, replay, save, reopen, replay again, replay a replay, and repeat in a separate session (same process and code); retain byte and resealed content variants; check every predicted property per identity, with CIW's own validators judging refusals and moved occurrences; compare every retained identity before reopen with the value the reopened session saves again (records paired by catalog position). Planned but offline-unreachable: ESM candidate_id and candidate execution identities (they need an operator-bound ESM adapter and a telemetry or calibrated bundle) and pinned-provider runtime identities (ciw.subprocess-runtime.v1; they need a provider checkout bound to a declared-workload or telemetry workflow) are planned matrix rows that the offline path cannot exercise; their predictions are read from the code, not observed. Digest re-derivations use a local canonical-JSON/SHA-256 implementation in ciw.lab, the same implementation origin as CIW, so they are cross_implementation checks (numerically_verified, never independently_verified); every other check compares CIW's own outputs or refusal messages. Matrix retained as identity-matrix.json/.md (observed refusal messages included per row).",
+ "expected_invariant": "Every exercised identity shows its predicted properties: content identities recompute exactly and are stable when their content is; event identities are distinct per occurrence; declared identities are copied, not derived; every identity predicted stable across reopen has the same value after the saved workspace is reopened and saved again; each executed telemetry runtime is retained with its ciw/telemetry-runtimes.json pin.",
+ "experiment": "Build an oscillator session and energy-accuracy bundles offline, replay, save, reopen, replay again, replay a replay, and repeat in a separate session (same process and code); retain byte and resealed content variants; check every predicted property per identity, with CIW's own validators judging refusals and moved occurrences; compare every retained identity before reopen with the value the reopened session saves again (records paired by catalog position); cite the mutation matrix's receipt-deletion and resealed-statistics rows. With the telemetry stack bound (--provider telemetry-stack=<dir>), check each checkout against its ciw/telemetry-runtimes.json pin, then execute, replay, save, classify (ciw.lab.bridge) and reopen a telemetry session in the shared workbench, reopen and replay a forged GSIE runtime revision, and reopen a forged GSIE adapter_version with an injected key and meet it with the replay's runtime identity comparison. Planned but not reachable here: ESM candidate_id and candidate execution identities: an ESM candidate action needs the ESM runtime pinned in src/ciw/esm-runtime.json (its built workbench-candidate artifact and replay helper, a node binary and a CIW checkout at its replay revision) bound as an operator candidate adapter, which the lab gate does not provision; their predictions are read from the code, not observed. Digest re-derivations use a local canonical-JSON/SHA-256 implementation in ciw.lab, the same implementation origin as CIW, so they are cross_implementation checks (numerically_verified, never independently_verified); every other check compares CIW's own outputs or refusal messages. Matrix retained as identity-matrix.json/.md (observed refusal messages included per row); the stack's checkout states and the session's runtime identities, without host paths, as telemetry-runtimes.json.",
  "failure_modes_checked": [
   "digest recomputation mismatch",
   "identity reused across occurrences",
@@ -28,10 +31,16 @@
   "source identity insensitive to bytes under one label",
   "result identity after an occurrence change (judged by CIW's step validator)",
   "numerical identity after a metadata-only resealed edit",
+  "oscillator data edit under a stale numerical_result_id",
+  "receipt deleted under a stale, recomputed or removed catalog seal (T083's rows)",
   "producer identities edited with and without resealing",
   "exchange identity tamper",
   "ESM request/response mismatch",
-  "ESM digest over a non-canonical layout of the same bundle"
+  "ESM digest over a non-canonical layout of the same bundle",
+  "telemetry checkout off its pin or with modified bytes",
+  "forged telemetry runtime revision on reopen and on replay",
+  "forged telemetry runtime adapter_version and injected key on reopen and in the replay comparison",
+  "host paths in retained runtime identities"
  ],
  "findings": [
   {
@@ -210,7 +219,15 @@
       "comparison": "abs_le",
       "observed": 0.0,
       "passed": true,
-      "reference": "oscillator numerical-result identity: observed properties that did not hold",
+      "reference": "oscillator numerical_result_id: re-derived digest properties that did not hold",
+      "reference_kind": "cross_implementation",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "oscillator numerical_result_id: observed properties that did not hold",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
      },
@@ -290,6 +307,22 @@
       "comparison": "abs_le",
       "observed": 0.0,
       "passed": true,
+      "reference": "workbench replay_receipt_seal: re-derived digest properties that did not hold",
+      "reference_kind": "cross_implementation",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "workbench replay_receipt_seal: observed properties that did not hold",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
       "reference": "oscillator record_digest (seal): re-derived digest properties that did not hold",
       "reference_kind": "cross_implementation",
       "tolerance": 0.0
@@ -349,10 +382,26 @@
       "reference": "ESM bundleBytesDigest: observed properties that did not hold",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "pinned-provider runtime identity (ciw.subprocess-runtime.v1): re-derived digest properties that did not hold",
+      "reference_kind": "cross_implementation",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "pinned-provider runtime identity (ciw.subprocess-runtime.v1): observed properties that did not hold",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
      }
     ]
    },
-   "claim": "Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths",
+   "claim": "Every exercised identity shows its predicted derivation, freshness, binding and reopen properties",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
    "origin": [
@@ -370,29 +419,28 @@
    "unit": null,
    "value": {
     "derivation_classes": {
-     "absent": 2,
+     "absent": 1,
      "byte_hash": 2,
      "caller_declared": 4,
      "caller_declared_name": 1,
      "code_hash_plus_declared_versions": 1,
      "constant_name": 1,
-     "content_hash": 8,
+     "content_hash": 9,
      "content_hash / fresh_event_uuid": 1,
      "content_hash_of_fresh_occurrence": 2,
      "fresh_event_uuid": 5,
      "provider_declared": 1,
      "provider_pinned": 1,
-     "unkeyed_seal": 1
+     "unkeyed_seal": 2
     },
-    "exercised_rows": 28,
-    "properties": 97,
-    "properties_held": 97,
-    "rederived_properties": 11,
-    "reopen_stability_properties": 23,
-    "rows": 30,
+    "exercised_rows": 30,
+    "properties": 119,
+    "properties_held": 119,
+    "rederived_properties": 16,
+    "reopen_stability_properties": 25,
+    "rows": 31,
     "unexercised_rows": [
-     "ESM candidate_id / candidate execution_id",
-     "pinned-provider runtime identity (ciw.subprocess-runtime.v1)"
+     "ESM candidate_id / candidate execution_id"
     ]
    }
   },
@@ -401,46 +449,39 @@
    "basis": {
     "checks": [
      {
-      "comparison": "ge",
-      "observed": 1.0,
+      "comparison": "abs_le",
+      "observed": 0.0,
       "passed": true,
-      "reference": "equal data, distinct result ids and no numerical identity (1 = observed)",
-      "reference_kind": "invariant",
-      "tolerance": 1.0
+      "reference": "statistics.v1 results carrying a numerical_result_id (observed 2, predicted 2)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "numerical_result_id differs from the lab's sha256 over {operation_id, data}",
+      "reference_kind": "cross_implementation",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "equal-data results R1 and R2 not sharing one numerical_result_id beside distinct result ids",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "expected_refusal": "Saved operation numerical_result_id differs from its data",
+      "observed_refusal": "Saved operation numerical_result_id differs from its data",
+      "passed": true,
+      "reference": "reopen of R1 with its mean moved and its seal, but not its numerical_result_id, recomputed",
+      "reference_kind": "refusal"
      }
     ]
    },
-   "claim": "Oscillator operation results carry no replay-stable numerical-result identity",
-   "counterexample": {
-    "statement": "Every retained CIW operation result carries a replay-stable numerical-result identity",
-    "witness": {
-     "fields": [
-      "channel",
-      "created_at",
-      "data",
-      "evidence_id",
-      "execution_id",
-      "interval_s",
-      "operation_id",
-      "parameters",
-      "record_digest",
-      "recording_file",
-      "result_id",
-      "role",
-      "run_id",
-      "runtime",
-      "schema",
-      "selection_revision",
-      "verification_id",
-      "verification_status"
-     ],
-     "operation": "statistics.v1",
-     "records": [
-      "result:R1",
-      "result:R2"
-     ]
-    }
-   },
+   "claim": "Oscillator operation results carry a content-level numerical_result_id that two executions with equal data share and that reopen recomputes from the retained numbers",
    "domain": "provenance",
    "evidence_status": "numerically_verified",
    "origin": [
@@ -457,9 +498,71 @@
    },
    "unit": null,
    "value": {
-    "data_equal": true,
-    "numerical_result_id_present": false,
-    "result_ids_equal": false
+    "legacy_results_with_identity": 0,
+    "resealed_statistics_edit_on_reopen": "accepted",
+    "results_with_identity": 2,
+    "shared_by_equal_data": true,
+    "stale_identity_on_reopen": "Saved operation numerical_result_id differs from its data"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "replay_receipt_seal differs from the lab's sha256 over the catalog's (bundle_id, replay_id) pairs",
+      "reference_kind": "cross_implementation",
+      "tolerance": 0.0
+     },
+     {
+      "expected_refusal": "Retained replay receipt seal differs",
+      "observed_refusal": "Retained replay receipt seal differs",
+      "passed": true,
+      "reference": "receipt.deleted (seal kept) on reopen",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "accepted",
+      "observed_refusal": "accepted",
+      "passed": true,
+      "reference": "receipt.deleted-resealed (seal recomputed) on reopen",
+      "reference_kind": "refusal"
+     },
+     {
+      "expected_refusal": "accepted",
+      "observed_refusal": "accepted",
+      "passed": true,
+      "reference": "receipt.deleted-seal-removed (seal removed) on reopen",
+      "reference_kind": "refusal"
+     }
+    ]
+   },
+   "claim": "The catalog's replay_receipt_seal binds each retained replay receipt to its bundle: a receipt deleted under a stale seal is refused on reopen, and the unkeyed seal recomputed or removed with it lets the deletion reopen",
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "deletions_on_reopen": {
+     "receipt.deleted": "Retained replay receipt seal differs",
+     "receipt.deleted-resealed": "accepted",
+     "receipt.deleted-seal-removed": "accepted"
+    },
+    "receipts_sealed": 1
    }
   },
   {
@@ -522,6 +625,366 @@
   {
    "assigned_by": "ciw.lab.evidence",
    "basis": {
+    "notes": "Returned by CIW's pinned subprocess adapter for the ppda checkout of the bound telemetry stack; ciw.lab.bridge matches the retained identity to ciw/telemetry-runtimes.json[ppda]. CIW records no source tree for this revision (tree_pinned false), so the tree is as retained; T077 compares it with the bound checkout in the identity matrix. Interpreter digest, versions and host paths are in telemetry-runtimes.json, never compared.",
+    "provider": {
+     "executed": true,
+     "repository": "giasonpooni/Provenance-Preserving-Data-Acquisition",
+     "revision": "209985a8c7482aba037021035c2f0b550c9b1ddc",
+     "source_tree": "9d7150ca433e78e637210c5b2849edba171677d7"
+    }
+   },
+   "claim": "The executed ppda runtime of the telemetry session is retained with CIW's ciw/telemetry-runtimes.json pin",
+   "domain": "provenance",
+   "evidence_status": "provider_backed",
+   "origin": [
+    "provider"
+   ],
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "matched": [
+     "ciw/telemetry-runtimes.json[ppda]"
+    ],
+    "module": "instrumentation",
+    "repository": "giasonpooni/Provenance-Preserving-Data-Acquisition",
+    "revision": "209985a8c7482aba037021035c2f0b550c9b1ddc",
+    "schema": "ciw.subprocess-runtime.v1",
+    "source_root": "bridge",
+    "source_tree": "9d7150ca433e78e637210c5b2849edba171677d7",
+    "tree_pinned": false
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": "Returned by CIW's pinned subprocess adapter for the stfe checkout of the bound telemetry stack; ciw.lab.bridge matches the retained identity to ciw/telemetry-runtimes.json[stfe]. CIW records no source tree for this revision (tree_pinned false), so the tree is as retained; T077 compares it with the bound checkout in the identity matrix. Interpreter digest, versions and host paths are in telemetry-runtimes.json, never compared.",
+    "provider": {
+     "executed": true,
+     "repository": "giasonpooni/Streaming-Telemetry-Feature-Extraction",
+     "revision": "54dd43b657b92d87c2fc263dfd99437c664be353",
+     "source_tree": "152816aca45290c81d770570851541edae69a706"
+    }
+   },
+   "claim": "The executed stfe runtime of the telemetry session is retained with CIW's ciw/telemetry-runtimes.json pin",
+   "domain": "provenance",
+   "evidence_status": "provider_backed",
+   "origin": [
+    "provider"
+   ],
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "matched": [
+     "ciw/telemetry-runtimes.json[stfe]"
+    ],
+    "module": "stfe",
+    "repository": "giasonpooni/Streaming-Telemetry-Feature-Extraction",
+    "revision": "54dd43b657b92d87c2fc263dfd99437c664be353",
+    "schema": "ciw.subprocess-runtime.v1",
+    "source_root": ".",
+    "source_tree": "152816aca45290c81d770570851541edae69a706",
+    "tree_pinned": false
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": "Returned by CIW's pinned subprocess adapter for the gsie checkout of the bound telemetry stack; ciw.lab.bridge matches the retained identity to ciw/telemetry-runtimes.json[gsie]. CIW records no source tree for this revision (tree_pinned false), so the tree is as retained; T077 compares it with the bound checkout in the identity matrix. Interpreter digest, versions and host paths are in telemetry-runtimes.json, never compared.",
+    "provider": {
+     "executed": true,
+     "repository": "giasonpooni/Geometric-State-Inference-Engine",
+     "revision": "de38873db1ba98744d395dfa7df1d3b5b7bb3059",
+     "source_tree": "dc364802cf846329e48eaaf0832fa4d47c2abd35"
+    }
+   },
+   "claim": "The executed gsie runtime of the telemetry session is retained with CIW's ciw/telemetry-runtimes.json pin",
+   "domain": "provenance",
+   "evidence_status": "provider_backed",
+   "origin": [
+    "provider"
+   ],
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "matched": [
+     "ciw/telemetry-runtimes.json[gsie]"
+    ],
+    "module": "geometric_state_inference.contracts",
+    "repository": "giasonpooni/Geometric-State-Inference-Engine",
+    "revision": "de38873db1ba98744d395dfa7df1d3b5b7bb3059",
+    "schema": "ciw.subprocess-runtime.v1",
+    "source_root": "src",
+    "source_tree": "dc364802cf846329e48eaaf0832fa4d47c2abd35",
+    "tree_pinned": false
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "notes": "Returned by CIW's pinned subprocess adapter for the set checkout of the bound telemetry stack; ciw.lab.bridge matches the retained identity to ciw/telemetry-runtimes.json[set]. CIW records no source tree for this revision (tree_pinned false), so the tree is as retained; T077 compares it with the bound checkout in the identity matrix. Interpreter digest, versions and host paths are in telemetry-runtimes.json, never compared.",
+    "provider": {
+     "executed": true,
+     "repository": "giasonpooni/State-Estimation-Evaluation-Testbed",
+     "revision": "1467ec5058b3e7ebd6ba4a45f2d9b49148a2560d",
+     "source_tree": "029ee11bcb68d55ac58afae773b875326ccfc9c0"
+    }
+   },
+   "claim": "The executed set runtime of the telemetry session is retained with CIW's ciw/telemetry-runtimes.json pin",
+   "domain": "provenance",
+   "evidence_status": "provider_backed",
+   "origin": [
+    "provider"
+   ],
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "matched": [
+     "ciw/telemetry-runtimes.json[set]"
+    ],
+    "module": "state_estimation_testbed.replay",
+    "repository": "giasonpooni/State-Estimation-Evaluation-Testbed",
+    "revision": "1467ec5058b3e7ebd6ba4a45f2d9b49148a2560d",
+    "schema": "ciw.subprocess-runtime.v1",
+    "source_root": ".",
+    "source_tree": "029ee11bcb68d55ac58afae773b875326ccfc9c0",
+    "tree_pinned": false
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "forged GSIE runtime revision: reopen accepted (1 = accepted)",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     },
+     {
+      "expected_refusal": "Telemetry replay runtime identity mismatch",
+      "observed_refusal": "Telemetry replay runtime identity mismatch",
+      "passed": true,
+      "reference": "telemetry replay (replay_session, which Workbench.replay runs) of the reopened forged bundle with the telemetry stack bound",
+      "reference_kind": "refusal"
+     }
+    ]
+   },
+   "claim": "A telemetry bundle whose GSIE runtime revision is forged, with every unkeyed digest over it recomputed, reopens, and a replay on the bound stack refuses it",
+   "counterexample": {
+    "statement": "Reopening a workspace checks every retained provider runtime identity against CIW's pin",
+    "witness": {
+     "edit": "runtimes.gsie.revision replaced by a revision that is not the pin",
+     "recomputed": [
+      "bundle_digest",
+      "verification.subject_ref",
+      "verification.verification_id",
+      "catalog bundle_id",
+      "replay_receipt_seal"
+     ],
+     "reopen": "accepted",
+     "replay": "Telemetry replay runtime identity mismatch"
+    }
+   },
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "reopen": "accepted",
+    "replay": "Telemetry replay runtime identity mismatch"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "forged GSIE adapter_version and injected key: reopen accepted (1 = accepted)",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     },
+     {
+      "expected_refusal": "accepted",
+      "observed_refusal": "accepted",
+      "passed": true,
+      "reference": "replay runtime identity comparison (telemetry._runtime for gsie, with the reopened retained identity as expected, as replay_session calls it) of the forged identity with the telemetry stack bound",
+      "reference_kind": "refusal"
+     }
+    ]
+   },
+   "claim": "A telemetry bundle whose GSIE runtime identity carries a forged adapter_version and an injected key, with every unkeyed digest over it recomputed, reopens, and the runtime identity comparison a replay makes before executing accepts it",
+   "counterexample": {
+    "statement": "A telemetry replay compares every retained runtime identity field except the host paths",
+    "witness": {
+     "compared_fields": [
+      "revision",
+      "source_tree",
+      "module",
+      "source_root",
+      "python_sha256",
+      "python_version",
+      "dependencies"
+     ],
+     "compared_for_ppda_only": [
+      "source_sha256",
+      "execution_scope"
+     ],
+     "edit": {
+      "runtimes.gsie.adapter_version": "ciw-lab-forged-adapter-v9",
+      "runtimes.gsie.audited_by": "ciw-lab forged independent audit"
+     },
+     "recomputed": [
+      "bundle_digest",
+      "verification.subject_ref",
+      "verification.verification_id",
+      "catalog bundle_id",
+      "replay_receipt_seal"
+     ],
+     "reopen": "accepted",
+     "replay_comparison": "accepted"
+    }
+   },
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "reopen": "accepted",
+    "replay_comparison": "accepted"
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "retained runtime identities naming the bound checkout's host path (observed 8, predicted 8)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "retained runtime identities naming the interpreter's host path (observed 8, predicted 8)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "telemetry operation available in the reopened session (0 = no binding restored)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ]
+   },
+   "claim": "A saved telemetry workspace retains the host paths of the bound provider checkouts and interpreter in its runtime identities",
+   "counterexample": {
+    "statement": "A saved workspace carries no host path of an operator-bound provider checkout",
+    "witness": {
+     "fields": [
+      "runtimes.<role>.repository_root",
+      "runtimes.<role>.python_executable"
+     ],
+     "restored_binding": "none: the reopened session offers no telemetry operation",
+     "roles": [
+      "ppda",
+      "stfe",
+      "gsie",
+      "set"
+     ]
+    }
+   },
+   "domain": "provenance",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
+   "regression_tolerance": {
+    "abs": 0.0,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+    "kind": "exact",
+    "value": 0.0
+   },
+   "unit": null,
+   "value": {
+    "naming_the_bound_checkout_path": 8,
+    "naming_the_interpreter_path": 8,
+    "runtime_identities": 8,
+    "telemetry_bound_after_reopen": false,
+    "telemetry_bundles": 2
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
     "notes": "These values are copied from a synthetic fixture log (the hashes are repeated-character placeholders) and CIW checks only their format; a resealed log with other well-formed values is accepted. Nothing identifies real hardware or code."
    },
    "claim": "The retained log's device and kernel identities identify the producing GPU and code",
@@ -545,7 +1008,7 @@
   {
    "assigned_by": "ciw.lab.evidence",
    "basis": {
-    "notes": "Every content identity and seal in the matrix is an unkeyed SHA-256 over public canonical JSON or raw bytes; no keyed signature or MAC exists on these paths (see T081-T090 for accepted forgeries)."
+    "notes": "Every content identity and seal in the matrix, the oscillator numerical_result_id and the catalog replay_receipt_seal included, is an unkeyed SHA-256 over public canonical JSON or raw bytes; no keyed signature or MAC exists on these paths (see T081-T090 for accepted forgeries)."
    },
    "claim": "Retained workspace records are authenticated: a holder without a secret cannot produce a forged record that reopens",
    "domain": "provenance",
@@ -570,111 +1033,244 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 20601,
+   "bytes": 24029,
    "path": "artifacts/T077/identity-matrix.json",
-   "sha256": "981ae0743fe0ee85c3f5a0805b1961d188723b881b28c800e8853a5fdf90409b"
+   "sha256": "52d238da3c3ced9e1ba6aa9172acf1bd04d66ea769173440d7fef74ad1fff923"
   },
   {
-   "bytes": 10119,
+   "bytes": 11593,
    "path": "artifacts/T077/identity-matrix.md",
-   "sha256": "2c9e645950fbbd9c420d94d3335afbd837857d30579fbf9e63f62474bde1cbb1"
+   "sha256": "499b1b7ba3efd988eba215ab9cc2288e895c405c28a093a6dd21a689f29c4116"
+  },
+  {
+   "bytes": 8221,
+   "path": "artifacts/T077/telemetry-runtimes.json",
+   "sha256": "8c803894c6e983ee997882e65ac881bd8cfb021c419aab8137549a74ce89f4c2"
   }
  ],
- "hypothesis": "Each CIW identity on the offline paths is a content or byte hash, a fresh event UUID, a caller- or provider-declared value, or absent, and its binding, replay and reopen behaviour follow from how it is derived.",
+ "hypothesis": "Each CIW identity is a content or byte hash, a fresh event UUID, a caller- or provider-declared value, or absent, and its binding, replay and reopen behaviour follow from how it is derived. Oscillator results carry a content-level numerical_result_id shared by equal numbers, the catalog's replay-receipt seal binds which bundle holds which receipt, and a telemetry session on the pinned stack retains its providers' runtime identities as CIW's pins beside host-measured digests; all of these are unkeyed.",
  "input_data": [
   "make_demo_run() damped-oscillator recording; statistics.v1 on channel v over [1, 2] s, twice, plus one legacy analysis.stats result",
   "examples/energy-accuracy/{baseline,reset}.json (origin synthetic_fixture): two original executions of baseline, one of reset, replays, and a separate session in the same process",
   "Workspaces saved by Session.save_workspace and reopened by Session.from_workspace in temporary directories",
   "examples/energy-accuracy/{baseline,reset,missing,under-target}.json, eight byte variants of baseline under one shared label (original, crlf, minified, tab-indented, sorted-keys, reversed-keys, trailing-whitespace, float-spelling 1e-09 -> 0.000000001) and two resealed content variants (sensor name renamed; initial_covariance diagonal written as integers)",
   "Synthetic telemetry-shaped records (schema, bundle digest, three step occurrences; exchange_provenance_common.telemetry_shaped_bundle) and a minimal ESM candidate inspection of them (esm_case), judged only by candidate_evidence.validate_response; no telemetry workflow or ESM process",
-  "Synthetic exchange result and verification artifacts whose content identities are computed locally (exchange_provenance_common.exchange_artifact), judged only by exchange._identity"
+  "Synthetic exchange result and verification artifacts whose content identities are computed locally (exchange_provenance_common.exchange_artifact), judged only by exchange._identity",
+  "examples/telemetry/source.json and configuration.json (synthetic scalar telemetry window, no reconciliation), run on the checkouts bound as telemetry-stack when it is bound"
  ],
- "mathematical_model": "Derivation classes used in the matrix: content_hash, byte_hash, content_hash_of_fresh_occurrence and unkeyed_seal (SHA-256 over canonical JSON or raw bytes); fresh_event_uuid (uuid4 draws); caller_declared, caller_declared_name, constant_name and provider_declared (copied, not derived); code_hash_plus_declared_versions (a code digest beside self-reported versions); provider_pinned (a pinned revision beside host-measured digests); absent. Content identities are sha256 over canonical JSON (sort_keys, compact separators); byte identities are sha256 over raw bytes; event identities are uuid4 draws (collision probability ~2^-122 per pair).",
+ "mathematical_model": "Derivation classes used in the matrix: content_hash, byte_hash, content_hash_of_fresh_occurrence and unkeyed_seal (SHA-256 over canonical JSON or raw bytes); fresh_event_uuid (uuid4 draws); caller_declared, caller_declared_name, constant_name and provider_declared (copied, not derived); code_hash_plus_declared_versions (a code digest beside self-reported versions); provider_pinned (a pinned revision beside host-measured digests); absent. Content identities are sha256 over canonical JSON (sort_keys, compact separators); byte identities are sha256 over raw bytes; event identities are uuid4 draws (collision probability ~2^-122 per pair); a pinned-provider runtime identity is CIW's pinned revision, module and source root beside Git's tree of the bound checkout and the interpreter's digest.",
  "number": 77,
- "numerical_result": "30 identities (28 exercised offline; not exercised: ESM candidate_id / candidate execution_id, pinned-provider runtime identity (ciw.subprocess-runtime.v1)); 97/97 predicted properties held (11 are same-origin digest re-derivations, the rest observe CIW outputs, refusals or validators; 23 rows compare their identity before and after reopen); classes {'absent': 2, 'byte_hash': 2, 'caller_declared': 4, 'caller_declared_name': 1, 'code_hash_plus_declared_versions': 1, 'constant_name': 1, 'content_hash': 8, 'content_hash / fresh_event_uuid': 1, 'content_hash_of_fresh_occurrence': 2, 'fresh_event_uuid': 5, 'provider_declared': 1, 'provider_pinned': 1, 'unkeyed_seal': 1}",
+ "numerical_result": "31 identities (30 exercised; not exercised: ESM candidate_id / candidate execution_id); 119/119 predicted properties held (16 are same-origin digest re-derivations, the rest observe CIW outputs, refusals or validators; 25 rows compare their identity before and after reopen); classes {'absent': 1, 'byte_hash': 2, 'caller_declared': 4, 'caller_declared_name': 1, 'code_hash_plus_declared_versions': 1, 'constant_name': 1, 'content_hash': 9, 'content_hash / fresh_event_uuid': 1, 'content_hash_of_fresh_occurrence': 2, 'fresh_event_uuid': 5, 'provider_declared': 1, 'provider_pinned': 1, 'unkeyed_seal': 2}; telemetry stack: 4 runtimes executed (gsie, ppda, set, stfe) of 5 bound checkouts at their pins; forged GSIE revision on reopen: accepted; forged GSIE adapter_version with an injected key on reopen and in the replay comparison: accepted, accepted",
  "observation_model": "No physical observation. The observed objects are CIW records (sessions, executions, results, bundles, receipts, saved workspace JSON) produced offline by the unmodified CIW code; the energy logs are synthetic fixtures and no hardware was sampled.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
   "status": "not_established"
  },
  "provider_runtime_identity": {
-  "ciw_version": "0.1.0",
-  "implementation": "ciw.lab",
-  "mpmath": "1.3.0",
-  "numpy": "2.4.3",
-  "potpourri3d": "1.4.0",
-  "pygeodesic": "0.1.11",
-  "python": "3.12.3",
-  "scipy": "1.16.2",
-  "sources": {
-   "src/ciw/lab/exchange_provenance.py": "6c5c6d9b49043664ad9cea8f4bc2ff5d9fc367aea6194e2e7608c98bfd5c54f4",
-   "src/ciw/lab/exchange_provenance_common.py": "17ab892e3f285ac475b44c240155acf45f8bbdbefca28a345980aba548c6d1a9"
+  "ciw": {
+   "ciw_version": "0.1.0",
+   "implementation": "ciw.lab",
+   "mpmath": "1.3.0",
+   "numpy": "2.4.3",
+   "potpourri3d": "1.4.0",
+   "pygeodesic": "0.1.11",
+   "python": "3.12.3",
+   "scipy": "1.16.2",
+   "sources": {
+    "src/ciw/lab/exchange_provenance.py": "52c65161fc650193a7df1a20919c1f962ce52f8efc12153e7a105658d4ab04d5",
+    "src/ciw/lab/exchange_provenance_common.py": "726ccccfe1beae025183069704cab05b35189515f6cdfffa0dd82f6e5ec3e8cb",
+    "src/ciw/operations/runner.py": "428d6a6e77123f5609125e7432a7158d0ecee015b1c53c2555206250c1d9f080",
+    "src/ciw/session.py": "0489eb0d4780f1f66b08aa6febdb966cc7b3c67dcdb5cfa1c431723e65781ff8",
+    "src/ciw/workbench.py": "79a7e5c2c30605c21a04578d9048d844edae577213125812ecf0885e17d40f80"
+   },
+   "sympy": "1.14.0"
   },
-  "sympy": "1.14.0"
+  "executed_runtimes": {
+   "gsie": {
+    "dependencies": {
+     "numpy": "2.4.3",
+     "scipy": "1.16.2"
+    },
+    "module": "geometric_state_inference.contracts",
+    "python_sha256": "8295ee25cfdb239f3e165afceda7f46de73e2b606ff0e2e3d8623e3facd30acc",
+    "python_version": "3.12.3",
+    "revision": "de38873db1ba98744d395dfa7df1d3b5b7bb3059",
+    "schema": "ciw.subprocess-runtime.v1",
+    "source_root": "src",
+    "source_tree": "dc364802cf846329e48eaaf0832fa4d47c2abd35"
+   },
+   "ppda": {
+    "dependencies": {
+     "numpy": "2.4.3",
+     "scipy": "1.16.2"
+    },
+    "module": "instrumentation",
+    "python_sha256": "8295ee25cfdb239f3e165afceda7f46de73e2b606ff0e2e3d8623e3facd30acc",
+    "python_version": "3.12.3",
+    "revision": "209985a8c7482aba037021035c2f0b550c9b1ddc",
+    "schema": "ciw.subprocess-runtime.v1",
+    "source_root": "bridge",
+    "source_tree": "9d7150ca433e78e637210c5b2849edba171677d7"
+   },
+   "set": {
+    "dependencies": {
+     "numpy": "2.4.3",
+     "scipy": "1.16.2"
+    },
+    "module": "state_estimation_testbed.replay",
+    "python_sha256": "8295ee25cfdb239f3e165afceda7f46de73e2b606ff0e2e3d8623e3facd30acc",
+    "python_version": "3.12.3",
+    "revision": "1467ec5058b3e7ebd6ba4a45f2d9b49148a2560d",
+    "schema": "ciw.subprocess-runtime.v1",
+    "source_root": ".",
+    "source_tree": "029ee11bcb68d55ac58afae773b875326ccfc9c0"
+   },
+   "stfe": {
+    "dependencies": {
+     "numpy": "2.4.3",
+     "scipy": "1.16.2"
+    },
+    "module": "stfe",
+    "python_sha256": "8295ee25cfdb239f3e165afceda7f46de73e2b606ff0e2e3d8623e3facd30acc",
+    "python_version": "3.12.3",
+    "revision": "54dd43b657b92d87c2fc263dfd99437c664be353",
+    "schema": "ciw.subprocess-runtime.v1",
+    "source_root": ".",
+    "source_tree": "152816aca45290c81d770570851541edae69a706"
+   }
+  },
+  "requirement_probes": {
+   "provider:telemetry-stack": true
+  },
+  "telemetry-stack": {
+   "cbsr": {
+    "head": "b543969cb80a69a5df1274eee10d22549bcea773",
+    "matched": [
+     "ciw/telemetry-runtimes.json[cbsr]"
+    ],
+    "state": "ready",
+    "tree": "eef36f7fe740b4deb562e9dda9383e94294c6503"
+   },
+   "gsie": {
+    "head": "de38873db1ba98744d395dfa7df1d3b5b7bb3059",
+    "matched": [
+     "ciw/telemetry-runtimes.json[gsie]",
+     "ciw/calibrated-window-runtimes.json[gsie]"
+    ],
+    "state": "ready",
+    "tree": "dc364802cf846329e48eaaf0832fa4d47c2abd35"
+   },
+   "ppda": {
+    "head": "209985a8c7482aba037021035c2f0b550c9b1ddc",
+    "matched": [
+     "ciw/telemetry-runtimes.json[ppda]"
+    ],
+    "state": "ready",
+    "tree": "9d7150ca433e78e637210c5b2849edba171677d7"
+   },
+   "set": {
+    "head": "1467ec5058b3e7ebd6ba4a45f2d9b49148a2560d",
+    "matched": [
+     "ciw/telemetry-runtimes.json[set]"
+    ],
+    "state": "ready",
+    "tree": "029ee11bcb68d55ac58afae773b875326ccfc9c0"
+   },
+   "stfe": {
+    "head": "54dd43b657b92d87c2fc263dfd99437c664be353",
+    "matched": [
+     "ciw/telemetry-runtimes.json[stfe]",
+     "ciw/calibrated-window-runtimes.json[stfe]"
+    ],
+    "state": "ready",
+    "tree": "152816aca45290c81d770570851541edae69a706"
+   }
+  }
  },
- "recommended_next_task": "Complete T077: observe the ESM candidate, candidate execution and pinned-provider runtime identity rows, now read from code, once the telemetry provider stack is provisioned and bound (the deferred research question among the unresolved assumptions), and, as CIW changes, add a numerical_result_id to oscillator operation results and bind replay receipts into a catalog-level seal.",
- "report_id": "sha256:d1b82f63f4e0fe5190a2dafffbe4d4ce6bb17632a74e60863de7ebe1edc2ed22",
+ "recommended_next_task": "Complete T077: observe the ESM candidate_id and candidate execution identity rows, still read from code, by binding the pinned ESM runtime and its CIW replay checkout to the telemetry session T077 runs on the telemetry-stack binding (the deferred research question among the unresolved assumptions), and, as CIW changes, have reopen check a telemetry bundle's pinned runtime identities against CIW's pins, which today only a replay compares, and have replay and reopen compare the whole retained identity but the host paths and refuse unknown keys, which today let a forged adapter_version with an injected key reopen and pass the replay comparison.",
+ "report_id": "sha256:81438126cd582b6ca7a40bee01be689e8bf0c44e38ecb852ca8b23294051d9f2",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "partial",
  "task_id": "T077",
  "tests_passed": [
-  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs recording evidence_id: re-derived digest properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs recording evidence_id: observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs recording file name: re-derived digest properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs recording file name: observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs workbench source evidence_id: re-derived digest properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs workbench source evidence_id: observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs workbench source_id: re-derived digest properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs workbench source_id: observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs bundle experiment_digest: re-derived digest properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs bundle experiment_digest: observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs energy log run_id (bundle experiment_id): observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs energy log producer identities: observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs oscillator operation_id: observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs energy operation_id: observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs oscillator execution_id: observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs energy step execution_id: observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs oscillator result_id: observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs energy result_id: re-derived digest properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs energy result_id: observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs energy numerical_result_id: re-derived digest properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs energy numerical_result_id: observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs oscillator numerical-result identity: observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs energy verification_id: re-derived digest properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs energy verification_id: observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs oscillator verification_id: observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs bundle_digest (workbench bundle_id): re-derived digest properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs bundle_digest (workbench bundle_id): observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs bundle session_id: observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs protocol Session.session_id: observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs replay_id: re-derived digest properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs replay_id: observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs oscillator record_digest (seal): re-derived digest properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs oscillator record_digest (seal): observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs oscillator runtime identity: observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs energy runtime identity: observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs exchange result_id / verification_id: observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs exchange batch_id: observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs ESM requestId / inspectedAt: observed properties that did not hold",
-  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths vs ESM bundleBytesDigest: observed properties that did not hold",
-  "check: Oscillator operation results carry no replay-stable numerical-result identity vs equal data, distinct result ids and no numerical identity (1 = observed)",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties vs recording evidence_id: re-derived digest properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties vs recording evidence_id: observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties vs recording file name: re-derived digest properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties vs recording file name: observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties vs workbench source evidence_id: re-derived digest properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties vs workbench source evidence_id: observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties vs workbench source_id: re-derived digest properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties vs workbench source_id: observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties vs bundle experiment_digest: re-derived digest properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties vs bundle experiment_digest: observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties vs energy log run_id (bundle experiment_id): observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties vs energy log producer identities: observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties vs oscillator operation_id: observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties vs energy operation_id: observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties vs oscillator execution_id: observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties vs energy step execution_id: observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties vs oscillator result_id: observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties vs energy result_id: re-derived digest properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties vs energy result_id: observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties vs energy numerical_result_id: re-derived digest properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties vs energy numerical_result_id: observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties vs oscillator numerical_result_id: re-derived digest properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties vs oscillator numerical_result_id: observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties vs energy verification_id: re-derived digest properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties vs energy verification_id: observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties vs oscillator verification_id: observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties vs bundle_digest (workbench bundle_id): re-derived digest properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties vs bundle_digest (workbench bundle_id): observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties vs bundle session_id: observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties vs protocol Session.session_id: observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties vs replay_id: re-derived digest properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties vs replay_id: observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties vs workbench replay_receipt_seal: re-derived digest properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties vs workbench replay_receipt_seal: observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties vs oscillator record_digest (seal): re-derived digest properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties vs oscillator record_digest (seal): observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties vs oscillator runtime identity: observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties vs energy runtime identity: observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties vs exchange result_id / verification_id: observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties vs exchange batch_id: observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties vs ESM requestId / inspectedAt: observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties vs ESM bundleBytesDigest: observed properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties vs pinned-provider runtime identity (ciw.subprocess-runtime.v1): re-derived digest properties that did not hold",
+  "check: Every exercised identity shows its predicted derivation, freshness, binding and reopen properties vs pinned-provider runtime identity (ciw.subprocess-runtime.v1): observed properties that did not hold",
+  "check: Oscillator operation results carry a content-level numerical_result_id that two executions with equal data share and that reopen recomputes from the retained numbers vs statistics.v1 results carrying a numerical_result_id (observed 2, predicted 2)",
+  "check: Oscillator operation results carry a content-level numerical_result_id that two executions with equal data share and that reopen recomputes from the retained numbers vs numerical_result_id differs from the lab's sha256 over {operation_id, data}",
+  "check: Oscillator operation results carry a content-level numerical_result_id that two executions with equal data share and that reopen recomputes from the retained numbers vs equal-data results R1 and R2 not sharing one numerical_result_id beside distinct result ids",
+  "check: Oscillator operation results carry a content-level numerical_result_id that two executions with equal data share and that reopen recomputes from the retained numbers vs reopen of R1 with its mean moved and its seal, but not its numerical_result_id, recomputed",
+  "check: The catalog's replay_receipt_seal binds each retained replay receipt to its bundle: a receipt deleted under a stale seal is refused on reopen, and the unkeyed seal recomputed or removed with it lets the deletion reopen vs replay_receipt_seal differs from the lab's sha256 over the catalog's (bundle_id, replay_id) pairs",
+  "check: The catalog's replay_receipt_seal binds each retained replay receipt to its bundle: a receipt deleted under a stale seal is refused on reopen, and the unkeyed seal recomputed or removed with it lets the deletion reopen vs receipt.deleted (seal kept) on reopen",
+  "check: The catalog's replay_receipt_seal binds each retained replay receipt to its bundle: a receipt deleted under a stale seal is refused on reopen, and the unkeyed seal recomputed or removed with it lets the deletion reopen vs receipt.deleted-resealed (seal recomputed) on reopen",
+  "check: The catalog's replay_receipt_seal binds each retained replay receipt to its bundle: a receipt deleted under a stale seal is refused on reopen, and the unkeyed seal recomputed or removed with it lets the deletion reopen vs receipt.deleted-seal-removed (seal removed) on reopen",
   "check: The energy replay bundle identity excludes its replay receipt and verification vs bundle digest recomputed by CIW without replay_receipts differs from the retained one",
   "check: The energy replay bundle identity excludes its replay receipt and verification vs bundle digest recomputed by CIW with the verification replaced differs from the retained one",
+  "check: A telemetry bundle whose GSIE runtime revision is forged, with every unkeyed digest over it recomputed, reopens, and a replay on the bound stack refuses it vs forged GSIE runtime revision: reopen accepted (1 = accepted)",
+  "check: A telemetry bundle whose GSIE runtime revision is forged, with every unkeyed digest over it recomputed, reopens, and a replay on the bound stack refuses it vs telemetry replay (replay_session, which Workbench.replay runs) of the reopened forged bundle with the telemetry stack bound",
+  "check: A telemetry bundle whose GSIE runtime identity carries a forged adapter_version and an injected key, with every unkeyed digest over it recomputed, reopens, and the runtime identity comparison a replay makes before executing accepts it vs forged GSIE adapter_version and injected key: reopen accepted (1 = accepted)",
+  "check: A telemetry bundle whose GSIE runtime identity carries a forged adapter_version and an injected key, with every unkeyed digest over it recomputed, reopens, and the runtime identity comparison a replay makes before executing accepts it vs replay runtime identity comparison (telemetry._runtime for gsie, with the reopened retained identity as expected, as replay_session calls it) of the forged identity with the telemetry stack bound",
+  "check: A saved telemetry workspace retains the host paths of the bound provider checkouts and interpreter in its runtime identities vs retained runtime identities naming the bound checkout's host path (observed 8, predicted 8)",
+  "check: A saved telemetry workspace retains the host paths of the bound provider checkouts and interpreter in its runtime identities vs retained runtime identities naming the interpreter's host path (observed 8, predicted 8)",
+  "check: A saved telemetry workspace retains the host paths of the bound provider checkouts and interpreter in its runtime identities vs telemetry operation available in the reopened session (0 = no binding restored)",
   "pytest: tests/test_lab_exchange_provenance.py::test_identity_matrix",
+  "pytest: tests/test_lab_exchange_provenance.py::test_identity_matrix_telemetry_runtimes",
   "pytest: tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work",
   "pytest: tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply"
  ],
  "tests_skipped": [],
  "title": "Build an identity matrix for: source evidence; operation; execution; result; numerical result; verification; bundle; replay; external producer IDs.",
- "uncertainty": "Exact equality tests on digests, UUID draws and exact refusal messages; a uuid4 collision among the fewer than 40 fresh uuid4 draws has probability below 1e-33. Properties are sampled on one fixture, not proved for all inputs. Checks that could not fail by construction (identifier prefix tests, a lab-set ESM digest, label-driven source_id counts, the fixture's placeholder hashes) are not counted as properties.",
+ "uncertainty": "Exact equality tests on digests, UUID draws and exact refusal messages; a uuid4 collision among the fewer than 40 fresh uuid4 draws has probability below 1e-33. Properties are sampled on one fixture, not proved for all inputs. Checks that could not fail by construction (identifier prefix tests, a lab-set ESM digest, label-driven source_id counts, the fixture's placeholder hashes) are not counted as properties. Compared values hold no float-derived digest (the oscillator numerical_result_id hashes NumPy reductions) and no host-dependent runtime field (interpreter digest, versions, paths).",
  "unresolved_assumptions": [
-  "Partial: ESM candidate_id and candidate execution identities (they need an operator-bound ESM adapter and a telemetry or calibrated bundle) and pinned-provider runtime identities (ciw.subprocess-runtime.v1; they need a provider checkout bound to a declared-workload or telemetry workflow) are planned matrix rows that the offline path cannot exercise; their predictions are read from the code, not observed.",
-  "The ESM rows use a synthetic telemetry-shaped record (schema, digest, three step occurrences), not a telemetry session validated by the telemetry workflow, which needs provider checkouts.",
-  "Provider-backed workflows (telemetry, declared workloads, proved heat) were not exercised offline; their identity rows are inferred only where they share the energy-accuracy code path.",
+  "Partial: ESM candidate_id and candidate execution identities: an ESM candidate action needs the ESM runtime pinned in src/ciw/esm-runtime.json (its built workbench-candidate artifact and replay helper, a node binary and a CIW checkout at its replay revision) bound as an operator candidate adapter, which the lab gate does not provision; their predictions are read from the code, not observed.",
+  "The ESM validator rows use a synthetic telemetry-shaped record (schema, digest, three step occurrences), not a telemetry session's bundle: no ESM binding is available to act on one.",
+  "Of the provider-backed workflows only telemetry was exercised, and only with the telemetry stack bound; declared workloads and proved heat retain the same runtime identity schema with workflow-specific checks (declared workloads compare a runtime projection on replay and check the pin and format on reopen, read from the code).",
+  "The telemetry runtimes' python_sha256, python_version and dependencies describe the interpreter that ran the lab, and repository_root and python_executable are host paths; they are retained without the paths in telemetry-runtimes.json and never compared across runs. CIW records no source tree for the telemetry pins (ciw.lab.bridge.pins_without_tree), so their provider_backed labels accept the retained tree as recorded; the identity matrix compares it with the bound checkout.",
   "Reopen stability is observed as the value CIW saves again after reopening, which is the reopened session's own serialization of its restored state.",
   "Content identities establish consistency, not authorship.",
-  "Deferred research question (telemetry provider stack): provision the telemetry stack pinned in src/ciw/telemetry-runtimes.json (ppda, stfe, gsie, set, cbsr; scripts/check_lab.py provisions only ppda and set of these, and scripts/reproduce_lab.py TEST_VARIABLES has no variable for stfe, gsie or cbsr), bind it to a telemetry or declared-workload workflow, and observe the ESM candidate, candidate execution and ciw.subprocess-runtime.v1 identity rows and telemetry-validated records that are now read from code or replaced by a synthetic telemetry-shaped record.",
+  "Deferred research question (ESM candidate binding): bind the ESM runtime pinned in src/ciw/esm-runtime.json (giasonpooni/Evidence-and-State-Management at 7c0642ebbcd95c301470e4be556342ab73c819cb, its built workbench-candidate artifact and replay helper at their pinned SHA-256, a node binary, and a CIW checkout at the replay revision e0af0472d9731eff603c13568325f15d14d2de5b) to the telemetry session that T077 runs on the telemetry-stack binding, and observe the ESM candidate_id and candidate execution identities, now read from code, and the ESM validator rows on a telemetry-validated bundle instead of the synthetic telemetry-shaped record. scripts/check_lab.py provisions none of these (scripts/check_workbench_candidates.py exercises them outside the queue), and an ESM action runs ESM's replay helper against that CIW checkout and the provider checkouts, for up to 330 s in CIW's candidate adapter.",
   "Deferred research question (key custody and signatures): which key signs CIW workspace records, replay receipts and execution records, who holds it, how is it provisioned, rotated and revoked, and how does a verifier obtain its public key? Every seal and identity on these paths is an unkeyed SHA-256, so 'Retained workspace records are authenticated' stays not_established until records are signed (for example Ed25519 over the canonical record bytes, with an RFC 3161 timestamp for created_at) and T077 and T080-T090 are re-run against the signed records to check that every surviving forgery is refused."
  ]
 }

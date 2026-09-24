@@ -1,6 +1,6 @@
 [
  {
-  "assumption": "41 figure tasks (77 figures) were not re-executed within the section's time budget: T001, T002, T003, T004, T005, T006, T007, T008, T009, T010, T011, T012, T014, T015, T016, T017, T018, T025, T036, T039, T040, T041, T043, T044, T046, T047, T051, T064, T067, T068, T097, T101, T107, T109, T126, T128, T133, T134, T135, T136, T137",
+  "assumption": "41 figure tasks (79 figures) were not re-executed within the section's time budget: T001, T002, T003, T004, T005, T006, T007, T008, T009, T010, T011, T012, T014, T015, T016, T017, T018, T025, T036, T039, T040, T041, T043, T044, T046, T047, T051, T064, T067, T068, T097, T101, T107, T109, T126, T128, T133, T134, T135, T136, T137",
   "open_items": [],
   "tasks": [
    "T158"
@@ -222,6 +222,13 @@
   ]
  },
  {
+  "assumption": "At a boundary vertex no continuation is declared: the trace stops there as boundary_reached.",
+  "open_items": [],
+  "tasks": [
+   "T038"
+  ]
+ },
+ {
   "assumption": "At p = 0.99 the closed-loop excess is inside the sampling interval here; it is not shown to be zero.",
   "open_items": [],
   "tasks": [
@@ -329,7 +336,7 @@
   ]
  },
  {
-  "assumption": "Byte identity is established on this platform only; the second-platform (Windows) comparison is made outside the queue by scripts/check_figures.py and is not part of this report.",
+  "assumption": "Byte identity is established on this platform and kernel only; the comparisons on Windows and on other OpenBLAS kernels are made outside the queue by scripts/check_figures.py and are not part of this report.",
   "open_items": [
    "cross-platform"
   ],
@@ -487,6 +494,16 @@
   ]
  },
  {
+  "assumption": "Deferred research question (ESM candidate binding): bind the ESM runtime pinned in src/ciw/esm-runtime.json (giasonpooni/Evidence-and-State-Management at 7c0642ebbcd95c301470e4be556342ab73c819cb, its built workbench-candidate artifact and replay helper at their pinned SHA-256, a node binary, and a CIW checkout at the replay revision e0af0472d9731eff603c13568325f15d14d2de5b) to the telemetry session that T077 runs on the telemetry-stack binding, and observe the ESM candidate_id and candidate execution identities, now read from code, and the ESM validator rows on a telemetry-validated bundle instead of the synthetic telemetry-shaped record. scripts/check_lab.py provisions none of these (scripts/check_workbench_candidates.py exercises them outside the queue), and an ESM action runs ESM's replay helper against that CIW checkout and the provider checkouts, for up to 330 s in CIW's candidate adapter.",
+  "open_items": [],
+  "tasks": [
+   "T077",
+   "T086",
+   "T088",
+   "T089"
+  ]
+ },
+ {
   "assumption": "Deferred research question (cross-platform reproduction): run T014 on Windows x86-64 and macOS arm64 besides the retained Linux x86-64 run and check that the two bitwise claims (dyadic truncation and continuation reproduces direct integration; decimal truncation lengths change the step in the last bit) hold bit for bit there and that every other T014 finding value (reversal orders, adaptive return and restart ratios) matches the retained one within its regression tolerance; adaptive step sequences may differ in the last bit between platforms, and no second platform has been compared",
   "open_items": [
    "cross-platform"
@@ -530,19 +547,6 @@
    "T085",
    "T086",
    "T087",
-   "T088",
-   "T089",
-   "T090"
-  ]
- },
- {
-  "assumption": "Deferred research question (telemetry provider stack): provision the telemetry stack pinned in src/ciw/telemetry-runtimes.json (ppda, stfe, gsie, set, cbsr; scripts/check_lab.py provisions only ppda and set of these, and scripts/reproduce_lab.py TEST_VARIABLES has no variable for stfe, gsie or cbsr), bind it to a telemetry or declared-workload workflow, and observe the ESM candidate, candidate execution and ciw.subprocess-runtime.v1 identity rows and telemetry-validated records that are now read from code or replaced by a synthetic telemetry-shaped record.",
-  "open_items": [
-   "telemetry-provisioning"
-  ],
-  "tasks": [
-   "T077",
-   "T086",
    "T088",
    "T089",
    "T090"
@@ -933,13 +937,6 @@
   "open_items": [],
   "tasks": [
    "T129"
-  ]
- },
- {
-  "assumption": "Implicit methods are evaluated on the constant-curvature Jacobi system through their exact step matrices; no nonlinear implicit geodesic integrator is in the core",
-  "open_items": [],
-  "tasks": [
-   "T016"
   ]
  },
  {
@@ -1388,6 +1385,15 @@
   ]
  },
  {
+  "assumption": "Of the provider-backed workflows only telemetry was exercised, and only with the telemetry stack bound; declared workloads and proved heat retain the same runtime identity schema with workflow-specific checks (declared workloads compare a runtime projection on replay and check the pin and format on reopen, read from the code).",
+  "open_items": [
+   "telemetry-provisioning"
+  ],
+  "tasks": [
+   "T077"
+  ]
+ },
+ {
   "assumption": "On the flat Cartesian charts (plane, cylinder) RK4 integrates j'' = 0 exactly, so those scalar-equation checks test only that K = 0 is integrated; the K = 0 separation law itself is measured on neighbouring straight lines through the polar chart of the plane",
   "open_items": [],
   "tasks": [
@@ -1493,13 +1499,6 @@
   ]
  },
  {
-  "assumption": "Only the equations of the 34-digit reference are independent of ciw (sympy derives them); its Gragg-Bulirsch-Stoer integrator is ciw-authored and mpmath supplies the arithmetic. The scipy DOP853 comparison integrates the ciw equations, so only its integrator is independent",
-  "open_items": [],
-  "tasks": [
-   "T002"
-  ]
- },
- {
   "assumption": "Only the families on SPECIFICATIONS.md are stated in formal notation; the family pages it lists specify the other families as method descriptions (models, references and decision rules), not in one uniform notation.",
   "open_items": [],
   "tasks": [
@@ -1511,13 +1510,6 @@
   "open_items": [],
   "tasks": [
    "T013"
-  ]
- },
- {
-  "assumption": "Only the ridge geodesic of the saddle is studied; oblique geodesics sample other K",
-  "open_items": [],
-  "tasks": [
-   "T016"
   ]
  },
  {
@@ -1558,13 +1550,6 @@
   ]
  },
  {
-  "assumption": "Oscillator results have no numerical identity, so their replays cannot be linked.",
-  "open_items": [],
-  "tasks": [
-   "T081"
-  ]
- },
- {
   "assumption": "Other developable surfaces (cones, tangent developables) are not in the core catalogue",
   "open_items": [],
   "tasks": [
@@ -1593,10 +1578,8 @@
   ]
  },
  {
-  "assumption": "Partial: ESM candidate_id and candidate execution identities (they need an operator-bound ESM adapter and a telemetry or calibrated bundle) and pinned-provider runtime identities (ciw.subprocess-runtime.v1; they need a provider checkout bound to a declared-workload or telemetry workflow) are planned matrix rows that the offline path cannot exercise; their predictions are read from the code, not observed.",
-  "open_items": [
-   "telemetry-provisioning"
-  ],
+  "assumption": "Partial: ESM candidate_id and candidate execution identities: an ESM candidate action needs the ESM runtime pinned in src/ciw/esm-runtime.json (its built workbench-candidate artifact and replay helper, a node binary and a CIW checkout at its replay revision) bound as an operator candidate adapter, which the lab gate does not provision; their predictions are read from the code, not observed.",
+  "open_items": [],
   "tasks": [
    "T077"
   ]
@@ -1623,7 +1606,7 @@
   ]
  },
  {
-  "assumption": "Pinned-provider subprocess runtime identities (ciw.subprocess-runtime.v1: pinned revision, module and source_root, host-measured source_tree and python_sha256; src/ciw/declared_workload.py) were not mutated, because no provider checkout was bound to a declared-workload or telemetry workflow; only the CIW-internal oscillator provider identity and CIW's own energy analysis identity were.",
+  "assumption": "Pinned-provider subprocess runtime identities (ciw.subprocess-runtime.v1: pinned revision, module and source_root, host-measured source_tree and python_sha256) were not mutated in this matrix, which runs no provider; only the CIW-internal oscillator provider identity and CIW's own energy analysis identity were. T077 observes the telemetry session's runtime identities when the telemetry stack is bound, including one forged revision.",
   "open_items": [
    "telemetry-provisioning"
   ],
@@ -1657,15 +1640,6 @@
   "open_items": [],
   "tasks": [
    "T129"
-  ]
- },
- {
-  "assumption": "Provider-backed workflows (telemetry, declared workloads, proved heat) were not exercised offline; their identity rows are inferred only where they share the energy-accuracy code path.",
-  "open_items": [
-   "telemetry-provisioning"
-  ],
-  "tasks": [
-   "T077"
   ]
  },
  {
@@ -1828,6 +1802,13 @@
   ]
  },
  {
+  "assumption": "Rounding-level figures are those their tasks declare when writing them (rounding_level in the report's generated artifacts): values at binary64 rounding level, whose last bits follow the BLAS kernel and platform, move their points or their log axis, so they record every plotted value with its rounding bound and are compared by those values, and whether one reproduced byte for byte (as on the kernel of the retained run) is recorded in figure-index.json only, which keeps this report the same on every kernel. Whether a declared bound is a rounding bound is a review question, checked by the declaring task's regression test.",
+  "open_items": [],
+  "tasks": [
+   "T158"
+  ]
+ },
+ {
   "assumption": "Route plants with margins below 0.05 are excluded from the solver and verdict comparisons; near-marginal forms enter only through T107's near-threshold family in the scalar-gate comparison.",
   "open_items": [],
   "tasks": [
@@ -1944,13 +1925,6 @@
   ]
  },
  {
-  "assumption": "Symplectic or symmetric integrators are not in the core and are not compared",
-  "open_items": [],
-  "tasks": [
-   "T015"
-  ]
- },
- {
   "assumption": "T148's policy for fixed-order reductions: pairwise: fixed binary tree split at n//2 over the stored order (bitwise reproducible only for the same order and length); error <= gamma_{ceil(log2 n)} sum|x|",
   "open_items": [],
   "tasks": [
@@ -2030,12 +2004,17 @@
   ]
  },
  {
-  "assumption": "The ESM rows use a synthetic telemetry-shaped record (schema, digest, three step occurrences), not a telemetry session validated by the telemetry workflow, which needs provider checkouts.",
-  "open_items": [
-   "telemetry-provisioning"
-  ],
+  "assumption": "The ESM validator rows use a synthetic telemetry-shaped record (schema, digest, three step occurrences), not a telemetry session's bundle: no ESM binding is available to act on one.",
+  "open_items": [],
   "tasks": [
    "T077"
+  ]
+ },
+ {
+  "assumption": "The Gragg-Bulirsch-Stoer integrator of the 34-digit reference is ciw-authored; wherever sympy and mpmath are installed its end states are checked against mpmath.odefun on the same sympy-derived equations, so the reference rests on equations (sympy) and a second integrator (mpmath) of origins other than ciw. mpmath supplies the arithmetic of both integrations, and neither gives a proved error bound: their agreement is empirical. The scipy DOP853 comparison integrates the ciw equations, so only its integrator is independent",
+  "open_items": [],
+  "tasks": [
+   "T002"
   ]
  },
  {
@@ -2300,13 +2279,6 @@
   ]
  },
  {
-  "assumption": "The exact solver returns distances, not the shortest path polyline: back-tracing the path from its windows is not implemented, so the shortest path itself is not drawn or compared.",
-  "open_items": [],
-  "tasks": [
-   "T038"
-  ]
- },
- {
   "assumption": "The exchange stage stops before the SET validator; conformance of well-formed artifacts needs SET (T097).",
   "open_items": [],
   "tasks": [
@@ -2524,6 +2496,13 @@
   ]
  },
  {
+  "assumption": "The isolated-cone prediction of the cut point is established only for digons enclosing one vertex on the declared icosphere traces; cut points whose digon encloses several vertices are observed, not predicted, and cut points on saddle-bearing meshes are not located.",
+  "open_items": [],
+  "tasks": [
+   "T038"
+  ]
+ },
+ {
   "assumption": "The lab tests' JUnit outcomes are recorded in each task's report, not by this task.",
   "open_items": [],
   "tasks": [
@@ -2566,6 +2545,13 @@
   ]
  },
  {
+  "assumption": "The nonlinear implicit integrator solves its stage equations by fixed-point iteration, which within its 60-iteration cap reaches only kh below about 0.6 (implicit midpoint) and 1.1 (Gauss-Legendre) here (without the cap it stops converging near kh = 1 and 1.3); a Newton solve would reach larger steps and is not implemented",
+  "open_items": [],
+  "tasks": [
+   "T016"
+  ]
+ },
+ {
   "assumption": "The offset is observable only while the velocity is nonzero.",
   "open_items": [],
   "tasks": [
@@ -2591,6 +2577,13 @@
   "open_items": [],
   "tasks": [
    "T012"
+  ]
+ },
+ {
+  "assumption": "The oscillator numerical_result_id links results with equal numbers and is recomputed on reopen from the retained numbers; it does not check that the numbers are statistics of the recording.",
+  "open_items": [],
+  "tasks": [
+   "T081"
   ]
  },
  {
@@ -2864,6 +2857,13 @@
   ]
  },
  {
+  "assumption": "The sqrt(2) exponent is fitted on the ridge geodesic only; oblique saddle geodesics are compared for integrator accuracy, not for their Jacobi growth law",
+  "open_items": [],
+  "tasks": [
+   "T016"
+  ]
+ },
+ {
   "assumption": "The sqrt(2) saddle exponent is a matched-asymptotics argument, not a proof",
   "open_items": [],
   "tasks": [
@@ -2899,6 +2899,20 @@
   ]
  },
  {
+  "assumption": "The symmetric integrators of the core (implicit midpoint, Gauss-Legendre) are not run on these two geodesics and horizons",
+  "open_items": [],
+  "tasks": [
+   "T015"
+  ]
+ },
+ {
+  "assumption": "The symmetric methods are integrated with fixed steps only; a time-reversible adaptive step control is not implemented, so the adaptive return error stays at tolerance level",
+  "open_items": [],
+  "tasks": [
+   "T014"
+  ]
+ },
+ {
   "assumption": "The sympy reference's chord expression is written in ciw.lab.observation_chord; sympy's independence covers its series expansion and simplification",
   "open_items": [],
   "tasks": [
@@ -2924,6 +2938,13 @@
   "open_items": [],
   "tasks": [
    "T145"
+  ]
+ },
+ {
+  "assumption": "The telemetry runtimes' python_sha256, python_version and dependencies describe the interpreter that ran the lab, and repository_root and python_executable are host paths; they are retained without the paths in telemetry-runtimes.json and never compared across runs. CIW records no source tree for the telemetry pins (ciw.lab.bridge.pins_without_tree), so their provider_backed labels accept the retained tree as recorded; the identity matrix compares it with the bound checkout.",
+  "open_items": [],
+  "tasks": [
+   "T077"
   ]
  },
  {
@@ -2982,6 +3003,13 @@
   "open_items": [],
   "tasks": [
    "T045"
+  ]
+ },
+ {
+  "assumption": "The vertex-hit rate is measured for isotropic tangential jitter; meshes and traces aligned with rows of vertices (regular grids, traces aimed at vertices) need the vertex rule systematically.",
+  "open_items": [],
+  "tasks": [
+   "T038"
   ]
  },
  {
@@ -3104,13 +3132,6 @@
   ]
  },
  {
-  "assumption": "Vertex hits are refused rather than continued by the Polthier-Schmies angle-bisection rule.",
-  "open_items": [],
-  "tasks": [
-   "T038"
-  ]
- },
- {
   "assumption": "Wall-clock timing figures are those their tasks declare when writing them (wall_clock_timing in the report's generated artifacts); a figure plotting wall-clock time without the declaration counts as a mismatch, and whether a declared figure's data depends on the clock is a review question.",
   "open_items": [],
   "tasks": [
@@ -3118,7 +3139,7 @@
   ]
  },
  {
-  "assumption": "Where a straightest geodesic stops being shortest (where it crosses the cut locus of its start point) is observed per trace, not predicted.",
+  "assumption": "Where several shortest paths tie, the back-trace returns one of them (the one whose window reached the target first); ties are not enumerated.",
   "open_items": [],
   "tasks": [
    "T038"
@@ -3177,6 +3198,13 @@
   "open_items": [],
   "tasks": [
    "T060"
+  ]
+ },
+ {
+  "assumption": "Why the Gauss-Legendre/RK4 error ratio varies between saddle geodesics is measured, not derived from the methods' error expansions",
+  "open_items": [],
+  "tasks": [
+   "T016"
   ]
  },
  {

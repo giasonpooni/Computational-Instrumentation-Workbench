@@ -254,7 +254,7 @@
   {
    "bytes": 5301,
    "path": "artifacts/T091/reopen.json",
-   "sha256": "52331164b6df3a78e7c3e6f8945ab5ba564ddb1fdc77b13d3e00a72fd277a402"
+   "sha256": "00561393a94737c03a4d848f74a09aa44b473bb439783b9c223d32cba93a5db5"
   }
  ],
  "hypothesis": "A CIW workspace saved by a session that held a trusted provider binding, with retained oscillator results, an energy-accuracy original and replay and a provider-kind bundle, can be reopened with no provider binding and without reaching any execution entry point, and the binding is not recovered.",
@@ -281,13 +281,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/exchange_provenance_bundles.py": "289185340068210691a0ccc526655eadb241855566c88003eedf97eef22b7085",
+   "src/ciw/lab/exchange_provenance_bundles.py": "f75ee7cccf320b68e75983ee2e5e974cea6a77e87f765cd22e8501ea04635007",
    "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "28f726a725f7219ef0afccd34545104b5dc0a36e27723281fe6bd1fbde467fa2"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: intercept execution below CIW's Python entry points while a workspace reopens (a sys.addaudithook hook on subprocess.Popen, os.exec*, os.posix_spawn and ctypes.dlopen, run in a child process because audit hooks cannot be removed), so that a workflow reached through a name imported into another module, or through code outside the listed entry points, is caught; and count validation recomputation for every retained kind, not only the energy analysis.",
- "report_id": "sha256:ad4e33191859e9e4b554225510ce7e42c8ff9be60fcd0e6fd5b00c09f27b4fbf",
+ "report_id": "sha256:b1b4f4cb6e4f083fbd271ccd42e3749fa33693a0de660b79b1ade69f86df3302",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "completed",

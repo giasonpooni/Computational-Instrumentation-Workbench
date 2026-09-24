@@ -113,9 +113,9 @@
   "execution.list": "response",
   "experiment.inspect": "response",
   "operation.list": "response",
-  "result.get result-0a8b385e911b4a819d7e94064abb1aa8": "response",
-  "result.get result-8fdb1ea9e800490dbb9872fe11ffcf05": "response",
-  "result.get result-c3e75658803f448e8730b2eebe37d914": "response",
+  "result.get result-6692f6760a93401db0258cd753abaa19": "response",
+  "result.get result-8968ad15f173454c91cb904db301284e": "response",
+  "result.get result-c5d8399dda2c4800801bfd19bdb9bb29": "response",
   "result.list": "response",
   "session.get": "response",
   "source.list": "response"
@@ -124,7 +124,7 @@
   "ciw.energy_records.analyze": 7
  },
  "reopen_attempts": [],
- "saved_workspace_sha256": "438258be6e1df50681e4c65547a359e260dc1ae59b3c6de07320a5cc7d14f43f",
+ "saved_workspace_sha256": "5742b3a871d66795b3ba2d855f10e5111549fc9235eb8e2ad00dedf0acfd6823",
  "synthetic_binding": {
   "engine": "/ciw-lab/synthetic-binding/execution-cli",
   "scr": "/ciw-lab/synthetic-binding/scr"

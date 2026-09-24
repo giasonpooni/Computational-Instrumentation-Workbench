@@ -15,12 +15,13 @@
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "A re-executed task that ends in its retained state writes every retained figure: with the same SHA-256, or, for a figure declared as a wall-clock timing figure, with the same series and points.",
- "experiment": "Hash and parse every retained SVG; re-execute the 41 declared inexpensive figure tasks plus every task that declares a wall-clock timing figure in a scratch directory, and compare each regenerated figure's bytes with the retained one (a declared timing figure: presence and structure).",
+ "expected_invariant": "A re-executed task that ends in its retained state writes every retained figure: with the same SHA-256, or, for a figure declared as a wall-clock timing figure, with the same series and points, and for one declared as a rounding-level figure, with the same series and every recorded value within its rounding bound.",
+ "experiment": "Hash and parse every retained SVG; re-execute the 41 declared inexpensive figure tasks plus every task that declares a wall-clock timing figure in a scratch directory, and compare each regenerated figure's bytes with the retained one (a declared timing figure: presence and structure; a declared rounding-level figure: its recorded values, each within its rounding bound).",
  "failure_modes_checked": [
   "figure bytes changed by nondeterministic data (timings, unseeded randomness, dictionary order)",
   "a figure plotting wall-clock timings without its declaration (counted as a mismatch)",
   "a declared timing figure that lost or gained series or points, or reproduced byte for byte (reported)",
+  "a declared rounding-level figure that lost or gained series or points, or whose values moved beyond their rounding bounds (counted as a mismatch)",
   "re-executed task ending in another state (for example an unbound provider): its figures are not comparable",
   "retained figure edited after its report (digest mismatch)",
   "malformed SVG"
@@ -34,13 +35,13 @@
       "comparison": "abs_le",
       "observed": 0.0,
       "passed": true,
-      "reference": "regenerated figures missing, undeclared figures whose bytes differ and declared timing figures whose series or points differ",
+      "reference": "regenerated figures missing, undeclared figures whose bytes differ, declared timing figures whose series or points differ and declared rounding-level figures whose series differ or whose values moved beyond their rounding bounds",
       "reference_kind": "exact_arithmetic",
       "tolerance": 0.0
      }
     ]
    },
-   "claim": "Re-executed figure tasks regenerate their retained figures, byte-identical unless declared as wall-clock timing figures",
+   "claim": "Re-executed figure tasks regenerate their retained figures, byte-identical unless declared as wall-clock timing figures, which keep their series and points, or as rounding-level figures, whose recorded values agree within their rounding bounds",
    "domain": "computational_pipeline",
    "evidence_status": "numerically_verified",
    "origin": [
@@ -165,20 +166,21 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 36691,
+   "bytes": 42064,
    "path": "artifacts/T158/figure-index.json",
-   "sha256": "e603108dd935efab00a430dc96a8809f6ad070c01abad9b1c3cbaa6a69b3227a"
+   "sha256": "96945a16d07fbc9cf4a053de8e65cf92d58e501be47e06883d7b267b7ba815d5"
   }
  ],
  "hypothesis": "Retained SVG figures are byte-for-byte reproducible when their tasks are re-executed.",
  "input_data": [
   "Retained reports of T001-T157 in the same output directory and their SVG artifacts",
   "Wall-clock timing declarations of those figures (wall_clock_timing in the reports' generated artifacts)",
+  "Rounding-level declarations of those figures (rounding_level in the reports' generated artifacts)",
   "Task implementations re-executed in a scratch directory with this run's provider bindings"
  ],
- "mathematical_model": "Figure bytes are a function of the task's data: ciw.lab.svg uses no clock or randomness, so a regenerated figure can differ only if its data does. A figure its task declares as plotting wall-clock timings is expected to differ in bytes, not in structure (series and points).",
+ "mathematical_model": "Figure bytes are a function of the task's data: ciw.lab.svg uses no clock or randomness, so a regenerated figure can differ only if its data does. A figure its task declares as plotting wall-clock timings is expected to differ in bytes, not in structure (series and points); one declared as plotting values at rounding level, whose last bits follow the BLAS kernel and platform, records its values with each point's rounding bound and is expected to differ in bytes, not in values beyond those bounds.",
  "number": 158,
- "numerical_result": "123 retained figures from 82 tasks, 1 declared as wall-clock timing figures; 46 regenerated and compared from 41 tasks: 0 mismatched; of 1 declared timing figures 1 differ in bytes with the same structure and 0 are byte-identical; 41 tasks not re-executed, 0 not comparable; 0 digest mismatches, 0 malformed.",
+ "numerical_result": "125 retained figures from 82 tasks, 1 declared as wall-clock timing figures and 9 as rounding-level figures; 46 regenerated and compared from 41 tasks: 0 mismatched; of 1 declared timing figures 1 differ in bytes with the same structure and 0 are byte-identical; 4 declared rounding-level figures compared by their recorded values within rounding bounds; 41 tasks not re-executed, 0 not comparable; 0 digest mismatches, 0 malformed.",
  "observation_model": "No physical observation; reads retained computational records only.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -194,32 +196,34 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/research_portfolio.py": "36d03762abf5cb7a900d4572ec3f8aa8e7bc55cb61331711dce910a334b3acf8",
-   "src/ciw/lab/svg.py": "c257826c20831a9e7f68ac20a665729f91474d83df10b64743d4d5ef1b61ced2"
+   "src/ciw/lab/research_portfolio.py": "e495d96130ff4578b64c09537d871ac59cf727595bbec93f4bacfdad5ca7874d",
+   "src/ciw/lab/svg.py": "646e652dc278d04beaf3c0c541fab1e964f78cbe7baf4a77cdd346fae8501154"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "Compare the figures on Windows, the second platform, with scripts/check_figures.py: on a windows-latest runner with Python 3.12, install the checkout whose lab/ is retained (python -m pip install -e \".[dev,lab,plsr]\") and run python scripts/check_figures.py --retained lab --output-dir results/figures-windows with --provider ROLE=PATH for every provider the retained figure tasks used (csg, plsr-python, ppda, scr, scr-exchange, set in this run), at the pins scripts/check_lab.py provisions and with plsr-python bound to that Python. It re-executes every figure task without the section's time budget and records each figure's outcome with the platform in figure-check.json; fix every figure it reports as a mismatch, declaring one only when its plotted data are wall-clock timings.",
- "report_id": "sha256:edf0f971024a585d896f7efcbbd895ddd932751c94494cba6ce7631277d84a56",
+ "recommended_next_task": "Compare the figures on Windows, the second platform, with scripts/check_figures.py: on a windows-latest runner with Python 3.12, install the checkout whose lab/ is retained (python -m pip install -e \".[dev,lab,plsr]\") and run python scripts/check_figures.py --retained lab --output-dir results/figures-windows with --provider ROLE=PATH for every provider the retained figure tasks used (csg, plsr-python, ppda, scr, scr-exchange, set in this run), at the pins scripts/check_lab.py provisions and with plsr-python bound to that Python. It re-executes every figure task without the section's time budget and records each figure's outcome with the platform and OpenBLAS kernel in figure-check.json; fix every figure it reports as a mismatch, declaring one only when its plotted data are wall-clock timings or when values at rounding level, whose last bits follow the BLAS kernel, move it, with each point's rounding bound recorded, never to hide a real numerical difference.",
+ "report_id": "sha256:6beacacbe6a6bbf363fdf4a21597ebdc38cbb3a8d668feab2241a1c7602a3192",
  "schema": "ciw.lab-task-report.v1",
  "section": "research-portfolio",
  "state": "partial",
  "task_id": "T158",
  "tests_passed": [
-  "check: Re-executed figure tasks regenerate their retained figures, byte-identical unless declared as wall-clock timing figures vs regenerated figures missing, undeclared figures whose bytes differ and declared timing figures whose series or points differ",
+  "check: Re-executed figure tasks regenerate their retained figures, byte-identical unless declared as wall-clock timing figures, which keep their series and points, or as rounding-level figures, whose recorded values agree within their rounding bounds vs regenerated figures missing, undeclared figures whose bytes differ, declared timing figures whose series or points differ and declared rounding-level figures whose series differ or whose values moved beyond their rounding bounds",
   "check: Re-executed figures declared as wall-clock timing figures differ from their retained bytes vs declared timing figures whose regenerated bytes differ from the retained bytes",
   "check: Retained figures hash to the digests their reports record vs retained SVG files missing or differing from their recorded SHA-256",
   "check: Retained figures are well-formed SVG documents vs retained figures that do not parse as XML with an svg root",
   "pytest: tests/test_lab_research_portfolio.py::test_figures_are_reproducible",
   "pytest: tests/test_lab_research_portfolio.py::test_a_changed_figure_is_a_mismatch_and_a_timing_figure_a_counterexample",
-  "pytest: tests/test_lab_research_portfolio.py::test_only_declared_timing_figures_are_exempt_from_the_byte_comparison"
+  "pytest: tests/test_lab_research_portfolio.py::test_only_declared_timing_figures_are_exempt_from_the_byte_comparison",
+  "pytest: tests/test_lab_research_portfolio.py::test_rounding_level_figures_are_compared_by_their_values_on_every_kernel"
  ],
  "tests_skipped": [],
  "title": "Generate reproducible figures.",
- "uncertainty": "Byte comparison on this platform only; other platforms are not compared.",
+ "uncertainty": "Byte comparison on this platform and BLAS kernel only; other platforms and kernels are not compared.",
  "unresolved_assumptions": [
-  "41 figure tasks (77 figures) were not re-executed within the section's time budget: T001, T002, T003, T004, T005, T006, T007, T008, T009, T010, T011, T012, T014, T015, T016, T017, T018, T025, T036, T039, T040, T041, T043, T044, T046, T047, T051, T064, T067, T068, T097, T101, T107, T109, T126, T128, T133, T134, T135, T136, T137",
+  "41 figure tasks (79 figures) were not re-executed within the section's time budget: T001, T002, T003, T004, T005, T006, T007, T008, T009, T010, T011, T012, T014, T015, T016, T017, T018, T025, T036, T039, T040, T041, T043, T044, T046, T047, T051, T064, T067, T068, T097, T101, T107, T109, T126, T128, T133, T134, T135, T136, T137",
   "Wall-clock timing figures are those their tasks declare when writing them (wall_clock_timing in the report's generated artifacts); a figure plotting wall-clock time without the declaration counts as a mismatch, and whether a declared figure's data depends on the clock is a review question.",
-  "Byte identity is established on this platform only; the second-platform (Windows) comparison is made outside the queue by scripts/check_figures.py and is not part of this report."
+  "Rounding-level figures are those their tasks declare when writing them (rounding_level in the report's generated artifacts): values at binary64 rounding level, whose last bits follow the BLAS kernel and platform, move their points or their log axis, so they record every plotted value with its rounding bound and are compared by those values, and whether one reproduced byte for byte (as on the kernel of the retained run) is recorded in figure-index.json only, which keeps this report the same on every kernel. Whether a declared bound is a rounding bound is a review question, checked by the declaring task's regression test.",
+  "Byte identity is established on this platform and kernel only; the comparisons on Windows and on other OpenBLAS kernels are made outside the queue by scripts/check_figures.py and are not part of this report."
  ]
 }

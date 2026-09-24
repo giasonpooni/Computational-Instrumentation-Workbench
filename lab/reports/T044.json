@@ -536,14 +536,14 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/surfaces_discrete_mesh.py": "6d6f03cf6afcc2ecbdce3da635c4c38b96a3c77c0a6209c510b589b009c10c3b",
-   "src/ciw/lab/surfaces_discrete_mesh_geometry.py": "eb8124863335556f8aaa6f47f599a137f5925ef9210b5d7878bb8c7416a4dad3",
-   "src/ciw/lab/surfaces_discrete_mesh_studies.py": "1d274cab4fa8572f2304e3bff48b546936762ba151732df04f6bbae949f85086"
+   "src/ciw/lab/surfaces_discrete_mesh.py": "514826d79f459b5f623c1644a41835aeda4c6370aba67be523441bdb36183b76",
+   "src/ciw/lab/surfaces_discrete_mesh_geometry.py": "dae3df0a227a1cc31197bc16f38671287bfc38fbeb1959a2af68c056fd962199",
+   "src/ciw/lab/surfaces_discrete_mesh_studies.py": "fee3e580fbeadd2ce04c5110b08803566b668f077851d21ffa364ac48d07b60e"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: fill reconstructed_surface_distance's geometry_m2 from a mesh, as sigma_vertex^2 |grad d|^2 with T043's linearized vertex-noise gain (valid only while the marker segment stays in its face corridor) instead of declared analytic surface parameters, and check it against this task's nested Monte Carlo. Partly delivered by T045, which carries the geometry/sensor split for model-derived distances on parametric surfaces (plane, sphere, cylinder geodesic) and names the same mesh conversion as its next step, and by T140's instrument and geometry budget for manufacturing predictions. An intrinsic_geodesic_distance reading keeps one sensor sigma: as in this task's residual, its geometry part belongs to the model prediction it is compared with, not to the reading.",
- "report_id": "sha256:d4fb7a1edec6baf502b641deca21496a2035bd2eaf9ceafe4437ac916e05dafa",
+ "report_id": "sha256:4b16c1586fd659bc021754c85572dd86cf3066399dbde82359296d6cb72790a4",
  "schema": "ciw.lab-task-report.v1",
  "section": "surfaces-discrete",
  "state": "completed",

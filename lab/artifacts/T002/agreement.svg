@@ -1,43 +1,47 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420" font-family="sans-serif" font-size="11">
 <rect width="640" height="420" fill="#ffffff"/>
-<text x="78" y="22" font-size="13" font-weight="bold">End-state gap to the reference (paths: references.json)</text>
+<text x="78" y="22" font-size="13" font-weight="bold">GBS estimate and odefun gap, 2 significant digits (odefun.json)</text>
 <rect x="78" y="40" width="392" height="322" fill="none" stroke="#333"/>
-<line x1="127.00" y1="40" x2="127.00" y2="362" stroke="#e5e7eb"/>
-<text x="127.00" y="378" text-anchor="middle">2</text>
-<line x1="225.00" y1="40" x2="225.00" y2="362" stroke="#e5e7eb"/>
-<text x="225.00" y="378" text-anchor="middle">4</text>
-<line x1="323.00" y1="40" x2="323.00" y2="362" stroke="#e5e7eb"/>
-<text x="323.00" y="378" text-anchor="middle">6</text>
-<line x1="421.00" y1="40" x2="421.00" y2="362" stroke="#e5e7eb"/>
-<text x="421.00" y="378" text-anchor="middle">8</text>
-<line x1="78" y1="344.38" x2="470" y2="344.38" stroke="#e5e7eb"/>
-<text x="72" y="348.38" text-anchor="end">1e-15</text>
-<line x1="78" y1="182.33" x2="470" y2="182.33" stroke="#e5e7eb"/>
-<text x="72" y="186.33" text-anchor="end">1e-14</text>
-<text x="274.00" y="406" text-anchor="middle">path index (figure_path_index)</text>
-<text x="16" y="201.00" text-anchor="middle" transform="rotate(-90 16 201.00)">max(position, transfer) gap</text>
-<path d="M78.00,126.19 L127.00,76.21 L176.00,139.06 L225.00,350.07 L274.00,51.93 L323.00,122.77 L372.00,108.09 L421.00,107.30 L470.00,117.60" fill="none" stroke="#1f5fa8" stroke-width="1.8"/>
-<circle cx="78.00" cy="126.19" r="2.6" fill="#1f5fa8"/>
-<circle cx="127.00" cy="76.21" r="2.6" fill="#1f5fa8"/>
-<circle cx="176.00" cy="139.06" r="2.6" fill="#1f5fa8"/>
-<circle cx="225.00" cy="350.07" r="2.6" fill="#1f5fa8"/>
-<circle cx="274.00" cy="51.93" r="2.6" fill="#1f5fa8"/>
-<circle cx="323.00" cy="122.77" r="2.6" fill="#1f5fa8"/>
-<circle cx="372.00" cy="108.09" r="2.6" fill="#1f5fa8"/>
-<circle cx="421.00" cy="107.30" r="2.6" fill="#1f5fa8"/>
-<circle cx="470.00" cy="117.60" r="2.6" fill="#1f5fa8"/>
+<line x1="78.00" y1="40" x2="78.00" y2="362" stroke="#e5e7eb"/>
+<text x="78.00" y="378" text-anchor="middle">1</text>
+<line x1="176.00" y1="40" x2="176.00" y2="362" stroke="#e5e7eb"/>
+<text x="176.00" y="378" text-anchor="middle">1.5</text>
+<line x1="274.00" y1="40" x2="274.00" y2="362" stroke="#e5e7eb"/>
+<text x="274.00" y="378" text-anchor="middle">2</text>
+<line x1="372.00" y1="40" x2="372.00" y2="362" stroke="#e5e7eb"/>
+<text x="372.00" y="378" text-anchor="middle">2.5</text>
+<line x1="470.00" y1="40" x2="470.00" y2="362" stroke="#e5e7eb"/>
+<text x="470.00" y="378" text-anchor="middle">3</text>
+<line x1="78" y1="360.15" x2="470" y2="360.15" stroke="#e5e7eb"/>
+<text x="72" y="364.15" text-anchor="end">1e-29</text>
+<line x1="78" y1="320.67" x2="470" y2="320.67" stroke="#e5e7eb"/>
+<text x="72" y="324.67" text-anchor="end">1e-28</text>
+<line x1="78" y1="281.18" x2="470" y2="281.18" stroke="#e5e7eb"/>
+<text x="72" y="285.18" text-anchor="end">1e-27</text>
+<line x1="78" y1="241.70" x2="470" y2="241.70" stroke="#e5e7eb"/>
+<text x="72" y="245.70" text-anchor="end">1e-26</text>
+<line x1="78" y1="202.21" x2="470" y2="202.21" stroke="#e5e7eb"/>
+<text x="72" y="206.21" text-anchor="end">1e-25</text>
+<line x1="78" y1="162.73" x2="470" y2="162.73" stroke="#e5e7eb"/>
+<text x="72" y="166.73" text-anchor="end">1e-24</text>
+<line x1="78" y1="123.24" x2="470" y2="123.24" stroke="#e5e7eb"/>
+<text x="72" y="127.24" text-anchor="end">1e-23</text>
+<line x1="78" y1="83.76" x2="470" y2="83.76" stroke="#e5e7eb"/>
+<text x="72" y="87.76" text-anchor="end">1e-22</text>
+<line x1="78" y1="44.27" x2="470" y2="44.27" stroke="#e5e7eb"/>
+<text x="72" y="48.27" text-anchor="end">1e-21</text>
+<text x="274.00" y="406" text-anchor="middle">variable-curvature path (figure_path_index)</text>
+<text x="16" y="201.00" text-anchor="middle" transform="rotate(-90 16 201.00)">max state difference</text>
+<path d="M78.00,156.96 L274.00,97.84 L470.00,51.93" fill="none" stroke="#1f5fa8" stroke-width="1.8"/>
+<circle cx="78.00" cy="156.96" r="2.6" fill="#1f5fa8"/>
+<circle cx="274.00" cy="97.84" r="2.6" fill="#1f5fa8"/>
+<circle cx="470.00" cy="51.93" r="2.6" fill="#1f5fa8"/>
 <line x1="482" y1="52" x2="502" y2="52" stroke="#1f5fa8" stroke-width="2"/>
-<text x="508" y="56">ciw Richardson</text>
-<path d="M78.00,335.64 L127.00,165.65 L176.00,303.94 L225.00,164.52 L274.00,134.07 L323.00,232.75 L372.00,258.47 L421.00,245.17 L470.00,173.58" fill="none" stroke="#c2410c" stroke-width="1.8"/>
-<circle cx="78.00" cy="335.64" r="2.6" fill="#c2410c"/>
-<circle cx="127.00" cy="165.65" r="2.6" fill="#c2410c"/>
-<circle cx="176.00" cy="303.94" r="2.6" fill="#c2410c"/>
-<circle cx="225.00" cy="164.52" r="2.6" fill="#c2410c"/>
-<circle cx="274.00" cy="134.07" r="2.6" fill="#c2410c"/>
-<circle cx="323.00" cy="232.75" r="2.6" fill="#c2410c"/>
-<circle cx="372.00" cy="258.47" r="2.6" fill="#c2410c"/>
-<circle cx="421.00" cy="245.17" r="2.6" fill="#c2410c"/>
-<circle cx="470.00" cy="173.58" r="2.6" fill="#c2410c"/>
+<text x="508" y="56">GBS 10 vs 20</text>
+<path d="M78.00,350.07 L274.00,287.80 L470.00,245.31" fill="none" stroke="#c2410c" stroke-width="1.8"/>
+<circle cx="78.00" cy="350.07" r="2.6" fill="#c2410c"/>
+<circle cx="274.00" cy="287.80" r="2.6" fill="#c2410c"/>
+<circle cx="470.00" cy="245.31" r="2.6" fill="#c2410c"/>
 <line x1="482" y1="70" x2="502" y2="70" stroke="#c2410c" stroke-width="2"/>
-<text x="508" y="74">scipy DOP853</text>
+<text x="508" y="74">odefun gap, 44 dig.</text>
 </svg>

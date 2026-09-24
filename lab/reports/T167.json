@@ -178,14 +178,14 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 143608,
+   "bytes": 140274,
    "path": "artifacts/T167/unmeasured.json",
-   "sha256": "3dcd15bd6e54078ebf93a6952f3179f0a2b5468d870954157bf2e3087f6d0f82"
+   "sha256": "bc9dc1ef510bd60b04dbff8313b8d0d51f6087833c30a6fe73b3476c1aeaef78"
   },
   {
-   "bytes": 104019,
+   "bytes": 101598,
    "path": "artifacts/T167/UNMEASURED.md",
-   "sha256": "be882d705e8bce68aab89095ede9670e1a8820935ddb32010d549adfc094f0c0"
+   "sha256": "581bcb992e27d0705f309c7f348af1458bed0bdc7ac241780f83c9ac86415863"
   }
  ],
  "hypothesis": "Everything that remains physically unmeasured or unrun is enumerable from the retained reports, with what each open claim needs: an acquisition on a named route, a run on a named route's host, code that does not exist yet, a reference instrument, or an instrument probe.",
@@ -212,12 +212,12 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/research_portfolio.py": "36d03762abf5cb7a900d4572ec3f8aa8e7bc55cb61331711dce910a334b3acf8"
+   "src/ciw/lab/research_portfolio.py": "e495d96130ff4578b64c09537d871ac59cf727595bbec93f4bacfdad5ca7874d"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "On the RTX 2080 host: `ciw energy probe --gpu-index 0` must report status ok; then run T116, T117, T118, T119, T121, T124, T147 there into a fresh output directory following their protocols (10 open physical claims name this route's device; 3 computational comparisons (T117, T121, T147) run only on this host) and retain the run with `ciw lab hardware retain`; next, hardware:rapl: an intel-rapl energy_uj counter under /sys/class/powercap must read as a number (the runner's hardware:rapl probe); `python -m ciw.lab.energy_gpu_telemetry rapl-capture` then records the capture. Claims needing implementation first, and those with no instrument probe, need code before hardware.",
- "report_id": "sha256:c36fd8818a9e689459ed9cf22e9c0ec3adb0262514ee61e29f4f1d8bde2cd8f2",
+ "report_id": "sha256:e80059b4b68d33fb561d8a18aefc4a07f673d292c5f0677d1b7af5d4922b560f",
  "schema": "ciw.lab-task-report.v1",
  "section": "research-portfolio",
  "state": "completed",

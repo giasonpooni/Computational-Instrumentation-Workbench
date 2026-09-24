@@ -485,14 +485,14 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/surfaces_discrete_mesh.py": "6d6f03cf6afcc2ecbdce3da635c4c38b96a3c77c0a6209c510b589b009c10c3b",
-   "src/ciw/lab/surfaces_discrete_mesh_geometry.py": "eb8124863335556f8aaa6f47f599a137f5925ef9210b5d7878bb8c7416a4dad3",
-   "src/ciw/lab/surfaces_discrete_mesh_studies.py": "1d274cab4fa8572f2304e3bff48b546936762ba151732df04f6bbae949f85086"
+   "src/ciw/lab/surfaces_discrete_mesh.py": "514826d79f459b5f623c1644a41835aeda4c6370aba67be523441bdb36183b76",
+   "src/ciw/lab/surfaces_discrete_mesh_geometry.py": "dae3df0a227a1cc31197bc16f38671287bfc38fbeb1959a2af68c056fd962199",
+   "src/ciw/lab/surfaces_discrete_mesh_studies.py": "fee3e580fbeadd2ce04c5110b08803566b668f077851d21ffa364ac48d07b60e"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: measure the heat-method convergence rate for time steps t = m h^2 over a range of m (only m = 1, as Crane et al. recommend, is used here) and the endpoint-error order for geodesic directions sampled over their angle to the lattice rows, on which the retained empirical order depends.",
- "report_id": "sha256:c7aa6b235a8dbde05d959c24ee245bfab18f6445d2ce0ec0ea9a76d521da17f6",
+ "report_id": "sha256:88ada544a9076a7a1229239a20c9a840c601ba4bff08d8fdc79b5267720cd38b",
  "schema": "ciw.lab-task-report.v1",
  "section": "surfaces-discrete",
  "state": "completed",

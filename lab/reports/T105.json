@@ -616,14 +616,14 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/lyapunov.py": "d343889fe69789b9551ef6e36029c1f969c6bf04c4cdb4618b9f506539831665",
+   "src/ciw/lab/lyapunov.py": "bac453e41cfaf4c8e83f82cc2eee826543cba08d732cba1e430a6a61fe2c1147",
    "src/ciw/lab/lyapunov_provider.py": "da3465b48b5f5efc47bfe6ab8379cf2cf2bc23e4835dc7ff047252e77fa6ef17",
    "src/ciw/lab/lyapunov_reference.py": "831ae8bd144c10e255cb9f2b54e0c219e2f98a59d01a07b5255046ae70b9b431"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: do outward-rounded parameter boxes (a guard band declared by the host) remove the boundary collisions between unit conventions, and should PLSR document that margin ratios are unit-dependent under non-uniform unit changes? Re-run the unit-scale comparison with outward-rounded boxes to find out.",
- "report_id": "sha256:45937bbd05874f79bd72941661b3a9f5cb4e12e01420f20682f88813d9a48c13",
+ "report_id": "sha256:baf06be759dcd60cc377c58b7796ca8b041aaceb7c6b49840f1dbf94e4fac668",
  "schema": "ciw.lab-task-report.v1",
  "section": "lyapunov",
  "state": "completed",

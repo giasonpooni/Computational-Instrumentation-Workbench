@@ -502,9 +502,9 @@
    "sha256": "35dc834dfd4a5502a4a996eb6bb45135613c084a628271a4cb029ec2dfa23c56"
   },
   {
-   "bytes": 289,
+   "bytes": 287,
    "path": "artifacts/T117/timing.json",
-   "sha256": "83e80b363432ddad677849a5a7aebaff33b189d452d27c53ca1306fb27a6e972"
+   "sha256": "791f95896d3a49a9de6f01bb14c6cc015ae2529b316508282580a70456a2bf1d"
   }
  ],
  "hypothesis": "Implementations of one computation in Python/NumPy, Rust and the GPU agree: the sphere RK4 geodesic kernel to rounding error in Python and Rust (libm sin/cos may differ), and the common Gaussian VI workload, which uses only correctly rounded +, -, x and / in one declared order, bitwise in NumPy, Rust and the gaussian_vi PTX kernel.",
@@ -579,15 +579,15 @@
    "src/ciw/energy_bench.py": "bd50806ba3128ff85a1d240bc9670db04082196ec050c51597ec0cc725e45046",
    "src/ciw/energy_cuda.py": "9b4b86809e47cba7683dc0c238b0b052b6785fd09e629224c5f8f37b6d5a0e64",
    "src/ciw/free_energy_math.py": "4f096c281c548e92ed7bb1d49a8fd58f3a4d6b48ababef2958331ca13f088a6e",
-   "src/ciw/lab/energy_gpu.py": "f49195ce5a78ced3c8da1562f4412f2fdc65d8cc2749dd4fbe0b25bc0334e773",
-   "src/ciw/lab/energy_gpu_kernels.py": "1198886637535f3f8ec26601aa70cdc16d1c175dc4286aa9807edec3910005d2",
+   "src/ciw/lab/energy_gpu.py": "a77a30ee8439752ff3da38d742a823ac16d0cea5ea189bf030c2d52233ef5706",
+   "src/ciw/lab/energy_gpu_kernels.py": "967807416e80c2fd746babe8e52419a20f68e9285c0a4aad452a4b6758d3e786",
    "src/ciw/lab/energy_gpu_telemetry.py": "6935331e622266868a97ee78f8e34d185aa69009a62fedc8ea8273b3a9312bfc",
    "src/ciw/lab/energy_gpu_workload.py": "5cdaf9fe9f25194dae561e060abf471567cfd3bb8df6c1836630a54c5085a9de"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Compare the PTX kernel's outputs with the NumPy reference bit for bit on the RTX 2080 host (protocol in docs/lab/ENERGY_GPU.md): `mkdir -p runs/rtx2080-<date>`; `ciw energy probe --gpu-index 0` must return a reading with status ok; start `TZ=UTC nvidia-smi --query-gpu=timestamp,uuid,name,utilization.gpu,utilization.memory,temperature.gpu,power.draw,clocks.sm,clocks.mem,pstate --format=csv,nounits -lms 100 -f runs/rtx2080-<date>/smi.csv` in the background; `ciw energy record --problem examples/energy-accuracy/problem.json --output-dir runs/rtx2080-<date>/capture --duration 10 --replicas 4096 --warmup-batches 2 --idle-duration 2 --gpu-index 0`; stop the sidecar; `ciw energy replay runs/rtx2080-<date>/capture/log.json`; then `CIW_LAB_NVIDIA_SMI_UTC_OFFSET=+00:00 ciw lab run T116 T117 T118 T119 T120 T121 T124 T147 --capture energy-log=runs/rtx2080-<date>/capture/log.json --capture nvidia-smi-csv=runs/rtx2080-<date>/smi.csv --output-dir results/rtx2080-<date>` on the same host and `ciw lab hardware retain results/rtx2080-<date> --retained lab --run-id rtx2080-<date> --host \"<RTX 2080 host>\"`. Measure the Rust port's and the NumPy reference's package energy per batch on a Linux host with readable intel-rapl counters (docs/lab/ENERGY_GPU.md): `python -m ciw.lab.energy_gpu_telemetry rapl-capture runs/rapl-<date>.json`, then `ciw lab run T115 T117 T120 --capture rapl-log=runs/rapl-<date>.json --output-dir results/rapl-<date>` on the same host, then `ciw lab hardware retain results/rapl-<date> --retained lab --run-id rapl-<date> --host \"<RAPL host>\"`. Deferred research question: a Julia port of the common Gaussian VI workload with the kernel's operation order (no fused multiply-add), run through the Julia worker T145 plans behind the SCR boundary and compared bitwise with the NumPy reference",
- "report_id": "sha256:88eeabc4b19de96ae8992803a1ab2df6e9b70946b2c53749a0e5a1ffc8ad65e1",
+ "report_id": "sha256:015075e6927097c23b2b385f3fbb632259a50bbf3d37f8eb068c68f549317fa7",
  "schema": "ciw.lab-task-report.v1",
  "section": "energy-gpu",
  "state": "partial",

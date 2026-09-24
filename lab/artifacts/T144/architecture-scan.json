@@ -58,16 +58,17 @@
    "ctypes"
   ]
  },
- "package_sha256": "4b7df3616b8ad18f88bafd98a7a867b987d02d2b2561500440b7d5b7fa63f7c5",
+ "package_sha256": "d6c90126c58c191df8d75938b6fff480c155e147a81ba7e643ab2dc14fc24279",
  "path_resolved_spawners": {
   "ciw.lab.energy_gpu_kernels": {
    "spawn_lines": [
-    306,
-    307,
-    324
+    283,
+    316,
+    317,
+    334
    ],
    "which_lines": [
-    294
+    300
    ]
   },
   "ciw.lab.exchange_provenance_bundles_providers": {
@@ -95,13 +96,13 @@
   },
   "ciw.lab.runner": {
    "spawn_lines": [
-    123,
-    291,
-    307
+    125,
+    306,
+    322
    ],
    "which_lines": [
-    284,
-    304
+    299,
+    319
    ]
   }
  },
@@ -110,15 +111,16 @@
    83
   ],
   "ciw.lab.energy_gpu_kernels": [
-   306,
-   307,
-   324
+   283,
+   316,
+   317,
+   334
   ],
   "ciw.lab.energy_gpu_workload": [
    466
   ],
   "ciw.lab.exchange_provenance_bundles": [
-   2388
+   2385
   ],
   "ciw.lab.exchange_provenance_bundles_providers": [
    140,
@@ -132,8 +134,8 @@
    140
   ],
   "ciw.lab.geodesic_jacobi_common": [
-   526,
-   656
+   634,
+   764
   ],
   "ciw.lab.implementation_targets_serial": [
    689,
@@ -144,9 +146,9 @@
    187
   ],
   "ciw.lab.runner": [
-   123,
-   291,
-   307
+   125,
+   306,
+   322
   ]
  },
  "unparsed_modules": [],

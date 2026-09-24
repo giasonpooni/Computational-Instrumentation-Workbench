@@ -318,9 +318,9 @@
    "sha256": "d686210a2ad5489fd856053ee3898c0d4c9ffc1cfb2158c23d9c6fb70b923c1c"
   },
   {
-   "bytes": 501,
+   "bytes": 497,
    "path": "artifacts/T115/timing.json",
-   "sha256": "dbb7a2331f715f7af8cefc7ce20364ae98cb79d7bd97ca261431e26defd427b2"
+   "sha256": "2c4e0ee6d8b19af75bf3b7b8b50da52549d52a2e17afe38056bf71cfa6fd5bb6"
   }
  ],
  "hypothesis": "The deterministic work of a fixed-step RK4 geodesic trajectory is exactly 4N right-hand-side evaluations, and that of a batch of the common Gaussian VI workload exactly replicas x (24 K + 7) operations; their CPU energy can be read only from package counters bracketing repeated batches, which an operator captures outside the lab runner.",
@@ -361,15 +361,15 @@
    "src/ciw/energy_bench.py": "bd50806ba3128ff85a1d240bc9670db04082196ec050c51597ec0cc725e45046",
    "src/ciw/energy_cuda.py": "9b4b86809e47cba7683dc0c238b0b052b6785fd09e629224c5f8f37b6d5a0e64",
    "src/ciw/free_energy_math.py": "4f096c281c548e92ed7bb1d49a8fd58f3a4d6b48ababef2958331ca13f088a6e",
-   "src/ciw/lab/energy_gpu.py": "f49195ce5a78ced3c8da1562f4412f2fdc65d8cc2749dd4fbe0b25bc0334e773",
-   "src/ciw/lab/energy_gpu_kernels.py": "1198886637535f3f8ec26601aa70cdc16d1c175dc4286aa9807edec3910005d2",
+   "src/ciw/lab/energy_gpu.py": "a77a30ee8439752ff3da38d742a823ac16d0cea5ea189bf030c2d52233ef5706",
+   "src/ciw/lab/energy_gpu_kernels.py": "967807416e80c2fd746babe8e52419a20f68e9285c0a4aad452a4b6758d3e786",
    "src/ciw/lab/energy_gpu_telemetry.py": "6935331e622266868a97ee78f8e34d185aa69009a62fedc8ea8273b3a9312bfc",
    "src/ciw/lab/energy_gpu_workload.py": "5cdaf9fe9f25194dae561e060abf471567cfd3bb8df6c1836630a54c5085a9de"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Measure package energy per geodesic trajectory and per common-workload batch on a Linux host with readable intel-rapl counters (docs/lab/ENERGY_GPU.md), hardware_measured through the RAPL identity gate: `python -m ciw.lab.energy_gpu_telemetry rapl-capture runs/rapl-<date>.json`, then `ciw lab run T115 T117 T120 --capture rapl-log=runs/rapl-<date>.json --output-dir results/rapl-<date>` on the same host, then `ciw lab hardware retain results/rapl-<date> --retained lab --run-id rapl-<date> --host \"<RAPL host>\"`",
- "report_id": "sha256:b6a062040fe133ac267afc8790290703a95f0d9871af16b6d0e0271a18139203",
+ "report_id": "sha256:63cb125da0808297225d0095c60798430d16ac84c300018ea3e362a313c57431",
  "schema": "ciw.lab-task-report.v1",
  "section": "energy-gpu",
  "state": "partial",

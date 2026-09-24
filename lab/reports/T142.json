@@ -299,14 +299,14 @@
    "sha256": "499c8c25a02b3fb601c00239dc16722ee73933cd40d825179954f0d9e15a122e"
   },
   {
-   "bytes": 1379,
+   "bytes": 1366,
    "path": "artifacts/T142/kernel-timings.json",
-   "sha256": "4a1251b581294fcbcbda77ba1dc16a7898dfe1bc7b355f7b1270ac460d7aaaf9"
+   "sha256": "d5f0efc85b172bad0a7cf0de3e145c205c0b680431bb1f87da8af8a9f42e8d5e"
   },
   {
    "bytes": 1649,
    "path": "artifacts/T142/kernel-timings.svg",
-   "sha256": "38a5e8cef8ef7a09a62bdb29d12470104b0a0018ffcb0313a98944226eaccc78",
+   "sha256": "5a7bc1ddec0a864df0e521311752f918954e3add6b670fe8e81eb3f511f88887",
    "wall_clock_timing": true
   }
  ],
@@ -355,7 +355,7 @@
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Done in this task: the Rust fused RK4 loop reproduces ciw.lab.jacobi.transfer (cross_implementation check). Remaining: whether a Rust port saves time or energy on the target machine, which wall-clock timings cannot establish as a finding; `python -m ciw.lab.energy_gpu_telemetry rapl-capture` now brackets a Rust port and the NumPy reference of the common Gaussian VI workload on a RAPL host, and the lab run it names reports their package energy per batch (docs/lab/ENERGY_GPU.md); a port of the ranked fused transfer loop itself would need its own bracket",
- "report_id": "sha256:3bd6941d823dac0a0067b45972b913f6cd00d5c19b34bda59e7ce56555ac6408",
+ "report_id": "sha256:0023dbc63b83c00301ce35e2d79b7b89752251eb4cd163c7c316878200cc4ca3",
  "schema": "ciw.lab-task-report.v1",
  "section": "implementation-targets",
  "state": "completed",

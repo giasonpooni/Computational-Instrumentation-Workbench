@@ -382,6 +382,15 @@
    ]
   },
   {
+   "description": null,
+   "file": "src/ciw/lab/integrators.py",
+   "present": true,
+   "tasks": [
+    "T014",
+    "T016"
+   ]
+  },
+  {
    "description": "Joint geodesic/Jacobi transfer integration without renormalization",
    "file": "src/ciw/lab/jacobi.py",
    "present": true,
@@ -894,6 +903,69 @@
    "file": "src/ciw/lab/svg.py",
    "present": true,
    "tasks": []
+  },
+  {
+   "description": null,
+   "file": "src/ciw/operations/runner.py",
+   "present": true,
+   "tasks": [
+    "T077",
+    "T078",
+    "T079",
+    "T080",
+    "T081",
+    "T082",
+    "T083",
+    "T084",
+    "T085",
+    "T086",
+    "T087",
+    "T088",
+    "T089",
+    "T090"
+   ]
+  },
+  {
+   "description": null,
+   "file": "src/ciw/session.py",
+   "present": true,
+   "tasks": [
+    "T077",
+    "T078",
+    "T079",
+    "T080",
+    "T081",
+    "T082",
+    "T083",
+    "T084",
+    "T085",
+    "T086",
+    "T087",
+    "T088",
+    "T089",
+    "T090"
+   ]
+  },
+  {
+   "description": null,
+   "file": "src/ciw/workbench.py",
+   "present": true,
+   "tasks": [
+    "T077",
+    "T078",
+    "T079",
+    "T080",
+    "T081",
+    "T082",
+    "T083",
+    "T084",
+    "T085",
+    "T086",
+    "T087",
+    "T088",
+    "T089",
+    "T090"
+   ]
   }
  ],
  "tasks": {
@@ -1051,11 +1123,14 @@
   "T014": {
    "sources": [
     "src/ciw/lab/geodesic_jacobi_limits.py",
-    "src/ciw/lab/geodesic_jacobi_limits_core.py"
+    "src/ciw/lab/geodesic_jacobi_limits_core.py",
+    "src/ciw/lab/integrators.py"
    ],
    "textbook": [
     "Jacobi equation j'' + K j = 0; conjugate and focal points",
-    "Explicit Runge-Kutta methods (Euler, midpoint, RK4, Dormand-Prince 5(4))"
+    "Explicit Runge-Kutta methods (Euler, midpoint, RK4, Dormand-Prince 5(4))",
+    "Implicit and A-stable integrators; stiffness",
+    "Floating-point arithmetic, rounding and exact rational reference arithmetic"
    ]
   },
   "T015": {
@@ -1072,9 +1147,11 @@
   "T016": {
    "sources": [
     "src/ciw/lab/geodesic_jacobi_limits.py",
-    "src/ciw/lab/geodesic_jacobi_limits_core.py"
+    "src/ciw/lab/geodesic_jacobi_limits_core.py",
+    "src/ciw/lab/integrators.py"
    ],
    "textbook": [
+    "Geodesic equation and Christoffel symbols",
     "Jacobi equation j'' + K j = 0; conjugate and focal points",
     "Explicit Runge-Kutta methods (Euler, midpoint, RK4, Dormand-Prince 5(4))",
     "Implicit and A-stable integrators; stiffness",
@@ -1767,7 +1844,10 @@
   "T077": {
    "sources": [
     "src/ciw/lab/exchange_provenance.py",
-    "src/ciw/lab/exchange_provenance_common.py"
+    "src/ciw/lab/exchange_provenance_common.py",
+    "src/ciw/operations/runner.py",
+    "src/ciw/session.py",
+    "src/ciw/workbench.py"
    ],
    "textbook": [
     "Cryptographic digests and canonical serialization"
@@ -1776,14 +1856,20 @@
   "T078": {
    "sources": [
     "src/ciw/lab/exchange_provenance.py",
-    "src/ciw/lab/exchange_provenance_common.py"
+    "src/ciw/lab/exchange_provenance_common.py",
+    "src/ciw/operations/runner.py",
+    "src/ciw/session.py",
+    "src/ciw/workbench.py"
    ],
    "textbook": []
   },
   "T079": {
    "sources": [
     "src/ciw/lab/exchange_provenance.py",
-    "src/ciw/lab/exchange_provenance_common.py"
+    "src/ciw/lab/exchange_provenance_common.py",
+    "src/ciw/operations/runner.py",
+    "src/ciw/session.py",
+    "src/ciw/workbench.py"
    ],
    "textbook": [
     "Compensated and pairwise summation",
@@ -1794,7 +1880,10 @@
   "T080": {
    "sources": [
     "src/ciw/lab/exchange_provenance.py",
-    "src/ciw/lab/exchange_provenance_common.py"
+    "src/ciw/lab/exchange_provenance_common.py",
+    "src/ciw/operations/runner.py",
+    "src/ciw/session.py",
+    "src/ciw/workbench.py"
    ],
    "textbook": [
     "Cryptographic digests and canonical serialization",
@@ -1804,7 +1893,10 @@
   "T081": {
    "sources": [
     "src/ciw/lab/exchange_provenance.py",
-    "src/ciw/lab/exchange_provenance_common.py"
+    "src/ciw/lab/exchange_provenance_common.py",
+    "src/ciw/operations/runner.py",
+    "src/ciw/session.py",
+    "src/ciw/workbench.py"
    ],
    "textbook": [
     "Cryptographic digests and canonical serialization"
@@ -1813,14 +1905,20 @@
   "T082": {
    "sources": [
     "src/ciw/lab/exchange_provenance.py",
-    "src/ciw/lab/exchange_provenance_common.py"
+    "src/ciw/lab/exchange_provenance_common.py",
+    "src/ciw/operations/runner.py",
+    "src/ciw/session.py",
+    "src/ciw/workbench.py"
    ],
    "textbook": []
   },
   "T083": {
    "sources": [
     "src/ciw/lab/exchange_provenance.py",
-    "src/ciw/lab/exchange_provenance_common.py"
+    "src/ciw/lab/exchange_provenance_common.py",
+    "src/ciw/operations/runner.py",
+    "src/ciw/session.py",
+    "src/ciw/workbench.py"
    ],
    "textbook": [
     "Cryptographic digests and canonical serialization"
@@ -1829,49 +1927,70 @@
   "T084": {
    "sources": [
     "src/ciw/lab/exchange_provenance.py",
-    "src/ciw/lab/exchange_provenance_common.py"
+    "src/ciw/lab/exchange_provenance_common.py",
+    "src/ciw/operations/runner.py",
+    "src/ciw/session.py",
+    "src/ciw/workbench.py"
    ],
    "textbook": []
   },
   "T085": {
    "sources": [
     "src/ciw/lab/exchange_provenance.py",
-    "src/ciw/lab/exchange_provenance_common.py"
+    "src/ciw/lab/exchange_provenance_common.py",
+    "src/ciw/operations/runner.py",
+    "src/ciw/session.py",
+    "src/ciw/workbench.py"
    ],
    "textbook": []
   },
   "T086": {
    "sources": [
     "src/ciw/lab/exchange_provenance.py",
-    "src/ciw/lab/exchange_provenance_common.py"
+    "src/ciw/lab/exchange_provenance_common.py",
+    "src/ciw/operations/runner.py",
+    "src/ciw/session.py",
+    "src/ciw/workbench.py"
    ],
    "textbook": []
   },
   "T087": {
    "sources": [
     "src/ciw/lab/exchange_provenance.py",
-    "src/ciw/lab/exchange_provenance_common.py"
+    "src/ciw/lab/exchange_provenance_common.py",
+    "src/ciw/operations/runner.py",
+    "src/ciw/session.py",
+    "src/ciw/workbench.py"
    ],
    "textbook": []
   },
   "T088": {
    "sources": [
     "src/ciw/lab/exchange_provenance.py",
-    "src/ciw/lab/exchange_provenance_common.py"
+    "src/ciw/lab/exchange_provenance_common.py",
+    "src/ciw/operations/runner.py",
+    "src/ciw/session.py",
+    "src/ciw/workbench.py"
    ],
    "textbook": []
   },
   "T089": {
    "sources": [
     "src/ciw/lab/exchange_provenance.py",
-    "src/ciw/lab/exchange_provenance_common.py"
+    "src/ciw/lab/exchange_provenance_common.py",
+    "src/ciw/operations/runner.py",
+    "src/ciw/session.py",
+    "src/ciw/workbench.py"
    ],
    "textbook": []
   },
   "T090": {
    "sources": [
     "src/ciw/lab/exchange_provenance.py",
-    "src/ciw/lab/exchange_provenance_common.py"
+    "src/ciw/lab/exchange_provenance_common.py",
+    "src/ciw/operations/runner.py",
+    "src/ciw/session.py",
+    "src/ciw/workbench.py"
    ],
    "textbook": []
   },
@@ -2583,6 +2702,7 @@
     "T004",
     "T005",
     "T012",
+    "T016",
     "T033",
     "T034",
     "T037",
@@ -2720,6 +2840,7 @@
    "reference": "Hairer and Wanner (1996), Solving ODEs II",
    "result": "Implicit and A-stable integrators; stiffness",
    "tasks": [
+    "T014",
     "T016",
     "T037",
     "T105"
@@ -2916,6 +3037,7 @@
     "T003",
     "T004",
     "T012",
+    "T014",
     "T018",
     "T020",
     "T022",

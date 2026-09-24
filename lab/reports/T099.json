@@ -567,7 +567,7 @@
   {
    "bytes": 1231,
    "path": "artifacts/T099/cargo-build.json",
-   "sha256": "b534d3ea6e736ac26aaf549b42a9e44a258857053c2045ac60682adbb52badaf"
+   "sha256": "34e0bcdee38522b588656626f2d30ab2adf94a7d73d79847ed1a459680f98dcb"
   },
   {
    "bytes": 1945,
@@ -582,7 +582,7 @@
   {
    "bytes": 1535,
    "path": "artifacts/T099/pinned-toolchain-build.json",
-   "sha256": "312375118ed16d10362bbed07fa7f88291b0d8e1f3fee9c62c6dd3074536679b"
+   "sha256": "947e4c6a25e8e4a529b117667c731d6741b3ba065cf00ccc9bcc953d5c8edb67"
   }
  ],
  "hypothesis": "The pinned SCR execution engine builds with cargo build --release --locked --offline, leaves the checkout and Cargo.lock unchanged, is reproducible across target directories and executes the heat kernel correctly; a retained run of the SP1 proved-heat gate is intact and names CIW's pins, and the CI-pinned Rust toolchain rebuilds the engine that gate proved against byte for byte.",
@@ -611,7 +611,7 @@
    "python": "3.12.3",
    "scipy": "1.16.2",
    "sources": {
-    "src/ciw/lab/exchange_provenance_bundles.py": "289185340068210691a0ccc526655eadb241855566c88003eedf97eef22b7085",
+    "src/ciw/lab/exchange_provenance_bundles.py": "f75ee7cccf320b68e75983ee2e5e974cea6a77e87f765cd22e8501ea04635007",
     "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "28f726a725f7219ef0afccd34545104b5dc0a36e27723281fe6bd1fbde467fa2",
     "src/ciw/lab/exchange_provenance_bundles_providers.py": "8c9c0104ce2ba1082c7b1c6e2dc2ad0728013e5cae6f5aa9b9f981e02da49690",
     "src/ciw/lab/proved_heat_records.py": "e4a4729eeb5f3090e6b7da83d1b9a8b7359a0ff3e80e3d067dfac261d1648823"
@@ -654,7 +654,7 @@
   }
  },
  "recommended_next_task": "Deferred research question: retain the output of a CI run of the SP1 proved-heat gate (.github/workflows/proved-heat.yml runs it and uploads proved-heat-native-evidence, which nothing retains) as a second record beside the local one, extending ciw lab proved-heat retain to accept that artifact, which has no local-run.json, so that the gate's outcome no longer rests on one operator host; attest the engine and prover the gate binds (build them from the pinned sources in the same job and record that build, or sign them), so that host_executable_binding is no longer operator_asserted_not_attested; and rebuild sp1-host with the CI-pinned toolchain on a second host to learn whether the prover digest, like the engine's on the recording host, depends only on the toolchain.",
- "report_id": "sha256:3411d3c4924e85385743f68bdd8be2ea39f04bb233bcd8ca975f7b0998d79d84",
+ "report_id": "sha256:9743da061d2eb9e21afeb69ed9709ad607001b3617e85c9e24981b94d06fcefe",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "completed",

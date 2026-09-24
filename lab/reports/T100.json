@@ -172,9 +172,9 @@
    },
    "unit": null,
    "value": {
-    "generator_findings": 256,
+    "generator_findings": 272,
     "not_shown": 0,
-    "provider_findings": 19,
+    "provider_findings": 23,
     "reports_absent_of_T001_T099": 0,
     "reports_checked": 99
    }
@@ -644,14 +644,14 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 26128,
+   "bytes": 26172,
    "path": "artifacts/T100/visibility-audit.json",
-   "sha256": "8f99ce29f1de121657b4a3a582da9fa22e513840eb92ae52c6fc812a411dfa7d"
+   "sha256": "37f39c908868668ee237bdcc64647056ea957b94607cad7b080a8a18eece0982"
   },
   {
-   "bytes": 2568,
+   "bytes": 2569,
    "path": "artifacts/T100/label-by-basis.json",
-   "sha256": "d8292702de51e4becf8bfa7e9f704e317afbd7e62a5a28ffd4717a644f86cbfb"
+   "sha256": "965724eb209eb7878ce612010956c7356b5b013e13e5eb4dc89fea1dc15624aa"
   }
  ],
  "hypothesis": "Retained lab reports keep synthetic, provider-backed and physical results visibly distinct: every rendered finding shows its label and, beside it, the basis it declares (the generator of synthetic inputs, the executed provider, an acquisition); CIW's own records refuse a synthetic-to-physical relabel wherever the record can detect it; and the workspace classifier tells a provider result from a fabricated, content-consistent one exactly as far as its comparison with CIW's pins reaches (T092's counterexample).",
@@ -664,7 +664,7 @@
  ],
  "mathematical_model": "Allowed labels per domain: physical -> {not_established, hardware_measured, independently_verified with acquisition}; authority -> {not_established}; computational -> never hardware_measured. Rendered row = report.finding_row: claim | value | label | declared basis. The Basis cell is compared whole with the cell docs/lab/AUTHORING.md prescribes, built here without describe_basis: each declared component in basis order, a generator with its name and seed, a provider as repository@revision, and an acquisition record as hardware acquisition (device) only on a physical finding labelled hardware_measured or independently_verified, as declared acquisition record (not accepted) on every other.",
  "number": 100,
- "numerical_result": "99 of 99 earlier reports present and audited (623 findings): 0 label violations, 0 rendering violations, 0 basis violations; findings declaring synthetic inputs: 256, an executed provider: 19, either one not named beside the label: 0; label x basis counts in label-by-basis.json (numerically_verified findings declaring synthetic inputs: 232, a provider run: 7); the pipe probe kept its label column; fresh-occurrence energy relabel accepted and classified physical_domain_measurement; same-occurrence relabel: invalid_payload: Identity collision across retained workbench artifacts; fabricated heat bundle reopen accepted, classified ['not_established'] with an invented tree and ['provider_backed'] with the pinned tree.",
+ "numerical_result": "99 of 99 earlier reports present and audited (652 findings): 0 label violations, 0 rendering violations, 0 basis violations; findings declaring synthetic inputs: 272, an executed provider: 23, either one not named beside the label: 0; label x basis counts in label-by-basis.json (numerically_verified findings declaring synthetic inputs: 245, a provider run: 7); the pipe probe kept its label column; fresh-occurrence energy relabel accepted and classified physical_domain_measurement; same-occurrence relabel: invalid_payload: Identity collision across retained workbench artifacts; fabricated heat bundle reopen accepted, classified ['not_established'] with an invented tree and ['provider_backed'] with the pinned tree.",
  "observation_model": "validate_report, per-finding label/domain rules, rendered Markdown rows compared with report.finding_row and their Basis cells with the declared basis; CIW analysis/refusal outputs and the retained bundle of a fresh-occurrence relabel; the workbench and classify_workspace views (labels and runtime_pins rows) of two fabricated provider-kind bundles.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -680,13 +680,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/exchange_provenance_bundles.py": "289185340068210691a0ccc526655eadb241855566c88003eedf97eef22b7085",
+   "src/ciw/lab/exchange_provenance_bundles.py": "f75ee7cccf320b68e75983ee2e5e974cea6a77e87f765cd22e8501ea04635007",
    "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "28f726a725f7219ef0afccd34545104b5dc0a36e27723281fe6bd1fbde467fa2"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question (CIW change): key the workspace seals, or have the provider sign its runtime identity at execution under a defined key custody, so that a bundle copying CIW's public pins (the retained copied-pin counterexample) is refused or classified not_established; compare a retained runtime identity with CIW's pins on reopen (Session.from_workspace), as ciw lab classify does; record in CIW's pin tables the source tree of every pinned revision that has none (the kinds ciw.lab.bridge.pins_without_tree lists, such as telemetry and calibrated-observable), so that the invented-tree check reaches them; and authenticate energy-log origin at acquisition, outside the workbench, so that a resealed relabel under a fresh occurrence is detected.",
- "report_id": "sha256:32861ceb4f4b09bbcc545f1ad1c13ba0256d0794d65359b5ccfa5d249c7cd560",
+ "report_id": "sha256:7f359fe2835ea2353619ae984c4230ff16e8abe7f2831ef916b67e72db1d5ff4",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "completed",

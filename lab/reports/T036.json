@@ -715,16 +715,16 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/integrators.py": "a8cd5b2c5042c70970ae27975ef9387c4492ac981132cd9096bf8eafa8dc6084",
+   "src/ciw/lab/integrators.py": "559acd622a939f9c90e252dc021aa709964851f3baee392253dff80904888c33",
    "src/ciw/lab/surfaces.py": "e8f264c182743d0177d93b961a49d7ddf78f30d79a7a75b9fea4018b10d4eef0",
-   "src/ciw/lab/surfaces_discrete.py": "69aab93e2eb89b4cb3c2a5e559151449c00371f316464abe806190664ecea984",
+   "src/ciw/lab/surfaces_discrete.py": "b8cb7efd2e05e2b4ec77aa0f2f74387ebcddcd1358561209f4e74705958171a6",
    "src/ciw/lab/surfaces_discrete_charts.py": "e1d7e0b8514c7795f0e41b26d993d44ae3f032ea67191b068194ec284f227e71",
    "src/ciw/lab/surfaces_discrete_geometry.py": "d4445a253778e1dff32b68a903a9caf560affa08ca5a7110207e54c8e1baa60e"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question (queue extension after T168): locate the chart-switch crossing with event detection in the adaptive integrator (switching now happens between steps), and drive switching from the T037 require_regular refusal codes instead of a fixed regularity threshold.",
- "report_id": "sha256:c792ae692d4e05868c673f45094eb603f1f3d37aad340d3d9b465051156496dd",
+ "report_id": "sha256:9723b6065cd8a4c0394e7603e49d900427d36213f4eadc68155b6e4cf95fcbbc",
  "schema": "ciw.lab-task-report.v1",
  "section": "surfaces-discrete",
  "state": "completed",

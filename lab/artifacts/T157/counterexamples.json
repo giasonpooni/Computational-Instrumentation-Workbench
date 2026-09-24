@@ -2,7 +2,7 @@
  {
   "claim": "Nonzero Christoffel symbols do not imply curvature: the polar charts of the plane and cylinder are flat",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:1812f85646b1bc85bcd7e8145413e2fc4fc56ac789a28fdc74f190b71c51e72b",
+  "report_id": "sha256:0534896ca22085947f91bdad025d19862029909ce672ebb94da55180b16540e4",
   "statement": "A chart with nonzero Christoffel symbols describes a curved surface",
   "task_id": "T001",
   "witness": {
@@ -14,7 +14,7 @@
  {
   "claim": "An extrinsically curved surface can have identically zero Christoffel symbols: the cylinder in (phi, z)",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:1812f85646b1bc85bcd7e8145413e2fc4fc56ac789a28fdc74f190b71c51e72b",
+  "report_id": "sha256:0534896ca22085947f91bdad025d19862029909ce672ebb94da55180b16540e4",
   "statement": "A surface that bends in space has nonzero Christoffel symbols in every chart",
   "task_id": "T001",
   "witness": {
@@ -25,7 +25,7 @@
  {
   "claim": "The adaptive-order checks reject a Dormand-Prince variant that advances with its fourth-order solution",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:5212317dad00b09520dbd28bde0a40a35d047454ac7b81b7e4b10e28385b3acb",
+  "report_id": "sha256:c9ec0f8816fd3de07a31bcb12e27c2a9f9f81344b731f133148a93fb38f85b54",
   "statement": "An effective order near 5 is observed whatever solution a DP5(4) pair advances",
   "task_id": "T003",
   "witness": {
@@ -37,7 +37,7 @@
  {
   "claim": "No convergence order is observable on flat Cartesian charts: every method is exact to rounding there",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:5212317dad00b09520dbd28bde0a40a35d047454ac7b81b7e4b10e28385b3acb",
+  "report_id": "sha256:c9ec0f8816fd3de07a31bcb12e27c2a9f9f81344b731f133148a93fb38f85b54",
   "statement": "Every integrator exhibits its nominal convergence order on every surface",
   "task_id": "T003",
   "witness": {
@@ -55,7 +55,7 @@
  {
   "claim": "Unit speed does not certify an accurate path: renormalized Euler keeps |g - 1| at rounding with a first-order endpoint error",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:87c19788b3b6644a131310378036c6bb99be20292137f215f72fc6d57296971f",
+  "report_id": "sha256:22f15f6033936ee05bd895206ad8bf5eddca797743d99fa448c67659e647d8ea",
   "statement": "A computed geodesic whose speed stays exactly 1 is accurate",
   "task_id": "T004",
   "witness": {
@@ -68,7 +68,7 @@
  {
   "claim": "Shrinking the finite-difference step far below its optimum degrades the Jacobi estimate (cancellation)",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:f1f63df700905d92da403f6832a3057047dba0fea38ecd35c6539776e9d2e1b8",
+  "report_id": "sha256:f3aa80feb3f209c4cab123ddb155d7ff192ad6354eb08eed99added50ea63aa3",
   "statement": "A smaller finite-difference step always gives a more accurate Jacobi estimate",
   "task_id": "T006",
   "witness": {
@@ -83,7 +83,7 @@
  {
   "claim": "RK4 determinant drift is O(h^5), one order above its O(h^4) global error, on constant and variable curvature",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:f62be9efdb310c25661e98c832ff1a8bf934acf7da2e1edf1f5e819ce27af6a7",
+  "report_id": "sha256:9837f16856aea2aff2d714d72f4f8b59cf51b2e2a14bcfeadc1b28500fa8ccef",
   "statement": "The RK4 transfer-matrix determinant drifts at the method's global order h^4",
   "task_id": "T007",
   "witness": {
@@ -104,7 +104,7 @@
  {
   "claim": "Where K = 0 every method preserves det Phi = 1 exactly, Euler included",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:f62be9efdb310c25661e98c832ff1a8bf934acf7da2e1edf1f5e819ce27af6a7",
+  "report_id": "sha256:9837f16856aea2aff2d714d72f4f8b59cf51b2e2a14bcfeadc1b28500fa8ccef",
   "statement": "Explicit Euler never preserves the transfer-matrix determinant",
   "task_id": "T007",
   "witness": {
@@ -119,7 +119,7 @@
  {
   "claim": "On variable curvature the first focal point is not half the first conjugate distance",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:f8f5f99c2caaab31bc2cbd71099ee0a40937ecd054d79ca834802cade37f438c",
+  "report_id": "sha256:7a97258b40b82e7ca9aec297fc22983ecfa451b6a10d972bfb48eea434d0878d",
   "statement": "The first focal point lies at half the first conjugate distance",
   "task_id": "T008",
   "witness": {
@@ -136,7 +136,7 @@
  {
   "claim": "Lateral and heading sensitivities rank paths differently",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:c6005f2196f55931cbbd521eaa82e6c025e1837da882ad859e4c84a2d13294ac",
+  "report_id": "sha256:56f0be32814004043f09345c6178d41679f3c41cd98034f91caf72f0a20ca079",
   "statement": "Ranking paths by sensitivity to heading error gives the same order as ranking by sensitivity to lateral offset",
   "task_id": "T009",
   "witness": {
@@ -158,7 +158,7 @@
  {
   "claim": "On the torus outer equator the separation at the conjugate point scales as eps^3, not eps^2",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:5de900415a1883415d9489ede30aa3445db7b250fd140072e86942a9ca8a29b4",
+  "report_id": "sha256:68bcec2e84c5c8b3ca96406670137f738e41b53d6bd51455acb4357594999884",
   "statement": "The separation at a conjugate point is of exact order eps^2",
   "task_id": "T010",
   "witness": {
@@ -177,7 +177,7 @@
  {
   "claim": "The relative first-order error diverges like 1/|s - s*| approaching the conjugate point",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:5de900415a1883415d9489ede30aa3445db7b250fd140072e86942a9ca8a29b4",
+  "report_id": "sha256:68bcec2e84c5c8b3ca96406670137f738e41b53d6bd51455acb4357594999884",
   "statement": "The first-order separation eps j is accurate along the whole path once eps is small",
   "task_id": "T010",
   "witness": {
@@ -198,7 +198,7 @@
  {
   "claim": "After the conjugate point the separation inverts sign and still follows eps j",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:5de900415a1883415d9489ede30aa3445db7b250fd140072e86942a9ca8a29b4",
+  "report_id": "sha256:68bcec2e84c5c8b3ca96406670137f738e41b53d6bd51455acb4357594999884",
   "statement": "Neighbouring geodesics stay on the side of the base geodesic they start on (the signed separation keeps its sign along the path)",
   "task_id": "T010",
   "witness": {
@@ -225,7 +225,7 @@
  {
   "claim": "Past the conjugate point the first-order prediction recovers: the relative error falls again like 1/|s - s*|",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:5de900415a1883415d9489ede30aa3445db7b250fd140072e86942a9ca8a29b4",
+  "report_id": "sha256:68bcec2e84c5c8b3ca96406670137f738e41b53d6bd51455acb4357594999884",
   "statement": "Once the first-order prediction has failed at a conjugate point it stays invalid beyond it",
   "task_id": "T010",
   "witness": {
@@ -242,7 +242,7 @@
  {
   "claim": "Separation does not grow monotonically with length: it nearly vanishes at the conjugate point",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:5de900415a1883415d9489ede30aa3445db7b250fd140072e86942a9ca8a29b4",
+  "report_id": "sha256:68bcec2e84c5c8b3ca96406670137f738e41b53d6bd51455acb4357594999884",
   "statement": "The separation of neighbouring geodesics grows monotonically with length",
   "task_id": "T010",
   "witness": {
@@ -257,7 +257,7 @@
  {
   "claim": "On the unit sphere a pure heading perturbation refocuses exactly: the relative first-order error of the embedded chord is uniform (2 sin(eps/2)/eps - 1, about -eps^2/24) and does not diverge at the conjugate point",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:5de900415a1883415d9489ede30aa3445db7b250fd140072e86942a9ca8a29b4",
+  "report_id": "sha256:68bcec2e84c5c8b3ca96406670137f738e41b53d6bd51455acb4357594999884",
   "statement": "The relative first-order error diverges at every conjugate point",
   "task_id": "T010",
   "witness": {
@@ -271,7 +271,7 @@
  {
   "claim": "On the unit sphere the image inverts after the conjugate point (signed ratio -1)",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:5de900415a1883415d9489ede30aa3445db7b250fd140072e86942a9ca8a29b4",
+  "report_id": "sha256:68bcec2e84c5c8b3ca96406670137f738e41b53d6bd51455acb4357594999884",
   "statement": "The image of a family of geodesics keeps its orientation beyond a conjugate point",
   "task_id": "T010",
   "witness": {
@@ -288,7 +288,7 @@
  {
   "claim": "A geometry-preserving near-fold chart multiplies the fixed-step error by a large factor",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:beedb340bb9e9ec435f813cf4ba828e9a97cf677420c37135955997f10ed79e0",
+  "report_id": "sha256:08cddd890470021f0ee479c5648558482cb0b0047ff330edfbb4c42293e53a14",
   "statement": "A change of chart that preserves the geometry leaves the fixed-step integration error unchanged",
   "task_id": "T011",
   "witness": {
@@ -308,7 +308,7 @@
  {
   "claim": "On a non-symmetric surface the orientation-reversed separation agrees only to first order: own/right - 1 is proportional to eps (Torus(2, 1) generic path)",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:6f146697c58ee0fba7ffdd9cd1757ae473229ffeab1eab3bc5a9fe4198565f75",
+  "report_id": "sha256:aa500d4e94a0967b2e378172d72fa7f621466d9bbf4db867cdd122bfbfc4876f",
   "statement": "Finite-eps signed separations are invariant under an orientation-reversing basis change expressed consistently",
   "task_id": "T012",
   "witness": {
@@ -328,7 +328,7 @@
  {
   "claim": "Equal Jacobi fields do not imply equal chords: the helix chord is shorter than the plane chord",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:b4d50a0290650557c5f3c5cec2a61472abb77b3e378708d29f73a26a6053a189",
+  "report_id": "sha256:acb355491ff4a4ff86a1cc583f3ca67d32ec15e8d857e2e104703fa90164c8cf",
   "statement": "Surfaces with identical Jacobi fields (intrinsic geometry) have identical chords between corresponding points",
   "task_id": "T013",
   "witness": {
@@ -349,7 +349,7 @@
  {
   "claim": "The chord deficit vanishes faster (exponent -2 in R + 1) than the Jacobi deviation (-1)",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:b4d50a0290650557c5f3c5cec2a61472abb77b3e378708d29f73a26a6053a189",
+  "report_id": "sha256:acb355491ff4a4ff86a1cc583f3ca67d32ec15e8d857e2e104703fa90164c8cf",
   "statement": "Intrinsic (Jacobi) and extrinsic (chord) signatures of curvature vanish at the same rate in the flat limit",
   "task_id": "T013",
   "witness": {
@@ -360,7 +360,7 @@
  {
   "claim": "Reversal error orders are 1 (Euler), 3 (midpoint) and 5 (RK4): even-order methods gain one order",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:7b08f6bb04cb21d2c923ff8e8689cfcad48220383a970111b5e42bae3448d60a",
+  "report_id": "sha256:318af5fadb747c99f3fe814c07510a2c9f23476238c83439bc6f7f204b0ae1e9",
   "statement": "Forward-then-reversed integration with a method of order p returns to the start with error proportional to h^p",
   "task_id": "T014",
   "witness": {
@@ -379,7 +379,7 @@
  {
   "claim": "With decimal truncation lengths the step sizes differ in the last bit and bitwise reproduction fails",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:7b08f6bb04cb21d2c923ff8e8689cfcad48220383a970111b5e42bae3448d60a",
+  "report_id": "sha256:318af5fadb747c99f3fe814c07510a2c9f23476238c83439bc6f7f204b0ae1e9",
   "statement": "Truncate-and-continue reproduces fixed-step integration bit for bit for any truncation length",
   "task_id": "T014",
   "witness": {
@@ -396,9 +396,23 @@
   }
  },
  {
+  "claim": "Symmetric implicit methods (implicit midpoint, 2-stage Gauss-Legendre; fixed-point stage solve to 1e-13) return from forward-then-reversed integration at rounding level at every step size",
+  "evidence_status": "numerically_verified",
+  "report_id": "sha256:318af5fadb747c99f3fe814c07510a2c9f23476238c83439bc6f7f204b0ae1e9",
+  "statement": "The forward-then-reversed return error of an integrator measures its global error",
+  "task_id": "T014",
+  "witness": {
+   "forward_position_error": 4.261941548118264e-07,
+   "method": "gauss-legendre-2",
+   "return_error": 3.352873534367973e-14,
+   "steps": 20,
+   "surface": "sphere"
+  }
+ },
+ {
   "claim": "Fixed-step RK4 sphere position error is cross-track: the precessing orbit plane, not the speed error, sets it",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:17a0765e348515a69fbb3f17903e85854bbe5a7c29b48c0a914e5378ea216004",
+  "report_id": "sha256:a8b7b6f7ac8097400440d0fb9f094610f8e99b069b8a6dc3a27fb2b78b016313",
   "statement": "The fixed-step RK4 position error on the sphere is the phase error of its speed error (a constant speed error gives position error ~ L)",
   "task_id": "T015",
   "witness": {
@@ -417,7 +431,7 @@
  {
   "claim": "Fixed-step RK4 energy error has a flat (oscillation-dominated) envelope up to L = 160 on the torus and L = 320 on the sphere; on the torus a secular term emerges between L = 160 and 320",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:17a0765e348515a69fbb3f17903e85854bbe5a7c29b48c0a914e5378ea216004",
+  "report_id": "sha256:a8b7b6f7ac8097400440d0fb9f094610f8e99b069b8a6dc3a27fb2b78b016313",
   "statement": "The energy error of a non-symplectic fixed-step integrator grows linearly with length at every horizon",
   "task_id": "T015",
   "witness": {
@@ -444,7 +458,7 @@
  {
   "claim": "Euler on the torus keeps a bounded energy error but changes the orbit type (Clairaut drift)",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:17a0765e348515a69fbb3f17903e85854bbe5a7c29b48c0a914e5378ea216004",
+  "report_id": "sha256:a8b7b6f7ac8097400440d0fb9f094610f8e99b069b8a6dc3a27fb2b78b016313",
   "statement": "A bounded energy (speed) error implies a qualitatively correct long-horizon geodesic",
   "task_id": "T015",
   "witness": {
@@ -459,7 +473,7 @@
  {
   "claim": "A-stable implicit methods do not remove the growth of the required steps with k (implicit midpoint ~ k^(3/2), 2-stage Gauss-Legendre ~ k^(5/4)); implicit midpoint is qualitatively wrong beyond kh = 2",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:ba9b516c208567f74bd9fd344349071786080c46406712dfa44d7df735ec3bfa",
+  "report_id": "sha256:ea28850756306beac210ea08cb1504bb85ad3e95e40d815a5d9b95bf95a5ada0",
   "statement": "An implicit (A-stable) integrator removes the growth of the step count with k on strongly negatively curved surfaces",
   "task_id": "T016",
   "witness": {
@@ -513,7 +527,7 @@
  {
   "claim": "Saddle(c): peak |K| = c^2 but Jacobi growth is polynomial in c; the local exponent of j_head(L) decreases toward sqrt(2)",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:ba9b516c208567f74bd9fd344349071786080c46406712dfa44d7df735ec3bfa",
+  "report_id": "sha256:ea28850756306beac210ea08cb1504bb85ad3e95e40d815a5d9b95bf95a5ada0",
   "statement": "Jacobi growth is exponential in sqrt(peak |K|) times the length",
   "task_id": "T016",
   "witness": {
@@ -524,9 +538,55 @@
   }
  },
  {
+  "claim": "The constant-curvature Jacobi error constants do not carry over to the nonlinear hyperbolic geodesic: Gauss-Legendre's end-point and speed errors are not 1/6 of RK4's",
+  "evidence_status": "numerically_verified",
+  "report_id": "sha256:ea28850756306beac210ea08cb1504bb85ad3e95e40d815a5d9b95bf95a5ada0",
+  "statement": "An integrator with a six times smaller error constant on the constant-curvature Jacobi equation is correspondingly more accurate for the geodesic itself",
+  "task_id": "T016",
+  "witness": {
+   "endpoint_error_ratio": 0.703619247447021,
+   "j_head_error_ratio": 0.16771886729645658,
+   "k": 1.0,
+   "max_speed_error_ratio": 0.6953013007698434,
+   "steps": 256
+  }
+ },
+ {
+  "claim": "On ridge and oblique saddle-surface geodesics (full nonlinear system) Gauss-Legendre and RK4 both converge at order 4, but their j_head error ratio depends on the geodesic instead of being the constant-curvature 1/6, while Gauss-Legendre's speed error is several times smaller at equal steps",
+  "evidence_status": "numerically_verified",
+  "report_id": "sha256:ea28850756306beac210ea08cb1504bb85ad3e95e40d815a5d9b95bf95a5ada0",
+  "statement": "Gauss-Legendre's constant-curvature advantage over RK4 (j_head error 1/6 of RK4's) holds on variable-curvature geodesics",
+  "task_id": "T016",
+  "witness": {
+   "curvature_range": [
+    -0.558213912126984,
+    -0.07160818589836329
+   ],
+   "geodesic": "c = 16 oblique",
+   "j_head_error_ratio": 2.4526153875369117
+  }
+ },
+ {
+  "claim": "On escaping geodesics (hyperbolic plane, oblique saddle geodesic) RK4's speed error does not drift either: it saturates like the symmetric methods', so boundedness there does not distinguish them",
+  "evidence_status": "numerically_verified",
+  "report_id": "sha256:ea28850756306beac210ea08cb1504bb85ad3e95e40d815a5d9b95bf95a5ada0",
+  "statement": "Over long horizons RK4's speed error drifts while a symmetric integrator's stays bounded",
+  "task_id": "T016",
+  "witness": {
+   "hyperbolic-plane": {
+    "rk4_envelope": 2.4755903290096803e-05,
+    "rk4_growth_after_one_eighth": 1.0
+   },
+   "saddle-oblique": {
+    "rk4_envelope": 3.417308181563605e-05,
+    "rk4_growth_after_one_eighth": 1.0
+   }
+  }
+ },
+ {
   "claim": "Unit sphere, pure heading: C2 = 0, C3 = -|sin s| cos^2 s / 24, and the domain does not shrink at s = pi",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:4cea98c3a1fdbcf05294b55d3a34e189247f02a2a371173f9f2bb10b9400cfa8",
+  "report_id": "sha256:3ab7cc15f6697f8bc95029e6f3c7294fb9427d0e670055f7818830d440f5ffdd",
   "statement": "The validity domain of the first-order approximation shrinks to zero at every conjugate point",
   "task_id": "T017",
   "witness": {
@@ -542,7 +602,7 @@
  {
   "claim": "Weak curvature is harder to resolve for Euler and midpoint only down to K ~ 1e-2: for K <= 1e-2 their ratios no longer depend on K, and the RK4 ratio grows like 1/K",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:062cae40cad8a453081677f17c37ffa85fc3362d31a3bb97791692a7cd59ae91",
+  "report_id": "sha256:b9cdc19497f70344279660eb30c6284e4de527d737063c093cd0635cdb00fac0",
   "statement": "Weaker intrinsic curvature is harder to resolve at a fixed step size",
   "task_id": "T018",
   "witness": {
@@ -570,7 +630,7 @@
  {
   "claim": "Below the floating-point resolution of L no step size resolves the curvature signal, although the methods' truncation errors alone would resolve it",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:062cae40cad8a453081677f17c37ffa85fc3362d31a3bb97791692a7cd59ae91",
+  "report_id": "sha256:b9cdc19497f70344279660eb30c6284e4de527d737063c093cd0635cdb00fac0",
   "statement": "Refining the step size always makes a nonzero curvature effect resolvable",
   "task_id": "T018",
   "witness": {
@@ -1068,7 +1128,7 @@
  {
   "claim": "A curvature-misscaled sphere passes every identity except the Gauss equation",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:1519a9dd5eaa5ea6c5153867b1cb0e7c42eb2b0e53e4fb9abb1cce9ab30546b8",
+  "report_id": "sha256:656e80c226a9de0379003dbd2c42efa48f6614dfd8fbc8e3f91a293823569589",
   "statement": "Metric symmetry, positive definiteness, Christoffel symmetry, metric compatibility and derivative consistency together certify a surface implementation",
   "task_id": "T033",
   "witness": {
@@ -1082,7 +1142,7 @@
  {
   "claim": "Metric compatibility cannot detect wrong metric derivatives",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:1519a9dd5eaa5ea6c5153867b1cb0e7c42eb2b0e53e4fb9abb1cce9ab30546b8",
+  "report_id": "sha256:656e80c226a9de0379003dbd2c42efa48f6614dfd8fbc8e3f91a293823569589",
   "statement": "A metric-compatible connection certifies the metric derivatives",
   "task_id": "T033",
   "witness": {
@@ -1096,7 +1156,7 @@
  {
   "claim": "Dual-number checks expose a hand-coded derivative defect that symmetry checks cannot see",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:8d1862f31ca84a8163da93d0d7af104f213395359939b1a7b1cbd76d1ecd9579",
+  "report_id": "sha256:8a43fcf06df9aa433e1897a8aa8ddc7e008268df527821fd1ceaf88b09616e5f",
   "statement": "Finite, index-symmetric hand-coded metric derivatives are correct",
   "task_id": "T034",
   "witness": {
@@ -1107,7 +1167,7 @@
  {
   "claim": "Smaller finite-difference steps can be far less accurate",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:03b61d0e4e607b8708d0bd73d435dd6b8a93e266775ad03d540cf06f3cf5e39b",
+  "report_id": "sha256:715a0a0450e185f285cac4c2baa11b8650b75066bd5da9f9997b6f15d02baf1d",
   "statement": "Decreasing the finite-difference step always improves agreement with the analytic derivative",
   "task_id": "T035",
   "witness": {
@@ -1120,7 +1180,7 @@
  {
   "claim": "Quadratic metrics have no truncation branch and a constant metric differences to exactly zero",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:03b61d0e4e607b8708d0bd73d435dd6b8a93e266775ad03d540cf06f3cf5e39b",
+  "report_id": "sha256:715a0a0450e185f285cac4c2baa11b8650b75066bd5da9f9997b6f15d02baf1d",
   "statement": "Every smooth metric shows an O(h^2) truncation branch in central-difference error",
   "task_id": "T035",
   "witness": {
@@ -1131,7 +1191,7 @@
  {
   "claim": "A single polar chart fails or loses accuracy on great circles passing near its pole",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:c792ae692d4e05868c673f45094eb603f1f3d37aad340d3d9b465051156496dd",
+  "report_id": "sha256:9723b6065cd8a4c0394e7603e49d900427d36213f4eadc68155b6e4cf95fcbbc",
   "statement": "Fixed-step RK4 in a single polar chart integrates every great circle as accurately as a chart-switching atlas at the same step count",
   "task_id": "T036",
   "witness": {
@@ -1148,7 +1208,7 @@
  {
   "claim": "From a declared angular-momentum seed of 1e-12, chart A alone crosses both poles of the meridian at 400 RK4 steps to within 1e-6",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:c792ae692d4e05868c673f45094eb603f1f3d37aad340d3d9b465051156496dd",
+  "report_id": "sha256:9723b6065cd8a4c0394e7603e49d900427d36213f4eadc68155b6e4cf95fcbbc",
   "statement": "Fixed-step integration in a single polar chart across its pole always fails",
   "task_id": "T036",
   "witness": {
@@ -1160,7 +1220,7 @@
  {
   "claim": "Across declared seeds from 1e-15 to 1e-10, chart A alone fails on the meridian whenever an RK4 stage point lands within 0.9 d* of a pole and never beyond 1.5 d*, d* = (L0 h^4)^(1/5), but no single multiple of d* separates the outcomes at every seed (350 to 450 RK4 steps at 1e-12, the step counts within 2 d* at the other half-decade seeds)",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:c792ae692d4e05868c673f45094eb603f1f3d37aad340d3d9b465051156496dd",
+  "report_id": "sha256:9723b6065cd8a4c0394e7603e49d900427d36213f4eadc68155b6e4cf95fcbbc",
   "statement": "A single-chart integration that crosses a pole accurately at one step count stays accurate at nearby step counts",
   "task_id": "T036",
   "witness": {
@@ -1177,7 +1237,7 @@
  {
   "claim": "The scan misses the removable coordinate singularity of the plane in the cube-root chart",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:9d60a00ab5fbb9ca4333092ebc4b837de2e76833244cb35f5199e305beae1f41",
+  "report_id": "sha256:e9208c945733f1fa69ee97e477d2bca7fd3566ea1ca5fb27f1975fb5728a2f20",
   "statement": "The scan detects every coordinate singularity, that is every det g -> 0 or cond g -> infinity at finite distance with bounded K",
   "task_id": "T037",
   "witness": {
@@ -1189,7 +1249,7 @@
  {
   "claim": "The graph z = r^(3/2) has a curvature singularity although its Monge metric is regular",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:9d60a00ab5fbb9ca4333092ebc4b837de2e76833244cb35f5199e305beae1f41",
+  "report_id": "sha256:e9208c945733f1fa69ee97e477d2bca7fd3566ea1ca5fb27f1975fb5728a2f20",
   "statement": "A nondegenerate metric chart implies bounded Gaussian curvature",
   "task_id": "T037",
   "witness": {
@@ -1201,7 +1261,7 @@
  {
   "claim": "Christoffel blow-up and curvature blow-up are independent near singular points",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:9d60a00ab5fbb9ca4333092ebc4b837de2e76833244cb35f5199e305beae1f41",
+  "report_id": "sha256:e9208c945733f1fa69ee97e477d2bca7fd3566ea1ca5fb27f1975fb5728a2f20",
   "statement": "Christoffel-symbol blow-up indicates a curvature singularity",
   "task_id": "T037",
   "witness": {
@@ -1212,7 +1272,7 @@
  {
   "claim": "A cone apex and the polar-chart origin share every pointwise exponent; only the circumference ratio separates them",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:9d60a00ab5fbb9ca4333092ebc4b837de2e76833244cb35f5199e305beae1f41",
+  "report_id": "sha256:e9208c945733f1fa69ee97e477d2bca7fd3566ea1ca5fb27f1975fb5728a2f20",
   "statement": "Pointwise metric and curvature invariants distinguish a removable coordinate singularity from a conical point",
   "task_id": "T037",
   "witness": {
@@ -1224,7 +1284,7 @@
  {
   "claim": "Cases just beyond each classification threshold are misclassified",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:9d60a00ab5fbb9ca4333092ebc4b837de2e76833244cb35f5199e305beae1f41",
+  "report_id": "sha256:e9208c945733f1fa69ee97e477d2bca7fd3566ea1ca5fb27f1975fb5728a2f20",
   "statement": "The approach scan classifies every singular point correctly",
   "task_id": "T037",
   "witness": {
@@ -1245,7 +1305,7 @@
  {
   "claim": "Cartesian loops around the sphere pole in the polar chart make a coordinate singularity read as a conical point",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:9d60a00ab5fbb9ca4333092ebc4b837de2e76833244cb35f5199e305beae1f41",
+  "report_id": "sha256:e9208c945733f1fa69ee97e477d2bca7fd3566ea1ca5fb27f1975fb5728a2f20",
   "statement": "The scan classifies a degenerate point independently of the approach loops chosen by the caller",
   "task_id": "T037",
   "witness": {
@@ -1257,7 +1317,7 @@
  {
   "claim": "Traced straightest geodesics are never shorter than the exact distance between their endpoints, yet on every icosphere level 1-4 some of length 2 (below pi) are not shortest paths, by an excess that falls with refinement",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:75b82d9e399b71f9f2f20df53fc3d3e2505d94e956ad11cbfa0498d43d4eebc7",
+  "report_id": "sha256:f9113e3fcc6ab0c6bce692e23fd201f4b64c3ee60a1d54fb31745725f96cbc39",
   "statement": "A straightest geodesic shorter than pi on a mesh inscribed in the unit sphere is a shortest path between its endpoints",
   "task_id": "T038",
   "witness": {
@@ -1269,9 +1329,41 @@
   }
  },
  {
+  "claim": "At a saddle vertex every end direction between the one-sided limits of the geodesics passing it is reached by a shortest path through the vertex, at a cone vertex none is, and the Polthier-Schmies continuation bisects the two limits",
+  "evidence_status": "numerically_verified",
+  "report_id": "sha256:f9113e3fcc6ab0c6bce692e23fd201f4b64c3ee60a1d54fb31745725f96cbc39",
+  "statement": "A straightest geodesic through a vertex is the limit of the straightest geodesics that pass it on either side",
+  "task_id": "T038",
+  "witness": {
+   "continued_polar": 2.356194490192345,
+   "one_sided_polar": [
+    1.570798612509183,
+    3.1415903678755073
+   ],
+   "total_angle_over_pi": 1.5
+  }
+ },
+ {
+  "claim": "A straightest geodesic can stop being shortest before every single vertex's isolated-cone prediction, when the digon between it and the other shortest path encloses several vertices",
+  "evidence_status": "numerically_verified",
+  "report_id": "sha256:f9113e3fcc6ab0c6bce692e23fd201f4b64c3ee60a1d54fb31745725f96cbc39",
+  "statement": "The first cut point of a straightest geodesic on a convex polyhedral surface is where it crosses the cut ray of one vertex, as if that vertex carried all the curvature",
+  "task_id": "T038",
+  "witness": {
+   "cut_point": 1.1709509040694328,
+   "enclosed_vertices": [
+    92,
+    112
+   ],
+   "level": 2,
+   "prediction": 1.3189570176010945,
+   "start": 5
+  }
+ },
+ {
   "claim": "Edge-graph Dijkstra distance from a valence-5 vertex keeps a relative-error floor that tends to sqrt(5) - 2",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:c7aa6b235a8dbde05d959c24ee245bfab18f6445d2ce0ec0ea9a76d521da17f6",
+  "report_id": "sha256:88ada544a9076a7a1229239a20c9a840c601ba4bff08d8fdc79b5267720cd38b",
   "statement": "Edge-graph shortest paths converge to the geodesic distance under mesh refinement",
   "task_id": "T039",
   "witness": {
@@ -1287,7 +1379,7 @@
  {
   "claim": "Steiner graphs with a fixed number of points per edge keep a relative-error floor",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:c7aa6b235a8dbde05d959c24ee245bfab18f6445d2ce0ec0ea9a76d521da17f6",
+  "report_id": "sha256:88ada544a9076a7a1229239a20c9a840c601ba4bff08d8fdc79b5267720cd38b",
   "statement": "Refining the mesh alone makes a Steiner-graph distance with fixed k converge to the geodesic distance",
   "task_id": "T039",
   "witness": {
@@ -1303,7 +1395,7 @@
  {
   "claim": "At fixed mesh a 1e-5 heading offset gives the flat Jacobi value L instead of sin(L) while no vertex lies between the paired geodesics",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:f6324e9e9ff18f337fd9df1e98a8e2e6f46b823567ba42b7ee543184b0c81797",
+  "report_id": "sha256:df242e30d4dba65a2b7e4657a4b0b1ed32d15b558a42273e8d5c861f5686457e",
   "statement": "On a fixed mesh the finite-difference Jacobi field converges to the smooth Jacobi field as the perturbation tends to zero",
   "task_id": "T040",
   "witness": {
@@ -1322,7 +1414,7 @@
  {
   "claim": "Angle-defect curvature at valence-5 icosphere vertices converges to (4.5 - 1.5 sqrt 5) K, not K",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:f6324e9e9ff18f337fd9df1e98a8e2e6f46b823567ba42b7ee543184b0c81797",
+  "report_id": "sha256:df242e30d4dba65a2b7e4657a4b0b1ed32d15b558a42273e8d5c861f5686457e",
   "statement": "The angle defect over one third of the incident area converges pointwise to the Gaussian curvature under refinement",
   "task_id": "T040",
   "witness": {
@@ -1334,7 +1426,7 @@
  {
   "claim": "Barycentric angle-defect curvature does not converge pointwise at valence-6 icosphere vertices on the icosahedral mirror planes",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:f6324e9e9ff18f337fd9df1e98a8e2e6f46b823567ba42b7ee543184b0c81797",
+  "report_id": "sha256:df242e30d4dba65a2b7e4657a4b0b1ed32d15b558a42273e8d5c861f5686457e",
   "statement": "Angle-defect curvature with the barycentric area converges pointwise at the valence-6 vertices of icosphere refinements",
   "task_id": "T040",
   "witness": {
@@ -1361,7 +1453,7 @@
  {
   "claim": "Over 60 further seeds per amplitude the dihedral fold check accepts some jittered meshes with an inverted face",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:9178171a216c67f2a2ff2a6809e9631eb1ac28433e20a4d3073ee333018b21cc",
+  "report_id": "sha256:61d9abc332c8a731aa512922ffc2227103ea1eda89dd57ca50ef5b127110a9e8",
   "statement": "The dihedral fold check (folded_face) refuses every jittered icosphere that has an inverted face",
   "task_id": "T041",
   "witness": {
@@ -1384,7 +1476,7 @@
  {
   "claim": "A tangential jitter of 0.2 h inverts a face for some but not all of 60 further seeds",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:9178171a216c67f2a2ff2a6809e9631eb1ac28433e20a4d3073ee333018b21cc",
+  "report_id": "sha256:61d9abc332c8a731aa512922ffc2227103ea1eda89dd57ca50ef5b127110a9e8",
   "statement": "Tangential jitter of 0.2 h or more inverts a face of the level-3 icosphere for every seed",
   "task_id": "T041",
   "witness": {
@@ -1396,7 +1488,7 @@
  {
   "claim": "A mesh with a smaller minimum angle can have a smaller geodesic error",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:9178171a216c67f2a2ff2a6809e9631eb1ac28433e20a4d3073ee333018b21cc",
+  "report_id": "sha256:61d9abc332c8a731aa512922ffc2227103ea1eda89dd57ca50ef5b127110a9e8",
   "statement": "A larger minimum angle implies a smaller geodesic error",
   "task_id": "T041",
   "witness": {
@@ -1407,7 +1499,7 @@
  {
   "claim": "Across mesh families a much smaller minimum angle can come with a smaller barycentric-area angle-defect RMS error",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:9178171a216c67f2a2ff2a6809e9631eb1ac28433e20a4d3073ee333018b21cc",
+  "report_id": "sha256:61d9abc332c8a731aa512922ffc2227103ea1eda89dd57ca50ef5b127110a9e8",
   "statement": "Minimum angle orders the barycentric angle-defect curvature error across mesh families",
   "task_id": "T041",
   "witness": {
@@ -1419,7 +1511,7 @@
  {
   "claim": "Within the latitude-longitude family a mesh with smaller minimum angle and larger radius ratio can have smaller curvature errors under both area choices",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:9178171a216c67f2a2ff2a6809e9631eb1ac28433e20a4d3073ee333018b21cc",
+  "report_id": "sha256:61d9abc332c8a731aa512922ffc2227103ea1eda89dd57ca50ef5b127110a9e8",
   "statement": "Within one mesh family better triangle quality (larger minimum angle, smaller radius ratio) implies smaller curvature error",
   "task_id": "T041",
   "witness": {
@@ -1430,7 +1522,7 @@
  {
   "claim": "Schwarz lantern meshes converge in Hausdorff distance but not in area",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:9178171a216c67f2a2ff2a6809e9631eb1ac28433e20a4d3073ee333018b21cc",
+  "report_id": "sha256:61d9abc332c8a731aa512922ffc2227103ea1eda89dd57ca50ef5b127110a9e8",
   "statement": "Hausdorff convergence of a mesh to a surface implies convergence of area",
   "task_id": "T041",
   "witness": {
@@ -1444,7 +1536,7 @@
  {
   "claim": "Schwarz lantern intrinsic height does not converge to the cylinder height",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:9178171a216c67f2a2ff2a6809e9631eb1ac28433e20a4d3073ee333018b21cc",
+  "report_id": "sha256:61d9abc332c8a731aa512922ffc2227103ea1eda89dd57ca50ef5b127110a9e8",
   "statement": "Hausdorff convergence of a mesh implies convergence of its geodesic distances",
   "task_id": "T041",
   "witness": {
@@ -1456,7 +1548,7 @@
  {
   "claim": "Lantern angle defects vanish while total absolute mean curvature grows like n^2 and normal tilt converges to atan(pi^2 q R / 2H) instead of 0",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:9178171a216c67f2a2ff2a6809e9631eb1ac28433e20a4d3073ee333018b21cc",
+  "report_id": "sha256:61d9abc332c8a731aa512922ffc2227103ea1eda89dd57ca50ef5b127110a9e8",
   "statement": "Hausdorff convergence of a mesh implies convergence of its normals and curvature",
   "task_id": "T041",
   "witness": {
@@ -1468,7 +1560,7 @@
  {
   "claim": "A strongly pleated lantern (m = n^2) is refused as folded although no face normal points towards the axis",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:9178171a216c67f2a2ff2a6809e9631eb1ac28433e20a4d3073ee333018b21cc",
+  "report_id": "sha256:61d9abc332c8a731aa512922ffc2227103ea1eda89dd57ca50ef5b127110a9e8",
   "statement": "The dihedral fold check refuses a mesh only when a face is inverted",
   "task_id": "T041",
   "witness": {
@@ -1480,7 +1572,7 @@
  {
   "claim": "Curvature and normals evaluated on an unvalidated zero-area face are nonfinite",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:00dcebe6f6f442d1694d013accbb601c83dd37bc8cc01ed40dc041596a83609b",
+  "report_id": "sha256:b8e6b95958ca272ceb64e1368d13c284240a33dc0b4399e7b39bf81049842105",
   "statement": "Curvature and normal formulas can be evaluated safely on unvalidated meshes",
   "task_id": "T042",
   "witness": {
@@ -1491,7 +1583,7 @@
  {
   "claim": "Without a declared centre the validator accepts a jittered icosphere with an inverted face",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:00dcebe6f6f442d1694d013accbb601c83dd37bc8cc01ed40dc041596a83609b",
+  "report_id": "sha256:b8e6b95958ca272ceb64e1368d13c284240a33dc0b4399e7b39bf81049842105",
   "statement": "Structural validation, including the dihedral fold check, refuses every mesh with an inverted face",
   "task_id": "T042",
   "witness": {
@@ -1502,7 +1594,7 @@
  {
   "claim": "The declared marker segment stays in its face corridor for sigma <= 1e-3 but leaves it in over 10% of samples at sigma = 1e-2",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:667bca9ebf5ef113e94b80668a29ff43b6a0a19e29ddd53a642a73b226966b21",
+  "report_id": "sha256:56069b005d02d5e83f487a3c36d583a031fdae4e6df76fd0bdebe548d648121c",
   "statement": "A fixed face corridor (fixed mesh combinatorics) represents the perturbed marker geodesic at every tested vertex-noise level",
   "task_id": "T043",
   "witness": {
@@ -1513,7 +1605,7 @@
  {
   "claim": "The noise level at which a fixed face corridor fails depends on the strip, and the declared strip, which has the largest vertex margin of the six, stays in its corridor for sigma <= 1e-3",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:667bca9ebf5ef113e94b80668a29ff43b6a0a19e29ddd53a642a73b226966b21",
+  "report_id": "sha256:56069b005d02d5e83f487a3c36d583a031fdae4e6df76fd0bdebe548d648121c",
   "statement": "The fixed-corridor marker distance is valid for sigma <= 1e-3 on icosphere-3 whichever declared geodesic carries the markers",
   "task_id": "T043",
   "witness": {
@@ -1526,7 +1618,7 @@
  {
   "claim": "A strip with a smaller vertex margin than the declared strip leaves its face corridor less often at every tested sigma >= 3e-3",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:667bca9ebf5ef113e94b80668a29ff43b6a0a19e29ddd53a642a73b226966b21",
+  "report_id": "sha256:56069b005d02d5e83f487a3c36d583a031fdae4e6df76fd0bdebe548d648121c",
   "statement": "The strip with the largest vertex margin leaves its fixed face corridor least often at every tested noise level",
   "task_id": "T043",
   "witness": {
@@ -1549,7 +1641,7 @@
  {
   "claim": "First-order propagation underestimates angle-defect curvature variance at sigma = 1e-2",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:667bca9ebf5ef113e94b80668a29ff43b6a0a19e29ddd53a642a73b226966b21",
+  "report_id": "sha256:56069b005d02d5e83f487a3c36d583a031fdae4e6df76fd0bdebe548d648121c",
   "statement": "First-order (linearized) propagation of vertex noise is adequate for angle-defect curvature at sigma = 1e-2 on icosphere-3",
   "task_id": "T043",
   "witness": {
@@ -1561,7 +1653,7 @@
  {
   "claim": "Under fixed vertex noise the curvature error grows as the mesh is refined",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:667bca9ebf5ef113e94b80668a29ff43b6a0a19e29ddd53a642a73b226966b21",
+  "report_id": "sha256:56069b005d02d5e83f487a3c36d583a031fdae4e6df76fd0bdebe548d648121c",
   "statement": "Refining the mesh reduces the error of angle-defect curvature",
   "task_id": "T043",
   "witness": {
@@ -1585,7 +1677,7 @@
  {
   "claim": "Under normal-only (shape) vertex noise of the same sigma the sensor dominates the baseline residual",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:d4fb7a1edec6baf502b641deca21496a2035bd2eaf9ceafe4437ac916e05dafa",
+  "report_id": "sha256:4b16c1586fd659bc021754c85572dd86cf3066399dbde82359296d6cb72790a4",
   "statement": "Whether geometry or sensor noise dominates the marker-distance residual is fixed by sigma_g and sigma_s alone",
   "task_id": "T044",
   "witness": {
@@ -1598,7 +1690,7 @@
  {
   "claim": "Averaging repeated sensor readings leaves the geometry variance as a floor",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:d4fb7a1edec6baf502b641deca21496a2035bd2eaf9ceafe4437ac916e05dafa",
+  "report_id": "sha256:4b16c1586fd659bc021754c85572dd86cf3066399dbde82359296d6cb72790a4",
   "statement": "Averaging repeated measurements drives the observation error to zero",
   "task_id": "T044",
   "witness": {
@@ -1887,7 +1979,7 @@
  {
   "claim": "Lateral variance collapses at the sphere's conjugate point s = pi: the heading contribution vanishes because j_head(pi) = 0, leaving only the initial lateral variance",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:44e47fcdab9970fbe9665c24478d2c746c88012a14fc3a11adf877c192c411d5",
+  "report_id": "sha256:ebbdb221c9a30bb8ce138f6821292fc6e10218dc293650316f0e1b4e4a734c3a",
   "statement": "Lateral position uncertainty grows monotonically with distance travelled",
   "task_id": "T064",
   "witness": {
@@ -1899,7 +1991,7 @@
  {
   "claim": "The heading standard deviation at which the first-order variance is 10% too large is about ten times smaller on the hyperbolic plane at s = 3 than on the sphere near its conjugate point (s = 0.9 pi)",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:44e47fcdab9970fbe9665c24478d2c746c88012a14fc3a11adf877c192c411d5",
+  "report_id": "sha256:ebbdb221c9a30bb8ce138f6821292fc6e10218dc293650316f0e1b4e4a734c3a",
   "statement": "A first-order (Phi P Phi^T) covariance is accurate for any heading uncertainty below 0.1 rad",
   "task_id": "T064",
   "witness": {
@@ -2092,43 +2184,9 @@
   }
  },
  {
-  "claim": "Oscillator operation results carry no replay-stable numerical-result identity",
-  "evidence_status": "numerically_verified",
-  "report_id": "sha256:d1b82f63f4e0fe5190a2dafffbe4d4ce6bb17632a74e60863de7ebe1edc2ed22",
-  "statement": "Every retained CIW operation result carries a replay-stable numerical-result identity",
-  "task_id": "T077",
-  "witness": {
-   "fields": [
-    "channel",
-    "created_at",
-    "data",
-    "evidence_id",
-    "execution_id",
-    "interval_s",
-    "operation_id",
-    "parameters",
-    "record_digest",
-    "recording_file",
-    "result_id",
-    "role",
-    "run_id",
-    "runtime",
-    "schema",
-    "selection_revision",
-    "verification_id",
-    "verification_status"
-   ],
-   "operation": "statistics.v1",
-   "records": [
-    "result:R1",
-    "result:R2"
-   ]
-  }
- },
- {
   "claim": "The energy replay bundle identity excludes its replay receipt and verification",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:d1b82f63f4e0fe5190a2dafffbe4d4ce6bb17632a74e60863de7ebe1edc2ed22",
+  "report_id": "sha256:81438126cd582b6ca7a40bee01be689e8bf0c44e38ecb852ca8b23294051d9f2",
   "statement": "A retained bundle identity binds every provenance record stored in the bundle",
   "task_id": "T077",
   "witness": {
@@ -2139,9 +2197,83 @@
   }
  },
  {
+  "claim": "A telemetry bundle whose GSIE runtime revision is forged, with every unkeyed digest over it recomputed, reopens, and a replay on the bound stack refuses it",
+  "evidence_status": "numerically_verified",
+  "report_id": "sha256:81438126cd582b6ca7a40bee01be689e8bf0c44e38ecb852ca8b23294051d9f2",
+  "statement": "Reopening a workspace checks every retained provider runtime identity against CIW's pin",
+  "task_id": "T077",
+  "witness": {
+   "edit": "runtimes.gsie.revision replaced by a revision that is not the pin",
+   "recomputed": [
+    "bundle_digest",
+    "verification.subject_ref",
+    "verification.verification_id",
+    "catalog bundle_id",
+    "replay_receipt_seal"
+   ],
+   "reopen": "accepted",
+   "replay": "Telemetry replay runtime identity mismatch"
+  }
+ },
+ {
+  "claim": "A telemetry bundle whose GSIE runtime identity carries a forged adapter_version and an injected key, with every unkeyed digest over it recomputed, reopens, and the runtime identity comparison a replay makes before executing accepts it",
+  "evidence_status": "numerically_verified",
+  "report_id": "sha256:81438126cd582b6ca7a40bee01be689e8bf0c44e38ecb852ca8b23294051d9f2",
+  "statement": "A telemetry replay compares every retained runtime identity field except the host paths",
+  "task_id": "T077",
+  "witness": {
+   "compared_fields": [
+    "revision",
+    "source_tree",
+    "module",
+    "source_root",
+    "python_sha256",
+    "python_version",
+    "dependencies"
+   ],
+   "compared_for_ppda_only": [
+    "source_sha256",
+    "execution_scope"
+   ],
+   "edit": {
+    "runtimes.gsie.adapter_version": "ciw-lab-forged-adapter-v9",
+    "runtimes.gsie.audited_by": "ciw-lab forged independent audit"
+   },
+   "recomputed": [
+    "bundle_digest",
+    "verification.subject_ref",
+    "verification.verification_id",
+    "catalog bundle_id",
+    "replay_receipt_seal"
+   ],
+   "reopen": "accepted",
+   "replay_comparison": "accepted"
+  }
+ },
+ {
+  "claim": "A saved telemetry workspace retains the host paths of the bound provider checkouts and interpreter in its runtime identities",
+  "evidence_status": "numerically_verified",
+  "report_id": "sha256:81438126cd582b6ca7a40bee01be689e8bf0c44e38ecb852ca8b23294051d9f2",
+  "statement": "A saved workspace carries no host path of an operator-bound provider checkout",
+  "task_id": "T077",
+  "witness": {
+   "fields": [
+    "runtimes.<role>.repository_root",
+    "runtimes.<role>.python_executable"
+   ],
+   "restored_binding": "none: the reopened session offers no telemetry operation",
+   "roles": [
+    "ppda",
+    "stfe",
+    "gsie",
+    "set"
+   ]
+  }
+ },
+ {
   "claim": "CIW canonical comparison is type-sensitive (1 != 1.0): a consistent int-for-float rewrite is refused by the stale log seal and, once resealed, retained as distinct evidence rather than aliased",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:b348a3d698d75b8cd50e0b9ea94cb3ebfb6cba6d6e9c99b7576a08d492010eee",
+  "report_id": "sha256:789ebcad1bbcf059c31f4458b2e8f48e9c4633d1903ee60e5e9cb91895c9284d",
   "statement": "Canonical-content identity treats numerically equal JSON numbers as equal content",
   "task_id": "T079",
   "witness": {
@@ -2159,7 +2291,7 @@
  {
   "claim": "Surviving mutant alias.swap-pairing: two statistics occurrences whose execution and result identities and creation times are exchanged consistently reopen re-paired",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:254ceb9adb49cce522ef7beb6330de18cafbfbeb6cdc14f1ad8d08b0b79ae498",
+  "report_id": "sha256:034ab7061648cf153c90d029df93439a8b98ad2a8e33068711876963a8027218",
   "statement": "A retained oscillator result stays bound to the execution occurrence that produced it",
   "task_id": "T080",
   "witness": {
@@ -2179,7 +2311,7 @@
  {
   "claim": "Surviving mutant revision.gap: a workspace whose selection revision jumps to 1000, with records claiming revision 999, reopens",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:254ceb9adb49cce522ef7beb6330de18cafbfbeb6cdc14f1ad8d08b0b79ae498",
+  "report_id": "sha256:034ab7061648cf153c90d029df93439a8b98ad2a8e33068711876963a8027218",
   "statement": "Saved execution and result selection revisions are checked against a retained selection history",
   "task_id": "T080",
   "witness": {
@@ -2197,7 +2329,7 @@
  {
   "claim": "Surviving mutant energy-source.resealed: a resealed edit of the retained source log, with every derived record rebuilt, reopens with a different gross energy",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:64b20c9d2da3648e667438148b7e9da21f00307cb6be3b5eb1caea87efcf19fd",
+  "report_id": "sha256:027d72a62497a402a9e591758038aa940c0d8c9bd546b6df0e96bf66014ca612",
   "statement": "Reopen re-analysis protects retained energy results from numerical forgery",
   "task_id": "T081",
   "witness": {
@@ -2220,11 +2352,11 @@
  {
   "claim": "Surviving mutant oscillator-stats.resealed: an in-bounds statistics edit with a recomputed seal reopens",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:64b20c9d2da3648e667438148b7e9da21f00307cb6be3b5eb1caea87efcf19fd",
+  "report_id": "sha256:027d72a62497a402a9e591758038aa940c0d8c9bd546b6df0e96bf66014ca612",
   "statement": "Unkeyed record seals detect every edit to a retained numerical result",
   "task_id": "T081",
   "witness": {
-   "description": "statistics mean moved to the midpoint of [minimum, maximum]; resealed",
+   "description": "statistics mean moved to the midpoint of [minimum, maximum]; numerical_result_id and seal recomputed",
    "name": "oscillator-stats.resealed",
    "observed": "accepted",
    "post_reopen": {
@@ -2238,11 +2370,11 @@
  {
   "claim": "Surviving mutant oscillator-stats.impossible-moments: resealed statistics that no sample set can have reopen",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:64b20c9d2da3648e667438148b7e9da21f00307cb6be3b5eb1caea87efcf19fd",
+  "report_id": "sha256:027d72a62497a402a9e591758038aa940c0d8c9bd546b6df0e96bf66014ca612",
   "statement": "Saved statistics satisfy |mean| <= rms <= max(|min|, |max|)",
   "task_id": "T081",
   "witness": {
-   "description": "R1 mean set to its maximum and rms to half of it (|mean| > rms); R2 rms set to ten times max(|min|, |max|) (rms > max|x|); both resealed",
+   "description": "R1 mean set to its maximum and rms to half of it (|mean| > rms); R2 rms set to ten times max(|min|, |max|) (rms > max|x|); numerical_result_id and seal of both recomputed",
    "name": "oscillator-stats.impossible-moments",
    "observed": "accepted",
    "post_reopen": {
@@ -2282,7 +2414,7 @@
  {
   "claim": "Surviving mutant oscillator-stats.legacy: an edit to an unsealed legacy result reopens",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:64b20c9d2da3648e667438148b7e9da21f00307cb6be3b5eb1caea87efcf19fd",
+  "report_id": "sha256:027d72a62497a402a9e591758038aa940c0d8c9bd546b6df0e96bf66014ca612",
   "statement": "Every retained oscillator result is sealed against edits",
   "task_id": "T081",
   "witness": {
@@ -2300,7 +2432,7 @@
  {
   "claim": "Surviving mutant fresh.created-at-shift: a backdated execution and result pair reopens",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:dada824909030eb193027d97bcb0d0e018b5c5c46a19833b3dbfadc429dcc97b",
+  "report_id": "sha256:556d4c90fb0b972190b57e49d884f228f629bb6f03b0d82c21af65ada78a4bb6",
   "statement": "A retained execution occurrence binds its creation time",
   "task_id": "T082",
   "witness": {
@@ -2317,11 +2449,11 @@
  {
   "claim": "Surviving mutant receipt.transplanted-full: a replay receipt moved onto an original sibling and rebuilt from the two bundles reopens there, and the replay reopens without it",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:1c1e397d3a53c416d1a160589cd809a27922a3b64cd1d2f5e15ad1c5827989db",
+  "report_id": "sha256:345ba31c4f2a3425eea88adfd030a23ca50e24df20e7a99de5f036539587ed7b",
   "statement": "A replay receipt cannot be moved from its replay bundle onto another retained bundle",
   "task_id": "T083",
   "witness": {
-   "description": "receipt moved from the replay B1 onto the original sibling B0b and rebuilt there (source B0, replayed B0b, verification rebuilt from B0 with B0b's own step as the reproduction, ids recomputed)",
+   "description": "receipt moved from the replay B1 onto the original sibling B0b and rebuilt there (source B0, replayed B0b, verification rebuilt from B0 with B0b's own step as the reproduction, ids and catalog receipt seal recomputed)",
    "name": "receipt.transplanted-full",
    "observed": "accepted",
    "post_reopen": {
@@ -2341,11 +2473,11 @@
  {
   "claim": "Surviving mutant receipt.fabricated: a receipt written onto a never-replayed original, claiming it replays its sibling, reopens",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:1c1e397d3a53c416d1a160589cd809a27922a3b64cd1d2f5e15ad1c5827989db",
+  "report_id": "sha256:345ba31c4f2a3425eea88adfd030a23ca50e24df20e7a99de5f036539587ed7b",
   "statement": "A replay receipt can only be retained on a bundle produced by that replay",
   "task_id": "T083",
   "witness": {
-   "description": "a new receipt written onto the never-replayed original B0b claiming it replays B0 (verification built from B0 and B0b's step, ids recomputed); B1 keeps its own receipt",
+   "description": "a new receipt written onto the never-replayed original B0b claiming it replays B0 (verification built from B0 and B0b's step, ids and catalog receipt seal recomputed); B1 keeps its own receipt",
    "name": "receipt.fabricated",
    "observed": "accepted",
    "post_reopen": {
@@ -2365,14 +2497,36 @@
   }
  },
  {
-  "claim": "Surviving mutant receipt.deleted: a replay bundle reopens without its replay receipt, listed with no receipt like an original execution",
+  "claim": "Surviving mutant receipt.deleted-resealed: a replay bundle reopens without its replay receipt once the unkeyed catalog receipt seal is recomputed, listed with no receipt like an original execution",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:1c1e397d3a53c416d1a160589cd809a27922a3b64cd1d2f5e15ad1c5827989db",
+  "report_id": "sha256:345ba31c4f2a3425eea88adfd030a23ca50e24df20e7a99de5f036539587ed7b",
   "statement": "A replay bundle cannot be retained without its replay receipt",
   "task_id": "T083",
   "witness": {
-   "description": "replay_receipts removed from the replay bundle",
-   "name": "receipt.deleted",
+   "description": "replay_receipts removed from the replay bundle; the catalog receipt seal recomputed",
+   "name": "receipt.deleted-resealed",
+   "observed": "accepted",
+   "post_reopen": {
+    "receipt_sources": {
+     "bundle:B0": [],
+     "bundle:B0b": [],
+     "bundle:B1": [],
+     "bundle:Bother": []
+    }
+   },
+   "recompute": "full",
+   "target": "energy replay bundle"
+  }
+ },
+ {
+  "claim": "Surviving mutant receipt.deleted-seal-removed: a replay bundle reopens without its replay receipt when the catalog receipt seal is removed too, as from a workspace saved before the seal existed",
+  "evidence_status": "numerically_verified",
+  "report_id": "sha256:345ba31c4f2a3425eea88adfd030a23ca50e24df20e7a99de5f036539587ed7b",
+  "statement": "A workspace saved with a replay-receipt seal cannot reopen without it",
+  "task_id": "T083",
+  "witness": {
+   "description": "replay_receipts removed from the replay bundle and replay_receipt_seal removed from the catalog",
+   "name": "receipt.deleted-seal-removed",
    "observed": "accepted",
    "post_reopen": {
     "receipt_sources": {
@@ -2383,32 +2537,32 @@
     }
    },
    "recompute": "none",
-   "target": "energy replay bundle"
+   "target": "energy replay bundle and catalog"
   }
  },
  {
-  "claim": "Surviving mutant receipt-source.sibling-execution: a receipt re-pointed, with its verification subject, at a sibling execution of the same bytes reopens",
+  "claim": "Surviving mutant receipt-source.sibling-execution-resealed: a receipt re-pointed, with its verification subject, at a sibling execution of the same bytes reopens once the catalog receipt seal is recomputed",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:5b030362b70c576873656148e10b6b2f85c4b80a3fb72ce2c153eb4478826771",
+  "report_id": "sha256:2ead9d6d79b0de9e4824bd183d526d6c24e01c963037ded471c4ada32ca028d4",
   "statement": "Unkeyed record seals detect every replay-provenance forgery",
   "task_id": "T084",
   "witness": {
-   "description": "receipt source and verification subject moved together to a sibling execution of the same source bytes; verification rebuilt",
-   "name": "receipt-source.sibling-execution",
+   "description": "receipt source and verification subject moved together to a sibling execution of the same source bytes; verification, replay_id and catalog receipt seal rebuilt",
+   "name": "receipt-source.sibling-execution-resealed",
    "observed": "accepted",
    "post_reopen": {
     "receipt_source": "bundle:B0b",
     "replay_bundle": "bundle:B1",
     "verification_subject": "bundle:B0b"
    },
-   "recompute": "local",
+   "recompute": "full",
    "target": "energy replay receipt"
   }
  },
  {
   "claim": "Surviving mutant receipt-replayed.reidentified-bundle: a replay re-sessioned and dated before its source, with recomputed digests, reopens",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:d6beac2ef2e4022a517d537ed81cba4b597d6ff300a747b641834f622007acd9",
+  "report_id": "sha256:6bd1b63cffdc1494b55159fc045dd9fcd2e61de06cb9ae8d7eb5f550233ff6ee",
   "statement": "A retained replay cannot be dated before its source bundle",
   "task_id": "T085",
   "witness": {
@@ -2428,7 +2582,7 @@
  {
   "claim": "Surviving mutant oscillator-subject.injected: a sealed result carrying an injected verification subject naming its sibling result reopens",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:a8e2e7b6bcd10d43c36029fcc6a54d2d764f6dc3e23a9c5a3ab632a13663cd1a",
+  "report_id": "sha256:25709b3957f02f3d946bbe528398b44fc143d78b9ccd7cf899aa3c6b382797ea",
   "statement": "Sealed operation records refuse verification-subject claims outside their schema",
   "task_id": "T086",
   "witness": {
@@ -2448,7 +2602,7 @@
  {
   "claim": "Surviving mutant oscillator-method.injected: a sealed result carrying an injected verification_method reopens",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:8f6248aa49fb2de5cfdc0ac0fe4723b0ec29b9f2cf0ae1d39b4d75fbcc03c666",
+  "report_id": "sha256:54c5ae42a4d0f3176f1b3194d31ca1982ac144f2d1f5f44109e8ac183e1af257",
   "statement": "Sealed operation records refuse verification-method claims outside their schema",
   "task_id": "T087",
   "witness": {
@@ -2468,7 +2622,7 @@
  {
   "claim": "Surviving mutant oscillator-independent.injected: sealed records carrying an injected independent: true reopen",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:e59a1389113fd6d3779a150f1157582ea569ee91c1bc5aa24cdd6340f4fa748e",
+  "report_id": "sha256:d410920161d90ff7d7a0b2830c40c28261f41afbaca25585cae00bd84ec75cfa",
   "statement": "Sealed operation records refuse independence claims outside their schema",
   "task_id": "T088",
   "witness": {
@@ -2488,7 +2642,7 @@
  {
   "claim": "Surviving mutant oscillator-admission.injected: a sealed result carrying an injected state_admission reopens",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:14ad7257a63ef08b1c09c721b381f31577a6d5ac20d9818971936023cdbfef7d",
+  "report_id": "sha256:7a453b01b5a9d0d4e579a81da86ff576c67d3113f135be2e90d9e48245c357a2",
   "statement": "Sealed operation records refuse admission claims outside their schema",
   "task_id": "T089",
   "witness": {
@@ -2508,7 +2662,7 @@
  {
   "claim": "Surviving mutant oscillator-runtime.both: a provider runtime forged identically in execution and result reopens",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:8ccf785487490885cd715fad92f3f74c94de51e3291e77777c7b51cd1965bd7a",
+  "report_id": "sha256:3f92f7e246b423d9af5e7411334f6ab0320ddac41cd86db2f29270b8207c0aa4",
   "statement": "Unkeyed record seals detect a forged provider runtime identity",
   "task_id": "T090",
   "witness": {
@@ -2532,7 +2686,7 @@
  {
   "claim": "Surviving mutant energy-runtime.all-bundles: a consistently forged analysis code digest reopens",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:8ccf785487490885cd715fad92f3f74c94de51e3291e77777c7b51cd1965bd7a",
+  "report_id": "sha256:3f92f7e246b423d9af5e7411334f6ab0320ddac41cd86db2f29270b8207c0aa4",
   "statement": "Reopening a workspace detects a forged analysis runtime identity",
   "task_id": "T090",
   "witness": {
@@ -2556,7 +2710,7 @@
  {
   "claim": "Surviving mutant energy-runtime.python-version: forged dependency versions reopen",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:8ccf785487490885cd715fad92f3f74c94de51e3291e77777c7b51cd1965bd7a",
+  "report_id": "sha256:3f92f7e246b423d9af5e7411334f6ab0320ddac41cd86db2f29270b8207c0aa4",
   "statement": "Reopening a workspace detects forged runtime dependency versions",
   "task_id": "T090",
   "witness": {
@@ -2580,7 +2734,7 @@
  {
   "claim": "Reopening recomputes the retained energy analysis to validate content",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:ad4e33191859e9e4b554225510ce7e42c8ff9be60fcd0e6fd5b00c09f27b4fbf",
+  "report_id": "sha256:b1b4f4cb6e4f083fbd271ccd42e3749fa33693a0de660b79b1ade69f86df3302",
   "statement": "Reopening a saved workspace performs no numerical recomputation",
   "task_id": "T091",
   "witness": {
@@ -2591,7 +2745,7 @@
  {
   "claim": "A retained numerical-heat bundle whose values no provider computed passes reopen validation",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:c05333e5295f23af989043a08091ac4df597c70a68ca9a6111c188a7395d0d9f",
+  "report_id": "sha256:4bb43f6065c3c7932126b77ace73062f7c428b5e6cdae49135f84f214f0a4ab1",
   "statement": "Reopen validation of a retained numerical-heat bundle establishes that its values are the pinned SCR heat-kernel output",
   "task_id": "T092",
   "witness": {
@@ -2616,7 +2770,7 @@
  {
   "claim": "A refused recording operation is retained as a refused execution record",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:7423c918cab90a2bdc5256d34cfce559e8a87855c73e9578b38beb7abf0e9695",
+  "report_id": "sha256:fbf1ae3adf2d36ba33e3b0fcb624dcdd1b665e69735712e07df1fa8a86fbb048",
   "statement": "Every refused request leaves the session's in-memory state unchanged",
   "task_id": "T093",
   "witness": {
@@ -2630,7 +2784,7 @@
  {
   "claim": "session.read_json accepts an overflowing number as infinity while the exchange and workbench parsers refuse it",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:78a9bd5c64a95161d7a0b04cb43e80fcd27a153263ccd8d65c7a71e1fe82e259",
+  "report_id": "sha256:e5a8bdf9cad85a61cc2d9a590b2b6b2d0a03a606952ad0059e0ffbf92d75a765",
   "statement": "Every CIW JSON reader refuses nonfinite numbers",
   "task_id": "T095",
   "witness": {
@@ -2642,7 +2796,7 @@
  {
   "claim": "session.read_json does not refuse a 20000-deep array with a ValueError",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:78a9bd5c64a95161d7a0b04cb43e80fcd27a153263ccd8d65c7a71e1fe82e259",
+  "report_id": "sha256:e5a8bdf9cad85a61cc2d9a590b2b6b2d0a03a606952ad0059e0ffbf92d75a765",
   "statement": "session.read_json refuses every malformed workspace file with a ValueError",
   "task_id": "T095",
   "witness": {
@@ -2653,7 +2807,7 @@
  {
   "claim": "Session.from_workspace raises AttributeError, not a ValueError refusal, on a workspace holding only its version",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:78a9bd5c64a95161d7a0b04cb43e80fcd27a153263ccd8d65c7a71e1fe82e259",
+  "report_id": "sha256:e5a8bdf9cad85a61cc2d9a590b2b6b2d0a03a606952ad0059e0ffbf92d75a765",
   "statement": "Session.from_workspace refuses every malformed workspace with a ValueError",
   "task_id": "T095",
   "witness": {
@@ -2667,7 +2821,7 @@
  {
   "claim": "Session.from_workspace accepts an unknown top-level field and drops it on re-save",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:78a9bd5c64a95161d7a0b04cb43e80fcd27a153263ccd8d65c7a71e1fe82e259",
+  "report_id": "sha256:e5a8bdf9cad85a61cc2d9a590b2b6b2d0a03a606952ad0059e0ffbf92d75a765",
   "statement": "Saved workspaces with fields outside the schema are refused on reopen",
   "task_id": "T095",
   "witness": {
@@ -2679,7 +2833,7 @@
  {
   "claim": "Workbench source.add reports malformed source JSON with text that names a bound runtime",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:78a9bd5c64a95161d7a0b04cb43e80fcd27a153263ccd8d65c7a71e1fe82e259",
+  "report_id": "sha256:e5a8bdf9cad85a61cc2d9a590b2b6b2d0a03a606952ad0059e0ffbf92d75a765",
   "statement": "Workbench source errors name the source, not a bound runtime",
   "task_id": "T095",
   "witness": {
@@ -2691,7 +2845,7 @@
  {
   "claim": "Observation-batch identities are caller-declared: mutated batches pass exchange._identity",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:de7d4f016f5bc817516e2f478b5b98609b1e2ede4bd1619ec5a35d1b0c76170c",
+  "report_id": "sha256:f809accf7fe45f01fe96d58ceb104267f48406882eff21ee1ecea5a1cebddf26",
   "statement": "Every exchange artifact identity is bound to its content",
   "task_id": "T096",
   "witness": {
@@ -2702,7 +2856,7 @@
  {
   "claim": "validate_response accepts unknown extra fields in an ESM response",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:de7d4f016f5bc817516e2f478b5b98609b1e2ede4bd1619ec5a35d1b0c76170c",
+  "report_id": "sha256:f809accf7fe45f01fe96d58ceb104267f48406882eff21ee1ecea5a1cebddf26",
   "statement": "The CIW candidate boundary refuses any ESM response field it does not recognise",
   "task_id": "T096",
   "witness": {
@@ -2716,7 +2870,7 @@
  {
   "claim": "A resealed relabel of the synthetic energy fixture under a fresh occurrence is accepted by the workbench and classified as a physical-domain measurement",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:32861ceb4f4b09bbcc545f1ad1c13ba0256d0794d65359b5ccfa5d249c7cd560",
+  "report_id": "sha256:7f359fe2835ea2353619ae984c4230ff16e8abe7f2831ef916b67e72db1d5ff4",
   "statement": "CIW energy records can distinguish a genuinely acquired log from a relabelled synthetic fixture",
   "task_id": "T100",
   "witness": {
@@ -2729,7 +2883,7 @@
  {
   "claim": "A fabricated numerical-heat bundle sealed with CIW's pinned SCR revision and source tree reopens and is labelled provider_backed by the workspace classifier, as a provider result is",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:32861ceb4f4b09bbcc545f1ad1c13ba0256d0794d65359b5ccfa5d249c7cd560",
+  "report_id": "sha256:7f359fe2835ea2353619ae984c4230ff16e8abe7f2831ef916b67e72db1d5ff4",
   "statement": "CIW's retained records and their classification keep provider-backed results visibly distinct from fabricated ones",
   "task_id": "T100",
   "witness": {
@@ -2757,7 +2911,7 @@
  {
   "claim": "PLSR's resolution of a subnormal plant is zero while forming its decrease matrix rounds an exactly indefinite declared form to a negative definite one",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:90fc44770b334d5d9cd3924ff2e37f7962bc3060c036a7dc9b0dca08b2f3dff2",
+  "report_id": "sha256:9125f336841f0c3c0a9848f1e1b16360e503bd167dd000168910b0bb144841c0",
   "statement": "The float64 resolution floor bounds the rounding error of the decrease form at every matrix scale",
   "task_id": "T101",
   "witness": {
@@ -2811,7 +2965,7 @@
  {
   "claim": "The PLSR level gate misses exceedances when s^2 underflows: V > level is certified",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:3fddb3ad58dfcdd1139b3965ce06f4164e81e810cd7c6ebadca98e34d7890020",
+  "report_id": "sha256:c386639fba7c882085160460d711ca1af27f81fb0c66cbdf363fdd4f3ba68be2",
   "statement": "OUTSIDE_LEVEL_SET is returned whenever V(x) exceeds the declared level",
   "task_id": "T103",
   "witness": {
@@ -2831,7 +2985,7 @@
  {
   "claim": "The PLSR level gate reports OUTSIDE_LEVEL_SET for V below the level when s^2 overflows",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:3fddb3ad58dfcdd1139b3965ce06f4164e81e810cd7c6ebadca98e34d7890020",
+  "report_id": "sha256:c386639fba7c882085160460d711ca1af27f81fb0c66cbdf363fdd4f3ba68be2",
   "statement": "The level gate is decided exactly through the power-of-two scaling",
   "task_id": "T103",
   "witness": {
@@ -2851,7 +3005,7 @@
  {
   "claim": "A finite in-box theta whose A(theta) overflows raises an input error instead of NUMERICAL_OVERFLOW",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:3fddb3ad58dfcdd1139b3965ce06f4164e81e810cd7c6ebadca98e34d7890020",
+  "report_id": "sha256:c386639fba7c882085160460d711ca1af27f81fb0c66cbdf363fdd4f3ba68be2",
   "statement": "Every finite in-box sample yields a runtime-status-v1 code",
   "task_id": "T103",
   "witness": {
@@ -2871,7 +3025,7 @@
  {
   "claim": "PLSR sets value_out_of_range and reports V = 0 for states whose exact V and x^T M x are representable binary64 subnormals, because s^2 underflows before the product is formed",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:3fddb3ad58dfcdd1139b3965ce06f4164e81e810cd7c6ebadca98e34d7890020",
+  "report_id": "sha256:c386639fba7c882085160460d711ca1af27f81fb0c66cbdf363fdd4f3ba68be2",
   "statement": "value_out_of_range is set exactly when V or x^T M x is not representable in binary64",
   "task_id": "T103",
   "witness": {
@@ -2890,7 +3044,7 @@
  {
   "claim": "A binary64 neighbour just outside the declared stiffness box is admitted in some unit system when the sample is converted as k / (1 / c) and the bound as k * c",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:45937bbd05874f79bd72941661b3a9f5cb4e12e01420f20682f88813d9a48c13",
+  "report_id": "sha256:baf06be759dcd60cc377c58b7796ca8b041aaceb7c6b49840f1dbf94e4fac668",
   "statement": "The declared box bounds and their binary64 neighbours keep their SI box decision under either conversion formula",
   "task_id": "T105",
   "witness": {
@@ -2906,7 +3060,7 @@
  {
   "claim": "A parameter just above the SI bound is admitted after multiplying bound and sample by 1e-3",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:45937bbd05874f79bd72941661b3a9f5cb4e12e01420f20682f88813d9a48c13",
+  "report_id": "sha256:baf06be759dcd60cc377c58b7796ca8b041aaceb7c6b49840f1dbf94e4fac668",
   "statement": "Converting the box and the sample with the same formula preserves box membership",
   "task_id": "T105",
   "witness": {
@@ -2921,7 +3075,7 @@
  {
   "claim": "A parameter exactly on the SI bound is refused when bound and sample are converted by the two mathematically equal formulas k * 0.001 and k / 1000",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:45937bbd05874f79bd72941661b3a9f5cb4e12e01420f20682f88813d9a48c13",
+  "report_id": "sha256:baf06be759dcd60cc377c58b7796ca8b041aaceb7c6b49840f1dbf94e4fac668",
   "statement": "Mathematically equal unit conversions give the same box decision",
   "task_id": "T105",
   "witness": {
@@ -2936,7 +3090,7 @@
  {
   "claim": "The light-damping plant's verdict depends on the unit system although its exact decrease form is negative definite in all of them",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:45937bbd05874f79bd72941661b3a9f5cb4e12e01420f20682f88813d9a48c13",
+  "report_id": "sha256:baf06be759dcd60cc377c58b7796ca8b041aaceb7c6b49840f1dbf94e4fac668",
   "statement": "The same physical plant in different units gets the same PLSR verdict",
   "task_id": "T105",
   "witness": {
@@ -2959,7 +3113,7 @@
  {
   "claim": "An affine certificate that is singular at an in-box theta raises ValueError instead of returning CERTIFICATE_NOT_POSITIVE",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:7dcae277b97806e1aa5252fe15b1d178a51c9e42861cb4938f8421ef2c47fd3a",
+  "report_id": "sha256:86ef646f1a29a38e02c50ff5c0ddc5e67c63e52e5326876df893d111a47ace79",
   "statement": "An in-box sample at which P is not positive definite yields CERTIFICATE_NOT_POSITIVE, which RUNTIME-STATUS-v1 at the pinned commit describes as 'P is not positive definite here, so there is no certificate to evaluate'",
   "task_id": "T106",
   "witness": {
@@ -2983,7 +3137,7 @@
  {
   "claim": "At required_margin 0 near-boundary spectra within two resolutions of zero receive CERTIFIED_WITH_MARGIN, and every such certificate is exactly sound",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:6f2fa1691b90c1aa7c2755567b450acd7c2e2ee59bb1bcae3165909725abcfb6",
+  "report_id": "sha256:79e45d5d9216e0e9167587053b43177d1593d02f5c799e8c0e5e79ab28917079",
   "statement": "Near-boundary spectra yield NUMERICAL_INCONCLUSIVE or MARGIN_LOW rather than CERTIFIED_WITH_MARGIN (candidate hypothesis formulated for T107, not a quoted specification)",
   "task_id": "T107",
   "witness": {
@@ -3026,7 +3180,7 @@
  {
   "claim": "solve_lyapunov refuses an exactly Hurwitz plant for which an exactly valid quadratic certificate exists and PLSR's own verdict certifies it",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:be32f04fe68e565abd521a1cc9cd3e4eed92984f786ffd4a26045f8e4427bc87",
+  "report_id": "sha256:315b5e78ede7b7085066496b6bd6478cf45975d3e6d501ed8f56eeaef92156f9",
   "statement": "PLSR's solve_lyapunov refuses only plants for which no valid quadratic certificate is available in float64",
   "task_id": "T109",
   "witness": {
@@ -3040,7 +3194,7 @@
  {
   "claim": "The scalar route sees decrease at every sampled state of an indefinite form that PLSR reports DECREASE_NOT_DEFINITE",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:d5d55d9912602664821a99dbeecbf42e41bfb4f230b1b2cd7c48559ffdf180a0",
+  "report_id": "sha256:680c2d563f096c0310141ee240b4ca753d86e1e179d1794ef6e85662f2dcd4ab",
   "statement": "A negative sampled scalar decrease at every tested state implies a negative definite decrease form",
   "task_id": "T111",
   "witness": {
@@ -3054,7 +3208,7 @@
  {
   "claim": "With Q = I the nominal-model P does not cover the declared inertia interval",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:4663ef05d11ca01d560c1417055194052d55eb50d6df168df2eab730adbdc476",
+  "report_id": "sha256:c48d4a83bfcb1e402ce5fb84faf3b78d6cefe4a248ba9f0a7eb968df45ae8a2a",
   "statement": "A Lyapunov P solved at the nominal model with Q = I certifies the declared +-30 % inertia interval",
   "task_id": "T114",
   "witness": {
@@ -3069,7 +3223,7 @@
  {
   "claim": "Dividing gross energy by executed solves reports a finite energy per result for the under-target fixture although no result is accepted",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:0646a06ceb9da0e5afc57d2eb438015bc38e134499501d9c1094854d480d1906",
+  "report_id": "sha256:39d5cc07f4ad5f2ff7a348fb7f08e68e584be1f089d59418f5fe758a50df5ff3",
   "statement": "Gross energy divided by executed solves is an energy per accepted numerical result",
   "task_id": "T119",
   "witness": {
@@ -3081,7 +3235,7 @@
  {
   "claim": "Lowering precision to float32 cannot reach a 1e-7 endpoint accuracy at any step count up to 2048, while float64 reaches it",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:d95b0ca6da7f1c38f8e807b5ae942bc4c79b19dca0a6997e7f73750324bf1879",
+  "report_id": "sha256:5e75a1c2d38a4ff44e531f270ef671dc1fdc75bc032347ae679e455a003428fb",
   "statement": "Halving floating-point precision reaches every accuracy target at no greater operation count",
   "task_id": "T120",
   "witness": {
@@ -3093,7 +3247,7 @@
  {
   "claim": "Lowering the common Gaussian VI workload to float32 cannot reach a 1e-14 nat KL target within 256 iterations, while float64 reaches it",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:d95b0ca6da7f1c38f8e807b5ae942bc4c79b19dca0a6997e7f73750324bf1879",
+  "report_id": "sha256:5e75a1c2d38a4ff44e531f270ef671dc1fdc75bc032347ae679e455a003428fb",
   "statement": "Halving floating-point precision reaches every accuracy target of the Gaussian VI workload at no greater operation count",
   "task_id": "T120",
   "witness": {
@@ -3105,7 +3259,7 @@
  {
   "claim": "Reduction order alone flips the sign of a float32 sum whose exact value is +0.25 (the one-thread sequential CPU fold against the GPU-style orders)",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:207b4ae9f2e28eea41908c6f71f488afed7448979348c64afbf7bc026854d1ff",
+  "report_id": "sha256:670f0144cb2c5d1f0433976a422d998a63c33b6818c92036c70cf7100f02096e",
   "statement": "The sign of a float32 reduction (a pass/fail decision at threshold 0) does not depend on the reduction order",
   "task_id": "T121",
   "witness": {
@@ -3133,7 +3287,7 @@
  {
   "claim": "Reduction order alone flips the sign of a float64 sum of float64-native cancellation data whose exact value is +0.25 (the sequential fold against the GPU-style orders)",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:207b4ae9f2e28eea41908c6f71f488afed7448979348c64afbf7bc026854d1ff",
+  "report_id": "sha256:670f0144cb2c5d1f0433976a422d998a63c33b6818c92036c70cf7100f02096e",
   "statement": "float64 reductions are order-robust for sign decisions",
   "task_id": "T121",
   "witness": {
@@ -3161,7 +3315,7 @@
  {
   "claim": "Atomic completion order alone changes a float32 pass/fail test |S - 0.25| <= 0.01 on identical inputs",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:207b4ae9f2e28eea41908c6f71f488afed7448979348c64afbf7bc026854d1ff",
+  "report_id": "sha256:670f0144cb2c5d1f0433976a422d998a63c33b6818c92036c70cf7100f02096e",
   "statement": "Atomic completion order cannot change a float32 pass/fail decision on identical inputs",
   "task_id": "T121",
   "witness": {
@@ -3184,7 +3338,7 @@
  {
   "claim": "Emulated atomicAdd completion orders of identical float32 block partials give distinct sums",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:207b4ae9f2e28eea41908c6f71f488afed7448979348c64afbf7bc026854d1ff",
+  "report_id": "sha256:670f0144cb2c5d1f0433976a422d998a63c33b6818c92036c70cf7100f02096e",
   "statement": "Accumulating the same block partials yields the same float32 result whatever the atomic completion order",
   "task_id": "T121",
   "witness": {
@@ -3199,7 +3353,7 @@
  {
   "claim": "A comparison-select maximum (a if a >= b else b, the rule numpy documents for np.maximum) returns its first operand for +0.0 and -0.0, so the sign of the result depends on operand order",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:207b4ae9f2e28eea41908c6f71f488afed7448979348c64afbf7bc026854d1ff",
+  "report_id": "sha256:670f0144cb2c5d1f0433976a422d998a63c33b6818c92036c70cf7100f02096e",
   "statement": "A max reduction built from a comparison select is bitwise order-invariant for every IEEE input",
   "task_id": "T121",
   "witness": {
@@ -3216,7 +3370,7 @@
  {
   "claim": "Fused multiply-add contraction of the common workload's in-kernel reductions changes its binary64 outputs, so a bitwise CPU/GPU comparison detects a contracting build",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:207b4ae9f2e28eea41908c6f71f488afed7448979348c64afbf7bc026854d1ff",
+  "report_id": "sha256:670f0144cb2c5d1f0433976a422d998a63c33b6818c92036c70cf7100f02096e",
   "statement": "A fixed-order reduction gives the same binary64 result whether or not the compiler contracts its multiply-adds",
   "task_id": "T121",
   "witness": {
@@ -3228,7 +3382,7 @@
  {
   "claim": "A mean step 1.2 times the stability bound makes KL grow instead of converge",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:020cd41874b0dd43dd08e57f83b51afd937561aabee3549994dc73596837c3f4",
+  "report_id": "sha256:cee12a2a26a45ac76aadfeb822d19b9ccc5b20358592b6b03d57379eced78b97",
   "statement": "Gradient descent on the variational free energy converges for every positive step size",
   "task_id": "T122",
   "witness": {
@@ -3239,7 +3393,7 @@
  {
   "claim": "Unit scales leave the same problem unconverged after 512 iterations (condition number 1.3e3)",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:020cd41874b0dd43dd08e57f83b51afd937561aabee3549994dc73596837c3f4",
+  "report_id": "sha256:cee12a2a26a45ac76aadfeb822d19b9ccc5b20358592b6b03d57379eced78b97",
   "statement": "Coordinate normalization changes only units, not bounded convergence",
   "task_id": "T122",
   "witness": {
@@ -3250,7 +3404,7 @@
  {
   "claim": "An untyped sum of free energy and physical energy changes when the energy unit changes",
   "evidence_status": "analytic",
-  "report_id": "sha256:5c76d93baac17d8d0a0c7ea0d47833939496435f936157b1d512785605733117",
+  "report_id": "sha256:097a34096d6bf5988e3dc93b2b0dbaeaac5bbb63147582e2ed7dc4ed01493a6d",
   "statement": "Adding variational free energy to physical energy yields a unit-independent quantity",
   "task_id": "T123",
   "witness": {
@@ -3261,7 +3415,7 @@
  {
   "claim": "A log whose counter readings were doubled and then resealed passes validation",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:3868289f1206e0d3c9546bca65bd69fb9486acdc3f0b88eab32b479ee32841de",
+  "report_id": "sha256:2bf492164dce268a335309afa2b08ab941be414db8f98b78360495762f7bbe74",
   "statement": "A valid log digest shows that the retained readings are unmodified hardware output",
   "task_id": "T124",
   "witness": {
@@ -3272,7 +3426,7 @@
  {
   "claim": "Relabelling a synthetic fixture as physical_measurement makes its analysis eligible for physical comparison",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:3868289f1206e0d3c9546bca65bd69fb9486acdc3f0b88eab32b479ee32841de",
+  "report_id": "sha256:2bf492164dce268a335309afa2b08ab941be414db8f98b78360495762f7bbe74",
   "statement": "The declared origin of a retained energy log authenticates a physical measurement",
   "task_id": "T124",
   "witness": {
@@ -3473,7 +3627,7 @@
  {
   "claim": "Some process spawns run a PATH-resolved executable without comparing it to a pinned identity",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:ba5d709de3e169f208ee3f536e16d5951972f330b04698e835ad8aaf440042a0",
+  "report_id": "sha256:81870736579fd4addf8cb58b86e9adb05a4003051145c5dceb5767c0e1c99d53",
   "statement": "Numerical providers are invoked only through pinned executables",
   "task_id": "T144",
   "witness": {
@@ -3485,7 +3639,7 @@
  {
   "claim": "Text search for 'subprocess' finds modules that spawn no process",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:ba5d709de3e169f208ee3f536e16d5951972f330b04698e835ad8aaf440042a0",
+  "report_id": "sha256:81870736579fd4addf8cb58b86e9adb05a4003051145c5dceb5767c0e1c99d53",
   "statement": "A text search for 'subprocess' identifies the process-spawning modules",
   "task_id": "T144",
   "witness": {
@@ -3732,7 +3886,7 @@
  {
   "claim": "A frozen in-process policy object can be mutated",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:12b277a5fc176db11859fba6b8aa359f06e35b01eed30aa517b765f5e5c1dda0",
+  "report_id": "sha256:4ef4e2e7bcbd952ba277cae1c72edfb02e1c9f0d1cc3c20ed2e06aca34b7f54c",
   "statement": "An in-process Python flag is an actuator authority boundary",
   "task_id": "T153",
   "witness": {
@@ -3743,7 +3897,7 @@
  {
   "claim": "A frozen control proposal's status can be forced in memory, and the forced object is refused",
   "evidence_status": "numerically_verified",
-  "report_id": "sha256:84ba6f05fb50c3604bbec1db98048a9c72463b5dfd4ea4b74b100a7498d8dd20",
+  "report_id": "sha256:8b3eac6b10e6744e66c1347f28e34ecdb8c40143d742b3224a43bd779154595d",
   "statement": "A frozen dataclass status field keeps every control output a proposal",
   "task_id": "T154",
   "witness": {

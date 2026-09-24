@@ -382,7 +382,7 @@
   {
    "bytes": 1621,
    "path": "artifacts/T153/write-path-scan.json",
-   "sha256": "65be4b95906960ae93eab2b272f4b41e9540842506f346465d610bb240a0dd2d"
+   "sha256": "7f795c710c067e8efa60ef370b84443f9a74766492e67d275a94195f06173f3a"
   }
  ],
  "hypothesis": "A deny-by-default write policy refuses every write; enabling needs an externally issued, signed, in-scope, unexpired authorization verified against a trust anchor the lab does not hold, so no route opens it here; and a source scan finds no device, serial or fieldbus write path in the package and network paths only in the declared workbench servers, so no other code path reaches a machine that the scan can see.",
@@ -418,7 +418,7 @@
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: enforce that any future write transport is routed through ActuatorWritePolicy (the scan flags a new transport, routing is not enforced), with a real signature scheme for authorization records; enforcement itself belongs in hardware interlocks outside this package",
- "report_id": "sha256:12b277a5fc176db11859fba6b8aa359f06e35b01eed30aa517b765f5e5c1dda0",
+ "report_id": "sha256:4ef4e2e7bcbd952ba277cae1c72edfb02e1c9f0d1cc3c20ed2e06aca34b7f54c",
  "schema": "ciw.lab-task-report.v1",
  "section": "implementation-targets",
  "state": "completed",

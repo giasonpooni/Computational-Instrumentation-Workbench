@@ -3,7 +3,10 @@
   "src/ciw/lab/exchange_provenance.py",
   "src/ciw/lab/exchange_provenance_common.py",
   "tests/test_lab_exchange_provenance.py",
-  "docs/lab/EXCHANGE_PROVENANCE.md"
+  "docs/lab/EXCHANGE_PROVENANCE.md",
+  "src/ciw/operations/runner.py",
+  "src/ciw/session.py",
+  "src/ciw/workbench.py"
  ],
  "evidence_status": {
   "counts": {
@@ -412,14 +415,14 @@
    "sha256": "aed2a485168ffc220d965e2715a48d088c5ffe68dde335ea8ebd585aa81dfbe5"
   },
   {
-   "bytes": 44569,
+   "bytes": 46717,
    "path": "artifacts/T090/mutation-matrix.json",
-   "sha256": "75153dcb682869dbca146c90242a838263d896846b7abb7a55e82ea70ba723b1"
+   "sha256": "bfc2e64682c074d0c229f75dd47f5a681bda35736e16a047c494088d4d2ff040"
   },
   {
-   "bytes": 13369,
+   "bytes": 13873,
    "path": "artifacts/T090/mutation-matrix.md",
-   "sha256": "aa4f77308afee866a1080c3d4ad4e99b0972e621717e1bb8f85a0b960f50594d"
+   "sha256": "13604ac6814e09e44cc5e5e13e9608c75fd1502791b78f5740ec7c8425e784a4"
   }
  ],
  "hypothesis": "Predicted kills: oscillator runtime edits that break the seal, differ between execution and result, or empty the identity; energy runtime edits that leave bundle_digest stale, differ between a replay and its source (the receipt verification binds one runtime digest), or break the code_sha256 format. Predicted survivors: oscillator-runtime.both (a provider-declared identity checked only for equality between the two records) and energy-runtime.all-bundles and energy-runtime.python-version (reopen format-checks the retained runtime; only a new replay compares it with the current analysis identity).",
@@ -430,7 +433,7 @@
  ],
  "mathematical_model": "Each record seal or identity d = sha256(canon(record \\ d)) is unkeyed, so any holder can recompute d after an edit. Reopen kills a mutant only if some check compares the edited field with an independently recomputed, fixed or cross-referenced value; otherwise a consistent recomputation survives.",
  "number": 90,
- "numerical_result": "9 rows (9 workspace mutants, 0 pure-validator rows): 6 refused; 3 surviving forgeries (oscillator-runtime.both, energy-runtime.all-bundles, energy-runtime.python-version); kill/survive predictions matched 9/9; refusal messages matched their regression pins 6/6. Full matrix: 72 rows (65 workspace mutants, 7 pure-validator rows): 52 refused; 19 surviving forgeries (alias.swap-pairing, revision.gap, energy-source.resealed, oscillator-stats.resealed, oscillator-stats.impossible-moments, oscillator-stats.legacy, fresh.created-at-shift, receipt.transplanted-full, receipt.fabricated, receipt.deleted, receipt-source.sibling-execution, receipt-replayed.reidentified-bundle, oscillator-subject.injected, oscillator-method.injected, oscillator-independent.injected, oscillator-admission.injected, oscillator-runtime.both, energy-runtime.all-bundles, energy-runtime.python-version); 1 documented validator acceptance (exchange.verification-independent); kill/survive predictions matched 72/72; refusal messages matched their regression pins 52/52",
+ "numerical_result": "9 rows (9 workspace mutants, 0 pure-validator rows): 6 refused; 3 surviving forgeries (oscillator-runtime.both, energy-runtime.all-bundles, energy-runtime.python-version); kill/survive predictions matched 9/9; refusal messages matched their regression pins 6/6. Full matrix: 75 rows (68 workspace mutants, 7 pure-validator rows): 54 refused; 20 surviving forgeries (alias.swap-pairing, revision.gap, energy-source.resealed, oscillator-stats.resealed, oscillator-stats.impossible-moments, oscillator-stats.legacy, fresh.created-at-shift, receipt.transplanted-full, receipt.fabricated, receipt.deleted-resealed, receipt.deleted-seal-removed, receipt-source.sibling-execution-resealed, receipt-replayed.reidentified-bundle, oscillator-subject.injected, oscillator-method.injected, oscillator-independent.injected, oscillator-admission.injected, oscillator-runtime.both, energy-runtime.all-bundles, energy-runtime.python-version); 1 documented validator acceptance (exchange.verification-independent); kill/survive predictions matched 75/75; refusal messages matched their regression pins 54/54",
  "observation_model": "No physical observation. The observed objects are CIW records (sessions, executions, results, bundles, receipts, saved workspace JSON) produced offline by the unmodified CIW code; the energy logs are synthetic fixtures and no hardware was sampled.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -446,13 +449,16 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/exchange_provenance.py": "6c5c6d9b49043664ad9cea8f4bc2ff5d9fc367aea6194e2e7608c98bfd5c54f4",
-   "src/ciw/lab/exchange_provenance_common.py": "17ab892e3f285ac475b44c240155acf45f8bbdbefca28a345980aba548c6d1a9"
+   "src/ciw/lab/exchange_provenance.py": "52c65161fc650193a7df1a20919c1f962ce52f8efc12153e7a105658d4ab04d5",
+   "src/ciw/lab/exchange_provenance_common.py": "726ccccfe1beae025183069704cab05b35189515f6cdfffa0dd82f6e5ec3e8cb",
+   "src/ciw/operations/runner.py": "428d6a6e77123f5609125e7432a7158d0ecee015b1c53c2555206250c1d9f080",
+   "src/ciw/session.py": "0489eb0d4780f1f66b08aa6febdb966cc7b3c67dcdb5cfa1c431723e65781ff8",
+   "src/ciw/workbench.py": "79a7e5c2c30605c21a04578d9048d844edae577213125812ecf0885e17d40f80"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "Deferred research question: mutate the pinned-provider subprocess runtime identities (ciw.subprocess-runtime.v1) once a provider checkout is bound to a declared-workload or telemetry workflow, and label a retained runtime that differs from the current analysis identity as historical and unverified on reopen (a CIW change), so that energy-runtime.all-bundles and energy-runtime.python-version no longer reopen as current.",
- "report_id": "sha256:8ccf785487490885cd715fad92f3f74c94de51e3291e77777c7b51cd1965bd7a",
+ "recommended_next_task": "Deferred research question: mutate the pinned-provider subprocess runtime identities (ciw.subprocess-runtime.v1) of the telemetry session the identity matrix runs on the telemetry-stack binding, field by field (one forged revision there reopens and only a replay refuses it), and label a retained runtime that differs from the current analysis identity as historical and unverified on reopen (a CIW change), so that energy-runtime.all-bundles and energy-runtime.python-version no longer reopen as current.",
+ "report_id": "sha256:3f92f7e246b423d9af5e7411334f6ab0320ddac41cd86db2f29270b8207c0aa4",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "completed",
@@ -482,9 +488,8 @@
  "uncertainty": "Outcomes are exact (accepted or a refusal message). Only kill/survive is a prediction; refusal messages are regression pins recorded from observed runs. Survivors are demonstrated forgeries; kills show only that these particular edits are detected, not that every edit of this field is.",
  "unresolved_assumptions": [
   "The forger model recomputes only unkeyed SHA-256 digests with CIW's public canonicalization; no key exists to steal.",
-  "Pinned-provider subprocess runtime identities (ciw.subprocess-runtime.v1: pinned revision, module and source_root, host-measured source_tree and python_sha256; src/ciw/declared_workload.py) were not mutated, because no provider checkout was bound to a declared-workload or telemetry workflow; only the CIW-internal oscillator provider identity and CIW's own energy analysis identity were.",
+  "Pinned-provider subprocess runtime identities (ciw.subprocess-runtime.v1: pinned revision, module and source_root, host-measured source_tree and python_sha256) were not mutated in this matrix, which runs no provider; only the CIW-internal oscillator provider identity and CIW's own energy analysis identity were. T077 observes the telemetry session's runtime identities when the telemetry stack is bound, including one forged revision.",
   "Whether a reader of a forged workspace would be misled depends on how the record is displayed; not assessed.",
-  "Deferred research question (telemetry provider stack): provision the telemetry stack pinned in src/ciw/telemetry-runtimes.json (ppda, stfe, gsie, set, cbsr; scripts/check_lab.py provisions only ppda and set of these, and scripts/reproduce_lab.py TEST_VARIABLES has no variable for stfe, gsie or cbsr), bind it to a telemetry or declared-workload workflow, and observe the ESM candidate, candidate execution and ciw.subprocess-runtime.v1 identity rows and telemetry-validated records that are now read from code or replaced by a synthetic telemetry-shaped record.",
   "Deferred research question (key custody and signatures): which key signs CIW workspace records, replay receipts and execution records, who holds it, how is it provisioned, rotated and revoked, and how does a verifier obtain its public key? Every seal and identity on these paths is an unkeyed SHA-256, so 'Retained workspace records are authenticated' stays not_established until records are signed (for example Ed25519 over the canonical record bytes, with an RFC 3161 timestamp for created_at) and T077 and T080-T090 are re-run against the signed records to check that every surviving forgery is refused."
  ]
 }

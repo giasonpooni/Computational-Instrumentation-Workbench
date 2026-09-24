@@ -140,6 +140,12 @@ Generated from retained lab reports. Each entry refutes the quoted general state
 - Evidence status: `numerically_verified`
 - Witness: `{"L1": 1.13, "L2": 3.0, "N1": 113, "N2": 300 …(+6)}`
 
+## T014: The forward-then-reversed return error of an integrator measures its global error
+
+- Finding: Symmetric implicit methods (implicit midpoint, 2-stage Gauss-Legendre; fixed-point stage solve to 1e-13) return from forward-then-reversed integration at rounding level at every step size
+- Evidence status: `numerically_verified`
+- Witness: `{"forward_position_error": 4.261941548118264e-07, "method": "gauss-legendre-2", "return_error": 3.352873534367973e-14, "steps": 20 …(+1)}`
+
 ## T015: The fixed-step RK4 position error on the sphere is the phase error of its speed error (a constant speed error gives position error ~ L)
 
 - Finding: Fixed-step RK4 sphere position error is cross-track: the precessing orbit plane, not the speed error, sets it
@@ -169,6 +175,24 @@ Generated from retained lab reports. Each entry refutes the quoted general state
 - Finding: Saddle(c): peak |K| = c^2 but Jacobi growth is polynomial in c; the local exponent of j_head(L) decreases toward sqrt(2)
 - Evidence status: `numerically_verified`
 - Witness: `{"c": 16384.0, "log_j_head": 14.554722514358353, "peak_abs_curvature": 268435456.0, "sqrt_peak_times_L": 32768.0}`
+
+## T016: An integrator with a six times smaller error constant on the constant-curvature Jacobi equation is correspondingly more accurate for the geodesic itself
+
+- Finding: The constant-curvature Jacobi error constants do not carry over to the nonlinear hyperbolic geodesic: Gauss-Legendre's end-point and speed errors are not 1/6 of RK4's
+- Evidence status: `numerically_verified`
+- Witness: `{"endpoint_error_ratio": 0.703619247447021, "j_head_error_ratio": 0.16771886729645658, "k": 1.0, "max_speed_error_ratio": 0.6953013007698434 …(+1)}`
+
+## T016: Gauss-Legendre's constant-curvature advantage over RK4 (j_head error 1/6 of RK4's) holds on variable-curvature geodesics
+
+- Finding: On ridge and oblique saddle-surface geodesics (full nonlinear system) Gauss-Legendre and RK4 both converge at order 4, but their j_head error ratio depends on the geodesic instead of being the constant-curvature 1/6, while Gauss-Legendre's speed error is several times smaller at equal steps
+- Evidence status: `numerically_verified`
+- Witness: `{"geodesic": "c = 16 oblique", "j_head_error_ratio": 2.4526153875369117, "curvature_range[0]": -0.558213912126984, "curvature_range[1]": -0.07160818589836329}`
+
+## T016: Over long horizons RK4's speed error drifts while a symmetric integrator's stays bounded
+
+- Finding: On escaping geodesics (hyperbolic plane, oblique saddle geodesic) RK4's speed error does not drift either: it saturates like the symmetric methods', so boundedness there does not distinguish them
+- Evidence status: `numerically_verified`
+- Witness: `{"hyperbolic-plane.rk4_envelope": 2.4755903290096803e-05, "hyperbolic-plane.rk4_growth_after_one_eighth": 1.0, "saddle-oblique.rk4_envelope": 3.417308181563605e-05, "saddle-oblique.rk4_growth_after_one_eighth": 1.0}`
 
 ## T017: The validity domain of the first-order approximation shrinks to zero at every conjugate point
 
@@ -367,6 +391,18 @@ Generated from retained lab reports. Each entry refutes the quoted general state
 - Finding: Traced straightest geodesics are never shorter than the exact distance between their endpoints, yet on every icosphere level 1-4 some of length 2 (below pi) are not shortest paths, by an excess that falls with refinement
 - Evidence status: `numerically_verified`
 - Witness: `{"exact": 1.9999625298889687, "excess": 3.747011103172326e-05, "level": 4, "start": 1 …(+1)}`
+
+## T038: A straightest geodesic through a vertex is the limit of the straightest geodesics that pass it on either side
+
+- Finding: At a saddle vertex every end direction between the one-sided limits of the geodesics passing it is reached by a shortest path through the vertex, at a cone vertex none is, and the Polthier-Schmies continuation bisects the two limits
+- Evidence status: `numerically_verified`
+- Witness: `{"continued_polar": 2.356194490192345, "total_angle_over_pi": 1.5, "one_sided_polar[0]": 1.570798612509183, "one_sided_polar[1]": 3.1415903678755073}`
+
+## T038: The first cut point of a straightest geodesic on a convex polyhedral surface is where it crosses the cut ray of one vertex, as if that vertex carried all the curvature
+
+- Finding: A straightest geodesic can stop being shortest before every single vertex's isolated-cone prediction, when the digon between it and the other shortest path encloses several vertices
+- Evidence status: `numerically_verified`
+- Witness: `{"cut_point": 1.1709509040694328, "level": 2, "prediction": 1.3189570176010945, "start": 5 …(+2)}`
 
 ## T039: Edge-graph shortest paths converge to the geodesic distance under mesh refinement
 
@@ -722,17 +758,29 @@ Generated from retained lab reports. Each entry refutes the quoted general state
 - Evidence status: `numerically_verified`
 - Witness: `{"gap_ticks": 44, "omega_rad_s": 0.2, "radius_at_inconsistency_m": 4.590603032028965}`
 
-## T077: Every retained CIW operation result carries a replay-stable numerical-result identity
-
-- Finding: Oscillator operation results carry no replay-stable numerical-result identity
-- Evidence status: `numerically_verified`
-- Witness: `{"operation": "statistics.v1", "fields[0]": "channel", "fields[1]": "created_at", "fields[2]": "data" …(+17)}`
-
 ## T077: A retained bundle identity binds every provenance record stored in the bundle
 
 - Finding: The energy replay bundle identity excludes its replay receipt and verification
 - Evidence status: `numerically_verified`
 - Witness: `{"bundle": "bundle:B1", "function": "src/ciw/telemetry.py:_bundle_digest", "removed": "replay_receipts", "replaced": "verification"}`
+
+## T077: Reopening a workspace checks every retained provider runtime identity against CIW's pin
+
+- Finding: A telemetry bundle whose GSIE runtime revision is forged, with every unkeyed digest over it recomputed, reopens, and a replay on the bound stack refuses it
+- Evidence status: `numerically_verified`
+- Witness: `{"edit": "runtimes.gsie.revision replaced by a revision that is not …", "reopen": "accepted", "replay": "Telemetry replay runtime identity mismatch", "recomputed[0]": "bundle_digest" …(+4)}`
+
+## T077: A telemetry replay compares every retained runtime identity field except the host paths
+
+- Finding: A telemetry bundle whose GSIE runtime identity carries a forged adapter_version and an injected key, with every unkeyed digest over it recomputed, reopens, and the runtime identity comparison a replay makes before executing accepts it
+- Evidence status: `numerically_verified`
+- Witness: `{"reopen": "accepted", "replay_comparison": "accepted", "compared_fields[0]": "revision", "compared_fields[1]": "source_tree" …(+14)}`
+
+## T077: A saved workspace carries no host path of an operator-bound provider checkout
+
+- Finding: A saved telemetry workspace retains the host paths of the bound provider checkouts and interpreter in its runtime identities
+- Evidence status: `numerically_verified`
+- Witness: `{"restored_binding": "none: the reopened session offers no telemetry operation", "fields[0]": "runtimes.<role>.repository_root", "fields[1]": "runtimes.<role>.python_executable", "roles[0]": "ppda" …(+3)}`
 
 ## T079: Canonical-content identity treats numerically equal JSON numbers as equal content
 
@@ -796,15 +844,21 @@ Generated from retained lab reports. Each entry refutes the quoted general state
 
 ## T083: A replay bundle cannot be retained without its replay receipt
 
-- Finding: Surviving mutant receipt.deleted: a replay bundle reopens without its replay receipt, listed with no receipt like an original execution
+- Finding: Surviving mutant receipt.deleted-resealed: a replay bundle reopens without its replay receipt once the unkeyed catalog receipt seal is recomputed, listed with no receipt like an original execution
 - Evidence status: `numerically_verified`
-- Witness: `{"description": "replay_receipts removed from the replay bundle", "name": "receipt.deleted", "observed": "accepted", "recompute": "none" …(+5)}`
+- Witness: `{"description": "replay_receipts removed from the replay bundle; the catalog …", "name": "receipt.deleted-resealed", "observed": "accepted", "recompute": "full" …(+5)}`
+
+## T083: A workspace saved with a replay-receipt seal cannot reopen without it
+
+- Finding: Surviving mutant receipt.deleted-seal-removed: a replay bundle reopens without its replay receipt when the catalog receipt seal is removed too, as from a workspace saved before the seal existed
+- Evidence status: `numerically_verified`
+- Witness: `{"description": "replay_receipts removed from the replay bundle and …", "name": "receipt.deleted-seal-removed", "observed": "accepted", "recompute": "none" …(+5)}`
 
 ## T084: Unkeyed record seals detect every replay-provenance forgery
 
-- Finding: Surviving mutant receipt-source.sibling-execution: a receipt re-pointed, with its verification subject, at a sibling execution of the same bytes reopens
+- Finding: Surviving mutant receipt-source.sibling-execution-resealed: a receipt re-pointed, with its verification subject, at a sibling execution of the same bytes reopens once the catalog receipt seal is recomputed
 - Evidence status: `numerically_verified`
-- Witness: `{"description": "receipt source and verification subject moved together to a …", "name": "receipt-source.sibling-execution", "observed": "accepted", "recompute": "local" …(+4)}`
+- Witness: `{"description": "receipt source and verification subject moved together to a …", "name": "receipt-source.sibling-execution-resealed", "observed": "accepted", "recompute": "full" …(+4)}`
 
 ## T085: A retained replay cannot be dated before its source bundle
 

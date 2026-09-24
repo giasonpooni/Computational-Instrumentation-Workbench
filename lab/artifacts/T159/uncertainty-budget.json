@@ -373,6 +373,63 @@
   }
  },
  {
+  "claim": "The 34-digit Gragg-Bulirsch-Stoer reference on the saddle path agrees with mpmath.odefun (Taylor series) on the same sympy-derived equations within its error estimate, which overstates the gap by the factor its order-16 extrapolation predicts",
+  "evidence_status": "independently_verified",
+  "measured": true,
+  "task_id": "T002",
+  "uncertainty": {
+   "basis": "measured rounding of the 34-digit reference end state: its largest distance from the same 20 macro-steps rerun at 44 digits (1.2e-32, 0.00066 of the gap). The gap is the difference of the two integrators' own errors, which neither reports separately (odefun gives no error estimate; its own rounding is not rerun here)",
+   "kind": "roundoff",
+   "value": 1.2046350500728475e-32
+  },
+  "unit": null,
+  "value": {
+   "gap_over_estimate": 1.2735416361889095e-05,
+   "gbs_error_estimate": 1.4378105484480408e-24,
+   "gbs_minus_odefun": 1.8311115984001913e-29,
+   "guarded_gbs_minus_odefun": 1.8299069633501184e-29,
+   "observed_order": 16.261762128240235
+  }
+ },
+ {
+  "claim": "The 34-digit Gragg-Bulirsch-Stoer reference on the torus path agrees with mpmath.odefun (Taylor series) on the same sympy-derived equations within its error estimate, which overstates the gap by the factor its order-16 extrapolation predicts",
+  "evidence_status": "independently_verified",
+  "measured": true,
+  "task_id": "T002",
+  "uncertainty": {
+   "basis": "measured rounding of the 34-digit reference end state: its largest distance from the same 20 macro-steps rerun at 44 digits (8.6e-33, 1.3e-05 of the gap). The gap is the difference of the two integrators' own errors, which neither reports separately (odefun gives no error estimate; its own rounding is not rerun here)",
+   "kind": "roundoff",
+   "value": 8.622995186211526e-33
+  },
+  "unit": null,
+  "value": {
+   "gap_over_estimate": 1.5724234436422844e-05,
+   "gbs_error_estimate": 4.3530344385152934e-23,
+   "gbs_minus_odefun": 6.8448134021036755e-28,
+   "guarded_gbs_minus_odefun": 6.844899632055538e-28,
+   "observed_order": 15.956655206548895
+  }
+ },
+ {
+  "claim": "The 34-digit Gragg-Bulirsch-Stoer reference on the gaussian-bump path agrees with mpmath.odefun (Taylor series) on the same sympy-derived equations within its error estimate, which overstates the gap by the factor its order-16 extrapolation predicts",
+  "evidence_status": "independently_verified",
+  "measured": true,
+  "task_id": "T002",
+  "uncertainty": {
+   "basis": "measured rounding of the 34-digit reference end state: its largest distance from the same 20 macro-steps rerun at 44 digits (2.1e-33, 2.6e-07 of the gap). The gap is the difference of the two integrators' own errors, which neither reports separately (odefun gives no error estimate; its own rounding is not rerun here)",
+   "kind": "roundoff",
+   "value": 2.1347197172142798e-33
+  },
+  "unit": null,
+  "value": {
+   "gap_over_estimate": 1.2598761752389642e-05,
+   "gbs_error_estimate": 6.39498405169957e-22,
+   "gbs_minus_odefun": 8.056888047769428e-27,
+   "guarded_gbs_minus_odefun": 8.056889094206366e-27,
+   "observed_order": 16.27637651522293
+  }
+ },
+ {
   "claim": "Clairaut's integral rho^2 phi' is conserved along the torus reference path",
   "evidence_status": "numerically_verified",
   "measured": true,
@@ -1874,6 +1931,148 @@
   "value": 0.010709114151019605
  },
  {
+  "claim": "Symmetric implicit methods (implicit midpoint, 2-stage Gauss-Legendre; fixed-point stage solve to 1e-13) return from forward-then-reversed integration at rounding level at every step size",
+  "evidence_status": "numerically_verified",
+  "measured": true,
+  "task_id": "T014",
+  "uncertainty": {
+   "basis": "the return errors are rounding and stage-solve residuals; they differ between OpenBLAS kernels by less than 1e-15",
+   "kind": "roundoff",
+   "value": 6.661338147750939e-14
+  },
+  "unit": null,
+  "value": {
+   "explicit_same_order_return_error_at_N_20": {
+    "midpoint": 0.000329484122056134,
+    "rk4": 2.478714649090108e-07
+   },
+   "iterations_per_step": {
+    "gauss-legendre-2": [
+     8.908333333333333,
+     7.270833333333333,
+     6.1187499999999995,
+     5.0218750000000005
+    ],
+    "implicit-midpoint": [
+     10.166666666666666,
+     8.1625,
+     6.829166666666666,
+     5.797916666666667
+    ]
+   },
+   "max_return_error": {
+    "gauss-legendre-2": 3.352873534367973e-14,
+    "implicit-midpoint": 6.661338147750939e-14
+   },
+   "return_errors": {
+    "hyperbolic-plane: gauss-legendre-2": [
+     6.938893903907228e-16,
+     2.615963001773025e-15,
+     1.1657341758564144e-14,
+     7.771561172376096e-16
+    ],
+    "hyperbolic-plane: implicit-midpoint": [
+     3.219646771412954e-14,
+     1.687538997430238e-14,
+     1.1102230246251565e-15,
+     1.4432899320127035e-15
+    ],
+    "sphere: gauss-legendre-2": [
+     3.352873534367973e-14,
+     6.106226635438361e-15,
+     1.1324274851176597e-14,
+     1.5543122344752192e-15
+    ],
+    "sphere: implicit-midpoint": [
+     2.2926105458509483e-14,
+     2.398081733190338e-14,
+     6.661338147750939e-14,
+     1.1934897514720433e-14
+    ],
+    "torus: gauss-legendre-2": [
+     3.9968028886505635e-15,
+     1.7763568394002505e-15,
+     6.661338147750939e-15,
+     2.220446049250313e-16
+    ],
+    "torus: implicit-midpoint": [
+     3.824718319833664e-14,
+     1.5057399771478686e-14,
+     2.2426505097428162e-14,
+     1.3322676295501878e-15
+    ]
+   }
+  }
+ },
+ {
+  "claim": "Implicit midpoint and 2-stage Gauss-Legendre are not exact: their forward end-point errors converge at orders 2 and 4",
+  "evidence_status": "numerically_verified",
+  "measured": true,
+  "task_id": "T014",
+  "uncertainty": {
+   "basis": "largest gap between a fitted forward order and its consecutive-step-pair orders",
+   "kind": "fit_spread",
+   "value": 0.009025321606026093
+  },
+  "unit": null,
+  "value": {
+   "hyperbolic-plane: gauss-legendre-2": 4.000112430456563,
+   "hyperbolic-plane: implicit-midpoint": 1.9994832604254649,
+   "sphere: gauss-legendre-2": 3.9993767131395876,
+   "sphere: implicit-midpoint": 1.999157357887076,
+   "torus: gauss-legendre-2": 3.9950969757551413,
+   "torus: implicit-midpoint": 1.99922104568205
+  }
+ },
+ {
+  "claim": "The symmetric methods' return error is bounded by the stage-solve tolerance: at tolerances 1e-4, 1e-6, 1e-8 it stays below the tolerance times the state size, it rises above rounding level at 1e-4 and 1e-6, and at 1e-8 it can already be at rounding level",
+  "evidence_status": "numerically_verified",
+  "measured": true,
+  "task_id": "T014",
+  "uncertainty": {
+   "basis": "the return error depends on where each fixed-point iteration stops; the largest ratio to the tolerance bound is given",
+   "kind": "step_sequence",
+   "value": 0.2229479028550052
+  },
+  "unit": null,
+  "value": {
+   "return_errors": {
+    "gauss-legendre-2": {
+     "1e-4": [
+      2.562420396967635e-05,
+      1.5649389832894656e-06
+     ],
+     "1e-6": [
+      6.206576641520911e-10,
+      1.2196748389037282e-07
+     ],
+     "1e-8": [
+      1.2834008855655554e-10,
+      3.7164715749327115e-14
+     ]
+    },
+    "implicit-midpoint": {
+     "1e-4": [
+      3.778116548847077e-05,
+      4.599782882808157e-06
+     ],
+     "1e-6": [
+      5.256635802197707e-07,
+      1.310855868297267e-09
+     ],
+     "1e-8": [
+      1.9044179566662933e-09,
+      1.051343234692581e-09
+     ]
+    }
+   },
+   "steps": [
+    20,
+    80
+   ]
+  }
+ },
+ {
   "claim": "Adaptive DP45 energy error grows linearly with length on the torus and the sphere",
   "evidence_status": "numerically_verified",
   "measured": true,
@@ -2212,6 +2411,344 @@
     1.4161709574879313,
     1.4148132489919054
    ]
+  }
+ },
+ {
+  "claim": "On the full nonlinear HyperbolicPlane(k) system the 2-stage Gauss-Legendre integrator converges at order 4, its j_head error tends to 1/6 of RK4's, and it needs exactly the step counts found on its constant-curvature step matrix",
+  "evidence_status": "numerically_verified",
+  "measured": true,
+  "task_id": "T016",
+  "uncertainty": {
+   "basis": "largest gap between a fitted order and its consecutive-step-pair orders; errors are against the closed form sinh(kL)/k",
+   "kind": "fit_spread",
+   "value": 0.037443719509502316
+  },
+  "unit": null,
+  "value": {
+   "gauss_legendre_over_rk4_j_head_error": [
+    [
+     0.17090791360723556,
+     0.16877323733181887,
+     0.16771886729645658
+    ],
+    [
+     0.17560481715756787,
+     0.17106916963038155,
+     0.16885147494045066
+    ],
+    [
+     0.18510844589643527,
+     0.17561131589155468,
+     0.17107224864603132
+    ],
+    [
+     0.20593866550310602,
+     0.1851095570324936,
+     0.1756113887149706
+    ]
+   ],
+   "j_head_order": {
+    "gauss-legendre-2": [
+     4.000013338365278,
+     4.000157686279443,
+     4.000627634270623,
+     4.002479552346438
+    ],
+    "rk4": [
+     3.98642623426892,
+     3.97186886647324,
+     3.943745145524853,
+     3.8875653944719826
+    ]
+   },
+   "k": [
+    1.0,
+    2.0,
+    4.0,
+    8.0
+   ],
+   "relative_error_at_required_steps": [
+    9.116373919582174e-07,
+    9.491262142381832e-07,
+    9.595001581870859e-07,
+    9.87222740136983e-07
+   ],
+   "relative_error_one_step_fewer": [
+    1.2015528705468616e-06,
+    1.0658610448890652e-06,
+    1.0071818485839264e-06,
+    1.0076338672618516e-06
+   ],
+   "required_steps": [
+    15,
+    35,
+    83,
+    196
+   ],
+   "steps": [
+    64,
+    128,
+    256
+   ]
+  }
+ },
+ {
+  "claim": "The constant-curvature Jacobi error constants do not carry over to the nonlinear hyperbolic geodesic: Gauss-Legendre's end-point and speed errors are not 1/6 of RK4's",
+  "evidence_status": "numerically_verified",
+  "measured": true,
+  "task_id": "T016",
+  "uncertainty": {
+   "basis": "largest gap between a fitted end-point order and its consecutive-step-pair orders",
+   "kind": "fit_spread",
+   "value": 0.0795563560712722
+  },
+  "unit": null,
+  "value": {
+   "endpoint_order": {
+    "gauss-legendre-2": [
+     4.000023795072634,
+     4.0001654915348,
+     4.000646603262332
+    ],
+    "rk4": [
+     3.9711971467696685,
+     3.9236520766687435,
+     3.8006719289064077
+    ]
+   },
+   "gauss_legendre_over_rk4_endpoint_error": [
+    [
+     0.7323068265918856,
+     0.7128861826286893,
+     0.703619247447021
+    ],
+    [
+     0.9743635261481305,
+     0.9065520637494755,
+     0.8763051268085
+    ],
+    [
+     1.2787077023689513,
+     1.0531919566971566,
+     0.969113247906108
+    ]
+   ],
+   "gauss_legendre_over_rk4_max_speed_error": [
+    [
+     0.7039294422977331,
+     0.6991336364611243,
+     0.6953013007698434
+    ],
+    [
+     1.051609944839834,
+     1.059394047596387,
+     1.0522338392927557
+    ],
+    [
+     0.9861300165913454,
+     1.0590778349200825,
+     1.0616881233764557
+    ]
+   ],
+   "k": [
+    1.0,
+    2.0,
+    4.0
+   ],
+   "steps": [
+    64,
+    128,
+    256
+   ]
+  }
+ },
+ {
+  "claim": "On ridge and oblique saddle-surface geodesics (full nonlinear system) Gauss-Legendre and RK4 both converge at order 4, but their j_head error ratio depends on the geodesic instead of being the constant-curvature 1/6, while Gauss-Legendre's speed error is several times smaller at equal steps",
+  "evidence_status": "numerically_verified",
+  "measured": true,
+  "task_id": "T016",
+  "uncertainty": {
+   "basis": "largest relative change of the DP45 reference j_head from rtol 1e-12 to 1e-13; errors below 1e-11 are left out of the fits and ratios",
+   "kind": "reference_error",
+   "value": 7.348938470424739e-13
+  },
+  "unit": null,
+  "value": {
+   "curvature_range": [
+    [
+     -0.9999997613134798,
+     -0.30972308243426766
+    ],
+    [
+     -0.824369932314378,
+     -0.2386852191381072
+    ],
+    [
+     -15.99995220099725,
+     -0.33615127210097984
+    ],
+    [
+     -6.698711957219943,
+     -0.048562801555834964
+    ],
+    [
+     -255.99457802705305,
+     -0.2822398869905535
+    ],
+    [
+     -0.558213912126984,
+     -0.07160818589836329
+    ]
+   ],
+   "gauss_legendre_over_rk4_j_head_error_at_finest_resolved_N": [
+    0.8258278472245317,
+    1.3249083239915638,
+    0.35883574489806924,
+    0.3005995724429494,
+    0.27414845531831783,
+    2.4526153875369117
+   ],
+   "geodesics": [
+    "c = 1 ridge",
+    "c = 1 oblique",
+    "c = 4 ridge",
+    "c = 4 oblique",
+    "c = 16 ridge",
+    "c = 16 oblique"
+   ],
+   "j_head_order": {
+    "gauss-legendre-2": [
+     3.999001919497339,
+     3.998784102169973,
+     3.9830828704140755,
+     3.996691166013767,
+     4.147313461505622,
+     3.9998119994729344
+    ],
+    "rk4": [
+     3.9922270377473934,
+     3.996520142539241,
+     4.017583370649729,
+     4.1055357666424195,
+     3.930284523612752,
+     4.0419285963954765
+    ]
+   },
+   "max_gauss_legendre_over_rk4_speed_error": 0.20710721319051245
+  }
+ },
+ {
+  "claim": "On a recurrent Torus(2, 1) geodesic that winds around the tube through negative curvature, the speed errors of implicit midpoint and 2-stage Gauss-Legendre stay bounded while RK4's grows secularly",
+  "evidence_status": "numerically_verified",
+  "measured": true,
+  "task_id": "T016",
+  "uncertainty": {
+   "basis": "change of the RK4 local slope between the last two doublings",
+   "kind": "fit_spread",
+   "value": 0.07052465516687523
+  },
+  "unit": null,
+  "value": {
+   "checkpoints": [
+    5.0,
+    10.0,
+    20.0,
+    40.0,
+    80.0,
+    160.0
+   ],
+   "curvature_range": [
+    -0.9999994385712062,
+    0.3333333333333333
+   ],
+   "envelope": {
+    "gauss-legendre-2": [
+     2.2163137562980495e-06,
+     2.2163137562980495e-06,
+     2.2163137562980495e-06,
+     2.2163137562980495e-06,
+     2.2163137562980495e-06,
+     2.2164063566698644e-06
+    ],
+    "implicit-midpoint": [
+     0.0012908966150591006,
+     0.0012908966150591006,
+     0.0012908966150591006,
+     0.0012908966150591006,
+     0.0012908966150591006,
+     0.0012910203078371207
+    ],
+    "rk4": [
+     2.0955876211314894e-05,
+     2.0955876211314894e-05,
+     2.5879087823144076e-05,
+     6.470060594043758e-05,
+     0.00012942085836531447,
+     0.000271850565302989
+    ]
+   },
+   "growth_after_one_eighth": {
+    "gauss-legendre-2": 1.0000417812557232,
+    "implicit-midpoint": 1.0000958192752054,
+    "rk4": 10.504642480476795
+   },
+   "h": 0.25,
+   "rk4_local_slopes": [
+    0.0,
+    0.3044319216412828,
+    1.3219924569231951,
+    1.0002190221699327,
+    1.070743677336808
+   ],
+   "theta_range": [
+    0.0,
+    134.543257681071
+   ]
+  }
+ },
+ {
+  "claim": "On escaping geodesics (hyperbolic plane, oblique saddle geodesic) RK4's speed error does not drift either: it saturates like the symmetric methods', so boundedness there does not distinguish them",
+  "evidence_status": "numerically_verified",
+  "measured": true,
+  "task_id": "T016",
+  "uncertainty": {
+   "basis": "speed errors on the vertical ray are rounding; the envelope ratios are exact maxima of the sampled runs",
+   "kind": "roundoff",
+   "value": 2.220446049250313e-15
+  },
+  "unit": null,
+  "value": {
+   "envelope_at_horizon": {
+    "hyperbolic-plane": {
+     "gauss-legendre-2": 1.857428205387368e-05,
+     "implicit-midpoint": 0.010866190626984684,
+     "rk4": 2.4755903290096803e-05
+    },
+    "saddle-oblique": {
+     "gauss-legendre-2": 8.502100932950007e-06,
+     "implicit-midpoint": 0.003986928874470719,
+     "rk4": 3.417308181563605e-05
+    }
+   },
+   "growth_after_one_eighth": {
+    "hyperbolic-plane": {
+     "gauss-legendre-2": 1.0069670272616802,
+     "implicit-midpoint": 1.0061961316670534,
+     "rk4": 1.0
+    },
+    "saddle-oblique": {
+     "gauss-legendre-2": 1.0,
+     "implicit-midpoint": 1.0,
+     "rk4": 1.0
+    }
+   },
+   "h": 0.25,
+   "horizon": 32.0,
+   "vertical_ray_max_speed_error": {
+    "gauss-legendre-2": 2.220446049250313e-15,
+    "implicit-midpoint": 1.7763568394002505e-15,
+    "rk4": 1.7763568394002505e-15
+   }
   }
  },
  {
@@ -4910,6 +5447,624 @@
     6,
     6
    ]
+  }
+ },
+ {
+  "claim": "Straightest geodesics continued through flat vertices by the Polthier-Schmies rule stay straight lines of the development on planar and prism-cylinder meshes",
+  "evidence_status": "numerically_verified",
+  "measured": true,
+  "task_id": "T038",
+  "uncertainty": {
+   "basis": "double-precision rounding of unfoldings, angle sums and exact distances (largest disagreement with the closed forms observed below 1e-14)",
+   "kind": "roundoff",
+   "value": 1e-14
+  },
+  "unit": "normalized length",
+  "value": {
+   "max_error": 4.440892098500626e-16,
+   "traces": 9,
+   "vertices_passed": [
+    1,
+    2,
+    1,
+    1,
+    4,
+    5,
+    2,
+    6,
+    2
+   ]
+  }
+ },
+ {
+  "claim": "At a cube corner (total angle 3 pi / 2) the Polthier-Schmies continuation leaves at 3 pi / 4 on both sides: its endpoint and the exact distance between its endpoints equal their closed forms, and the continued path is longer than that distance",
+  "evidence_status": "numerically_verified",
+  "measured": true,
+  "task_id": "T038",
+  "uncertainty": {
+   "basis": "double-precision rounding of unfoldings, angle sums and exact distances (largest disagreement with the closed forms observed below 1e-14)",
+   "kind": "roundoff",
+   "value": 1e-14
+  },
+  "unit": "normalized length",
+  "value": {
+   "endpoint_error": 1.6653345369377348e-16,
+   "exact_minus_closed_form": 4.440892098500626e-16,
+   "k": 4,
+   "starts": [
+    [
+     0.61,
+     0.23
+    ],
+    [
+     0.19,
+     0.53
+    ]
+   ],
+   "traced_minus_exact": [
+    0.08609791814910928,
+    0.08062202108752037
+   ]
+  }
+ },
+ {
+  "claim": "Through one vertex of total angle theta the Polthier-Schmies continuation ends at polar angle theta / 2 on both sides, where the exact distance from the start takes its closed form (and agrees with pygeodesic's exact MMP when installed), so the continued geodesic is shortest exactly when theta is at least 2 pi",
+  "evidence_status": "independently_verified",
+  "measured": true,
+  "task_id": "T038",
+  "uncertainty": {
+   "basis": "double-precision rounding of unfoldings, angle sums and exact distances (largest disagreement with the closed forms observed below 1e-14)",
+   "kind": "roundoff",
+   "value": 1e-14
+  },
+  "unit": "normalized length",
+  "value": {
+   "max_closed_form_error": 5.329070518200751e-15,
+   "shortest_path_through_vertex": [
+    false,
+    false,
+    true,
+    true,
+    true
+   ],
+   "total_angles_over_pi": [
+    1.5,
+    1.8,
+    2.0,
+    2.2,
+    2.5
+   ],
+   "traced_minus_exact": [
+    0.05990633290524505,
+    0.009694487787809236,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ {
+  "claim": "At a saddle vertex every end direction between the one-sided limits of the geodesics passing it is reached by a shortest path through the vertex, at a cone vertex none is, and the Polthier-Schmies continuation bisects the two limits",
+  "evidence_status": "numerically_verified",
+  "measured": true,
+  "task_id": "T038",
+  "uncertainty": {
+   "basis": "second-order terms of the lateral offset",
+   "kind": "truncation_bound",
+   "value": 1e-12
+  },
+  "unit": "rad",
+  "value": {
+   "continued_gap_ratio": 0.9999927243454568,
+   "ends_over_pi": [
+    0.3,
+    0.6,
+    0.9,
+    1.1,
+    1.3
+   ],
+   "first_order_offset": 2.2857142857142856e-06,
+   "one_sided_polar": [
+    [
+     1.570798612509183,
+     3.1415903678755073
+    ],
+    [
+     2.5132764085861212,
+     3.1415903678755073
+    ],
+    [
+     3.141594939304079,
+     3.1415903678755073
+    ],
+    [
+     3.769913470022038,
+     3.1415903678755095
+    ],
+    [
+     4.7123912660989715,
+     3.1415903678755077
+    ]
+   ],
+   "through_measured": [
+    [
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    [
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    [
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    [
+     false,
+     false,
+     false,
+     true,
+     false
+    ],
+    [
+     false,
+     false,
+     false,
+     true,
+     true
+    ]
+   ],
+   "total_angles_over_pi": [
+    1.5,
+    1.8,
+    2.0,
+    2.2,
+    2.5
+   ]
+  }
+ },
+ {
+  "claim": "Generic straightest geodesics on jittered icospheres pass through no vertex: none of the seeded traces crosses an edge within the vertex tolerance, near-vertex crossings occur at the uniform rate 2 tau per crossing, and crossings per trace grow like 1/h",
+  "evidence_status": "numerically_verified",
+  "measured": true,
+  "task_id": "T038",
+  "uncertainty": {
+   "basis": "one-sided 95% upper bound on the per-crossing vertex-hit probability from no hit in 22310 seeded crossings (-ln 0.05 / N, the rule of three)",
+   "kind": "monte_carlo_95ci",
+   "value": 0.0001342775559638723
+  },
+  "unit": null,
+  "value": {
+   "crossing_order": -1.0096829930558069,
+   "crossings": [
+    1479,
+    2950,
+    5937,
+    11944
+   ],
+   "expected_hits": 4.462e-05,
+   "levels": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "min_margin": 0.0002536231389291821,
+   "near": [
+    [
+     297,
+     40,
+     2,
+     0
+    ],
+    [
+     617,
+     58,
+     6,
+     0
+    ],
+    [
+     1157,
+     113,
+     7,
+     0
+    ],
+    [
+     2436,
+     238,
+     9,
+     0
+    ]
+   ],
+   "pooled_near_over_2tau": [
+    1.010085163603765,
+    1.0062752129090093,
+    0.5378753922008068,
+    0.0
+   ],
+   "taus": [
+    0.1,
+    0.01,
+    0.001,
+    0.0001
+   ],
+   "traces": [
+    200,
+    200,
+    200,
+    200
+   ],
+   "vertex_hits": 0
+  }
+ },
+ {
+  "claim": "Shortest paths back-traced from the exact solver's windows have the exact length, lie on the surface, run straight across every edge and bend only at saddle and reflex boundary vertices (and match pygeodesic's paths when installed)",
+  "evidence_status": "independently_verified",
+  "measured": true,
+  "task_id": "T038",
+  "uncertainty": {
+   "basis": "double-precision rounding of unfoldings, angle sums and exact distances (largest disagreement with the closed forms observed below 1e-14)",
+   "kind": "roundoff",
+   "value": 1e-14
+  },
+  "unit": "normalized length",
+  "value": {
+   "bends": {
+    "boundary": 4,
+    "cone": 0,
+    "flat": 0,
+    "saddle": 8
+   },
+   "max_length_error": 1.3322676295501878e-15,
+   "max_path_distance": 1.8708266857020518e-15,
+   "meshes": [
+    "icosphere-2-jitter0.1-s20261238",
+    "torus-24x12-jitter0.1-s20261239",
+    "l-shape-8",
+    "fan-6-2.5pi-inserted"
+   ],
+   "pairs": 72,
+   "vertices_on_paths": {
+    "boundary": 8,
+    "cone": 0,
+    "flat": 15,
+    "saddle": 8
+   }
+  }
+ },
+ {
+  "claim": "The first cut point of every declared straightest geodesic, where its length first exceeds the exact distance from its start, comes no later than the smallest isolated-cone prediction r sin(delta / 2) / sin(delta / 2 - phi) over the vertices it passes, and equals it when the digon between the trace and the other shortest path encloses one vertex",
+  "evidence_status": "independently_verified",
+  "measured": true,
+  "task_id": "T038",
+  "uncertainty": {
+   "basis": "largest cut-point resolution: the excess threshold 1e-12 over the excess slope, plus the bisection width",
+   "kind": "truncation_bound",
+   "value": 4.0444859674475117e-07
+  },
+  "unit": "normalized length",
+  "value": {
+   "cut": 15,
+   "cut_points": [
+    [
+     1,
+     2.0,
+     0,
+     1.4982522746293867,
+     1.4982522746344533,
+     1,
+     0.050601264701012914
+    ],
+    [
+     1,
+     2.0,
+     1,
+     1.3316623744480398,
+     1.331662374479008,
+     1,
+     0.07493399903333724
+    ],
+    [
+     1,
+     2.0,
+     2,
+     1.8628259596257144,
+     1.862825959628882,
+     1,
+     0.10616763199758318
+    ],
+    [
+     1,
+     2.0,
+     3,
+     null,
+     2.0666913715258164,
+     null,
+     0.13714503217579727
+    ],
+    [
+     1,
+     2.0,
+     4,
+     1.7725428827364333,
+     1.7725428827394114,
+     1,
+     0.10760537054250299
+    ],
+    [
+     1,
+     2.0,
+     5,
+     null,
+     6.151237491125951,
+     null,
+     0.31388884311576093
+    ],
+    [
+     2,
+     2.0,
+     0,
+     null,
+     2.0245237346062837,
+     null,
+     0.0595558319893408
+    ],
+    [
+     2,
+     2.0,
+     1,
+     1.4724455310548796,
+     1.4724455310745164,
+     1,
+     0.04235072318260636
+    ],
+    [
+     2,
+     2.0,
+     2,
+     null,
+     3.5596877774232256,
+     null,
+     0.10833045161349317
+    ],
+    [
+     2,
+     2.0,
+     3,
+     null,
+     2.374621626235002,
+     null,
+     0.07734058358021718
+    ],
+    [
+     2,
+     2.0,
+     4,
+     0.11290106070967741,
+     0.11290106264742998,
+     1,
+     0.0032393415523571095
+    ],
+    [
+     2,
+     2.0,
+     5,
+     1.1709509040694328,
+     1.3189570176010945,
+     2,
+     0.031613518282415966
+    ],
+    [
+     3,
+     2.0,
+     0,
+     0.43970695471273197,
+     0.4397069558492612,
+     1,
+     0.002766465649502353
+    ],
+    [
+     3,
+     2.0,
+     1,
+     1.0992784650474203,
+     1.0992784656797432,
+     1,
+     0.001075003718564073
+    ],
+    [
+     3,
+     2.0,
+     2,
+     null,
+     2.63640618510718,
+     null,
+     0.033794909082930986
+    ],
+    [
+     3,
+     2.0,
+     3,
+     1.166168623395108,
+     1.1661686239151798,
+     1,
+     0.010751510745522533
+    ],
+    [
+     3,
+     2.0,
+     4,
+     null,
+     2.7604080598524328,
+     null,
+     0.050679941256635636
+    ],
+    [
+     3,
+     2.0,
+     5,
+     null,
+     7.411978691681664,
+     null,
+     0.08530339607137988
+    ],
+    [
+     4,
+     2.0,
+     0,
+     0.563326734705913,
+     0.56332673815955,
+     1,
+     0.00398599661808183
+    ],
+    [
+     4,
+     2.0,
+     1,
+     0.8545776194328006,
+     0.8545776218291343,
+     1,
+     0.0014164210036881665
+    ],
+    [
+     4,
+     2.0,
+     2,
+     0.6646141177184551,
+     0.6646141193017572,
+     1,
+     0.005501395727087909
+    ],
+    [
+     4,
+     2.0,
+     3,
+     null,
+     null,
+     null,
+     null
+    ],
+    [
+     4,
+     2.0,
+     4,
+     null,
+     2.2104097476763482,
+     null,
+     0.016468462863009795
+    ],
+    [
+     4,
+     2.0,
+     5,
+     1.2011962927931534,
+     1.201196300309804,
+     1,
+     0.006607900884158697
+    ],
+    [
+     2,
+     1.0,
+     0,
+     null,
+     2.0245237346062837,
+     null,
+     0.0595558319893408
+    ],
+    [
+     2,
+     1.0,
+     1,
+     null,
+     1.4724455310745164,
+     null,
+     0.04235072318260636
+    ],
+    [
+     2,
+     1.0,
+     2,
+     null,
+     null,
+     null,
+     null
+    ],
+    [
+     2,
+     1.0,
+     3,
+     null,
+     null,
+     null,
+     null
+    ],
+    [
+     2,
+     1.0,
+     4,
+     0.11290106070967741,
+     0.11290106264742998,
+     1,
+     0.0032393415523571095
+    ],
+    [
+     2,
+     1.0,
+     5,
+     null,
+     1.3189570176010945,
+     null,
+     0.031613518282415966
+    ]
+   ],
+   "distinct_cut_points": 14,
+   "max_distance_error": 2.220446049250313e-15,
+   "max_resolution": 4.0444859674475117e-07,
+   "one_vertex_digons": 13,
+   "several_vertex_digons": 1,
+   "traces": 30,
+   "trigger_distance_over_h_by_level": {
+    "1": 0.10760537054250299,
+    "2": 0.04235072318260636,
+    "3": 0.010751510745522533,
+    "4": 0.006607900884158697
+   }
+  }
+ },
+ {
+  "claim": "A straightest geodesic can stop being shortest before every single vertex's isolated-cone prediction, when the digon between it and the other shortest path encloses several vertices",
+  "evidence_status": "numerically_verified",
+  "measured": true,
+  "task_id": "T038",
+  "uncertainty": {
+   "basis": "largest cut-point resolution",
+   "kind": "truncation_bound",
+   "value": 4.0444859674475117e-07
+  },
+  "unit": "normalized length",
+  "value": {
+   "traces": 1,
+   "witness": {
+    "cut_point": 1.1709509040694328,
+    "enclosed_defect": 0.15646146002302963,
+    "enclosed_vertices": [
+     92,
+     112
+    ],
+    "length": 2.0,
+    "level": 2,
+    "prediction": 1.3189570176010945,
+    "start": 5
+   }
   }
  },
  {
@@ -10337,7 +11492,7 @@
   }
  },
  {
-  "claim": "Every exercised identity shows its predicted derivation, freshness, binding and reopen properties on the offline paths",
+  "claim": "Every exercised identity shows its predicted derivation, freshness, binding and reopen properties",
   "evidence_status": "numerically_verified",
   "measured": true,
   "task_id": "T077",
@@ -10349,30 +11504,87 @@
   "unit": null,
   "value": {
    "derivation_classes": {
-    "absent": 2,
+    "absent": 1,
     "byte_hash": 2,
     "caller_declared": 4,
     "caller_declared_name": 1,
     "code_hash_plus_declared_versions": 1,
     "constant_name": 1,
-    "content_hash": 8,
+    "content_hash": 9,
     "content_hash / fresh_event_uuid": 1,
     "content_hash_of_fresh_occurrence": 2,
     "fresh_event_uuid": 5,
     "provider_declared": 1,
     "provider_pinned": 1,
-    "unkeyed_seal": 1
+    "unkeyed_seal": 2
    },
-   "exercised_rows": 28,
-   "properties": 97,
-   "properties_held": 97,
-   "rederived_properties": 11,
-   "reopen_stability_properties": 23,
-   "rows": 30,
+   "exercised_rows": 30,
+   "properties": 119,
+   "properties_held": 119,
+   "rederived_properties": 16,
+   "reopen_stability_properties": 25,
+   "rows": 31,
    "unexercised_rows": [
-    "ESM candidate_id / candidate execution_id",
-    "pinned-provider runtime identity (ciw.subprocess-runtime.v1)"
+    "ESM candidate_id / candidate execution_id"
    ]
+  }
+ },
+ {
+  "claim": "Oscillator operation results carry a content-level numerical_result_id that two executions with equal data share and that reopen recomputes from the retained numbers",
+  "evidence_status": "numerically_verified",
+  "measured": true,
+  "task_id": "T077",
+  "uncertainty": {
+   "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+   "kind": "exact",
+   "value": 0.0
+  },
+  "unit": null,
+  "value": {
+   "legacy_results_with_identity": 0,
+   "resealed_statistics_edit_on_reopen": "accepted",
+   "results_with_identity": 2,
+   "shared_by_equal_data": true,
+   "stale_identity_on_reopen": "Saved operation numerical_result_id differs from its data"
+  }
+ },
+ {
+  "claim": "The catalog's replay_receipt_seal binds each retained replay receipt to its bundle: a receipt deleted under a stale seal is refused on reopen, and the unkeyed seal recomputed or removed with it lets the deletion reopen",
+  "evidence_status": "numerically_verified",
+  "measured": true,
+  "task_id": "T077",
+  "uncertainty": {
+   "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+   "kind": "exact",
+   "value": 0.0
+  },
+  "unit": null,
+  "value": {
+   "deletions_on_reopen": {
+    "receipt.deleted": "Retained replay receipt seal differs",
+    "receipt.deleted-resealed": "accepted",
+    "receipt.deleted-seal-removed": "accepted"
+   },
+   "receipts_sealed": 1
+  }
+ },
+ {
+  "claim": "A saved telemetry workspace retains the host paths of the bound provider checkouts and interpreter in its runtime identities",
+  "evidence_status": "numerically_verified",
+  "measured": true,
+  "task_id": "T077",
+  "uncertainty": {
+   "basis": "exact equality of SHA-256 digests, bytes, counts, booleans or refusal strings; no rounding",
+   "kind": "exact",
+   "value": 0.0
+  },
+  "unit": null,
+  "value": {
+   "naming_the_bound_checkout_path": 8,
+   "naming_the_interpreter_path": 8,
+   "runtime_identities": 8,
+   "telemetry_bound_after_reopen": false,
+   "telemetry_bundles": 2
   }
  },
  {
@@ -11582,9 +12794,9 @@
   },
   "unit": null,
   "value": {
-   "generator_findings": 256,
+   "generator_findings": 272,
    "not_shown": 0,
-   "provider_findings": 19,
+   "provider_findings": 23,
    "reports_absent_of_T001_T099": 0,
    "reports_checked": 99
   }
@@ -16600,10 +17812,10 @@
    "value": 0
   },
   "unit": "counterexamples",
-  "value": 214
+  "value": 223
  },
  {
-  "claim": "Re-executed figure tasks regenerate their retained figures, byte-identical unless declared as wall-clock timing figures",
+  "claim": "Re-executed figure tasks regenerate their retained figures, byte-identical unless declared as wall-clock timing figures, which keep their series and points, or as rounding-level figures, whose recorded values agree within their rounding bounds",
   "evidence_status": "numerically_verified",
   "measured": true,
   "task_id": "T158",

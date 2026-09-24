@@ -457,13 +457,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/geodesic_jacobi_limits.py": "893d8b0240e673dd9aa7b5ba13b09958caa861706335726277d676def21aa83d",
-   "src/ciw/lab/geodesic_jacobi_limits_core.py": "0e0b8f85ed4e83c3fcdc866e8a7e580a17432e174b8db8d8277230e226473d7f"
+   "src/ciw/lab/geodesic_jacobi_limits.py": "14bc47662e88f42b396934ed5a6dc6b1bd2e16d023cfb9b13f6e78a98a3f1281",
+   "src/ciw/lab/geodesic_jacobi_limits_core.py": "e705a0dcd311d7aab77c29916512ec13847b7a8e1708310222755bf2df510c0e"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: resolvability-aware step selection: choose each method's step from the measured curvature-signal-to-integrator-error ratio and check that the lateral column and the conjugate-point locations (only j_head(L) is compared here) are then resolved on the weak-curvature paths (sensor-level resolvability needs a measured noise floor and is hardware-gated)",
- "report_id": "sha256:062cae40cad8a453081677f17c37ffa85fc3362d31a3bb97791692a7cd59ae91",
+ "report_id": "sha256:b9cdc19497f70344279660eb30c6284e4de527d737063c093cd0635cdb00fac0",
  "schema": "ciw.lab-task-report.v1",
  "section": "geodesic-jacobi",
  "state": "completed",

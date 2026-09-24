@@ -438,13 +438,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/exchange_provenance_bundles.py": "289185340068210691a0ccc526655eadb241855566c88003eedf97eef22b7085",
+   "src/ciw/lab/exchange_provenance_bundles.py": "f75ee7cccf320b68e75983ee2e5e974cea6a77e87f765cd22e8501ea04635007",
    "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "28f726a725f7219ef0afccd34545104b5dc0a36e27723281fe6bd1fbde467fa2"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: observe, rather than infer, replay refusal for the provider kinds other than numerical-heat by retaining a bundle of each from its bound provider (the telemetry stack pinned in src/ciw/telemetry-runtimes.json for telemetry bundles, and the calibrated-observable stack pinned in src/ciw/calibrated-observable-runtimes.json for calibrated-observable bundles, both of which reach the 'No operator-bound ESM candidate adapter' refusal) and replaying it in a reopened unbound session; and add example sources for acquired-calibrated-window, bim-quantity, identified-stability and residual-monitor so that their execution refusal is observed too.",
- "report_id": "sha256:c05333e5295f23af989043a08091ac4df597c70a68ca9a6111c188a7395d0d9f",
+ "report_id": "sha256:4bb43f6065c3c7932126b77ace73062f7c428b5e6cdae49135f84f214f0a4ab1",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "completed",

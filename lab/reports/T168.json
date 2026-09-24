@@ -253,9 +253,9 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 204874,
+   "bytes": 209228,
    "path": "artifacts/T168/regression-coverage.json",
-   "sha256": "8d67474ea0e9f649e40a82776e4bbed8c92d8cf8a02aaeb5d71fecc3b4063512"
+   "sha256": "783f72ccb2307cf9a9b181b87ee32119f73865889602a36ed5f1234861e6b439"
   }
  ],
  "hypothesis": "Every completed or partial experiment is backed by at least one registered pytest regression test that declares the task it guards and asserts its evidence labels, and those tests pass.",
@@ -266,7 +266,7 @@
  ],
  "mathematical_model": "Per task: registered node ids resolved against test functions (AST); a registration is declared when a lab_task marker on the test (its class, or its pytest.param case) names the task; a task is tied when one of its declared nodes asserts an evidence label (source text); marker declarations naming a task that does not register what they mark are counted; tied tasks whose tied tests never name the task are counted as advisory; JUnit outcomes per node as recorded in the reports.",
  "number": 168,
- "numerical_result": "168 tasks, 626 task-to-node registrations (387 distinct node ids), 626 declared by a lab_task marker; 0 registrations whose marker does not name the task; 0 marker declarations naming a task that does not register the test; 0 completed/partial tasks without regression tests; 0 dangling node ids; 0 tasks without a tied test; 0 tied tasks whose tied tests never name the task (advisory); JUnit: 624 passed, 0 failed, 0 skipped or not run, 2 not recorded (2 of them T168's own nodes, which its own run's record cannot hold).",
+ "numerical_result": "168 tasks, 641 task-to-node registrations (401 distinct node ids), 641 declared by a lab_task marker; 0 registrations whose marker does not name the task; 0 marker declarations naming a task that does not register the test; 0 completed/partial tasks without regression tests; 0 dangling node ids; 0 tasks without a tied test; 0 tied tasks whose tied tests never name the task (advisory); JUnit: 639 passed, 0 failed, 0 skipped or not run, 2 not recorded (2 of them T168's own nodes, which its own run's record cannot hold).",
  "observation_model": "No physical observation; reads retained computational records only.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -282,12 +282,12 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/research_portfolio.py": "36d03762abf5cb7a900d4572ec3f8aa8e7bc55cb61331711dce910a334b3acf8"
+   "src/ciw/lab/research_portfolio.py": "e495d96130ff4578b64c09537d871ac59cf727595bbec93f4bacfdad5ca7874d"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Record the evidence labels each lab_task-marked test asserts when it runs (for example as JUnit properties written by a fixture that wraps report access), so a label assertion is observed in the record rather than inferred from the test's source text.",
- "report_id": "sha256:f5aa5de8513f6d62c6be4e4b24938325d12eee2f8a9ef727c5c42c27d390640c",
+ "report_id": "sha256:3286c173b02d5a06fc2ada4288029d4b0c1112e4110ad192ac14789ebf11303a",
  "schema": "ciw.lab-task-report.v1",
  "section": "research-portfolio",
  "state": "completed",

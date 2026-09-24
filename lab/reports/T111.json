@@ -795,14 +795,14 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/lyapunov.py": "d343889fe69789b9551ef6e36029c1f969c6bf04c4cdb4618b9f506539831665",
+   "src/ciw/lab/lyapunov.py": "bac453e41cfaf4c8e83f82cc2eee826543cba08d732cba1e430a6a61fe2c1147",
    "src/ciw/lab/lyapunov_provider.py": "da3465b48b5f5efc47bfe6ab8379cf2cf2bc23e4835dc7ff047252e77fa6ef17",
    "src/ciw/lab/lyapunov_reference.py": "831ae8bd144c10e255cb9f2b54e0c219e2f98a59d01a07b5255046ae70b9b431"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: compare the scalar-quadratic and matrix-eigenvalue routes on near-marginal plants (stability margins below 0.05, excluded here) against exact rational references, where the two routes are most likely to disagree.",
- "report_id": "sha256:d5d55d9912602664821a99dbeecbf42e41bfb4f230b1b2cd7c48559ffdf180a0",
+ "report_id": "sha256:680c2d563f096c0310141ee240b4ca753d86e1e179d1794ef6e85662f2dcd4ab",
  "schema": "ciw.lab-task-report.v1",
  "section": "lyapunov",
  "state": "completed",

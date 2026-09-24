@@ -25,13 +25,16 @@
 | T083 | receipt.transplanted-resealed | workspace | energy bundle | local | killed | Retained energy analysis binding differs | Retained energy analysis binding differs | killed |
 | T083 | receipt.transplanted-full | workspace | energy bundle | full | accepted | accepted | accepted | SURVIVED |
 | T083 | receipt.fabricated | workspace | energy bundle | full | accepted | accepted | accepted | SURVIVED |
-| T083 | receipt.deleted | workspace | energy replay bundle | none | accepted | accepted | accepted | SURVIVED |
+| T083 | receipt.deleted | workspace | energy replay bundle | none | killed | Retained replay receipt seal differs | Retained replay receipt seal differs | killed |
+| T083 | receipt.deleted-resealed | workspace | energy replay bundle | full | accepted | accepted | accepted | SURVIVED |
+| T083 | receipt.deleted-seal-removed | workspace | energy replay bundle and catalog | none | accepted | accepted | accepted | SURVIVED |
 | T084 | receipt-source.naive | workspace | energy replay receipt | none | killed | Invalid retained energy replay receipt | Invalid retained energy replay receipt | killed |
 | T084 | receipt-source.replay-id | workspace | energy replay receipt | local | killed | Retained energy analysis binding differs | Retained energy analysis binding differs | killed |
 | T084 | receipt-source.subject-rebound | workspace | energy replay receipt | local | killed | Replay source must already belong to this workbench | Replay source must already belong to this workbench | killed |
 | T084 | receipt-source.self | workspace | energy replay receipt | local | killed | Invalid retained energy replay receipt | Invalid retained energy replay receipt | killed |
 | T084 | receipt-source.other-source | workspace | energy replay receipt | local | killed | Replay source must already belong to this workbench | Replay source must already belong to this workbench | killed |
-| T084 | receipt-source.sibling-execution | workspace | energy replay receipt | local | accepted | accepted | accepted | SURVIVED |
+| T084 | receipt-source.sibling-execution | workspace | energy replay receipt | local | killed | Retained replay receipt seal differs | Retained replay receipt seal differs | killed |
+| T084 | receipt-source.sibling-execution-resealed | workspace | energy replay receipt | full | accepted | accepted | accepted | SURVIVED |
 | T085 | receipt-replayed.naive | workspace | energy replay receipt | none | killed | Invalid retained energy replay receipt | Invalid retained energy replay receipt | killed |
 | T085 | receipt-replayed.replay-id | workspace | energy replay receipt | local | killed | Invalid retained energy replay receipt | Invalid retained energy replay receipt | killed |
 | T085 | receipt-replayed.source | workspace | energy replay receipt | local | killed | Invalid retained energy replay receipt | Invalid retained energy replay receipt | killed |

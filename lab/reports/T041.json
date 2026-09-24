@@ -1448,14 +1448,14 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/surfaces_discrete_mesh.py": "6d6f03cf6afcc2ecbdce3da635c4c38b96a3c77c0a6209c510b589b009c10c3b",
-   "src/ciw/lab/surfaces_discrete_mesh_geometry.py": "eb8124863335556f8aaa6f47f599a137f5925ef9210b5d7878bb8c7416a4dad3",
-   "src/ciw/lab/surfaces_discrete_mesh_studies.py": "1d274cab4fa8572f2304e3bff48b546936762ba151732df04f6bbae949f85086"
+   "src/ciw/lab/surfaces_discrete_mesh.py": "514826d79f459b5f623c1644a41835aeda4c6370aba67be523441bdb36183b76",
+   "src/ciw/lab/surfaces_discrete_mesh_geometry.py": "dae3df0a227a1cc31197bc16f38671287bfc38fbeb1959a2af68c056fd962199",
+   "src/ciw/lab/surfaces_discrete_mesh_studies.py": "fee3e580fbeadd2ce04c5110b08803566b668f077851d21ffa364ac48d07b60e"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: attribute geodesic and curvature errors per region (per-vertex error against local triangle quality) instead of summarizing each mesh by its worst triangle, and test whether the radius-ratio association holds within each mesh family separately (it is not positive within the latitude-longitude family).",
- "report_id": "sha256:9178171a216c67f2a2ff2a6809e9631eb1ac28433e20a4d3073ee333018b21cc",
+ "report_id": "sha256:61d9abc332c8a731aa512922ffc2227103ea1eda89dd57ca50ef5b127110a9e8",
  "schema": "ciw.lab-task-report.v1",
  "section": "surfaces-discrete",
  "state": "completed",

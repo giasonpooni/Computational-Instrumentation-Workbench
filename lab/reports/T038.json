@@ -10,18 +10,18 @@
   "counts": {
    "analytic": 0,
    "hardware_measured": 0,
-   "independently_verified": 3,
+   "independently_verified": 6,
    "not_established": 1,
-   "numerically_verified": 14,
+   "numerically_verified": 19,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "Planar and prism meshes are intrinsically flat, so traces must equal straight lines of the development and exact distances the shortest segments of the development (bent at the L-shape's reflex corner); cube corners are 1, sqrt 2 and sqrt 5 apart; exact distances are symmetric, change by at most an edge length along an edge, do not change when points are inserted as vertices and never exceed the length of any surface path; Steiner distances with nested point sets are nonincreasing in k, and every graph edge joins two points of one face.",
- "experiment": "Trace declared geodesics; compare with exact developments; re-derive lengths by a second ciw implementation (strip layout from edge lengths); compare Dijkstra with a dense Floyd-Warshall and, when installed, scipy.sparse.csgraph; test every Steiner-graph edge for a common face; compute exact distances on meshes with closed forms, from three sources on icospheres and a torus (compared with pygeodesic when installed) and between vertex pairs (compared with potpourri3d's FlipOut when installed); compare the edge graph, Steiner graphs, the heat method and traced lengths with them.",
+ "expected_invariant": "Planar and prism meshes are intrinsically flat, so traces, through vertices too, must equal straight lines of the development and exact distances the shortest segments of the development (bent at the L-shape's reflex corner); cube corners are 1, sqrt 2 and sqrt 5 apart; exact distances are symmetric, change by at most an edge length along an edge, do not change when points are inserted as vertices and never exceed the length of any surface path; Steiner distances with nested point sets are nonincreasing in k, and every graph edge joins two points of one face; a back-traced shortest path has the exact length, lies on the surface and is straight except at saddle and reflex boundary vertices; the excess of a trace's length over the exact distance from its start never decreases.",
+ "experiment": "Trace declared geodesics; compare with exact developments; re-derive lengths by a second ciw implementation (strip layout from edge lengths); compare Dijkstra with a dense Floyd-Warshall and, when installed, scipy.sparse.csgraph; test every Steiner-graph edge for a common face; compute exact distances on meshes with closed forms, from three sources on icospheres and a torus (compared with pygeodesic when installed) and between vertex pairs (compared with potpourri3d's FlipOut when installed); compare the edge graph, Steiner graphs, the heat method and traced lengths with them. Continue traces through flat, cone and saddle vertices and compare with closed forms and exact distances; count vertex hits of seeded generic traces on jittered meshes; back-trace shortest paths between seeded vertex pairs and check them without the solver (and against pygeodesic's paths when installed); locate each declared trace's cut point from the exact distances along it, back-trace the other shortest path there and count the vertices between the two.",
  "failure_modes_checked": [
-  "vertex hits (refused, none occurred in the declared set)",
+  "vertex hits of the declared sphere traces (refused, none occurred)",
   "boundary reached",
   "tracing through a face without an exit edge",
   "strip unfolding sign conventions",
@@ -31,7 +31,14 @@
   "rays through vertices on regular grids (planes, cylinders, cube)",
   "points inserted inside a face and on an edge",
   "scipy absent (Floyd-Warshall only; the Dijkstra finding is then numerically_verified)",
-  "pygeodesic or potpourri3d absent (their findings then rest on the same-origin checks and are numerically_verified)"
+  "pygeodesic or potpourri3d absent (their findings then rest on the same-origin checks and are numerically_verified)",
+  "traces continued through flat vertices, along rows of vertices and along mesh edges, and started at a vertex",
+  "continuation through cone (cube corner, fans) and saddle vertices, and its reversal",
+  "tied shortest paths on symmetric meshes (the back-traced paths are compared on generic jittered meshes, and on the L-shape and the saddle fan, which are simply connected and nonpositively curved, so that their shortest paths are unique)",
+  "straight passes through vertices, which the back-trace lists or not by a rounding tie (counted geometrically, as vertices on the path)",
+  "path points at vertices (side angles around the fan) and on edges (turn across the edge)",
+  "cut points past the last edge crossing of a trace",
+  "digons enclosing several vertices"
  ],
  "findings": [
   {
@@ -197,7 +204,7 @@
      "producer": {
       "implementation": "ciw.lab.surfaces_discrete_mesh_geometry.dijkstra",
       "revision": "ciw 0.1.0",
-      "source_sha256": "eb8124863335556f8aaa6f47f599a137f5925ef9210b5d7878bb8c7416a4dad3"
+      "source_sha256": "dae3df0a227a1cc31197bc16f38671287bfc38fbeb1959a2af68c056fd962199"
      },
      "reference": "scipy.sparse.csgraph.dijkstra on the same icosphere-3 edge weights (equal up to summation order)",
      "reference_kind": "exact_arithmetic",
@@ -642,7 +649,7 @@
      "producer": {
       "implementation": "ciw.lab.surfaces_discrete_mesh_exact.ExactGeodesic",
       "revision": "ciw 0.1.0",
-      "source_sha256": "a1e500e5792e8cd3f788c4a4f2f7df2cd2c4a2d6d1b712d4cbb68f8daa09291a"
+      "source_sha256": "1c02b7d6609a6182d6fea7a2fb9cebf9a6b287f03f3d0bc49e47a12fa92c54c1"
      },
      "reference": "pygeodesic.geodesic.PyGeodesicAlgorithmExact (Kirsanov's exact MMP) from the same sources to every vertex of the same 5 meshes (equal up to rounding)",
      "reference_kind": "exact_arithmetic",
@@ -731,7 +738,7 @@
      "producer": {
       "implementation": "ciw.lab.surfaces_discrete_mesh_exact.ExactGeodesic",
       "revision": "ciw 0.1.0",
-      "source_sha256": "a1e500e5792e8cd3f788c4a4f2f7df2cd2c4a2d6d1b712d4cbb68f8daa09291a"
+      "source_sha256": "1c02b7d6609a6182d6fea7a2fb9cebf9a6b287f03f3d0bc49e47a12fa92c54c1"
      },
      "reference": "potpourri3d.EdgeFlipGeodesicSolver (FlipOut) geodesic length minus exact distance over the same 3267 pairs, plus a 1e-12 rounding allowance (a locally shortest path is never shorter than a shortest one)",
      "reference_kind": "invariant",
@@ -1104,6 +1111,1173 @@
   {
    "assigned_by": "ciw.lab.evidence",
    "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 4.440892098500626e-16,
+      "passed": true,
+      "reference": "largest endpoint distance from the straight line of the development (planar grids, a sheared grid and a prism cylinder, aimed at vertices and along rows of vertices)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "fewest vertices a trace passed through",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     }
+    ],
+    "generator": {
+     "meshes": [
+      "plane-8x8",
+      "prism-cylinder-16x10"
+     ],
+     "name": "ciw.lab.surfaces_discrete_mesh_studies.continuation_study"
+    }
+   },
+   "claim": "Straightest geodesics continued through flat vertices by the Polthier-Schmies rule stay straight lines of the development on planar and prism-cylinder meshes",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "double-precision rounding of unfoldings, angle sums and exact distances (largest disagreement with the closed forms observed below 1e-14)",
+    "kind": "roundoff",
+    "value": 1e-14
+   },
+   "unit": "normalized length",
+   "value": {
+    "max_error": 4.440892098500626e-16,
+    "traces": 9,
+    "vertices_passed": [
+     1,
+     2,
+     1,
+     1,
+     4,
+     5,
+     2,
+     6,
+     2
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 1.6653345369377348e-16,
+      "passed": true,
+      "reference": "largest endpoint distance from (0, r2 cos(pi/4 + gamma), r2 sin(pi/4 + gamma)) (or its mirror image) for a ray arriving at angle gamma from the x axis",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 4.440892098500626e-16,
+      "passed": true,
+      "reference": "largest |exact distance - sqrt(r1^2 + r2^2 - 2 r1 r2 cos(3 pi / 4))| (the endpoint is reached around both sides of the corner)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "signed_ge",
+      "observed": 0.08062202108752037,
+      "passed": true,
+      "reference": "smallest continued length minus exact distance (closed form about 0.08)",
+      "reference_kind": "analytic",
+      "tolerance": 0.001
+     }
+    ],
+    "generator": {
+     "k": 4,
+     "name": "ciw.lab.surfaces_discrete_mesh_geometry.cube_mesh",
+     "run": 0.5,
+     "starts": [
+      [
+       0.61,
+       0.23
+      ],
+      [
+       0.19,
+       0.53
+      ]
+     ]
+    }
+   },
+   "claim": "At a cube corner (total angle 3 pi / 2) the Polthier-Schmies continuation leaves at 3 pi / 4 on both sides: its endpoint and the exact distance between its endpoints equal their closed forms, and the continued path is longer than that distance",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "double-precision rounding of unfoldings, angle sums and exact distances (largest disagreement with the closed forms observed below 1e-14)",
+    "kind": "roundoff",
+    "value": 1e-14
+   },
+   "unit": "normalized length",
+   "value": {
+    "endpoint_error": 1.6653345369377348e-16,
+    "exact_minus_closed_form": 4.440892098500626e-16,
+    "k": 4,
+    "starts": [
+     [
+      0.61,
+      0.23
+     ],
+     [
+      0.19,
+      0.53
+     ]
+    ],
+    "traced_minus_exact": [
+     0.08609791814910928,
+     0.08062202108752037
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 1.2212453270876722e-15,
+      "passed": true,
+      "reference": "largest |exact distance - sqrt(r1^2 + r2^2 - 2 r1 r2 cos(min(phi, theta - phi, pi)))| from the start to the continued endpoint and to points at five polar angles phi (ciw window propagation)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 4.440892098500626e-16,
+      "passed": true,
+      "reference": "largest |polar angle of the continued endpoint - theta / 2| and |its distance from the vertex - r2|",
+      "reference_kind": "analytic",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 2.498001805406602e-16,
+      "passed": true,
+      "reference": "largest distance from the start of the trace run back from the endpoint (the rule is symmetric)",
+      "reference_kind": "invariant",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "fans where the continued path is a shortest path (within 1e-10) exactly when theta is not below 2 pi, counted as mismatches",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "validation issues of the fans",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "name": "ciw.lab.surfaces_discrete_mesh_geometry.fan_mesh",
+     "radii": [
+      0.45,
+      0.35
+     ],
+     "total_angles_over_pi": [
+      1.5,
+      1.8,
+      2.0,
+      2.2,
+      2.5
+     ],
+     "triangles": 6
+    },
+    "independent_check": {
+     "checker": {
+      "implementation": "pygeodesic.geodesic.PyGeodesicAlgorithmExact",
+      "revision": "0.1.11"
+     },
+     "comparison": "abs_le",
+     "observed": 5.329070518200751e-15,
+     "passed": true,
+     "producer": {
+      "implementation": "ciw.lab.surfaces_discrete_mesh_geometry.trace",
+      "revision": "ciw 0.1.0",
+      "source_sha256": "dae3df0a227a1cc31197bc16f38671287bfc38fbeb1959a2af68c056fd962199"
+     },
+     "reference": "pygeodesic.geodesic.PyGeodesicAlgorithmExact (Kirsanov's exact MMP) distances from the start to the continued endpoints and the grid points on the same fans, against the closed form",
+     "reference_kind": "analytic",
+     "tolerance": 1e-12
+    }
+   },
+   "claim": "Through one vertex of total angle theta the Polthier-Schmies continuation ends at polar angle theta / 2 on both sides, where the exact distance from the start takes its closed form (and agrees with pygeodesic's exact MMP when installed), so the continued geodesic is shortest exactly when theta is at least 2 pi",
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check",
+    "reference_checks",
+    "synthetic_inputs"
+   ],
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "double-precision rounding of unfoldings, angle sums and exact distances (largest disagreement with the closed forms observed below 1e-14)",
+    "kind": "roundoff",
+    "value": 1e-14
+   },
+   "unit": "normalized length",
+   "value": {
+    "max_closed_form_error": 5.329070518200751e-15,
+    "shortest_path_through_vertex": [
+     false,
+     false,
+     true,
+     true,
+     true
+    ],
+    "total_angles_over_pi": [
+     1.5,
+     1.8,
+     2.0,
+     2.2,
+     2.5
+    ],
+    "traced_minus_exact": [
+     0.05990633290524505,
+     0.009694487787809236,
+     0.0,
+     0.0,
+     0.0
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "end points at polar angle phi from the start with a shortest path through the vertex (exact distance r1 + r2 within 1e-10) where min(phi, theta - phi) < pi, or none where it is at least pi, counted as mismatches",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 1.0173471325081434e-15,
+      "passed": true,
+      "reference": "largest |deviation of the one-sided endpoints from polar angles pi and theta - pi - epsilon (r1 + r2) / r2| for rays aimed epsilon r1 beside the vertex (first order in epsilon)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-09
+     },
+     {
+      "comparison": "ge",
+      "observed": 0.9999927243454568,
+      "passed": true,
+      "reference": "smallest |polar angle of the continued endpoint - the nearer one-sided endpoint| over the cone and saddle fans, divided by |2 pi - theta| / 2 (the continuation is the limit of neither side)",
+      "reference_kind": "analytic",
+      "tolerance": 0.5
+     }
+    ],
+    "generator": {
+     "name": "ciw.lab.surfaces_discrete_mesh_studies.fan_study",
+     "offset": 1e-06,
+     "triangles": 6
+    }
+   },
+   "claim": "At a saddle vertex every end direction between the one-sided limits of the geodesics passing it is reached by a shortest path through the vertex, at a cone vertex none is, and the Polthier-Schmies continuation bisects the two limits",
+   "counterexample": {
+    "statement": "A straightest geodesic through a vertex is the limit of the straightest geodesics that pass it on either side",
+    "witness": {
+     "continued_polar": 2.356194490192345,
+     "one_sided_polar": [
+      1.570798612509183,
+      3.1415903678755073
+     ],
+     "total_angle_over_pi": 1.5
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "second-order terms of the lateral offset",
+    "kind": "truncation_bound",
+    "value": 1e-12
+   },
+   "unit": "rad",
+   "value": {
+    "continued_gap_ratio": 0.9999927243454568,
+    "ends_over_pi": [
+     0.3,
+     0.6,
+     0.9,
+     1.1,
+     1.3
+    ],
+    "first_order_offset": 2.2857142857142856e-06,
+    "one_sided_polar": [
+     [
+      1.570798612509183,
+      3.1415903678755073
+     ],
+     [
+      2.5132764085861212,
+      3.1415903678755073
+     ],
+     [
+      3.141594939304079,
+      3.1415903678755073
+     ],
+     [
+      3.769913470022038,
+      3.1415903678755095
+     ],
+     [
+      4.7123912660989715,
+      3.1415903678755077
+     ]
+    ],
+    "through_measured": [
+     [
+      false,
+      false,
+      false,
+      false,
+      false
+     ],
+     [
+      false,
+      false,
+      false,
+      false,
+      false
+     ],
+     [
+      false,
+      false,
+      false,
+      false,
+      false
+     ],
+     [
+      false,
+      false,
+      false,
+      true,
+      false
+     ],
+     [
+      false,
+      false,
+      false,
+      true,
+      true
+     ]
+    ],
+    "total_angles_over_pi": [
+     1.5,
+     1.8,
+     2.0,
+     2.2,
+     2.5
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "edge crossings within the vertex tolerance 1e-09 (continued by the rule)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "le",
+      "observed": 0.010085163603765102,
+      "passed": true,
+      "reference": "largest |crossings within tau of a vertex / (2 tau crossings) - 1| for tau = 0.1, 0.01 (uniform edge parameter near the ends)",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.2
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.009682993055806888,
+      "passed": true,
+      "reference": "fitted order of crossings per trace against h, plus 1",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.1
+     }
+    ],
+    "generator": {
+     "amplitude": 0.1,
+     "length": 1.0,
+     "levels": [
+      2,
+      3,
+      4,
+      5
+     ],
+     "name": "ciw.lab.surfaces_discrete_mesh_studies.vertex_hit_study",
+     "seed": 20261138,
+     "traces": 200
+    }
+   },
+   "claim": "Generic straightest geodesics on jittered icospheres pass through no vertex: none of the seeded traces crosses an edge within the vertex tolerance, near-vertex crossings occur at the uniform rate 2 tau per crossing, and crossings per trace grow like 1/h",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "one-sided 95% upper bound on the per-crossing vertex-hit probability from no hit in 22310 seeded crossings (-ln 0.05 / N, the rule of three)",
+    "kind": "monte_carlo_95ci",
+    "value": 0.0001342775559638723
+   },
+   "unit": null,
+   "value": {
+    "crossing_order": -1.0096829930558069,
+    "crossings": [
+     1479,
+     2950,
+     5937,
+     11944
+    ],
+    "expected_hits": 4.462e-05,
+    "levels": [
+     2,
+     3,
+     4,
+     5
+    ],
+    "min_margin": 0.0002536231389291821,
+    "near": [
+     [
+      297,
+      40,
+      2,
+      0
+     ],
+     [
+      617,
+      58,
+      6,
+      0
+     ],
+     [
+      1157,
+      113,
+      7,
+      0
+     ],
+     [
+      2436,
+      238,
+      9,
+      0
+     ]
+    ],
+    "pooled_near_over_2tau": [
+     1.010085163603765,
+     1.0062752129090093,
+     0.5378753922008068,
+     0.0
+    ],
+    "taus": [
+     0.1,
+     0.01,
+     0.001,
+     0.0001
+    ],
+    "traces": [
+     200,
+     200,
+     200,
+     200
+    ],
+    "vertex_hits": 0
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 1.3322676295501878e-15,
+      "passed": true,
+      "reference": "largest |back-traced polyline length - exact distance|",
+      "reference_kind": "invariant",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "path segments not inside the face they are assigned to (point-in-face test: plane offset and barycentric coordinates within 1e-12)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "le",
+      "observed": 1.412203687323199e-13,
+      "passed": true,
+      "reference": "largest turn across an edge, |a1 + a2 - pi| between the segments and the edge",
+      "reference_kind": "invariant",
+      "tolerance": 1e-09
+     },
+     {
+      "comparison": "signed_ge",
+      "observed": -1.3322676295501878e-15,
+      "passed": true,
+      "reference": "smallest angle between the segments at a vertex on either side (the inside at a boundary vertex) minus pi",
+      "reference_kind": "invariant",
+      "tolerance": -1e-09
+     },
+     {
+      "comparison": "le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "bends at cone or flat vertices",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 4.0,
+      "passed": true,
+      "reference": "fewer bends at saddle vertices or at boundary vertices than one (both kinds exercised)",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "le",
+      "observed": 1.8708266857020518e-15,
+      "passed": true,
+      "reference": "largest distance between the path and the path back-traced from the other end",
+      "reference_kind": "invariant",
+      "tolerance": 1e-09
+     }
+    ],
+    "generator": {
+     "meshes": [
+      "icosphere-2-jitter0.1-s20261238",
+      "torus-24x12-jitter0.1-s20261239",
+      "l-shape-8",
+      "fan-6-2.5pi-inserted"
+     ],
+     "name": "ciw.lab.surfaces_discrete_mesh_studies.path_study",
+     "seed": 20261248,
+     "sources": 3,
+     "targets": 6
+    },
+    "independent_check": {
+     "checker": {
+      "implementation": "pygeodesic.geodesic.PyGeodesicAlgorithmExact",
+      "revision": "0.1.11"
+     },
+     "comparison": "le",
+     "observed": 1.8392257889042202e-15,
+     "passed": true,
+     "producer": {
+      "implementation": "ciw.lab.surfaces_discrete_mesh_exact.Propagation.path",
+      "revision": "ciw 0.1.0",
+      "source_sha256": "1c02b7d6609a6182d6fea7a2fb9cebf9a6b287f03f3d0bc49e47a12fa92c54c1"
+     },
+     "reference": "pygeodesic.geodesic.PyGeodesicAlgorithmExact.geodesicDistance paths between the same vertex pairs: largest distance from a point of either polyline to the other",
+     "reference_kind": "exact_arithmetic",
+     "tolerance": 1e-09
+    }
+   },
+   "claim": "Shortest paths back-traced from the exact solver's windows have the exact length, lie on the surface, run straight across every edge and bend only at saddle and reflex boundary vertices (and match pygeodesic's paths when installed)",
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check",
+    "reference_checks",
+    "synthetic_inputs"
+   ],
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "double-precision rounding of unfoldings, angle sums and exact distances (largest disagreement with the closed forms observed below 1e-14)",
+    "kind": "roundoff",
+    "value": 1e-14
+   },
+   "unit": "normalized length",
+   "value": {
+    "bends": {
+     "boundary": 4,
+     "cone": 0,
+     "flat": 0,
+     "saddle": 8
+    },
+    "max_length_error": 1.3322676295501878e-15,
+    "max_path_distance": 1.8708266857020518e-15,
+    "meshes": [
+     "icosphere-2-jitter0.1-s20261238",
+     "torus-24x12-jitter0.1-s20261239",
+     "l-shape-8",
+     "fan-6-2.5pi-inserted"
+    ],
+    "pairs": 72,
+    "vertices_on_paths": {
+     "boundary": 8,
+     "cone": 0,
+     "flat": 15,
+     "saddle": 8
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "signed_le",
+      "observed": 4.440892098500626e-16,
+      "passed": true,
+      "reference": "largest decrease of the excess of traced length over the exact distance from one sample to the next (it never decreases along a geodesic)",
+      "reference_kind": "invariant",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 1.1102230246251565e-15,
+      "passed": true,
+      "reference": "largest |window-evaluated distance at the endpoint - the endpoint vertex's distance|",
+      "reference_kind": "invariant",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "le",
+      "observed": 0.0,
+      "passed": true,
+      "reference": "traces with a cut point that the endpoint distance calls shortest, or without one that it does not",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 13.0,
+      "passed": true,
+      "reference": "distinct cut points whose digon encloses exactly one vertex",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "signed_le",
+      "observed": -2.988023726040732e-11,
+      "passed": true,
+      "reference": "largest |isolated-cone prediction - cut point| minus the cut point's resolution, over digons enclosing one vertex",
+      "reference_kind": "analytic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "signed_le",
+      "observed": -4.001346485076605e-11,
+      "passed": true,
+      "reference": "largest cut point minus the smallest isolated-cone prediction, minus the resolution",
+      "reference_kind": "analytic",
+      "tolerance": 0.0
+     },
+     {
+      "comparison": "signed_ge",
+      "observed": 0.024523734606283654,
+      "passed": true,
+      "reference": "smallest isolated-cone prediction minus the trace length over traces without a cut point",
+      "reference_kind": "analytic",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "configs": [
+      [
+       1,
+       2.0
+      ],
+      [
+       2,
+       2.0
+      ],
+      [
+       3,
+       2.0
+      ],
+      [
+       4,
+       2.0
+      ],
+      [
+       2,
+       1.0
+      ]
+     ],
+     "cut_excess": 1e-12,
+     "name": "ciw.lab.surfaces_discrete_mesh_studies.traced_exact_study"
+    },
+    "independent_check": {
+     "checker": {
+      "implementation": "pygeodesic.geodesic.PyGeodesicAlgorithmExact",
+      "revision": "0.1.11"
+     },
+     "comparison": "signed_ge",
+     "observed": 9.986677323704498e-13,
+     "passed": true,
+     "producer": {
+      "implementation": "ciw.lab.surfaces_discrete_mesh_exact.Propagation.distance_at",
+      "revision": "ciw 0.1.0",
+      "source_sha256": "1c02b7d6609a6182d6fea7a2fb9cebf9a6b287f03f3d0bc49e47a12fa92c54c1"
+     },
+     "reference": "pygeodesic.geodesic.PyGeodesicAlgorithmExact distances from the start to the trace points 10 resolutions before and after each of the 14 distinct cut points, each inserted as a vertex alone: the smaller of 1e-12 minus the excess of the traced length over them before the cut point and that excess minus 1e-12 after it (the cut point bracketed independently)",
+     "reference_kind": "exact_arithmetic",
+     "tolerance": 0.0
+    }
+   },
+   "claim": "The first cut point of every declared straightest geodesic, where its length first exceeds the exact distance from its start, comes no later than the smallest isolated-cone prediction r sin(delta / 2) / sin(delta / 2 - phi) over the vertices it passes, and equals it when the digon between the trace and the other shortest path encloses one vertex",
+   "domain": "numerical",
+   "evidence_status": "independently_verified",
+   "origin": [
+    "independent_check",
+    "reference_checks",
+    "synthetic_inputs"
+   ],
+   "regression_tolerance": {
+    "abs": 1e-08,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "largest cut-point resolution: the excess threshold 1e-12 over the excess slope, plus the bisection width",
+    "kind": "truncation_bound",
+    "value": 4.0444859674475117e-07
+   },
+   "unit": "normalized length",
+   "value": {
+    "cut": 15,
+    "cut_points": [
+     [
+      1,
+      2.0,
+      0,
+      1.4982522746293867,
+      1.4982522746344533,
+      1,
+      0.050601264701012914
+     ],
+     [
+      1,
+      2.0,
+      1,
+      1.3316623744480398,
+      1.331662374479008,
+      1,
+      0.07493399903333724
+     ],
+     [
+      1,
+      2.0,
+      2,
+      1.8628259596257144,
+      1.862825959628882,
+      1,
+      0.10616763199758318
+     ],
+     [
+      1,
+      2.0,
+      3,
+      null,
+      2.0666913715258164,
+      null,
+      0.13714503217579727
+     ],
+     [
+      1,
+      2.0,
+      4,
+      1.7725428827364333,
+      1.7725428827394114,
+      1,
+      0.10760537054250299
+     ],
+     [
+      1,
+      2.0,
+      5,
+      null,
+      6.151237491125951,
+      null,
+      0.31388884311576093
+     ],
+     [
+      2,
+      2.0,
+      0,
+      null,
+      2.0245237346062837,
+      null,
+      0.0595558319893408
+     ],
+     [
+      2,
+      2.0,
+      1,
+      1.4724455310548796,
+      1.4724455310745164,
+      1,
+      0.04235072318260636
+     ],
+     [
+      2,
+      2.0,
+      2,
+      null,
+      3.5596877774232256,
+      null,
+      0.10833045161349317
+     ],
+     [
+      2,
+      2.0,
+      3,
+      null,
+      2.374621626235002,
+      null,
+      0.07734058358021718
+     ],
+     [
+      2,
+      2.0,
+      4,
+      0.11290106070967741,
+      0.11290106264742998,
+      1,
+      0.0032393415523571095
+     ],
+     [
+      2,
+      2.0,
+      5,
+      1.1709509040694328,
+      1.3189570176010945,
+      2,
+      0.031613518282415966
+     ],
+     [
+      3,
+      2.0,
+      0,
+      0.43970695471273197,
+      0.4397069558492612,
+      1,
+      0.002766465649502353
+     ],
+     [
+      3,
+      2.0,
+      1,
+      1.0992784650474203,
+      1.0992784656797432,
+      1,
+      0.001075003718564073
+     ],
+     [
+      3,
+      2.0,
+      2,
+      null,
+      2.63640618510718,
+      null,
+      0.033794909082930986
+     ],
+     [
+      3,
+      2.0,
+      3,
+      1.166168623395108,
+      1.1661686239151798,
+      1,
+      0.010751510745522533
+     ],
+     [
+      3,
+      2.0,
+      4,
+      null,
+      2.7604080598524328,
+      null,
+      0.050679941256635636
+     ],
+     [
+      3,
+      2.0,
+      5,
+      null,
+      7.411978691681664,
+      null,
+      0.08530339607137988
+     ],
+     [
+      4,
+      2.0,
+      0,
+      0.563326734705913,
+      0.56332673815955,
+      1,
+      0.00398599661808183
+     ],
+     [
+      4,
+      2.0,
+      1,
+      0.8545776194328006,
+      0.8545776218291343,
+      1,
+      0.0014164210036881665
+     ],
+     [
+      4,
+      2.0,
+      2,
+      0.6646141177184551,
+      0.6646141193017572,
+      1,
+      0.005501395727087909
+     ],
+     [
+      4,
+      2.0,
+      3,
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      4,
+      2.0,
+      4,
+      null,
+      2.2104097476763482,
+      null,
+      0.016468462863009795
+     ],
+     [
+      4,
+      2.0,
+      5,
+      1.2011962927931534,
+      1.201196300309804,
+      1,
+      0.006607900884158697
+     ],
+     [
+      2,
+      1.0,
+      0,
+      null,
+      2.0245237346062837,
+      null,
+      0.0595558319893408
+     ],
+     [
+      2,
+      1.0,
+      1,
+      null,
+      1.4724455310745164,
+      null,
+      0.04235072318260636
+     ],
+     [
+      2,
+      1.0,
+      2,
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      2,
+      1.0,
+      3,
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      2,
+      1.0,
+      4,
+      0.11290106070967741,
+      0.11290106264742998,
+      1,
+      0.0032393415523571095
+     ],
+     [
+      2,
+      1.0,
+      5,
+      null,
+      1.3189570176010945,
+      null,
+      0.031613518282415966
+     ]
+    ],
+    "distinct_cut_points": 14,
+    "max_distance_error": 2.220446049250313e-15,
+    "max_resolution": 4.0444859674475117e-07,
+    "one_vertex_digons": 13,
+    "several_vertex_digons": 1,
+    "traces": 30,
+    "trigger_distance_over_h_by_level": {
+     "1": 0.10760537054250299,
+     "2": 0.04235072318260636,
+     "3": 0.010751510745522533,
+     "4": 0.006607900884158697
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "ge",
+      "observed": 1.0,
+      "passed": true,
+      "reference": "cut points whose digon encloses more than one vertex",
+      "reference_kind": "exact_arithmetic",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "signed_ge",
+      "observed": 0.14800611319317045,
+      "passed": true,
+      "reference": "smallest isolated-cone prediction minus cut point, minus the resolution, over those",
+      "reference_kind": "analytic",
+      "tolerance": 0.0
+     }
+    ],
+    "generator": {
+     "configs": [
+      [
+       1,
+       2.0
+      ],
+      [
+       2,
+       2.0
+      ],
+      [
+       3,
+       2.0
+      ],
+      [
+       4,
+       2.0
+      ],
+      [
+       2,
+       1.0
+      ]
+     ],
+     "cut_excess": 1e-12,
+     "name": "ciw.lab.surfaces_discrete_mesh_studies.traced_exact_study"
+    }
+   },
+   "claim": "A straightest geodesic can stop being shortest before every single vertex's isolated-cone prediction, when the digon between it and the other shortest path encloses several vertices",
+   "counterexample": {
+    "statement": "The first cut point of a straightest geodesic on a convex polyhedral surface is where it crosses the cut ray of one vertex, as if that vertex carried all the curvature",
+    "witness": {
+     "cut_point": 1.1709509040694328,
+     "enclosed_vertices": [
+      92,
+      112
+     ],
+     "level": 2,
+     "prediction": 1.3189570176010945,
+     "start": 5
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
+   "regression_tolerance": {
+    "abs": 1e-08,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "largest cut-point resolution",
+    "kind": "truncation_bound",
+    "value": 4.0444859674475117e-07
+   },
+   "unit": "normalized length",
+   "value": {
+    "traces": 1,
+    "witness": {
+     "cut_point": 1.1709509040694328,
+     "enclosed_defect": 0.15646146002302963,
+     "enclosed_vertices": [
+      92,
+      112
+     ],
+     "length": 2.0,
+     "level": 2,
+     "prediction": 1.3189570176010945,
+     "start": 5
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
     "notes": "No scanned surface, device or calibration was acquired; the computation is synthetic."
    },
    "claim": "Straightest geodesics on a mesh reconstructed from a real scan reproduce the geodesics of the scanned physical surface",
@@ -1132,24 +2306,37 @@
    "sha256": "cff30fee0d3bec714603a5c939df81fc01dbb5e2e26b5db9034036345af5e892"
   },
   {
-   "bytes": 12715,
+   "bytes": 41902,
    "path": "artifacts/T038/exact-distances.json",
-   "sha256": "a2352136d4d794358a9fcb24d371413a5ef5b18aaf5bc58df75a05bc612c2765"
+   "sha256": "77f544c0bb5d1e523c6326187380a6496e31e4b0704a85e122258620726f5a20"
+  },
+  {
+   "bytes": 8898,
+   "path": "artifacts/T038/vertex-continuation.json",
+   "sha256": "6329aa39b77b23a353b2640454d7bceb9610e901c65a66a4cfec16c87332e689"
+  },
+  {
+   "bytes": 73988,
+   "path": "artifacts/T038/shortest-paths.json",
+   "sha256": "a3258db0bfa621b2113b0fcb33f48d98831853a5669495520d714be3f5ee0df2"
   }
  ],
- "hypothesis": "Unfolding across edges (straight in faces, equal angles at edges) yields exact straightest geodesics on developable meshes. Window propagation (Chen-Han with the Xin-Wang priority queue, saddle, reflex-boundary and flat pseudo-sources and pruning against vertex distances) yields the exact polyhedral distance, the length of the globally shortest surface path, so that edge-graph, Steiner-graph and locally shortest paths never fall below it; whether traced straightest geodesics shorter than pi are shortest paths is tested against it.",
+ "hypothesis": "Unfolding across edges (straight in faces, equal angles at edges) yields exact straightest geodesics on developable meshes, and continuing through a vertex with half its total angle on each side (the Polthier-Schmies rule) keeps them straight lines of the development through flat vertices. Window propagation (Chen-Han with the Xin-Wang priority queue, saddle, reflex-boundary and flat pseudo-sources and pruning against vertex distances) yields the exact polyhedral distance, the length of the globally shortest surface path, so that edge-graph, Steiner-graph and locally shortest paths never fall below it, and its windows back-trace that path; whether traced straightest geodesics shorter than pi are shortest paths, and where they stop being shortest, is tested against it.",
  "input_data": [
   "icosphere levels 1-7 (unit sphere) for traces, 1-4 with three sources each for exact distances",
   "torus 24x12 (R = 2, r = 1; 120 saddle vertices)",
   "prism cylinder R=1, n=8..128 sectors (traces), n = 8, 16, 32 (exact)",
   "sheared planar 8x8 grids (shear 0-1.5) and an L-shaped 8x8 grid",
   "refined cube, 4x4 squares per face",
-  "six declared sphere geodesics (chart point, heading)"
+  "six declared sphere geodesics (chart point, heading)",
+  "one-vertex fans of six triangles with total angles 1.5, 1.8, 2, 2.2 and 2.5 pi",
+  "tangentially jittered icospheres (0.1 h), levels 2-5, 200 seeded generic traces of length 1 each",
+  "a jittered icosphere-2, a jittered 24x12 torus, the L-shaped grid and a 2.5 pi fan for back-traced paths"
  ],
- "mathematical_model": "Straightest geodesic: in each face a straight segment; at an edge the direction keeps its edge component and the magnitude of its perpendicular component (rotation about the edge). Exact distance: windows (an edge interval with its source unfolded into the plane and the source's own distance) propagated face by face in increasing order of the smallest distance they carry; every vertex whose angle sum is not below flat by more than 1e-9 re-emits windows as a pseudo-source; a window part that a path through a vertex of its edge or faces beats by more than a rounding margin is pruned; surface points become vertices by planar face and edge splits. Graph distances: Dijkstra on the edge graph and on the graph of k Steiner points per edge; vertex hits are refused by the tracer.",
+ "mathematical_model": "Straightest geodesic: in each face a straight segment; at an edge the direction keeps its edge component and the magnitude of its perpendicular component (rotation about the edge); at a vertex of total angle theta, with the Polthier-Schmies rule, it leaves at theta / 2 from the reversed incoming direction on both sides. Exact distance: windows (an edge interval with its source unfolded into the plane and the source's own distance) propagated face by face in increasing order of the smallest distance they carry; every vertex whose angle sum is not below flat by more than 1e-9 re-emits windows as a pseudo-source; a window part that a path through a vertex of its edge or faces beats by more than a rounding margin is pruned; surface points become vertices by planar face and edge splits. Each window records its parent window or pseudo-source, and each vertex the window or pseudo-source that set its distance, so a shortest path is back-traced along the rays to the unfolded sources; the distance at any surface point is the best of its face's windows and vertices. Cut point of a trace: where its length first exceeds the exact distance from its start; for one cone vertex of angle defect delta, seen from the start at distance r and angle phi from the trace, the trace crosses the vertex's cut ray at r sin(delta / 2) / sin(delta / 2 - phi) when phi < delta / 2. Graph distances: Dijkstra on the edge graph and on the graph of k Steiner points per edge.",
  "number": 38,
- "numerical_result": "Plane traces exact to 8.9e-16; prism-cylinder traces match the development to 8.0e-15; unfolded strip length equals traced length to 3.1e-15 over 42 sphere traces (statuses ['completed']); edge Dijkstra agrees with its reference shortest-path implementations to 8.9e-16; Steiner distances to traced endpoints exceed the traced length by mean 3.01e-02 (k=1), 1.29e-02 (k=3), 5.30e-03 (k=7); 0 of 115740 Steiner-graph edges leave a face. Exact polyhedral distances (window propagation) equal their closed forms to 7.1e-15 on sheared planes, an L-shape (20 targets reached around its reflex corner), prism cylinders and cube corners (sqrt 5 = 2.236068 where the edge graph gives 2.414214); inserting points as vertices changes distances by at most 1.3e-15; distances from three sources on icosphere levels 1-4 and a torus with 120 saddle vertices agree with their references (source symmetry, and pygeodesic's exact MMP when installed) to 8.0e-15; no edge-graph path (nor, when potpourri3d is installed, FlipOut edge-flip geodesic) between 3267 vertex pairs is shorter than the exact distance (smallest excess -4.4e-15). Against the exact distance from vertex 0 the edge graph's largest relative excess is 0.181, 0.220, 0.232, 0.235 on levels 1-4 (valence-5 floor sqrt 5 - 2 = 0.236); the Steiner mean excess (k = 1, 3, 7) is 1.9e-02, 7.1e-03, 2.4e-03 on level 2 and 2.1e-02, 7.8e-03, 2.3e-03 on level 3; the heat-method maximum error is 0.096, 0.066, 0.043 on levels 1-3 (fitted order 0.60). Traced length-2 geodesics are shortest paths in 2 of 6, 3 of 6, 3 of 6, 2 of 6 traces on levels 1-4, and the largest excess of a trace over the exact distance is 1.3e-02, 1.6e-03, 1.4e-04, 3.7e-05; 5 of 6 length-1 traces on level 2 are shortest.",
- "observation_model": "No physical observation; traced endpoints, lengths, exact and graph distances in normalized units.",
+ "numerical_result": "Plane traces exact to 8.9e-16; prism-cylinder traces match the development to 8.0e-15; unfolded strip length equals traced length to 3.1e-15 over 42 sphere traces (statuses ['completed']); edge Dijkstra agrees with its reference shortest-path implementations to 8.9e-16; Steiner distances to traced endpoints exceed the traced length by mean 3.01e-02 (k=1), 1.29e-02 (k=3), 5.30e-03 (k=7); 0 of 115740 Steiner-graph edges leave a face. Exact polyhedral distances (window propagation) equal their closed forms to 7.1e-15 on sheared planes, an L-shape (20 targets reached around its reflex corner), prism cylinders and cube corners (sqrt 5 = 2.236068 where the edge graph gives 2.414214); inserting points as vertices changes distances by at most 1.3e-15; distances from three sources on icosphere levels 1-4 and a torus with 120 saddle vertices agree with their references (source symmetry, and pygeodesic's exact MMP when installed) to 8.0e-15; no edge-graph path (nor, when potpourri3d is installed, FlipOut edge-flip geodesic) between 3267 vertex pairs is shorter than the exact distance (smallest excess -4.4e-15). Against the exact distance from vertex 0 the edge graph's largest relative excess is 0.181, 0.220, 0.232, 0.235 on levels 1-4 (valence-5 floor sqrt 5 - 2 = 0.236); the Steiner mean excess (k = 1, 3, 7) is 1.9e-02, 7.1e-03, 2.4e-03 on level 2 and 2.1e-02, 7.8e-03, 2.3e-03 on level 3; the heat-method maximum error is 0.096, 0.066, 0.043 on levels 1-3 (fitted order 0.60). Traced length-2 geodesics are shortest paths in 2 of 6, 3 of 6, 3 of 6, 2 of 6 traces on levels 1-4, and the largest excess of a trace over the exact distance is 1.3e-02, 1.6e-03, 1.4e-04, 3.7e-05; 5 of 6 length-1 traces on level 2 are shortest. Continued through vertices by the Polthier-Schmies rule, 9 traces on planar and prism-cylinder meshes pass 24 flat vertices and stay straight lines of the development to 4.4e-16; through a cube corner the endpoint matches its closed form to 1.7e-16 and the continued path exceeds the exact distance by 0.086, 0.081. On fans of total angle 1.5, 1.8, 2, 2.2, 2.5 pi the exact distances from the start (and pygeodesic's, when installed) equal the closed form to 5.3e-15, and the continued path exceeds the exact distance by 6.0e-02, 9.7e-03, 0.0e+00, 0.0e+00, 0.0e+00; rays passing the vertex 1e-06 r1 aside end at polar angles pi and theta - pi (on the 1.5 pi fan 1.5708, 3.1416 rad). Of 800 generic traces on jittered icospheres (levels 2-5, 22310 edge crossings, 59.7 per trace at the finest level, order -1.01 in h) 0 came within 1e-09 of a vertex; crossings within tau of a vertex, over 2 tau, are 1.010 (tau=0.1), 1.006 (tau=0.01), 0.538 (tau=0.001), 0.000 (tau=0.0001), and the closest crossing was 2.5e-04 of an edge from a vertex. 72 shortest paths back-traced on 4 meshes have the exact length to 1.3e-15, bend at 8 saddle and 4 boundary vertices only, and agree with the paths back-traced from the other end (and pygeodesic's, when installed) to 1.9e-15. Of 30 declared traces, 15 have a cut point before their length (14 distinct: a shorter trace from the same start repeats a longer one's); in 13 the digon between the trace and the other shortest path encloses one vertex and the cut point equals that vertex's isolated-cone prediction to within its resolution (largest 4.0e-07); in 1 it encloses several vertices and comes earlier (level 2, trace 5: 2 vertices, cut at 1.1710 against 1.3190). The vertex that cuts passes within 0.1076, 0.0424, 0.0108, 0.0066 h (largest per level) of the trace.",
+ "observation_model": "No physical observation; traced endpoints, lengths, exact and graph distances, path polylines and cut points in normalized units.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
   "status": "not_established"
@@ -1164,15 +2351,15 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/surfaces_discrete_mesh.py": "6d6f03cf6afcc2ecbdce3da635c4c38b96a3c77c0a6209c510b589b009c10c3b",
-   "src/ciw/lab/surfaces_discrete_mesh_exact.py": "a1e500e5792e8cd3f788c4a4f2f7df2cd2c4a2d6d1b712d4cbb68f8daa09291a",
-   "src/ciw/lab/surfaces_discrete_mesh_geometry.py": "eb8124863335556f8aaa6f47f599a137f5925ef9210b5d7878bb8c7416a4dad3",
-   "src/ciw/lab/surfaces_discrete_mesh_studies.py": "1d274cab4fa8572f2304e3bff48b546936762ba151732df04f6bbae949f85086"
+   "src/ciw/lab/surfaces_discrete_mesh.py": "514826d79f459b5f623c1644a41835aeda4c6370aba67be523441bdb36183b76",
+   "src/ciw/lab/surfaces_discrete_mesh_exact.py": "1c02b7d6609a6182d6fea7a2fb9cebf9a6b287f03f3d0bc49e47a12fa92c54c1",
+   "src/ciw/lab/surfaces_discrete_mesh_geometry.py": "dae3df0a227a1cc31197bc16f38671287bfc38fbeb1959a2af68c056fd962199",
+   "src/ciw/lab/surfaces_discrete_mesh_studies.py": "fee3e580fbeadd2ce04c5110b08803566b668f077851d21ffa364ac48d07b60e"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "Deferred research question: continue traced geodesics through vertices by the Polthier-Schmies rule (they are refused as vertex_hit now) and measure how often generic traces need it on irregular meshes; back-trace the shortest path polyline from the exact solver's windows, which return distances only; and locate where straightest geodesics stop being shortest (the cut locus of the start point, whose branches end at vertices) as a function of refinement and of the distance to the nearest vertex.",
- "report_id": "sha256:75b82d9e399b71f9f2f20df53fc3d3e2505d94e956ad11cbfa0498d43d4eebc7",
+ "recommended_next_task": "Deferred research question: predict the cut point of a straightest geodesic whose digon with the other shortest path encloses several vertices (the isolated-cone prediction holds only for one-vertex digons), for example from the cut locus of the start computed where two of the exact solver's windows give equal distances, and locate cut points on saddle-bearing meshes; and test with enough seeded traces per level whether the fraction of straightest geodesics of length L that stay shortest tends, under refinement, to a limit set by the enclosed curvature (about exp(-K L^2 / 6) if the vertices whose cut rays a trace can cross fall independently) rather than to 1.",
+ "report_id": "sha256:f9113e3fcc6ab0c6bce692e23fd201f4b64c3ee60a1d54fb31745725f96cbc39",
  "schema": "ciw.lab-task-report.v1",
  "section": "surfaces-discrete",
  "state": "completed",
@@ -1206,6 +2393,41 @@
   "check: Traced straightest geodesics are never shorter than the exact distance between their endpoints, yet on every icosphere level 1-4 some of length 2 (below pi) are not shortest paths, by an excess that falls with refinement vs smallest traced length minus exact endpoint distance over all traces, plus a 1e-12 rounding allowance",
   "check: Traced straightest geodesics are never shorter than the exact distance between their endpoints, yet on every icosphere level 1-4 some of length 2 (below pi) are not shortest paths, by an excess that falls with refinement vs fewest length-2 traces per level that exceed the exact distance by more than 1e-10",
   "check: Traced straightest geodesics are never shorter than the exact distance between their endpoints, yet on every icosphere level 1-4 some of length 2 (below pi) are not shortest paths, by an excess that falls with refinement vs largest increase of the maximum excess from one level to the next",
+  "check: Straightest geodesics continued through flat vertices by the Polthier-Schmies rule stay straight lines of the development on planar and prism-cylinder meshes vs largest endpoint distance from the straight line of the development (planar grids, a sheared grid and a prism cylinder, aimed at vertices and along rows of vertices)",
+  "check: Straightest geodesics continued through flat vertices by the Polthier-Schmies rule stay straight lines of the development on planar and prism-cylinder meshes vs fewest vertices a trace passed through",
+  "check: At a cube corner (total angle 3 pi / 2) the Polthier-Schmies continuation leaves at 3 pi / 4 on both sides: its endpoint and the exact distance between its endpoints equal their closed forms, and the continued path is longer than that distance vs largest endpoint distance from (0, r2 cos(pi/4 + gamma), r2 sin(pi/4 + gamma)) (or its mirror image) for a ray arriving at angle gamma from the x axis",
+  "check: At a cube corner (total angle 3 pi / 2) the Polthier-Schmies continuation leaves at 3 pi / 4 on both sides: its endpoint and the exact distance between its endpoints equal their closed forms, and the continued path is longer than that distance vs largest |exact distance - sqrt(r1^2 + r2^2 - 2 r1 r2 cos(3 pi / 4))| (the endpoint is reached around both sides of the corner)",
+  "check: At a cube corner (total angle 3 pi / 2) the Polthier-Schmies continuation leaves at 3 pi / 4 on both sides: its endpoint and the exact distance between its endpoints equal their closed forms, and the continued path is longer than that distance vs smallest continued length minus exact distance (closed form about 0.08)",
+  "check: Through one vertex of total angle theta the Polthier-Schmies continuation ends at polar angle theta / 2 on both sides, where the exact distance from the start takes its closed form (and agrees with pygeodesic's exact MMP when installed), so the continued geodesic is shortest exactly when theta is at least 2 pi vs largest |exact distance - sqrt(r1^2 + r2^2 - 2 r1 r2 cos(min(phi, theta - phi, pi)))| from the start to the continued endpoint and to points at five polar angles phi (ciw window propagation)",
+  "check: Through one vertex of total angle theta the Polthier-Schmies continuation ends at polar angle theta / 2 on both sides, where the exact distance from the start takes its closed form (and agrees with pygeodesic's exact MMP when installed), so the continued geodesic is shortest exactly when theta is at least 2 pi vs largest |polar angle of the continued endpoint - theta / 2| and |its distance from the vertex - r2|",
+  "check: Through one vertex of total angle theta the Polthier-Schmies continuation ends at polar angle theta / 2 on both sides, where the exact distance from the start takes its closed form (and agrees with pygeodesic's exact MMP when installed), so the continued geodesic is shortest exactly when theta is at least 2 pi vs largest distance from the start of the trace run back from the endpoint (the rule is symmetric)",
+  "check: Through one vertex of total angle theta the Polthier-Schmies continuation ends at polar angle theta / 2 on both sides, where the exact distance from the start takes its closed form (and agrees with pygeodesic's exact MMP when installed), so the continued geodesic is shortest exactly when theta is at least 2 pi vs fans where the continued path is a shortest path (within 1e-10) exactly when theta is not below 2 pi, counted as mismatches",
+  "check: Through one vertex of total angle theta the Polthier-Schmies continuation ends at polar angle theta / 2 on both sides, where the exact distance from the start takes its closed form (and agrees with pygeodesic's exact MMP when installed), so the continued geodesic is shortest exactly when theta is at least 2 pi vs validation issues of the fans",
+  "independent: Through one vertex of total angle theta the Polthier-Schmies continuation ends at polar angle theta / 2 on both sides, where the exact distance from the start takes its closed form (and agrees with pygeodesic's exact MMP when installed), so the continued geodesic is shortest exactly when theta is at least 2 pi vs pygeodesic.geodesic.PyGeodesicAlgorithmExact",
+  "check: At a saddle vertex every end direction between the one-sided limits of the geodesics passing it is reached by a shortest path through the vertex, at a cone vertex none is, and the Polthier-Schmies continuation bisects the two limits vs end points at polar angle phi from the start with a shortest path through the vertex (exact distance r1 + r2 within 1e-10) where min(phi, theta - phi) < pi, or none where it is at least pi, counted as mismatches",
+  "check: At a saddle vertex every end direction between the one-sided limits of the geodesics passing it is reached by a shortest path through the vertex, at a cone vertex none is, and the Polthier-Schmies continuation bisects the two limits vs largest |deviation of the one-sided endpoints from polar angles pi and theta - pi - epsilon (r1 + r2) / r2| for rays aimed epsilon r1 beside the vertex (first order in epsilon)",
+  "check: At a saddle vertex every end direction between the one-sided limits of the geodesics passing it is reached by a shortest path through the vertex, at a cone vertex none is, and the Polthier-Schmies continuation bisects the two limits vs smallest |polar angle of the continued endpoint - the nearer one-sided endpoint| over the cone and saddle fans, divided by |2 pi - theta| / 2 (the continuation is the limit of neither side)",
+  "check: Generic straightest geodesics on jittered icospheres pass through no vertex: none of the seeded traces crosses an edge within the vertex tolerance, near-vertex crossings occur at the uniform rate 2 tau per crossing, and crossings per trace grow like 1/h vs edge crossings within the vertex tolerance 1e-09 (continued by the rule)",
+  "check: Generic straightest geodesics on jittered icospheres pass through no vertex: none of the seeded traces crosses an edge within the vertex tolerance, near-vertex crossings occur at the uniform rate 2 tau per crossing, and crossings per trace grow like 1/h vs largest |crossings within tau of a vertex / (2 tau crossings) - 1| for tau = 0.1, 0.01 (uniform edge parameter near the ends)",
+  "check: Generic straightest geodesics on jittered icospheres pass through no vertex: none of the seeded traces crosses an edge within the vertex tolerance, near-vertex crossings occur at the uniform rate 2 tau per crossing, and crossings per trace grow like 1/h vs fitted order of crossings per trace against h, plus 1",
+  "check: Shortest paths back-traced from the exact solver's windows have the exact length, lie on the surface, run straight across every edge and bend only at saddle and reflex boundary vertices (and match pygeodesic's paths when installed) vs largest |back-traced polyline length - exact distance|",
+  "check: Shortest paths back-traced from the exact solver's windows have the exact length, lie on the surface, run straight across every edge and bend only at saddle and reflex boundary vertices (and match pygeodesic's paths when installed) vs path segments not inside the face they are assigned to (point-in-face test: plane offset and barycentric coordinates within 1e-12)",
+  "check: Shortest paths back-traced from the exact solver's windows have the exact length, lie on the surface, run straight across every edge and bend only at saddle and reflex boundary vertices (and match pygeodesic's paths when installed) vs largest turn across an edge, |a1 + a2 - pi| between the segments and the edge",
+  "check: Shortest paths back-traced from the exact solver's windows have the exact length, lie on the surface, run straight across every edge and bend only at saddle and reflex boundary vertices (and match pygeodesic's paths when installed) vs smallest angle between the segments at a vertex on either side (the inside at a boundary vertex) minus pi",
+  "check: Shortest paths back-traced from the exact solver's windows have the exact length, lie on the surface, run straight across every edge and bend only at saddle and reflex boundary vertices (and match pygeodesic's paths when installed) vs bends at cone or flat vertices",
+  "check: Shortest paths back-traced from the exact solver's windows have the exact length, lie on the surface, run straight across every edge and bend only at saddle and reflex boundary vertices (and match pygeodesic's paths when installed) vs fewer bends at saddle vertices or at boundary vertices than one (both kinds exercised)",
+  "check: Shortest paths back-traced from the exact solver's windows have the exact length, lie on the surface, run straight across every edge and bend only at saddle and reflex boundary vertices (and match pygeodesic's paths when installed) vs largest distance between the path and the path back-traced from the other end",
+  "independent: Shortest paths back-traced from the exact solver's windows have the exact length, lie on the surface, run straight across every edge and bend only at saddle and reflex boundary vertices (and match pygeodesic's paths when installed) vs pygeodesic.geodesic.PyGeodesicAlgorithmExact",
+  "check: The first cut point of every declared straightest geodesic, where its length first exceeds the exact distance from its start, comes no later than the smallest isolated-cone prediction r sin(delta / 2) / sin(delta / 2 - phi) over the vertices it passes, and equals it when the digon between the trace and the other shortest path encloses one vertex vs largest decrease of the excess of traced length over the exact distance from one sample to the next (it never decreases along a geodesic)",
+  "check: The first cut point of every declared straightest geodesic, where its length first exceeds the exact distance from its start, comes no later than the smallest isolated-cone prediction r sin(delta / 2) / sin(delta / 2 - phi) over the vertices it passes, and equals it when the digon between the trace and the other shortest path encloses one vertex vs largest |window-evaluated distance at the endpoint - the endpoint vertex's distance|",
+  "check: The first cut point of every declared straightest geodesic, where its length first exceeds the exact distance from its start, comes no later than the smallest isolated-cone prediction r sin(delta / 2) / sin(delta / 2 - phi) over the vertices it passes, and equals it when the digon between the trace and the other shortest path encloses one vertex vs traces with a cut point that the endpoint distance calls shortest, or without one that it does not",
+  "check: The first cut point of every declared straightest geodesic, where its length first exceeds the exact distance from its start, comes no later than the smallest isolated-cone prediction r sin(delta / 2) / sin(delta / 2 - phi) over the vertices it passes, and equals it when the digon between the trace and the other shortest path encloses one vertex vs distinct cut points whose digon encloses exactly one vertex",
+  "check: The first cut point of every declared straightest geodesic, where its length first exceeds the exact distance from its start, comes no later than the smallest isolated-cone prediction r sin(delta / 2) / sin(delta / 2 - phi) over the vertices it passes, and equals it when the digon between the trace and the other shortest path encloses one vertex vs largest |isolated-cone prediction - cut point| minus the cut point's resolution, over digons enclosing one vertex",
+  "check: The first cut point of every declared straightest geodesic, where its length first exceeds the exact distance from its start, comes no later than the smallest isolated-cone prediction r sin(delta / 2) / sin(delta / 2 - phi) over the vertices it passes, and equals it when the digon between the trace and the other shortest path encloses one vertex vs largest cut point minus the smallest isolated-cone prediction, minus the resolution",
+  "check: The first cut point of every declared straightest geodesic, where its length first exceeds the exact distance from its start, comes no later than the smallest isolated-cone prediction r sin(delta / 2) / sin(delta / 2 - phi) over the vertices it passes, and equals it when the digon between the trace and the other shortest path encloses one vertex vs smallest isolated-cone prediction minus the trace length over traces without a cut point",
+  "independent: The first cut point of every declared straightest geodesic, where its length first exceeds the exact distance from its start, comes no later than the smallest isolated-cone prediction r sin(delta / 2) / sin(delta / 2 - phi) over the vertices it passes, and equals it when the digon between the trace and the other shortest path encloses one vertex vs pygeodesic.geodesic.PyGeodesicAlgorithmExact",
+  "check: A straightest geodesic can stop being shortest before every single vertex's isolated-cone prediction, when the digon between it and the other shortest path encloses several vertices vs cut points whose digon encloses more than one vertex",
+  "check: A straightest geodesic can stop being shortest before every single vertex's isolated-cone prediction, when the digon between it and the other shortest path encloses several vertices vs smallest isolated-cone prediction minus cut point, minus the resolution, over those",
   "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_next_steps_name_forward_work",
   "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_tracer_is_exact_on_developable_meshes",
   "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_graph_distances_and_steiner_sandwich",
@@ -1219,15 +2441,22 @@
   "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_paths_and_approximations_never_beat_the_exact_distance",
   "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_exact_checks_fall_back_without_external_packages",
   "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_ciw_producers_of_t038_independent_checks_carry_a_revision",
+  "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_vertex_continuation_on_flat_and_cone_vertices",
+  "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_fan_continuation_bisects_the_total_angle",
+  "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_generic_traces_do_not_hit_vertices",
+  "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_back_traced_paths_are_shortest_and_bend_only_at_saddles_and_boundaries",
+  "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_cut_points_match_the_isolated_cone_prediction",
+  "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_continuation_paths_and_cut_points_agree_with_pygeodesic",
   "pytest: tests/test_lab_surfaces_discrete_mesh.py::test_solver_task_report"
  ],
  "tests_skipped": [],
  "title": "Build a triangle-mesh intrinsic geodesic solver.",
- "uncertainty": "Deterministic computation; floating-point rounding only (exact distances agree with the closed forms to about 1e-14). The strip layout, Floyd-Warshall, source symmetry, edge Lipschitz and edge-graph path checks are ciw code (same origin); the scipy, pygeodesic and potpourri3d comparisons are independent. The Steiner-over-traced ordering is not a sandwich of the distance: the exact distance falls below 1 of the 6 length-1 traces on level 2 (by up to 1.1e-04), so for large enough k the Steiner distance would fall below them too. A trace counts as shortest when it is within 1e-10 of the exact distance; the others exceed it by at least 4.6e-06.",
+ "uncertainty": "Deterministic computation; floating-point rounding only (exact distances agree with the closed forms to about 1e-14). The strip layout, Floyd-Warshall, source symmetry, edge Lipschitz, edge-graph path and reverse-path checks are ciw code (same origin); the scipy, pygeodesic and potpourri3d comparisons are independent. The Steiner-over-traced ordering is not a sandwich of the distance: the exact distance falls below 1 of the 6 length-1 traces on level 2 (by up to 1.1e-04), so for large enough k the Steiner distance would fall below them too. A trace counts as shortest when it is within 1e-10 of the exact distance; the others exceed it by at least 4.6e-06. A cut point is located to within 4.0e-07 (the excess threshold 1e-12 over the excess slope). The vertex-hit rate rests on 22310 seeded crossings; a count of zero bounds it only to about 3 / 22310 per crossing at 95%, and the rate 2 tau per crossing is observed for tau of 0.1 and 0.01 only (near-vertex crossings come in clusters, so smaller counts scatter more than Poisson counts).",
  "unresolved_assumptions": [
-  "The exact solver returns distances, not the shortest path polyline: back-tracing the path from its windows is not implemented, so the shortest path itself is not drawn or compared.",
   "Exactness holds in exact arithmetic; computed distances carry rounding, and the pruning margin (1e-10 of the mean edge) keeps near-ties. The solver is a Python loop meant for meshes of a few thousand vertices; the largest here has 2562.",
-  "Vertex hits are refused rather than continued by the Polthier-Schmies angle-bisection rule.",
-  "Where a straightest geodesic stops being shortest (where it crosses the cut locus of its start point) is observed per trace, not predicted."
+  "Where several shortest paths tie, the back-trace returns one of them (the one whose window reached the target first); ties are not enumerated.",
+  "At a boundary vertex no continuation is declared: the trace stops there as boundary_reached.",
+  "The isolated-cone prediction of the cut point is established only for digons enclosing one vertex on the declared icosphere traces; cut points whose digon encloses several vertices are observed, not predicted, and cut points on saddle-bearing meshes are not located.",
+  "The vertex-hit rate is measured for isotropic tangential jitter; meshes and traces aligned with rows of vertices (regular grids, traces aimed at vertices) need the vertex rule systematically."
  ]
 }

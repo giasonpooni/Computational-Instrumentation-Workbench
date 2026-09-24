@@ -605,9 +605,10 @@
    "sha256": "0d92910de59bd5d46596cc2bf12482321dbb3636475c5187adf1e56f6fa388cd"
   },
   {
-   "bytes": 10008,
+   "bytes": 13922,
    "path": "artifacts/T107/ratio-vs-target.svg",
-   "sha256": "b0afb3b593caeb4e8bb62ee7928f9c62df949a989f62dc5c1477ea02e9046a32"
+   "rounding_level": true,
+   "sha256": "e50c3de6bac1807309df9e4f4244b14d11dfa7586d015c8b72120c5f57c9751c"
   }
  ],
  "hypothesis": "PLSR never gives a certifying code to a near-boundary decrease form that is not exactly negative definite; on forms whose exact max eig(M) keeps 3/16 of a resolution from its code thresholds it gives the code that exact position predicts, so beyond two resolutions from zero it always resolves the sign and under a declared margin of three resolutions no case within two resolutions is CERTIFIED_WITH_MARGIN; within rounding of -res the code is CERTIFIED_WITH_MARGIN or NUMERICAL_INCONCLUSIVE on either exact side, and within rounding of +res DECREASE_NOT_DEFINITE, NOT_CERTIFIED or NUMERICAL_INCONCLUSIVE. A stronger candidate statement formulated for this experiment (it is not quoted from the runtime's documentation) -- that near-boundary spectra yield NUMERICAL_INCONCLUSIVE or MARGIN_LOW rather than CERTIFIED_WITH_MARGIN -- is tested at required_margin 0 as a candidate counterexample.",
@@ -652,14 +653,14 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/lyapunov.py": "d343889fe69789b9551ef6e36029c1f969c6bf04c4cdb4618b9f506539831665",
+   "src/ciw/lab/lyapunov.py": "bac453e41cfaf4c8e83f82cc2eee826543cba08d732cba1e430a6a61fe2c1147",
    "src/ciw/lab/lyapunov_provider.py": "da3465b48b5f5efc47bfe6ab8379cf2cf2bc23e4835dc7ff047252e77fa6ef17",
    "src/ciw/lab/lyapunov_reference.py": "831ae8bd144c10e255cb9f2b54e0c219e2f98a59d01a07b5255046ae70b9b431"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: how much of the [-2, 0) res inconclusive band would a less conservative eigensolver term (p(n) = n instead of n^2) recover without losing soundness against the exact bins?",
- "report_id": "sha256:6f2fa1691b90c1aa7c2755567b450acd7c2e2ee59bb1bcae3165909725abcfb6",
+ "report_id": "sha256:79e45d5d9216e0e9167587053b43177d1593d02f5c799e8c0e5e79ab28917079",
  "schema": "ciw.lab-task-report.v1",
  "section": "lyapunov",
  "state": "completed",

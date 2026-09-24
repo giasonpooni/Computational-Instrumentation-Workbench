@@ -373,14 +373,14 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/lyapunov.py": "d343889fe69789b9551ef6e36029c1f969c6bf04c4cdb4618b9f506539831665",
+   "src/ciw/lab/lyapunov.py": "bac453e41cfaf4c8e83f82cc2eee826543cba08d732cba1e430a6a61fe2c1147",
    "src/ciw/lab/lyapunov_provider.py": "da3465b48b5f5efc47bfe6ab8379cf2cf2bc23e4835dc7ff047252e77fa6ef17",
    "src/ciw/lab/lyapunov_reference.py": "831ae8bd144c10e255cb9f2b54e0c219e2f98a59d01a07b5255046ae70b9b431"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: a sampled-data check that a continuous-time certificate is not silently reused for the one-step map exp(A h): certify exp(A h) for declared sampling periods h and compare with the continuous verdict (no sampling period is modelled here).",
- "report_id": "sha256:45ca7fc0b2e65c0815372f8593fc2b0da2124c143ebb4f8c37364cb1d0797807",
+ "report_id": "sha256:f1742f1b76bcfd92d200282b71eb47681b249ceb5c17685b4635390dca39dc38",
  "schema": "ciw.lab-task-report.v1",
  "section": "lyapunov",
  "state": "completed",

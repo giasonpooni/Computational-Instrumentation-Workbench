@@ -21,11 +21,11 @@
   "independently_verified": {
    "acquisition": 0,
    "derivation": 4,
-   "independent_check": 34,
+   "independent_check": 40,
    "none": 0,
    "provider": 7,
-   "reference_checks": 23,
-   "synthetic_inputs": 7
+   "reference_checks": 29,
+   "synthetic_inputs": 10
   },
   "not_established": {
    "acquisition": 0,
@@ -38,19 +38,19 @@
   },
   "numerically_verified": {
    "acquisition": 0,
-   "derivation": 106,
+   "derivation": 109,
    "independent_check": 0,
    "none": 0,
    "provider": 7,
-   "reference_checks": 499,
-   "synthetic_inputs": 232
+   "reference_checks": 518,
+   "synthetic_inputs": 245
   },
   "provider_backed": {
    "acquisition": 0,
    "derivation": 0,
    "independent_check": 0,
    "none": 0,
-   "provider": 5,
+   "provider": 9,
    "reference_checks": 0,
    "synthetic_inputs": 0
   },
@@ -64,7 +64,7 @@
    "synthetic_inputs": 0
   }
  },
- "findings": 623,
+ "findings": 652,
  "reading": "counts[label][component]: findings with that label declaring that basis component (ciw.lab.evidence.origin_counts); 'none' counts findings declaring no component. The label is decided by the rules; the components show what it rests on.",
  "task_ids_audited": [
   "T001",

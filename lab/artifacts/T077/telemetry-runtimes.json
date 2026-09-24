@@ -1,0 +1,289 @@
+{
+ "bound": true,
+ "bound_roles": [
+  "cbsr",
+  "gsie",
+  "ppda",
+  "set",
+  "stfe"
+ ],
+ "checkouts": {
+  "cbsr": {
+   "clean": true,
+   "head": "b543969cb80a69a5df1274eee10d22549bcea773",
+   "matched": [
+    "ciw/telemetry-runtimes.json[cbsr]"
+   ],
+   "pin": "b543969cb80a69a5df1274eee10d22549bcea773",
+   "reason": null,
+   "recomputed_tree": "eef36f7fe740b4deb562e9dda9383e94294c6503",
+   "repository": "giasonpooni/Constraint-Based-State-Reconciliation",
+   "state": "ready",
+   "tree": "eef36f7fe740b4deb562e9dda9383e94294c6503"
+  },
+  "gsie": {
+   "clean": true,
+   "head": "de38873db1ba98744d395dfa7df1d3b5b7bb3059",
+   "matched": [
+    "ciw/telemetry-runtimes.json[gsie]",
+    "ciw/calibrated-window-runtimes.json[gsie]"
+   ],
+   "pin": "de38873db1ba98744d395dfa7df1d3b5b7bb3059",
+   "reason": null,
+   "recomputed_tree": "dc364802cf846329e48eaaf0832fa4d47c2abd35",
+   "repository": "giasonpooni/Geometric-State-Inference-Engine",
+   "state": "ready",
+   "tree": "dc364802cf846329e48eaaf0832fa4d47c2abd35"
+  },
+  "ppda": {
+   "clean": true,
+   "head": "209985a8c7482aba037021035c2f0b550c9b1ddc",
+   "matched": [
+    "ciw/telemetry-runtimes.json[ppda]"
+   ],
+   "pin": "209985a8c7482aba037021035c2f0b550c9b1ddc",
+   "reason": null,
+   "recomputed_tree": "9d7150ca433e78e637210c5b2849edba171677d7",
+   "repository": "giasonpooni/Provenance-Preserving-Data-Acquisition",
+   "state": "ready",
+   "tree": "9d7150ca433e78e637210c5b2849edba171677d7"
+  },
+  "set": {
+   "clean": true,
+   "head": "1467ec5058b3e7ebd6ba4a45f2d9b49148a2560d",
+   "matched": [
+    "ciw/telemetry-runtimes.json[set]"
+   ],
+   "pin": "1467ec5058b3e7ebd6ba4a45f2d9b49148a2560d",
+   "reason": null,
+   "recomputed_tree": "029ee11bcb68d55ac58afae773b875326ccfc9c0",
+   "repository": "giasonpooni/State-Estimation-Evaluation-Testbed",
+   "state": "ready",
+   "tree": "029ee11bcb68d55ac58afae773b875326ccfc9c0"
+  },
+  "stfe": {
+   "clean": true,
+   "head": "54dd43b657b92d87c2fc263dfd99437c664be353",
+   "matched": [
+    "ciw/telemetry-runtimes.json[stfe]",
+    "ciw/calibrated-window-runtimes.json[stfe]"
+   ],
+   "pin": "54dd43b657b92d87c2fc263dfd99437c664be353",
+   "reason": null,
+   "recomputed_tree": "152816aca45290c81d770570851541edae69a706",
+   "repository": "giasonpooni/Streaming-Telemetry-Feature-Extraction",
+   "state": "ready",
+   "tree": "152816aca45290c81d770570851541edae69a706"
+  }
+ },
+ "classification": [
+  {
+   "bundle": "original",
+   "labels": [
+    "not_established",
+    "provider_backed"
+   ],
+   "runtime_pins": [
+    {
+     "matched": [
+      "ciw/telemetry-runtimes.json[gsie]"
+     ],
+     "module": "geometric_state_inference.contracts",
+     "problem": null,
+     "repository": "geometric_state_inference.contracts",
+     "revision": "de38873db1ba98744d395dfa7df1d3b5b7bb3059",
+     "role": "gsie",
+     "source_tree": "dc364802cf846329e48eaaf0832fa4d47c2abd35",
+     "tree_pinned": false
+    },
+    {
+     "matched": [
+      "ciw/telemetry-runtimes.json[ppda]"
+     ],
+     "module": "instrumentation",
+     "problem": null,
+     "repository": "instrumentation",
+     "revision": "209985a8c7482aba037021035c2f0b550c9b1ddc",
+     "role": "ppda",
+     "source_tree": "9d7150ca433e78e637210c5b2849edba171677d7",
+     "tree_pinned": false
+    },
+    {
+     "matched": [
+      "ciw/telemetry-runtimes.json[set]"
+     ],
+     "module": "state_estimation_testbed.replay",
+     "problem": null,
+     "repository": "state_estimation_testbed.replay",
+     "revision": "1467ec5058b3e7ebd6ba4a45f2d9b49148a2560d",
+     "role": "set",
+     "source_tree": "029ee11bcb68d55ac58afae773b875326ccfc9c0",
+     "tree_pinned": false
+    },
+    {
+     "matched": [
+      "ciw/telemetry-runtimes.json[stfe]"
+     ],
+     "module": "stfe",
+     "problem": null,
+     "repository": "stfe",
+     "revision": "54dd43b657b92d87c2fc263dfd99437c664be353",
+     "role": "stfe",
+     "source_tree": "152816aca45290c81d770570851541edae69a706",
+     "tree_pinned": false
+    }
+   ]
+  },
+  {
+   "bundle": "replay",
+   "labels": [
+    "not_established",
+    "numerically_verified",
+    "provider_backed"
+   ],
+   "runtime_pins": [
+    {
+     "matched": [
+      "ciw/telemetry-runtimes.json[gsie]"
+     ],
+     "module": "geometric_state_inference.contracts",
+     "problem": null,
+     "repository": "geometric_state_inference.contracts",
+     "revision": "de38873db1ba98744d395dfa7df1d3b5b7bb3059",
+     "role": "gsie",
+     "source_tree": "dc364802cf846329e48eaaf0832fa4d47c2abd35",
+     "tree_pinned": false
+    },
+    {
+     "matched": [
+      "ciw/telemetry-runtimes.json[ppda]"
+     ],
+     "module": "instrumentation",
+     "problem": null,
+     "repository": "instrumentation",
+     "revision": "209985a8c7482aba037021035c2f0b550c9b1ddc",
+     "role": "ppda",
+     "source_tree": "9d7150ca433e78e637210c5b2849edba171677d7",
+     "tree_pinned": false
+    },
+    {
+     "matched": [
+      "ciw/telemetry-runtimes.json[set]"
+     ],
+     "module": "state_estimation_testbed.replay",
+     "problem": null,
+     "repository": "state_estimation_testbed.replay",
+     "revision": "1467ec5058b3e7ebd6ba4a45f2d9b49148a2560d",
+     "role": "set",
+     "source_tree": "029ee11bcb68d55ac58afae773b875326ccfc9c0",
+     "tree_pinned": false
+    },
+    {
+     "matched": [
+      "ciw/telemetry-runtimes.json[stfe]"
+     ],
+     "module": "stfe",
+     "problem": null,
+     "repository": "stfe",
+     "revision": "54dd43b657b92d87c2fc263dfd99437c664be353",
+     "role": "stfe",
+     "source_tree": "152816aca45290c81d770570851541edae69a706",
+     "tree_pinned": false
+    }
+   ]
+  }
+ ],
+ "executed_roles": [
+  "gsie",
+  "ppda",
+  "set",
+  "stfe"
+ ],
+ "forged": {
+  "reopen": {
+   "error": null,
+   "message": null,
+   "outcome": "accepted"
+  },
+  "replay": {
+   "error": "ValueError",
+   "message": "Telemetry replay runtime identity mismatch",
+   "outcome": "refused"
+  }
+ },
+ "forged_fields": {
+  "reopen": {
+   "error": null,
+   "message": null,
+   "outcome": "accepted"
+  },
+  "replay_comparison": {
+   "error": null,
+   "message": null,
+   "outcome": "accepted"
+  }
+ },
+ "reason": null,
+ "replay_runtimes_equal": true,
+ "runtimes": {
+  "gsie": {
+   "adapter_version": "ciw-pinned-subprocess-v1",
+   "dependencies": {
+    "numpy": "2.4.3",
+    "scipy": "1.16.2"
+   },
+   "module": "geometric_state_inference.contracts",
+   "python_sha256": "8295ee25cfdb239f3e165afceda7f46de73e2b606ff0e2e3d8623e3facd30acc",
+   "python_version": "3.12.3",
+   "revision": "de38873db1ba98744d395dfa7df1d3b5b7bb3059",
+   "schema": "ciw.subprocess-runtime.v1",
+   "source_root": "src",
+   "source_tree": "dc364802cf846329e48eaaf0832fa4d47c2abd35"
+  },
+  "ppda": {
+   "adapter_version": "ciw-pinned-subprocess-v1",
+   "dependencies": {
+    "numpy": "2.4.3",
+    "scipy": "1.16.2"
+   },
+   "execution_scope": "standalone_checked_source_only",
+   "module": "instrumentation",
+   "python_sha256": "8295ee25cfdb239f3e165afceda7f46de73e2b606ff0e2e3d8623e3facd30acc",
+   "python_version": "3.12.3",
+   "revision": "209985a8c7482aba037021035c2f0b550c9b1ddc",
+   "schema": "ciw.subprocess-runtime.v1",
+   "source_root": "bridge",
+   "source_sha256": "d624bcda528165c7692d11846df0bd8a8c1402868f86c1fce407d5e2946963a1",
+   "source_tree": "9d7150ca433e78e637210c5b2849edba171677d7"
+  },
+  "set": {
+   "adapter_version": "ciw-pinned-subprocess-v1",
+   "dependencies": {
+    "numpy": "2.4.3",
+    "scipy": "1.16.2"
+   },
+   "module": "state_estimation_testbed.replay",
+   "python_sha256": "8295ee25cfdb239f3e165afceda7f46de73e2b606ff0e2e3d8623e3facd30acc",
+   "python_version": "3.12.3",
+   "revision": "1467ec5058b3e7ebd6ba4a45f2d9b49148a2560d",
+   "schema": "ciw.subprocess-runtime.v1",
+   "source_root": ".",
+   "source_tree": "029ee11bcb68d55ac58afae773b875326ccfc9c0"
+  },
+  "stfe": {
+   "adapter_version": "ciw-pinned-subprocess-v1",
+   "dependencies": {
+    "numpy": "2.4.3",
+    "scipy": "1.16.2"
+   },
+   "module": "stfe",
+   "python_sha256": "8295ee25cfdb239f3e165afceda7f46de73e2b606ff0e2e3d8623e3facd30acc",
+   "python_version": "3.12.3",
+   "revision": "54dd43b657b92d87c2fc263dfd99437c664be353",
+   "schema": "ciw.subprocess-runtime.v1",
+   "source_root": ".",
+   "source_tree": "152816aca45290c81d770570851541edae69a706"
+  }
+ },
+ "schema": "ciw.lab-telemetry-runtimes.v1"
+}

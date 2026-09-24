@@ -65,7 +65,7 @@
     "value": 0
    },
    "unit": "findings",
-   "value": 305
+   "value": 325
   },
   {
    "assigned_by": "ciw.lab.evidence",
@@ -146,9 +146,9 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 220266,
+   "bytes": 238472,
    "path": "artifacts/T161/geometry-methods-draft.md",
-   "sha256": "59144932b20b520f11bc8710a0f4068467ec94509ecefe7e4211d2bef8cdcd4d"
+   "sha256": "464ec235f1af24fb600e6dc52e6de5d973dec3757c710a32b647805396504def"
   }
  ],
  "hypothesis": "A geometry methods draft with a thesis, introduction, methods, results, discussion, limitations and outstanding work can be generated from retained findings alone: every number traceable to a report identity, every label defined and shown with its basis, and every limitation drawn from not_established findings and the unfinished tasks' own statements.",
@@ -159,7 +159,7 @@
  ],
  "mathematical_model": "Draft = generated Markdown: a thesis restating counts and counterexamples of the retained findings; an introduction listing the tasks' questions; methods (label definitions, the independence qualification, task hypotheses and models, the assumptions that limit independence); results (one selected finding and figure per task); a discussion listing each counterexample with its witness; limitations (the computational boundary, not_established findings, what each unfinished task is missing); outstanding work; references from the T156 textbook ledger; an appendix with every finding, its label and its basis.",
  "number": 161,
- "numerical_result": "Draft cites 305 findings from 44 reports (44 selected, 32 figures, 84 counterexamples discussed, 0 unfinished tasks, 5 independence qualifications); 0 table rows differ from their source; 0 label or boundary statements missing; 0 required assumptions absent.",
+ "numerical_result": "Draft cites 325 findings from 44 reports (44 selected, 32 figures, 90 counterexamples discussed, 0 unfinished tasks, 5 independence qualifications); 0 table rows differ from their source; 0 label or boundary statements missing; 0 required assumptions absent.",
  "observation_model": "No physical observation; reads retained computational records only.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -175,12 +175,12 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/research_portfolio.py": "36d03762abf5cb7a900d4572ec3f8aa8e7bc55cb61331711dce910a334b3acf8"
+   "src/ciw/lab/research_portfolio.py": "e495d96130ff4578b64c09537d871ac59cf727595bbec93f4bacfdad5ca7874d"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Write the parts the lab cannot write (the thesis in the authors' words, the related-work discussion, the interpretation of the counterexamples and the conclusions) and submit the draft for external review; 18 physical, calibration or sensor claims of completed tasks (T005, T009, T013, T018, T023, T030, T031, T033, T034, T035, T037, T038, T039, T040, T042, T043, T044) stay not established, and each task's own next step is listed under Outstanding work; 7 authority-domain claims stay not established on any evidence.",
- "report_id": "sha256:5a4834e46f689fb5de127215880007841d21fe5795d30c98e45db6481afde6fd",
+ "report_id": "sha256:2e9235787586ecf8a77b53607ad44aae0a3af5e807681aa3303fcbac77bfa0b3",
  "schema": "ciw.lab-task-report.v1",
  "section": "research-portfolio",
  "state": "partial",

@@ -2,7 +2,8 @@
  "changed_files": [
   "src/ciw/lab/geodesic_jacobi_limits.py",
   "src/ciw/lab/geodesic_jacobi_limits_core.py",
-  "docs/lab/GEODESIC_JACOBI_LIMITS.md"
+  "docs/lab/GEODESIC_JACOBI_LIMITS.md",
+  "src/ciw/lab/integrators.py"
  ],
  "evidence_status": {
   "counts": {
@@ -10,14 +11,14 @@
    "hardware_measured": 0,
    "independently_verified": 0,
    "not_established": 0,
-   "numerically_verified": 6,
+   "numerically_verified": 12,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "Exponents 5 (error), 5/4 (RK4 and Gauss-Legendre steps), 3/2 (implicit midpoint), ~1 (DP45 steps); Gauss-Legendre/RK4 step ratio (120/720)^(1/4) = 0.639 at every k; saddle local exponents approaching sqrt(2).",
- "experiment": "Integrate the joint geodesic/Jacobi system per k (adaptive and RK4), measure the growth and decay rates from the eigenvalues of the integrated transfer matrix, search the minimal step counts, compare with stability limits, iterate implicit midpoint beyond its pole, and integrate the saddle ridge geodesic for c up to 16384.",
+ "expected_invariant": "Exponents 5 (error), 5/4 (RK4 and Gauss-Legendre steps), 3/2 (implicit midpoint), ~1 (DP45 steps); Gauss-Legendre/RK4 step ratio (120/720)^(1/4) = 0.639 at every k; saddle local exponents approaching sqrt(2); nonlinear Gauss-Legendre of order 4 with j_head error 1/6 of RK4's on constant K and the step-matrix step counts; bounded symmetric speed errors against a secular RK4 drift on the recurrent geodesic.",
+ "experiment": "Integrate the joint geodesic/Jacobi system per k (adaptive and RK4), measure the growth and decay rates from the eigenvalues of the integrated transfer matrix, search the minimal step counts, compare with stability limits, iterate implicit midpoint beyond its pole, and integrate the saddle ridge geodesic for c up to 16384; integrate the full nonlinear hyperbolic and saddle systems (ridge and oblique geodesics) with the fixed-point Gauss-Legendre integrator and RK4 at three step sizes, rerun the step-matrix step counts with the nonlinear integrator, follow the speed error of RK4, implicit midpoint and Gauss-Legendre over long horizons on escaping and recurrent geodesics, and run implicit midpoint beyond its pole on the full system to see its stage solve refused.",
  "failure_modes_checked": [
   "matrix-power step search checked against the scalar stability functions on the eigenmodes and, for RK4, against the full geodesic/Jacobi integration",
   "implicit-midpoint singular step (kh = 2) refused rather than divided by zero",
@@ -25,7 +26,11 @@
   "adaptive saddle results checked by tightening rtol",
   "exponential growth fitted from the integrated Jacobi field, not the closed form",
   "growth and decay rates measured from the integrated transfer matrix, not from the generator at the literal K = -k^2 (which would only recompute its eigenvalues); the decay rate is claimed only where the decaying eigenvalue exceeds 100 rtol times the largest entry of Phi(L)",
-  "implicit methods of order 2 and 4 both compared, so the step growth is not an order artefact"
+  "implicit methods of order 2 and 4 both compared, so the step growth is not an order artefact",
+  "nonlinear Gauss-Legendre checked against its own step-matrix powers on constant K and at the step-matrix step counts, so the implicit comparison is not an artefact of the linearization",
+  "saddle errors below the reference resolution are left out of the fits instead of being fitted to reference noise",
+  "speed drift judged on both escaping and recurrent geodesics, so boundedness is not attributed to symmetry where no method drifts",
+  "a stage solve that does not converge is refused by name, never returned unconverged"
  ],
  "findings": [
   {
@@ -600,6 +605,682 @@
      1.4148132489919054
     ]
    }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.002479552346438041,
+      "passed": true,
+      "reference": "max |Gauss-Legendre j_head order - 4| over k",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.11243460552801743,
+      "passed": true,
+      "reference": "max |RK4 j_head order - 4| over k",
+      "reference_kind": "analytic",
+      "tolerance": 0.15
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.053668332289823484,
+      "passed": true,
+      "reference": "max over k of |6 x (GL/RK4 j_head error at N = 256) - 1| (error constants 1/720 and 1/120)",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 4.408716921442009e-14,
+      "passed": true,
+      "reference": "max |nonlinear Gauss-Legendre j_head - its step-matrix power| / j_head",
+      "reference_kind": "cross_implementation",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "le",
+      "observed": 9.87222740136983e-07,
+      "passed": true,
+      "reference": "max relative j_head error of the nonlinear integrator at the step-matrix step count (target 1e-06)",
+      "reference_kind": "analytic",
+      "tolerance": 1e-06
+     },
+     {
+      "comparison": "ge",
+      "observed": 1.0071818485839264e-06,
+      "passed": true,
+      "reference": "min relative j_head error of the nonlinear integrator one step below it",
+      "reference_kind": "analytic",
+      "tolerance": 1e-06
+     }
+    ],
+    "derivation": "docs/lab/GEODESIC_JACOBI_LIMITS.md#t016-strongly-negative-curvature",
+    "generator": {
+     "deterministic": true,
+     "k": [
+      1.0,
+      2.0,
+      4.0,
+      8.0
+     ],
+     "name": "ciw.lab.geodesic_jacobi_limits:implicit-hyperbolic",
+     "seed": null,
+     "solve_tol": 1e-13,
+     "steps": [
+      64,
+      128,
+      256
+     ]
+    }
+   },
+   "claim": "On the full nonlinear HyperbolicPlane(k) system the 2-stage Gauss-Legendre integrator converges at order 4, its j_head error tends to 1/6 of RK4's, and it needs exactly the step counts found on its constant-curvature step matrix",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks",
+    "synthetic_inputs"
+   ],
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 0.001
+   },
+   "uncertainty": {
+    "basis": "largest gap between a fitted order and its consecutive-step-pair orders; errors are against the closed form sinh(kL)/k",
+    "kind": "fit_spread",
+    "value": 0.037443719509502316
+   },
+   "unit": null,
+   "value": {
+    "gauss_legendre_over_rk4_j_head_error": [
+     [
+      0.17090791360723556,
+      0.16877323733181887,
+      0.16771886729645658
+     ],
+     [
+      0.17560481715756787,
+      0.17106916963038155,
+      0.16885147494045066
+     ],
+     [
+      0.18510844589643527,
+      0.17561131589155468,
+      0.17107224864603132
+     ],
+     [
+      0.20593866550310602,
+      0.1851095570324936,
+      0.1756113887149706
+     ]
+    ],
+    "j_head_order": {
+     "gauss-legendre-2": [
+      4.000013338365278,
+      4.000157686279443,
+      4.000627634270623,
+      4.002479552346438
+     ],
+     "rk4": [
+      3.98642623426892,
+      3.97186886647324,
+      3.943745145524853,
+      3.8875653944719826
+     ]
+    },
+    "k": [
+     1.0,
+     2.0,
+     4.0,
+     8.0
+    ],
+    "relative_error_at_required_steps": [
+     9.116373919582174e-07,
+     9.491262142381832e-07,
+     9.595001581870859e-07,
+     9.87222740136983e-07
+    ],
+    "relative_error_one_step_fewer": [
+     1.2015528705468616e-06,
+     1.0658610448890652e-06,
+     1.0071818485839264e-06,
+     1.0076338672618516e-06
+    ],
+    "required_steps": [
+     15,
+     35,
+     83,
+     196
+    ],
+    "steps": [
+     64,
+     128,
+     256
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.1993280710935923,
+      "passed": true,
+      "reference": "max |end-point order - 4| over RK4 and Gauss-Legendre, k <= 4 (hyperbolic distance to the exact semicircle)",
+      "reference_kind": "analytic",
+      "tolerance": 0.25
+     },
+     {
+      "comparison": "ge",
+      "observed": 4.221715484682126,
+      "passed": true,
+      "reference": "6 x smallest GL/RK4 end-point error ratio (1 if the Jacobi error constants carried over)",
+      "reference_kind": "invariant",
+      "tolerance": 3.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 4.1718078046190605,
+      "passed": true,
+      "reference": "6 x smallest GL/RK4 max speed error ratio",
+      "reference_kind": "invariant",
+      "tolerance": 3.0
+     }
+    ],
+    "generator": {
+     "deterministic": true,
+     "k": [
+      1.0,
+      2.0,
+      4.0
+     ],
+     "name": "ciw.lab.geodesic_jacobi_limits:implicit-hyperbolic-endpoint",
+     "seed": null,
+     "steps": [
+      64,
+      128,
+      256
+     ]
+    }
+   },
+   "claim": "The constant-curvature Jacobi error constants do not carry over to the nonlinear hyperbolic geodesic: Gauss-Legendre's end-point and speed errors are not 1/6 of RK4's",
+   "counterexample": {
+    "statement": "An integrator with a six times smaller error constant on the constant-curvature Jacobi equation is correspondingly more accurate for the geodesic itself",
+    "witness": {
+     "endpoint_error_ratio": 0.703619247447021,
+     "j_head_error_ratio": 0.16771886729645658,
+     "k": 1.0,
+     "max_speed_error_ratio": 0.6953013007698434,
+     "steps": 256
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 0.005
+   },
+   "uncertainty": {
+    "basis": "largest gap between a fitted end-point order and its consecutive-step-pair orders",
+    "kind": "fit_spread",
+    "value": 0.0795563560712722
+   },
+   "unit": null,
+   "value": {
+    "endpoint_order": {
+     "gauss-legendre-2": [
+      4.000023795072634,
+      4.0001654915348,
+      4.000646603262332
+     ],
+     "rk4": [
+      3.9711971467696685,
+      3.9236520766687435,
+      3.8006719289064077
+     ]
+    },
+    "gauss_legendre_over_rk4_endpoint_error": [
+     [
+      0.7323068265918856,
+      0.7128861826286893,
+      0.703619247447021
+     ],
+     [
+      0.9743635261481305,
+      0.9065520637494755,
+      0.8763051268085
+     ],
+     [
+      1.2787077023689513,
+      1.0531919566971566,
+      0.969113247906108
+     ]
+    ],
+    "gauss_legendre_over_rk4_max_speed_error": [
+     [
+      0.7039294422977331,
+      0.6991336364611243,
+      0.6953013007698434
+     ],
+     [
+      1.051609944839834,
+      1.059394047596387,
+      1.0522338392927557
+     ],
+     [
+      0.9861300165913454,
+      1.0590778349200825,
+      1.0616881233764557
+     ]
+    ],
+    "k": [
+     1.0,
+     2.0,
+     4.0
+    ],
+    "steps": [
+     64,
+     128,
+     256
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": 0.14731346150562175,
+      "passed": true,
+      "reference": "max |j_head order - 4| over RK4 and Gauss-Legendre on six geodesics (errors >= 1e-11)",
+      "reference_kind": "analytic",
+      "tolerance": 0.3
+     },
+     {
+      "comparison": "le",
+      "observed": 0.07348938470424739,
+      "passed": true,
+      "reference": "max relative change of the DP45 reference j_head from rtol 1e-12 to 1e-13, over the resolution floor",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.2
+     },
+     {
+      "comparison": "ge",
+      "observed": 14.715692325221472,
+      "passed": true,
+      "reference": "largest factor between a GL/RK4 j_head error ratio and 1/6",
+      "reference_kind": "invariant",
+      "tolerance": 2.0
+     },
+     {
+      "comparison": "le",
+      "observed": 0.20710721319051245,
+      "passed": true,
+      "reference": "max GL/RK4 speed error ratio over geodesics and N",
+      "reference_kind": "invariant",
+      "tolerance": 0.5
+     }
+    ],
+    "generator": {
+     "c": [
+      1.0,
+      4.0,
+      16.0
+     ],
+     "deterministic": true,
+     "name": "ciw.lab.geodesic_jacobi_limits:implicit-saddle",
+     "oblique_heading": -0.3,
+     "oblique_offset_over_c": 0.5,
+     "seed": null
+    }
+   },
+   "claim": "On ridge and oblique saddle-surface geodesics (full nonlinear system) Gauss-Legendre and RK4 both converge at order 4, but their j_head error ratio depends on the geodesic instead of being the constant-curvature 1/6, while Gauss-Legendre's speed error is several times smaller at equal steps",
+   "counterexample": {
+    "statement": "Gauss-Legendre's constant-curvature advantage over RK4 (j_head error 1/6 of RK4's) holds on variable-curvature geodesics",
+    "witness": {
+     "curvature_range": [
+      -0.558213912126984,
+      -0.07160818589836329
+     ],
+     "geodesic": "c = 16 oblique",
+     "j_head_error_ratio": 2.4526153875369117
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
+   "regression_tolerance": {
+    "abs": 0.005,
+    "rel": 0.005
+   },
+   "uncertainty": {
+    "basis": "largest relative change of the DP45 reference j_head from rtol 1e-12 to 1e-13; errors below 1e-11 are left out of the fits and ratios",
+    "kind": "reference_error",
+    "value": 7.348938470424739e-13
+   },
+   "unit": null,
+   "value": {
+    "curvature_range": [
+     [
+      -0.9999997613134798,
+      -0.30972308243426766
+     ],
+     [
+      -0.824369932314378,
+      -0.2386852191381072
+     ],
+     [
+      -15.99995220099725,
+      -0.33615127210097984
+     ],
+     [
+      -6.698711957219943,
+      -0.048562801555834964
+     ],
+     [
+      -255.99457802705305,
+      -0.2822398869905535
+     ],
+     [
+      -0.558213912126984,
+      -0.07160818589836329
+     ]
+    ],
+    "gauss_legendre_over_rk4_j_head_error_at_finest_resolved_N": [
+     0.8258278472245317,
+     1.3249083239915638,
+     0.35883574489806924,
+     0.3005995724429494,
+     0.27414845531831783,
+     2.4526153875369117
+    ],
+    "geodesics": [
+     "c = 1 ridge",
+     "c = 1 oblique",
+     "c = 4 ridge",
+     "c = 4 oblique",
+     "c = 16 ridge",
+     "c = 16 oblique"
+    ],
+    "j_head_order": {
+     "gauss-legendre-2": [
+      3.999001919497339,
+      3.998784102169973,
+      3.9830828704140755,
+      3.996691166013767,
+      4.147313461505622,
+      3.9998119994729344
+     ],
+     "rk4": [
+      3.9922270377473934,
+      3.996520142539241,
+      4.017583370649729,
+      4.1055357666424195,
+      3.930284523612752,
+      4.0419285963954765
+     ]
+    },
+    "max_gauss_legendre_over_rk4_speed_error": 0.20710721319051245
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 1.0000958192752054,
+      "passed": true,
+      "reference": "max over the symmetric methods of envelope(L = 160) / envelope(L = 20)",
+      "reference_kind": "invariant",
+      "tolerance": 1.05
+     },
+     {
+      "comparison": "ge",
+      "observed": 10.504642480476795,
+      "passed": true,
+      "reference": "RK4 envelope(L = 160) / envelope(L = 20)",
+      "reference_kind": "invariant",
+      "tolerance": 4.0
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.07074367733680798,
+      "passed": true,
+      "reference": "RK4 local slope of the envelope over the last doubling minus 1 (secular drift)",
+      "reference_kind": "analytic",
+      "tolerance": 0.2
+     },
+     {
+      "comparison": "ge",
+      "observed": 0.9999994385712062,
+      "passed": true,
+      "reference": "the geodesic crosses the inner equator (K = -1): -min K along it",
+      "reference_kind": "invariant",
+      "tolerance": 0.99
+     }
+    ],
+    "generator": {
+     "deterministic": true,
+     "h": 0.25,
+     "heading": 1.3,
+     "horizon": 160.0,
+     "name": "ciw.lab.geodesic_jacobi_limits:speed-drift-winding",
+     "seed": null
+    }
+   },
+   "claim": "On a recurrent Torus(2, 1) geodesic that winds around the tube through negative curvature, the speed errors of implicit midpoint and 2-stage Gauss-Legendre stay bounded while RK4's grows secularly",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
+   "regression_tolerance": {
+    "abs": 1e-09,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "change of the RK4 local slope between the last two doublings",
+    "kind": "fit_spread",
+    "value": 0.07052465516687523
+   },
+   "unit": null,
+   "value": {
+    "checkpoints": [
+     5.0,
+     10.0,
+     20.0,
+     40.0,
+     80.0,
+     160.0
+    ],
+    "curvature_range": [
+     -0.9999994385712062,
+     0.3333333333333333
+    ],
+    "envelope": {
+     "gauss-legendre-2": [
+      2.2163137562980495e-06,
+      2.2163137562980495e-06,
+      2.2163137562980495e-06,
+      2.2163137562980495e-06,
+      2.2163137562980495e-06,
+      2.2164063566698644e-06
+     ],
+     "implicit-midpoint": [
+      0.0012908966150591006,
+      0.0012908966150591006,
+      0.0012908966150591006,
+      0.0012908966150591006,
+      0.0012908966150591006,
+      0.0012910203078371207
+     ],
+     "rk4": [
+      2.0955876211314894e-05,
+      2.0955876211314894e-05,
+      2.5879087823144076e-05,
+      6.470060594043758e-05,
+      0.00012942085836531447,
+      0.000271850565302989
+     ]
+    },
+    "growth_after_one_eighth": {
+     "gauss-legendre-2": 1.0000417812557232,
+     "implicit-midpoint": 1.0000958192752054,
+     "rk4": 10.504642480476795
+    },
+    "h": 0.25,
+    "rk4_local_slopes": [
+     0.0,
+     0.3044319216412828,
+     1.3219924569231951,
+     1.0002190221699327,
+     1.070743677336808
+    ],
+    "theta_range": [
+     0.0,
+     134.543257681071
+    ]
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 1.0069670272616802,
+      "passed": true,
+      "reference": "max over methods and both geodesics of envelope(L) / envelope(L/8)",
+      "reference_kind": "invariant",
+      "tolerance": 1.05
+     },
+     {
+      "comparison": "le",
+      "observed": 4.827210111415964e-14,
+      "passed": true,
+      "reference": "hyperbolic geodesic heading from the vertical at L (it turns toward the vertical ray)",
+      "reference_kind": "invariant",
+      "tolerance": 1e-06
+     },
+     {
+      "comparison": "le",
+      "observed": 2.220446049250313e-15,
+      "passed": true,
+      "reference": "max speed error of every method on the vertical hyperbolic geodesic (right-hand side linear along the ray)",
+      "reference_kind": "invariant",
+      "tolerance": 1e-13
+     }
+    ],
+    "generator": {
+     "deterministic": true,
+     "h": 0.25,
+     "horizon": 32.0,
+     "name": "ciw.lab.geodesic_jacobi_limits:speed-drift-escaping",
+     "seed": null
+    }
+   },
+   "claim": "On escaping geodesics (hyperbolic plane, oblique saddle geodesic) RK4's speed error does not drift either: it saturates like the symmetric methods', so boundedness there does not distinguish them",
+   "counterexample": {
+    "statement": "Over long horizons RK4's speed error drifts while a symmetric integrator's stays bounded",
+    "witness": {
+     "hyperbolic-plane": {
+      "rk4_envelope": 2.4755903290096803e-05,
+      "rk4_growth_after_one_eighth": 1.0
+     },
+     "saddle-oblique": {
+      "rk4_envelope": 3.417308181563605e-05,
+      "rk4_growth_after_one_eighth": 1.0
+     }
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
+   "regression_tolerance": {
+    "abs": 1e-13,
+    "rel": 1e-06
+   },
+   "uncertainty": {
+    "basis": "speed errors on the vertical ray are rounding; the envelope ratios are exact maxima of the sampled runs",
+    "kind": "roundoff",
+    "value": 2.220446049250313e-15
+   },
+   "unit": null,
+   "value": {
+    "envelope_at_horizon": {
+     "hyperbolic-plane": {
+      "gauss-legendre-2": 1.857428205387368e-05,
+      "implicit-midpoint": 0.010866190626984684,
+      "rk4": 2.4755903290096803e-05
+     },
+     "saddle-oblique": {
+      "gauss-legendre-2": 8.502100932950007e-06,
+      "implicit-midpoint": 0.003986928874470719,
+      "rk4": 3.417308181563605e-05
+     }
+    },
+    "growth_after_one_eighth": {
+     "hyperbolic-plane": {
+      "gauss-legendre-2": 1.0069670272616802,
+      "implicit-midpoint": 1.0061961316670534,
+      "rk4": 1.0
+     },
+     "saddle-oblique": {
+      "gauss-legendre-2": 1.0,
+      "implicit-midpoint": 1.0,
+      "rk4": 1.0
+     }
+    },
+    "h": 0.25,
+    "horizon": 32.0,
+    "vertical_ray_max_speed_error": {
+     "gauss-legendre-2": 2.220446049250313e-15,
+     "implicit-midpoint": 1.7763568394002505e-15,
+     "rk4": 1.7763568394002505e-15
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "expected_refusal": "implicit-midpoint stage equations did not converge within 60 fixed-point iterations at step size 0.2857142857142857 (step 1 of 7)",
+      "observed_refusal": "implicit-midpoint stage equations did not converge within 60 fixed-point iterations at step size 0.2857142857142857 (step 1 of 7)",
+      "passed": true,
+      "reference": "integrators.integrate_implicit(implicit midpoint, HyperbolicPlane(8), N = 7)",
+      "reference_kind": "refusal"
+     }
+    ]
+   },
+   "claim": "The fixed-point stage solve refuses implicit midpoint on the full HyperbolicPlane(8) system at kh = 2.29 instead of returning an unconverged step",
+   "domain": "computational_pipeline",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks"
+   ],
+   "uncertainty": null,
+   "unit": null,
+   "value": "implicit-midpoint stage equations did not converge within 60 fixed-point iterations at step size 0.2857142857142857 (step 1 of 7)"
   }
  ],
  "generated_artifacts": [
@@ -607,6 +1288,16 @@
    "bytes": 6253,
    "path": "artifacts/T016/negative-curvature.json",
    "sha256": "d4e40c55bee836cb27d28feef5fc83d2a19d710f58792edd0727a9c3751e5a93"
+  },
+  {
+   "bytes": 17887,
+   "path": "artifacts/T016/implicit-nonlinear.json",
+   "sha256": "c73db83932344cda3928091d8ee5dbee6ac0e0ecfbe718757d27492ad058e20f"
+  },
+  {
+   "bytes": 6962,
+   "path": "artifacts/T016/speed-drift.svg",
+   "sha256": "3d9f19f276639c5de3b5599523d7f2776e65a389a26768d1952e70e72a3f43f2"
   },
   {
    "bytes": 3617,
@@ -619,16 +1310,18 @@
    "sha256": "2310d5114d263a4ec0bd5779a1f709708159ea272db0448e30fbb336bf9c0660"
   }
  ],
- "hypothesis": "On K = -k^2 the Jacobi fields grow like e^(kL), so absolute errors are amplified by e^(kL) and a fixed relative accuracy needs steps growing with k; this is intrinsic instability of the flow (eigenvalues +k and -k of the Jacobi linearization), not classical stiffness, so A-stable implicit methods do not remove it. Concentrated negative curvature (Saddle with large c) does not produce exponential growth.",
+ "hypothesis": "On K = -k^2 the Jacobi fields grow like e^(kL), so absolute errors are amplified by e^(kL) and a fixed relative accuracy needs steps growing with k; this is intrinsic instability of the flow (eigenvalues +k and -k of the Jacobi linearization), not classical stiffness, so A-stable implicit methods do not remove it. Concentrated negative curvature (Saddle with large c) does not produce exponential growth. On the full nonlinear systems a Gauss-Legendre integrator keeps its constant-curvature advantage only for the Jacobi field on constant K, and its symmetry keeps the speed error bounded where RK4's drifts only on recurrent geodesics.",
  "input_data": [
   "HyperbolicPlane(k), k in 1, 2, 4, 8, start (0, 1), heading 0.6, L = 2.0",
   "RK4 N = 128; DP45 rtol 1e-10; relative accuracy target 1e-06; implicit midpoint and 2-stage Gauss-Legendre as exact step matrices",
-  "Saddle(c), c in 1, 4, 16, 64, 256, 1024, 4096, 16384, ridge geodesic y = 0 from arclength 1 before the saddle point, L = 2, DP45 rtol 1e-9 (checked at 1e-11)"
+  "Saddle(c), c in 1, 4, 16, 64, 256, 1024, 4096, 16384, ridge geodesic y = 0 from arclength 1 before the saddle point, L = 2, DP45 rtol 1e-9 (checked at 1e-11)",
+  "Full nonlinear systems: 2-stage Gauss-Legendre (fixed-point stage solve to 1e-13, at most 60 iterations) and RK4 on HyperbolicPlane(k) with N = 64, 128, 256; on Saddle(c), c in 1, 4, 16, the ridge geodesic and an oblique one from (x0, 0.5/c) with heading -0.3, N = 32, 64, 128; 32, 64, 128; 64, 128, 256, against DP45 at rtol 1e-13 (checked at 1e-12)",
+  "Speed drift at h = 0.25 for RK4, implicit midpoint and Gauss-Legendre: HyperbolicPlane(1) from (0, 1) heading 0.6 and the oblique Saddle(1) geodesic to L = 32; Torus(2, 1) from (0, 0) heading 1.3 (winds around the tube) to L = 160"
  ],
- "mathematical_model": "j'' = k^2 j, j_head = sinh(kL)/k. A one-step method of order p with R(z) = e^z (1 + c z^(p+1) + ...) on the growing mode has relative error N |c| (kh)^(p+1), so N(tau) = L (L |c| k^(p+1) / tau)^(1/p) ~ k^((p+1)/p): RK4 c = -1/120 (k^(5/4)), implicit midpoint c = 1/12 (k^(3/2), pole at kh = 2 and negative factor beyond), 2-stage Gauss-Legendre (the (2, 2) Pade approximant) c = -1/720 (k^(5/4), no real pole). RK4 stability for the decaying mode needs kh <= 2.785. Saddle ridge y = 0: K = -c^2/(1 + c^2 x^2)^2 ~ -1/(4 s^2) away from the saddle point, where j'' = j/(4 s^2) has solutions |s|^((1 +/- sqrt(2))/2); matching the inbound and outbound power laws through the core of width 1/c gives j_head(L) ~ c^sqrt(2) (matched asymptotics, not a proof).",
+ "mathematical_model": "j'' = k^2 j, j_head = sinh(kL)/k. A one-step method of order p with R(z) = e^z (1 + c z^(p+1) + ...) on the growing mode has relative error N |c| (kh)^(p+1), so N(tau) = L (L |c| k^(p+1) / tau)^(1/p) ~ k^((p+1)/p): RK4 c = -1/120 (k^(5/4)), implicit midpoint c = 1/12 (k^(3/2), pole at kh = 2 and negative factor beyond), 2-stage Gauss-Legendre (the (2, 2) Pade approximant) c = -1/720 (k^(5/4), no real pole). RK4 stability for the decaying mode needs kh <= 2.785. Saddle ridge y = 0: K = -c^2/(1 + c^2 x^2)^2 ~ -1/(4 s^2) away from the saddle point, where j'' = j/(4 s^2) has solutions |s|^((1 +/- sqrt(2))/2); matching the inbound and outbound power laws through the core of width 1/c gives j_head(L) ~ c^sqrt(2) (matched asymptotics, not a proof). The nonlinear Gauss-Legendre integrator is the same collocation method, so on constant K its Jacobi columns equal the step-matrix powers up to the stage-solve tolerance; the geodesic equation is nonlinear, where the linear error constants say nothing. Gauss methods are symmetric (applied in chart position-velocity coordinates they are not symplectic for the geodesic Hamiltonian), so on a reversible integrable problem with recurrent (quasi-periodic) orbits their error in first integrals stays bounded, while a non-symmetric method such as RK4 accumulates a secular drift; on an escaping geodesic nothing recurs and the local speed errors can saturate for any method (on the vertical hyperbolic ray the right-hand side is linear along the ray, so every Runge-Kutta method keeps the speed).",
  "number": 16,
- "numerical_result": "RK4 error exponent 4.941 (measured/predicted 0.901-1.02); required steps for k = 1, 2, 4, 8: RK4 23, 54, 127, 303 (exponent 1.24), implicit midpoint 832, 2311, 6532, 18476 (exponent 1.49), 2-stage Gauss-Legendre 15, 35, 83, 196 (exponent 1.24, 0.647 to 0.654 times the RK4 steps, predicted (120/720)^(1/4) = 0.639), DP45 81, 162, 300, 505 (exponent 0.881); accuracy/stability step ratio 23-50.5; growth and decay rates of the integrated Phi(L) equal k to 1.6e-11 and 6.3e-11 relative (decay resolvable for k <= 4); RK4 geodesic endpoint error 2.2e-09 (k = 1) to 0.461 (k = 8); implicit midpoint at kh = 2.29 changes sign 6 times; saddle j_head(L) 3.168, 14.26, 105.8, 793.8, 5775, 4.136e+04, 2.946e+05, 2.094e+06 for c = 1, 4, 16, 64, 256, 1024, 4096, 16384 (fitted exponent 1.43 for c >= 16, local exponents 1.454, 1.431, 1.42, 1.416, 1.415 from c = 16), DP45 steps grow by 47, 52, 48, 48, 47, 46, 46 per factor 4 in c.",
- "observation_model": "Relative error of j_head(L); required steps by doubling and bisection on the exact step matrices of RK4, implicit midpoint and 2-stage Gauss-Legendre (matrix powers, checked against the scalar stability function on the eigenmodes, and for RK4 against the full geodesic/Jacobi integration); hyperbolic distance of the geodesic endpoint to the exact semicircle.",
+ "numerical_result": "RK4 error exponent 4.941 (measured/predicted 0.901-1.02); required steps for k = 1, 2, 4, 8: RK4 23, 54, 127, 303 (exponent 1.24), implicit midpoint 832, 2311, 6532, 18476 (exponent 1.49), 2-stage Gauss-Legendre 15, 35, 83, 196 (exponent 1.24, 0.647 to 0.654 times the RK4 steps, predicted (120/720)^(1/4) = 0.639), DP45 81, 162, 300, 505 (exponent 0.881); accuracy/stability step ratio 23-50.5; growth and decay rates of the integrated Phi(L) equal k to 1.6e-11 and 6.3e-11 relative (decay resolvable for k <= 4); RK4 geodesic endpoint error 2.2e-09 (k = 1) to 0.461 (k = 8); implicit midpoint at kh = 2.29 changes sign 6 times; saddle j_head(L) 3.168, 14.26, 105.8, 793.8, 5775, 4.136e+04, 2.946e+05, 2.094e+06 for c = 1, 4, 16, 64, 256, 1024, 4096, 16384 (fitted exponent 1.43 for c >= 16, local exponents 1.454, 1.431, 1.42, 1.416, 1.415 from c = 16), DP45 steps grow by 47, 52, 48, 48, 47, 46, 46 per factor 4 in c. Full nonlinear systems: Gauss-Legendre j_head orders 4, 4, 4.001, 4.002 (RK4 3.986, 3.972, 3.944, 3.888) for k = 1, 2, 4, 8, GL/RK4 j_head error at N = 256 0.1677, 0.1689, 0.1711, 0.1756 (1/6 = 0.1667), equal to its step-matrix power to 4.4e-14, relative error at the step-matrix counts 15, 35, 83, 196 up to 9.872e-07 and one step below at least 1.007e-06; hyperbolic end-point error ratio GL/RK4 0.704-1.28 and speed error ratio 0.695-1.06 (k <= 4); saddle j_head orders 3.93-4.147, GL/RK4 j_head error ratios c = 1 ridge 0.826, c = 1 oblique 1.32, c = 4 ridge 0.359, c = 4 oblique 0.301, c = 16 ridge 0.274, c = 16 oblique 2.45, GL/RK4 speed error ratio at most 0.207; fixed-point iterations per step 5-14.9 (hyperbolic plane) and 4.75-9.41 (saddle) for Gauss-Legendre; winding torus speed-error envelope at L = 160 over L = 20: RK4 10.5 (last local slope 1.07), implicit midpoint 1.0001, Gauss-Legendre 1.00004 (9.26 and 11.1 iterations per step); on the escaping geodesics every envelope ratio is at most 1.007, and the vertical hyperbolic ray keeps the speed to 2.2e-15 for every method; implicit midpoint on the full HyperbolicPlane(8) system at kh = 2.29: refused ('implicit-midpoint stage equations did not converge within 60 fixed-point iterations at step size 0.2857142857142857 (step 1 of 7)').",
+ "observation_model": "Relative error of j_head(L); required steps by doubling and bisection on the exact step matrices of RK4, implicit midpoint and 2-stage Gauss-Legendre (matrix powers, checked against the scalar stability function on the eigenmodes, and for RK4 against the full geodesic/Jacobi integration); hyperbolic distance of the geodesic endpoint to the exact semicircle; for the full nonlinear comparison the j_head and end-point errors against the closed forms (hyperbolic plane) or the DP45 reference (saddle; errors below 1e-11 are not fitted), and the running maximum of |g(v, v) - 1| along each run (speed-error envelope).",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
   "status": "not_established"
@@ -643,13 +1336,14 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/geodesic_jacobi_limits.py": "893d8b0240e673dd9aa7b5ba13b09958caa861706335726277d676def21aa83d",
-   "src/ciw/lab/geodesic_jacobi_limits_core.py": "0e0b8f85ed4e83c3fcdc866e8a7e580a17432e174b8db8d8277230e226473d7f"
+   "src/ciw/lab/geodesic_jacobi_limits.py": "14bc47662e88f42b396934ed5a6dc6b1bd2e16d023cfb9b13f6e78a98a3f1281",
+   "src/ciw/lab/geodesic_jacobi_limits_core.py": "e705a0dcd311d7aab77c29916512ec13847b7a8e1708310222755bf2df510c0e",
+   "src/ciw/lab/integrators.py": "559acd622a939f9c90e252dc021aa709964851f3baee392253dff80904888c33"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "Deferred research question: add a nonlinear implicit geodesic integrator (for example Gauss-Legendre collocation) and compare it on the full saddle and hyperbolic geodesic systems, including oblique saddle geodesics that sample other K (implicit methods are compared here only on the constant-curvature Jacobi step matrices)",
- "report_id": "sha256:ba9b516c208567f74bd9fd344349071786080c46406712dfa44d7df735ec3bfa",
+ "recommended_next_task": "Deferred research question: derive the Gauss-Legendre and RK4 global error coefficients along variable-curvature geodesics (their j_head error ratio is measured here from well below to above 1 on saddle geodesics, not the constant-curvature 1/6), and add a Newton stage solve to reach steps beyond the fixed-point limit (kh of about 0.6 for implicit midpoint, about 1.1 for Gauss-Legendre), to test whether A-stability then pays on the full hyperbolic system",
+ "report_id": "sha256:ea28850756306beac210ea08cb1504bb85ad3e95e40d815a5d9b95bf95a5ada0",
  "schema": "ciw.lab-task-report.v1",
  "section": "geodesic-jacobi",
  "state": "completed",
@@ -679,16 +1373,40 @@
   "check: Saddle(c): peak |K| = c^2 but Jacobi growth is polynomial in c; the local exponent of j_head(L) decreases toward sqrt(2) vs log j_head(L) / (sqrt(peak |K|) L) at the largest c (exponential growth would give about 1)",
   "check: Saddle(c): peak |K| = c^2 but Jacobi growth is polynomial in c; the local exponent of j_head(L) decreases toward sqrt(2) vs largest change of consecutive local exponents from c = 16 on (nonpositive: decreasing)",
   "check: Saddle(c): peak |K| = c^2 but Jacobi growth is polynomial in c; the local exponent of j_head(L) decreases toward sqrt(2) vs last local exponent (c = 4096 -> 16384) minus the matched-asymptotics value sqrt(2)",
+  "check: On the full nonlinear HyperbolicPlane(k) system the 2-stage Gauss-Legendre integrator converges at order 4, its j_head error tends to 1/6 of RK4's, and it needs exactly the step counts found on its constant-curvature step matrix vs max |Gauss-Legendre j_head order - 4| over k",
+  "check: On the full nonlinear HyperbolicPlane(k) system the 2-stage Gauss-Legendre integrator converges at order 4, its j_head error tends to 1/6 of RK4's, and it needs exactly the step counts found on its constant-curvature step matrix vs max |RK4 j_head order - 4| over k",
+  "check: On the full nonlinear HyperbolicPlane(k) system the 2-stage Gauss-Legendre integrator converges at order 4, its j_head error tends to 1/6 of RK4's, and it needs exactly the step counts found on its constant-curvature step matrix vs max over k of |6 x (GL/RK4 j_head error at N = 256) - 1| (error constants 1/720 and 1/120)",
+  "check: On the full nonlinear HyperbolicPlane(k) system the 2-stage Gauss-Legendre integrator converges at order 4, its j_head error tends to 1/6 of RK4's, and it needs exactly the step counts found on its constant-curvature step matrix vs max |nonlinear Gauss-Legendre j_head - its step-matrix power| / j_head",
+  "check: On the full nonlinear HyperbolicPlane(k) system the 2-stage Gauss-Legendre integrator converges at order 4, its j_head error tends to 1/6 of RK4's, and it needs exactly the step counts found on its constant-curvature step matrix vs max relative j_head error of the nonlinear integrator at the step-matrix step count (target 1e-06)",
+  "check: On the full nonlinear HyperbolicPlane(k) system the 2-stage Gauss-Legendre integrator converges at order 4, its j_head error tends to 1/6 of RK4's, and it needs exactly the step counts found on its constant-curvature step matrix vs min relative j_head error of the nonlinear integrator one step below it",
+  "check: The constant-curvature Jacobi error constants do not carry over to the nonlinear hyperbolic geodesic: Gauss-Legendre's end-point and speed errors are not 1/6 of RK4's vs max |end-point order - 4| over RK4 and Gauss-Legendre, k <= 4 (hyperbolic distance to the exact semicircle)",
+  "check: The constant-curvature Jacobi error constants do not carry over to the nonlinear hyperbolic geodesic: Gauss-Legendre's end-point and speed errors are not 1/6 of RK4's vs 6 x smallest GL/RK4 end-point error ratio (1 if the Jacobi error constants carried over)",
+  "check: The constant-curvature Jacobi error constants do not carry over to the nonlinear hyperbolic geodesic: Gauss-Legendre's end-point and speed errors are not 1/6 of RK4's vs 6 x smallest GL/RK4 max speed error ratio",
+  "check: On ridge and oblique saddle-surface geodesics (full nonlinear system) Gauss-Legendre and RK4 both converge at order 4, but their j_head error ratio depends on the geodesic instead of being the constant-curvature 1/6, while Gauss-Legendre's speed error is several times smaller at equal steps vs max |j_head order - 4| over RK4 and Gauss-Legendre on six geodesics (errors >= 1e-11)",
+  "check: On ridge and oblique saddle-surface geodesics (full nonlinear system) Gauss-Legendre and RK4 both converge at order 4, but their j_head error ratio depends on the geodesic instead of being the constant-curvature 1/6, while Gauss-Legendre's speed error is several times smaller at equal steps vs max relative change of the DP45 reference j_head from rtol 1e-12 to 1e-13, over the resolution floor",
+  "check: On ridge and oblique saddle-surface geodesics (full nonlinear system) Gauss-Legendre and RK4 both converge at order 4, but their j_head error ratio depends on the geodesic instead of being the constant-curvature 1/6, while Gauss-Legendre's speed error is several times smaller at equal steps vs largest factor between a GL/RK4 j_head error ratio and 1/6",
+  "check: On ridge and oblique saddle-surface geodesics (full nonlinear system) Gauss-Legendre and RK4 both converge at order 4, but their j_head error ratio depends on the geodesic instead of being the constant-curvature 1/6, while Gauss-Legendre's speed error is several times smaller at equal steps vs max GL/RK4 speed error ratio over geodesics and N",
+  "check: On a recurrent Torus(2, 1) geodesic that winds around the tube through negative curvature, the speed errors of implicit midpoint and 2-stage Gauss-Legendre stay bounded while RK4's grows secularly vs max over the symmetric methods of envelope(L = 160) / envelope(L = 20)",
+  "check: On a recurrent Torus(2, 1) geodesic that winds around the tube through negative curvature, the speed errors of implicit midpoint and 2-stage Gauss-Legendre stay bounded while RK4's grows secularly vs RK4 envelope(L = 160) / envelope(L = 20)",
+  "check: On a recurrent Torus(2, 1) geodesic that winds around the tube through negative curvature, the speed errors of implicit midpoint and 2-stage Gauss-Legendre stay bounded while RK4's grows secularly vs RK4 local slope of the envelope over the last doubling minus 1 (secular drift)",
+  "check: On a recurrent Torus(2, 1) geodesic that winds around the tube through negative curvature, the speed errors of implicit midpoint and 2-stage Gauss-Legendre stay bounded while RK4's grows secularly vs the geodesic crosses the inner equator (K = -1): -min K along it",
+  "check: On escaping geodesics (hyperbolic plane, oblique saddle geodesic) RK4's speed error does not drift either: it saturates like the symmetric methods', so boundedness there does not distinguish them vs max over methods and both geodesics of envelope(L) / envelope(L/8)",
+  "check: On escaping geodesics (hyperbolic plane, oblique saddle geodesic) RK4's speed error does not drift either: it saturates like the symmetric methods', so boundedness there does not distinguish them vs hyperbolic geodesic heading from the vertical at L (it turns toward the vertical ray)",
+  "check: On escaping geodesics (hyperbolic plane, oblique saddle geodesic) RK4's speed error does not drift either: it saturates like the symmetric methods', so boundedness there does not distinguish them vs max speed error of every method on the vertical hyperbolic geodesic (right-hand side linear along the ray)",
+  "check: The fixed-point stage solve refuses implicit midpoint on the full HyperbolicPlane(8) system at kh = 2.29 instead of returning an unconverged step vs integrators.integrate_implicit(implicit midpoint, HyperbolicPlane(8), N = 7)",
   "pytest: tests/test_lab_geodesic_jacobi_limits.py::test_t016_negative_curvature_is_not_stiffness",
+  "pytest: tests/test_lab_geodesic_jacobi_limits.py::test_t016_gauss_legendre_on_the_full_nonlinear_systems",
+  "pytest: tests/test_lab_geodesic_jacobi_limits.py::test_gauss_collocation_steps_and_refusal",
   "pytest: tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work"
  ],
  "tests_skipped": [],
  "title": "Study stiff behavior on strongly negative-curvature surfaces.",
- "uncertainty": "Step counts are integers found by bisection assuming monotone error in N; the saddle local exponents (1.454, 1.431, 1.42, 1.416, 1.415 for c = 16 ... 16384) come from adaptive runs self-consistent to 3.5e-09 relative, so each local exponent is accurate to about 1e-8; the sqrt(2) limit is a matched-asymptotics argument supported by these slopes, not a proof.",
+ "uncertainty": "Step counts are integers found by bisection assuming monotone error in N; the saddle local exponents (1.454, 1.431, 1.42, 1.416, 1.415 for c = 16 ... 16384) come from adaptive runs self-consistent to 3.5e-09 relative, so each local exponent is accurate to about 1e-8; the sqrt(2) limit is a matched-asymptotics argument supported by these slopes, not a proof. The nonlinear Gauss-Legendre results carry the stage-solve residual (tolerance 1e-13) and rounding. Where a fixed-point iteration stops can change by one iteration between platforms (it did for one step in 640 between OpenBLAS kernels), which moves a Gauss-Legendre state by up to about 1e-14 relative: up to 1e-3 of the smallest errors used (1e-11), so orders and error ratios built from them are compared within 1e-3 to 5e-3, while the speed envelopes (1e-6 and larger) move by less than 1e-8 relative.",
  "unresolved_assumptions": [
   "The sqrt(2) saddle exponent is a matched-asymptotics argument, not a proof",
-  "Only the ridge geodesic of the saddle is studied; oblique geodesics sample other K",
-  "Implicit methods are evaluated on the constant-curvature Jacobi system through their exact step matrices; no nonlinear implicit geodesic integrator is in the core",
+  "The sqrt(2) exponent is fitted on the ridge geodesic only; oblique saddle geodesics are compared for integrator accuracy, not for their Jacobi growth law",
+  "The nonlinear implicit integrator solves its stage equations by fixed-point iteration, which within its 60-iteration cap reaches only kh below about 0.6 (implicit midpoint) and 1.1 (Gauss-Legendre) here (without the cap it stops converging near kh = 1 and 1.3); a Newton solve would reach larger steps and is not implemented",
+  "Why the Gauss-Legendre/RK4 error ratio varies between saddle geodesics is measured, not derived from the methods' error expansions",
   "Error amplification of the geodesic in the half-plane chart mixes chart compression near y = 0 with intrinsic instability"
  ]
 }

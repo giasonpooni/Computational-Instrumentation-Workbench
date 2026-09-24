@@ -2,7 +2,8 @@
  "changed_files": [
   "src/ciw/lab/geodesic_jacobi_limits.py",
   "src/ciw/lab/geodesic_jacobi_limits_core.py",
-  "docs/lab/GEODESIC_JACOBI_LIMITS.md"
+  "docs/lab/GEODESIC_JACOBI_LIMITS.md",
+  "src/ciw/lab/integrators.py"
  ],
  "evidence_status": {
   "counts": {
@@ -10,17 +11,19 @@
    "hardware_measured": 0,
    "independently_verified": 0,
    "not_established": 0,
-   "numerically_verified": 5,
+   "numerically_verified": 8,
    "provider_backed": 0,
    "synthetic": 0
   },
   "primary": "numerically_verified"
  },
- "expected_invariant": "Return error orders 1, 3, 5; bitwise continuation for identical step doubles.",
- "experiment": "Forward/backward fixed-step and adaptive runs; truncated and continued runs compared with direct runs bit for bit; a deterministic search over decimal truncation lengths for a step-size mismatch.",
+ "expected_invariant": "Return error orders 1, 3, 5 for the explicit methods; symmetric return error at rounding level (<= 1e-12) at every N and, when the solve tolerance is loosened, below that tolerance times the state size (a bound: above rounding level at 1e-4 and 1e-6, possibly still at rounding level at 1e-8); forward orders 2 and 4; bitwise continuation for identical step doubles.",
+ "experiment": "Forward/backward fixed-step (explicit and symmetric implicit) and adaptive runs; a sweep of the declared stage-solve tolerance; truncated and continued runs compared with direct runs bit for bit; a deterministic search over decimal truncation lengths for a step-size mismatch.",
  "failure_modes_checked": [
   "Jacobi derivatives flipped along with velocities (otherwise the Jacobi state does not return)",
   "roundoff floor kept below the smallest fitted error",
+  "symmetric methods checked to be inexact forward (orders 2 and 4), so the exact return is not an artefact of an overly fine grid",
+  "stage equations solved to a declared tolerance; a step whose fixed-point iteration does not converge is refused, never returned unconverged",
   "bitwise claims checked with exact equality, not tolerances",
   "decimal witness search is deterministic and bounded"
  ],
@@ -356,6 +359,356 @@
    },
    "unit": null,
    "value": 0.010709114151019605
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 6.661338147750939e-14,
+      "passed": true,
+      "reference": "max return error of implicit midpoint and 2-stage Gauss-Legendre over three surfaces and N = 20 ... 160 (rounding bound)",
+      "reference_kind": "invariant",
+      "tolerance": 1e-12
+     },
+     {
+      "comparison": "ge",
+      "observed": 247871.4649090108,
+      "passed": true,
+      "reference": "smallest same-order explicit return error at N = 20 (explicit midpoint, RK4) over the rounding bound",
+      "reference_kind": "invariant",
+      "tolerance": 100000.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 39734.44515866529,
+      "passed": true,
+      "reference": "smallest forward end-point error of the symmetric methods at N = 20 over the rounding bound (they are not exact)",
+      "reference_kind": "invariant",
+      "tolerance": 10000.0
+     }
+    ],
+    "derivation": "docs/lab/GEODESIC_JACOBI_LIMITS.md#t014-geodesic-reversal-and-path-truncation",
+    "generator": {
+     "deterministic": true,
+     "methods": [
+      "implicit-midpoint",
+      "gauss-legendre-2"
+     ],
+     "name": "ciw.lab.geodesic_jacobi_limits:symmetric-reversal",
+     "seed": null,
+     "solve_tol": 1e-13,
+     "steps": [
+      20,
+      40,
+      80,
+      160
+     ]
+    }
+   },
+   "claim": "Symmetric implicit methods (implicit midpoint, 2-stage Gauss-Legendre; fixed-point stage solve to 1e-13) return from forward-then-reversed integration at rounding level at every step size",
+   "counterexample": {
+    "statement": "The forward-then-reversed return error of an integrator measures its global error",
+    "witness": {
+     "forward_position_error": 4.261941548118264e-07,
+     "method": "gauss-legendre-2",
+     "return_error": 3.352873534367973e-14,
+     "steps": 20,
+     "surface": "sphere"
+    }
+   },
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks",
+    "synthetic_inputs"
+   ],
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 0.01
+   },
+   "uncertainty": {
+    "basis": "the return errors are rounding and stage-solve residuals; they differ between OpenBLAS kernels by less than 1e-15",
+    "kind": "roundoff",
+    "value": 6.661338147750939e-14
+   },
+   "unit": null,
+   "value": {
+    "explicit_same_order_return_error_at_N_20": {
+     "midpoint": 0.000329484122056134,
+     "rk4": 2.478714649090108e-07
+    },
+    "iterations_per_step": {
+     "gauss-legendre-2": [
+      8.908333333333333,
+      7.270833333333333,
+      6.1187499999999995,
+      5.0218750000000005
+     ],
+     "implicit-midpoint": [
+      10.166666666666666,
+      8.1625,
+      6.829166666666666,
+      5.797916666666667
+     ]
+    },
+    "max_return_error": {
+     "gauss-legendre-2": 3.352873534367973e-14,
+     "implicit-midpoint": 6.661338147750939e-14
+    },
+    "return_errors": {
+     "hyperbolic-plane: gauss-legendre-2": [
+      6.938893903907228e-16,
+      2.615963001773025e-15,
+      1.1657341758564144e-14,
+      7.771561172376096e-16
+     ],
+     "hyperbolic-plane: implicit-midpoint": [
+      3.219646771412954e-14,
+      1.687538997430238e-14,
+      1.1102230246251565e-15,
+      1.4432899320127035e-15
+     ],
+     "sphere: gauss-legendre-2": [
+      3.352873534367973e-14,
+      6.106226635438361e-15,
+      1.1324274851176597e-14,
+      1.5543122344752192e-15
+     ],
+     "sphere: implicit-midpoint": [
+      2.2926105458509483e-14,
+      2.398081733190338e-14,
+      6.661338147750939e-14,
+      1.1934897514720433e-14
+     ],
+     "torus: gauss-legendre-2": [
+      3.9968028886505635e-15,
+      1.7763568394002505e-15,
+      6.661338147750939e-15,
+      2.220446049250313e-16
+     ],
+     "torus: implicit-midpoint": [
+      3.824718319833664e-14,
+      1.5057399771478686e-14,
+      2.2426505097428162e-14,
+      1.3322676295501878e-15
+     ]
+    }
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "abs_le",
+      "observed": -0.0008426421129239525,
+      "passed": true,
+      "reference": "sphere implicit-midpoint forward order minus 2",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.0006232868604123531,
+      "passed": true,
+      "reference": "sphere gauss-legendre-2 forward order minus 4",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.0007789543179499425,
+      "passed": true,
+      "reference": "torus implicit-midpoint forward order minus 2",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.004903024244858667,
+      "passed": true,
+      "reference": "torus gauss-legendre-2 forward order minus 4",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": -0.00051673957453513,
+      "passed": true,
+      "reference": "hyperbolic-plane implicit-midpoint forward order minus 2",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "abs_le",
+      "observed": 0.0001124304565633949,
+      "passed": true,
+      "reference": "hyperbolic-plane gauss-legendre-2 forward order minus 4",
+      "reference_kind": "analytic",
+      "tolerance": 0.1
+     },
+     {
+      "comparison": "le",
+      "observed": 0.02332329943275488,
+      "passed": true,
+      "reference": "torus reference end point (DP45 rtol 1e-13) change against rtol 1e-12, over the smallest torus forward error",
+      "reference_kind": "self_convergence",
+      "tolerance": 0.1
+     }
+    ],
+    "derivation": "docs/lab/GEODESIC_JACOBI_LIMITS.md#t014-geodesic-reversal-and-path-truncation",
+    "generator": {
+     "deterministic": true,
+     "methods": [
+      "implicit-midpoint",
+      "gauss-legendre-2"
+     ],
+     "name": "ciw.lab.geodesic_jacobi_limits:symmetric-forward",
+     "seed": null,
+     "steps": [
+      20,
+      40,
+      80,
+      160
+     ]
+    }
+   },
+   "claim": "Implicit midpoint and 2-stage Gauss-Legendre are not exact: their forward end-point errors converge at orders 2 and 4",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "derivation",
+    "reference_checks",
+    "synthetic_inputs"
+   ],
+   "regression_tolerance": {
+    "abs": 0.005,
+    "rel": 0.0
+   },
+   "uncertainty": {
+    "basis": "largest gap between a fitted forward order and its consecutive-step-pair orders",
+    "kind": "fit_spread",
+    "value": 0.009025321606026093
+   },
+   "unit": null,
+   "value": {
+    "hyperbolic-plane: gauss-legendre-2": 4.000112430456563,
+    "hyperbolic-plane: implicit-midpoint": 1.9994832604254649,
+    "sphere: gauss-legendre-2": 3.9993767131395876,
+    "sphere: implicit-midpoint": 1.999157357887076,
+    "torus: gauss-legendre-2": 3.9950969757551413,
+    "torus: implicit-midpoint": 1.99922104568205
+   }
+  },
+  {
+   "assigned_by": "ciw.lab.evidence",
+   "basis": {
+    "checks": [
+     {
+      "comparison": "le",
+      "observed": 0.2229479028550052,
+      "passed": true,
+      "reference": "max return error / (solve tolerance x largest |state|)",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 1564938.9832894655,
+      "passed": true,
+      "reference": "smallest return error at solve tolerance 1e-4 over the rounding bound",
+      "reference_kind": "invariant",
+      "tolerance": 100.0
+     },
+     {
+      "comparison": "ge",
+      "observed": 620.6576641520911,
+      "passed": true,
+      "reference": "smallest return error at solve tolerance 1e-6 over the rounding bound",
+      "reference_kind": "invariant",
+      "tolerance": 100.0
+     },
+     {
+      "comparison": "le",
+      "observed": 0.037164715749327115,
+      "passed": true,
+      "reference": "smallest return error at solve tolerance 1e-8 over the rounding bound",
+      "reference_kind": "invariant",
+      "tolerance": 1.0
+     }
+    ],
+    "generator": {
+     "deterministic": true,
+     "name": "ciw.lab.geodesic_jacobi_limits:solve-tolerance-sweep",
+     "seed": null,
+     "solve_tol": [
+      0.0001,
+      1e-06,
+      1e-08
+     ],
+     "steps": [
+      20,
+      80
+     ],
+     "surface": "torus"
+    }
+   },
+   "claim": "The symmetric methods' return error is bounded by the stage-solve tolerance: at tolerances 1e-4, 1e-6, 1e-8 it stays below the tolerance times the state size, it rises above rounding level at 1e-4 and 1e-6, and at 1e-8 it can already be at rounding level",
+   "domain": "numerical",
+   "evidence_status": "numerically_verified",
+   "origin": [
+    "reference_checks",
+    "synthetic_inputs"
+   ],
+   "regression_tolerance": {
+    "abs": 1e-12,
+    "rel": 0.001
+   },
+   "uncertainty": {
+    "basis": "the return error depends on where each fixed-point iteration stops; the largest ratio to the tolerance bound is given",
+    "kind": "step_sequence",
+    "value": 0.2229479028550052
+   },
+   "unit": null,
+   "value": {
+    "return_errors": {
+     "gauss-legendre-2": {
+      "1e-4": [
+       2.562420396967635e-05,
+       1.5649389832894656e-06
+      ],
+      "1e-6": [
+       6.206576641520911e-10,
+       1.2196748389037282e-07
+      ],
+      "1e-8": [
+       1.2834008855655554e-10,
+       3.7164715749327115e-14
+      ]
+     },
+     "implicit-midpoint": {
+      "1e-4": [
+       3.778116548847077e-05,
+       4.599782882808157e-06
+      ],
+      "1e-6": [
+       5.256635802197707e-07,
+       1.310855868297267e-09
+      ],
+      "1e-8": [
+       1.9044179566662933e-09,
+       1.051343234692581e-09
+      ]
+     }
+    },
+    "steps": [
+     20,
+     80
+    ]
+   }
   }
  ],
  "generated_artifacts": [
@@ -370,21 +723,27 @@
    "sha256": "55019d3c088c8b9cf16526e560c9051632dac248d2ec83e0168bd87f56d458b9"
   },
   {
+   "bytes": 4242,
+   "path": "artifacts/T014/symmetric-reversal.json",
+   "sha256": "a3e92c41ea0370cec74597d28c0d9737c21492c81d8a27632cbe70025496e877"
+  },
+  {
    "bytes": 5429,
    "path": "artifacts/T014/reversal.svg",
    "sha256": "400ebb4e5db1c7d1a9cb15485072f9e14d8d1f8892d15a380820f5d3811a0f48"
   }
  ],
- "hypothesis": "The geodesic flow is reversible, so integrating forward, flipping velocities and Jacobi derivatives, and integrating again returns to the start up to the method's global error; truncate-and-continue on an identical grid is the same arithmetic as direct integration.",
+ "hypothesis": "The geodesic flow is reversible, so integrating forward, flipping velocities and Jacobi derivatives, and integrating again returns to the start up to the method's global error for an explicit method, but exactly for a symmetric one (implicit midpoint, Gauss-Legendre), whose return error is only its stage-solve residual and rounding; truncate-and-continue on an identical grid is the same arithmetic as direct integration.",
  "input_data": [
   "Unit sphere (1.1, 0.4) heading 0.9 L = 2; Torus(2, 1) (0, 0.5) heading 0.7 L = 3; HyperbolicPlane(1) (0, 1) heading 0.6 L = 1.5",
   "Fixed steps N = [20, 40, 80, 160]; DP45 rtol 1e-9, atol 1e-12",
+  "Implicit midpoint and 2-stage Gauss-Legendre at the same N: fixed-point stage solve to 1e-13 (at most 60 iterations); torus also at solve tolerances 1e-4, 1e-6, 1e-8 with N = 20, 80",
   "Truncation: torus, L1 = 1.25 / N1 = 160 and L2 = 2 / N2 = 256 (h = 2^-7); decimal cuts of L2 = 3, N2 = 300"
  ],
- "mathematical_model": "With (u, v, j, j') -> (u, -v, j, -j') the flow over L is inverted. For a one-step method with local error C h^(p+1), the step with -h has local error C (-h)^(p+1); the composition cancels at order h^(p+1) when p is even, so the return error is O(h^(p+1)) for even p and O(h^p) for odd p. Linear check: RK4 R(z) R(-z) = 1 + z^6/72 + ..., midpoint 1 + z^4/4, Euler 1 - z^2.",
+ "mathematical_model": "With (u, v, j, j') -> (u, -v, j, -j') the flow over L is inverted. For a one-step method with local error C h^(p+1), the step with -h has local error C (-h)^(p+1); the composition cancels at order h^(p+1) when p is even, so the return error is O(h^(p+1)) for even p and O(h^p) for odd p. Linear check: RK4 R(z) R(-z) = 1 + z^6/72 + ..., midpoint 1 + z^4/4, Euler 1 - z^2. A symmetric method has Phi_(-h) = Phi_h^(-1), and every Runge-Kutta method commutes with the linear flip rho (Phi_h(rho y) = rho Phi_(-h)(y)), so rho Phi_h^N rho Phi_h^N = identity: the return error is bounded by the stage-solve tolerance plus rounding, not by h^p (linear check: implicit midpoint and the (2, 2) Pade approximant have R(z) R(-z) = 1 exactly), while the forward error is still O(h^2) and O(h^4).",
  "number": 14,
- "numerical_result": "Mean reversal orders euler 1.05, midpoint 3.001, rk4 4.999; adaptive return error up to 0.955 x rtol; dyadic continuation difference 0; decimal witness L1 = 1.13 with a step-size mismatch and a bitwise different result (max difference 4.4e-16); adaptive restart difference 0.0107 x rtol.",
- "observation_model": "Max absolute difference of the full joint state (geodesic and both Jacobi columns).",
+ "numerical_result": "Mean reversal orders euler 1.05, midpoint 3.001, rk4 4.999; adaptive return error up to 0.955 x rtol; symmetric return error at most 6.7e-14 (implicit midpoint) and 3.4e-14 (Gauss-Legendre) at every N, against 0.00033 (explicit midpoint) and 2.5e-07 (RK4) at N = 20, although their forward orders are implicit-midpoint 1.999-1.999, gauss-legendre-2 3.995-4 with forward errors from 4e-08 at N = 20; 10.2-5.8 (implicit midpoint) and 8.91-5.02 (Gauss-Legendre) fixed-point iterations per step from N = 20 to 160; at solve tolerances 1e-4, 1e-6, 1e-8 the return error spans 1.6e-06 to 3.8e-05, 6.2e-10 to 5.3e-07, 3.7e-14 to 1.9e-09 (at most 0.22 x tolerance x state size; rounding bound 1e-12); dyadic continuation difference 0; decimal witness L1 = 1.13 with a step-size mismatch and a bitwise different result (max difference 4.4e-16); adaptive restart difference 0.0107 x rtol.",
+ "observation_model": "Max absolute difference of the full joint state (geodesic and both Jacobi columns); for the symmetric methods also the forward end-point error: embedded distance to the exact great circle (sphere) or to a DP45 rtol 1e-13 end point (torus), hyperbolic distance to the exact semicircle.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
   "status": "not_established"
@@ -399,13 +758,14 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/geodesic_jacobi_limits.py": "893d8b0240e673dd9aa7b5ba13b09958caa861706335726277d676def21aa83d",
-   "src/ciw/lab/geodesic_jacobi_limits_core.py": "0e0b8f85ed4e83c3fcdc866e8a7e580a17432e174b8db8d8277230e226473d7f"
+   "src/ciw/lab/geodesic_jacobi_limits.py": "14bc47662e88f42b396934ed5a6dc6b1bd2e16d023cfb9b13f6e78a98a3f1281",
+   "src/ciw/lab/geodesic_jacobi_limits_core.py": "e705a0dcd311d7aab77c29916512ec13847b7a8e1708310222755bf2df510c0e",
+   "src/ciw/lab/integrators.py": "559acd622a939f9c90e252dc021aa709964851f3baee392253dff80904888c33"
   },
   "sympy": "1.14.0"
  },
- "recommended_next_task": "Deferred research question: add a symmetric integrator (implicit midpoint) to ciw.lab.integrators and check that its forward/backward return error stays at rounding level at every step size, where the explicit methods return with errors of order 1, 3 and 5",
- "report_id": "sha256:7b08f6bb04cb21d2c923ff8e8689cfcad48220383a970111b5e42bae3448d60a",
+ "recommended_next_task": "Deferred research question: implement a time-reversible adaptive step control for the Gauss-Legendre integrator (step size from a symmetric error estimate) and test whether its forward/backward return error also stays at rounding level where the DP45 return error sits at the tolerance, and measure how the rounding-level return error of the fixed-step symmetric methods grows with N (random walk or linear) with compensated summation of the step increments",
+ "report_id": "sha256:318af5fadb747c99f3fe814c07510a2c9f23476238c83439bc6f7f204b0ae1e9",
  "schema": "ciw.lab-task-report.v1",
  "section": "geodesic-jacobi",
  "state": "completed",
@@ -426,15 +786,32 @@
   "check: With decimal truncation lengths the step sizes differ in the last bit and bitwise reproduction fails vs max difference stays at roundoff level",
   "check: Adaptive restart at L1 reproduces direct adaptive integration only to tolerance level vs difference / rtol",
   "check: Adaptive restart at L1 reproduces direct adaptive integration only to tolerance level vs restart is not bitwise: absolute difference",
+  "check: Symmetric implicit methods (implicit midpoint, 2-stage Gauss-Legendre; fixed-point stage solve to 1e-13) return from forward-then-reversed integration at rounding level at every step size vs max return error of implicit midpoint and 2-stage Gauss-Legendre over three surfaces and N = 20 ... 160 (rounding bound)",
+  "check: Symmetric implicit methods (implicit midpoint, 2-stage Gauss-Legendre; fixed-point stage solve to 1e-13) return from forward-then-reversed integration at rounding level at every step size vs smallest same-order explicit return error at N = 20 (explicit midpoint, RK4) over the rounding bound",
+  "check: Symmetric implicit methods (implicit midpoint, 2-stage Gauss-Legendre; fixed-point stage solve to 1e-13) return from forward-then-reversed integration at rounding level at every step size vs smallest forward end-point error of the symmetric methods at N = 20 over the rounding bound (they are not exact)",
+  "check: Implicit midpoint and 2-stage Gauss-Legendre are not exact: their forward end-point errors converge at orders 2 and 4 vs sphere implicit-midpoint forward order minus 2",
+  "check: Implicit midpoint and 2-stage Gauss-Legendre are not exact: their forward end-point errors converge at orders 2 and 4 vs sphere gauss-legendre-2 forward order minus 4",
+  "check: Implicit midpoint and 2-stage Gauss-Legendre are not exact: their forward end-point errors converge at orders 2 and 4 vs torus implicit-midpoint forward order minus 2",
+  "check: Implicit midpoint and 2-stage Gauss-Legendre are not exact: their forward end-point errors converge at orders 2 and 4 vs torus gauss-legendre-2 forward order minus 4",
+  "check: Implicit midpoint and 2-stage Gauss-Legendre are not exact: their forward end-point errors converge at orders 2 and 4 vs hyperbolic-plane implicit-midpoint forward order minus 2",
+  "check: Implicit midpoint and 2-stage Gauss-Legendre are not exact: their forward end-point errors converge at orders 2 and 4 vs hyperbolic-plane gauss-legendre-2 forward order minus 4",
+  "check: Implicit midpoint and 2-stage Gauss-Legendre are not exact: their forward end-point errors converge at orders 2 and 4 vs torus reference end point (DP45 rtol 1e-13) change against rtol 1e-12, over the smallest torus forward error",
+  "check: The symmetric methods' return error is bounded by the stage-solve tolerance: at tolerances 1e-4, 1e-6, 1e-8 it stays below the tolerance times the state size, it rises above rounding level at 1e-4 and 1e-6, and at 1e-8 it can already be at rounding level vs max return error / (solve tolerance x largest |state|)",
+  "check: The symmetric methods' return error is bounded by the stage-solve tolerance: at tolerances 1e-4, 1e-6, 1e-8 it stays below the tolerance times the state size, it rises above rounding level at 1e-4 and 1e-6, and at 1e-8 it can already be at rounding level vs smallest return error at solve tolerance 1e-4 over the rounding bound",
+  "check: The symmetric methods' return error is bounded by the stage-solve tolerance: at tolerances 1e-4, 1e-6, 1e-8 it stays below the tolerance times the state size, it rises above rounding level at 1e-4 and 1e-6, and at 1e-8 it can already be at rounding level vs smallest return error at solve tolerance 1e-6 over the rounding bound",
+  "check: The symmetric methods' return error is bounded by the stage-solve tolerance: at tolerances 1e-4, 1e-6, 1e-8 it stays below the tolerance times the state size, it rises above rounding level at 1e-4 and 1e-6, and at 1e-8 it can already be at rounding level vs smallest return error at solve tolerance 1e-8 over the rounding bound",
   "pytest: tests/test_lab_geodesic_jacobi_limits.py::test_t014_reversal_and_truncation",
+  "pytest: tests/test_lab_geodesic_jacobi_limits.py::test_t014_symmetric_methods_return_at_rounding_level",
   "pytest: tests/test_lab_geodesic_jacobi_limits.py::test_t014_defers_cross_platform_reproduction_as_one_question",
+  "pytest: tests/test_lab_geodesic_jacobi_limits.py::test_gauss_collocation_steps_and_refusal",
   "pytest: tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work"
  ],
  "tests_skipped": [],
  "title": "Test geodesic reversal and path truncation.",
- "uncertainty": "Orders are least-squares fits over four step sizes; the smallest RK4 return error (7.6e-12) stays far above roundoff. Adaptive ratios depend on the accepted step sequence.",
+ "uncertainty": "Orders are least-squares fits over four step sizes; the smallest RK4 return error (7.6e-12) stays far above roundoff. Adaptive ratios depend on the accepted step sequence. The symmetric return errors are rounding and stage-solve residuals: they change in the last bits between OpenBLAS kernels (below 1e-15), so their regression tolerance is the 1e-12 rounding bound itself. Where a fixed-point iteration stops can move by one iteration between platforms, which changes a mean iteration count by 1/(2N) and a state by up to about 1e-14; the iteration means are therefore compared within 1 %, and the forward orders, fitted down to errors of 1e-11, within 5e-3.",
  "unresolved_assumptions": [
   "The order gain for even p is derived for smooth problems; it can fail near chart singularities",
+  "The symmetric methods are integrated with fixed steps only; a time-reversible adaptive step control is not implemented, so the adaptive return error stays at tolerance level",
   "Deferred research question (cross-platform reproduction): run T014 on Windows x86-64 and macOS arm64 besides the retained Linux x86-64 run and check that the two bitwise claims (dyadic truncation and continuation reproduces direct integration; decimal truncation lengths change the step in the last bit) hold bit for bit there and that every other T014 finding value (reversal orders, adaptive return and restart ratios) matches the retained one within its regression tolerance; adaptive step sequences may differ in the last bit between platforms, and no second platform has been compared"
  ]
 }

@@ -354,14 +354,14 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/lyapunov.py": "d343889fe69789b9551ef6e36029c1f969c6bf04c4cdb4618b9f506539831665",
+   "src/ciw/lab/lyapunov.py": "bac453e41cfaf4c8e83f82cc2eee826543cba08d732cba1e430a6a61fe2c1147",
    "src/ciw/lab/lyapunov_provider.py": "da3465b48b5f5efc47bfe6ab8379cf2cf2bc23e4835dc7ff047252e77fa6ef17",
    "src/ciw/lab/lyapunov_reference.py": "831ae8bd144c10e255cb9f2b54e0c219e2f98a59d01a07b5255046ae70b9b431"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question (upstream PLSR change): check positive definiteness in QuadraticCertificate with an exact LDL^T (or a resolution-aware eigenvalue floor) instead of the eigvalsh sign, and re-run to check that the exactly indefinite P candidates that eigvalsh calls positive definite are refused.",
- "report_id": "sha256:5b320a25f2b283ee644be9c9471839cfb3921118cac833c495f8449aac2ad321",
+ "report_id": "sha256:860e5193cfff432db11d1c6705e7c230ee960925b3ffd8186085207b5c90fb18",
  "schema": "ciw.lab-task-report.v1",
  "section": "lyapunov",
  "state": "completed",

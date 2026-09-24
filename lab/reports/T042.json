@@ -583,14 +583,14 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/surfaces_discrete_mesh.py": "6d6f03cf6afcc2ecbdce3da635c4c38b96a3c77c0a6209c510b589b009c10c3b",
-   "src/ciw/lab/surfaces_discrete_mesh_geometry.py": "eb8124863335556f8aaa6f47f599a137f5925ef9210b5d7878bb8c7416a4dad3",
-   "src/ciw/lab/surfaces_discrete_mesh_studies.py": "1d274cab4fa8572f2304e3bff48b546936762ba151732df04f6bbae949f85086"
+   "src/ciw/lab/surfaces_discrete_mesh.py": "514826d79f459b5f623c1644a41835aeda4c6370aba67be523441bdb36183b76",
+   "src/ciw/lab/surfaces_discrete_mesh_geometry.py": "dae3df0a227a1cc31197bc16f38671287bfc38fbeb1959a2af68c056fd962199",
+   "src/ciw/lab/surfaces_discrete_mesh_studies.py": "fee3e580fbeadd2ce04c5110b08803566b668f077851d21ffa364ac48d07b60e"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: detect the defects recorded here as undetected (self-intersections between non-adjacent faces, unwelded seams of coincident duplicate vertices, duplicate faces) as named refusal states, and measure the false-positive rate of every refusal on valid meshes, including legitimate sharp creases that folded_face now refuses.",
- "report_id": "sha256:00dcebe6f6f442d1694d013accbb601c83dd37bc8cc01ed40dc041596a83609b",
+ "report_id": "sha256:b8e6b95958ca272ceb64e1368d13c284240a33dc0b4399e7b39bf81049842105",
  "schema": "ciw.lab-task-report.v1",
  "section": "surfaces-discrete",
  "state": "completed",

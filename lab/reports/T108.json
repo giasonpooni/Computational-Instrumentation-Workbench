@@ -321,14 +321,14 @@
   },
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/lyapunov.py": "d343889fe69789b9551ef6e36029c1f969c6bf04c4cdb4618b9f506539831665",
+   "src/ciw/lab/lyapunov.py": "bac453e41cfaf4c8e83f82cc2eee826543cba08d732cba1e430a6a61fe2c1147",
    "src/ciw/lab/lyapunov_provider.py": "da3465b48b5f5efc47bfe6ab8379cf2cf2bc23e4835dc7ff047252e77fa6ef17",
    "src/ciw/lab/lyapunov_reference.py": "831ae8bd144c10e255cb9f2b54e0c219e2f98a59d01a07b5255046ae70b9b431"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: extend the required-margin monotonicity property test to affine plants with a parameter-dependent P(theta), which the finite family here does not contain (the general statement rests on the decision-order argument).",
- "report_id": "sha256:0665e4faf9d1fea6b3b33e1acf76ad7c4c765a9493b1eb8bbb95ab8213fa0711",
+ "report_id": "sha256:a8928be28e8423644930e342b7e2f4a85f944c998fffdf635f35842289c92e5a",
  "schema": "ciw.lab-task-report.v1",
  "section": "lyapunov",
  "state": "completed",

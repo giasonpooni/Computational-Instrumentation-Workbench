@@ -721,8 +721,8 @@
    "python": "3.12.3",
    "scipy": "1.16.2",
    "sources": {
-    "src/ciw/lab/geodesic_jacobi.py": "a3abaeabd7605e4a100c304efb6066d2b656644122bf602c06cb97691415a419",
-    "src/ciw/lab/geodesic_jacobi_common.py": "7cb215a28e357a37f1c42cef6bdcb40e22abf7804ae9d58c4818fa40aa52da53"
+    "src/ciw/lab/geodesic_jacobi.py": "407edba2b834982772d95d52990aec86a4c1466d927f40dcf8edf1258456e05b",
+    "src/ciw/lab/geodesic_jacobi_common.py": "9a6f433f386493a5f2a24c072bf7cff1e1a3fd5572b1c676ab4a80fda9109ff2"
    },
    "sympy": "1.14.0"
   },
@@ -742,7 +742,7 @@
   }
  },
  "recommended_next_task": "Deferred research question (hardware-gated): measure the separation law on real neighbouring trajectories (for example two tracked markers on great circles of a sphere and on a saddle, with a calibrated position sensor) and compare the measured separation with eps j(s) within the sensor's calibrated uncertainty. Route: T005 would read the tracker export as an operator capture (ctx.capture('trajectory-log'), bound with ciw lab run T005 --capture trajectory-log=PATH) and fit the separation from it as a computational finding; the physical finding needs, besides an acquisition record (device, raw_sha256 of the captured bytes, acquired_at, calibration), a probe of the tracker on the analysing host that succeeds in T005 (runner.CAPTURE_INSTRUMENTS has no entry for trajectory-log) or a signed-capture trust anchor, and the run is retained with ciw lab hardware retain under lab/hardware/<run-id>. Neither the capture reader nor a tracker probe exists, so the physical-domain finding stays not_established even when such data exist",
- "report_id": "sha256:65f3c07843ff4bbbf804cc24b72f16359d5ddfa08881354750914fc2ace30caf",
+ "report_id": "sha256:385116644c095b9bbfedb7804bda2813988cbb2a63acf43aa408a0d178cf8792",
  "schema": "ciw.lab-task-report.v1",
  "section": "geodesic-jacobi",
  "state": "completed",

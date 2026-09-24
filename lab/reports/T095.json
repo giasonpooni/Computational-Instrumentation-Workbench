@@ -540,13 +540,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/exchange_provenance_bundles.py": "289185340068210691a0ccc526655eadb241855566c88003eedf97eef22b7085",
+   "src/ciw/lab/exchange_provenance_bundles.py": "f75ee7cccf320b68e75983ee2e5e974cea6a77e87f765cd22e8501ea04635007",
    "src/ciw/lab/exchange_provenance_bundles_fixtures.py": "28f726a725f7219ef0afccd34545104b5dc0a36e27723281fe6bd1fbde467fa2"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: apply the malformed matrix to the source parsers of the workbench kinds other than energy-accuracy, which parse after the same canonical-base64 and byte-budget checks; and, once CIW makes the changes docs/lab/EXCHANGE_BUNDLES.md requests (read_json refusing an overflowing number and turning RecursionError into ValueError, Session.from_workspace refusing unknown or missing top-level fields with a ValueError, source.add naming the source rather than a runtime), re-run it to check that each of the five counterexamples becomes a refusal with its own text.",
- "report_id": "sha256:78a9bd5c64a95161d7a0b04cb43e80fcd27a153263ccd8d65c7a71e1fe82e259",
+ "report_id": "sha256:e5a8bdf9cad85a61cc2d9a590b2b6b2d0a03a606952ad0059e0ffbf92d75a765",
  "schema": "ciw.lab-task-report.v1",
  "section": "exchange-provenance",
  "state": "completed",

@@ -638,13 +638,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/geodesic_jacobi_limits.py": "893d8b0240e673dd9aa7b5ba13b09958caa861706335726277d676def21aa83d",
-   "src/ciw/lab/geodesic_jacobi_limits_core.py": "0e0b8f85ed4e83c3fcdc866e8a7e580a17432e174b8db8d8277230e226473d7f"
+   "src/ciw/lab/geodesic_jacobi_limits.py": "14bc47662e88f42b396934ed5a6dc6b1bd2e16d023cfb9b13f6e78a98a3f1281",
+   "src/ciw/lab/geodesic_jacobi_limits_core.py": "e705a0dcd311d7aab77c29916512ec13847b7a8e1708310222755bf2df510c0e"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: sample resonant and chaotic geodesics (two geodesics now) beyond the horizon 320 the run budget allows, fit asymptotic drift laws, and compare a symmetric integrator on the same horizons",
- "report_id": "sha256:17a0765e348515a69fbb3f17903e85854bbe5a7c29b48c0a914e5378ea216004",
+ "report_id": "sha256:a8b7b6f7ac8097400440d0fb9f094610f8e99b069b8a6dc3a27fb2b78b016313",
  "schema": "ciw.lab-task-report.v1",
  "section": "geodesic-jacobi",
  "state": "completed",
@@ -680,6 +680,6 @@
  "unresolved_assumptions": [
   "Two geodesics only; resonant or chaotic geodesics are not sampled",
   "Horizon 320 is limited by the run budget; asymptotic drift laws are not established",
-  "Symplectic or symmetric integrators are not in the core and are not compared"
+  "The symmetric integrators of the core (implicit midpoint, Gauss-Legendre) are not run on these two geodesics and horizons"
  ]
 }

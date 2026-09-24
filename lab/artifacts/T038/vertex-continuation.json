@@ -1,0 +1,453 @@
+{
+ "continuation": {
+  "cube": {
+   "k": 4,
+   "rows": [
+    {
+     "closed_form": 1.065822322371156,
+     "endpoint_error": 1.6653345369377348e-16,
+     "exact": 1.0658223223711556,
+     "exact_minus_closed_form": -4.440892098500626e-16,
+     "start": [
+      0.61,
+      0.23
+     ],
+     "status": "completed",
+     "traced": 1.1519202405202649,
+     "traced_minus_exact": 0.08609791814910928,
+     "vertices_passed": 1
+    },
+    {
+     "closed_form": 0.9824055093228496,
+     "endpoint_error": 5.551115123125783e-17,
+     "exact": 0.9824055093228494,
+     "exact_minus_closed_form": -2.220446049250313e-16,
+     "start": [
+      0.19,
+      0.53
+     ],
+     "status": "completed",
+     "traced": 1.0630275304103698,
+     "traced_minus_exact": 0.08062202108752037,
+     "vertices_passed": 1
+    }
+   ]
+  },
+  "flat": [
+   {
+    "error": 1.1102230246251565e-16,
+    "kind": "aimed at a vertex",
+    "mesh": "plane-8x8",
+    "shear": 0.0,
+    "status": "completed",
+    "vertices_passed": 1
+   },
+   {
+    "error": 5.551115123125783e-17,
+    "kind": "aimed at a vertex",
+    "mesh": "plane-8x8",
+    "shear": 0.0,
+    "status": "completed",
+    "vertices_passed": 2
+   },
+   {
+    "error": 4.440892098500626e-16,
+    "kind": "aimed at a vertex",
+    "mesh": "plane-8x8",
+    "shear": 0.5,
+    "status": "completed",
+    "vertices_passed": 1
+   },
+   {
+    "error": 5.551115123125783e-17,
+    "kind": "aimed at a vertex",
+    "mesh": "plane-8x8",
+    "shear": 0.5,
+    "status": "completed",
+    "vertices_passed": 1
+   },
+   {
+    "error": 1.1102230246251565e-16,
+    "kind": "along a diagonal row of vertices",
+    "mesh": "plane-8x8",
+    "shear": 0.0,
+    "status": "completed",
+    "vertices_passed": 4
+   },
+   {
+    "error": 0.0,
+    "kind": "along a grid row of vertices",
+    "mesh": "plane-8x8",
+    "shear": 0.0,
+    "status": "completed",
+    "vertices_passed": 5
+   },
+   {
+    "error": 5.551115123125783e-17,
+    "kind": "aimed at a vertex",
+    "mesh": "prism-cylinder-16x10",
+    "shear": null,
+    "status": "completed",
+    "vertices_passed": 2
+   },
+   {
+    "error": 1.6653345369377348e-16,
+    "kind": "along a column of vertices",
+    "mesh": "prism-cylinder-16x10",
+    "shear": null,
+    "status": "completed",
+    "vertices_passed": 6
+   },
+   {
+    "error": 1.249000902703301e-16,
+    "kind": "along a diagonal row of vertices",
+    "mesh": "prism-cylinder-16x10",
+    "shear": null,
+    "status": "completed",
+    "vertices_passed": 2
+   }
+  ],
+  "flat_max_error": 4.440892098500626e-16,
+  "flat_vertices_passed": [
+   1,
+   2,
+   1,
+   1,
+   4,
+   5,
+   2,
+   6,
+   2
+  ]
+ },
+ "fans": {
+  "ends_over_pi": [
+   0.3,
+   0.6,
+   0.9,
+   1.1,
+   1.3
+  ],
+  "offset": 1e-06,
+  "radii": [
+   0.45,
+   0.35
+  ],
+  "rows": [
+   {
+    "exact_minus_closed_form": [
+     -3.3306690738754696e-16,
+     -1.6653345369377348e-16,
+     -3.3306690738754696e-16,
+     1.1102230246251565e-15,
+     2.220446049250313e-16,
+     3.3306690738754696e-16
+    ],
+    "issues": [],
+    "one_sided_limit_error": 2.285714286509588e-06,
+    "one_sided_polar": [
+     1.570798612509183,
+     3.1415903678755073
+    ],
+    "path_through_centre": false,
+    "polar_minus_half": 0.0,
+    "radius_error": 5.551115123125783e-17,
+    "reverse_error": 1.5265566588595902e-16,
+    "status": "completed",
+    "through_expected": [
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    "through_measured": [
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    "total_angle_over_pi": 1.5,
+    "traced_minus_exact": 0.05990633290524505,
+    "vertices_passed": 1
+   },
+   {
+    "exact_minus_closed_form": [
+     -1.1102230246251565e-16,
+     -1.1102230246251565e-16,
+     1.1102230246251565e-16,
+     -1.1102230246251565e-16,
+     4.440892098500626e-16,
+     0.0
+    ],
+    "issues": [],
+    "one_sided_limit_error": 2.2857142867316327e-06,
+    "one_sided_polar": [
+     2.5132764085861212,
+     3.1415903678755073
+    ],
+    "path_through_centre": false,
+    "polar_minus_half": 4.440892098500626e-16,
+    "radius_error": 0.0,
+    "reverse_error": 8.326672684688674e-17,
+    "status": "completed",
+    "through_expected": [
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    "through_measured": [
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    "total_angle_over_pi": 1.8,
+    "traced_minus_exact": 0.009694487787809236,
+    "vertices_passed": 1
+   },
+   {
+    "exact_minus_closed_form": [
+     0.0,
+     0.0,
+     -1.1102230246251565e-16,
+     2.220446049250313e-16,
+     1.2212453270876722e-15,
+     0.0
+    ],
+    "issues": [],
+    "one_sided_limit_error": 2.2857142858434543e-06,
+    "one_sided_polar": [
+     3.141594939304079,
+     3.1415903678755073
+    ],
+    "path_through_centre": true,
+    "polar_minus_half": 4.440892098500626e-16,
+    "radius_error": 5.551115123125783e-17,
+    "reverse_error": 2.498001805406602e-16,
+    "status": "completed",
+    "through_expected": [
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    "through_measured": [
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    "total_angle_over_pi": 2.0,
+    "traced_minus_exact": 0.0,
+    "vertices_passed": 1
+   },
+   {
+    "exact_minus_closed_form": [
+     0.0,
+     5.551115123125783e-17,
+     -1.1102230246251565e-16,
+     -1.1102230246251565e-16,
+     0.0,
+     -9.992007221626409e-16
+    ],
+    "issues": [],
+    "one_sided_limit_error": 2.285714285399365e-06,
+    "one_sided_polar": [
+     3.769913470022038,
+     3.1415903678755095
+    ],
+    "path_through_centre": true,
+    "polar_minus_half": -4.440892098500626e-16,
+    "radius_error": 5.551115123125783e-17,
+    "reverse_error": 1.3877787807814457e-16,
+    "status": "completed",
+    "through_expected": [
+     false,
+     false,
+     false,
+     true,
+     false
+    ],
+    "through_measured": [
+     false,
+     false,
+     false,
+     true,
+     false
+    ],
+    "total_angle_over_pi": 2.2,
+    "traced_minus_exact": 0.0,
+    "vertices_passed": 1
+   },
+   {
+    "exact_minus_closed_form": [
+     0.0,
+     0.0,
+     -2.220446049250313e-16,
+     -1.1102230246251565e-16,
+     -2.220446049250313e-16,
+     -1.1102230246251565e-16
+    ],
+    "issues": [],
+    "one_sided_limit_error": 2.285714285399365e-06,
+    "one_sided_polar": [
+     4.7123912660989715,
+     3.1415903678755077
+    ],
+    "path_through_centre": true,
+    "polar_minus_half": 0.0,
+    "radius_error": 1.1102230246251565e-16,
+    "reverse_error": 7.632783294297951e-17,
+    "status": "completed",
+    "through_expected": [
+     false,
+     false,
+     false,
+     true,
+     true
+    ],
+    "through_measured": [
+     false,
+     false,
+     false,
+     true,
+     true
+    ],
+    "total_angle_over_pi": 2.5,
+    "traced_minus_exact": 0.0,
+    "vertices_passed": 1
+   }
+  ],
+  "start_fraction": 0.37,
+  "triangles": 6
+ },
+ "vertex_hits": {
+  "amplitude": 0.1,
+  "crossing_order": -1.0096829930558069,
+  "crossings": 22310,
+  "length": 1.0,
+  "pooled_near_over_2tau": [
+   1.010085163603765,
+   1.0062752129090093,
+   0.5378753922008068,
+   0.0
+  ],
+  "rows": [
+   {
+    "crossings": 1479,
+    "crossings_per_trace": 7.395,
+    "h": 0.302148446075979,
+    "level": 2,
+    "min_margin": 0.0003883353361535311,
+    "near": [
+     297,
+     40,
+     2,
+     0
+    ],
+    "near_over_2tau": [
+     1.0040567951318458,
+     1.352265043948614,
+     0.676132521974307,
+     0.0
+    ],
+    "statuses": [
+     "completed"
+    ],
+    "traces": 200,
+    "vertex_hits": 0,
+    "vertices": 162
+   },
+   {
+    "crossings": 2950,
+    "crossings_per_trace": 14.75,
+    "h": 0.15223723045827323,
+    "level": 3,
+    "min_margin": 0.00046083500144045164,
+    "near": [
+     617,
+     58,
+     6,
+     0
+    ],
+    "near_over_2tau": [
+     1.0457627118644068,
+     0.9830508474576272,
+     1.0169491525423728,
+     0.0
+    ],
+    "statuses": [
+     "completed"
+    ],
+    "traces": 200,
+    "vertex_hits": 0,
+    "vertices": 642
+   },
+   {
+    "crossings": 5937,
+    "crossings_per_trace": 29.685,
+    "h": 0.07627782056632401,
+    "level": 4,
+    "min_margin": 0.0002555978325963215,
+    "near": [
+     1157,
+     113,
+     7,
+     0
+    ],
+    "near_over_2tau": [
+     0.9743978440289708,
+     0.9516590870810173,
+     0.5895233282802762,
+     0.0
+    ],
+    "statuses": [
+     "completed"
+    ],
+    "traces": 200,
+    "vertex_hits": 0,
+    "vertices": 2562
+   },
+   {
+    "crossings": 11944,
+    "crossings_per_trace": 59.72,
+    "h": 0.03815056092170942,
+    "level": 5,
+    "min_margin": 0.0002536231389291821,
+    "near": [
+     2436,
+     238,
+     9,
+     0
+    ],
+    "near_over_2tau": [
+     1.0197588747488278,
+     0.9963161419959813,
+     0.37675820495646345,
+     0.0
+    ],
+    "statuses": [
+     "completed"
+    ],
+    "traces": 200,
+    "vertex_hits": 0,
+    "vertices": 10242
+   }
+  ],
+  "taus": [
+   0.1,
+   0.01,
+   0.001,
+   0.0001
+  ],
+  "tolerance": 1e-09,
+  "vertex_hits": 0
+ }
+}

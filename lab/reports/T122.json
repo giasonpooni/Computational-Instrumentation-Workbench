@@ -530,9 +530,10 @@
    "sha256": "cf161d627ff6e3dd15197a535f1c10f41c2f9ef85e3c86216c32a47aba288bfd"
   },
   {
-   "bytes": 13369,
+   "bytes": 51176,
    "path": "artifacts/T122/free-energy.svg",
-   "sha256": "17bcbc7eae74099081d2507cb673047970d8214c49197280f1d33e0d3238d363"
+   "rounding_level": true,
+   "sha256": "c5e12cd8af5d43298570e80da4a559b6a63b944098ec4b0a0946d07b65d038cb"
   }
  ],
  "hypothesis": "Bounded natural-gradient/Euclidean descent on the Gaussian variational free energy reaches the exact posterior, with F + log Z = KL at every iterate; convergence speed depends on normalization.",
@@ -558,15 +559,15 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/energy_gpu.py": "f49195ce5a78ced3c8da1562f4412f2fdc65d8cc2749dd4fbe0b25bc0334e773",
-   "src/ciw/lab/energy_gpu_kernels.py": "1198886637535f3f8ec26601aa70cdc16d1c175dc4286aa9807edec3910005d2",
+   "src/ciw/lab/energy_gpu.py": "a77a30ee8439752ff3da38d742a823ac16d0cea5ea189bf030c2d52233ef5706",
+   "src/ciw/lab/energy_gpu_kernels.py": "967807416e80c2fd746babe8e52419a20f68e9285c0a4aad452a4b6758d3e786",
    "src/ciw/lab/energy_gpu_telemetry.py": "6935331e622266868a97ee78f8e34d185aa69009a62fedc8ea8273b3a9312bfc",
    "src/ciw/lab/energy_gpu_workload.py": "5cdaf9fe9f25194dae561e060abf471567cfd3bb8df6c1836630a54c5085a9de"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: a bounded free-energy example with a non-Gaussian posterior (for example a two-component mixture likelihood), where F + log Z = KL still holds but KL has no closed form, so the identity must be checked against a quadrature or Monte Carlo KL with its own stated uncertainty",
- "report_id": "sha256:020cd41874b0dd43dd08e57f83b51afd937561aabee3549994dc73596837c3f4",
+ "report_id": "sha256:cee12a2a26a45ac76aadfeb822d19b9ccc5b20358592b6b03d57379eced78b97",
  "schema": "ciw.lab-task-report.v1",
  "section": "energy-gpu",
  "state": "completed",

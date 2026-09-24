@@ -339,7 +339,7 @@
   {
    "bytes": 2527,
    "path": "artifacts/T154/control-outputs.json",
-   "sha256": "d154481e7802b40a9d4635760b6654e835ee5403985cd0aabcdd6f565459c6b0"
+   "sha256": "82211eb21cdf10cef368a63706b60cc788e48111bd752467e414d6c7bba2f3e2"
   },
   {
    "bytes": 2036,
@@ -377,7 +377,7 @@
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: a proposal-and-authorization record for stop requests to an independent safety function (the servo-axis abort declared in ciw.lab.lyapunov_research is not a ControlProposal), and a hardware-in-the-loop authority design review; production acceptance and actuation authority stay outside the system",
- "report_id": "sha256:84ba6f05fb50c3604bbec1db98048a9c72463b5dfd4ea4b74b100a7498d8dd20",
+ "report_id": "sha256:8b3eac6b10e6744e66c1347f28e34ecdb8c40143d742b3224a43bd779154595d",
  "schema": "ciw.lab-task-report.v1",
  "section": "implementation-targets",
  "state": "completed",

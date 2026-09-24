@@ -1,7 +1,7 @@
 {
  "note": "Elapsed times of this run only; the Rust figure includes process start and JSON exchange.",
- "python_closed_form_wall_s": 0.022661334998701932,
- "python_generic_wall_s": 0.31488802999956533,
- "rust_build_wall_s": 0.3494057409989182,
- "rust_run_wall_s": 0.0025811359992076177
+ "python_closed_form_wall_s": 0.02052489999914542,
+ "python_generic_wall_s": 0.2929576390015427,
+ "rust_build_wall_s": 0.3326333529985277,
+ "rust_run_wall_s": 0.0019295929960208014
 }

@@ -991,14 +991,14 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/surfaces_discrete_mesh.py": "6d6f03cf6afcc2ecbdce3da635c4c38b96a3c77c0a6209c510b589b009c10c3b",
-   "src/ciw/lab/surfaces_discrete_mesh_geometry.py": "eb8124863335556f8aaa6f47f599a137f5925ef9210b5d7878bb8c7416a4dad3",
-   "src/ciw/lab/surfaces_discrete_mesh_studies.py": "1d274cab4fa8572f2304e3bff48b546936762ba151732df04f6bbae949f85086"
+   "src/ciw/lab/surfaces_discrete_mesh.py": "514826d79f459b5f623c1644a41835aeda4c6370aba67be523441bdb36183b76",
+   "src/ciw/lab/surfaces_discrete_mesh_geometry.py": "dae3df0a227a1cc31197bc16f38671287bfc38fbeb1959a2af68c056fd962199",
+   "src/ciw/lab/surfaces_discrete_mesh_studies.py": "fee3e580fbeadd2ce04c5110b08803566b668f077851d21ffa364ac48d07b60e"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: re-trace the geodesic per Monte Carlo sample past the strip-dependent corridor threshold, where the fixed-strip distance stops being the geodesic distance, and propagate a correlated, anisotropic vertex covariance and independently measured normals. A realistic scanner covariance needs acquired scan data (hardware-gated). Route: T043 would read the scan export as an operator capture (ctx.capture('scan-export'), bound with ciw lab run T043 --capture scan-export=PATH) and fit the covariance from it as a computational finding; a scanner claim needs, besides an acquisition record (device, raw_sha256 of the captured bytes, acquired_at, calibration), a probe of the scanner on the analysing host that succeeds in T043 (runner.CAPTURE_INSTRUMENTS has no entry for scan-export) or a signed-capture trust anchor, and the run is retained with ciw lab hardware retain under lab/hardware/<run-id>. Neither the capture reader nor a scanner probe exists, so T043's scanner claims stay not_established even when such data exist.",
- "report_id": "sha256:667bca9ebf5ef113e94b80668a29ff43b6a0a19e29ddd53a642a73b226966b21",
+ "report_id": "sha256:56069b005d02d5e83f487a3c36d583a031fdae4e6df76fd0bdebe548d648121c",
  "schema": "ciw.lab-task-report.v1",
  "section": "surfaces-discrete",
  "state": "completed",

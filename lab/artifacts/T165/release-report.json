@@ -1,21 +1,21 @@
 {
  "basis_components": {
   "acquisition": 0,
-  "derivation": 142,
-  "independent_check": 63,
+  "derivation": 145,
+  "independent_check": 69,
   "none": 165,
-  "provider": 92,
-  "reference_checks": 843,
-  "synthetic_inputs": 350
+  "provider": 96,
+  "reference_checks": 868,
+  "synthetic_inputs": 366
  },
  "ciw_version": "0.1.0",
  "labels": {
   "analytic": 11,
   "hardware_measured": 0,
-  "independently_verified": 63,
+  "independently_verified": 69,
   "not_established": 187,
-  "numerically_verified": 805,
-  "provider_backed": 6,
+  "numerically_verified": 824,
+  "provider_backed": 10,
   "synthetic": 0
  },
  "physical_validation": "not_established",
@@ -96,11 +96,26 @@
   ],
   "tasks": 168
  },
- "release_digest": "sha256:18fdd36b2ddeb44409b393f3e4fe81620551bb0084384cab6cc255628194841e",
+ "release_digest": "sha256:0f3127c76ae72fedf33f4d9f1a99857b634ba2f934a7919587e08f1c6524b828",
  "release_digest_covers": "task states, headline labels, finding claims and finding labels",
  "release_digest_encoding": "sha256 over the UTF-8 bytes of ciw.core.identities.canonical_json (sorted keys, no whitespace, ASCII escapes, NaN refused; the encoding of report identities) of the list [[task, state, headline label, [[claim, label], ...]], ...] in queue order",
  "reports": 164,
  "runtimes": [
+  {
+   "identities": [
+    {
+     "revision": "b543969cb80a69a5df1274eee10d22549bcea773",
+     "tasks": [
+      "T077"
+     ],
+     "tree": "eef36f7fe740b4deb562e9dda9383e94294c6503"
+    }
+   ],
+   "runtime": "cbsr",
+   "tasks": [
+    "T077"
+   ]
+  },
   {
    "identities": [
     {
@@ -139,6 +154,21 @@
     "T020",
     "T026",
     "T098"
+   ]
+  },
+  {
+   "identities": [
+    {
+     "revision": "de38873db1ba98744d395dfa7df1d3b5b7bb3059",
+     "tasks": [
+      "T077"
+     ],
+     "tree": "dc364802cf846329e48eaaf0832fa4d47c2abd35"
+    }
+   ],
+   "runtime": "gsie",
+   "tasks": [
+    "T077"
    ]
   },
   {
@@ -183,6 +213,13 @@
   {
    "identities": [
     {
+     "revision": "209985a8c7482aba037021035c2f0b550c9b1ddc",
+     "tasks": [
+      "T077"
+     ],
+     "tree": "9d7150ca433e78e637210c5b2849edba171677d7"
+    },
+    {
      "revision": "a29845e13e55de30b24ae752b896058041d653e6",
      "tasks": [
       "T097",
@@ -193,6 +230,7 @@
    ],
    "runtime": "ppda",
    "tasks": [
+    "T077",
     "T097",
     "T098"
    ]
@@ -268,6 +306,13 @@
   {
    "identities": [
     {
+     "revision": "1467ec5058b3e7ebd6ba4a45f2d9b49148a2560d",
+     "tasks": [
+      "T077"
+     ],
+     "tree": "029ee11bcb68d55ac58afae773b875326ccfc9c0"
+    },
+    {
      "revision": "542e672be512bf43b61253f2b2a43cd967cb3062",
      "tasks": [
       "T097",
@@ -278,6 +323,7 @@
    ],
    "runtime": "set",
    "tasks": [
+    "T077",
     "T097",
     "T098"
    ]
@@ -295,6 +341,21 @@
    "runtime": "sp1",
    "tasks": [
     "T099"
+   ]
+  },
+  {
+   "identities": [
+    {
+     "revision": "54dd43b657b92d87c2fc263dfd99437c664be353",
+     "tasks": [
+      "T077"
+     ],
+     "tree": "152816aca45290c81d770570851541edae69a706"
+    }
+   ],
+   "runtime": "stfe",
+   "tasks": [
+    "T077"
    ]
   }
  ],

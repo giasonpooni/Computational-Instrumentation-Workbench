@@ -510,13 +510,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/geodesic_jacobi_limits.py": "893d8b0240e673dd9aa7b5ba13b09958caa861706335726277d676def21aa83d",
-   "src/ciw/lab/geodesic_jacobi_limits_core.py": "0e0b8f85ed4e83c3fcdc866e8a7e580a17432e174b8db8d8277230e226473d7f"
+   "src/ciw/lab/geodesic_jacobi_limits.py": "14bc47662e88f42b396934ed5a6dc6b1bd2e16d023cfb9b13f6e78a98a3f1281",
+   "src/ciw/lab/geodesic_jacobi_limits_core.py": "e705a0dcd311d7aab77c29916512ec13847b7a8e1708310222755bf2df510c0e"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: survey C2(s*) over a seeded sample of torus geodesics (how often a path is reflection-symmetric with C2 = 0) and tabulate validity domains for lateral perturbation families beyond the single lateral case on the sphere",
- "report_id": "sha256:4cea98c3a1fdbcf05294b55d3a34e189247f02a2a371173f9f2bb10b9400cfa8",
+ "report_id": "sha256:3ab7cc15f6697f8bc95029e6f3c7294fb9427d0e670055f7818830d440f5ffdd",
  "schema": "ciw.lab-task-report.v1",
  "section": "geodesic-jacobi",
  "state": "completed",

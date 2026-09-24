@@ -481,13 +481,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/geodesic_jacobi.py": "a3abaeabd7605e4a100c304efb6066d2b656644122bf602c06cb97691415a419",
-   "src/ciw/lab/geodesic_jacobi_common.py": "7cb215a28e357a37f1c42cef6bdcb40e22abf7804ae9d58c4818fa40aa52da53"
+   "src/ciw/lab/geodesic_jacobi.py": "407edba2b834982772d95d52990aec86a4c1466d927f40dcf8edf1258456e05b",
+   "src/ciw/lab/geodesic_jacobi_common.py": "9a6f433f386493a5f2a24c072bf7cff1e1a3fd5572b1c676ab4a80fda9109ff2"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: rank lateral against heading sensitivity over equal-length paths (only the witness pair has equal lengths now) and predict the witness pair's heading difference quantitatively from its two curvature profiles through the first-order kernels, which now explain it only qualitatively",
- "report_id": "sha256:c6005f2196f55931cbbd521eaa82e6c025e1837da882ad859e4c84a2d13294ac",
+ "report_id": "sha256:56f0be32814004043f09345c6178d41679f3c41cd98034f91caf72f0a20ca079",
  "schema": "ciw.lab-task-report.v1",
  "section": "geodesic-jacobi",
  "state": "completed",

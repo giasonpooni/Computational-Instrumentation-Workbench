@@ -397,9 +397,10 @@
    "sha256": "0d642d9555303e27ee7e8bb530c54ffccb8cf176e6a1b6760f3ad25cd38ac24b"
   },
   {
-   "bytes": 5049,
+   "bytes": 6808,
    "path": "artifacts/T012/frame-invariance.svg",
-   "sha256": "6b9bf01afebba1097135932417b10f6b3a2735ac8e18e661cb80ebf2475d08db"
+   "rounding_level": true,
+   "sha256": "e3b2302d2a125c89afb44094f44bc70f1f3baabcf44df7ec881eee9233e5ed23"
   },
   {
    "bytes": 6277,
@@ -431,13 +432,13 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/geodesic_jacobi_limits.py": "893d8b0240e673dd9aa7b5ba13b09958caa861706335726277d676def21aa83d",
-   "src/ciw/lab/geodesic_jacobi_limits_core.py": "0e0b8f85ed4e83c3fcdc866e8a7e580a17432e174b8db8d8277230e226473d7f"
+   "src/ciw/lab/geodesic_jacobi_limits.py": "14bc47662e88f42b396934ed5a6dc6b1bd2e16d023cfb9b13f6e78a98a3f1281",
+   "src/ciw/lab/geodesic_jacobi_limits_core.py": "e705a0dcd311d7aab77c29916512ec13847b7a8e1708310222755bf2df510c0e"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: implement Mobius isometries of HyperbolicPlane as a ChartMap and check that Jacobi columns and endpoint distances are invariant under them (only tangent-basis changes are tested there now), and extend the ambient tests to translations and reflections of the embedding",
- "report_id": "sha256:6f146697c58ee0fba7ffdd9cd1757ae473229ffeab1eab3bc5a9fe4198565f75",
+ "report_id": "sha256:aa500d4e94a0967b2e378172d72fa7f621466d9bbf4db867cdd122bfbfc4876f",
  "schema": "ciw.lab-task-report.v1",
  "section": "geodesic-jacobi",
  "state": "completed",

@@ -506,7 +506,7 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/integrators.py": "a8cd5b2c5042c70970ae27975ef9387c4492ac981132cd9096bf8eafa8dc6084",
+   "src/ciw/lab/integrators.py": "559acd622a939f9c90e252dc021aa709964851f3baee392253dff80904888c33",
    "src/ciw/lab/jacobi.py": "87b7d23f17cac61b513ab96bd56fb9f58a50c19de463055c2278097c8c623e42",
    "src/ciw/lab/sensor_fusion_bench.py": "f373849a4c6836fa20685c59ce7a6fe6bf732f6df9d6a49646cdc017262dd656",
    "src/ciw/lab/sensor_fusion_common.py": "db3b0430ad5c13920239cef354da61b64ab1b01f84b2d3d5aff2f78840a5867a",
@@ -517,7 +517,7 @@
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question: repeat the Jacobi covariance propagation and the linearization-breakdown study on the variable-curvature torus and Gaussian bump, using as references the geodesic integrator that T002 validates against 34-digit solutions on those surfaces (largest gap 6.4e-14) and the Jacobi columns that T006 checks against finite-difference flow there.",
- "report_id": "sha256:44e47fcdab9970fbe9665c24478d2c746c88012a14fc3a11adf877c192c411d5",
+ "report_id": "sha256:ebbdb221c9a30bb8ce138f6821292fc6e10218dc293650316f0e1b4e4a734c3a",
  "schema": "ciw.lab-task-report.v1",
  "section": "sensor-fusion",
  "state": "completed",

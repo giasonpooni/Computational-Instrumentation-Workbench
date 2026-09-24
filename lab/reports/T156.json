@@ -134,14 +134,14 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 75013,
+   "bytes": 77525,
    "path": "artifacts/T156/attribution-ledger.json",
-   "sha256": "67f4809a167afbf0969285cec643647461422cf88d7fb8fbb3a809a390b65d99"
+   "sha256": "f4f0ac38a536f51a0acffed6b78a3cb3ce27803a11fa707198ffce2d4834d0a5"
   },
   {
-   "bytes": 12931,
+   "bytes": 13449,
    "path": "artifacts/T156/ATTRIBUTION.md",
-   "sha256": "d10b2523dc861c4cf5b8b8246a6c67ab24a2716be603bac4dcdd699ca805510e"
+   "sha256": "654ef57645100e3cd53225231f504dfd566be2d684ec7019627ff3e67c2edc56"
   }
  ],
  "hypothesis": "Every result used by the lab can be attributed either to established literature or to a named implementation artifact in this repository.",
@@ -152,7 +152,7 @@
  ],
  "mathematical_model": "Per retained task: textbook results whose names its report text uses (pattern per ledger entry) and the package source files its report names as changed files; a task with neither is unattributed.",
  "number": 156,
- "numerical_result": "155 reports: 124 use at least one of 30 textbook results, 31 rest on implementation sources only, 0 unattributed; 0 ledger textbook results unused; 64 implementation files, 0 curated ones missing.",
+ "numerical_result": "155 reports: 124 use at least one of 30 textbook results, 31 rest on implementation sources only, 0 unattributed; 0 ledger textbook results unused; 68 implementation files, 0 curated ones missing.",
  "observation_model": "No physical observation; reads retained computational records only.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -168,12 +168,12 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/research_portfolio.py": "36d03762abf5cb7a900d4572ec3f8aa8e7bc55cb61331711dce910a334b3acf8"
+   "src/ciw/lab/research_portfolio.py": "e495d96130ff4578b64c09537d871ac59cf727595bbec93f4bacfdad5ca7874d"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Record per-finding provenance tags (textbook result or contribution) so attribution is declared by each task rather than inferred from its wording.",
- "report_id": "sha256:dd387ac373e82754d26a58bad4c616ce6dd590fa32634bd974c83b8793302646",
+ "report_id": "sha256:95c03acadc824ec6fcfc5131dea59187f9eccb3f3d71f0fe659295b8b01fa19a",
  "schema": "ciw.lab-task-report.v1",
  "section": "research-portfolio",
  "state": "completed",

@@ -257,6 +257,8 @@
   "ciw.lab.integrators.step_midpoint",
   "ciw.lab.integrators.step_rk4",
   "ciw.lab.integrators.integrate_fixed",
+  "ciw.lab.integrators.step_gauss",
+  "ciw.lab.integrators.integrate_implicit",
   "ciw.lab.integrators.richardson_rk4",
   "ciw.lab.integrators.integrate_adaptive",
   "ciw.lab.jacobi.rhs",

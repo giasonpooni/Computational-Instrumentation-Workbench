@@ -870,14 +870,14 @@
   "scipy": "1.16.2",
   "sources": {
    "src/ciw/lab/surfaces.py": "e8f264c182743d0177d93b961a49d7ddf78f30d79a7a75b9fea4018b10d4eef0",
-   "src/ciw/lab/surfaces_discrete.py": "69aab93e2eb89b4cb3c2a5e559151449c00371f316464abe806190664ecea984",
+   "src/ciw/lab/surfaces_discrete.py": "b8cb7efd2e05e2b4ec77aa0f2f74387ebcddcd1358561209f4e74705958171a6",
    "src/ciw/lab/surfaces_discrete_charts.py": "e1d7e0b8514c7795f0e41b26d993d44ae3f032ea67191b068194ec284f227e71",
    "src/ciw/lab/surfaces_discrete_geometry.py": "d4445a253778e1dff32b68a903a9caf560affa08ca5a7110207e54c8e1baa60e"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "Deferred research question (queue extension after T168): adopt these refusal codes (nonfinite_point, nonfinite_metric, degenerate_metric, curvature_blowup, outside_chart, curvature_singularity, conical_singularity) as the admission refusal states for smooth surface data, and add a removability test (metric regularity in radial arclength coordinates) so the cube-root chart's removable singularity is classified (the refusal states that T042 defines (MESH_CODES, TRACE_CODES and QUERY_CODES in surfaces_discrete_mesh_geometry.py) are for triangle meshes and contain none of these codes).",
- "report_id": "sha256:9d60a00ab5fbb9ca4333092ebc4b837de2e76833244cb35f5199e305beae1f41",
+ "report_id": "sha256:e9208c945733f1fa69ee97e477d2bca7fd3566ea1ca5fb27f1975fb5728a2f20",
  "schema": "ciw.lab-task-report.v1",
  "section": "surfaces-discrete",
  "state": "completed",

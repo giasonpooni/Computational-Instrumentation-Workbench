@@ -49,7 +49,7 @@
    "task": "T083"
   },
   {
-   "description": "receipt moved from the replay B1 onto the original sibling B0b and rebuilt there (source B0, replayed B0b, verification rebuilt from B0 with B0b's own step as the reproduction, ids recomputed)",
+   "description": "receipt moved from the replay B1 onto the original sibling B0b and rebuilt there (source B0, replayed B0b, verification rebuilt from B0 with B0b's own step as the reproduction, ids and catalog receipt seal recomputed)",
    "error": null,
    "killed": false,
    "kind": "workspace",
@@ -75,7 +75,7 @@
    "task": "T083"
   },
   {
-   "description": "a new receipt written onto the never-replayed original B0b claiming it replays B0 (verification built from B0 and B0b's step, ids recomputed); B1 keeps its own receipt",
+   "description": "a new receipt written onto the never-replayed original B0b claiming it replays B0 (verification built from B0 and B0b's step, ids and catalog receipt seal recomputed); B1 keeps its own receipt",
    "error": null,
    "killed": false,
    "kind": "workspace",
@@ -103,12 +103,52 @@
    "task": "T083"
   },
   {
-   "description": "replay_receipts removed from the replay bundle",
+   "description": "replay_receipts removed from the replay bundle; the catalog receipt seal kept",
+   "error": "ValueError",
+   "killed": true,
+   "kind": "workspace",
+   "message_matches_pin": true,
+   "name": "receipt.deleted",
+   "observed": "Retained replay receipt seal differs",
+   "observed_outcome": "killed",
+   "outcome_matches_prediction": true,
+   "pinned_message": "Retained replay receipt seal differs",
+   "predicted_outcome": "killed",
+   "recompute": "none",
+   "target": "energy replay bundle",
+   "task": "T083"
+  },
+  {
+   "description": "replay_receipts removed from the replay bundle; the catalog receipt seal recomputed",
    "error": null,
    "killed": false,
    "kind": "workspace",
    "message_matches_pin": true,
-   "name": "receipt.deleted",
+   "name": "receipt.deleted-resealed",
+   "observed": "accepted",
+   "observed_outcome": "accepted",
+   "outcome_matches_prediction": true,
+   "pinned_message": "accepted",
+   "post_reopen": {
+    "receipt_sources": {
+     "bundle:B0": [],
+     "bundle:B0b": [],
+     "bundle:B1": [],
+     "bundle:Bother": []
+    }
+   },
+   "predicted_outcome": "accepted",
+   "recompute": "full",
+   "target": "energy replay bundle",
+   "task": "T083"
+  },
+  {
+   "description": "replay_receipts removed from the replay bundle and replay_receipt_seal removed from the catalog",
+   "error": null,
+   "killed": false,
+   "kind": "workspace",
+   "message_matches_pin": true,
+   "name": "receipt.deleted-seal-removed",
    "observed": "accepted",
    "observed_outcome": "accepted",
    "outcome_matches_prediction": true,
@@ -123,7 +163,7 @@
    },
    "predicted_outcome": "accepted",
    "recompute": "none",
-   "target": "energy replay bundle",
+   "target": "energy replay bundle and catalog",
    "task": "T083"
   }
  ],

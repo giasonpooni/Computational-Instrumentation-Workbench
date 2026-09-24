@@ -35,12 +35,18 @@
    "tests/test_lab_geodesic_jacobi.py::test_every_next_step_is_a_deferred_research_question": "passed",
    "tests/test_lab_geodesic_jacobi.py::test_every_numerical_finding_declares_uncertainty_and_tolerance": "passed",
    "tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space": "passed",
+   "tests/test_lab_geodesic_jacobi.py::test_odefun_order_check_refutes_a_lower_order_extrapolation": "passed",
+   "tests/test_lab_geodesic_jacobi.py::test_odefun_reference_follows_the_closed_form_on_the_sphere": "passed",
+   "tests/test_lab_geodesic_jacobi.py::test_t002_reference_integrator_agrees_with_mpmath_odefun": "passed",
    "tests/test_lab_geodesic_jacobi.py::test_t002_references_agree": "passed",
    "tests/test_lab_geodesic_jacobi.py::test_t002_without_optional_modules": "passed"
   },
   "missing": [],
   "regression_tests": [
    "tests/test_lab_geodesic_jacobi.py::test_t002_references_agree",
+   "tests/test_lab_geodesic_jacobi.py::test_t002_reference_integrator_agrees_with_mpmath_odefun",
+   "tests/test_lab_geodesic_jacobi.py::test_odefun_order_check_refutes_a_lower_order_extrapolation",
+   "tests/test_lab_geodesic_jacobi.py::test_odefun_reference_follows_the_closed_form_on_the_sphere",
    "tests/test_lab_geodesic_jacobi.py::test_t002_without_optional_modules",
    "tests/test_lab_geodesic_jacobi.py::test_every_numerical_finding_declares_uncertainty_and_tolerance",
    "tests/test_lab_geodesic_jacobi.py::test_figures_fit_their_legend_and_title_space",
@@ -50,11 +56,15 @@
   "task_id": "T002",
   "tied": [
    "tests/test_lab_geodesic_jacobi.py::test_t002_references_agree",
+   "tests/test_lab_geodesic_jacobi.py::test_t002_reference_integrator_agrees_with_mpmath_odefun",
+   "tests/test_lab_geodesic_jacobi.py::test_odefun_order_check_refutes_a_lower_order_extrapolation",
    "tests/test_lab_geodesic_jacobi.py::test_t002_without_optional_modules",
    "tests/test_lab_geodesic_jacobi.py::test_every_next_step_is_a_deferred_research_question"
   ],
   "tied_naming_the_task": [
    "tests/test_lab_geodesic_jacobi.py::test_t002_references_agree",
+   "tests/test_lab_geodesic_jacobi.py::test_t002_reference_integrator_agrees_with_mpmath_odefun",
+   "tests/test_lab_geodesic_jacobi.py::test_odefun_order_check_refutes_a_lower_order_extrapolation",
    "tests/test_lab_geodesic_jacobi.py::test_t002_without_optional_modules"
   ],
   "undeclared": []
@@ -364,24 +374,30 @@
  },
  {
   "junit": {
+   "tests/test_lab_geodesic_jacobi_limits.py::test_gauss_collocation_steps_and_refusal": "passed",
    "tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work": "passed",
    "tests/test_lab_geodesic_jacobi_limits.py::test_t014_defers_cross_platform_reproduction_as_one_question": "passed",
-   "tests/test_lab_geodesic_jacobi_limits.py::test_t014_reversal_and_truncation": "passed"
+   "tests/test_lab_geodesic_jacobi_limits.py::test_t014_reversal_and_truncation": "passed",
+   "tests/test_lab_geodesic_jacobi_limits.py::test_t014_symmetric_methods_return_at_rounding_level": "passed"
   },
   "missing": [],
   "regression_tests": [
    "tests/test_lab_geodesic_jacobi_limits.py::test_t014_reversal_and_truncation",
+   "tests/test_lab_geodesic_jacobi_limits.py::test_t014_symmetric_methods_return_at_rounding_level",
    "tests/test_lab_geodesic_jacobi_limits.py::test_t014_defers_cross_platform_reproduction_as_one_question",
+   "tests/test_lab_geodesic_jacobi_limits.py::test_gauss_collocation_steps_and_refusal",
    "tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work"
   ],
   "state": "completed",
   "task_id": "T014",
   "tied": [
    "tests/test_lab_geodesic_jacobi_limits.py::test_t014_reversal_and_truncation",
+   "tests/test_lab_geodesic_jacobi_limits.py::test_t014_symmetric_methods_return_at_rounding_level",
    "tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work"
   ],
   "tied_naming_the_task": [
    "tests/test_lab_geodesic_jacobi_limits.py::test_t014_reversal_and_truncation",
+   "tests/test_lab_geodesic_jacobi_limits.py::test_t014_symmetric_methods_return_at_rounding_level",
    "tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work"
   ],
   "undeclared": []
@@ -410,22 +426,28 @@
  },
  {
   "junit": {
+   "tests/test_lab_geodesic_jacobi_limits.py::test_gauss_collocation_steps_and_refusal": "passed",
    "tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work": "passed",
+   "tests/test_lab_geodesic_jacobi_limits.py::test_t016_gauss_legendre_on_the_full_nonlinear_systems": "passed",
    "tests/test_lab_geodesic_jacobi_limits.py::test_t016_negative_curvature_is_not_stiffness": "passed"
   },
   "missing": [],
   "regression_tests": [
    "tests/test_lab_geodesic_jacobi_limits.py::test_t016_negative_curvature_is_not_stiffness",
+   "tests/test_lab_geodesic_jacobi_limits.py::test_t016_gauss_legendre_on_the_full_nonlinear_systems",
+   "tests/test_lab_geodesic_jacobi_limits.py::test_gauss_collocation_steps_and_refusal",
    "tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work"
   ],
   "state": "completed",
   "task_id": "T016",
   "tied": [
    "tests/test_lab_geodesic_jacobi_limits.py::test_t016_negative_curvature_is_not_stiffness",
+   "tests/test_lab_geodesic_jacobi_limits.py::test_t016_gauss_legendre_on_the_full_nonlinear_systems",
    "tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work"
   ],
   "tied_naming_the_task": [
    "tests/test_lab_geodesic_jacobi_limits.py::test_t016_negative_curvature_is_not_stiffness",
+   "tests/test_lab_geodesic_jacobi_limits.py::test_t016_gauss_legendre_on_the_full_nonlinear_systems",
    "tests/test_lab_geodesic_jacobi_limits.py::test_next_steps_name_forward_work"
   ],
   "undeclared": []
@@ -1038,20 +1060,26 @@
  },
  {
   "junit": {
+   "tests/test_lab_surfaces_discrete_mesh.py::test_back_traced_paths_are_shortest_and_bend_only_at_saddles_and_boundaries": "passed",
    "tests/test_lab_surfaces_discrete_mesh.py::test_ciw_producers_of_t038_independent_checks_carry_a_revision": "passed",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_continuation_paths_and_cut_points_agree_with_pygeodesic": "passed",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_cut_points_match_the_isolated_cone_prediction": "passed",
    "tests/test_lab_surfaces_discrete_mesh.py::test_dijkstra_check_falls_back_without_scipy": "passed",
    "tests/test_lab_surfaces_discrete_mesh.py::test_exact_checks_fall_back_without_external_packages": "passed",
    "tests/test_lab_surfaces_discrete_mesh.py::test_exact_distances_agree_with_pygeodesic": "passed",
    "tests/test_lab_surfaces_discrete_mesh.py::test_exact_distances_match_closed_forms": "passed",
    "tests/test_lab_surfaces_discrete_mesh.py::test_exact_distances_on_a_perturbed_cube_agree_with_pygeodesic": "passed",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_fan_continuation_bisects_the_total_angle": "passed",
    "tests/test_lab_surfaces_discrete_mesh.py::test_flipout_geodesics_are_never_shorter": "passed",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_generic_traces_do_not_hit_vertices": "passed",
    "tests/test_lab_surfaces_discrete_mesh.py::test_graph_distances_and_steiner_sandwich": "passed",
    "tests/test_lab_surfaces_discrete_mesh.py::test_nearly_flat_saddles_leave_no_shadow": "passed",
    "tests/test_lab_surfaces_discrete_mesh.py::test_next_steps_name_forward_work": "passed",
    "tests/test_lab_surfaces_discrete_mesh.py::test_paths_and_approximations_never_beat_the_exact_distance": "passed",
    "tests/test_lab_surfaces_discrete_mesh.py::test_point_insertion_leaves_distances_unchanged": "passed",
    "tests/test_lab_surfaces_discrete_mesh.py::test_solver_task_report": "passed",
-   "tests/test_lab_surfaces_discrete_mesh.py::test_tracer_is_exact_on_developable_meshes": "passed"
+   "tests/test_lab_surfaces_discrete_mesh.py::test_tracer_is_exact_on_developable_meshes": "passed",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_vertex_continuation_on_flat_and_cone_vertices": "passed"
   },
   "missing": [],
   "regression_tests": [
@@ -1068,6 +1096,12 @@
    "tests/test_lab_surfaces_discrete_mesh.py::test_paths_and_approximations_never_beat_the_exact_distance",
    "tests/test_lab_surfaces_discrete_mesh.py::test_exact_checks_fall_back_without_external_packages",
    "tests/test_lab_surfaces_discrete_mesh.py::test_ciw_producers_of_t038_independent_checks_carry_a_revision",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_vertex_continuation_on_flat_and_cone_vertices",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_fan_continuation_bisects_the_total_angle",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_generic_traces_do_not_hit_vertices",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_back_traced_paths_are_shortest_and_bend_only_at_saddles_and_boundaries",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_cut_points_match_the_isolated_cone_prediction",
+   "tests/test_lab_surfaces_discrete_mesh.py::test_continuation_paths_and_cut_points_agree_with_pygeodesic",
    "tests/test_lab_surfaces_discrete_mesh.py::test_solver_task_report"
   ],
   "state": "completed",
@@ -1928,22 +1962,26 @@
  {
   "junit": {
    "tests/test_lab_exchange_provenance.py::test_identity_matrix": "passed",
+   "tests/test_lab_exchange_provenance.py::test_identity_matrix_telemetry_runtimes": "passed",
    "tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work": "passed",
    "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply": "passed"
   },
   "missing": [],
   "regression_tests": [
    "tests/test_lab_exchange_provenance.py::test_identity_matrix",
+   "tests/test_lab_exchange_provenance.py::test_identity_matrix_telemetry_runtimes",
    "tests/test_lab_exchange_provenance.py::test_next_steps_name_forward_work",
    "tests/test_lab_exchange_provenance.py::test_shared_deferred_questions_are_recorded_where_they_apply"
   ],
   "state": "partial",
   "task_id": "T077",
   "tied": [
-   "tests/test_lab_exchange_provenance.py::test_identity_matrix"
+   "tests/test_lab_exchange_provenance.py::test_identity_matrix",
+   "tests/test_lab_exchange_provenance.py::test_identity_matrix_telemetry_runtimes"
   ],
   "tied_naming_the_task": [
-   "tests/test_lab_exchange_provenance.py::test_identity_matrix"
+   "tests/test_lab_exchange_provenance.py::test_identity_matrix",
+   "tests/test_lab_exchange_provenance.py::test_identity_matrix_telemetry_runtimes"
   ],
   "undeclared": []
  },
@@ -4029,25 +4067,29 @@
   "junit": {
    "tests/test_lab_research_portfolio.py::test_a_changed_figure_is_a_mismatch_and_a_timing_figure_a_counterexample": "passed",
    "tests/test_lab_research_portfolio.py::test_figures_are_reproducible": "passed",
-   "tests/test_lab_research_portfolio.py::test_only_declared_timing_figures_are_exempt_from_the_byte_comparison": "passed"
+   "tests/test_lab_research_portfolio.py::test_only_declared_timing_figures_are_exempt_from_the_byte_comparison": "passed",
+   "tests/test_lab_research_portfolio.py::test_rounding_level_figures_are_compared_by_their_values_on_every_kernel": "passed"
   },
   "missing": [],
   "regression_tests": [
    "tests/test_lab_research_portfolio.py::test_figures_are_reproducible",
    "tests/test_lab_research_portfolio.py::test_a_changed_figure_is_a_mismatch_and_a_timing_figure_a_counterexample",
-   "tests/test_lab_research_portfolio.py::test_only_declared_timing_figures_are_exempt_from_the_byte_comparison"
+   "tests/test_lab_research_portfolio.py::test_only_declared_timing_figures_are_exempt_from_the_byte_comparison",
+   "tests/test_lab_research_portfolio.py::test_rounding_level_figures_are_compared_by_their_values_on_every_kernel"
   ],
   "state": "partial",
   "task_id": "T158",
   "tied": [
    "tests/test_lab_research_portfolio.py::test_figures_are_reproducible",
    "tests/test_lab_research_portfolio.py::test_a_changed_figure_is_a_mismatch_and_a_timing_figure_a_counterexample",
-   "tests/test_lab_research_portfolio.py::test_only_declared_timing_figures_are_exempt_from_the_byte_comparison"
+   "tests/test_lab_research_portfolio.py::test_only_declared_timing_figures_are_exempt_from_the_byte_comparison",
+   "tests/test_lab_research_portfolio.py::test_rounding_level_figures_are_compared_by_their_values_on_every_kernel"
   ],
   "tied_naming_the_task": [
    "tests/test_lab_research_portfolio.py::test_figures_are_reproducible",
    "tests/test_lab_research_portfolio.py::test_a_changed_figure_is_a_mismatch_and_a_timing_figure_a_counterexample",
-   "tests/test_lab_research_portfolio.py::test_only_declared_timing_figures_are_exempt_from_the_byte_comparison"
+   "tests/test_lab_research_portfolio.py::test_only_declared_timing_figures_are_exempt_from_the_byte_comparison",
+   "tests/test_lab_research_portfolio.py::test_rounding_level_figures_are_compared_by_their_values_on_every_kernel"
   ],
   "undeclared": []
  },

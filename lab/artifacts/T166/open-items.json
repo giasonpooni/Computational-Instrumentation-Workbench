@@ -91,9 +91,9 @@
    },
    {
     "kind": "next step",
-    "phrase": "sign receipts",
+    "phrase": "host-held key",
     "task_id": "T083",
-    "text": "Deferred research question (CIW change): bind replay receipts into the replay bundle identity or a catalog-level seal so that an accidental deletion is detected, and sign receipts at replay time with a host-held key under a defined key custody so that the retained fabricated sibling receipt (B0b) and a transplanted receipt are refused."
+    "text": "Deferred research question (CIW change): sign replay receipts, or the catalog's replay-receipt seal, at replay time with a host-held key under a defined key custody, and require the seal in workspaces saved with one, so that the fabricated sibling receipt (B0b), the rebuilt transplant and the deletions that recompute or remove the unkeyed seal are refused."
    },
    {
     "kind": "finding",
@@ -111,7 +111,7 @@
     "kind": "next step",
     "phrase": "key custody",
     "task_id": "T084",
-    "text": "Deferred research question (CIW change): bind each replay receipt to the source execution's own identity as well as its bytes, or sign it under a defined key custody, and re-run these mutations to check that receipt-source.sibling-execution is refused while every killed mutant keeps its pinned message."
+    "text": "Deferred research question (CIW change): bind each replay receipt to the source execution's own identity as well as its bytes, or sign it under a defined key custody, and re-run these mutations to check that receipt-source.sibling-execution-resealed is refused while every killed mutant keeps its pinned message."
    },
    {
     "kind": "finding",
@@ -415,27 +415,9 @@
   "statements": [
    {
     "kind": "assumption",
-    "phrase": "telemetry or calibrated",
-    "task_id": "T077",
-    "text": "Partial: ESM candidate_id and candidate execution identities (they need an operator-bound ESM adapter and a telemetry or calibrated bundle) and pinned-provider runtime identities (ciw.subprocess-runtime.v1; they need a provider checkout bound to a declared-workload or telemetry workflow) are planned matrix rows that the offline path cannot exercise; their predictions are read from the code, not observed."
-   },
-   {
-    "kind": "assumption",
-    "phrase": "telemetry workflow",
-    "task_id": "T077",
-    "text": "The ESM rows use a synthetic telemetry-shaped record (schema, digest, three step occurrences), not a telemetry session validated by the telemetry workflow, which needs provider checkouts."
-   },
-   {
-    "kind": "assumption",
-    "phrase": "workflows (telemetry",
-    "task_id": "T077",
-    "text": "Provider-backed workflows (telemetry, declared workloads, proved heat) were not exercised offline; their identity rows are inferred only where they share the energy-accuracy code path."
-   },
-   {
-    "kind": "assumption",
     "phrase": "telemetry stack",
     "task_id": "T077",
-    "text": "Deferred research question (telemetry provider stack): provision the telemetry stack pinned in src/ciw/telemetry-runtimes.json (ppda, stfe, gsie, set, cbsr; scripts/check_lab.py provisions only ppda and set of these, and scripts/reproduce_lab.py TEST_VARIABLES has no variable for stfe, gsie or cbsr), bind it to a telemetry or declared-workload workflow, and observe the ESM candidate, candidate execution and ciw.subprocess-runtime.v1 identity rows and telemetry-validated records that are now read from code or replaced by a synthetic telemetry-shaped record."
+    "text": "Of the provider-backed workflows only telemetry was exercised, and only with the telemetry stack bound; declared workloads and proved heat retain the same runtime identity schema with workflow-specific checks (declared workloads compare a runtime projection on replay and check the pin and format on reopen, read from the code)."
    },
    {
     "kind": "assumption",
@@ -445,21 +427,9 @@
    },
    {
     "kind": "assumption",
-    "phrase": "telemetry stack",
-    "task_id": "T086",
-    "text": "Deferred research question (telemetry provider stack): provision the telemetry stack pinned in src/ciw/telemetry-runtimes.json (ppda, stfe, gsie, set, cbsr; scripts/check_lab.py provisions only ppda and set of these, and scripts/reproduce_lab.py TEST_VARIABLES has no variable for stfe, gsie or cbsr), bind it to a telemetry or declared-workload workflow, and observe the ESM candidate, candidate execution and ciw.subprocess-runtime.v1 identity rows and telemetry-validated records that are now read from code or replaced by a synthetic telemetry-shaped record."
-   },
-   {
-    "kind": "assumption",
     "phrase": "telemetry workflow",
     "task_id": "T088",
     "text": "Pure-validator rows run candidate_evidence.validate_response on a synthetic telemetry-shaped record (schema, digest, three step occurrences) that no telemetry workflow validated, without an ESM process, and exchange._identity without the pinned exchange validator."
-   },
-   {
-    "kind": "assumption",
-    "phrase": "telemetry stack",
-    "task_id": "T088",
-    "text": "Deferred research question (telemetry provider stack): provision the telemetry stack pinned in src/ciw/telemetry-runtimes.json (ppda, stfe, gsie, set, cbsr; scripts/check_lab.py provisions only ppda and set of these, and scripts/reproduce_lab.py TEST_VARIABLES has no variable for stfe, gsie or cbsr), bind it to a telemetry or declared-workload workflow, and observe the ESM candidate, candidate execution and ciw.subprocess-runtime.v1 identity rows and telemetry-validated records that are now read from code or replaced by a synthetic telemetry-shaped record."
    },
    {
     "kind": "assumption",
@@ -470,26 +440,8 @@
    {
     "kind": "assumption",
     "phrase": "telemetry stack",
-    "task_id": "T089",
-    "text": "Deferred research question (telemetry provider stack): provision the telemetry stack pinned in src/ciw/telemetry-runtimes.json (ppda, stfe, gsie, set, cbsr; scripts/check_lab.py provisions only ppda and set of these, and scripts/reproduce_lab.py TEST_VARIABLES has no variable for stfe, gsie or cbsr), bind it to a telemetry or declared-workload workflow, and observe the ESM candidate, candidate execution and ciw.subprocess-runtime.v1 identity rows and telemetry-validated records that are now read from code or replaced by a synthetic telemetry-shaped record."
-   },
-   {
-    "kind": "assumption",
-    "phrase": "declared-workload or telemetry",
     "task_id": "T090",
-    "text": "Pinned-provider subprocess runtime identities (ciw.subprocess-runtime.v1: pinned revision, module and source_root, host-measured source_tree and python_sha256; src/ciw/declared_workload.py) were not mutated, because no provider checkout was bound to a declared-workload or telemetry workflow; only the CIW-internal oscillator provider identity and CIW's own energy analysis identity were."
-   },
-   {
-    "kind": "assumption",
-    "phrase": "telemetry stack",
-    "task_id": "T090",
-    "text": "Deferred research question (telemetry provider stack): provision the telemetry stack pinned in src/ciw/telemetry-runtimes.json (ppda, stfe, gsie, set, cbsr; scripts/check_lab.py provisions only ppda and set of these, and scripts/reproduce_lab.py TEST_VARIABLES has no variable for stfe, gsie or cbsr), bind it to a telemetry or declared-workload workflow, and observe the ESM candidate, candidate execution and ciw.subprocess-runtime.v1 identity rows and telemetry-validated records that are now read from code or replaced by a synthetic telemetry-shaped record."
-   },
-   {
-    "kind": "next step",
-    "phrase": "declared-workload or telemetry",
-    "task_id": "T090",
-    "text": "Deferred research question: mutate the pinned-provider subprocess runtime identities (ciw.subprocess-runtime.v1) once a provider checkout is bound to a declared-workload or telemetry workflow, and label a retained runtime that differs from the current analysis identity as historical and unverified on reopen (a CIW change), so that energy-runtime.all-bundles and energy-runtime.python-version no longer reopen as current."
+    "text": "Pinned-provider subprocess runtime identities (ciw.subprocess-runtime.v1: pinned revision, module and source_root, host-measured source_tree and python_sha256) were not mutated in this matrix, which runs no provider; only the CIW-internal oscillator provider identity and CIW's own energy analysis identity were. T077 observes the telemetry session's runtime identities when the telemetry stack is bound, including one forged revision."
    },
    {
     "kind": "assumption",
@@ -508,12 +460,6 @@
     "phrase": "telemetry stack",
     "task_id": "T097",
     "text": "The PPDA telemetry stack (ppda, stfe, gsie, set, cbsr at src/ciw/telemetry-runtimes.json pins) is a separate integration."
-   },
-   {
-    "kind": "next step",
-    "phrase": "telemetry workflow",
-    "task_id": "T097",
-    "text": "Deferred research question: provision the telemetry provider stack (ppda, stfe, gsie, set and cbsr at the src/ciw/telemetry-runtimes.json pins; scripts/check_lab.py provisions only ppda and set of these, at other pins) and drive CIW's telemetry workflow end to end against it, as the exchange roundtrip here does for PPDA, SCR and SET; and attest the SCR engine a bound replay uses (CIW records a bound engine as operator_asserted_not_attested), for example by requiring a locked build of the bound checkout in the same run before a replay is accepted."
    }
   ],
   "tasks": [
@@ -548,7 +494,7 @@
     "kind": "next step",
     "phrase": "second host",
     "task_id": "T081",
-    "text": "Deferred research question (CIW change): give oscillator operation results a content-level numerical_result_id so their replays can be linked, recompute statistics (or at least the moment inequalities) on reopen, and repeat the stability test in a separate process on a second host, since the separate session here shares the process and code."
+    "text": "Deferred research question (CIW change): recompute statistics (or at least the moment inequalities) on reopen, which the oscillator numerical_result_id does not do (reopen recomputes it from the retained numbers, so an edit that recomputes it too survives), and repeat the stability test in a separate process on a second host, since the separate session here shares the process and code."
    },
    {
     "kind": "next step",
@@ -596,13 +542,13 @@
     "kind": "assumption",
     "phrase": "Windows",
     "task_id": "T158",
-    "text": "Byte identity is established on this platform only; the second-platform (Windows) comparison is made outside the queue by scripts/check_figures.py and is not part of this report."
+    "text": "Byte identity is established on this platform and kernel only; the comparisons on Windows and on other OpenBLAS kernels are made outside the queue by scripts/check_figures.py and are not part of this report."
    },
    {
     "kind": "next step",
     "phrase": "Windows",
     "task_id": "T158",
-    "text": "Compare the figures on Windows, the second platform, with scripts/check_figures.py: on a windows-latest runner with Python 3.12, install the checkout whose lab/ is retained (python -m pip install -e \".[dev,lab,plsr]\") and run python scripts/check_figures.py --retained lab --output-dir results/figures-windows with --provider ROLE=PATH for every provider the retained figure tasks used (csg, plsr-python, ppda, scr, scr-exchange, set in this run), at the pins scripts/check_lab.py provisions and with plsr-python bound to that Python. It re-executes every figure task without the section's time budget and records each figure's outcome with the platform in figure-check.json; fix every figure it reports as a mismatch, declaring one only when its plotted data are wall-clock timings."
+    "text": "Compare the figures on Windows, the second platform, with scripts/check_figures.py: on a windows-latest runner with Python 3.12, install the checkout whose lab/ is retained (python -m pip install -e \".[dev,lab,plsr]\") and run python scripts/check_figures.py --retained lab --output-dir results/figures-windows with --provider ROLE=PATH for every provider the retained figure tasks used (csg, plsr-python, ppda, scr, scr-exchange, set in this run), at the pins scripts/check_lab.py provisions and with plsr-python bound to that Python. It re-executes every figure task without the section's time budget and records each figure's outcome with the platform and OpenBLAS kernel in figure-check.json; fix every figure it reports as a mismatch, declaring one only when its plotted data are wall-clock timings or when values at rounding level, whose last bits follow the BLAS kernel, move it, with each point's rounding bound recorded, never to hide a real numerical difference."
    },
    {
     "kind": "next step",

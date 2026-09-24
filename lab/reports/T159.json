@@ -62,7 +62,7 @@
     "value": 0
    },
    "unit": "findings",
-   "value": 710
+   "value": 732
   },
   {
    "assigned_by": "ciw.lab.evidence",
@@ -107,14 +107,14 @@
  ],
  "generated_artifacts": [
   {
-   "bytes": 491060,
+   "bytes": 520031,
    "path": "artifacts/T159/uncertainty-budget.json",
-   "sha256": "11e2ce20f31ff3ccf16ed31bf9c097d6eef4cfa8355503cb3049972aee9b1884"
+   "sha256": "09364a47f06ba8bf8c604d986feecc68f9a27305083034fea946511356d8f757"
   },
   {
-   "bytes": 281329,
+   "bytes": 294917,
    "path": "artifacts/T159/uncertainty-budget.md",
-   "sha256": "3f43735978a74ec533d0f22dbc457b04d475629bed697f07efa7df5a9f53607f"
+   "sha256": "ca830f7d15ff6b042b32a664d9a593a5a3544dcde2c250abfd4c74b34370653d"
   }
  ],
  "hypothesis": "Every numerical finding either declares an uncertainty or is identified as lacking one.",
@@ -123,7 +123,7 @@
  ],
  "mathematical_model": "Table rows = every finding whose value contains a number: (task, claim, value, unit, uncertainty kind, value and basis, evidence status). A listing of per-finding components, not a combined budget. A finding whose basis declares no component (evidence.basis_origin is empty) measured nothing: it records an unestablished claim, and its value is listed with the kind 'none (no basis: nothing measured)'.",
  "number": 159,
- "numerical_result": "1054 findings, 710 numerical (value contains a number); 710 declare a per-finding uncertainty, 0 measured ones do not, and 0 record an unestablished claim with no basis (nothing measured); kinds {'collision_bound': 1, 'exact': 64, 'fit': 18, 'fit_residual': 3, 'fit_spread': 17, 'grid_resolution': 1, 'method_error': 1, 'model_truncation': 5, 'monte_carlo_95ci': 90, 'platform_spread': 1, 'quantization': 1, 'reference_error': 87, 'roundoff': 319, 'step_quantization': 1, 'step_sequence': 2, 'truncation_bound': 99}.",
+ "numerical_result": "1083 findings, 732 numerical (value contains a number); 732 declare a per-finding uncertainty, 0 measured ones do not, and 0 record an unestablished claim with no basis (nothing measured); kinds {'collision_bound': 1, 'exact': 67, 'fit': 18, 'fit_residual': 3, 'fit_spread': 21, 'grid_resolution': 1, 'method_error': 1, 'model_truncation': 5, 'monte_carlo_95ci': 91, 'platform_spread': 1, 'quantization': 1, 'reference_error': 88, 'roundoff': 328, 'step_quantization': 1, 'step_sequence': 3, 'truncation_bound': 102}.",
  "observation_model": "No physical observation; reads retained computational records only.",
  "physical_validation_status": {
   "statement": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
@@ -139,12 +139,12 @@
   "python": "3.12.3",
   "scipy": "1.16.2",
   "sources": {
-   "src/ciw/lab/research_portfolio.py": "36d03762abf5cb7a900d4572ec3f8aa8e7bc55cb61331711dce910a334b3acf8"
+   "src/ciw/lab/research_portfolio.py": "e495d96130ff4578b64c09537d871ac59cf727595bbec93f4bacfdad5ca7874d"
   },
   "sympy": "1.14.0"
  },
  "recommended_next_task": "None open in this listing: every measured numerical finding declares an uncertainty. Deferred research question: combine per-quantity components into budgets where one predicted quantity has several sources, in the form T140 uses.",
- "report_id": "sha256:bff19814a8fadfdefa1ca8916cc4c64378da2298af615e3adf72716d69d9fb52",
+ "report_id": "sha256:e26e99aaacc3dea24a61a71b5dc5bbc44d24bbd2c7a36772919d4ca31732b698",
  "schema": "ciw.lab-task-report.v1",
  "section": "research-portfolio",
  "state": "completed",
