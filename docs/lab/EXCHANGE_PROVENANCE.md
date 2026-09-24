@@ -14,7 +14,7 @@ These experiments test the unmodified CIW integrity layer (`ciw.session`,
 `ciw.operations.runner`, `ciw.workbench`, `ciw.energy_workflow`,
 `ciw.energy_records`, `ciw.exchange`, `ciw.candidate_evidence`,
 `ciw.core.identities`, `ciw.telemetry`) with no network, provider checkout,
-GPU or hardware. The section runs in about 14 s and its tests in about 16 s
+GPU or hardware. The section runs in about 13 s and its tests in about 13 s
 on one core.
 
 ## What was built
@@ -75,15 +75,33 @@ Both controls hold.
 
 ## Identity matrix (T077)
 
-The matrix has 29 identities. 28 are exercised offline, and all 77 predicted
+The matrix has 30 identities. 28 are exercised offline, and all 97 predicted
 properties hold. Of those, 11 are re-derivations of a CIW digest with the lab's
 own canonical JSON and SHA-256 (same implementation origin, recorded as
-`cross_implementation`). The other 66 observe CIW's outputs, its refusal
+`cross_implementation`). The other 86 observe CIW's outputs, its refusal
 messages, or its own validators (for example, `EnergyAccuracyWorkflow._validate_step`
-judges a step moved to a new occurrence). Checks that could not fail by
-construction were removed: identifier prefix tests, an ESM digest the lab
-itself set, and a `source_id` count that differing labels guaranteed. The
-full matrix, with per-property results and the observed refusal messages, is
+judges a step moved to a new occurrence).
+
+The *Across reopen* column is checked row by row. For each of the 22 exercised
+identities predicted stable, and for the absent oscillator numerical identity,
+a property compares the value saved before reopen with the value the reopened
+session saves again. Records are paired by catalog position, not by identity,
+so no identity is assumed stable. All 23 hold.
+
+Checks that could not fail by construction are not counted as properties:
+identifier prefix tests, an ESM digest the lab itself set, a `source_id` count
+that differing labels guaranteed, and the fixture's placeholder producer hashes.
+The placeholder hashes are a fact about the repository fixture, not about CIW,
+so they are recorded as a value on the physical finding below.
+
+**T077 is `partial`.** Two planned rows cannot run offline, and their
+predictions are read from the code, not observed:
+- the ESM `candidate_id` and candidate execution identities, which need an
+  operator-bound ESM adapter and a telemetry or calibrated bundle;
+- the pinned-provider runtime identity (`ciw.subprocess-runtime.v1`), which
+  needs a provider checkout bound to a declared-workload or telemetry workflow.
+
+The full matrix, with per-property results and the observed refusal messages, is
 retained as `artifacts/T077/identity-matrix.{json,md}`.
 
 | Identity | Derivation | Binds | Across replay | Across reopen | Validated at |
@@ -117,11 +135,17 @@ retained as `artifacts/T077/identity-matrix.{json,md}`.
 | ESM `requestId` / `inspectedAt` | caller-declared | equality of request and response only | n/a | n/a | `candidate_evidence.py:validate_response` |
 | ESM `bundleBytesDigest` | byte hash of the bytes CIW passes (its canonical serialization of the bundle) | those exact bytes; a digest over another layout of the same bundle is refused | n/a | n/a | `validate_response`, `workbench.py:Workbench._validate_candidate` |
 | ESM `candidate_id` / candidate execution | content hash / fresh uuid4 | response bytes, policy, adapter identity | n/a | stable | `workbench.py:Workbench._validate_candidate` (not exercised offline) |
+| pinned-provider runtime identity (`ciw.subprocess-runtime.v1`) | pinned revision, module and source root, beside host-measured `source_tree` and `python_sha256` | the pinned provider revision and the host's tree and interpreter digests | compared on replay (runtime projection without host paths) | pin and format checked | `declared_workload.py:DeclaredWorkflow._validate`, `_runtime_projection`, `workbench.py:_validate_links` (not exercised offline) |
 
 The log's producer identities are placeholders in the fixture (`aaaa…`,
 `cccc…`, `dddd…`) and CIW checks only their format: a resealed log with other
 well-formed values is accepted. T077 therefore records the physical claim that
 they identify the producing GPU and code as `not_established`.
+
+T079 treats the variants' own properties (eight distinct input byte strings,
+one shared label) as harness preconditions. They are asserted before any
+finding is built and are never counted as checks, because they describe the
+lab's inputs, not CIW's behaviour.
 
 ### Byte-level and content-level identities (T078, T079)
 
@@ -173,10 +197,10 @@ canonically identical log. It is not a function of the analysed numbers alone.
 
 ## Mutation matrix (T080–T090)
 
-There are 68 rows: 61 edit and reopen a saved workspace, and 7 run pure
-validators. 52 are refused. 15 distinct workspace forgeries survive. One
+There are 72 rows: 65 edit and reopen a saved workspace, and 7 run pure
+validators. 52 are refused. 19 distinct workspace forgeries survive. One
 validator row, `exchange.verification-independent`, is accepted by design and
-is not counted as a survivor. The kill/survive prediction matched in 68 of 68
+is not counted as a survivor. The kill/survive prediction matched in 72 of 72
 rows, and every refusal matched its pinned message (52 of 52). Each forgery is
 run once. The T086 subject-with-source rebinding is the same edit as T084's
 `receipt-source.sibling-execution`, so T086 cites that row instead of re-running
@@ -190,6 +214,7 @@ own rows.
 | T080 | `alias.execution-result` (E2 points at R1) | local | `Execution/result execution_id binding mismatch` |
 | T080 | `alias.result-prefix` | local | `Invalid saved result identity` |
 | T080 | `alias.operation` (statistics → spectrum; killed only by payload-shape validation) | local | `Invalid saved spectrum data fields or sample count` |
+| T080 | `alias.swap-pairing` (R1↔R2 exchange executions consistently: ids and creation times swapped together) | local | **accepted** |
 | T080 | `revision.gap` (records claim revision 999 of 1000) | local | **accepted** |
 | T081 | `energy-data.naive` | none | `Energy analysis bundle identity, schema or size differs` |
 | T081 | `energy-data.reforged` (every derived digest recomputed; source bytes unchanged) | full | `Retained energy analysis binding differs` |
@@ -205,7 +230,9 @@ own rows.
 | T082 | `fresh.created-at-one` | local | `Execution/result created_at binding mismatch` |
 | T082 | `fresh.created-at-shift` (backdated in both records) | local | **accepted** |
 | T083 | `receipt.numerical-match-false`, `receipt.transplanted` | local / none | `Invalid retained energy replay receipt` |
-| T083 | `receipt.transplanted-resealed` | local | `Retained energy analysis binding differs` |
+| T083 | `receipt.transplanted-resealed` (replayed digest and `replay_id` recomputed; the donor's reproduction step kept) | local | `Retained energy analysis binding differs` |
+| T083 | `receipt.transplanted-full` (receipt rebuilt on B0b from B0 and B0b's own step) | full | **accepted** |
+| T083 | `receipt.fabricated` (new receipt on the never-replayed original B0b, claiming it replays B0) | full | **accepted** |
 | T083 | `receipt.deleted` | none | **accepted** |
 | T084 | `receipt-source.naive`, `receipt-source.self` | none / local | `Invalid retained energy replay receipt` |
 | T084 | `receipt-source.replay-id` | local | `Retained energy analysis binding differs` |
@@ -216,6 +243,7 @@ own rows.
 | T086 | `receipt-subject.naive` | none | `Invalid retained energy replay receipt` |
 | T086 | `receipt-subject.resealed`, `bundle-subject.resealed` | local | `Retained energy analysis binding differs` |
 | T086 | `oscillator-verification.resealed` | local | `Protocol v1 saved results must remain not_verified with verification_id null` |
+| T086 | `oscillator-subject.injected` (`subject_ref` naming R2 injected into R1) | local | **accepted** |
 | T086 | `esm.bundle-subject` (pure validator) | none | `ESM candidate does not bind the selected native bundle` |
 | T086 | `exchange.verification-subject` (pure validator) | none | `verification_id does not match the artifact content` |
 | T087 | `receipt-method.naive` | none | `Invalid retained energy replay receipt` |
@@ -264,9 +292,19 @@ verification edit is refused":
 - **Moving subject and source together.** The subject and the source can be
   moved together to any retained bundle of the same source. That is the
   surviving mutant `receipt-source.sibling-execution`.
-- **Other refusals.** Replay freshness, cross-namespace collisions, receipt
-  transplants and edits to analysed numbers that leave the source bytes
-  unchanged are refused.
+- **Other refusals.** Replay freshness, cross-namespace collisions, and edits
+  to analysed numbers that leave the source bytes unchanged are refused. A
+  receipt moved onto another bundle is refused only while its replayed digest is
+  stale or its verification still binds the donor's reproduction step. Rebuilt
+  from the two bundles, it survives (`receipt.transplanted-full`), and so does
+  a receipt written for a replay that never happened (`receipt.fabricated`).
+  Nothing binds a receipt to a replay event: every receipt field is a copy of,
+  or an unkeyed digest over, retained bundles.
+- **Oscillator aliases.** A result or execution that names another occurrence's
+  identity is refused. Two occurrences whose identities and creation times are
+  exchanged together (`alias.swap-pairing`) reopen, because oscillator
+  identities are uuid4 draws that bind no content. This is harmless here only
+  because R1 and R2 carry equal data.
 
 Re-analysis protects the numbers only relative to the retained source bytes,
 and those bytes are not authenticated. A forger can edit one counter sample in
@@ -286,13 +324,16 @@ the source instead of adding a second one beside it.
 | `energy-source.resealed` | B0, B0b and B1 report a gross energy of 0.25 J instead of 0.2 J, under their original session ids and times | The retained log is protected only by its author's unkeyed `log_digest`; reopen re-analyses whatever bytes are retained |
 | `receipt-source.sibling-execution` | B1 claims to replay B0b, with its verification subject also B0b, although it replayed B0 | Any retained bundle with the same source bytes, configuration and runtime satisfies the receipt checks; the receipt is consistent, not authenticated |
 | `receipt-replayed.reidentified-bundle` | The replay is dated 2001, before its source (created at run time), and has a new `session_id` | `created_at` and `session_id` sit inside an unkeyed `bundle_digest`, which the forger recomputes along with the receipt; no check compares a replay's time with its source's |
-| `receipt.deleted` | B1 appears to be an original execution, with no replay recorded | `_bundle_digest` excludes `replay_receipts`, and nothing else records that the replay happened |
+| `receipt.deleted` | B1 is listed with no receipt, like an original execution | `_bundle_digest` excludes `replay_receipts`, and nothing else records that the replay happened |
+| `receipt.transplanted-full` | B0b, an original execution, claims to replay B0; the actual replay B1 has no receipt | Every receipt field (source and replayed digests, verification with the containing bundle's own step, `replay_id`) is computable from retained bundles |
+| `receipt.fabricated` | B0b claims to replay B0 although it was never replayed; B1 keeps its genuine receipt | As for the transplant: a sibling of the same bytes, configuration and runtime satisfies every receipt check, and no record of replay events exists |
+| `alias.swap-pairing` | R1 names E2 as its execution and R2 names E1 | Oscillator execution and result identities are uuid4 draws; reopen checks only that each pair agrees (ids, creation time, runtime), and both pairs are resealed |
 | `oscillator-stats.resealed` | `statistics.v1` mean moved to the interval midpoint | `validate_payload` checks bounds only, and the seal is unkeyed |
-| `oscillator-stats.impossible-moments` | R1 has \|mean\| > rms; R2 has rms greater than max(\|min\|, \|max\|); no sample set has these moments | `validate_payload` does not check \|mean\| ≤ rms ≤ max(\|min\|, \|max\|). The computed result satisfies both inequalities and matches a NumPy recomputation from the 64 samples (relative difference 0 here) |
+| `oscillator-stats.impossible-moments` | R1 has \|mean\| > rms; R2 has rms greater than max(\|min\|, \|max\|); no sample set has these moments | `validate_payload` does not check \|mean\| ≤ rms ≤ max(\|min\|, \|max\|). The computed result satisfies both inequalities and matches the lab's direct NumPy recomputation from the 64 samples (relative difference 0 here; a same-origin `cross_implementation` check) |
 | `oscillator-stats.legacy` | Legacy result mean edited | Legacy `analysis.stats` results have no seal at all |
 | `fresh.created-at-shift` | Execution and result backdated to 2001 | `created_at` is bound only between the two records, and both are resealed |
 | `revision.gap` | Records claim selection revision 999 of 1000 | The selection history is not saved; `selection_revision` is only checked to be at most the current revision |
-| `oscillator-{method,independent,admission}.injected` | `result.get` returns `verification_method`, `independent: true` or `state_admission: admitted`, next to `verification_status: not_verified` | `_validate_saved_result` requires certain keys but does not refuse extra keys, and `validate_execution` does not check its key set |
+| `oscillator-{subject,method,independent,admission}.injected` | `result.get` returns `subject_ref` (naming R2), `verification_method`, `independent: true` or `state_admission: admitted`, next to `verification_status: not_verified` | `_validate_saved_result` requires certain keys but does not refuse extra keys, and `validate_execution` does not check its key set |
 | `oscillator-runtime.both` | Execution and result name `lab.forged-provider` version 99 | The runtime identity is provider-declared; no check exists beyond equality between execution and result |
 | `energy-runtime.all-bundles`, `energy-runtime.python-version` | Bundles claim different analysis code or a different Python version | Reopen checks only the runtime's format. Only a new replay compares it with the current `analysis_identity()`. The retained runtime is historical provenance that no unkeyed check can verify |
 
@@ -306,11 +347,18 @@ counterexample. The full inspector was not run here because it needs the
 pinned validator checkout (`CIW_SET_REPO`).
 
 Every survivor is recorded exactly once as a counterexample finding. The finding
-names the refuted general statement and carries a witness. For
-`energy-source.resealed`, `oscillator-stats.impossible-moments` and
-`receipt-replayed.reidentified-bundle`, the finding also checks that the witness
-shows the forged content (a changed energy, violated inequalities, a replay dated
-before its source). T077 and every task from T080 to T090 also record the
+names the refuted general statement and carries a witness read from the
+reopened session. Beyond the acceptance, every survivor finding checks that the
+witness shows the forged content: a changed energy, violated inequalities, a
+replay dated before its source, the injected value returned by `result.get`,
+the forged receipt placement, the swapped pairing, the forged revision, time or
+runtime. If CIW began stripping unknown keys or dropping a forged field on
+reopen, these checks would fail rather than pass on acceptance alone. Two
+witnesses (`energy-source.resealed` and `oscillator-stats.impossible-moments`)
+show floats from NumPy reductions or the energy analysis. Their last bits can
+differ between SIMD dispatch paths, libm builds and platforms, so those two
+findings use the regression tolerance `{abs: 0, rel: 1e-9}`. Every other
+survivor is compared exactly. T077 and every task from T080 to T090 also record the
 provenance finding *"Retained workspace records are authenticated"*. That
 finding is `not_established` (declared as expected) because no keyed signature
 or MAC exists on these paths. T089 adds a `production_acceptance` claim that
@@ -329,11 +377,13 @@ the logs and their producer identities. All of these remain `not_established`.
    producing host.
 2. **Bind receipts into identity.** Include replay receipts, or their
    `replay_id`s, in a catalog-level workspace seal, or give the replay bundle a
-   second digest that covers them. Deleting or re-pointing a receipt would then
-   no longer reopen silently. Also refuse a replay dated before its source.
+   second digest that covers them. Also refuse a replay dated before its source.
+   An unkeyed seal only stops accidental deletion or re-pointing. A forger who
+   transplants or fabricates a receipt recomputes the seal too, so binding a
+   receipt to an actual replay event needs the keyed signature of change 1.
 3. **Closed record schemas.** Refuse unknown keys in `ciw.execution.v1` and
-   `ciw.operation-result.v1` records, so that verification, independence or
-   admission claims cannot be added through the seal.
+   `ciw.operation-result.v1` records, so that verification subject, method,
+   independence or admission claims cannot be added through the seal.
 4. **Stronger checks on operation results.** Add a content-level
    `numerical_result_id` to oscillator operation results. Recompute
    `statistics.v1` on reopen, which is cheap, or at least check the moment
@@ -357,8 +407,10 @@ the logs and their producer identities. All of these remain `not_established`.
   authenticity or time. Re-analysis on reopen protects numbers only relative to
   retained source bytes that are themselves unauthenticated.
 - A killed mutant shows that one particular edit is detected. It does not show
-  that every edit to that field is detected. Refusal messages are regression
-  pins recorded from observed runs, not predictions.
+  that every edit to that field is detected. T083 is the example: the two
+  transplants it refuses differ from the surviving one only in how much the
+  forger recomputes. Refusal messages are regression pins recorded from observed
+  runs, not predictions.
 - A surviving mutant is a demonstrated forgery. Whether it would mislead a
   particular reader depends on how the record is displayed, which was not
   assessed.
@@ -371,6 +423,9 @@ the logs and their producer identities. All of these remain `not_established`.
   were exercised. Provider-backed workflows (telemetry, declared workloads,
   proved heat), bound ESM candidates and the full exchange inspector need
   checkouts that are not used here. The ESM validator ran on a synthetic
-  telemetry-shaped record.
+  telemetry-shaped record. T090 therefore mutates only the CIW-internal
+  oscillator provider identity and CIW's own energy analysis identity. The
+  pinned-provider subprocess runtime identities (`ciw.subprocess-runtime.v1`)
+  were not mutated.
 - Stability of the float-valued `numerical_result_id` across platforms and BLAS
   builds was not tested.

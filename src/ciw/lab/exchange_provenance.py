@@ -8,7 +8,7 @@ replays and replay receipts), saved workspaces reopened with
 ``Session.from_workspace``, and the pure exchange and ESM candidate
 validators. T077 records how every identity is derived, what it binds, whether
 it survives replay and reopen and where it is validated, and checks each
-property empirically. T078-T083 test retention, separation, stability,
+property of the offline-reachable rows empirically. T078-T083 test retention, separation, stability,
 freshness and receipt binding. T084-T090 edit saved workspaces, recompute
 whatever unkeyed digests an edit needs to be self-consistent, reopen, and
 record whether the edit is refused and with which exact message.
@@ -23,6 +23,7 @@ admission authority, or verification by another party.
 """
 from __future__ import annotations
 
+import base64
 from collections import Counter
 from copy import deepcopy
 import hashlib
@@ -35,7 +36,8 @@ from .evidence import finding, holds as compare
 from .exchange_provenance_common import (
     FORGED_CODE, FORGED_DIGEST, FORGED_RUNTIME, FORGED_SESSION, FORGED_TIME, KIND, OPERATION, Mutant, View,
     attempt, build_session_fixture, build_variant_fixture, build_verification, check_esm, edited_log, esm_case,
-    exchange_artifact, fixture_available, measurement_edit, reforge, reforge_source, relabel, reopen, request,
+    exchange_artifact, fixture_available, forge_receipt, measurement_edit, reforge, reforge_source, relabel, reopen,
+    request,
     reseal_oscillator, reseal_receipt, restep, role_labels, run_mutant, telemetry_shaped_bundle, validator_row,
     verification_id)
 from .registry import task
@@ -62,6 +64,11 @@ SESSION_INPUTS = [OSCILLATOR_INPUT,
                   "examples/energy-accuracy/{baseline,reset}.json (origin synthetic_fixture): two original executions "
                   "of baseline, one of reset, replays, and a separate session in the same process",
                   WORKSPACE_INPUT]
+ESM_INPUT = ("Synthetic telemetry-shaped records (schema, bundle digest, three step occurrences; "
+             "exchange_provenance_common.telemetry_shaped_bundle) and a minimal ESM candidate inspection of them "
+             "(esm_case), judged only by candidate_evidence.validate_response; no telemetry workflow or ESM process")
+EXCHANGE_INPUT = ("Synthetic exchange result and verification artifacts whose content identities are computed locally "
+                  "(exchange_provenance_common.exchange_artifact), judged only by exchange._identity")
 VARIANT_INPUT = ("examples/energy-accuracy/{baseline,reset,missing,under-target}.json, eight byte variants of baseline "
                  "under one shared label (original, crlf, minified, tab-indented, sorted-keys, reversed-keys, "
                  "trailing-whitespace, float-spelling 1e-09 -> 0.000000001) and two resealed content variants "
@@ -113,9 +120,11 @@ def _refusal_message(call) -> str:
     return "accepted"
 
 
-def _collision(count: int) -> dict:
-    return {"kind": "collision_bound", "value": count * (count - 1) / 2.0 ** 123,
-            "basis": f"uuid4 carries 122 random bits; P(any collision among {count} draws) <= n(n-1)/2^123"}
+def _collision(draws: int, digests: int) -> dict:
+    return {"kind": "collision_bound", "value": draws * (draws - 1) / 2.0 ** 123,
+            "basis": f"{draws} uuid4 draws, 122 random bits each: P(any collision) <= n(n-1)/2^123; the other "
+                     f"{digests} identities are SHA-256 digests over records that contain those draws, so they are "
+                     "distinct whenever the draws are, up to a SHA-256 collision (below 2^-240 here)"}
 
 
 # ------------------------------------------------------------------ checks
@@ -282,29 +291,96 @@ def _authentication(rows) -> dict:
         tolerance=EXACT, expected_not_established=True)
 
 
+# Injected claims and the value each injection writes, as the reopened result.get must return it.
+INJECTED = {"oscillator-method.injected": ("verification_method", "independent_reimplementation"),
+            "oscillator-independent.injected": ("independent", True),
+            "oscillator-admission.injected": ("state_admission", "admitted"),
+            "oscillator-subject.injected": ("subject_ref", "result:R2")}
+
+
+def _held(reference: str, held: bool) -> dict:
+    return _exact(f"{reference} (0 = shown)", 0 if held else 1)
+
+
 def _witness_checks(row: dict) -> list:
-    """Survivors whose claim says more than 'reopens' also check that the reader sees the forged content."""
-    seen = row.get("post_reopen", {})
-    if row["name"] == "energy-source.resealed":
+    """Every survivor also checks that a reader of the reopened session sees the forged content."""
+    seen, name = row.get("post_reopen", {}), row["name"]
+    if name == "energy-source.resealed":
         computed = seen.get("gross_energy_j_computed_from_original_bytes")
         forged = seen.get("gross_energy_j_after_reopen", {})
         return [_exact("reopened baseline bundles (B0, B0b, B1) not reporting a gross energy different from the "
-                       "original bytes' value", 3 - sum(value != computed for value in forged.values()))]
-    if row["name"] == "oscillator-stats.impossible-moments":
+                       "original bytes' value", 3 - sum(value != computed for value in forged.values())),
+                _held("original session ids and creation times kept on the forged bundles",
+                      seen.get("original_session_ids_and_created_at_kept") is True)]
+    if name == "oscillator-stats.impossible-moments":
         violated = sum(not held for record in seen.get("retained_inequalities", {}).values() for held in record.values())
         return [_count("moment inequalities violated by the reopened results", violated, 2)]
-    if row["name"] == "receipt-replayed.reidentified-bundle":
-        return [_exact("reopened replay not dated before its source bundle", 0 if seen.get("replay_predates_source") else 1)]
-    return []
+    if name == "receipt-replayed.reidentified-bundle":
+        return [_held("reopened replay dated before its source bundle", seen.get("replay_predates_source") is True)]
+    if name in INJECTED:
+        field, value = INJECTED[name]
+        shown = seen.get("result.get", {})
+        return [_held(f"reopened result.get returns the injected {field} beside verification_status not_verified",
+                      shown.get(field) == value and type(shown.get(field)) is type(value)
+                      and shown.get("verification_status") == "not_verified")]
+    if name == "receipt-source.sibling-execution":
+        return [_held("reopened receipt source and verification subject both name the sibling bundle:B0b",
+                      seen.get("receipt_source") == seen.get("verification_subject") == "bundle:B0b")]
+    if name in ("receipt.deleted", "receipt.transplanted-full", "receipt.fabricated"):
+        expected = {"receipt.deleted": {"bundle:B0": [], "bundle:B0b": [], "bundle:Bother": [], "bundle:B1": []},
+                    "receipt.transplanted-full": {"bundle:B0": [], "bundle:B0b": ["bundle:B0"], "bundle:Bother": [],
+                                                  "bundle:B1": []},
+                    "receipt.fabricated": {"bundle:B0": [], "bundle:B0b": ["bundle:B0"], "bundle:Bother": [],
+                                           "bundle:B1": ["bundle:B0"]}}[name]
+        return [_held(f"reopened bundles list the receipt sources {expected}", seen.get("receipt_sources") == expected)]
+    if name == "alias.swap-pairing":
+        return [_held("reopened R1 names execution E2 and E2 names result R1 (and R2/E1 the converse)",
+                      seen == {"result:R1": "execution:E2", "result:R2": "execution:E1",
+                               "execution:E1": "result:R2", "execution:E2": "result:R1"})]
+    if name == "revision.gap":
+        return [_held("reopened selection revision 1000 with the execution claiming 999",
+                      seen == {"selection_revision": 1000, "execution_selection_revision": 999})]
+    if name == "fresh.created-at-shift":
+        return [_held("reopened execution dated 2001", seen.get("execution_created_at") == FORGED_TIME)]
+    if name in ("oscillator-stats.resealed", "oscillator-stats.legacy"):
+        return [_held("reopened mean is the interval midpoint and differs from the computed mean",
+                      seen == {"retained_mean_is_midpoint": True, "retained_mean_differs_from_computed": True})]
+    if name == "oscillator-runtime.both":
+        return [_held("reopened execution and result both name the forged provider runtime",
+                      seen == {"execution_runtime": FORGED_RUNTIME, "result_runtime": FORGED_RUNTIME})]
+    if name in ("energy-runtime.all-bundles", "energy-runtime.python-version"):
+        field = "code_sha256" if name == "energy-runtime.all-bundles" else "python_version"
+        return [_held(f"reopened bundle retains the forged {field}",
+                      seen.get("retained_runtime_forged", {}).get(field) is True)]
+    raise ValueError(f"Surviving mutant {name} has no witness check")
+
+
+def _has_float(value) -> bool:
+    if isinstance(value, dict):
+        return any(_has_float(item) for item in value.values())
+    if isinstance(value, list):
+        return any(_has_float(item) for item in value)
+    return isinstance(value, float)
+
+
+# Witness floats are NumPy reductions or analysed energies retained for display;
+# their last bits can differ between SIMD dispatch paths, libm builds and platforms.
+FLOAT_WITNESS = {"abs": 0.0, "rel": 1e-9}
+FLOAT_WITNESS_UNC = {"kind": "exact", "value": 0.0,
+                     "basis": "the acceptance and the witness checks are exact (strings, booleans, inequality "
+                              "outcomes); the floats shown in the witness are compared across runs within rel 1e-9 "
+                              "because their last bits depend on the platform's reduction and libm paths"}
 
 
 def _survivor(row: dict, claim: str, statement: str) -> dict:
     witness = {key: row[key] for key in ("name", "target", "recompute", "description", "observed")}
     if "post_reopen" in row:
         witness["post_reopen"] = row["post_reopen"]
+    floats = _has_float(witness)
     return _verified(claim, {"mutant": row["name"], "observed": row["observed"]},
                      [_invariant(f"{row['name']}: accepted (1 = accepted)", 1.0 if _accepted(row) else 0.0, 1.0, "ge")]
-                     + _witness_checks(row), counterexample={"statement": statement, "witness": witness})
+                     + _witness_checks(row), counterexample={"statement": statement, "witness": witness},
+                     uncertainty=FLOAT_WITNESS_UNC if floats else None, tolerance=FLOAT_WITNESS if floats else None)
 
 
 def _kills(rows, claim: str, harness: dict | None = None) -> dict:
@@ -503,6 +579,26 @@ def _transplant(reseal):
     return apply
 
 
+def _transplant_full(view):
+    """Move B1's receipt onto B0b and rebuild it there: verification reproduction = B0b's own step."""
+    del view.native("B1")["replay_receipts"]
+    view.native("B0b")["replay_receipts"] = [forge_receipt(view.native("B0"), view.native("B0b"))]
+
+
+def _fabricate_receipt(view):
+    """Give the never-replayed original B0b a receipt claiming it replays B0; B1 keeps its own."""
+    view.native("B0b")["replay_receipts"] = [forge_receipt(view.native("B0"), view.native("B0b"))]
+
+
+def _swap_pairing(view):
+    """Exchange the two oscillator occurrences consistently: identities and creation times move together."""
+    E1, E2, R1, R2 = view.E1, view.E2, view.R1, view.R2
+    R1["execution_id"], R2["execution_id"] = E2["execution_id"], E1["execution_id"]
+    E1["result_id"], E2["result_id"] = R2["result_id"], R1["result_id"]
+    R1["created_at"], R2["created_at"] = R2["created_at"], R1["created_at"]
+    reseal_oscillator(E1, E2, R1, R2)
+
+
 def _revision_gap(view):
     view.workspace["selection"]["revision"] = 1000
     view.E1["selection_revision"] = view.R1["selection_revision"] = 999
@@ -613,11 +709,22 @@ def _w_created(session, fixture):
     return {"execution_created_at": execution["created_at"]}
 
 
-def _w_deleted(session, fixture):
-    replayed = fixture["natives"]["B1"]["bundle_digest"]
-    return {"replay_bundle_listed": any(b["bundle_id"] == replayed for b in session.workbench.list_bundles()),
-            "bundles_with_receipts": sum(bool(session.workbench.get_bundle(b["bundle_id"]).get("replay_receipts"))
-                                         for b in session.workbench.list_bundles())}
+def _w_receipt_sources(session, fixture):
+    """Each listed bundle's receipt sources, by role; a bundle missing from the catalog is absent here."""
+    roles = {native["bundle_digest"]: f"bundle:{role}" for role, native in fixture["natives"].items()}
+    listed = {}
+    for summary in session.workbench.list_bundles():
+        native = session.workbench.get_bundle(summary["bundle_id"])
+        listed[roles.get(native["bundle_digest"], "bundle:<unlabelled>")] = [
+            receipt["source_bundle_digest"] for receipt in native.get("replay_receipts", [])]
+    return {"receipt_sources": dict(sorted(listed.items()))}
+
+
+def _w_pairing(session, fixture):
+    oscillator = fixture["oscillator"]
+    return {**{f"result:{role}": session.results[oscillator[role]["result_id"]]["execution_id"] for role in ("R1", "R2")},
+            **{f"execution:{role}": session.executions[oscillator[role]["execution_id"]]["result_id"]
+               for role in ("E1", "E2")}}
 
 
 BINDING = "Retained energy analysis binding differs"
@@ -650,6 +757,9 @@ MUTANTS = (
        "validation, not by an identity binding)",
        "Invalid saved spectrum data fields or sample count",
        _oscillator(["E1", "R1"], lambda r, v: r.update(operation_id="spectrum.periodogram.v1"))),
+    _m("alias.swap-pairing", "T080", "oscillator executions and results", "local",
+       "R1 and R2 exchange executions consistently: result execution_ids, execution result_ids and result created_at "
+       "swapped between the two pairs; all four records resealed", "accepted", _swap_pairing, _w_pairing),
     _m("revision.gap", "T080", "oscillator selection history", "local",
        "selection revision 1000 with execution and result claiming revision 999; resealed",
        "accepted", _revision_gap, _w_revision),
@@ -705,9 +815,18 @@ MUTANTS = (
     _m("receipt.transplanted", "T083", "energy bundle", "none",
        "receipt moved from the replay bundle onto a sibling execution", RECEIPT, _transplant(False)),
     _m("receipt.transplanted-resealed", "T083", "energy bundle", "local",
-       "receipt moved onto a sibling execution; replayed digest and replay_id recomputed", BINDING, _transplant(True)),
+       "receipt moved onto a sibling execution; replayed digest and replay_id recomputed, the verification keeps "
+       "the donor's reproduction step", BINDING, _transplant(True)),
+    _m("receipt.transplanted-full", "T083", "energy bundle", "full",
+       "receipt moved from the replay B1 onto the original sibling B0b and rebuilt there (source B0, replayed B0b, "
+       "verification rebuilt from B0 with B0b's own step as the reproduction, ids recomputed)", "accepted",
+       _transplant_full, _w_receipt_sources),
+    _m("receipt.fabricated", "T083", "energy bundle", "full",
+       "a new receipt written onto the never-replayed original B0b claiming it replays B0 (verification built from B0 "
+       "and B0b's step, ids recomputed); B1 keeps its own receipt", "accepted", _fabricate_receipt,
+       _w_receipt_sources),
     _m("receipt.deleted", "T083", "energy replay bundle", "none", "replay_receipts removed from the replay bundle",
-       "accepted", _delete_receipt, _w_deleted),
+       "accepted", _delete_receipt, _w_receipt_sources),
     # T084: receipt source digest.
     _m("receipt-source.naive", "T084", "energy replay receipt", "none",
        "source_bundle_digest set to a fixed forged digest", RECEIPT,
@@ -757,6 +876,9 @@ MUTANTS = (
        "verification_id and verification_status forged; resealed", V1,
        _oscillator(["R1"], lambda r, v: r.update(verification_id="verification-" + UUID_HEX,
                                                  verification_status="verified"))),
+    _m("oscillator-subject.injected", "T086", "oscillator result", "local",
+       "subject_ref naming the sibling result R2 injected into a sealed result; resealed", "accepted",
+       _oscillator(["R1"], lambda r, v: r.update(subject_ref=v.R2["result_id"])), _w_result("subject_ref")),
     # T087: verification method.
     _m("receipt-method.naive", "T087", "energy replay receipt verification", "none",
        "method set to independent_reimplementation", RECEIPT,
@@ -832,15 +954,19 @@ MUTANTS = (
 
 # The refuted general statement for each predicted survivor.
 STATEMENTS = {
+    "alias.swap-pairing": "A retained oscillator result stays bound to the execution occurrence that produced it",
     "revision.gap": "Saved execution and result selection revisions are checked against a retained selection history",
     "energy-source.resealed": "Reopen re-analysis protects retained energy results from numerical forgery",
     "oscillator-stats.resealed": "Unkeyed record seals detect every edit to a retained numerical result",
     "oscillator-stats.impossible-moments": "Saved statistics satisfy |mean| <= rms <= max(|min|, |max|)",
     "oscillator-stats.legacy": "Every retained oscillator result is sealed against edits",
     "fresh.created-at-shift": "A retained execution occurrence binds its creation time",
+    "receipt.transplanted-full": "A replay receipt cannot be moved from its replay bundle onto another retained bundle",
+    "receipt.fabricated": "A replay receipt can only be retained on a bundle produced by that replay",
     "receipt.deleted": "A replay bundle cannot be retained without its replay receipt",
     "receipt-source.sibling-execution": "Unkeyed record seals detect every replay-provenance forgery",
     "receipt-replayed.reidentified-bundle": "A retained replay cannot be dated before its source bundle",
+    "oscillator-subject.injected": "Sealed operation records refuse verification-subject claims outside their schema",
     "oscillator-method.injected": "Sealed operation records refuse verification-method claims outside their schema",
     "oscillator-independent.injected": "Sealed operation records refuse independence claims outside their schema",
     "oscillator-admission.injected": "Sealed operation records refuse admission claims outside their schema",
@@ -971,6 +1097,41 @@ def identity_matrix(fixture: dict, variants: dict) -> list:
         log["runtime"]["workload"]["kernel_sha256"] = value
         log["runtime"]["python"]["executable_sha256"] = value
 
+    saved, again = fixture["workspace"], fixture["workspace_reopened"]
+
+    def reopen_stable(records, extract) -> bool:
+        """The identity values of every record saved before reopen reappear when the reopened session saves again.
+
+        Records are paired by catalog position, not by identity, so no identity is assumed stable; the reopened
+        session appends its own replays after the records it restored.
+        """
+        before, after = records(saved), records(again)
+        values = [extract(record) for record in before]
+        return bool(before) and len(after) >= len(before) and values == [extract(r) for r in after[:len(before)]]
+
+    def executions(workspace):
+        return workspace["executions"]
+
+    def results(workspace):
+        return workspace["results"]
+
+    def sources(workspace):
+        return workspace["workbench"]["sources"]
+
+    def bundles(workspace):
+        return workspace["workbench"]["bundles"]
+
+    def energy_steps(record):
+        native = record["native"]
+        steps = native["steps"] + [native["verification"]["reproduction"]]
+        steps += [receipt["verification"]["reproduction"] for receipt in native.get("replay_receipts", [])]
+        return steps
+
+    def log_producers(source):
+        log = json.loads(base64.b64decode(source["bytes_b64"]).decode("utf-8"))
+        return (log["sensor"]["device_uuid"], log["runtime"]["workload"]["kernel_sha256"],
+                log["runtime"]["python"]["executable_sha256"], log["runtime"]["implementation"]["code_sha256"])
+
     producers = {"sensor.device_uuid": parsed["sensor"]["device_uuid"],
                  "runtime.workload.kernel_sha256": parsed["runtime"]["workload"]["kernel_sha256"],
                  "runtime.python.executable_sha256": parsed["runtime"]["python"]["executable_sha256"],
@@ -1003,8 +1164,9 @@ def identity_matrix(fixture: dict, variants: dict) -> list:
                 "render_excluded": evidence_id(rendered) == run["evidence_id"],
                 "sample_edit_refused": refusals["recording_sample_edit"]
                 == "Evidence integrity mismatch: scientific content does not match evidence_id",
-                "retained_across_reopen": fixture["reopened_run_evidence_id"] == run["evidence_id"]
-                == fixture["workspace"]["run"]["evidence_id"]}, refusals=seen("recording_sample_edit")),
+                "stable_across_reopen": fixture["reopened_run_evidence_id"] == run["evidence_id"]
+                == fixture["workspace"]["run"]["evidence_id"] == fixture["workspace_reopened"]["run"]["evidence_id"]},
+               refusals=seen("recording_sample_edit")),
         _entry("recording file name", "oscillator recording", "content_hash",
                "'recording-' + sha256 over canonical JSON of the whole run, written by Session",
                "entire parsed run including run_id and render; the file is a CIW re-serialization",
@@ -1012,7 +1174,9 @@ def identity_matrix(fixture: dict, variants: dict) -> list:
                                             "src/ciw/session.py:_validate_saved_result"],
                {"recomputed_from_run": fixture["recording"]["file"]
                 == "recording-" + hashlib.sha256(_canon(run, True)).hexdigest() + ".json",
-                "file_is_reserialization_not_input_bytes": fixture["recording"]["is_reserialization"]}),
+                "file_is_reserialization_not_input_bytes": fixture["recording"]["is_reserialization"],
+                "stable_across_reopen": fixture["reopened_recording_file"] == fixture["recording"]["file"]
+                and reopen_stable(results, lambda r: r["recording_file"])}),
         _entry("workbench source evidence_id", "workbench source", "byte_hash", "'sha256:' + sha256(exact source bytes)",
                "exact retained bytes only (not label or kind); bundle artifact_ref and sha256 are copies of it",
                "stable (bundle artifact_ref equals it)", "stable",
@@ -1022,7 +1186,7 @@ def identity_matrix(fixture: dict, variants: dict) -> list:
                 "equals_bundle_artifact_ref": all(n["source"]["evidence"][0]["artifact_ref"] == S["evidence_id"]
                                                   for n in same),
                 "label_independent": SR["evidence_id"] == SC["evidence_id"] == S["evidence_id"],
-                "retained_across_reopen": S["source_id"] in reopened_sources}),
+                "stable_across_reopen": reopen_stable(sources, lambda r: r["evidence_id"])}),
         _entry("workbench source_id", "workbench source", "content_hash",
                "'source:' + sha256 over canonical descriptor {schema, kind, label, source_schema, evidence_id, byte_count}",
                "source bytes (through evidence_id) and the caller-declared label", "stable", "stable",
@@ -1031,20 +1195,24 @@ def identity_matrix(fixture: dict, variants: dict) -> list:
                {"recomputed_from_descriptor": S["source_id"] == "source:" + _sha(descriptor),
                 "label_bound": SR["source_id"] != SC["source_id"],
                 "byte_bound_under_one_label": len({r["source_id"] for r in byte_records}) == len(byte_records) > 1,
-                "same_bytes_and_label_same_id_across_sessions": SC["source_id"] == S["source_id"]}),
+                "same_bytes_and_label_same_id_across_sessions": SC["source_id"] == S["source_id"],
+                "stable_across_reopen": reopen_stable(sources, lambda r: r["source_id"])
+                and S["source_id"] in reopened_sources}),
         _entry("bundle experiment_digest", "energy bundle source", "content_hash",
                "sha256 over canonical JSON of the parsed log", "parsed log content (whitespace and key order excluded)",
                "stable", "stable", ["src/ciw/energy_workflow.py:EnergyAccuracyWorkflow._validate"],
                {"recomputed_from_parsed_content": B0["source"]["experiment_digest"] == _sha(parsed),
                 "stable_across_replay_and_sessions": len({n["source"]["experiment_digest"] for n in same}) == 1,
-                "byte_layout_insensitive": len({r["experiment_digest"] for r in byte_records}) == 1}),
+                "byte_layout_insensitive": len({r["experiment_digest"] for r in byte_records}) == 1,
+                "stable_across_reopen": reopen_stable(bundles, lambda r: r["native"]["source"]["experiment_digest"])}),
         _entry("energy log run_id (bundle experiment_id)", "energy log", "caller_declared",
                "copied from the retained log's run_id field (format energy-run-<32 hex>)",
                "the log author's measurement-occurrence claim; bound to log_digest by workbench claims",
                "stable", "stable", ["src/ciw/energy_records.py:_validate", "src/ciw/workbench.py:_claims"],
                {"copied_from_log": all(n["source"]["experiment_id"] == parsed["run_id"] for n in same),
                 "unchanged_by_resealed_content_edit": metadata["experiment_id"] == parsed["run_id"]
-                and metadata["experiment_digest"] != logged["experiment_digest"]}),
+                and metadata["experiment_digest"] != logged["experiment_digest"],
+                "stable_across_reopen": reopen_stable(bundles, lambda r: r["native"]["source"]["experiment_id"])}),
         _entry("energy log producer identities", "energy log", "caller_declared",
                "sensor.device_uuid, runtime.workload.kernel_sha256, runtime.python.executable_sha256 and "
                "runtime.implementation.code_sha256 copied verbatim from the log",
@@ -1055,38 +1223,46 @@ def identity_matrix(fixture: dict, variants: dict) -> list:
                 == producers["sensor.device_uuid"],
                 "unsealed_edit_refused_by_log_digest": refusals["producer_edit_unsealed"] == LOG_DIGEST,
                 "resealed_edit_accepted_format_only": refusals["producer_edit_resealed"] == "accepted",
-                "fixture_hashes_are_placeholders": all(len(set(producers[key])) == 1 for key in producers
-                                                       if key.endswith("sha256"))},
+                "stable_across_reopen": reopen_stable(sources, log_producers) and reopen_stable(
+                    bundles, lambda r: r["native"]["steps"][0]["result"]["data"]["measurement_scope"]["device_uuid"])},
                refusals=seen("producer_edit_unsealed", "producer_edit_resealed")),
         _entry("oscillator operation_id", "oscillator operation", "caller_declared_name",
                "versioned registry name chosen by the requester", "which registered operation ran", "not_applicable",
                "stable", ["src/ciw/operations/registry.py:valid_operation_id",
                           "src/ciw/operations/runner.py:validate_execution"],
                {"same_for_repeat": E1["operation_id"] == E2["operation_id"] == R1["operation_id"] == "statistics.v1",
-                "versioned_name": valid_operation_id(E1["operation_id"])}),
+                "versioned_name": valid_operation_id(E1["operation_id"]),
+                "stable_across_reopen": reopen_stable(executions, lambda r: r["operation_id"])
+                and reopen_stable(results, lambda r: r.get("operation_id"))}),
         _entry("energy operation_id", "energy bundle step", "constant_name", "fixed name ciw.energy-accuracy.v1",
                "which workflow ran", "stable", "stable",
                ["src/ciw/energy_workflow.py:EnergyAccuracyWorkflow._validate_step", "src/ciw/workbench.py:_claims"],
                {"constant_across_occurrences": {s["operation_id"] for s in steps} == {OPERATION},
-                "versioned_name": valid_operation_id(OPERATION)}),
+                "versioned_name": valid_operation_id(OPERATION),
+                "stable_across_reopen": reopen_stable(bundles, lambda r: [s["operation_id"] for s in energy_steps(r)])}),
         _entry("oscillator execution_id", "oscillator execution", "fresh_event_uuid", "'execution-' + uuid4().hex",
                "one execution occurrence (nothing about its content)", "fresh", "stable",
                ["src/ciw/operations/runner.py:execute", "src/ciw/operations/runner.py:validate_execution",
                 "src/ciw/session.py:_identity"],
                {"fresh_per_execution": E1["execution_id"] != E2["execution_id"],
                 "uuid4_form": _uuid4(E1["execution_id"], "execution-") and _uuid4(E2["execution_id"], "execution-"),
-                "result_links_execution": R1["execution_id"] == E1["execution_id"] and E1["result_id"] == R1["result_id"]}),
+                "result_links_execution": R1["execution_id"] == E1["execution_id"] and E1["result_id"] == R1["result_id"],
+                "stable_across_reopen": reopen_stable(executions, lambda r: r["execution_id"])
+                and reopen_stable(results, lambda r: r["execution_id"])}),
         _entry("energy step execution_id", "energy bundle step", "fresh_event_uuid", "'execution-' + uuid4().hex",
                "one analysis occurrence", "fresh", "stable",
                ["src/ciw/energy_workflow.py:EnergyAccuracyWorkflow._validate_step", "src/ciw/workbench.py:_validate_links"],
                {"fresh_per_occurrence": len({s["execution_id"] for s in steps}) == len(steps),
                 "uuid4_form": all(_uuid4(s["execution_id"], "execution-") for s in steps),
-                "result_execution_ref_matches": all(s["result"]["execution_ref"] == s["execution_id"] for s in steps)}),
+                "result_execution_ref_matches": all(s["result"]["execution_ref"] == s["execution_id"] for s in steps),
+                "stable_across_reopen": reopen_stable(bundles, lambda r: [s["execution_id"] for s in energy_steps(r)])}),
         _entry("oscillator result_id", "oscillator result", "fresh_event_uuid", "'result-' + uuid4().hex",
                "one result occurrence (content bound only by the unkeyed record seal)", "fresh", "stable",
                ["src/ciw/session.py:_validate_saved_result", "src/ciw/session.py:_identity"],
                {"fresh_per_execution": R1["result_id"] != R2["result_id"],
-                "uuid4_form": _uuid4(R1["result_id"], "result-") and _uuid4(RL["result_id"], "result-")}),
+                "uuid4_form": _uuid4(R1["result_id"], "result-") and _uuid4(RL["result_id"], "result-"),
+                "stable_across_reopen": reopen_stable(results, lambda r: r["result_id"])
+                and reopen_stable(executions, lambda r: r["result_id"])}),
         _entry("energy result_id", "energy bundle step", "content_hash_of_fresh_occurrence",
                "sha256 over the result record, which includes execution_ref", "result content and its fresh occurrence",
                "fresh", "stable", ["src/ciw/energy_workflow.py:EnergyAccuracyWorkflow._validate_step"],
@@ -1094,7 +1270,8 @@ def identity_matrix(fixture: dict, variants: dict) -> list:
                 "fresh_per_occurrence": len({s["result_id"] for s in steps}) == len(steps),
                 "ciw_refuses_stale_result_id_after_occurrence_change": moved["stale_result_id"] == BINDING,
                 "ciw_accepts_recomputed_result_id": moved["recomputed_result_id"] == "accepted"
-                and moved["result_id_changed"]},
+                and moved["result_id_changed"],
+                "stable_across_reopen": reopen_stable(bundles, lambda r: [s["result_id"] for s in energy_steps(r)])},
                refusals={"moved_step_stale_result_id": moved["stale_result_id"],
                          "moved_step_recomputed_result_id": moved["recomputed_result_id"]}),
         _entry("energy numerical_result_id", "energy bundle step", "content_hash",
@@ -1110,13 +1287,16 @@ def identity_matrix(fixture: dict, variants: dict) -> list:
                 "occurrence_change_leaves_it_unchanged": moved["numerical_result_id_unchanged"],
                 "metadata_only_resealed_edit_changes_it": metadata["numerical_result_id"] != logged["numerical_result_id"],
                 "metadata_only_edit_changes_only_log_digest_in_data":
-                    metadata["data_keys_differing_from_baseline"] == ["log_digest"]}),
+                    metadata["data_keys_differing_from_baseline"] == ["log_digest"],
+                "stable_across_reopen": reopen_stable(
+                    bundles, lambda r: [s["numerical_result_id"] for s in energy_steps(r)])}),
         _entry("oscillator numerical-result identity", "oscillator result", "absent",
                "none: results carry data but no content-level numerical identity",
                "nothing; equal numbers from two executions are not linked", "absent", "absent",
                ["(no validator)"],
                {"absent": all("numerical_result_id" not in record for record in (R1, R2, RL)),
-                "equal_data_distinct_ids": R1["data"] == R2["data"] and R1["result_id"] != R2["result_id"]}),
+                "equal_data_distinct_ids": R1["data"] == R2["data"] and R1["result_id"] != R2["result_id"],
+                "absent_after_reopen": all("numerical_result_id" not in record for record in results(again))}),
         _entry("energy verification_id", "energy verification", "content_hash",
                "sha256(schema + NUL + canonical verification without its id)",
                "subject_ref, outcome, independent, method, runtime_digest, reproduction step, authority", "fresh",
@@ -1129,12 +1309,17 @@ def identity_matrix(fixture: dict, variants: dict) -> list:
                 "exchange_status_not_authenticated": all(_identity(v, "verification_id")
                                                          == "content_recomputed_not_authenticated" for v in verifications),
                 "receipt_subject_is_source": all(r["verification"]["subject_ref"] == r["source_bundle_digest"]
-                                                 for r in receipts)}),
+                                                 for r in receipts),
+                "stable_across_reopen": reopen_stable(bundles, lambda r: [r["native"]["verification"]["verification_id"]]
+                                                      + [receipt["verification"]["verification_id"]
+                                                         for receipt in r["native"].get("replay_receipts", [])])}),
         _entry("oscillator verification_id", "oscillator result", "absent", "always null; status not_verified",
                "nothing (protocol v1 results are never verified)", "absent", "stable",
                ["src/ciw/session.py:_validate_saved_result"],
                {"null_and_not_verified": all(r["verification_id"] is None and r["verification_status"] == "not_verified"
-                                             for r in (R1, R2, RL))}),
+                                             for r in (R1, R2, RL)),
+                "stable_across_reopen": reopen_stable(results, lambda r: (r["verification_id"],
+                                                                           r["verification_status"]))}),
         _entry("bundle_digest (workbench bundle_id)", "energy bundle", "content_hash_of_fresh_occurrence",
                "sha256 over the bundle without bundle_digest, verification and replay_receipts",
                "session_id, created_at, source bytes, configuration, runtimes and steps; NOT verification or receipts",
@@ -1149,12 +1334,16 @@ def identity_matrix(fixture: dict, variants: dict) -> list:
                 "verification_excluded": _bundle_digest(dict(B1, verification={"schema": "lab.replaced"}))
                 == B1["bundle_digest"],
                 "catalog_id_equals_digest": all(r["bundle_id"] == r["native"]["bundle_digest"]
-                                                for r in fixture["workspace"]["workbench"]["bundles"])}),
+                                                for r in fixture["workspace"]["workbench"]["bundles"]),
+                "stable_across_reopen": reopen_stable(bundles, lambda r: (r["bundle_id"], r["native"]["bundle_digest"]))
+                and all(natives[role]["bundle_digest"] == record["bundle_id"]
+                        for role, record in zip(("B0", "B0b", "Bother", "B1"), bundles(saved)))}),
         _entry("bundle session_id", "energy bundle", "fresh_event_uuid", "'session-' + uuid4().hex",
                "one workflow session occurrence", "fresh", "stable",
                ["src/ciw/energy_workflow.py:EnergyAccuracyWorkflow._validate", "src/ciw/workbench.py:_claims"],
                {"fresh_per_bundle": len({n["session_id"] for n in same}) == len(same),
-                "uuid4_form": all(_uuid4(n["session_id"], "session-") for n in same)}),
+                "uuid4_form": all(_uuid4(n["session_id"], "session-") for n in same),
+                "stable_across_reopen": reopen_stable(bundles, lambda r: r["native"]["session_id"])}),
         _entry("protocol Session.session_id", "protocol session", "fresh_event_uuid", "'session-' + uuid4().hex",
                "one live protocol session; never saved", "not_applicable", "fresh (not persisted)",
                ["src/ciw/session.py:Session.__init__"],
@@ -1165,17 +1354,24 @@ def identity_matrix(fixture: dict, variants: dict) -> list:
                "source and replayed bundle digests, numerical_match, verification, admission", "fresh", "stable",
                ["src/ciw/workbench.py:_validate_receipts", "src/ciw/energy_workflow.py:EnergyAccuracyWorkflow._validate"],
                {"recomputed": all(r["replay_id"] == _sha(_without(r, "replay_id")) for r in receipts),
-                "fresh_per_replay": len({r["replay_id"] for r in receipts}) == len(receipts)}),
+                "fresh_per_replay": len({r["replay_id"] for r in receipts}) == len(receipts),
+                "stable_across_reopen": reopen_stable(bundles, lambda r: [receipt["replay_id"] for receipt
+                                                                          in r["native"].get("replay_receipts", [])])
+                and any(record["native"].get("replay_receipts") for record in bundles(saved))}),
         _entry("oscillator record_digest (seal)", "oscillator execution and result", "unkeyed_seal",
                "sha256 over the record without record_digest", "the whole record, but anyone can recompute it",
                "not_applicable", "stable", ["src/ciw/operations/runner.py:seal", "src/ciw/operations/runner.py:check_seal"],
                {"recomputed_without_secret": all(seal_ok(record) for record in (E1, E2, R1, R2)),
-                "legacy_result_unsealed": "record_digest" not in RL and "schema" not in RL}),
+                "legacy_result_unsealed": "record_digest" not in RL and "schema" not in RL,
+                "stable_across_reopen": reopen_stable(executions, lambda r: r["record_digest"])
+                and reopen_stable(results, lambda r: r.get("record_digest"))}),
         _entry("oscillator runtime identity", "oscillator execution and result", "provider_declared",
                "the operation provider's runtime_identity() dict", "a provider name and version string",
                "not_applicable", "stable (never re-checked)", ["src/ciw/operations/runner.py:validate_execution"],
                {"declared_by_provider": E1["runtime"] == R1["runtime"] == fixture["runtime_declared"],
-                "no_code_digest": not any("sha256" in str(value) for value in E1["runtime"].values())}),
+                "no_code_digest": not any("sha256" in str(value) for value in E1["runtime"].values()),
+                "stable_across_reopen": reopen_stable(executions, lambda r: r["runtime"])
+                and reopen_stable(results, lambda r: r.get("runtime"))}),
         _entry("energy runtime identity", "energy bundle", "code_hash_plus_declared_versions",
                "sha256 of three CIW source files plus self-reported python and numpy versions",
                "analysis code bytes and dependency version strings", "stable (compared on replay)",
@@ -1183,7 +1379,8 @@ def identity_matrix(fixture: dict, variants: dict) -> list:
                                                 "src/ciw/energy_workflow.py:_check_runtime",
                                                 "src/ciw/energy_workflow.py:EnergyAccuracyWorkflow._adapters"],
                {"equals_current_analysis_identity": B0["runtimes"]["energy"] == analysis_identity(),
-                "stable_across_occurrences": len({_canon(n["runtimes"]) for n in same}) == 1}),
+                "stable_across_occurrences": len({_canon(n["runtimes"]) for n in same}) == 1,
+                "stable_across_reopen": reopen_stable(bundles, lambda r: r["native"]["runtimes"])}),
         _entry("exchange result_id / verification_id", "external exchange artifact", "content_hash",
                "sha256(schema + NUL + canonical artifact without its id)", "artifact content; status "
                "content_recomputed_not_authenticated", "not_applicable", "not_applicable",
@@ -1216,6 +1413,14 @@ def identity_matrix(fixture: dict, variants: dict) -> list:
                "content_hash / fresh_event_uuid", "'candidate:' + sha256(record); 'candidate-execution:' + uuid4",
                "the retained ESM response bytes, policy and adapter identity", "not_applicable", "stable",
                ["src/ciw/workbench.py:Workbench._validate_candidate"], {}, exercised=False),
+        _entry("pinned-provider runtime identity (ciw.subprocess-runtime.v1)", "provider-backed bundle runtime",
+               "provider_pinned", "revision, module and source_root must equal CIW's pin; source_tree (40 hex), "
+               "python_sha256 (64 hex), python_version and dependencies are reported by the host adapter",
+               "the pinned provider revision plus host-measured tree and interpreter digests (format-checked on reopen)",
+               "compared on replay (runtime projection without host paths)", "pin and format checked",
+               ["src/ciw/declared_workload.py:DeclaredWorkflow._validate",
+                "src/ciw/declared_workload.py:DeclaredWorkflow._runtime_projection",
+                "src/ciw/workbench.py:_validate_links"], {}, exercised=False),
     ]
     return rows
 
@@ -1247,7 +1452,11 @@ def _property_checks(identity: str, properties: dict) -> list:
 CLASSES = ("content_hash, byte_hash, content_hash_of_fresh_occurrence and unkeyed_seal (SHA-256 over canonical JSON "
            "or raw bytes); fresh_event_uuid (uuid4 draws); caller_declared, caller_declared_name, constant_name and "
            "provider_declared (copied, not derived); code_hash_plus_declared_versions (a code digest beside "
-           "self-reported versions); absent")
+           "self-reported versions); provider_pinned (a pinned revision beside host-measured digests); absent")
+UNEXERCISED = ("ESM candidate_id and candidate execution identities (they need an operator-bound ESM adapter and a "
+               "telemetry or calibrated bundle) and pinned-provider runtime identities (ciw.subprocess-runtime.v1; they "
+               "need a provider checkout bound to a declared-workload or telemetry workflow) are planned matrix rows "
+               "that the offline path cannot exercise; their predictions are read from the code, not observed.")
 
 T077_PLAN = _fields(
     "Each CIW identity on the offline paths is a content or byte hash, a fresh event UUID, a caller- or "
@@ -1257,12 +1466,15 @@ T077_PLAN = _fields(
     "(collision probability ~2^-122 per pair).",
     "Every exercised identity shows its predicted properties: content identities recompute exactly and are stable "
     "when their content is; event identities are distinct per occurrence; declared identities are copied, not "
-    "derived.",
+    "derived; every identity predicted stable across reopen has the same value after the saved workspace is "
+    "reopened and saved again.",
     "Build an oscillator session and energy-accuracy bundles offline, replay, save, reopen, replay again, replay a "
     "replay, and repeat in a separate session (same process and code); retain byte and resealed content variants; "
-    "check every predicted property per identity, with CIW's own validators judging refusals and moved occurrences.",
+    "check every predicted property per identity, with CIW's own validators judging refusals and moved occurrences; "
+    "compare every retained identity before reopen with the value the reopened session saves again (records paired "
+    "by catalog position). Planned but offline-unreachable: " + UNEXERCISED,
     "not run", "not run", [], [], "T078",
-    inputs=SESSION_INPUTS + [VARIANT_INPUT])
+    inputs=SESSION_INPUTS + [VARIANT_INPUT, ESM_INPUT, EXCHANGE_INPUT])
 
 
 @task("T077", changed_files=CHANGED, regression_tests=(_node("test_identity_matrix"),), plan=T077_PLAN)
@@ -1285,11 +1497,21 @@ def identity_matrix_task(ctx):
     receipt_free = _bundle_digest(_without(B1, "replay_receipts")) == B1["bundle_digest"]
     verification_free = _bundle_digest(dict(B1, verification={"schema": "lab.replaced"})) == B1["bundle_digest"]
     parsed = json.loads(fixture["raw"]["baseline"].decode("utf-8"))
+    producers = {"sensor.device_uuid": parsed["sensor"]["device_uuid"],
+                 "runtime.workload.kernel_sha256": parsed["runtime"]["workload"]["kernel_sha256"],
+                 "runtime.python.executable_sha256": parsed["runtime"]["python"]["executable_sha256"],
+                 "runtime.implementation.code_sha256": parsed["runtime"]["implementation"]["code_sha256"]}
+    # A property of the repository fixture, not of CIW: recorded as a value, never counted as a check.
+    placeholders = all(len(set(value)) == 1 for key, value in producers.items() if key.endswith("sha256"))
+    reopen_rows = [row["identity"] for row in exercised
+                   if {"stable_across_reopen", "absent_after_reopen"} & set(row["properties"])]
+    unexercised = [row["identity"] for row in rows if not row["exercised"]]
     findings = [
-        _verified("Every exercised identity shows its predicted derivation, freshness and binding properties on the "
-                  "offline paths",
-                  {"rows": len(rows), "exercised_rows": len(exercised), "properties": properties,
-                   "properties_held": held, "rederived_properties": rederived, "derivation_classes": classes},
+        _verified("Every exercised identity shows its predicted derivation, freshness, binding and reopen properties "
+                  "on the offline paths",
+                  {"rows": len(rows), "exercised_rows": len(exercised), "unexercised_rows": unexercised,
+                   "properties": properties, "properties_held": held, "rederived_properties": rederived,
+                   "reopen_stability_properties": len(reopen_rows), "derivation_classes": classes},
                   checks),
         _verified("Oscillator operation results carry no replay-stable numerical-result identity",
                   {"numerical_result_id_present": "numerical_result_id" in R1, "data_equal": R1["data"] == R2["data"],
@@ -1315,10 +1537,7 @@ def identity_matrix_task(ctx):
                                               "replaced": "verification",
                                               "function": "src/ciw/telemetry.py:_bundle_digest"}}),
         finding("The retained log's device and kernel identities identify the producing GPU and code", "physical",
-                {"sensor.device_uuid": parsed["sensor"]["device_uuid"],
-                 "runtime.workload.kernel_sha256": parsed["runtime"]["workload"]["kernel_sha256"],
-                 "runtime.python.executable_sha256": parsed["runtime"]["python"]["executable_sha256"],
-                 "runtime.implementation.code_sha256": parsed["runtime"]["implementation"]["code_sha256"]},
+                {**producers, "fixture_hashes_are_placeholders": placeholders},
                 {"notes": "These values are copied from a synthetic fixture log (the hashes are repeated-character "
                           "placeholders) and CIW checks only their format; a resealed log with other well-formed "
                           "values is accepted. Nothing identifies real hardware or code."}, tolerance=EXACT),
@@ -1334,15 +1553,19 @@ def identity_matrix_task(ctx):
     fields.update(
         experiment=T077_PLAN["experiment"] + " " + COMPARISON + " Matrix retained as identity-matrix.json/.md "
                    "(observed refusal messages included per row).",
-        numerical_result=f"{len(rows)} identities ({len(exercised)} exercised offline); {held}/{properties} predicted "
-                         f"properties held ({rederived} are same-origin digest re-derivations, the rest observe CIW "
-                         f"outputs, refusals or validators); classes {classes}",
+        numerical_result=f"{len(rows)} identities ({len(exercised)} exercised offline; not exercised: "
+                         f"{', '.join(unexercised)}); {held}/{properties} predicted properties held ({rederived} are "
+                         f"same-origin digest re-derivations, the rest observe CIW outputs, refusals or validators; "
+                         f"{len(reopen_rows)} rows compare their identity before and after reopen); classes {classes}",
         uncertainty="Exact equality tests on digests, UUID draws and exact refusal messages; a uuid4 collision among "
-                    "the ~40 fresh identities has probability below 1e-33. Properties are sampled on one fixture, not "
-                    "proved for all inputs. Checks that could not fail by construction (identifier prefix tests, a "
-                    "lab-set ESM digest, label-driven source_id counts) were removed.",
+                    "the fewer than 40 fresh uuid4 draws has probability below 1e-33. Properties are sampled on one "
+                    "fixture, not proved for all inputs. Checks that could not fail by construction (identifier prefix "
+                    "tests, a lab-set ESM digest, label-driven source_id counts, the fixture's placeholder hashes) "
+                    "are not counted as properties.",
         failure_modes_checked=["digest recomputation mismatch", "identity reused across occurrences",
-                               "identity not stable across replay or reopen", "label-independent source identity",
+                               "identity not stable across replay", "identity value changed by save, reopen and "
+                               "re-save (per row, records paired by catalog position)",
+                               "label-independent source identity",
                                "source identity insensitive to bytes under one label",
                                "result identity after an occurrence change (judged by CIW's step validator)",
                                "numerical identity after a metadata-only resealed edit",
@@ -1350,16 +1573,19 @@ def identity_matrix_task(ctx):
                                "exchange identity tamper", "ESM request/response mismatch",
                                "ESM digest over a non-canonical layout of the same bundle"],
         unresolved_assumptions=[
-            "ESM candidate_id and candidate execution identities were not exercised: they need an operator-bound ESM "
-            "adapter and a telemetry or calibrated bundle.",
+            "Partial: " + UNEXERCISED,
             "The ESM rows use a synthetic telemetry-shaped record (schema, digest, three step occurrences), not a "
             "telemetry session validated by the telemetry workflow, which needs provider checkouts.",
             "Provider-backed workflows (telemetry, declared workloads, proved heat) were not exercised offline; their "
             "identity rows are inferred only where they share the energy-accuracy code path.",
+            "Reopen stability is observed as the value CIW saves again after reopening, which is the reopened "
+            "session's own serialization of its restored state.",
             "Content identities establish consistency, not authorship."],
         recommended_next_task="T078 (exact source-byte retention); CIW change: add a numerical_result_id to "
                               "oscillator operation results and bind replay receipts into a catalog-level seal")
-    return {"state": _state(findings), "fields": fields, "findings": findings}
+    state = _state(findings)
+    return {"state": "partial" if unexercised and state == "completed" else state, "fields": fields,
+            "findings": findings}
 
 
 # ------------------------------------------------------------------ T078 exact source bytes
@@ -1487,10 +1713,14 @@ def whitespace_retention(ctx):
 
     def distinct(key):
         return len({record[key] for record in records})
-    byte_level = {key: distinct(key) for key in ("input_sha256", "evidence_id", "source_id")}
+    # Harness preconditions on the lab's own inputs, not observations of CIW: they are never counted as checks.
+    inputs, labels = distinct("input_sha256"), len({record["label"] for record in records})
+    if inputs != count or labels != 1:
+        raise RuntimeError("T079 harness precondition failed: the byte variants must be distinct byte strings under "
+                           "one shared label")
+    byte_level = {key: distinct(key) for key in ("evidence_id", "source_id")}
     content_level = {key: distinct(key) for key in ("experiment_digest", "log_digest", "numerical_result_id")}
     aliases = sum(record["artifact_ref"] != record["evidence_id"] for record in records)
-    labels = len({record["label"] for record in records})
     levels = [
         {"identity": "workbench evidence_id (bundle artifact_ref and sha256 are copies of it)", "level": "byte",
          "distinct_values": byte_level["evidence_id"]},
@@ -1521,11 +1751,12 @@ def whitespace_retention(ctx):
     findings = [
         _verified("Whitespace, key-order and float-spelling variants under one label retain distinct exact bytes and "
                   "distinct evidence and source identities while their parsed content is canonically equal",
-                  {"variants": count, "labels": labels, "exactly_retained": exact, "canonically_equal": canonical,
+                  {"variants": count, "labels": labels, "distinct_input_sha256": inputs,
+                   "harness_preconditions": "distinct input bytes under one label, asserted before any check",
+                   "exactly_retained": exact, "canonically_equal": canonical,
                    "artifact_ref_not_equal_to_evidence_id": aliases,
                    **{f"distinct_{key}": value for key, value in byte_level.items()}},
-                  [_count("labels shared by the variants", labels, 1),
-                   _count("variants retained byte-exactly (live, bundle, reopen)", exact, count),
+                  [_count("variants retained byte-exactly (live, bundle, reopen)", exact, count),
                    _count("variants canonically equal to baseline (CIW canonical JSON)", canonical, count),
                    _exact("variants whose bundle artifact_ref is not their evidence_id", aliases)]
                   + [_count(f"distinct {key}", value, count) for key, value in byte_level.items()]),
@@ -1563,7 +1794,8 @@ def whitespace_retention(ctx):
     fields = dict(T079_PLAN)
     fields.update(
         experiment=T079_PLAN["experiment"] + " Identity levels retained as identity-levels.json/.md.",
-        numerical_result=f"{count} variants under {labels} label: byte-level distinct counts {byte_level}; "
+        numerical_result=f"{count} distinct input byte strings under {labels} label (harness precondition): CIW "
+                         f"byte-level distinct counts {byte_level}; "
                          f"content-level distinct counts {content_level}; consistent int-for-float rewrite refused "
                          f"unsealed ({message(unsealed)}), distinct evidence when resealed; partial rewrite and BOM "
                          "refused",
@@ -1584,17 +1816,20 @@ def whitespace_retention(ctx):
 # ------------------------------------------------------------------ T080 separation
 T080_PLAN = _fields(
     "Operation, execution and result identities have different kinds (name, fresh occurrence, result occurrence); "
-    "forged aliases between execution and result identities are refused on reopen, while the selection revision "
-    "a record claims is not checked against any history.",
+    "inconsistent aliases between execution and result identities are refused on reopen, but a consistent "
+    "re-pairing of two occurrences (execution and result identities and creation times exchanged together) reopens, "
+    "because oscillator identities are uuid4 draws that bind no content; the selection revision a record claims is "
+    "not checked against any history.",
     "operation_id is a constant per operation; execution_id and result_id are independent uuid4 draws per "
     "occurrence (energy result_id = sha256 over a record that includes execution_ref); numerical_result_id "
     "excludes the occurrence.",
     "No string is used in two identity roles; CIW's own step validator refuses a moved occurrence with a stale "
-    "result_id and accepts it with a recomputed one, whose numerical and operation identities are unchanged; "
-    "execution/result aliasing forgeries are refused; revision.gap reopens.",
+    "result_id and accepts it with a recomputed one, whose numerical and operation identities are unchanged; the "
+    "four inconsistent aliasing forgeries are refused; alias.swap-pairing and revision.gap reopen.",
     "Compare identity sets across oscillator and energy occurrences, move one energy step to a new execution_ref and "
-    "let EnergyAccuracyWorkflow._validate_step judge it, and reopen four aliasing forgeries and one selection-revision "
-    "forgery.", "not run", "not run", [], [], "T081")
+    "let EnergyAccuracyWorkflow._validate_step judge it, and reopen four inconsistent aliasing forgeries, one "
+    "consistent re-pairing of the two statistics occurrences and one selection-revision forgery.",
+    "not run", "not run", [], [], "T081")
 
 
 @task("T080", changed_files=CHANGED, regression_tests=(_node("test_identity_separation"),), plan=T080_PLAN)
@@ -1635,11 +1870,15 @@ def identity_separation(ctx):
                           0 if moved["recomputed_result_id"] == "accepted" else 1),
                    _exact("identities that did not move as predicted (result_id changes; numerical_result_id and "
                           "operation_id do not)", unmoved)]),
-        _kills(rows, "Execution/result aliasing forgeries are refused on reopen with the pinned message; operation "
-                     "substitution is refused only by payload-shape validation", harness),
-        *_survivor_findings(rows, {"revision.gap": "Surviving mutant revision.gap: a workspace whose selection "
-                                                   "revision jumps to 1000, with records claiming revision 999, "
-                                                   "reopens"}),
+        _kills(rows, "Inconsistent execution/result aliases (a result or execution naming another occurrence's "
+                     "identity, a result identity with the execution prefix) are refused on reopen with the pinned "
+                     "message; operation substitution is refused only by payload-shape validation", harness),
+        *_survivor_findings(rows, {
+            "alias.swap-pairing": "Surviving mutant alias.swap-pairing: two statistics occurrences whose execution "
+                                  "and result identities and creation times are exchanged consistently reopen "
+                                  "re-paired",
+            "revision.gap": "Surviving mutant revision.gap: a workspace whose selection revision jumps to 1000, with "
+                            "records claiming revision 999, reopens"}),
         _authentication(rows),
     ]
     fields = dict(T080_PLAN)
@@ -1649,14 +1888,19 @@ def identity_separation(ctx):
                          f"result_id -> {moved['stale_result_id']}, recomputed -> {moved['recomputed_result_id']}; "
                          f"mutants: {_summary(rows)}",
         uncertainty="Exact comparisons. The saved selection history is not retained, so revision claims cannot be "
-                    "checked by any validator.",
+                    "checked by any validator. Kills show only that these particular aliases are detected; the "
+                    "re-pairing survivor is harmless in this fixture only because R1 and R2 carry equal data.",
         failure_modes_checked=["identity reuse across roles", "result pointing at another execution", "execution "
                                "pointing at another result", "wrong identity prefix",
                                "operation substitution (alias.operation is killed incidentally by payload-shape "
                                "validation: only statistics.v1 and spectrum.periodogram.v1 are registered and their "
                                "payload shapes differ, so no shape-compatible substitution exists offline)",
-                               "stale result identity after an occurrence change", "selection revision gap"],
+                               "stale result identity after an occurrence change",
+                               "consistent re-pairing of two execution/result occurrences", "selection revision gap"],
         unresolved_assumptions=["uuid4 freshness is probabilistic, not enforced by a registry across workspaces.",
+                                "Oscillator result and execution identities bind no content, so which execution "
+                                "produced a result is recorded but not verifiable; the re-pairing was tested only "
+                                "between occurrences of one operation with equal parameters and data.",
                                 "Selection history is not persisted, so selection_revision is only bounded, not bound.",
                                 "No binding between operation_id and the other identities was isolated from payload "
                                 "validation."],
@@ -1752,8 +1996,12 @@ def numerical_identity(ctx):
                   "direct recomputation from the retained samples",
                   {"max_relative_difference": relative, "sample_count": direct["sample_count"],
                    "inequalities": inequalities},
-                  [_invariant("max relative difference of mean, minimum, maximum and rms from a NumPy recomputation",
-                              relative, 1e-12, "le"),
+                  [{"reference_kind": "cross_implementation",
+                    "reference": "max relative difference of mean, minimum, maximum and rms between "
+                                 "ciw.adapters.oscillator.compute_statistics (max-normalized NumPy reductions) and "
+                                 "ciw.lab's direct unnormalized NumPy recomputation (same implementation origin)",
+                    "observed": float(relative), "tolerance": 1e-12, "comparison": "le",
+                    "passed": compare(float(relative), 1e-12, "le")},
                    _exact("sample count differs from the recomputation", direct["sample_count"] - computed["sample_count"]),
                    _exact("moment inequalities violated by the computed result",
                           sum(not value for value in inequalities.values()))],
@@ -1840,12 +2088,15 @@ def fresh_occurrences(ctx):
     }
     table = {kind: {"occurrences": len(values), "distinct": len(set(values))} for kind, values in kinds.items()}
     total = sum(entry["occurrences"] for entry in table.values())
+    # uuid4 draws are the execution, result and session identities in uuid4 form; the rest are SHA-256 digests.
+    draws = sum(any(_uuid4(value, prefix) for prefix in ("execution-", "result-", "session-"))
+                for values in kinds.values() for value in values)
     rows, harness = _task_rows(ctx, "T082"), _mutations(ctx)["harness"]
     _retain_rows(ctx, rows, "freshness-mutations")
     findings = [
         _verified("Every execution, result, verification, bundle, session and replay occurrence has a fresh identity",
                   table, [_count(f"distinct {kind} identities", entry["distinct"], entry["occurrences"])
-                          for kind, entry in table.items()], uncertainty=_collision(total)),
+                          for kind, entry in table.items()], uncertainty=_collision(draws, total - draws)),
         _kills(rows, "Reused or colliding occurrence identities are refused on reopen with the pinned message",
                harness),
         *_survivor_findings(rows, {"fresh.created-at-shift": "Surviving mutant fresh.created-at-shift: a backdated "
@@ -1856,9 +2107,10 @@ def fresh_occurrences(ctx):
     fields.update(
         experiment=T082_PLAN["experiment"] + " Mutation rows retained as freshness-mutations.json/.md.",
         numerical_result=f"occurrence table {table}; mutants: {_summary(rows)}",
-        uncertainty=f"uuid4 collisions among these {total} identities have probability below "
-                    f"{_collision(total)['value']:.1e}; freshness is checked within one workspace, not globally "
-                    "across workspaces.",
+        uncertainty=f"{total} identities: {draws} uuid4 draws, whose collision probability is below "
+                    f"{_collision(draws, total - draws)['value']:.1e}, and {total - draws} SHA-256 digests over records "
+                    "containing those draws; freshness is checked within one workspace, not globally across "
+                    "workspaces.",
         failure_modes_checked=["replay reusing the original execution", "replay reusing the original reproduction",
                                "energy step colliding with an oscillator execution", "oscillator execution duplicate",
                                "creation time moved in one record", "creation time moved in both records"],
@@ -1873,14 +2125,21 @@ def fresh_occurrences(ctx):
 # ------------------------------------------------------------------ T083 receipt binding
 T083_PLAN = _fields(
     "A replay receipt binds the source bundle digest, the replayed bundle digest, the verification subject, the "
-    "fresh reproduction step, the runtime digest and a not_performed admission, but the replay bundle's own "
-    "identity does not bind the receipt.",
+    "fresh reproduction step, the runtime digest and a not_performed admission, but nothing binds it to a replay "
+    "event: every field is a copy of, or an unkeyed digest over, retained bundles, and the replay bundle's own "
+    "identity excludes the receipt. Predicted kills: a false numerical_match, and a receipt moved onto another "
+    "bundle while its replayed digest stays stale or its verification keeps the donor's reproduction step. "
+    "Predicted survivors: the same move with the receipt rebuilt from the two bundles (receipt.transplanted-full), "
+    "a receipt written onto a never-replayed original (receipt.fabricated) and receipt deletion (receipt.deleted).",
     "replay_id = sha256(receipt \\ replay_id); receipt.verification.subject_ref = source_bundle_digest; "
-    "bundle_digest = sha256(bundle \\ {bundle_digest, verification, replay_receipts}).",
-    "All binding equalities hold for every retained receipt; transplanted receipts and false numerical matches are "
-    "refused; a receipt can be removed without changing any digest (receipt.deleted reopens).",
-    "Check the binding equalities for three receipts (replay, replay after reopen, replay of a replay); reopen "
-    "receipt transplant, false numerical match and deletion forgeries.", "not run", "not run", [], [], "T084")
+    "receipt.verification.reproduction = the containing bundle's step; bundle_digest = sha256(bundle \\ "
+    "{bundle_digest, verification, replay_receipts}). Every term is computable from retained bundles alone.",
+    "All binding equalities hold for every retained receipt; the three predicted kills are refused with their pinned "
+    "messages; receipt.transplanted-full, receipt.fabricated and receipt.deleted reopen, and the reopened catalog "
+    "shows the forged receipt placement.",
+    "Check the binding equalities for three receipts (replay, replay after reopen, replay of a replay); reopen a false "
+    "numerical match, receipt transplants with no, local and full recomputation, a fabricated receipt and a receipt "
+    "deletion.", "not run", "not run", [], [], "T084")
 
 
 @task("T083", changed_files=CHANGED, regression_tests=(_node("test_replay_receipt_binding"),), plan=T083_PLAN)
@@ -1926,10 +2185,16 @@ def receipt_binding(ctx):
                   {"receipts": len(properties), "binding_properties": total, "held": held_count},
                   [check for entry in properties
                    for check in _property_checks(f"{entry['replay']} receipt binding", entry["properties"])]),
-        _kills(rows, "Transplanted receipts and false numerical-match claims are refused on reopen", harness),
-        *_survivor_findings(rows, {"receipt.deleted": "Surviving mutant receipt.deleted: a replay bundle reopens "
-                                                      "without its replay receipt, indistinguishable from an original "
-                                                      "execution"}),
+        _kills(rows, "A false numerical-match claim, and a receipt moved onto another bundle with a stale replayed "
+                     "digest or with the donor's reproduction step, are refused on reopen", harness),
+        *_survivor_findings(rows, {
+            "receipt.transplanted-full": "Surviving mutant receipt.transplanted-full: a replay receipt moved onto an "
+                                         "original sibling and rebuilt from the two bundles reopens there, and the "
+                                         "replay reopens without it",
+            "receipt.fabricated": "Surviving mutant receipt.fabricated: a receipt written onto a never-replayed "
+                                  "original, claiming it replays its sibling, reopens",
+            "receipt.deleted": "Surviving mutant receipt.deleted: a replay bundle reopens without its replay receipt, "
+                               "listed with no receipt like an original execution"}),
         finding("Replay agreement establishes verification by an independent party", "provenance",
                 {"receipt_independent_flags": [natives[role]["replay_receipts"][0]["verification"]["independent"]
                                                for role in ("B1", "B2", "B3")], "method": METHOD},
@@ -1944,14 +2209,23 @@ def receipt_binding(ctx):
                    "receipt-mutations.json/.md.",
         numerical_result=f"{held_count}/{total} receipt binding properties held over {len(properties)} receipts; "
                          f"mutants: {_summary(rows)}",
-        uncertainty="Exact equalities. Receipt deletion is accepted because bundle_digest excludes replay_receipts "
+        uncertainty="Exact equalities. Kills show only that these particular edits are detected, not that every "
+                    "receipt edit is. Receipt deletion, full transplant and fabrication are accepted because every "
+                    "receipt field is recomputable from retained bundles and bundle_digest excludes replay_receipts "
                     "(src/ciw/telemetry.py:_bundle_digest); nothing else records that a replay happened.",
-        failure_modes_checked=["receipt moved to another bundle", "receipt moved and resealed", "false "
-                               "numerical_match", "receipt deleted"],
+        failure_modes_checked=["receipt moved to another bundle (no recompute)", "receipt moved with replayed digest "
+                               "and replay_id recomputed (donor reproduction step kept)", "receipt moved and fully "
+                               "rebuilt on the target", "receipt fabricated for a never-replayed original",
+                               "false numerical_match", "receipt deleted"],
         unresolved_assumptions=["Only energy-accuracy receipts were exercised; provider-backed receipts share "
-                                "workbench._validate_receipts but have workflow-specific checks."],
+                                "workbench._validate_receipts but have workflow-specific checks.",
+                                "A fabricated receipt needs a sibling of the same source bytes, configuration and "
+                                "runtime; one was retained here (B0b), which any user can create by executing a "
+                                "source twice."],
         recommended_next_task="T084 (mutate replay receipt source digest); CIW change: bind receipts into the replay "
-                              "bundle identity or a catalog-level seal so deletion is detected")
+                              "bundle identity or a catalog-level seal so accidental deletion is detected, and sign "
+                              "receipts with a host-held key at replay time so a transplanted or fabricated receipt "
+                              "is refused")
     return {"state": _state(findings), "fields": fields, "findings": findings}
 
 
@@ -1990,12 +2264,17 @@ MUTATION_TASKS = {
                       "rebuilds the expected verification with subject = receipt source); a bundle verification "
                       "subject other than the bundle's own digest; oscillator verification fields (protocol v1 fixes "
                       "them); an ESM candidate naming another bundle; an exchange subject edit without a recomputed "
-                      "verification_id. No survivor of its own is predicted: the subject can move only together with "
-                      "the receipt source, which is T084's receipt-source.sibling-execution (cross-referenced here, "
-                      "not re-run).",
-        "invariant": "Every predicted refusal is observed; T084's sibling-execution survivor shows the subject and "
-                     "source moved together; the harness controls hold.",
-        "survivors": {}, "next": "T087 (mutate verification method)"},
+                      "verification_id. On the energy path the subject can move only together with the receipt "
+                      "source, which is T084's receipt-source.sibling-execution (cross-referenced here, not re-run). "
+                      "Predicted survivor: oscillator-subject.injected, because sealed oscillator records do not "
+                      "refuse extra keys and their seal is unkeyed (as for the method, independence and admission "
+                      "injections of T087-T089).",
+        "invariant": "Every predicted refusal is observed; the injected subject_ref is returned by result.get after "
+                     "reopen; T084's sibling-execution survivor shows the energy subject and source moved together; "
+                     "the harness controls hold.",
+        "survivors": {"oscillator-subject.injected": "Surviving mutant oscillator-subject.injected: a sealed result "
+                      "carrying an injected verification subject naming its sibling result reopens"},
+        "next": "T087 (mutate verification method)"},
     "T087": {
         "subject": "Verification method", "stem": "verification-method-mutations",
         "hypothesis": "Predicted kills: the three energy verification method edits, because reopen rebuilds the "
@@ -2056,6 +2335,8 @@ MUTATION_TASKS = {
 def _mutation_plan(task_id: str) -> dict:
     spec = MUTATION_TASKS[task_id]
     validators = spec.get("validators")
+    inputs = list(SESSION_INPUTS) + ([ESM_INPUT] if validators else []) + (
+        [EXCHANGE_INPUT] if validators and "exchange" in validators else [])
     return _fields(
         spec["hypothesis"],
         "Each record seal or identity d = sha256(canon(record \\ d)) is unkeyed, so any holder can recompute d "
@@ -2065,7 +2346,7 @@ def _mutation_plan(task_id: str) -> dict:
         f"Edit the saved workspace ({spec['subject'].lower()}), recompute none, local or all unkeyed digests, write it "
         "and reopen with Session.from_workspace"
         + (f"; pure {validators} validators are also run on synthetic records." if validators else "."),
-        "not run", "not run", [], [], spec["next"])
+        "not run", "not run", [], [], spec["next"], inputs=inputs)
 
 
 def _cross_reference(matrix: dict) -> dict:
@@ -2142,6 +2423,11 @@ def _mutation_task(ctx, task_id: str) -> dict:
             "The forger model recomputes only unkeyed SHA-256 digests with CIW's public canonicalization; no key "
             "exists to steal.",
             *([_validator_scope(spec["validators"])] if spec.get("validators") else []),
+            *(["Pinned-provider subprocess runtime identities (ciw.subprocess-runtime.v1: pinned revision, module and "
+               "source_root, host-measured source_tree and python_sha256; src/ciw/declared_workload.py) were not "
+               "mutated, because no provider checkout was bound to a declared-workload or telemetry workflow; only "
+               "the CIW-internal oscillator provider identity and CIW's own energy analysis identity were."]
+              if task_id == "T090" else []),
             "Whether a reader of a forged workspace would be misled depends on how the record is displayed; not "
             "assessed."])
     return {"state": _state(findings), "fields": fields, "findings": findings}

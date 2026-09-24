@@ -148,6 +148,7 @@ def build_session_fixture(root: Path) -> dict:
         "workspace": saved["workspace"], "workspace_bytes": saved["bytes"],
         "workspace_reopened": saved_reopened["workspace"],
         "reopened_run_evidence_id": reopened.run["evidence_id"],
+        "reopened_recording_file": reopened.recording_file,
         "recording": {"file": session.recording_file, "sha256": hashlib.sha256(recording).hexdigest(),
                       "is_reserialization": recording == (json.dumps(run, indent=2) + "\n").encode("utf-8")},
     }
@@ -233,6 +234,20 @@ def reseal_receipt(receipt: dict) -> None:
     from ..telemetry import digest
     receipt["verification"]["verification_id"] = verification_id(receipt["verification"])
     receipt["replay_id"] = digest({key: item for key, item in receipt.items() if key != "replay_id"})
+
+
+def forge_receipt(source: dict, replayed: dict) -> dict:
+    """A receipt claiming that ``replayed`` replays ``source``, built from the two bundles alone.
+
+    Every field is copied from or recomputed over retained records (CIW's
+    layout, the replayed bundle's own step as the reproduction); no replay
+    event is needed to write it.
+    """
+    receipt = {"schema": f"ciw.{KIND}-replay.v1", "source_bundle_digest": source["bundle_digest"],
+               "replayed_bundle_digest": replayed["bundle_digest"], "numerical_match": True,
+               "verification": build_verification(source, replayed["steps"][0]), "admission": "not_performed"}
+    reseal_receipt(receipt)
+    return receipt
 
 
 def reforge(workspace: dict, *, keep_verification=False) -> None:

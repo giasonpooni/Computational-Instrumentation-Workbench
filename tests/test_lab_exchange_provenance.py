@@ -48,15 +48,25 @@ def _artifact(lab, task_id, name):
     return (lab.ctx.output_dir / "artifacts" / task_id / name).read_text(encoding="utf-8")
 
 
-def _labels(report, primary, counts):
-    assert report["state"] == "completed"
+def _labels(report, primary, counts, state="completed"):
+    assert report["state"] == state
     assert report["evidence_status"]["primary"] == primary
     assert {label: count for label, count in report["evidence_status"]["counts"].items() if count} == counts
 
 
+def _survivor_findings(report):
+    return {record["value"]["mutant"]: record for record in report["findings"] if record.get("counterexample")
+            and isinstance(record["value"], dict) and "mutant" in record["value"]}
+
+
 def _survivors(report):
-    return sorted(record["value"]["mutant"] for record in report["findings"] if record.get("counterexample")
-                  and isinstance(record["value"], dict) and "mutant" in record["value"])
+    """Surviving mutants; each one also checks, beyond its acceptance, what the reopened session shows."""
+    found = _survivor_findings(report)
+    for record in found.values():
+        checks = record["basis"]["checks"]
+        assert record["evidence_status"] == "numerically_verified" and len(checks) >= 2
+        assert all(check["passed"] for check in checks)
+    return sorted(found)
 
 
 def _kill_messages(report):
@@ -97,10 +107,15 @@ def test_every_section_task_is_registered_with_its_regression_test():
 
 def test_identity_matrix(lab):
     report = lab("T077")
-    _labels(report, "numerically_verified", {"numerically_verified": 3, "not_established": 2})
+    # Partial: two planned rows (ESM candidate, pinned-provider runtime) cannot run offline.
+    _labels(report, "numerically_verified", {"numerically_verified": 3, "not_established": 2}, state="partial")
     summary = report["findings"][0]["value"]
-    assert summary["rows"] == 29 and summary["exercised_rows"] == 28
-    assert summary["properties"] == summary["properties_held"] == 77 and summary["rederived_properties"] == 11
+    assert summary["rows"] == 30 and summary["exercised_rows"] == 28
+    assert summary["unexercised_rows"] == ["ESM candidate_id / candidate execution_id",
+                                           "pinned-provider runtime identity (ciw.subprocess-runtime.v1)"]
+    assert report["unresolved_assumptions"][0].startswith("Partial: ESM candidate_id")
+    assert summary["properties"] == summary["properties_held"] == 97 and summary["rederived_properties"] == 11
+    assert summary["reopen_stability_properties"] == 23
     assert summary["derivation_classes"]["fresh_event_uuid"] == 5
     found = _findings(report)
     gap = found["Oscillator operation results carry no replay-stable numerical-result identity"]
@@ -111,6 +126,7 @@ def test_identity_matrix(lab):
     assert excluded["value"]["digest_unchanged_with_replaced_verification"] is True
     producers = found["The retained log's device and kernel identities identify the producing GPU and code"]
     assert producers["domain"] == "physical" and producers["evidence_status"] == "not_established"
+    assert producers["value"]["fixture_hashes_are_placeholders"] is True
     assert _authentication_is_unestablished(report)
     kinds = {check["reference_kind"] for check in report["findings"][0]["basis"]["checks"]}
     assert kinds == {"cross_implementation", "exact_arithmetic"}
@@ -121,6 +137,12 @@ def test_identity_matrix(lab):
     assert matrix["energy step execution_id"]["derivation_class"] == "fresh_event_uuid"
     assert matrix["exchange batch_id"]["derivation_class"] == "caller_declared"
     assert matrix["ESM candidate_id / candidate execution_id"]["exercised"] is False
+    assert matrix["pinned-provider runtime identity (ciw.subprocess-runtime.v1)"]["exercised"] is False
+    # Every exercised identity predicted stable across reopen is compared before and after reopen, and holds.
+    stable = [row for row in matrix.values() if row["exercised"] and row["across_reopen"].startswith("stable")]
+    assert len(stable) == 22 and all(row["properties"]["stable_across_reopen"] is True for row in stable)
+    assert matrix["oscillator numerical-result identity"]["properties"]["absent_after_reopen"] is True
+    assert all("fixture_hashes_are_placeholders" not in row["properties"] for row in matrix.values())
     assert matrix["energy result_id"]["observed_refusals"]["moved_step_stale_result_id"] == ep.BINDING
     assert matrix["ESM bundleBytesDigest"]["observed_refusals"] == {
         "esm_noncanonical_bytes": ep.ESM_SCOPE, "esm_forged_digest": ep.ESM_SCOPE}
@@ -155,8 +177,11 @@ def test_whitespace_variants(lab):
     report = lab("T079")
     _labels(report, "numerically_verified", {"numerically_verified": 5})
     distinct = report["findings"][0]["value"]
-    assert distinct["labels"] == 1
+    assert distinct["labels"] == 1 and distinct["distinct_input_sha256"] == 8
     assert distinct["variants"] == distinct["distinct_evidence_id"] == distinct["distinct_source_id"] == 8
+    # The lab's own inputs are harness preconditions, never checks.
+    references = [check["reference"] for check in report["findings"][0]["basis"]["checks"]]
+    assert not any("label" in text or "input_sha256" in text for text in references)
     assert report["findings"][1]["value"] == {"experiment_digest": 1, "log_digest": 1, "numerical_result_id": 1}
     typed = report["findings"][2]
     assert typed["value"]["python_equal"] is True and typed["value"]["ciw_canonical_equal"] is False
@@ -170,16 +195,18 @@ def test_whitespace_variants(lab):
 
 def test_identity_separation(lab):
     report = lab("T080")
-    _labels(report, "numerically_verified", {"numerically_verified": 3, "not_established": 1})
+    _labels(report, "numerically_verified", {"numerically_verified": 4, "not_established": 1})
     separation = report["findings"][0]["value"]
     assert separation["cross_role_overlaps"] == 0
     assert separation["moved_step"] == {"stale_result_id": ep.BINDING, "recomputed_result_id": "accepted",
                                         "result_id_changed": True, "numerical_result_id_unchanged": True,
                                         "operation_id_unchanged": True}
     assert _kill_messages(report)["alias.execution-result"] == "Execution/result execution_id binding mismatch"
-    assert _survivors(report) == ["revision.gap"]
+    assert _survivors(report) == ["alias.swap-pairing", "revision.gap"]
     assert _authentication_is_unestablished(report)
-    _retained_rows(lab, "T080")
+    rows = _retained_rows(lab, "T080")
+    assert rows["alias.swap-pairing"]["post_reopen"] == {"result:R1": "execution:E2", "result:R2": "execution:E1",
+                                                         "execution:E1": "result:R2", "execution:E2": "result:R1"}
 
 
 def test_numerical_identity(lab):
@@ -192,6 +219,7 @@ def test_numerical_identity(lab):
     assert metadata["numerical_result_id_differs"] is True and metadata["data_keys_differing"] == ["log_digest"]
     statistics = report["findings"][2]
     assert statistics["value"]["max_relative_difference"] <= 1e-12
+    assert statistics["basis"]["checks"][0]["reference_kind"] == "cross_implementation"
     assert statistics["value"]["inequalities"] == {"abs_mean_le_rms": True, "rms_le_max_abs": True}
     assert report["findings"][3]["value"]["message"] == "Identity collision across retained workbench artifacts"
     assert _kill_messages(report)["energy-data.reforged"] == ep.BINDING
@@ -205,6 +233,11 @@ def test_numerical_identity(lab):
     moments = rows["oscillator-stats.impossible-moments"]["post_reopen"]["retained_inequalities"]
     assert moments == {"result:R1": {"abs_mean_le_rms": False, "rms_le_max_abs": True},
                        "result:R2": {"abs_mean_le_rms": True, "rms_le_max_abs": False}}
+    # Witnesses carrying floats tolerate last-bit platform differences; the others stay exact.
+    tolerances = {name: record["regression_tolerance"] for name, record in _survivor_findings(report).items()}
+    assert tolerances["oscillator-stats.impossible-moments"] == tolerances["energy-source.resealed"] == {
+        "abs": 0.0, "rel": 1e-9}
+    assert tolerances["oscillator-stats.resealed"] == {"abs": 0.0, "rel": 0.0}
 
 
 def test_fresh_occurrences(lab):
@@ -214,7 +247,8 @@ def test_fresh_occurrences(lab):
     assert all(entry["distinct"] == entry["occurrences"] for entry in table.values())
     assert table["execution"]["occurrences"] == 17 and table["replay"]["occurrences"] == 3
     assert report["findings"][0]["uncertainty"]["kind"] == "collision_bound"
-    assert 0 < report["findings"][0]["uncertainty"]["value"] < 1e-33
+    assert report["findings"][0]["uncertainty"]["basis"].startswith("27 uuid4 draws")
+    assert 0 < report["findings"][0]["uncertainty"]["value"] == 27 * 26 / 2.0 ** 123
     kills = _kill_messages(report)
     assert kills["fresh.energy-replay-reuse"] == ("Declared workload bundles must have distinct execution and "
                                                   "reproduction occurrences")
@@ -225,13 +259,23 @@ def test_fresh_occurrences(lab):
 
 def test_replay_receipt_binding(lab):
     report = lab("T083")
-    _labels(report, "numerically_verified", {"numerically_verified": 3, "not_established": 2})
+    _labels(report, "numerically_verified", {"numerically_verified": 5, "not_established": 2})
     assert report["findings"][0]["value"] == {"binding_properties": 30, "held": 30, "receipts": 3}
-    assert _survivors(report) == ["receipt.deleted"]
+    assert _kill_messages(report) == {"receipt.numerical-match-false": "Invalid retained energy replay receipt",
+                                      "receipt.transplanted": "Invalid retained energy replay receipt",
+                                      "receipt.transplanted-resealed": ep.BINDING}
+    assert _survivors(report) == ["receipt.deleted", "receipt.fabricated", "receipt.transplanted-full"]
+    assert "kills show only that these particular edits are detected" in report["uncertainty"].lower()
     independent = _findings(report)["Replay agreement establishes verification by an independent party"]
     assert independent["evidence_status"] == "not_established"
     assert independent["value"]["receipt_independent_flags"] == [False, False, False]
-    _retained_rows(lab, "T083")
+    rows = _retained_rows(lab, "T083")
+    none = {"bundle:B0": [], "bundle:B0b": [], "bundle:Bother": [], "bundle:B1": []}
+    assert rows["receipt.deleted"]["post_reopen"] == {"receipt_sources": none}
+    assert rows["receipt.transplanted-full"]["post_reopen"] == {"receipt_sources": dict(none, **{
+        "bundle:B0b": ["bundle:B0"]})}
+    assert rows["receipt.fabricated"]["post_reopen"] == {"receipt_sources": dict(none, **{
+        "bundle:B0b": ["bundle:B0"], "bundle:B1": ["bundle:B0"]})}
 
 
 def test_receipt_digest_mutations(lab):
@@ -246,16 +290,17 @@ def test_receipt_digest_mutations(lab):
         "receipt-source.self": "Invalid retained energy replay receipt",
         "receipt-source.other-source": "Replay source must already belong to this workbench"}
     assert _survivors(source) == ["receipt-source.sibling-execution"]
+    sibling = _retained_rows(lab, "T084")["receipt-source.sibling-execution"]["post_reopen"]
+    assert sibling["receipt_source"] == sibling["verification_subject"] == "bundle:B0b"
     assert set(_kill_messages(replayed).values()) == {"Invalid retained energy replay receipt"}
     assert _survivors(replayed) == ["receipt-replayed.reidentified-bundle"]
     witness = _retained_rows(lab, "T085")["receipt-replayed.reidentified-bundle"]["post_reopen"]
     assert witness["replay_predates_source"] is True and witness["receipt_source"] == "bundle:B0"
-    _retained_rows(lab, "T084")
 
 
 def test_verification_mutations(lab):
     subject, method, independent = lab("T086"), lab("T087"), lab("T088")
-    _labels(subject, "numerically_verified", {"numerically_verified": 2, "not_established": 1})
+    _labels(subject, "numerically_verified", {"numerically_verified": 3, "not_established": 1})
     _labels(method, "numerically_verified", {"numerically_verified": 2, "not_established": 1})
     _labels(independent, "numerically_verified", {"numerically_verified": 3, "not_established": 1})
     for report in (subject, method, independent):
@@ -263,7 +308,7 @@ def test_verification_mutations(lab):
     assert _kill_messages(subject)["oscillator-verification.resealed"] == (
         "Protocol v1 saved results must remain not_verified with verification_id null")
     assert _kill_messages(subject)["exchange.verification-subject"] == "verification_id does not match the artifact content"
-    assert _survivors(subject) == []
+    assert _survivors(subject) == ["oscillator-subject.injected"]
     cited = next(record for record in subject["findings"] if record["claim"].startswith("The verification subject moves"))
     assert cited["value"]["mutant"] == "receipt-source.sibling-execution" and "counterexample" not in cited
     assert _kill_messages(method)["receipt-method.resealed"] == ep.BINDING
@@ -275,8 +320,12 @@ def test_verification_mutations(lab):
     assert exchange["value"]["observed"] == "accepted:content_recomputed_not_authenticated"
     rows = _retained_rows(lab, "T088")
     assert "accepted_by_design" in rows["exchange.verification-independent"]
-    for task_id in ("T086", "T087"):
-        _retained_rows(lab, task_id)
+    injected = {"T086": ("oscillator-subject.injected", "subject_ref", "result:R2"),
+                "T087": ("oscillator-method.injected", "verification_method", "independent_reimplementation"),
+                "T088": ("oscillator-independent.injected", "independent", True)}
+    for task_id, (name, field, value) in injected.items():
+        shown = _retained_rows(lab, task_id)[name]["post_reopen"]["result.get"]
+        assert shown == {field: value, "verification_status": "not_verified"}
 
 
 def test_admission_and_runtime_mutations(lab):
@@ -289,6 +338,10 @@ def test_admission_and_runtime_mutations(lab):
     assert authority["domain"] == "production_acceptance" and authority["evidence_status"] == "not_established"
     assert authority["value"] == {"receipt_admissions": ["not_performed"] * 3}
     assert _survivors(admission) == ["oscillator-admission.injected"]
+    assert _retained_rows(lab, "T089")["oscillator-admission.injected"]["post_reopen"]["result.get"] == {
+        "state_admission": "admitted", "verification_status": "not_verified"}
+    assert any(text.startswith("Pinned-provider subprocess runtime identities") for text in runtime[
+        "unresolved_assumptions"])
     kills = _kill_messages(runtime)
     assert kills["oscillator-runtime.execution-only"] == "Execution/result runtime binding mismatch"
     assert kills["energy-runtime.replay-only"] == ep.BINDING
@@ -300,14 +353,14 @@ def test_admission_and_runtime_mutations(lab):
     matrix = json.loads(_artifact(lab, "T090", "mutation-matrix.json"))
     assert matrix["harness"] == {"reforge_reproduces_ciw_digests": True, "unchanged_workspace_reopens": True}
     rows = matrix["rows"]
-    assert len(rows) == len(ep.MUTANTS) + 7 == 68
+    assert len(rows) == len(ep.MUTANTS) + 7 == 72
     assert all(row["outcome_matches_prediction"] and row["message_matches_pin"] for row in rows)
     workspace_survivors = [row["name"] for row in rows if not row["killed"] and row["kind"] == "workspace"]
-    assert len(workspace_survivors) == len(set(workspace_survivors)) == 15
+    assert len(workspace_survivors) == len(set(workspace_survivors)) == 19
+    assert set(workspace_survivors) == set(ep.STATEMENTS)
     assert [row["name"] for row in rows if not row["killed"] and row["kind"] == "validator"] == [
         "exchange.verification-independent"]
-    for task_id in ("T089", "T090"):
-        _retained_rows(lab, task_id)
+    _retained_rows(lab, "T090")
 
 
 def test_tasks_block_without_the_fixture_logs(tmp_path, monkeypatch):
