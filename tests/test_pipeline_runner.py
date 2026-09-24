@@ -7,7 +7,8 @@ import pytest
 from ciw.adapters.protocol import AdapterRefusal
 from ciw.core.canonical import bundle_digest, canonical, digest
 from ciw.pipelines import _check_runner
-from ciw.pipelines.runner import PipelineRunner, check_receipts, check_step, host_projection, seal_step
+from ciw.pipelines.runner import (PipelineRunner, check_receipt_envelope, check_receipts, check_step, host_projection,
+                                  seal_step)
 
 TREE = "a" * 40
 PIN = {"role": "toy", "revision": "b" * 40, "source_tree": TREE, "module": "toy.provider", "source_root": "src"}
@@ -98,6 +99,44 @@ def test_replay_is_a_fresh_occurrence_with_a_bound_receipt():
     doubled["replay_receipts"].append(deepcopy(receipt))
     with pytest.raises(ValueError, match="at most one"):
         check_receipts(doubled, "toy-kind")
+
+
+def _reseal(receipt):
+    receipt["replay_id"] = digest({key: value for key, value in receipt.items() if key != "replay_id"})
+
+
+@pytest.mark.parametrize("mutate, message", [
+    (lambda r: r.update(schema="ciw.other-kind-replay.v1"), "does not bind"),
+    (lambda r: r.update(numerical_match=False), "does not bind"),
+    (lambda r: r.update(admission="performed"), "does not bind"),
+    (lambda r: r.update(replayed_bundle_digest="sha256:" + "2" * 64), "does not bind"),
+    (lambda r: r.update(source_bundle_digest="not-a-digest"), "does not bind"),
+    (lambda r: r.update(extra=True), "Invalid record fields"),
+    (lambda r: r["verification"].update(subject_ref="sha256:" + "3" * 64), "verification_id"),
+    (lambda r: r.update(verification=[]), "must be a record"),
+])
+def test_a_provider_shaped_replay_receipt_binds_its_fresh_bundle(mutate, message):
+    original = ToyRunner().create_session(source_bytes(), {"toy": "/host/a"})
+    fresh = ToyRunner().replay_session(original, {"toy": "/host/a"})["session"]
+    check_receipt_envelope(fresh, "toy-kind")
+    changed = deepcopy(fresh)
+    mutate(changed["replay_receipts"][0])
+    _reseal(changed["replay_receipts"][0])
+    with pytest.raises(ValueError, match=message):
+        check_receipt_envelope(changed, "toy-kind")
+    # The resealed subject is the only content change; its identity no longer holds.
+    moved = deepcopy(fresh)
+    proof = moved["replay_receipts"][0]["verification"]
+    proof["subject_ref"] = "sha256:" + "4" * 64
+    proof["verification_id"] = "sha256:" + __import__("hashlib").sha256(
+        proof["schema"].encode() + b"\0" + canonical({k: v for k, v in proof.items() if k != "verification_id"})).hexdigest()
+    _reseal(moved["replay_receipts"][0])
+    with pytest.raises(ValueError, match="subject differs from replay source"):
+        check_receipt_envelope(moved, "toy-kind")
+    doubled = deepcopy(fresh)
+    doubled["replay_receipts"].append(deepcopy(doubled["replay_receipts"][0]))
+    with pytest.raises(ValueError, match="retains one receipt"):
+        check_receipt_envelope(doubled, "toy-kind")
 
 
 def test_replay_refuses_a_different_pin():
@@ -271,8 +310,36 @@ def test_declared_and_reproduced_kinds_follow_the_descriptor_verification_method
     methods = {kind: value["verification"]["method"] for kind, value in pipelines.load().items()}
     assert "proved-heat" in workbench.DECLARED_KINDS - workbench.REPRODUCED_KINDS
     assert not {"telemetry", "calibrated-observable", "identified-design"} & workbench.DECLARED_KINDS
-    for kind in workbench.REPRODUCED_KINDS - {"instrument-exchange"}:
-        assert methods[kind].endswith("fresh_occurrence_reproduction"), kind
+    assert workbench.CONTRACT_KINDS == {"instrument-exchange"}
+    assert not workbench.CONTRACT_KINDS & workbench.REPRODUCED_KINDS
+    for kind in workbench.REPRODUCED_KINDS:
+        assert pipelines.workflow(kind).PROFILE.verify_method == methods[kind], kind
+
+
+def test_a_descriptor_cannot_declare_a_verification_method_its_workflow_does_not_record():
+    import copy
+    from ciw import pipelines
+    for kind, method in (("geometric-circle", "fresh_registered_guest_verification"),
+                         ("energy-accuracy", "same_runtime_fresh_occurrence_reproduction"),
+                         ("telemetry", "pinned_set_contract_validation"),
+                         ("instrument-exchange", "pinned_set_replay_verification")):
+        descriptors = copy.deepcopy(pipelines.load())
+        descriptors[kind]["verification"]["method"] = method
+        with pytest.raises(ValueError, match=kind + ": descriptor verification method"):
+            pipelines.check(descriptors)
+
+
+def test_a_declared_record_validates_beside_a_retained_exchange_record():
+    from ciw import workbench
+    # A contract-validated exchange retains no reproduction of its own.
+    record = {"kind": "numerical-heat", "bundle_id": "a", "upstream_bundle_id": None,
+              "native": {"steps": [{"execution_id": "e1"}], "verification": {"reproduction": {"execution_id": "e2"}}}}
+    exchange = {"kind": "instrument-exchange", "bundle_id": "b", "upstream_bundle_id": None,
+                "native": {"steps": [{"execution_id": "x1"}], "verification": {"verifier_ref": "set"}}}
+    workbench._validate_links(record, {"a": record, "b": exchange})
+    exchange["native"]["steps"][0]["execution_id"] = "e2"
+    with pytest.raises(ValueError, match="distinct execution and reproduction occurrences"):
+        workbench._validate_links(record, {"a": record, "b": exchange})
 
 
 def test_verification_records_never_alias_the_profile_or_the_reproduced_step():

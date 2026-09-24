@@ -16,15 +16,18 @@ from threading import RLock
 from .adapters.protocol import AdapterRefusal
 from .adapters.subprocess import _json
 from .pipelines import load as _load_descriptors
+from .pipelines.runner import check_receipt_envelope
 
 # A declared kind retains one sealed native step and its own verification; a
 # kind verified against a pinned provider set replays that set instead. Every
 # declared kind except a proof-verified one verifies by fresh reproduction.
 _METHODS = {kind: value["verification"]["method"] for kind, value in _load_descriptors().items()}
 DECLARED_KINDS = frozenset(kind for kind, method in _METHODS.items() if method != "pinned_set_replay_verification")
-REPRODUCED_KINDS = frozenset(kind for kind in DECLARED_KINDS if _METHODS[kind] != "fresh_registered_guest_verification")
 # A contract-validated kind is declared but retains no single sealed native step of its own.
 CONTRACT_KINDS = frozenset(kind for kind, method in _METHODS.items() if method == "pinned_set_contract_validation")
+# A reproduced kind's verification retains the fresh step that reproduced its own.
+REPRODUCED_KINDS = frozenset(kind for kind in DECLARED_KINDS - CONTRACT_KINDS
+                             if _METHODS[kind] != "fresh_registered_guest_verification")
 # One selected upstream kind per kind that binds exactly one; kinds that
 # select an ordered set of upstream bundles bind them in their workflow.
 _INPUTS = {kind: value["inputs"] for kind, value in _load_descriptors().items()}
@@ -329,22 +332,10 @@ def _validate_record(record, sources):
 
 
 def _validate_receipts(native, kind):
-    receipts = native.get("replay_receipts", [])
-    if not isinstance(receipts, list) or len(receipts) > 1:
-        raise ValueError("A native replay retains one receipt")
-    for receipt in receipts:
-        _keys(receipt, {"schema", "source_bundle_digest", "replayed_bundle_digest", "numerical_match",
-                        "verification", "admission", "replay_id"})
-        if (receipt["schema"] != "ciw." + kind + "-replay.v1" or
-                receipt["replayed_bundle_digest"] != native["bundle_digest"] or
-                receipt["source_bundle_digest"] == native["bundle_digest"] or
-                receipt["numerical_match"] is not True or receipt["admission"] != "not_performed" or
-                receipt["replay_id"] != _digest({k: v for k, v in receipt.items() if k != "replay_id"})):
-            raise ValueError("Replay receipt does not bind the retained fresh bundle")
-        from .exchange import _identity
-        _identity(receipt["verification"], "verification_id")
-        if receipt["verification"]["subject_ref"] != receipt["source_bundle_digest"]:
-            raise ValueError("Replay verification subject differs from replay source")
+    try:
+        check_receipt_envelope(native, kind)
+    except (KeyError, TypeError) as exc:
+        raise ValueError("Replay receipt does not bind the retained fresh bundle") from exc
 
 
 def _validate_links(record, bundles):
@@ -392,7 +383,7 @@ def _validate_links(record, bundles):
         validate_replay = getattr(workflow, "validate_replay", None)
         if validate_replay is not None:
             validate_replay(original["native"], native, receipt)
-        if record["kind"] in REPRODUCED_KINDS - CONTRACT_KINDS:
+        if record["kind"] in REPRODUCED_KINDS:
             workflow = _workflow(record["kind"])
             raw = workflow._validate(original["native"])
             workflow._check_verification(original["native"], receipt["verification"], workflow._source(raw),

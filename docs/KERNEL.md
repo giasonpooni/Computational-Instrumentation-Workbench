@@ -202,7 +202,7 @@ hook on its workflow.
 | --- | --- |
 | Which workflow runs the kind | `implementation.entry` |
 | `experiment.inspect` projector, fusion context | `implementation.view`; `mapped_source` hook swaps the declaration |
-| Declared, reproduced and contract-validated kinds | `verification.method` |
+| Declared, reproduced and contract-validated kinds | `verification.method`, which `pipelines.check` binds to the method the workflow records (`PROFILE.verify_method`, or `VERIFICATION_METHOD` for a hand-written module) |
 | Single or ordered upstream selection | `inputs.upstream_kinds`, `inputs.upstream_cardinality` |
 | Operator configuration separate from the source | `inputs.configuration` |
 | Providers the operator may leave unbound | `steps[].optional` |

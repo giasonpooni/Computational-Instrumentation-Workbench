@@ -240,6 +240,32 @@ def verification(bundle: dict, reproduced: dict, profile: RecordProfile = DECLAR
     return value
 
 
+def check_receipt_envelope(bundle: dict, kind: str) -> None:
+    """A replayed bundle retains at most one receipt binding it to the occurrence it reproduced.
+
+    Provider-shaped verification (SET, calibrated windows) is checked only for
+    its content identity and subject; its body is the provider's.
+    """
+    receipts = bundle.get("replay_receipts", [])
+    if not isinstance(receipts, list) or len(receipts) > 1:
+        raise ValueError("A native replay retains one receipt")
+    for receipt in receipts:
+        exact_keys(receipt, RECEIPT_FIELDS)
+        earlier = receipt["source_bundle_digest"]
+        if (receipt["schema"] != "ciw." + kind + "-replay.v1" or not isinstance(earlier, str) or
+                not _SHA256.fullmatch(earlier) or earlier == bundle["bundle_digest"] or
+                receipt["replayed_bundle_digest"] != bundle["bundle_digest"] or
+                receipt["numerical_match"] is not True or receipt["admission"] != "not_performed" or
+                receipt["replay_id"] != digest({key: value for key, value in receipt.items() if key != "replay_id"})):
+            raise ValueError("Replay receipt does not bind the retained fresh bundle")
+        proof = receipt["verification"]
+        if not isinstance(proof, dict):
+            raise ValueError("Replay verification must be a record")
+        _identity(proof, "verification_id")
+        if proof.get("subject_ref") != earlier:
+            raise ValueError("Replay verification subject differs from replay source")
+
+
 def check_receipts(bundle: dict, kind: str, profile: RecordProfile = DECLARED) -> None:
     """A replayed bundle retains at most one receipt naming the earlier occurrence it reproduced.
 

@@ -17,8 +17,11 @@ from . import calibrated_window as window
 from .adapters.subprocess import _json
 from .exchange import _identity
 from .core.canonical import canonical, digest, byte_digest, bundle_digest, exact_keys
+from .pipelines.runner import check_receipt_envelope
 
 MAX_BYTES = 4 * 1024 * 1024
+# How retained verification is produced; the descriptor must declare the same.
+VERIFICATION_METHOD = "pinned_set_replay_verification"
 SOURCE_LIMIT = 262144
 SOURCE_SCHEMA = "ciw.acquired-calibrated-window-source.v1"
 ROW_SCHEMA = "ciw.acquired-window-sample.v1"
@@ -223,6 +226,17 @@ def _validate(bundle):
         _identity(bundle["verification"], "verification_id")
         if canonical(bundle["verification"]) != canonical(_verification(bundle)):
             raise ValueError("Outer verification must bind mapping and exact child SET receipt")
+        # A replayed occurrence retains the receipt naming what it reproduced,
+        # and that receipt names this exact child and the child's own replay proof.
+        check_receipt_envelope(bundle, "acquired-calibrated-window")
+        for receipt in bundle.get("replay_receipts", []):
+            child_receipt, = child.get("replay_receipts", [])
+            expected = _verification(bundle, child, child_receipt["verification"])
+            expected["subject_ref"] = receipt["source_bundle_digest"]
+            del expected["verification_id"]
+            expected["verification_id"] = "sha256:" + sha256(VERIFICATION_SCHEMA.encode() + b"\0" + canonical(expected)).hexdigest()
+            if canonical(receipt["verification"]) != canonical(expected):
+                raise ValueError("Acquired window replay receipt differs from its retained child replay")
         return raw
     except (KeyError, TypeError, IndexError, AttributeError, OverflowError, RecursionError) as exc:
         raise ValueError("Malformed acquired calibrated window session") from exc

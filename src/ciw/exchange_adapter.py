@@ -31,6 +31,8 @@ REPLAY_SCHEMA = "ciw.instrument-exchange-replay.v1"
 OPERATION = "ciw.instrument-exchange.v1"
 ROLES = {"set"}
 MAX_BYTES = 4 * 1024 * 1024
+# How retained verification is produced; the descriptor must declare the same.
+VERIFICATION_METHOD = "pinned_set_contract_validation"
 MAX_ARTIFACTS = 32
 # The instrument-exchange descriptor is the SET validator pin definition.
 PIN = pin_map("instrument-exchange")["set"]

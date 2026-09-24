@@ -51,7 +51,7 @@ Do observed positions and quantities agree with the declared geometry and buildi
 
 | Surface | Pipeline | Providers | Verification | Guide |
 | --- | --- | --- | --- | --- |
-| bench | `ciw.energy-accuracy.v1` — Offline analysis of retained NVML energy logs against posterior accuracy | CIW reference | same_runtime_fresh_occurrence_reproduction | [ENERGY_ACCURACY.md](ENERGY_ACCURACY.md) |
+| bench | `ciw.energy-accuracy.v1` — Offline analysis of retained NVML energy logs against posterior accuracy | CIW reference | fresh_analysis_of_same_retained_measurement | [ENERGY_ACCURACY.md](ENERGY_ACCURACY.md) |
 | certification | `ciw.instrument-exchange.v1` — Pinned SET contract conformance of an exchange artifact | set | pinned_set_contract_validation | [EXCHANGE.md](EXCHANGE.md) |
 | certification | `ciw.numerical-heat.v1` — Bounded native integer heat diffusion with exact byte commitments | engine, scr | same_runtime_fresh_occurrence_reproduction | [DECLARED_WORKLOADS.md](DECLARED_WORKLOADS.md) |
 | certification | `ciw.proved-heat.v1` — Registered SCR/SP1 heat computation with proof production and full-ELF verification | engine, guest, prover, scr | fresh_registered_guest_verification | [PROVED_HEAT.md](PROVED_HEAT.md) |
@@ -250,7 +250,7 @@ Specific refusals: none.
 
 ### `ciw.energy-accuracy.v1`
 
-Implementation `ciw.energy_workflow` (declared workflow); verification: same_runtime_fresh_occurrence_reproduction.
+Implementation `ciw.energy_workflow` (declared workflow); verification: fresh_analysis_of_same_retained_measurement.
 
 Specific refusals: none.
 
@@ -338,7 +338,7 @@ Specific refusals: none.
 
 Implementation `ciw.measurement_chain` (declared workflow, delegates to `ciw.investigation`, `ciw.covariance_workflow`); verification: same_runtime_fresh_occurrence_reproduction.
 
-Specific refusals: `DECLARED_WORKLOAD_REFUSED`, `MEASUREMENT_CHAIN_REFUSED`, `invalid_parameters`, `replay_mismatch`, `replay_unavailable`, `runtime_mismatch`, `unit_mismatch`, `unsupported_covariance`, `unsupported_cross_assembly_dependence`, `unsupported_measurement_batch`, `unsupported_model_dependence`, `unsupported_temporal_covariance`.
+Specific refusals: `MEASUREMENT_CHAIN_REFUSED`, `invalid_parameters`, `replay_mismatch`, `replay_unavailable`, `runtime_mismatch`, `unit_mismatch`, `unsupported_covariance`, `unsupported_cross_assembly_dependence`, `unsupported_measurement_batch`, `unsupported_model_dependence`, `unsupported_temporal_covariance`.
 
 - Tank investigation orchestration: RCI v2 calibration per sensor, the native run recording (_make_run), and FSRT reconstruction with explicit cross-assembly independence and model independence. Each step runs the native investigation through create_investigation; validation re-derives the run from the source and the retained sensor calibrations and RCI runtime through _make_run, and it must equal the retained run recording apart from its run_id. (`ciw.investigation:create_investigation` called from `ciw.measurement_chain:MeasurementChainWorkflow._step`; `ciw.investigation:_make_run` re-derived in `ciw.measurement_chain:_check_data`; `ciw.investigation:_validate_model_independence` applied by `ciw.measurement_chain:_source`, by create_investigation and by `ciw.investigation:_validate_source` from _make_run; code: `ciw.investigation:create_investigation`, `ciw.investigation:_make_run`, `ciw.investigation:_validate_model_independence`, `ciw.measurement_chain:MeasurementChainWorkflow._step`, `ciw.measurement_chain:_check_data`)
 - JSPT must consume the unchanged FSRT covariance artifact that the source selects (posterior or reconciled) (selector admitted by `ciw.measurement_chain:_source`; retained JSPT parameters must equal the map plus the FSRT result id and selected artifact in `ciw.measurement_chain:_check_data`; artifact resolved by `ciw.covariance_workflow:execute_covariance` and rechecked by `ciw.covariance_workflow:validate_source_link` before JSPT runs; code: `ciw.measurement_chain:_check_data`, `ciw.measurement_chain:_source`, `ciw.covariance_workflow:execute_covariance`, `ciw.covariance_workflow:validate_source_link`)
@@ -374,7 +374,7 @@ Specific refusals: `DECLARED_WORKLOAD_REFUSED`.
 
 Implementation `ciw.proved_heat` (declared workflow); verification: fresh_registered_guest_verification.
 
-Specific refusals: `DECLARED_WORKLOAD_REFUSED`, `PROVED_HEAT_REFUSED`.
+Specific refusals: `PROVED_HEAT_REFUSED`.
 
 - SP1 proof byte binding. The proof must be 1..8 MiB of canonical base64 with a matching sha256 and byte_count, backend sp1-cpu v6.1.0, and guest_sha256 equal to the registered guest. The proof identity must equal the SCR commitment _commit('proof', [b'sp1-cpu', b'v6.1.0', raw]) (`ciw.proved_heat:_proof_bytes` checks the exact proof fields, the encoded and decoded PROOF_LIMIT budget, canonical re-encoding, sha256, byte_count, backend and GUEST_SHA256, then recomputes the identity with `ciw.declared_workload:_commit`. It runs on every created or retained result via `ciw.proved_heat:_data`; `ciw.proved_heat:ProvedHeatWorkflow._invoke` also applies it to the retained proof written before a verify-only call and to the proof file after every provider call; code: `ciw.proved_heat:_proof_bytes`, `ciw.declared_workload:_commit`, `ciw.proved_heat:GUEST_SHA256`, `ciw.proved_heat:ProvedHeatWorkflow._invoke`)
 - The verifier report must equal exactly {command: verify, outcome: verified, coverage: 'program=true input=true output=true exit_code=true', proof_identity, backend, statement_program = native.program_identity} (`ciw.proved_heat:_verifier` compares the report canonically against that exact dict, with backend BACKEND. `ciw.proved_heat:_data` applies it to every created or retained result and `ciw.proved_heat:ProvedHeatWorkflow.verify_session` applies it to each fresh verify-only answer; code: `ciw.proved_heat:_verifier`, `ciw.proved_heat:_data`, `ciw.proved_heat:ProvedHeatWorkflow.verify_session`)

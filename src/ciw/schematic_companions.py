@@ -20,6 +20,7 @@ from .declared_workload import (AUTHORITY, DeclaredWorkflow, MAX_BYTES, RESULT_S
                                SOURCE_LIMIT, _graph, _text, _verification)
 from .core.canonical import canonical, digest, byte_digest, bundle_digest, exact_keys, utc_now
 from .pipelines import pin_map
+from .pipelines.runner import check_receipts
 
 KIND = "schematic-companions"
 SOURCE_SCHEMA = "ciw.schematic-companions-source.v1"
@@ -448,6 +449,8 @@ class SchematicCompanionWorkflow(DeclaredWorkflow):
                 raise ValueError("Companion execution must consume its selected upstream result")
             self._check_verification(bundle, bundle["verification"], source, evidence["artifact_ref"])
             native_occurrences(bundle)
+            # A replayed occurrence retains the receipt naming what it reproduced.
+            check_receipts(bundle, self.kind, self.PROFILE)
             return raw
         except (KeyError, TypeError, IndexError, AttributeError, OverflowError, RecursionError) as exc:
             raise ValueError("Malformed companion session") from exc

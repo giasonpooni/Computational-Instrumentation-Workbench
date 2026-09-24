@@ -27,6 +27,8 @@ SCHEMA = "ciw.identified-design-session.v1"
 SOURCE_SCHEMA = "ciw.identified-design-input.v1"
 RESULT_SCHEMA = "notation.instrument.result-artifact.v1"
 MAX_BYTES = 8 * 1024 * 1024
+# How retained verification is produced; the descriptor must declare the same.
+VERIFICATION_METHOD = "pinned_set_replay_verification"
 OPERATIONS = (
     ("sidt", "sidt.declared-lti-identification.v1"),
     ("oit", "ciw.identified-candidate-observability.v1"),

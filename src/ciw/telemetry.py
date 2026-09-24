@@ -19,9 +19,12 @@ from .exchange import _read, _identity, RESULT_SCHEMA
 from .core.canonical import bundle_digest, byte_digest, canonical, digest, exact_keys, utc_instant, utc_now
 from .session import write_json
 from .pipelines import pin_map
+from .pipelines.runner import check_receipt_envelope
 
 SCHEMA = "ciw.telemetry-session.v1"
 MAX_BYTES = 4 * 1024 * 1024
+# How retained verification is produced; the descriptor must declare the same.
+VERIFICATION_METHOD = "pinned_set_replay_verification"
 ROLES = {"ppda", "stfe", "gsie", "set", "cbsr"}
 
 
@@ -423,6 +426,8 @@ def _validate_retained_inner(bundle):
             "source_result_digest": digest(candidate), "execution_id": steps[3]["execution_id"]})
         if steps[3]["request"] != expected_cbsr:
             raise ValueError("Reconciliation input differs from retained estimator binding")
+    # A replayed occurrence retains the receipt naming what it reproduced.
+    check_receipt_envelope(bundle, "telemetry")
     return raw
 
 

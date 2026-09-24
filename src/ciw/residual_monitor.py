@@ -20,6 +20,7 @@ from .declared_workload import (AUTHORITY, DeclaredWorkflow, RESULT_SCHEMA,
                                SOURCE_LIMIT, _text, _verification)
 from .core.canonical import canonical, digest, byte_digest, bundle_digest, exact_keys, utc_now, utc_instant
 from .pipelines import pin_map
+from .pipelines.runner import check_receipts
 
 KIND = "residual-monitor"
 SOURCE_SCHEMA = "ciw.residual-monitor-source.v1"
@@ -454,6 +455,8 @@ class ResidualMonitorWorkflow(DeclaredWorkflow):
             validate_upstreams(bundle, bundle["upstream_windows"])
             self._validate_step(step, source, evidence["artifact_ref"])
             self._check_verification(bundle, bundle["verification"], source, evidence["artifact_ref"])
+            # A replayed occurrence retains the receipt naming what it reproduced.
+            check_receipts(bundle, self.kind, self.PROFILE)
             return raw
         except (KeyError, TypeError, AttributeError, IndexError, OverflowError, RecursionError) as exc:
             raise ValueError("Malformed residual monitor bundle") from exc

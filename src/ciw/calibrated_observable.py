@@ -18,10 +18,13 @@ from .exchange import _read, _identity
 from .session import write_json
 from .core.canonical import canonical, digest, byte_digest, utc_now, bundle_digest
 from .pipelines import pin_map
+from .pipelines.runner import check_receipt_envelope
 
 SCHEMA = "ciw.calibrated-observable-session.v1"
 RESULT_SCHEMA = "ciw.calibrated-operation-result.v1"
 MAX_BYTES = 4 * 1024 * 1024
+# How retained verification is produced; the descriptor must declare the same.
+VERIFICATION_METHOD = "pinned_set_replay_verification"
 OPERATIONS = (
     ("fsrt", "fsrt.declare-calibrated-two-channel.v1"),
     ("tbrt", "ciw.tbrt-two-channel.v1"),
@@ -428,6 +431,8 @@ def _validate(bundle):
             if bundle["verification"]["subject_ref"] != bundle["bundle_digest"]:
                 raise ValueError("Verification subject mismatch")
             _identity(bundle["verification"], "verification_id")
+        # A replayed occurrence retains the receipt naming what it reproduced.
+        check_receipt_envelope(bundle, "calibrated-observable")
         return raw
     except (KeyError, TypeError, IndexError, OverflowError, RecursionError) as exc:
         raise ValueError("Malformed calibrated-observable session") from exc

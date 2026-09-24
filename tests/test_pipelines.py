@@ -155,3 +155,12 @@ def test_inspection_projector_is_descriptor_data():
     broken["implementation"]["view"]["context"] = "yes"
     with pytest.raises(ValueError, match="view"):
         pipelines.validate(broken)
+
+
+def test_refusals_follow_only_the_declared_workload_code_a_pipeline_executes():
+    descriptors = pipelines.load()
+    # Subclassing DeclaredWorkflow executes its invoke; importing helpers executes only those helpers.
+    assert "DECLARED_WORKLOAD_REFUSED" in pipelines.code_refusals(descriptors["schematic-companions"], descriptors)
+    proved = pipelines.code_refusals(descriptors["proved-heat"], descriptors)
+    assert "DECLARED_WORKLOAD_REFUSED" not in proved and "RUNTIME_UNAVAILABLE" in proved
+    assert "DECLARED_WORKLOAD_REFUSED" not in pipelines.code_refusals(descriptors["measurement-chain"], descriptors)

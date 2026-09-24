@@ -486,9 +486,8 @@ def test_bound_design_rejects_unknown_upstream_before_calling_provider(
         "operation_id": DESIGN_OPERATION,
         "parameters": {"source_id": declaration["source_id"], "upstream_bundle_id": "absent-bundle"},
     })
-    # Unbound is a retained refused execution with no result, never a bundle.
-    assert reply["type"] == "response" and reply["payload"]["status"] == "refused", reply
-    refused = reply["payload"]["execution"]
-    assert refused["refusal"]["code"] == "operation_unavailable" and reply["payload"]["result"] is None
-    assert refused in response(session, "execution.list")["executions"]
+    # A bound workflow still rejects an unretained upstream before any execution exists.
+    assert reply["type"] == "error", reply
+    assert reply["payload"]["message"] == "Select a retained upstream bundle of the declared kind"
+    assert response(session, "execution.list")["executions"] == []
     assert response(session, "bundle.list")["bundles"] == []

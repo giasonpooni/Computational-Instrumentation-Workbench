@@ -73,12 +73,31 @@ def _refusal_codes(tree, roles):
     return codes
 
 
-def _uses_declared_workload(module: str) -> bool:
-    """Whether a runner-based implementation executes DeclaredWorkflow code, by subclassing or importing it."""
+def _declared_workload_code(module: str) -> list:
+    """The DeclaredWorkflow code a runner-based implementation executes.
+
+    Subclassing ``DeclaredWorkflow`` executes all of it; importing helpers
+    executes only those top-level functions.
+    """
     import ast
-    path = Path(__file__).resolve().parents[1] / (module.removeprefix("ciw.").replace(".", "/") + ".py")
-    return any(isinstance(node, ast.ImportFrom) and node.level == 1 and node.module == "declared_workload"
-               for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))))
+    package = Path(__file__).resolve().parents[1]
+    path = package / (module.removeprefix("ciw.").replace(".", "/") + ".py")
+    names = {alias.name for node in ast.walk(ast.parse(path.read_text(encoding="utf-8")))
+             if isinstance(node, ast.ImportFrom) and node.level == 1 and node.module == "declared_workload"
+             for alias in node.names}
+    base = ast.parse((package / "declared_workload.py").read_text(encoding="utf-8"))
+    if "DeclaredWorkflow" in names:
+        return [base]
+    functions = {node.name: node for node in base.body if isinstance(node, ast.FunctionDef)}
+    reached, pending = set(), [name for name in names if name in functions]
+    while pending:
+        name = pending.pop()
+        if name not in reached:
+            reached.add(name)
+            pending += [node.id for node in ast.walk(functions[name])
+                        if isinstance(node, ast.Name) and node.id in functions]
+    helpers = [functions[name] for name in sorted(reached)]
+    return [ast.Module(body=helpers, type_ignores=[])] if helpers else []
 
 
 def code_refusals(descriptor: dict, descriptors: dict | None = None) -> list[str]:
@@ -97,11 +116,12 @@ def code_refusals(descriptor: dict, descriptors: dict | None = None) -> list[str
     implementation = descriptor["implementation"]
     modules = [(implementation["module"], descriptor)]
     modules += [(module, owners.get(module, descriptor)) for module in implementation["delegates"]]
-    if implementation["runner"] == "declared_workflow" and _uses_declared_workload(implementation["module"]):
-        modules.append(("ciw.declared_workload", descriptor))
     if implementation["runner"] == "generic_runner":
         modules.append(("ciw.pipelines.runner", descriptor))
     codes = set(WORKBENCH_REFUSALS)
+    if implementation["runner"] == "declared_workflow":
+        for tree in _declared_workload_code(implementation["module"]):
+            codes |= _refusal_codes(tree, [step["role"] for step in descriptor["steps"]])
     for module, owner in modules:
         path = package / (module.removeprefix("ciw.").replace(".", "/") + ".py")
         roles = [step["role"] for step in owner["steps"]]
@@ -417,6 +437,15 @@ def _check_runner(kind: str, runner: str, workflow) -> None:
         raise ValueError(f"{kind}: runs through the shared runner; declare it generic_runner or declared_workflow")
 
 
+def _check_method(kind: str, method: str, workflow) -> None:
+    """A descriptor declares the verification method its workflow actually records."""
+    from .runner import PipelineRunner
+    recorded = (workflow.PROFILE.verify_method if isinstance(workflow, PipelineRunner)
+                else getattr(workflow, "VERIFICATION_METHOD", None))
+    if method != recorded:
+        raise ValueError(f"{kind}: descriptor verification method {method} differs from the recorded {recorded}")
+
+
 def check(descriptors: dict | None = None) -> dict:
     """Bind descriptors to code: kinds, operation ids, roles, pins, upstreams, guides, investigations."""
     from .. import kernel
@@ -454,6 +483,7 @@ def check(descriptors: dict | None = None) -> dict:
                              "workflow's check_bindings, select_bindings and replay_bindings")
         import_module(value["implementation"]["module"])
         _check_runner(kind, value["implementation"]["runner"], flow)
+        _check_method(kind, value["verification"]["method"], flow)
         if not callable(resolve_symbol(value["implementation"]["view"]["symbol"])):
             raise ValueError(f"{kind}: inspection view is not callable")
         for rule in value["domain_rules"]:

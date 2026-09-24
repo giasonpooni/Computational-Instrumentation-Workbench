@@ -24,7 +24,7 @@ from .declared_workload import (
 from .exchange import _identity
 from .core.canonical import canonical, digest, byte_digest, exact_keys
 from .pipelines import pin_map
-from .pipelines.runner import PipelineRunner, check_step, seal_step
+from .pipelines.runner import DECLARED, PipelineRunner, RecordProfile, check_step, seal_step
 
 MAX_BYTES = 24 * 1024 * 1024
 PROOF_LIMIT = 8 * 1024 * 1024
@@ -37,6 +37,7 @@ GUEST_SHA256 = "a14e3750da7e221d31842bd6cf983fcc8c0f530b2811537e2a9a9fe803dacf82
 BACKEND = "sp1-cpu v6.1.0"
 POLICY = {**HEAT_POLICY, "proof_policy": "required_before_result"}
 VERIFY_SCHEMA = "ciw.proved-heat-verification.v1"
+METHOD = "fresh_registered_guest_verification"
 REPLAY_VERIFY_SCHEMA = "ciw.proved-heat-replay-verification.v1"
 TRUST_SCOPE = "retained_runtime_report_requires_fresh_verification"
 MEMORY_SCOPE = "max_waited_child_peak_rss"
@@ -207,7 +208,7 @@ def _verification(bundle, occurrence):
     step = bundle["steps"][0]
     data = step["result"]["data"]
     return _identify({"schema": VERIFY_SCHEMA, "subject_ref": bundle["bundle_digest"],
-        "outcome": "passed", "independent": False, "method": "fresh_registered_guest_verification",
+        "outcome": "passed", "independent": False, "method": METHOD,
         "runtime_digest": digest(bundle["runtimes"]), "result_id": step["result_id"],
         "proof_identity": data["proof"]["identity"], "verifier_digest": digest(data["verifier"]),
         "verification_operation_id": occurrence, "trust_scope": TRUST_SCOPE,
@@ -219,6 +220,8 @@ class ProvedHeatWorkflow(PipelineRunner):
 
     MAX_BYTES = MAX_BYTES
     LABEL = "Proved heat"
+    # Steps are sealed as declared results; verification is its own proof statement.
+    PROFILE = RecordProfile(DECLARED.result_schema, VERIFY_SCHEMA, METHOD, DECLARED.authority)
     ROLES = frozenset({"scr", "engine", "prover", "guest"})
     EXTRA_ROLES = frozenset({"engine", "prover", "guest"})
 

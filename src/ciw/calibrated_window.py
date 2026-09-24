@@ -20,11 +20,14 @@ from .exchange import _identity
 from .calibrated_observable import _exact_timestamp
 from .core.canonical import canonical, digest, byte_digest, bundle_digest, utc_instant, utc_now, exact_keys
 from .pipelines import pin_map
+from .pipelines.runner import check_receipt_envelope
 
 SCHEMA = "ciw.calibrated-window-session.v1"
 SOURCE_SCHEMA = "ciw.calibrated-window-source.v1"
 RESULT_SCHEMA = "ciw.calibrated-operation-result.v1"
 MAX_BYTES = 4 * 1024 * 1024
+# How retained verification is produced; the descriptor must declare the same.
+VERIFICATION_METHOD = "pinned_set_replay_verification"
 OPERATIONS = (("tbrt", "ciw.tbrt-window.v1"), ("mcur", "ciw.mcur-window.v1"),
               ("stfe", "stfe.window-mean.v1"), ("gsie", "ciw.gsie-predict-update.v1"))
 ROLES = frozenset(role for role, _ in OPERATIONS) | {"set"}
@@ -427,6 +430,8 @@ def _validate(bundle):
             _identity(bundle["verification"], "verification_id")
             if bundle["verification"]["subject_ref"] != bundle["bundle_digest"] or bundle["verification"].get("independent") is not False:
                 raise ValueError("Verification subject or authority mismatch")
+        # A replayed occurrence retains the receipt naming what it reproduced.
+        check_receipt_envelope(bundle, "calibrated-window")
         return raw
     except (KeyError, TypeError, IndexError, AttributeError, OverflowError, RecursionError) as exc:
         raise ValueError("Malformed calibrated window session") from exc
