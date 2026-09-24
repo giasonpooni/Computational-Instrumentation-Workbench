@@ -237,3 +237,17 @@ def test_workbench_reads_native_occurrences_from_the_workflow_not_the_kind():
     assert workbench._native_hook({"schema": "ciw.unknown-kind-session.v1"}, "catalog_steps") is None
     source = (workbench.__file__ and open(workbench.__file__, encoding="utf-8").read())
     assert "from .free_energy_workflow import native_occurrences" not in source
+
+
+def test_acquired_windows_sharing_an_occurrence_are_refused_through_the_hook():
+    from ciw import workbench
+
+    def record(bundle_id, execution, result):
+        return {"kind": "acquired-calibrated-window", "bundle_id": bundle_id, "upstream_bundle_id": None,
+                "native": {"steps": [{"execution_id": execution, "result_id": result}]}}
+
+    first = record("a", "execution-1", "result-1")
+    workbench._validate_links(first, {"a": first, "b": record("b", "execution-2", "result-2")})
+    for other in (record("b", "execution-1", "result-2"), record("b", "execution-2", "result-1")):
+        with pytest.raises(ValueError, match="fresh native execution and result"):
+            workbench._validate_links(first, {"a": first, "b": other})

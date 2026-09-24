@@ -48,6 +48,14 @@ ROW_FIELDS = {"schema", "sequence", "window_id", "channel_id", "epoch", "frame",
               "uncertainty_evidence_ids", "sample"}
 
 
+FRESH_OCCURRENCE_MESSAGE = "Acquired windows must retain fresh native execution and result occurrences"
+
+
+def native_occurrences(bundle):
+    """Execution and result occurrences of the window's own steps; two windows never share one."""
+    return {step[key] for step in bundle["steps"] for key in ("execution_id", "result_id")}
+
+
 def _source(raw):
     if not isinstance(raw, bytes) or len(raw) > SOURCE_LIMIT:
         raise ValueError("Acquired window mapping source exceeds 256 KiB")

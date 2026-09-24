@@ -319,14 +319,6 @@ def _claims(record):
     if native_claims is not None:
         for identity, (role, body) in native_claims(record["native"]).items():
             claim(identity, role, body)
-    if record["kind"] == "energy-accuracy":
-        native = record["native"]
-        data = native["steps"][0]["result"]["data"]
-        occurrence = native["source"]["experiment_id"]
-        # Reanalysis may reuse the same log; one capture occurrence cannot be
-        # rebound to changed evidence and masquerade as another measurement.
-        claim(occurrence, "retained_energy_log_occurrence", {"log_digest": data["log_digest"], "origin": data["origin"]})
-        claim(data["log_digest"], "retained_energy_log", {"run_id": occurrence, "origin": data["origin"]})
     return claims
 
 
@@ -404,13 +396,6 @@ def _validate_receipts(native, kind):
 
 def _validate_links(record, bundles):
     native = record["native"]
-    if record["kind"] == "acquired-calibrated-window":
-        occurrences = {step[key] for step in native["steps"] for key in ("execution_id", "result_id")}
-        for other in bundles.values():
-            if other["bundle_id"] != record["bundle_id"] and other["kind"] == record["kind"]:
-                used = {step[key] for step in other["native"]["steps"] for key in ("execution_id", "result_id")}
-                if not occurrences.isdisjoint(used):
-                    raise ValueError("Acquired windows must retain fresh native execution and result occurrences")
     if record["kind"] == "residual-monitor":
         _workflow(record["kind"]).validate_upstreams(native, {key: value["native"] for key, value in bundles.items()})
     workflow = _workflow(record["kind"])

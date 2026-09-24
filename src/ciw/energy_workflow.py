@@ -79,6 +79,15 @@ def _verification(bundle, reproduction):
 class EnergyAccuracyWorkflow(DeclaredWorkflow):
     MAX_BYTES = MAX_BYTES
 
+    def identity_claims(self, bundle):
+        """Reanalysis may reuse a log; one capture occurrence cannot be rebound to changed evidence."""
+        data = bundle["steps"][0]["result"]["data"]
+        occurrence = bundle["source"]["experiment_id"]
+        if occurrence == data["log_digest"]:
+            raise ValueError("Retained identity collision")
+        return {occurrence: ("retained_energy_log_occurrence", {"log_digest": data["log_digest"], "origin": data["origin"]}),
+                data["log_digest"]: ("retained_energy_log", {"run_id": occurrence, "origin": data["origin"]})}
+
     def __init__(self):
         self.kind, self.role, self.ROLES = KIND, "energy", frozenset()
         self.SOURCE_SCHEMA = energy_records.SCHEMA
