@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import logging
 import math
 import os
 import tempfile
@@ -23,6 +24,8 @@ from .calibration_status import calibration_status
 from .instruments import (
     compute_spectrum, compute_statistics, inspect_sample, run_metadata, validate_run,
 )
+
+LOG = logging.getLogger(__name__)
 
 PROTOCOL_VERSION = 1
 _RESULT_SUMMARY_FIELDS = (
@@ -299,6 +302,14 @@ class Session:
             return envelope("error", {"code": "invalid_payload", "message": str(exc)}, request_id)
         except OSError:
             return envelope("error", {"code": "storage_error", "message": "Unable to persist the requested record"}, request_id)
+        except Exception:  # noqa: BLE001 - a defect inside one request must not end the client's connection
+            # Retained state is already consistent here: every mutation happens
+            # under the lock and every reservation is released in a finally.
+            # The traceback goes to the service log; the client gets an explicit
+            # envelope rather than a closed socket.
+            LOG.exception("Request %s failed inside the service", request_id)
+            return envelope("error", {"code": "internal_error",
+                                      "message": "The request failed inside the service; see the service log"}, request_id)
 
     def _dispatch(self, kind: str, payload: dict) -> dict:
         if kind == "session.get":

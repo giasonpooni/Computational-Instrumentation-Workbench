@@ -31,6 +31,44 @@ existing benches.
 | GPU energy to accuracy | Actual NVML/CUDA host capture; built-in retained-log analysis, shared view and replay | `ciw energy probe`, `record`, `replay`; [contract and operating guide](ENERGY_ACCURACY.md) |
 | Uncertainty validation | Provider-free finite-sample consistency of declared covariances: NEES, NIS, coverage and bias against declared bands | `ciw source add --kind uncertainty-validation --file …`, `ciw operation execute ciw.uncertainty-validation.v1 --source …`; [contract and fixtures](UNCERTAINTY_VALIDATION.md) |
 
+## Operation identifiers
+
+Every shared-session operation, as `operation.list` reports it. Built-in
+operations need no repository binding and stay available after a workspace
+reopens; the others need their pinned providers bound when the service starts
+and are otherwise listed as unavailable. The contract page holds the input
+schema, the retained record and the replay semantics.
+
+| Operation | Source kind | Role | Availability | Contract page |
+| --- | --- | --- | --- | --- |
+| `ciw.acquired-calibrated-window.v1` | `acquired-calibrated-window` | `state_estimator` | Pinned provider binding at `ciw serve`; explicit upstream bundle | [Acquired Stream](ACQUIRED_STREAM.md) |
+| `ciw.acquired-dataset.v1` | `acquired-dataset` | `evidence_acquisition` | Pinned provider binding at `ciw serve` | [Integrated Modules](INTEGRATED_MODULES.md) |
+| `ciw.bim-quantity.v1` | `bim-quantity` | `construction_quantity` | Pinned provider binding at `ciw serve` | [Integrated Modules](INTEGRATED_MODULES.md) |
+| `ciw.calibrated-observable.v1` | `calibrated-observable` | `state_estimator` | Pinned provider binding at `ciw serve` | [Calibrated Observable](CALIBRATED_OBSERVABLE.md) |
+| `ciw.calibrated-window.v1` | `calibrated-window` | `state_estimator` | Pinned provider binding at `ciw serve` | [Calibrated Window](CALIBRATED_WINDOW.md) |
+| `ciw.covariance-geometry.v1` | `covariance-geometry` | `covariance_geometry` | Pinned provider binding at `ciw serve` | [Geometry Research](GEOMETRY_RESEARCH.md) |
+| `ciw.curved-path-transfer.v1` | `curved-path-transfer` | `geometric_sensitivity` | Pinned provider binding at `ciw serve` | [Geodesic References](GEODESIC_REFERENCES.md) |
+| `ciw.energy-accuracy.v1` | `energy-accuracy` | `offline_energy_accuracy_analysis` | Built in; no binding | [Energy Accuracy](ENERGY_ACCURACY.md) |
+| `ciw.flat-torus-reference.v1` | `flat-torus-reference` | `geometric_reference` | Pinned provider binding at `ciw serve` | [Geodesic References](GEODESIC_REFERENCES.md) |
+| `ciw.geometric-circle.v1` | `geometric-circle` | `geometric_reconciliation` | Pinned provider binding at `ciw serve` | [Remaining Modules](REMAINING_MODULES.md) |
+| `ciw.identified-design.v1` | `identified-design` | `decision` | Pinned provider binding at `ciw serve`; explicit upstream bundle | [Identified Design](IDENTIFIED_DESIGN.md) |
+| `ciw.identified-stability.v1` | `identified-stability` | `stability_assessment` | Pinned provider binding at `ciw serve`; explicit upstream bundle | [Remaining Modules](REMAINING_MODULES.md) |
+| `ciw.instrument-exchange.v1` | `instrument-exchange` | `typed_exchange_adapter` | Pinned provider binding at `ciw serve` | [Exchange](EXCHANGE.md) |
+| `ciw.encoder-position.v1` | `machine-manifest` | `machine_manifest_reference` | Built in; no binding | [Contract Foundations](CONTRACT_FOUNDATIONS.md) |
+| `ciw.measurement-chain.v1` | `measurement-chain` | `measurement_chain_testbed` | Pinned provider binding at `ciw serve` | [Remaining Modules](REMAINING_MODULES.md) |
+| `ciw.mesh-path.v1` | `mesh-path` | `mesh_path_baseline` | Pinned provider binding at `ciw serve` | [Geometry Research](GEOMETRY_RESEARCH.md) |
+| `ciw.numerical-heat.v1` | `numerical-heat` | `numerical_execution` | Pinned provider binding at `ciw serve` | [Declared Workloads](DECLARED_WORKLOADS.md) |
+| `ciw.project-graph.v1` | `project-graph` | `project_graph_inspection` | Built in; no binding | [Contract Foundations](CONTRACT_FOUNDATIONS.md) |
+| `ciw.proved-heat.v1` | `proved-heat` | `proved_numerical_execution` | Pinned provider binding at `ciw serve` | [Proved Heat](PROVED_HEAT.md) |
+| `ciw.residual-monitor.v1` | `residual-monitor` | `residual_diagnostics` | Pinned provider binding at `ciw serve` | [Acquired Stream](ACQUIRED_STREAM.md) |
+| `ciw.schematic-assessment.v1` | `schematic-assessment` | `schematic_assessment` | Pinned provider binding at `ciw serve` | [Declared Workloads](DECLARED_WORKLOADS.md) |
+| `ciw.schematic-companions.v1` | `schematic-companions` | `local_model_analysis` | Pinned provider binding at `ciw serve`; explicit upstream bundle | [Integrated Modules](INTEGRATED_MODULES.md) |
+| `ciw.telemetry.v1` | `telemetry` | `state_estimator` | Pinned provider binding at `ciw serve` | [Shared Telemetry](SHARED_TELEMETRY.md) |
+| `ciw.thermal-observer.v1` | `thermal-observer` | `thermal_observer_reference` | Built in; no binding | [Contract Foundations](CONTRACT_FOUNDATIONS.md) |
+| `ciw.translation-flow.v1` | `translation-flow` | `translation_dynamics` | Pinned provider binding at `ciw serve` | [Geometry Research](GEOMETRY_RESEARCH.md) |
+| `ciw.uncertainty-validation.v1` | `uncertainty-validation` | `uncertainty_consistency` | Built in; no binding | [Uncertainty Validation](UNCERTAINTY_VALIDATION.md) |
+| `ciw.variational-free-energy.v1` | `variational-free-energy` | `variational_inference` | Pinned provider binding at `ciw serve` | [Variational Free Energy](VARIATIONAL_FREE_ENERGY.md) |
+
 ## Identified model and budgeted next observation
 
 The [identified-design guide](IDENTIFIED_DESIGN.md) connects SIDT, OIT, GSIE,
