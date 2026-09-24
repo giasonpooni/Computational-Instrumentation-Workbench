@@ -219,3 +219,14 @@ def test_saved_common_bench_restores_without_host_binding_or_execution(retained,
     if directory:
         original.save_workspace(Path(directory) / "workspace.json")
     assert restored.workbench.pending_operations == 0
+
+
+def test_the_estimation_to_decision_chain_answers_its_investigations(retained):
+    """Calibrated observation -> identified design -> stability is one current lineage chain."""
+    view = call(retained["session"], "session.get")["workbench"]["project"]
+    progress = {item["investigation_id"]: item for item in view["investigations"]}
+    loop = ["ciw.calibrated-observable.v1", "ciw.identified-design.v1", "ciw.identified-stability.v1"]
+    chains = [chain for chain in progress["manufacturing-cycle"]["chains"] if chain["sequence"][-len(loop):] == loop]
+    assert chains and all(chain["status"] == "current_for_declared_inputs" for chain in chains)
+    assert progress["process-balance"]["state"] == "default_pipeline_current"
+    assert view["needs_reevaluation"] == []
