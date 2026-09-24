@@ -197,7 +197,8 @@ def test_resealed_source_channel_mismatch_refuses_before_destination_writes(inve
     assert not output.exists()
 
 
-@pytest.mark.parametrize("corruption", ["source", "covariance", "mixed_covariance", "claims", "held", "boolean_time"])
+@pytest.mark.parametrize("corruption", ["source", "covariance", "asymmetric_covariance", "mixed_covariance", "claims",
+                                        "held", "boolean_time"])
 def test_resealed_result_still_must_satisfy_source_and_scope(investigation, tmp_path, corruption):
     workspace = deepcopy(investigation["workspace"])
     result = workspace["results"][0]
@@ -205,6 +206,9 @@ def test_resealed_result_still_must_satisfy_source_and_scope(investigation, tmp_
         result["data"]["observed_points_m"][0][0] = 3
     elif corruption == "covariance":
         result["data"]["uncertainty"]["tangent_joint_covariance"] = [[1, 2], [2, 1]]
+    elif corruption == "asymmetric_covariance":
+        covariance = result["data"]["uncertainty"]["tangent_joint_covariance"]
+        covariance[0][1] = covariance[0][1] + 0.25 * abs(covariance[0][0])
     elif corruption == "mixed_covariance":
         result["data"]["uncertainty"]["ambient_joint_covariance"] = np.diag([1e12, 1e12, -1, -1]).tolist()
     elif corruption == "claims":
@@ -216,9 +220,11 @@ def test_resealed_result_still_must_satisfy_source_and_scope(investigation, tmp_
     seal(result)
     path, output = tmp_path / "tampered.json", tmp_path / "must-not-write"
     path.write_text(json.dumps(workspace))
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError) as caught:
         Session.from_workspace(path, output)
     assert not output.exists()
+    if corruption == "asymmetric_covariance":
+        assert "symmetric" in str(caught.value).lower(), caught.value
 
 
 def test_resealed_parsed_source_cannot_replace_numeric_literal_with_bool(investigation, tmp_path):

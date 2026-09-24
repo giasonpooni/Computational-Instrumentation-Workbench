@@ -223,8 +223,9 @@ indefinite tangent covariance and resealed negative ambient variances are
 refused on reopen
 (`::test_resealed_result_still_must_satisfy_source_and_scope[covariance]`,
 `[mixed_covariance]`) and a negative input variance is refused by GTE itself
-(`::test_domain_hold_and_refusals_remain_distinct[covariance]`); no test
-exercises an asymmetric matrix. They are not `covariance-artifact.v1` and
+(`::test_domain_hold_and_refusals_remain_distinct[covariance]`); a resealed
+asymmetric tangent covariance is refused on reopen as not symmetric
+(`::test_resealed_result_still_must_satisfy_source_and_scope[asymmetric_covariance]`). They are not `covariance-artifact.v1` and
 cannot be selected by the propagation workflow.
 
 Not implemented: a joint cross-assembly calibration model (an overlap is
