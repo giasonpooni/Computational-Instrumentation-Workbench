@@ -7,7 +7,7 @@ native execution records and replay evidence. Provider repositories keep their
 scientific responsibilities while their operations and artifacts join this suite.
 
 The [Workbench desktop tab](EXPERIMENT_VIEW.md) is now implemented over that
-substrate: it links twenty-six retained workflows to measurement/state/covariance and
+substrate: it links twenty-seven retained workflows to measurement/state/covariance and
 residual panels, native input dependencies, evidence inspection and live session
 invalidation. It introduces no additional estimator or parallel result store.
 
@@ -177,7 +177,7 @@ normal server shutdown also saves them. A workflow that refuses before producing
 a bundle returns an error and leaves its source retained, without publishing a
 partial state. The catalog permits at most 64 sources, 128 completed bundles and
 64 MiB of retained content. Existing protocol frame limits still apply. It
-supports twenty-six executable source kinds and source-only geography; it is not an arbitrary bundle
+supports twenty-seven executable source kinds and source-only geography; it is not an arbitrary bundle
 importer or a live acquisition service.
 
 ## What shares a workspace

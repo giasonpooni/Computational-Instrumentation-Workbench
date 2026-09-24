@@ -134,10 +134,12 @@ The provider-free typed contract foundations are exercised by
 `tests/test_machine_manifest.py`, `tests/test_project_model.py` and
 `tests/test_thermal_contract.py`; these cover evidence-bound machine binding,
 project-history invalidation and independent thermal-reference replay. The
-machine, thermal and project graph operation lifecycles are covered by
-`tests/test_machine_workflow.py`, `tests/test_thermal_workflow.py` and
-`tests/test_project_workflow.py`, including save/reopen, fresh replay and refusal
-cases. Independent ICRH profiles for these provider-free operations remain the
+machine, thermal, project graph and uncertainty validation operation lifecycles
+are covered by `tests/test_machine_workflow.py`, `tests/test_thermal_workflow.py`,
+`tests/test_project_workflow.py` and `tests/test_uncertainty_validation.py`,
+including save/reopen, fresh replay and refusal cases; the chi-square and
+binomial bands behind the last are checked against reference values in
+`tests/test_consistency_math.py`. Independent ICRH profiles for these provider-free operations remain the
 next integration gate; see [contract foundations](CONTRACT_FOUNDATIONS.md).
 Coverage is not exhaustive: covariance CLI argument parsing and the
 calibration-refusal exit code lack dedicated assertions in the current suite.

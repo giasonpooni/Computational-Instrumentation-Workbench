@@ -18,7 +18,7 @@ operating point.
 
 ## Shared operating session
 
-The [Workbench desktop tab](EXPERIMENT_VIEW.md) projects all twenty-six shared workflow
+The [Workbench desktop tab](EXPERIMENT_VIEW.md) projects all twenty-seven shared workflow
 kinds through `experiment.inspect`: retained measurements, state/covariance,
 residuals, native dependencies, evidence and verification. It follows committed
 session changes and keeps replay occurrences separate. This read-only display
@@ -35,7 +35,7 @@ The live Session now hosts `ciw.telemetry.v1`, `ciw.calibrated-observable.v1` an
 `ciw.measurement-chain.v1`, `ciw.geometric-circle.v1` and
 `ciw.identified-stability.v1`, `ciw.flat-torus-reference.v1`,
 `ciw.curved-path-transfer.v1`, `ciw.thermal-observer.v1`,
-`ciw.encoder-position.v1` and `ciw.project-graph.v1`, through
+`ciw.encoder-position.v1`, `ciw.project-graph.v1` and `ciw.uncertainty-validation.v1`, through
 `operation.list/execute`.
 `source.*`, `bundle.*` and `fusion.list` expose retained inputs, native bundles
 and candidate contexts; result and execution lists include those native records
@@ -82,6 +82,7 @@ keep their native owners; the table below distinguishes implemented ICRH profile
 | Two-capacity thermal model → Python reference observer | Shared `ciw.thermal-observer.v1`; ordered state/input/sensor declarations, dropout-aware observer, bounded sensor selection, read-only authority and fresh replay | CIW contract and save/reopen/replay tests; Julia parity and independent ICRH profile pending | Synthetic thermal source only; no physical telemetry, Julia provider admission, hardware actuation or calibration claim. |
 | Evidence bundle → machine manifest compiler | Shared `ciw.encoder-position.v1`; evidence-bound encoder/gearbox/leadscrew candidate, deterministic challenge, position/covariance evaluation, separate execution/result identities and fresh replay | CIW machine contract plus save/reopen/replay, tamper and runtime-identity refusal tests; independent ICRH profile pending | Read-only reference evaluation only; no document retrieval, physical calibration, state admission, firmware loading or actuation. |
 | Retained project history → project graph reference | Shared `ciw.project-graph.v1`; exact versioned history replay, typed object/edge validation, acyclic computation graph, result staleness against pinned input revisions, evidence-bound context status, separate execution/result identities and fresh replay | CIW project contract plus save/reopen/replay, stale-revision, broken-history, tamper and runtime-identity refusal tests; independent ICRH profile pending | Declaration consistency only; no declared computation executes, no evidence is fetched, and no physical validation or state admission is claimed. |
+| Declared reference, estimate and covariance samples → finite-sample consistency | Shared `ciw.uncertainty-validation.v1`; NEES and NIS against chi-square bands, per-component Clopper-Pearson coverage and bias, explicit too-small versus too-large statuses, diagnostic-only authority under unknown dependence, fresh replay | CIW special-function reference values, four seeded fixtures separating consistent, too-small, too-large and unknown-dependence cases, save/reopen/replay, refusal and tamper tests; independent ICRH profile pending | Statistical check of declared covariances against declared reference values only; reference uncertainty is not modelled, independence is declared, and no physical validation or state admission follows. |
 
 “Independent harness” means a separately implemented conformance checker. It
 does not mean an independent physical measurement or independent validation of
@@ -177,8 +178,8 @@ produced and consume it.
 | [SCR](https://github.com/giasonpooni/Scientific-Computation-Runtime) | Explicit execution specifications, native dispatch, scientific workloads and exchange exports | CIW now invokes native integer diffusion with exact commitments and a host-bound executable. Additional descriptors and physical-model semantics need separate contracts. |
 | [GSV](https://github.com/giasonpooni/Geospatial-State-Visualization) | Browser provider interface, geographic/temporal inspection and comparison checks | CIW declared CRS84 sources now enter its native provider; local laboratory/BIM coordinates still require explicit mappings. |
 
-The machine-manifest and project-graph adapters are provider-free and intentionally
-do not copy code from the schematic-retrieval or external conformance repositories.
+The machine-manifest, project-graph and uncertainty-validation adapters are provider-free
+and intentionally do not copy code from the schematic-retrieval or external conformance repositories.
 The machine manifest's input artifacts are evidence-backed proposals; the deterministic compiler is the authority
 for this bounded operation. The loose geometry providers remain consumed through the
 exact pins in [GEODESIC_REFERENCES.md](GEODESIC_REFERENCES.md), and the independent

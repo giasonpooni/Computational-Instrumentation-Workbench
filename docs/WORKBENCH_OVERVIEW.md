@@ -74,7 +74,7 @@ The executable persistence and admission rules are in
 | GPU and machine interfaces | Captured through bounded providers and host-side telemetry; deadline-critical protection remains local to the machine. |
 | MCP and agents | Optional tools at the workbench boundary. They propose or inspect work; deterministic contracts decide acceptance. |
 
-The workbench currently has twenty-six registered workflow kinds in the shared
+The workbench currently has twenty-seven registered workflow kinds in the shared
 session. Their exact status, commands and limits are maintained in
 [INSTRUMENTS.md](INSTRUMENTS.md) and
 [INTEGRATION_COVERAGE.md](INTEGRATION_COVERAGE.md), rather than duplicated here.

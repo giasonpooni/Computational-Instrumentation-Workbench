@@ -41,7 +41,7 @@ CIW is the coordinating instrument around that loop:
 - It records refusals and runtime failures without manufacturing a successful
   result.
 
-The workbench currently registers twenty-six workflow kinds in the shared
+The workbench currently registers twenty-seven workflow kinds in the shared
 session. The exact operation status, commands, pins, limits and validation
 evidence live in [INSTRUMENTS.md](docs/INSTRUMENTS.md) and
 [INTEGRATION_COVERAGE.md](docs/INTEGRATION_COVERAGE.md).
