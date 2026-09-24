@@ -269,6 +269,9 @@ def parser() -> argparse.ArgumentParser:
     server.add_argument("--covariance-geometry-repo", type=Path, help="Bind pinned SPD covariance geometry provider")
     server.add_argument("--intrinsic-surface-repo", type=Path, help="Bind pinned mesh edge-path baseline provider")
     server.add_argument("--translation-surface-repo", type=Path, help="Bind pinned square-tiled translation-flow provider")
+    server.add_argument("--bind-role", action="append", default=[], metavar="KIND:ROLE=PATH",
+                        help="Bind one provider role of any declared kind to an explicit host path; repeat per role. "
+                             "The kind's declared roles and pins are enforced")
     server.add_argument("--sp1-prover", type=Path, help="Explicit SCR sp1-host binary; requires computation bindings and --sp1-heat-guest")
     server.add_argument("--sp1-heat-guest", type=Path, help="Exact registered SP1 heat guest ELF; requires --sp1-prover")
     server.add_argument("--python", dest="python_executable", type=Path,
@@ -424,6 +427,21 @@ def parser() -> argparse.ArgumentParser:
     return root
 
 
+def parse_bindings(values):
+    """Group ``KIND:ROLE=PATH`` operator bindings by kind; each role is bound once."""
+    grouped = {}
+    for value in values:
+        kind, separator, rest = value.partition(":")
+        role, equals, path = rest.partition("=")
+        if not separator or not equals or not kind or not role or not path.strip():
+            raise ValueError(f"--bind-role expects KIND:ROLE=PATH, not {value!r}")
+        roles = grouped.setdefault(kind, {})
+        if role in roles:
+            raise ValueError(f"--bind-role names {kind}:{role} more than once")
+        roles[role] = Path(path)
+    return grouped
+
+
 def main(argv: list[str] | None = None) -> int:
     args = parser().parse_args(argv)
     try:
@@ -550,6 +568,10 @@ def main(argv: list[str] | None = None) -> int:
                     raise ValueError("SP1 requires --computation-repo and --computation-engine")
                 session.workbench.bind_workflow("proved-heat", {"scr": args.computation_repo,
                     "engine": args.computation_engine, "prover": args.sp1_prover, "guest": args.sp1_heat_guest})
+            for kind, repositories in parse_bindings(args.bind_role).items():
+                if session.workbench._bindings.get(kind):
+                    raise ValueError(f"--bind-role {kind} repeats a binding another option already made")
+                session.workbench.bind_workflow(kind, repositories)
             if args.esm_telemetry_binding is not None:
                 configuration = read_json(args.esm_telemetry_binding)
                 if "ppda" not in configuration.get("runtime", {}).get("repositories", {}):

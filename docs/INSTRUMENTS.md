@@ -13,6 +13,12 @@ The [integration coverage matrix](INTEGRATION_COVERAGE.md) records complete
 execution paths, profile coverage and the next concrete connections between
 existing benches.
 
+Besides the per-tool `serve` options below, any declared kind can be bound
+role by role with `ciw serve --bind-role KIND:ROLE=PATH`, repeated per role
+(for example `--bind-role mesh-path:isgt=/trusted/isgt`). The workbench checks
+the kind's declared roles and exact pins exactly as for the named options. A
+kind that another option has already bound is refused rather than rebound.
+
 | Tool and role | Workbench status | Entry point |
 | --- | --- | --- |
 | `analytic-damped-oscillator.v1` | Integrated built-in synthetic instrument | `python -m ciw demo`, `analyze stats`, `analyze spectrum` |
