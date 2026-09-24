@@ -8,7 +8,7 @@ import sys
 
 import pytest
 
-from ciw.lab import evidence, report, runner
+from ciw.lab import evidence, report, runner, svg
 from ciw.lab.evidence import EvidenceRefusal, finding, supported_label, validate_finding
 from ciw.lab.registry import load_queue
 
@@ -499,31 +499,73 @@ def test_rewritten_artifact_keeps_one_entry_with_the_bytes_on_disk(tmp_path):
     assert entries[0]["sha256"] == hashlib.sha256((tmp_path / "artifacts" / "T001" / "t.json").read_bytes()).hexdigest()
 
 
-def test_timing_figures_are_declared_in_the_artifact_list_and_validated(tmp_path):
+def test_figure_declarations_are_recorded_in_the_artifact_list_and_validated(tmp_path):
     ctx = runner.Context(tmp_path)
     ctx.begin("T001")
+    residuals = svg.line_plot([("r", [1, 2], [1e-16, 3e-15])], title="t", xlabel="x", ylabel="y", logy=True,
+                              rounding=1e-14)
     ctx.artifact_text("plot.svg", "<svg/>")
     ctx.artifact_text("timings.svg", "<svg/>", wall_clock_timing=True)
-    assert [a.get(report.WALL_CLOCK_TIMING) for a in ctx.artifacts] == [None, True]
-    # The declaration marks a figure; a timing record in another format is not one.
-    with pytest.raises(ValueError, match="Only SVG figures"):
-        ctx.artifact_text("timings.json", "{}", wall_clock_timing=True)
-    assert not (tmp_path / "artifacts" / "T001" / "timings.json").exists()
+    ctx.artifact_text("residuals.svg", residuals, rounding_level=True)
+    assert [a.get(report.WALL_CLOCK_TIMING) for a in ctx.artifacts] == [None, True, None]
+    assert [a.get(report.ROUNDING_LEVEL) for a in ctx.artifacts] == [None, None, True]
+    # A declaration marks a figure; a timing or residual record in another format is not one, and a figure is
+    # declared as one kind or the other. A rounding-level figure records its plotted values and rounding bounds.
+    for declaration in ({"wall_clock_timing": True}, {"rounding_level": True}):
+        with pytest.raises(ValueError, match="Only SVG figures"):
+            ctx.artifact_text("timings.json", "{}", **declaration)
+    with pytest.raises(ValueError, match="not both"):
+        ctx.artifact_text("both.svg", residuals, wall_clock_timing=True, rounding_level=True)
+    with pytest.raises(ValueError, match="records its plotted values and rounding bounds"):
+        ctx.artifact_text("bare.svg", svg.line_plot([("r", [1, 2], [1e-16, 3e-15])], title="t", xlabel="x",
+                                                    ylabel="y", logy=True), rounding_level=True)
+    for name in ("timings.json", "both.svg", "bare.svg"):
+        assert not (tmp_path / "artifacts" / "T001" / name).exists()
     task = load_queue()["tasks"][0]
     record = finding("rate", "numerical", 4.0, {"checks": [CHECK]})
     built = report.build_report(task, "completed", {"generated_artifacts": ctx.artifacts,
                                                     "provider_runtime_identity": {"runtime": "builtin"}}, [record])
     assert report.validate_report(built)["generated_artifacts"][1] == dict(ctx.artifacts[1], wall_clock_timing=True)
+    assert report.validate_report(built)["generated_artifacts"][2] == dict(ctx.artifacts[2], rounding_level=True)
     if importlib.util.find_spec("jsonschema"):
         assert runner.schema_errors(built) == []
-    for tampered in ({"wall_clock_timing": False}, {"wall_clock_timing": "yes"}, {"path": "artifacts/T001/t.json"}):
-        broken = json.loads(json.dumps(built))
-        broken["generated_artifacts"][1].update(tampered)
-        broken["report_id"] = report.report_identity(broken)
-        with pytest.raises(EvidenceRefusal, match="wall_clock_timing is declared only as true, on an SVG figure"):
-            report.validate_report(broken)
-        if importlib.util.find_spec("jsonschema"):
-            assert any(problem.startswith("generated_artifacts/1") for problem in runner.schema_errors(broken))
+    for index, key in ((1, "wall_clock_timing"), (2, "rounding_level")):
+        for tampered in ({key: False}, {key: "yes"}, {"path": "artifacts/T001/t.json"}):
+            broken = json.loads(json.dumps(built))
+            broken["generated_artifacts"][index].update(tampered)
+            broken["report_id"] = report.report_identity(broken)
+            with pytest.raises(EvidenceRefusal, match=f"{key} is declared only as true, on an SVG figure"):
+                report.validate_report(broken)
+            if importlib.util.find_spec("jsonschema"):
+                assert any(problem.startswith(f"generated_artifacts/{index}")
+                           for problem in runner.schema_errors(broken))
+    both = json.loads(json.dumps(built))
+    both["generated_artifacts"][1]["rounding_level"] = True
+    both["report_id"] = report.report_identity(both)
+    with pytest.raises(EvidenceRefusal, match="not both"):
+        report.validate_report(both)
+    if importlib.util.find_spec("jsonschema"):
+        assert any(problem.startswith("generated_artifacts/1") for problem in runner.schema_errors(both))
+
+
+def test_line_plot_records_plotted_values_and_rounding_bounds_only_when_asked():
+    series = [("a", [1, 2, 3], [1e-16, 0.0, 2.5e-15]), ("b<&>", range(1, 4), [1e-3, 2e-3, float("nan")])]
+    kwargs = {"title": "t", "xlabel": "x", "ylabel": "y", "logy": True}
+    plain = svg.line_plot(series, **kwargs)
+    assert "metadata" not in plain and svg.recorded_values(plain) is None
+    # One bound for every point, or one per series (a number or one per point); only plotted points are recorded,
+    # with their exact values.
+    recorded = svg.recorded_values(svg.line_plot(series, rounding=[[1e-15, 2e-15, 3e-15], 1e-9], **kwargs))
+    assert recorded == [{"name": "a", "x": [1.0, 3.0], "y": [1e-16, 2.5e-15], "bound": [1e-15, 3e-15]},
+                        {"name": "b<&>", "x": [1.0, 2.0], "y": [1e-3, 2e-3], "bound": [1e-9, 1e-9]}]
+    assert [s["bound"] for s in svg.recorded_values(svg.line_plot(series, rounding=4e-16, **kwargs))] == [
+        [4e-16, 4e-16], [4e-16, 4e-16]]
+    # The figure itself is the one drawn without a record.
+    assert svg.line_plot(series, rounding=4e-16, **kwargs).startswith(plain.removesuffix("</svg>\n"))
+    for bad in (True, [1e-15], [[1e-15, 2e-15], 1e-9], [-1.0, 1e-9], [float("inf"), 1e-9]):
+        with pytest.raises(ValueError):
+            svg.line_plot(series, rounding=bad, **kwargs)
+    assert svg.recorded_values(b"<svg") is None and svg.recorded_values(None) is None
 
 
 def test_completed_report_cannot_record_failed_tests():

@@ -181,11 +181,14 @@ python scripts/check_lab.py --blas-core Haswell --output-dir results/lab-gate-ha
 
 `scripts/check_figures.py` re-executes every figure task of the retained run
 with the installed `ciw` and compares each SVG figure with `lab/` byte for
-byte (a figure declared as a wall-clock timing figure by structure only); it
-records the platform, Python, NumPy and BLAS build in `figure-check.json`,
-lists tasks whose providers are not bound (`--provider ROLE=PATH`) as not
-re-executed, and exits 3 on a mismatch. Run on Windows, it is the
-second-platform figure comparison (see [LAB.md](LAB.md#retained-evidence)).
+byte (a figure declared as a wall-clock timing figure by structure only, one
+declared as a rounding-level figure by its recorded values within their
+rounding bounds); it records the platform, Python, NumPy, BLAS build and
+OpenBLAS kernel in `figure-check.json`, lists tasks whose providers are not
+bound (`--provider ROLE=PATH`) as not re-executed, and exits 3 on a mismatch.
+Run on Windows, it is the second-platform figure comparison; run with
+`OPENBLAS_CORETYPE` set, as CI's `lab-blas-kernels` job does, it compares the
+figures on another kernel (see [LAB.md](LAB.md#retained-evidence)).
 
 New lab tasks follow the [authoring contract](lab/AUTHORING.md). Regenerate
 the retained evidence only together with the code change that alters it, and

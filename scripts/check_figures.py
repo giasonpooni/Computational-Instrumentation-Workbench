@@ -7,8 +7,14 @@ report lists an SVG figure, with no time budget, into a new output directory
 each figure with the retained copy: byte for byte, except a figure its task
 declared as a wall-clock timing figure (``wall_clock_timing`` in the report's
 generated artifacts), which is compared for presence and structure (series and
-points) only. Run on another platform (Windows) against the same retained run,
-it gives the second-platform comparison that T158 names as its next step.
+points) only, or as a rounding-level figure (``rounding_level``: values at
+binary64 rounding level, whose last bits follow the BLAS kernel and platform,
+move it), which is compared by the plotted values it records, each within its
+recorded rounding bound; the two declarations are counted separately. Run on
+another platform (Windows) against the same retained run, it gives the
+second-platform comparison that T158 names as its next step; run under a
+forced OpenBLAS kernel (``OPENBLAS_CORETYPE``, as CI's lab-blas-kernels job
+does), it fails on an undeclared figure whose bytes follow the kernel.
 
 A task is not re-executed when its retained report used a provider that is
 not bound here (``--provider ROLE=PATH``, as for ``ciw lab run``) or recorded
@@ -16,11 +22,13 @@ source digests that differ from this installation's, and a re-executed task
 that ends in another state or with other requirement-probe outcomes is not
 comparable; neither is ever counted as a match. ``figure-check.json``
 (``ciw.lab-figure-check.v1``) records every figure's outcome with the platform
-(OS, Python, NumPy and its BLAS) and ``figure-check.md`` summarizes it; the
-exit status is 3 when a figure mismatches or none was compared. BLAS runs
-single-threaded unless the caller sets its thread variables, as in the
-clean-room run that retained the figures. The record is a reproducibility
-check, not a lab finding, and stays outside ``lab/``.
+(OS, Python, NumPy, its BLAS and the OpenBLAS kernel it runs, read from the
+loaded library by ``ciw.lab.blas_probe.openblas_core``, with any forced
+``OPENBLAS_CORETYPE``) and ``figure-check.md`` summarizes it; the exit status
+is 3 when a figure mismatches or none was compared. BLAS runs single-threaded
+unless the caller sets its thread variables, as in the clean-room run that
+retained the figures. The record is a reproducibility check, not a lab
+finding, and stays outside ``lab/``.
 """
 from __future__ import annotations
 
@@ -50,9 +58,15 @@ def bindings(values) -> dict:
 
 
 def blas_identity() -> dict:
-    """NumPy's BLAS and LAPACK build and the CPU features it uses, with threadpoolctl's runtime view when installed."""
+    """NumPy's BLAS and LAPACK build, the OpenBLAS kernel it runs and the CPU features it uses, with threadpoolctl's
+    runtime view when installed."""
     import numpy as np
-    identity = {"thread_variables": {name: os.environ.get(name) for name in (*BLAS_THREADS, "OPENBLAS_CORETYPE")}}
+
+    from ciw.lab.blas_probe import openblas_core
+    # The kernel the loaded library runs (the host's, or the one OPENBLAS_CORETYPE forces); the build
+    # configuration below names only the build target.
+    identity = {"thread_variables": {name: os.environ.get(name) for name in (*BLAS_THREADS, "OPENBLAS_CORETYPE")},
+                "openblas_core": openblas_core()}
     try:
         config = np.show_config(mode="dicts")
     except TypeError:  # NumPy before 1.25 only prints its configuration
@@ -116,9 +130,18 @@ def not_reexecuted(report, providers) -> str | None:
     return None
 
 
+def _declared(artifact) -> dict:
+    from ciw.lab.report import FIGURE_DECLARATIONS
+    return {key: artifact.get(key) is True for key in FIGURE_DECLARATIONS}
+
+
 def compare_task(retained_dir: Path, fresh_dir: Path, old, new) -> tuple[list, str | None]:
-    """The figure outcomes of one re-executed task, or why its figures are not comparable."""
-    from ciw.lab.report import WALL_CLOCK_TIMING
+    """The figure outcomes of one re-executed task, or why its figures are not comparable.
+
+    A figure's declaration is read from the retained report, so a declaration a task adds takes effect once its
+    report is retained again.
+    """
+    from ciw.lab.report import ROUNDING_LEVEL, WALL_CLOCK_TIMING
     from ciw.lab.research_portfolio import compare_figure
     if old["state"] != new["state"]:
         return [], f"state {old['state']} -> {new['state']}"
@@ -130,60 +153,74 @@ def compare_task(retained_dir: Path, fresh_dir: Path, old, new) -> tuple[list, s
     written = {artifact["path"]: artifact for artifact in _figures(new)}
     outcomes = []
     for artifact in _figures(old):
-        path, declared = artifact["path"], artifact.get(WALL_CLOCK_TIMING) is True
+        path, declared = artifact["path"], _declared(artifact)
         fresh = (fresh_dir / path).read_bytes() if path in written else None
-        outcomes.append({"task_id": old["task_id"], "path": path, WALL_CLOCK_TIMING: declared,
-                         "outcome": compare_figure((retained_dir / path).read_bytes(), fresh, declared),
+        outcome = compare_figure((retained_dir / path).read_bytes(), fresh, declared[WALL_CLOCK_TIMING],
+                                 rounding_level=declared[ROUNDING_LEVEL])
+        outcomes.append({"task_id": old["task_id"], "path": path, **declared, "outcome": outcome,
                          "retained_sha256": artifact["sha256"], "fresh_sha256": written.get(path, {}).get("sha256")})
     for path in sorted(set(written) - {artifact["path"] for artifact in _figures(old)}):
-        outcomes.append({"task_id": old["task_id"], "path": path,
-                         WALL_CLOCK_TIMING: written[path].get(WALL_CLOCK_TIMING) is True, "outcome": NOT_RETAINED,
+        outcomes.append({"task_id": old["task_id"], "path": path, **_declared(written[path]), "outcome": NOT_RETAINED,
                          "retained_sha256": None, "fresh_sha256": written[path]["sha256"]})
     return outcomes, None
 
 
 def summarize(reports: dict, outcomes: list, skipped: dict, not_comparable: dict) -> dict:
-    from ciw.lab.report import WALL_CLOCK_TIMING
+    from ciw.lab.report import FIGURE_DECLARATIONS, ROUNDING_LEVEL, WALL_CLOCK_TIMING
     from ciw.lab.research_portfolio import MISMATCHES
 
     def figures(task_ids):
         return sum(len(_figures(reports[task_id])) for task_id in task_ids)
 
-    declared = [o for o in outcomes if o[WALL_CLOCK_TIMING]]
+    timing = [o for o in outcomes if o[WALL_CLOCK_TIMING]]
+    rounding = [o for o in outcomes if o[ROUNDING_LEVEL]]
     return {"figure_tasks": len(reports), "figures": figures(reports),
             "compared_tasks": len({o["task_id"] for o in outcomes}),
             "compared_figures": sum(o["outcome"] != NOT_RETAINED for o in outcomes),
-            "identical": sum(o["outcome"] == "identical" and not o[WALL_CLOCK_TIMING] for o in outcomes),
-            "declared_timing_same_structure": sum(o["outcome"] == "same structure" for o in declared),
-            "declared_timing_identical": sum(o["outcome"] == "identical" for o in declared),
+            "identical": sum(o["outcome"] == "identical" and not any(o[key] for key in FIGURE_DECLARATIONS)
+                             for o in outcomes),
+            "declared_timing_same_structure": sum(o["outcome"] == "same structure" for o in timing),
+            "declared_timing_identical": sum(o["outcome"] == "identical" for o in timing),
+            "declared_rounding_level_within_bounds": sum(o["outcome"] == "within rounding bounds" for o in rounding),
+            "declared_rounding_level_identical": sum(o["outcome"] == "identical" for o in rounding),
             "mismatched": sum(o["outcome"] in (*MISMATCHES, NOT_RETAINED) for o in outcomes),
             "not_reexecuted_tasks": len(skipped), "not_reexecuted_figures": figures(skipped),
             "not_comparable_tasks": len(not_comparable), "not_comparable_figures": figures(not_comparable)}
 
 
+def _declaration(outcome) -> str:
+    from ciw.lab.report import ROUNDING_LEVEL, WALL_CLOCK_TIMING
+    return ("wall-clock timing" if outcome[WALL_CLOCK_TIMING] else "rounding level" if outcome[ROUNDING_LEVEL]
+            else "no")
+
+
 def render(record: dict) -> str:
     """The Markdown summary: platform, counts, then every declared or not byte-identical figure and every task left out."""
-    from ciw.lab.report import WALL_CLOCK_TIMING
     host, counts = record["platform"], record["summary"]
     blas = host["blas"].get("blas") or {}
+    forced = host["blas"]["thread_variables"].get("OPENBLAS_CORETYPE")
     lines = [f"# Figure re-execution on {host['platform']}", "",
              f"- Python {host['python']} ({host['python_implementation']}), NumPy {host['numpy']}, BLAS "
              f"{blas.get('name', 'unknown')} {blas.get('version', '')}".rstrip()
              + (f" ({blas['openblas configuration']})" if blas.get("openblas configuration") else ""),
+             f"- OpenBLAS core: {host['blas'].get('openblas_core') or 'unknown'}"
+             + (f" (OPENBLAS_CORETYPE={forced})" if forced else ""),
              f"- CIW {host['ciw']['version']}, package digest {host['ciw']['package_digest']}",
              f"- Retained run: `{record['retained']}`; providers bound: {', '.join(record['providers']) or 'none'}",
              f"- Figure tasks: {counts['figure_tasks']} ({counts['figures']} figures); re-executed and compared: "
              f"{counts['compared_tasks']} tasks ({counts['compared_figures']} figures)",
              f"- Byte-identical: {counts['identical']}; declared wall-clock timing figures with the same structure: "
-             f"{counts['declared_timing_same_structure']}, byte-identical: {counts['declared_timing_identical']}",
+             f"{counts['declared_timing_same_structure']}, byte-identical: {counts['declared_timing_identical']}; "
+             f"declared rounding-level figures within their rounding bounds: "
+             f"{counts['declared_rounding_level_within_bounds']}, byte-identical: "
+             f"{counts['declared_rounding_level_identical']}",
              f"- Mismatched: {counts['mismatched']}",
              f"- Not re-executed: {counts['not_reexecuted_tasks']} tasks ({counts['not_reexecuted_figures']} figures); "
              f"not comparable: {counts['not_comparable_tasks']} tasks ({counts['not_comparable_figures']} figures)"]
-    rows = [o for o in record["figures"] if o["outcome"] != "identical" or o[WALL_CLOCK_TIMING]]
+    rows = [o for o in record["figures"] if o["outcome"] != "identical" or _declaration(o) != "no"]
     if rows:
-        lines += ["", "| Task | Figure | Declared timing figure | Outcome |", "| --- | --- | --- | --- |"]
-        lines += [f"| {o['task_id']} | `{o['path']}` | {'yes' if o[WALL_CLOCK_TIMING] else 'no'} | {o['outcome']} |"
-                  for o in rows]
+        lines += ["", "| Task | Figure | Declared | Outcome |", "| --- | --- | --- | --- |"]
+        lines += [f"| {o['task_id']} | `{o['path']}` | {_declaration(o)} | {o['outcome']} |" for o in rows]
     for title, reasons in (("Not re-executed", record["not_reexecuted"]), ("Not comparable", record["not_comparable"])):
         if reasons:
             lines += ["", f"| {title} | Reason |", "| --- | --- |"]
@@ -234,7 +271,8 @@ def main() -> int:
     record = {"schema": RECORD_SCHEMA,
               "note": "Figures of a retained lab run re-executed on this platform; a reproducibility check, "
                       "not a lab finding. Declared wall-clock timing figures are compared for presence and "
-                      "structure only; tasks not re-executed or not comparable are never counted as matches.",
+                      "structure only, declared rounding-level figures by their recorded values within their "
+                      "rounding bounds; tasks not re-executed or not comparable are never counted as matches.",
               "retained": str(args.retained), "platform": platform_identity(), "providers": sorted(providers),
               "summary": summarize(reports, outcomes, skipped, not_comparable), "figures": outcomes,
               "not_reexecuted": skipped, "not_comparable": not_comparable}

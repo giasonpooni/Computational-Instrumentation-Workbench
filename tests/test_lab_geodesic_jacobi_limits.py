@@ -12,7 +12,7 @@ import pytest
 
 from ciw.lab import geodesic_jacobi_limits as gjl
 from ciw.lab import geodesic_jacobi_limits_core as core
-from ciw.lab import registry, runner
+from ciw.lab import registry, runner, svg
 from ciw.lab.evidence import AUTHORITY_DOMAINS, COMPUTATIONAL_DOMAINS, PHYSICAL_DOMAINS
 from ciw.lab.report import FIELD_NAMES, validate_report
 from ciw.lab.surfaces import Plane, Reparametrized, Sphere, SurfaceRefusal, Torus
@@ -241,6 +241,22 @@ def test_t012_frame_invariance_and_refusal(run):
     assert "to first order in eps" in report["mathematical_model"]
     artifacts = {a["path"].rsplit("/", 1)[-1] for a in report["generated_artifacts"]}
     assert {"frame-invariance.svg", "orientation-separation.svg"} <= artifacts
+    # frame-invariance.svg plots state differences between frames that agree in exact arithmetic: each is a few
+    # ulps of states of order one (zeros are drawn at its 1e-18 floor), and their last bits follow the BLAS kernel.
+    # Every plotted value is within the 16 eps it records as its rounding bound, so the whole figure is at rounding
+    # level: it is declared a rounding-level figure; orientation-separation.svg plots the separations themselves.
+    eps = np.finfo(float).eps
+    study = json.loads((run[0] / "artifacts" / "T012" / "frame-invariance.json").read_text(encoding="utf-8"))
+    plotted = [r["max_state_difference"] for r in study["rotations"] + study["basis_rotations"]]
+    assert max(plotted) <= 16 * eps
+    recorded = svg.recorded_values((run[0] / "artifacts" / "T012" / "frame-invariance.svg").read_bytes())
+    # (frame-invariance.json keeps 12 significant digits)
+    assert sorted(y for s in recorded for y in s["y"]) == pytest.approx(sorted(max(v, 1e-18) for v in plotted),
+                                                                        rel=1e-11)
+    assert {b for s in recorded for b in s["bound"]} == {16 * eps}
+    declared = {a["path"].rsplit("/", 1)[-1]: a.get("rounding_level") for a in report["generated_artifacts"]
+                if a["path"].endswith(".svg")}
+    assert declared == {"frame-invariance.svg": True, "orientation-separation.svg": None}
     refusal = _labelled(report, "improper rotation")
     assert refusal["evidence_status"] == "numerically_verified"
     assert refusal["basis"]["checks"][0]["observed_refusal"] == "Frame change requires a proper rotation matrix"

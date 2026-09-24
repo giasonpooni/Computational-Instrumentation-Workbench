@@ -26,9 +26,11 @@ import xml.etree.ElementTree as ET
 import numpy as np
 
 from .. import __version__
+from . import svg
 from .evidence import AUTHORITY_DOMAINS, PHYSICAL_DOMAINS, EvidenceRefusal, origin_difference, validate_finding
 from .registry import SECTION_MODULES, base_section_modules, load_implementations, load_queue
-from .report import FIELDS, FIELD_NAMES, WALL_CLOCK_TIMING, build_report, render_markdown, validate_report
+from .report import (FIELDS, FIELD_NAMES, ROUNDING_LEVEL, WALL_CLOCK_TIMING, build_report, render_markdown,
+                     validate_report)
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[1]
 # Retained evidence is committed; one artifact larger than this is refused so
@@ -246,13 +248,20 @@ class Context:
         self.captured[role] = hashlib.sha256(data).hexdigest()
         return data
 
-    def _write(self, name: str, data: bytes, wall_clock_timing: bool = False) -> str:
+    def _write(self, name: str, data: bytes, wall_clock_timing: bool = False, rounding_level: bool = False) -> str:
         if "/" in name or "\\" in name or name.startswith("."):
             raise ValueError("Artifact names are single file names")
         if len(data) > MAX_ARTIFACT_BYTES:
             raise ValueError(f"Artifact {name} exceeds {MAX_ARTIFACT_BYTES} bytes; retain a summary instead")
-        if wall_clock_timing and not name.endswith(".svg"):
-            raise ValueError(f"Only SVG figures are declared as wall-clock timing figures, not {name}")
+        if (wall_clock_timing or rounding_level) and not name.endswith(".svg"):
+            raise ValueError(f"Only SVG figures are declared as wall-clock timing or rounding-level figures, "
+                             f"not {name}")
+        if wall_clock_timing and rounding_level:
+            raise ValueError(f"A figure is declared as a wall-clock timing or a rounding-level figure, "
+                             f"not both: {name}")
+        if rounding_level and svg.recorded_values(data) is None:
+            raise ValueError(f"A rounding-level figure records its plotted values and rounding bounds "
+                             f"(svg.line_plot(..., rounding=...)): {name}")
         directory = self.output_dir / "artifacts" / self.task_id
         directory.mkdir(parents=True, exist_ok=True)
         (directory / name).write_bytes(data)
@@ -262,16 +271,22 @@ class Context:
         entry = {"path": relative, "sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data)}
         if wall_clock_timing:
             entry[WALL_CLOCK_TIMING] = True
+        if rounding_level:
+            entry[ROUNDING_LEVEL] = True
         self.artifacts.append(entry)
         return relative
 
     def artifact_json(self, name: str, value) -> str:
         return self._write(name, dumps(value).encode("utf-8"))
 
-    def artifact_text(self, name: str, text: str, *, wall_clock_timing: bool = False) -> str:
-        """Retain a text artifact; ``wall_clock_timing=True`` declares an SVG figure whose bytes depend on wall-clock
-        timing, recorded in the report's artifact list and compared for presence and structure only on re-execution."""
-        return self._write(name, text.encode("utf-8"), wall_clock_timing)
+    def artifact_text(self, name: str, text: str, *, wall_clock_timing: bool = False,
+                      rounding_level: bool = False) -> str:
+        """Retain a text artifact. ``wall_clock_timing=True`` declares an SVG figure whose bytes depend on wall-clock
+        timing, compared for presence and structure only on re-execution; ``rounding_level=True`` one that plots
+        values at binary64 rounding level, whose bytes follow the BLAS kernel and platform: it records its plotted
+        values and their rounding bounds (``svg.line_plot(..., rounding=...)``), and a re-execution compares those
+        values within the bounds. Either declaration is recorded in the report's artifact list."""
+        return self._write(name, text.encode("utf-8"), wall_clock_timing, rounding_level)
 
 
 TOOLCHAIN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")

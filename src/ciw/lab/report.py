@@ -49,20 +49,33 @@ FIELD_NAMES = tuple(name for name, _ in FIELDS)
 # passed; it never means physically validated.
 STATES = ("completed", "partial", "deferred", "blocked")
 
-# Key of a generated-artifact entry declaring an SVG figure whose bytes depend on
-# wall-clock timing (``ctx.artifact_text(..., wall_clock_timing=True)``); present
-# only as ``true``. Figure re-executions compare such a figure for presence and
-# structure, never byte for byte (T158, scripts/check_figures.py).
+# Keys of a generated-artifact entry declaring an SVG figure whose bytes are not
+# reproducible byte for byte; present only as ``true``, at most one per figure.
+# ``wall_clock_timing`` (``ctx.artifact_text(..., wall_clock_timing=True)``): the
+# figure plots wall-clock timings; figure re-executions compare it for presence
+# and structure. ``rounding_level`` (``rounding_level=True``): it plots values
+# at binary64 rounding level (errors and residuals near machine epsilon), whose
+# last bits, and so the figure's coordinates and axis range, follow the BLAS
+# kernel and platform; it records its plotted values with their rounding bounds
+# (``svg.line_plot(..., rounding=...)``), and re-executions compare those
+# values within the bounds. Neither is compared byte for byte (T158,
+# scripts/check_figures.py).
 WALL_CLOCK_TIMING = "wall_clock_timing"
+ROUNDING_LEVEL = "rounding_level"
+FIGURE_DECLARATIONS = (WALL_CLOCK_TIMING, ROUNDING_LEVEL)
 
 
-def _timing_declaration_problem(artifacts) -> str | None:
-    """Why the wall-clock timing declarations of a generated-artifact list are malformed, or None."""
+def _figure_declaration_problem(artifacts) -> str | None:
+    """Why the figure declarations of a generated-artifact list are malformed, or None."""
     for artifact in artifacts if isinstance(artifacts, list) else []:
-        if isinstance(artifact, dict) and WALL_CLOCK_TIMING in artifact and (
-                artifact[WALL_CLOCK_TIMING] is not True or not str(artifact.get("path")).endswith(".svg")):
-            return (f"Artifact {artifact.get('path')!r}: {WALL_CLOCK_TIMING} is declared only as true, "
-                    "on an SVG figure")
+        if not isinstance(artifact, dict):
+            continue
+        for key in FIGURE_DECLARATIONS:
+            if key in artifact and (artifact[key] is not True or not str(artifact.get("path")).endswith(".svg")):
+                return f"Artifact {artifact.get('path')!r}: {key} is declared only as true, on an SVG figure"
+        if all(key in artifact for key in FIGURE_DECLARATIONS):
+            return (f"Artifact {artifact.get('path')!r}: a figure is declared as {WALL_CLOCK_TIMING} or "
+                    f"{ROUNDING_LEVEL}, not both")
     return None
 
 
@@ -102,7 +115,7 @@ def validate_report(report: dict) -> dict:
         raise EvidenceRefusal(f"Report is missing required fields: {missing}")
     if report.get("state") not in STATES:
         raise EvidenceRefusal(f"Report state must be one of {STATES}")
-    declaration = _timing_declaration_problem(report["generated_artifacts"])
+    declaration = _figure_declaration_problem(report["generated_artifacts"])
     if declaration:
         raise EvidenceRefusal(declaration)
     findings = report.get("findings")

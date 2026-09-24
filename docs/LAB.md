@@ -352,7 +352,10 @@ python scripts/check_lab.py --blas-core Sandybridge --output-dir results/lab-gat
 CI's `lab-blas-kernels` job (`.github/workflows/test.yml`) runs the lab tests
 on the Haswell and Sandybridge kernels, forced through `OPENBLAS_CORETYPE` and
 confirmed from the loaded library, so a test that holds only on the kernel of
-the machine that wrote it fails there.
+the machine that wrote it fails there. It then re-executes the retained figure
+tasks on that kernel with `scripts/check_figures.py` (see below), so a figure
+whose bytes follow the kernel without its declaration fails there as well, as
+does a rounding-level figure whose values move beyond their rounding bounds.
 
 For a few tasks, run them with the variable set and compare only those:
 `OPENBLAS_CORETYPE=Haswell ciw lab run T094 --output-dir results/haswell`, then
@@ -412,30 +415,62 @@ Figures are compared by re-execution instead. A task whose figure plots
 wall-clock timings declares it when writing it,
 `ctx.artifact_text(name, svg, wall_clock_timing=True)`, which records
 `wall_clock_timing: true` on the figure's entry in the report's generated
-artifacts (today T142's `kernel-timings.svg`); `validate_report` and the
-schema accept the declaration only as `true` on an SVG figure. T158
+artifacts (today T142's `kernel-timings.svg`). A figure that plots values at
+binary64 rounding level (errors, gaps and residuals near machine epsilon) is
+declared with `rounding_level=True` (`rounding_level: true`): the last bits of
+those values follow the OpenBLAS kernel and the platform, and on a log axis
+they move single points, or every gridline and point when the smallest plotted
+value is one of them. Such a figure records its plotted values with each
+point's rounding bound (`svg.line_plot(..., rounding=...)`, in a `metadata`
+element of the SVG): the largest change rounding can make to the value between
+two runs, derived from the unit roundoff and the size of the quantities it is
+computed from, or from a rounding-error bound the task checks. Today T002's
+`agreement.svg`, T003's `adaptive.svg`, T012's `frame-invariance.svg`, T033's
+`conformance-residuals.svg`, T035's `fd-v-shape.svg`, T107's
+`ratio-vs-target.svg`, T109's `solver-agreement.svg`, T120's
+`common-workload-precision.svg` and T122's `free-energy.svg` are declared,
+each with a regression test that checks its bounds and the value that sets its
+axis on the task's own data. `validate_report` and the schema accept either
+declaration only as `true` on an SVG figure, and never both on one, and the
+runner refuses a rounding-level figure that records no values. T158
 re-executes the figure tasks that fit the research section's time budget and
-compares every retained figure byte for byte, except a declared one, which is
-compared for presence and structure (series and points) only: an undeclared
-figure that differs is a mismatch, and a declared figure that reproduced byte
-for byte is reported, not hidden. `scripts/check_figures.py` re-executes every
-figure task of a retained run with the installed `ciw`, without a time budget,
-into a new directory, compares the figures the same way and writes
-`figure-check.json` (`ciw.lab-figure-check.v1`: each figure's outcome and the
-platform, Python, NumPy and BLAS build) and `figure-check.md`. A task whose
-retained report used a provider that is not bound (`--provider ROLE=PATH`; a
-provider probe that succeeded, or a checkout its runtime identity records as
-ready or at a revision, as T097 records set, ppda and scr-exchange) or
-recorded source digests that differ from the installed package's is listed as
-not re-executed, and one that ends in another state or with other
-requirement-probe outcomes as not comparable; neither counts as a match. It
-exits 3 on a mismatch or when no figure was compared. Run on Windows against
-the same `lab/`, it is the second-platform comparison T158 names as its next
-step:
+compares every retained figure byte for byte, except a declared one: a timing
+figure is compared for presence and structure (series and points) only, a
+rounding-level figure by its recorded values (the same series and point
+counts, x values to 1e-12 relative, each y value within the larger of its two
+recorded rounding bounds plus 1e-12 relative), so a value that moves beyond its
+rounding bound, a truncation error say, is still a mismatch. An undeclared
+figure that differs, a declared timing figure whose series or points differ
+and a rounding-level figure whose series or values differ are mismatches, and
+a declared timing figure that reproduced byte for byte is reported, not
+hidden. A rounding-level figure reproduces byte for byte on the kernel of the
+retained run and only within its bounds on others, so which of the two
+happened is recorded only in T158's `figure-index.json`, never in its findings
+or prose, and the figure leaves T158's report the same on every kernel.
+`scripts/check_figures.py` re-executes every figure task of a retained run
+with the installed `ciw`, without a time budget, into a new directory,
+compares the figures the same way (counting the two declarations apart) and
+writes `figure-check.json` (`ciw.lab-figure-check.v1`: each figure's outcome
+and the platform, Python, NumPy and BLAS build, and the OpenBLAS kernel the
+loaded library runs, with any forced `OPENBLAS_CORETYPE`) and
+`figure-check.md`. It reads each figure's declaration from the retained
+report, so a declaration a task adds takes effect once its report is retained
+again. A task whose retained report used a provider that is not bound
+(`--provider ROLE=PATH`; a provider probe that succeeded, or a checkout its
+runtime identity records as ready or at a revision, as T097 records set, ppda
+and scr-exchange) or recorded source digests that differ from the installed
+package's is listed as not re-executed, and one that ends in another state or
+with other requirement-probe outcomes as not comparable; neither counts as a
+match. It exits 3 on a mismatch or when no figure was compared. Run on
+Windows against the same `lab/`, it is the second-platform comparison T158
+names as its next step (`.github/workflows/figures.yml` runs it on
+`windows-latest` without providers); run under a forced kernel, it is the
+kernel comparison of CI's `lab-blas-kernels` job:
 
 ```sh
 python scripts/check_figures.py --retained lab --output-dir results/figures              # every figure task
 python scripts/check_figures.py --retained lab --output-dir results/figures T013 T020   # selected tasks
+OPENBLAS_CORETYPE=Haswell python scripts/check_figures.py --retained lab --output-dir results/figures-Haswell
 python scripts/check_figures.py --retained lab --output-dir results/figures-windows \
     --provider csg=/trusted/references/csg --provider scr=/trusted/references/scr \
     --provider set=/trusted/references/set --provider ppda=/trusted/references/ppda \

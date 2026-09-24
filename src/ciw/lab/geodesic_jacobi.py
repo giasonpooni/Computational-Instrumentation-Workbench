@@ -652,7 +652,8 @@ def high_precision_references(ctx):
                        [max(rows[k]["scipy_vs_reference"]["max"], 1e-17) for k in order]))
     ctx.artifact_text("agreement.svg", svg.line_plot(
         series, title="End-state gap to the reference (paths: references.json)",
-        xlabel="path index (figure_path_index)", ylabel="max(position, transfer) gap", logy=True))
+        xlabel="path index (figure_path_index)", ylabel="max(position, transfer) gap", logy=True,
+        rounding=64 * float(np.finfo(float).eps)), rounding_level=True)
     ctx.artifact_text("clairaut.svg", svg.line_plot(
         [(n, s, np.maximum(d, 1e-17)) for n, s, d in curves], title="Torus Clairaut drift |C(s) - C(0)|",
         xlabel="arclength s", ylabel="|rho^2 phi' - C0|", logy=True, markers=False))
@@ -931,7 +932,8 @@ def integrator_orders(ctx):
     ctx.artifact_text("adaptive.svg", svg.line_plot(
         [(k, [r["function_evaluations"] for r in c["rows"]], [r["error"] for r in c["rows"]])
          for k, c in adaptive["charts"].items()], title="Dormand-Prince error against function evaluations",
-        xlabel="function evaluations", ylabel="endpoint error", logx=True, logy=True))
+        xlabel="function evaluations", ylabel="endpoint error", logx=True, logy=True,
+        rounding=64 * float(np.finfo(float).eps)), rounding_level=True)
 
     generator = {"name": "declared standard geodesics", "paths": list(gj.STANDARD)}
     adaptive_generator = dict(generator, rtol=list(ADAPTIVE_RTOL), charts=list(GAMMA_CHARTS))

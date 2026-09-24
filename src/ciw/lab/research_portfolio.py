@@ -32,6 +32,7 @@ import hashlib
 import io
 from itertools import product
 import json
+import math
 import os
 from pathlib import Path
 import platform
@@ -42,12 +43,13 @@ import xml.etree.ElementTree as ET
 import zipfile
 
 from .. import __version__
+from . import svg
 from .evidence import (AUTHORITY_DOMAINS, COMPARISONS, COMPUTATIONAL_DOMAINS, COMPUTATIONAL_ORDER, DOMAINS,
                        INDEPENDENT_ORIGINS, LABELS, MAX_THRESHOLD, PHYSICAL_DOMAINS, BOUNDARY, EvidenceRefusal,
                        ORIGINS, describe_basis, finding, finding_origin, supported_label, holds as compare)
 from ..core.identities import content_identity
 from .registry import load_implementations, load_queue, task
-from .report import WALL_CLOCK_TIMING, validate_report
+from .report import ROUNDING_LEVEL, WALL_CLOCK_TIMING, validate_report
 
 MODULE = "src/ciw/lab/research_portfolio.py"
 TESTS = "tests/test_lab_research_portfolio.py"
@@ -963,9 +965,13 @@ REGENERATED = ("T013", "T020", "T023", "T030", "T031", "T033", "T035", "T037", "
                "T142", "T147", "T148", "T152", "T154")
 FIGURE_HYPOTHESIS = "Retained SVG figures are byte-for-byte reproducible when their tasks are re-executed."
 FIGURE_CLAIM = ("Re-executed figure tasks regenerate their retained figures, byte-identical unless declared as "
-                "wall-clock timing figures")
+                "wall-clock timing figures, which keep their series and points, or as rounding-level figures, whose "
+                "recorded values agree within their rounding bounds")
 # Outcomes of compare_figure that refute FIGURE_CLAIM.
-MISMATCHES = ("not regenerated", "differs", "structure differs")
+MISMATCHES = ("not regenerated", "differs", "structure differs", "values differ")
+# Relative agreement a rounding-level figure's x values, and its y values beyond their rounding bounds, keep: far
+# below the 0.01 px a figure's coordinates resolve.
+VALUE_RTOL = 1e-12
 
 
 def figure_structure(data) -> dict | None:
@@ -986,17 +992,40 @@ def figure_structure(data) -> dict | None:
     return {"series": tags["path"], "points": tags["circle"]}
 
 
-def compare_figure(retained, fresh, declared: bool) -> str:
+def compare_values(retained, fresh) -> str:
+    """Outcome of a rounding-level figure whose bytes differ, from the values both figures record.
+
+    ``within rounding bounds`` when the series (names, point counts, path and circle elements) are the same, every
+    x value agrees to :data:`VALUE_RTOL` and every y value to its rounding bound (the larger of the two recorded)
+    plus :data:`VALUE_RTOL`; otherwise ``structure differs`` (including a figure that records no values) or
+    ``values differ``.
+    """
+    old, new = svg.recorded_values(retained), svg.recorded_values(fresh)
+    if (old is None or new is None or figure_structure(fresh) != figure_structure(retained)
+            or [(s["name"], len(s["x"])) for s in old] != [(s["name"], len(s["x"])) for s in new]):
+        return "structure differs"
+    for a, b in zip(old, new):
+        if not all(math.isclose(x, y, rel_tol=VALUE_RTOL) for x, y in zip(a["x"], b["x"])) or any(
+                abs(y - z) > max(u, v) + VALUE_RTOL * max(abs(y), abs(z))
+                for y, z, u, v in zip(a["y"], b["y"], a["bound"], b["bound"])):
+            return "values differ"
+    return "within rounding bounds"
+
+
+def compare_figure(retained, fresh, declared: bool, rounding_level: bool = False) -> str:
     """Outcome of one regenerated figure against its retained bytes (``fresh`` None: the task no longer writes it).
 
-    A figure not declared as a wall-clock timing figure is ``identical`` or ``differs``. A declared one is
+    An undeclared figure is ``identical`` or ``differs``. One ``declared`` as a wall-clock timing figure is
     compared for presence and structure only: ``identical``, ``same structure`` (other bytes, as declared) or
-    ``structure differs``. The outcomes in :data:`MISMATCHES` refute byte reproducibility.
+    ``structure differs``. A ``rounding_level`` figure is ``identical`` or compared by the values it records
+    (:func:`compare_values`). The outcomes in :data:`MISMATCHES` refute byte reproducibility.
     """
     if fresh is None:
         return "not regenerated"
     if fresh == retained:
         return "identical"
+    if rounding_level:
+        return compare_values(retained, fresh)
     if not declared:
         return "differs"
     shape = figure_structure(fresh)
@@ -1033,8 +1062,10 @@ def _second_platform_step(roles) -> str:
             "results/figures-windows with --provider ROLE=PATH for every provider the retained figure tasks used"
             f"{bound}, at the pins scripts/check_lab.py provisions and with plsr-python bound to that Python. It "
             "re-executes every figure task without the section's time budget and records each figure's outcome "
-            "with the platform in figure-check.json; fix every figure it reports as a mismatch, declaring one only "
-            "when its plotted data are wall-clock timings.")
+            "with the platform and OpenBLAS kernel in figure-check.json; fix every figure it reports as a "
+            "mismatch, declaring one only when its plotted data are wall-clock timings or when values at rounding "
+            "level, whose last bits follow the BLAS kernel, move it, with each point's rounding bound recorded, "
+            "never to hide a real numerical difference.")
 
 
 def _figure_index(ctx, reports) -> list:
@@ -1046,6 +1077,7 @@ def _figure_index(ctx, reports) -> list:
                 data = path.read_bytes() if path.is_file() else None
                 figures.append({"task_id": report["task_id"], "path": artifact["path"], "sha256": artifact["sha256"],
                                 WALL_CLOCK_TIMING: artifact.get(WALL_CLOCK_TIMING) is True,
+                                ROUNDING_LEVEL: artifact.get(ROUNDING_LEVEL) is True,
                                 "digest_matches": data is not None and hashlib.sha256(data).hexdigest() == artifact["sha256"],
                                 "well_formed": figure_structure(data) is not None})
     return figures
@@ -1054,7 +1086,8 @@ def _figure_index(ctx, reports) -> list:
 @task("T158", changed_files=(MODULE, "src/ciw/lab/svg.py"),
       regression_tests=(f"{TESTS}::test_figures_are_reproducible",
                         f"{TESTS}::test_a_changed_figure_is_a_mismatch_and_a_timing_figure_a_counterexample",
-                        f"{TESTS}::test_only_declared_timing_figures_are_exempt_from_the_byte_comparison"))
+                        f"{TESTS}::test_only_declared_timing_figures_are_exempt_from_the_byte_comparison",
+                        f"{TESTS}::test_rounding_level_figures_are_compared_by_their_values_on_every_kernel"))
 def reproducible_figures(ctx):
     from .runner import Context, run_task
     reports = _reports_before(ctx, 158)
@@ -1062,18 +1095,25 @@ def reproducible_figures(ctx):
         FIGURE_HYPOTHESIS,
         "Figure bytes are a function of the task's data: ciw.lab.svg uses no clock or randomness, so a regenerated "
         "figure can differ only if its data does. A figure its task declares as plotting wall-clock timings is "
-        "expected to differ in bytes, not in structure (series and points).",
+        "expected to differ in bytes, not in structure (series and points); one declared as plotting values at "
+        "rounding level, whose last bits follow the BLAS kernel and platform, records its values with each "
+        "point's rounding bound and is expected to differ in bytes, not in values beyond those bounds.",
         [_earlier(158) + " and their SVG artifacts",
          "Wall-clock timing declarations of those figures (wall_clock_timing in the reports' generated artifacts)",
+         "Rounding-level declarations of those figures (rounding_level in the reports' generated artifacts)",
          "Task implementations re-executed in a scratch directory with this run's provider bindings"],
         "A re-executed task that ends in its retained state writes every retained figure: with the same SHA-256, or, "
-        "for a figure declared as a wall-clock timing figure, with the same series and points.",
+        "for a figure declared as a wall-clock timing figure, with the same series and points, and for one declared "
+        "as a rounding-level figure, with the same series and every recorded value within its rounding bound.",
         f"Hash and parse every retained SVG; re-execute the {len(REGENERATED)} declared inexpensive figure tasks plus "
         "every task that declares a wall-clock timing figure in a scratch directory, and compare each regenerated "
-        "figure's bytes with the retained one (a declared timing figure: presence and structure).",
+        "figure's bytes with the retained one (a declared timing figure: presence and structure; a declared "
+        "rounding-level figure: its recorded values, each within its rounding bound).",
         ["figure bytes changed by nondeterministic data (timings, unseeded randomness, dictionary order)",
          "a figure plotting wall-clock timings without its declaration (counted as a mismatch)",
          "a declared timing figure that lost or gained series or points, or reproduced byte for byte (reported)",
+         "a declared rounding-level figure that lost or gained series or points, or whose values moved beyond their "
+         "rounding bounds (counted as a mismatch)",
          "re-executed task ending in another state (for example an unbound provider): its figures are not comparable",
          "retained figure edited after its report (digest mismatch)", "malformed SVG"],
         _second_platform_step(()))
@@ -1103,25 +1143,32 @@ def reproducible_figures(ctx):
                 original, fresh = ctx.output_dir / figure["path"], Path(directory) / figure["path"]
                 outcome = compare_figure(original.read_bytes() if original.is_file() else None,
                                          fresh.read_bytes() if figure["path"] in written else None,
-                                         figure[WALL_CLOCK_TIMING])
+                                         figure[WALL_CLOCK_TIMING], rounding_level=figure[ROUNDING_LEVEL])
                 outcomes.append({"task_id": task_id, "path": figure["path"],
-                                 WALL_CLOCK_TIMING: figure[WALL_CLOCK_TIMING], "outcome": outcome})
+                                 WALL_CLOCK_TIMING: figure[WALL_CLOCK_TIMING], ROUNDING_LEVEL: figure[ROUNDING_LEVEL],
+                                 "outcome": outcome})
     mismatched = [o["path"] for o in outcomes if o["outcome"] in MISMATCHES]
     declared = [o for o in outcomes if o[WALL_CLOCK_TIMING]]
     timing_differs = [o["path"] for o in declared if o["outcome"] == "same structure"]
     timing_identical = [o["path"] for o in declared if o["outcome"] == "identical"]
+    # A rounding-level figure regenerates byte for byte on the kernel of the retained run and only within its
+    # rounding bounds on another: which of the two happened stays in figure-index.json, out of every compared field.
+    rounding = [o for o in outcomes if o[ROUNDING_LEVEL]]
     compared = {o["task_id"] for o in outcomes}
     uncompared = [tid for tid in sorted(by_task) if tid not in compared and tid not in not_comparable]
     digest_problems = sum(not f["digest_matches"] for f in figures)
     malformed = sum(not f["well_formed"] for f in figures)
-    ctx.artifact_json("figure-index.json", {"figures": figures, "wall_clock_timing_tasks": declaring,
-                                            "regenerated": outcomes, "not_comparable": not_comparable,
-                                            "not_reexecuted": uncompared})
+    ctx.artifact_json("figure-index.json", {
+        "figures": figures, "wall_clock_timing_tasks": declaring,
+        "rounding_level_tasks": sorted({f["task_id"] for f in figures if f[ROUNDING_LEVEL]}),
+        "regenerated": outcomes, "not_comparable": not_comparable, "not_reexecuted": uncompared})
     findings = []
     if outcomes:
         findings.append(_count(FIGURE_CLAIM, "computational_pipeline", len(mismatched),
-                               [_check("regenerated figures missing, undeclared figures whose bytes differ and declared "
-                                       "timing figures whose series or points differ", len(mismatched))], "figures"))
+                               [_check("regenerated figures missing, undeclared figures whose bytes differ, declared "
+                                       "timing figures whose series or points differ and declared rounding-level "
+                                       "figures whose series differ or whose values moved beyond their rounding "
+                                       "bounds", len(mismatched))], "figures"))
     else:
         findings.append(finding(FIGURE_CLAIM, "computational_pipeline", None, {}, expected_not_established=True))
     if timing_differs:
@@ -1146,18 +1193,29 @@ def reproducible_figures(ctx):
     ]
     fields["numerical_result"] = (
         f"{len(figures)} retained figures from {len(by_task)} tasks, "
-        f"{sum(f[WALL_CLOCK_TIMING] for f in figures)} declared as wall-clock timing figures; {len(outcomes)} "
+        f"{sum(f[WALL_CLOCK_TIMING] for f in figures)} declared as wall-clock timing figures and "
+        f"{sum(f[ROUNDING_LEVEL] for f in figures)} as rounding-level figures; {len(outcomes)} "
         f"regenerated and compared from {len(compared)} tasks: {len(mismatched)} mismatched; of {len(declared)} "
         f"declared timing figures {len(timing_differs)} differ in bytes with the same structure and "
-        f"{len(timing_identical)} are byte-identical; {len(uncompared)} tasks not re-executed, {len(not_comparable)} "
+        f"{len(timing_identical)} are byte-identical; {len(rounding)} declared rounding-level figures compared by "
+        f"their recorded values within rounding bounds; {len(uncompared)} tasks not re-executed, {len(not_comparable)} "
         f"not comparable; {digest_problems} digest mismatches, {malformed} malformed.")
-    fields["uncertainty"] = "Byte comparison on this platform only; other platforms are not compared."
+    fields["uncertainty"] = ("Byte comparison on this platform and BLAS kernel only; other platforms and kernels are "
+                             "not compared.")
     assumptions = ["Wall-clock timing figures are those their tasks declare when writing them (wall_clock_timing in "
                    "the report's generated artifacts); a figure plotting wall-clock time without the declaration "
                    "counts as a mismatch, and whether a declared figure's data depends on the clock is a review "
                    "question.",
-                   "Byte identity is established on this platform only; the second-platform (Windows) comparison is "
-                   "made outside the queue by scripts/check_figures.py and is not part of this report."]
+                   "Rounding-level figures are those their tasks declare when writing them (rounding_level in the "
+                   "report's generated artifacts): values at binary64 rounding level, whose last bits follow the BLAS "
+                   "kernel and platform, move their points or their log axis, so they record every plotted value "
+                   "with its rounding bound and are compared by those values, and whether one reproduced byte for "
+                   "byte (as on the kernel of the retained run) is recorded in figure-index.json only, which keeps "
+                   "this report the same on every kernel. Whether a declared bound is a rounding bound is a review "
+                   "question, checked by the declaring task's regression test.",
+                   "Byte identity is established on this platform and kernel only; the comparisons on Windows and on "
+                   "other OpenBLAS kernels are made outside the queue by scripts/check_figures.py and are not part "
+                   "of this report."]
     if timing_identical:
         assumptions.insert(0, "Declared wall-clock timing figures reproduced byte for byte here: "
                            + ", ".join(timing_identical) + "; review whether their bytes depend on the clock, since "

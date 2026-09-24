@@ -41,9 +41,9 @@ from .surfaces_discrete_charts import (CONICAL_TOLERANCE, CURVATURE_BLOWUP, DEGE
                                        FIT_RESIDUAL, FIT_WINDOW, SWITCH_THRESHOLD, Approach, SphereAtlas, graph_atlas,
                                        great_circle, integrate_atlas, integrate_single, pole_passing_great_circle,
                                        refusal_code, require_regular, scan)
-from .surfaces_discrete_geometry import (DOMAINS, EPS, SEED, THRESHOLDS, ConformalHalfPlane, Cone, CubeRootChart,
-                                         DroppedCrossTermBump, PolarChart, PowerGraph, central_difference, conformance,
-                                         conformance_surfaces, mutant_surfaces)
+from .surfaces_discrete_geometry import (DOMAINS, EPS, SEED, STENCIL_STEP, THRESHOLDS, ConformalHalfPlane, Cone,
+                                         CubeRootChart, DroppedCrossTermBump, PolarChart, PowerGraph,
+                                         central_difference, conformance, conformance_surfaces, mutant_surfaces)
 
 MODULE = "src/ciw/lab/surfaces_discrete.py"
 GEOMETRY = "src/ciw/lab/surfaces_discrete_geometry.py"
@@ -135,6 +135,12 @@ STENCIL_UNCERTAINTY = {
     for name, value, what in (("gauss_equation", 1e-10, "second metric derivatives of the Brioschi curvature"),
                               ("derivative_consistency", 1e-11, "differences of the metric"),
                               ("mixed_partials", 1e-12, "differences of the exact metric derivatives"))}
+# Rounding bounds the conformance figure records per point (svg.line_plot(..., rounding=...)): the largest change
+# rounding (another BLAS kernel or platform) makes to a plotted residual between two runs, twice its roundoff in one
+# run. An algebraic identity's roundoff is ALGEBRAIC_UNCERTAINTY; a stencil identity's is the stencil's eps / h at
+# h = 1e-3 l, times 4 for the stencil weights (their absolute values sum to 1.5) and the metric-derivative scale.
+ALGEBRAIC_ROUNDING = 2 * ALGEBRAIC_UNCERTAINTY["value"]
+STENCIL_ROUNDING = 8 * EPS / STENCIL_STEP
 
 
 @task("T033", changed_files=(MODULE, GEOMETRY, DOC),
@@ -170,15 +176,17 @@ def surface_interface(ctx):
                                                          "nonfinite": row["nonfinite"], "errors": row["errors"],
                                                          "worst": row["worst"]} for k, row in mutants.items()}})
     keys = list(table)
+    plotted = ("gauss_equation", "derivative_consistency", "mixed_partials", "compatibility")
     series = [(name, list(range(1, len(keys) + 1)), [max(table[k]["worst"][name], RESIDUAL_FLOOR) for k in keys])
-              for name in ("gauss_equation", "derivative_consistency", "mixed_partials", "compatibility")]
+              for name in plotted]
     short = {"plane": "plane", "sphere": "sphere", "cylinder": "cyl", "saddle": "saddle", "torus": "torus",
              "gaussian-bump": "bump", "hyperbolic-plane": "hyp", "plane-polar": "polar",
              "gaussian-bump-shear": "shear", "rotated-torus": "rot-torus"}
     ctx.artifact_text("conformance-residuals.svg", svg.line_plot(
         series, title="Worst residual per surface; values < 1e-17 (and zeros) drawn at 1e-17",
         xlabel=" ".join(f"{i} {short.get(k, k)}" for i, k in enumerate(keys, 1)), ylabel="normalized residual",
-        logy=True))
+        logy=True, rounding=[ALGEBRAIC_ROUNDING if name == "compatibility" else STENCIL_ROUNDING for name in plotted]),
+        rounding_level=True)
     misscaled, flipped = mutants["misscaled-curvature"], mutants["sign-flipped-derivatives"]
     nan_mutant = mutants["nan-derivatives"]
     fields = {
@@ -596,6 +604,10 @@ FD_SURFACES = ("sphere", "torus", "gaussian-bump", "hyperbolic-plane")
 FD_CONTROLS = ("saddle", "plane-polar", "plane")
 TRUNCATION_WINDOW = (10 ** -3.5, 1e-2)
 ROUNDING_WINDOW = (1e-13, 1e-10)
+# Rounding bound the V-shape figure records per measured point: the largest change rounding (another BLAS kernel or
+# platform) makes to a plotted error between two runs, twice the 2 eps / h that bounds the rounding branch (every
+# error times h is within 2 eps in the rounding window). The predicted curve is closed-form and has none.
+FD_ROUNDING = 4 * EPS
 LEADING_STEP = -3.0  # log10 of the relative step where the h^2/6 d^3 g term is compared
 # The signed leading-term comparison uses only points where the truncation
 # term exceeds the rounding floor eps|g|/h by this factor, so rounding moves
@@ -698,7 +710,8 @@ def finite_difference_derivatives(ctx):
     series.append(("predicted (sphere)", hs, rows["sphere"]["median_predicted"]))
     ctx.artifact_text("fd-v-shape.svg", svg.line_plot(
         series, title="Central-difference error of metric derivatives vs step",
-        xlabel="relative step h", ylabel="median max |D_h g - dg| / (max|g|/l)", logx=True, logy=True))
+        xlabel="relative step h", ylabel="median max |D_h g - dg| / (max|g|/l)", logx=True, logy=True,
+        rounding=[[FD_ROUNDING / h for h in hs]] * (len(series) - 1) + [0.0]), rounding_level=True)
     fields = {
         "hypothesis": ("Central differences of the metric approach the analytic dg as h^2 until rounding, which grows "
                        "as eps/h, takes over; the optimum lies near h* = (3 eps |g| / |d^3 g|)^(1/3) ~ eps^(1/3)."),

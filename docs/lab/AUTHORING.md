@@ -193,7 +193,9 @@ Rules that are never relaxed:
    `Sandybridge`, or `scripts/check_lab.py --blas-core ...`) and compare: a
    rounding-level difference gets a tolerance justified by that spread, and a
    state or label that changes with the kernel means the claim must be
-   redesigned, never a wider tolerance.
+   redesigned, never a wider tolerance. Its figures are compared the same way
+   by `scripts/check_figures.py` under the forced kernel (see
+   [Code and tests](#code-and-tests)).
 
 ## Registering a task
 
@@ -325,12 +327,40 @@ exception by its type, not its message, when it may name a path.
   out of findings (they are not reproducible); retain them in artifacts. A
   figure that plots them is declared when written,
   `ctx.artifact_text("timings.svg", svg.line_plot(...), wall_clock_timing=True)`,
-  which records `wall_clock_timing: true` on its generated-artifact entry (only
-  SVG figures can be declared). T158 and `scripts/check_figures.py` compare a
-  declared figure for presence and structure only; every other figure must
-  regenerate byte for byte, so an undeclared timing figure is a mismatch.
-  Declare only figures whose plotted data are wall-clock timings: a figure
-  that differs for another reason (platform numerics) is fixed, not declared.
+  which records `wall_clock_timing: true` on its generated-artifact entry. A
+  figure whose bytes follow the BLAS kernel and platform because it plots
+  values at binary64 rounding level (errors, gaps and residuals near machine
+  epsilon, whose last bits follow the kernel; on a log axis they move a point,
+  or every coordinate when the smallest plotted value is one of them) is
+  declared with `rounding_level=True` (`rounding_level: true`) and records its
+  plotted values with each point's rounding bound,
+  `ctx.artifact_text("residuals.svg", svg.line_plot(..., rounding=bound), rounding_level=True)`:
+  the bound is the largest change rounding (another kernel or platform) can
+  make to the plotted value between two runs, in the y axis's units, one
+  number for every point or one per series (a number or one per point). Only
+  SVG figures can be declared, each with one declaration at most, and the
+  runner refuses a rounding-level figure that records no values. T158 and
+  `scripts/check_figures.py` compare a declared timing figure for presence and
+  structure (series and points) only, and a declared rounding-level figure by
+  its recorded values: the same series and point counts, x values to 1e-12
+  relative and every y value within its rounding bound (plus 1e-12 relative),
+  so a value that moves beyond its bound is a mismatch. Every other figure must
+  regenerate byte for byte on every kernel and platform, so an undeclared
+  timing or rounding-level figure is a mismatch. Declare `wall_clock_timing`
+  only when the plotted data are wall-clock timings, and `rounding_level` only
+  when rounding moves a plotted value visibly (at least 1e-3 of the smallest
+  value, which sets a log axis), with bounds that are rounding bounds: a small
+  multiple of the unit roundoff times the size of the quantities the value is
+  computed from (for example 64 eps for gaps between end states of order one,
+  4 eps / h for a central difference with step h), or a rounding-error bound
+  the task checks on every run (10 n^2 u cond(P) for the relative difference
+  of two Lyapunov solutions). A value far above its bound, a truncation error
+  for example, stays compared. A regression test checks the bounds and
+  the axis-setting value on the task's own data (T002, T003, T012, T033,
+  T035, T107, T109, T120 and T122 do). Never declare a figure, or widen a
+  bound, to hide a real numerical difference: a figure whose values differ
+  beyond their rounding bounds on another kernel or platform is fixed, not
+  declared.
 - Budget: the whole section run ≤ 60 s and its tests ≤ 60 s on one CPU core.
   The clean-room gate pins `OPENBLAS_NUM_THREADS=1`; do not rely on BLAS
   threading, and avoid large dense solves where a structured solver exists.
