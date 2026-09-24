@@ -99,3 +99,11 @@ def test_statuses_separate_too_small_too_large_and_bias():
     assert all(item["status"] == consistency.OVER for item in consistency.coverage_status(errors, identity, 0.95)["components"])
     assert all(item["status"] == consistency.UNBIASED for item in consistency.bias_status(errors, identity, 0.95)["components"])
     assert all(item["status"] == consistency.BIASED for item in consistency.bias_status(errors + 1.0, identity, 0.95)["components"])
+
+
+def test_overflowing_normalized_squares_are_refused_rather_than_propagated():
+    huge = np.array([[1e200, 1e200]])
+    tiny = [[[1e-200, 0.0], [0.0, 1e-200]]]
+    with pytest.raises(ValueError, match="overflow"):
+        consistency.normalized_squares(huge, tiny)
+    assert consistency.normalized_squares(np.array([[1.0, 0.0]]), [[[1.0, 0.0], [0.0, 1.0]]]) == [1.0]

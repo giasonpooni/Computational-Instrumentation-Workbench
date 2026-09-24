@@ -169,9 +169,16 @@ def normalized_squares(errors, covariances):
     """e_k^T P_k^{-1} e_k for each retained pair; covariances must be positive definite."""
     errors = np.asarray(errors, dtype=np.float64)
     values = []
-    for error, covariance in zip(errors, covariances):
-        solved = np.linalg.solve(np.asarray(covariance, dtype=np.float64), error)
-        values.append(float(error @ solved))
+    with np.errstate(over="raise", invalid="raise", divide="raise"):
+        for error, covariance in zip(errors, covariances):
+            try:
+                solved = np.linalg.solve(np.asarray(covariance, dtype=np.float64), error)
+                value = float(error @ solved)
+            except FloatingPointError as exc:
+                raise ValueError("Normalized squares overflow binary64 for the declared errors and covariances") from exc
+            if not math.isfinite(value):
+                raise ValueError("Normalized squares overflow binary64 for the declared errors and covariances")
+            values.append(value)
     return values
 
 
