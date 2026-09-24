@@ -143,7 +143,8 @@ def validate_inventory(entries) -> list:
 
 # ----------------------------------------------------------------- T144
 EVIDENCE_MODULES = ("ciw.lab.evidence", "ciw.lab.report", "ciw.core.identities")
-NATIVE_ALLOWLIST = frozenset({"ciw.energy_cuda", "ciw.energy_nvml"})  # declared hardware energy probes
+# Declared hardware probes: the GPU energy probes, and the probe of which CPU kernels NumPy's OpenBLAS runs.
+NATIVE_ALLOWLIST = frozenset({"ciw.energy_cuda", "ciw.energy_nvml", "ciw.lab.blas_probe"})
 NATIVE_MODULES = frozenset({"ctypes", "cffi", "cppyy", "ctypes.util", "_ctypes"})
 SPAWN_FUNCTIONS = frozenset({"run", "Popen", "call", "check_call", "check_output", "getoutput", "getstatusoutput"})
 ASYNC_SPAWN = frozenset({"create_subprocess_exec", "create_subprocess_shell"})

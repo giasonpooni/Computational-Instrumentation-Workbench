@@ -253,7 +253,7 @@ def test_representability_reference():
     assert R.representable(Fraction(9, 16) * Fraction(R.TINY))
 
 
-@pytest.mark.lab_task("T101", "T102", "T103", "T104", "T106", "T109")
+@pytest.mark.lab_task("T101", "T102", "T103", "T104", "T106", "T107", "T109")
 def test_checks_are_unconditional_and_observed_values_are_computed():
     """No check is added only after its outcome was observed, and none records a literal observed value.
 
@@ -289,6 +289,7 @@ def test_checks_are_unconditional_and_observed_values_are_computed():
 T107_INPUTS_DIGEST = "0f7b956e7e020ea5acc156395d424553ed6ff43338f15aab91e93217a1010f55"
 
 
+@pytest.mark.lab_task("T107")
 def test_boundary_family_is_exact_and_kernel_free(monkeypatch, tmp_path):
     """T107's near-boundary family calls no numpy.linalg routine and declares the same inputs on every kernel.
 

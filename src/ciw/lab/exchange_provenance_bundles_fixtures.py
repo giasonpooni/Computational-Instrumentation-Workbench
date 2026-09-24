@@ -10,14 +10,18 @@ retained workspace is reopened, a synthetic numerical-heat bundle whose values
 were never computed by a provider, a lab-written canonical JSON encoder (checked
 byte for byte against ``json.dumps`` by T096 and the tests), the malformed exchange
 fixture catalogue, the digest manifest of the golden workspaces under
-``tests/fixtures/lab`` and the platform fingerprint they were written on.
+``tests/fixtures/lab``, the platform fingerprint they were written on (with the
+OpenBLAS kernel NumPy runs, from ``blas_probe``) and a comparison of the
+energy-analysis recomputation to rounding tolerance where CIW's reopen
+compares it bit for bit.
 
 Non-claims: the embedded energy log is a synthetic fixture (its ``origin`` field
 says so). A golden digest establishes byte identity of a retained file, not the
 correctness, authorship or physical validity of its content, and a retained
 runtime identity is metadata, not proof of which engine computed the values. The
 fabricated heat bundle exists to measure what reopen validation does not check;
-it is never presented as a provider result.
+it is never presented as a provider result. An equal platform fingerprint does
+not guarantee equal rounding; it names what is known to change it.
 """
 from __future__ import annotations
 
@@ -33,6 +37,8 @@ from pathlib import Path
 import struct
 import tempfile
 import zlib
+
+from .blas_probe import openblas_core
 
 EXAMPLE_SHA256 = {
     "energy-accuracy/baseline.json": "3ff4cb68be07e36d9796fb83402b0f72a46a3f1edff0d9e70addc9ab1695ef81",
@@ -101,20 +107,29 @@ GOLDEN_MANIFEST = {
 # offline build of SCR a59aba2 with cargo 1.94.1); T094 compares the retained
 # runtime identity with it.
 GOLDEN_SCR_ENGINE_SHA256 = "sha256:b9f40b3094ecf4b793676c766ffd559dc69abc4fada564c1bde94e79c6f0b201"
-# platform_fingerprint() of the machine that wrote the golden workspaces. Reopen
-# recomputes the energy analysis (LAPACK solves) bit for bit; a platform with a
-# different fingerprint may round differently.
+# platform_fingerprint() of the machine that wrote the golden workspaces, whose
+# OpenBLAS ran its SkylakeX (AVX-512) kernels. Reopen recomputes the energy
+# analysis (LAPACK solves) bit for bit; a platform with a different fingerprint
+# may round differently (T094 measures by how much).
 GOLDEN_PLATFORM = {"system": "Linux", "machine": "x86_64", "numpy": "2.4.3",
                    "blas": "scipy-openblas 0.3.31.dev", "lapack": "scipy-openblas 0.3.31.dev",
-                   "simd_found": ["AVX512_ICL", "AVX512_SPR", "X86_V3", "X86_V4"]}
+                   "openblas_core": "SkylakeX", "simd_found": ["AVX512_ICL", "AVX512_SPR", "X86_V3", "X86_V4"]}
 FIXTURE_BINDING = "ciw-fixtures"
 
 
 def platform_fingerprint() -> dict:
-    """Platform facts that can change the last bits of NumPy/LAPACK results (system, NumPy, BLAS, SIMD)."""
+    """Platform facts that can change the last bits of NumPy/LAPACK results.
+
+    System, NumPy, BLAS and LAPACK builds, SIMD extensions and, where NumPy's
+    bundled OpenBLAS names it, the kernel it runs (``openblas_core``; the key is
+    absent otherwise).
+    """
     import platform
     import numpy as np
     info = {"system": platform.system(), "machine": platform.machine(), "numpy": np.__version__}
+    core = openblas_core()
+    if core is not None:
+        info["openblas_core"] = core
     try:
         config = np.show_config(mode="dicts")
     except (TypeError, ValueError, AttributeError):  # older NumPy without mode="dicts"
@@ -301,6 +316,88 @@ def execution_guard(refuse: bool = True):
                 delattr(target, attribute)
             else:
                 setattr(target, attribute, original)
+
+
+def analysis_agreement(retained, fresh, tolerance: dict) -> dict:
+    """Leaf-by-leaf comparison of a retained and a recomputed analysis.
+
+    Floats agree when ``|retained - fresh| <= abs + rel * |retained|`` (the form
+    ``ciw lab verify`` uses); every other leaf, and the structure (keys, list
+    lengths), must be equal. ``bit_identical`` is CIW's own test: equal canonical
+    JSON. ``max_abs_difference`` is over the floats.
+    """
+    from ..telemetry import canonical
+    counts = {"float_fields": 0, "other_fields": 0, "floats_differing": 0, "floats_outside_tolerance": 0,
+              "other_fields_differing": 0, "max_abs_difference": 0.0}
+
+    def walk(old, new):
+        if isinstance(old, dict) and isinstance(new, dict) and old.keys() == new.keys():
+            for key in sorted(old):
+                walk(old[key], new[key])
+        elif isinstance(old, list) and isinstance(new, list) and len(old) == len(new):
+            for pair in zip(old, new):
+                walk(*pair)
+        elif type(old) is float and type(new) is float:
+            counts["float_fields"] += 1
+            difference = abs(old - new)
+            counts["floats_differing"] += old != new
+            counts["max_abs_difference"] = max(counts["max_abs_difference"], difference)
+            counts["floats_outside_tolerance"] += not difference <= tolerance["abs"] + tolerance["rel"] * abs(old)
+        else:
+            counts["other_fields"] += 1
+            counts["other_fields_differing"] += type(old) is not type(new) or old != new
+
+    walk(retained, fresh)
+    counts["bit_identical"] = canonical(retained) == canonical(fresh)
+    counts["within_tolerance"] = not counts["floats_outside_tolerance"] and not counts["other_fields_differing"]
+    return counts
+
+
+def retained_energy_analyses(workspace) -> dict:
+    """{log digest: retained analysis} of the energy-accuracy bundles of a saved workspace (the first per log)."""
+    retained = {}
+    bundles = (workspace.get("workbench") or {}).get("bundles") if isinstance(workspace, dict) else None
+    for record in bundles if isinstance(bundles, list) else ():
+        try:
+            if record["kind"] == "energy-accuracy":
+                data = record["native"]["steps"][0]["result"]["data"]
+                retained.setdefault(data["log_digest"], data)
+        except (KeyError, IndexError, TypeError):
+            continue
+    return retained
+
+
+@contextmanager
+def energy_recomputation_within(retained: dict, tolerance: dict, records: list):
+    """Compare each energy-analysis recomputation with the retained analysis to ``tolerance``, not bit for bit.
+
+    Enter it inside :func:`execution_guard`, which still counts every
+    recomputation. Each ``ciw.energy_records.analyze`` call recomputes the
+    analysis and appends its :func:`analysis_agreement` with the retained analysis
+    of the same log (``retained`` maps log digests to them) to ``records``. It
+    returns the retained analysis when the recomputation agrees within
+    ``tolerance``, so CIW's bit-for-bit comparison passes and every other reopen
+    check still decides, and the recomputation otherwise, which CIW refuses. The
+    function is restored on exit.
+    """
+    from .. import energy_records
+    recompute = energy_records.analyze
+
+    def analyze(log):
+        fresh = recompute(log)
+        expected = retained.get(log.get("log_digest")) if isinstance(log, dict) else None
+        if expected is None:
+            records.append({"retained": False, "bit_identical": False, "within_tolerance": False})
+            return fresh
+        agreement = analysis_agreement(expected, fresh, tolerance)
+        records.append({"retained": True, **agreement})
+        return deepcopy(expected) if agreement["within_tolerance"] else fresh
+
+    energy_records.analyze = analyze
+    try:
+        yield records
+    finally:
+        energy_records.analyze = recompute
 
 
 def heat_reference(values, steps: int) -> list[int]:

@@ -186,7 +186,9 @@ in the provider/runtime identity) and checks structural rules:
   `ciw.lab.evidence` (closure: `ciw`, `ciw.core`, `ciw.core.identities`,
   `ciw.lab`, `ciw.lab.evidence`, `ciw.lab.report`);
 - native loading (`ctypes`, `cffi`) appears only in the declared hardware
-  energy probes `ciw.energy_cuda` and `ciw.energy_nvml`;
+  probes: the energy probes `ciw.energy_cuda` and `ciw.energy_nvml`, and
+  `ciw.lab.blas_probe`, which asks NumPy's loaded OpenBLAS which CPU kernels
+  it runs (T094's platform fingerprint and the gate's `--blas-core`);
 - no spawn goes through a shell (`shell=True`, `os.system`, `os.popen`,
   `asyncio.create_subprocess_shell`, `subprocess.getoutput`);
 - no compiled extension ships in the package.

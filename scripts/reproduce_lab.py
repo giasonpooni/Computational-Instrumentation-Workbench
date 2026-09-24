@@ -14,7 +14,10 @@ likewise checked for integrity only (``ciw lab proved-heat verify`` with
 Each binding also reaches the lab tests as the ``CIW_LAB_*`` variable their
 provider-gated tests read. The retained run binds CSG, FTR, SCR, the exchange
 SET, PPDA and SCR checkouts and the Python 3.12 PLSR/FTR interpreter; ``scripts/check_lab.py`` provisions exactly
-that, and a comparison without those bindings fails. Nothing here acquires
+that, and a comparison without those bindings fails. ``--blas-core`` runs the
+clean room on another OpenBLAS kernel (``OPENBLAS_CORETYPE``), so the retained
+evidence can be verified on the kernels other hosts would pick; ``gate.json``
+records the kernel the clean room's NumPy ran. Nothing here acquires
 physical measurements; hardware-dependent tasks are reported as blocked.
 """
 from __future__ import annotations
@@ -24,6 +27,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
@@ -42,9 +46,12 @@ TEST_VARIABLES = {"csg": "CIW_LAB_CSG_REPO", "ftr": "CIW_LAB_FTR_REPO", "scr": "
 # Operator hardware captures the energy tasks read; the gate acquires and analyzes none.
 OPERATOR_CAPTURES = ("CIW_LAB_RAPL_LOG", "CIW_LAB_ENERGY_LOG", "CIW_LAB_NVIDIA_SMI_CSV", "CIW_LAB_NVIDIA_SMI_UTC_OFFSET")
 # The clean room reproduces the packaged queue: interpreter paths, pytest options, queue
-# extensions, provider-test bindings and operator captures of the calling shell never reach it.
-INHERITED_EXCLUDED = ("PYTHONPATH", "PYTEST_ADDOPTS", "CIW_LAB_EXTENSIONS", "CIW_LAB_MODULES",
+# extensions, an OpenBLAS kernel choice (--blas-core makes it), provider-test bindings and
+# operator captures of the calling shell never reach it.
+INHERITED_EXCLUDED = ("PYTHONPATH", "PYTEST_ADDOPTS", "CIW_LAB_EXTENSIONS", "CIW_LAB_MODULES", "OPENBLAS_CORETYPE",
                       *TEST_VARIABLES.values(), *OPERATOR_CAPTURES)
+# Asked of the clean-room interpreter: the installed wheel's own reader, the one T094's platform fingerprint uses.
+BLAS_CORE_QUERY = "from ciw.lab.blas_probe import openblas_core; print(openblas_core() or '')"
 
 
 def run(command, **kwargs):
@@ -81,7 +88,7 @@ def pytest_ini() -> str:
     return "[pytest]\nmarkers =\n" + "".join(f"    {marker}\n" for marker in markers["markers"])
 
 
-def clean_room_environment(work: Path, providers=()) -> dict:
+def clean_room_environment(work: Path, providers=(), blas_core=None) -> dict:
     environment = {key: value for key, value in os.environ.items() if key not in INHERITED_EXCLUDED}
     environment["PYTHONDONTWRITEBYTECODE"] = "1"
     environment["CIW_LAB_REPOSITORY_ROOT"] = str(work)
@@ -89,7 +96,26 @@ def clean_room_environment(work: Path, providers=()) -> dict:
     # Single-threaded BLAS keeps reduction order, and so retained values, stable.
     for variable in ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS"):
         environment[variable] = "1"
+    if blas_core:
+        # OpenBLAS then runs these kernels instead of the ones it picks for the CPU; blas_core_problem checks it did.
+        environment["OPENBLAS_CORETYPE"] = blas_core
     return environment
+
+
+def clean_room_blas_core(python, work: Path, environment: dict) -> str | None:
+    """The OpenBLAS kernel the clean-room NumPy runs; None where its BLAS names none."""
+    answer = subprocess.run([python, "-c", BLAS_CORE_QUERY], check=True, capture_output=True, text=True,
+                            cwd=work, env=environment).stdout.strip()
+    return answer if re.fullmatch(r"\w+", answer) else None
+
+
+def blas_core_problem(requested, reported) -> str | None:
+    """Why a clean room asked to run ``requested`` kernels cannot: OpenBLAS silently ignores a name it does not know."""
+    if requested and (reported or "").lower() != requested.lower():
+        return (f"The clean-room NumPy runs the OpenBLAS kernel {reported or '(none reported)'}, not the requested "
+                f"{requested}; pass a kernel name as OpenBLAS reports it (for example Haswell or Sandybridge) on a "
+                "NumPy that bundles OpenBLAS")
+    return None
 
 
 def main() -> int:
@@ -102,6 +128,9 @@ def main() -> int:
                         help="Provider binding; PATH '@venv' names the clean-room interpreter")
     parser.add_argument("--extras", default="dev,lab",
                         help="Wheel extras to install, e.g. dev,lab,plsr on Python 3.12+")
+    parser.add_argument("--blas-core", metavar="CORE",
+                        help="OpenBLAS kernel for the clean room (OPENBLAS_CORETYPE, e.g. Haswell or Sandybridge); "
+                             "the run is refused unless the clean-room NumPy then reports it")
     parser.add_argument("--temporary-root", type=Path)
     args = parser.parse_args()
     problem = None if args.no_compare else retained_problem(args.retained)
@@ -136,11 +165,18 @@ def main() -> int:
         for name in ("docs",):
             shutil.copytree(ROOT / name, work / name)
         providers = bindings(args.provider, python)
-        environment = clean_room_environment(work, providers)
+        environment = clean_room_environment(work, providers, args.blas_core)
         located = subprocess.run([python, "-c", "import ciw, sys; print(ciw.__file__)"], check=True,
                                  capture_output=True, text=True, cwd=work, env=environment).stdout.strip()
         if Path(located).resolve().is_relative_to(ROOT):
             raise SystemExit("The clean-room interpreter imported ciw from the checkout")
+        blas_core = clean_room_blas_core(python, work, environment)
+        # Named before any step can fail, so a failed gate's log still says which kernel the clean room ran.
+        print(f"Clean room runs OpenBLAS kernel {blas_core or '(none reported)'} "
+              f"(requested: {args.blas_core or 'none'})", flush=True)
+        problem = blas_core_problem(args.blas_core, blas_core)
+        if problem:
+            raise SystemExit(problem)
         junit = output / "tests.xml"
         run([python, "-I", "-B", "-m", "pytest", "-q", "-p", "no:cacheprovider", "--rootdir", str(work),
              "--junitxml", str(junit), str(tests)], cwd=work, env=environment)
@@ -169,15 +205,18 @@ def main() -> int:
             if proved_heat_records:
                 run([python, "-m", "ciw", "lab", "proved-heat", "verify", "--retained", str(args.retained.resolve())],
                     cwd=work, env=environment)
-    # The record names the bindings the queue and tests received, and the clean-room interpreter's version.
+    # The record names the bindings the queue and tests received, the clean-room interpreter's version and the
+    # OpenBLAS kernel its NumPy ran (None where NumPy's BLAS names none), with the kernel requested, if any.
     (output / "gate.json").write_text(json.dumps({"schema": "ciw.lab-clean-room-gate.v1", "wheel_sha256": wheel_sha256,
                                                    "compared_with": None if args.no_compare else str(args.retained),
                                                    "providers": [f"{role}={path}" for role, path in providers],
                                                    "python": sys.version.split()[0],
+                                                   "openblas_core": blas_core, "openblas_coretype": args.blas_core,
                                                    "hardware_runs_verified_for_integrity": hardware_runs,
                                                    "proved_heat_records_verified_for_integrity": proved_heat_records,
                                                    "physical_validation": "not_established"}, indent=2) + "\n")
-    print(f"PASS: clean-room lab queue from wheel {wheel_sha256[:16]}; reports in {output}")
+    print(f"PASS: clean-room lab queue from wheel {wheel_sha256[:16]} on OpenBLAS kernel "
+          f"{blas_core or '(none reported)'}; reports in {output}")
     return 0
 
 

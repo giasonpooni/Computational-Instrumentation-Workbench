@@ -680,8 +680,9 @@ def python_orchestration(ctx):
                                "executables", "compiled extension", "unparseable module"],
         unresolved_assumptions=["Modules added concurrently by other sections are scanned as found at run time "
                                 "(identified by the package digest)",
-                                "Hardware energy probes (ciw.energy_cuda, ciw.energy_nvml) load drivers in-process by "
-                                "declared exception"],
+                                "Hardware probes load native code in-process by declared exception: the energy probes "
+                                "(ciw.energy_cuda, ciw.energy_nvml) load drivers, and ciw.lab.blas_probe opens the "
+                                "OpenBLAS NumPy already loaded, through ctypes, only to read which kernel it runs"],
         provider_runtime_identity=dict(_runtime_identity((MODULE, ARCH)), scanned_package_sha256=scan["package_sha256"],
                                        scanned_files=scan["files"]))
     return {"state": _state(findings), "fields": fields, "findings": findings}

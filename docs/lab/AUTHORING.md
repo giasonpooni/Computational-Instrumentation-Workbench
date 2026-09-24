@@ -189,6 +189,11 @@ Rules that are never relaxed:
    regression gate. Values must be JSON (floats, lists, dicts, strings, bools).
    Choose tolerances that survive Linux/Windows and NumPy BLAS differences
    (typically `rel` 1e-6 for converged quantities; looser for orders/rates).
+   Run the task under other OpenBLAS kernels (`OPENBLAS_CORETYPE=Haswell` and
+   `Sandybridge`, or `scripts/check_lab.py --blas-core ...`) and compare: a
+   rounding-level difference gets a tolerance justified by that spread, and a
+   state or label that changes with the kernel means the claim must be
+   redesigned, never a wider tolerance.
 
 ## Registering a task
 

@@ -23,6 +23,10 @@ no copy of ``lab/``: T099 validates it and rebuilds its engine with the pinned
 Rust toolchain when that toolchain is installed. Every retained record is
 checked for integrity by ``ciw lab verify`` (or ``ciw lab proved-heat verify``
 with ``--no-compare``).
+
+``--blas-core CORE`` runs the clean room on that OpenBLAS kernel (for example
+Haswell or Sandybridge), to verify the retained run on the kernels other hosts
+would pick; the gate record names the kernel the clean room ran.
 """
 from __future__ import annotations
 
@@ -92,6 +96,8 @@ def main() -> int:
                         help="Existing clean checkouts named csg, ftr, scr, set, ppda and scr-exchange; cloned when absent")
     parser.add_argument("--temporary-root", type=Path)
     parser.add_argument("--no-compare", action="store_true")
+    parser.add_argument("--blas-core", metavar="CORE",
+                        help="OpenBLAS kernel for the clean room (e.g. Haswell or Sandybridge); see reproduce_lab.py")
     args = parser.parse_args()
     if args.temporary_root:
         args.temporary_root = args.temporary_root.resolve()
@@ -121,6 +127,8 @@ def main() -> int:
             command += ["--temporary-root", args.temporary_root]
         if args.no_compare:
             command.append("--no-compare")
+        if args.blas_core:
+            command += ["--blas-core", args.blas_core]
         for role, path in providers.items():
             command += ["--provider", f"{role}={path}"]
         record = proved_heat_record()
