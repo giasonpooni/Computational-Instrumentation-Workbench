@@ -7,11 +7,13 @@ validates the retained bundle against the deterministic reference check the
 workflow declares without executing a provider; replay records a fresh
 occurrence whose numerical identity must match the original.
 
-The thermal, machine-manifest and project-graph workflows subclass
-``ReferenceWorkflow``.  Each supplies its constants and four hooks: how to
-validate exact source bytes, how to compute the native data, which runtime
-identity it publishes, and which configuration a bundle retains.  Everything
-identity-critical lives here once.
+The thermal, machine-manifest, project-graph, uncertainty-validation and
+energy-accuracy workflows subclass ``ReferenceWorkflow``.  Each supplies its
+constants and four hooks: how to validate exact source bytes, how to compute
+the native data, which runtime identity it publishes, and which configuration a
+bundle retains.  Three further hooks have defaults: the experiment identity a
+bundle records, the request a step retains, and the shape check on a retained
+runtime identity.  Everything identity-critical lives here once.
 """
 from __future__ import annotations
 
@@ -30,6 +32,7 @@ METHOD = "same_python_reference_fresh_occurrence_reproduction"
 EXECUTION_ID = re.compile(r"execution-[a-f0-9]{32}")
 SESSION_ID = re.compile(r"session-[a-f0-9]{32}")
 CODE_DIGEST = re.compile(r"[a-f0-9]{64}")
+BUNDLE_DIGEST = re.compile(r"sha256:[a-f0-9]{64}")
 FIXED_ALGORITHM_KEYS = {"profile", "code_sha256", "source_normalization"}
 STEP_KEYS = {"runtime_ref", "operation_id", "execution_id", "input_refs", "request", "request_sha256",
              "result", "result_sha256", "result_id", "numerical_result", "numerical_result_id"}
@@ -69,6 +72,7 @@ class ReferenceWorkflow:
     operation = None
     role = None
     label = "reference"
+    method = METHOD
     ROLES = set()
     MAX_BYTES = 0
     AUTHORITY = {}
@@ -95,6 +99,14 @@ class ReferenceWorkflow:
         if canonical(result["data"]) != canonical(self._native_data(source)):
             raise ValueError(f"{self._label} native result differs from the deterministic reference")
 
+    def _experiment_id(self, source):
+        """The experiment identity a bundle records for a validated source."""
+        return source["experiment_id"]
+
+    def _request(self, source, evidence_id):
+        """The request a step retains; by default the source's own request."""
+        return deepcopy(source["request"])
+
     # -------------------------------------------------------------- helpers
     @property
     def _label(self):
@@ -120,7 +132,7 @@ class ReferenceWorkflow:
 
     def _bundle_source(self, source, raw):
         evidence = byte_digest(raw)
-        return {"experiment_id": source["experiment_id"], "experiment_digest": digest(source),
+        return {"experiment_id": self._experiment_id(source), "experiment_digest": digest(source),
                 "evidence": [{"artifact_ref": evidence, "sha256": evidence,
                               "bytes_b64": base64.b64encode(raw).decode()}]}
 
@@ -138,13 +150,14 @@ class ReferenceWorkflow:
         }
         result["result_id"] = digest(result)
         numerical = {"operation_id": self.operation, "data": deepcopy(data)}
+        request = self._request(source, evidence_id)
         return {
             "runtime_ref": self.role,
             "operation_id": self.operation,
             "execution_id": occurrence,
             "input_refs": [evidence_id],
-            "request": deepcopy(source["request"]),
-            "request_sha256": digest(source["request"]),
+            "request": request,
+            "request_sha256": digest(request),
             "result": result,
             "result_sha256": digest(result),
             "result_id": result["result_id"],
@@ -154,11 +167,12 @@ class ReferenceWorkflow:
 
     def _validate_step(self, step, source, evidence_id):
         _keys(step, STEP_KEYS)
+        request = self._request(source, evidence_id)
         if (step["runtime_ref"] != self.role or step["operation_id"] != self.operation or
                 not isinstance(step["execution_id"], str) or not EXECUTION_ID.fullmatch(step["execution_id"]) or
                 step["input_refs"] != [evidence_id] or
-                canonical(step["request"]) != canonical(source["request"]) or
-                step["request_sha256"] != digest(source["request"])):
+                canonical(step["request"]) != canonical(request) or
+                step["request_sha256"] != digest(request)):
             raise ValueError(f"{self._label} step request or occurrence binding differs")
         result = step["result"]
         _keys(result, RESULT_KEYS)
@@ -174,21 +188,25 @@ class ReferenceWorkflow:
         if step["result_id"] != result["result_id"] or step["result_sha256"] != digest(result):
             raise ValueError(f"{self._label} step result commitment differs")
 
-    def _verification(self, bundle, reproduced):
-        if canonical(bundle["steps"][0]["numerical_result"]) != canonical(reproduced["numerical_result"]):
-            raise ValueError(f"{self._label} replay numerical result differs")
+    def _artifact(self, subject_ref, runtimes, reproduced):
+        """The verification artifact binding a reproduction to a subject bundle and its runtimes."""
         value = {
             "schema": self.verify_schema,
-            "subject_ref": bundle["bundle_digest"],
+            "subject_ref": subject_ref,
             "outcome": "passed",
             "independent": False,
-            "method": METHOD,
-            "runtime_digest": digest(bundle["runtimes"]),
+            "method": self.method,
+            "runtime_digest": digest(runtimes),
             "reproduction": deepcopy(reproduced),
             "authority": deepcopy(self.AUTHORITY),
         }
         value["verification_id"] = byte_digest(self.verify_schema.encode() + b"\0" + canonical(value))
         return value
+
+    def _verification(self, bundle, reproduced):
+        if canonical(bundle["steps"][0]["numerical_result"]) != canonical(reproduced["numerical_result"]):
+            raise ValueError(f"{self._label} replay numerical result differs")
+        return self._artifact(bundle["bundle_digest"], bundle["runtimes"], reproduced)
 
     def _check_verification(self, bundle, verification, source, evidence):
         _keys(verification, VERIFICATION_KEYS)
@@ -243,21 +261,19 @@ class ReferenceWorkflow:
                 _keys(receipt, RECEIPT_KEYS)
                 if (receipt["schema"] != self.replay_schema or
                         receipt["replayed_bundle_digest"] != bundle["bundle_digest"] or
+                        not isinstance(receipt["source_bundle_digest"], str) or
+                        not BUNDLE_DIGEST.fullmatch(receipt["source_bundle_digest"]) or
                         receipt["source_bundle_digest"] == bundle["bundle_digest"] or
                         receipt["numerical_match"] is not True or receipt["admission"] != "not_performed" or
                         receipt["replay_id"] != digest({key: value for key, value in receipt.items() if key != "replay_id"})):
                     raise ValueError(f"Invalid {self.label} replay receipt")
-                verification = receipt["verification"]
-                _keys(verification, VERIFICATION_KEYS)
-                if (verification["schema"] != self.verify_schema or
-                        verification["subject_ref"] != receipt["source_bundle_digest"] or
-                        verification["outcome"] != "passed" or verification["independent"] is not False or
-                        verification["method"] != METHOD or verification["authority"] != self.AUTHORITY):
+                # A receipt's verification reproduces exactly this bundle's
+                # occurrence against the source bundle and the shared runtimes;
+                # recomputing the artifact pins every field and its identity.
+                if receipt["verification"] != self._artifact(receipt["source_bundle_digest"], bundle["runtimes"], step):
                     raise ValueError(f"Invalid {self.label} replay verification scope")
-                self._validate_step(verification["reproduction"], source, evidence["artifact_ref"])
-                _identity(verification, "verification_id")
             return raw
-        except (KeyError, TypeError, IndexError, AttributeError, OverflowError, RecursionError) as exc:
+        except (KeyError, TypeError, IndexError, AttributeError, OverflowError, RecursionError, UnicodeError) as exc:
             raise ValueError(f"Malformed retained {self.label} session") from exc
 
     def _execute(self, raw, runtime):

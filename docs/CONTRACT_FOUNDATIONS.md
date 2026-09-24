@@ -93,16 +93,23 @@ refusal and replay gates run in CI.
 
 ## Shared reference lifecycle
 
-The thermal, machine-manifest and project-graph operations share one lifecycle in
+The thermal, machine-manifest, project-graph, uncertainty-validation and
+energy-accuracy operations share one lifecycle in
 `src/ciw/reference_workflow.py`: exact source retention, a fresh execution
 occurrence with separate result and numerical-result identities, a verification
 that reproduces the occurrence in the same process, save/reopen validation
-without a provider, and replay with a receipt. Each workflow supplies its
-constants and four hooks: source validation, native data, the runtime identity
-it publishes and the configuration a bundle retains. The thermal workflow
-overrides the data check to use the contract's tolerances while pinning the
-Python reference's provenance. The shared module is part of every reference's
-algorithm identity, so a change to it is a runtime change for replay.
+without a provider, and replay with a receipt whose verification is recomputed
+field for field. Each workflow supplies its constants and four hooks: source
+validation, native data, the runtime identity it publishes and the
+configuration a bundle retains. Three further hooks default sensibly: the
+experiment identity a bundle records, the request a step retains and the shape
+check on a retained runtime identity. The thermal workflow overrides the data
+check to use the contract's tolerances while pinning the Python reference's
+provenance. The energy workflow keeps its own verification method, a request
+derived from the log digest and run identity, and its flat pre-existing runtime
+identity, so energy workspaces saved before the consolidation still reopen.
+The shared module is part of every reference's algorithm identity, so a change
+to it is a runtime change for replay.
 
 ## Current boundary and next gate
 
