@@ -43,9 +43,18 @@ def _labels(report):
     return [f["evidence_status"] for f in report["findings"]]
 
 
-@pytest.mark.lab_task("T060", "T061", "T062", "T063", "T064", "T065", "T066", "T067", "T068", "T069", "T070", "T071",
-                      "T072", "T073", "T074", "T075", "T076")
-@pytest.mark.parametrize("task_id", TASK_IDS)
+# Each case carries its own task's marker: every task registers only its own case.
+@pytest.mark.parametrize("task_id", [
+    pytest.param("T060", marks=pytest.mark.lab_task("T060")), pytest.param("T061", marks=pytest.mark.lab_task("T061")),
+    pytest.param("T062", marks=pytest.mark.lab_task("T062")), pytest.param("T063", marks=pytest.mark.lab_task("T063")),
+    pytest.param("T064", marks=pytest.mark.lab_task("T064")), pytest.param("T065", marks=pytest.mark.lab_task("T065")),
+    pytest.param("T066", marks=pytest.mark.lab_task("T066")), pytest.param("T067", marks=pytest.mark.lab_task("T067")),
+    pytest.param("T068", marks=pytest.mark.lab_task("T068")), pytest.param("T069", marks=pytest.mark.lab_task("T069")),
+    pytest.param("T070", marks=pytest.mark.lab_task("T070")), pytest.param("T071", marks=pytest.mark.lab_task("T071")),
+    pytest.param("T072", marks=pytest.mark.lab_task("T072")), pytest.param("T073", marks=pytest.mark.lab_task("T073")),
+    pytest.param("T074", marks=pytest.mark.lab_task("T074")), pytest.param("T075", marks=pytest.mark.lab_task("T075")),
+    pytest.param("T076", marks=pytest.mark.lab_task("T076")),
+])
 def test_section_reports_labels_and_states(reports, task_id):
     """One case per task, so a failure marks only its own task partial in a JUnit-linked run."""
     report = reports[task_id]

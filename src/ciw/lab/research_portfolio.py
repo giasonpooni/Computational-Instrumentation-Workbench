@@ -2711,21 +2711,48 @@ def unmeasured(ctx):
 MARKER = "lab_task"  # @pytest.mark.lab_task("T001", ...) declares the tasks a registered regression test guards
 
 
+def _is_marker(decorator) -> bool:
+    """Whether a decorator (or a ``marks=`` entry) is a ``pytest.mark.lab_task(...)`` or ``mark.lab_task(...)`` call."""
+    target = decorator.func if isinstance(decorator, ast.Call) else None
+    return (isinstance(target, ast.Attribute) and target.attr == MARKER
+            and (isinstance(target.value, ast.Attribute) and target.value.attr == "mark"
+                 or isinstance(target.value, ast.Name) and target.value.id == "mark"))
+
+
 def _declared_tasks(decorators) -> frozenset:
     """Task ids that ``lab_task`` marker decorators (``pytest.mark.lab_task`` or ``mark.lab_task``) name as literals."""
-    declared = set()
-    for decorator in decorators:
-        target = decorator.func if isinstance(decorator, ast.Call) else None
-        if (isinstance(target, ast.Attribute) and target.attr == MARKER
-                and (isinstance(target.value, ast.Attribute) and target.value.attr == "mark"
-                     or isinstance(target.value, ast.Name) and target.value.id == "mark")):
-            declared |= {a.value for a in decorator.args if isinstance(a, ast.Constant) and isinstance(a.value, str)}
-    return frozenset(declared)
+    return frozenset(a.value for decorator in decorators if _is_marker(decorator) for a in decorator.args
+                     if isinstance(a, ast.Constant) and isinstance(a.value, str))
+
+
+def _marked_cases(decorators) -> list:
+    """(case id, marks) of each ``pytest.param(..., marks=...)`` literal in a test's one parametrize decorator.
+
+    The case id is the param's literal ``id``, else its string values joined
+    by "-", as pytest forms it; a param with other values is skipped.
+    """
+    parametrize = [d for d in decorators if isinstance(d, ast.Call) and isinstance(d.func, ast.Attribute)
+                   and d.func.attr == "parametrize"]
+    if len(parametrize) != 1 or len(parametrize[0].args) < 2 or any(k.arg == "ids" for k in parametrize[0].keywords):
+        return []  # stacked parametrizations and ids= form other case ids: those cases carry the test's markers only
+    values = parametrize[0].args[1]
+    cases = []
+    for value in values.elts if isinstance(values, (ast.List, ast.Tuple)) else []:
+        if not (isinstance(value, ast.Call) and getattr(value.func, "attr", getattr(value.func, "id", "")) == "param"):
+            continue
+        keywords = {k.arg: k.value for k in value.keywords}
+        parts = [keywords["id"]] if "id" in keywords else value.args
+        if "marks" in keywords and parts and all(isinstance(p, ast.Constant) and isinstance(p.value, str)
+                                                 for p in parts):
+            marks = keywords["marks"]
+            cases.append(("-".join(p.value for p in parts),
+                          marks.elts if isinstance(marks, (ast.List, ast.Tuple)) else [marks]))
+    return cases
 
 
 def _index_source(relative: str, text: str, index: dict) -> None:
-    """Add the test functions of one test module: node id -> (source of the test and the module names it uses,
-    task ids its ``lab_task`` markers declare)."""
+    """Add the test functions of one test module, and the parametrized cases whose marks are literal: node id ->
+    (source of the test and the module names it uses, its ``lab_task`` markers left out; task ids they declare)."""
     tree = ast.parse(text)
     lines = text.splitlines(keepends=True)
 
@@ -2750,7 +2777,7 @@ def _index_source(relative: str, text: str, index: dict) -> None:
             for current in frontier:
                 segments.append(segment(current))
                 if isinstance(current, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                    segments += [segment(d) for d in current.decorator_list]
+                    segments += [segment(d) for d in current.decorator_list if not _is_marker(d)]
                     names = {argument.arg for argument in current.args.args}
                 else:
                     names = set()
@@ -2763,10 +2790,13 @@ def _index_source(relative: str, text: str, index: dict) -> None:
         return "\n".join(segments)
 
     def collect(prefix, body, inherited):
-        # A marker on a test class applies to its methods, as pytest applies it.
+        # A marker on a test class applies to its methods, and a pytest.param's marks to its case, as pytest does.
         for node in body:
             if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name.startswith("test"):
-                index[f"{prefix}::{node.name}"] = (closure(node), inherited | _declared_tasks(node.decorator_list))
+                source, declared = closure(node), inherited | _declared_tasks(node.decorator_list)
+                index[f"{prefix}::{node.name}"] = (source, declared)
+                for case, marks in _marked_cases(node.decorator_list):
+                    index[f"{prefix}::{node.name}[{case}]"] = (source, declared | _declared_tasks(marks))
             elif isinstance(node, ast.ClassDef) and node.name.startswith("Test"):
                 collect(f"{prefix}::{node.name}", node.body, inherited | _declared_tasks(node.decorator_list))
 
@@ -2785,7 +2815,7 @@ def _test_index(tests_dir: Path) -> dict:
 
 def _test_names(tests_dir: Path) -> set:
     """pytest node ids of the test functions and test-class methods (sync or async) under ``tests_dir``."""
-    return set(_test_index(tests_dir))
+    return {node for node in _test_index(tests_dir) if "[" not in node}
 
 
 LABEL_WORDS = re.compile(r"evidence_status|" + "|".join(LABELS))
@@ -2794,30 +2824,55 @@ LABEL_WORDS = re.compile(r"evidence_status|" + "|".join(LABELS))
 def _tie(task_id: str, node: str, index: dict) -> tuple:
     """(declares the task, asserts a label) for one registered node.
 
-    A node declares its task when a ``lab_task`` marker on its test function
-    or an enclosing test class names the task id as a literal string; it
-    asserts a label when its source (helpers, fixtures and constants it uses
-    included) mentions ``evidence_status`` or a label.
+    A node declares its task when a ``lab_task`` marker on its test function,
+    an enclosing test class or its ``pytest.param`` case names the task id as
+    a literal string; it asserts a label when its source (helpers, fixtures
+    and constants it uses included) mentions ``evidence_status`` or a label.
     """
-    entry = index.get(node.split("[")[0])
+    entry = index.get(node, index.get(node.split("[")[0]))
     if entry is None:
         return False, False
     source, declared = entry
     return task_id in declared, LABEL_WORDS.search(source) is not None
 
 
+def _names(task_id: str, function: str, node: str, index: dict) -> bool:
+    """Whether a registered node names its task: the task id in its node id, test name or source (its ``lab_task``
+    markers left out), or the task function's name in that source. Advisory: naming a task is not running it."""
+    entry = index.get(node, index.get(node.split("[")[0]))
+    if entry is None:
+        return False
+    source = entry[0]
+    return (task_id in node or task_id.lower() in node.rsplit("::", 1)[-1] or task_id in source
+            or (function not in ("", "<lambda>") and re.search(rf"\b{re.escape(function)}\b", source) is not None))
+
+
 def _stray_declarations(index: dict, registered: dict) -> list:
-    """``node: task`` for each ``lab_task`` declaration naming a task that registers none of the node's cases."""
+    """``node: task`` for each ``lab_task`` declaration naming a task that does not register what it marks.
+
+    A case's own marks may name the tasks that register the case or its
+    test; a test's (or its class's) marker applies to every case, so it may
+    name only the tasks that register the test or every registered case.
+    """
     tasks = {}
     for task_id, nodes in registered.items():
         for node in nodes:
-            tasks.setdefault(node.split("[")[0], set()).add(task_id)
-    return [f"{node}: {task_id}" for node, (_, declared) in sorted(index.items())
-            for task_id in sorted(declared - tasks.get(node, set()))]
+            tasks.setdefault(node, set()).add(task_id)
+    stray = []
+    for node, (_, declared) in sorted(index.items()):
+        test = node.split("[")[0]
+        if node != test:
+            declared, allowed = declared - index[test][1], tasks.get(node, set()) | tasks.get(test, set())
+        else:
+            cases = [owners for case, owners in tasks.items() if case.startswith(node + "[")]
+            allowed = tasks.get(node, set()) | (set.intersection(*cases) if cases else set())
+        stray += [f"{node}: {task_id}" for task_id in sorted(declared - allowed)]
+    return stray
 
 
-# Probe cases for the tie analysis, every node registered for T901: (node id, expected (declares T901, asserts
-# label)), and the declarations that name a task registering nothing here.
+# Probe cases for the tie analysis, every node registered for T901 (and one case for T904): (node id, expected
+# (declares T901, asserts label)), whether nodes name a task, and the declarations naming a task that does not
+# register what they mark.
 TIE_PROBE = '''
 import pytest
 from pytest import mark
@@ -2854,13 +2909,28 @@ class TestGroup:
     @pytest.mark.lab_task("T902")
     def test_method(self, run):
         assert _label(run("T901"))
+@pytest.mark.parametrize("task_id", [pytest.param("T901", marks=pytest.mark.lab_task("T901")),
+                                     pytest.param("T903", marks=[mark.lab_task("T903")])])
+def test_case_marks(run, task_id):
+    assert _label(run(task_id))
+@pytest.mark.lab_task("T901", "T904")
+@pytest.mark.parametrize("task_id", ["T901", "T904"])
+def test_shared_marker(run, task_id):
+    assert _label(run(task_id))
 '''
 TIE_EXPECTED = {"test_literal": (True, True), "test_constant": (True, True), "test_t901_named": (False, True),
                 "test_parametrized[T901]": (True, True), "test_unrelated": (False, False),
                 "test_values_only": (True, False), "test_other_task": (False, True),
-                "test_computed_ids": (False, True), "TestGroup::test_method": (True, True)}
-STRAY_EXPECTED = ["tests/test_probe.py::TestGroup::test_method: T902", "tests/test_probe.py::test_constant: T900",
-                  "tests/test_probe.py::test_other_task: T902"]
+                "test_computed_ids": (False, True), "TestGroup::test_method": (True, True),
+                "test_case_marks[T901]": (True, True), "test_shared_marker[T901]": (True, True)}
+# A marker is not read as naming its task: test_other_task and TestGroup::test_method run T901 only.
+NAMES_EXPECTED = {("T901", "test_literal"): True, ("T901", "test_constant"): True, ("T901", "test_t901_named"): True,
+                  ("T901", "test_parametrized[T901]"): True, ("T901", "test_unrelated"): False,
+                  ("T902", "test_other_task"): False, ("T902", "TestGroup::test_method"): False}
+STRAY_EXPECTED = ["tests/test_probe.py::TestGroup::test_method: T902",
+                  "tests/test_probe.py::test_case_marks[T903]: T903", "tests/test_probe.py::test_constant: T900",
+                  "tests/test_probe.py::test_other_task: T902", "tests/test_probe.py::test_shared_marker: T901",
+                  "tests/test_probe.py::test_shared_marker: T904"]
 
 
 def _tie_probe_errors() -> list:
@@ -2868,7 +2938,10 @@ def _tie_probe_errors() -> list:
     _index_source("tests/test_probe.py", TIE_PROBE, index)
     nodes = {node: f"tests/test_probe.py::{node}" for node in TIE_EXPECTED}
     errors = [node for node, expected in TIE_EXPECTED.items() if _tie("T901", nodes[node], index) != expected]
-    if _stray_declarations(index, {"T901": list(nodes.values())}) != STRAY_EXPECTED:
+    errors += [f"{node} names {task_id}" for (task_id, node), expected in NAMES_EXPECTED.items()
+               if _names(task_id, "", nodes[node], index) != expected]
+    registered = {"T901": list(nodes.values()), "T904": ["tests/test_probe.py::test_shared_marker[T904]"]}
+    if _stray_declarations(index, registered) != STRAY_EXPECTED:
         errors.append("stray declarations")
     return errors
 
@@ -2905,9 +2978,10 @@ def permanent_regression_tests(ctx):
         "Every completed or partial experiment is backed by at least one registered pytest regression test that "
         "declares the task it guards and asserts its evidence labels, and those tests pass.",
         "Per task: registered node ids resolved against test functions (AST); a registration is declared when a "
-        "lab_task marker on the test (or its class) names the task; a task is tied when one of its declared nodes "
-        "asserts an evidence label (source text); marker declarations naming a task that does not register the test "
-        "are counted; JUnit outcomes per node as recorded in the reports.",
+        "lab_task marker on the test (its class, or its pytest.param case) names the task; a task is tied when one "
+        "of its declared nodes asserts an evidence label (source text); marker declarations naming a task that does "
+        "not register what they mark are counted; tied tasks whose tied tests never name the task are counted as "
+        "advisory; JUnit outcomes per node as recorded in the reports.",
         [_earlier(168) + " (this section's T155-T167 included)", "Registered regression node ids of T001-T168",
          "tests/ of the repository (CIW_LAB_REPOSITORY_ROOT in the clean room)"],
         "No completed or partial task lacks a registered test; every registered node resolves and its lab_task "
@@ -2919,12 +2993,16 @@ def permanent_regression_tests(ctx):
         "first), and fold the JUnit outcomes the reports recorded.",
         ["registered node ids that do not resolve", "registrations the test's lab_task marker does not declare",
          "lab_task markers naming a task that does not register the test", "tests asserting values only",
+         "tests registered for a task they never run (advisory: no tied test names the task)",
          "registered tests failing or not run", "registrations without a recorded outcome dropped from the totals"],
         OBSERVED_LABELS_STEP[0].upper() + OBSERVED_LABELS_STEP[1:] + ".",
-        assumptions=["Declarations are read from literal task ids in lab_task decorators of the test or its class: "
+        assumptions=["Declarations are read from literal task ids in lab_task decorators of the test or its class, "
+                     "and in the marks of the pytest.param literals of its one parametrize decorator for that case: "
                      "a module-level pytestmark or a task id computed at run time is not read, and such a "
                      "registration counts as undeclared.",
-                     "A label assertion is inferred from source text: mentioning a label is taken as asserting it.",
+                     "A label assertion is inferred from source text: mentioning a label is taken as asserting it. "
+                     "Whether a tied test runs its task is not established: a marker declares the tie, and the "
+                     "advisory count only checks that some tied test names the task or its function.",
                      "The tolerance-aware comparison with retained reports (ciw lab verify, run by scripts/check_lab.py "
                      "in CI) is outside this report."])
     tests_dir = repository_path("tests")  # never the current directory: it may hold another project's tests
@@ -2942,19 +3020,23 @@ def permanent_regression_tests(ctx):
     implementations, _ = load_implementations()
     states = {r["task_id"]: r["state"] for r in reports}
     outcomes = {r["task_id"]: _junit_outcomes(r) for r in reports}
-    rows, values_only = [], []
+    rows, values_only, unnamed = [], [], []
     for task_id in sorted(set(states) | ({"T168"} & set(implementations))):
         implementation = implementations.get(task_id)
         nodes = list(implementation.regression_tests) if implementation else []
+        function = getattr(getattr(implementation, "run", None), "__name__", "")
         ties = {node: _tie(task_id, node, index) for node in nodes}
         missing = [n for n in nodes if n.split("[")[0] not in index]
+        tied = [n for n, (declared, labelled) in ties.items() if declared and labelled]
         rows.append({"task_id": task_id, "state": states.get(task_id, "running"), "regression_tests": nodes,
                      "missing": missing,
                      "undeclared": [n for n, (declared, _) in ties.items() if not declared and n not in missing],
-                     "tied": [n for n, (declared, labelled) in ties.items() if declared and labelled],
+                     "tied": tied, "tied_naming_the_task": [n for n in tied if _names(task_id, function, n, index)],
                      "junit": {n: outcomes.get(task_id, {}).get(n, "not recorded") for n in nodes}})
         if len(missing) < len(nodes) and not any(labelled for _, labelled in ties.values()):
             values_only.append(task_id)
+        if tied and not rows[-1]["tied_naming_the_task"]:
+            unnamed.append(task_id)
     uncovered = [r["task_id"] for r in rows if r["state"] in ("completed", "partial") and not r["regression_tests"]]
     dangling = [f"{r['task_id']}: {n}" for r in rows for n in r["missing"]]
     undeclared = [f"{r['task_id']}: {n}" for r in rows for n in r["undeclared"]]
@@ -2976,6 +3058,8 @@ def permanent_regression_tests(ctx):
                "computational_pipeline", len(undeclared), [probe], "registrations", basis=STATIC),
         _count("Declarations in lab_task markers naming a task that does not register the test",
                "computational_pipeline", len(stray), [probe], "declarations", basis=STATIC),
+        _count("Tied tasks none of whose tied tests names the task or its function (advisory, not a completion "
+               "condition)", "computational_pipeline", len(unnamed), [probe], "tasks", basis=STATIC),
     ]
     junit_supplied = recorded["passed"] + recorded["failed"] + recorded["skipped"] > 0
     if junit_supplied:
@@ -2998,6 +3082,16 @@ def permanent_regression_tests(ctx):
     if untied:
         fields["unresolved_assumptions"].insert(0, "Tasks without a registered test that declares the task and "
                                                    "asserts a label: " + ", ".join(untied))
+    if unnamed:
+        fields["unresolved_assumptions"].insert(0, "Advisory: tied tasks none of whose tied tests names the task or "
+                                                   "its function, so a declared test may not run it: "
+                                                   + ", ".join(unnamed))
+    if failed:
+        fields["unresolved_assumptions"].insert(0, "Registered regression tests failing in the JUnit record: "
+                                                   + "; ".join(failed[:20]))
+    if uncovered:
+        fields["unresolved_assumptions"].insert(0, "Completed or partial tasks without a registered regression "
+                                                   "test: " + ", ".join(uncovered))
     not_run = recorded["skipped"] + recorded["not run"]
     # T168's own nodes run in the pytest session before the queue, but the JUnit record is read per task when its
     # report is built, and this report is the one being built: its outcome cannot be recorded here.
@@ -3011,11 +3105,12 @@ def permanent_regression_tests(ctx):
         f"declared by a lab_task marker; {len(undeclared)} registrations whose marker does not name the task; "
         f"{len(stray)} marker declarations naming a task that does not register the test; {len(uncovered)} "
         f"completed/partial tasks without regression tests; {len(dangling)} dangling node ids; {len(untied)} tasks "
-        f"without a tied test; JUnit: {recorded['passed']} passed, {recorded['failed']} failed, {not_run} skipped "
-        f"or not run, {recorded['not recorded']} not recorded ({own} of them T168's own "
-        f"node{'' if own == 1 else 's'}, which its own run's record cannot hold).")
-    fields["uncertainty"] = ("Exact counts; declarations are read from lab_task decorators and label assertions "
-                             "inferred from source text.")
+        f"without a tied test; {len(unnamed)} tied tasks whose tied tests never name the task (advisory); JUnit: "
+        f"{recorded['passed']} passed, {recorded['failed']} failed, {not_run} skipped or not run, "
+        f"{recorded['not recorded']} not recorded ({own} of them T168's own node{'' if own == 1 else 's'}, which its "
+        f"own run's record cannot hold).")
+    fields["uncertainty"] = ("Exact counts; declarations are read from lab_task decorators, label assertions and "
+                             "(advisory) task naming inferred from source text.")
     if unrecorded:
         fields["unresolved_assumptions"].insert(0, f"{unrecorded} task-to-node registrations of other tasks have no "
                                                    "outcome recorded in their reports (a node registered after its "
@@ -3031,6 +3126,11 @@ def permanent_regression_tests(ctx):
         nodes = [n for r in rows if r["task_id"] in values_only for n in r["regression_tests"]]
         gaps.append(f"assert evidence labels in {', '.join(nodes)} (the registered tests of {', '.join(values_only)}, "
                     "which assert values only)")
+    if uncovered:  # the task list stays in parentheses, so the planner reads no pointer to a completed task
+        gaps.append(f"register a regression test for each completed or partial task without one "
+                    f"({', '.join(uncovered)})")
+    if failed:
+        gaps.append(f"make the failing registered tests pass ({'; '.join(failed[:20])})")
     skipped = sorted({n for r in rows for n, o in r["junit"].items() if o in ("skipped", "not run")})
     if skipped:
         gaps.append(f"make {', '.join(skipped)} run where the JUnit record is written ({not_run} registrations "

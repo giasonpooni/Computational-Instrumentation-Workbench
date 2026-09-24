@@ -5,7 +5,7 @@ import platform
 
 import pytest
 
-from ciw.lab import research_portfolio, runner
+from ciw.lab import planner, research_portfolio, runner
 from ciw.lab.evidence import DOMAINS, EvidenceRefusal, finding
 from ciw.lab.registry import Implementation, load_implementations, load_queue
 from ciw.lab.report import build_report, validate_report
@@ -1059,6 +1059,15 @@ def test_t168_labels(lab):
     assert lab("T168")["findings"][0]["evidence_status"] == "numerically_verified"
 '''
 OWN = "tests/test_fake.py::test_t168_labels"
+# A test declaring T021 that runs T010 only.
+ELSEWHERE_TEST = '''
+import pytest
+
+@pytest.mark.lab_task("T021")
+def test_declared_elsewhere(lab):
+    assert lab("T010")["evidence_status"]["primary"] == "numerically_verified"
+'''
+ELSEWHERE = "tests/test_elsewhere.py::test_declared_elsewhere"
 
 
 def _fake_repository(root, monkeypatch):
@@ -1072,9 +1081,10 @@ def test_regression_coverage_is_checked(retained, tmp_path, monkeypatch):
     _fake_repository(tmp_path / "repo", monkeypatch)
     tied, values = "tests/test_fake.py::test_t010_runs_and_labels", "tests/test_fake.py::test_values_only"
 
-    def registry(t010, t116=(values,)):
+    def registry(t010, t116=(values,), t021=()):
         # Only the fixture's tasks, so real section registrations cannot leak in.
         fakes = {"T010": Implementation("T010", None, regression_tests=t010),
+                 "T021": Implementation("T021", None, regression_tests=t021),
                  "T116": Implementation("T116", None, regression_tests=t116),
                  "T168": Implementation("T168", None, regression_tests=(OWN,))}
         monkeypatch.setattr(research_portfolio, "load_implementations", lambda: (fakes, {}))
@@ -1098,13 +1108,22 @@ def test_regression_coverage_is_checked(retained, tmp_path, monkeypatch):
     # No JUnit outcomes were recorded in these reports: the pass/fail finding is honestly unestablished.
     assert _finding(report, "Registered regression tests failing")["expected_not_established"] is True
     assert report["state"] == "partial"
-    # The next step names the untied task's test that asserts values only.
-    assert report["recommended_next_task"].startswith(f"Assert evidence labels in {values} (the registered tests of T116")
-    # A registered test that fails in the recorded JUnit outcomes refutes the task.
+    # The next step names the untied task's test that asserts values only, then the tasks without a test, in
+    # parentheses so the planner reads no pointer to a completed task.
+    step = report["recommended_next_task"]
+    assert step.startswith(f"Assert evidence labels in {values} (the registered tests of T116")
+    assert "; register a regression test for each completed or partial task without one (T021, T098, T147); " in step
+    assert "Completed or partial tasks without a registered regression test: T021, T098, T147" \
+        in report["unresolved_assumptions"]
+    assert planner.next_step_items(step, "T168", {"T010", "T021", "T098", "T116", "T147"})[1] == []
+    # A registered test that fails in the recorded JUnit outcomes refutes the task, and the next step names it.
     _retain(retained, "T010", "partial", [finding("f", "numerical", 1, {"checks": [CHECK]})],
             tests_passed=[], extra={"tests_failed": [f"pytest: {tied}"]})
     failing = _run("T168", retained)
     assert _labels(failing)["Registered regression tests failing in the JUnit record of this run"] == "not_established"
+    assert failing["state"] == "partial"
+    assert f"; make the failing registered tests pass (T010: {tied}); " in failing["recommended_next_task"]
+    assert f"Registered regression tests failing in the JUnit record: T010: {tied}" in failing["unresolved_assumptions"]
     # A registration whose test's marker names another task is undeclared; a marker naming a task that does not
     # register the test is a stray declaration. Either keeps the task partial, and the next step says so first.
     registry((tied,), t116=(tied,))
@@ -1153,6 +1172,18 @@ def test_regression_outcomes_add_up_and_name_the_own_node(tmp_path, monkeypatch)
     assert report["state"] == "partial"
     assert any(a.startswith("1 task-to-node registrations of other tasks have no outcome")
                for a in report["unresolved_assumptions"])
+    # A tied test that never names its task is advisory: it is reported, but neither blocks completion nor enters
+    # the next step.
+    (tmp_path / "repo" / "tests" / "test_elsewhere.py").write_text(ELSEWHERE_TEST, encoding="utf-8")
+    fakes["T021"] = Implementation("T021", None, regression_tests=(ELSEWHERE,))
+    advisory = tmp_path / "advisory"
+    _retain(advisory, "T021", "completed", [finding("f", "numerical", 1, {"checks": [CHECK]})],
+            tests_passed=[f"pytest: {ELSEWHERE}"])
+    report = _run("T168", advisory)
+    assert _finding(report, "Tied tasks none of whose tied tests names")["value"] == 1
+    assert "Advisory: tied tasks none of whose tied tests names the task or its function, so a declared test may not " \
+           "run it: T021" in report["unresolved_assumptions"]
+    assert report["state"] == "completed" and "T021" not in report["recommended_next_task"]
 
 
 def test_regression_tie_analysis_is_checked_on_probe_cases(monkeypatch):
@@ -1165,6 +1196,11 @@ def test_regression_tie_analysis_is_checked_on_probe_cases(monkeypatch):
     # A task id in a test's name or source no longer ties it: only a marker declares.
     assert research_portfolio._tie("T168", "tests/test_fake.py::test_t168_labels", index) == (True, True)
     assert research_portfolio._tie("T116", "tests/test_fake.py::test_t010_runs_and_labels", index) == (False, True)
+    # Naming (advisory) reads the node id and source, never the marker: test_declared_elsewhere runs T010 only.
+    research_portfolio._index_source("tests/test_elsewhere.py", ELSEWHERE_TEST, index)
+    assert research_portfolio._tie("T021", ELSEWHERE, index) == (True, True)
+    assert not research_portfolio._names("T021", "", ELSEWHERE, index)
+    assert research_portfolio._names("T010", "", ELSEWHERE, index)
     # A probe that reads markers wrongly is caught before the counts are trusted.
     monkeypatch.setattr(research_portfolio, "_declared_tasks", lambda decorators: frozenset({"T901"}))
     assert research_portfolio._tie_probe_errors()
