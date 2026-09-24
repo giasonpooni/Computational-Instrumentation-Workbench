@@ -150,11 +150,12 @@ numbers (bit for bit for machine manifest and project graph, within the shared
 binary64 tolerance for energy, thermal and uncertainty validation, whose
 linear-algebra kernels differ between hosts), and replays each bundle. Three
 replay outcomes are accepted: a fresh occurrence with the same numerical
-identity; a refusal because the reference runtime identity changed; or, for
-the three kernel-sensitive kinds only, a refusal as a numerical mismatch that
-leaves the retained bundle valid. The snapshot was made on a host whose
-OpenBLAS kernels are the SkylakeX set; `OPENBLAS_CORETYPE=Haswell` or
-`Prescott` reproduces the other outcomes locally. Regenerate the snapshot with
+identity; a refusal because the reference runtime identity changed, which on
+another host names `algorithm.kernel_probe`; or, should the probe ever fail to
+separate two hosts, a refusal as a numerical mismatch for a kernel-sensitive
+kind that leaves the retained bundle valid. The snapshot was made on a host
+whose OpenBLAS kernels are the SkylakeX set; `OPENBLAS_CORETYPE=Haswell` or
+`Prescott` reproduces the refusal locally. Regenerate the snapshot with
 `python tests/fixtures/retained/generate.py` only when the retained format
 changes on purpose, and say so in the commit; a silent regeneration hides
 exactly the incompatibility the gate exists to catch.

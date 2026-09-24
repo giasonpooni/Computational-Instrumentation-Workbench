@@ -61,11 +61,15 @@ def analysis_identity():
 
 def _check_runtime(runtime):
     expected = analysis_identity()
-    _keys(runtime, set(expected))
+    optional = base.OPTIONAL_ALGORITHM_KEYS & set(expected)
+    _keys(runtime, set(expected) - optional, optional)
     if any(runtime[key] != expected[key] for key in FIXED_RUNTIME_KEYS):
         raise ValueError("Unsupported retained energy analysis runtime")
     if type(runtime["code_sha256"]) is not str or not base.CODE_DIGEST.fullmatch(runtime["code_sha256"]):
         raise ValueError("Invalid retained analysis implementation identity")
+    if "kernel_probe" in runtime and (type(runtime["kernel_probe"]) is not str or
+                                      not base.CODE_DIGEST.fullmatch(runtime["kernel_probe"])):
+        raise ValueError("Invalid retained analysis kernel probe")
     for key in ("python_version", "numpy_version"):
         if type(runtime[key]) is not str or not VERSION.fullmatch(runtime[key]):
             raise ValueError("Invalid retained analysis dependency identity")

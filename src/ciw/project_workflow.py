@@ -59,8 +59,9 @@ def _text(value, limit=512):
 
 @lru_cache(maxsize=1)
 def _algorithm_identity():
+    # Pure-Python graph replay: no NumPy routine runs, so no kernel probe.
     return base.algorithm_identity(PROFILE, [Path(project.__file__), Path(base.__file__), Path(__file__)],
-                                   python_version=platform.python_version())
+                                   kernel=False, python_version=platform.python_version())
 
 
 def runtime_identity():

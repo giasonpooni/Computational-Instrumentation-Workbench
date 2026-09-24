@@ -121,18 +121,26 @@ classification; their reopen check compares structure, labels, counts and
 decimal strings exactly and numbers with the shared binary64 tolerance
 (`close_data` in `reference_workflow.py`, relative 1e-9, absolute 1e-12).
 Replay still requires the fresh numerical result to match the retained one
-exactly: on a host whose kernels round differently, replay of one of these
-three kinds is refused as a numerical mismatch while the retained bundle stays
-valid. The published runtime identity records Python and NumPy versions but
-not the kernel, so such a refusal names the numbers rather than the runtime;
-recording the kernel in the identity is open work.
+exactly. So that a host whose kernels round differently is refused for the
+right reason, every NumPy-backed reference (energy, thermal, machine manifest,
+uncertainty validation) records a **numerical kernel probe** in its algorithm
+identity: the digest of fixed inputs pushed through the solve, Cholesky,
+eigendecomposition, product, reduction and transcendental routines the
+references use. Equal probes mean equal rounding for that arithmetic; the
+probe fingerprints behaviour rather than naming a kernel, and it can separate
+hosts more finely than a given reference needs, which only makes a refusal
+conservative. The pure-Python project graph records no probe. A retained
+identity from before the probe existed still reopens, and replay of it is
+refused because identities are compared whole. A replay refusal names the
+differing fields, for example `algorithm.kernel_probe`.
 
 A committed retained workspace under `tests/fixtures/retained/` is the reopen
 gate for every change to the shared module or its subclasses: the current code
 must validate each retained bundle, reproduce its numbers from the retained
 source (bit for bit for the exact kinds, within tolerance for the others), and
-replay it freshly, refuse on runtime identity, or refuse as a numerical
-mismatch for a kernel-sensitive kind only.
+replay it freshly, refuse on runtime identity, or, should a probe ever fail to
+separate two hosts, refuse as a numerical mismatch for a kernel-sensitive kind
+only.
 
 ## Current boundary and next gate
 

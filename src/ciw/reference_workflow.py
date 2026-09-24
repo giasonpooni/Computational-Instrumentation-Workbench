@@ -14,16 +14,27 @@ the native data, which runtime identity it publishes, and which configuration a
 bundle retains.  Three further hooks have defaults: the experiment identity a
 bundle records, the request a step retains, and the shape check on a retained
 runtime identity.  Everything identity-critical lives here once.
+
+A reference that runs through NumPy's linear algebra records a numerical kernel
+probe in its algorithm identity: the digest of fixed inputs pushed through the
+routines the references use.  OpenBLAS selects kernels by CPU core type and
+they round differently, so two hosts with the same Python, NumPy and source
+bytes can still produce different roundoff; the probe makes that a runtime
+identity difference, refused before replay executes, rather than a surprising
+numerical mismatch afterwards.
 """
 from __future__ import annotations
 
 import base64
 from copy import deepcopy
 from hashlib import sha256
+from functools import lru_cache
 import json
 import math
 import re
 import uuid
+
+import numpy as np
 
 from .exchange import _identity
 from .telemetry import _bundle_digest, _now, byte_digest, canonical, digest, _keys
@@ -36,6 +47,10 @@ SESSION_ID = re.compile(r"session-[a-f0-9]{32}")
 CODE_DIGEST = re.compile(r"[a-f0-9]{64}")
 BUNDLE_DIGEST = re.compile(r"sha256:[a-f0-9]{64}")
 FIXED_ALGORITHM_KEYS = {"profile", "code_sha256", "source_normalization"}
+# Identities retained before the kernel probe existed still reopen; replay
+# compares identities whole, so they can never claim the current runtime.
+OPTIONAL_ALGORITHM_KEYS = {"kernel_probe"}
+PROBE_SIZES = ((2, 7), (3, 11), (6, 13), (8, 17))
 STEP_KEYS = {"runtime_ref", "operation_id", "execution_id", "input_refs", "request", "request_sha256",
              "result", "result_sha256", "result_id", "numerical_result", "numerical_result_id"}
 RESULT_KEYS = {"schema", "operation_id", "execution_ref", "input_refs", "data", "authority", "result_id"}
@@ -81,15 +96,70 @@ def close_data(retained, fresh, path="data", *, rel_tol=REL_TOL, abs_tol=ABS_TOL
         raise ValueError(f"Retained {path} differs from the deterministic reference")
 
 
-def algorithm_identity(profile, files, **versions):
-    """Content identity of the reference's own source files, normalized to LF."""
+def _probe_matrix(size, seed):
+    """A symmetric positive-definite matrix from a pure-Python generator; no NumPy RNG stream."""
+    state, values = seed, []
+    for _ in range(size * size):
+        state = (1103515245 * state + 12345) % 2**31
+        values.append(state / 2**31 - 0.5)
+    square = np.array(values, dtype=np.float64).reshape(size, size)
+    return square @ square.T + size * np.eye(size)
+
+
+def _kernel_probe():
+    parts = []
+    for size, seed in PROBE_SIZES:
+        spd = _probe_matrix(size, seed)
+        vector = np.arange(1, size + 1, dtype=np.float64) / 3.0
+        general = _probe_matrix(size, seed + 1) - _probe_matrix(size, seed + 2)
+        parts += [np.linalg.cholesky(spd), np.linalg.solve(spd, vector), np.linalg.solve(spd, np.eye(size)),
+                  np.linalg.inv(spd), np.linalg.eigvalsh(spd), *np.linalg.eigh(spd), general @ spd, spd @ vector,
+                  np.linalg.det(spd), np.log(np.diag(spd)), np.exp(-np.diag(spd) / size), np.expm1(-vector / size),
+                  np.sum(spd, axis=0), np.sum(spd), np.trace(np.linalg.solve(spd, general @ general.T)),
+                  np.linalg.norm(general), np.sqrt(np.diag(spd))]
+    raw = b"".join(np.ascontiguousarray(np.asarray(part, dtype="<f8")).tobytes() for part in parts)
+    return sha256(raw).hexdigest()
+
+
+@lru_cache(maxsize=1)
+def numerical_kernel_probe():
+    """Digest of the bits NumPy's linear algebra and transcendental routines produce for fixed inputs.
+
+    Equal probes mean the host's kernels round the references' arithmetic the
+    same way; the probe does not name a kernel, it fingerprints its behaviour.
+    """
+    return _kernel_probe()
+
+
+def algorithm_identity(profile, files, *, kernel=True, **versions):
+    """Content identity of the reference's own source files, normalized to LF.
+
+    ``kernel`` records the numerical kernel probe; a reference that never
+    touches NumPy passes ``kernel=False``.
+    """
     content = b"\0".join(
         path.name.encode("utf-8") + b"\0" +
         path.read_text(encoding="utf-8").replace("\r\n", "\n").encode("utf-8")
         for path in files
     )
-    return {"profile": profile, "code_sha256": sha256(content).hexdigest(),
-            "source_normalization": "utf8_lf", **versions}
+    identity = {"profile": profile, "code_sha256": sha256(content).hexdigest(),
+                "source_normalization": "utf8_lf", **versions}
+    if kernel:
+        identity["kernel_probe"] = numerical_kernel_probe()
+    return identity
+
+
+def identity_differences(current, retained, path=""):
+    """Dotted paths at which two runtime identities differ, for a refusal that names its cause."""
+    if isinstance(current, dict) and isinstance(retained, dict):
+        found = []
+        for key in sorted(set(current) | set(retained)):
+            if key not in current or key not in retained:
+                found.append(path + key)
+            else:
+                found.extend(identity_differences(current[key], retained[key], path + key + "."))
+        return found
+    return [] if current == retained else [path.rstrip(".") or "identity"]
 
 
 class ReferenceWorkflow:
@@ -157,8 +227,10 @@ class ReferenceWorkflow:
         runtime = self._runtime_identity()
         if expected is not None:
             expected_runtime = expected.get(self.role, expected) if isinstance(expected, dict) else expected
-            if self._runtime_projection(runtime) != self._runtime_projection(expected_runtime):
-                raise ValueError(f"{self._label} reference runtime identity differs from the retained execution")
+            current, retained = self._runtime_projection(runtime), self._runtime_projection(expected_runtime)
+            if current != retained:
+                differing = ", ".join(identity_differences(current, retained)[:8])
+                raise ValueError(f"{self._label} reference runtime identity differs from the retained execution: {differing}")
         return None, runtime
 
     def _bundle_source(self, source, raw):
@@ -260,11 +332,13 @@ class ReferenceWorkflow:
         if any(runtime[key] != expected[key] for key in expected if key != "algorithm"):
             raise ValueError(f"Unapproved {self.label} reference runtime")
         algorithm, reference = runtime["algorithm"], expected["algorithm"]
-        _keys(algorithm, set(reference))
+        optional = OPTIONAL_ALGORITHM_KEYS & set(reference)
+        _keys(algorithm, set(reference) - optional, optional)
         if (algorithm["profile"] != reference["profile"] or algorithm["source_normalization"] != "utf8_lf" or
                 not isinstance(algorithm["code_sha256"], str) or not CODE_DIGEST.fullmatch(algorithm["code_sha256"]) or
                 any(not isinstance(algorithm[key], str) or not 1 <= len(algorithm[key]) <= 64
-                    for key in reference if key not in FIXED_ALGORITHM_KEYS)):
+                    for key in algorithm if key not in FIXED_ALGORITHM_KEYS) or
+                ("kernel_probe" in algorithm and not CODE_DIGEST.fullmatch(algorithm["kernel_probe"]))):
             raise ValueError(f"Malformed {self.label} reference algorithm identity")
 
     # ------------------------------------------------------------ lifecycle

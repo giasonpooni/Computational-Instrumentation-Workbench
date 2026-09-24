@@ -105,9 +105,10 @@ Reopening validates a retained analysis against a fresh one: statuses, reasons,
 counts and decimal counter strings must match exactly, while the accuracy
 metrics are compared with a binary64 tolerance because the Gaussian reference
 runs through the host's linear-algebra kernels and its roundoff-level errors
-differ between CPUs. Replay itself requires an exact numerical match and is
-refused on a host whose kernels round differently, leaving the retained
-bundle valid.
+differ between CPUs. Replay itself requires an exact numerical match; the
+analysis runtime identity records a numerical kernel probe, so a host whose
+kernels round differently is refused before analysis as a runtime identity
+difference, leaving the retained bundle valid.
 
 The source log is bounded to 4 MiB; each workflow bundle is bounded to 8 MiB,
 within the shared workspace budget. The service accepts WebSocket frames up to
