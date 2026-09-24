@@ -139,10 +139,13 @@ machine and thermal operation lifecycles are covered by
 `tests/test_machine_workflow.py` and `tests/test_thermal_workflow.py`, including
 save/reopen and fresh replay. Project operation/execution/result registration
 remains the next integration gate; see [contract foundations](CONTRACT_FOUNDATIONS.md).
-Coverage is not exhaustive: the off-allowlist `runtime_mismatch`,
-`RUNTIME_UNAVAILABLE` and `RUNTIME_IO` branches, covariance CLI argument parsing,
-and the calibration-refusal exit code lack dedicated assertions in the current
-suite. Passing shared helper tests does not separately validate those paths.
+`tests/test_runtime_refusal_branches.py` asserts the off-allowlist
+`runtime_mismatch`, the three `RUNTIME_UNAVAILABLE` sites (a runtime that cannot
+start, an unreadable interpreter, a failed or malformed runtime probe) and
+`RUNTIME_IO` (a grandchild that escapes the runtime's session and holds its
+output pipe; POSIX only). `tests/test_cli_arguments.py` asserts covariance
+argument parsing and the exit code `2` for calibration-status and provider
+refusals. Coverage is still not exhaustive; see below.
 [RECONCILIATION.md](RECONCILIATION.md) records, per contract area, the behavior
 the current tests assert, what they cover in part, and what is not implemented.
 
