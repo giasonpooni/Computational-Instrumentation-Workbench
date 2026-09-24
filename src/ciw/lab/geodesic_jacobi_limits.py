@@ -1392,9 +1392,14 @@ T014_SYMMETRIC = ("implicit-midpoint", "gauss-legendre-2")
 # Rounding level for a return error: the joint states are O(1) (at most about 3), so 1e-12 is about 4500 ulp(1)
 # after 2 x 160 steps, and it is 5 decades below the smallest explicit same-order return error at N = 20.
 T014_ROUNDING = 1e-12
-# Looser declared stage tolerances (torus case, coarsest and a finer grid): the return error should follow them. They
-# stay far above rounding, so rounding cannot move a fixed-point stop across one of them on another platform.
+# Looser declared stage tolerances (torus case, coarsest and a finer grid): the return error should stay below each of
+# them times the state size. That is a bound, not a scaling: within it the error spreads over decades, and it clears
+# rounding level (by T014_ABOVE_ROUNDING) at the looser tolerances only, while at 1e-8 it can already be at rounding
+# level. They stay far above rounding, so rounding cannot move a fixed-point stop across one of them on another
+# platform.
 T014_SOLVE_TOLS = (1e-4, 1e-6, 1e-8)
+T014_ABOVE_ROUNDING_TOLS = (1e-4, 1e-6)
+T014_ABOVE_ROUNDING = 1e2
 T014_TOL_STEPS = (20, 80)
 T014_REFERENCE_RTOL = 1e-13
 
@@ -1503,9 +1508,10 @@ def reversal_and_truncation(ctx):
     sweep = {m: {_power_of_ten(row["solve_tol"]): row["return_errors"] for row in sym["tolerance_sweep"]
                  if row["method"] == m} for m in T014_SYMMETRIC}
     sweep_ratio = max(max(row["return_errors"]) / (row["solve_tol"] * torus_state) for row in sym["tolerance_sweep"])
-    loosest = max(T014_SOLVE_TOLS)
-    loose_min = min(min(row["return_errors"]) for row in sym["tolerance_sweep"] if row["solve_tol"] == loosest)
-    loose_max = max(max(row["return_errors"]) for row in sym["tolerance_sweep"] if row["solve_tol"] == loosest)
+    sweep_range = {tol: (min(min(row["return_errors"]) for row in sym["tolerance_sweep"] if row["solve_tol"] == tol),
+                         max(max(row["return_errors"]) for row in sym["tolerance_sweep"] if row["solve_tol"] == tol))
+                   for tol in T014_SOLVE_TOLS}
+    tightest = min(T014_SOLVE_TOLS)
     gl_witness = next(r for r in sym_rows if r["surface"] == "sphere" and r["method"] == "gauss-legendre-2")
     findings = [
         finding("Reversal error orders are 1 (Euler), 3 (midpoint) and 5 (RK4): even-order methods gain one order",
@@ -1606,17 +1612,21 @@ def reversal_and_truncation(ctx):
                                              "largest gap between a fitted forward order and its consecutive-step-pair "
                                              "orders"),
                 tolerance={"abs": 5e-3, "rel": 0.0}),
-        finding("The symmetric methods' return error is set by the stage-solve tolerance: at tolerances "
-                f"{', '.join(_power_of_ten(t) for t in T014_SOLVE_TOLS)} it rises above rounding level and stays "
-                "below the tolerance times the state size",
+        finding("The symmetric methods' return error is bounded by the stage-solve tolerance: at tolerances "
+                f"{', '.join(_power_of_ten(t) for t in T014_SOLVE_TOLS)} it stays below the tolerance times the "
+                "state size, it rises above rounding level at "
+                f"{' and '.join(_power_of_ten(t) for t in T014_ABOVE_ROUNDING_TOLS)}, and at "
+                f"{_power_of_ten(tightest)} it can already be at rounding level",
                 "numerical", {"steps": list(T014_TOL_STEPS), "return_errors": sweep},
                 {"generator": _gen("solve-tolerance-sweep", surface="torus", solve_tol=list(T014_SOLVE_TOLS),
                                    steps=list(T014_TOL_STEPS)),
                  "checks": [core.check("invariant", "max return error / (solve tolerance x largest |state|)",
-                                       sweep_ratio, 1.0, "le"),
-                            core.check("invariant", "smallest return error at solve tolerance "
-                                       f"{_power_of_ten(loosest)} over the rounding bound", loose_min / T014_ROUNDING,
-                                       1e3, "ge")]},
+                                       sweep_ratio, 1.0, "le")]
+                 + [core.check("invariant", f"smallest return error at solve tolerance {_power_of_ten(tol)} over the "
+                               "rounding bound", sweep_range[tol][0] / T014_ROUNDING, T014_ABOVE_ROUNDING, "ge")
+                    for tol in T014_ABOVE_ROUNDING_TOLS]
+                 + [core.check("invariant", f"smallest return error at solve tolerance {_power_of_ten(tightest)} over "
+                               "the rounding bound", sweep_range[tightest][0] / T014_ROUNDING, 1.0, "le")]},
                 uncertainty=core.uncertainty("step_sequence", sweep_ratio,
                                              "the return error depends on where each fixed-point iteration stops; "
                                              "the largest ratio to the tolerance bound is given"),
@@ -1651,8 +1661,10 @@ def reversal_and_truncation(ctx):
                            "great circle (sphere) or to a DP45 rtol 1e-13 end point (torus), hyperbolic distance to "
                            "the exact semicircle."),
         expected_invariant=("Return error orders 1, 3, 5 for the explicit methods; symmetric return error at rounding "
-                            "level (<= 1e-12) at every N and below the solve tolerance times the state size when that "
-                            "is loosened; forward orders 2 and 4; bitwise continuation for identical step doubles."),
+                            "level (<= 1e-12) at every N and, when the solve tolerance is loosened, below that "
+                            "tolerance times the state size (a bound: above rounding level at 1e-4 and 1e-6, possibly "
+                            "still at rounding level at 1e-8); forward orders 2 and 4; bitwise continuation for "
+                            "identical step doubles."),
         experiment=("Forward/backward fixed-step (explicit and symmetric implicit) and adaptive runs; a sweep of the "
                     "declared stage-solve tolerance; truncated and continued runs compared with direct runs bit for "
                     "bit; a deterministic search over decimal truncation lengths for a step-size mismatch."),
@@ -1669,9 +1681,11 @@ def reversal_and_truncation(ctx):
                           f"{_g(sym_iterations['implicit-midpoint'][-1], 3)} "
                           f"(implicit midpoint) and {_g(sym_iterations['gauss-legendre-2'][0], 3)}-"
                           f"{_g(sym_iterations['gauss-legendre-2'][-1], 3)} (Gauss-Legendre) fixed-point iterations "
-                          f"per step from N = 20 to 160; at solve tolerance {_power_of_ten(loosest)} the return "
-                          f"error rises to {_g(loose_max, 2)} "
-                          f"(at most {_g(sweep_ratio, 2)} x tolerance x state size); dyadic continuation difference "
+                          f"per step from N = 20 to 160; at solve tolerances "
+                          f"{', '.join(_power_of_ten(t) for t in T014_SOLVE_TOLS)} the return error spans "
+                          f"{', '.join(f'{_g(lo, 2)} to {_g(hi, 2)}' for lo, hi in sweep_range.values())} (at most "
+                          f"{_g(sweep_ratio, 2)} x tolerance x state size; rounding bound {_g(T014_ROUNDING, 2)}); "
+                          f"dyadic continuation difference "
                           f"{_g(dyadic, 2)}; decimal witness L1 = {witness['L1'] if witness else None} with a "
                           f"step-size mismatch and a bitwise different result (max difference "
                           f"{_g(witness['max_abs_difference'], 2) if witness else 0}); adaptive restart "
@@ -2873,8 +2887,10 @@ def negative_curvature(ctx):
                                 "The sqrt(2) exponent is fitted on the ridge geodesic only; oblique saddle geodesics "
                                 "are compared for integrator accuracy, not for their Jacobi growth law",
                                 "The nonlinear implicit integrator solves its stage equations by fixed-point "
-                                "iteration, which converges only for kh below about 1 here; a Newton solve would "
-                                "reach larger steps and is not implemented",
+                                "iteration, which within its 60-iteration cap reaches only kh below about 0.6 "
+                                "(implicit midpoint) and 1.1 (Gauss-Legendre) here (without the cap it stops "
+                                "converging near kh = 1 and 1.3); a Newton solve would reach larger steps and is not "
+                                "implemented",
                                 "Why the Gauss-Legendre/RK4 error ratio varies between saddle geodesics is measured, "
                                 "not derived from the methods' error expansions",
                                 "Error amplification of the geodesic in the half-plane chart mixes chart compression near "
@@ -2882,9 +2898,9 @@ def negative_curvature(ctx):
         recommended_next_task=("Deferred research question: derive the Gauss-Legendre and RK4 global error "
                                "coefficients along variable-curvature geodesics (their j_head error ratio is measured "
                                "here from well below to above 1 on saddle geodesics, not the constant-curvature 1/6), "
-                               "and add a Newton stage solve to reach the steps kh >= 1 where the fixed-point "
-                               "iteration is refused, to test whether A-stability then pays on the full "
-                               "hyperbolic system"),
+                               "and add a Newton stage solve to reach steps beyond the fixed-point limit (kh of about "
+                               "0.6 for implicit midpoint, about 1.1 for Gauss-Legendre), to test whether "
+                               "A-stability then pays on the full hyperbolic system"),
     )
     return {"state": "completed", "fields": fields, "findings": findings}
 

@@ -313,14 +313,21 @@ def test_t014_symmetric_methods_return_at_rounding_level(run):
     for label, order in forward["value"].items():
         assert order == pytest.approx({"implicit-midpoint": 2, "gauss-legendre-2": 4}[label.split(": ")[1]], abs=0.05)
     assert any(c["reference_kind"] == "self_convergence" for c in forward["basis"]["checks"])
-    # Loosening the stage-solve tolerance raises the return error up to (not beyond) the tolerance.
-    sweep = _labelled(report, "set by the stage-solve tolerance")
+    # Loosening the stage-solve tolerance raises the return error up to (not beyond) the tolerance: a bound, not a
+    # scaling. It clears rounding level at 1e-4 and 1e-6, but at 1e-8 it can already be at rounding level.
+    sweep = _labelled(report, "return error is bounded by the stage-solve tolerance")
     assert sweep["evidence_status"] == "numerically_verified"
-    for method, by_tol in sweep["value"]["return_errors"].items():
+    by_method = sweep["value"]["return_errors"]
+    for method, by_tol in by_method.items():
         assert set(by_tol) == {gjl._power_of_ten(t) for t in gjl.T014_SOLVE_TOLS} == {"1e-4", "1e-6", "1e-8"}
         for tol, errors in by_tol.items():
             assert max(errors) <= 3.0 * float(tol), (method, tol)
-        assert min(by_tol["1e-4"]) > 1e3 * gjl.T014_ROUNDING
+    assert {gjl._power_of_ten(t) for t in gjl.T014_ABOVE_ROUNDING_TOLS} == {"1e-4", "1e-6"}
+    for tol in ("1e-4", "1e-6"):
+        assert min(min(by_tol[tol]) for by_tol in by_method.values()) >= gjl.T014_ABOVE_ROUNDING * gjl.T014_ROUNDING
+    assert min(min(by_tol["1e-8"]) for by_tol in by_method.values()) <= gjl.T014_ROUNDING
+    assert "rises above rounding level at 1e-4 and 1e-6" in sweep["claim"]
+    assert len(sweep["basis"]["checks"]) == 1 + len(gjl.T014_ABOVE_ROUNDING_TOLS) + 1
     assert "time-reversible adaptive step control" in report["recommended_next_task"]
     assert "symmetric-reversal.json" in {a["path"].rsplit("/", 1)[-1] for a in report["generated_artifacts"]}
 

@@ -249,8 +249,13 @@ error is still `O(h²)` and `O(h⁴)`.
 at the first iterate whose stage values change by at most `SOLVE_TOL = 1e−13`
 times the magnitude of the terms they are summed from, componentwise (about
 450 units of roundoff, so rounding noise cannot keep a contracting iteration
-from meeting it, and the remainder after the stop is the change times the
-contraction factor); the iteration contracts
+from meeting it). The test bounds the last change, not the remainder: for a
+contraction factor `q` the stage values then differ from the exact ones by at
+most `q/(1 − q)` times that change (1.5 times it at `q = 0.6`, about the
+largest `q` the iteration cap admits), and the returned step, formed from `f`
+of the previous iterate, by at most `|h| Lip(f)/(1 − q)` times it
+(`2q/(1 − q)`, 3 at `q = 0.6`, for implicit midpoint); on `y′ = y` both bounds
+are attained. The iteration contracts
 while `|h| × Lip(f) × ρ(A) < 1` (`ρ(A) = 1/2` and `1/√12`). A step whose
 iteration has not converged after `SOLVE_MAX_ITERATIONS = 60` iterations, or
 whose iterate is nonfinite or outside the domain of `f`, raises
@@ -264,7 +269,10 @@ geodesic/Jacobi state, forward then reversed; forward end-point error against
 the great circle, the exact semicircle (hyperbolic distance) or a DP45
 `rtol = 1e−13` torus end point (checked at `1e−12`); on the torus also the
 stage tolerances `1e−4, 1e−6, 1e−8` at `N = 20, 80`, far above rounding so
-that rounding cannot move a fixed-point stop across them.
+that rounding cannot move a fixed-point stop across them, checked for the
+bound `tolerance × state size` at each, for a return error at least 100 times
+the rounding bound (`1e−12`) at `1e−4` and `1e−6`, and for a smallest return
+error within the rounding bound at `1e−8`.
 
 *Result.* Reversal orders 1.05, 3.00, 5.00 (means over sphere, torus,
 hyperbolic plane); adaptive return error ≤ 0.95 × rtol. The symmetric methods
@@ -273,9 +281,14 @@ midpoint) and 3.4e−14 (Gauss–Legendre), against 3.3e−4 (explicit midpoint)
 and 2.5e−7 (RK4) at `N = 20`, although they are not exact forward (orders
 1.999 and 3.995–4.000, forward errors from 4e−8 at `N = 20`). They need 10.2
 to 5.8 (implicit midpoint) and 8.9 to 5.0 (Gauss–Legendre) fixed-point
-iterations per step from `N = 20` to 160. Loosening the stage tolerance to
-`1e−4` raises the return error to 3.8e−5, at most 0.22 × tolerance × state
-size: the solve, not `h^p`, bounds it. Dyadic continuation
+iterations per step from `N = 20` to 160. The stage tolerance bounds the
+return error but does not set it: at `1e−4`, `1e−6` and `1e−8` the return
+error spans 1.6e−6–3.8e−5, 6.2e−10–5.3e−7 and 3.7e−14–1.9e−9, at most
+0.22 × tolerance × state size, so the solve, not `h^p`, bounds it. It clears
+the rounding bound by at least 620 times at `1e−6`, but at `1e−8`
+Gauss–Legendre at `N = 80` is already at rounding level, and at `N = 80` a
+100 times tighter tolerance (`1e−6` to `1e−8`) lowers the implicit-midpoint
+return error only from 1.3e−9 to 1.05e−9. Dyadic continuation
 (`h = 2⁻⁷`) is bitwise identical for all three methods; decimal truncation
 lengths (first witness `L1 = 1.13`, `L2 = 3`, `N2 = 300`) change the step by
 one ulp and break bitwise identity at the 4e−16 level. The witness records that
@@ -472,9 +485,16 @@ the envelope grows from `L = 20` to 160 by 10.5 for RK4 (local slopes 1.32,
 after `L/8`, RK4's by exactly 1.0; on the vertical hyperbolic ray every method
 keeps the speed to 2.2e−15. Implicit midpoint at `kh = 2.29` is refused:
 "implicit-midpoint stage equations did not converge within 60 fixed-point
-iterations at step size 0.2857142857142857 (step 1 of 7)" (the fixed-point
-iteration diverges for `kh` above about 1 on this system, before the pole at
-`kh = 2`).
+iterations at step size 0.2857142857142857 (step 1 of 7)", where the
+fixed-point iteration diverges. At smaller `kh` the iteration contracts ever
+more slowly as `kh` grows, so the 60-iteration cap refuses first: it refuses
+whole `L = 2` runs of implicit midpoint from `kh ≈ 0.6` (0.62 at `k = 4, 8`,
+0.67 at `k = 2`) and of Gauss–Legendre from `kh ≈ 1.1` (1.07 at `k = 8`, 1.14
+at `k = 4`). With a cap of 20000 iterations the same runs still converge up to
+`kh = 0.89` (implicit midpoint, 834 iterations for its slowest step) and 1.23
+(Gauss–Legendre), and fail only from `kh ≈ 0.94–1` and 1.33, at step 3 or 4;
+the first implicit-midpoint step of `HyperbolicPlane(8)` alone converges up to
+`kh = 1.3` (1096 iterations). All of this lies below the pole at `kh = 2`.
 
 *Counterexamples.* "An implicit (A-stable) integrator removes the growth of
 the step count with `k` on strongly negatively curved surfaces" (an implicit
@@ -502,9 +522,10 @@ within 1e−6.
 supported by the local exponents, not a proof, and is fitted on the ridge
 geodesic only (the oblique geodesics are compared for integrator accuracy);
 why the Gauss–Legendre/RK4 error ratio varies between saddle geodesics is
-measured, not derived; the fixed-point stage solve converges only for `kh`
-below about 1 here, and a Newton solve that would reach larger steps is not
-implemented.
+measured, not derived; within its 60-iteration cap the fixed-point stage
+solve reaches only `kh` below about 0.6 (implicit midpoint) and 1.1
+(Gauss–Legendre) here (without the cap it stops converging near `kh = 1` and
+1.3), and a Newton solve that would reach larger steps is not implemented.
 
 ## T017 Validity domains of the first-order approximation
 
@@ -627,8 +648,9 @@ question T014 defers is recorded once among its unresolved assumptions
   (T014, T016) are not yet run on T015's two geodesics and horizons.
 * A time-reversible adaptive step control for the Gauss–Legendre integrator
   would test whether an adaptive return can also be exact (T014), and a Newton
-  stage solve would reach the steps `kh ≳ 1` where the fixed-point iteration is
-  refused (T016).
+  stage solve would reach steps beyond the fixed-point limit (`kh ≈ 0.6` for
+  implicit midpoint, `≈ 1.1` for Gauss–Legendre), where the fixed-point
+  iteration is refused (T016).
 * A `Surface.check` scale that is invariant under anisotropic charts would
   allow tori with `R ≥ 10⁶`; today `det g / tr(g)²` refuses them as degenerate.
 * Hyperbolic-plane isometries (Möbius maps) as a `ChartMap` would extend T012 to

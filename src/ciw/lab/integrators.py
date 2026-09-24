@@ -65,8 +65,11 @@ GAUSS_TABLEAUS = {"implicit-midpoint": (((0.5,),), (1.0,)),
 IMPLICIT_ORDERS = {"implicit-midpoint": 2, "gauss-legendre-2": 4}
 # Declared stage-equation tolerance: the fixed-point iteration stops at the first iterate whose stage values
 # change by at most SOLVE_TOL times the magnitude of the terms they are summed from (componentwise). That is
-# about 450 units of roundoff, so rounding noise cannot keep a contracting iteration from meeting it, and the
-# remainder left after the stop is smaller still (the change times the contraction factor).
+# about 450 units of roundoff, so rounding noise cannot keep a contracting iteration from meeting it. The test
+# bounds the last change, not the remainder: for a contraction factor q the stage values then differ from the
+# exact ones by at most q/(1 - q) times that change (1.5 times it at q = 0.6, about the largest q that
+# SOLVE_MAX_ITERATIONS admits), and the returned step, formed from f of the previous iterate, by at most
+# |h| Lip(f)/(1 - q) times it (2q/(1 - q), 3 at q = 0.6, for implicit midpoint). On y' = y both bounds are attained.
 SOLVE_TOL = 1e-13
 SOLVE_MAX_ITERATIONS = 60
 
