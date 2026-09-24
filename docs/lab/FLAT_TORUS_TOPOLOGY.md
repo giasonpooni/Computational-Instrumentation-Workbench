@@ -109,6 +109,20 @@ no conjugate point within the horizon, so their margins are tied at "more than
 about 8". Those routes amplify heading errors 20 to 100 times more than
 route 0. Focus-margin groups, best first: [[3, 4, 5, 8], [7], [6], [0], [1], [2]].
 
+The rankings are decided by gaps of at least 3.3e-3 relative (routes 1 and 2
+by length) and 0.39 between focus-margin groups. The ranking finding checks
+both against ten times the route-value uncertainty (5.6e-6). Route values
+differ between OpenBLAS kernels in their last digits: the torus metric and its
+derivatives are BLAS dot products of 3-vectors, which kernels round
+differently (with those dot products written out, five kernels agree bit for
+bit). Across the SkylakeX, Haswell, Sandybridge, Nehalem and Katmai kernels,
+routes 6, 7 and 8 differ by at most 1.4e-14 in focus margin and 1.5e-15
+relative in amplification; lengths, headings and rankings are identical. The
+ranking finding's counterexample witness quotes route values, so it carries a
+regression tolerance of 1e-12 absolute plus 1e-13 relative, about 70 to 100
+times that spread. The route table keeps the route-accuracy tolerance (1e-6
+absolute plus 1e-5 relative).
+
 A 360-heading fan misses route 5. At 1440 headings the search finds 9 routes,
 and 2880 headings give the same 9. Each run of adjacent rays that pass the same
 lift of q seeds Newton once per miss-distance minimum. No seed was dropped as

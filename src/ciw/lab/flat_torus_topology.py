@@ -58,6 +58,10 @@ EXACT = {"abs": 0, "rel": 0}
 TIGHT = {"abs": 1e-12, "rel": 1e-9}
 FLOAT = {"abs": 1e-9, "rel": 1e-7}
 ROUTE = {"abs": 1e-6, "rel": 1e-5}
+# Route values differ between OpenBLAS kernels in their last digits (BLAS dot products of 3-vectors in the surface
+# metric and its derivatives): across five kernels by at most 1.4e-14 in focus margins and 1.5e-15 relative in
+# amplifications. A witness that quotes route values carries this tolerance, about 70 to 100 times that spread.
+KERNEL_ROUNDING = {"abs": 1e-12, "rel": 1e-13}
 
 
 def _tests(*names):
@@ -1144,6 +1148,17 @@ def _route_table(found):
              "passes_conjugate_point": r["focus_margin"] is not None and r["focus_margin"] < 0} for r in found]
 
 
+def _ordering_gaps(found, ranks):
+    """Smallest gaps deciding the rankings: relative between routes adjacent by length or by amplification, and in
+    length units between adjacent focus-margin groups (a censored group at its smallest margin lower bound)."""
+    relative = [abs(found[b][key] - found[a][key]) / max(abs(found[a][key]), abs(found[b][key]))
+                for order, key in ((ranks["by_length"], "length"), (ranks["by_amplification"], "amplification"))
+                for a, b in zip(order, order[1:])]
+    levels = [min(found[i]["margin_lower_bound"] for i in group) if found[group[0]]["focus_margin"] is None
+              else found[group[0]]["focus_margin"] for group in ranks["by_focus_margin"]]
+    return min(relative), min(a - b for a, b in zip(levels, levels[1:]))
+
+
 ROUTE_SET_UNC = {"kind": "truncation_bound", "value": None,
                  "basis": "completeness of the fan search is not proven: no bound on routes missed at both fan "
                           "densities; routes are matched by length and heading to 1e-6"}
@@ -1172,10 +1187,12 @@ def focus_margin_ranking(ctx):
     wronskian = max(r["wronskian_drift"] for r in found)
     clairaut = max(r["clairaut_drift"] for r in found)
     batch = max(r["j_head_batch_vs_transfer"] / max(1.0, r["amplification"]) for r in found)
+    route_unc = max(batch, sc["j_head"] if sc else 0.0, sc["conjugate"] if sc else 0.0)
     shortest = ranks["by_length"][0]
     amp_rank = ranks["by_amplification"].index(shortest)
     margin_rank = next(i for i, group in enumerate(ranks["by_focus_margin"]) if shortest in group)
     censored = ranks["by_focus_margin"][0] if found[ranks["by_focus_margin"][0][0]]["focus_margin"] is None else []
+    gap_relative, gap_margin = _ordering_gaps(found, ranks)
     flat = jacobi.transfer(Plane(), [0.0, 0.0], 0.3, 20.0, steps=40)
     flat_min = float(np.min(flat.states[1:, 6] / flat.s[1:]))
     fields = _fields(
@@ -1206,7 +1223,10 @@ def focus_margin_ranking(ctx):
         f"Endpoint residual <= {residual:.1e}; Wronskian drift <= {wronskian:.1e}; Clairaut drift <= "
         f"{clairaut:.1e}; batch-vs-transfer amplification difference <= {batch:.1e} (relative)"
         + ("." if sc is None else f"; scipy/sympy re-integration: j_head {sc['j_head']:.1e} (relative), conjugate "
-                                  f"points {sc['conjugate']:.1e}, endpoint {sc['endpoint']:.1e}."),
+                                  f"points {sc['conjugate']:.1e}, endpoint {sc['endpoint']:.1e}.")
+        + f" The rankings are decided by gaps of at least {gap_relative:.1e} (relative, length and amplification) "
+          f"and {gap_margin:.2f} (focus margin); route values differ between OpenBLAS kernels only in their last "
+          "digits.",
         ["duplicate routes merged (counted)", "routes beyond the length budget discarded (counted)",
          "censored margins (no conjugate point within the horizon) tied as one group",
          "Newton divergence or singular Jacobian (counted)", "fan density (route set unchanged at double density)"],
@@ -1227,8 +1247,7 @@ def focus_margin_ranking(ctx):
     findings = [
         finding("Every fan-search route p -> q on Torus(2, 1) ends on a lift of q with the Wronskian and the "
                 "Clairaut integral conserved to tolerance", "numerical", table, basis,
-                uncertainty=_unc("reference_error", max(batch, sc["j_head"] if sc else 0.0,
-                                                        sc["conjugate"] if sc else 0.0),
+                uncertainty=_unc("reference_error", route_unc,
                                  "max of the relative amplification difference against the batch RK4 search and, "
                                  "when scipy and sympy are available, the relative j_head(L) difference and the "
                                  "absolute conjugate-point difference (bounding the focus margins, length units) "
@@ -1245,15 +1264,29 @@ def focus_margin_ranking(ctx):
                 "group", "numerical", ranks,
                 {"checks": [_check("rank of the shortest route by amplification (0 = least amplifying)", amp_rank,
                                    1, "ge"),
-                            _check("focus-margin group of the shortest route (0 = best group)", margin_rank, 1, "ge")]},
+                            _check("focus-margin group of the shortest route (0 = best group)", margin_rank, 1, "ge"),
+                            _check("smallest relative gap between routes adjacent by length or by amplification, "
+                                   "against ten times the route-value uncertainty", gap_relative, 10 * route_unc,
+                                   "ge", kind="invariant"),
+                            _check("smallest gap between adjacent focus-margin groups (length units; a censored group "
+                                   "at its smallest margin lower bound), against ten times the route-value "
+                                   "uncertainty", gap_margin, 10 * route_unc, "ge", kind="invariant")]},
                 counterexample={"statement": "The shortest route also minimizes amplification and maximizes focus "
                                              "margin s_c - L",
                                 "witness": {"shortest": table[shortest],
                                             "least_amplification": table[ranks["by_amplification"][0]],
                                             "best_margin_group": [table[i] for i in ranks["by_focus_margin"][0]]}},
-                uncertainty={"kind": "exact", "value": 0.0, "basis": "orderings of the route values; adjacent values "
-                                                                     "differ far more than their uncertainty"},
-                tolerance=EXACT),
+                uncertainty={"kind": "exact", "value": 0.0,
+                             "basis": f"orderings of the route values, decided by gaps of at least {gap_relative:.1e} "
+                                      f"relative (length, amplification) and {gap_margin:.2f} (focus margin), checked "
+                                      "against ten times the route-value uncertainty. The witness quotes route values, "
+                                      "which differ between OpenBLAS kernels in their last digits (BLAS dot products "
+                                      "of 3-vectors in the surface metric and its derivatives): across the SkylakeX, "
+                                      "Haswell, Sandybridge, Nehalem and Katmai kernels by at most 1.4e-14 in focus "
+                                      "margins and 1.5e-15 relative in amplifications, with lengths, headings and "
+                                      "rankings identical. The regression tolerance, 1e-12 absolute plus 1e-13 "
+                                      "relative, is about 70 to 100 times that spread"},
+                tolerance=KERNEL_ROUNDING),
         finding("A flat torus has no conjugate points: j_head(s) = s > 0 has no zero, so the focus margin s_c - L is "
                 "infinite", "numerical",
                 flat_min, {"derivation": "K = 0 gives j_head(s) = s",

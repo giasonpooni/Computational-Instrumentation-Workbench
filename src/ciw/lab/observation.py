@@ -1178,6 +1178,11 @@ DISTORTION_ARCS_M = (0.0, 0.015, 0.03, 0.045, 0.06)
 DISTORTION_PAIRS = ((0, 2), (0, 4), (1, 3))
 DISTORTION_MODEL = (0.05, 0.01, 5e-4, -5e-4)
 FOLD = {"k1": -0.6, "r_true": 0.85, "undistort_iterations": 400}
+# Central-difference step of T050's pixel Jacobians. The first-order residuals |direct - J_pix delta_pix| / |direct|
+# see J's rounding error, the triangulation's rounding (BLAS camera products, LAPACK SVD; about 1e-15 m) over 2h, which
+# differs between OpenBLAS kernels: at 1e-3 px it moved the residuals by up to 1.5e-6 relative, at 1e-2 px by at most
+# 5.5e-8, while the h^2 truncation shifts them by 1e-6 to 1e-5 relative (deterministic).
+JACOBIAN_STEP_PX = 1e-2
 
 
 def _monotone_preimage(k1, distorted_radius):
@@ -1220,7 +1225,7 @@ def distortion_study() -> dict:
         for camera in cameras:
             visible_all &= bool(np.all(cam.visible(camera, points, markers["normals"])))
         truth = cam.pair_chords(points, pairs)
-        jac = cam.chord_pixel_jacobian(cameras, points[pairs[:, 0]], points[pairs[:, 1]])
+        jac = cam.chord_pixel_jacobian(cameras, points[pairs[:, 0]], points[pairs[:, 1]], step=JACOBIAN_STEP_PX)
         radius = float(np.mean([np.linalg.norm(c.normalized(c.project(points)), axis=1).mean() for c in cameras]))
         biases = {}
         for k in DISTORTION_K1:
@@ -1308,7 +1313,7 @@ def perspective_study(scene) -> dict:
     (affine) projection.
     """
     cameras, points, normals, pairs, truth = (scene[key] for key in ("cameras", "points", "normals", "pairs", "truth"))
-    jac = cam.chord_pixel_jacobian(cameras, points[pairs[:, 0]], points[pairs[:, 1]])
+    jac = cam.chord_pixel_jacobian(cameras, points[pairs[:, 0]], points[pairs[:, 1]], step=JACOBIAN_STEP_PX)
     rows, closed_gap = [], 0.0
     for radius in MARKER_RADII_M:
         fitted = [np.array([cam.conic_centre(camera.project(cam.disc_rim(p, n, radius, RIM_SAMPLES)))
@@ -1410,7 +1415,12 @@ def lens_distortion_perturbations(ctx):
                                          "first_order_relative_residual": study["first_order_relative_residual"]},
                                         "radius slope: largest departure of a pairwise slope from the fitted one "
                                         "(higher-order terms of f k1 ((r + dr)^3 - r^3) and the changing pixel "
-                                        "Jacobian of the shifted markers); first order: the O(k1 r^2) residual itself"),
+                                        "Jacobian of the shifted markers); first order: the O(k1 r^2) residual itself. "
+                                        "Its rounding part, the triangulation's rounding over the "
+                                        f"{JACOBIAN_STEP_PX:g} px central-difference step of J_pix, differs between "
+                                        "the SkylakeX, Haswell, Sandybridge, Nehalem and Katmai OpenBLAS kernels by "
+                                        "at most 2.5e-8 relative; the regression tolerance (1e-6 relative) is about "
+                                        "40 times that spread"),
                 tolerance={"abs": 1e-12, "rel": 1e-6}),
         finding("Undistorting with the true Brown-Conrady model (radial and tangential) removes the chord bias",
                 "numerical",
@@ -1492,7 +1502,11 @@ def lens_distortion_perturbations(ctx):
                 unit="m", uncertainty=_truncation({"first_order_relative_residual":
                                                    perspective["first_order_relative_residual"]},
                                                   "the first-order law omits O(delta^2) terms; the recorded residual "
-                                                  "is that truncation"),
+                                                  "is that truncation. Its rounding part, the triangulation's rounding "
+                                                  f"over the {JACOBIAN_STEP_PX:g} px central-difference step of J_pix, "
+                                                  "differs between the SkylakeX, Haswell, Sandybridge, Nehalem and "
+                                                  "Katmai OpenBLAS kernels by at most 5.5e-8 relative; the regression "
+                                                  "tolerance (1e-6 relative) is about 18 times that spread"),
                 tolerance={"abs": 1e-12, "rel": 1e-6}),
         _unestablished("A two-term radial plus tangential Brown-Conrady model describes a real lens to the required "
                        "accuracy", "calibration", "No lens was measured; higher-order, decentring and "
@@ -1541,7 +1555,8 @@ def lens_distortion_perturbations(ctx):
                    "prediction and log-log slopes across image radius and k1; correction with the generating model; "
                    "fold counterexample with converged undistortion; perspective: conic centres of projected "
                    "circular-marker rims against the closed form and the projected centres, fronto-parallel and "
-                   "weak-perspective controls, and chord bias against J_pix delta over three marker radii.",
+                   "weak-perspective controls, and chord bias against J_pix delta over three marker radii. J_pix is "
+                   f"taken by central differences with a {JACOBIAN_STEP_PX:g} px step.",
         numerical_result=f"formula consistency {study['formula_relative_error']:.1e}; first-order residual "
                          f"{study['first_order_relative_residual']:.2%}; bias at k1 = 0.01 grows from "
                          f"{rows[0]['mean_abs_bias_k1_0.01_m']:.2e} to {rows[-1]['mean_abs_bias_k1_0.01_m']:.2e} m, "
@@ -1563,7 +1578,9 @@ def lens_distortion_perturbations(ctx):
                     "are not separated (pairwise slopes up to "
                     f"{max(study['pairwise_radius_slopes']):.2f} at the largest radius); marker-centre offsets are "
                     "exact to rounding (closed form against conic fit), and the marker chord bias carries its "
-                    "first-order residual.",
+                    "first-order residual. Both first-order residuals also carry the triangulation's rounding over "
+                    "the central-difference step of J_pix, which differs between OpenBLAS kernels by less than 1e-7 "
+                    "relative.",
         failure_modes_checked=["sign of k1 (odd symmetry)", "markers leaving the image at large shifts",
                                "tangential terms", "non-invertible distortion inside the image",
                                "undistorted versus distorted radius when locating the fold",

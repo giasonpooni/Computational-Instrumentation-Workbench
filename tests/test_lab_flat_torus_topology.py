@@ -12,6 +12,8 @@ import json
 import math
 import os
 from pathlib import Path
+import platform
+import subprocess
 import sys
 
 import pytest
@@ -391,10 +393,48 @@ def test_t024_t025_route_ranking_and_front(reports):
     assert ranks["value"]["by_amplification"] == [2, 1, 0, 4, 3, 7, 6, 8, 5]
     assert ranks["value"]["by_focus_margin"] == [[3, 4, 5, 8], [7], [6], [0], [1], [2]]
     assert "counterexample" in ranks
+    # The witness quotes route values, whose last digits depend on the BLAS kernel: a declared rounding tolerance,
+    # not an exact one. The orderings are decided by gaps far above the route-value uncertainty.
+    assert ranks["regression_tolerance"] == ftt.KERNEL_ROUNDING == {"abs": 1e-12, "rel": 1e-13}
+    gaps = [check for check in ranks["basis"]["checks"] if check["reference"].startswith("smallest")]
+    assert len(gaps) == 2 and all(check["passed"] and check["tolerance"] > 0 for check in gaps)
+    assert gaps[0]["observed"] == pytest.approx(0.0033434, rel=1e-4) and gaps[1]["observed"] > 0.3
     assert _label(report, "A flat torus has no conjugate points")["value"] == pytest.approx(1.0, abs=1e-12)
     front = _label(reports["T025"], "The three-objective front")["value"]
     assert front["front"] == [0, 1, 2, 3, 4] and front["front_members_past_conjugate_point"] == [2]
     assert front["fronts_2d"] == {"length_amplification": [0, 1, 2], "length_margin": [0, 3]}
+
+
+def _under_another_openblas_kernel(code):
+    """JSON printed by ``code`` in a subprocess forcing another OpenBLAS kernel than this process runs.
+
+    Sandybridge (no FMA), or Haswell when this process already forces Sandybridge. Skips where NumPy's BLAS is not
+    a DYNAMIC_ARCH x86-64 OpenBLAS, whose kernel OPENBLAS_CORETYPE selects.
+    """
+    import numpy as np
+
+    blas = np.show_config(mode="dicts").get("Build Dependencies", {}).get("blas", {})
+    if "openblas" not in str(blas.get("name")) or "DYNAMIC_ARCH" not in str(blas.get("openblas configuration")) \
+            or platform.machine().lower() not in ("x86_64", "amd64"):
+        pytest.skip("NumPy's BLAS is not a DYNAMIC_ARCH x86-64 OpenBLAS")
+    kernel = "Haswell" if os.environ.get("OPENBLAS_CORETYPE", "").lower() == "sandybridge" else "Sandybridge"
+    source = str(Path(ftt.__file__).resolve().parents[2])
+    environment = dict(os.environ, OPENBLAS_CORETYPE=kernel,
+                       PYTHONPATH=os.pathsep.join(filter(None, (source, os.environ.get("PYTHONPATH")))))
+    result = subprocess.run([sys.executable, "-c", code], env=environment, capture_output=True, text=True, timeout=300)
+    assert result.returncode == 0, result.stderr[-2000:]
+    return json.loads(result.stdout)
+
+
+def test_t024_route_values_stay_within_the_witness_tolerance_on_another_blas_kernel(reports):
+    """The last digits of route values depend on the BLAS kernel (dot products in the surface metric); another
+    kernel finds the same routes and rankings, with values within the ranking witness's regression tolerance."""
+    other = _under_another_openblas_kernel("import json; from ciw.lab import flat_torus_topology as ftt; "
+                                           "print(json.dumps(ftt._route_table(ftt.torus_routes()['routes'])))")
+    table = _label(reports["T024"], "Every fan-search route")["value"]
+    ranks = _label(reports["T024"], "Rankings by length")
+    assert runner._close(table, other, ranks["regression_tolerance"])
+    assert routes.rankings(other) == ranks["value"]
 
 
 def test_pareto_second_computation_detects_a_wrong_dominance_rule(reports, tmp_path, monkeypatch):

@@ -4,6 +4,7 @@ import json
 import math
 import os
 from pathlib import Path
+import platform
 import subprocess
 import sys
 import textwrap
@@ -326,6 +327,9 @@ def test_t050_lens_distortion(tmp_path):
     assert consistency["basis"]["checks"][0]["reference_kind"] == "invariant"
     law = _find(report, "Uncorrected radial")["value"]
     assert law["mean_abs_bias_k1_0.01_m"] == sorted(law["mean_abs_bias_k1_0.01_m"])
+    # J_pix by central differences with the declared step: its truncation and rounding stay far below the residual.
+    assert observation.JACOBIAN_STEP_PX == 1e-2 and "0.01 px step" in report["experiment"]
+    assert law["first_order_relative_residual"] == pytest.approx(0.0030165, rel=1e-5)
     assert law["radius_slope"] == pytest.approx(2.0, abs=0.1) and law["k1_slope_max_error"] < 0.01
     assert _find(report, "Undistorting")["value"]["corrected_error_m"] < 1e-12
     fold = _find(report, "Strong barrel")
@@ -369,6 +373,38 @@ def test_t050_perspective_markers(tmp_path):
     assert bias["value"]["bias_radius_slope"] == pytest.approx(2.0, abs=1e-3)
     assert 1e-5 < bias["value"]["max_abs_chord_bias_m"][-1] < 1e-3
     assert "perspective" in report["hypothesis"].lower() and "perspective" in report["experiment"].lower()
+
+
+def _under_another_openblas_kernel(code):
+    """JSON printed by ``code`` in a subprocess forcing another OpenBLAS kernel than this process runs.
+
+    Sandybridge (no FMA), or Haswell when this process already forces Sandybridge. Skips where NumPy's BLAS is not
+    a DYNAMIC_ARCH x86-64 OpenBLAS, whose kernel OPENBLAS_CORETYPE selects.
+    """
+    blas = np.show_config(mode="dicts").get("Build Dependencies", {}).get("blas", {})
+    if "openblas" not in str(blas.get("name")) or "DYNAMIC_ARCH" not in str(blas.get("openblas configuration")) \
+            or platform.machine().lower() not in ("x86_64", "amd64"):
+        pytest.skip("NumPy's BLAS is not a DYNAMIC_ARCH x86-64 OpenBLAS")
+    kernel = "Haswell" if os.environ.get("OPENBLAS_CORETYPE", "").lower() == "sandybridge" else "Sandybridge"
+    source = str(Path(observation.__file__).resolve().parents[2])
+    environment = dict(os.environ, OPENBLAS_CORETYPE=kernel,
+                       PYTHONPATH=os.pathsep.join(filter(None, (source, os.environ.get("PYTHONPATH")))))
+    result = subprocess.run([sys.executable, "-c", code], env=environment, capture_output=True, text=True, timeout=300)
+    assert result.returncode == 0, result.stderr[-2000:]
+    return json.loads(result.stdout)
+
+
+def test_t050_first_order_residuals_stay_within_tolerance_on_another_blas_kernel(tmp_path):
+    """The first-order residuals carry J_pix's rounding, which depends on the BLAS kernel (camera products and the
+    triangulation's SVD); another kernel's residuals stay within the findings' regression tolerance."""
+    other = _under_another_openblas_kernel(
+        "import json; from ciw.lab import observation as o; print(json.dumps("
+        "[o.distortion_study()['first_order_relative_residual'], "
+        "o.perspective_study(o.camera_scene())['first_order_relative_residual']]))")
+    report = _run("T050", tmp_path)
+    for prefix, value in zip(("Uncorrected radial", "Perspective displacement of circular-marker"), other):
+        record = _find(report, prefix)
+        assert runner._close(record["value"]["first_order_relative_residual"], value, record["regression_tolerance"])
 
 
 def test_shared_phase_rounding_covariance():
