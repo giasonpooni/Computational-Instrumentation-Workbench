@@ -194,10 +194,26 @@ log through `data.log_digest`. Renaming the sensor, which is never analysed, and
 resealing the log changes `numerical_result_id` while every analysed number
 stays equal. The identity is therefore stable across occurrences of a
 canonically identical log. It is not a function of the analysed numbers alone.
-T081 retains the baseline identity itself as `energy_numerical_result_id`, in
-`numerical-identity.json` and in the value of its identity finding, so
-`ciw lab verify` compares it exactly between runs. The other identities in
-that artifact are replaced by role labels, because they are fresh per run.
+
+It is also stable only on one arithmetic platform: it hashes the analysed
+floats bit for bit, and their last bits depend on the BLAS kernel. T081 was
+regenerated on one Linux x86-64 host under the OpenBLAS kernels SkylakeX,
+Haswell, Sandybridge, Nehalem and Katmai (`OPENBLAS_CORETYPE`). Each run had
+one identity over its twelve occurrences, but there were three identities
+(Nehalem and Katmai matched Sandybridge bit for bit). Of the 47 analysed
+floats, up to 13 moved, by at most 2.2e-16: the reference mean and covariance
+entries by at most 2.8e-16 relative, the rest being filter errors at rounding
+level. The identity finding's value therefore holds the counts its claim is
+about (occurrences, distinct numerical and result identities, recomputation
+mismatches) and the numerical result the identity hashes, not the identity
+itself. `ciw lab verify` compares the counts exactly and the result leaf by
+leaf within 2e-14 absolute, about 90 times the measured spread, so a kernel's
+last bits pass and a changed analysed number fails. T081 retains the run's own
+identity as `energy_numerical_result_id` in `numerical-identity.json`, beside
+that result (`energy_numerical_result`); verify checks that artifact only
+against its recorded digest. The run does not record which kernel produced its
+values. The other identities in the artifact are replaced by role labels,
+because they are fresh per run.
 
 ## Mutation matrix (T080–T090)
 
@@ -426,11 +442,16 @@ holds the first two).
   cbsr. Then bind the stack to a telemetry or declared-workload workflow, so
   the ESM candidate rows, the candidate execution rows and the
   `ciw.subprocess-runtime.v1` rows are observed rather than read from code.
-- **Cross-platform reproduction** (T081). Run T081 on Windows x86-64 and macOS
-  arm64 besides the retained Linux x86-64 run. Every float-valued
-  `numerical_result_id` of the energy-accuracy bundles must equal the retained
-  `energy_numerical_result_id` exactly (T081's `numerical-identity.json` and
-  its identity finding's value, which `ciw lab verify` compares exactly).
+- **Cross-platform reproduction** (T081). The bit-exact `numerical_result_id`
+  links occurrences on one arithmetic platform only: five OpenBLAS kernels on
+  one Linux x86-64 host gave three identities. Run T081 on Windows x86-64 and
+  macOS arm64 and compare it with the retained run by `ciw lab verify`, which
+  checks that each run again has one identity over its occurrences and
+  compares the energy numerical result that identity hashes leaf by leaf
+  within 2e-14 absolute (the retained run does not record its kernel). Do the
+  differences stay at rounding level? Should CIW link occurrences across
+  platforms by such a tolerance comparison, or by an identity over
+  declared-precision data, instead of the bit-exact identity?
 
 Each task's `recommended_next_task` names its own open question, usually one
 of the CIW changes above (`exchange_provenance.NEXT_STEPS`). It is never the
@@ -462,5 +483,7 @@ next queue task, which has already run.
   oscillator provider identity and CIW's own energy analysis identity. The
   pinned-provider subprocess runtime identities (`ciw.subprocess-runtime.v1`)
   were not mutated.
-- Stability of the float-valued `numerical_result_id` across platforms and BLAS
-  builds was not tested.
+- The float-valued `numerical_result_id` is not stable across BLAS kernels
+  (five OpenBLAS kernels on one host gave three identities). Other operating
+  systems and BLAS libraries were not tested, and a run does not record which
+  kernel produced it.

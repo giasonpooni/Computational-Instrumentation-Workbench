@@ -439,17 +439,32 @@ def test_t081_defers_cross_platform_reproduction_as_one_question(lab):
     assumptions = report["unresolved_assumptions"]
     platform = [a for a in assumptions if "platform" in a.lower()]
     assert platform == [ep.PLATFORM_QUESTION_T081]
-    for fragment in ("Windows x86-64", "macOS arm64", "Linux x86-64", "numerical_result_id",
-                     "equals the retained energy_numerical_result_id", "numerical-identity.json"):
+    for fragment in ("Windows x86-64", "macOS arm64", "Linux x86-64", "numerical_result_id", "five OpenBLAS kernels",
+                     "ciw lab verify", "leaf by leaf within 2e-14", "does not record its kernel"):
         assert fragment in platform[0], fragment
-    # The id the question compares against is retained verbatim (not masked by relabel) in the named artifact and
-    # in the identity finding's value, which the regression gate compares exactly.
-    retained = json.loads(_artifact(lab, "T081", "numerical-identity.json"))["energy_numerical_result_id"]
-    assert retained.startswith("sha256:") and len(retained) == len("sha256:") + 64
-    int(retained.removeprefix("sha256:"), 16)
+    assert "OpenBLAS kernels SkylakeX, Haswell, Sandybridge, Nehalem and Katmai" in report["uncertainty"]
+    # The id hashes floats whose last bits depend on the BLAS kernel, so the regression gate compares the counts the
+    # claim is about and the numerical result the id hashes, within the kernel tolerance; the id is retained verbatim
+    # (not masked by relabel) in the named artifact, beside that result.
     identity = report["findings"][0]
     assert identity["claim"].startswith("The energy numerical_result_id is identical")
-    assert identity["value"]["energy_numerical_result_id"] == retained
+    value = identity["value"]
+    assert {key: value[key] for key in value if key != "numerical_result"} == {
+        "occurrences": 12, "distinct_numerical_result_ids": 1, "distinct_result_ids": 12, "recomputation_mismatches": 0}
+    assert identity["regression_tolerance"] == ep.KERNEL_ROUNDING == {"abs": 2e-14, "rel": 0.0}
+    assert identity["uncertainty"]["kind"] == "roundoff" and "about 90 times" in identity["uncertainty"]["basis"]
+    artifact = json.loads(_artifact(lab, "T081", "numerical-identity.json"))
+    retained = artifact["energy_numerical_result_id"]
+    assert retained.startswith("sha256:") and len(retained) == len("sha256:") + 64
+    int(retained.removeprefix("sha256:"), 16)
+    assert not any(retained in json.dumps(record["value"]) for record in report["findings"])
+    assert set(artifact["energy_numerical_result"]) == {"operation_id", "data"}
+    assert ep._sha(artifact["energy_numerical_result"]) == retained == ep._sha(value["numerical_result"])
+    # The gate passes last-bit kernel differences (at most 2.2e-16 measured) and refuses a changed analysed number.
+    for delta, close in ((1e-15, True), (1e-3, False)):
+        changed = json.loads(json.dumps(value))
+        changed["numerical_result"]["data"]["reference"]["log_evidence"] += delta
+        assert runner._close(value, changed, identity["regression_tolerance"]) is close, delta
     # It is the baseline log's identity that T078 retains for its source records.
     lab("T078")
     records = json.loads(_artifact(lab, "T078", "source-retention.json"))["records"]
