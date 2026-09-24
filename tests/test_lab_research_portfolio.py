@@ -1,7 +1,10 @@
+import importlib.util
 import json
 import math
 from pathlib import Path
 import platform
+import re
+import sys
 
 import pytest
 
@@ -291,29 +294,47 @@ def test_counterexample_catalogue(retained):
 
 
 # --------------------------------------------------------------- T158
-def _figure_task(task_id, timing=False, varying=False):
+FIGURES = research_portfolio.FIGURE_CLAIM
+TIMING_DIFFERS = "Re-executed figures declared as wall-clock timing figures differ from their retained bytes"
+TIMING_IDENTICAL = "Re-executed figures declared as wall-clock timing figures reproduced byte for byte in this run"
+
+
+def _figure_task(task_id, varying=False, declared=False, timing_note=False, growing=False, provider=None,
+                 states=("completed",), extra=False, identity=None):
+    """A fake figure task: ``varying`` changes one plotted value on every call, ``growing`` adds a point,
+    ``timing_note`` retains a JSON note on wall-clock timings (no declaration), ``declared`` declares the figure,
+    ``extra`` writes a second figure from its second call on, ``identity`` is its recorded runtime identity."""
     from ciw.lab import svg
     calls = iter(range(1, 100))
 
     def figure(ctx):
-        scale = next(calls) if varying else 1
-        if timing:
-            ctx.artifact_json("timings.json", {"note": "Wall-clock timings of this run; not reproducible.", "seconds": scale})
-        ctx.artifact_text("plot.svg", svg.line_plot([("a", [1, 2, 3], [1, 4, 9 * scale])], title="t", xlabel="x",
-                                                    ylabel="y"))
-        return {"fields": {}, "findings": [finding("f", "numerical", 1.0, {"generator": {"name": "g"}, "checks": [CHECK]},
-                                                   uncertainty={"kind": "exact", "value": 0, "basis": "b"},
-                                                   tolerance={"abs": 0, "rel": 0})]}
+        call = next(calls)
+        if provider:
+            ctx.available(f"provider:{provider}")
+        if timing_note:
+            ctx.artifact_json("timings.json", {"note": "Wall-clock timings of this run; not reproducible.", "seconds": call})
+        xs = list(range(1, 3 + (call if growing else 1)))
+        ys = [x * x * (call if varying and x == xs[-1] else 1) for x in xs]
+        ctx.artifact_text("plot.svg", svg.line_plot([("a", xs, ys)], title="t", xlabel="x", ylabel="y"),
+                          wall_clock_timing=declared)
+        if extra and call > 1:
+            ctx.artifact_text("extra.svg", svg.line_plot([("a", xs, ys)], title="t", xlabel="x", ylabel="y"))
+        return {"state": states[min(call, len(states)) - 1],
+                "fields": {"provider_runtime_identity": identity} if identity else {},
+                "findings": [finding("f", "numerical", 1.0, {"generator": {"name": "g"}, "checks": [CHECK]},
+                                     uncertainty={"kind": "exact", "value": 0, "basis": "b"},
+                                     tolerance={"abs": 0, "rel": 0})]}
     return Implementation(task_id, figure)
 
 
-def _retain_figures(directory, monkeypatch, fakes):
+def _retain_figures(directory, monkeypatch, fakes, providers=None):
     for task_id, fake in fakes.items():
-        saved = runner.run_task(_queue()[task_id], fake, runner.Context(directory), {})
+        saved = runner.run_task(_queue()[task_id], fake, runner.Context(directory, providers), {})
         (directory / "reports").mkdir(exist_ok=True)
         (directory / "reports" / f"{task_id}.json").write_text(runner.dumps(saved))
     real, errors = load_implementations()
-    monkeypatch.setattr(research_portfolio, "load_implementations", lambda: ({**real, **fakes}, errors))
+    for module in (research_portfolio, runner):  # T158 re-executes through the former, scripts/check_figures.py the latter
+        monkeypatch.setattr(module, "load_implementations", lambda: ({**real, **fakes}, errors))
     monkeypatch.setattr(research_portfolio, "REGENERATED", tuple(fakes))
 
 
@@ -321,21 +342,20 @@ def test_figures_are_reproducible(tmp_path, monkeypatch):
     _retain_figures(tmp_path, monkeypatch, {"T010": _figure_task("T010")})
     report = _run("T158", tmp_path)
     values = {f["claim"]: f["value"] for f in report["findings"]}
-    assert values["Re-executed figure tasks without wall-clock timings regenerate byte-identical figures"] == 0
+    assert values[FIGURES] == 0
     assert set(_labels(report).values()) == {"numerically_verified"}
     assert report["state"] == "completed" and report["evidence_status"]["primary"] == "numerically_verified"
 
 
 def test_a_changed_figure_is_a_mismatch_and_a_timing_figure_a_counterexample(tmp_path, monkeypatch):
     _retain_figures(tmp_path, monkeypatch, {"T010": _figure_task("T010", varying=True),
-                                            "T013": _figure_task("T013", timing=True, varying=True)})
+                                            "T013": _figure_task("T013", declared=True, varying=True)})
     report = _run("T158", tmp_path)
     labels = _labels(report)
-    # A timing-free figure that changes refutes byte reproducibility.
-    assert labels["Re-executed figure tasks without wall-clock timings regenerate byte-identical figures"] == "not_established"
-    assert _finding(report, "Re-executed figure tasks without")["value"] == 1
-    # A timing figure that changes is a counterexample to the hypothesis, established by its check.
-    counter = _finding(report, "Re-executed figures that plot wall-clock timings differ")
+    # An undeclared figure that changes refutes byte reproducibility.
+    assert labels[FIGURES] == "not_established" and _finding(report, FIGURES)["value"] == 1
+    # A declared timing figure that changes is a counterexample to the hypothesis, established by its check.
+    counter = _finding(report, TIMING_DIFFERS)
     assert counter["evidence_status"] == "numerically_verified" and counter["value"] == 1
     assert counter["counterexample"]["witness"] == {"figures": ["artifacts/T013/plot.svg"]}
     assert report["state"] == "partial" and report["evidence_status"]["primary"] == "not_established"
@@ -345,13 +365,151 @@ def test_a_changed_figure_is_a_mismatch_and_a_timing_figure_a_counterexample(tmp
     assert _labels(edited)["Retained figures hash to the digests their reports record"] == "not_established"
 
 
+def test_only_declared_timing_figures_are_exempt_from_the_byte_comparison(tmp_path, monkeypatch):
+    # T010 retains a note on wall-clock timings but does not declare its differing figure: a mismatch.
+    _retain_figures(tmp_path / "undeclared", monkeypatch, {"T010": _figure_task("T010", varying=True, timing_note=True)})
+    undeclared = _run("T158", tmp_path / "undeclared")
+    assert _labels(undeclared)[FIGURES] == "not_established" and _finding(undeclared, FIGURES)["value"] == 1
+    assert TIMING_DIFFERS not in _labels(undeclared)
+    # Declared, the same differing figure is compared for structure and is no mismatch.
+    _retain_figures(tmp_path / "declared", monkeypatch, {"T010": _figure_task("T010", varying=True, declared=True)})
+    declared = _run("T158", tmp_path / "declared")
+    assert _labels(declared)[FIGURES] == "numerically_verified" and _finding(declared, FIGURES)["value"] == 0
+    assert _labels(declared)[TIMING_DIFFERS] == "numerically_verified"
+    assert declared["state"] == "completed"
+    # A declared figure whose series or points change is a mismatch; one that reproduced is reported, not hidden.
+    _retain_figures(tmp_path / "mixed", monkeypatch, {"T013": _figure_task("T013", growing=True, declared=True),
+                                                      "T020": _figure_task("T020", declared=True)})
+    mixed = _run("T158", tmp_path / "mixed")
+    assert _finding(mixed, FIGURES)["value"] == 1 and _labels(mixed)[FIGURES] == "not_established"
+    assert _finding(mixed, TIMING_IDENTICAL)["value"] == 1 and _labels(mixed)[TIMING_IDENTICAL] == "numerically_verified"
+    assert TIMING_DIFFERS not in _labels(mixed)
+    assert any(a.startswith("Declared wall-clock timing figures reproduced byte for byte here: artifacts/T020/plot.svg")
+               for a in mixed["unresolved_assumptions"])
+    index = json.loads((tmp_path / "mixed" / "artifacts" / "T158" / "figure-index.json").read_text(encoding="utf-8"))
+    assert {o["task_id"]: o["outcome"] for o in index["regenerated"]} == {"T013": "structure differs",
+                                                                          "T020": "identical"}
+    assert index["wall_clock_timing_tasks"] == ["T013", "T020"]
+    # The comparison itself: bytes for an undeclared figure, presence and series/points for a declared one.
+    first, second = (research_portfolio.figure_structure(b"<svg xmlns='http://www.w3.org/2000/svg'>" + b"<path/>" * n
+                                                         + b"</svg>") for n in (1, 2))
+    assert first == {"series": 1, "points": 0} and second["series"] == 2
+    assert research_portfolio.figure_structure(b"<svg") is None
+    assert research_portfolio.compare_figure(b"<svg/>", None, True) == "not regenerated"
+    assert research_portfolio.compare_figure(b"<svg/>", b"<svg />", False) == "differs"
+    assert research_portfolio.compare_figure(b"<svg/>", b"<svg />", True) == "same structure"
+    assert research_portfolio.compare_figure(b"<svg/>", b"<svg><path/></svg>", True) == "structure differs"
+    assert research_portfolio.compare_figure(b"<svg/>", b"<svg", True) == "structure differs"
+
+
 def test_figures_not_reexecuted_leave_the_task_partial(tmp_path, monkeypatch):
     _retain_figures(tmp_path, monkeypatch, {"T010": _figure_task("T010")})
     monkeypatch.setattr(research_portfolio, "REGENERATED", ())
     report = _run("T158", tmp_path)
     assert report["state"] == "partial"
-    assert _finding(report, "Re-executed figure tasks without")["expected_not_established"] is True
+    assert _finding(report, FIGURES)["expected_not_established"] is True
     assert any("not re-executed" in a and "T010" in a for a in report["unresolved_assumptions"])
+
+
+# A T097-like runtime identity: optional checkouts read without a provider probe, one ready and one not bound.
+UNPROBED = {"set": {"state": "ready", "head": "h", "tree": "t"}, "ppda": {"state": "not_bound", "head": None},
+            "scr": {"revision": "r", "source_tree": "t"}, "scr-engine": {"revision": "r"}, "sources": {}}
+
+
+def test_next_step_runs_the_figure_check_on_the_second_platform(tmp_path, monkeypatch):
+    _retain_figures(tmp_path, monkeypatch, {"T010": _figure_task("T010", provider="csg"), "T013": _figure_task("T013"),
+                                            "T020": _figure_task("T020", identity=UNPROBED)},
+                    providers={"csg": tmp_path})
+    step = _run("T158", tmp_path)["recommended_next_task"]
+    # The remaining work is the Windows run of scripts/check_figures.py with the providers the figure tasks used,
+    # the checkouts a task read without probing them included.
+    assert "Windows" in step and "python scripts/check_figures.py --retained lab" in step
+    assert "(csg, scr, set in this run)" in step and "figure-check.json" in step
+    assert "declare timing figures" not in step and not re.search(r"\bT\d{3}\b", step)
+    # A declaration is for wall-clock timing figures only, never for a figure that differs on another platform.
+    assert "fix or declare" not in step and "declaring one only when its plotted data are wall-clock timings" in step
+
+
+def test_providers_used_include_checkouts_read_without_a_probe():
+    used = research_portfolio.providers_used({"provider_runtime_identity": dict(
+        UNPROBED, requirement_probes={"provider:csg": True, "provider:ftr": False, "tool:cargo": True})})
+    # A ready or pinned checkout role counts; a role not bound, a failed probe and a non-checkout key do not.
+    assert used == ["csg", "scr", "set"]
+    assert research_portfolio.providers_used({"provider_runtime_identity": None}) == []
+
+
+def _script(name):
+    path = Path(__file__).resolve().parents[1] / "scripts" / f"{name}.py"
+    if not path.is_file():
+        pytest.skip("scripts/ is not part of the clean-room copy of the tests")
+    spec = importlib.util.spec_from_file_location(f"lab_script_{name}", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_figure_check_script_reexecutes_a_retained_run_and_compares_every_figure(tmp_path, monkeypatch, capsys):
+    check = _script("check_figures")
+    retained = tmp_path / "retained"
+    _retain_figures(retained, monkeypatch, {
+        "T010": _figure_task("T010"),                                        # reproduces byte for byte
+        "T013": _figure_task("T013", varying=True, declared=True),           # declared timing figure: structure only
+        "T020": _figure_task("T020", varying=True, timing_note=True),        # undeclared timing figure: a mismatch
+        "T023": _figure_task("T023", states=("completed", "partial")),      # ends in another state: not comparable
+        "T030": _figure_task("T030", provider="csg"),                        # its provider is not bound here
+        "T031": _figure_task("T031", extra=True)},                           # writes a figure the report lacks
+        providers={"csg": tmp_path})
+
+    def main(*args):
+        monkeypatch.setattr(sys, "argv", ["check_figures.py", "--retained", str(retained), *args])
+        return check.main()
+
+    out = tmp_path / "out"
+    assert main("--output-dir", str(out)) == 3
+    record = json.loads((out / "figure-check.json").read_text(encoding="utf-8"))
+    assert record["schema"] == "ciw.lab-figure-check.v1" and record["providers"] == []
+    assert {o["path"]: o["outcome"] for o in record["figures"]} == {
+        "artifacts/T010/plot.svg": "identical", "artifacts/T013/plot.svg": "same structure",
+        "artifacts/T020/plot.svg": "differs", "artifacts/T031/plot.svg": "identical",
+        "artifacts/T031/extra.svg": "not retained"}
+    # Tasks left out are listed with their reason and never counted as matches.
+    assert record["not_reexecuted"] == {"T030": "provider csg not bound here; the retained run used it"}
+    assert record["not_comparable"] == {"T023": "state completed -> partial"}
+    assert record["summary"] == {
+        "figure_tasks": 6, "figures": 6, "compared_tasks": 4, "compared_figures": 4, "identical": 2,
+        "declared_timing_same_structure": 1, "declared_timing_identical": 0, "mismatched": 2,
+        "not_reexecuted_tasks": 1, "not_reexecuted_figures": 1, "not_comparable_tasks": 1, "not_comparable_figures": 1}
+    # The platform the comparison ran on, for the second-platform record.
+    assert record["platform"]["python"] == platform.python_version() and "blas" in record["platform"]
+    assert (out / "run" / "reports" / "T010.json").is_file() and not (out / "run" / "reports" / "T030.json").exists()
+    summary = (out / "figure-check.md").read_text(encoding="utf-8")
+    assert "- Mismatched: 2" in summary and "| T020 | `artifacts/T020/plot.svg` | no | differs |" in summary
+    assert "| T030 | provider csg not bound here; the retained run used it |" in summary
+    assert "FAIL: 2 figures mismatched" in capsys.readouterr().out
+    # Selected tasks with the provider bound: the provider task is re-executed and compared too.
+    assert main("--output-dir", str(tmp_path / "bound"), "--provider", f"csg={tmp_path}", "T010", "T013", "T030") == 0
+    bound = json.loads((tmp_path / "bound" / "figure-check.json").read_text(encoding="utf-8"))
+    assert bound["providers"] == ["csg"] and bound["not_reexecuted"] == {} and bound["not_comparable"] == {}
+    assert {o["task_id"]: o["outcome"] for o in bound["figures"]} == {"T010": "identical", "T013": "same structure",
+                                                                      "T030": "identical"}
+    assert "PASS: 3 figures compared, none mismatched" in capsys.readouterr().out
+    # Changed sources, a used output directory, one inside the retained run and unknown tasks are refused.
+    changed = check.not_reexecuted({"provider_runtime_identity": {"sources": {"src/ciw/lab/svg.py": "0" * 64}}}, {})
+    assert changed == "sources differ from the retained run's: src/ciw/lab/svg.py"
+    # Provider-backed reports record their CIW sources under "ciw"; those are compared as well.
+    nested = {"provider_runtime_identity": {"ciw": {"sources": {"src/ciw/lab/svg.py": "0" * 64}},
+                                            "requirement_probes": {"provider:csg": True}}}
+    assert check.not_reexecuted(nested, {"csg": tmp_path}) == (
+        "sources differ from the retained run's: src/ciw/lab/svg.py")
+    # A checkout the task read without probing it (T097's set) must be bound as well.
+    assert check.not_reexecuted({"provider_runtime_identity": UNPROBED}, {"scr": tmp_path}) == (
+        "provider set not bound here; the retained run used it")
+    for args, message in ((("--output-dir", str(out)), "new or empty"),
+                          (("--output-dir", str(retained / "figures")), "outside the retained run"),
+                          (("--output-dir", str(tmp_path / "unknown"), "T001"), "Not figure tasks"),
+                          (("--output-dir", str(tmp_path / "bad"), "--provider", "csg"), "ROLE=PATH")):
+        with pytest.raises(SystemExit, match=message):
+            main(*args)
 
 
 # --------------------------------------------------------------- T159

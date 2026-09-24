@@ -333,7 +333,7 @@ def rust_kernels(ctx):
         [(name, [profile["counts"][name]["flops"]], [timings["seconds_per_call"][name] * 1e6])
          for name in ("geodesic_rhs", "jacobi_rhs", "rk4_step", "kalman_update")],
         title="Per-call time against exact flops (this machine)", xlabel="flops per call", ylabel="microseconds per call",
-        logx=True, logy=True))
+        logx=True, logy=True), wall_clock_timing=True)
     max_diff = max(profile["agreement"].values())
     counts_finding = finding(
         "Exact floating-point operation counts of the scalar kernel restatements", "numerical",

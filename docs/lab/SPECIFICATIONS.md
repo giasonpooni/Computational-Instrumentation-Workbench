@@ -334,11 +334,16 @@ wrong aggregate, never by re-reading what was just written:
   states only numbers of the value (`…(+N)` marks entries left out; numbers are
   never cut);
 - for T158, re-executing a declared set of inexpensive figure tasks plus every
-  figure task that retains wall-clock timings (a retained JSON artifact that
-  mentions wall-clock or elapsed time) and comparing figure bytes. A timing
-  figure that differs is recorded as a counterexample to byte reproducibility;
-  a timing-free figure that differs refutes it; figures not re-executed leave
-  the task `partial`;
+  task that declares a wall-clock timing figure (`wall_clock_timing: true` on
+  the figure's generated-artifact entry, set by the task when it writes the
+  figure) and comparing figure bytes; a declared figure is compared for
+  presence and structure (series and points) only. A declared figure that
+  differs in bytes is recorded as a counterexample to byte reproducibility,
+  and one that reproduced byte for byte is reported; any other figure that
+  differs, a figure no longer written and a declared figure whose structure
+  differs refute it; figures not re-executed leave the task `partial`
+  (`scripts/check_figures.py` re-executes all of them outside the queue, on
+  any platform);
 - for T168, a static tie analysis (a registered test names its task and
   mentions an evidence label), itself checked on probe cases, and the JUnit
   outcomes the reports recorded.
