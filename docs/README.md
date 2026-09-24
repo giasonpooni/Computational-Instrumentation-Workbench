@@ -30,6 +30,7 @@ imports `ciw`, and the command-line entry point is also `ciw`.
 - [Calibrated observable process](CALIBRATED_OBSERVABLE.md)
 - [Identified and budgeted observation](IDENTIFIED_DESIGN.md)
 - [Machine manifest workflow](CONTRACT_FOUNDATIONS.md#machine-manifest-operation)
+- [Project graph operation](CONTRACT_FOUNDATIONS.md#project-graph-operation)
 - [Energy-to-accuracy bench](ENERGY_ACCURACY.md)
 - [Variational free-energy sensor fusion](VARIATIONAL_FREE_ENERGY.md)
 - [Geodesic references](GEODESIC_REFERENCES.md) and [geometry research](GEOMETRY_RESEARCH.md)

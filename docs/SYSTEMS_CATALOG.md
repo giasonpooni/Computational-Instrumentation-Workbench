@@ -28,11 +28,12 @@ refusal behavior where the operation supports them.
 | [INTEGRATION_COVERAGE.md](INTEGRATION_COVERAGE.md) | Exercised paths, profile coverage, validation evidence and next connections. |
 | [WORKBENCH_ASSEMBLY.md](WORKBENCH_ASSEMBLY.md) | Multi-provider session assembly and deployment layout. |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Admission, persistence, identity separation, replay and read-only boundaries. |
-| [CONTRACT_FOUNDATIONS.md](CONTRACT_FOUNDATIONS.md) | Typed exchange and machine-manifest foundations. |
+| [CONTRACT_FOUNDATIONS.md](CONTRACT_FOUNDATIONS.md) | Typed exchange, machine-manifest and project-graph foundations. |
 | [PROVIDER_AVAILABILITY.md](PROVIDER_AVAILABILITY.md) | Exact local checkout provisioning and access limitations. |
 
 The built-in oscillator, telemetry, calibrated process, identified-design,
-covariance, geometry, energy and machine-manifest workflows are owned by CIW.
+covariance, geometry, energy, machine-manifest and project-graph workflows are
+owned by CIW.
 Their detailed operation status is maintained in the operation catalogue rather
 than repeated in this systems page.
 

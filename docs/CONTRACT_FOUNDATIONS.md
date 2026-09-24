@@ -1,9 +1,9 @@
 # Contract foundations for typed engineering projects
 
 This increment checks three provider-free foundations that were previously
-present only as local drafts. The machine manifest and thermal profile are now
-registered as shared workbench operations backed by independent Python references;
-the project graph remains a reusable contract until its operation adapter is defined.
+present only as local drafts. The machine manifest, thermal profile and project graph are
+now registered as shared workbench operations backed by independent Python
+references.
 
 ## Machine manifest
 
@@ -53,6 +53,27 @@ Inspection reports `execution`, `physical_validation` and `state_admission` as
 `not_performed`; the project model does not execute an operation or authorize
 an action.
 
+## Project graph operation
+
+`src/ciw/project_workflow.py` registers the project graph as the shared
+provider-free operation `ciw.project-graph.v1`. A retained source carries one
+exact `ciw.project.v1` artifact, the read-only configuration and a request
+naming the project revision the operator reviewed. A source whose artifact
+revision differs from that request, whose history chain or digests are broken,
+or whose configuration claims execution is refused before retention. Execution
+replays the history through the independent Python reference and retains the
+complete inspection as the native result: object and edge counts, result
+staleness against pinned input revisions, unresolved physical edges and
+evidence-bound context status, with separate operation, execution, result and
+numerical-result identities. Save/reopen validates the retained inspection
+against a fresh deterministic replay without executing a provider;
+`bundle.replay` records a new occurrence with a matching numerical identity.
+Declared computations are never executed, evidence is never fetched, and
+physical validation and state admission remain `not_performed`.
+`tests/test_project_workflow.py` covers the lifecycle, stale-revision and
+broken-history refusals, retained-record tamper refusal and runtime-identity
+mismatch. `examples/project-graph/make_source.py` prints a complete source.
+
 ## Thermal observer reference
 
 `src/ciw/thermal_contract.py` and `src/ciw/thermal_reference.py` define a
@@ -76,8 +97,9 @@ The thermal profile is now registered as the provider-free
 `ciw.thermal-observer.v1` operation. It uses the independent Python reference
 for its first executable occurrence and preserves operation, execution, result,
 source and replay identities through the shared save/reopen path. The machine
-manifest is now registered through `ciw.encoder-position.v1`; the project graph
-remains a contract module until its own operation adapter is defined. The next thermal gate is a separately verified Julia
+manifest is registered through `ciw.encoder-position.v1` and the project graph
+through `ciw.project-graph.v1`; independent ICRH profiles for these three
+provider-free operations remain pending. The next thermal gate is a separately verified Julia
 worker with an instantiated environment and a cross-language replay check.
 Provider bindings must remain host configuration; saved artifacts may not
 choose an executable or extend the allowlist.
