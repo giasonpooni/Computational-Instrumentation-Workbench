@@ -141,6 +141,17 @@ including save/reopen, fresh replay and refusal cases; the chi-square and
 binomial bands behind the last are checked against reference values in
 `tests/test_consistency_math.py`. Independent ICRH profiles for these provider-free operations remain the
 next integration gate; see [contract foundations](CONTRACT_FOUNDATIONS.md).
+`tests/test_retained_compatibility.py` is the reopen gate for identity-critical
+changes. It reopens `tests/fixtures/retained/workbench.json`, a committed
+snapshot of one executed bundle per provider-free kind built from the committed
+example inputs, validates every retained bundle against the current reference
+without a provider, executes each retained source afresh and requires the same
+numerical identity, and replays each bundle: a replay must be a fresh
+occurrence with the same numerical identity, or be refused solely because the
+reference runtime identity changed. Regenerate the snapshot with
+`python tests/fixtures/retained/generate.py` only when the retained format
+changes on purpose, and say so in the commit; a silent regeneration hides
+exactly the incompatibility the gate exists to catch.
 Coverage is not exhaustive: covariance CLI argument parsing and the
 calibration-refusal exit code lack dedicated assertions in the current suite.
 The off-allowlist `runtime_mismatch` refusal is asserted by

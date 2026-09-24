@@ -109,7 +109,11 @@ provenance. The energy workflow keeps its own verification method, a request
 derived from the log digest and run identity, and its flat pre-existing runtime
 identity, so energy workspaces saved before the consolidation still reopen.
 The shared module is part of every reference's algorithm identity, so a change
-to it is a runtime change for replay.
+to it is a runtime change for replay. A committed retained workspace under
+`tests/fixtures/retained/` is the reopen gate for every change to the shared
+module or its subclasses: the current code must validate each retained bundle,
+reproduce its numerical identity from the retained source, and replay it
+freshly or refuse on runtime identity alone.
 
 ## Current boundary and next gate
 
