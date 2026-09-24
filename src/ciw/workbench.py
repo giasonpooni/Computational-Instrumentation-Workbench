@@ -296,7 +296,7 @@ def _validate_record(record, sources):
     native = record["native"]
     if not isinstance(native, dict):
         raise ValueError("Native bundle must be an object")
-    raw = workflow._validate_retained(native) if record["kind"] == "telemetry" else workflow._validate(native)
+    raw = workflow._validate(native)
     if (native["bundle_digest"] != record["bundle_id"] or
             raw != base64.b64decode(source["bytes_b64"], validate=True)):
         raise ValueError("Bundle differs from its exact retained source bytes")

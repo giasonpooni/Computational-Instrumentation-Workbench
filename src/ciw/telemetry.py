@@ -344,6 +344,10 @@ def _validate_retained(bundle):
         raise ValueError("Malformed retained telemetry session") from exc
 
 
+# The workbench validates every retained kind through ``_validate``.
+_validate = _validate_retained
+
+
 def _validate_retained_inner(bundle):
     if len(canonical(bundle)) > MAX_BYTES:
         raise ValueError("Telemetry session exceeds byte budget")
