@@ -73,11 +73,21 @@ def same(actual, expected, message: str) -> None:
         raise ValueError(message)
 
 
+NESTED_RUNTIMES = ("vendor",)
+
+
 def host_projection(runtime):
-    """A runtime identity without its host bindings, at every level."""
-    if isinstance(runtime, dict):
-        return {key: host_projection(value) for key, value in runtime.items() if key not in HOST_FIELDS}
-    return runtime
+    """A runtime identity without its host bindings.
+
+    Host fields are dropped from the runtime and from the nested provider
+    runtimes it names (``vendor``); every other value, including
+    ``dependencies`` and ``engine``, is compared exactly.
+    """
+    value = {key: item for key, item in runtime.items() if key not in HOST_FIELDS}
+    for key in NESTED_RUNTIMES:
+        if isinstance(value.get(key), dict):
+            value[key] = host_projection(value[key])
+    return value
 
 
 def seal_step(role: str, operation: str, source: dict, input_refs: list, data) -> dict:
@@ -229,6 +239,17 @@ class PipelineRunner:
                 runtime["source_tree"] != self.pin.get("source_tree", runtime["source_tree"])):
             raise ValueError(f"{self.LABEL} source tree differs from the approved provider pin")
         self.check_runtime(runtime)
+
+    def run_provider(self, bound, script, arguments, payload):
+        """Run a provider script, then re-verify its identity before its outcome is read.
+
+        A provider whose checkout, interpreter or dependencies changed while it
+        ran is refused as a pin mismatch whatever its exit code or output.
+        """
+        adapter, runtime, _ = bound
+        code, raw = adapter._run(script, arguments, payload)
+        self._unchanged(adapter, runtime, "during")
+        return code, raw
 
     def _unchanged(self, adapter, runtime, when):
         current = self._runtime_projection(adapter.runtime_identity())

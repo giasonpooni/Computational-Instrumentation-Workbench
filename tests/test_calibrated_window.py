@@ -63,7 +63,7 @@ def test_operation_joins_existing_session_and_startup(tmp_path):
     operations = call(session, "operation.list")["operations"]
     entry, = [o for o in operations if o["operation_id"] == "ciw.calibrated-window.v1"]
     assert entry["available"] is False
-    call(session, "operation.execute", {"operation_id": entry["operation_id"], "parameters": {"source_id": source["source_id"]}}, error=True)
+    assert call(session, "operation.execute", {"operation_id": entry["operation_id"], "parameters": {"source_id": source["source_id"]}})["status"] == "refused"
     assert call(session, "bundle.list")["bundles"] == []
     args = parser().parse_args(["serve", "--calibrated-window-stack-root", "/trusted/window", "--telemetry-stack-root", "/trusted/telemetry"])
     assert args.calibrated_window_stack_root == Path("/trusted/window")
@@ -204,7 +204,7 @@ def test_native_refusal_does_not_retain_partial_state(attack, repositories, tmp_
     session = Session(make_demo_run(), tmp_path)
     session.workbench.bind_workflow("calibrated-window", repositories)
     descriptor = add(session, window.canonical(source))
-    call(session, "operation.execute", {"operation_id": "ciw.calibrated-window.v1", "parameters": {"source_id": descriptor["source_id"]}}, error=True)
+    assert call(session, "operation.execute", {"operation_id": "ciw.calibrated-window.v1", "parameters": {"source_id": descriptor["source_id"]}})["status"] == "refused"
     assert session.workbench.list_bundles() == []
     assert session.workbench.fusion_contexts() == []
     assert session.workbench.pending_operations == 0

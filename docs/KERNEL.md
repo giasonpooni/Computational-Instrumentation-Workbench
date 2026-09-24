@@ -77,10 +77,23 @@ unsupported, unbound or failed operation is retained as a refused execution with
 no result; a completed operation seals its execution and result. Domain payloads
 live in their own schemas inside these envelopes.
 
+Workflow kinds follow the same rule. An unbound provider, a provider refusal or
+a failed check during `operation.execute` or `bundle.replay` returns
+`{"status": "refused", "execution": ..., "result": null}` and retains a
+`ciw.workbench-refusal.v1` record: its own execution identity, the operation,
+source and evidence identities, any upstream bundles, the replayed bundle for a
+refused replay, and the refusal code and message, sealed by a record digest.
+It appears in `execution.list`, persists in the workspace and is validated on
+reopen; it is never a result, a bundle or a graph node. Capacity exhaustion is
+the one rejection that is not retained.
+
 ## Persistence and the project graph
 
 Workspace format 3 is the final format minted because a family of records was
-added. Later record types are records inside the workspace.
+added. Later record types are records inside the workspace: the retained
+workbench is `ciw.retained-workbench.v1`, `.v2` once it holds candidate-action
+receipts and `.v3` once it holds refused executions, and a reader accepts all
+three.
 
 `session.get` returns `workbench.project`, a `ciw.project-graph-view.v1` read of
 the retained records as the [`ciw.project.v1`](../src/ciw/project_model.py) graph

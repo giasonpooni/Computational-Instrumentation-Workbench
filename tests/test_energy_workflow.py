@@ -208,10 +208,10 @@ def test_same_measurement_occurrence_cannot_be_rebound_to_a_different_log(retain
     log = json.loads(retained[0])
     log["phases"][3]["samples"][-1]["energy_mj"] = "9999"
     other = w.add_source(source_payload(canonical(reseal(log))))
-    with pytest.raises(ValueError, match="Identity collision"):
-        w.execute({"operation_id": OPERATION, "source_id": other["source_id"]})
+    refused = w.execute({"operation_id": OPERATION, "source_id": other["source_id"]})
+    assert refused["status"] == "refused" and "Identity collision" in refused["execution"]["refusal"]["message"]
     assert w.pending_operations == 0
-    assert len(w.serialize()["bundles"]) == 1
+    assert len(w.serialize()["bundles"]) == 1 and w.serialize()["refusals"] == [refused["execution"]]
 
 
 def test_shared_session_live_transport_save_restore_and_reanalysis(retained, tmp_path):

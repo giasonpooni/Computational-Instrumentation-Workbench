@@ -155,8 +155,34 @@ def test_sealed_step_binds_request_result_and_numbers():
 
 
 def test_host_fields_never_count_as_pins():
-    nested = {"repository_root": "/x", "revision": "r", "vendor": {"python_executable": "/y", "revision": "v"}}
-    assert host_projection(nested) == {"revision": "r", "vendor": {"revision": "v"}}
+    nested = {"repository_root": "/x", "revision": "r", "vendor": {"python_executable": "/y", "revision": "v"},
+              "dependencies": {"numpy": "2.4.3", "python_executable": "/kept"}}
+    # Host bindings are dropped from the runtime and its nested provider runtime
+    # only; every other value, dependencies included, is compared exactly.
+    assert host_projection(nested) == {"revision": "r", "vendor": {"revision": "v"},
+                                       "dependencies": {"numpy": "2.4.3", "python_executable": "/kept"}}
+
+
+class ScriptRunner(ToyRunner):
+    def invoke(self, source, bound):
+        code, raw = self.run_provider(bound, "script", [], b"")
+        if code:
+            raise AdapterRefusal("TOY_REFUSED", "The toy provider refused")
+        return json.loads(raw)
+
+
+class ScriptAdapter(FakeAdapter):
+    def _run(self, script, arguments, payload):
+        self.identity = {**self.identity, "source_tree": "d" * 40}
+        return 1, b"not json"
+
+
+def test_drift_during_a_run_outranks_the_providers_own_refusal():
+    runner = ScriptRunner()
+    runner.make_adapter = lambda repository, retained: ScriptAdapter(repository, runtime())
+    with pytest.raises(ValueError, match="changed during execution") as caught:
+        runner.create_session(source_bytes(), {"toy": "/host/a"})
+    assert not isinstance(caught.value, AdapterRefusal)
 
 
 def test_generic_runner_classes_supply_hooks_only():

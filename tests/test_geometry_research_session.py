@@ -96,6 +96,13 @@ def test_geometry_offline_restore_never_binds_provider(retained,tmp_path,monkeyp
     assert restored.workbench.serialize() == session.workbench.serialize()
     for kind,refs in result["references"].items():
         before = deepcopy(restored.workbench.serialize())
-        assert call(restored,"experiment.inspect",{"bundle_id":refs["original"]}) == call(session,"experiment.inspect",{"bundle_id":refs["original"]})
-        call(restored,"bundle.replay",{"bundle_id":refs["original"]},error=True)
-        assert restored.workbench.serialize() == before
+        # Retained refusals advance the catalog revision; the view is otherwise identical.
+        view = lambda s: {k: v for k, v in call(s, "experiment.inspect", {"bundle_id": refs["original"]}).items() if k != "catalog_revision"}
+        assert view(restored) == view(session)
+        refused = call(restored,"bundle.replay",{"bundle_id":refs["original"]})
+        assert refused["status"] == "refused" and refused["execution"]["refusal"]["code"] == "operation_unavailable"
+        # A refused replay retains its refusal and changes no source, bundle or result.
+        after = restored.workbench.serialize()
+        assert after["refusals"][-1] == refused["execution"]
+        assert {k: v for k, v in after.items() if k not in {"schema", "revision", "refusals"}} == \
+            {k: v for k, v in before.items() if k not in {"schema", "revision", "refusals"}}

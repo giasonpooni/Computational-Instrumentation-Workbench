@@ -44,8 +44,9 @@ def test_proof_operation_requires_explicit_host_binding(tmp_path):
     operation = next(o for o in call(session, "operation.list")["operations"] if o["operation_id"] == "ciw.proved-heat.v1")
     assert operation["available"] is False
     assert operation["role"] == "proved_numerical_execution"
-    call(session, "operation.execute", {"operation_id": operation["operation_id"],
-         "parameters": {"source_id": source["source_id"]}}, error=True)
+    unbound = call(session, "operation.execute", {"operation_id": operation["operation_id"],
+                   "parameters": {"source_id": source["source_id"]}})
+    assert unbound["status"] == "refused" and unbound["execution"]["refusal"]["code"] == "operation_unavailable"
     assert call(session, "bundle.list")["bundles"] == []
     assert call(session, "experiment.inspect", {"view": "fusion"})["contexts"] == []
 
@@ -108,7 +109,7 @@ def test_historical_proof_session_restore_and_replay_bindings(tmp_path, monkeypa
         assert view["panels"][1]["values"] == [0, 65, 92, 65, 0]
         assert view["object_context"]["verification_trust_scope"] == TRUST_SCOPE
     assert call(restored, "experiment.inspect", {"view": "fusion"})["contexts"] == []
-    call(restored, "bundle.replay", {"bundle_id": original["bundle_id"]}, error=True)
+    assert call(restored, "bundle.replay", {"bundle_id": original["bundle_id"]})["status"] == "refused"
 
 
 def test_terminal_receives_supported_large_proof_envelope():
@@ -164,7 +165,9 @@ def test_proving_refusal_does_not_block_other_clients_or_publish_result(tmp_path
                 finally:
                     release.set()
                 refused = json.loads(await asyncio.wait_for(submitter.recv(), 5))
-                assert refused["type"] == "error" and refused["payload"]["code"] == "PROVED_HEAT_REFUSED"
+                assert refused["type"] == "response" and refused["payload"]["status"] == "refused"
+                assert refused["payload"]["execution"]["refusal"]["code"] == "PROVED_HEAT_REFUSED"
+                assert refused["payload"]["result"] is None
                 assert session.workbench.pending_operations == 0
                 assert call(session, "bundle.list")["bundles"] == []
     asyncio.run(exercise())

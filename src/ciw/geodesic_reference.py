@@ -355,7 +355,7 @@ class GeodesicReferenceWorkflow(PipelineRunner):
 
     def invoke(self, source, bound):
         adapter = bound[0]
-        code, raw = adapter._run(_BOOTSTRAP, [self.role, str(adapter.source_root)], canonical(source))
+        code, raw = self.run_provider(bound, _BOOTSTRAP, [self.role, str(adapter.source_root)], canonical(source))
         if code:
             raise AdapterRefusal("GEODESIC_REFERENCE_REFUSED", "Pinned " + self.role + " refused the declared reference")
         return _json(raw)

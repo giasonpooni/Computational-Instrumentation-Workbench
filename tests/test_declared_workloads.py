@@ -35,7 +35,7 @@ def test_source_and_operation_available_without_execution(kind, tmp_path):
     assert base64.b64decode(call(session, "source.get", {"source_id": retained["source_id"]})["bytes_b64"]) == raw
     operation = next(o for o in call(session, "operation.list")["operations"] if o["operation_id"] == "ciw." + kind + ".v1")
     assert not operation["available"] and operation["role"] != "state_estimator"
-    call(session, "operation.execute", {"operation_id": operation["operation_id"], "parameters": {"source_id": retained["source_id"]}}, error=True)
+    assert call(session, "operation.execute", {"operation_id": operation["operation_id"], "parameters": {"source_id": retained["source_id"]}})["status"] == "refused"
     assert session.workbench.serialize()["bundles"] == []
 
 
@@ -123,7 +123,7 @@ def test_shared_catalog_native_results_and_restore(retained, monkeypatch):
     restored = Session.from_workspace(path, path.parent / "restored")
     assert restored.workbench.serialize() == before
     assert {o["operation_id"] for o in restored.workbench.describe_operations() if o["available"]} == {"ciw.energy-accuracy.v1", "ciw.encoder-position.v1", "ciw.thermal-observer.v1"}
-    call(restored, "bundle.replay", {"bundle_id": bundles[KINDS[0]][0]["bundle_digest"]}, error=True)
+    assert call(restored, "bundle.replay", {"bundle_id": bundles[KINDS[0]][0]["bundle_digest"]})["status"] == "refused"
     assert restored.workbench.pending_operations == 0
 
 

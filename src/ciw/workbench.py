@@ -54,6 +54,9 @@ WORKFLOW_OPERATION_IDS = frozenset(OPERATIONS.values())
 from .candidate_evidence import OPERATIONS as CANDIDATE_OPERATIONS
 WORKBENCH_OPERATION_IDS = WORKFLOW_OPERATION_IDS | CANDIDATE_OPERATIONS.keys()
 MAX_SOURCES = 64
+REFUSAL_SCHEMA = "ciw.workbench-refusal.v1"
+MAX_REFUSALS = 256
+_FAILED = (AdapterRefusal, ValueError, TypeError, KeyError, OverflowError)
 MAX_BUNDLES = 128
 MAX_BYTES = 64 * 1024 * 1024
 _OVERHEAD = 4096
@@ -154,6 +157,24 @@ def _keys(value, required, optional=()):
 def _text(value, name):
     if not isinstance(value, str) or not value.strip() or len(value) > 512:
         raise ValueError(f"{name} must be a nonempty bounded string")
+
+
+def _refusal_record(action, kind, source, upstream_ids, subject, exc):
+    """A refused execution occurrence: an identity and a reason, never a result."""
+    from uuid import uuid4
+    from .core.canonical import utc_now
+    if isinstance(exc, AdapterRefusal):
+        refusal = {key: value[:512] for key, value in exc.to_dict().items()}
+    else:
+        refusal = {"code": "invalid_operation", "message": str(exc)[:512]}
+    refusal["message"] = refusal["message"].strip() or refusal["code"]
+    record = {"schema": REFUSAL_SCHEMA, "execution_id": "execution-" + uuid4().hex, "action": action,
+              "operation_id": OPERATIONS[kind], "source_kind": kind, "source_id": source["source_id"],
+              "evidence_id": source["evidence_id"], "upstream_bundle_ids": list(upstream_ids),
+              "subject_bundle_id": subject, "created_at": utc_now(), "status": "refused", "result_id": None,
+              "refusal": refusal}
+    record["record_digest"] = _digest(record)
+    return record
 
 
 def _descriptor(source):
@@ -573,6 +594,7 @@ class Workbench:
         self._bindings = {"energy-accuracy": {}, "thermal-observer": {}, "machine-manifest": {}}
         self._candidate_adapters = {}
         self._candidates = {}
+        self._refusals = {}
         self._identities = {operation: ("operation", _digest(operation)) for operation in WORKFLOW_OPERATION_IDS}
         self._used_bytes = 0
         self._pending = 0
@@ -831,6 +853,68 @@ class Workbench:
             self._revision += 1
             return deepcopy(_summary(record))
 
+    def _retain_refusal(self, action, kind, source, upstream_ids, subject, exc):
+        """Retain an unbound, unsupported or failed execution as a refused occurrence.
+
+        Capacity exhaustion is a rejection, never a retained refusal: it is
+        the one reason a refusal itself could not be kept.
+        """
+        if isinstance(exc, AdapterRefusal) and exc.code == "workbench_capacity":
+            raise exc
+        record = _refusal_record(action, kind, source, upstream_ids, subject, exc)
+        size = len(_canonical(record))
+        with self._lock:
+            self._validate_refusal(record)
+            if len(self._refusals) >= MAX_REFUSALS or self._used_bytes + size + _OVERHEAD > MAX_BYTES:
+                raise AdapterRefusal("workbench_capacity", "Refused-execution capacity exceeded; save and start a new session") from exc
+            self._refusals[record["execution_id"]] = record
+            self._used_bytes += size
+            self._revision += 1
+        return {"status": "refused", "execution": deepcopy(record), "result": None}
+
+    def _validate_refusal(self, record):
+        _keys(record, {"schema", "execution_id", "action", "operation_id", "source_kind", "source_id", "evidence_id",
+                       "upstream_bundle_ids", "subject_bundle_id", "created_at", "status", "result_id", "refusal",
+                       "record_digest"})
+        from re import fullmatch
+        from datetime import datetime
+        if (record["schema"] != REFUSAL_SCHEMA or record["status"] != "refused" or record["result_id"] is not None or
+                record["action"] not in {"execute", "replay"} or record["source_kind"] not in OPERATIONS or
+                record["operation_id"] != OPERATIONS[record["source_kind"]] or
+                not isinstance(record["execution_id"], str) or not fullmatch(r"execution-[0-9a-f]{32}", record["execution_id"])):
+            raise ValueError("Unsupported refused-execution record")
+        if record["record_digest"] != _digest({key: value for key, value in record.items() if key != "record_digest"}):
+            raise ValueError("Refused-execution record content mismatch")
+        source = self._sources.get(record["source_id"])
+        if source is None or source["kind"] != record["source_kind"] or source["evidence_id"] != record["evidence_id"]:
+            raise ValueError("Refused execution names another retained source")
+        upstream = record["upstream_bundle_ids"]
+        if (not isinstance(upstream, list) or len(upstream) > MAX_BUNDLES or
+                any(not isinstance(item, str) or item not in self._bundles for item in upstream)):
+            raise ValueError("Refused execution names an unretained upstream bundle")
+        subject = record["subject_bundle_id"]
+        if record["action"] == "replay":
+            bundle = self._bundles.get(subject) if isinstance(subject, str) else None
+            if bundle is None or bundle["kind"] != record["source_kind"] or bundle["source_id"] != record["source_id"]:
+                raise ValueError("Refused replay names another retained bundle")
+        elif subject is not None:
+            raise ValueError("A refused execution has no subject bundle")
+        refusal = record["refusal"]
+        _keys(refusal, {"code", "message"}, {"reason_code"})
+        for key, value in refusal.items():
+            _text(value, "Refusal " + key)
+        _text(record["created_at"], "Refusal time")
+        try:
+            instant = datetime.fromisoformat(record["created_at"].replace("Z", "+00:00"))
+        except ValueError as exc:
+            raise ValueError("Invalid refusal time") from exc
+        if instant.utcoffset() is None:
+            raise ValueError("Refusal time must be timezone-aware")
+
+    def refused_executions(self):
+        with self._lock:
+            return deepcopy(list(self._refusals.values()))
+
     def execute(self, payload):
         _keys(payload, {"operation_id", "source_id"}, {"upstream_bundle_id", "configuration"})
         _text(payload["operation_id"], "Operation identity")
@@ -859,13 +943,20 @@ class Workbench:
                 if upstream_id not in self._bundles or self._bundles[upstream_id]["kind"] != UPSTREAM_KINDS[kind]:
                     raise ValueError("Select a retained upstream bundle of the declared kind")
                 upstream = deepcopy(self._bundles[upstream_id]["native"])
+            upstream_ids = [upstream_id] if upstream_id is not None else []
             if kind == "residual-monitor":
                 raw = base64.b64decode(source["bytes_b64"], validate=True)
                 requested = _workflow(kind).requested_upstream_ids(raw)
                 if any(identity not in self._bundles for identity in requested):
                     raise ValueError("Select window bundles already retained in this workbench")
                 upstream = {identity: deepcopy(self._bundles[identity]["native"]) for identity in requested}
-            bindings, reserved = self._reserve(kind)
+                upstream_ids = list(requested)
+            # Admission ends here: an unbound, unsupported or failed operation
+            # is retained as a refused execution with no result.
+            try:
+                bindings, reserved = self._reserve(kind)
+            except AdapterRefusal as exc:
+                return self._retain_refusal("execute", kind, source, upstream_ids, None, exc)
         try:
             raw = base64.b64decode(source["bytes_b64"], validate=True)
             workflow = _workflow(kind)
@@ -877,6 +968,8 @@ class Workbench:
             else:
                 native = workflow.create_session(raw, bindings) if upstream is None else workflow.create_session(raw, upstream, bindings)
             return self._retain(kind, source, upstream_id, native)
+        except _FAILED as exc:
+            return self._retain_refusal("execute", kind, source, upstream_ids, None, exc)
         finally:
             with self._lock:
                 self._pending -= 1
@@ -890,7 +983,11 @@ class Workbench:
                 raise ValueError("Unknown retained workbench bundle")
             record = deepcopy(self._bundles[payload["bundle_id"]])
             source = deepcopy(self._sources[record["source_id"]])
-            bindings, reserved = self._reserve(record["kind"])
+            upstream_ids = [record["upstream_bundle_id"]] if record["upstream_bundle_id"] is not None else []
+            try:
+                bindings, reserved = self._reserve(record["kind"])
+            except AdapterRefusal as exc:
+                return self._retain_refusal("replay", record["kind"], source, upstream_ids, record["bundle_id"], exc)
         try:
             if record["kind"] == "telemetry":
                 roles = set(record["native"]["runtimes"])
@@ -904,6 +1001,8 @@ class Workbench:
                 raise ValueError("Replay receipt differs from the returned native bundle")
             summary = self._retain(record["kind"], source, record["upstream_bundle_id"], native)
             return {"bundle": summary, "replay_receipt": deepcopy(receipt)}
+        except _FAILED as exc:
+            return self._retain_refusal("replay", record["kind"], source, upstream_ids, record["bundle_id"], exc)
         finally:
             with self._lock:
                 self._pending -= 1
@@ -1079,9 +1178,12 @@ class Workbench:
 
     def serialize(self):
         with self._lock:
-            return deepcopy({"schema": "ciw.retained-workbench.v2" if self._candidates else SCHEMA, "revision": self._revision,
+            schema = ("ciw.retained-workbench.v3" if self._refusals else
+                      "ciw.retained-workbench.v2" if self._candidates else SCHEMA)
+            return deepcopy({"schema": schema, "revision": self._revision,
                 "sources": list(self._sources.values()), "bundles": list(self._bundles.values()),
-                **({"candidates": list(self._candidates.values())} if self._candidates else {})})
+                **({"candidates": list(self._candidates.values())} if self._candidates else {}),
+                **({"refusals": list(self._refusals.values())} if self._refusals else {})})
 
     @classmethod
     def restore(cls, value):
@@ -1090,15 +1192,21 @@ class Workbench:
             if len(_canonical(value)) > MAX_BYTES:
                 raise ValueError("Retained workbench exceeds the byte budget")
             value = deepcopy(value)
-            new = value.get("schema") == "ciw.retained-workbench.v2"
-            _keys(value, {"schema", "revision", "sources", "bundles"} | ({"candidates"} if new else set()))
-            candidates = value.get("candidates", [])
+            schema = value.get("schema")
+            base = {"schema", "revision", "sources", "bundles"}
+            if schema == "ciw.retained-workbench.v3":
+                _keys(value, base | {"refusals"}, {"candidates"})
+            else:
+                _keys(value, base | ({"candidates"} if schema == "ciw.retained-workbench.v2" else set()))
+            candidates, refusals = value.get("candidates", []), value.get("refusals", [])
             if not isinstance(candidates, list) or len(candidates) > MAX_BUNDLES:
                 raise ValueError("Malformed candidate receipt catalog")
-            if (value["schema"] not in {SCHEMA, "ciw.retained-workbench.v2"} or type(value["revision"]) is not int or
+            if not isinstance(refusals, list) or len(refusals) > MAX_REFUSALS or (schema == "ciw.retained-workbench.v3" and not refusals):
+                raise ValueError("Malformed refused-execution catalog")
+            if (schema not in {SCHEMA, "ciw.retained-workbench.v2", "ciw.retained-workbench.v3"} or type(value["revision"]) is not int or
                     not isinstance(value["sources"], list) or not isinstance(value["bundles"], list) or
                     len(value["sources"]) > MAX_SOURCES or len(value["bundles"]) > MAX_BUNDLES or
-                    value["revision"] != len(value["sources"]) + len(value["bundles"]) + len(candidates)):
+                    value["revision"] != len(value["sources"]) + len(value["bundles"]) + len(candidates) + len(refusals)):
                 raise ValueError("Malformed retained workbench catalog")
             restored = cls()
             for retained in value["sources"]:
@@ -1128,6 +1236,13 @@ class Workbench:
                     raise ValueError("Duplicate candidate action identity")
                 occurrences.add(record["execution_id"])
                 restored._candidates[record["candidate_id"]] = record
+                restored._used_bytes += len(_canonical(record))
+            for record in refusals:
+                restored._validate_refusal(record)
+                if record["execution_id"] in occurrences:
+                    raise ValueError("Duplicate refused-execution identity")
+                occurrences.add(record["execution_id"])
+                restored._refusals[record["execution_id"]] = record
                 restored._used_bytes += len(_canonical(record))
             if restored._used_bytes + _OVERHEAD > MAX_BYTES:
                 raise ValueError("Retained workbench exceeds the storage byte budget")

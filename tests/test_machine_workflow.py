@@ -96,8 +96,10 @@ def test_machine_replay_refuses_changed_reference_identity(tmp_path, monkeypatch
     monkeypatch.setattr(machine_workflow, "runtime_identity", changed_identity)
     response = session.handle({"protocol_version": 1, "request_id": "replay",
                                "type": "bundle.replay", "payload": {"bundle_id": completed["bundle_id"]}})
-    assert response["type"] == "error"
-    assert "runtime identity" in response["payload"]["message"]
+    assert response["type"] == "response" and response["payload"]["status"] == "refused"
+    refusal = response["payload"]["execution"]
+    assert "runtime identity" in refusal["refusal"]["message"] and refusal["subject_bundle_id"] == completed["bundle_id"]
+    assert [bundle["bundle_id"] for bundle in session.workbench.list_bundles()] == [completed["bundle_id"]]
 
 
 def test_machine_source_tampering_refuses_before_retention(tmp_path):

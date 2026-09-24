@@ -219,5 +219,5 @@ def test_saved_stream_restores_without_host_bindings_or_native_reexecution(retai
     assert {o["operation_id"] for o in restored.workbench.describe_operations() if o["available"]} == {"ciw.energy-accuracy.v1", "ciw.encoder-position.v1", "ciw.thermal-observer.v1"}
     for bundle in [retained["acquisition"], *retained["windows"], retained["monitor"], retained["held"]]:
         assert call(restored, "bundle.get", {"bundle_id": bundle["bundle_digest"]}) == bundle
-        call(restored, "bundle.replay", {"bundle_id": bundle["bundle_digest"]}, error=True)
+        assert call(restored, "bundle.replay", {"bundle_id": bundle["bundle_digest"]})["status"] == "refused"
     assert restored.workbench.pending_operations == 0

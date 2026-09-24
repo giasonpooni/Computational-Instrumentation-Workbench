@@ -214,7 +214,7 @@ def test_saved_common_bench_restores_without_host_binding_or_execution(retained,
         assert call(restored, "bundle.get", {"bundle_id": bundle["bundle_digest"]}) == bundle
         view = call(restored, "experiment.inspect", {"bundle_id": bundle["bundle_digest"]})
         assert view["kind"] == kind and view["fusion_context"] is None
-        call(restored, "bundle.replay", {"bundle_id": bundle["bundle_digest"]}, error=True)
+        assert call(restored, "bundle.replay", {"bundle_id": bundle["bundle_digest"]})["status"] == "refused"
     directory = os.environ.get("CIW_REMAINING_FIXTURE_DIR")
     if directory:
         original.save_workspace(Path(directory) / "workspace.json")

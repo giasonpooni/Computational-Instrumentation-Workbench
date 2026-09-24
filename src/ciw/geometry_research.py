@@ -125,7 +125,7 @@ class GeometryResearchWorkflow(PipelineRunner):
 
     def invoke(self, source, bound):
         adapter = bound[0]
-        code, raw = adapter._run(_BOOTSTRAP, [self.role, str(adapter.source_root)], canonical(source))
+        code, raw = self.run_provider(bound, _BOOTSTRAP, [self.role, str(adapter.source_root)], canonical(source))
         if code:
             raise AdapterRefusal("GEOMETRY_PROVIDER_REFUSED", "Pinned " + self.role + " refused the declared mathematical request")
         return _json(raw)

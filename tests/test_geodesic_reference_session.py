@@ -112,6 +112,11 @@ def test_reference_restore_needs_no_provider_and_replay_refuses_without_binding(
     for kind, refs in result["references"].items():
         before = deepcopy(restored.workbench.serialize())
         assert call(restored, "experiment.inspect", {"bundle_id": refs["original"]})["kind"] == kind
-        call(restored, "bundle.replay", {"bundle_id": refs["original"]}, error=True)
-        assert restored.workbench.serialize() == before
+        refused = call(restored, "bundle.replay", {"bundle_id": refs["original"]})
+        assert refused["status"] == "refused" and refused["execution"]["refusal"]["code"] == "operation_unavailable"
+        # A refused replay retains its refusal and changes no source, bundle or result.
+        after = restored.workbench.serialize()
+        assert after["refusals"][-1] == refused["execution"]
+        assert {k: v for k, v in after.items() if k not in {"schema", "revision", "refusals"}} == \
+            {k: v for k, v in before.items() if k not in {"schema", "revision", "refusals"}}
     assert {o["operation_id"] for o in restored.workbench.describe_operations() if o["available"]} == {"ciw.energy-accuracy.v1", "ciw.encoder-position.v1", "ciw.thermal-observer.v1"}

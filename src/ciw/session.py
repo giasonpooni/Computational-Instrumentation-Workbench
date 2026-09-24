@@ -389,7 +389,8 @@ class Session:
             _keys(payload, set())
             with self._lock:
                 return {"executions": copy.deepcopy(list(self.executions.values()))
-                        + self.workbench.native_executions() + self.workbench.candidate_executions()}
+                        + self.workbench.native_executions() + self.workbench.candidate_executions()
+                        + self.workbench.refused_executions()}
         if kind == "operation.execute":
             _keys(payload, {"operation_id", "parameters"}, {"operation_id"})
             if (not valid_operation_id(payload["operation_id"])
@@ -553,6 +554,7 @@ class Session:
                     raise ValueError("Operation result is missing its completed execution")
         native_occurrences = {entry["execution_id"] for entry in retained_workbench.native_executions()}
         native_occurrences.update(entry["execution_id"] for entry in retained_workbench.candidate_executions())
+        native_occurrences.update(entry["execution_id"] for entry in retained_workbench.refused_executions())
         native_results = {entry["result_id"] for entry in retained_workbench.native_result_summaries()}
         if (execution_ids | set(execution_map) | set(result_map)) & (native_occurrences | native_results):
             raise ValueError("Identity collision between recording operations and retained workflows")

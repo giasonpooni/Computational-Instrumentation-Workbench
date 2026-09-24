@@ -234,6 +234,8 @@ class DeclaredWorkflow(PipelineRunner):
             code, raw = adapter._run(_BOOTSTRAP, [self.role, str(adapter.source_root), str(executable)], canonical(source))
             if engine is not None and _read(executable, 32 * 1024 * 1024) != engine:
                 raise ValueError("Native executable changed during execution")
+        # Re-verify the provider before its outcome is classified.
+        self._unchanged(adapter, bound[1], "during")
         if code:
             raise AdapterRefusal("DECLARED_WORKLOAD_REFUSED", "Pinned " + self.role + " refused the declared workload")
         return _json(raw)

@@ -364,7 +364,7 @@ class BimQuantityWorkflow(PipelineRunner):
 
     def invoke(self, source, bound):
         adapter = bound[0]
-        code, raw = adapter._run(_BOOTSTRAP, [str(adapter.source_root)], canonical(source))
+        code, raw = self.run_provider(bound, _BOOTSTRAP, [str(adapter.source_root)], canonical(source))
         if code:
             raise AdapterRefusal("BIM_QUANTITY_REFUSED", "Pinned CSE refused the bounded IFC workload")
         return _json(raw)

@@ -103,6 +103,9 @@ Three additive session requests are available:
 | `execution.list` | `{}` | Retained completed/refused execution records |
 
 A refusal is a recorded invocation with no result, not an estimated state.
+Workflow kinds answer the same way: an unbound, refused or failed workflow
+execution or replay returns `status: "refused"` with a retained
+`ciw.workbench-refusal.v1` execution (see [KERNEL.md](KERNEL.md#envelopes-and-admission)).
 Calibration failures during acquisition/import raise `calibration_unavailable`
 and do not create a calibrated run or result. Invalid protocol/configuration
 requests retain the existing error envelope. Source bindings must be supplied

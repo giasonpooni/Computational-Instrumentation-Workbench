@@ -170,7 +170,11 @@ def test_unbound_execution_cannot_promote_retained_source(tmp_path):
         "operation_id": CALIBRATED_OPERATION,
         "parameters": {"source_id": source["source_id"]},
     })
-    assert reply["type"] == "error", reply
+    # Unbound is a retained refused execution with no result, never a bundle.
+    assert reply["type"] == "response" and reply["payload"]["status"] == "refused", reply
+    refused = reply["payload"]["execution"]
+    assert refused["refusal"]["code"] == "operation_unavailable" and reply["payload"]["result"] is None
+    assert refused in response(session, "execution.list")["executions"]
     assert response(session, "bundle.list")["bundles"] == []
     assert response(session, "experiment.inspect", {"view": "fusion"})["contexts"] == []
     assert response(session, "source.list")["sources"] == [source]
@@ -461,7 +465,9 @@ def test_design_cannot_select_unretained_upstream_or_client_code(tmp_path, param
         "operation_id": DESIGN_OPERATION,
         "parameters": {"source_id": source["source_id"], **parameters},
     })
+    # A malformed or client-chosen upstream is rejected before any execution exists.
     assert reply["type"] == "error", reply
+    assert response(session, "execution.list")["executions"] == []
     assert response(session, "bundle.list")["bundles"] == []
     assert response(session, "experiment.inspect", {"view": "fusion"})["contexts"] == []
 
@@ -476,5 +482,9 @@ def test_bound_design_rejects_unknown_upstream_before_calling_provider(
         "operation_id": DESIGN_OPERATION,
         "parameters": {"source_id": declaration["source_id"], "upstream_bundle_id": "absent-bundle"},
     })
-    assert reply["type"] == "error", reply
+    # Unbound is a retained refused execution with no result, never a bundle.
+    assert reply["type"] == "response" and reply["payload"]["status"] == "refused", reply
+    refused = reply["payload"]["execution"]
+    assert refused["refusal"]["code"] == "operation_unavailable" and reply["payload"]["result"] is None
+    assert refused in response(session, "execution.list")["executions"]
     assert response(session, "bundle.list")["bundles"] == []

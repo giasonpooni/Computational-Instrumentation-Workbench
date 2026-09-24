@@ -219,7 +219,7 @@ class AcquisitionWorkflow(PipelineRunner):
 
     def invoke(self, source, bound):
         adapter = bound[0]
-        code, raw = adapter._run(_BOOTSTRAP, [str(adapter.source_root), _filename(source)], canonical(source))
+        code, raw = self.run_provider(bound, _BOOTSTRAP, [str(adapter.source_root), _filename(source)], canonical(source))
         if code:
             raise AdapterRefusal("ACQUISITION_REFUSED", "Pinned PPDA refused the declared offline acquisition")
         return _json(raw)

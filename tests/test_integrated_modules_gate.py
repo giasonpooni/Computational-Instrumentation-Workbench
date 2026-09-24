@@ -144,5 +144,5 @@ def test_restore_retains_modules_without_executing_or_binding_providers(retained
     assert {o["operation_id"] for o in restored.workbench.describe_operations() if o["available"]} == {"ciw.energy-accuracy.v1", "ciw.encoder-position.v1", "ciw.thermal-observer.v1"}
     assert call(restored, "experiment.inspect", {"view": "spatial", "source_id": geographic["source_id"]}) == spatial
     for original, _ in bundles.values():
-        call(restored, "bundle.replay", {"bundle_id": original["bundle_digest"]}, error=True)
+        assert call(restored, "bundle.replay", {"bundle_id": original["bundle_digest"]})["status"] == "refused"
     assert restored.workbench.pending_operations == 0
