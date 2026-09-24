@@ -53,7 +53,7 @@ ciw send session.get
 ciw watch
 ```
 
-`watch` prints the current session and subsequent shared-selection events. Stop it with Ctrl+C to enter further commands. Plain requests also work without a viewport:
+`watch` prints the current session and every subsequent event: shared-selection changes, workbench changes and newly created results. Stop it with Ctrl+C to enter further commands. Plain requests also work without a viewport:
 
 ```powershell
 ciw send sample.get --payload '{"time_s":3.0}'
@@ -64,6 +64,22 @@ ciw send workspace.save
 ```
 
 Use the current revision from `session.get` in each selection update. A revision conflict means another client changed the selection: fetch the new state before retrying. On shells that alter JSON quoting, write the payload into a JSON file and pass `--payload-file request.json`.
+
+Shared workbench sources and operations have their own verbs, so no payload
+has to be encoded by hand. The provider-free uncertainty validation runs
+without any repository binding:
+
+```text
+ciw source add --kind uncertainty-validation --file examples/uncertainty-validation/consistent.json
+ciw operation list
+ciw operation execute ciw.uncertainty-validation.v1 --source SOURCE_ID
+ciw bundle inspect BUNDLE_ID
+ciw bundle replay BUNDLE_ID
+```
+
+`SOURCE_ID` and `BUNDLE_ID` are printed by the preceding commands. Operations
+that need pinned providers report `available: false` in `operation list` until
+`ciw serve` is started with their host bindings.
 
 Install or unzip [Godot 4.5.2 Standard](https://godotengine.org/download/archive/4.5.2-stable/), then import `godot/project.godot` and run it. Alternatively, use `godot --path godot` if the binary is on PATH. The client connects to `ws://127.0.0.1:8765` by default. Select **Oscillator** for the phase portrait, backend energy surface/trajectory, shared cursor and channel/interval controls. **Experiments** presents shared native bundles when they exist. Source sample identity remains authoritative. Closing Godot leaves the Python session running.
 
@@ -92,7 +108,7 @@ The scripted Godot check requires port 8765 to be free; it starts and stops its 
 
 - One small, uniformly sampled demo recording per session; q, v and energy channels. The oscillator demo has its own bounded record contract.
 - The terminal client currently emits JSON and event lines. Rich/Textual panels and in-terminal plots are not implemented.
-- Local native clients, text JSON, maximum 1 MiB incoming messages and 1,024 analysis results per session. No remote authentication, device acquisition or hard real-time control.
+- Local native clients, text JSON, maximum 8 MiB incoming messages and 1,024 analysis results per session. No remote authentication, device acquisition or hard real-time control.
 - Periodogram only; streaming telemetry, spectrograms, region occupancy, cancellation and binary arrays are not implemented.
 - Local JSON is prototype persistence. An instrument catalog and a worker supervisor remain integration work; no replacement database is introduced.
 - No uncertainty estimate or verification certificate is fabricated. Result records explicitly say `not_verified`.

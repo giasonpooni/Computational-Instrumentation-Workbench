@@ -18,7 +18,7 @@ Status: first implementation contract. Python is authoritative; terminal and God
 Request: `{"protocol_version":1,"request_id":"unique-client-id","type":"session.get","payload":{}}`.
 Success: `{"protocol_version":1,"request_id":"...","type":"response","payload":{...}}`.
 Failure: same envelope with `type: "error"` and `payload: {"code":"...","message":"..."}`.
-Broadcast after selection mutation: `{"protocol_version":1,"request_id":null,"type":"selection.changed","payload":SELECTION}`.
+Broadcast after selection mutation: `{"protocol_version":1,"request_id":null,"type":"selection.changed","payload":SELECTION}`. Broadcast after a completed analysis or generic operation: `{"protocol_version":1,"request_id":null,"type":"result.created","payload":RESULT_SUMMARY}`. Broadcast after a workbench source, bundle or replay is retained: `{"protocol_version":1,"request_id":null,"type":"workbench.changed","payload":{"session_id":...}}`.
 The native endpoint sends a `session.snapshot` event on connection with the same payload as `session.get`. Responses and broadcasts can interleave; correlate by request_id. Clients may reconnect and request a fresh snapshot.
 
 The additive `/spatial` endpoint sends `spatial.ready` with session identity and
@@ -64,7 +64,7 @@ Spectrum data: `{sample_count, method:"periodogram", window:"hann", detrend:"con
 
 `RESULT` is `{result_id, evidence_id, operation_id, execution_id, verification_id:null, verification_status:"not_verified", run_id, selection_revision, channel, interval_s, created_at, data}`. Operation IDs are `statistics.v1` and `spectrum.periodogram.v1`. Verification stays explicit and unclaimed. Results are persisted by the server and headless CLI in a chosen output directory. Source recordings are separate from derived results.
 
-`RESULT_SUMMARY` includes result/operation/execution IDs, channel, interval, creation time and verification status, without numerical arrays. Snapshots and `result.list` expose these so fresh clients can discover analyses restored from a workspace. New analyses do not yet produce an event; refresh the list to discover results created by another client.
+`RESULT_SUMMARY` includes result/operation/execution IDs, channel, interval, creation time and verification status, without numerical arrays. Snapshots and `result.list` expose these so fresh clients can discover analyses restored from a workspace. A completed analysis or generic operation is announced to every connected client as a `result.created` event whose payload is the `RESULT_SUMMARY`; numerical arrays stay behind `result.get`. Retained workbench sources, bundles and replays are announced as `workbench.changed`, and selection commits as `selection.changed`. Events carry `request_id: null`; clients match responses by request id and may ignore events they do not use.
 
 Binary transport, occupancy operations, live acquisition and spectrograms are not implemented. The additive adapter and covariance sections below specify the delivered external-provider JSON operations.
 

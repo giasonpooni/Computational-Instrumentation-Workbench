@@ -11,10 +11,31 @@ from urllib.parse import urlsplit
 from websockets.asyncio.server import serve
 from websockets.exceptions import ConnectionClosed
 
-from .session import Session, _reject_constant, envelope
+from .session import Session, _RESULT_SUMMARY_FIELDS, _reject_constant, envelope
 from .workbench import WORKBENCH_OPERATION_IDS
 
 LOG = logging.getLogger(__name__)
+
+
+def created_result(request, payload):
+    """The summary of a session result the request just created, or None.
+
+    Legacy analyses answer with the result itself; a generic operation answers
+    with its execution and result. Workbench operations announce themselves
+    through workbench.changed instead, and refusals create no result.
+    """
+    kind = request.get("type") if isinstance(request, dict) else None
+    if kind in {"analysis.stats", "analysis.spectrum"}:
+        result = payload
+    elif (kind == "operation.execute" and isinstance(payload, dict) and payload.get("status") == "completed"
+          and isinstance(request.get("payload"), dict)
+          and request["payload"].get("operation_id") not in WORKBENCH_OPERATION_IDS):
+        result = payload.get("result")
+    else:
+        return None
+    if not isinstance(result, dict) or any(key not in result for key in _RESULT_SUMMARY_FIELDS):
+        return None
+    return {key: result[key] for key in _RESULT_SUMMARY_FIELDS}
 
 
 def spatial_origins(values):
@@ -122,6 +143,10 @@ class WorkbenchServer:
                         await self._broadcast(envelope("workbench.changed", {
                             "session_id": self.session.session_id,
                         }))
+                    created = created_result(request, response["payload"]) if response["type"] == "response" else None
+                    if created is not None:
+                        # Announce the summary only; the numerical arrays stay behind result.get.
+                        await self._broadcast(envelope("result.created", created))
         except ConnectionClosed:
             pass
         except Exception:

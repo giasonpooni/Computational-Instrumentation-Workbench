@@ -129,6 +129,9 @@ class WorkbenchIntegrationTests(unittest.IsolatedAsyncioTestCase):
         response = await self.call(client, "analysis.stats")
         self.assertEqual(response["type"], "response")
         remote = response["payload"]
+        announced = await self.receive(client)
+        self.assertEqual(announced["type"], "result.created")
+        self.assertEqual(announced["payload"]["result_id"], remote["result_id"])
         self.assertEqual(remote["data"], headless["data"])
         self.assertEqual(remote["evidence_id"], headless["evidence_id"])
         self.assertNotEqual(remote["execution_id"], headless["execution_id"])
@@ -145,6 +148,32 @@ class WorkbenchIntegrationTests(unittest.IsolatedAsyncioTestCase):
         cli_response = await self.run_cli("send", "session.get", "--url", self.uri)
         self.assertEqual(cli_response["type"], "response")
         self.assertEqual(cli_response["payload"], self.session.snapshot())
+
+    async def test_new_results_are_announced_to_every_client_as_summaries(self):
+        producer, _ = await self.new_client()
+        observer, _ = await self.new_client()
+        response = await self.call(producer, "analysis.spectrum")
+        self.assertEqual(response["type"], "response")
+        result = response["payload"]
+        summary = {key: result[key] for key in ("result_id", "operation_id", "execution_id", "channel", "interval_s",
+                                                "created_at", "verification_status", "selection_revision")}
+        for client in (producer, observer):
+            event = await self.receive(client)
+            self.assertEqual(event["type"], "result.created")
+            self.assertIsNone(event["request_id"])
+            self.assertEqual(event["payload"], summary)
+            self.assertNotIn("data", event["payload"])
+        # A refused generic operation creates no result and announces nothing, so the
+        # observer's next message is its own response.
+        refused = await self.call(producer, "operation.execute", {"operation_id": "missing.v1", "parameters": {}}, "missing")
+        self.assertEqual(refused["payload"]["status"], "refused")
+        listing = await self.call(observer, "result.list", request_id="listing")
+        self.assertIn(result["result_id"], [item["result_id"] for item in listing["payload"]["results"]])
+        completed = await self.call(producer, "operation.execute", {"operation_id": "statistics.v1", "parameters": {}}, "generic")
+        self.assertEqual(completed["payload"]["status"], "completed")
+        event = await self.receive(observer)
+        self.assertEqual(event["type"], "result.created")
+        self.assertEqual(event["payload"]["result_id"], completed["payload"]["result"]["result_id"])
 
     async def test_bad_messages_do_not_terminate_connection_or_change_selection(self):
         client, original = await self.new_client()
