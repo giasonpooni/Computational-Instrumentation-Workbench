@@ -1385,6 +1385,47 @@ def _precision_study():
     return table
 
 
+# precision.svg plots RK4 endpoint errors down to float32 roundoff and to float64 errors near 1e-13, whose last bits
+# follow the platform's sin/cos (NumPy's own SIMD code or the C library, by CPU and OS). Each plotted error is bounded
+# by PRECISION_ROUNDING_FACTOR times the largest change PRECISION_ROUNDING_SEEDS runs make when every sin and cos
+# result is moved by a random whole number of ulps in [-PRECISION_TRIG_ULPS, PRECISION_TRIG_ULPS] (more than the
+# documented error of either implementation), plus eps of the error itself so that no bound is zero.
+PRECISION_TRIG_ULPS = 4
+PRECISION_ROUNDING_SEEDS = 4
+PRECISION_ROUNDING_FACTOR = 10.0
+
+
+def _perturbed_trig(rng, dtype):
+    """(sin, cos) of theta, each moved by a random whole number of ulps, staying in ``dtype``."""
+    def trig(theta):
+        values = []
+        for value in (np.sin(theta), np.cos(theta)):
+            ulps = rng.integers(-PRECISION_TRIG_ULPS, PRECISION_TRIG_ULPS + 1, size=value.shape).astype(dtype)
+            values.append(value + ulps * np.spacing(np.abs(value)))
+        return values
+    return trig
+
+
+def _precision_rounding_study(table):
+    """Per plotted error, the largest change under perturbed sin/cos, and the rounding bound the figure records."""
+    states = kernels.initial_states()
+    spread = {}
+    for dtype in (np.float32, np.float64):
+        name = np.dtype(dtype).name
+        changes = [0.0] * len(PRECISION_GRID)
+        for seed in range(PRECISION_ROUNDING_SEEDS):
+            rng = np.random.default_rng(seed)
+            for i, steps in enumerate(PRECISION_GRID):
+                final = kernels.rk4_batch(states, kernels.LENGTH, steps, dtype, _perturbed_trig(rng, dtype))
+                error = float(np.max(kernels.endpoint_errors(states, final.astype(np.float64), kernels.LENGTH)))
+                changes[i] = max(changes[i], abs(error - table[name][i]))
+        spread[name] = changes
+    bounds = {name: [PRECISION_ROUNDING_FACTOR * change + float(np.finfo(name).eps) * error
+                     for change, error in zip(spread[name], table[name])] for name in spread}
+    return {"trig_ulps": PRECISION_TRIG_ULPS, "seeds": list(range(PRECISION_ROUNDING_SEEDS)),
+            "factor": PRECISION_ROUNDING_FACTOR, "max_change": spread, "bound": bounds}
+
+
 def _vi_precision_study():
     """KL to the exact posterior after 0..256 iterations of the common workload, in float32 and float64."""
     kls = {precision: [common.kl_nats(row) for row in common.trace_numpy(np.dtype(precision).type,
@@ -1482,6 +1523,7 @@ def _vi_precision_findings(vi, counts):
     BRACKET_TEST, IDENTITY_TEST, COMMON_TEST, NEXT_TEST, UNCERTAINTY_TEST))
 def precision_versus_cost(ctx):
     table = ctx.memo("energy-gpu-precision", _precision_study)
+    rounding = ctx.memo("energy-gpu-precision-rounding", lambda: _precision_rounding_study(table))
     vi = ctx.memo("energy-gpu-common-precision", _vi_precision_study)
     counts = ctx.memo("energy-gpu-common-counts", _common_counts)
     f32, f64 = table["float32"], table["float64"]
@@ -1569,6 +1611,7 @@ def precision_versus_cost(ctx):
     findings += [energy, _no_measurement(GPU_FLOAT32, GPU_FLOAT32_NOTE, unit="J/batch")]
     measured = energy["evidence_status"] == "hardware_measured"
     ctx.artifact_json("precision.json", {"grid": list(PRECISION_GRID), "max_endpoint_error": table,
+                                         "figure_rounding": rounding,
                                          "targets": reach, "operation_count": ops,
                                          "float64_order_fit": {"order": order64, "rms_residual": fit_rms},
                                          "common_workload": dict(vi, declaration=common.workload(),
@@ -1578,7 +1621,7 @@ def precision_versus_cost(ctx):
     ctx.artifact_text("precision.svg", svg.line_plot(
         [(name, list(PRECISION_GRID), errs) for name, errs in table.items()],
         title="RK4 sphere geodesic: endpoint error vs steps", xlabel="steps N", ylabel="max endpoint error",
-        logx=True, logy=True))
+        logx=True, logy=True, rounding=[rounding["bound"][name] for name in table]), rounding_level=True)
     iterations = list(range(VI_TRACE_ITERATIONS + 1))
     ctx.artifact_text("common-workload-precision.svg", svg.line_plot(
         [(p, iterations, [max(value, 1e-40) for value in vi["kl_nats"][p]]) for p in common.PRECISIONS],

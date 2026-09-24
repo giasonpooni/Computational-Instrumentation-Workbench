@@ -195,7 +195,15 @@ value. Wall-clock and CPU times are retained only as artifacts
   censored at the grid minimum; every tabulated error clears its target by a
   factor of at least 1.4, so the table is compared exactly. Counterexample:
   float32 cannot reach 1e-7 at any N ≤ 2048, while float64 reaches it at
-  N = 128 — lower precision is not cheaper at every accuracy target. The
+  N = 128 — lower precision is not cheaper at every accuracy target.
+  `precision.svg` is a rounding-level figure: the float32 plateau is
+  roundoff, and the float64 errors near 1e-13 follow the platform's sin/cos
+  in their last bits (on Windows the N = 2048 error moved by 5.1e-16). Each
+  plotted error records a bound of ten times its largest change over four
+  seeded runs in which every sin and cos result moves by a random whole
+  number of ulps in [−4, 4] (`precision.json` `figure_rounding`): 3e-15 to
+  2e-14 for float64, below 1e-5 of each error in the order-4 range, and about
+  the size of the float32 plateau errors themselves. The
   energy comparison uses the common workload instead, where float32 and
   float64 run the same iteration: both precisions meet the workload's
   declared 1e-8 nat KL target at the planned iteration K = 38 (KL 6.9e-9

@@ -61,29 +61,33 @@ def sphere_rhs(y):
     return np.array([y[2], y[3], s * c * y[3] * y[3], -2.0 * (c / s) * y[2] * y[3]])
 
 
-def sphere_rhs_batch(y, dtype):
-    """Vectorized right-hand side on a (4, batch) array evaluated in ``dtype`` arithmetic."""
-    s, c = np.sin(y[0]), np.cos(y[0])
+def sphere_rhs_batch(y, dtype, trig=None):
+    """Vectorized right-hand side on a (4, batch) array evaluated in ``dtype`` arithmetic.
+
+    ``trig`` replaces the (sin, cos) evaluation of theta, for studies of how the
+    platform's transcendental implementation moves the result; None uses NumPy's.
+    """
+    s, c = (np.sin(y[0]), np.cos(y[0])) if trig is None else trig(y[0])
     return np.stack([y[2], y[3], s * c * y[3] * y[3], dtype(-2.0) * (c / s) * y[2] * y[3]])
 
 
-def rk4_step(y, h, dtype):
+def rk4_step(y, h, dtype, trig=None):
     """One RK4 step on a (4, batch) array with every operation in ``dtype``."""
     half, sixth, two = dtype(0.5) * h, h / dtype(6.0), dtype(2.0)
-    k1 = sphere_rhs_batch(y, dtype)
-    k2 = sphere_rhs_batch(y + half * k1, dtype)
-    k3 = sphere_rhs_batch(y + half * k2, dtype)
-    k4 = sphere_rhs_batch(y + h * k3, dtype)
+    k1 = sphere_rhs_batch(y, dtype, trig)
+    k2 = sphere_rhs_batch(y + half * k1, dtype, trig)
+    k3 = sphere_rhs_batch(y + half * k2, dtype, trig)
+    k4 = sphere_rhs_batch(y + h * k3, dtype, trig)
     return y + sixth * (k1 + two * k2 + two * k3 + k4)
 
 
-def rk4_batch(states, length, steps, dtype=np.float64) -> np.ndarray:
+def rk4_batch(states, length, steps, dtype=np.float64, trig=None) -> np.ndarray:
     """Fixed-step RK4 with every operation in ``dtype`` (NumPy 2 keeps float32 closed)."""
     dtype = np.dtype(dtype).type
     y = np.asarray(states, dtype=dtype).T.copy()
     h = dtype(length / steps)
     for _ in range(steps):
-        y = rk4_step(y, h, dtype)
+        y = rk4_step(y, h, dtype, trig)
     if y.dtype != np.dtype(dtype) or not np.all(np.isfinite(y)):
         raise FloatingPointError("RK4 left its declared precision or the finite domain")
     return y.T

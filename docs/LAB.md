@@ -434,11 +434,14 @@ value is one of them. Such a figure records its plotted values with each
 point's rounding bound (`svg.line_plot(..., rounding=...)`, in a `metadata`
 element of the SVG): the largest change rounding can make to the value between
 two runs, derived from the unit roundoff and the size of the quantities it is
-computed from, or from a rounding-error bound the task checks. Today T002's
-`agreement.svg`, T003's `adaptive.svg`, T012's `frame-invariance.svg`, T033's
+computed from, from a rounding-error bound the task checks, or measured by
+perturbing the operations whose last bits differ between platforms (T120's
+`precision.svg`: ten times the largest change when every sin and cos result
+moves by up to 4 ulps). Today T002's `binary64-gaps.svg`, T003's
+`adaptive.svg`, T012's `frame-invariance.svg`, T033's
 `conformance-residuals.svg`, T035's `fd-v-shape.svg`, T107's
-`ratio-vs-target.svg`, T109's `solver-agreement.svg`, T120's
-`common-workload-precision.svg` and T122's `free-energy.svg` are declared,
+`ratio-vs-target.svg`, T109's `solver-agreement.svg`, T120's `precision.svg`
+and `common-workload-precision.svg` and T122's `free-energy.svg` are declared,
 each with a regression test that checks its bounds and the value that sets its
 axis on the task's own data. `validate_report` and the schema accept either
 declaration only as `true` on an SVG figure, and never both on one, and the

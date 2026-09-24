@@ -1244,7 +1244,9 @@ def test_common_workload_precision_study(lab):
     # the float32 KL stalls at its own floor. Rounding, whose last bits follow the BLAS kernel, moves each KL by at
     # most the bound the figure records (energy_gpu.kl_rounding with each precision's eps), which both floors lie
     # within, so it is declared a rounding-level figure; the float64 KL above 1e-6 nats stays compared to 1e-6 of
-    # itself. precision.svg (RK4 endpoint errors) is not declared.
+    # itself. precision.svg (RK4 endpoint errors) is declared too: its float32 plateau is roundoff, and its float64
+    # errors near 1e-13 moved in their last bits on Windows, whose sin/cos differ from this platform's. Each plotted
+    # error records a bound of ten times its largest change when every sin and cos result is moved by up to 4 ulps.
     kl = json.loads((lab.context.output_dir / "artifacts" / "T120" / "precision.json").read_text(
         encoding="utf-8"))["common_workload"]["kl_nats"]
     smallest = min(min(values) for values in kl.values())
@@ -1259,7 +1261,22 @@ def test_common_workload_precision_study(lab):
     assert all(b <= 1e-6 * y for y, b in zip(recorded["float64"]["y"], recorded["float64"]["bound"]) if y > 1e-6)
     declared = {a["path"].rsplit("/", 1)[1]: a.get("rounding_level") for a in report["generated_artifacts"]
                 if a["path"].endswith(".svg")}
-    assert declared == {"precision.svg": None, "common-workload-precision.svg": True}
+    assert declared == {"precision.svg": True, "common-workload-precision.svg": True}
+    study = json.loads((lab.context.output_dir / "artifacts" / "T120" / "precision.json").read_text(encoding="utf-8"))
+    rounding = study["figure_rounding"]
+    endpoint = {s["name"]: s for s in svg.recorded_values(
+        (lab.context.output_dir / "artifacts" / "T120" / "precision.svg").read_bytes())}
+    assert list(endpoint) == ["float32", "float64"]
+    for name, series in endpoint.items():
+        assert series["x"] == list(energy_gpu.PRECISION_GRID) and series["y"] == study["max_endpoint_error"][name]
+        assert series["bound"] == rounding["bound"][name]
+        assert all(0 < change and bound == energy_gpu.PRECISION_ROUNDING_FACTOR * change + float(np.finfo(name).eps) * y
+                   for change, bound, y in zip(rounding["max_change"][name], series["bound"], series["y"]))
+    # The float64 order-4 range stays compared to 1e-5 of each error; the float32 plateau is at rounding level.
+    assert all(b <= 1e-5 * y for n, y, b in zip(endpoint["float64"]["x"], endpoint["float64"]["y"],
+                                                  endpoint["float64"]["bound"]) if n <= 256)
+    plateau = [i for i, n in enumerate(energy_gpu.PRECISION_GRID) if n >= 128]
+    assert all(endpoint["float32"]["bound"][i] >= 0.1 * endpoint["float32"]["y"][i] for i in plateau)
 
 
 @pytest.mark.lab_task("T121")
