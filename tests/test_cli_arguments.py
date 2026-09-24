@@ -72,3 +72,24 @@ def test_a_provider_refusal_exits_two_with_its_code(tmp_path, monkeypatch, capsy
     monkeypatch.setattr(workflow, "replay_covariance", refuse)
     code = cli.main(["covariance-replay", str(tmp_path / "ws.json"), "--jspt-repo", str(tmp_path), "--output-dir", str(tmp_path)])
     assert code == 2 and "ciw: replay_unavailable:" in capsys.readouterr().err
+
+
+def test_investigations_reads_a_saved_workspace_without_executing(tmp_path, monkeypatch, capsys):
+    from test_machine_workflow import _session_with_source as machine_session
+    from test_thermal_workflow import _call
+    session, source = machine_session(tmp_path / "original")
+    _call(session, "operation.execute", {"operation_id": "ciw.encoder-position.v1",
+                                         "parameters": {"source_id": source["source_id"]}})
+    path = session.save_workspace(tmp_path / "workspace.json")
+    before = path.read_bytes()
+    import ciw.machine_workflow as machine
+    monkeypatch.setattr(machine.MachineManifestWorkflow, "create_session",
+                        lambda *args, **kwargs: pytest.fail("reading investigations executed an operation"))
+    assert cli.main(["investigations", str(path)]) == 0
+    text = capsys.readouterr().out
+    assert "manufacturing-cycle: incomplete" in text and "ciw.encoder-position.v1: 1 result(s), current" in text
+    assert "geometry-bim: not_started" in text
+    assert cli.main(["investigations", str(path), "--json"]) == 0
+    progress = json.loads(capsys.readouterr().out)
+    assert {item["investigation_id"] for item in progress} >= {"manufacturing-cycle", "geometry-bim", "process-balance"}
+    assert path.read_bytes() == before

@@ -144,6 +144,7 @@ def test_connected_current_results_answer_the_default_pipeline_and_form_chains()
                                                                ["result:c", "result:d", "result:e"]]
     assert all(chain["status"] == "current_for_declared_inputs" for chain in progress["chains"])
     assert progress["chains"][1]["pipelines"] == ["ciw.c.v1", "ciw.d.v1", "ciw.e.v1"]
+    assert progress["chains"][1]["sequence"] == ["ciw.c.v1", "ciw.d.v1", "ciw.e.v1"]
 
 
 def test_a_stale_upstream_makes_its_chain_and_its_default_stage_need_reevaluation():

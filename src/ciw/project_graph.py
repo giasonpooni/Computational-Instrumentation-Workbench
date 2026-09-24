@@ -173,7 +173,7 @@ def investigations(nodes: list, edges: list, operations: dict, catalog: dict | N
             if len(group) < 2:
                 continue
             ordered = sorted(group, key=order.__getitem__)
-            chains.append({"nodes": ordered,
+            chains.append({"nodes": ordered, "sequence": [members[kind_at[node]] for node in ordered],
                            "pipelines": sorted({members[kind_at[node]] for node in group}),
                            "status": CURRENT if all(status[node] == CURRENT for node in ordered) else "needs_reevaluation"})
         chains.sort(key=lambda chain: order[chain["nodes"][0]])

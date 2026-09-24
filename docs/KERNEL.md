@@ -126,7 +126,8 @@ kinds pass the runtime identity checked at binding, and provider-free references
 pass their current code identity. A result computed under other pins therefore
 reads `needs_reevaluation`, as do its dependents and any chain containing it,
 until it is replayed. An investigation is `not_started`, `incomplete`, or
-`default_pipeline_current`.
+`default_pipeline_current`. `ciw investigations WORKSPACE [--json]` prints the
+same progress for a saved workspace without executing or writing anything.
 Like the rest of the view, this is computed from retained records and never
 executes anything.
 

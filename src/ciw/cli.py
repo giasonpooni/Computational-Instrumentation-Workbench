@@ -289,6 +289,10 @@ def parser() -> argparse.ArgumentParser:
     watch.add_argument("--url", default="ws://127.0.0.1:8765")
     inspect = commands.add_parser("inspect", help="Inspect a saved result/workspace without executing it")
     inspect.add_argument("path", type=Path)
+    investigations = commands.add_parser(
+        "investigations", help="Show how far a saved workspace answers each declared investigation, without executing it")
+    investigations.add_argument("path", type=Path)
+    investigations.add_argument("--json", action="store_true", help="Print the complete progress records")
     proof = commands.add_parser("proof", help="Freshly verify a retained registered SCR heat proof")
     proof_actions = proof.add_subparsers(dest="proof_command", required=True)
     proof_verify = proof_actions.add_parser("verify", help="Run the full registered-ELF verifier without producing a new proof")
@@ -454,6 +458,28 @@ def bind_named_options(session, args, names):
             session.workbench.bind_workflow(kind, {role: value / role for role in sorted(_workflow(kind).ROLES)})
 
 
+def investigation_progress(path: Path) -> list:
+    """Reopen a saved workspace read-only and read its investigation progress; nothing executes or is written."""
+    import tempfile
+    with tempfile.TemporaryDirectory(prefix="ciw-investigations-") as directory:
+        session = Session.from_workspace(path, Path(directory))
+        return session.workbench.project_view()["investigations"]
+
+
+def print_investigations(progress: list) -> None:
+    for item in progress:
+        print(f"{item['investigation_id']}: {item['state']} — {item['title']}")
+        for stage in item["stages"]:
+            if stage["results"]:
+                marker = "current" if stage["current"] else "needs reevaluation"
+                print(f"  {'*' if stage['default'] else ' '} {stage['pipeline_id']}: "
+                      f"{len(stage['results'])} result(s), {marker}")
+        if item["missing_default_stages"] and item["state"] != "not_started":
+            print("    missing: " + ", ".join(item["missing_default_stages"]))
+        for chain in item["chains"]:
+            print(f"    chain ({chain['status']}): " + " -> ".join(chain["sequence"]))
+
+
 def parse_bindings(values):
     """Group ``KIND:ROLE=PATH`` operator bindings by kind; each role is bound once."""
     grouped = {}
@@ -594,6 +620,12 @@ def main(argv: list[str] | None = None) -> int:
             asyncio.run(watch_remote(args.url))
         elif args.command == "inspect":
             print_json(read_json(args.path))
+        elif args.command == "investigations":
+            progress = investigation_progress(args.path)
+            if args.json:
+                print_json(progress)
+            else:
+                print_investigations(progress)
         elif args.command == "proof":
             from .adapters.subprocess import _json
             from .exchange import _read
