@@ -418,6 +418,15 @@ def _validate_links(record, bundles):
             raise ValueError("Replay must preserve numerical identity and create fresh occurrences")
 
 
+def _runner_pins(workflow, bound):
+    """The graph pins of a shared-runner binding: its runtime under the workflow's role, as a bundle retains it."""
+    from .pipelines.runner import PipelineRunner
+    from .project_graph import pins_of
+    if not isinstance(workflow, PipelineRunner) or not isinstance(bound, tuple) or len(bound) != 3:
+        return None
+    return pins_of({"runtimes": {workflow.role: bound[1]}})
+
+
 def _own_child(record, native):
     """A native session the record embeds as its own child (an acquired window's derived window)."""
     child = record["native"].get("child_window")
@@ -437,6 +446,7 @@ class Workbench:
         self._sources = {}
         self._bundles = {}
         self._bindings = {"energy-accuracy": {}, "thermal-observer": {}, "machine-manifest": {}}
+        self._bound_pins = {}
         self._candidate_adapters = {}
         self._candidates = {}
         self._refusals = {}
@@ -460,12 +470,18 @@ class Workbench:
         # Validate trusted provider identities before advertising availability.
         # The workflows check them again at each execution and replay.
         check = getattr(workflow, "check_bindings", None)
+        pins = None
         if check is not None:
             check(bindings)
         else:
-            workflow._adapters(bindings)
+            bound = workflow._adapters(bindings)
+            pins = _runner_pins(workflow, bound)
         with self._lock:
             self._bindings[kind] = bindings
+            if pins is None:
+                self._bound_pins.pop(kind, None)
+            else:
+                self._bound_pins[kind] = pins
 
     @property
     def pending_operations(self):
@@ -1001,9 +1017,30 @@ class Workbench:
                 base64.b64decode(record["native"]["source"]["evidence"][0]["bytes_b64"], validate=True))
         return ids
 
+    def current_pins(self):
+        """Pins each executable kind is bound to now, for marking results computed under other pins.
+
+        Provider kinds report the runtime identity checked when they were bound;
+        provider-free references report their current code identity. Nothing
+        executes a scientific operation.
+        """
+        with self._lock:
+            pins = dict(self._bound_pins)
+            unbound = [kind for kind, bindings in self._bindings.items() if not bindings and kind not in pins]
+        for kind in unbound:
+            workflow = _workflow(kind)
+            if getattr(workflow, "ROLES", None) == frozenset():
+                try:
+                    pins[kind] = _runner_pins(workflow, workflow._adapters({}))
+                except (ValueError, OSError, AdapterRefusal):
+                    continue
+        return {kind: value for kind, value in pins.items() if value is not None}
+
     def project_view(self, current_pins=None):
         """Read the retained records as the project graph; nothing executes."""
         from .project_graph import view
+        if current_pins is None:
+            current_pins = self.current_pins()
         with self._lock:
             state = self.serialize()
             upstream = {record["bundle_id"]: self._upstream_ids(record) for record in state["bundles"]}

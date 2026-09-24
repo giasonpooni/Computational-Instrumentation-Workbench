@@ -168,3 +168,30 @@ def test_the_graph_view_reports_a_retained_member_result_under_its_investigation
     assert len(stage["current"]) == 1 and cycle["state"] == "incomplete" and cycle["chains"] == []
     assert "ciw.acquired-dataset.v1" in cycle["missing_default_stages"]
     assert progress["geometry-bim"]["state"] == "not_started"
+
+
+def test_a_changed_reference_code_identity_marks_retained_results_for_reevaluation(tmp_path, monkeypatch):
+    from ciw import machine_workflow
+    from test_machine_workflow import _session_with_source as machine_session
+    session, source = machine_session(tmp_path)
+    _call(session, "operation.execute", {"operation_id": "ciw.encoder-position.v1",
+                                         "parameters": {"source_id": source["source_id"]}})
+    before = session.workbench.project_view()
+    assert before["needs_reevaluation"] == []
+    original = machine_workflow.runtime_identity
+
+    def changed():
+        value = deepcopy(original())
+        value["algorithm"]["code_sha256"] = "0" * 64
+        return value
+
+    monkeypatch.setattr(machine_workflow, "runtime_identity", changed)
+    after = session.workbench.project_view()
+    (result,) = _node(after, "result:")
+    assert result["node_id"] in after["needs_reevaluation"] and result["status"] == "needs_reevaluation"
+    cycle = next(item for item in after["investigations"] if item["investigation_id"] == "manufacturing-cycle")
+    stage = next(item for item in cycle["stages"] if item["pipeline_id"] == "ciw.encoder-position.v1")
+    assert stage["results"] == [result["node_id"]] and stage["current"] == []
+    # Restoring the identity restores currency: nothing was rewritten.
+    monkeypatch.setattr(machine_workflow, "runtime_identity", original)
+    assert session.workbench.project_view()["needs_reevaluation"] == []

@@ -121,7 +121,12 @@ The view's `investigations` list reads the same graph against the
   for example calibrated observable → identified design → identified stability.
   A chain is current only while every node in it is.
 
-An investigation is `not_started`, `incomplete`, or `default_pipeline_current`.
+The live view passes the pins each kind is bound to now. Shared-runner provider
+kinds pass the runtime identity checked at binding, and provider-free references
+pass their current code identity. A result computed under other pins therefore
+reads `needs_reevaluation`, as do its dependents and any chain containing it,
+until it is replayed. An investigation is `not_started`, `incomplete`, or
+`default_pipeline_current`.
 Like the rest of the view, this is computed from retained records and never
 executes anything.
 
