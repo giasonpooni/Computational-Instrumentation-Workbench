@@ -179,12 +179,17 @@ def test_native_refusals_cannot_leave_partial_bundles(retained):
         parameters = {"source_id": source["source_id"]}
         if kind == "identified-stability":
             parameters["upstream_bundle_id"] = retained["upstream"]["bundle_digest"]
-        error = call(session, "operation.execute", {"operation_id": "ciw." + kind + ".v1",
-                     "parameters": parameters}, error=True)
+        # A native refusal is retained as a refused execution: an identity and a
+        # reason, never a bundle, a result or partial state.
+        reply = call(session, "operation.execute", {"operation_id": "ciw." + kind + ".v1",
+                     "parameters": parameters})
+        assert reply["status"] == "refused" and reply["result"] is None, reply
+        refused = reply["execution"]
+        assert refused["result_id"] is None and refused["source_id"] == source["source_id"]
         assert call(session, "bundle.list") == before
         output(kind, "native-refusals", [{"case": "expired_calibration_or_geometry_or_foreign_frame",
             "stage": "operation.execute", "source_bytes_b64": base64.b64encode(raw).decode("ascii"),
-            "error": error, "execution": "refused", "scientific_result": "not_retained"}])
+            "refusal": refused["refusal"], "execution": "refused", "scientific_result": "not_retained"}])
     assert session.workbench.pending_operations == 0
 
 
@@ -226,7 +231,14 @@ def test_the_estimation_to_decision_chain_answers_its_investigations(retained):
     view = call(retained["session"], "session.get")["workbench"]["project"]
     progress = {item["investigation_id"]: item for item in view["investigations"]}
     loop = ["ciw.calibrated-observable.v1", "ciw.identified-design.v1", "ciw.identified-stability.v1"]
-    chains = [chain for chain in progress["manufacturing-cycle"]["chains"] if chain["sequence"][-len(loop):] == loop]
-    assert chains and all(chain["status"] == "current_for_declared_inputs" for chain in chains)
+
+    def in_lineage_order(sequence):
+        # Later stages may repeat (several stability assessments of one design).
+        positions = [sequence.index(pipeline) for pipeline in loop if pipeline in sequence]
+        return len(positions) == len(loop) and positions == sorted(positions)
+
+    chains = [chain for chain in progress["manufacturing-cycle"]["chains"] if in_lineage_order(chain["sequence"])]
+    assert chains, progress["manufacturing-cycle"]["chains"]
+    assert all(chain["status"] == "current_for_declared_inputs" for chain in chains), chains
     assert progress["process-balance"]["state"] == "default_pipeline_current"
     assert view["needs_reevaluation"] == []
