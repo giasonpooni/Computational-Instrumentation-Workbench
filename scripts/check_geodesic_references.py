@@ -1,6 +1,5 @@
 """Exercise installed CIW native references and independent ICRH replay checks."""
 import argparse
-import ast
 import json
 import os
 from pathlib import Path
@@ -21,13 +20,6 @@ def call(command, **kwargs):
     return subprocess.run(command, check=True, timeout=kwargs.pop("timeout", 300), **kwargs)
 
 
-def literal(path, name):
-    for statement in ast.parse(path.read_text(encoding="utf-8")).body:
-        if isinstance(statement, ast.Assign) and any(isinstance(t, ast.Name) and t.id == name for t in statement.targets):
-            return ast.literal_eval(statement.value)
-    raise ValueError("Missing literal pin declaration: " + name)
-
-
 def exact_source(repository, revision):
     from provider_checkouts import validate_checkout
     validate_checkout(repository, revision)
@@ -44,7 +36,12 @@ def main():
     if sys.version_info < (3, 12):
         raise RuntimeError("The native flat-torus reference requires Python 3.12 or newer")
     root = Path(__file__).resolve().parents[1]
-    pins = literal(root / "src/ciw/geodesic_reference.py", "PINS")
+    pins = {}
+    for kind in ("flat-torus-reference", "curved-path-transfer"):
+        # Exact provider pins come from the pipeline descriptors the module executes.
+        descriptor = json.loads((root / "src/ciw/pipelines/descriptors" / f"{kind}.json").read_text(encoding="utf-8"))
+        step, = [step for step in descriptor["steps"] if "pin" in step]
+        pins[kind] = {"role": step["role"], **step["pin"]}
     revisions = {pin["role"]: pin["revision"] for pin in pins.values()}
     if set(revisions) != set(REPOSITORIES):
         raise ValueError("Require both pinned native reference providers")

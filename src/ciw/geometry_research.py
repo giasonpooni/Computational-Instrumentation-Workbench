@@ -14,18 +14,13 @@ from .adapters.protocol import AdapterRefusal
 from .adapters.subprocess import _json
 from .declared_workload import AUTHORITY, RESULT_SCHEMA, _text
 from .geodesic_reference import GeodesicReferenceWorkflow
+from .pipelines import provider_pin
 from .telemetry import canonical, digest, _keys
 
 SOURCE_LIMIT = 128 * 1024
 KINDS = frozenset({"covariance-geometry", "mesh-path", "translation-flow"})
-PINS = {
-    "covariance-geometry": {"role": "cggt", "revision": "510ad2bd0fb96faf77824b72e70ae1b4090646a0", "source_tree": "b2535f95606b0a17eec46b543b7be069e2f8bb89",
-        "module": "covariance_geometry", "source_root": "src"},
-    "mesh-path": {"role": "isgt", "revision": "ef4e64f3b73c83f9cb0e748dd029410fa0dbe76d", "source_tree": "0c9c667ca038edd265d9cdb6522ac891f14f65b6",
-        "module": "intrinsic_surface_geodesics", "source_root": "src"},
-    "translation-flow": {"role": "tsde", "revision": "5e72693e7e5722c47883ef1a68b2959afdf2e215", "source_tree": "6f2ecbb21617d87c3a1e8b60fa722b109dd7ccc8",
-        "module": "translation_surface_dynamics", "source_root": "src"},
-}
+# The pipeline descriptors are the pin definition; this module executes them.
+PINS = {kind: provider_pin(kind) for kind in sorted(KINDS)}
 REQUEST_SCHEMAS = {"covariance-geometry": "covariance-geometry-request-v1",
     "mesh-path": "isgt.edge-geodesic-request.v1", "translation-flow": "tsde.square-tiled-flow-request.v1"}
 RESULT_SCHEMAS = {"covariance-geometry": "covariance-geometry-result-v1",

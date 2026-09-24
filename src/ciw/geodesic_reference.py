@@ -17,18 +17,15 @@ from .adapters.protocol import AdapterRefusal
 from .adapters.subprocess import _json
 from .declared_workload import AUTHORITY, DeclaredWorkflow, RESULT_SCHEMA, VERIFY_SCHEMA, _text, _verification
 from .exchange import _identity
+from .pipelines import provider_pin
 from .telemetry import canonical, digest, _keys
 
 KINDS = frozenset({"flat-torus-reference", "curved-path-transfer"})
 MAX_SAMPLES = 128
 SOURCE_LIMIT = 32 * 1024
 FRAME = "transverse-to-gamma, parallel-transported"
-PINS = {
-    "flat-torus-reference": {"role": "ftr", "revision": "dc918562cd9e351a65475d29f46963c9f2fd7db8",
-        "source_tree": "1f082c6b443f2e301ac5889122912f26968ae756", "module": "flat_torus.companion", "source_root": "src"},
-    "curved-path-transfer": {"role": "csg", "revision": "bbc535af29c30997e56fd120320c570830676462",
-        "source_tree": "181b6eb73288d001f45c39bb149b1a80a431f34b", "module": "geodesic_testbed.jacobi", "source_root": "src"},
-}
+# The pipeline descriptors are the pin definition; this module executes them.
+PINS = {kind: provider_pin(kind) for kind in sorted(KINDS)}
 POLICIES = {
     "flat-torus-reference": {"geometry_basis": "area_one_flat_quotient", "length_unit": "normalized_length",
         "uncertainty": "not_applicable", "physical_geometry": "not_established"},

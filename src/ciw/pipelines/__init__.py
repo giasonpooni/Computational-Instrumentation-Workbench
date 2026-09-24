@@ -88,6 +88,16 @@ def live_pins(kind: str) -> dict:
     raise ValueError(f"No normalized pin source for {kind}")
 
 
+def provider_pin(kind: str, role: str | None = None) -> dict:
+    """The exact pin a module executes, read from its descriptor (the definition)."""
+    path = _descriptor_dir() / f"{kind}.json"
+    value = validate(json.loads(path.read_text(encoding="utf-8")))
+    steps = [step for step in value["steps"] if "pin" in step and (role is None or step["role"] == role)]
+    if len(steps) != 1:
+        raise ValueError(f"{kind} does not declare exactly one pinned provider step" + (f" for {role}" if role else ""))
+    return {"role": steps[0]["role"], **deepcopy(steps[0]["pin"])}
+
+
 def _descriptor_dir() -> Path:
     return Path(resources.files("ciw.pipelines") / "descriptors")
 

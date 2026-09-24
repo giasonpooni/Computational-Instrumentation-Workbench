@@ -1,6 +1,5 @@
 """Run all three real geometry providers through an isolated installed CIW wheel."""
 import argparse
-import ast
 import json
 import os
 from pathlib import Path
@@ -23,11 +22,17 @@ def call(command, **kwargs):
     return subprocess.run(command, check=True, timeout=kwargs.pop("timeout", 300), **kwargs)
 
 
-def pins(path):
-    for node in ast.parse(path.read_text(encoding="utf-8")).body:
-        if isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == "PINS" for t in node.targets):
-            return ast.literal_eval(node.value)
-    raise ValueError("Missing exact provider pins")
+KINDS = ("covariance-geometry", "mesh-path", "translation-flow")
+
+
+def pins(root):
+    """Exact provider pins from the pipeline descriptors, which the modules execute."""
+    declared = {}
+    for kind in KINDS:
+        descriptor = json.loads((root / "src/ciw/pipelines/descriptors" / f"{kind}.json").read_text(encoding="utf-8"))
+        step, = [step for step in descriptor["steps"] if "pin" in step]
+        declared[kind] = {"role": step["role"], **step["pin"]}
+    return declared
 
 
 def exact_source(path, pin):
@@ -45,7 +50,7 @@ def main():
     parser.add_argument("--output-dir", type=Path, default=Path("results/geometry-research"))
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
-    declarations = pins(root / "src/ciw/geometry_research.py")
+    declarations = pins(root)
     by_role = {pin["role"]:pin for pin in declarations.values()}
     if set(by_role) != set(REPOSITORIES):
         raise ValueError("Require all three geometry providers")
