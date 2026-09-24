@@ -184,9 +184,10 @@ def test_gate_record_names_the_bindings_the_queue_received(tmp_path, monkeypatch
 
 
 def test_gate_runs_and_records_the_requested_openblas_kernel(tmp_path, monkeypatch, capsys):
+    import subprocess
     from types import SimpleNamespace
     reproduce = _script("reproduce_lab")
-    commands, answers = [], {"core": "Haswell"}
+    commands, answers = [], {"core": "Haswell", "fail": False}
 
     def run(command, **kwargs):  # the wheel build, installation, tests and queue are recorded, not run
         command = [str(part) for part in command]
@@ -195,6 +196,8 @@ def test_gate_runs_and_records_the_requested_openblas_kernel(tmp_path, monkeypat
             dist = Path(command[command.index("--wheel-dir") + 1])
             dist.mkdir(parents=True)
             (dist / "ciw-0-py3-none-any.whl").write_bytes(b"wheel")
+        if answers["fail"] and command[1:5] == ["-m", "ciw", "lab", "run"]:
+            raise subprocess.CalledProcessError(1, command)
 
     def ask(command, **kwargs):  # what the clean-room interpreter answers
         if reproduce.BLAS_CORE_QUERY in [str(part) for part in command]:
@@ -229,6 +232,14 @@ def test_gate_runs_and_records_the_requested_openblas_kernel(tmp_path, monkeypat
     assert all("OPENBLAS_CORETYPE" not in env for command, env in commands if env)
     record = json.loads((tmp_path / "default" / "gate.json").read_text(encoding="utf-8"))
     assert record["openblas_core"] == "SkylakeX" and record["openblas_coretype"] is None
+    # A gate that fails after the kernel check writes no record, but its log still names the kernel the clean room ran.
+    answers["fail"] = True
+    capsys.readouterr()
+    with pytest.raises(subprocess.CalledProcessError):
+        gate("failed", "--blas-core", "SkylakeX")
+    assert "Clean room runs OpenBLAS kernel SkylakeX (requested: SkylakeX)" in capsys.readouterr().out
+    assert not (tmp_path / "failed" / "gate.json").exists()
+    answers["fail"] = False
     # A NumPy whose BLAS names no kernel is recorded as such, and cannot be asked for one.
     answers["core"] = ""
     assert gate("unnamed") == 0

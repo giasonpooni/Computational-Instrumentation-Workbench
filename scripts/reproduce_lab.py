@@ -160,6 +160,9 @@ def main() -> int:
         if Path(located).resolve().is_relative_to(ROOT):
             raise SystemExit("The clean-room interpreter imported ciw from the checkout")
         blas_core = clean_room_blas_core(python, work, environment)
+        # Named before any step can fail, so a failed gate's log still says which kernel the clean room ran.
+        print(f"Clean room runs OpenBLAS kernel {blas_core or '(none reported)'} "
+              f"(requested: {args.blas_core or 'none'})", flush=True)
         problem = blas_core_problem(args.blas_core, blas_core)
         if problem:
             raise SystemExit(problem)

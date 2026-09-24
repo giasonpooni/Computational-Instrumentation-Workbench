@@ -330,6 +330,9 @@ goldens). `--blas-core CORE` runs the clean room on another kernel: it sets
 reports that kernel (`ciw.lab.blas_probe.openblas_core` reads it from the
 loaded library; NumPy's build configuration names only the build target). Names are OpenBLAS's, matched without case; a name OpenBLAS
 does not know, or maps to another kernel (`Zen` runs `Haswell`), is refused.
+With or without the option, the gate prints the kernel the clean room runs
+before the lab tests start and records it in `gate.json` when it passes, so the
+log of a gate that fails on a CI runner still names the runner's kernel.
 To verify the retained run across kernels on one host:
 
 ```sh

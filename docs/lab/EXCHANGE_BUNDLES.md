@@ -111,9 +111,14 @@ T094 makes each of its claims hold on every platform instead. It reopens every
 golden twice under the guard. The first reopen replaces CIW's bit-for-bit
 comparison of the energy recomputation, and only that, with a per-float
 comparison within `ENERGY_ROUNDING_TOLERANCE` (1e-14 absolute plus 1e-14
-relative, about 45 and 36 times the measured absolute and relative spread;
-every other field exact; `energy_recomputation_within`), so the rest of
-reopen validation decides on any platform. The second is CIW's reopen,
+relative, summed as `ciw lab verify` sums them; every other field exact;
+`energy_recomputation_within`), so the rest of reopen validation decides on
+any platform. Where the largest difference, 2.2e-16, was measured, the bound
+is 45 times it at the near-zero error fields (the absolute term: 45 ulps of the
+order-one quantities they are differences of) and 91 times at the reference
+mean near 1; fields that moved less sit further inside it (at the covariance
+entries and their error fields about 190 to 1500 times their largest
+difference, the absolute term dominating). The second is CIW's reopen,
 unmodified. Its outcome must equal the bitwise prediction (accepted where every
 recomputation is bit-identical, otherwise refused by that name), and where the
 fingerprint equals `GOLDEN_PLATFORM` every recomputation must be bit-identical.

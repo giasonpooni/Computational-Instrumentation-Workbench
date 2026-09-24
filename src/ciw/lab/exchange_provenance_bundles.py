@@ -808,8 +808,11 @@ ENERGY_ROUNDING_BASIS = (
     "workspace on one x86-64 host under three OpenBLAS kernels: SkylakeX, which wrote it, recomputes it bit for bit; "
     "under Haswell and Sandybridge the reference mean and covariance (order-one results of 2x2 LAPACK solves) move "
     "by at most 2 ulps (2.8e-16 relative) and the error fields derived from them, which cancel to near zero, by at "
-    "most 2.2e-16 absolute. The margin is about 45 times the absolute and 36 times the relative spread; this run's "
-    "differences are in golden.json.")
+    "most 2.2e-16 absolute. The two terms are summed, as ciw lab verify sums them: where the largest difference, "
+    "2.2e-16, was measured the bound is 45 times it at the error fields (the absolute term, 45 ulps of the order-one "
+    "quantities they are differences of) and 91 times at reference.mean[1] (bound 2.0e-14); fields that moved "
+    "less sit further inside it (at the covariance entries and their error fields about 190 to 1500 times their "
+    "largest difference, the absolute term dominating). This run's differences are in golden.json.")
 
 
 def _retained_analyses(raw: bytes) -> dict:
@@ -1027,8 +1030,9 @@ def golden_retained_bundles(ctx):
         f"{outside} outside the tolerance; {matched} of {len(unmodified)} unmodified reopens end as predicted; "
         f"retained heat values {heat_values}.",
         "Exact counts and digests. The energy recomputation is compared to 1e-14 absolute plus 1e-14 relative per "
-        "float, about 45 times the absolute and 36 times the relative spread measured across three OpenBLAS "
-        "kernels, and bit for bit where CIW compares it.",
+        "float, summed: 45 times the largest difference measured across three OpenBLAS kernels at the near-zero "
+        "error fields and 91 times at the order-one reference mean, further where a field moved less; and bit for "
+        "bit where CIW compares it.",
         ["fixture drift (digest)", "schema or validator drift breaking reopen", "execution during reopen",
          "replay identity drift", "unbound replay of a provider-backed golden bundle",
          "retained runtime identity differing from CIW's pins", "floating-point recomputation drift beyond rounding",
