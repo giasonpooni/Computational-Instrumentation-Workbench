@@ -79,6 +79,12 @@ def _figure_declarations(report):
             if a["path"].endswith(".svg")}
 
 
+def _recorded(ctx, task_id, name):
+    """The plotted values and rounding bounds a rounding-level figure records, by series name."""
+    series = svg.recorded_values((ctx.output_dir / "artifacts" / task_id / name).read_bytes())
+    return {s["name"]: s for s in series}
+
+
 def test_registrations_name_existing_tests():
     names = set(globals())
     assert set(IMPLEMENTATIONS) == set(SECTION)
@@ -192,11 +198,22 @@ def test_t002_references_agree(lab):
     rows = _artifact(lab.ctx, "T002", "references.json")["rows"]
     assert all(rows[k]["reference_error_estimate"] < 1e-18 for k in gj.VARIABLE_KEYS)
     assert all(rows[k]["scipy_vs_reference"]["max"] < 1e-11 for k in rows)
-    # agreement.svg plots rounding-level data: every gap it draws lies between binary64 end states of order one
-    # below 1e-12, and the smallest, which sets its log axis, is a few ulps. Their last bits follow the BLAS kernel,
-    # so it is declared a rounding-level figure; clairaut.svg plots RK4 truncation drift and is not.
-    plotted = [rows[k][gap]["max"] for k in rows for gap in ("ciw_vs_reference", "scipy_vs_reference")]
-    assert max(plotted) < 1e-12 and min(plotted) <= 8 * np.finfo(float).eps
+    # agreement.svg plots each binary64 end state's gap to a reference exact to 1e-18, below 1e-12. Rounding, whose
+    # last bits follow the BLAS kernel, moves each gap by at most the 64 eps it records as every point's bound: at most
+    # 128 ulps of the path's largest end-state entry, all of order one. The smallest gap, which sets the log axis, is
+    # within that bound, so the figure's bytes follow the kernel: it is declared a rounding-level figure and compared
+    # by its recorded values; clairaut.svg plots RK4 truncation drift and is not.
+    eps = np.finfo(float).eps
+    recorded = _recorded(lab.ctx, "T002", "agreement.svg")
+    index = _artifact(lab.ctx, "T002", "references.json")["figure_path_index"]
+    order = [index[str(i)] for i in range(1, len(index) + 1)]
+    for name, gap in (("ciw Richardson", "ciw_vs_reference"), ("scipy DOP853", "scipy_vs_reference")):
+        assert recorded[name]["y"] == [max(rows[k][gap]["max"], 1e-17) for k in order]
+        assert recorded[name]["bound"] == [64 * eps] * len(rows)
+    assert all(max(np.max(np.abs(row["reference_position"])), np.max(np.abs(row["reference_matrix"]))) >= 0.5
+               for row in rows.values())
+    plotted = [y for series in recorded.values() for y in series["y"]]
+    assert max(plotted) < 1e-12 and min(plotted) <= 64 * eps
     assert _figure_declarations(report) == {"agreement.svg": True, "clairaut.svg": None}
     closed = _findings(report)["ciw Richardson RK4 end states match closed-form geodesics and transfer matrices on "
                                "the six closed-form charts"]
@@ -262,12 +279,23 @@ def test_t003_integrator_orders(lab):
     assert flat["counterexample"]["witness"]["charts"] == ["plane", "cylinder"]
     assert max(flat["value"].values()) < 1e-12
     # adaptive.svg reaches the rounding floor: its smallest error, at the tightest tolerance, is below 1e-12 of the
-    # endpoint it measures, so the endpoint's last bits, which follow the BLAS kernel, move its points and its log
-    # axis. It is declared a rounding-level figure; the fixed-step order figures are not.
+    # endpoint it measures. Rounding, whose last bits follow the BLAS kernel, moves each endpoint error by at most the
+    # 64 eps it records as every point's bound, at most 128 ulps of endpoints of order one: more than 1e-3 of the
+    # smallest error, which sets the log axis, and far below every larger error, which the bound therefore keeps
+    # compared. It is declared a rounding-level figure; the fixed-step order figures are not.
+    eps = np.finfo(float).eps
     charts = _artifact(lab.ctx, "T003", "orders.json")["adaptive"]["charts"]
+    recorded = _recorded(lab.ctx, "T003", "adaptive.svg")
+    assert set(recorded) == set(charts)
+    for key, chart in charts.items():
+        assert recorded[key]["x"] == [r["function_evaluations"] for r in chart["rows"]]
+        assert recorded[key]["y"] == [r["error"] for r in chart["rows"]]
+        assert recorded[key]["bound"] == [64 * eps] * len(chart["rows"])
+        assert np.linalg.norm(gjt.reference(lab.ctx, key)["position"]) >= 0.5
     key, row = min(((k, r) for k, c in charts.items() for r in c["rows"]), key=lambda item: item[1]["error"])
     assert row["rtol"] == min(gjt.ADAPTIVE_RTOL)
     assert row["error"] < 1e-12 * np.linalg.norm(gjt.reference(lab.ctx, key)["position"])
+    assert 64 * eps >= 1e-3 * row["error"]
     declared = _figure_declarations(report)
     assert declared.pop("adaptive.svg") is True
     assert declared == {f"orders-{k}.svg": None for k in gjt.GAMMA_CHARTS}

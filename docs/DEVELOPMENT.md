@@ -181,8 +181,9 @@ python scripts/check_lab.py --blas-core Haswell --output-dir results/lab-gate-ha
 
 `scripts/check_figures.py` re-executes every figure task of the retained run
 with the installed `ciw` and compares each SVG figure with `lab/` byte for
-byte (a figure declared as a wall-clock timing or rounding-level figure by
-structure only); it records the platform, Python, NumPy, BLAS build and
+byte (a figure declared as a wall-clock timing figure by structure only, one
+declared as a rounding-level figure by its recorded values within their
+rounding bounds); it records the platform, Python, NumPy, BLAS build and
 OpenBLAS kernel in `figure-check.json`, lists tasks whose providers are not
 bound (`--provider ROLE=PATH`) as not re-executed, and exits 3 on a mismatch.
 Run on Windows, it is the second-platform figure comparison; run with

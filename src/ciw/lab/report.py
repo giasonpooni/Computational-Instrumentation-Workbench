@@ -52,11 +52,13 @@ STATES = ("completed", "partial", "deferred", "blocked")
 # Keys of a generated-artifact entry declaring an SVG figure whose bytes are not
 # reproducible byte for byte; present only as ``true``, at most one per figure.
 # ``wall_clock_timing`` (``ctx.artifact_text(..., wall_clock_timing=True)``): the
-# figure plots wall-clock timings. ``rounding_level`` (``rounding_level=True``):
-# it plots values at binary64 rounding level (errors and residuals near machine
-# epsilon), whose last bits, and so the figure's coordinates and axis range,
-# follow the BLAS kernel and platform. Figure re-executions compare a declared
-# figure for presence and structure, never byte for byte (T158,
+# figure plots wall-clock timings; figure re-executions compare it for presence
+# and structure. ``rounding_level`` (``rounding_level=True``): it plots values
+# at binary64 rounding level (errors and residuals near machine epsilon), whose
+# last bits, and so the figure's coordinates and axis range, follow the BLAS
+# kernel and platform; it records its plotted values with their rounding bounds
+# (``svg.line_plot(..., rounding=...)``), and re-executions compare those
+# values within the bounds. Neither is compared byte for byte (T158,
 # scripts/check_figures.py).
 WALL_CLOCK_TIMING = "wall_clock_timing"
 ROUNDING_LEVEL = "rounding_level"

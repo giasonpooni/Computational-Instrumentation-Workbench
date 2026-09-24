@@ -307,12 +307,16 @@ TIMING_DIFFERS = "Re-executed figures declared as wall-clock timing figures diff
 TIMING_IDENTICAL = "Re-executed figures declared as wall-clock timing figures reproduced byte for byte in this run"
 
 
+ROUNDING_BOUND = 1e-9  # the rounding bound a fake rounding-level figure records for every point
+
+
 def _figure_task(task_id, varying=False, declared=False, timing_note=False, growing=False, provider=None,
-                 states=("completed",), extra=False, identity=None, rounding=False):
-    """A fake figure task: ``varying`` changes one plotted value on every call, ``growing`` adds a point,
-    ``timing_note`` retains a JSON note on wall-clock timings (no declaration), ``declared`` declares the figure
-    as a wall-clock timing figure and ``rounding`` as a rounding-level figure, ``extra`` writes a second figure from
-    its second call on, ``identity`` is its recorded runtime identity."""
+                 states=("completed",), extra=False, identity=None, rounding=False, jitter=False):
+    """A fake figure task: ``varying`` changes one plotted value on every call, ``jitter`` moves it by 1e-12 (within
+    ``ROUNDING_BOUND``, as another BLAS kernel's last bits would), ``growing`` adds a point, ``timing_note`` retains a
+    JSON note on wall-clock timings (no declaration), ``declared`` declares the figure as a wall-clock timing figure
+    and ``rounding`` as a rounding-level figure (recording its values with ``ROUNDING_BOUND``), ``extra`` writes a
+    second figure from its second call on, ``identity`` is its recorded runtime identity."""
     from ciw.lab import svg
     calls = iter(range(1, 100))
 
@@ -323,8 +327,10 @@ def _figure_task(task_id, varying=False, declared=False, timing_note=False, grow
         if timing_note:
             ctx.artifact_json("timings.json", {"note": "Wall-clock timings of this run; not reproducible.", "seconds": call})
         xs = list(range(1, 3 + (call if growing else 1)))
-        ys = [x * x * (call if varying and x == xs[-1] else 1) for x in xs]
-        ctx.artifact_text("plot.svg", svg.line_plot([("a", xs, ys)], title="t", xlabel="x", ylabel="y"),
+        ys = [x * x * (call if varying and x == xs[-1] else 1) + (call * 1e-12 if jitter and x == xs[-1] else 0)
+              for x in xs]
+        ctx.artifact_text("plot.svg", svg.line_plot([("a", xs, ys)], title="t", xlabel="x", ylabel="y",
+                                                    rounding=ROUNDING_BOUND if rounding else None),
                           wall_clock_timing=declared, rounding_level=rounding)
         if extra and call > 1:
             ctx.artifact_text("extra.svg", svg.line_plot([("a", xs, ys)], title="t", xlabel="x", ylabel="y"))
@@ -415,13 +421,13 @@ def test_only_declared_timing_figures_are_exempt_from_the_byte_comparison(tmp_pa
 
 
 @pytest.mark.lab_task("T158")
-def test_rounding_level_figures_are_compared_by_structure_on_every_kernel(tmp_path, monkeypatch):
+def test_rounding_level_figures_are_compared_by_their_values_on_every_kernel(tmp_path, monkeypatch):
     # T020's rounding-level figure regenerates byte for byte on the kernel that retained it and with other last bits
-    # on another kernel ("other"): T158 compares it for presence and structure on both.
+    # on another kernel ("other"): T158 compares the values it records, within their rounding bounds, on both.
     reports = {}
-    for kernel, varying in (("retained", False), ("other", True)):
+    for kernel, jitter in (("retained", False), ("other", True)):
         _retain_figures(tmp_path / kernel, monkeypatch, {"T010": _figure_task("T010"),
-                                                         "T020": _figure_task("T020", varying=varying, rounding=True)})
+                                                         "T020": _figure_task("T020", jitter=jitter, rounding=True)})
         reports[kernel] = _run("T158", tmp_path / kernel, keep=True)
     for report in reports.values():
         assert _finding(report, FIGURES)["value"] == 0 and set(_labels(report).values()) == {"numerically_verified"}
@@ -438,14 +444,38 @@ def test_rounding_level_figures_are_compared_by_structure_on_every_kernel(tmp_pa
         assert index["rounding_level_tasks"] == ["T020"] and index["wall_clock_timing_tasks"] == []
         outcomes[kernel] = {o["path"]: o["outcome"] for o in index["regenerated"] if o["rounding_level"]}
     assert outcomes == {"retained": {"artifacts/T020/plot.svg": "identical"},
-                        "other": {"artifacts/T020/plot.svg": "same structure"}}
+                        "other": {"artifacts/T020/plot.svg": "within rounding bounds"}}
     comparison = runner.compare(tmp_path / "retained", tmp_path / "other", tasks=["T158"])
     assert comparison["compared"] == 1 and comparison["problems"] == []
-    # A rounding-level figure that lost or gained series or points is a mismatch.
-    _retain_figures(tmp_path / "grown", monkeypatch, {"T020": _figure_task("T020", growing=True, rounding=True)})
-    grown = _run("T158", tmp_path / "grown")
-    assert _finding(grown, FIGURES)["value"] == 1 and _labels(grown)[FIGURES] == "not_established"
-    assert grown["state"] == "partial"
+    # A rounding-level figure that lost or gained a point, or whose value moved beyond its rounding bound (a real
+    # numerical difference), is a mismatch.
+    for case, fake in (("grown", _figure_task("T020", growing=True, rounding=True)),
+                       ("moved", _figure_task("T020", varying=True, rounding=True))):
+        _retain_figures(tmp_path / case, monkeypatch, {"T020": fake})
+        report = _run("T158", tmp_path / case)
+        assert _finding(report, FIGURES)["value"] == 1 and _labels(report)[FIGURES] == "not_established"
+        assert report["state"] == "partial"
+    # The comparison itself: series names and point counts, x values to VALUE_RTOL, each y value to its rounding
+    # bound (the larger of the two recorded) plus VALUE_RTOL.
+    from ciw.lab import svg
+
+    def figure(a, b=(1.0, 2.0, 3.0), names=("a", "b"), xs=(1, 2, 3), bounds=(1e-9, 0.0)):
+        return svg.line_plot([(names[0], xs, a), (names[1], xs, b)], title="t", xlabel="x", ylabel="y", logy=True,
+                             rounding=list(bounds)).encode()
+
+    compare, base = research_portfolio.compare_figure, figure([1e-10, 1e-3, 2.0])
+    for within in (figure([9e-10, 1e-3, 2.0]), figure([1e-10, 1e-3 + 1e-9, 2.0], b=(1.0, 2.0, 3.0 * (1 + 1e-13))),
+                   figure([1e-10, 1e-3, 2.0], b=(1.0, 2.0, 3.0 + 1e-9), bounds=(1e-9, 1e-9))):
+        assert compare(base, within, False, rounding_level=True) == "within rounding bounds"
+    for moved in (figure([3e-9, 1e-3, 2.0]), figure([1e-10, 1e-3, 2.0 * (1 + 1e-6)]),
+                  figure([1e-10, 1e-3, 2.0], b=(1.0, 2.0, 3.0 + 1e-9)), figure([1e-10, 1e-3, 2.0], xs=(1, 2, 3.0001))):
+        assert compare(base, moved, False, rounding_level=True) == "values differ"
+    for other in (figure([1e-10, 1e-3, 2.0], names=("b", "a")), figure([1e-10, 1e-3], b=(1.0, 2.0), xs=(1, 2)),
+                  svg.line_plot([(n, [1, 2, 3], [1e-10, 1e-3, 2.0]) for n in "ab"], title="t", xlabel="x",
+                                ylabel="y", logy=True).encode(), b"<svg"):
+        assert compare(base, other, False, rounding_level=True) == "structure differs"
+    assert compare(base, base, False, rounding_level=True) == "identical"
+    assert "values differ" in research_portfolio.MISMATCHES
 
 
 def test_figures_not_reexecuted_leave_the_task_partial(tmp_path, monkeypatch):
@@ -474,8 +504,9 @@ def test_next_step_runs_the_figure_check_on_the_second_platform(tmp_path, monkey
     assert "declare timing figures" not in step and not re.search(r"\bT\d{3}\b", step)
     # A declaration is for wall-clock timing or rounding-level figures only, never to hide a real numerical difference.
     assert "fix or declare" not in step
-    assert ("declaring one only when its plotted data are wall-clock timings or values at rounding level whose last "
-            "bits follow the BLAS kernel, never to hide a real numerical difference") in step
+    assert ("declaring one only when its plotted data are wall-clock timings or when values at rounding level, whose "
+            "last bits follow the BLAS kernel, move it, with each point's rounding bound recorded, never to hide a "
+            "real numerical difference") in step
 
 
 def test_providers_used_include_checkouts_read_without_a_probe():
@@ -506,8 +537,9 @@ def test_figure_check_script_reexecutes_a_retained_run_and_compares_every_figure
         "T023": _figure_task("T023", states=("completed", "partial")),      # ends in another state: not comparable
         "T030": _figure_task("T030", provider="csg"),                        # its provider is not bound here
         "T031": _figure_task("T031", extra=True),                            # writes a figure the report lacks
-        "T033": _figure_task("T033", varying=True, rounding=True),           # rounding-level figure: structure only
-        "T035": _figure_task("T035", growing=True, rounding=True)},          # ... whose points changed: a mismatch
+        "T033": _figure_task("T033", jitter=True, rounding=True),            # rounding-level figure: values in bounds
+        "T035": _figure_task("T035", growing=True, rounding=True),           # ... whose points changed: a mismatch
+        "T037": _figure_task("T037", varying=True, rounding=True)},          # ... value beyond its bound: a mismatch
         providers={"csg": tmp_path})
 
     def main(*args):
@@ -521,18 +553,18 @@ def test_figure_check_script_reexecutes_a_retained_run_and_compares_every_figure
     assert {o["path"]: o["outcome"] for o in record["figures"]} == {
         "artifacts/T010/plot.svg": "identical", "artifacts/T013/plot.svg": "same structure",
         "artifacts/T020/plot.svg": "differs", "artifacts/T031/plot.svg": "identical",
-        "artifacts/T031/extra.svg": "not retained", "artifacts/T033/plot.svg": "same structure",
-        "artifacts/T035/plot.svg": "structure differs"}
+        "artifacts/T031/extra.svg": "not retained", "artifacts/T033/plot.svg": "within rounding bounds",
+        "artifacts/T035/plot.svg": "structure differs", "artifacts/T037/plot.svg": "values differ"}
     # The two declarations are recorded, and counted, apart.
     assert {o["task_id"] for o in record["figures"] if o["wall_clock_timing"]} == {"T013"}
-    assert {o["task_id"] for o in record["figures"] if o["rounding_level"]} == {"T033", "T035"}
+    assert {o["task_id"] for o in record["figures"] if o["rounding_level"]} == {"T033", "T035", "T037"}
     # Tasks left out are listed with their reason and never counted as matches.
     assert record["not_reexecuted"] == {"T030": "provider csg not bound here; the retained run used it"}
     assert record["not_comparable"] == {"T023": "state completed -> partial"}
     assert record["summary"] == {
-        "figure_tasks": 8, "figures": 8, "compared_tasks": 6, "compared_figures": 6, "identical": 2,
+        "figure_tasks": 9, "figures": 9, "compared_tasks": 7, "compared_figures": 7, "identical": 2,
         "declared_timing_same_structure": 1, "declared_timing_identical": 0,
-        "declared_rounding_level_same_structure": 1, "declared_rounding_level_identical": 0, "mismatched": 3,
+        "declared_rounding_level_within_bounds": 1, "declared_rounding_level_identical": 0, "mismatched": 4,
         "not_reexecuted_tasks": 1, "not_reexecuted_figures": 1, "not_comparable_tasks": 1, "not_comparable_figures": 1}
     # The platform the comparison ran on, for the second-platform record, with the OpenBLAS kernel NumPy runs.
     assert record["platform"]["python"] == platform.python_version() and "blas" in record["platform"]
@@ -540,20 +572,21 @@ def test_figure_check_script_reexecutes_a_retained_run_and_compares_every_figure
     assert core == openblas_core()
     assert (out / "run" / "reports" / "T010.json").is_file() and not (out / "run" / "reports" / "T030.json").exists()
     summary = (out / "figure-check.md").read_text(encoding="utf-8")
-    assert "- Mismatched: 3" in summary and "| T020 | `artifacts/T020/plot.svg` | no | differs |" in summary
+    assert "- Mismatched: 4" in summary and "| T020 | `artifacts/T020/plot.svg` | no | differs |" in summary
     assert "| T013 | `artifacts/T013/plot.svg` | wall-clock timing | same structure |" in summary
-    assert "| T033 | `artifacts/T033/plot.svg` | rounding level | same structure |" in summary
-    assert "declared rounding-level figures with the same structure: 1, byte-identical: 0" in summary
+    assert "| T033 | `artifacts/T033/plot.svg` | rounding level | within rounding bounds |" in summary
+    assert "| T037 | `artifacts/T037/plot.svg` | rounding level | values differ |" in summary
+    assert "declared rounding-level figures within their rounding bounds: 1, byte-identical: 0" in summary
     assert f"- OpenBLAS core: {core or 'unknown'}" in summary
     assert "| T030 | provider csg not bound here; the retained run used it |" in summary
-    assert "FAIL: 3 figures mismatched" in capsys.readouterr().out
+    assert "FAIL: 4 figures mismatched" in capsys.readouterr().out
     # Selected tasks with the provider bound: the provider task is re-executed and compared too.
     assert main("--output-dir", str(tmp_path / "bound"), "--provider", f"csg={tmp_path}", "T010", "T013", "T030",
                 "T033") == 0
     bound = json.loads((tmp_path / "bound" / "figure-check.json").read_text(encoding="utf-8"))
     assert bound["providers"] == ["csg"] and bound["not_reexecuted"] == {} and bound["not_comparable"] == {}
-    assert {o["task_id"]: o["outcome"] for o in bound["figures"]} == {"T010": "identical", "T013": "same structure",
-                                                                      "T030": "identical", "T033": "same structure"}
+    assert {o["task_id"]: o["outcome"] for o in bound["figures"]} == {
+        "T010": "identical", "T013": "same structure", "T030": "identical", "T033": "within rounding bounds"}
     assert "PASS: 4 figures compared, none mismatched" in capsys.readouterr().out
     # Changed sources, a used output directory, one inside the retained run and unknown tasks are refused.
     changed = check.not_reexecuted({"provider_runtime_identity": {"sources": {"src/ciw/lab/svg.py": "0" * 64}}}, {})

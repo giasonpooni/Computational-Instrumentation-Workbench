@@ -2,15 +2,25 @@
 
 The output depends only on the plotted numbers and labels, so a regenerated
 figure has the same bytes. No plotting library is required.
+
+A figure that plots values at binary64 rounding level, whose last bits follow
+the BLAS kernel and platform, records its plotted values with each point's
+rounding bound (``line_plot(..., rounding=...)``); ``recorded_values`` reads
+them back, so a re-execution compares the values rather than the bytes.
 """
 from __future__ import annotations
 
 from html import escape
+import json
 import math
+import numbers
+import xml.etree.ElementTree as ET
 
 PALETTE = ("#1f5fa8", "#c2410c", "#15803d", "#7e22ce", "#b91c1c", "#0f766e", "#a16207", "#475569")
 WIDTH, HEIGHT = 640, 420
 LEFT, RIGHT, TOP, BOTTOM = 78, 170, 40, 58
+# Identity of the metadata element holding a figure's recorded values and rounding bounds.
+VALUES_ID = "ciw-plotted-values"
 
 
 def _transform(values, log):
@@ -39,16 +49,49 @@ def _label(value, log):
     return format(value, ".3g")
 
 
-def line_plot(series, *, title, xlabel, ylabel, logx=False, logy=False, markers=True) -> str:
-    """Plot ``series`` = [(name, xs, ys), ...]; nonpositive values are dropped on log axes."""
+def _number(value) -> bool:
+    return isinstance(value, numbers.Real) and not isinstance(value, bool)
+
+
+def _per_point(bound, count, name) -> list:
+    bounds = [float(bound)] * count if _number(bound) else [float(b) for b in bound if _number(b)]
+    if len(bounds) != count or not all(math.isfinite(b) and b >= 0 for b in bounds):
+        raise ValueError(f"Series {name!r} needs one finite, nonnegative rounding bound per point")
+    return bounds
+
+
+def line_plot(series, *, title, xlabel, ylabel, logx=False, logy=False, markers=True, rounding=None) -> str:
+    """Plot ``series`` = [(name, xs, ys), ...]; nonpositive values are dropped on log axes.
+
+    ``rounding``, for a figure declared as plotting values at rounding level
+    (``ctx.artifact_text(..., rounding_level=True)``), records every plotted
+    point (x and y exactly) with its rounding bound: the largest change rounding
+    (another BLAS kernel or platform) can make to its y value between two runs,
+    in y units. It is one number for every point, or a list with one entry per
+    series, each a number or one bound per point of that series. Without it the
+    figure is unchanged.
+    """
+    series = [(name, list(xs), list(ys)) for name, xs, ys in series]
+    if rounding is None:
+        per_series = [None] * len(series)
+    elif isinstance(rounding, bool):
+        raise ValueError("rounding is a bound, or one per series, not a flag")
+    else:
+        per_series = [rounding] * len(series) if _number(rounding) else list(rounding)
+        if len(per_series) != len(series):
+            raise ValueError("Give one rounding bound, or one per series")
     cleaned = []
-    for name, xs, ys in series:
-        points = [(float(x), float(y)) for x, y in zip(xs, ys)
+    for (name, xs, ys), bound in zip(series, per_series):
+        bounds = [None] * len(xs) if bound is None else _per_point(bound, min(len(xs), len(ys)), name)
+        points = [(float(x), float(y), b) for x, y, b in zip(xs, ys, bounds)
                   if math.isfinite(x) and math.isfinite(y) and (not logx or x > 0) and (not logy or y > 0)]
         if points:
-            cleaned.append((name, [p[0] for p in points], [p[1] for p in points]))
+            cleaned.append((name, [p[0] for p in points], [p[1] for p in points], [p[2] for p in points]))
     if not cleaned:
         raise ValueError("No finite points to plot")
+    recorded = None if rounding is None else [{"name": str(name), "x": xs, "y": ys, "bound": bounds}
+                                              for name, xs, ys, bounds in cleaned]
+    cleaned = [(name, xs, ys) for name, xs, ys, _ in cleaned]
     tx = [_transform(xs, logx) for _, xs, _ in cleaned]
     ty = [_transform(ys, logy) for _, _, ys in cleaned]
     xmin, xmax = min(min(v) for v in tx), max(max(v) for v in tx)
@@ -96,5 +139,27 @@ def line_plot(series, *, title, xlabel, ylabel, logx=False, logy=False, markers=
         out.append(f'<line x1="{LEFT + plot_w + 12}" y1="{ly}" x2="{LEFT + plot_w + 32}" y2="{ly}" '
                    f'stroke="{color}" stroke-width="2"/>')
         out.append(f'<text x="{LEFT + plot_w + 38}" y="{ly + 4}">{escape(name)}</text>')
+    if recorded is not None:
+        values = escape(json.dumps({"series": recorded}, separators=(",", ":")), quote=False)
+        out.append(f'<metadata id="{VALUES_ID}">{values}</metadata>')
     out.append("</svg>")
     return "\n".join(out) + "\n"
+
+
+def recorded_values(data) -> list | None:
+    """The plotted values and rounding bounds a figure records (``line_plot(..., rounding=...)``): a list of
+    ``{"name", "x", "y", "bound"}`` series, or None when the figure records none or is not well-formed."""
+    try:
+        root = ET.fromstring(data)
+        element = next((e for e in root.iter() if e.tag.rsplit("}", 1)[-1] == "metadata"
+                        and e.get("id") == VALUES_ID), None)
+        series = json.loads(element.text)["series"] if element is not None else None
+    except (ET.ParseError, TypeError, ValueError, KeyError):
+        return None
+    if not isinstance(series, list) or not all(
+            isinstance(s, dict) and set(s) == {"name", "x", "y", "bound"} and isinstance(s["name"], str)
+            and all(isinstance(s[k], list) and len(s[k]) == len(s["x"])
+                    and all(isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v)
+                            for v in s[k]) for k in ("x", "y", "bound")) for s in series):
+        return None
+    return series

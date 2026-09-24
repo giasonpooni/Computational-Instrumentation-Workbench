@@ -336,20 +336,23 @@ wrong aggregate, never by re-reading what was just written:
 - for T158, re-executing a declared set of inexpensive figure tasks plus every
   task that declares a wall-clock timing figure (`wall_clock_timing: true` on
   the figure's generated-artifact entry, set by the task when it writes the
-  figure) and comparing figure bytes; a declared figure, timing or
-  rounding-level (`rounding_level: true`: it plots values at binary64
-  rounding level, whose last bits follow the BLAS kernel and platform), is
-  compared for presence and structure (series and points) only. A declared
-  timing figure that differs in bytes is recorded as a counterexample to byte
-  reproducibility, and one that reproduced byte for byte is reported; whether
-  a rounding-level figure reproduced byte for byte (it does on the kernel of
-  the retained run only) is recorded in `figure-index.json` alone, so that
-  T158's findings, labels and prose are the same on every kernel; any other
-  figure that differs, a figure no longer written and a declared figure whose
-  structure differs refute it; figures not re-executed leave the task
-  `partial` (`scripts/check_figures.py` re-executes all of them outside the
-  queue, on any platform and forced OpenBLAS kernel, and counts the two
-  declarations apart);
+  figure) and comparing figure bytes; a declared timing figure is compared
+  for presence and structure (series and points) only, and a declared
+  rounding-level figure (`rounding_level: true`: values at binary64 rounding
+  level, whose last bits follow the BLAS kernel and platform, move it) by the
+  plotted values it records: the same series and point counts, x values to
+  1e-12 relative and each y value within its recorded rounding bound plus
+  1e-12 relative. A declared timing figure that differs in bytes is recorded
+  as a counterexample to byte reproducibility, and one that reproduced byte
+  for byte is reported; whether a rounding-level figure reproduced byte for
+  byte (it does on the kernel of the retained run only) is recorded in
+  `figure-index.json` alone, so that T158's findings, labels and prose are the
+  same on every kernel; any other figure that differs, a figure no longer
+  written, a declared figure whose structure differs and a rounding-level
+  figure whose values move beyond their bounds refute it; figures not
+  re-executed leave the task `partial` (`scripts/check_figures.py`
+  re-executes all of them outside the queue, on any platform and forced
+  OpenBLAS kernel, and counts the two declarations apart);
 - for T168, a static tie analysis (a registered test, or its parametrized
   case, declares its task with a `lab_task` marker and mentions an evidence
   label; markers naming a task that does not register what they mark are

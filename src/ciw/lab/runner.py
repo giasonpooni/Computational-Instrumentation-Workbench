@@ -26,6 +26,7 @@ import xml.etree.ElementTree as ET
 import numpy as np
 
 from .. import __version__
+from . import svg
 from .evidence import AUTHORITY_DOMAINS, PHYSICAL_DOMAINS, EvidenceRefusal, origin_difference, validate_finding
 from .registry import SECTION_MODULES, base_section_modules, load_implementations, load_queue
 from .report import (FIELDS, FIELD_NAMES, ROUNDING_LEVEL, WALL_CLOCK_TIMING, build_report, render_markdown,
@@ -258,6 +259,9 @@ class Context:
         if wall_clock_timing and rounding_level:
             raise ValueError(f"A figure is declared as a wall-clock timing or a rounding-level figure, "
                              f"not both: {name}")
+        if rounding_level and svg.recorded_values(data) is None:
+            raise ValueError(f"A rounding-level figure records its plotted values and rounding bounds "
+                             f"(svg.line_plot(..., rounding=...)): {name}")
         directory = self.output_dir / "artifacts" / self.task_id
         directory.mkdir(parents=True, exist_ok=True)
         (directory / name).write_bytes(data)
@@ -278,9 +282,10 @@ class Context:
     def artifact_text(self, name: str, text: str, *, wall_clock_timing: bool = False,
                       rounding_level: bool = False) -> str:
         """Retain a text artifact. ``wall_clock_timing=True`` declares an SVG figure whose bytes depend on wall-clock
-        timing; ``rounding_level=True`` one that plots values at binary64 rounding level, whose bytes follow the BLAS
-        kernel and platform. Either is recorded in the report's artifact list, and the figure is compared for
-        presence and structure only on re-execution."""
+        timing, compared for presence and structure only on re-execution; ``rounding_level=True`` one that plots
+        values at binary64 rounding level, whose bytes follow the BLAS kernel and platform: it records its plotted
+        values and their rounding bounds (``svg.line_plot(..., rounding=...)``), and a re-execution compares those
+        values within the bounds. Either declaration is recorded in the report's artifact list."""
         return self._write(name, text.encode("utf-8"), wall_clock_timing, rounding_level)
 
 

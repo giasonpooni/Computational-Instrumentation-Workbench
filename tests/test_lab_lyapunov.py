@@ -21,7 +21,7 @@ import numpy as np
 import pytest
 
 from ciw.lab import lyapunov as L
-from ciw.lab import runner
+from ciw.lab import runner, svg
 from ciw.lab import lyapunov_reference as R
 from ciw.lab import lyapunov_research as X
 from ciw.lab.evidence import COMPUTATIONAL_DOMAINS
@@ -75,6 +75,11 @@ def _figure_declarations(report):
     """Each SVG figure of a report by file name, with its rounding-level declaration (None when undeclared)."""
     return {a["path"].rsplit("/", 1)[1]: a.get("rounding_level") for a in report["generated_artifacts"]
             if a["path"].endswith(".svg")}
+
+
+def _recorded(directory, task_id, name):
+    """The plotted values and rounding bounds a rounding-level figure records, by series name."""
+    return {s["name"]: s for s in svg.recorded_values((directory / "artifacts" / task_id / name).read_bytes())}
 
 
 def _run(task_id, tmp_path, providers=None):
@@ -745,11 +750,24 @@ def test_t107_inconclusive_band(reports, provider_run):
         assert record["regression_tolerance"] == expected, record["claim"]
     # ratio-vs-target.svg plots computed max eig(M) in units of the float64 resolution, the rounding-error bound of
     # forming M: every point lies within ten resolutions of zero and within a tenth of one of its exact target, so
-    # the BLAS kernel's last bits move its points and its axis range. It is declared a rounding-level figure.
-    points = json.loads((provider_run / "artifacts" / "T107" / "inconclusive-band.json").read_text(
-        encoding="utf-8"))["points"]
+    # the BLAS kernel's last bits move its points and its axis range. Window cases are drawn by their code, which
+    # their exact windows decide on every kernel; the straddle cases, whose codes follow rounding, form one series.
+    # Each computed value lies within T107_DISTANCE (3/16 res) of its exact value, as the window finding checks, so
+    # two runs differ by at most the 3/8 res the figure records as every point's rounding bound. It is declared a
+    # rounding-level figure.
+    band = json.loads((provider_run / "artifacts" / "T107" / "inconclusive-band.json").read_text(encoding="utf-8"))
+    points = band["points"]
     assert points and max(abs(ratio) for _, ratio, _ in points) <= 10.0
     assert max(abs(ratio + kappa) for kappa, ratio, _ in points) <= 0.1
+    assert max(case["realized_error_over_res"] for case in band["cases"]) <= float(L.T107_DISTANCE)
+    recorded = _recorded(provider_run, "T107", "ratio-vs-target.svg")
+    assert list(recorded) == ["CERTIFIED_WITH_MARGIN", "DECREASE_NOT_DEFINITE", "NUMERICAL_INCONCLUSIVE",
+                              "straddles at -res, +res"]
+    assert set(recorded["straddles at -res, +res"]["x"]) == {-1.0, 1.0}
+    assert all(abs(x) != 1.0 for name, series in recorded.items() if name.isupper() for x in series["x"])
+    assert {b for series in recorded.values() for b in series["bound"]} == {2 * float(L.T107_DISTANCE)}
+    assert sorted((x, y) for series in recorded.values() for x, y in zip(series["x"], series["y"])) == sorted(
+        (kappa, -ratio) for kappa, ratio, _ in points)
     assert _figure_declarations(report) == {"ratio-vs-target.svg": True}
 
 
@@ -803,11 +821,24 @@ def test_t109_adversarial_eigenvalues(reports, provider_run):
     assert _label(report, "numpy.linalg.eigvals misplaces") == "numerically_verified"
     # solver-agreement.svg plots the relative difference of two binary64 Lyapunov solutions, each below 1e-12 and
     # within 10 n^2 u cond(P), beside that rounding bound: the BLAS kernel's last bits move its points, so it is
-    # declared a rounding-level figure.
+    # declared a rounding-level figure. Two runs' differences, each within 10 n^2 u cond(P), differ by at most it:
+    # the bound the figure records per point, which every plotted difference lies within; the closed-form n^2 u
+    # cond(P) curve records none.
     rows = [row for row in json.loads((provider_run / "artifacts" / "T109" / "adversarial.json").read_text(
         encoding="utf-8"))["rows"] if "relative_difference" in row]
     assert rows and max(row["relative_difference"] for row in rows) < 1e-12
     assert max(row["normalised_difference"] for row in rows) <= 10.0
+    recorded = _recorded(provider_run, "T109", "solver-agreement.svg")
+    agreement, curve = recorded["PLSR vs independent P"], recorded["n^2 u cond(P) for n = 2"]
+    assert agreement["x"] == [row["condition_P"] for row in rows]
+    assert agreement["y"] == [max(row["relative_difference"], 1e-18) for row in rows]
+    for row, bound in zip(rows, agreement["bound"]):
+        if row["normalised_difference"] > 0:
+            assert bound == pytest.approx(10 * row["relative_difference"] / row["normalised_difference"], rel=1e-12)
+        size = math.sqrt(bound / (10 * R.U * max(row["condition_P"], 1.0)))  # the plant's dimension n
+        assert size == pytest.approx(round(size), rel=1e-9) and 2 <= round(size) <= 8
+    assert all(y <= bound for y, bound in zip(agreement["y"], agreement["bound"]))
+    assert set(curve["bound"]) == {0.0}
     assert _figure_declarations(report) == {"solver-agreement.svg": True}
 
 

@@ -1350,6 +1350,23 @@ VI_FLOOR_TARGET = 1e-14
 PREC_ENERGY = ("CPU package energy per batch of the common Gaussian VI workload in float32 and in float64 (NumPy "
                "reference, RAPL, gross and idle-subtracted)")
 GPU_FLOAT32 = "GPU energy per batch of a float32 build of the common Gaussian VI workload"
+# Rounding moves an iterate of order one by at most KL_ROUNDING_STEPS (k + 1) eps after k iterations (a few roundings
+# per component and iteration, none assumed damped).
+KL_ROUNDING_STEPS = 4
+
+
+def kl_rounding(iterations, kl, eps) -> list:
+    """Rounding bound of each point of a KL trace, for its figure (svg.line_plot(..., rounding=...)).
+
+    Near the posterior KL = |e|^2 / 2 in the whitened error e of the iterate, so moving the iterate by delta moves
+    KL by at most sqrt(2 KL) delta + delta^2 / 2; with delta = KL_ROUNDING_STEPS (k + 1) eps in one run, two runs
+    (another BLAS kernel or platform) differ by at most twice that. Below delta^2 the KL is at rounding level.
+    """
+    bounds = []
+    for k, value in zip(iterations, kl):
+        delta = KL_ROUNDING_STEPS * (k + 1) * eps
+        bounds.append(2 * (math.sqrt(2 * max(value, 0.0)) * delta + delta * delta / 2))
+    return bounds
 GPU_FLOAT32_MISSING = ("implementation missing: no float32 implementation of the gaussian_vi PTX kernel exists "
                        "(ciw.energy_cuda is binary64 only, and `ciw energy record` captures only it), so a float32 "
                        "GPU workload cannot run on any host")
@@ -1566,7 +1583,9 @@ def precision_versus_cost(ctx):
     ctx.artifact_text("common-workload-precision.svg", svg.line_plot(
         [(p, iterations, [max(value, 1e-40) for value in vi["kl_nats"][p]]) for p in common.PRECISIONS],
         title="Common Gaussian VI workload: KL to the exact posterior", xlabel="iteration",
-        ylabel="KL (nats, floored at 1e-40)", logy=True), rounding_level=True)
+        ylabel="KL (nats, floored at 1e-40)", logy=True,
+        rounding=[kl_rounding(iterations, vi["kl_nats"][p], float(np.finfo(p).eps)) for p in common.PRECISIONS]),
+        rounding_level=True)
     target = f"{common.SPEC['target_kl_nats']:g}"
     fields = _fields(
         hypothesis="Lower precision buys nothing once roundoff dominates: float32 RK4 matches float64 until truncation "
@@ -2102,11 +2121,16 @@ def bounded_free_energy(ctx):
         "normalization": runs["declared"]["normalized"]["normalization"],
         "trace": [{"iteration": r["iteration"], "free_energy": r["free_energy"], "kl_to_reference": r["kl_to_reference"],
                    "identity_residual": r["free_energy"] + log_z - r["kl_to_reference"]} for r in trace]})
+    # The declared and alternate descents end within rounding of the posterior, and the smallest of their KL values
+    # sets the log axis: the figure records its values with their rounding bounds (kl_rounding).
+    traces = {name: runs[name]["fit"]["trace"] for name in ("declared", "unit", "alternate")}
     ctx.artifact_text("free-energy.svg", svg.line_plot(
-        [(f"{name} scales", [r["iteration"] for r in runs[name]["fit"]["trace"]],
-          [r["kl_to_reference"] for r in runs[name]["fit"]["trace"]]) for name in ("declared", "unit", "alternate")],
+        [(f"{name} scales", [r["iteration"] for r in trace], [r["kl_to_reference"] for r in trace])
+         for name, trace in traces.items()],
         title="KL(q || posterior) during bounded variational descent", xlabel="iteration", ylabel="KL (nat)",
-        logy=True, markers=False))
+        logy=True, markers=False,
+        rounding=[kl_rounding([r["iteration"] for r in trace], [r["kl_to_reference"] for r in trace],
+                              float(np.finfo(float).eps)) for trace in traces.values()]), rounding_level=True)
     fields = _fields(
         hypothesis="Bounded natural-gradient/Euclidean descent on the Gaussian variational free energy reaches the "
                    "exact posterior, with F + log Z = KL at every iterate; convergence speed depends on normalization.",

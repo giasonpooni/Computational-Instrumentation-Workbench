@@ -6,14 +6,15 @@ report lists an SVG figure, with no time budget, into a new output directory
 (``ciw lab run`` in this process, from the installed ``ciw``) and compares
 each figure with the retained copy: byte for byte, except a figure its task
 declared as a wall-clock timing figure (``wall_clock_timing`` in the report's
-generated artifacts) or as a rounding-level figure (``rounding_level``: it plots
-values at binary64 rounding level, whose last bits follow the BLAS kernel and
-platform), which is compared for presence and structure (series and points)
-only; the two declarations are counted separately. Run on another platform
-(Windows) against the same retained run, it gives the second-platform
-comparison that T158 names as its next step; run under a forced OpenBLAS
-kernel (``OPENBLAS_CORETYPE``, as CI's lab-blas-kernels job does), it fails
-on an undeclared figure whose bytes follow the kernel.
+generated artifacts), which is compared for presence and structure (series and
+points) only, or as a rounding-level figure (``rounding_level``: values at
+binary64 rounding level, whose last bits follow the BLAS kernel and platform,
+move it), which is compared by the plotted values it records, each within its
+recorded rounding bound; the two declarations are counted separately. Run on
+another platform (Windows) against the same retained run, it gives the
+second-platform comparison that T158 names as its next step; run under a
+forced OpenBLAS kernel (``OPENBLAS_CORETYPE``, as CI's lab-blas-kernels job
+does), it fails on an undeclared figure whose bytes follow the kernel.
 
 A task is not re-executed when its retained report used a provider that is
 not bound here (``--provider ROLE=PATH``, as for ``ciw lab run``) or recorded
@@ -140,6 +141,7 @@ def compare_task(retained_dir: Path, fresh_dir: Path, old, new) -> tuple[list, s
     A figure's declaration is read from the retained report, so a declaration a task adds takes effect once its
     report is retained again.
     """
+    from ciw.lab.report import ROUNDING_LEVEL, WALL_CLOCK_TIMING
     from ciw.lab.research_portfolio import compare_figure
     if old["state"] != new["state"]:
         return [], f"state {old['state']} -> {new['state']}"
@@ -153,8 +155,9 @@ def compare_task(retained_dir: Path, fresh_dir: Path, old, new) -> tuple[list, s
     for artifact in _figures(old):
         path, declared = artifact["path"], _declared(artifact)
         fresh = (fresh_dir / path).read_bytes() if path in written else None
-        outcomes.append({"task_id": old["task_id"], "path": path, **declared,
-                         "outcome": compare_figure((retained_dir / path).read_bytes(), fresh, any(declared.values())),
+        outcome = compare_figure((retained_dir / path).read_bytes(), fresh, declared[WALL_CLOCK_TIMING],
+                                 rounding_level=declared[ROUNDING_LEVEL])
+        outcomes.append({"task_id": old["task_id"], "path": path, **declared, "outcome": outcome,
                          "retained_sha256": artifact["sha256"], "fresh_sha256": written.get(path, {}).get("sha256")})
     for path in sorted(set(written) - {artifact["path"] for artifact in _figures(old)}):
         outcomes.append({"task_id": old["task_id"], "path": path, **_declared(written[path]), "outcome": NOT_RETAINED,
@@ -178,7 +181,7 @@ def summarize(reports: dict, outcomes: list, skipped: dict, not_comparable: dict
                              for o in outcomes),
             "declared_timing_same_structure": sum(o["outcome"] == "same structure" for o in timing),
             "declared_timing_identical": sum(o["outcome"] == "identical" for o in timing),
-            "declared_rounding_level_same_structure": sum(o["outcome"] == "same structure" for o in rounding),
+            "declared_rounding_level_within_bounds": sum(o["outcome"] == "within rounding bounds" for o in rounding),
             "declared_rounding_level_identical": sum(o["outcome"] == "identical" for o in rounding),
             "mismatched": sum(o["outcome"] in (*MISMATCHES, NOT_RETAINED) for o in outcomes),
             "not_reexecuted_tasks": len(skipped), "not_reexecuted_figures": figures(skipped),
@@ -208,8 +211,8 @@ def render(record: dict) -> str:
              f"{counts['compared_tasks']} tasks ({counts['compared_figures']} figures)",
              f"- Byte-identical: {counts['identical']}; declared wall-clock timing figures with the same structure: "
              f"{counts['declared_timing_same_structure']}, byte-identical: {counts['declared_timing_identical']}; "
-             f"declared rounding-level figures with the same structure: "
-             f"{counts['declared_rounding_level_same_structure']}, byte-identical: "
+             f"declared rounding-level figures within their rounding bounds: "
+             f"{counts['declared_rounding_level_within_bounds']}, byte-identical: "
              f"{counts['declared_rounding_level_identical']}",
              f"- Mismatched: {counts['mismatched']}",
              f"- Not re-executed: {counts['not_reexecuted_tasks']} tasks ({counts['not_reexecuted_figures']} figures); "
@@ -267,9 +270,9 @@ def main() -> int:
                 not_comparable[task_id] = reason
     record = {"schema": RECORD_SCHEMA,
               "note": "Figures of a retained lab run re-executed on this platform; a reproducibility check, "
-                      "not a lab finding. Declared wall-clock timing and rounding-level figures are compared for "
-                      "presence and structure only; tasks not re-executed or not comparable are never counted as "
-                      "matches.",
+                      "not a lab finding. Declared wall-clock timing figures are compared for presence and "
+                      "structure only, declared rounding-level figures by their recorded values within their "
+                      "rounding bounds; tasks not re-executed or not comparable are never counted as matches.",
               "retained": str(args.retained), "platform": platform_identity(), "providers": sorted(providers),
               "summary": summarize(reports, outcomes, skipped, not_comparable), "figures": outcomes,
               "not_reexecuted": skipped, "not_comparable": not_comparable}

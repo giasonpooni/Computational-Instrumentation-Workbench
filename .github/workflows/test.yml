@@ -25,9 +25,10 @@ jobs:
   lab-blas-kernels:
     # Retained lab evidence must regenerate on any OpenBLAS kernel a host picks: run the lab tests on an AVX2 kernel
     # and on a kernel without FMA, forced through OPENBLAS_CORETYPE and confirmed from the loaded library, then
-    # re-execute every retained figure task there: only a figure its task declares (wall-clock timing or
-    # rounding-level) may differ in bytes. Provider tasks are listed as not re-executed (no provider is bound here),
-    # as are tasks whose sources changed since the retained run.
+    # re-execute every retained figure task there: only a figure its task declares may differ in bytes, a wall-clock
+    # timing figure keeping its series and points and a rounding-level figure its recorded values within their
+    # rounding bounds. Provider tasks are listed as not re-executed (no provider is bound here), as are tasks whose
+    # sources changed since the retained run.
     strategy:
       fail-fast: false
       matrix:
@@ -46,6 +47,16 @@ jobs:
       - run: python -m pytest -q tests/test_lab_*.py
       - name: Re-execute every retained figure task on the forced kernel and compare
         run: python scripts/check_figures.py --retained lab --output-dir results/figures-${{ matrix.core }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: figure-check-${{ matrix.core }}
+          path: |
+            results/figures-${{ matrix.core }}/figure-check.json
+            results/figures-${{ matrix.core }}/figure-check.md
+            results/figures-${{ matrix.core }}/run/artifacts/**/*.svg
+            results/figures-${{ matrix.core }}/run/reports/*.json
+          if-no-files-found: warn
 
   plsr-terminal:
     strategy:

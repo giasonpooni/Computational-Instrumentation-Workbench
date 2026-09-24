@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 
 from ciw import energy_bench, energy_cuda, energy_records
-from ciw.lab import energy_gpu, energy_gpu_kernels as kernels, energy_gpu_telemetry as telemetry, runner
+from ciw.lab import energy_gpu, energy_gpu_kernels as kernels, energy_gpu_telemetry as telemetry, runner, svg
 from ciw.lab import energy_gpu_workload as common, planner
 from ciw.lab.evidence import COMPUTATIONAL_DOMAINS, PHYSICAL_DOMAINS, EvidenceRefusal, supported_label
 from ciw.lab.registry import load_queue, section_implementations
@@ -846,6 +846,27 @@ def test_bounded_free_energy_identity_and_counterexamples(lab):
     assert unit["value"]["iterations"] == 512 and unit["value"]["final_kl_nats"] > 1e-3
     assert "counterexample" in unstable and "counterexample" in unit
     assert physical_labels(report) == {"not_established"}
+    # free-energy.svg plots KL during the three descents; the declared and alternate descents end near 1e-21 and
+    # 1e-22 nats, and the smallest KL sets the log axis. Rounding, whose last bits follow the BLAS kernel, moves each
+    # KL by at most the bound the figure records (energy_gpu.kl_rounding: KL = |e|^2 / 2 in the whitened iterate
+    # error, the iterate moved by at most 4 (k + 1) eps after k iterations): more than 1e-3 of the smallest KL, so
+    # the figure's bytes follow the kernel and it is declared a rounding-level figure, and at most 1e-6 of every KL
+    # above 1e-6 nats, which stays compared.
+    trace = json.loads((lab.context.output_dir / "artifacts" / "T122" / "free-energy-trace.json").read_text(
+        encoding="utf-8"))["trace"]
+    recorded = {s["name"]: s for s in svg.recorded_values(
+        (lab.context.output_dir / "artifacts" / "T122" / "free-energy.svg").read_bytes())}
+    assert list(recorded) == ["declared scales", "unit scales", "alternate scales"]
+    assert recorded["declared scales"]["y"] == [r["kl_to_reference"] for r in trace]
+    eps = float(np.finfo(float).eps)
+    for series in recorded.values():
+        assert series["bound"] == energy_gpu.kl_rounding(series["x"], series["y"], eps)
+        assert all(b <= 1e-6 * y for y, b in zip(series["y"], series["bound"]) if y > 1e-6)
+    smallest, bound = min((y, b) for series in recorded.values() for y, b in zip(series["y"], series["bound"]))
+    assert smallest < 1e-21 and bound >= 1e-3 * smallest
+    assert energy_gpu.kl_rounding([0, 3], [0.5, 0.0], eps) == [2 * (4 * eps + (4 * eps) ** 2 / 2),
+                                                               2 * (16 * eps) ** 2 / 2]
+    assert [a.get("rounding_level") for a in report["generated_artifacts"] if a["path"].endswith(".svg")] == [True]
 
 
 @pytest.mark.lab_task("T123")
@@ -1220,12 +1241,22 @@ def test_common_workload_precision_study(lab):
     assert {p: counts["value"][p]["iteration_flops"] for p in common.PRECISIONS} == {"float64": 24, "float32": 24}
     # common-workload-precision.svg plots both runs down to their rounding floors: the float64 KL ends a few u^2
     # above zero (its iterate a few ulps from the posterior) and, as the smallest plotted value, sets the log axis;
-    # the float32 KL stalls at its own floor. Their last bits follow the BLAS kernel, so it is declared a
-    # rounding-level figure; precision.svg (RK4 endpoint errors) is not.
+    # the float32 KL stalls at its own floor. Rounding, whose last bits follow the BLAS kernel, moves each KL by at
+    # most the bound the figure records (energy_gpu.kl_rounding with each precision's eps), which both floors lie
+    # within, so it is declared a rounding-level figure; the float64 KL above 1e-6 nats stays compared to 1e-6 of
+    # itself. precision.svg (RK4 endpoint errors) is not declared.
     kl = json.loads((lab.context.output_dir / "artifacts" / "T120" / "precision.json").read_text(
         encoding="utf-8"))["common_workload"]["kl_nats"]
     smallest = min(min(values) for values in kl.values())
     assert 0 < smallest == min(kl["float64"]) <= 32 * (np.finfo(np.float64).eps / 2) ** 2
+    recorded = {s["name"]: s for s in svg.recorded_values(
+        (lab.context.output_dir / "artifacts" / "T120" / "common-workload-precision.svg").read_bytes())}
+    assert list(recorded) == list(common.PRECISIONS)
+    for precision, series in recorded.items():
+        assert series["y"] == [max(value, 1e-40) for value in kl[precision]]
+        assert series["bound"] == energy_gpu.kl_rounding(series["x"], kl[precision], float(np.finfo(precision).eps))
+        assert min(series["y"]) <= series["bound"][series["y"].index(min(series["y"]))]
+    assert all(b <= 1e-6 * y for y, b in zip(recorded["float64"]["y"], recorded["float64"]["bound"]) if y > 1e-6)
     declared = {a["path"].rsplit("/", 1)[1]: a.get("rounding_level") for a in report["generated_artifacts"]
                 if a["path"].endswith(".svg")}
     assert declared == {"precision.svg": None, "common-workload-precision.svg": True}

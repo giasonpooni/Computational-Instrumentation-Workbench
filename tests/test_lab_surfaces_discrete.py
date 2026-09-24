@@ -10,6 +10,7 @@ import numpy as np
 import pytest
 
 from ciw.lab import surfaces_discrete as sd
+from ciw.lab import svg
 from ciw.lab.evidence import COMPUTATIONAL_DOMAINS, validate_finding
 from ciw.lab.registry import _REGISTRY, load_queue
 from ciw.lab.runner import PROSE_FIELDS, Context, _close, _witness, run_task
@@ -188,15 +189,32 @@ def test_t033_report(tmp_path):
     assert report["findings"][0]["value"] <= 1e-7
     # conformance-residuals.svg plots the worst residuals of identities that hold exactly: evaluation error within
     # the error the task declares for each identity (a few ulps of rounding for the algebraic compatibility
-    # identity; the fourth-order stencil's h^4 truncation and eps/h rounding for the others), not a defect. Their
-    # last bits follow the BLAS kernel, so it is declared a rounding-level figure.
-    surfaces = json.loads((tmp_path / "artifacts" / "T033" / "conformance.json").read_text(encoding="utf-8"))["surfaces"]
-    bounds = {"compatibility": sd.ALGEBRAIC_UNCERTAINTY["value"],
-              **{name: declared["value"] for name, declared in sd.STENCIL_UNCERTAINTY.items()}}
-    assert set(bounds) == {"gauss_equation", "derivative_consistency", "mixed_partials", "compatibility"}
-    assert bounds["compatibility"] <= 8 * np.finfo(float).eps
-    for name, bound in bounds.items():
+    # identity; the fourth-order stencil's h^4 truncation and eps/h rounding for the others), not a defect.
+    conformance = json.loads((tmp_path / "artifacts" / "T033" / "conformance.json").read_text(encoding="utf-8"))
+    surfaces = conformance["surfaces"]
+    declared = {"compatibility": sd.ALGEBRAIC_UNCERTAINTY["value"],
+                **{name: uncertainty["value"] for name, uncertainty in sd.STENCIL_UNCERTAINTY.items()}}
+    assert set(declared) == {"gauss_equation", "derivative_consistency", "mixed_partials", "compatibility"}
+    assert declared["compatibility"] <= 8 * np.finfo(float).eps
+    for name, bound in declared.items():
         assert max(row["worst"][name] for row in surfaces.values()) <= bound, name
+    # Rounding, whose last bits follow the BLAS kernel, moves each residual between two runs by at most the bound the
+    # figure records: twice the algebraic roundoff, and for a stencil identity 8 eps / h, from the stencil's eps / h
+    # rounding at h = 1e-3 l, within twice every stencil identity's declared error and a twentieth of the largest
+    # (truncation) residual, which stays compared. The smallest residuals (compatibility, a few ulps or zero, drawn
+    # at 1e-17) set the log axis within their bound, so it is declared a rounding-level figure.
+    recorded = {s["name"]: s for s in svg.recorded_values(
+        (tmp_path / "artifacts" / "T033" / "conformance-residuals.svg").read_bytes())}
+    eps = np.finfo(float).eps
+    assert sd.ALGEBRAIC_ROUNDING == 2 * declared["compatibility"]
+    assert sd.STENCIL_ROUNDING == 8 * eps / sd.STENCIL_STEP and sd.STENCIL_STEP == 1e-3
+    assert all(sd.STENCIL_ROUNDING <= 2 * uncertainty["value"] for uncertainty in sd.STENCIL_UNCERTAINTY.values())
+    for name, series in recorded.items():
+        assert series["y"] == [max(surfaces[key]["worst"][name], sd.RESIDUAL_FLOOR) for key in conformance["order"]]
+        assert set(series["bound"]) == {sd.ALGEBRAIC_ROUNDING if name == "compatibility" else sd.STENCIL_ROUNDING}
+    assert list(recorded) == list(declared)[1:] + ["compatibility"]
+    assert sd.STENCIL_ROUNDING <= max(recorded["gauss_equation"]["y"]) / 20
+    assert max(recorded["compatibility"]["y"]) <= sd.ALGEBRAIC_ROUNDING
     assert [a.get("rounding_level") for a in report["generated_artifacts"] if a["path"].endswith(".svg")] == [True]
     _common_report_checks(report)
 
@@ -335,7 +353,10 @@ def test_t035_report(tmp_path):
     # fd-v-shape.svg plots the rounding branch of central differences: from h = 1e-10 down, every plotted error
     # times h is within two ulps of the metric (eps/h rounding). The saddle control, whose quadratic metric central
     # differences reproduce exactly, is rounding at every step and gives the smallest plotted value, a few ulps,
-    # which sets the log axis. Their last bits follow the BLAS kernel, so it is declared a rounding-level figure.
+    # which sets the log axis. Rounding, whose last bits follow the BLAS kernel, moves each measured error between two
+    # runs by at most the 4 eps / h the figure records, twice that rounding branch: the rounding branch and the
+    # smallest value lie within it, and the truncation branch far above it stays compared (the closed-form prediction
+    # records no bound). It is declared a rounding-level figure.
     scan = json.loads((tmp_path / "artifacts" / "T035" / "fd-scan.json").read_text(encoding="utf-8"))
     hs, rows, eps = np.array(scan["steps"]), scan["surfaces"], np.finfo(float).eps
     plotted = {key: np.array(rows[key]["median_error"]) for key in sd.FD_SURFACES + ("saddle",)}
@@ -346,6 +367,18 @@ def test_t035_report(tmp_path):
     smallest = min(np.min(errors[errors > 0]) for errors in [*plotted.values(),
                                                               np.array(rows["sphere"]["median_predicted"])])
     assert smallest == np.min(plotted["saddle"]) <= 8 * eps
+    recorded = {s["name"]: s for s in svg.recorded_values(
+        (tmp_path / "artifacts" / "T035" / "fd-v-shape.svg").read_bytes())}
+    assert list(recorded) == [*sd.FD_SURFACES, "saddle", "predicted (sphere)"]
+    assert sd.FD_ROUNDING == 4 * eps
+    for key, errors in plotted.items():
+        kept = errors > 0
+        assert recorded[key]["x"] == hs[kept].tolist() and recorded[key]["y"] == errors[kept].tolist()
+        assert recorded[key]["bound"] == (sd.FD_ROUNDING / hs[kept]).tolist()
+        assert np.all(errors[rounding] <= sd.FD_ROUNDING / hs[rounding] / 2)
+    assert set(recorded["predicted (sphere)"]["bound"]) == {0.0}
+    at = int(np.argmin(np.where(plotted["saddle"] > 0, plotted["saddle"], np.inf)))
+    assert plotted["saddle"][at] <= sd.FD_ROUNDING / hs[at]
     assert [a.get("rounding_level") for a in report["generated_artifacts"] if a["path"].endswith(".svg")] == [True]
     _common_report_checks(report)
 

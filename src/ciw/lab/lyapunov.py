@@ -2466,15 +2466,20 @@ def inconclusive_band(ctx):
     ctx.artifact_json("inconclusive-band.json", R.jsonable({"codes_by_exact_bin": table,
                                                             "window_codes_by_exact_bin": window_table,
                                                             "cases": rows, "points": points}))
+    # Window cases by their code, which the exact window decides on every kernel; a straddle case's code follows the
+    # rounding of its computed eigenvalue, so the straddles are one series. Each computed value lies within
+    # T107_DISTANCE of its exact value (checked above against exact brackets), so two runs differ by at most twice it:
+    # the rounding bound the figure records.
     by_code = {}
-    for kappa, ratio, code in sorted(points):
-        by_code.setdefault(code, ([], []))
-        by_code[code][0].append(kappa)
-        by_code[code][1].append(-ratio)
+    for row in sorted(rows, key=lambda r: (r["kappa"], r["margin_ratio"])):
+        name = "straddles at -res, +res" if row["kind"] == "straddle" else row["code_at_required_margin_0"]
+        by_code.setdefault(name, ([], []))
+        by_code[name][0].append(row["kappa"])
+        by_code[name][1].append(-row["margin_ratio"])
     ctx.artifact_text("ratio-vs-target.svg", svg.line_plot(
         [(code, xs, ys) for code, (xs, ys) in sorted(by_code.items()) if abs(max(xs)) < 20],
         title="T107 computed max eig / resolution against target kappa", xlabel="target kappa",
-        ylabel="max eig(M) / resolution", markers=True), rounding_level=True)
+        ylabel="max eig(M) / resolution", markers=True, rounding=2 * float(T107_DISTANCE)), rounding_level=True)
     exact_checker = _independent(_check("exact bins and classes of the declared forms", unsound, 0.0), identity)
     band_extra = {}
     if window_certified:
@@ -2876,7 +2881,7 @@ def adversarial_eigenvalues(ctx):
     results = dict(first["results"], **second["results"])
     base = provider_basis(identity)
     rows, violations, certified = [], 0, 0
-    agreement, transient = [], []
+    agreement, transient, forward_bounds = [], [], []
     identity_threshold_mismatch = 0
     solver_invalid, ungated, refused_with_certificate = 0, 0, []
     for i, case in enumerate(cases):
@@ -2927,6 +2932,9 @@ def adversarial_eigenvalues(ctx):
             normalised = relative / (n * n * R.U * max(condition, 1.0))
             row.update(relative_difference=relative, condition_P=condition, normalised_difference=normalised)
             agreement.append((condition, relative, normalised))
+            # The forward-error bound the agreement is checked against (normalised difference at most 10): two
+            # binary64 solutions within it differ by at most it, the rounding bound the figure records.
+            forward_bounds.append(10 * n * n * R.U * max(condition, 1.0))
         rows.append(row)
     ctx.artifact_json("adversarial.json", R.jsonable({"rows": rows, "transient": transient,
                                                        "refused_with_certificate": refused_with_certificate,
@@ -2937,7 +2945,8 @@ def adversarial_eigenvalues(ctx):
         [("PLSR vs independent P", [c for c, _, _ in agreement], [max(r, 1e-18) for _, r, _ in agreement]),
          ("n^2 u cond(P) for n = 2", [c for c, _, _ in agreement], [4 * R.U * max(c, 1.0) for c, _, _ in agreement])],
         title="T109 relative difference of Lyapunov solutions", xlabel="condition number of P",
-        ylabel="||P_PLSR - P_ind|| / ||P_ind||", logx=True, logy=True), rounding_level=True)
+        ylabel="||P_PLSR - P_ind|| / ||P_ind||", logx=True, logy=True, rounding=[forward_bounds, 0.0]),
+        rounding_level=True)
     checker = {"implementation": independent[0]["implementation"], "revision": independent[0]["revision"]}
     max_relative = max(r for _, r, _ in agreement)
     max_normalised = max(m for _, _, m in agreement)
