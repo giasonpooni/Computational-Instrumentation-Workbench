@@ -156,7 +156,13 @@ interval is reached at distance `σ + |s − x|`.
   relaxed by a pseudo-source along an edge continues along that edge. The
   polyline runs from the target to the source, with the face of every
   segment. Where several shortest paths tie, it is the one whose window
-  reached the target first; ties are not enumerated.
+  reached the target first; ties are not enumerated. A path that passes a
+  vertex straight (a flat vertex, a vertex of a straight boundary edge) is
+  reached both through that vertex's pseudo-source and along a window ray
+  through it, so whether the vertex is listed as a path point is a rounding
+  tie that last-bit changes of the coordinates decide; the polyline is the
+  same either way. The studies therefore decide whether a path passes a
+  vertex geometrically (the vertex within `1e-12` of the polyline).
 - **Distances at surface points.** `distance_at(face, point)` is the smallest
   of `σ + |s − x|` over the recorded windows of the point's face (and of the
   face across, for a point on an edge) whose ray reaches the point, and
@@ -397,7 +403,12 @@ a point at `r1 = 0.45` aimed at the centre and continued `r2 = 0.35` past it:
   five grid points) equals `sqrt(r1² + r2² − 2 r1 r2 cos(min(φ, θ − φ, π)))`
   to `5.3e-15` (ciw's window propagation and, when installed, pygeodesic), the
   continued endpoint sits at polar angle `θ/2`, and a trace run back from the
-  endpoint returns to the start to `2.6e-16`.
+  endpoint returns to the start to `2.6e-16`. The shortest path to the
+  continued endpoint passes the centre (the centre lies within `1e-12` of the
+  back-traced polyline) exactly on the flat and saddle fans; on the cones it
+  misses the centre by 0.15 and 0.062. On the flat fan the path is listed
+  through the centre or not by a rounding tie (above), so passing is decided
+  geometrically.
 - The set of end directions reached by a shortest path through the vertex is
   `[π, θ − π]`, empty for cones, a single direction at a flat vertex and a fan
   of width `θ − 2π` at a saddle; the grid points classify accordingly on every
@@ -405,9 +416,11 @@ a point at `r1 = 0.45` aimed at the centre and continued `r2 = 0.35` past it:
 - Rays aimed `10⁻⁶ r1` beside the centre end at polar angles `π` and `θ − π`
   (on the 1.5π fan, 3.1416 and 1.5708), each displaced by the first-order
   `10⁻⁶ (r1 + r2)/r2 = 2.29e-6` (agreement to `1e-15`). The
-  continuation, at `θ/2`, is their bisector and the limit of neither: a
-  counterexample to "a straightest geodesic through a vertex is the limit of
-  the geodesics that pass it".
+  continuation, at `θ/2`, is their bisector and the limit of neither: on every
+  cone and saddle fan it lies `|2π − θ|/2` from the nearer one-sided endpoint
+  (the ratio is 0.99999 at worst, the offset above), a counterexample to "a
+  straightest geodesic through a vertex is the limit of the geodesics that
+  pass it".
 
 **How often generic traces need the rule.** 200 seeded traces of length 1 per
 level on tangentially jittered icospheres (0.1 h, validated with the centre
@@ -421,7 +434,10 @@ declared), uniform start points of uniformly chosen faces, uniform headings:
 | 5 | 0.038 | 11944 | 59.7 | 2436 | 238 | 9 | 0 |
 
 None of the 22310 crossings came within the `1e-9` vertex tolerance (the
-closest was `2.5e-4` of an edge from a vertex). Crossings within `τ` of a
+closest was `2.5e-4` of an edge from a vertex); by itself, a count of zero
+bounds the per-crossing probability only to `−ln 0.05 / 22310 = 1.3e-4` at
+95 % (the rule of three), the uncertainty the finding records. Crossings
+within `τ` of a
 vertex, divided by `2τ` times the crossings, are 1.010 and 1.006 for
 `τ = 0.1` and `0.01`: the edge parameter is uniform near the ends, so a
 crossing needs the rule with probability about `2 × 10⁻⁹`, about `4.5e-5`
@@ -440,14 +456,22 @@ and the 2.5π fan with seven points inserted (72 paths): lengths equal the
 exact distances to `1.3e-15`; every segment lies in its assigned face (point
 in face test); every edge crossing is straight (`|a1 + a2 − π| ≤ 1.4e-13`);
 at every vertex the path passes, the angle on each side is at least `π`
-(on the inside at a boundary vertex) to `1.3e-15`. Of the 15 path points at
-vertices, 12 are bends, at saddle (8) and reflex boundary (4) vertices only;
-the other 3 are passed straight (a flat interior vertex and two vertices of a
-straight boundary edge). Paths agree with the paths back-traced from the
-other end, and with pygeodesic's paths, to `1.9e-15`. Symmetric meshes are
-avoided on purpose: where shortest paths tie (as between symmetric vertex
-pairs of the regular torus), each implementation returns one of them, and
-their polylines need not agree.
+(on the inside at a boundary vertex) to `1.3e-15`. Of the 31 vertices the
+paths pass (within `1e-12` of the polyline, the paths' ends excluded), 12 are
+bends, at saddle (8) and reflex boundary (4) vertices only; the other 19, all
+on the L-shape, are passed straight (15 flat interior vertices and 4 vertices
+of straight boundary edges). Passes are counted geometrically: whether the
+back-trace lists a straight pass as a path point is a rounding tie (above):
+on the L-shape that count is 7 as generated and 11 to 17 under `2e-16`
+relative noise in the coordinates (six seeds), while the geometric count stays
+23. Paths agree
+with the paths back-traced from the other end, and with pygeodesic's paths,
+to `1.9e-15`. Tied shortest paths are avoided on purpose: the jittered
+meshes are generic, and the L-shape and the saddle fan are simply connected
+with no interior vertex of angle below `2π` (nonpositively curved), so their
+shortest paths are unique. Where shortest paths tie (as between symmetric
+vertex pairs of the regular torus), each implementation returns one of them,
+and their polylines need not agree.
 
 **Cut points.** Along a trace the excess `e(s) = s − d(s)` of its length over
 the exact distance from its start never decreases (a subpath of a shortest
@@ -463,9 +487,13 @@ from the trace, the trace crosses the vertex's cut ray at
 
     s* = r sin(δ/2) / sin(δ/2 − φ)   (when φ < δ/2; never otherwise).
 
-Of the 30 declared traces, 15 have a cut point before their length:
+Of the 30 declared traces, 15 have a cut point before their length. They are
+14 distinct cut points: the level-2 length-1 trace from start 4 is the first
+half of the length-2 trace from the same start and repeats its cut point
+(traces from one start on one level coincide up to the shorter length), so
+counts below are of distinct cut points.
 
-- In 14 the digon encloses exactly one vertex, and the cut point equals that
+- In 13 the digon encloses exactly one vertex, and the cut point equals that
   vertex's isolated-cone prediction to within the cut point's resolution
   (largest `4.0e-7`, at level 4, where the excess rises slowly); the observed
   differences are at most `7.5e-9`.
@@ -480,8 +508,17 @@ Of the 30 declared traces, 15 have a cut point before their length:
   as `φ < δ/2` with `δ ∝ h²` requires. Distance alone does not decide: on
   level 3 a trace passes a vertex at 0.0095 h and stays shortest to length 2,
   while another is cut by a vertex passed at 0.0108 h.
-- pygeodesic (when installed) confirms the window-evaluated distances at 30
-  points just before and after the cut points to `1.8e-15`.
+- pygeodesic (when installed) brackets every distinct cut point on its own:
+  at the trace points 10 resolutions before and after it, each inserted as a
+  vertex alone, the traced length exceeds pygeodesic's distance from the
+  start by at most `1.3e-15` before (shortest) and by at least `1.0e-11`
+  after (above the `10⁻¹²` threshold), so the cut point lies within 10
+  resolutions (`4.0e-6` at most) of where the windows put it. The
+  window-evaluated distances at those 28 points agree with pygeodesic's to
+  `2.2e-15`. Each probe gets its own refined mesh: on level 1 the two probes
+  are `7e-10` apart, and inserted together the second lies within the edge
+  snapping of point insertion (`1e-9` of an edge) of an edge of the first's
+  split and is moved by `4e-10`, which moves its distance as much.
 
 ### Convergence under refinement (T039)
 

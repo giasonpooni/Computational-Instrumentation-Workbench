@@ -501,10 +501,12 @@ def _nearest_on_polyline(points, polyline):
 
 # Cut points: an excess of traced length over the exact distance above CUT_EXCESS (rounding stays below 1e-14 here)
 # marks a point past the cut point; bisection locates it; the other shortest path is traced from CUT_PAST mean
-# edges past it.
+# edges past it; an independent solver brackets it with probes CUT_PROBE resolutions before and after it.
 CUT_EXCESS = 1e-12
 CUT_BISECTIONS = 40
 CUT_PAST = 0.02
+CUT_PROBE = 10.0
+CUT_ROUNDING = 1e-12  # the most an excess before the cut point may show (rounding of lengths near 1)
 
 
 def cut_point(mesh, defect, refined, propagation, tr, end) -> dict:
@@ -521,6 +523,8 @@ def cut_point(mesh, defect, refined, propagation, tr, end) -> dict:
     point-in-polygon test, exact for polylines on a mesh inscribed in a sphere about the origin) carry the
     curvature that closes it. ``trigger`` is the passed vertex whose isolated-cone cut ray the trace would
     cross first (``single_cone_cut``); ``nearest`` is the passed vertex closest to the trace before the cut.
+    ``probes`` are the trace points CUT_PROBE resolutions before and after the cut point, with their
+    window-evaluated distances, at which an independent exact solver can bracket it.
     """
     points = np.asarray(tr.points)
     s = arclengths(points)
@@ -557,17 +561,19 @@ def cut_point(mesh, defect, refined, propagation, tr, end) -> dict:
         other = propagation.path_to_point(refined.locate(x)[0], x)
         loop = np.vstack([points[:j + 1], [x], other["points"][1:-1]])
         enclosed = enclosed_vertices(mesh.vertices, loop)
-        # Probe points CUT_PAST mean edges before and after the cut point, for an independent exact solver.
+        # Probe points CUT_PROBE resolutions before and after the cut point, where an independent exact solver must
+        # find the trace shortest and not shortest (an excess above CUT_EXCESS) to bracket it at that resolution.
+        resolution = correction + (s[first + 1] - s[first]) / 2 ** CUT_BISECTIONS
         probes = {"arclengths": [], "segments": [], "points": [], "distances": []}
-        for arclength in (max(hi - correction - CUT_PAST * h, 0.0), past):
+        for arclength in (max(hi - correction - CUT_PROBE * resolution, 0.0),
+                          min(hi - correction + CUT_PROBE * resolution, float(s[-1]))):
             k = min(max(int(np.searchsorted(s, arclength)) - 1, 0), len(points) - 2)
             x = at(arclength, k)
             probes["arclengths"].append(float(arclength))
             probes["segments"].append(k)
             probes["points"].append(x)
             probes["distances"].append(float(propagation.distance_at(refined.locate(x)[0], x)))
-        result.update(bracket=[float(s[first]), float(s[first + 1])], arclength=hi - correction,
-                      resolution=correction + (s[first + 1] - s[first]) / 2 ** CUT_BISECTIONS,
+        result.update(bracket=[float(s[first]), float(s[first + 1])], arclength=hi - correction, resolution=resolution,
                       enclosed=enclosed, enclosed_defect=float(sum(defect[v] for v in enclosed)), probes=probes)
     upto = len(points) if first is None else first + 2  # the polyline up to the sample past the cut point
     gap, along = _nearest_on_polyline(mesh.vertices, points[:upto])
@@ -756,6 +762,9 @@ PATH_SOURCES = 3
 PATH_TARGETS = 6
 # A path side angle this far below pi, or a turn this large at an edge, is a bend (rounding stays below 1e-12).
 BEND = 1e-9
+# A vertex this close to a path polyline lies on the path. Whether a path passing a vertex straight lists it as a
+# path point is a rounding tie (a pseudo-source or a window ray through it), so passes are counted geometrically.
+ON_PATH = 1e-12
 
 
 def _unit(vector) -> np.ndarray:
@@ -912,6 +921,9 @@ def fan_study(angles=FAN_ANGLES, n=FAN_TRIANGLES, radii=FAN_RADII, start=FAN_STA
         through = [min(e * math.pi, theta - e * math.pi) >= math.pi for e in ends]
         measured = [abs(d - (r1 + r2)) <= SHORTEST for d in exact[1:]]
         path = propagation.path(ids[1])
+        # Whether the shortest path passes the centre is decided geometrically: at theta = 2 pi it may be
+        # back-traced through the centre's pseudo-source or along a window ray through the centre, a rounding tie.
+        through_centre = point_to_polyline([refined.vertices[0]], path["points"]) <= ON_PATH
         rows.append({"total_angle_over_pi": fraction, "issues": issues, "status": tr.status,
                      "vertices_passed": len(tr.vertices), "polar_minus_half": continued - 0.5 * theta,
                      "radius_error": radius - r2, "reverse_error": float(np.max(np.abs(back.end_point - point))),
@@ -919,7 +931,7 @@ def fan_study(angles=FAN_ANGLES, n=FAN_TRIANGLES, radii=FAN_RADII, start=FAN_STA
                      "traced_minus_exact": tr.length - exact[0], "exact_minus_closed_form": [
                          d - c for d, c in zip(exact, closed)],
                      "through_expected": through, "through_measured": measured,
-                     "path_through_centre": 0 in path["vertices"],
+                     "path_through_centre": through_centre,
                      "refined": {"vertices": refined.vertices, "faces": refined.faces, "start": ids[0],
                                  "ends": ids[1:], "closed_form": closed}})
     return {"triangles": n, "radii": list(radii), "start_fraction": start, "ends_over_pi": list(ends),
@@ -969,9 +981,16 @@ def vertex_hit_study(levels=HIT_LEVELS, amplitude=HIT_JITTER, traces=HIT_TRACES,
 
 
 def crossing_margins(mesh, tr) -> list:
-    """Edge-parameter distance to the nearer endpoint at every edge crossing of a trace (vertex passes excluded)."""
-    margins = []
+    """Edge-parameter distance to the nearer endpoint at every edge crossing of a trace (vertex passes excluded).
+
+    A vertex pass is a trace point equal to the next vertex of ``tr.vertices``; the face after it may share an
+    edge with the face before it, so faces sharing an edge do not make a crossing.
+    """
+    margins, passes = [], list(tr.vertices)
     for i, (f, g) in enumerate(zip(tr.faces, tr.faces[1:])):
+        if passes and np.array_equal(tr.points[i + 1], mesh.vertices[passes[0]]):
+            passes.pop(0)
+            continue
         shared = sorted(set(mesh.faces[f].tolist()) & set(mesh.faces[g].tolist()))
         if len(shared) != 2:
             continue
@@ -1073,7 +1092,11 @@ def point_to_polyline(points, polyline) -> float:
 
 
 def path_checks(mesh, path, classes) -> dict:
-    """Checks of one back-traced path that use no part of the solver: surface membership, straightness, bends."""
+    """Checks of one back-traced path that use no part of the solver: surface membership, straightness, bends.
+
+    ``on_path`` counts, by class, the mesh vertices other than the path's ends within ON_PATH of its polyline:
+    a geometric count, where the path points listed at vertices depend on rounding ties for straight passes.
+    """
     points, faces, at_vertex = path["points"], path["faces"], path["vertices"]
     member = face_membership(mesh, points)
     off_surface = sum(not (member[k, f] and member[k + 1, f]) for k, f in enumerate(faces))
@@ -1088,9 +1111,11 @@ def path_checks(mesh, path, classes) -> dict:
         sides.append(min(angles) - math.pi)
         if max(abs(a - math.pi) for a in angles) > BEND:
             bends[classes[at_vertex[k]]] += 1
+    others = np.setdiff1d(np.arange(len(mesh.vertices)), [v for v in (at_vertex[0], at_vertex[-1]) if v >= 0])
+    gap, _ = _nearest_on_polyline(mesh.vertices[others], points)
+    on_path = {kind: int(np.sum(classes[others[gap <= ON_PATH]] == kind)) for kind in bends}
     return {"off_surface": int(off_surface), "max_turn": max(turns, default=0.0),
-            "min_side_minus_pi": min(sides, default=0.0), "bends": bends,
-            "vertex_points": int(sum(v >= 0 for v in at_vertex[1:-1]))}
+            "min_side_minus_pi": min(sides, default=0.0), "bends": bends, "on_path": on_path}
 
 
 def path_study(meshes=None, sources=PATH_SOURCES, targets=PATH_TARGETS, seed=SEED + 310):
@@ -1100,6 +1125,7 @@ def path_study(meshes=None, sources=PATH_SOURCES, targets=PATH_TARGETS, seed=SEE
     assigned to (a point-in-face test), straight across every edge it crosses (equal angles on both sides), and
     at every vertex it passes an angle of at least pi on each side (on the one side at a boundary vertex), so that
     it bends only at saddle and reflex boundary vertices; and the path back-traced from the other end, reversed.
+    The vertices a path passes are counted geometrically (``on_path``), by class.
     """
     meshes = path_meshes() if meshes is None else meshes
     rng = np.random.Generator(np.random.PCG64(seed))
@@ -1111,7 +1137,7 @@ def path_study(meshes=None, sources=PATH_SOURCES, targets=PATH_TARGETS, seed=SEE
         pairs, worst = [], {"length_error": 0.0, "outside_interval": 0.0, "off_surface": 0, "max_turn": 0.0,
                             "min_side_minus_pi": math.inf, "reverse_distance": 0.0}
         bends = {"saddle": 0, "boundary": 0, "flat": 0, "cone": 0}
-        vertex_points = 0
+        on_path = dict(bends)
         for source in rng.choice(n, size=sources, replace=False):
             forward = solver.propagate(int(source))
             chosen = rng.choice(np.delete(np.arange(n), source), size=targets, replace=False)
@@ -1127,13 +1153,13 @@ def path_study(meshes=None, sources=PATH_SOURCES, targets=PATH_TARGETS, seed=SEE
                 worst["max_turn"] = max(worst["max_turn"], checks["max_turn"])
                 worst["min_side_minus_pi"] = min(worst["min_side_minus_pi"], checks["min_side_minus_pi"])
                 worst["reverse_distance"] = max(worst["reverse_distance"], reverse)
-                vertex_points += checks["vertex_points"]
-                for kind, count in checks["bends"].items():
-                    bends[kind] += count
+                for kind in bends:
+                    bends[kind] += checks["bends"][kind]
+                    on_path[kind] += checks["on_path"][kind]
                 pairs.append({"source": int(source), "target": int(target), "distance": path["distance"],
                               "points": path["points"]})
-        rows.append({"mesh": mesh.name, "vertices": n, "pairs": len(pairs), "vertex_points": vertex_points,
-                     "bends": bends, "saddle_vertices": int(np.sum(classes == "saddle")), **worst,
+        rows.append({"mesh": mesh.name, "vertices": n, "pairs": len(pairs), "on_path": on_path, "bends": bends,
+                     "saddle_vertices": int(np.sum(classes == "saddle")), **worst,
                      "mesh_arrays": {"vertices": mesh.vertices, "faces": mesh.faces}, "paths": pairs})
     return {"sources": sources, "targets": targets, "rows": rows}
 
@@ -1147,8 +1173,12 @@ def continuation_independent_study(fans, paths, traced):
 
     Fans: exact distances from the start to the continued endpoint and the grid points, against the closed form.
     Paths: pygeodesic's own path between the same vertices (``geodesicDistance`` returns it, target first),
-    against the back-traced polyline, and its distance. Cut points: exact distances from the start to the two
-    probe points on either side of each located cut point, inserted as vertices, against the recorded windows.
+    against the back-traced polyline, and its distance. Cut points: exact distances from the start to the probe
+    points CUT_PROBE resolutions before and after each distinct cut point, each inserted as a vertex alone (the
+    second of two points that close would be snapped onto an edge of the first's split, and moved): the traced
+    length may exceed them by at most rounding before the cut and must exceed them by more than CUT_EXCESS after
+    it, which brackets the cut point independently (``cut_bracket_margin``, the smaller of the two margins); and
+    they are compared with the window-evaluated distances.
     """
     result = {"pygeodesic": package_version("pygeodesic")}
     if not result["pygeodesic"]:
@@ -1169,26 +1199,41 @@ def continuation_independent_study(fans, paths, traced):
             distance, polyline = algorithm.geodesicDistance(pair["source"], pair["target"])
             path_distance = max(path_distance, _polyline_distance(pair["points"], np.asarray(polyline)))
             path_length = max(path_length, abs(float(distance) - pair["distance"]))
-    cut_gap, probes = 0.0, 0
-    for row in traced["rows"]:
-        cut = row.get("cut")
-        if not cut or cut["probes"] is None:
-            continue
+    cut_gap, probes, before, after = 0.0, 0, -math.inf, math.inf
+    for row in distinct_cuts(traced["rows"]):
+        cut = row["cut"]
         mesh = G.icosphere(row["level"])
         u0, heading = STARTS[row["start"]]
         start = sphere_start(mesh, u0, heading)
         tr = G.trace(mesh, start["face"], start["point"], start["direction"], row["length"])
-        inserted = [(start["face"], start["point"])] + [(tr.faces[j], p) for j, p in zip(cut["probes"]["segments"],
-                                                                                          cut["probes"]["points"])]
-        refined, ids = E.insert_points(mesh, inserted)
-        algorithm = PyGeodesicAlgorithmExact(refined.vertices, refined.faces.astype(np.int32))
-        reference, _ = algorithm.geodesicDistances(np.array([ids[0]], dtype=np.int32), None)
-        for v, d in zip(ids[1:], cut["probes"]["distances"]):
-            cut_gap = max(cut_gap, abs(float(reference[v]) - d))
+        probe = cut["probes"]
+        for side, (j, x, arclength, d) in enumerate(zip(probe["segments"], probe["points"], probe["arclengths"],
+                                                        probe["distances"])):
+            refined, (a, b) = E.insert_points(mesh, [(start["face"], start["point"]), (tr.faces[j], x)])
+            algorithm = PyGeodesicAlgorithmExact(refined.vertices, refined.faces.astype(np.int32))
+            reference, _ = algorithm.geodesicDistances(np.array([a], dtype=np.int32), None)
+            if side == 0:
+                before = max(before, arclength - float(reference[b]))
+            else:
+                after = min(after, arclength - float(reference[b]))
+            cut_gap = max(cut_gap, abs(float(reference[b]) - d))
             probes += 1
     result.update(fan_max_abs=fan_gap, path_max_distance=path_distance, path_length_max_abs=path_length,
-                  cut_probe_max_abs=cut_gap, cut_probes=probes)
+                  cut_probe_max_abs=cut_gap, cut_probes=probes, cut_excess_before=before, cut_excess_after=after)
+    if probes:
+        result["cut_bracket_margin"] = min(CUT_ROUNDING - before, after - CUT_EXCESS)
     return result
+
+
+def distinct_cuts(rows) -> list:
+    """Traced rows with a cut point, one per level and start: traces from one start on one level coincide up to
+    the shorter length, so a shorter trace that is cut repeats the cut point of a longer one."""
+    seen, distinct = set(), []
+    for row in rows:
+        if (row.get("cut") or {}).get("arclength") is not None and (row["level"], row["start"]) not in seen:
+            seen.add((row["level"], row["start"]))
+            distinct.append(row)
+    return distinct
 
 
 # ---------------------------------------------------------------- Jacobi fields and curvature

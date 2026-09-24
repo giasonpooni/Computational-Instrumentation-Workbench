@@ -180,14 +180,25 @@ def test_solver_task_report(reports):
                    "At a saddle vertex every end direction", "Generic straightest geodesics on jittered icospheres",
                    "A straightest geodesic can stop being shortest"):
         assert _value(report, prefix)["evidence_status"] == "numerically_verified", prefix
-    hits = _value(report, "Generic straightest geodesics on jittered icospheres")["value"]
+    hit_record = _value(report, "Generic straightest geodesics on jittered icospheres")
+    hits = hit_record["value"]
     assert hits["vertex_hits"] == 0 and sum(hits["crossings"]) > 10000 and hits["expected_hits"] < 1e-3
+    # No hit in N crossings: the one-sided 95% bound (the rule of three), as the uncertainty prose states.
+    assert hit_record["uncertainty"]["value"] == pytest.approx(-math.log(0.05) / sum(hits["crossings"]), rel=1e-12)
+    fan = _value(report, FAN_CLAIM)["value"]
+    assert fan["shortest_path_through_vertex"] == [theta >= 2.0 for theta in fan["total_angles_over_pi"]]
     limits = _value(report, "At a saddle vertex every end direction")
     assert limits["counterexample"]["statement"].startswith("A straightest geodesic through a vertex is the limit")
+    # The violation is observed by the finding's own check: the continuation is apart from both one-sided limits.
+    assert limits["value"]["continued_gap_ratio"] == pytest.approx(1.0, abs=1e-4)
     paths = _value(report, PATH_CLAIM)["value"]
     assert paths["bends"]["saddle"] > 0 and paths["bends"]["boundary"] > 0 and paths["max_path_distance"] <= 1e-9
     cut = _value(report, CUT_CLAIM)["value"]
     assert cut["one_vertex_digons"] >= 10 and cut["several_vertex_digons"] >= 1 and cut["cut"] < cut["traces"]
+    assert cut["one_vertex_digons"] + cut["several_vertex_digons"] == cut["distinct_cut_points"] < cut["cut"]
+    if S.package_version("pygeodesic"):
+        bracket = _value(report, CUT_CLAIM)["basis"]["independent_check"]
+        assert bracket["comparison"] == "signed_ge" and bracket["observed"] > 0.0
     several = _value(report, "A straightest geodesic can stop being shortest")["counterexample"]["witness"]
     assert len(several["enclosed_vertices"]) >= 2 and several["prediction"] > several["cut_point"] + 0.1
 
@@ -460,6 +471,19 @@ def test_fan_continuation_bisects_the_total_angle():
         assert abs(row["one_sided_limit_error"] - offset) <= 1e-9
     saddle = next(r for r in study["rows"] if r["total_angle_over_pi"] == 2.5)
     assert saddle["through_expected"] == [False, False, False, True, True]  # the fan between pi and theta - pi
+    # On the flat fan the straight path is back-traced through the centre's pseudo-source or along a window ray
+    # through the centre, a rounding tie that ulp shifts of the endpoint decide; passing the centre does not move.
+    flat = G.fan_mesh(S.FAN_TRIANGLES, 2 * math.pi)
+    r1, r2 = study["radii"]
+    polar0 = study["start_fraction"] * 2 * math.pi / S.FAN_TRIANGLES
+    start, (face, end) = S.fan_point(flat, polar0, r1), S.fan_point(flat, polar0 + math.pi, r2)
+    for shift in range(-2, 3):
+        moved = end.copy()
+        for _ in range(abs(shift)):
+            moved[0] = np.nextafter(moved[0], math.copysign(math.inf, shift))
+        refined, (a, b) = E.insert_points(flat, [start, (face, moved)])
+        path = E.ExactGeodesic(refined).propagate(a).path(b)
+        assert S.point_to_polyline([refined.vertices[0]], path["points"]) <= S.ON_PATH
     with pytest.raises(ValueError):
         G.fan_mesh(5, 2.5 * math.pi)  # a saddle fan zigzags, so it needs an even number of triangles
 
@@ -476,6 +500,11 @@ def test_generic_traces_do_not_hit_vertices():
                  0.9)
     margins = S.crossing_margins(plane, tr)
     assert len(margins) == len(tr.faces) - 1 and min(margins) == pytest.approx(0.4, abs=1e-12)
+    # A vertex pass is no crossing, even into a face that shares an edge with the arrival face.
+    fan = G.fan_mesh(3, 1.8 * math.pi)
+    face, point = S.fan_point(fan, 0.37 * 0.6 * math.pi, 0.45)
+    passing = G.trace(fan, face, point, S._unit(fan.vertices[0] - point), 0.8, vertex_rule=S.PS)
+    assert passing.vertices == [0] and passing.faces == [0, 1] and S.crossing_margins(fan, passing) == []
 
 
 @pytest.mark.lab_task("T038")
@@ -485,6 +514,7 @@ def test_back_traced_paths_are_shortest_and_bend_only_at_saddles_and_boundaries(
         assert row["length_error"] <= 1e-12 and row["off_surface"] == 0 and row["outside_interval"] <= 1e-12
         assert row["max_turn"] <= S.BEND and row["min_side_minus_pi"] >= -S.BEND
         assert row["reverse_distance"] <= 1e-9 and row["bends"]["cone"] == row["bends"]["flat"] == 0
+        assert all(row["on_path"][kind] >= row["bends"][kind] for kind in row["bends"])  # bends lie on the path
     # The L-shape's hidden target is reached around the reflex corner, where the path bends.
     shape = S._l_shape(8)
     nearest = [int(np.argmin(np.linalg.norm(shape.vertices - p, axis=1)))
@@ -521,6 +551,11 @@ def test_cut_points_match_the_isolated_cone_prediction():
     summary = M.cut_summary(traced)
     assert summary["max_decrease"] <= 1e-12 and summary["endpoint_gap"] <= 1e-12 and summary["mismatched"] == 0
     assert len(summary["single"]) >= 5 and summary["single_error"] <= 0.0
+    for row in summary["cut"]:  # probes CUT_PROBE resolutions before and after each cut point
+        cut = row["cut"]
+        assert cut["probes"]["arclengths"] == pytest.approx(
+            [cut["arclength"] - S.CUT_PROBE * cut["resolution"], cut["arclength"] + S.CUT_PROBE * cut["resolution"]],
+            abs=1e-12)
     assert summary["later_than_predicted"] <= 0.0 and summary["uncut_margin"] >= 0.0
     # Level 2, trace 5: the digon encloses two vertices, and the cut comes before either one alone predicts.
     witness = next(r for r in summary["several"] if (r["level"], r["start"]) == (2, 5))
@@ -544,11 +579,22 @@ def test_continuation_paths_and_cut_points_agree_with_pygeodesic():
     pytest.importorskip("pygeodesic.geodesic")
     fans = S.fan_study(angles=(1.5, 2.5))
     paths = S.path_study(sources=2, targets=2)
-    traced = S.traced_exact_study(configs=((1, 2.0),))
+    traced = S.traced_exact_study(configs=((2, 2.0), (2, 1.0)))
     result = S.continuation_independent_study(fans, paths, traced)
     assert result["fan_max_abs"] <= 1e-12 and result["path_max_distance"] <= 1e-9
     assert result["path_length_max_abs"] <= 1e-12
-    assert result["cut_probes"] >= 2 and result["cut_probe_max_abs"] <= 1e-12
+    # The level-2 length-1 trace from start 4 repeats the cut point of the length-2 trace: probed once.
+    distinct = S.distinct_cuts(traced["rows"])
+    assert len(distinct) < sum(r.get("cut", {}).get("arclength") is not None for r in traced["rows"])
+    assert result["cut_probes"] == 2 * len(distinct) >= 4 and result["cut_probe_max_abs"] <= 1e-12
+    # pygeodesic brackets every cut point: shortest CUT_PROBE resolutions before it, not shortest after it.
+    assert result["cut_excess_before"] <= S.CUT_ROUNDING and result["cut_excess_after"] > S.CUT_EXCESS
+    assert result["cut_bracket_margin"] >= 0.0
+    for row in distinct:  # probes on the wrong sides of the cut point fail the bracket
+        probes = row["cut"]["probes"]
+        for key in probes:
+            probes[key] = probes[key][::-1]
+    assert S.continuation_independent_study(fans, paths, traced)["cut_bracket_margin"] < 0.0
 
 
 # ---------------------------------------------------------------- T039

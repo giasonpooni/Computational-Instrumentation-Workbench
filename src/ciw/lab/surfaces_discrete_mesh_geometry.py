@@ -515,9 +515,11 @@ def fan_mesh(n: int, total_angle: float, radius: float = 1.0) -> TriMesh:
 class Trace:
     """A straightest geodesic: polyline, visited faces and its outcome.
 
-    Consecutive faces share an edge, except where the trace passed through a
-    vertex listed in ``vertices`` (the Polthier-Schmies continuation), after
-    which the next face shares only that vertex.
+    Consecutive faces share the edge the trace crosses between them, except
+    where it passed through a vertex listed in ``vertices`` (the
+    Polthier-Schmies continuation): there the trace point is that vertex
+    itself, and the next face may be any face around it, an edge neighbour
+    or the arrival face included.
     """
 
     status: str

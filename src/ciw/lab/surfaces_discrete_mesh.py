@@ -431,11 +431,13 @@ def _exact_findings(exact, external, comparison, traced, analytic, insertion):
 
 
 def cut_summary(traced) -> dict:
-    """Cut points of the traced-exact study: per trace, and the one-vertex and several-vertex digons among them."""
+    """Cut points of the traced-exact study: per trace, and the one-vertex and several-vertex digons among the
+    distinct cut points (a cut shorter trace repeats the cut point of the longer one from its start)."""
     done = [r for r in traced["rows"] if r["status"] == "completed"]
     cut = [r for r in done if r["cut"]["arclength"] is not None]
-    single = [r for r in cut if len(r["cut"]["enclosed"]) == 1]
-    several = [r for r in cut if len(r["cut"]["enclosed"]) > 1]
+    distinct = S.distinct_cuts(done)
+    single = [r for r in distinct if len(r["cut"]["enclosed"]) == 1]
+    several = [r for r in distinct if len(r["cut"]["enclosed"]) > 1]
     uncut = [r for r in done if r["cut"]["arclength"] is None]
 
     def prediction(r):
@@ -445,8 +447,8 @@ def cut_summary(traced) -> dict:
               None if r["cut"]["enclosed"] is None else len(r["cut"]["enclosed"]),
               None if r["cut"]["trigger"] is None else r["cut"]["trigger"]["distance_over_h"]] for r in done]
     # Empty sets give values that pass vacuously; the counts of cut points and one-vertex digons are checked apart.
-    return {"done": done, "cut": cut, "single": single, "several": several, "uncut": uncut, "table": table,
-            "prediction": prediction,
+    return {"done": done, "cut": cut, "distinct": distinct, "single": single, "several": several, "uncut": uncut,
+            "table": table, "prediction": prediction,
             "single_error": max((abs(prediction(r) - r["cut"]["arclength"]) - r["cut"]["resolution"] for r in single),
                                 default=0.0),
             "later_than_predicted": max((r["cut"]["arclength"] - prediction(r) - r["cut"]["resolution"] for r in cut
@@ -546,20 +548,28 @@ def _continuation_findings(continuation, fans, hits, paths, traced, independent)
     limit_gap = max(abs(r["one_sided_limit_error"] - offset) for r in rows)
     mismatched = sum(e != m for r in rows for e, m in zip(r["through_expected"], r["through_measured"]))
     cone = min(rows, key=lambda r: r["total_angle_over_pi"])
+    # The continuation against the nearer one-sided endpoint, relative to its first-order gap |2 pi - theta| / 2.
+    curved = [(r, r["total_angle_over_pi"] * math.pi) for r in rows if r["total_angle_over_pi"] != 2.0]
+    apart = min(min(abs(0.5 * theta + r["polar_minus_half"] - p) for p in r["one_sided_polar"])
+                / abs(math.pi - 0.5 * theta) for r, theta in curved)
     findings.append(finding(
         "At a saddle vertex every end direction between the one-sided limits of the geodesics passing it is reached "
         "by a shortest path through the vertex, at a cone vertex none is, and the Polthier-Schmies continuation "
         "bisects the two limits", "numerical",
         {"total_angles_over_pi": [r["total_angle_over_pi"] for r in rows], "ends_over_pi": fans["ends_over_pi"],
          "through_measured": [r["through_measured"] for r in rows],
-         "one_sided_polar": [r["one_sided_polar"] for r in rows], "first_order_offset": offset},
+         "one_sided_polar": [r["one_sided_polar"] for r in rows], "first_order_offset": offset,
+         "continued_gap_ratio": apart},
         {"generator": generator(f"{STUD}.fan_study", triangles=fans["triangles"], offset=fans["offset"]),
          "checks": [check("end points at polar angle phi from the start with a shortest path through the vertex "
                           "(exact distance r1 + r2 within 1e-10) where min(phi, theta - phi) < pi, or none where it "
                           "is at least pi, counted as mismatches", mismatched, 0.0, "le", kind="exact_arithmetic"),
                     check("largest |deviation of the one-sided endpoints from polar angles pi and theta - pi - "
                           "epsilon (r1 + r2) / r2| for rays aimed epsilon r1 beside the vertex (first order in "
-                          "epsilon)", limit_gap, 1e-9, kind="analytic")]},
+                          "epsilon)", limit_gap, 1e-9, kind="analytic"),
+                    check("smallest |polar angle of the continued endpoint - the nearer one-sided endpoint| over the "
+                          "cone and saddle fans, divided by |2 pi - theta| / 2 (the continuation is the limit of "
+                          "neither side)", apart, 0.5, "ge", kind="analytic")]},
         unit="rad", uncertainty=_u("truncation_bound", fans["offset"] ** 2, "second-order terms of the lateral offset"),
         tolerance={"abs": 1e-9, "rel": 0.0},
         counterexample={"statement": "A straightest geodesic through a vertex is the limit of the straightest "
@@ -590,7 +600,11 @@ def _continuation_findings(continuation, fans, hits, paths, traced, independent)
                           max(abs(ratio - 1) for _, ratio in uniform), 0.2, "le", kind="self_convergence"),
                     check("fitted order of crossings per trace against h, plus 1", hits["crossing_order"] + 1.0, 0.1,
                           kind="self_convergence")]},
-        uncertainty=_binomial(hits["vertex_hits"] / hits["crossings"], hits["crossings"]), tolerance=TIGHT))
+        uncertainty=_u("monte_carlo_95ci", -math.log(0.05) / hits["crossings"],
+                       f"one-sided 95% upper bound on the per-crossing vertex-hit probability from no hit in "
+                       f"{hits['crossings']} seeded crossings (-ln 0.05 / N, the rule of three)")
+        if hits["vertex_hits"] == 0 else _binomial(hits["vertex_hits"] / hits["crossings"], hits["crossings"]),
+        tolerance=TIGHT))
 
     path_rows = paths["rows"]
     bends = {kind: sum(r["bends"][kind] for r in path_rows) for kind in ("saddle", "boundary", "flat", "cone")}
@@ -629,7 +643,7 @@ def _continuation_findings(continuation, fans, hits, paths, traced, independent)
         "straight across every edge and bend only at saddle and reflex boundary vertices (and match pygeodesic's "
         "paths when installed)", "numerical",
         {"meshes": [r["mesh"] for r in path_rows], "pairs": sum(r["pairs"] for r in path_rows), "bends": bends,
-         "vertex_points": sum(r["vertex_points"] for r in path_rows),
+         "vertices_on_paths": {kind: sum(r["on_path"][kind] for r in path_rows) for kind in bends},
          "max_length_error": max(r["length_error"] for r in path_rows), "max_path_distance": path_value},
         path_basis, unit="normalized length", uncertainty=roundoff, tolerance={"abs": 1e-9, "rel": 0.0}))
 
@@ -643,8 +657,8 @@ def _continuation_findings(continuation, fans, hits, paths, traced, independent)
                          summary["endpoint_gap"], ROUNDING, kind="invariant"),
                    check("traces with a cut point that the endpoint distance calls shortest, or without one that it "
                          "does not", summary["mismatched"], 0.0, "le", kind="exact_arithmetic"),
-                   check("cut points whose digon encloses exactly one vertex", len(summary["single"]), 1.0, "ge",
-                         kind="exact_arithmetic"),
+                   check("distinct cut points whose digon encloses exactly one vertex", len(summary["single"]), 1.0,
+                         "ge", kind="exact_arithmetic"),
                    check("largest |isolated-cone prediction - cut point| minus the cut point's resolution, over "
                          "digons enclosing one vertex", summary["single_error"], 0.0, "signed_le", kind="analytic"),
                    check("largest cut point minus the smallest isolated-cone prediction, minus the resolution",
@@ -652,13 +666,15 @@ def _continuation_findings(continuation, fans, hits, paths, traced, independent)
                    check("smallest isolated-cone prediction minus the trace length over traces without a cut point",
                          summary["uncut_margin"], 0.0, "signed_ge", kind="analytic")]}
     probe_value = summary["endpoint_gap"]
-    if independent.get("cut_probe_max_abs") is not None:
+    if independent.get("cut_bracket_margin") is not None:
         probe_value = max(probe_value, independent["cut_probe_max_abs"])
         cut_basis["independent_check"] = dict(
-            check("pygeodesic.geodesic.PyGeodesicAlgorithmExact distances from the start to "
-                  f"{independent['cut_probes']} points {S.CUT_PAST:g} h before and after each cut point, inserted as "
-                  "vertices, against the window-evaluated distances", independent["cut_probe_max_abs"], ROUNDING,
-                  kind="exact_arithmetic"),
+            check("pygeodesic.geodesic.PyGeodesicAlgorithmExact distances from the start to the trace points "
+                  f"{S.CUT_PROBE:g} resolutions before and after each of the {len(summary['distinct'])} distinct cut "
+                  f"points, each inserted as a vertex alone: the smaller of {S.CUT_ROUNDING:g} minus the excess of "
+                  f"the traced length over them before the cut point and that excess minus {S.CUT_EXCESS:g} after "
+                  "it (the cut point bracketed independently)",
+                  independent["cut_bracket_margin"], 0.0, "signed_ge", kind="exact_arithmetic"),
             producer=_ciw_producer(f"{SOLV}.Propagation.distance_at", SOLVER),
             checker={"implementation": "pygeodesic.geodesic.PyGeodesicAlgorithmExact",
                      "revision": independent["pygeodesic"]})
@@ -667,7 +683,8 @@ def _continuation_findings(continuation, fans, hits, paths, traced, independent)
         "distance from its start, comes no later than the smallest isolated-cone prediction r sin(delta / 2) / "
         "sin(delta / 2 - phi) over the vertices it passes, and equals it when the digon between the trace and the "
         "other shortest path encloses one vertex", "numerical",
-        {"traces": len(summary["done"]), "cut": len(summary["cut"]), "one_vertex_digons": len(summary["single"]),
+        {"traces": len(summary["done"]), "cut": len(summary["cut"]), "distinct_cut_points": len(summary["distinct"]),
+         "one_vertex_digons": len(summary["single"]),
          "several_vertex_digons": len(summary["several"]), "max_resolution": summary["max_resolution"],
          "max_distance_error": probe_value, "cut_points": summary["table"],
          "trigger_distance_over_h_by_level": summary["trigger_distance"]},
@@ -964,7 +981,11 @@ def mesh_geodesic_solver(ctx):
          "checks and are numerically_verified)",
          "traces continued through flat vertices, along rows of vertices and along mesh edges, and started at a vertex",
          "continuation through cone (cube corner, fans) and saddle vertices, and its reversal",
-         "tied shortest paths on symmetric meshes (the back-traced paths are compared on jittered meshes)",
+         "tied shortest paths on symmetric meshes (the back-traced paths are compared on generic jittered meshes, "
+         "and on the L-shape and the saddle fan, which are simply connected and nonpositively curved, so that their "
+         "shortest paths are unique)",
+         "straight passes through vertices, which the back-trace lists or not by a rounding tie (counted "
+         "geometrically, as vertices on the path)",
          "path points at vertices (side angles around the fan) and on edges (turn across the edge)",
          "cut points past the last edge crossing of a trace", "digons enclosing several vertices"],
         ["Exactness holds in exact arithmetic; computed distances carry rounding, and the pruning margin (1e-10 of "
@@ -1013,9 +1034,10 @@ def continuation_text(continuation, fans, hits, paths, independent, cuts) -> str
             f"the exact length to {max(r['length_error'] for r in path_rows):.1e}, bend at {bends['saddle']} saddle "
             f"and {bends['boundary']} boundary vertices only, and agree with the paths back-traced from the other end "
             f"(and pygeodesic's, when installed) to {path_distance:.1e}. Of {len(cuts['done'])} declared traces, "
-            f"{len(cuts['cut'])} have a cut point before their length; in {len(cuts['single'])} the digon between the "
-            "trace and the other shortest path encloses one vertex and the cut point equals that vertex's "
-            f"isolated-cone prediction to within its resolution (largest {cuts['max_resolution']:.1e})")
+            f"{len(cuts['cut'])} have a cut point before their length ({len(cuts['distinct'])} distinct: a shorter "
+            f"trace from the same start repeats a longer one's); in {len(cuts['single'])} the digon between the trace "
+            "and the other shortest path encloses one vertex and the cut point equals that vertex's isolated-cone "
+            f"prediction to within its resolution (largest {cuts['max_resolution']:.1e})")
     if cuts["several"]:
         witness = cuts["several"][0]
         text += (f"; in {len(cuts['several'])} it encloses several vertices and comes earlier (level "
