@@ -275,12 +275,16 @@ class PolygonSurface:
                 singular.update(tuple(c) for c in cone["corners"])
         return singular
 
-    def flow(self, polygon: int, start, direction, max_crossings: int = 200, stop_on_return: bool = True):
+    def flow(self, polygon: int, start, direction, max_crossings: int = 200, stop_on_return: bool = True,
+             record_path: bool = False):
         """Straight-line flow from an interior point; exact unless the surface declares ``tol``.
 
-        Returns the crossing record and total time (in units of ``direction``);
-        raises FlowTermination with SADDLE_CONNECTION at an exact cone-point hit,
-        or NEAR_VERTEX_WITHIN_TOLERANCE when a float pass is within ``tol``.
+        Returns the crossing record and total time (in units of ``direction``),
+        and with ``record_path`` the traversed segments (polygon, entry point,
+        exit point) in the surface's own number type; raises FlowTermination
+        with SADDLE_CONNECTION at an exact cone-point hit, or
+        NEAR_VERTEX_WITHIN_TOLERANCE when a float pass is within ``tol`` of a
+        vertex along the crossed edge.
         """
         self.require_translation()
         poly = self.polygons[polygon]
@@ -289,7 +293,7 @@ class PolygonSurface:
                                   {"polygon": polygon})
         singular = self.cone_points()
         x, current, entry = start, polygon, None
-        time, crossings, min_clearance = 0, [], math.inf
+        time, crossings, min_clearance, path = 0, [], math.inf, []
         for _ in range(max_crossings):
             best = None
             poly = self.polygons[current]
@@ -318,8 +322,11 @@ class PolygonSurface:
                 if _is_zero(_cross(rel, direction), self.tol) and self._positive(_dot(rel, direction)) \
                         and float(_dot(rel, direction)) <= float(t * _dot(direction, direction)) + self.tol:
                     closing = _dot(rel, direction) / _dot(direction, direction)
-                    return {"closed": True, "time": time + closing, "crossings": crossings,
-                            "min_vertex_clearance": min_clearance}
+                    result = {"closed": True, "time": time + closing, "crossings": crossings,
+                              "min_vertex_clearance": min_clearance}
+                    if record_path:
+                        result["path"] = path + [(current, x, start)]
+                    return result
             edge_length = math.sqrt(float(_dot(self.edge(current, j), self.edge(current, j))))
             clearance = min(float(sigma), 1 - float(sigma)) * edge_length
             min_clearance = min(min_clearance, clearance)
@@ -336,12 +343,37 @@ class PolygonSurface:
             k, l = self.partner[(current, j)]
             partner_poly = self.polygons[k]
             translation = _sub(partner_poly[l], poly[(j + 1) % len(poly)])
-            y = _add(_add(x, (t * direction[0], t * direction[1])), translation)
+            exit_point = _add(x, (t * direction[0], t * direction[1]))
+            if record_path:
+                path.append((current, x, exit_point))
+            y = _add(exit_point, translation)
             crossings.append((current, j, k, l))
             time = time + t
             x, current, entry = y, k, l
-        return {"closed": False, "time": time, "crossings": crossings, "min_vertex_clearance": min_clearance,
-                "end": (current, x)}
+        result = {"closed": False, "time": time, "crossings": crossings, "min_vertex_clearance": min_clearance,
+                  "end": (current, x)}
+        if record_path:
+            result["path"] = path
+        return result
+
+    def min_vertex_distance(self, path) -> float:
+        """Smallest Euclidean distance from recorded path segments to the corners of their polygons.
+
+        Each segment is a chord of a convex polygon, so this is the closest
+        approach of the trajectory to a vertex; it can be smaller than the
+        along-edge clearance at the crossings. Evaluated in binary64 from the
+        segment end points (exact data rounded once).
+        """
+        best = math.inf
+        for polygon, a, b in path:
+            ax, ay, bx, by = float(a[0]), float(a[1]), float(b[0]), float(b[1])
+            dx, dy = bx - ax, by - ay
+            length_sq = dx * dx + dy * dy
+            for vertex in self.polygons[polygon]:
+                vx, vy = float(vertex[0]), float(vertex[1])
+                s = 0.0 if length_sq == 0 else min(1.0, max(0.0, ((vx - ax) * dx + (vy - ay) * dy) / length_sq))
+                best = min(best, math.hypot(ax + s * dx - vx, ay + s * dy - vy))
+        return best
 
 
 # ---------------------------------------------------------------- builders

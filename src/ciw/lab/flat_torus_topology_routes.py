@@ -385,6 +385,44 @@ def pareto_front(routes):
     return front
 
 
+def objective_matrix(routes):
+    """Rows (length, amplification, -focus margin) read from the route fields; a censored margin gives -inf."""
+    return np.array([[r["length"], r["amplification"], -math.inf if r["focus_margin"] is None else -r["focus_margin"]]
+                     for r in routes], dtype=float).reshape(len(routes), 3)
+
+
+def front_by_dominance_matrix(objectives):
+    """Non-dominated rows (minimization) from a broadcast dominance matrix.
+
+    A second formulation of :func:`pareto_front` that shares none of its code:
+    D[i, j] is True when row i is no worse than row j in every column and
+    better in one; the front is the set of columns of D with no True entry.
+    """
+    F = np.asarray(objectives, dtype=float)
+    no_worse = np.all(F[:, None, :] <= F[None, :, :], axis=2)
+    better = np.any(F[:, None, :] < F[None, :, :], axis=2)
+    return [int(i) for i in np.flatnonzero(~np.any(no_worse & better, axis=0))]
+
+
+def front_by_sweep(keys):
+    """Non-dominated points of two-objective keys (minimization) by sort-and-sweep.
+
+    After a lexicographic sort, a point is dominated exactly when some strictly
+    smaller key has a second objective no larger than its own, so the sweep
+    keeps the running minimum of the second objective over strictly smaller
+    keys (equal keys are processed as one group and never dominate each other).
+    """
+    order = sorted(range(len(keys)), key=lambda i: (keys[i][0], keys[i][1], i))
+    front, best, k = [], math.inf, 0
+    while k < len(order):
+        group = [i for i in order[k:] if tuple(keys[i]) == tuple(keys[order[k]])]
+        if keys[order[k]][1] < best:
+            front.extend(group)
+        best = min(best, keys[order[k]][1])
+        k += len(group)
+    return sorted(front)
+
+
 def rankings(routes, tie_tol=1e-9):
     """Orders by length and amplification, and focus-margin groups (best first).
 

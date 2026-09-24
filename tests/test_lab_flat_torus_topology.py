@@ -32,15 +32,15 @@ HAS = {name: importlib.util.find_spec(name) is not None for name in ("scipy", "s
 NV, NE, AN = "numerically_verified", "not_established", "analytic"
 
 # Headline (primary) label per task: the weakest established computational label.
-HEADLINE = {tid: NV for tid in TASKS} | {"T021": AN}
+HEADLINE = {tid: NV for tid in TASKS} | {"T020": AN, "T021": AN}
 
 # Expected label of every finding, by claim prefix. A tuple names the optional modules whose
 # independent check lifts the finding to independently_verified.
 LABELS = {
-    "T019": {"Every enumerated SL(2,Z) basis": ("sympy",), "Number of reduced bases": NV,
+    "T019": {"Every enumerated SL(2,Z) basis": NV, "Number of reduced bases": NV,
              "Integer matrices with det != 1": NV, "Float Gauss reduction agrees with the pinned FTR": NE},
     "T020": {"Every winding with": NV, "For all 120 pairs": NV, "The lattice-point count": NV,
-             "The golden-slope geodesic": ("mpmath",), "A binary64 heading slope": NV,
+             "The golden-slope geodesic": ("mpmath",), "A binary64 heading slope": AN,
              "Closed-geodesic lengths |m w1": NE},
     "T021": {"On the test flat torus": NV, "For every flat torus": AN, "Shortest equals least heading-sensitive": AN,
              "The shortest route on a physical": NE},
@@ -55,8 +55,8 @@ LABELS = {
              "The length spectrum does not determine": NV, "A det-2 integer matrix": NV,
              "Closed-geodesic lengths before and after": NE},
     "T027": {"L-shape and regular octagon": NV, "Horizontal cylinders": NV, "Pairings that are not": NV},
-    "T028": {"All 96 tested": NV, "Trajectories hitting a cone point": NV, "Float octagon flow": NV,
-             "A generic float octagon": NV},
+    "T028": {"All 96 tested": NV, "Trajectories hitting a cone point": NV, "A float start within": NV,
+             "Float octagon flow": NV, "A generic float octagon": NV},
     "T029": {"Cone angles": NV, "Gauss-Bonnet": NV, "Polygon vertices need not": NV},
     "T030": {"4- and 8-neighbour": ("scipy",), "Worst-direction": NV, "Fast marching converges": NV,
              "Grid-planned path lengths": NE},
@@ -145,9 +145,8 @@ def test_gauss_reduction_is_exact():
         lat.gram(((1, 2), (2, 1)))
 
 
-def test_sympy_reduction_check_detects_a_wrong_boundary_rule(monkeypatch):
-    pytest.importorskip("sympy")
-    assert ftt.sympy_reduction_check() == {"compared": 3048, "mismatches": 0}
+def test_vector_reduction_check_detects_a_wrong_boundary_rule(monkeypatch):
+    assert ftt.vector_reduction_check() == {"compared": 3048, "mismatches": 0}
     original = lat.gauss_reduce
 
     def wrong_boundary(form):
@@ -155,7 +154,7 @@ def test_sympy_reduction_check_detects_a_wrong_boundary_rule(monkeypatch):
         a, b, c = reduced
         return ((a, -b, c) if b and (2 * b == a or a == c) else reduced), M, steps
     monkeypatch.setattr(lat, "gauss_reduce", wrong_boundary)
-    assert ftt.sympy_reduction_check()["mismatches"] > 0
+    assert ftt.vector_reduction_check()["mismatches"] > 0
 
 
 def test_t019_reduction_and_refusals(reports):
@@ -163,13 +162,16 @@ def test_t019_reduction_and_refusals(reports):
     first = _label(report, "Every enumerated SL(2,Z) basis")
     assert first["value"]["failures"] == {"inverse": 0, "area": 0, "reduction": 0, "reducer": 0, "automorphism": 0}
     assert first["value"]["reductions"] == 6 * (308 + 200)
-    if HAS["sympy"]:
-        assert "3048 bases and words" in first["basis"]["independent_check"]["reference"]
+    # The second reduction is ciw code: a cross-implementation check, never an independent one.
+    assert "independent_check" not in first["basis"]
+    second = [c for c in first["basis"]["checks"] if c["reference_kind"] == "cross_implementation"]
+    assert len(second) == 1 and "3048 bases and words" in second[0]["reference"] and second[0]["observed"] == 0
     counts = _label(report, "Number of reduced bases")
     assert counts["value"] == ftt.PREDICTED_REDUCED_BASES
     refusals = _label(report, "Integer matrices with det != 1")
     assert refusals["value"]["det 2 (index-2 sublattice)"] == "BASIS_CHANGE_NOT_UNIMODULAR"
     assert refusals["counterexample"]["witness"]["image_canonical"] != refusals["counterexample"]["witness"]["canonical"]
+    assert "det(M)^2 det G" in refusals["basis"]["derivation"]
 
 
 def test_ftr_refusal_makes_task_partial(tmp_path):
@@ -263,6 +265,8 @@ def test_t020_winding_classification(reports):
     assert checks["|q gap - 1/sqrt 5| minus (phi^-2k / sqrt 5 + binary64 rounding bound)"]["observed"] <= 0
     rational = _label(report, "A binary64 heading slope is rational")
     assert rational["value"]["log2_denominator"] <= 52 and "counterexample" in rational
+    assert "IEEE 754" in rational["basis"]["derivation"] and not rational["basis"].get("checks")
+    assert "golden gaps / phi^-k >= 0.99999993" in report["numerical_result"]
 
 
 # ---------------------------------------------------------------- flat routes and ties
@@ -366,6 +370,27 @@ def test_t024_t025_route_ranking_and_front(reports):
     assert front["fronts_2d"] == {"length_amplification": [0, 1, 2], "length_margin": [0, 3]}
 
 
+def test_pareto_second_computation_detects_a_wrong_dominance_rule(reports, tmp_path, monkeypatch):
+    table = _label(reports["T024"], "Every fan-search route")["value"]
+    objectives = routes.objective_matrix(table)
+    assert routes.front_by_dominance_matrix(objectives) == routes.pareto_front(table) == [0, 1, 2, 3, 4]
+    assert routes.front_by_sweep(objectives[:, [0, 1]].tolist()) == [0, 1, 2]
+    assert routes.front_by_sweep([(1.0, 2.0), (1.0, 2.0), (2.0, 1.0), (2.0, 3.0)]) == [0, 1, 2]
+
+    # Amplification and margin signs flipped: pareto_front builds a wrong front that the old self-referential
+    # dominance check accepted; the second computation refutes it.
+    def flipped(a, b):
+        ka = (a["length"], -a["amplification"], routes.margin_value(a))
+        kb = (b["length"], -b["amplification"], routes.margin_value(b))
+        return all(x <= y for x, y in zip(ka, kb)) and any(x < y for x, y in zip(ka, kb))
+    monkeypatch.setattr(routes, "dominates", flipped)
+    monkeypatch.setattr(ftt, "torus_routes", lambda: {"routes": table})
+    report = _run(["T025"], tmp_path)["T025"]
+    record = _label(report, "The three-objective front")
+    assert record["value"]["front"] != [0, 1, 2, 3, 4] and record["evidence_status"] == NE
+    assert report["evidence_status"]["primary"] == NE
+
+
 def test_t032_counterexample_library(reports):
     report = reports["T032"]
     assert len([f for f in report["findings"] if "counterexample" in f]) == 5
@@ -399,7 +424,14 @@ def test_t026_modular_invariance(reports):
     assert _label(report, "Area-one float spectra")["value"] < 1e-8
     mirror = _label(report, "The length spectrum does not determine")
     assert mirror["value"]["same_spectrum"] and not mirror["value"]["same_canonical"]
-    assert _label(report, "Transporting winding labels")["value"] == 6428
+    naive = _label(report, "Transporting winding labels")
+    assert naive["value"] == 6428
+    witness = naive["counterexample"]["witness"]
+    G, M, (m, n) = tuple(Fraction(x) for x in witness["gram"]), witness["matrix"], witness["winding"]
+    H = lat.transform_any(G, tuple(map(tuple, M)))
+    assert witness["naive_label"] == [M[0][0] * m + M[0][1] * n, M[1][0] * m + M[1][1] * n]
+    assert lat.quad(H, *witness["naive_label"]) != lat.quad(G, m, n) == lat.quad(H, *witness["correct_label"])
+    assert "368 basis changes" in _label(report, "Area-one float spectra")["claim"]
     assert _label(report, "A det-2 integer matrix")["value"]["area_sq_ratio"] == "4"
 
 
@@ -446,8 +478,27 @@ def test_t028_glued_edge_flow(reports):
     assert _label(report, "All 96 tested")["value"] == {"closed": 90, "saddle_connections": 6, "undecided": 0}
     refusals = _label(report, "Trajectories hitting a cone point")["value"]
     assert refusals == {"exact_l_shape": "SADDLE_CONNECTION", "exact_octagon": "SADDLE_CONNECTION",
-                        "float_octagon": "NEAR_VERTEX_WITHIN_TOLERANCE", "float_start": "START_NOT_INTERIOR"}
+                        "float_octagon": "NEAR_VERTEX_WITHIN_TOLERANCE"}
+    assert _label(report, "A float start within")["value"] == {"float_start": "START_NOT_INTERIOR"}
     assert _label(report, "Float octagon flow")["value"]["time_difference"] < 1e-12
+    generic = _label(report, "A generic float octagon")
+    value = generic["value"]
+    assert value["crossings"] == 400 and value["max_position_deviation"] < 1e-12
+    # The Euclidean closest approach is below the along-edge clearance at the crossings.
+    assert 1e-9 < value["min_euclidean_vertex_distance"] < value["min_along_edge_clearance"]
+    assert value["min_euclidean_vertex_distance"] == pytest.approx(2.4257e-4, rel=1e-4)
+    assert generic["uncertainty"]["value"] == value["max_position_deviation"]
+
+
+def test_generic_flow_check_uses_the_euclidean_vertex_distance():
+    # Along-edge clearance at the crossings cannot see a pass close to a vertex between crossings.
+    F = surf.regular_octagon(exact=False, tol=1e-9)
+    result = F.flow(0, (1 / 3, 1 / 5), (math.cos(0.3), math.sin(0.3)), max_crossings=400, record_path=True)
+    assert len(result["path"]) == 400
+    assert F.min_vertex_distance(result["path"]) < result["min_vertex_clearance"]
+    square = surf.square_torus()
+    assert square.min_vertex_distance([(0, (Fraction(1, 2), 0), (1, Fraction(1, 2)))]) == pytest.approx(
+        math.sqrt(2) / 4)
 
 
 # ---------------------------------------------------------------- discrete and perturbed metrics
@@ -475,6 +526,8 @@ def test_t031_route_switch(reports):
     assert jump["value"]["heading_jump_deg"] == pytest.approx(126.87, abs=0.01)
     witness = jump["counterexample"]["witness"]
     assert witness["eps_before"] < 1 / 250 < witness["eps_after"] and witness["eps_after"] - witness["eps_before"] < 3e-4
+    bound = jump["uncertainty"]["value"]["length_jump"]
+    assert jump["value"]["length_jump"] <= bound < 1e-4
     assert witness["translates_before"] != witness["translates_after"]
     assert ftt.flip_threshold(Fraction(1, 64))[0] == Fraction(1, 16)
 

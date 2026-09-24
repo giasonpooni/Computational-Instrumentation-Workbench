@@ -58,19 +58,19 @@ reduction and length comparison is exact in integers or `Fraction`s.
 
 | Task | Question | Method | Key result (retained run) |
 | --- | --- | --- | --- |
-| T019 | Equivalent lattice representatives | Exact Gauss/Lagrange reduction of MᵀGM for all 308 SL(2,Z) matrices with entries ≤ 5 and 200 seeded words, on six lattices; count closed-domain reduced bases; sympy recomputes every canonical form independently | 0 failures in 3048 reductions, and sympy's vector-form Lagrange reduction agrees on all 3048 (including the boundary rule b ≥ 0); reduced-basis counts 2 (generic), 4 (vertical boundary, arc, square), 12 (hexagonal), 2 (rectangular), as the stabilizers predict; det 2, det −1 and non-integer changes refused |
-| T020 | Classify geodesics by winding | Exact segment-by-segment flow in lattice coordinates for all windings with \|m\|, \|n\| ≤ 6, returns detected by an exact solve on each segment; exact intersection counts; lattice-point count against a brute-force box; golden-slope returns in binary64 and with mpmath | Measured first return at t = 1/gcd with the primitive displacement, gcd returns by t = 1, (\|m\|+\|n\|)/gcd crossings; intersections = \|det\| for 120 pairs; 229 lattice points within R = 20, equal to the box count; golden gaps equal φ⁻ᵏ (ratio ≥ 0.99999993); binary64 φ = p/2⁴⁹ is rational |
+| T019 | Equivalent lattice representatives | Exact Gauss/Lagrange reduction of MᵀGM for all 308 SL(2,Z) matrices with entries ≤ 5 and 200 seeded words, on six lattices; a second ciw reduction (vector-form Lagrange on the basis vectors) recomputes every canonical form as a cross-implementation check; count closed-domain reduced bases | 0 failures in 3048 reductions, and the second reduction agrees on all 3048 (including the boundary rule b ≥ 0); reduced-basis counts 2 (generic), 4 (vertical boundary, arc, square), 12 (hexagonal), 2 (rectangular), as the stabilizers predict; det 2, det −1 and non-integer changes refused, and the det-2 image has a different canonical form |
+| T020 | Classify geodesics by winding | Exact segment-by-segment flow in lattice coordinates for all windings with \|m\|, \|n\| ≤ 6, returns detected by an exact solve on each segment; exact intersection counts; lattice-point count against a brute-force box; golden-slope returns in binary64 and with mpmath | Measured first return at t = 1/gcd with the primitive displacement, gcd returns by t = 1, (\|m\|+\|n\|)/gcd crossings; intersections = \|det\| for 120 pairs; 229 lattice points within R = 20, equal to the box count; golden gaps equal φ⁻ᵏ (ratio ≥ 0.99999993); binary64 φ = p/2⁴⁹ is rational (an `analytic` finding from the IEEE 754 format, so T020's headline label is `analytic`) |
 | T021 | Shortest vs least sensitive | Exact translates q − p + λ; each route integrated with `ciw.lab.jacobi` on the plane chart | j_head(L) = L (error 5e-16), so the length and amplification orders are identical: theorem-backed and numerically checked. The equivalence holds whenever j_head(L) is one increasing function of L for all routes (constant K ≤ 0) and can fail with K > 0 somewhere or curvature that differs between routes |
 | T022 | Degenerate shortest representatives | Exact nearest translates; 12 × 12 census; exact Voronoi-vertex (cut-locus) enumeration; binary64 with and without a relative tolerance | Multiplicities 2 / 4 at half periods; census {1: 121, 2: 22, 4: 1}; Σ(k_v − 2) = 2 on six lattices; rounding the target (1/2 + 2⁻⁶⁰, 1/4) to binary64 turns multiplicity 1 into 2; at 6 exact ties that binary64 cannot represent, raw comparison undercounts 4 and the tolerance 1e-9 undercounts none |
 | T023 | Sensitivity across headings | Return distance r(θ; L) over 7200 headings (closed-form segment-to-lattice distance) | 18 zeros = the 18 primitive directions with \|v\| ≤ 3; V-slope \|v\| (error 6e-12); measured closure basins widest for the shortest classes, with 0 discordant pairs |
 | T024 | Focus-margin-aware ranking | Torus(2, 1), p = (0, 0.4), q = (2, −0.3): 1440-heading fan (rerun at 2880), one Newton seed per miss-distance minimum, `ciw.lab.jacobi` verification, scipy DOP853 on a sympy-derived field | 9 routes, unchanged at double density; the shortest route is neither the least amplifying nor in the best focus-margin group (table below); a flat torus has no conjugate points |
-| T025 | Pareto fronts | Exhaustive dominance on (L, \|j_head\|, −margin) | Front {0, 1, 2, 3, 4} of 9 (route 2 lies past a conjugate point); length/amplification front {0, 1, 2}; length/margin front {0, 3} |
-| T026 | Modular-reduction invariance | Exact spectra (Q ≤ 60), det and systole under 368 matrices; the naive label rule; mirror and index-2 examples; FTR fold length pairs | Exactly invariant; the naive rule c′ = Mc fails 6428 times; the mirror image is isospectral but not SL(2,Z)-equivalent; det 2 multiplies the squared area by 4 |
+| T025 | Pareto fronts | Exhaustive dominance on (L, \|j_head\|, −margin); every front recomputed from the route fields by a numpy dominance matrix (three objectives) and a sort-and-sweep (two objectives) | Front {0, 1, 2, 3, 4} of 9 (route 2 lies past a conjugate point); length/amplification front {0, 1, 2}; length/margin front {0, 3}; the second computation agrees on every front |
+| T026 | Modular-reduction invariance | Exact spectra (Q ≤ 60), det and systole under 368 matrices; area-one float spectra under the same 368 matrices; the naive label rule; mirror and index-2 examples; FTR fold length pairs | Exactly invariant; float spectra agree within 1e-8 (1.1e-10, limited by the conditioning of bases with entries up to 85, not by unit roundoff); the naive rule c′ = Mc fails 6428 times (witness: generic lattice, M = [[−5, −4], [−1, −1]], c = (1, 0), Q(c) = 5 but Q′(Mc) = 5153); the mirror image is isospectral but not SL(2,Z)-equivalent; a det-2 matrix changes the spectrum (and, by det(M)² det G, multiplies the squared area by 4) |
 | T027 | Translation-surface examples | Exact polygons (Q, Q(√2), Q(√3)), edge involutions, topology, exact horizontal flows | L-shape and octagon: genus 2, one vertex class (checked); octagon cylinders 2 + √2 and 1 + √2 with areas summing to 2 + 2√2; non-translation and unequal gluings refused |
-| T028 | Geodesics across glued edges | Exact rational flow on the L-shape; exact Q(√2) against float flow on the octagon | All 96 rational trajectories (16 primitive directions × 3 starts, count checked) close (multiplier 1–3) or hit the cone point (6 saddle connections); float matches exact to 2e-15; near-vertex passes refused within tolerance 1e-9 |
+| T028 | Geodesics across glued edges | Exact rational flow on the L-shape; exact Q(√2) against float flow on the octagon; a generic float trajectory (θ = 0.3) against the exact Q(√2) trace of its binary64 start and direction | All 96 rational trajectories (32 primitive directions × 3 starts) close (multiplier 1–3) or hit the cone point (6 saddle connections); float matches exact to 2e-15; the generic trajectory keeps the exact crossing sequence for 400 crossings (position deviation 1.2e-14) and comes no closer than 2.43e-4 (Euclidean) to a vertex, below the along-edge clearance 2.74e-4 at the crossings; near-vertex passes and starts within tolerance 1e-9 of an edge refused |
 | T029 | Cone singularities | Union-find on corners; exact corner angles; commutator cycles for origamis; Euler characteristic known independently (declared topology, Riemann–Hurwitz for origamis) | Octagon and L-shape 6π; H(1,1) origami 4π + 4π; pillowcase 4 × π; tori regular; Gauss–Bonnet defect 0 against the independent χ everywhere |
 | T030 | Smooth vs discrete geodesics | Dijkstra (4/8 stencils) and fast marching on N = 30, 60, 120 periodic grids; scipy csgraph check | Graph ratios fixed under refinement: √2 at 45° (4-nbr), 1.08239 at 22.6° (8-nbr), worst sqrt(4 − 2√2) at 22.5°; fast-marching error 5.1% → 3.2% → 1.9% |
-| T031 | Route changes under metric perturbation | g = I + εh, h = [[0, 1], [1, 0]]; exact minimization over translates; sympy solve | Switch at ε* = 4δ exactly (1/250 for δ = 1/1000); between sweep points ε = 0.0039 and 0.0041 the heading jumps 126.9° while the minimal length changes by 9e-8 |
+| T031 | Route changes under metric perturbation | g = I + εh, h = [[0, 1], [1, 0]]; exact minimization over translates; sympy solve | Switch at ε* = 4δ exactly (1/250 for δ = 1/1000); between sweep points ε = 0.0039 and 0.0041 the heading jumps 126.9° (exact up to rounding: each route's heading does not depend on ε) while the minimal length changes by 9e-8, within the continuity bound 4.5e-5 (bracket width × max \|dL/dε\|) |
 | T032 | Counterexample library | Four shortest-versus-alternative witnesses, one near-conjugate conditioning witness, and two searches that cannot produce a witness | See below |
 
 ### T020: what the golden-slope numbers mean
@@ -138,14 +138,31 @@ general statements are false; they do not rank routes for any application.
 - Exact integer, `Fraction` and Q(√d) computations back `numerically_verified`
   findings through `exact_arithmetic` checks. Float results compared with an
   exact or closed-form value (fast-marching errors, the ε* bisection) use
-  `analytic` checks. Same-origin comparisons (batch RK4 against
-  `ciw.lab.jacobi`, float octagon against exact octagon) use
-  `cross_implementation` checks and are never labelled independent.
+  `analytic` checks. Same-origin comparisons are `cross_implementation`
+  checks and are never labelled independent: batch RK4 against
+  `ciw.lab.jacobi`, float octagon against exact octagon, the second
+  (vector-form) lattice reduction of T019, and the second Pareto computation
+  of T025 (numpy dominance matrix, sort-and-sweep). The T019 second reduction
+  recomputes the canonical form of all 3048 bases and words and compares it
+  with canonical(G), with `lat.gauss_reduce` and with the boundary rule; a
+  test confirms that a wrong boundary representative is caught. A test also
+  confirms that a wrong dominance rule, which builds a wrong T025 front, is
+  refuted by the second computation.
+- The generic T028 octagon trajectory is traced again exactly in Q(√2) from
+  the same binary64 start and direction (dyadic rationals). The checks compare
+  the crossing sequences, bound the float position deviation by the declared
+  tolerance, and require the Euclidean closest approach of the exact
+  trajectory to a vertex to exceed the tolerance plus that deviation. The
+  along-edge clearance at the crossings cannot fail that test: the float flow
+  refuses any crossing within the tolerance.
+- Findings that hold by definition or format are `analytic`, not checked:
+  the rationality of binary64 slopes (T020, which makes T020's headline
+  `analytic`), and det(MᵀGM) = det(M)² det G for the det-2 examples (T019,
+  T026).
+- The route-set stability findings (T024, T032) declare no completeness
+  bound (uncertainty value `null`), because the fan search is not proven
+  complete.
 - Independent checks, when the optional modules are installed:
-  - sympy (T019): recomputes the canonical form of all 3048 bases and words
-    by vector-form Lagrange reduction on sympy Integers, and compares it with
-    canonical(G), with ciw's form and with the boundary rule. A test confirms
-    that a wrong boundary representative is caught.
   - sympy (T031): solves for the threshold ε*.
   - mpmath (T020): 50-digit golden-slope gaps.
   - scipy with sympy (T024 route table; T032 inner-equator, outer-equator and
