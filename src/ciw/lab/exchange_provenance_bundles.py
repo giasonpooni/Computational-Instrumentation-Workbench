@@ -38,12 +38,13 @@ from .evidence import (AUTHORITY_DOMAINS, COMPUTATIONAL_DOMAINS, LABELS, PHYSICA
 from .registry import task
 from .report import build_report, render_markdown, validate_report
 from .svg import line_plot
-from .exchange_provenance_bundles_fixtures import (EXECUTION_PATHS, GOLDEN_MANIFEST, GOLDEN_PLATFORM,
-                                                   GOLDEN_SCR_ENGINE_SHA256, Client, ExecutionForbidden,
-                                                   build_energy_session, example_bytes, execution_guard,
-                                                   fabricated_heat_catalog, fixture_root, heat_reference,
-                                                   malformed_fixtures, merge_catalogs, platform_fingerprint,
-                                                   repository_example, source_payload)
+from .exchange_provenance_bundles_fixtures import (GOLDEN_MANIFEST, GOLDEN_PLATFORM, GOLDEN_SCR_ENGINE_SHA256,
+                                                   SYNTHETIC_BINDING, Client, ExecutionForbidden,
+                                                   add_provider_content, build_energy_session, example_bytes,
+                                                   execution_guard, execution_paths, fabricated_heat_catalog,
+                                                   fixture_root, heat_reference, malformed_fixtures, merge_catalogs,
+                                                   path_label, platform_fingerprint, repository_example,
+                                                   source_payload, workflow_entry_points)
 from . import exchange_provenance_bundles_providers as providers
 
 MODULE = "src/ciw/lab/exchange_provenance_bundles.py"
@@ -88,12 +89,16 @@ UPSTREAM_SOURCES = (
     ("identified-design", "identified-design/source.json"),
     ("schematic-companions", "declared-workloads/schematic-companions.json"),
 )
-PROVIDER_PATHS = frozenset(label for label in (
-    "subprocess.Popen", "ciw.adapters.subprocess._bounded_process",
-    "ciw.adapters.subprocess.PinnedSubprocessAdapter.__init__", "ciw.candidate_evidence._bounded_process",
-    "ciw.declared_workload.DeclaredWorkflow._adapters", "ciw.declared_workload.DeclaredWorkflow._step",
-    "ciw.declared_workload.DeclaredWorkflow._execute", "ciw.declared_workload.DeclaredWorkflow.create_session",
-    "ciw.declared_workload.DeclaredWorkflow.replay_session"))
+_PROCESS_PATHS = frozenset({"subprocess.Popen", "ciw.adapters.subprocess._bounded_process",
+                            "ciw.adapters.subprocess.PinnedSubprocessAdapter.__init__",
+                            "ciw.candidate_evidence._bounded_process"})
+
+
+def _provider_paths() -> frozenset:
+    """Entry points that start or reach a provider: processes, pinned adapters and every workflow entry point
+    except those the builtin energy-accuracy workflow defines itself."""
+    return _PROCESS_PATHS | {path_label(entry) for entry in workflow_entry_points()
+                             if entry[1] != "EnergyAccuracyWorkflow"}
 
 
 def _check(reference, observed, tolerance=0.0, comparison="abs_le", kind="exact_arithmetic"):
@@ -223,11 +228,18 @@ def _session_class():
                         f"{TESTS}::test_execution_guard_restores_every_patched_attribute"))
 def save_reopen_without_providers(ctx):
     Session = _session_class()
+    declared = json.loads(example_bytes("declared-workloads/numerical-heat.json"))
     with tempfile.TemporaryDirectory(prefix="ciw-lab-t091-") as scratch:
         scratch = Path(scratch)
         session, _, ids = build_energy_session(scratch / "original")
+        # Provider-kind content and a trusted binding in the saving session: what must not survive a save/reopen.
+        ids["heat"] = add_provider_content(session, heat_reference(declared["initial_values"], declared["steps"]))
+        original_bindings = sorted(kind for kind, value in session.workbench._bindings.items() if value)
+        original_available = sorted(o["operation_id"] for o in session.workbench.describe_operations() if o["available"])
         path = session.save_workspace(scratch / "saved" / "workspace.json")
         saved_bytes = path.read_bytes()
+        saved_text = saved_bytes.decode("utf-8")
+        binding_paths_saved = sum(location in saved_text for location in SYNTHETIC_BINDING.values())
         reads = {}
         with execution_guard() as guard:
             reopened = Session.from_workspace(path, scratch / "reopened")
@@ -236,6 +248,7 @@ def save_reopen_without_providers(ctx):
                                   ("execution.list", {}), ("operation.list", {}),
                                   ("experiment.inspect", {"bundle_id": ids["original"]})):
                 reads[kind] = reader.call(kind, payload)["type"]
+            reads["bundle.get numerical-heat"] = reader.call("bundle.get", {"bundle_id": ids["heat"]})["type"]
             for result_id in sorted(reopened.results):
                 reads["result.get " + result_id] = reader.call("result.get", {"result_id": result_id})["type"]
             reopen_attempts = list(guard["attempts"])
@@ -256,28 +269,44 @@ def save_reopen_without_providers(ctx):
         # Positive control after leaving the guard: the binding-free builtin still replays.
         replay = Client(reopened).call("bundle.replay", {"bundle_id": ids["original"]})
         replay_match = replay["type"] == "response" and replay["payload"]["replay_receipt"]["numerical_match"] is True
+        # The binding the saving session held is not recovered: replaying its provider-kind bundle is refused.
+        heat_replay = _outcome(Client(reopened).call("bundle.replay", {"bundle_id": ids["heat"]}))
         unchanged = path.read_bytes() == saved_bytes
+    guarded = [path_label(entry) for entry in execution_paths()]
     observed = {"workspace_version": saved["workspace_version"], "bundles": len(saved["workbench"]["bundles"]),
+                "provider_kind_bundles": sorted(b["kind"] for b in saved["workbench"]["bundles"]
+                                                if b["kind"] != "energy-accuracy"),
                 "results": len(saved["results"]), "executions": len(saved["executions"]),
-                "execution_path_calls": len(reopen_attempts), "provider_bindings": bindings,
-                "available_operations": available, "read_requests": len(reads),
+                "bindings_before_save": original_bindings, "execution_path_calls": len(reopen_attempts),
+                "provider_bindings": bindings, "available_operations": available, "read_requests": len(reads),
                 "read_requests_answered": sum(value == "response" for value in reads.values())}
     ctx.artifact_json("reopen.json", {"observed": observed, "reads": reads, "mismatches": mismatches,
                                       "reopen_attempts": reopen_attempts, "recomputations": recomputations,
                                       "guard_control": control, "binding_keys_in_saved_workspace": binding_keys,
+                                      "synthetic_binding": SYNTHETIC_BINDING,
+                                      "binding_paths_in_saved_workspace": binding_paths_saved,
+                                      "available_before_save": original_available, "provider_bundle_replay": heat_replay,
                                       "saved_workspace_sha256": sha256(saved_bytes).hexdigest(),
-                                      "guarded_paths": [".".join(filter(None, p)) for p in EXECUTION_PATHS]})
+                                      "guarded_paths": guarded})
     analyze_calls = recomputations.get("ciw.energy_records.analyze", 0)
     findings = [
-        finding("A saved workspace with oscillator results and an energy-accuracy original and replay reopens "
-                "with no provider binding and reaches no execution path", "computational_pipeline", observed,
-                {"checks": [_check("execution entry points reached while reopening and reading", len(reopen_attempts)),
+        finding("A saved workspace from a session holding a trusted provider binding, with oscillator results, an "
+                "energy-accuracy original and replay and a provider-kind numerical-heat bundle, reopens with no "
+                "provider binding and reaches no execution path", "computational_pipeline", observed,
+                {"checks": [_check("trusted provider bindings held by the saving session", len(original_bindings), 1,
+                                   "ge", "invariant"),
+                            _check("provider-kind bundles in the saved workspace",
+                                   len(observed["provider_kind_bundles"]), 1, "ge", "invariant"),
+                            _check("execution entry points reached while reopening and reading", len(reopen_attempts)),
                             _check("selection/results/executions/catalog digest mismatches after reopen",
                                    sum(mismatches.values())),
                             _check("provider bindings present after reopen", len(bindings)),
                             _check("binding-like keys in the saved workspace", binding_keys),
+                            _check("synthetic binding paths present in the saved workspace bytes", binding_paths_saved),
                             _check("read requests not answered", len(reads) - observed["read_requests_answered"]),
-                            _check("saved workspace bytes changed by reopen", int(not unchanged))]},
+                            _check("saved workspace bytes changed by reopen", int(not unchanged)),
+                            _refusal("bundle.replay of the provider-kind bundle after reopen",
+                                     f"operation_unavailable: {UNBOUND}", heat_replay)]},
                 uncertainty=EXACT_COUNT, tolerance=EXACT),
         finding("The execution guard intercepts a replay attempted while it is active", "computational_pipeline",
                 control, {"checks": [_refusal("Workbench.replay inside execution_guard", "intercepted", control)]},
@@ -295,30 +324,42 @@ def save_reopen_without_providers(ctx):
                 uncertainty=EXACT_COUNT, tolerance=EXACT),
     ]
     fields = _fields(
-        "A CIW workspace saved with retained oscillator results and an energy-accuracy original and replay can be "
-        "reopened with no provider binding and without reaching any execution entry point.",
+        "A CIW workspace saved by a session that held a trusted provider binding, with retained oscillator results, "
+        "an energy-accuracy original and replay and a provider-kind bundle, can be reopened with no provider binding "
+        "and without reaching any execution entry point, and the binding is not recovered.",
         "Reopen = validate(saved JSON) then construct; the guard replaces "
-        f"{len(EXECUTION_PATHS)} execution entry points (workflow steps, sessions, "
-        "provider adapters, subprocesses, recording operations) with a refusing recorder.",
+        f"{len(guarded)} execution entry points (session analyses, recording operations, the workbench, every "
+        "workbench workflow's session/step/adapter entry points, provider adapters, subprocesses) with a refusing "
+        "recorder.",
         ["ciw.instruments.make_demo_run (synthetic analytic oscillator)",
-         "examples/energy-accuracy/baseline.json bytes (synthetic_fixture origin), embedded"],
+         "examples/energy-accuracy/baseline.json bytes (synthetic_fixture origin), embedded",
+         "a provider-kind numerical-heat bundle (fabricated_heat_catalog: values equal to the integer reference, "
+         "fabricated runtime identity) and a synthetic trusted numerical-heat binding naming no checkout"],
         "Protocol v1 requests against the reopened Session; digests of selection, results, executions and the "
-        "retained catalog; guard attempt and recomputation counters.",
-        "Zero execution-path calls, zero bindings, identical retained content, answered read requests.",
+        "retained catalog; guard attempt and recomputation counters; the saved bytes.",
+        "Zero execution-path calls, zero bindings, no binding path in the saved bytes, identical retained content, "
+        "answered read requests, provider-kind replay refused.",
         "Build a session (stats, selection update, spectrum, statistics.v1 operation, energy source, execute, "
-        "replay), save, reopen under the guard, issue read requests, compare digests, run a guard sensitivity "
-        "control and a binding-free replay control after the guard.",
-        f"{observed['bundles']} bundles, {observed['results']} results and {observed['executions']} execution "
-        f"reopened with {len(reopen_attempts)} execution-path calls and bindings {bindings}; "
-        f"the energy analysis was recomputed {analyze_calls} times for validation.",
+        "replay), add a provider-kind numerical-heat bundle and a synthetic trusted binding, save, reopen under the "
+        "guard, issue read requests, compare digests, run a guard sensitivity control, then after the guard a "
+        "binding-free replay control and a replay of the provider-kind bundle.",
+        f"{observed['bundles']} bundles ({', '.join(observed['provider_kind_bundles'])} from a provider kind), "
+        f"{observed['results']} results and {observed['executions']} execution reopened with {len(reopen_attempts)} "
+        f"execution-path calls; bindings before save {original_bindings}, after reopen {bindings}; provider-kind "
+        f"replay: {heat_replay}; the energy analysis was recomputed {analyze_calls} times for validation.",
         "Exact: counts and digest equalities; no floating-point tolerance is involved.",
         ["execution entry point reached during reopen", "retained content drift across reopen",
-         "binding restored from saved data", "saved workspace rewritten by reopen",
-         "guard insensitivity (control replay must be intercepted)"],
-        ["The guard covers the execution entry points listed in reopen.json; a new entry point added to CIW "
-         "must be added to EXECUTION_PATHS.",
-         "Validation recomputation (energy analysis) is counted separately from execution because it creates no "
-         "occurrence and no result; the counterexample finding records it."],
+         "binding restored from saved data", "binding path written into the saved workspace",
+         "saved workspace rewritten by reopen", "guard insensitivity (control replay must be intercepted)"],
+        ["The provider-kind bundle is fabricated (no provider ran here) and the binding names no checkout: the "
+         "task tests that save/reopen carry neither execution nor binding, not provider output. A bundle produced "
+         "by the real SCR is reopened under the same guard in T094 (golden) and T097 (live, when SCR is bound).",
+         "The guard covers the entry points listed in reopen.json: EXECUTION_PATHS plus the entry points of every "
+         "workbench workflow kind, discovered from ciw.workbench._workflow. Entry points reached through a name "
+         "imported into another module, or code paths outside these, are not intercepted.",
+         "Validation recomputation is counted only for the energy analysis (ciw.energy_records.analyze), separately "
+         "from execution because it creates no occurrence and no result; in-process validation recomputation of "
+         "other kinds is not counted."],
         "T092: refuse replay of provider kinds without a binding in the reopened session.")
     return {"state": _settle("completed", findings), "fields": fields, "findings": findings}
 
@@ -330,8 +371,10 @@ def _unbound_session(scratch: Path):
 
     Returns the reopened session, identities, the retained source descriptors
     by kind, the fabricated catalog, reopen attempts, the upstream-gated kinds
-    whose sources were retained and the repository kinds whose example was not
-    reachable.
+    whose sources were retained, the repository kinds whose example was not
+    reachable and the reopen outcome of the fabricated bundle (``accepted`` or
+    the refusal text). If reopen refuses the fabricated bundle, the workspace is
+    reopened without it so the other refusal cases still run.
     """
     Session = _session_class()
     session, client, ids = build_energy_session(scratch / "original")
@@ -347,18 +390,26 @@ def _unbound_session(scratch: Path):
             sources[kind] = client.ok("source.add", source_payload(kind, raw, f"Unbound {kind} source"))
             if group == "upstream":
                 upstream.append(kind)
-    path = session.save_workspace(scratch / "saved" / "workspace.json")
-    workspace = json.loads(path.read_text(encoding="utf-8"))
+    plain = session.save_workspace(scratch / "saved" / "workspace.json")
+    workspace = json.loads(plain.read_text(encoding="utf-8"))
     fabricated = fabricated_heat_catalog([0, 1, 2, 3, 0])
     workspace["workbench"] = merge_catalogs(workspace["workbench"], fabricated)
+    path = scratch / "saved" / "with-fabricated-heat.json"
     path.write_text(json.dumps(workspace, indent=2, allow_nan=False) + "\n", encoding="utf-8")
     with execution_guard() as guard:
-        reopened = Session.from_workspace(path, scratch / "reopened")
-    ids["heat"] = fabricated["bundles"][0]["bundle_id"]
-    return reopened, ids, sources, fabricated, list(guard["attempts"]), upstream, unreachable
+        try:
+            reopened = Session.from_workspace(path, scratch / "reopened")
+            outcome = "accepted"
+        except ValueError as exc:
+            outcome = str(exc)
+            reopened = Session.from_workspace(plain, scratch / "reopened-without-fabricated")
+    if outcome == "accepted":
+        ids["heat"] = fabricated["bundles"][0]["bundle_id"]
+    return reopened, ids, sources, fabricated, list(guard["attempts"]), upstream, unreachable, outcome
 
 
 def _replay_refusal_cases(ids, sources, upstream=()):
+    """Refusal cases; the retained-heat replay case needs the fabricated bundle (``ids["heat"]``) to be present."""
     heat_source = sources["numerical-heat"]["source_id"]
     cases = []
     for kind in sorted(set(sources) - set(upstream)):
@@ -373,11 +424,12 @@ def _replay_refusal_cases(ids, sources, upstream=()):
                {"operation_id": f"ciw.{kind}.v1", "parameters": {"source_id": sources[kind]["source_id"],
                                                                 "upstream_bundle_id": ids["original"]}},
                UPSTREAM_REFUSAL) for kind in sorted(upstream)]
+    if "heat" in ids:
+        cases.append(("replay retained numerical-heat bundle without SCR binding", "bundle.replay",
+                      {"bundle_id": ids["heat"]}, f"operation_unavailable: {UNBOUND}"))
     cases += [
-        ("replay retained numerical-heat bundle without SCR binding", "bundle.replay", {"bundle_id": ids["heat"]},
-         f"operation_unavailable: {UNBOUND}"),
         ("replay with client-supplied repositories", "bundle.replay",
-         {"bundle_id": ids["heat"], "repositories": {"scr": "/client/scr", "engine": "/client/engine"}},
+         {"bundle_id": ids.get("heat", ids["original"]), "repositories": {"scr": "/client/scr", "engine": "/client/engine"}},
          "invalid_payload: Unexpected or missing workbench fields"),
         ("execute with client-supplied repositories", "operation.execute",
          {"operation_id": "ciw.numerical-heat.v1", "parameters": {"source_id": heat_source,
@@ -412,7 +464,8 @@ def _workflow_kinds(session) -> list:
                         f"{TESTS}::test_fabricated_heat_bundle_is_content_consistent_but_wrong"))
 def replay_refusal_without_binding(ctx):
     with tempfile.TemporaryDirectory(prefix="ciw-lab-t092-") as scratch:
-        reopened, ids, sources, fabricated, reopen_attempts, upstream, unreachable = _unbound_session(Path(scratch))
+        (reopened, ids, sources, fabricated, reopen_attempts, upstream, unreachable,
+         fabricated_reopen) = _unbound_session(Path(scratch))
         unavailable = _workflow_kinds(reopened)
         client = Client(reopened)
         outcomes = []
@@ -423,41 +476,52 @@ def replay_refusal_without_binding(ctx):
                 observed = _outcome(client.call(kind, payload))
                 outcomes.append({"case": label, "request": kind, "expected": expected, "observed": observed,
                                  "entry_points": guard["attempts"][before:]})
-        provider_reached = sorted({p for row in outcomes for p in row["entry_points"] if p in PROVIDER_PATHS})
+        provider_paths = _provider_paths()
+        provider_reached = sorted({p for row in outcomes for p in row["entry_points"] if p in provider_paths})
         control = client.call("bundle.replay", {"bundle_id": ids["original"]})
         control_ok = control["type"] == "response" and control["payload"]["replay_receipt"]["numerical_match"] is True
-        heat = reopened.workbench.get_bundle(ids["heat"])
+        # What a workbench reader sees of the fabricated bundle (the catalog's own copy when reopen refused it).
+        heat = (reopened.workbench.get_bundle(ids["heat"]) if "heat" in ids
+                else deepcopy(fabricated["bundles"][0]["native"]))
     declared = json.loads(example_bytes("declared-workloads/numerical-heat.json"))
     reference = heat_reference(declared["initial_values"], declared["steps"])
     retained = heat["steps"][0]["result"]["data"]["values"]
     mismatched = sum(a != b for a, b in zip(retained, reference))
     ctx.artifact_json("refusals.json", {"cases": outcomes, "provider_paths_reached": provider_reached,
-                                        "reopen_attempts": reopen_attempts, "energy_replay_control": _outcome(control)})
+                                        "provider_paths_counted": sorted(provider_paths),
+                                        "reopen_attempts": reopen_attempts, "fabricated_bundle_reopen": fabricated_reopen,
+                                        "energy_replay_control": _outcome(control)})
     ctx.artifact_json("fabricated-heat-catalog.json", fabricated)
     refused = sum(row["observed"] == row["expected"] for row in outcomes)
     refused_unbound = sorted(set(sources) - set(upstream))
     not_exercised = sorted(set(unavailable) - set(sources))
+    replay_observed = ["numerical-heat"] if "heat" in ids else []
     findings = [
         finding("Requests to execute or replay unbound provider workflows, or to supply or bypass a binding, are "
-                "refused with a named error and reach no provider process or adapter", "computational_pipeline",
+                "refused with a named error and reach no provider process, adapter or workflow entry point",
+                "computational_pipeline",
                 {"requests": len(outcomes), "refused_as_expected": refused,
                  "codes": sorted({row["observed"].split(":", 1)[0] for row in outcomes}),
                  "kinds_refused_unbound": refused_unbound, "kinds_refused_at_upstream_selection": sorted(upstream),
+                 "kinds_with_replay_refusal_observed": replay_observed,
                  "unavailable_kinds_not_exercised": not_exercised},
                 {"checks": [_refusal(row["case"], row["expected"], row["observed"]) for row in outcomes]
-                 + [_check("provider process or adapter entry points reached", len(provider_reached)),
+                 + [_check("provider process, adapter or workflow entry points reached", len(provider_reached)),
                     _check("execution entry points reached while reopening", len(reopen_attempts))]},
                 uncertainty=EXACT_COUNT, tolerance=EXACT),
         finding("A retained numerical-heat bundle whose values no provider computed passes reopen validation",
                 "computational_pipeline",
-                {"accepted_on_reopen": True, "retained_values": retained, "reference_values": reference,
+                {"reopen_outcome": fabricated_reopen, "retained_values": retained, "reference_values": reference,
                  "mismatched_cells": mismatched},
-                {"checks": [_check("cells differing from the independent integer reference", mismatched, 1, "ge",
+                {"checks": [_refusal("Session.from_workspace of a workspace holding the fabricated numerical-heat bundle",
+                                     "accepted", fabricated_reopen),
+                            _check("cells differing from the independent integer reference", mismatched, 1, "ge",
                                    "invariant")]},
                 uncertainty=EXACT_INTEGER, tolerance=EXACT, counterexample={
                     "statement": "Reopen validation of a retained numerical-heat bundle establishes that its values "
                                  "are the pinned SCR heat-kernel output",
-                    "witness": {"bundle_id": ids["heat"], "retained_values": retained, "reference_values": reference,
+                    "witness": {"bundle_id": fabricated["bundles"][0]["bundle_id"], "retained_values": retained,
+                                "reference_values": reference,
                                 "runtime_repository_root": heat["runtimes"]["scr"]["repository_root"]}}),
         finding("The binding-free energy-accuracy replay succeeds in the same reopened session", "computational_pipeline",
                 control_ok, {"checks": [_check("energy replay without numerical match", int(not control_ok))]},
@@ -465,7 +529,11 @@ def replay_refusal_without_binding(ctx):
         finding("A content-consistent reopened bundle is acceptable as a verified production result",
                 "production_acceptance", "not decided by the workbench", {}),
     ]
-    assumptions = ["No ESM candidate adapter refusal ('No operator-bound ESM candidate adapter') is reached: that "
+    assumptions = ["Replay refusal is observed only for numerical-heat, the one kind with a retained bundle here "
+                   "(the fabricated one); every other unavailable kind is exercised through operation.execute. That "
+                   "their retained bundles would be refused on replay too is inferred from Workbench.replay calling "
+                   "Workbench._reserve(kind), which refuses any kind without a trusted binding, not observed.",
+                   "No ESM candidate adapter refusal ('No operator-bound ESM candidate adapter') is reached: that "
                    "path needs a retained telemetry or calibrated-observable bundle, which needs bound providers. The "
                    "ESM case here is refused for its bundle kind.",
                    "The fabricated bundle's runtime identity is syntactically valid but names no real checkout."]
@@ -490,9 +558,10 @@ def replay_refusal_without_binding(ctx):
         f"{len(outcomes)} refusal cases on a reopened session, each compared with its expected error text; a "
         "counting guard records which execution entry points each request reached.",
         f"{refused}/{len(outcomes)} refused exactly as expected: {len(refused_unbound)} of {len(unavailable)} "
-        f"unavailable workflow kinds refused unbound, {len(upstream)} refused at upstream selection, "
-        f"{len(not_exercised)} not exercised; provider paths reached: {provider_reached or 'none'}; "
-        f"the fabricated heat bundle (values {retained}) reopened although the reference field is {reference}.",
+        f"unavailable workflow kinds refused unbound on execute, {len(upstream)} refused at upstream selection, "
+        f"{len(not_exercised)} not exercised; replay refusal observed for {replay_observed or 'no kind'} only (inferred "
+        f"for the rest); provider paths reached: {provider_reached or 'none'}; the fabricated heat bundle (values "
+        f"{retained}, reference field {reference}) on reopen: {fabricated_reopen}.",
         "Exact string and count comparisons.",
         ["client-supplied repositories in replay/execute payloads", "client binding request",
          "unknown bundle", "unversioned and unregistered operation identities", "ESM on a non-telemetry bundle",
@@ -597,8 +666,10 @@ def unchanged_after_refusal(ctx):
                                          "refused_operation": refused_operation, "recorded_parts": recorded,
                                          "new_files": new_files})
     findings = [
-        finding("Refused requests leave the in-memory session state and the session directory unchanged, and a "
-                "re-save reproduces the saved workspace content", "computational_pipeline",
+        finding(f"Each of the {len(outcomes)} exercised non-recording request classes is refused and leaves the "
+                "in-memory session state and the session directory unchanged, and a re-save reproduces the saved "
+                "workspace content (a refused recording operation is the exception: it is retained as an execution "
+                "record)", "computational_pipeline",
                 {"refused_as_expected": refused, "requests": len(outcomes), "state_parts_changed": changed_parts,
                  "directory_changed": before["directory"] != after["directory"],
                  "resaved_content_equal": content_equal},
@@ -626,14 +697,15 @@ def unchanged_after_refusal(ctx):
                                 "new_files": len(new_files)}}),
     ]
     fields = _fields(
-        "A request that CIW refuses changes neither the session state a save would write nor the session directory.",
+        "A refused request other than a recording operation changes neither the session state a save would write nor "
+        "the session directory; a refused recording operation is retained by design as an execution record.",
         "State = digests of selection, results, executions, retained catalog, catalog revision, byte and "
         "reservation counters, identity claims, candidates and bindings; plus the session directory listing and "
         "the re-saved workspace content without its saved_at timestamp.",
         ["energy-accuracy session (synthetic baseline) with oscillator results and one unbound numerical-heat source"],
         "Exact 'code: message' of each refusal; SHA-256 digests before and after the refused requests.",
-        "Each request refused with its expected text; all digests equal; re-saving reproduces the workspace "
-        "content except its saved_at timestamp.",
+        "Each non-recording request refused with its expected text; all digests equal; re-saving reproduces the "
+        "workspace content except its saved_at timestamp; a refused recording operation adds an execution record.",
         f"Send {len(outcomes)} refused requests (unbound execution, forged bindings, malformed sources, stale "
         "revision, unknown identities, out-of-range analysis, save redirection, unsupported version), then compare; "
         "reopen a corrupted copy; finally send one refused recording operation separately.",
@@ -643,8 +715,9 @@ def unchanged_after_refusal(ctx):
         ["reservation or pending counters leaked by a refusal", "partial source retained after refusal",
          "selection revision advanced by a refused update", "save path redirected by a client",
          "refused reopen writing into its target directory", "refusal for an unintended reason (text compared)"],
-        ["Refused recording operations are retained by design as auditable execution records; this is a documented "
-         "exception, not a leak.",
+        ["The unchanged-state result covers the exercised non-recording request classes only. Refused recording "
+         "operations are retained by design as auditable execution records (the counterexample finding); this is a "
+         "documented exception, not a leak.",
          "The saved workspace file is not rewritten by requests (no request can target it); the evidence is the "
          "state digests and the re-save comparison."],
         "T094: reopen golden retained bundles with the current code.")
@@ -811,16 +884,18 @@ def golden_retained_bundles(ctx):
 # ---------------------------------------------------------------- T095
 
 def _attempt(function):
-    """Outcome of one validator call; any exception is retained with its type (a crash is not a clean refusal)."""
+    """Outcome of one validator call; any exception is retained with its type.
+
+    Only a ``ValueError`` (CIW's refusal type) counts as ``refused``; any other
+    exception is a crash (``crashed``), never a clean refusal.
+    """
     try:
         function()
-        return {"refused": False, "error_type": None, "message": None}
-    except RecursionError as exc:
-        return {"refused": True, "error_type": "RecursionError", "message": str(exc)[:200]}
+        return {"refused": False, "crashed": False, "error_type": None, "message": None}
     except ValueError as exc:
-        return {"refused": True, "error_type": type(exc).__name__, "message": str(exc)[:500]}
+        return {"refused": True, "crashed": False, "error_type": type(exc).__name__, "message": str(exc)[:500]}
     except Exception as exc:  # retained, never hidden: an unexpected exception type is itself a finding
-        return {"refused": True, "error_type": type(exc).__name__, "message": str(exc)[:500]}
+        return {"refused": False, "crashed": True, "error_type": type(exc).__name__, "message": str(exc)[:200]}
 
 
 def _parsed(raw: bytes):
@@ -852,25 +927,27 @@ def _malformed_matrix(directory: Path) -> dict:
         response = client.call("source.add", source_payload("energy-accuracy", raw, name))
         try:
             exchange.inspect_exchange([path], validator_repo=validator_repo)
-            inspected = {"refused": False, "error_type": None, "message": None}
+            inspected = {"refused": False, "crashed": False, "error_type": None, "message": None}
         except OSError:
-            inspected = {"refused": False, "error_type": "validator_unavailable", "message": None}
-        except (ValueError, RecursionError) as exc:
-            inspected = {"refused": True, "error_type": type(exc).__name__, "message": str(exc)[:500]}
+            inspected = {"refused": False, "crashed": False, "error_type": "validator_unavailable", "message": None}
+        except ValueError as exc:
+            inspected = {"refused": True, "crashed": False, "error_type": type(exc).__name__, "message": str(exc)[:500]}
+        except Exception as exc:  # a crash is retained, not counted as a refusal
+            inspected = {"refused": False, "crashed": True, "error_type": type(exc).__name__, "message": str(exc)[:200]}
         value = _parsed(raw)
         field = fields.get(value.get("schema")) if isinstance(value, dict) else None
         rows[name] = {
-            "workbench_source_add": {"refused": response["type"] == "error", "error_type": None,
+            "workbench_source_add": {"refused": response["type"] == "error", "crashed": False, "error_type": None,
                                      "message": _outcome(response) if response["type"] == "error" else None},
             "session_read_json": _attempt(lambda: read_json(path)),
             "exchange_inspect": inspected,
             "exchange_identity": (_attempt(lambda: exchange._identity(value, field)) if field
-                                  else {"refused": None, "error_type": "not_applicable", "message": None}),
+                                  else {"refused": None, "crashed": None, "error_type": "not_applicable", "message": None}),
             "session_from_workspace": _attempt(lambda: Session.from_workspace(path, directory / f"never-{index}")),
             "workbench_restore": (_attempt(lambda: Workbench.restore(value)) if isinstance(value, dict)
-                                  else {"refused": None, "error_type": "not_applicable", "message": None}),
+                                  else {"refused": None, "crashed": None, "error_type": "not_applicable", "message": None}),
         }
-        if not rows[name]["session_read_json"]["refused"]:
+        if rows[name]["session_read_json"]["error_type"] is None:
             # What read_json made of the bytes it accepted (the overflow witness).
             parsed = read_json(path)
             component = (parsed.get("components") or [{}])[0] if isinstance(parsed, dict) else {}
@@ -899,7 +976,7 @@ def _runtime_malformed(directory: Path) -> dict:
             ("non-canonical base64", {"kind": "energy-accuracy", "label": "x", "bytes_b64": "e31="}),
             ("extra source payload field", {**source_payload("energy-accuracy", b"{}", "x"), "provider": "scr"})):
         response = client.call("source.add", payload)
-        rows[label] = {"refused": response["type"] == "error", "error_type": None,
+        rows[label] = {"refused": response["type"] == "error", "crashed": False, "error_type": None,
                        "message": _outcome(response) if response["type"] == "error" else None}
     saved = session.save_workspace(directory / "valid-workspace.json")
     workspace = json.loads(saved.read_text(encoding="utf-8"))
@@ -915,10 +992,10 @@ def _runtime_malformed(directory: Path) -> dict:
     extra_path = _write(directory / "extra.json", json.dumps(extra).encode())
     accepted = _attempt(lambda: Session.from_workspace(extra_path, directory / "extra-reopened"))
     dropped = None
-    if not accepted["refused"]:
+    if accepted["error_type"] is None:
         resaved = Session.from_workspace(extra_path, directory / "extra-resaved").save_workspace(directory / "resaved.json")
         dropped = "lab_unexpected_field" not in json.loads(resaved.read_text(encoding="utf-8"))
-    rows["extra top-level workspace field (Session.from_workspace)"] = dict(accepted, dropped_on_resave=dropped)
+    rows[EXTRA_FIELD_INPUT] = dict(accepted, dropped_on_resave=dropped)
     return rows
 
 
@@ -949,6 +1026,8 @@ MALFORMED_EXPECTED = {
 }
 # A committed fixture whose targeted validator crashes instead of refusing (a counterexample).
 CRASH_FIXTURE = ("incomplete-workspace.json", "session_from_workspace")
+# The generated input that is accepted instead of refused (a counterexample).
+EXTRA_FIELD_INPUT = "extra top-level workspace field (Session.from_workspace)"
 RUNTIME_EXPECTED = {
     "oversize-exchange (1 MiB + 1 byte)": "file exceeds 1048576 bytes: <path>",
     "oversize-energy-source (4 MiB + 1 byte)":
@@ -971,9 +1050,13 @@ def malformed_exchange_fixtures(ctx):
     root = fixture_root(ctx.providers)
     committed = None
     if root is not None and (root / "malformed").is_dir():
-        committed = sum((root / "malformed" / name).read_bytes() != raw if (root / "malformed" / name).is_file() else 1
-                        for name, raw in malformed_fixtures().items())
-    ctx.artifact_json("malformed-refusals.json", {"committed_fixture_mismatches": committed,
+        generated = malformed_fixtures()
+        directory = root / "malformed"
+        committed = {"differing": sorted(name for name, raw in generated.items() if (directory / name).is_file()
+                                         and (directory / name).read_bytes() != raw),
+                     "missing": sorted(name for name in generated if not (directory / name).is_file()),
+                     "extra": sorted(path.name for path in directory.iterdir() if path.name not in generated)}
+    ctx.artifact_json("malformed-refusals.json", {"committed_fixture_comparison": committed,
                                                   "fixtures": matrix, "runtime": runtime})
     # A refusal counts only as the expected CIW text; a crash or another message does not.
     unrefused = [name for name, (validator, expected) in MALFORMED_EXPECTED.items()
@@ -985,14 +1068,23 @@ def malformed_exchange_fixtures(ctx):
     overflow = matrix["overflow.json"]
     deep = matrix["deep-nesting.json"]
     crash = matrix[CRASH_FIXTURE[0]][CRASH_FIXTURE[1]]
-    extra = runtime["extra top-level workspace field (Session.from_workspace)"]
+    extra = runtime[EXTRA_FIELD_INPUT]
     source_text = matrix["duplicate-key.json"]["workbench_source_add"]["message"]
-    total = len(MALFORMED_EXPECTED) + len(RUNTIME_EXPECTED)
+    declared = len(MALFORMED_EXPECTED) + len(RUNTIME_EXPECTED)
+    inputs = len(matrix) + len(runtime)
+    # Inputs with no declared CIW refusal text; each must be one of the counterexamples below.
+    without = sorted(set(matrix) - set(MALFORMED_EXPECTED)) + sorted(set(runtime) - set(RUNTIME_EXPECTED))
+    outcomes_without = {CRASH_FIXTURE[0]: f"{CRASH_FIXTURE[1]}: {crash['error_type'] or 'accepted'}",
+                        EXTRA_FIELD_INPUT: extra["message"] if extra["error_type"] else "accepted"}
     parsed_overflow = overflow["session_read_json"].get("parsed_component_value")
     findings = [
-        finding("Every malformed exchange fixture is refused by the CIW validator it targets, with the error text "
-                "retained", "computational_pipeline", {"fixtures": total, "refused": total - len(unrefused)},
-                {"checks": [_check("malformed fixtures not refused with their expected text", len(unrefused))]
+        finding("Every malformed exchange input with a declared CIW refusal text is refused by the validator it "
+                "targets with exactly that text", "computational_pipeline",
+                {"inputs": inputs, "with_declared_refusal": declared, "refused_with_declared_text": declared - len(unrefused),
+                 "without_declared_refusal": {name: outcomes_without.get(name, "not covered") for name in without}},
+                {"checks": [_check("malformed inputs with a declared text not refused with it", len(unrefused)),
+                            _check("inputs without a declared refusal that no counterexample finding covers",
+                                   sum(name not in outcomes_without for name in without))]
                  + checks}, uncertainty=EXACT_COUNT, tolerance=EXACT),
         finding("session.read_json accepts an overflowing number as infinity while the exchange and workbench "
                 "parsers refuse it", "computational_pipeline",
@@ -1037,6 +1129,14 @@ def malformed_exchange_fixtures(ctx):
                     "statement": "Saved workspaces with fields outside the schema are refused on reopen",
                     "witness": {"field": "lab_unexpected_field", "reopened": not extra["refused"],
                                 "dropped_on_resave": extra["dropped_on_resave"]}}),
+        (finding("The committed malformed fixtures equal their generator's bytes", "provenance",
+                 {"fixtures": len(malformed_fixtures()), **committed},
+                 {"checks": [_check("committed malformed fixtures differing from, missing from or extra to the generator",
+                                    sum(map(len, committed.values())))]},
+                 uncertainty=EXACT_COUNT, tolerance=EXACT) if committed is not None else
+         finding("The committed malformed fixtures equal their generator's bytes", "provenance",
+                 "not compared: tests/fixtures/lab/malformed is not reachable from this installation", {},
+                 expected_not_established=True)),
         finding("Workbench source.add reports malformed source JSON with text that names a bound runtime",
                 "computational_pipeline", source_text,
                 {"checks": [_refusal("source.add of duplicate-key.json", MALFORMED_TEXT, source_text)]},
@@ -1052,16 +1152,20 @@ def malformed_exchange_fixtures(ctx):
         "(parsing stage, no SET checkout), ciw.exchange._identity, Session.from_workspace, Workbench.restore.",
         [f"tests/fixtures/lab/malformed/{name}" for name in sorted(malformed_fixtures())]
         + sorted(RUNTIME_EXPECTED) + ["extra top-level workspace field (generated)"],
-        "Refused/accepted, exception type and exact message per validator (retained in malformed-refusals.json).",
-        "Every fixture refused by the validator it targets with its exact CIW text; wrong-type cases are single-field "
-        "mutations of a valid input so the refusal is attributable.",
+        "Refused (ValueError), crashed (any other exception) or accepted, exception type and exact message per "
+        "validator (retained in malformed-refusals.json).",
+        "Every input with a declared CIW refusal text refused by the validator it targets with that text; wrong-type "
+        "cases are single-field mutations of a valid input so the refusal is attributable; the committed fixtures "
+        "equal their generator's bytes.",
         "Write each committed fixture from its generator, apply the byte-level validators to each, apply the "
         "structural validators to the runtime-generated cases, and compare exact CIW messages.",
-        f"{total - len(unrefused)}/{total} malformed inputs refused with their expected text; read_json accepted "
-        f"1e999 as {parsed_overflow} and "
-        f"{'raised ' + str(deep['session_read_json']['error_type']) if deep['session_read_json']['refused'] else 'accepted'}"
-        f" on 20000-deep nesting; Session.from_workspace raised {crash['error_type']} on a version-only workspace; an "
-        "extra top-level workspace field was accepted and dropped on re-save.",
+        f"{declared - len(unrefused)}/{inputs} malformed inputs refused with their declared CIW text ({declared} have "
+        f"one); the other {len(without)} are counterexamples ({'; '.join(f'{k}: {v}' for k, v in outcomes_without.items())}); "
+        f"read_json accepted 1e999 as {parsed_overflow} and "
+        f"{'raised ' + str(deep['session_read_json']['error_type']) if deep['session_read_json']['error_type'] else 'accepted'}"
+        f" on 20000-deep nesting; the extra top-level workspace field was "
+        f"{'dropped' if extra['dropped_on_resave'] else 'kept'} on re-save; committed fixtures "
+        f"{'match their generator' if committed is not None and not sum(map(len, committed.values())) else 'not compared' if committed is None else 'differ from their generator'}.",
         "Exact string comparison of CIW-generated text; messages from Python's json module and interpreter "
         "exceptions are retained but not compared, because they vary between interpreter versions.",
         ["duplicate keys", "NaN and ±Infinity literals", "float overflow", "truncation", "invalid UTF-8",
@@ -1108,11 +1212,14 @@ def _mutated(value, generator):
 
 
 def _identity_study(seed=9601, count=24):
-    """exchange._identity over records sealed by the lab's own canonical encoder (not json.dumps).
+    """exchange._identity over records sealed by the lab-written canonical encoder.
 
     ``canonical_text`` is written from the producer specification (sorted
-    members, no spaces, literal non-ASCII, JSON escapes, shortest float repr),
-    so acceptance is agreement between two encoders, not a copy checking itself.
+    members, no spaces, literal non-ASCII, JSON escapes, shortest float repr)
+    without calling ``json.dumps``, and the study first checks that it agrees
+    byte for byte with the ``json.dumps`` call ``exchange._identity`` uses. Both
+    are CIW-side code, so acceptance of valid records follows from that
+    agreement; it is not an independent check of ``_identity``.
     """
     import numpy as np
     from .. import exchange
@@ -1315,9 +1422,9 @@ def provider_free_conformance(ctx):
     wrong_mutated = sum(not row["observed"].startswith("refused") for row in mutated)
     extras_accepted = sum(row["observed"] == "accepted" for row in extras)
     findings = [
-        finding("exchange._identity accepts every synthetic result and verification record sealed by an "
-                "independently written canonical encoder, in any member order, and refuses every single-field "
-                "mutation and a forged identity", "computational_pipeline",
+        finding("exchange._identity accepts every synthetic result and verification record sealed by a lab-written "
+                "canonical encoder that agrees byte for byte with json.dumps, in any member order, and refuses every "
+                "single-field mutation and a forged identity", "computational_pipeline",
                 {key: identity[key] for key in ("valid", "accepted", "reordered_accepted", "encoder_agreement",
                                                 "mutations", "refused")},
                 {"generator": {"name": "ciw.lab seeded nested JSON records", "seed": 9601, "count": 24},
@@ -1363,18 +1470,18 @@ def provider_free_conformance(ctx):
          f"{len(candidates)} synthetic ESM inspect/capture responses over telemetry and calibrated bundle stubs"],
         "Accepted or refused (with message) per record or response.",
         "All valid accepted, all single-field mutations refused, identity invariant under member order.",
-        "Seal records with the lab's own canonical encoder (checked against json.dumps), re-validate them with "
-        "members reordered, mutate each non-identity field and the identity itself; build valid ESM responses and "
-        "apply every boundary mutation.",
+        "Seal records with the lab-written canonical encoder (checked byte for byte against the json.dumps call "
+        "exchange._identity uses), re-validate them with members reordered, mutate each non-identity field and the "
+        "identity itself; build valid ESM responses and apply every boundary mutation.",
         f"{identity['refused']}/{identity['mutations']} identity mutations refused; "
         f"{len(mutated) - wrong_mutated}/{len(mutated)} candidate mutations refused; {extras_accepted} response(s) "
         "with unknown fields accepted.",
         "Exact.",
         ["member-order dependence", "identity forgery", "admission/state/truth flags",
          "binding to request, time, digest and bundle", "capture receipt consistency"],
-        ["Acceptance of valid records is agreement between the lab's canonical encoder and exchange._identity "
-         "(both CIW-side code written to the same producer specification); producer-sealed artifacts are "
-         "accepted only in T097's PPDA/SCR/SET roundtrip, when those checkouts are bound.",
+        ["Acceptance of valid records follows from the lab encoder's byte-for-byte agreement with the json.dumps "
+         "call exchange._identity uses (both CIW-side code, same origin), so it is not independent evidence; "
+         "producer-sealed artifacts are tested only in T097's PPDA/SCR/SET roundtrip, when those checkouts are bound.",
          "JSON escaping (for example \\u00e9 for é) is resolved by the JSON parser before _identity sees a "
          "record, so it is not an identity property and is not tested here.",
          "The bundle stubs contain only the fields validate_response reads; full native bundles need providers.",
@@ -1609,7 +1716,7 @@ def exact_provider_integrations(ctx):
                 roundtrip_reason = "roundtrip failed: " + _sanitized(f"{type(exc).__name__}: {exc}",
                                                                      bound_paths + [scratch])
     ctx.artifact_json("integration.json", _located({
-        "scr_identity": {k: identity[k] for k in ("head", "tree", "tracked_sha256", "tracked_files", "cargo_locks")},
+        "scr_identity": {k: identity[k] for k in ("head", "tree", "tracked_sha256", "tracked_files", "lockfiles")},
         "scr_pins": comparison, "engine": None if engine is None else {"origin": engine["origin"], "sha256": engine["sha256"]},
         "optional_providers": optional, "blocked": blocked, "set_reason": set_reason,
         "roundtrip_reason": roundtrip_reason or None, "parts": parts}, _host_bindings(ctx)))
@@ -1758,23 +1865,43 @@ def _pin_consistency() -> dict:
 REVISION_REFUSAL = "SOURCE_PIN_MISMATCH: The bound checkout is not at the declared revision"
 
 
+def _control_revision(role, identity, pins):
+    """(revision, declared_in) of the first CIW pin of another repository that is not this checkout's HEAD."""
+    repository = providers.REPOSITORIES.get(role, role)
+    candidates = sorted((pin["revision"], pin["declared_in"]) for other, entries in pins.items()
+                        if providers.REPOSITORIES.get(other, other) != repository for pin in entries
+                        if pin["revision"] != identity["head"])
+    return candidates[0] if candidates else None
+
+
 def _adapter_outcomes(role, path, identity, pins) -> list:
-    """CIW's own subprocess adapter against every module pin CIW declares for the role."""
+    """CIW's own subprocess adapter against every module pin CIW declares for the role.
+
+    A control row runs the role's first module pin with a revision CIW pins for
+    another repository, so the refusal side is exercised even when every
+    declared pin of the role is at HEAD.
+    """
     from ..adapters.protocol import AdapterRefusal
     from ..adapters.subprocess import PinnedSubprocessAdapter
-    rows = []
-    for pin in pins.get(role, []):
-        if not pin.get("module"):
-            continue
+
+    def attempt(pin, revision):
         try:
-            PinnedSubprocessAdapter(path, pin["revision"], pin["module"], source_root=pin["source_root"])
-            outcome = "accepted"
+            PinnedSubprocessAdapter(path, revision, pin["module"], source_root=pin["source_root"])
+            return "accepted"
         except AdapterRefusal as exc:
-            outcome = f"{exc.code}: {exc}"
+            return f"{exc.code}: {exc}"
         except ValueError as exc:
-            outcome = f"ValueError: {exc}"
-        rows.append({"declared_in": pin["declared_in"], "revision": pin["revision"],
-                     "at_head": pin["revision"] == identity["head"], "outcome": outcome})
+            return f"ValueError: {exc}"
+
+    module_pins = [pin for pin in pins.get(role, []) if pin.get("module")]
+    rows = [{"declared_in": pin["declared_in"], "revision": pin["revision"], "at_head": pin["revision"] == identity["head"],
+             "control": False, "outcome": attempt(pin, pin["revision"])} for pin in module_pins]
+    control = _control_revision(role, identity, pins) if module_pins else None
+    if control is not None:
+        revision, source = control
+        rows.append({"declared_in": f"control: {module_pins[0]['declared_in']} module at the {source} revision",
+                     "revision": revision, "at_head": False, "control": True,
+                     "outcome": attempt(module_pins[0], revision)})
     return rows
 
 
@@ -1824,6 +1951,13 @@ def provider_identities(ctx):
     consistency = _pin_consistency()
     roles = sorted(role for role in providers.REPOSITORIES if role in ctx.providers)
     identities, comparisons, adapters, errors = {}, {}, {}, {}
+    # Bound interpreters (for example plsr-python, ftr-python) that host provider code.
+    interpreters, interpreter_errors = {}, {}
+    for role in sorted(role for role, path in ctx.providers.items() if role.endswith("-python") and path):
+        try:
+            interpreters[role] = providers.interpreter_identity(ctx.providers[role])
+        except (ValueError, OSError, subprocess.SubprocessError) as exc:
+            interpreter_errors[role] = type(exc).__name__
     for role in roles:
         try:
             identities[role] = providers.checkout_identity(ctx.providers[role])
@@ -1845,16 +1979,19 @@ def provider_identities(ctx):
                 errors["scr-engine"] = type(exc).__name__
     ctx.artifact_json("provider-identities.json", _located({
         "identities": identities, "comparisons": comparisons, "adapter_pin_checks": adapters, "errors": errors,
+        "interpreters": interpreters, "interpreter_errors": interpreter_errors,
         "ciw_pins": pins, "pins_by_repository": consistency["by_repository"], "engine": None if engine is None else {
             "origin": engine["origin"], "sha256": engine["sha256"], "byte_count": len(engine["binary"]),
             "toolchain": None if engine["build"] is None else {k: engine["build"][k] for k in ("cargo", "rustc")}}},
         _host_bindings(ctx)))
     input_data = [f"{role}: {providers.REPOSITORIES[role]} at {identities[role]['head']}" if role in identities
                   else f"{role}: not a readable Git repository root" for role in roles]
+    input_data += [f"{role}: bound interpreter (version and digest in provider-identities.json)"
+                   for role in sorted(interpreters.keys() | interpreter_errors.keys())]
     if not identities:
         fields = _fields(
             "Every bound provider checkout is clean and at a CIW pin, and its bytes reproduce its Git tree.",
-            "Identity = (HEAD, HEAD^{tree}, SHA-256 over tracked working bytes, Cargo.lock SHA-256, engine SHA-256).",
+            "Identity = (HEAD, HEAD^{tree}, SHA-256 over tracked working bytes, lockfile SHA-256, engine SHA-256).",
             input_data, "None: no readable provider checkout is bound.", "Pins matched; recomputed tree equals Git's.",
             "Blocked: bind providers with --provider ROLE=PATH for roles " + ", ".join(sorted(providers.REPOSITORIES)),
             f"No checkout identity computed ({len(roles)} bound paths unreadable); the CIW pin table is retained in "
@@ -1905,14 +2042,35 @@ def provider_identities(ctx):
                                sum(identities[role]["recomputed_tree"] == identities[role]["tree"]
                                    for role in modified))]},
             uncertainty=EXACT_COUNT, tolerance=EXACT))
-    again = {role: providers.checkout_identity(ctx.providers[role])["tracked_sha256"] for role in identities}
-    findings.append(finding(
-        "Tracked-source and Cargo.lock digests of every readable bound checkout", "provenance",
-        {role: {"tracked_sha256": identities[role]["tracked_sha256"], "tracked_files": identities[role]["tracked_files"],
-                "cargo_locks": identities[role]["cargo_locks"]} for role in sorted(identities)},
-        {"checks": [_check("digests that change on an immediate second read",
-                           sum(again[role] != identities[role]["tracked_sha256"] for role in identities))]},
-        uncertainty=EXACT_COUNT, tolerance=EXACT))
+    if clean:
+        # A second reader of the same digests: blob bytes from Git's object database, not the working tree.
+        differing, object_errors = 0, []
+        for role in clean:
+            try:
+                second = providers.head_object_digests(ctx.providers[role])
+            except (ValueError, OSError, subprocess.SubprocessError) as exc:
+                object_errors.append(f"{role}: {type(exc).__name__}")
+                differing += 1
+                continue
+            first = identities[role]
+            differing += int(second["tracked_sha256"] != first["tracked_sha256"])
+            differing += int(second["tracked_files"] != first["tracked_files"])
+            differing += sum(second["lockfiles"].get(name) != first["lockfiles"].get(name)
+                             for name in second["lockfiles"].keys() | first["lockfiles"].keys())
+        findings.append(finding(
+            "Tracked-source and lockfile digests of every clean bound checkout agree between its working tree and "
+            "Git's HEAD objects", "provenance",
+            {role: {"tracked_sha256": identities[role]["tracked_sha256"], "tracked_files": identities[role]["tracked_files"],
+                    "lockfiles": identities[role]["lockfiles"]} for role in clean},
+            {"independent_check": {**_check("tracked-source and lockfile digests differing between the working-tree "
+                                            "reading and the Git object reading", differing),
+                                   "producer": {"implementation": "ciw.lab.exchange_provenance_bundles_providers"
+                                                                  ".checkout_identity (working-tree bytes)",
+                                                "revision": __version__},
+                                   "checker": {"implementation": "git cat-file --batch of HEAD blobs, hashed with "
+                                                                 "SHA-256", "revision": _git_version()}},
+             **({"notes": {"object_read_errors": object_errors}} if object_errors else {})},
+            uncertainty=EXACT_COUNT, tolerance=EXACT))
     rows = [(role, row) for role in sorted(adapters) for row in adapters[role]]
     if rows:
         checks = []
@@ -1926,53 +2084,98 @@ def provider_identities(ctx):
                 checks.append(_refusal(reference, "SOURCE_PIN_MISMATCH", row["outcome"].split(":", 1)[0]))
         findings.append(finding(
             "CIW's pinned subprocess adapter accepts each clean bound checkout for the module pins at its HEAD and "
-            "refuses it for every other module pin", "provenance",
+            "refuses it at any other revision, including a control revision taken from another repository's pin",
+            "provenance",
             {role: {"at_head": sorted(row["declared_in"] for row in adapters[role] if row["at_head"]),
-                    "refused": sorted(row["declared_in"] for row in adapters[role] if row["outcome"] != "accepted")}
-             for role in sorted(adapters) if adapters[role]},
+                    "refused_declared_pins": sorted(row["declared_in"] for row in adapters[role]
+                                                    if not row["control"] and row["outcome"] != "accepted"),
+                    "control_refused": any(row["control"] and row["outcome"] != "accepted" for row in adapters[role])}
+             for role in sorted(adapters) if adapters[role]}
+            | {"refusal_cases": sum(not row["at_head"] for _, row in rows),
+               "acceptance_cases": sum(row["at_head"] for _, row in rows)},
             {"checks": checks}, uncertainty=EXACT_COUNT, tolerance=EXACT))
     if liveness is not None:
         findings.append(finding(
             "The SCR engine recorded for this run executes the SCR heat descriptor on the survey input",
             "numerical", {"engine_origin": engine["origin"],
-                          "cargo_lock_sha256": identities["scr"]["cargo_locks"].get("crates/Cargo.lock"),
+                          "cargo_lock_sha256": identities["scr"]["lockfiles"].get("crates/Cargo.lock"),
                           "survey_output": liveness["cases"][0]["values"],
                           "descriptor_sha256": liveness["descriptor_sha256"]},
             _provider_basis(identities["scr"], engine), uncertainty=EXACT_INTEGER, tolerance=EXACT))
     findings += _engine_origin_findings(ctx, engine)
+    if "plsr-python" in interpreters or "plsr-python" in interpreter_errors:
+        findings.append(_plsr_installation_finding(interpreters.get("plsr-python"),
+                                                   interpreter_errors.get("plsr-python")))
     findings.append(finding(
         "A matching HEAD, tree and lock digest authenticates the upstream repository, toolchain and built engine",
         "provenance", "not established: digests are not signatures", {}, expected_not_established=True))
     state = _settle("partial" if refused or errors else "completed", findings)
     adapter_refused = sorted(role for role, role_rows in adapters.items()
-                             if any(row["outcome"] != "accepted" for row in role_rows))
+                             if any(not row["control"] and row["outcome"] != "accepted" for row in role_rows))
+    controls_refused = sorted(role for role, role_rows in adapters.items()
+                              if any(row["control"] and row["outcome"] != "accepted" for row in role_rows))
     fields = _fields(
         "Every bound provider checkout is clean and at a CIW pin; its working bytes reproduce its Git tree; its "
-        "lockfiles and the engine used in this run are recorded.",
+        "lockfiles, the bound provider interpreters and the engine used in this run are recorded.",
         "Git object ids: blob = H('blob' len NUL bytes), tree = H('tree' len NUL sorted(mode name NUL id)); "
-        "tracked digest = SHA-256 over 'mode kind sha256(bytes) path' lines in ls-tree order.",
+        "tracked digest = SHA-256 over 'mode kind sha256(bytes) path' lines in ls-tree order, computed from the "
+        "working tree and again from Git's HEAD objects; lockfiles = Cargo.lock, uv.lock, poetry.lock, Pipfile.lock, "
+        "package-lock.json and the other recognised names, plus fully pinned requirements*.txt.",
         input_data,
-        "git rev-parse, git ls-tree, working-tree bytes, CIW pin tables, PinnedSubprocessAdapter outcomes.",
-        "HEAD equals a CIW pin; pinned trees equal; recomputed tree equals Git's; digests stable.",
-        "For each bound role read HEAD and tree, hash every tracked file, recompute the tree independently of "
-        "Git, compare with every CIW pin for that role (refusing mismatches with their reasons), and let CIW's own "
-        "adapter accept or refuse each module pin; execute the SCR engine once on the survey input when available.",
+        "git rev-parse, git ls-tree, git cat-file, working-tree bytes, CIW pin tables, PinnedSubprocessAdapter "
+        "outcomes, interpreter probes.",
+        "HEAD equals a CIW pin; pinned trees equal; recomputed tree equals Git's; working-tree and Git-object "
+        "digests equal; the adapter refuses every revision other than HEAD.",
+        "For each bound role read HEAD and tree, hash every tracked file and lockfile, recompute the tree "
+        "independently of Git, reread the digests from Git's HEAD objects, compare with every CIW pin for that role "
+        "(refusing mismatches with their reasons), and let CIW's own adapter accept or refuse each module pin plus a "
+        "control revision from another repository; probe each bound interpreter (version, executable digest, "
+        "installed PLSR sources); execute the SCR engine once on the survey input when available.",
         f"accepted {accepted}, refused {refused}, unreadable {sorted(errors)}; {tree_mismatch} tree recomputation "
-        f"mismatches among clean checkouts; adapter refusals for {adapter_refused}; "
+        f"mismatches among clean checkouts; adapter refusals of declared pins for {adapter_refused}, of the "
+        f"control revision for {controls_refused}; "
+        f"interpreters recorded {sorted(interpreters)}, unreadable {sorted(interpreter_errors)}; "
         f"engine {None if engine is None else engine['origin']}.",
         "Exact digests.",
         ["dirty or untracked files", "wrong revision", "pinned tree drift", "modified tracked bytes",
-         "executable-bit drift", "one checkout serving several different CIW pins", "adapter accepting a wrong pin"],
-        ["Engine and interpreter digests depend on the toolchain; they are retained as provenance in the artifact "
-         "and the basis notes, not compared as regression values.",
+         "executable-bit drift", "one checkout serving several different CIW pins", "adapter accepting a wrong pin",
+         "working-tree lockfile differing from HEAD", "installed PLSR drifting from its pin"],
+        ["Engine and interpreter digests depend on the toolchain and the host's Python build; they are retained as "
+         "provenance in provider-identities.json (engine, interpreters) and provider_runtime_identity, not compared as "
+         "regression values. A PLSR install commit is recorded only when the installer wrote one (direct_url.json).",
          "Pins declared only in .github/workflows/exchange.yml are mirrored in EXCHANGE_WORKFLOW_PINS.",
          "Checkout paths are kept in provider-identities.json only; report prose names repositories and revisions."],
         "T099: verify the locked offline SCR build and record the SP1 build requirements.")
     bound = {role: {"head": identities[role]["head"], "tree": identities[role]["tree"]} for role in sorted(identities)}
     if engine is not None:
         bound["scr"]["engine_sha256"] = engine["sha256"]
+    for role, record in sorted(interpreters.items()):
+        bound[role] = {"python_version": record["python_version"], "sha256": record["sha256"],
+                       **({"plsr_version": record["plsr"].get("version"),
+                           "plsr_install_commit": record["plsr"].get("install_commit")} if record.get("plsr") else {})}
     fields["provider_runtime_identity"] = _runtime_identity(changed, bound)
     return {"state": state, "fields": fields, "findings": findings}
+
+
+def _plsr_installation_finding(record, error):
+    """The PLSR runtime installed in the bound plsr-python interpreter against ciw/plsr-runtime.json."""
+    manifest = providers.plsr_manifest()
+    plsr = (record or {}).get("plsr") or {}
+    files = plsr.get("files") or {}
+    differing = sorted(set(files) ^ set(manifest["files"])
+                       | {name for name in files.keys() & manifest["files"].keys() if files[name] != manifest["files"][name]})
+    return finding(
+        "The PLSR runtime installed in the bound plsr-python interpreter has CIW's pinned version and source file "
+        "digests", "provenance",
+        {"pin": manifest["commit"], "package_version": plsr.get("version"), "source_files": len(files),
+         "differing_source_files": differing, **({"probe_error": error} if error else {})},
+        {"checks": [_check("installed PLSR versions differing from ciw/plsr-runtime.json",
+                           int(plsr.get("version") != manifest["package_version"])),
+                    _check("installed PLSR source files missing, extra or differing from ciw/plsr-runtime.json",
+                           len(differing) + (0 if files else len(manifest["files"])))],
+         "notes": {"install_commit": plsr.get("install_commit"), "install_kind": plsr.get("install_kind"),
+                   "hashing": "SHA-256 of CRLF-normalised .py, .json and py.typed files, as ciw.plsr_engine hashes them"}},
+        uncertainty=EXACT_COUNT, tolerance=EXACT)
 
 
 def _git_version() -> str:
@@ -2041,7 +2244,7 @@ def locked_cargo_build(ctx):
     ctx.artifact_json("sp1-requirements.json", {"requirements": providers.SP1_REQUIREMENTS, "probes": probes,
                                                 "attempted": False})
     digests = sorted({row["binary_sha256"] for row in ok})
-    lock = identity["cargo_locks"].get("crates/Cargo.lock")
+    lock = identity["lockfiles"].get("crates/Cargo.lock")
     provider_note = {"repository": providers.REPOSITORIES["scr"], "revision": identity["head"],
                      "source_tree": identity["tree"], "binary_sha256": digests}
     findings = [finding(
@@ -2214,6 +2417,45 @@ def _energy_origin_study():
             "same_occurrence_collision": collision, "fresh_occurrence": fresh_outcome, "fresh_bundle": fresh_data}
 
 
+def _provider_origin_study():
+    """A fabricated, content-consistent numerical-heat bundle as CIW readers see it (T092's counterexample).
+
+    The bundle is saved in a workspace, then read back through the workbench
+    protocol and through ``ciw.lab.bridge.classify_workspace`` (``ciw lab
+    classify``), which validates the workspace like ``Session.from_workspace``.
+    """
+    from ..declared_workload import PINS
+    from ..instruments import make_demo_run
+    from ..proved_heat import PIN as PROVED_HEAT_PIN
+    from ..workbench import Workbench
+    from .bridge import classify_workspace
+    Session = _session_class()
+    fabricated = fabricated_heat_catalog([0, 1, 2, 3, 0], experiment_id="ciw-lab-t100-fabricated-heat")
+    bundle_id = fabricated["bundles"][0]["bundle_id"]
+    with tempfile.TemporaryDirectory(prefix="ciw-lab-t100-provider-") as scratch:
+        scratch = Path(scratch)
+        session = Session(make_demo_run(), scratch / "session")
+        session.workbench = Workbench.restore(fabricated)
+        path = session.save_workspace(scratch / "workspace.json")
+        runtime = Client(session).ok("bundle.get", {"bundle_id": bundle_id})["runtimes"]["scr"]
+        try:
+            classification = classify_workspace(path)
+            outcome = "accepted"
+        except ValueError as exc:
+            classification, outcome = None, str(exc)
+    labels = []
+    for item in (classification or {}).get("items", []):
+        if item["kind"] == "workbench_bundle" and item["identity"] == bundle_id:
+            labels = [record["evidence_status"] for record in item["findings"]
+                      if record["claim"].endswith("numerical result")]
+    return {"reopen": outcome, "numerical_labels": labels,
+            "reader_view": {"revision_is_ciw_pin": runtime["revision"] == PINS["numerical-heat"]["revision"],
+                            "source_tree_is_ciw_pin": runtime["source_tree"] == PROVED_HEAT_PIN["source_tree"],
+                            "engine_source_binding": runtime["engine"]["source_binding"],
+                            "adapter_version": runtime["adapter_version"]},
+            "bundle_id": bundle_id}
+
+
 def _free_energy_study():
     from .. import free_energy_view
     from ..free_energy_profile import POLICY, SOURCE_SCHEMA, validate_source
@@ -2271,6 +2513,7 @@ def visibly_distinct_results(ctx):
     rows, violations, rendering = _audit_reports(ctx)
     energy = _energy_origin_study()
     free = _free_energy_study()
+    provider = _provider_origin_study()
     # Validator self-test: a physical finding relabelled with a computational label is refused.
     physical = finding("Synthetic fixture reflects real device energy", "physical", 1.0,
                        {"generator": {"name": "synthetic fixture"}})
@@ -2285,7 +2528,8 @@ def visibly_distinct_results(ctx):
     ctx.artifact_json("visibility-audit.json", {"reports": rows, "task_ids_audited": present,
                                                 "reports_expected_for_the_full_queue": EXPECTED_EARLIER_REPORTS,
                                                 "label_violations": violations, "rendering_violations": rendering,
-                                                "energy": energy, "free_energy": free, "forged_relabel": forged,
+                                                "energy": energy, "free_energy": free, "provider_origin": provider,
+                                                "forged_relabel": forged,
                                                 "rendering_probe_row": row})
     findings = []
     audited = bool(rows)
@@ -2357,40 +2601,64 @@ def visibly_distinct_results(ctx):
                             _check("view basis literals naming the synthetic reference",
                                    int("synthetic_reference_not_hardware_measurement" in free["view_basis_literals"]),
                                    1, "ge", "invariant")]}, uncertainty=EXACT_COUNT, tolerance=EXACT),
+        finding("A fabricated, content-consistent numerical-heat bundle reopens and is labelled provider_backed by the "
+                "workspace classifier, as a provider result is", "computational_pipeline",
+                {"reopen": provider["reopen"], "numerical_labels": provider["numerical_labels"],
+                 "reader_view": provider["reader_view"]},
+                {"checks": [_refusal("classify_workspace (Session.from_workspace validation) of the saved fabricated "
+                                     "bundle", "accepted", provider["reopen"]),
+                            _check("fabricated bundle numerical findings not labelled provider_backed",
+                                   sum(label != "provider_backed" for label in provider["numerical_labels"])
+                                   + int(not provider["numerical_labels"]))]},
+                uncertainty=EXACT_COUNT, tolerance=EXACT, counterexample={
+                    "statement": "CIW's retained records and their classification keep provider-backed results "
+                                 "visibly distinct from fabricated ones",
+                    "witness": {"bundle_id": provider["bundle_id"], "values": [0, 1, 2, 3, 0],
+                                "classified": provider["numerical_labels"], **provider["reader_view"]}}),
         finding("The relabelled energy log is a physical GPU energy measurement", "physical",
                 "not established: origin is operator-declared and unauthenticated", {}),
         finding("The synthetic energy fixture characterizes real NVML counter accuracy", "sensor_performance",
                 "not established: synthetic fixture", {}),
     ]
     fields = _fields(
-        "Retained lab reports and CIW's own records keep synthetic, provider-backed and physical results visibly "
-        "distinct, and relabelling is refused wherever the record can detect it.",
+        "Retained lab reports keep synthetic, provider-backed and physical labels visibly distinct; CIW's own records "
+        "refuse a synthetic-to-physical relabel wherever the record can detect it; and CIW's records are tested for "
+        "whether they tell a provider result from a fabricated, content-consistent one (T092's counterexample, read "
+        "here through the workspace classifier).",
         "Allowed labels per domain: physical -> {not_established, hardware_measured, independently_verified with "
         "acquisition}; authority -> {not_established}; computational -> never hardware_measured.",
         ["retained reports ctx.output_dir/reports/T001-T099 (only those present when T100 runs)",
          "examples/energy-accuracy/baseline.json (synthetic, embedded)", "ciw.free_energy_profile.POLICY",
-         "ciw.free_energy_view source text"],
+         "ciw.free_energy_view source text",
+         "fabricated numerical-heat catalog (values [0, 1, 2, 3, 0], fabricated runtime identity at the CIW revision pin)"],
         "validate_report, per-finding label/domain rules, rendered Markdown rows; CIW analysis/refusal outputs and "
-        "the retained bundle of a fresh-occurrence relabel.",
+        "the retained bundle of a fresh-occurrence relabel; the workbench and classify_workspace views of a "
+        "fabricated provider-kind bundle.",
         "Zero violations; relabels refused where detectable; physical claims not established.",
         "Audit every retained report below T100 present in the output directory; forge a relabelled physical "
         "finding; render a claim containing a pipe character; relabel the energy fixture unsealed, resealed in the "
         "same occurrence and resealed in a fresh occurrence (reading the retained bundle's classification); relabel "
-        "free-energy source policies; inspect the free-energy truth panel basis.",
+        "free-energy source policies; inspect the free-energy truth panel basis; save a fabricated numerical-heat "
+        "bundle and read it through bundle.get and classify_workspace.",
         f"{len(rows)} of {EXPECTED_EARLIER_REPORTS} earlier reports present and audited: {len(violations)} label "
         f"violations, {len(rendering)} rendering violations; the pipe probe "
         f"{'kept' if kept else 'lost'} its label column; fresh-occurrence energy relabel "
         f"{energy['fresh_occurrence']} and classified {fresh.get('classification')}; same-occurrence relabel: "
-        f"{energy['same_occurrence_collision']}.",
+        f"{energy['same_occurrence_collision']}; fabricated heat bundle reopen {provider['reopen']}, classified "
+        f"{provider['numerical_labels']}.",
         "Exact.",
         ["unknown label", "physical finding with computational label", "authority finding established",
          "label missing from rendered row", "origin relabel with and without resealing", "occurrence rebinding",
-         "free-energy policy relabel"],
+         "free-energy policy relabel", "fabricated provider-kind bundle classified as provider-backed"],
         ["The report audit covers only reports present in the output directory when T100 runs: a section-only run "
          "audits its own section, a full run T001-T099; stale reports from earlier runs in the same directory are "
          "included if present (task ids in visibility-audit.json).",
-         f"Retained claims containing a pipe or newline: {pipe_claims}; the rendering probe uses a synthetic claim."],
-        ("Authenticate energy-log origin at acquisition (outside the workbench)." if kept else
-         "Escape claim text in ciw.lab.report.render_markdown; authenticate energy-log origin at acquisition "
-         "(outside the workbench)."))
+         f"Retained claims containing a pipe or newline: {pipe_claims}; the rendering probe uses a synthetic claim.",
+         "The only reader-visible trace of the fabricated bundle is a runtime source tree that differs from CIW's "
+         "pinned tree; neither reopen nor classify_workspace compares it (reader_view in visibility-audit.json)."],
+        ("Compare a retained provider runtime identity (revision and source tree) with CIW's pins when reopening "
+         "or classifying; authenticate energy-log origin at acquisition (outside the workbench)." if kept else
+         "Escape claim text in ciw.lab.report.render_markdown; compare a retained provider runtime identity with "
+         "CIW's pins when reopening or classifying; authenticate energy-log origin at acquisition (outside the "
+         "workbench)."))
     return {"state": _settle("completed" if audited else "partial", findings), "fields": fields, "findings": findings}

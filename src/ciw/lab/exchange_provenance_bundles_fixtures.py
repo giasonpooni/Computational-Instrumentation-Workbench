@@ -3,10 +3,12 @@
 Scope: the exact bytes of six small CIW example sources (embedded so the section
 also runs from an installed wheel, where ``examples/`` is absent), a reader for
 further ``examples/`` sources when the repository is reachable, a protocol
-client, an execution guard that refuses every CIW execution entry point while a
+client, an execution guard that refuses the CIW execution entry points (session
+analyses, recording operations, the workbench, every workbench workflow's
+session/step/adapter entry points, provider adapters and subprocesses) while a
 retained workspace is reopened, a synthetic numerical-heat bundle whose values
-were never computed by a provider, a canonical JSON encoder written from the
-exchange producer specification (not ``json.dumps``), the malformed exchange
+were never computed by a provider, a lab-written canonical JSON encoder (checked
+byte for byte against ``json.dumps`` by T096 and the tests), the malformed exchange
 fixture catalogue, the digest manifest of the golden workspaces under
 ``tests/fixtures/lab`` and the platform fingerprint they were written on.
 
@@ -22,8 +24,10 @@ from __future__ import annotations
 import base64
 from contextlib import contextmanager
 from copy import deepcopy
+from functools import lru_cache
 from hashlib import sha256
 from importlib import import_module
+import inspect
 import json
 from pathlib import Path
 import struct
@@ -176,8 +180,10 @@ def source_payload(kind: str, raw: bytes, label: str) -> dict:
     return {"kind": kind, "label": label, "bytes_b64": base64.b64encode(raw).decode("ascii")}
 
 
-# Every CIW path that executes an analysis, a workflow step, a provider process
-# or a trusted binding. Reopening a retained workspace must reach none of them.
+# CIW paths outside the workbench workflows that execute an analysis, a recording
+# operation, a provider process or a trusted binding. execution_paths() adds the
+# entry points of every workbench workflow kind. Reopening a retained workspace
+# must reach none of them.
 EXECUTION_PATHS = (
     ("subprocess", None, "Popen"),
     ("ciw.adapters.subprocess", None, "_bounded_process"),
@@ -202,8 +208,45 @@ EXECUTION_PATHS = (
     ("ciw.declared_workload", "DeclaredWorkflow", "create_session"),
     ("ciw.declared_workload", "DeclaredWorkflow", "replay_session"),
 )
-# Pure recomputation used by validation; counted, not forbidden.
+# Pure recomputation used by validation; counted, not forbidden. Only the energy
+# analysis is counted: it is the builtin analysis that reopening the kinds these
+# tasks reopen (energy-accuracy, numerical-heat) recomputes. Validators of other
+# kinds may recompute commitments or checks in process without being counted.
 RECOMPUTATION_PATHS = (("ciw.energy_records", None, "analyze"),)
+# Methods through which ciw.workbench runs a workflow kind (where the workflow defines them).
+WORKFLOW_METHODS = ("_adapters", "_step", "_execute", "_execute_selected", "create_session", "replay_session")
+
+
+@lru_cache(maxsize=1)
+def workflow_entry_points() -> tuple:
+    """(module, class or None, attribute) of every workbench workflow kind's entry points.
+
+    Discovered from ``ciw.workbench._workflow`` for every operation kind, so a
+    kind added to the workbench is guarded without editing this list. Methods
+    are patched on the class that defines them.
+    """
+    from ..workbench import OPERATIONS, _workflow
+    found = set()
+    for kind in sorted(OPERATIONS):
+        workflow = _workflow(kind)
+        for name in WORKFLOW_METHODS:
+            if inspect.ismodule(workflow):
+                if callable(getattr(workflow, name, None)):
+                    found.add((workflow.__name__, None, name))
+                continue
+            owner = next((cls for cls in type(workflow).__mro__ if name in vars(cls)), None)
+            if owner is not None and owner is not object:
+                found.add((owner.__module__, owner.__qualname__, name))
+    return tuple(sorted(found, key=lambda entry: (entry[0], entry[1] or "", entry[2])))
+
+
+def execution_paths() -> tuple:
+    """Every guarded execution entry point: EXECUTION_PATHS plus the discovered workflow entry points."""
+    return EXECUTION_PATHS + tuple(entry for entry in workflow_entry_points() if entry not in EXECUTION_PATHS)
+
+
+def path_label(entry) -> str:
+    return ".".join(filter(None, entry))
 
 
 _MISSING = object()
@@ -244,14 +287,13 @@ def execution_guard(refuse: bool = True):
         return count
 
     try:
-        for paths, wrap in ((EXECUTION_PATHS, intercept), (RECOMPUTATION_PATHS, counting)):
+        for paths, wrap in ((execution_paths(), intercept), (RECOMPUTATION_PATHS, counting)):
             for module, qualname, attribute in paths:
                 target = owner(module, qualname)
                 # Save the owner's own entry: an inherited method is restored by
                 # deleting the shadowing attribute, not by copying it down.
                 saved.append((target, attribute, vars(target).get(attribute, _MISSING)))
-                setattr(target, attribute, wrap(".".join(filter(None, (module, qualname, attribute))),
-                                                getattr(target, attribute)))
+                setattr(target, attribute, wrap(path_label((module, qualname, attribute)), getattr(target, attribute)))
         yield record
     finally:
         for target, attribute, original in reversed(saved):
@@ -344,6 +386,26 @@ def merge_catalogs(first: dict, second: dict) -> dict:
     sources, bundles = first["sources"] + second["sources"], first["bundles"] + second["bundles"]
     return {"schema": first["schema"], "revision": len(sources) + len(bundles),
             "sources": deepcopy(sources), "bundles": deepcopy(bundles)}
+
+
+# A trusted binding that names no checkout: T091 puts it in a session's workbench
+# to show that saving and reopening never carry a binding across.
+SYNTHETIC_BINDING = {"scr": "/ciw-lab/synthetic-binding/scr", "engine": "/ciw-lab/synthetic-binding/execution-cli"}
+
+
+def add_provider_content(session, values, *, experiment_id: str = "ciw-lab-provider-kind-bundle") -> str:
+    """Give a session a provider-kind numerical-heat bundle and a synthetic trusted binding; returns the bundle id.
+
+    The bundle is :func:`fabricated_heat_catalog` (content-consistent, fabricated
+    runtime identity). The binding goes into the workbench's trusted-binding
+    table, the state ``Workbench.bind_workflow`` leaves after it has validated a
+    real checkout; it points at no checkout and nothing executes through it.
+    """
+    from ..workbench import Workbench
+    fabricated = fabricated_heat_catalog(values, experiment_id=experiment_id)
+    session.workbench = Workbench.restore(merge_catalogs(session.workbench.serialize(), fabricated))
+    session.workbench._bindings["numerical-heat"] = {role: Path(path) for role, path in SYNTHETIC_BINDING.items()}
+    return fabricated["bundles"][0]["bundle_id"]
 
 
 # ------------------------------------------------------------------ golden bundles

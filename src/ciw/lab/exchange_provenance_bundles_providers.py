@@ -1,18 +1,22 @@
 """Provider checkout identities, locked builds and pinned integrations for T097-T099.
 
 Scope: read-only identity of operator-bound provider checkouts (HEAD, HEAD
-tree, a digest of every tracked file's working bytes, Cargo.lock digests), an
-independent recomputation of the Git tree id from those bytes, comparison with
-every provider pin CIW declares, the SCR ``execution-cli`` locked offline build,
-execution of the SCR heat kernel through its own Python API and through CIW's
-numerical-heat workflow, and the SET/PPDA exchange integrations when their
+tree, a digest of every tracked file's working bytes, the digest of every
+recognised lockfile), a second reading of the same digests from Git's HEAD
+objects, an independent recomputation of the Git tree id from the working
+bytes, comparison with every provider pin CIW declares, the identity of bound
+provider interpreters (version, executable digest and, for PLSR, the installed
+runtime's version and source digests), the SCR ``execution-cli`` locked offline
+build, execution of the SCR heat kernel through its own Python API and through
+CIW's numerical-heat workflow, and the SET/PPDA exchange integrations when their
 exact checkouts are bound.
 
 Non-claims: a matching HEAD and tree show that the bound bytes are the pinned
 source; they do not authenticate the upstream repository, the Rust toolchain or
-a built binary beyond the inputs actually executed. Engine digests depend on
-the toolchain and are retained as provenance, not as regression values. Nothing
-here clones, checks out, repairs or writes into a provider checkout.
+a built binary beyond the inputs actually executed. Engine and interpreter
+digests depend on the toolchain and host build and are retained as provenance,
+not as regression values. Nothing here clones, checks out, repairs or writes
+into a provider checkout.
 """
 from __future__ import annotations
 
@@ -21,6 +25,7 @@ from importlib import resources
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
@@ -70,6 +75,28 @@ SP1_REQUIREMENTS = {
     "gate": "scripts/check_proved_heat.py via .github/workflows/proved-heat.yml",
 }
 _CACHE_DIRS = (".venv", "venv", "__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache")
+# Dependency lockfiles recognised by name; requirements*.txt counts only when
+# every requirement in it is pinned (see is_lockfile).
+LOCKFILE_NAMES = frozenset({"Cargo.lock", "uv.lock", "poetry.lock", "Pipfile.lock", "pdm.lock", "package-lock.json",
+                            "npm-shrinkwrap.json", "pnpm-lock.yaml", "yarn.lock", "Gemfile.lock", "go.sum",
+                            "composer.lock", "flake.lock"})
+_REQUIREMENTS = re.compile(r"requirements[\w.-]*\.txt")
+PLSR_DISTRIBUTION = "parameterized-lyapunov-stability-runtime"
+
+
+def is_lockfile(name: str, data: bytes) -> bool:
+    """A recognised lockfile, or a requirements*.txt whose every requirement is pinned (``==``/``===``/``@``)."""
+    leaf = name.rsplit("/", 1)[-1]
+    if leaf in LOCKFILE_NAMES:
+        return True
+    if not _REQUIREMENTS.fullmatch(leaf):
+        return False
+    requirements = []
+    for line in data.decode("utf-8", "replace").splitlines():
+        line = line.split(" #", 1)[0].strip()
+        if line and not line.startswith(("#", "-")):
+            requirements.append(line.rstrip("\\").strip())
+    return bool(requirements) and all("==" in line or " @ " in line for line in requirements)
 
 
 def ciw_pins() -> dict:
@@ -103,13 +130,13 @@ def ciw_pins() -> dict:
     return pins
 
 
-def _git(path: Path, *arguments: str) -> bytes:
+def _git(path: Path, *arguments: str, stdin: bytes | None = None) -> bytes:
     # No optional index refresh or fsmonitor: inspection never writes to an
     # operator-owned checkout.
     environment = {**os.environ, "GIT_OPTIONAL_LOCKS": "0"}
     return subprocess.run(["git", "--no-replace-objects", "-c", "core.fsmonitor=false", "-c", "core.autocrlf=false",
                            "-C", str(path), *arguments], check=True, capture_output=True, timeout=120,
-                          env=environment).stdout
+                          env=environment, input=stdin).stdout
 
 
 def _tree_id(entries: dict, algorithm: str) -> bytes:
@@ -139,7 +166,7 @@ def checkout_identity(path) -> dict:
     if algorithm not in ("sha1", "sha256"):
         raise ValueError(f"Unsupported Git object format: {algorithm}")
     root: dict = {}
-    manifest, mismatched, locks, gitlinks = [], [], {}, 0
+    manifest, mismatched, lockfiles, gitlinks = [], [], {}, 0
     for entry in _git(path, "ls-tree", "-r", "-z", "--full-tree", "HEAD").split(b"\0"):
         if not entry:
             continue
@@ -171,8 +198,8 @@ def checkout_identity(path) -> dict:
         node[leaf] = (working_mode if working_mode != "missing" else mode, blob.digest())
         digest = sha256(data).hexdigest()
         manifest.append(f"{mode} blob {digest} {name}")
-        if name.endswith("Cargo.lock"):
-            locks[name] = digest
+        if is_lockfile(name, data):
+            lockfiles[name] = digest
     exclusions = [f":(exclude,glob)**/{name}/**" for name in _CACHE_DIRS]
     untracked = [item for item in _git(path, "ls-files", "--others", "-z", "--", ".", *exclusions).split(b"\0") if item]
     dirty = bool(_git(path, "status", "--porcelain=v1", "--untracked-files=no"))
@@ -180,7 +207,108 @@ def checkout_identity(path) -> dict:
             "recomputed_tree": _tree_id(root, algorithm).hex(), "tracked_files": len(manifest),
             "gitlinks": gitlinks, "tracked_sha256": sha256("\n".join(manifest).encode("utf-8")).hexdigest(),
             "mismatched_files": sorted(mismatched), "untracked_outside_caches": len(untracked), "dirty": dirty,
-            "cargo_locks": locks}
+            "lockfiles": dict(sorted(lockfiles.items()))}
+
+
+def head_object_digests(path) -> dict:
+    """The tracked-source and lockfile digests of :func:`checkout_identity`, read from Git's HEAD objects.
+
+    A second reader of the same quantities: blob bytes come from ``git cat-file
+    --batch`` (the object database), not from the working tree, so for a clean
+    checkout both readings agree and a working-tree reading error does not.
+    """
+    path = Path(path).resolve()
+    listing, blobs = [], []
+    for entry in _git(path, "ls-tree", "-r", "-z", "--full-tree", "HEAD").split(b"\0"):
+        if not entry:
+            continue
+        metadata, raw_name = entry.split(b"\t", 1)
+        mode, kind, expected = metadata.decode("ascii").split()
+        listing.append((mode, kind, expected, raw_name.decode("utf-8")))
+        if kind == "blob":
+            blobs.append(expected)
+    output = _git(path, "cat-file", "--batch", stdin=b"".join(oid.encode("ascii") + b"\n" for oid in blobs))
+    contents, offset = {}, 0
+    for oid in blobs:
+        end = output.index(b"\n", offset)
+        header = output[offset:end].decode("ascii").split()
+        if header[0] != oid or header[1] != "blob":
+            raise ValueError(f"Unexpected git cat-file record for {oid}")
+        size = int(header[2])
+        contents[oid] = output[end + 1:end + 1 + size]
+        offset = end + 1 + size + 1
+    manifest, lockfiles = [], {}
+    for mode, kind, expected, name in listing:
+        if kind == "commit":
+            manifest.append(f"{mode} commit {expected} {name}")
+            continue
+        data = contents[expected]
+        digest = sha256(data).hexdigest()
+        manifest.append(f"{mode} blob {digest} {name}")
+        if is_lockfile(name, data):
+            lockfiles[name] = digest
+    return {"tracked_files": len(manifest), "tracked_sha256": sha256("\n".join(manifest).encode("utf-8")).hexdigest(),
+            "lockfiles": dict(sorted(lockfiles.items()))}
+
+
+_INTERPRETER_PROBE = r'''
+import hashlib, json, platform, sys
+from importlib import metadata, resources
+out = {"python_version": platform.python_version(), "implementation": platform.python_implementation()}
+try:
+    distribution = metadata.distribution(sys.argv[1])
+except metadata.PackageNotFoundError:
+    distribution = None
+if distribution is not None:
+    record = {"version": distribution.version}
+    try:
+        direct = json.loads(distribution.read_text("direct_url.json") or "null") or {}
+    except ValueError:
+        direct = {}
+    record["install_commit"] = (direct.get("vcs_info") or {}).get("commit_id")
+    record["install_kind"] = next((kind for kind in ("vcs_info", "dir_info", "archive_info") if kind in direct), None)
+    files = {}
+
+    def walk(node, prefix=""):
+        for child in node.iterdir():
+            if child.name == "__pycache__":
+                continue
+            name = prefix + child.name
+            if child.is_dir():
+                walk(child, name + "/")
+            elif name.endswith((".py", ".json")) or child.name == "py.typed":
+                # CRLF-normalised, as ciw.plsr_engine and ciw.lab.lyapunov_provider hash them.
+                files[name] = hashlib.sha256(child.read_bytes().replace(b"\r\n", b"\n")).hexdigest()
+    try:
+        walk(resources.files("lyapunov"))
+        record["files"] = files
+    except Exception as exc:
+        record["error"] = type(exc).__name__
+    out["plsr"] = record
+print(json.dumps(out, sort_keys=True))
+'''
+
+
+def interpreter_identity(executable) -> dict:
+    """Version and executable SHA-256 of a bound interpreter, plus the installed PLSR runtime if present.
+
+    The executable digest follows symlinks (a virtual environment's entry point
+    hashes as its base interpreter). Nothing is installed or imported into this
+    process; the probe runs in isolated mode.
+    """
+    executable = Path(executable)
+    data = executable.read_bytes()
+    with tempfile.TemporaryDirectory(prefix="ciw-lab-interpreter-") as directory:
+        completed = subprocess.run([str(executable), "-I", "-B", "-c", _INTERPRETER_PROBE, PLSR_DISTRIBUTION],
+                                   capture_output=True, text=True, timeout=120, cwd=directory)
+    if completed.returncode:
+        raise ValueError("Interpreter probe failed: " + (completed.stderr.strip().splitlines() or ["no output"])[-1])
+    return {"sha256": sha256(data).hexdigest(), "byte_count": len(data), "entry_is_symlink": executable.is_symlink(),
+            **json.loads(completed.stdout)}
+
+
+def plsr_manifest() -> dict:
+    return json.loads(resources.files("ciw").joinpath("plsr-runtime.json").read_text(encoding="utf-8"))
 
 
 def status_entries(path) -> int:
