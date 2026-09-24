@@ -44,24 +44,46 @@
   ],
   "domain_rules": [
     {
-      "rule": "The native start must equal the declared cover point modulo the retained lattice. alpha and beta must be integers within 1e-12, and the reduced coordinates must lie in [0,1). Lattice orientation must have omega1 real and positive and Im(omega2) > 0.",
-      "evidence": "src/ciw/geodesic_reference.py:196-208"
+      "rule": "The native start must equal the declared cover point modulo the retained lattice: the lattice coordinates alpha and beta of the declared start minus the native start must be integers within 1e-12, and the native start's reduced coordinates must lie in [0,1) within the same absolute 1e-12 allowance. Lattice orientation must have omega1 real and positive and Im(omega2) > 0.",
+      "evidence": "`ciw.geodesic_reference:_check_flat` checks the orientation, then solves for alpha and beta in the retained omega1/omega2 basis; the 1e-12 allowance covers binary64 basis conversion at the source bounds.",
+      "code": [
+        "ciw.geodesic_reference:_check_flat"
+      ]
     },
     {
-      "rule": "Trajectory consistency: exactly `samples` path parameters strictly increasing from 0 to 1. Both point lists start within 1e-12 of the reference start. Crossings are ordered in (prev,1], their count is at most |m|+|n|, and lattice steps lie in {-1,0,1}. The trajectory's lattice, winding, start, length and closed fields agree with the reference.",
-      "evidence": "src/ciw/geodesic_reference.py:220-254"
+      "rule": "Trajectory consistency: exactly `samples` path parameters strictly increasing from 0 to 1. Both point lists (parallelogram_points, cover_points) hold exactly `samples` {re,im} points, and each list's first point lies within 1e-12 of the reference start in each coordinate. Crossings are ordered in (prev,1] starting after 0, their count is at most |m|+|n|, and each lattice step is an integer pair in {-1,0,1}. The trajectory's lattice (shape equal to the declared tau, omega1 and omega2 equal to the reference), winding (equal to the declared (m,n), which the reference winding must also equal), start, length and closed fields agree with the reference.",
+      "evidence": "`ciw.geodesic_reference:_check_flat`, reached through `ciw.geodesic_reference:_check_data` from the `ciw.geodesic_reference:GeodesicReferenceWorkflow.check_data` hook after invoke and in `ciw.pipelines.runner:check_step` for the retained step and its reproduction.",
+      "code": [
+        "ciw.geodesic_reference:_check_flat",
+        "ciw.geodesic_reference:_check_data",
+        "ciw.geodesic_reference:GeodesicReferenceWorkflow.check_data"
+      ]
     },
     {
-      "rule": "Native geometry invariants: closed loop, zero Gaussian curvature, positive area and length, arclength interval [0,length], plus a fixed handoff object and a fixed list of three limitation strings.",
-      "evidence": "src/ciw/geodesic_reference.py:209-219"
+      "rule": "Native geometry invariants: fixed reference schema, claim scope, source repository and consumer repository; geometry tau and winding equal to the declared ones; closed loop, zero Gaussian curvature, positive area and length, arclength interval [0,length]; geometry_digest equal to sha256 of the canonical geometry; plus a fixed handoff object (declared-curvature-profile, constant, curvature 0.0, the geometry's arclength interval) and a fixed list of three limitation strings.",
+      "evidence": "`ciw.geodesic_reference:_check_flat` recomputes the geometry digest over `ciw.core.canonical:canonical` and compares the handoff and limitations exactly.",
+      "code": [
+        "ciw.geodesic_reference:_check_flat",
+        "ciw.core.canonical:canonical"
+      ]
     },
     {
-      "rule": "Provider invocation shim. It builds complex tau and start, unpacks the winding, calls flat_geodesic_reference and trace_closed_geodesic, and serialises dataclasses, ndarrays and complex values to JSON.",
-      "evidence": "src/ciw/geodesic_reference.py:134-155,171"
+      "rule": "Provider invocation shim (role ftr). It builds complex tau and start, unpacks the winding, calls flat_geodesic_reference(tau, m, n, start) without a sample count and trace_closed_geodesic(tau, m, n, start, samples) with the declared samples, retains the reference through its own as_dict, and serialises dataclasses, ndarrays, NumPy scalars and complex values to JSON.",
+      "evidence": "The shim is `ciw.geodesic_reference:_BOOTSTRAP`, run by `ciw.geodesic_reference:GeodesicReferenceWorkflow.invoke` through `ciw.pipelines.runner:PipelineRunner.run_provider`, which re-verifies the pinned provider after it runs; a nonzero exit becomes GEODESIC_REFERENCE_REFUSED.",
+      "code": [
+        "ciw.geodesic_reference:_BOOTSTRAP",
+        "ciw.geodesic_reference:GeodesicReferenceWorkflow.invoke",
+        "ciw.pipelines.runner:PipelineRunner.run_provider"
+      ]
     },
     {
-      "rule": "The shim encodes complex values as {'re','im'} (src/ciw/geodesic_reference.py:143), and _pair and _check_flat assume that encoding (geodesic_reference.py:172-174,188-190). The validator and the invocation shim are coupled, so they have to be versioned together as one plugin; they cannot be split into a descriptor shim plus a generic payload schema.",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "The shim `ciw.geodesic_reference:_BOOTSTRAP` encodes complex values as {'re','im'} (its native() encoder, which also matches the encoding the pinned provider's as_dict uses for the reference geometry), and `ciw.geodesic_reference:_pair` and `ciw.geodesic_reference:_check_flat` assume that encoding. The validator and the invocation shim are coupled, so they have to be versioned together as one plugin (today the invoke and check_data hooks of `ciw.geodesic_reference:GeodesicReferenceWorkflow`); they cannot be split into a descriptor shim plus a generic payload schema.",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.geodesic_reference:_BOOTSTRAP",
+        "ciw.geodesic_reference:_pair",
+        "ciw.geodesic_reference:_check_flat"
+      ]
     }
   ],
   "investigations": [

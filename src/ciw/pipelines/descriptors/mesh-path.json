@@ -44,24 +44,47 @@
   ],
   "domain_rules": [
     {
-      "rule": "Mesh topology recomputed from the declaration. No coincident vertices. Triangles non-degenerate under exact Fraction cross products. Triangle quality (twice area over longest edge squared) above the declared threshold. No duplicate triangles. Manifold edges (at most two incident) and connected vertex links with degrees in {1,2}. No isolated vertices. Component labels, boundary and orientation-conflict counts. The retained mesh_quality must equal the recomputation, with an ulp tolerance on minimum quality.",
-      "evidence": "src/ciw/geometry_mesh_contract.py:50-122,203-209"
+      "rule": "Mesh topology recomputed from the declaration. No coincident vertices (exactly equal coordinate triples). Triangles non-degenerate under exact Fraction cross products and free of zero-length edges. Every triangle's quality (twice area over longest edge squared) strictly above the declared threshold. No duplicate triangles. Manifold edges (at most two incident triangles) and connected vertex links with degrees in {1,2} and zero or two degree-1 vertices. No isolated vertices. Component labels, boundary and orientation-conflict counts and the boundary, disconnected and inconsistent_face_orientation flags are recomputed. The retained mesh_quality must have exactly the recomputed fields and equal the recomputation, with a 64-ulp tolerance on minimum_triangle_quality only. The check_data hook, through `ciw.geometry_research:_check_data`, applies this to every native result before the step is sealed (`ciw.pipelines.runner:PipelineRunner._step`) and again to every retained step (`ciw.pipelines.runner:check_step`).",
+      "evidence": "`ciw.geometry_mesh_contract:_geometry` recomputes the topology; `ciw.geometry_mesh_contract:_result` recomputes it from the request and compares the retained mesh_quality using `ciw.geometry_mesh_contract:_near`; reached through `ciw.geometry_mesh_contract:validate_result` from `ciw.geometry_research:_check_data`",
+      "code": [
+        "ciw.geometry_mesh_contract:_geometry",
+        "ciw.geometry_mesh_contract:_result",
+        "ciw.geometry_mesh_contract:_near"
+      ]
     },
     {
-      "rule": "Dijkstra optimality certificate. Every retained finite distance must satisfy the edge inequality |d_a - d_b| <= w + 64*n*ulp. There must be a tight-predecessor chain from the source that witnesses every reachable vertex; hop rank is used so binary64 plateaus are tolerated. Unreachable vertices have null distances.",
-      "evidence": "src/ciw/geometry_mesh_contract.py:216-230,243-267"
+      "rule": "Shortest-path optimality certificate for the retained edge_dijkstra distances; no solver is executed. The source distance is exactly 0, vertices in the source's component have finite nonnegative distances and every other vertex has a null distance. Every retained finite distance must satisfy the edge inequality |d_a - d_b| <= w + 64*n*ulp(max(d_a, d_b, w)), with n the vertex count. There must be a tight-predecessor chain from the source that witnesses every vertex with a finite distance; reachability over tight edges (hop rank) is certified rather than a strictly decreasing binary64 value, so equal-distance plateaus are tolerated.",
+      "evidence": "`ciw.geometry_mesh_contract:_result`",
+      "code": [
+        "ciw.geometry_mesh_contract:_result"
+      ]
     },
     {
-      "rule": "The target path is simple, uses only declared edges, runs from source to target, and has a length equal (fsum within the ulp budget) to the target distance. Reachability matches the connected components.",
-      "evidence": "src/ciw/geometry_mesh_contract.py:228-242, _near 40-47"
+      "rule": "The target path is simple, has at most n vertices, uses only declared edges, runs from source to target, and has a length equal (fsum within the 64*n-ulp budget of `ciw.geometry_mesh_contract:_near`) to the target distance, which must equal the retained vertex distance of the target exactly. Reachability must be a Boolean that matches the connected components; an unreachable target has an empty path and a null target distance.",
+      "evidence": "`ciw.geometry_mesh_contract:_result`, tolerance in `ciw.geometry_mesh_contract:_near`",
+      "code": [
+        "ciw.geometry_mesh_contract:_result",
+        "ciw.geometry_mesh_contract:_near"
+      ]
     },
     {
-      "rule": "Euclidean lower bounds for each vertex, target lower and upper bounds, a triangle-inequality residual within distance_absolute_tolerance, and a nonnegative gap max(0, d - lower). Unreachable targets have null bounds.",
-      "evidence": "src/ciw/geometry_mesh_contract.py:268-292"
+      "rule": "Euclidean lower bounds for each vertex (nonnegative, within 64 ulp of the straight-line distance from the source vertex), a target lower bound equal to the target's Euclidean bound, a triangle-inequality residual in [0, distance_absolute_tolerance] that matches max(0, lower - d) over finite distances within the 64*n-ulp budget, and roundoff_certification not_established. A reachable target has an upper bound equal to its distance and a nonnegative gap matching max(0, d - lower) within the same 64*n-ulp budget. An unreachable target keeps its Euclidean lower bound but has a null upper bound and a null gap.",
+      "evidence": "`ciw.geometry_mesh_contract:_result`, tolerance in `ciw.geometry_mesh_contract:_near`",
+      "code": [
+        "ciw.geometry_mesh_contract:_result",
+        "ciw.geometry_mesh_contract:_near"
+      ]
     },
     {
-      "rule": "Admission-time mesh topology and quality policy. The minimum triangle quality threshold is a declared setting in [0, .01] (src/ciw/geometry_mesh_contract.py:164-165), enforced when the source is admitted (geometry_mesh_contract.py:75) and again on the result (geometry_mesh_contract.py:205-209). Non-manifold and isolated-vertex meshes are refused as unsupported, not as malformed JSON (geometry_mesh_contract.py:85-97).",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "Admission-time mesh topology and quality policy. The minimum triangle quality threshold is a declared setting in [0, .01] (`ciw.geometry_mesh_contract:_request`), enforced on every triangle when the source is admitted (`ciw.geometry_mesh_contract:_geometry`, reached from the parse_source hook through `ciw.geometry_research:_source` and `ciw.geometry_mesh_contract:validate_request`) and again on the result, whose retained minimum quality must stay above it (`ciw.geometry_mesh_contract:_result`). Non-manifold edges, non-manifold vertex links and isolated vertices are refused as ValueErrors with their own messages, not as a malformed declaration: `ciw.geometry_mesh_contract:validate_request` wraps only TypeError, KeyError, IndexError, OverflowError, RecursionError and UnicodeError as malformed, and `ciw.geometry_research:_source` does not wrap ValueError. Such a source is rejected at workbench source admission (`ciw.workbench:_source`), before any execution.",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.geometry_mesh_contract:_request",
+        "ciw.geometry_mesh_contract:_geometry",
+        "ciw.geometry_mesh_contract:validate_request",
+        "ciw.geometry_research:_source",
+        "ciw.geometry_mesh_contract:_result"
+      ]
     }
   ],
   "investigations": [

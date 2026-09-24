@@ -44,32 +44,65 @@
   ],
   "domain_rules": [
     {
-      "rule": "The arclength grid must be refined for the declared curvature: abs(K)*(s[i+1]-s[i])^2 <= 0.01 (with slack 1e-14), with the grid starting at 0 and strictly increasing.",
-      "evidence": "src/ciw/geodesic_reference.py:105-113"
+      "rule": "The arclength grid must be refined for the declared curvature: abs(K)*(s[i+1]-s[i])^2 <= 0.01 (with slack 1e-14), with the grid of 2..128 samples starting at 0 and strictly increasing.",
+      "evidence": "`ciw.geodesic_reference:_source`, the `ciw.geodesic_reference:GeodesicReferenceWorkflow.parse_source` hook, refuses a grid that is too short or long (`ciw.geodesic_reference:MAX_SAMPLES`), does not start at zero, does not strictly increase or is too coarse for |K| on admission.",
+      "code": [
+        "ciw.geodesic_reference:_source",
+        "ciw.geodesic_reference:GeodesicReferenceWorkflow.parse_source",
+        "ciw.geodesic_reference:MAX_SAMPLES"
+      ]
     },
     {
-      "rule": "The declared starting covariance must be exactly symmetric positive-semidefinite in rational arithmetic (b==c, a,d >= 0, ad >= b^2), with entries of magnitude at most 1 and basis 'assumed'.",
-      "evidence": "src/ciw/geodesic_reference.py:67-72,119-126"
+      "rule": "The declared starting covariance must be exactly symmetric positive-semidefinite in rational arithmetic (b==c, a,d >= 0, ad >= b^2), with entries of magnitude at most 1, basis 'assumed' and a nonempty note.",
+      "evidence": "`ciw.geodesic_reference:_covariance` checks the matrix in Fraction arithmetic; `ciw.geodesic_reference:_source` applies it with the magnitude, basis and note checks on admission.",
+      "code": [
+        "ciw.geodesic_reference:_covariance",
+        "ciw.geodesic_reference:_source"
+      ]
     },
     {
-      "rule": "The native record's source_digest must equal 'sha256:' + sha256(canonical({curvature:[K], constant:true, span:[0, s_end]})) truncated to 32 hex digits.",
-      "evidence": "src/ciw/geodesic_reference.py:278-281"
+      "rule": "The native record's source_digest must equal 'sha256:' + the first 32 hex digits of sha256(canonical({curvature:[float(K)], constant:true, span:[0.0, float(s_end)]})): K and the grid end s_end are converted to binary64 floats before canonicalization, so an integer K or s_end in the source is still hashed as a float.",
+      "evidence": "`ciw.geodesic_reference:_check_curved` recomputes the digest over `ciw.core.canonical:canonical` of the declared description.",
+      "code": [
+        "ciw.geodesic_reference:_check_curved",
+        "ciw.core.canonical:canonical"
+      ]
     },
     {
-      "rule": "Transfer consistency: per-sample vectors of length n; initial [a,a',b,b'] = [1,0,0,1]; curvature broadcast; grid and resolution min/max step equal to the retained arclength deltas; resolution method rk4; propagated covariance of length n with nonnegative variances and first matrix == C0; separation and heading_change at index 0 equal to the declared perturbation.",
-      "evidence": "src/ciw/geodesic_reference.py:270-302,318-329"
+      "rule": "Transfer consistency: per-sample vectors of length n (arclength, curvature, a, a', b, b', separation, heading_change, determinant); record arclength equal to the declared grid; initial [a,a',b,b'] = [1,0,0,1]; curvature broadcast; record units and starting covariance equal to the declared ones; grid start 0 and end s_end, grid min/max step and resolution max step equal to the min/max retained arclength deltas; resolution method rk4; propagated covariance of length n with nonnegative variances and first matrix == C0; separation and heading_change at index 0 equal to the declared perturbation.",
+      "evidence": "`ciw.geodesic_reference:_check_curved`, reached through `ciw.geodesic_reference:_check_data` from the `ciw.geodesic_reference:GeodesicReferenceWorkflow.check_data` hook after invoke and in `ciw.pipelines.runner:check_step` for the retained step and its reproduction.",
+      "code": [
+        "ciw.geodesic_reference:_check_curved",
+        "ciw.geodesic_reference:_check_data",
+        "ciw.geodesic_reference:GeodesicReferenceWorkflow.check_data",
+        "ciw.pipelines.runner:check_step"
+      ]
     },
     {
-      "rule": "Claim limits: validity is heading-only (max_lateral null, directions ['heading'], reference 'closed-form', pointwise_error == relative_tolerance, max_heading > 0). Convergence records must be established=false with a 'not-established:' basis and null metrics (a single solve cannot claim step-doubling convergence). Calibration is unbound. Provenance and path_type_basis are fixed text.",
-      "evidence": "src/ciw/geodesic_reference.py:283-317"
+      "rule": "Claim limits: validity is heading-only (established true, max_lateral null, directions ['heading'], reference 'closed-form', relative_tolerance and pointwise_error == the declared relative_tolerance, max_heading > 0). The resolution and validity convergence records must be established=false with a 'not-established:' basis and null metrics (a single solve cannot claim step-doubling convergence). Calibration is unbound. Provenance and path_type_basis are fixed text.",
+      "evidence": "`ciw.geodesic_reference:_check_curved`",
+      "code": [
+        "ciw.geodesic_reference:_check_curved"
+      ]
     },
     {
       "rule": "Invocation shim composing integrate_jacobi, then as_transfer_record(units, StartingCovariance(units, **covariance), relative_tolerance, observation_mode), then propagate_declared_covariance, separation, heading_change and determinant.",
-      "evidence": "src/ciw/geodesic_reference.py:156-168"
+      "evidence": "The shim is `ciw.geodesic_reference:_BOOTSTRAP` (role csg), run by `ciw.geodesic_reference:GeodesicReferenceWorkflow.invoke` through `ciw.pipelines.runner:PipelineRunner.run_provider`, which re-verifies the pinned provider after it runs; a nonzero exit becomes GEODESIC_REFERENCE_REFUSED.",
+      "code": [
+        "ciw.geodesic_reference:_BOOTSTRAP",
+        "ciw.geodesic_reference:GeodesicReferenceWorkflow.invoke",
+        "ciw.pipelines.runner:PipelineRunner.run_provider"
+      ]
     },
     {
-      "rule": "The validity scope is fixed to observation_mode 'intrinsic-surface-distance' in two places: the source configuration const (src/ciw/geodesic_reference.py:31-33) and the native validity record (geodesic_reference.py:297). The pointwise_error must equal the declared relative_tolerance (298). Together these bound the scientific claim to heading-only transfer under one observation mode, so they are a claim policy, not a schema const.",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "The validity scope is fixed to observation_mode 'intrinsic-surface-distance' in two places: the source configuration, which must equal the curved-path-transfer entry of `ciw.geodesic_reference:POLICIES` exactly (`ciw.geodesic_reference:_source`) and whose observation_mode `ciw.geodesic_reference:_BOOTSTRAP` passes to as_transfer_record, and the native validity record (`ciw.geodesic_reference:_check_curved`, which also requires the record's observation_mode to equal the configured one). The pointwise_error must equal the declared relative_tolerance (`ciw.geodesic_reference:_check_curved`). Together these bound the scientific claim to heading-only transfer under one observation mode, so they are a claim policy, not a schema const.",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.geodesic_reference:POLICIES",
+        "ciw.geodesic_reference:_source",
+        "ciw.geodesic_reference:_BOOTSTRAP",
+        "ciw.geodesic_reference:_check_curved"
+      ]
     }
   ],
   "investigations": [

@@ -167,59 +167,131 @@
   "domain_rules": [
     {
       "rule": "Provider-output semantic re-derivation. It checks SIDT identity hashes, rank, degrees of freedom, condition limit and unknown parameter covariance; OIT eligibility; the GSIE snapshot and state id; EDSPT normalized covariance, D-opt/A-opt gains, affordability and tie-break ordering; and the YWIR admission verdict and token cap.",
-      "evidence": "identified_semantics.py:51-99 (SIDT), 146-173 (GSIE), 174-241 (gain and EDSPT), 242-272 (YWIR), entry validate_outputs at 273-286. Called from identified_design.py:506-507."
+      "evidence": "`ciw.identified_semantics:_sidt` (SIDT), `ciw.identified_semantics:_oit` (OIT), `ciw.identified_semantics:_gsie` (GSIE), `ciw.identified_semantics:_gain` and `ciw.identified_semantics:_edspt` (gain and EDSPT), `ciw.identified_semantics:_ywir` (YWIR), entry `ciw.identified_semantics:validate_outputs`. Called from `ciw.identified_design:_validate`.",
+      "code": [
+        "ciw.identified_semantics:validate_outputs",
+        "ciw.identified_semantics:_sidt",
+        "ciw.identified_semantics:_oit",
+        "ciw.identified_semantics:_gsie",
+        "ciw.identified_semantics:_edspt",
+        "ciw.identified_semantics:_ywir"
+      ]
     },
     {
-      "rule": "Source compatibility with the retained upstream. Identification state names, units and frame must equal the retained GSIE state. Every telemetry channel must use the same reference clock as the identification. Identification samples may not be later than the prior time.",
-      "evidence": "identified_design.py:200-207, 215-216"
+      "rule": "Source compatibility with the retained upstream. Identification state names must equal the upstream's declared observability state names, and state units and frame must equal the retained GSIE posterior (upstream step 4). Every telemetry channel must use the same reference clock as the identification. The last sample time of each declared training or holdout split may not be later than the retained prior time.",
+      "evidence": "`ciw.identified_design:_source_inner`, after `ciw.calibrated_observable:inspect_session` and `ciw.calibrated_observable:_validate` accept the upstream",
+      "code": [
+        "ciw.identified_design:_source_inner"
+      ]
     },
     {
       "rule": "Uncertainty gates. Prior-process and prior-candidate cross-covariance must be the declared zero (unknown blocks the operation). next_input must be an explicit zero. uncertainty_scope must be conditional on the point model. Candidate matrices must be exactly float-representable.",
-      "evidence": "identified_design.py:220-228, 250-251, 261-266"
+      "evidence": "`ciw.identified_design:_source_inner` (prediction and candidate checks against `ciw.identified_design:SCOPE`)",
+      "code": [
+        "ciw.identified_design:_source_inner",
+        "ciw.identified_design:SCOPE"
+      ]
     },
     {
       "rule": "Budget separation. The observation cost unit may never be inference_token, candidate cost units must match the budget, and YWIR owns only the inference-token budget.",
-      "evidence": "identified_design.py:240-241, 247-248, 279-280"
+      "evidence": "`ciw.identified_design:_source_inner` (design cost unit, candidate cost units, token_admission budget unit); the retained YWIR result's budget_unit is re-checked by `ciw.identified_semantics:_ywir`",
+      "code": [
+        "ciw.identified_design:_source_inner",
+        "ciw.identified_semantics:_ywir"
+      ]
     },
     {
       "rule": "Exact prediction time. target_time = prior.time + sample_interval must be exact in rational arithmetic.",
-      "evidence": "identified_design.py:317-321"
+      "evidence": "`ciw.identified_design:_request` (gsie branch, Fraction comparison); the retained GSIE time is re-checked against the request target_time by `ciw.identified_semantics:_gsie`",
+      "code": [
+        "ciw.identified_design:_request",
+        "ciw.identified_semantics:_gsie"
+      ]
     },
     {
       "rule": "Shim numeric transforms. EDSPT prior covariance is divided by the state scales, observation matrices are multiplied by the scales, and OIT eligibility is filtered to status 'observable'.",
-      "evidence": "identified_design.py:66-71, 81-91"
+      "evidence": "`ciw.identified_design:_BOOTSTRAP` (oit and edspt branches). From retained outputs, `ciw.identified_semantics:_edspt` re-derives the covariance division and `ciw.identified_semantics:_oit` re-derives the 'observable' filter; the observation-matrix scaling is not re-derived semantically and is reproduced only by exact pinned recomputation (`ciw.identified_design:_compare`).",
+      "code": [
+        "ciw.identified_design:_BOOTSTRAP",
+        "ciw.identified_semantics:_oit",
+        "ciw.identified_semantics:_edspt"
+      ]
     },
     {
-      "rule": "Declared evidence refs must be disjoint from operation ids and the model id.",
-      "evidence": "identified_design.py:166-178, 281-282"
+      "rule": "Declared evidence refs must be disjoint from the design and upstream calibrated operation ids and the model id. Retained-session validation also refuses a session, execution or result identity equal to a declared evidence ref.",
+      "evidence": "`ciw.identified_design:_declared_refs` collects the refs; `ciw.identified_design:_source_inner` refuses overlap with `ciw.identified_design:OPERATIONS`, `ciw.calibrated_observable:OPERATIONS` and the model id; `ciw.identified_design:_validate` refuses a session identity among the declared refs and adds the refs to the identity set that every execution and result identity must avoid",
+      "code": [
+        "ciw.identified_design:_declared_refs",
+        "ciw.identified_design:_source_inner",
+        "ciw.identified_design:_validate"
+      ]
     },
     {
-      "rule": "The occurrence id is injected into the provider. The kernel execution_id is passed into SIDT's input (identified_design.py:301) and validated as echoed in the output (identified_semantics.py:55). created_at is embedded in every result artifact (369). result_sha256 therefore depends on occurrence identity, which forces template recomputation that reuses the template's execution ids and created_at (381-382) and compares result_sha256 (534-537). Only sidt's numerical projection strips this (292-293).",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "The occurrence id is injected into the provider. The kernel execution_id is passed into SIDT's input by `ciw.identified_design:_request` and validated as echoed in the output by `ciw.identified_semantics:_sidt`. created_at is embedded in every result artifact by `ciw.identified_design:_result`. result_sha256 therefore depends on occurrence identity, which forces template recomputation in `ciw.identified_design:_execute` to reuse the template's execution ids and created_at, and `ciw.identified_design:_compare` compares result_sha256. Only sidt's numerical projection (`ciw.identified_design:_numerical`) strips this.",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.identified_design:_request",
+        "ciw.identified_design:_result",
+        "ciw.identified_design:_execute",
+        "ciw.identified_design:_compare",
+        "ciw.identified_design:_numerical",
+        "ciw.identified_semantics:_sidt"
+      ]
     },
     {
-      "rule": "Partial-chain refusal. A guard refusal after sidt/oit/gsie/edspt have run propagates out of _execute (384) and create_session (560), and none of the executed steps are retained. The owner's kernel 'retain refusal' would have to define whether partial executions are sealed.",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "Partial-chain refusal. A guard refusal raised by `ciw.identified_design:_request` after earlier steps have run (DESIGN_MODEL_* after sidt, DESIGN_NO_OBSERVABLE_CANDIDATE after sidt/oit/gsie, DESIGN_NO_AFFORDABLE_CANDIDATE after edspt), or a provider refusal from `ciw.identified_design:_invoke`, propagates out of `ciw.identified_design:_execute` and `ciw.identified_design:create_session` (or `ciw.identified_design:replay_session`). The result artifacts of the steps that already ran were sealed in memory by `ciw.identified_design:_result`, but they are discarded and none is retained. `ciw.workbench:Workbench.execute` and `ciw.workbench:Workbench.replay` keep the failure only through `ciw.workbench:Workbench._retain_refusal`, as a refused-execution record (identity, source, upstream and refusal code; result_id null), never as a partial session.",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.identified_design:_request",
+        "ciw.identified_design:_execute",
+        "ciw.workbench:Workbench._retain_refusal",
+        "ciw.workbench:_refusal_record"
+      ]
     },
     {
-      "rule": "Runtimes and pins are coupled to the upstream kind. The bundle retains runtime identities for all 11 roles (38, 397, 457), including fsrt/tbrt/mcur/cbsr/fdir, which no design step invokes. The oit/gsie/set pins are taken from calibrated-observable-runtimes.json (105-110). Checkouts are bound twice: design _adapters (559, 569) and calibrated.replay_session's own adapters (552-554).",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "Runtimes and pins are coupled to the upstream kind. The bundle retains runtime identities for all 11 roles (`ciw.identified_design:ROLES`, written by `ciw.identified_design:_execute` and required by `ciw.identified_design:_validate`), including fsrt/tbrt/mcur/cbsr/fdir, which no design step invokes. The oit/gsie/set pins are taken from calibrated-observable-runtimes.json by `ciw.identified_design:_pins`. Checkouts are bound twice: design `ciw.identified_design:_adapters` (in create_session and replay_session) and calibrated.replay_session's own adapters via `ciw.identified_design:_replay_upstream`.",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.identified_design:ROLES",
+        "ciw.identified_design:_pins",
+        "ciw.identified_design:_adapters",
+        "ciw.identified_design:_replay_upstream"
+      ]
     },
     {
-      "rule": "Downstream positional contract. identified_stability binds design steps[0] and steps[2] (identified_stability.py:180-181). Workbench reads step index 2 for design and 4 for calibrated (workbench.py:465), and reads upstream steps[5]/steps[6] (workbench.py:502, 511). The step order is a public output contract and must be frozen or exposed as named outputs.",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "Downstream positional contract. `ciw.identified_stability:_binding` binds design steps[0] and steps[2]. `ciw.workbench:_context` reads step index 2 for design and 4 for calibrated, and reads upstream steps[5]/steps[6]. The step order is a public output contract: `ciw.identified_design:_validate` accepts only the order of `ciw.identified_design:OPERATIONS`, so that order must stay frozen or be exposed as named outputs.",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.identified_stability:_binding",
+        "ciw.workbench:_context",
+        "ciw.identified_design:OPERATIONS"
+      ]
     },
     {
-      "rule": "Source admission needs the upstream. _source_inner fully validates and inspects the upstream (197, 206) before the compatibility checks. Workbench therefore bypasses the kind's _source at add_source (workbench.py:177-184).",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "Source admission needs the upstream. `ciw.identified_design:_source_inner` fully validates and inspects the upstream (`ciw.calibrated_observable:inspect_session`, `ciw.calibrated_observable:_validate`) before the compatibility checks. Workbench therefore bypasses the kind's _source at add_source: `ciw.workbench:_source` only checks the byte budget, canonical base64, the source schema and canonical JSON, and full admission happens in `ciw.identified_design:create_session` once an upstream is selected.",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.identified_design:_source_inner",
+        "ciw.workbench:_source",
+        "ciw.identified_design:create_session"
+      ]
     },
     {
-      "rule": "The source envelope differs from the other kinds. It uses 'configuration_digest' (394, 453) instead of 'experiment_digest' (declared_workload.py:348, acquired_window.py:240), and configuration is the whole source (395, 453). Unifying envelopes in the kernel requires either a migration or per-pipeline field names.",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "The source envelope differs from the other kinds. It uses 'configuration_digest' (`ciw.identified_design:_execute`, `ciw.identified_design:_validate`) instead of 'experiment_digest' (`ciw.pipelines.runner:PipelineRunner._execute`, `ciw.acquired_window:_wrap`), and configuration is the whole source rather than its configuration field. Unifying envelopes in the kernel requires either a migration or per-pipeline field names.",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.identified_design:_execute",
+        "ciw.identified_design:_validate"
+      ]
     },
     {
-      "rule": "Shim-derived fields feed guards. eligible_candidate_ids is computed inside the shim (70-71), consumed by the edspt guard (325-327), and re-verified in identified_semantics._oit (identified_semantics.py:100+). The shim output is not raw provider output.",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "Shim-derived fields feed guards. eligible_candidate_ids is computed inside the shim (`ciw.identified_design:_BOOTSTRAP`) and consumed by the edspt guard in `ciw.identified_design:_request`; it is re-verified only afterwards, when `ciw.identified_design:_validate` reaches `ciw.identified_semantics:_oit`. The shim output is not raw provider output.",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.identified_design:_BOOTSTRAP",
+        "ciw.identified_design:_request",
+        "ciw.identified_semantics:_oit"
+      ]
     }
   ],
   "investigations": [

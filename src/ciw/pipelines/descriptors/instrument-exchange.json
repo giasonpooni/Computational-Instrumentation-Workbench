@@ -33,24 +33,48 @@
   ],
   "domain_rules": [
     {
-      "rule": "Artifact identity rule: the identity field must equal sha256(schema || 0 || canonical(payload without the field)), except batch_id, which is a caller-declared reference",
-      "evidence": "src/ciw/exchange.py:99-108"
+      "rule": "Artifact identity rule: the identity field named for the artifact's schema must equal \"sha256:\" + hex SHA-256 of (schema UTF-8 bytes || a NUL byte || canonical JSON of the artifact without that field), except batch_id, which is a caller-declared reference. The adapter's own native verification records carry an identity computed the same way, and retained-bundle validation rechecks it with the same rule.",
+      "evidence": "`ciw.exchange:_identity` with identity fields from `ciw.exchange:_SCHEMAS`; native verification identity from `ciw.exchange_adapter:_identity`, rechecked by `ciw.exchange:_identity` in `ciw.exchange_adapter:_validate`",
+      "code": [
+        "ciw.exchange:_identity",
+        "ciw.exchange:_SCHEMAS",
+        "ciw.exchange_adapter:_identity",
+        "ciw.exchange_adapter:_validate"
+      ]
     },
     {
       "rule": "Link classification: each input_refs / subject_ref / source_artifact_refs reference is either matched_supplied_reference or unresolved_external_reference. Covariance validation is delegated to the pinned SET contract functions",
-      "evidence": "src/ciw/exchange.py:151-190"
+      "evidence": "`ciw.exchange:inspect_exchange` builds the links and calls the SET validator function named in `ciw.exchange:_SCHEMAS` for each artifact",
+      "code": [
+        "ciw.exchange:inspect_exchange",
+        "ciw.exchange:_SCHEMAS"
+      ]
     },
     {
       "rule": "Security: execute only the allowlisted source bytes after hashing, and never import the checkout's package initializer",
-      "evidence": "src/ciw/exchange.py:73-97"
+      "evidence": "`ciw.exchange:_validator` hashes the pinned source path against the packaged exchange-runtime.json pin and executes only those already-read bytes in a fresh module; `ciw.exchange_adapter:_runtime` first requires the pinned revision and source digest",
+      "code": [
+        "ciw.exchange:_validator",
+        "ciw.exchange_adapter:_runtime"
+      ]
     },
     {
-      "rule": "Bounds and shape rules apply before the pinned validator runs: at most 1 MiB per artifact and 8 MiB in total, JSON depth at most 64, and 1..64 components for non-verification artifacts (exchange.py:21-25, 117-150).",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "Bounds and shape rules apply before the pinned validator runs: 1..32 artifacts, at most 1 MiB per artifact and 8 MiB in total, JSON depth at most 64, and 1..64 components for non-verification artifacts. The adapter's typed source envelope is itself capped at 4 MiB and 1..32 artifacts with distinct identities.",
+      "evidence": "added by adversarial verification; limits enforced in `ciw.exchange:inspect_exchange` and `ciw.exchange:_read` before `ciw.exchange:_validator` runs; envelope bounds in `ciw.exchange_adapter:_source`",
+      "code": [
+        "ciw.exchange:inspect_exchange",
+        "ciw.exchange:_read",
+        "ciw.exchange_adapter:_source"
+      ]
     },
     {
-      "rule": "A producer verification artifact that records a failed outcome is still a conformant record, not a failure (exchange.py:111-116 docstring; status fixed at :193).",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "A producer verification artifact that records a failed outcome is still a conformant record, not a failure: the native result retains it unchanged, and the adapter's own native verification (outcome passed) attests only pinned SET content conformance of the bundle, never the producer's claimed outcome.",
+      "evidence": "added by adversarial verification; `ciw.exchange:inspect_exchange` docstring and its fixed \"conformant\" report status; `ciw.exchange_adapter:_validate` requires the native result artifacts to equal the typed source artifacts; `ciw.exchange_adapter:_native_verification` records only a pinned_set_conformance check whose subject is the bundle digest",
+      "code": [
+        "ciw.exchange:inspect_exchange",
+        "ciw.exchange_adapter:_validate",
+        "ciw.exchange_adapter:_native_verification"
+      ]
     }
   ],
   "investigations": [],

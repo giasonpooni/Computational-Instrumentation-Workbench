@@ -47,32 +47,61 @@
   ],
   "domain_rules": [
     {
-      "rule": "Independent re-derivation of the PLSR float64-decrease-v1 verdict: decrease matrix A^T P A - P symmetrised, floating-point resolution bound with gamma=(n+3)u/(1-(n+3)u), scaled value/decrease/min_P/max_decrease checked to rel 1e-12, and the status ladder NOT_CERTIFIED / CERTIFIED_WITH_MARGIN / MARGIN_LOW / DECREASE_NOT_DEFINITE / NUMERICAL_INCONCLUSIVE",
-      "evidence": "identified_stability.py:270-289 (plus plsr_engine._validate_diagnostics at plsr_engine.py:254-336 called at identified_stability.py:268-269)"
+      "rule": "Independent re-derivation of the PLSR float64-decrease-v1 verdict: the record's A and P diagnostics must equal the model's exactly and its decrease_matrix the recomputed symmetrised A^T P A - P exactly; scaled_value and scaled_decrease (on the sample divided by state_scale), min_P, max_decrease and resolution n*(2*gamma*n^2*max|A|^2*max|P| + u*max|P|) + n^3*u*max|decrease| (max|.| the largest absolute entry, u the float64 unit roundoff, gamma=(n+3)u/(1-(n+3)u)) are recomputed, and the retained values must be non-null and agree to rel 1e-12; for every code except CERTIFICATE_NOT_POSITIVE and OUTSIDE_LEVEL_SET, the code must follow the ladder NOT_CERTIFIED (scaled_decrease > resolution*|x/state_scale|^2) / CERTIFIED_WITH_MARGIN or MARGIN_LOW (margin > resolution, split by margin > required_margin) / DECREASE_NOT_DEFINITE (max_decrease > resolution) / NUMERICAL_INCONCLUSIVE",
+      "evidence": "`ciw.identified_stability:_record` after `ciw.plsr_engine:_validate_diagnostics`; run on the fresh record in `ciw.identified_stability:IdentifiedStabilityWorkflow._step` and on retained records in `ciw.identified_stability:IdentifiedStabilityWorkflow._validate_step`",
+      "code": [
+        "ciw.identified_stability:_record",
+        "ciw.plsr_engine:_validate_diagnostics"
+      ]
     },
     {
       "rule": "Certificate P must be exactly symmetric positive definite: numpy eigvalsh check plus exact Fraction Schur-complement pivots > 0, no repair",
-      "evidence": "identified_stability.py:106-117"
+      "evidence": "`ciw.identified_stability:_model`",
+      "code": [
+        "ciw.identified_stability:_model"
+      ]
     },
     {
-      "rule": "PLSR companion record authority/content binding: fixed claim_scope computational-integrity-only, may_authorize False, maturity block, proof_status NOT_CHECKED, record_digest over provider digest rule excluding generated_at/cargo_prove_available/guest_manifest, operationally_acceptable iff CERTIFIED_WITH_MARGIN, sampleless codes refused",
-      "evidence": "identified_stability.py:244-267"
+      "rule": "PLSR companion record authority/content binding: exact record field set, fixed claim_scope computational-integrity-only, may_authorize False, confirmed_out_of_development False, maturity block, proof_status NOT_CHECKED, record_digest equal to the SHA-256 of the record's sorted-key compact JSON without record_digest (the omission set also names generated_at/cargo_prove_available/guest_manifest, but the exact field set already refuses those fields), operationally_acceptable iff CERTIFIED_WITH_MARGIN, sampleless codes refused",
+      "evidence": "`ciw.identified_stability:_record` with `ciw.identified_stability:MATURITY` and `ciw.identified_stability:_native_digest`; field set `ciw.plsr_engine:_RECORD_KEYS`, sampleless codes `ciw.plsr_engine:_SAMPLELESS`",
+      "code": [
+        "ciw.identified_stability:_record",
+        "ciw.identified_stability:_native_digest",
+        "ciw.identified_stability:MATURITY"
+      ]
     },
     {
       "rule": "Model convention: discrete-time linear plant with explicit positive sample period, common unit across coordinates, zero equilibrium in native coordinate order, certificate unit 1/(u*u), margin quantity named negative-largest-eigenvalue-of-decrease-matrix, required_margin >= 0",
-      "evidence": "identified_stability.py:79-145, 161-173"
+      "evidence": "`ciw.identified_stability:_model` (plant, time, units, margin policy) and `ciw.identified_stability:_source` (equilibrium, certificate unit)",
+      "code": [
+        "ciw.identified_stability:_model",
+        "ciw.identified_stability:_source"
+      ]
     },
     {
-      "rule": "A containment guard inside the provider process: lyapunov.__file__ must lie under the bound source root (identified_stability.py:224-225).",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "A containment guard inside the provider process: lyapunov.__file__ must lie under the bound source root (`ciw.identified_stability:_BOOTSTRAP`, whose source-root argument `ciw.identified_stability:IdentifiedStabilityWorkflow._step` sets to the adapter's source_root), checked before the model artifact is loaded or evaluated.",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.identified_stability:_BOOTSTRAP",
+        "ciw.identified_stability:IdentifiedStabilityWorkflow._step"
+      ]
     },
     {
-      "rule": "The receipt proof aliasing and the strict runtime-digest equality on replay (identified_stability.py:409-417), described above.",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "Replay receipt proof aliasing and strict runtime-digest equality: a replayed bundle retains exactly one receipt whose verification names the earlier bundle as subject_ref but whose reproduction is this bundle's own primary step, with runtime_digest equal to the digest of this bundle's full runtimes (`ciw.identified_stability:IdentifiedStabilityWorkflow._validate` rebuilding it with `ciw.pipelines.runner:verification`, not `ciw.pipelines.runner:check_receipts`). Because `ciw.identified_stability:IdentifiedStabilityWorkflow.replay_session` digests the earlier bundle's runtimes, replay succeeds only when the fresh runtime record equals the retained one exactly, host fields repository_root and python_executable included, although adapter binding (`ciw.identified_stability:IdentifiedStabilityWorkflow._adapters`) compares only `ciw.pipelines.runner:host_projection`.",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.identified_stability:IdentifiedStabilityWorkflow._validate",
+        "ciw.identified_stability:IdentifiedStabilityWorkflow.replay_session",
+        "ciw.pipelines.runner:verification"
+      ]
     },
     {
-      "rule": "A bound on the selected state mean, |x| <= 1e12, applied to upstream data before invocation (identified_stability.py:214-215).",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "A bound on the selected state mean, finite and |x| <= 1e12, applied to upstream data before invocation (`ciw.identified_stability:_selected` via `ciw.identified_stability:_number`).",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.identified_stability:_selected",
+        "ciw.identified_stability:_number"
+      ]
     }
   ],
   "investigations": [

@@ -43,36 +43,75 @@
   ],
   "domain_rules": [
     {
-      "rule": "Held-reason ladder: ordered first-match predicates (cross covariance unknown -> frame unresolved -> frame mismatch -> IFC binding -> target binding -> target missing -> derived quantity -> unit -> assumed units -> initial invariants) with held/accepted/refused consistency",
-      "evidence": "bim_quantity.py:272-286; duplicated natively inside the provider shim at bim_quantity.py:133-145"
+      "rule": "Held-reason ladder: ordered first-match predicates (cross covariance unknown -> frame unresolved -> frame mismatch -> IFC binding -> target binding -> target missing -> derived quantity -> unit -> assumed units -> initial invariants) with held/accepted/refused consistency: a matching predicate forces status held with that reason, no match allows only accepted/conditioned or refused/invariant_rejection, and a held or refused outcome keeps a posterior identical to the prior. The one outcome exempt from the ladder is refused/native_refusal, admitted only with a native_error string, a valid prior state or none, and no posterior, ledger, replay or invariants.",
+      "evidence": "`ciw.bim_quantity:_check_data` admits only reasons in `ciw.bim_quantity:REASONS`, returns early for a well-formed native_refusal, then re-derives the ladder host-side from the source, the retained prior state, the unit context and the genesis invariant verdict; the same ladder runs natively inside the provider shim `ciw.bim_quantity:_BOOTSTRAP`, which reports a GatError as native_refusal.",
+      "code": [
+        "ciw.bim_quantity:_check_data",
+        "ciw.bim_quantity:_BOOTSTRAP",
+        "ciw.bim_quantity:REASONS"
+      ]
     },
     {
-      "rule": "CSE execution-ledger integrity: sha256 hash chain from 64 zeros, per-event verification_digest and event_hash over canonical JSON, ledger head equals integrity.head, genesis binds prior world/belief and module/configuration digests, ledger replay counts, and exact expected observe_quantity operation and provenance (noise_sigma=sqrt(variance))",
-      "evidence": "bim_quantity.py:295-355"
+      "rule": "CSE execution-ledger integrity for every outcome except native_refusal (which retains no ledger): gat-execution-ledger v1 under gat-world-v1, sha256 hash chain from 64 zeros, per-event verification_digest and event_hash over canonical JSON, integrity {algorithm sha256, head = last event_hash}, one genesis event when held and genesis plus one transition (accepted) or rejection (refused) otherwise, genesis binds the prior world/belief digests and carries 64-hex module/configuration digests, first and last events bind the prior and posterior world digests, ledger replay counts, and exact expected observe_quantity operation and provenance (noise_sigma=sqrt(variance)); an accepted transition passes its invariants with no error fields, and a rejection fails them and retains VerificationError with error_digest = sha256(error_type NUL error_message).",
+      "evidence": "`ciw.bim_quantity:_check_data` walks the chain and recomputes both per-event digests with `ciw.core.canonical:canonical`, then checks integrity, genesis, the replay summary and the observe_quantity event against the source observation.",
+      "code": [
+        "ciw.bim_quantity:_check_data",
+        "ciw.core.canonical:canonical"
+      ]
     },
     {
-      "rule": "World/belief binary commitments: world_digest = sha256(module_digest || little-endian float64 mean||covariance), belief_digest over the raw-role sub-block",
-      "evidence": "bim_quantity.py:228-236 (and little-endian guard in shim at bim_quantity.py:104)"
+      "rule": "World/belief binary commitments: world_digest = sha256(ASCII bytes of the 64-hex genesis module_digest || little-endian float64 mean || little-endian float64 row-major covariance) and belief_digest = sha256(the same float64 packing of the raw-role mean and raw-role covariance sub-block, with no module_digest prefix), checked for both prior and posterior.",
+      "evidence": "`ciw.bim_quantity:_state_digests`, called from `ciw.bim_quantity:_check_data`; the provider hashes native-order array bytes, so the shim `ciw.bim_quantity:_BOOTSTRAP` refuses a host that is not little endian.",
+      "code": [
+        "ciw.bim_quantity:_state_digests",
+        "ciw.bim_quantity:_check_data",
+        "ciw.bim_quantity:_BOOTSTRAP"
+      ]
     },
     {
-      "rule": "State covariance domain: symmetric, nonnegative marginals, correlation-eigenvalue PSD via core.covariance._validate_matrix on the full (possibly singular, derived quantities) matrix and on the raw sub-block; no jitter or clipping",
-      "evidence": "bim_quantity.py:168-208"
+      "rule": "State covariance domain: exactly symmetric, nonnegative marginals, correlation-eigenvalue PSD via `ciw.core.covariance:_validate_matrix` on the full (possibly singular, derived quantities) matrix and on the raw sub-block, which must be nonempty; no jitter or clipping.",
+      "evidence": "`ciw.bim_quantity:_state` checks symmetry and nonnegative diagonals, then calls `ciw.core.covariance:_validate_matrix` (correlation eigenvalues >= -1e-10, exactly zero rows for zero variances) on both matrices without modifying them.",
+      "code": [
+        "ciw.bim_quantity:_state",
+        "ciw.core.covariance:_validate_matrix"
+      ]
     },
     {
-      "rule": "Invariant report consistency: passed == no FAIL rows, bounded rows/detail",
-      "evidence": "bim_quantity.py:211-225"
+      "rule": "Invariant report consistency: passed == no FAIL rows, bounded rows/detail (1..512 PASS/WARN/FAIL rows with bounded invariant_id/subject, a bounded finite residual and detail at most 4096 characters), and the reported invariants equal the retained final world's verification: the transition event's when accepted, the genesis event's when held or refused (a rejected transition's failing verification is never the reported one).",
+      "evidence": "`ciw.bim_quantity:_report`, applied by `ciw.bim_quantity:_check_data` to every ledger event's verification and to the reported invariants.",
+      "code": [
+        "ciw.bim_quantity:_report",
+        "ciw.bim_quantity:_check_data"
+      ]
     },
     {
-      "rule": "An in-provider ledger replay check. The shim replays the CSE ledger and raises if the replayed world digest differs (bim_quantity.py:156-157). This exits nonzero and becomes BIM_QUANTITY_REFUSED (bim_quantity.py:375-376). The kind therefore has a second verification method, native ledger replay, besides same_runtime_fresh_occurrence_reproduction.",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "An in-provider ledger replay check. The shim `ciw.bim_quantity:_BOOTSTRAP` replays the CSE ledger and raises if the replayed world digest differs. This exits nonzero and `ciw.bim_quantity:BimQuantityWorkflow.invoke` turns it into BIM_QUANTITY_REFUSED; `ciw.bim_quantity:_check_data` then requires the retained replay summary to match the posterior world digest, ledger head and event counts. The kind therefore has a second verification method, native ledger replay, besides same_runtime_fresh_occurrence_reproduction.",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.bim_quantity:_BOOTSTRAP",
+        "ciw.bim_quantity:BimQuantityWorkflow.invoke",
+        "ciw.bim_quantity:_check_data"
+      ]
     },
     {
-      "rule": "A 64-full-variable budget is enforced inside the provider process (bim_quantity.py:125-126), plus a little-endian host guard for the binary state commitment (bim_quantity.py:104). Both are re-checked on the payload (bim_quantity.py:174-175, 228-236).",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "A 64-full-variable budget is enforced inside the provider process by the shim `ciw.bim_quantity:_BOOTSTRAP`, plus a little-endian host guard for the binary state commitment. Both raise ValueError rather than GatError, so they exit nonzero and become BIM_QUANTITY_REFUSED instead of a retained native_refusal. Both are re-checked on the payload: `ciw.bim_quantity:_state` bounds each state to 1..64 quantities, and `ciw.bim_quantity:_state_digests` recomputes the commitments with explicit little-endian packing.",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.bim_quantity:_BOOTSTRAP",
+        "ciw.bim_quantity:BimQuantityWorkflow.invoke",
+        "ciw.bim_quantity:_state",
+        "ciw.bim_quantity:_state_digests"
+      ]
     },
     {
-      "rule": "The shim is CIW-written code that drives provider internals: GatSession.from_text, ObserveQuantity.single, replay_ledger, verification_payload and length_unit_context (bim_quantity.py:94-165). It runs through the private adapter._run path, which bypasses the ciw.adapter-request envelope (adapters/subprocess.py:294 vs 328-369). Under 'untouched providers' this is a hand-written adapter that must stay, or be moved upstream as a provider-owned ciw_adapter, as GTE already has.",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "The shim `ciw.bim_quantity:_BOOTSTRAP` is CIW-written code that drives provider internals: GatSession.from_text, ObserveQuantity.single, replay_ledger, verification_payload and length_unit_context. `ciw.bim_quantity:BimQuantityWorkflow.invoke` runs it through `ciw.pipelines.runner:PipelineRunner.run_provider`, which calls the private `ciw.adapters.subprocess:PinnedSubprocessAdapter._run` and so bypasses the ciw.adapter-request envelope built by `ciw.adapters.subprocess:PinnedSubprocessAdapter.invoke`. Under 'untouched providers' this is a hand-written adapter that must stay, or be moved upstream as a provider-owned ciw_adapter, as GTE already has.",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.bim_quantity:_BOOTSTRAP",
+        "ciw.bim_quantity:BimQuantityWorkflow.invoke",
+        "ciw.pipelines.runner:PipelineRunner.run_provider",
+        "ciw.adapters.subprocess:PinnedSubprocessAdapter._run"
+      ]
     }
   ],
   "investigations": [

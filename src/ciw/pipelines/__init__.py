@@ -32,6 +32,8 @@ FIELDS = frozenset({"schema", "pipeline_id", "source_kind", "session_schema", "s
 _HEX40 = re.compile(r"[0-9a-f]{40}\Z")
 _ROLE = re.compile(r"[a-z][a-z0-9]{1,15}\Z")
 _CODE = re.compile(r"[A-Za-z][A-Za-z0-9_]{1,63}\*?\Z")
+_SYMBOL = re.compile(r"ciw(\.[a-z_][a-z0-9_]*)*:[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*\Z")
+_LINE_CITATION = re.compile(r"\.(py|jl|json):\d")
 # Admission codes the workbench itself raises for every pipeline.
 WORKBENCH_REFUSALS = ("operation_unavailable", "workbench_capacity")
 
@@ -221,9 +223,14 @@ def validate(value) -> dict:
     if len(set(value["refusals"])) != len(value["refusals"]):
         raise ValueError("Refusal codes must be distinct")
     for rule in value["domain_rules"]:
-        _keys(rule, {"rule", "evidence"}, name="domain rule")
+        _keys(rule, {"rule", "evidence", "code"}, name="domain rule")
         _text(rule["rule"], "domain rule", 1024)
         _text(rule["evidence"], "domain rule evidence", 512)
+        if (not isinstance(rule["code"], list) or not 1 <= len(rule["code"]) <= 8 or
+                any(not isinstance(ref, str) or not _SYMBOL.fullmatch(ref) for ref in rule["code"])):
+            raise ValueError("A domain rule cites 1..8 code symbols as module:qualname")
+        if _LINE_CITATION.search(rule["rule"] + " " + rule["evidence"]):
+            raise ValueError("Domain rules cite code symbols, not line numbers")
     if (not isinstance(value["investigations"], list) or len(set(value["investigations"])) != len(value["investigations"])):
         raise ValueError("investigations must be a list of distinct identifiers")
     if value["surface"] not in SURFACES:
@@ -316,6 +323,18 @@ def load_investigations() -> dict:
     return result
 
 
+def resolve_symbol(reference: str):
+    """The object a ``module:qualname`` code reference names; ValueError if it does not exist."""
+    module, _, qualname = reference.partition(":")
+    try:
+        target = import_module(module)
+        for name in qualname.split("."):
+            target = getattr(target, name)
+    except (ImportError, AttributeError) as exc:
+        raise ValueError(f"Code reference {reference} does not resolve") from exc
+    return target
+
+
 def _check_runner(kind: str, runner: str, workflow) -> None:
     """A generic runner pipeline supplies domain hooks only; the runner owns its records."""
     from .runner import HOOKS, PipelineRunner
@@ -361,6 +380,9 @@ def check(descriptors: dict | None = None) -> dict:
             raise ValueError(f"{kind}: descriptor upstream differs from the registered upstream")
         import_module(value["implementation"]["module"])
         _check_runner(kind, value["implementation"]["runner"], _workflow(kind))
+        for rule in value["domain_rules"]:
+            for reference in rule["code"]:
+                resolve_symbol(reference)
         for module in value["implementation"]["delegates"]:
             import_module(module)
         if value["refusals"] != code_refusals(value, descriptors):
@@ -466,7 +488,9 @@ def render_catalog(descriptors: dict | None = None) -> str:
                   "", "Specific refusals: " + (", ".join(f"`{code}`" for code in specific) if specific else "none") + "."]
         if value["domain_rules"]:
             lines.append("")
-            lines += [f"- {rule['rule']} ({rule['evidence']})".replace("|", "\\|") for rule in value["domain_rules"]]
+            lines += [(f"- {rule['rule']} ({rule['evidence']}; code: "
+                       + ", ".join(f"`{ref}`" for ref in rule["code"]) + ")").replace("|", "\\|")
+                      for rule in value["domain_rules"]]
     multiple = {}
     for entry in matrix:
         multiple.setdefault(entry["role"], []).append(entry["pin"]["revision"][:12])

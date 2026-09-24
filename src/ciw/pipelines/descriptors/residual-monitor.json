@@ -59,32 +59,66 @@
   ],
   "domain_rules": [
     {
-      "rule": "One residual sequence must share an identical scope (channel, frame, units, clock, calibration, model, reference prior); targets strictly increase; no GSIE result, physical window or sample set counts twice; a repeated observation id cannot change content",
-      "evidence": "src/ciw/residual_monitor.py:139-170"
+      "rule": "One residual sequence must share an identical scope (epoch, channel, frame, units, clock, calibration, model, reference prior); targets strictly increase; no GSIE result, physical window or sample set counts twice; a repeated observation id cannot change content",
+      "evidence": "`ciw.residual_monitor:_request` builds the scope from the upstream declaration, GSIE model (all but target_time) and measurement variables, units and frame, and raises when a later window's scope differs, its target_time does not exceed the previous one, its GSIE result id, window identity digest or sorted observation-id set was already seen, or a repeated observation id carries different canonical content.",
+      "code": [
+        "ciw.residual_monitor:_request"
+      ]
     },
     {
-      "rule": "The analytic oracle re-derives NIS, whitened residual, ambiguous isolability, two-sided CUSUM with reset, and trivial 1x1 observability, then compares at rel_tol 2e-12 / abs_tol 1e-14 with exact integers",
-      "evidence": "src/ciw/residual_monitor.py:255-331"
+      "rule": "The analytic oracle re-derives NIS, whitened residual, ambiguous isolability, the declared CUSUM recurrence (positive, negative or two-sided, with optional reset on alarm), and trivial 1x1 observability (observable only when a condition limit is declared), then compares at rel_tol 2e-12 / abs_tol 1e-14 with exact integers and exact non-numerical fields",
+      "evidence": "`ciw.residual_monitor:_oracle` recomputes every row from the request; `ciw.residual_monitor:_assert_numerical` walks dicts (same keys) and lists (same length) and compares floats with math.isclose(rel_tol=2e-12, abs_tol=1e-14), integers exactly and every other leaf by exact type and value; `ciw.residual_monitor:_check_data` applies it to provider output in `ciw.residual_monitor:ResidualMonitorWorkflow._step` and on every `ciw.residual_monitor:ResidualMonitorWorkflow._validate_step`.",
+      "code": [
+        "ciw.residual_monitor:_oracle",
+        "ciw.residual_monitor:_assert_numerical",
+        "ciw.residual_monitor:_check_data"
+      ]
     },
     {
       "rule": "Stateful CUSUM across windows, advanced only when OIT reports 'observable' (observability hold does not advance the state); interpretation flags are fixed to limited authority",
-      "evidence": "src/ciw/residual_monitor.py:230-248"
+      "evidence": "`ciw.residual_monitor:_BOOTSTRAP` calls cusum_step and replaces the state only when lti_observability returns 'observable', and writes alarm_authority 'held_unknown_temporal_dependence', physical_drift 'not_established' and unique_sensor_fault null; `ciw.residual_monitor:_check_data` refuses output that differs from `ciw.residual_monitor:_oracle`, which does the same; `ciw.residual_monitor:_source` requires `ciw.residual_monitor:POLICY` (observability_hold 'does_not_advance_cusum') unchanged.",
+      "code": [
+        "ciw.residual_monitor:_BOOTSTRAP",
+        "ciw.residual_monitor:_oracle",
+        "ciw.residual_monitor:_check_data",
+        "ciw.residual_monitor:_source"
+      ]
     },
     {
-      "rule": "Overlap annotations record interval overlap and shared observation/artifact ids, with residual_cross_covariance declared unknown",
-      "evidence": "src/ciw/residual_monitor.py:179-187"
+      "rule": "Overlap annotations record interval overlap and shared observation/artifact ids for every pair of windows, with the shared calibration profile and reference prior, and residual_cross_covariance declared unknown",
+      "evidence": "`ciw.residual_monitor:_request` appends one overlap entry per earlier window; `ciw.residual_monitor:_check_data` refuses provider output whose overlaps differ canonically from the request.",
+      "code": [
+        "ciw.residual_monitor:_request",
+        "ciw.residual_monitor:_check_data"
+      ]
     },
     {
-      "rule": "The monitor reads calibrated-window's internal step layout: GSIE at child['steps'][3] (133), and mapped event times from the CIW-wrapped TBRT data at child['steps'][0]['result']['data']['samples'] (180). It also builds the OIT declaration from the upstream GSIE dynamics and observation matrices (192-194).",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "The monitor reads calibrated-window's internal step layout: in `ciw.residual_monitor:_request` it takes GSIE at child['steps'][3] and mapped event times from the CIW-wrapped TBRT data at child['steps'][0]['result']['data']['samples'], where child is the calibrated window or an acquired window's child_window as returned by `ciw.residual_monitor:_unwrap`. The indices are hard-coded; they hold only because `ciw.calibrated_window:_validate`, which `ciw.residual_monitor:_unwrap` runs first, requires the steps in `ciw.calibrated_window:OPERATIONS` order (tbrt, mcur, stfe, gsie). It also builds each window's OIT declaration from the monitor's observability configuration plus the upstream window's declared GSIE dynamics matrix, observation-model matrix and variables.",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.residual_monitor:_request",
+        "ciw.residual_monitor:_unwrap",
+        "ciw.calibrated_window:_validate",
+        "ciw.calibrated_window:OPERATIONS"
+      ]
     },
     {
-      "rule": "Upstreams are validated in depth, again and again. _unwrap re-runs acquired_window._validate, calibrated_window._validate and _check_child_receipt for every selected window (106-119). That happens at create (478), at every reopen (_validate calls validate_upstreams at 455), and again at link time against the catalog (workbench.py:377-378).",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "Upstreams are validated in depth, again and again. `ciw.residual_monitor:_unwrap` re-runs `ciw.acquired_window:_validate` (acquired windows), `ciw.calibrated_window:_validate` and `ciw.acquired_window:_check_child_receipt` for every selected window each time `ciw.residual_monitor:_request` runs. At create that is three times (`ciw.residual_monitor:ResidualMonitorWorkflow.create_session`, then `ciw.residual_monitor:ResidualMonitorWorkflow._execute_selected`, then its closing `ciw.residual_monitor:ResidualMonitorWorkflow._validate`); every later validation of the bundle repeats it (`ciw.residual_monitor:ResidualMonitorWorkflow._validate` calls `ciw.residual_monitor:validate_upstreams`), including workbench admission and restore through `ciw.workbench:_validate_record`; and it runs again at link time against the catalog (`ciw.workbench:_validate_links`).",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.residual_monitor:_unwrap",
+        "ciw.residual_monitor:validate_upstreams",
+        "ciw.workbench:_validate_links"
+      ]
     },
     {
-      "rule": "In the bootstrap, CUSUM state advances only when OIT returns 'observable'; the pre and post state is recorded, and the interpretation flags are fixed (bootstrap roughly 230-250). This is a fold over the windows that carries state from one to the next.",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "In `ciw.residual_monitor:_BOOTSTRAP`, CUSUM state advances only when OIT returns 'observable'; the pre and post state is recorded (monitor_state_before, monitor_state_after), and the interpretation flags are fixed. This is a fold over the windows that carries state from one to the next, which `ciw.residual_monitor:_oracle` replays and `ciw.residual_monitor:_check_data` requires the provider to match.",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.residual_monitor:_BOOTSTRAP",
+        "ciw.residual_monitor:_oracle",
+        "ciw.residual_monitor:_check_data"
+      ]
     }
   ],
   "investigations": [

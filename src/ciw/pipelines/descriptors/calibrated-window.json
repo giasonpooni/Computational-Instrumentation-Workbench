@@ -88,55 +88,122 @@
   "domain_rules": [
     {
       "rule": "Exact Schur-complement PSD certification of the full joint covariance, with no tolerance, jitter or diagonal substitution",
-      "evidence": "src/ciw/calibrated_window.py:64-82 (comment 70-71); reused by src/ciw/geometric_circle.py:100"
+      "evidence": "`ciw.calibrated_window:_covariance` requires binary64-exact finite entries and exact Fraction symmetry, then eliminates exactly, refusing a negative pivot or a zero pivot with a nonzero entry below it. `ciw.calibrated_window:_source` applies it to the 2n+4 joint matrix; `ciw.geometric_circle:_check_data` reuses it for the GTE input covariance.",
+      "code": [
+        "ciw.calibrated_window:_covariance",
+        "ciw.calibrated_window:_source",
+        "ciw.geometric_circle:_check_data"
+      ]
     },
     {
-      "rule": "Exact rational propagation J*Sigma*J^T, refusing binary64 overflow or underflow",
-      "evidence": "src/ciw/calibrated_window.py:85-100"
+      "rule": "Exact rational propagation J*Sigma*J^T, rounded once per entry to binary64, refusing an entry beyond binary64 range or a nonzero entry that underflows to zero",
+      "evidence": "`ciw.calibrated_window:_project` multiplies in Fraction arithmetic and rounds each entry once with float(). An entry beyond binary64 range raises OverflowError from that conversion, so its isfinite branch never fires; a nonzero entry that rounds to zero raises 'Covariance propagation exceeds binary64'. Its only caller is `ciw.calibrated_window:_invoke`; `ciw.workbench:Workbench.execute` and `ciw.workbench:Workbench.replay` retain either error as a refusal.",
+      "code": [
+        "ciw.calibrated_window:_project",
+        "ciw.calibrated_window:_invoke"
+      ]
     },
     {
       "rule": "Joint covariance layout: device times, clock skew/offset, indicated values, gain/offset; TBRT uses the 3x3 sub-block [i,n,n+1] and MCUR uses [n+2+i,2n+2,2n+3]; Jacobian re-embedding",
-      "evidence": "src/ciw/calibrated_window.py:58-61, 217, 239, 275-289"
+      "evidence": "`ciw.calibrated_window:covariance_order` defines the order and `ciw.calibrated_window:_source` requires it; the shim `ciw.calibrated_window:_BOOTSTRAP` slices the TBRT and MCUR sub-blocks; `ciw.calibrated_window:_jacobians` re-embeds the native Jacobian rows at the same indices into 2n+4 columns.",
+      "code": [
+        "ciw.calibrated_window:covariance_order",
+        "ciw.calibrated_window:_source",
+        "ciw.calibrated_window:_BOOTSTRAP",
+        "ciw.calibrated_window:_jacobians"
+      ]
     },
     {
       "rule": "Cross-provider covariance composition: the joint time/value covariance from TBRT and MCUR Jacobians must reproduce MCUR's native marginal variance exactly",
-      "evidence": "src/ciw/calibrated_window.py:309-314"
+      "evidence": "For MCUR, `ciw.calibrated_window:_invoke` projects the re-embedded TBRT and MCUR Jacobians (`ciw.calibrated_window:_jacobians`) through `ciw.calibrated_window:_project`, keeps the value block as temporal_covariance, and raises unless its diagonal equals every native MCUR sample variance.",
+      "code": [
+        "ciw.calibrated_window:_invoke",
+        "ciw.calibrated_window:_jacobians",
+        "ciw.calibrated_window:_project"
+      ]
     },
     {
       "rule": "TBRT/MCUR adapter shim: builds the native dataclasses, checks origin+delta exactness and microsecond precision, requires MCUR feature compatibility to be 'compatible'",
-      "evidence": "src/ciw/calibrated_window.py:192-252 (222, 237, 246-247)"
+      "evidence": "`ciw.calibrated_window:_BOOTSTRAP` builds the TBRT clock/observation and MCUR profile/observation/joint-covariance dataclasses and raises on each check; `ciw.calibrated_window:_invoke` runs it and turns a nonzero exit into CALIBRATED_WINDOW_TBRT_REFUSED or CALIBRATED_WINDOW_MCUR_REFUSED.",
+      "code": [
+        "ciw.calibrated_window:_BOOTSTRAP",
+        "ciw.calibrated_window:_invoke"
+      ]
     },
     {
-      "rule": "Source applicability rules: clock map frames, UTC seconds, identity quantity-frame map, profile applicability per sample, declared-zero consistency, calibration block equal to the profile covariance, fixed COMPOSITION, scalar stationary GSIE hold model",
-      "evidence": "src/ciw/calibrated_window.py:133-186"
+      "rule": "Source applicability rules: clock map frames, UTC seconds, identity quantity-frame map, profile applicability per sample (sensor, quantity, input unit), declared-zero consistency, calibration block equal to the profile covariance, fixed COMPOSITION, scalar stationary GSIE hold model with independent prior and window-end feature semantics",
+      "evidence": "`ciw.calibrated_window:_source` raises ValueError for each violated predicate and requires the configuration composition to equal `ciw.calibrated_window:COMPOSITION` exactly.",
+      "code": [
+        "ciw.calibrated_window:_source",
+        "ciw.calibrated_window:COMPOSITION"
+      ]
     },
     {
       "rule": "No silent window selection: every mapped event time must fall inside the declared window before STFE runs",
-      "evidence": "src/ciw/calibrated_window.py:341-343"
+      "evidence": "`ciw.calibrated_window:_request` builds the STFE request and raises unless start <= event_time < end for every mapped sample; `ciw.calibrated_window:_validate` rebuilds each request through it, so inspection applies the same check.",
+      "code": [
+        "ciw.calibrated_window:_request",
+        "ciw.calibrated_window:_validate"
+      ]
     },
     {
-      "rule": "Inspection cannot see covariance produced by the post-hook. The CIW-computed temporal_covariance and joint_time_value_covariance are written into the sealed step-0/1 result data (calibrated_window.py:306-314, 363). _project and _jacobians are called only in _invoke (308, 311), never in _validate (382-433). If that covariance is edited and re-digested consistently, it flows into the rebuilt STFE request (330-331) and inspection still passes. Only replay's template comparison (telemetry.py:536-542) would catch it.",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "Inspection cannot see covariance produced by the post-hook. The CIW-computed temporal_covariance and joint_time_value_covariance are written into the step-0/1 result data by `ciw.calibrated_window:_invoke` and sealed by `ciw.calibrated_window:_execute`. `ciw.calibrated_window:_project` and `ciw.calibrated_window:_jacobians` are called only in `ciw.calibrated_window:_invoke`, never in `ciw.calibrated_window:_validate`, which repeats neither the value-block extraction nor the MCUR marginal-variance check. If that covariance is edited and every identity re-digested consistently, inspection still passes: an edited MCUR temporal_covariance flows into the STFE request rebuilt by `ciw.calibrated_window:_request`, and `ciw.workbench:_telemetry_context` exposes an edited joint_time_value_covariance. Only replay catches it, at the template comparison `ciw.telemetry:_compare_reproduction` in `ciw.calibrated_window:replay_session`.",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.calibrated_window:_invoke",
+        "ciw.calibrated_window:_validate",
+        "ciw.workbench:_telemetry_context",
+        "ciw.telemetry:_compare_reproduction"
+      ]
     },
     {
-      "rule": "Reproduction reuses the template occurrence, which is the opposite of the declared kinds. Requests embed execution_id and created_at (337, 348), and the reproduction reuses both from the template (358-359). Verification is exact digest equality of request, result and numerical_result_id (telemetry.py:541), plus SET. Declared kinds instead require a fresh occurrence (declared_workload.py:303-304).",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "Reproduction reuses the template occurrence, which is the opposite of the shared-runner pipelines. The STFE and GSIE requests built by `ciw.calibrated_window:_request` embed execution_id and created_at, and `ciw.calibrated_window:_execute` given a template reuses its created_at and every step's execution_id. Verification is exact equality of request_sha256, result_sha256 and numerical_result_id (`ciw.telemetry:_compare_reproduction`), plus SET (`ciw.calibrated_window:_verify`). Pipelines on `ciw.pipelines.runner:PipelineRunner` instead require a fresh occurrence: `ciw.pipelines.runner:PipelineRunner._check_verification`, which every subclass override keeps, refuses a reproduction that reuses the execution_id or result_id.",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.calibrated_window:_execute",
+        "ciw.telemetry:_compare_reproduction",
+        "ciw.pipelines.runner:PipelineRunner._check_verification"
+      ]
     },
     {
-      "rule": "Replay calls SET twice with different subjects (455-459). The receipt's verification is SET(original bundle vs fresh numerical results); fresh['verification'] is SET(fresh bundle vs a template reproduction of the old bundle). replay_session also returns an extra 'replay_results' key (468), which the declared kinds do not (declared_workload.py:369).",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "Replay calls SET twice with different subjects through `ciw.calibrated_window:_verify`. The receipt's verification is SET(original bundle vs fresh numerical results); fresh['verification'] is SET(fresh bundle vs a template reproduction of the old bundle). `ciw.calibrated_window:replay_session` also returns an extra 'replay_results' key, which the shared-runner pipelines do not (`ciw.pipelines.runner:PipelineRunner.replay_session` returns only session and replay_receipt).",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.calibrated_window:replay_session",
+        "ciw.calibrated_window:_verify",
+        "ciw.pipelines.runner:PipelineRunner.replay_session"
+      ]
     },
     {
-      "rule": "The shims pass CIW assertions to the providers as arguments: require_synchronization_evidence=True plus expected_reference to TBRT (219), and same_profile_for_all_samples=True plus joint_temporal_covariance_declared=True to MCUR (245-246). These assertions are only true because of the source predicates at 159-161 and 165-166, so the shim and the predicates cannot be separated.",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "The shims pass CIW-established facts to the providers as arguments. `ciw.calibrated_window:_BOOTSTRAP` gives MCUR same_profile_for_all_samples=True and joint_temporal_covariance_declared=True, which hold only because `ciw.calibrated_window:_source` requires every sample to match the single declared profile's sensor, quantity and input unit, and the joint covariance to follow `ciw.calibrated_window:covariance_order` under a declared or declared_zero cross-covariance policy. It gives TBRT expected_reference (the declared receipt clock) and require_synchronization_evidence=True, matching the `ciw.calibrated_window:_source` predicates that the clock model maps the declared device clock to the declared receipt clock and names distinct nonempty synchronization evidence ids. The shim and the predicates cannot be separated.",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.calibrated_window:_BOOTSTRAP",
+        "ciw.calibrated_window:_source",
+        "ciw.calibrated_window:covariance_order"
+      ]
     },
     {
-      "rule": "Step order acts as a public contract. residual-monitor, acquired-calibrated-window and the workbench fusion context all index steps[0], steps[1] and steps[3] directly (residual_monitor.py:133, 180; workbench.py:549-552). Any descriptor reordering or renaming breaks three consumers.",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "Retained step order is a public contract. `ciw.calibrated_window:_validate` fixes the steps to `ciw.calibrated_window:OPERATIONS` (tbrt, mcur, stfe, gsie), and consumers index them positionally: `ciw.residual_monitor:_request` reads steps[3] as the GSIE result and steps[0] as the mapped event times, and `ciw.workbench:_telemetry_context` reads steps[0] as the clock result and steps[1] as the calibration result, for calibrated-window and for acquired-calibrated-window, whose outer steps `ciw.acquired_window:_validate` requires to equal the child's. Reordering or renaming OPERATIONS breaks these consumers and every retained bundle. The descriptor's own step list is matched by role set only, so its order is not the contract.",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.calibrated_window:OPERATIONS",
+        "ciw.calibrated_window:_validate",
+        "ciw.residual_monitor:_request",
+        "ciw.workbench:_telemetry_context",
+        "ciw.acquired_window:_validate"
+      ]
     },
     {
-      "rule": "The source predicates also run at inspection (_source is called inside _validate at 394). Turning them into admission-time retained refusals changes what reopening an existing bundle means.",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "The source predicates also run outside execution. `ciw.calibrated_window:_source` runs when the workbench admits the source (`ciw.workbench:_source` from `ciw.workbench:Workbench.add_source`, a rejection rather than a retained refusal, and again when `ciw.workbench:Workbench.restore` re-admits it), and inside `ciw.calibrated_window:_validate` whenever a bundle is retained or reopened (`ciw.workbench:_validate_record`) or unwrapped by residual monitoring (`ciw.residual_monitor:_unwrap`). Turning them into execution-time refusals retained by `ciw.workbench:Workbench._retain_refusal` changes what admitting a source and reopening an existing bundle mean.",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.calibrated_window:_source",
+        "ciw.calibrated_window:_validate",
+        "ciw.workbench:_source",
+        "ciw.workbench:_validate_record",
+        "ciw.residual_monitor:_unwrap"
+      ]
     }
   ],
   "investigations": [

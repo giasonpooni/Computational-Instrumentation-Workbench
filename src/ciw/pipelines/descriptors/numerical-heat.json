@@ -48,20 +48,41 @@
   ],
   "domain_rules": [
     {
-      "rule": "Recompute the SCR execution commitments. Each is a length-prefixed, domain-separated SHA-256 tagged 'scout.execution.<tag>.v1', over program, input, output and specification. The computation identity is commit(program_id, input_id, output_id, u32 exit=0), and every native identity must equal CIW's recomputation",
-      "evidence": "src/ciw/declared_workload.py:149-152, :200-204. _commit is reused for the proof identity at proved_heat.py:155"
+      "rule": "Recompute the SCR execution commitments. Each is a SHA-256 over the u64 little-endian length-prefixed domain tag 'scout.execution.<tag>.v1', the u64 little-endian field count and each field, u64 little-endian length-prefixed. The program, input and output identities commit HEAT_DESCRIPTOR, the encoded input and the re-encoded output; the specification identity commits (program, empty configuration, input). The computation identity is commit(program_id, input_id, output_id, u32 exit=0) over the raw 32-byte identities, and every native identity must equal CIW's recomputation. The check_data hook applies this to every native result before its step is sealed and again when a retained session is validated",
+      "evidence": "`ciw.declared_workload:_commit` recomputed in `ciw.declared_workload:_check_data`, called by the `ciw.declared_workload:DeclaredWorkflow.check_data` hook from `ciw.pipelines.runner:PipelineRunner._step` and `ciw.pipelines.runner:check_step`. `_commit` is reused for the proof identity in `ciw.proved_heat:_proof_bytes`",
+      "code": [
+        "ciw.declared_workload:_commit",
+        "ciw.declared_workload:_check_data",
+        "ciw.declared_workload:DeclaredWorkflow.check_data",
+        "ciw.pipelines.runner:PipelineRunner._step",
+        "ciw.pipelines.runner:check_step"
+      ]
     },
     {
-      "rule": "The specification must equal CIW's embedded HEAT_DESCRIPTOR program bytes and the little-endian input [steps u32][n u32][n x i64] derived from the source JSON. The displayed values must re-encode to the native output bytes, with |u| ≤ 2^40",
-      "evidence": "src/ciw/declared_workload.py:35-42, :191-199"
+      "rule": "The specification must equal CIW's embedded HEAT_DESCRIPTOR program bytes, an empty configuration and the little-endian input [steps u32][n u32][n x i64] derived from the source JSON, and the result status must be completed. The displayed values must be exactly n integers with |u| ≤ 2^40 that re-encode as i64 little-endian to the native output bytes",
+      "evidence": "`ciw.declared_workload:_check_data` against `ciw.declared_workload:HEAT_DESCRIPTOR`",
+      "code": [
+        "ciw.declared_workload:_check_data",
+        "ciw.declared_workload:HEAT_DESCRIPTOR"
+      ]
     },
     {
-      "rule": "CIW admits 3..256 cells and 0..1024 steps (declared_workload.py:110-114). The embedded native descriptor allows n<=4096 and steps<=100000 (:37), and proved-heat narrows further to 3..32 and 0..64 (proved_heat.py:59-63). The bounds are three CIW policy tiers over one native kernel, so a descriptor 'extends' must be able to narrow bounds, not only add policy keys",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "CIW admits 3..256 integer cells, |u| ≤ 2^40 and 0..1024 steps (`ciw.declared_workload:_source`). The embedded native descriptor states n<=4096 and steps<=100000 (`ciw.declared_workload:HEAT_DESCRIPTOR`), a bound the native kernel owns (fault 4) and CIW does not check. Proved-heat narrows further to 3..32 cells and 0..64 steps (`ciw.proved_heat:_source`) while its `ciw.proved_heat:POLICY` only adds proof_policy to HEAT_POLICY, and `ciw.proved_heat:_data` checks its native result with the numerical-heat check against the same HEAT_DESCRIPTOR. The bounds are three tiers over one native kernel (the kernel's own bound and two CIW admission bounds), so any mechanism letting one descriptor extend another (the v1 descriptor schema has none) must be able to narrow bounds, not only add policy keys",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.declared_workload:_source",
+        "ciw.declared_workload:HEAT_DESCRIPTOR",
+        "ciw.proved_heat:_source",
+        "ciw.proved_heat:POLICY",
+        "ciw.proved_heat:_data"
+      ]
     },
     {
-      "rule": "exit_code and engine_occurrence are checked with 'type(x) is int' (a bool is rejected), and detail must be None (declared_workload.py:193). The reader's 'equals' block needs strict typing to preserve this",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "exit_code and engine_occurrence are checked with 'type(x) is int' (a bool is rejected) and must equal 0, and detail must be None (`ciw.declared_workload:_check_data`). A declarative 'equals' block replacing this check needs strict typing to preserve it",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.declared_workload:_check_data"
+      ]
     }
   ],
   "investigations": [],

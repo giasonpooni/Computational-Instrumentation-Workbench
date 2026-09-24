@@ -61,35 +61,81 @@
   "domain_rules": [
     {
       "rule": "SP1 proof byte binding. The proof must be 1..8 MiB of canonical base64 with a matching sha256 and byte_count, backend sp1-cpu v6.1.0, and guest_sha256 equal to the registered guest. The proof identity must equal the SCR commitment _commit('proof', [b'sp1-cpu', b'v6.1.0', raw])",
-      "evidence": "src/ciw/proved_heat.py:143-158"
+      "evidence": "`ciw.proved_heat:_proof_bytes` checks the exact proof fields, the encoded and decoded PROOF_LIMIT budget, canonical re-encoding, sha256, byte_count, backend and GUEST_SHA256, then recomputes the identity with `ciw.declared_workload:_commit`. It runs on every created or retained result via `ciw.proved_heat:_data`; `ciw.proved_heat:ProvedHeatWorkflow._invoke` also applies it to the retained proof written before a verify-only call and to the proof file after every provider call",
+      "code": [
+        "ciw.proved_heat:_proof_bytes",
+        "ciw.declared_workload:_commit",
+        "ciw.proved_heat:GUEST_SHA256",
+        "ciw.proved_heat:ProvedHeatWorkflow._invoke"
+      ]
     },
     {
       "rule": "The verifier report must equal exactly {command: verify, outcome: verified, coverage: 'program=true input=true output=true exit_code=true', proof_identity, backend, statement_program = native.program_identity}",
-      "evidence": "src/ciw/proved_heat.py:161-166, :381-382"
+      "evidence": "`ciw.proved_heat:_verifier` compares the report canonically against that exact dict, with backend BACKEND. `ciw.proved_heat:_data` applies it to every created or retained result and `ciw.proved_heat:ProvedHeatWorkflow.verify_session` applies it to each fresh verify-only answer",
+      "code": [
+        "ciw.proved_heat:_verifier",
+        "ciw.proved_heat:_data",
+        "ciw.proved_heat:ProvedHeatWorkflow.verify_session"
+      ]
     },
     {
-      "rule": "The registered guest ELF hash is enforced before SCR is loaded. The verify-only path rebuilds ExecutionResult from the retained native data and verifies the retained proof without re-executing. It accepts a different compatible host, but only with the approved source, guest and backend",
-      "evidence": "src/ciw/proved_heat.py:112-122 (bootstrap verify branch), :233-235, :273-274, :387-405; tests/test_proved_heat.py:115, :224"
+      "rule": "The registered guest ELF hash is enforced before SCR is loaded. The verify-only path rebuilds ExecutionResult from the retained native data and verifies the retained proof without re-executing. It accepts a different compatible host, but only with the approved source, guest and backend; the backend is the one the retained proof and the fresh verifier report name (`ciw.proved_heat:_verifier`), since the prover binary itself is operator-asserted, not attested. Tests: test_guest_pin_refuses_before_loading_scr, test_fresh_verification_accepts_another_compatible_host_and_records_it",
+      "evidence": "`ciw.proved_heat:ProvedHeatWorkflow._adapters` hashes the guest against GUEST_SHA256 before constructing PinnedSubprocessAdapter; `ciw.proved_heat:ProvedHeatWorkflow._check_runtime` re-checks guest and PIN. The verify branch of `ciw.proved_heat:_BOOTSTRAP` rebuilds ExecutionResult and calls only verify_existing_proof. `ciw.proved_heat:ProvedHeatWorkflow.verify_session` binds with no retained runtime and checks the fresh report with `ciw.proved_heat:_verifier`",
+      "code": [
+        "ciw.proved_heat:ProvedHeatWorkflow._adapters",
+        "ciw.proved_heat:ProvedHeatWorkflow._check_runtime",
+        "ciw.proved_heat:_BOOTSTRAP",
+        "ciw.proved_heat:ProvedHeatWorkflow.verify_session",
+        "ciw.proved_heat:_verifier"
+      ]
     },
     {
       "rule": "Memory and timing semantics. Memory is read with RUSAGE_CHILDREN ru_maxrss, i.e. the largest waited child's peak RSS in KiB converted to bytes. not_measured must carry bytes=null, measured bytes must be a multiple of 1024, and stage durations must lie in [0, 3600] s",
-      "evidence": "src/ciw/proved_heat.py:68-85, :169-186"
+      "evidence": "`ciw.proved_heat:_MEMORY_PROBE` (the child_memory prelude of the provider bootstrap) reads RUSAGE_CHILDREN ru_maxrss on Linux only and multiplies KiB by 1024. `ciw.proved_heat:_memory` enforces unit, scope, null bytes when not_measured and a bounded multiple of 1024 when measured; `ciw.proved_heat:_seconds` bounds every stage duration",
+      "code": [
+        "ciw.proved_heat:_MEMORY_PROBE",
+        "ciw.proved_heat:_memory",
+        "ciw.proved_heat:_seconds"
+      ]
     },
     {
-      "rule": "A retained verification is a historical report, not fresh trust. Inspection must report cryptographic_verification 'not_performed_by_inspection' along with the trust_scope. The replay receipt binds the fresh proof identity, the fresh verification id and the original runtime digest",
-      "evidence": "src/ciw/proved_heat.py:40, :205-213, :408-458; workbench.py:199-201"
+      "rule": "A retained verification is a historical report, not fresh trust. Inspection (the bundle summary and the experiment.inspect view) must report cryptographic_verification 'not_performed_by_inspection' along with the trust_scope. The replay receipt binds the fresh proof identity, the fresh verification id and the original runtime digest: `ciw.proved_heat:ProvedHeatWorkflow._receipt_verification` builds it, `ciw.proved_heat:ProvedHeatWorkflow._check_receipt` checks the fresh fields and `ciw.proved_heat:ProvedHeatWorkflow.validate_replay` the original",
+      "evidence": "`ciw.proved_heat:_verification` stamps TRUST_SCOPE and `ciw.proved_heat:ProvedHeatWorkflow._validate` only recomputes it without executing. `ciw.workbench:_summary` and `ciw.workload_view:project` (reached from `ciw.workbench:Workbench.inspect_experiment`) add cryptographic_verification and verification_trust_scope for proved-heat",
+      "code": [
+        "ciw.proved_heat:_verification",
+        "ciw.workbench:_summary",
+        "ciw.workload_view:project",
+        "ciw.proved_heat:ProvedHeatWorkflow._receipt_verification",
+        "ciw.proved_heat:ProvedHeatWorkflow._check_receipt",
+        "ciw.proved_heat:ProvedHeatWorkflow.validate_replay"
+      ]
     },
     {
-      "rule": "Adapter implementation version is pinned as part of the proof runtime identity (proved_heat.py:254)",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "Adapter implementation version is pinned as part of the proof runtime identity: `ciw.proved_heat:ProvedHeatWorkflow._check_runtime` refuses any runtime whose adapter_version is not ciw-pinned-subprocess-v1, the value `ciw.adapters.subprocess:ADAPTER_VERSION` emits",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.proved_heat:ProvedHeatWorkflow._check_runtime",
+        "ciw.adapters.subprocess:ADAPTER_VERSION"
+      ]
     },
     {
-      "rule": "Receipt ownership: proved-heat validates its own replay receipts inside _validate (proved_heat.py:378-382). DeclaredWorkflow._validate accepts replay_receipts as an optional key but never checks them (declared_workload.py:311), so that check lives only in workbench.py:349-366 and :436-447",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "Receipt ownership: proved-heat validates its own replay receipts inside `ciw.proved_heat:ProvedHeatWorkflow._validate` (at most one, each checked by `ciw.proved_heat:ProvedHeatWorkflow._check_receipt`). That override replaces `ciw.pipelines.runner:PipelineRunner._validate`, so `ciw.pipelines.runner:check_receipts`, which requires the same-runtime reproduction verification schema, never applies to proved-heat. The workbench adds the generic `ciw.workbench:_validate_receipts` and, in `ciw.workbench:_validate_links`, `ciw.proved_heat:ProvedHeatWorkflow.validate_replay` against the retained original",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.proved_heat:ProvedHeatWorkflow._validate",
+        "ciw.proved_heat:ProvedHeatWorkflow._check_receipt",
+        "ciw.proved_heat:ProvedHeatWorkflow.validate_replay",
+        "ciw.workbench:_validate_links",
+        "ciw.workbench:_validate_receipts"
+      ]
     },
     {
-      "rule": "The create bootstrap is a three-stage in-provider pipeline: run_specification -> prove_and_verify_result(prove_timeout=1800) -> verify_existing_proof. It has perf_counter stage timing and a proof-size gate inside the provider (proved_heat.py:100-121). The CIW adapter timeout is 3100 s (:238). There are two nested timeouts",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "The create bootstrap is a three-stage in-provider pipeline: run_specification -> prove_and_verify_result(prove_timeout=1800) -> verify_existing_proof. It has perf_counter stage timing and a proof-size gate inside the provider (`ciw.proved_heat:_BOOTSTRAP`). The CIW adapter timeout is 3100 s (`ciw.proved_heat:ProvedHeatWorkflow._adapters`). There are two nested timeouts",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.proved_heat:_BOOTSTRAP",
+        "ciw.proved_heat:ProvedHeatWorkflow._adapters"
+      ]
     }
   ],
   "investigations": [],

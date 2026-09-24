@@ -22,59 +22,124 @@
   "domain_rules": [
     {
       "rule": "Joseph-form observation-space conditioning with explicit per-channel dropout mask, NIS and innovation conditioning",
-      "evidence": "src/ciw/thermal_reference.py:40-66"
+      "evidence": "`ciw.thermal_reference:correction` builds available_mask from the non-null channels, returns the prior unchanged with nis None when every channel drops out, and otherwise conditions on the selected rows with the Joseph covariance update, reporting NIS, observation rank and the innovation condition number.",
+      "code": [
+        "ciw.thermal_reference:correction"
+      ]
     },
     {
       "rule": "Exact constant-input ZOH via the symmetric eigensystem of the capacity-scaled conductance matrix, requiring a dissipative plant, independent of the Julia symbolic path",
-      "evidence": "src/ciw/thermal_reference.py:14-33"
+      "evidence": "`ciw.thermal_reference:model_matrices` builds the conductance matrix directly, diagonalises the capacity-scaled symmetric form with eigh, refuses any non-negative rate, and forms Ad and the input integral from exp/expm1 of the rates; it consumes no Julia matrices.",
+      "code": [
+        "ciw.thermal_reference:model_matrices"
+      ]
     },
     {
       "rule": "Prospective four-subset sensor selection by log-det information gain before future observations, with cost budget, minimum sensors and lowest-mask tie policy",
-      "evidence": "src/ciw/thermal_reference.py:69-92; thermal_contract.py:136-138"
+      "evidence": "`ciw.thermal_reference:selection_reference` enumerates masks 0..3 on the next predicted covariance that `ciw.thermal_reference:reference` forms after the last step, marks feasibility by budget and minimum_sensors, and takes the first feasible mask within tie_tolerance_nats; `ciw.thermal_contract:validate_request` fixes that tie policy.",
+      "code": [
+        "ciw.thermal_reference:selection_reference",
+        "ciw.thermal_reference:reference",
+        "ciw.thermal_contract:validate_request"
+      ]
     },
     {
-      "rule": "Source admission replays the synthetic generator: every retained state and observation must equal the forward simulation with the declared noise rows within tolerance, including held-out rows",
-      "evidence": "src/ciw/thermal_contract.py:163-207"
+      "rule": "Source admission replays the synthetic generator: every retained state and every non-missing observation must equal the forward simulation with the declared noise rows within tolerance, including held-out rows",
+      "evidence": "`ciw.thermal_contract:validate_source` steps the generator_model ZOH with the retained process and measurement noise rows and compares states, non-null observations and the held-out state and observations through `ciw.thermal_contract:_close`.",
+      "code": [
+        "ciw.thermal_contract:validate_source",
+        "ciw.thermal_contract:_close"
+      ]
     },
     {
-      "rule": "Result acceptance against the independent reference with strict shape/type and abs 1e-7/rel 1e-8. Also: symbolic permutation must be a bijection, an infeasible selection must not invent a solver solution, and an unchecked incumbent or nonzero gap is refused",
-      "evidence": "src/ciw/thermal_contract.py:32, 144-160, 209-267"
+      "rule": "Result acceptance against the independent reference with strict shape and JSON type (a float slot also accepts an int, never a bool) and abs 1e-7/rel 1e-8. Also: symbolic permutation must be a bijection, an infeasible selection must not invent a solver solution, and an unchecked incumbent or a relative gap above 1e-9 is refused",
+      "evidence": "`ciw.thermal_contract:validate_result` recomputes the reference and compares model, observer and selection through `ciw.thermal_contract:_close` at `ciw.thermal_contract:TOLERANCES`, then checks the permutation, the solver status/primal status pairing, objective value and bound, and relative_gap.",
+      "code": [
+        "ciw.thermal_contract:validate_result",
+        "ciw.thermal_contract:_close",
+        "ciw.thermal_contract:TOLERANCES"
+      ]
     },
     {
       "rule": "Covariance exactly symmetric (no repair), positive-definite, eigenvalues in [1e-10, 1e4] with condition number <= 1e8; inputs keep equilibrium in 100..1000 K",
-      "evidence": "src/ciw/thermal_contract.py:66-76, 101-105"
+      "evidence": "`ciw.thermal_contract:_covariance` requires exact equality with the transpose and bounds the eigenvalues and their ratio; `ciw.thermal_contract:_input` bounds power to 0..1e4 W and ambient to 100..1000 K and requires ambient + P/g_sa + P/g_cs <= 1000 K.",
+      "code": [
+        "ciw.thermal_contract:_covariance",
+        "ciw.thermal_contract:_input"
+      ]
     },
     {
       "rule": "Projection of the reference into the Julia-shaped contract result: fixed equations/LaTeX, state_permutation, and a synthesized 'python-reference-enumeration' solver block mapping infeasible to INFEASIBLE/NO_SOLUTION",
-      "evidence": "src/ciw/thermal_workflow.py:85-130"
+      "evidence": "`ciw.thermal_workflow:_native_result` adds the fixed symbolic block with rendering 'python-reference' and identity state_permutation, synthesizes the solver block from the reference selection status, and passes the result through `ciw.thermal_contract:validate_result` before returning it.",
+      "code": [
+        "ciw.thermal_workflow:_native_result"
+      ]
     },
     {
-      "rule": "Operation-identity aliasing. request.operation_id must equal 'julia.thermal-design.v1' (src/ciw/thermal_contract.py:18, 109-110), and the constant configuration POLICY names inference 'julia_time_varying_kalman_filter' (:26). The executed operation, however, is ciw.thermal-observer.v1 (src/ciw/thermal_workflow.py:26), run by a runtime with execution_scope 'independent_python_reference_only' (:65). A runner that requires request operation == step operation would reject every valid source.",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "Operation-identity aliasing. request.operation_id must equal 'julia.thermal-design.v1' (`ciw.thermal_contract:OPERATION_ID`, enforced by `ciw.thermal_contract:validate_request`), and the constant configuration `ciw.thermal_contract:POLICY` names inference 'julia_time_varying_kalman_filter'. The executed operation, however, is ciw.thermal-observer.v1 (`ciw.thermal_workflow:OPERATION`), run by a runtime with execution_scope 'independent_python_reference_only' (`ciw.thermal_workflow:runtime_identity`). `ciw.thermal_workflow:_validate_step` binds the step to OPERATION and the request to the source request without comparing the two; a runner that required request operation == step operation would reject every valid source.",
+      "evidence": "added by adversarial verification; symbol citations in the rule",
+      "code": [
+        "ciw.thermal_contract:OPERATION_ID",
+        "ciw.thermal_contract:POLICY",
+        "ciw.thermal_workflow:OPERATION",
+        "ciw.thermal_workflow:runtime_identity",
+        "ciw.thermal_workflow:_validate_step"
+      ]
     },
     {
-      "rule": "Truth isolation. The provider receives only source['request'] (src/ciw/thermal_workflow.py:86), and reference() explicitly accepts no source truth (src/ciw/thermal_reference.py:91-92). The synthetic truth in source['evaluation'] is used only at admission (src/ciw/thermal_contract.py:175-205). This request projection is a scientific-integrity rule, not just wiring.",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "Truth isolation. `ciw.thermal_workflow:_native_result` passes only source['request'] to `ciw.thermal_reference:reference`, which explicitly accepts no source truth (its argument must carry exactly the request keys `ciw.thermal_contract:validate_request` admits). In the workflow path the synthetic truth in source['evaluation'] is read only by the admission check `ciw.thermal_contract:validate_source` (re-run on reopen and replay); otherwise it is only retained inside the source bytes and the experiment_digest. The separate diagnostic checker `ciw.thermal_contract:validate_data` with `ciw.thermal_reference:evaluate` is not called by the workflow. This request projection is a scientific-integrity rule, not just wiring.",
+      "evidence": "added by adversarial verification; symbol citations in the rule",
+      "code": [
+        "ciw.thermal_workflow:_native_result",
+        "ciw.thermal_reference:reference",
+        "ciw.thermal_contract:validate_request",
+        "ciw.thermal_contract:validate_source"
+      ]
     },
     {
-      "rule": "Generator model and request model are distinct (truth vs belief). The held-out input must be admissible under both (src/ciw/thermal_contract.py:198-199), and states are replayed with generator_model while inference uses request.model (:179-181 vs src/ciw/thermal_reference.py:95).",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "Generator model and request model are separate declarations (truth vs belief) that may differ; nothing requires them to be equal or distinct. The held-out input must be admissible under both (`ciw.thermal_contract:validate_source`), and states are replayed with generator_model in `ciw.thermal_contract:validate_source` while inference uses request.model in `ciw.thermal_reference:reference`.",
+      "evidence": "added by adversarial verification; symbol citations in the rule",
+      "code": [
+        "ciw.thermal_contract:validate_source",
+        "ciw.thermal_reference:reference"
+      ]
     },
     {
-      "rule": "Fixed profile constraints: an identity observation matrix, fixed state/input/sensor order and units, parameter ratios <= 1e4 (src/ciw/thermal_contract.py:84-98), 1..128 steps spanning at most one day (:119-120), and an exact tie tolerance of 1e-10 with 'lowest_mask_within_tolerance' (:135-136).",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "Fixed profile constraints: an identity observation matrix, fixed state/input/sensor order and units, parameter ratios <= 1e4 (`ciw.thermal_contract:validate_model`), 1..128 steps spanning at most one day, and an exact tie tolerance of 1e-10 with 'lowest_mask_within_tolerance' (`ciw.thermal_contract:validate_request`).",
+      "evidence": "added by adversarial verification; symbol citations in the rule",
+      "code": [
+        "ciw.thermal_contract:validate_model",
+        "ciw.thermal_contract:validate_request"
+      ]
     },
     {
-      "rule": "Reopen is recompute. Workbench.restore runs workflow._validate on every bundle (src/ciw/workbench.py:1087-1088). That re-runs the reference through validate_result (src/ciw/thermal_workflow.py:175; src/ciw/thermal_contract.py:218). Any failure rejects the whole workbench (src/ciw/workbench.py:1110-1111) instead of marking the bundle needs_reevaluation (the concept exists only in src/ciw/project_model.py:367-373).",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "Reopen is recompute. `ciw.workbench:Workbench.restore` validates every bundle through `ciw.workbench:_validate_record`, which calls `ciw.thermal_workflow:ThermalWorkflow._validate`. That re-runs the reference through `ciw.thermal_contract:validate_result` for the step and the verification reproduction. Any failure rejects the whole workbench instead of marking the bundle needs_reevaluation; that status exists only in the project graph (`ciw.project_model:inspect`), where it follows an input revision drift (a pin change, or an upstream result replayed to a different numerical result) or an unpinned ancestor, never a failed recompute.",
+      "evidence": "added by adversarial verification; symbol citations in the rule",
+      "code": [
+        "ciw.workbench:Workbench.restore",
+        "ciw.workbench:_validate_record",
+        "ciw.thermal_workflow:ThermalWorkflow._validate",
+        "ciw.thermal_contract:validate_result",
+        "ciw.project_model:inspect"
+      ]
     },
     {
-      "rule": "The retained runtime is checked only structurally on reopen (src/ciw/thermal_workflow.py:258-272) but by exact equality on replay (:78-81). The runtime-match policy is therefore split by verb.",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "The retained runtime is checked only structurally on reopen (`ciw.thermal_workflow:ThermalWorkflow._validate`) but by exact equality with the current runtime identity on replay (`ciw.thermal_workflow:_adapters`). The runtime-match policy is therefore split by verb.",
+      "evidence": "added by adversarial verification; symbol citations in the rule",
+      "code": [
+        "ciw.thermal_workflow:ThermalWorkflow._validate",
+        "ciw.thermal_workflow:_adapters"
+      ]
     },
     {
-      "rule": "Asymmetric covariance policy. Admission forbids repairing input covariances (src/ciw/thermal_contract.py:70-71), but the reference symmetrises intermediate covariances (src/ciw/thermal_reference.py:36-37, 52, 56, 104).",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "Asymmetric covariance policy. Admission forbids repairing input covariances (`ciw.thermal_contract:_covariance`), but the reference symmetrises intermediate covariances with `ciw.thermal_reference:_symmetric` in `ciw.thermal_reference:correction` and `ciw.thermal_reference:reference`.",
+      "evidence": "added by adversarial verification; symbol citations in the rule",
+      "code": [
+        "ciw.thermal_contract:_covariance",
+        "ciw.thermal_reference:_symmetric",
+        "ciw.thermal_reference:correction",
+        "ciw.thermal_reference:reference"
+      ]
     }
   ],
   "investigations": [],

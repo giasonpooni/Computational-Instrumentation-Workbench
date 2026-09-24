@@ -66,36 +66,77 @@
   ],
   "domain_rules": [
     {
-      "rule": "Target admissibility. The selected node must be a declared function with model_ref 'jspt.reference.quadratic_drag' and class nonlinear or unknown. x_star must be one finite value with |x*| \u2264 1e6, and c must satisfy 0 \u2264 c \u2264 1e6. The chart must be identity and the units SI. sigma_x is optional and must be a scalar in [0, 1e12]. No undeclared attributes are allowed",
-      "evidence": "src/ciw/schematic_companions.py:66-82"
+      "rule": "Target admissibility. The selected node must be a declared function with model_ref 'jspt.reference.quadratic_drag' and class nonlinear or unknown. x_star must be a one-element list holding a finite value with |x*| ≤ 1e6, and c must be finite with 0 ≤ c ≤ 1e6. The chart must be identity and the units SI. sigma_x is optional and must be a 1×1 matrix whose finite entry lies in [0, 1e12]. No undeclared attributes are allowed: only class, model_ref, x_star, c, law, chart, units, sigma_x, rank and invisible_dim may appear. The source configuration must equal the declared policy, and the submitted schematic keeps room for the four certificates (at most 252 nodes and 1020 edges)",
+      "evidence": "`ciw.schematic_companions:_source` with `ciw.schematic_companions:_finite`; policy `ciw.schematic_companions:POLICY`",
+      "code": [
+        "ciw.schematic_companions:_source",
+        "ciw.schematic_companions:_finite",
+        "ciw.schematic_companions:POLICY"
+      ]
     },
     {
-      "rule": "Certificate naming and collision rules. The provider adds cert:jspt:<f>, cert:jspt.structure:<f>, cert:jspt.cov:<f> and cert:lyapunov:<f>, which must not collide with declared non-certificates. The appended edges must be 'linearizes', or 'certifies' for Lyapunov, in exact order. The declared topology is a prefix. The target may change only in rank/invisible_dim, and other nodes change only by stale marking",
-      "evidence": "src/ciw/schematic_companions.py:83-86, :108-110, :196-227"
+      "rule": "Certificate naming and collision rules. The only nodes the provider may add are cert:jspt:<f>, cert:jspt.structure:<f>, cert:jspt.cov:<f> and cert:lyapunov:<f>, and a declared node holding one of these identities must be a certificate in the submitted schematic. Every declared node and the schematic metadata are retained. The declared topology is a prefix, and exactly one edge is appended from each newly added certificate identity (present in the result, not declared) to the target, 'linearizes', or 'certifies' for Lyapunov, in that identity order; no other edge is appended, so a run that adds no certificate appends none. The target may change only in rank/invisible_dim. Other declared nodes change only by stale marking of a previously SAMPLED certificate, except declared nodes holding one of the four identities, whose content in the result is not compared",
+      "evidence": "`ciw.schematic_companions:_certificate_ids`; collision check in `ciw.schematic_companions:_source`; retention, stale marking and edge checks in `ciw.schematic_companions:_check_data`",
+      "code": [
+        "ciw.schematic_companions:_certificate_ids",
+        "ciw.schematic_companions:_source",
+        "ciw.schematic_companions:_check_data"
+      ]
     },
     {
-      "rule": "SRA eligibility policy for this model and chart. There are four tools in a fixed order, owned by jspt or plsr, and every event that is not NOT_ELIGIBLE must carry NATIVE_JSPT or NATIVE_PLSR. The eligibility table inserts jspt.sweep_perturbation_scale for non-unknown classes. check_coordinate_consistency is always NOT_ELIGIBLE. For the unknown class everything is NOT_ELIGIBLE and no companion executes. For nonlinear, jacobian_at and sweep are ELIGIBLE",
-      "evidence": "src/ciw/schematic_companions.py:228-254"
+      "rule": "SRA eligibility policy for this model and chart. The four events follow TOOLS in fixed order, name the selected function, are owned by plsr for lyapunov.evaluate and jspt otherwise, and have result SAMPLED, REFUSED, NOT_CHECKED or NOT_ELIGIBLE; every event that is not NOT_ELIGIBLE must carry NATIVE_PLSR (lyapunov.evaluate) or NATIVE_JSPT (the jspt tools) as its pin. The eligibility table, before and after execution, inserts jspt.sweep_perturbation_scale for non-unknown classes. check_coordinate_consistency is always NOT_ELIGIBLE. For the unknown class everything is NOT_ELIGIBLE and no companion executes. For nonlinear, jacobian_at and sweep are ELIGIBLE",
+      "evidence": "`ciw.schematic_companions:_check_data` over `ciw.schematic_companions:TOOLS`",
+      "code": [
+        "ciw.schematic_companions:_check_data",
+        "ciw.schematic_companions:TOOLS",
+        "ciw.schematic_companions:NATIVE_JSPT",
+        "ciw.schematic_companions:NATIVE_PLSR"
+      ]
     },
     {
-      "rule": "Analytic Jacobian cross-check: A = -2\u00b7c\u00b7|x*|. The SRA binding is also recomputed: declaration_id = _native_digest('sra.declaration.v1', _declaration(graph, target)) and result_id = _native_digest('sra.jacobian-result.v1', binding+A). This uses SRA's own JSON hashing, namespace + NUL, without ensure_ascii=False. Also checked are the schema NsJacobianBinding@0.1, kernel == NATIVE_JSPT, provenance == NATIVE_PROVENANCE, fixture false, and that the execution_id matches the sra-execution:<uuid> pattern and does not appear in the submitted schematic",
-      "evidence": "src/ciw/schematic_companions.py:113-126, :255-274"
+      "rule": "Analytic Jacobian cross-check. When the Jacobian event is SAMPLED, cert:jspt:<f> must hold exactly A = [[-2·c·|x*|]], and its SRA binding is recomputed: declaration_id = _native_digest('sra.declaration.v1', _declaration(submitted schematic, target)) and result_id = _native_digest('sra.jacobian-result.v1', binding+A). This uses SRA's own JSON hashing, namespace + NUL, without ensure_ascii=False. Also checked are the schema NsJacobianBinding@0.1, the call_inputs (model_ref, x_star, c), kernel == NATIVE_JSPT, provenance == NATIVE_PROVENANCE, fixture false, that the Jacobian event detail repeats A and the binding's result and execution refs, and that the execution_id matches the sra-execution:<uuid> pattern and does not appear in the submitted schematic",
+      "evidence": "`ciw.schematic_companions:_check_data` with `ciw.schematic_companions:_native_digest` and `ciw.schematic_companions:_declaration`",
+      "code": [
+        "ciw.schematic_companions:_check_data",
+        "ciw.schematic_companions:_native_digest",
+        "ciw.schematic_companions:_declaration",
+        "ciw.schematic_companions:NATIVE_PROVENANCE"
+      ]
     },
     {
-      "rule": "Dependent certificates must bind the same Jacobian result and execution. Local structure: rank = 1[|A| > rank_absolute_tolerance], the singular value is |A|, the visible and invisible bases are unit-norm, and target rank/invisible_dim are consistent. Covariance: sigma_y = A\u00b7sigma_x\u00b7A to 1e-12 relative, with sigma_x copied and exact_for_affine false. Lyapunov: a < 0, p > 0, 2ap = -1, V = p\u00b7x\u00b2, decrease = 2ap\u00b7x\u00b2, verdict certified, and event detail must match the certificate",
-      "evidence": "src/ciw/schematic_companions.py:275-310"
+      "rule": "Dependent certificates. For each local structure, covariance or Lyapunov event that is SAMPLED, its certificate must bind the same Jacobian result and execution, with matching tool, owner and pin; certificates of events that are not SAMPLED are not compared with the Jacobian. Local structure: rank = 1[|A| > rank_absolute_tolerance], the singular value is |A|, the visible and invisible bases are unit-norm, and target rank/invisible_dim are consistent. Covariance: sigma_y = A·sigma_x·A to 1e-12 relative, with sigma_x copied and exact_for_affine false. Lyapunov: a < 0, p > 0, 2ap = -1, V = p·x², decrease = 2ap·x², verdict certified, and event detail must match the certificate",
+      "evidence": "`ciw.schematic_companions:_check_data` with `ciw.schematic_companions:_scalar_basis` and `ciw.schematic_companions:_scalar_matrix`",
+      "code": [
+        "ciw.schematic_companions:_check_data",
+        "ciw.schematic_companions:_scalar_basis",
+        "ciw.schematic_companions:_scalar_matrix",
+        "ciw.schematic_companions:POLICY"
+      ]
     },
     {
-      "rule": "Companions require a freshly SAMPLED Jacobian. When sigma_x is not declared, the covariance event must be NOT_ELIGIBLE, so input covariance is never invented",
-      "evidence": "src/ciw/schematic_companions.py:311-314"
+      "rule": "Companions require a freshly SAMPLED Jacobian: no local structure, covariance or Lyapunov event may be SAMPLED unless this execution's Jacobian event is SAMPLED. When sigma_x is not declared, the covariance event must be NOT_ELIGIBLE, so input covariance is never invented",
+      "evidence": "`ciw.schematic_companions:_check_data`",
+      "code": [
+        "ciw.schematic_companions:_check_data"
+      ]
     },
     {
-      "rule": "Provider-echoed scope: data.scope must equal POLICY and data.function_id must equal the source selection (schematic_companions.py:196-197)",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "Provider-echoed scope: data.scope must equal POLICY and data.function_id must equal the source selection (`ciw.schematic_companions:_check_data`)",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.schematic_companions:_check_data",
+        "ciw.schematic_companions:POLICY"
+      ]
     },
     {
-      "rule": "The fresh SRA occurrence must match the 'sra-execution:<uuid>' pattern and must not appear as a SUBSTRING anywhere in canonical(source.schematic) (schematic_companions.py:259-262). This is a text-containment rule, not a path check",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "The fresh SRA occurrence must match the 'sra-execution:<uuid>' pattern and must not appear as a SUBSTRING anywhere in canonical(source.schematic) (`ciw.schematic_companions:_check_data`). This is a text-containment rule, not a path check. When their Jacobian events are SAMPLED, the primary step and the verification reproduction must carry distinct native occurrences (`ciw.schematic_companions:SchematicCompanionWorkflow._check_verification`, `ciw.schematic_companions:native_occurrences`), and no other retained schematic-companions bundle may share any of them (`ciw.workbench:_validate_links`)",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.schematic_companions:_check_data",
+        "ciw.schematic_companions:SchematicCompanionWorkflow._check_verification",
+        "ciw.schematic_companions:native_occurrences",
+        "ciw.workbench:_validate_links"
+      ]
     }
   ],
   "investigations": [],

@@ -45,31 +45,63 @@
   "domain_rules": [
     {
       "rule": "Recompute the PPDA native evidence graph from the retained snapshot bytes: source, document, record, observation and artifact ids using PPDA's ensure_ascii sha256 formula, a 12-digit zero-padded locator and checkpoint position, per-run pool fingerprints, and the final checkpoint and restored pool fingerprint.",
-      "evidence": "acquired_dataset.py:140-190. _native_hash is at 140-141. The identity formulas are at 162-172. The checkpoint and fingerprint logic is at 179-189. The docstring at 145-149 limits this to an integrity check."
+      "evidence": "`ciw.acquired_dataset:_check_data` recomputes the ids with `ciw.acquired_dataset:_native_hash`, plus the checkpoints and pool fingerprints; it compares runs and evidence canonically with the provider output, and the final checkpoint and restored pool fingerprint by equality. Its docstring limits this to an integrity check. The runner reaches it through `ciw.acquired_dataset:AcquisitionWorkflow.check_data` after invoke and in `ciw.pipelines.runner:check_step`.",
+      "code": [
+        "ciw.acquired_dataset:_check_data",
+        "ciw.acquired_dataset:_native_hash",
+        "ciw.acquired_dataset:AcquisitionWorkflow.check_data"
+      ]
     },
     {
       "rule": "Incremental append-only acquisition semantics: request times must be strictly increasing and tz-aware, record sequences strictly increasing, each snapshot must extend the previous one as a prefix, and revisions require a new plan.",
-      "evidence": "acquired_dataset.py:49-76 (53-55, 68-74)"
+      "evidence": "`ciw.acquired_dataset:_source`, the `ciw.acquired_dataset:AcquisitionWorkflow.parse_source` hook, refuses naive or non-increasing requested_at, sequences that are not distinct, increasing, nonnegative and at most 12 digits, and a snapshot whose leading records differ canonically from the previous snapshot.",
+      "code": [
+        "ciw.acquired_dataset:_source",
+        "ciw.acquired_dataset:AcquisitionWorkflow.parse_source"
+      ]
     },
     {
-      "rule": "Native acquisition driver: register SourceDefinition and AdapterRegistry, call execute_plan per snapshot, and restore DurablePool between runs. Also refuse if any declared record fails admission.",
-      "evidence": "acquired_dataset.py:83-137 (refusal condition at 114-115)"
+      "rule": "Native acquisition driver: register the SourceDefinition in a SourceRegistry and the incremental dataset binding in an AdapterRegistry, call execute_plan per snapshot, and restore DurablePool before the first run and after each run. Also refuse if a run does not succeed or any declared record fails admission.",
+      "evidence": "The driver is the shim `ciw.acquired_dataset:_BOOTSTRAP`, run by `ciw.acquired_dataset:AcquisitionWorkflow.invoke` through `ciw.pipelines.runner:PipelineRunner.run_provider`, which re-verifies the provider identity before the exit code is read; a nonzero exit from an unchanged provider becomes ACQUISITION_REFUSED.",
+      "code": [
+        "ciw.acquired_dataset:_BOOTSTRAP",
+        "ciw.acquired_dataset:AcquisitionWorkflow.invoke",
+        "ciw.pipelines.runner:PipelineRunner.run_provider"
+      ]
     },
     {
-      "rule": "Incremental first-appearance semantics. _check_data skips rows whose sequence is <= the last seen (acquired_dataset.py:165-166), so each document, record and observation carries the retrieved_at/extracted_at of the first snapshot that contained the row (169, 175). acquired_window.py:107 depends on this: document.retrieved_at == snapshot.requested_at only holds for that first snapshot. This is cross-pipeline semantic coupling that no descriptor field captures.",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "Incremental first-appearance semantics. `ciw.acquired_dataset:_check_data` skips rows whose sequence is <= the last seen, so each document, record and observation is emitted once, for the first snapshot that contained the row: the document carries that snapshot's requested_at as retrieved_at and the observation as extracted_at. `ciw.acquired_window:_derive` depends on this: document.retrieved_at == snapshot.requested_at only holds for that first snapshot. This is cross-pipeline semantic coupling that no descriptor field captures.",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.acquired_dataset:_check_data",
+        "ciw.acquired_window:_derive"
+      ]
     },
     {
-      "rule": "The derived filename carries identity. _filename = 'dataset-' + sha256(canonical(source.source)) + '.json' (79-80) is not just an argv convenience. It enters the plan parameters (154), the locator (168), and therefore record.id (171-172) and artifact_id (176). Changing the derivation formula invalidates every retained bundle, so it must be frozen with the pipeline version.",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "The derived filename carries identity. `ciw.acquired_dataset:_filename` = 'dataset-' + hex sha256(canonical(source.source)) + '.json' is not just the argv path `ciw.acquired_dataset:AcquisitionWorkflow.invoke` passes to the shim. It enters the plan parameters, the locator, and therefore record.id and artifact_id, all recomputed in `ciw.acquired_dataset:_check_data`. Changing the derivation formula invalidates every retained bundle, so it must be frozen with the pipeline version.",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.acquired_dataset:_filename",
+        "ciw.acquired_dataset:_check_data",
+        "ciw.acquired_dataset:AcquisitionWorkflow.invoke"
+      ]
     },
     {
-      "rule": "Three different JSON serializations mirror the provider. Row content uses json.dumps with default separators and ensure_ascii (167). Ids use compact separators with ensure_ascii=True (140-141). The shim output uses ensure_ascii=False (136).",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "Three different JSON serializations are in play, and only the first two mirror the provider. Row content in `ciw.acquired_dataset:_check_data` uses json.dumps with sort_keys, default separators and ensure_ascii, as PPDA's incremental dataset adapter does. Ids use `ciw.acquired_dataset:_native_hash`: sort_keys, compact separators and ensure_ascii=True, as SCOUT's content_hash does. The shim output printed by `ciw.acquired_dataset:_BOOTSTRAP` uses compact separators with ensure_ascii=False; it is transport only, because `ciw.acquired_dataset:AcquisitionWorkflow.invoke` parses it and the runner seals the parsed data, not those bytes.",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.acquired_dataset:_check_data",
+        "ciw.acquired_dataset:_native_hash",
+        "ciw.acquired_dataset:_BOOTSTRAP"
+      ]
     },
     {
-      "rule": "All-or-nothing admission. The shim refuses if any declared record fails admission (115). It restores the DurablePool between runs (107, 123), and the restored fingerprint must equal the last run's (189). The pool fingerprint includes empty provider-internal categories (referents, claimed_relationships, derived_values, derived_groundings at 182), and the checkpoint position is zero-padded to 12 digits (183).",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "All-or-nothing admission. The shim `ciw.acquired_dataset:_BOOTSTRAP` refuses if any declared record fails admission, and `ciw.acquired_dataset:_check_data` requires every run to report outcome acquired with no admission failures and no error. The shim restores the DurablePool before the first run and after each run, and the restored fingerprint must equal the last run's. The pool fingerprint includes empty provider-internal categories (referents, claimed_relationships, derived_values, derived_groundings), and the checkpoint position is zero-padded to 12 digits.",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.acquired_dataset:_BOOTSTRAP",
+        "ciw.acquired_dataset:_check_data"
+      ]
     }
   ],
   "investigations": [

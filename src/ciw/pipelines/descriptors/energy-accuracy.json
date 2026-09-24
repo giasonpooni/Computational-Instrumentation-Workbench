@@ -22,32 +22,67 @@
   ],
   "domain_rules": [
     {
-      "rule": "Retained NVML log validation: five ordered, non-overlapping phases; sample/batch budgets; clock and UUID formats; origin must be physical_measurement or synthetic_fixture; seal/log_digest",
-      "evidence": "src/ciw/energy_records.py:265-330 (_validate/validate_log), :332-343 (seal), :133-262 (plan/sensor/runtime/sample validators)"
+      "rule": "Retained NVML log validation: five ordered, non-overlapping phases; sample/batch budgets; clock and UUID formats; origin must be physical_measurement or synthetic_fixture; seal/log_digest. The analysis source admits a log only through this validation.",
+      "evidence": "`ciw.energy_records:validate_log` and `ciw.energy_records:_validate`, `ciw.energy_records:seal`, plan/sensor/runtime/sample validators `ciw.energy_records:_plan`, `ciw.energy_records:_sensor`, `ciw.energy_records:_runtime`, `ciw.energy_records:_sample`; applied on admission by `ciw.energy_workflow:EnergyAccuracyWorkflow._source`",
+      "code": [
+        "ciw.energy_records:validate_log",
+        "ciw.energy_records:_validate",
+        "ciw.energy_records:seal",
+        "ciw.energy_records:_sensor",
+        "ciw.energy_workflow:EnergyAccuracyWorkflow._source"
+      ]
     },
     {
       "rule": "Gross counter-difference energy per phase with bracket and alignment checks; reset/wrap ambiguity; per-batch KL against the reference; eligibility reasons and the classification physical_domain_measurement / synthetic_only / ineligible",
-      "evidence": "src/ciw/energy_records.py:345-389 (_phase_analysis), :390-445 (analyze)"
+      "evidence": "`ciw.energy_records:_phase_analysis`, `ciw.energy_records:analyze`",
+      "code": [
+        "ciw.energy_records:_phase_analysis",
+        "ciw.energy_records:analyze"
+      ]
     },
     {
-      "rule": "Capture tooling (CUDA PTX Gaussian VI worker, NVML counter reader, five-phase capture journal)",
-      "evidence": "src/ciw/energy_bench.py:35-205, energy_cuda.py:209-318, energy_nvml.py:101-223; only reachable from cli.py:435-446"
+      "rule": "Capture tooling (CUDA PTX Gaussian VI worker, NVML counter reader, five-phase capture journal) stays outside the offline analysis workflow, which never imports it; it is reachable only from the energy probe and energy record commands",
+      "evidence": "`ciw.energy_bench:prepare_plan`, `ciw.energy_bench:capture`, `ciw.energy_bench:probe`, `ciw.energy_cuda:CudaGaussianWorker`, `ciw.energy_nvml:NVMLEnergyCounter`; only reachable from `ciw.cli:main`",
+      "code": [
+        "ciw.energy_bench:capture",
+        "ciw.energy_bench:probe",
+        "ciw.energy_cuda:CudaGaussianWorker",
+        "ciw.energy_nvml:NVMLEnergyCounter",
+        "ciw.cli:main"
+      ]
     },
     {
-      "rule": "validate_log rebuilds the float64 CUDA device input from information_system(problem), the initial precision, alpha and beta. It then requires the hash of that input to equal workload.prepared_input_sha256 (energy_records.py:224-231).",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "validate_log rebuilds the little-endian float64 CUDA device input from information_system(problem) (precision and information vector), the initial mean, the initial precision, alpha, beta and 1-beta. It then requires the SHA-256 of that input to equal workload.prepared_input_sha256. Only the initial device input is reconstructed, never the GPU iteration (`ciw.energy_records:_runtime`).",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.energy_records:_runtime",
+        "ciw.energy_records:validate_log"
+      ]
     },
     {
-      "rule": "The workload's iterations, replicas, solver and problem digest must equal the plan (energy_records.py:216-223), and the CUDA workload profile is fixed (:197-206).",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "The workload's iterations, replicas, solver and problem digest must equal the plan, and the CUDA workload profile is fixed (`ciw.energy_records:_runtime`).",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.energy_records:_runtime"
+      ]
     },
     {
-      "rule": "Plan admission runs gaussian_reference to validate the numerical domain before any measurement is considered (energy_records.py:136-138).",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "Plan admission runs gaussian_reference to validate the numerical domain before any measurement is considered: `ciw.energy_records:_plan` calls `ciw.free_energy_math:gaussian_reference`, and `ciw.energy_records:_validate` checks the plan before the sensor, runtime and phases.",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.energy_records:_plan",
+        "ciw.energy_records:_validate"
+      ]
     },
     {
-      "rule": "The run_id to log_digest binding holds across bundles through the workbench-wide identity map: claims at workbench.py:290-297, checked at :825 and merged at :829. It is a catalog-level uniqueness rule, not a per-bundle check.",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "The run_id to log_digest binding holds across bundles through the workbench-wide identity map: claims in `ciw.workbench:_claims` (the run_id bound to log_digest and origin, and the log_digest bound to run_id and origin), checked by `ciw.workbench:Workbench._check_claims` and merged into the map by `ciw.workbench:Workbench._retain` (and likewise by `ciw.workbench:Workbench.restore`). It is a catalog-level uniqueness rule, not a per-bundle check.",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.workbench:_claims",
+        "ciw.workbench:Workbench._check_claims",
+        "ciw.workbench:Workbench._retain",
+        "ciw.workbench:Workbench.restore"
+      ]
     }
   ],
   "investigations": [],

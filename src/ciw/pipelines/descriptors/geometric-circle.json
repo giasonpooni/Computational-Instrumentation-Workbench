@@ -43,28 +43,60 @@
   ],
   "domain_rules": [
     {
-      "rule": "Input joint covariance must be exactly symmetric PSD in rational arithmetic (exact Schur complements, no jitter/averaging) before retention, stricter than GTE's native roundoff-tolerant domain",
-      "evidence": "geometric_circle.py:95-102 calling calibrated_window._covariance (calibrated_window.py:64-76) and gte_records._covariance; policy flag at geometric_circle.py:31"
+      "rule": "Input joint covariance must be exactly symmetric PSD in rational arithmetic (exact Schur complements, no tolerance, jitter, averaging or diagonal substitution) before a native result is sealed or a session retained, stricter than GTE's native roundoff-tolerant domain. The check_data hook enforces it on every native result before the step is sealed, not at source admission: a declaration outside this domain is still admitted and retained as a workbench source (`ciw.workbench:Workbench.add_source`) and still reaches GTE, but yields no sealed step or session; the workbench keeps the failure only as a refused-execution record with no result (`ciw.workbench:Workbench._retain_refusal`), and retained-session validation refuses it again. The source configuration must equal the policy that declares input_covariance_validation exact_symmetric_positive_semidefinite_before_retention.",
+      "evidence": "`ciw.geometric_circle:_check_data` calling `ciw.calibrated_window:_covariance` and `ciw.adapters.gte_records:_covariance`; hook order in `ciw.pipelines.runner:PipelineRunner._step` and `ciw.pipelines.runner:check_step`; policy flag `ciw.geometric_circle:POLICY` required by `ciw.geometric_circle:_source`",
+      "code": [
+        "ciw.geometric_circle:_check_data",
+        "ciw.calibrated_window:_covariance",
+        "ciw.geometric_circle:_source",
+        "ciw.pipelines.runner:PipelineRunner._step",
+        "ciw.pipelines.runner:check_step",
+        "ciw.workbench:Workbench._retain_refusal"
+      ]
     },
     {
-      "rule": "Fixed-exact circle applicability: constraint frame equals observation frame, kind circle, euclidean metric, radius>0, validity window [start,end) contains every sample time, no observed point equals the circle centre, geometry_uncertainty fixed_exact",
-      "evidence": "geometric_circle.py:103-114"
+      "rule": "Fixed-exact circle applicability: the constraint has exactly its declared fields, constraint frame equals observation frame, kind circle, euclidean metric, radius>0, validity window [start,end) with start<end contains every sample time, no observed point equals the circle centre, geometry_uncertainty fixed_exact. The check_data hook applies this to the declared request on every native result; source admission leaves applicability to native GTE.",
+      "evidence": "`ciw.geometric_circle:_check_data`",
+      "code": [
+        "ciw.geometric_circle:_check_data"
+      ]
     },
     {
-      "rule": "Typed GTE result must echo request bindings (source_id, observation ids, times, frame, observed points, constraint, policy) and full-batch selection",
-      "evidence": "adapters/gte_records.py:51-70 (continues to :132)"
+      "rule": "Typed GTE result (gte.circle-result.v1, euclidean-nearest-circle-projection-v1, exact field set) must echo request bindings by digest (source_id, observation ids, times, time origin, frame, observed points, constraint, policy), echo the declared input covariance, its source and frame in its uncertainty block, and require full-batch selection. The selection this pipeline passes, [0, duration_s) of the synthetic run, always contains the full batch.",
+      "evidence": "`ciw.adapters.gte_records:validate_payload`, called by `ciw.geometric_circle:_check_data`",
+      "code": [
+        "ciw.adapters.gte_records:validate_payload",
+        "ciw.geometric_circle:_check_data"
+      ]
     },
     {
-      "rule": "The GTE reconciliation status must follow from the policy thresholds (held with reasons correction_limit_exceeded or linearization_limit_exceeded, else eligible), and reconciled_points must be null when held (adapters/gte_records.py:113-121). This is a hand-written provider-payload validator shared with geodesic.py (geodesic.py:154-161).",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "The GTE reconciliation status must follow from the policy thresholds: held with reasons correction_limit_exceeded (some correction_norm_m above max_correction_m) and/or linearization_limit_exceeded (some linearization_ratio above max_linearization_ratio), else eligible with no reasons, scope declared_geometric_policy_only; reconciled_points_m must be null when held and equal the projected points when eligible (`ciw.adapters.gte_records:validate_payload`). This is a hand-written provider-payload validator shared with the GTE investigation path: `ciw.geodesic:bind_gte` registers gte.project-circle.v1, whose results `ciw.operations.schemas:validate_payload` dispatches to the same validator. The threshold domain (policy has exactly max_correction_m >= 0 and max_linearization_ratio > 0) is checked only by this pipeline's `ciw.geometric_circle:_check_data`; the shared validator does not check it.",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.adapters.gte_records:validate_payload",
+        "ciw.operations.schemas:validate_payload",
+        "ciw.geodesic:bind_gte",
+        "ciw.geometric_circle:_check_data"
+      ]
     },
     {
-      "rule": "The selection-support convention: duration = last sample + 1 s as half-open selection support, not a measured period (geodesic.py:71-77). It is used only to build the synthetic run that the validator needs.",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "The selection-support convention: duration = last sample + 1 s as half-open selection support, not a measured period; `ciw.geodesic:_duration` refuses sample times for which that sum is not finite or not greater than the last sample. In this pipeline it is used only to build the synthetic run (`ciw.geodesic:_make_run`) and the selection [0, duration_s) that `ciw.geometric_circle:_check_data` hands to the validator; neither is retained in the session.",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.geodesic:_duration",
+        "ciw.geodesic:_make_run",
+        "ciw.geometric_circle:_check_data"
+      ]
     },
     {
-      "rule": "The input covariance is checked in two different domains on the same matrix. The first is exact rational PSD (geometric_circle.py:100 -> calibrated_window.py:64-76). The second is a float correlation-eigenvalue check with 1e-10 tolerance (geometric_circle.py:101 -> gte_records.py:27-48). The descriptor must say that both apply.",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "The input covariance is checked in two different domains on the same matrix. The first is exact rational PSD (`ciw.geometric_circle:_check_data` -> `ciw.calibrated_window:_covariance`). The second is a float correlation check with 1e-10 tolerance on asymmetry and smallest eigenvalue, negative variances refused and zero-variance rows and columns required exactly zero (`ciw.geometric_circle:_check_data` -> `ciw.adapters.gte_records:_covariance`), which `ciw.adapters.gte_records:validate_payload` applies again to the echoed input_joint_covariance. A declaration must pass both.",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.geometric_circle:_check_data",
+        "ciw.calibrated_window:_covariance",
+        "ciw.adapters.gte_records:_covariance",
+        "ciw.adapters.gte_records:validate_payload"
+      ]
     }
   ],
   "investigations": [

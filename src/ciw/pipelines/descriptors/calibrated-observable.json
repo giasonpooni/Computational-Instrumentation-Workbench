@@ -121,55 +121,118 @@
   "domain_rules": [
     {
       "rule": "Two-channel time alignment: exact rational check reference_origin + event_time_delta == event_time, declared maximum nominal separation tolerance, target_time = max(channel times), retained time-uncertainty policy",
-      "evidence": "calibrated_observable.py:91-115"
+      "evidence": "The tbrt branch of `ciw.calibrated_observable:_BOOTSTRAP` compares Fraction(reference_origin) + Fraction(event_time_delta) with Fraction(event_time) per channel, refuses a tolerance that is not a finite nonnegative int or float and any separation above it, and returns target_time = max(times) with the declared measurement_time_policy, which `ciw.calibrated_observable:_source_inner` requires to be nominal_alignment_with_retained_time_uncertainty.",
+      "code": [
+        "ciw.calibrated_observable:_BOOTSTRAP",
+        "ciw.calibrated_observable:_source_inner"
+      ]
     },
     {
-      "rule": "Calibrated covariance combination: refuse unknown calibrated cross-covariance or missing evidence, require the declared combined covariance diagonal to equal each channel's MCUR-propagated variance exactly, and require zero off-diagonal under declared_zero",
-      "evidence": "calibrated_observable.py:144-155"
+      "rule": "Calibrated covariance combination: refuse unknown calibrated cross-covariance or missing evidence, require the declared combined covariance diagonal to equal each channel's MCUR-propagated variance exactly, and require the [0][1] off-diagonal entry to be zero under declared_zero (the [1][0] entry is not checked here)",
+      "evidence": "The mcur branch of `ciw.calibrated_observable:_BOOTSTRAP` refuses calibrated_covariance whose cross_covariance_policy is 'unknown' or whose evidence_ids are empty, compares each matrix[i][i] with that channel's calibration variance by exact float equality, and under 'declared_zero' refuses a nonzero matrix[0][1]. `ciw.calibrated_observable:_request` passes the experiment's calibrated_covariance to MCUR unchanged.",
+      "code": [
+        "ciw.calibrated_observable:_BOOTSTRAP",
+        "ciw.calibrated_observable:_request"
+      ]
     },
     {
-      "rule": "Calibration applicability evidence: reference_ids non-empty, unique strings; joint covariance evidence_ids required; acquired_at = epoch + aligned event_time without microsecond loss; epoch must be UTC",
-      "evidence": "calibrated_observable.py:117-143"
+      "rule": "Calibration applicability evidence: reference_ids a non-empty list of unique, non-blank strings; joint covariance evidence_ids required; acquired_at = epoch + aligned event_time without microsecond loss; epoch must be UTC",
+      "evidence": "The mcur branch of `ciw.calibrated_observable:_BOOTSTRAP` refuses these before calling calibrate, including an acquired_at whose elapsed seconds do not round-trip exactly and an epoch_utc not at UTC. `ciw.calibrated_observable:_source_inner` already requires epoch_utc to be an exact UTC timestamp and the calibration validity bounds to be exact, via `ciw.calibrated_observable:_exact_timestamp`.",
+      "code": [
+        "ciw.calibrated_observable:_BOOTSTRAP",
+        "ciw.calibrated_observable:_source_inner",
+        "ciw.calibrated_observable:_exact_timestamp"
+      ]
     },
     {
-      "rule": "Observability-gated estimation: GSIE update_observable receives an ObservabilityAssessment assembled from OIT output, OIT's declared transition and the dynamics model id; non-observable statuses refuse estimation",
-      "evidence": "calibrated_observable.py:157-180 (wiring 294-306); docs/CALIBRATED_OBSERVABLE.md flowchart; tests/test_calibrated_observable.py:167-176"
+      "rule": "Observability-gated estimation: GSIE update_observable receives an ObservabilityAssessment assembled from OIT output, OIT's declared transition and the dynamics model id; non-observable statuses (unobservable, ill_conditioned, unresolved) refuse estimation in the pinned GSIE, surfaced as CALIBRATED_GSIE_REFUSED",
+      "evidence": "`ciw.calibrated_observable:_request` builds the observability inputs from the OIT step (ids are its numerical_result_id); the gsie branch of `ciw.calibrated_observable:_BOOTSTRAP` constructs ObservabilityAssessment and calls update_observable; `ciw.calibrated_observable:_invoke` maps a refusal to CALIBRATED_GSIE_REFUSED. docs/CALIBRATED_OBSERVABLE.md flowchart; test_noninformative_observability_blocks_estimation in tests/test_calibrated_observable.py",
+      "code": [
+        "ciw.calibrated_observable:_request",
+        "ciw.calibrated_observable:_BOOTSTRAP",
+        "ciw.calibrated_observable:_invoke"
+      ]
     },
     {
       "rule": "Stationary-hold model and OIT-assesses-exact-estimator-model admission",
-      "evidence": "calibrated_observable.py:261-267"
+      "evidence": "`ciw.calibrated_observable:_source_inner` refuses a source unless the OIT transition, observation and model_id equal the GSIE dynamics matrix, observation-model matrix and observation-model model_id, and unless the GSIE dynamics are the stationary hold (identity matrix, zero process covariance). `ciw.calibrated_observable:_source` applies it on create and on every validation.",
+      "code": [
+        "ciw.calibrated_observable:_source_inner",
+        "ciw.calibrated_observable:_source"
+      ]
     },
     {
       "rule": "FDIR residual basis is the retained GSIE prior innovation, with CBSR status piped in",
-      "evidence": "calibrated_observable.py:184-191, 314-320"
+      "evidence": "The fdir branch of `ciw.calibrated_observable:_request` passes the GSIE step's innovation and innovation_covariance as residual and residual_covariance, the GSIE and CBSR result_ids as source_ids and the CBSR status as cbsr_status; the fdir branch of `ciw.calibrated_observable:_BOOTSTRAP` echoes cbsr_status and labels residual_basis 'retained_gsie_prior_innovation'.",
+      "code": [
+        "ciw.calibrated_observable:_request",
+        "ciw.calibrated_observable:_BOOTSTRAP"
+      ]
     },
     {
       "rule": "Exact ISO timestamp precision (fraction digits beyond microseconds, fractional offsets, UTC requirement)",
-      "evidence": "calibrated_observable.py:37-57 (imported by calibrated_window.py:22)"
+      "evidence": "`ciw.calibrated_observable:_exact_timestamp` refuses nonzero fraction digits beyond six, fractional offsets that fromisoformat would drop, naive timestamps and, with require_utc, non-UTC offsets. `ciw.calibrated_observable:_source_inner` applies it to epoch_utc and the calibration validity bounds; `ciw.calibrated_window:_source` imports and reuses it.",
+      "code": [
+        "ciw.calibrated_observable:_exact_timestamp",
+        "ciw.calibrated_observable:_source_inner",
+        "ciw.calibrated_window:_source"
+      ]
     },
     {
-      "rule": "Completed steps with non-success outcome statuses are not refusals. CBSR can return status 'held' with reconciled None, and FDIR still runs, consuming cbsr_status (calibrated_observable.py:316-320, 191; tests/test_calibrated_observable.py:187-194). FDIR returns isolability 'ambiguous' with no isolated fault under unknown fault cross-covariance (tests/test_calibrated_observable.py:179-184). A generic 'failed -> retained refusal' split must not classify these.",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "Completed steps with non-success outcome statuses are not refusals. CBSR can return status 'held' with reconciled None, and FDIR still runs on it: the fdir branch of `ciw.calibrated_observable:_request` pipes cbsr_status in and `ciw.calibrated_observable:_BOOTSTRAP` echoes it. Under unknown fault cross-covariance FDIR returns isolability 'ambiguous' with no isolated fault. Only a raised exception is a refusal: `ciw.calibrated_observable:_invoke` raises CALIBRATED_<ROLE>_REFUSED on a nonzero provider exit, and `ciw.workbench:Workbench.execute` and `ciw.workbench:Workbench.replay` call `ciw.workbench:Workbench._retain_refusal` only for a caught exception: an AdapterRefusal from provider reservation, or an AdapterRefusal, ValueError, TypeError, KeyError or OverflowError raised while running create_session or replay_session and retaining its bundle. Held and ambiguous sessions are retained as ordinary bundles, so a generic 'failed -> retained refusal' split must not classify them.",
+      "evidence": "tests/test_calibrated_observable.py: test_reconciliation_hold_retains_candidate_and_residual_diagnostics and test_unknown_fault_crosscovariance_keeps_detection_but_refuses_unique_nomination. `ciw.workbench:Workbench._retain_refusal` re-raises workbench_capacity instead of retaining it. Added by adversarial verification",
+      "code": [
+        "ciw.calibrated_observable:_request",
+        "ciw.calibrated_observable:_invoke",
+        "ciw.workbench:Workbench.execute",
+        "ciw.workbench:Workbench.replay",
+        "ciw.workbench:Workbench._retain_refusal"
+      ]
     },
     {
-      "rule": "Execution-invariant identity binding. GSIE's observation_id, evidence_refs and observability assessment_id/evidence_refs use prior numerical_result_ids, not result_ids (calibrated_observable.py:296-305), so GSIE state_id, replay_snapshot and observability_assessment_id (176-178) stay identical across fresh-id replays. CBSR and FDIR receive execution-dependent result_ids (312-320), and their numerical views strip exactly those fields (325-337). The test asserts result_ids differ while numerical ids match (tests/test_calibrated_observable.py:142-145). This is a correctness invariant tying wiring to numerical views, not just 'use numerical_result_id as identity'.",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "Execution-invariant identity binding. `ciw.calibrated_observable:_request` gives GSIE the prior steps' numerical_result_ids, not result_ids, as observation_id, evidence_refs and observability assessment_id/evidence_refs, so the GSIE state_id, replay_snapshot and observability_assessment_id returned by the gsie branch of `ciw.calibrated_observable:_BOOTSTRAP` stay identical across fresh-id replays. FSRT, CBSR and FDIR do receive execution-dependent values (FSRT and CBSR execution_id; CBSR evidence_refs, source_result_id and source_result_digest; FDIR source_ids), and `ciw.calibrated_observable:_numerical` drops these fields from their numerical views: FSRT schema, result_id, execution_id, operation_id; CBSR schema, execution_id, input_state_id, output_state_id, constraint_id, request, request_digest, evidence_refs, result_id, source_binding_verification; FDIR detection and isolability source_ids. This invariant ties the wiring to the numerical views, not just 'use numerical_result_id as identity'.",
+      "evidence": "test_replay_preserves_numerics_with_fresh_occurrences in tests/test_calibrated_observable.py asserts that execution_ids and result_ids differ while numerical_result_ids match; added by adversarial verification",
+      "code": [
+        "ciw.calibrated_observable:_request",
+        "ciw.calibrated_observable:_numerical",
+        "ciw.calibrated_observable:_BOOTSTRAP"
+      ]
     },
     {
-      "rule": "Serialization normalization changes content. The bootstrap native() converts dataclasses, ndarrays, enums and datetimes, and maps non-finite floats to None (calibrated_observable.py:66-81). An infinite OIT condition_number becomes null (163) and flows into GSIE's ObservabilityAssessment (295-296). Telemetry has no such normalization (telemetry.py:172).",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "Serialization normalization changes content. The native() helper in `ciw.calibrated_observable:_BOOTSTRAP` converts dataclasses, ndarrays, enums and datetimes, and maps non-finite floats to None. An infinite OIT condition_number becomes null in the OIT result and `ciw.calibrated_observable:_request` passes it into GSIE's ObservabilityAssessment. The telemetry shim `ciw.telemetry:_BOOTSTRAP` has no such normalization: it prints with allow_nan=False, so a non-finite value refuses there instead, as `ciw.core.canonical:canonical` also does. native() is not applied to the fsrt, cbsr or set results, so a non-finite value in those refuses at the shim's final allow_nan=False print.",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.calibrated_observable:_BOOTSTRAP",
+        "ciw.calibrated_observable:_request",
+        "ciw.telemetry:_BOOTSTRAP",
+        "ciw.core.canonical:canonical"
+      ]
     },
     {
-      "rule": "MCUR pairs input channels with TBRT per-channel rows by position via zip, without a channel_id cross-check (calibrated_observable.py:122). It stamps acquired_at with each channel's own aligned event_time (125-128), while GSIE is evaluated at target_time = max(times) (114, 291). This nominal-alignment semantics is valid only under the stationary-hold admission (265-267).",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "MCUR pairs input channels with TBRT per-channel rows by position via zip, without a channel_id cross-check (mcur branch of `ciw.calibrated_observable:_BOOTSTRAP`). It stamps acquired_at with each channel's own aligned event_time, while GSIE is evaluated at target_time = max(times) (computed by the tbrt branch of the same shim and passed as the GSIE time by `ciw.calibrated_observable:_request`). This nominal-alignment semantics is valid only under the stationary-hold admission in `ciw.calibrated_observable:_source_inner`.",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.calibrated_observable:_BOOTSTRAP",
+        "ciw.calibrated_observable:_request",
+        "ciw.calibrated_observable:_source_inner"
+      ]
     },
     {
-      "rule": "TBRT is always called with require_synchronization_evidence=True (calibrated_observable.py:103), a hard-coded authority policy. OIT reshaping takes state_dimension from diagnostics.input_dimension and echoes observation_matrix and declaration from the request (163-166).",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "TBRT is always called with require_synchronization_evidence=True (tbrt branch of `ciw.calibrated_observable:_BOOTSTRAP`), a hard-coded authority policy. OIT reshaping (oit branch of the same shim) takes state_dimension from diagnostics.input_dimension and echoes observation_matrix and declaration from the request.",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.calibrated_observable:_BOOTSTRAP"
+      ]
     },
     {
-      "rule": "Two digest schemes for the same experiment. bundle.source.experiment_digest = digest(experiment), unprefixed (calibrated_observable.py:361, 379). The FSRT declaration's experiment_digest is schema-prefixed sha256 (416-421). Wrapped result_id = digest(envelope), also unprefixed (353). The descriptor must carry per-identity hash schemes, not one scheme.",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "Three hash schemes for the same experiment, all spelled 'sha256:<hex>'. The retained evidence artifact_ref and sha256 are `ciw.core.canonical:byte_digest` of the exact source bytes. bundle.source.experiment_digest is `ciw.core.canonical:digest` of the parsed experiment: SHA-256 of its canonical bytes with no schema prefix. The FSRT declaration's experiment_digest hashes the experiment schema string, a NUL byte, then the canonical bytes, and its result_id hashes the declaration schema, a NUL byte and the canonical declaration without result_id. The wrapped result_id of every other step is digest(envelope without result_id), with no schema prefix. `ciw.calibrated_observable:_execute` builds the bundle-side identities and `ciw.calibrated_observable:_validate` rechecks all of them. The descriptor must carry per-identity hash schemes, not one scheme.",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.calibrated_observable:_execute",
+        "ciw.calibrated_observable:_validate",
+        "ciw.core.canonical:digest",
+        "ciw.core.canonical:byte_digest"
+      ]
     }
   ],
   "investigations": [

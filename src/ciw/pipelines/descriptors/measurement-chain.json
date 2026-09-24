@@ -77,28 +77,63 @@
   ],
   "domain_rules": [
     {
-      "rule": "Tank investigation orchestration: RCI v2 calibration per sensor, the native run recording (_make_run), and FSRT reconstruction with explicit cross-assembly independence and model independence",
-      "evidence": "src/ciw/investigation.py:161-166 (_validate_model_independence), 201 (_make_run), 342-418 (create_investigation); called from measurement_chain.py:153, 312"
+      "rule": "Tank investigation orchestration: RCI v2 calibration per sensor, the native run recording (_make_run), and FSRT reconstruction with explicit cross-assembly independence and model independence. Each step runs the native investigation through create_investigation; validation re-derives the run from the source and the retained sensor calibrations and RCI runtime through _make_run, and it must equal the retained run recording apart from its run_id.",
+      "evidence": "`ciw.investigation:create_investigation` called from `ciw.measurement_chain:MeasurementChainWorkflow._step`; `ciw.investigation:_make_run` re-derived in `ciw.measurement_chain:_check_data`; `ciw.investigation:_validate_model_independence` applied by `ciw.measurement_chain:_source`, by create_investigation and by `ciw.investigation:_validate_source` from _make_run",
+      "code": [
+        "ciw.investigation:create_investigation",
+        "ciw.investigation:_make_run",
+        "ciw.investigation:_validate_model_independence",
+        "ciw.measurement_chain:MeasurementChainWorkflow._step",
+        "ciw.measurement_chain:_check_data"
+      ]
     },
     {
       "rule": "JSPT must consume the unchanged FSRT covariance artifact that the source selects (posterior or reconciled)",
-      "evidence": "src/ciw/measurement_chain.py:84-85, 158-163; covariance_workflow.py:80-95"
+      "evidence": "selector admitted by `ciw.measurement_chain:_source`; retained JSPT parameters must equal the map plus the FSRT result id and selected artifact in `ciw.measurement_chain:_check_data`; artifact resolved by `ciw.covariance_workflow:execute_covariance` and rechecked by `ciw.covariance_workflow:validate_source_link` before JSPT runs",
+      "code": [
+        "ciw.measurement_chain:_check_data",
+        "ciw.measurement_chain:_source",
+        "ciw.covariance_workflow:execute_covariance",
+        "ciw.covariance_workflow:validate_source_link"
+      ]
     },
     {
-      "rule": "Numerical projection replaces the enumerated occurrence-dependent native ids (run evidence, calibration, FSRT and JSPT covariance ids, and the coordinate-map id that embeds the input covariance id) so replays compare numerically",
-      "evidence": "src/ciw/measurement_chain.py:168-198 (comment 185-187)"
+      "rule": "Numerical projection replaces the enumerated occurrence-dependent native ids (run evidence, calibration, FSRT and JSPT covariance ids, and the coordinate-map id that embeds the input covariance id) so replays compare numerically. The workflow's own step records this projection as numerical_result, and the shared runner's verification compares it between the primary step and each fresh reproduction.",
+      "evidence": "`ciw.measurement_chain:_numerical` (comment on the coordinate-map binding); recorded by `ciw.measurement_chain:MeasurementChainWorkflow._step`, recomputed by `ciw.measurement_chain:MeasurementChainWorkflow._validate_step`, compared by `ciw.pipelines.runner:verification`",
+      "code": [
+        "ciw.measurement_chain:_numerical",
+        "ciw.measurement_chain:MeasurementChainWorkflow._step",
+        "ciw.measurement_chain:MeasurementChainWorkflow._validate_step",
+        "ciw.pipelines.runner:verification"
+      ]
     },
     {
-      "rule": "Source shape: exactly two sensors, the original rci.calibrate.v2 request, one record per sensor as canonical base64 JSON, a 2-column JSPT Jacobian, and an allowed map_kind",
-      "evidence": "src/ciw/measurement_chain.py:45-108"
+      "rule": "Source shape: exactly two distinctly named sensors, the original rci.calibrate.v2 request, one record per sensor as canonical base64 of a JSON object, 1..16 distinct output quantities, a 2-column JSPT Jacobian, and an allowed map_kind (linear, local_linearization, weighted_aggregation or coordinate_change)",
+      "evidence": "`ciw.measurement_chain:_source`",
+      "code": [
+        "ciw.measurement_chain:_source"
+      ]
     },
     {
-      "rule": "Two pin sources are reconciled only after execution. The seams bind from adapter-runtimes.json, which has no source_root or source_tree and whose _runtime does not pass source_root (investigation.py:32-48). The outer PINS require source_root 'src' and an exact source_tree (measurement_chain.py:28-30, 122). The runtime records pulled from the native workspace (_runtime_records at 111-115) must equal the preflight identities (324) and the outer retained runtimes (385-389).",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "For a new session the two pin sources are reconciled only after execution. The seams bind from adapter-runtimes.json, which has no source_root or source_tree and whose loader `ciw.investigation:_runtime` does not pass source_root (the adapter default 'src' applies); it pins only revision and module before execution. The outer `ciw.measurement_chain:PINS` require source_root 'src' and an exact source_tree; `ciw.measurement_chain:MeasurementChainWorkflow._adapters` does not check them, and `ciw.measurement_chain:_check_runtime` applies them from `ciw.measurement_chain:_check_data` after the seams ran. The runtime records pulled from the native workspace (`ciw.measurement_chain:_runtime_records`) must equal the preflight identities (`ciw.measurement_chain:MeasurementChainWorkflow._step`) and the outer retained runtimes (`ciw.measurement_chain:MeasurementChainWorkflow._validate`).",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.investigation:_runtime",
+        "ciw.measurement_chain:PINS",
+        "ciw.measurement_chain:_check_runtime",
+        "ciw.measurement_chain:_check_data",
+        "ciw.measurement_chain:_runtime_records",
+        "ciw.measurement_chain:MeasurementChainWorkflow._step",
+        "ciw.measurement_chain:MeasurementChainWorkflow._validate"
+      ]
     },
     {
-      "rule": "The workspace file is handed between seams through a temp directory, and the JSPT parameters are derived from FSRT's result id (310-316).",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "The workspace file is handed between seams through a temp directory: `ciw.measurement_chain:MeasurementChainWorkflow._step` passes the workspace that create_investigation saved to `ciw.covariance_workflow:execute_covariance`, with parameters that are the source's covariance map (including its source_artifact selector) plus FSRT's result id; execute_covariance adds the resolved source_covariance before JSPT runs.",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.measurement_chain:MeasurementChainWorkflow._step",
+        "ciw.covariance_workflow:execute_covariance"
+      ]
     }
   ],
   "investigations": [

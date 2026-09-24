@@ -85,43 +85,94 @@
   "domain_rules": [
     {
       "rule": "GSIE composite operation ciw.gsie-predict-update.v1: import feature batch through GSIE exchange with SET as validator, predict to target_time, update, export result artifact with a CIW-authored applicability statement",
-      "evidence": "telemetry.py:141-162"
+      "evidence": "The gsie branch of `ciw.telemetry:_BOOTSTRAP` calls import_observation_batch and export_result_artifact with validator_repo set to the SET checkout root that `ciw.telemetry:_invoke` passes, predicts to declaration.target_time, updates, and writes applicability 'declared scalar telemetry feature observation model only'; `ciw.telemetry:_execute` records the step as ciw.gsie-predict-update.v1.",
+      "code": [
+        "ciw.telemetry:_BOOTSTRAP",
+        "ciw.telemetry:_invoke",
+        "ciw.telemetry:_execute"
+      ]
     },
     {
       "rule": "PPDA standalone execution scope: only the approved bytes of bridge/instrumentation.py may execute, never the PPDA vendor tree",
-      "evidence": "telemetry.py:29-55, 131-137, 184; telemetry-runtimes.json:2"
+      "evidence": "`ciw.telemetry:_PPDAProjection.checked_source` refuses a symlinked bridge/instrumentation.py or bridge directory, or bytes whose SHA-256 differs from the ppda source_sha256 pin that `ciw.telemetry:_runtime` loads from telemetry-runtimes.json; `ciw.telemetry:_invoke` sends only those checked bytes, and the ppda branch of `ciw.telemetry:_BOOTSTRAP` execs them without adding the checkout to sys.path.",
+      "code": [
+        "ciw.telemetry:_PPDAProjection.checked_source",
+        "ciw.telemetry:_invoke",
+        "ciw.telemetry:_BOOTSTRAP",
+        "ciw.telemetry:_runtime"
+      ]
     },
     {
       "rule": "Window-selected covariance submatrix: all samples are passed but only indices with window.start <= t < window.end select covariance rows/cols and observation_refs",
-      "evidence": "telemetry.py:265-267, 276-278"
+      "evidence": "`ciw.telemetry:_stfe_request` passes every batch component as a sample, selects the indices whose sample_times fall in [window.start, window.end), and builds uncertainty.matrix and uncertainty.observation_refs from those indices only.",
+      "code": [
+        "ciw.telemetry:_stfe_request"
+      ]
     },
     {
       "rule": "Feature-to-observation transport: STFE window-mean result is reinterpreted as an observation batch at gsie.target_time with admission_status reference_only and admission_ref ciw:feature-transport-only",
-      "evidence": "telemetry.py:285-296 (reused by calibrated_window.py:347)"
+      "evidence": "`ciw.telemetry:_feature_batch` builds a notation.instrument.observation-batch.v1 from the STFE result artifact with observed_at = epoch + gsie.target_time, admission_ref 'ciw:feature-transport-only' and admission_status 'reference_only'; `ciw.calibrated_window:_request` reuses it for the calibrated-window GSIE step.",
+      "code": [
+        "ciw.telemetry:_feature_batch",
+        "ciw.calibrated_window:_request"
+      ]
     },
     {
       "rule": "Exact microsecond representability of epoch+seconds mapped instants",
-      "evidence": "telemetry.py:86-93 (used at 218, 247-248, 291-292; imported by residual_monitor.py:21, calibrated_window.py:23)"
+      "evidence": "`ciw.core.canonical:utc_instant` refuses an offset that is not a finite int or float and any instant whose elapsed seconds do not round-trip exactly at microseconds. `ciw.telemetry:_source_inner` applies it to every sample time; `ciw.telemetry:_ppda_request` and `ciw.telemetry:_feature_batch` map observed_at/received_at with it; `ciw.calibrated_window:_source` and `ciw.residual_monitor:_request` use the same kernel utility.",
+      "code": [
+        "ciw.core.canonical:utc_instant",
+        "ciw.telemetry:_source_inner",
+        "ciw.telemetry:_ppda_request",
+        "ciw.telemetry:_feature_batch"
+      ]
     },
     {
-      "rule": "Identity aliasing by prefix swap: batch_id is derived from the evidence digest (telemetry.py:246), and the feature batch id is derived from the STFE result id (telemetry.py:290). The workbench treats the PPDA id as a stable non-result claim (workbench.py:247-250, 453-456).",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "Identity aliasing by prefix swap: the PPDA batch_id is the evidence digest with its 'sha256:' prefix replaced by 'batch:' (`ciw.telemetry:_ppda_request`), and the feature batch id is the STFE result id with its prefix replaced by 'feature-observation:' (`ciw.telemetry:_feature_batch`). The workbench treats the PPDA id as a stable non-result claim: `ciw.workbench:_claims` claims it as an observation_batch rather than a result, and `ciw.workbench:_validate_links` lets a replay keep it only when the reprojected batch is identical.",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.telemetry:_ppda_request",
+        "ciw.telemetry:_feature_batch",
+        "ciw.workbench:_claims",
+        "ciw.workbench:_validate_links"
+      ]
     },
     {
-      "rule": "Acquisition time basis: observed_at = epoch + max(event_time) and received_at = epoch + max(received_at) (telemetry.py:247-248). The feature observation's received_at comes from configuration.window.received_by (telemetry.py:292), a caller value that is never validated against the samples.",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "Acquisition time basis: observed_at = epoch + max(event_time) and received_at = epoch + max(received_at) (`ciw.telemetry:_ppda_request`). The feature observation's received_at comes from configuration.window.received_by (`ciw.telemetry:_feature_batch`), a caller value that the telemetry pipeline itself never checks against the samples: `ciw.telemetry:_execute` checks the configuration and gsie keys, the gsie prior-crosscov policy and feature-observation semantics, target_time == window.end and the optional cbsr layout, never window.received_by, and `ciw.telemetry:_feature_batch` only requires it to map to an exact instant through `ciw.core.canonical:utc_instant`. Any check against the samples is left to the pinned engines: STFE receives the window unchanged (`ciw.telemetry:_stfe_request`) and GSIE receives it as the feature batch's received_at.",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.telemetry:_ppda_request",
+        "ciw.telemetry:_feature_batch",
+        "ciw.telemetry:_execute",
+        "ciw.telemetry:_stfe_request"
+      ]
     },
     {
-      "rule": "Provenance assertions written by CIW into the PPDA request: covariance_method 'caller-declared full temporal covariance', and covariance_source_refs/source_artifact_refs = [evidence] (telemetry.py:252-253).",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "Provenance assertions written by CIW into the PPDA request: covariance_method 'caller-declared full temporal covariance', and covariance_source_refs/source_artifact_refs = [evidence] (`ciw.telemetry:_ppda_request`; `ciw.telemetry:_validate_retained_inner` requires the retained request to equal it).",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.telemetry:_ppda_request",
+        "ciw.telemetry:_validate_retained_inner"
+      ]
     },
     {
-      "rule": "The GSIE composite, including the CIW applicability string 'declared scalar telemetry feature observation model only', is shared with calibrated-window through telemetry._invoke (telemetry.py:141-162; calibrated_window.py:294). Moving it into a shim changes two pipelines at once.",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "The GSIE composite, including the CIW applicability string 'declared scalar telemetry feature observation model only', lives in `ciw.telemetry:_BOOTSTRAP` and is shared with calibrated-window through `ciw.telemetry:_invoke`: `ciw.calibrated_window:_invoke` delegates every role except tbrt and mcur to it, and acquired-calibrated-window runs it inside its child calibrated window (`ciw.acquired_window:create_session`, `ciw.acquired_window:replay_session`). Moving it into a shim changes three pipelines at once.",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.telemetry:_BOOTSTRAP",
+        "ciw.telemetry:_invoke",
+        "ciw.calibrated_window:_invoke",
+        "ciw.acquired_window:create_session",
+        "ciw.acquired_window:replay_session"
+      ]
     },
     {
-      "rule": "The CBSR precondition checks state_labels, state_units and frame_ref (telemetry.py:381-386). The calibrated variant checks only units and frame (calibrated_observable.py:308-310), so it cannot be one shared predicate without a behaviour change.",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "The CBSR precondition checks state_labels, state_units and frame_ref against the GSIE artifact (`ciw.telemetry:_cbsr_layout`). The calibrated variant checks only units and frame (`ciw.calibrated_observable:_request`), so it cannot be one shared predicate without a behaviour change.",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.telemetry:_cbsr_layout",
+        "ciw.calibrated_observable:_request"
+      ]
     }
   ],
   "investigations": [

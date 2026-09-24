@@ -45,23 +45,48 @@
   "domain_rules": [
     {
       "rule": "The gluing must consist of two complete permutations (right and up) of 1-32 tiles forming a connected surface. The start is strictly inside a square. The direction is nonzero and bounded by 1024. The duration is in [0,1024]. Rationals are canonical, reduced and within 64- or 256-bit budgets.",
-      "evidence": "src/ciw/geometry_translation_contract.py:45-54,72-105"
+      "evidence": "`ciw.geometry_translation_contract:validate_request`, rational budgets in `ciw.geometry_translation_contract:_fraction` and `ciw.geometry_translation_contract:_pair`; applied on admission by `ciw.geometry_research:_source` and again by `ciw.geometry_translation_contract:validate_result`",
+      "code": [
+        "ciw.geometry_translation_contract:validate_request",
+        "ciw.geometry_translation_contract:_fraction",
+        "ciw.geometry_translation_contract:_pair",
+        "ciw.geometry_research:_source"
+      ]
     },
     {
       "rule": "Corner-class topology derived from the gluing: corner equivalence classes, cone angles that are multiples of 2π, Euler characteristic <= 0 and even, and the genus. The retained gluing_validation must equal the derived structure exactly.",
-      "evidence": "src/ciw/geometry_translation_contract.py:108-143"
+      "evidence": "`ciw.geometry_translation_contract:_topology` derives the corner classes, cone angles, Euler characteristic and genus (inverse maps from `ciw.geometry_translation_contract:_inverse`) and compares them exactly with the retained gluing_validation; reached through `ciw.geometry_translation_contract:validate_result`",
+      "code": [
+        "ciw.geometry_translation_contract:_topology",
+        "ciw.geometry_translation_contract:_inverse"
+      ]
     },
     {
       "rule": "Exact rational replay of the retained segment and event chain. Each segment is affine motion along the direction within the closed unit square. Event times strictly increase. Each event is a single outgoing edge, never a corner continuation, mapped by the gluing permutation. Segments must account for every event and for the elapsed time.",
-      "evidence": "src/ciw/geometry_translation_contract.py:169-212"
+      "evidence": "`ciw.geometry_translation_contract:validate_result`, outgoing-edge test `ciw.geometry_translation_contract:_outgoing`, edge translations `ciw.geometry_translation_contract:EDGE`",
+      "code": [
+        "ciw.geometry_translation_contract:validate_result",
+        "ciw.geometry_translation_contract:_outgoing",
+        "ciw.geometry_translation_contract:EDGE"
+      ]
     },
     {
       "rule": "Stop semantics. 'completed' requires remaining = 0 and no pending edge. 'stopped_at_vertex' requires two simultaneous outgoing edges and the correct vertex id. 'event_budget_exhausted' requires one pending edge and events == max_events. The invariants map must be consistent with the status.",
-      "evidence": "src/ciw/geometry_translation_contract.py:213-233"
+      "evidence": "`ciw.geometry_translation_contract:validate_result` (final state and status), pending edges from `ciw.geometry_translation_contract:_outgoing`, invariant names `ciw.geometry_translation_contract:INVARIANTS`",
+      "code": [
+        "ciw.geometry_translation_contract:validate_result",
+        "ciw.geometry_translation_contract:_outgoing",
+        "ciw.geometry_translation_contract:INVARIANTS"
+      ]
     },
     {
-      "rule": "The workbench profile is narrower than the provider's. CIW caps max_events at 0..256 (src/ciw/geometry_translation_contract.py:71,101-102), tighter than the native 64-bit profile. This workbench policy is layered on the provider's request profile; the descriptor or plugin must record it separately from the provider-owned profile.",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "The workbench profile is narrower than the provider's. CIW caps max_events at 0..256 (`ciw.geometry_translation_contract:validate_request`), tighter than the pinned tsde provider's own 0..1024 event budget; the other request bounds mirror the native 64-bit rational profile. This workbench policy is layered on the provider's request profile, and this rule records it separately from the provider-owned profile that the pin fixes. A larger budget is refused with a workbench-profile message when the source is admitted (`ciw.geometry_research:_source`), before any provider execution, and the retained chain is held to it (at most max_events events and max_events+1 segments, `ciw.geometry_translation_contract:validate_result`).",
+      "evidence": "added by adversarial verification; CIW citations in the rule. The provider's own 0..1024 bound is MAX_EVENTS = 1024 in translation_surface_dynamics.flow (validate_request) at the pinned tsde revision 5e72693, source tree 6f2ecbb, outside this package",
+      "code": [
+        "ciw.geometry_translation_contract:validate_request",
+        "ciw.geometry_translation_contract:validate_result",
+        "ciw.geometry_research:_source"
+      ]
     }
   ],
   "investigations": [

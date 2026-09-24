@@ -44,24 +44,52 @@
   ],
   "domain_rules": [
     {
-      "rule": "Spectral evidence consistency for each input, the relative covariance and every sample. Eigenvalues are ordered and above a strict floor (a declared floor, or a relative floor of 8*n*EPS*max|lambda|). min, max, margin and condition number are derived exactly. The condition number is within the declared limit. The decomposition residual is within abs+rel*norm. log-det equals fsum(log lambda). The Frobenius norm equals hypot(lambda) and the matrix norm. The trace equals the sum of eigenvalues.",
-      "evidence": "src/ciw/geometry_covariance_contract.py:142-176, tolerance model _close 79-84 (64*EPS*scale + 8 ulp + residual)"
+      "rule": "Spectral evidence consistency for each input, the relative covariance and every sample: one eigenvalue per coordinate, in nondecreasing order, strictly above a floor (the declared eigenvalue_floor for inputs and samples, a relative floor of 8*n*EPS*max|lambda| for the relative covariance). The reported floor, min, max, margin, condition number and decomposition budget are derived exactly. The condition number is within the declared limit. The Frobenius norm is positive and bounded (1e8, or 1e20 for the relative covariance). The decomposition residual is within abs+rel*norm. Within the `ciw.geometry_covariance_contract:_close` roundoff tolerance, log-det equals fsum(log lambda) and the Frobenius norm equals hypot(lambda) widened by the decomposition residual. For inputs and samples, whose matrices are retained, the Frobenius norm also equals the matrix norm and the trace equals the sum of eigenvalues (widened by sqrt(n) times the residual).",
+      "evidence": "`ciw.geometry_covariance_contract:_spectrum`, applied to each spectrum by `ciw.geometry_covariance_contract:validate_result`; exact derivations `ciw.geometry_covariance_contract:_derived`; tolerance model `ciw.geometry_covariance_contract:_close` (64*EPS*scale + 8 ulp + residual)",
+      "code": [
+        "ciw.geometry_covariance_contract:_spectrum",
+        "ciw.geometry_covariance_contract:validate_result",
+        "ciw.geometry_covariance_contract:_derived",
+        "ciw.geometry_covariance_contract:_close"
+      ]
     },
     {
-      "rule": "Affine-invariant distance = ||log eig(relative covariance)||_2. For each sample, constant-speed invariants (distance_from_a = t*d, distance_to_b = (1-t)*d) and log-det affinity, plus endpoint residuals at t=0 and t=1. The ordered invariants list must match these names and budgets exactly.",
-      "evidence": "src/ciw/geometry_covariance_contract.py:179-189,215-252"
+      "rule": "Affine-invariant distance d = ||log eig(relative covariance)||_2 within the `ciw.geometry_covariance_contract:_close` tolerance. The ordered invariants list is exactly distance_symmetry, then for each sample i: constant_speed_from_a:i (distance_from_a = t*d), constant_speed_to_b:i (distance_to_b = (1-t)*d) and log_determinant_affinity:i (log-det = (1-t)*logdet_a + t*logdet_b), followed at the first (t=0) and last (t=1) sample by endpoint:i, the residual ||sample - input||_F. Every record has the expected name, passes, and has a budget derived exactly as abs+rel*|scale| (scale: d for the distance records, the interpolated log-det for affinity, the input's Frobenius norm for endpoints) with a residual within it; except distance_symmetry, whose reverse distance is not retained, the reported residual matches the recomputed one.",
+      "evidence": "`ciw.geometry_covariance_contract:validate_result`, `ciw.geometry_covariance_contract:_check_invariant`",
+      "code": [
+        "ciw.geometry_covariance_contract:validate_result",
+        "ciw.geometry_covariance_contract:_check_invariant"
+      ]
     },
     {
-      "rule": "Roundoff symmetry evidence for each ordered stage: the asymmetry is at most the symmetry tolerance times max(1,norm); the averaging adjustment lies between asymmetry/2 and n*asymmetry; the stage norms match the spectral norms. No input projection or regularisation ('no silent repair').",
-      "evidence": "src/ciw/geometry_covariance_contract.py:243-270"
+      "rule": "Roundoff symmetry evidence for each ordered stage (relative_covariance, reverse_distance, then sample, distance_from_a and distance_to_b for each sample): the stage norm is positive and at most 1e20; the allowed asymmetry is derived exactly as the symmetry tolerance times max(1,norm) and bounds the asymmetry; the averaging adjustment lies between asymmetry/2 and n*asymmetry; the relative-covariance and sample stage norms match their spectral norms within the adjustment plus `ciw.geometry_covariance_contract:_close` roundoff. The evidence records input_projection and regularization as not_performed and intermediate_symmetry as recorded_transpose_averaging ('no silent repair').",
+      "evidence": "`ciw.geometry_covariance_contract:validate_result`",
+      "code": [
+        "ciw.geometry_covariance_contract:validate_result",
+        "ciw.geometry_covariance_contract:_derived",
+        "ciw.geometry_covariance_contract:_close"
+      ]
     },
     {
-      "rule": "Request profile: 1-8 distinct named coordinates with units; settings within fixed ranges; 2-33 parameters strictly increasing from 0 to 1; exactly symmetric square input matrices with entries of magnitude at most 1e6.",
-      "evidence": "src/ciw/geometry_covariance_contract.py:21-23,91-139"
+      "rule": "Request profile: 1-8 distinct named coordinates with units; settings within fixed ranges; 2-33 parameters strictly increasing from 0 to 1; exactly symmetric square input matrices with entries of magnitude at most 1e6. The source admits the request only through this profile, and the request experiment_id must equal the source's.",
+      "evidence": "`ciw.geometry_covariance_contract:SETTINGS`, `ciw.geometry_covariance_contract:validate_request`, `ciw.geometry_covariance_contract:_matrix`, applied on admission by `ciw.geometry_research:_source`",
+      "code": [
+        "ciw.geometry_covariance_contract:validate_request",
+        "ciw.geometry_covariance_contract:SETTINGS",
+        "ciw.geometry_covariance_contract:_matrix",
+        "ciw.geometry_research:_source"
+      ]
     },
     {
-      "rule": "The spectral contract explicitly checks internal consistency of the reported eigen-evidence without solving an eigenproblem (src/ciw/geometry_covariance_contract.py:1-7). The validator's trust model is therefore 'consistency of retained evidence plus a fresh reproduction', a domain-specific verification semantic the descriptor's verification block must name. It is not 'payload valid'.",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "The covariance contract checks internal consistency of the reported eigen-evidence without importing a provider or solving an eigenproblem (module docstring of `ciw.geometry_covariance_contract`). The trust model is therefore 'consistency of retained evidence plus a fresh reproduction', not 'payload valid': `ciw.pipelines.runner:check_step` applies the contract, through the check_data hook `ciw.geometry_research:_check_data`, to the retained step and to its reproduction; `ciw.pipelines.runner:verification` requires an identical numerical result and records independent: false, the bundle's runtime digest and method same_runtime_fresh_occurrence_reproduction, which the descriptor's verification block names; `ciw.pipelines.runner:PipelineRunner._check_verification` requires a distinct execution and result identity; `ciw.pipelines.runner:PipelineRunner._execute` runs the reproduction on the same bound runtime.",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.geometry_research:_check_data",
+        "ciw.pipelines.runner:check_step",
+        "ciw.pipelines.runner:verification",
+        "ciw.pipelines.runner:PipelineRunner._check_verification",
+        "ciw.pipelines.runner:PipelineRunner._execute"
+      ]
     }
   ],
   "investigations": [

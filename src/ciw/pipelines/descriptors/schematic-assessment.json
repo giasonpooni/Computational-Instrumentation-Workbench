@@ -43,28 +43,54 @@
   ],
   "domain_rules": [
     {
-      "rule": "NsObservabilitySchematic@0.1 typed-graph validity. It checks the node-kind enum, the function-class enum, the certificate-owner enum {jspt,plsr,rci,cse}, duplicate node ids, node budget 1..256 and edge budget 1024. Each edge kind's (src kind, dst kind) pair must match the _EDGES relation table",
-      "evidence": "src/ciw/declared_workload.py:48-52, :60-88. Reused by schematic_companions.py:63, :198"
+      "rule": "NsObservabilitySchematic@0.1 typed-graph validity. It requires the graph schema and meta.schema to both be NsObservabilitySchematic@0.1 and checks the node-kind enum, the function-class enum (a missing class counts as unknown), the certificate-owner enum {jspt,plsr,rci,cse}, duplicate node ids, node budget 1..256 and edge budget 1024. Each edge must join declared nodes, and its kind's (src kind, dst kind) pair must match the _EDGES relation table. The check applies to the submitted schematic and again to the provider's output graph",
+      "evidence": "`ciw.declared_workload:_graph` against `ciw.declared_workload:_EDGES`, called from `ciw.declared_workload:_source` and `ciw.declared_workload:_check_data`. Reused by `ciw.schematic_companions:_source` and `ciw.schematic_companions:_check_data`",
+      "code": [
+        "ciw.declared_workload:_graph",
+        "ciw.declared_workload:_EDGES",
+        "ciw.declared_workload:_source",
+        "ciw.declared_workload:_check_data"
+      ]
     },
     {
       "rule": "Stale-marking invariant. Provider output may differ from the submitted graph only on certificate nodes whose prior result was SAMPLED, and only by the exact attribute set {historical_result=SAMPLED, result=NOT_ELIGIBLE, currentness=stale, stale_reason=...}",
-      "evidence": "src/ciw/declared_workload.py:162-170. Duplicated in schematic_companions.py:212-220"
+      "evidence": "`ciw.declared_workload:_check_data`, applied by the `ciw.declared_workload:DeclaredWorkflow.check_data` hook to every native result in `ciw.pipelines.runner:PipelineRunner._step` and again when a retained session is validated in `ciw.pipelines.runner:check_step`. Duplicated in `ciw.schematic_companions:_check_data`",
+      "code": [
+        "ciw.declared_workload:_check_data",
+        "ciw.declared_workload:DeclaredWorkflow.check_data"
+      ]
     },
     {
       "rule": "The provider's retrieval (schematics.retrieve.blanket) must equal CIW's own two-hop undirected neighbourhood over the declared edges for every query",
-      "evidence": "src/ciw/declared_workload.py:179-186"
+      "evidence": "`ciw.declared_workload:_check_data` recomputes the neighbourhoods and compares them with the blanket output that `ciw.declared_workload:_BOOTSTRAP` returns for each source query",
+      "code": [
+        "ciw.declared_workload:_check_data",
+        "ciw.declared_workload:_BOOTSTRAP"
+      ]
     },
     {
-      "rule": "The output graph must keep the declared node order exactly (list(nodes) == [n['id'] for n in original['nodes']]), with edges and meta byte-identical (declared_workload.py:158-161). This is order preservation, not just set-level topology",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "The output graph must keep the declared node order exactly (list(nodes) == [n['id'] for n in original['nodes']], where nodes is the ordered, duplicate-free map `ciw.declared_workload:_graph` returns), with edges and meta identical in canonical JSON bytes, so edge order is fixed too (`ciw.declared_workload:_check_data`). This is order preservation, not just set-level topology",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.declared_workload:_check_data",
+        "ciw.declared_workload:_graph"
+      ]
     },
     {
-      "rule": "The stale-marking check hard-codes SRA's internal stale_reason text and attribute values (declared_workload.py:166-167). They must match invalidate_stale_results at the pinned revision (bootstrap :129). This couples CIW to provider-internal text. It is duplicated at schematic_companions.py:217-218",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "The stale-marking check hard-codes SRA's internal stale_reason text and attribute values (`ciw.declared_workload:_check_data`). They must match schematics.annotate.invalidate_stale_results at the pinned revision, which `ciw.declared_workload:_BOOTSTRAP` runs before decisions and retrieval. This couples CIW to provider-internal text. It is duplicated in `ciw.schematic_companions:_check_data`",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.declared_workload:_check_data",
+        "ciw.declared_workload:_BOOTSTRAP",
+        "ciw.schematic_companions:_check_data"
+      ]
     },
     {
-      "rule": "The neighbourhoods are computed over the SOURCE edges (original['edges'], declared_workload.py:183), undirected, include the query node, and are sorted. The provider's retrieval over its (possibly stale-marked) output graph must agree with that",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "The neighbourhoods are computed over the SOURCE edges (original['edges'] in `ciw.declared_workload:_check_data`), undirected, include the query node, and are sorted. The provider's retrieval over its (possibly stale-marked) output graph must agree with that",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.declared_workload:_check_data"
+      ]
     }
   ],
   "investigations": [],

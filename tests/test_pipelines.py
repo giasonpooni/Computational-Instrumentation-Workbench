@@ -94,3 +94,25 @@ def test_refusal_vocabulary_is_the_code_on_the_execution_path():
     changed["telemetry"]["refusals"] = [code for code in changed["telemetry"]["refusals"] if code != "TELEMETRY_RUNTIME_REFUSED"]
     with pytest.raises(ValueError, match="refusals differ"):
         pipelines.check(changed)
+
+
+def test_domain_rules_cite_resolvable_code_not_line_numbers():
+    descriptors = pipelines.load()
+    for value in descriptors.values():
+        for rule in value["domain_rules"]:
+            for reference in rule["code"]:
+                assert pipelines.resolve_symbol(reference) is not None
+    value = deepcopy(next(v for v in descriptors.values() if v["domain_rules"]))
+    stale = deepcopy(value)
+    stale["domain_rules"][0]["evidence"] = "geometric_circle.py:103-114"
+    with pytest.raises(ValueError, match="line numbers"):
+        pipelines.validate(stale)
+    missing = deepcopy(value)
+    missing["domain_rules"][0]["code"] = ["ciw.pipelines.runner:NoSuchSymbol"]
+    pipelines.validate(missing)
+    with pytest.raises(ValueError, match="does not resolve"):
+        pipelines.check({**descriptors, missing["source_kind"]: missing})
+    unbound = deepcopy(value)
+    del unbound["domain_rules"][0]["code"]
+    with pytest.raises(ValueError):
+        pipelines.validate(unbound)

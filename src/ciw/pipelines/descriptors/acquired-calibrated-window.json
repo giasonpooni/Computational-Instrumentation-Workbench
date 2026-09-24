@@ -90,35 +90,72 @@
   "domain_rules": [
     {
       "rule": "PPDA evidence-graph lineage join. The selected observation must cite exactly the selected record, that record must cite the selected document, the observation content must equal the exact snapshot row, and the document's retrieved_at must equal the snapshot's requested_at (the first snapshot that introduced the row).",
-      "evidence": "acquired_window.py:98-110"
+      "evidence": "`ciw.acquired_window:_derive` refuses a selection unless observation.record_ids == [record.id], record.document_id == document.id, canonical(observation.content) == canonical(row) and document.retrieved_at == snapshot.requested_at.",
+      "code": [
+        "ciw.acquired_window:_derive"
+      ]
     },
     {
       "rule": "Typed-row-to-declaration consistency with no value or timestamp overrides. Row channel, epoch, frame, clocks, clock-map ref, calibration ref, cross-covariance policy and uncertainty evidence ids must all equal the window declaration. The row's window_id must equal the experiment.",
-      "evidence": "acquired_window.py:113-122 (POLICY mapping at line 31)"
+      "evidence": "`ciw.acquired_window:_derive` requires the exact `ciw.acquired_window:ROW_FIELDS` and `ciw.acquired_window:SAMPLE_FIELDS` keys and ROW_SCHEMA, compares every declared field canonically against the declaration, and copies the row's sample unchanged, only adding the namespaced observation_id and artifact_id. `ciw.acquired_window:_source` admits no override field (exact DECLARATION_FIELDS) and checks the mapping label in `ciw.acquired_window:POLICY` only by equality.",
+      "code": [
+        "ciw.acquired_window:_derive",
+        "ciw.acquired_window:ROW_FIELDS",
+        "ciw.acquired_window:SAMPLE_FIELDS",
+        "ciw.acquired_window:_source"
+      ]
     },
     {
-      "rule": "The window prior must be an explicit independent reference, not the previous posterior, and inter-window cross-covariance is not inferred.",
-      "evidence": "acquired_window.py:34-35 declare this only as POLICY constants checked by equality (acquired_window.py:57). No code path verifies that the child's prior is not a previous posterior; the child validates its own source (calibrated_window._source at acquired_window.py:136)."
+      "rule": "The mapping source must declare that the window prior is an explicit independent reference, not the previous posterior, and that inter-window cross-covariance is not inferred. This is a declared policy checked by equality, not a verified property: no code path verifies that the child's prior is not a previous posterior.",
+      "evidence": "`ciw.acquired_window:POLICY` holds window_prior 'explicit_independent_reference_not_previous_posterior' and inter_window_cross_covariance 'not_inferred'; `ciw.acquired_window:_source` only checks configuration == POLICY. The child checks its own source (`ciw.calibrated_window:_source` requires prior_measurement_crosscov_policy 'declared_zero', not the prior's origin); `ciw.workbench:_telemetry_context` emits its own fixed labels (reference_prior_policy, inter_window_covariance), not read from POLICY.",
+      "code": [
+        "ciw.acquired_window:POLICY",
+        "ciw.acquired_window:_source"
+      ]
     },
     {
-      "rule": "The lineage join depends on acquired-dataset's first-appearance dedupe. The check document.retrieved_at == snapshot.requested_at (acquired_window.py:107) accepts only the snapshot that first introduced the row, because documents are created only for rows with sequence > seen (acquired_dataset.py:165-169). A later snapshot that also contains the row is rejected. This is semantic knowledge of the upstream pipeline's internals.",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "The lineage join depends on acquired-dataset's first-appearance dedupe. The check document.retrieved_at == snapshot.requested_at in `ciw.acquired_window:_derive` accepts only the snapshot that first introduced the row, because `ciw.acquired_dataset:_check_data` requires the retained evidence graph to equal one rebuilt with a document only for rows whose sequence exceeds every earlier row's (sequence > seen), stamped with that snapshot's requested_at, and `ciw.acquired_dataset:_source` requires append-only snapshots with strictly increasing requested_at. A later snapshot that also contains the row is rejected. This is semantic knowledge of the upstream pipeline's internals.",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.acquired_window:_derive",
+        "ciw.acquired_dataset:_check_data",
+        "ciw.acquired_dataset:_source"
+      ]
     },
     {
-      "rule": "The derived child source is byte-exact and carries identity. canonical(dict(declaration, schema=window.SOURCE_SCHEMA, samples=...)) (130-131) must equal the child's retained evidence bytes (208, 236). The id namespacing 'ppda-observation:'/'ppda-record:' (122-123) and the selected-record fields (sequence, snapshot_sha256, source_id, mapped ids at 125-129) are part of acquisition_binding, which is checked by exact equality (144, 205). Any mapping DSL must reproduce these bytes exactly or every retained bundle breaks.",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "The derived child source is byte-exact and carries identity. canonical(dict(declaration, schema=window.SOURCE_SCHEMA, samples=...)) built in `ciw.acquired_window:_derive` must equal the child's retained evidence bytes (checked in `ciw.acquired_window:_validate` and `ciw.acquired_window:_wrap`). The id namespacing 'ppda-observation:'/'ppda-record:' and the selected-record fields (sequence, snapshot_sha256, source_id, mapped ids), also built in `ciw.acquired_window:_derive`, are part of acquisition_binding, which is checked by exact equality in `ciw.acquired_window:validate_upstream` and `ciw.acquired_window:_validate`. Any mapping DSL must reproduce these bytes exactly or every retained bundle breaks.",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.acquired_window:_derive",
+        "ciw.acquired_window:_validate",
+        "ciw.acquired_window:validate_upstream"
+      ]
     },
     {
-      "rule": "The outer bundle aliases the child. steps, runtimes and created_at must equal the child's exactly, and session_id must differ (211-213, 239-243). Workbench attributes the aliased steps to the child owner (workbench.py:241). _native_steps yields child_window as owner (workbench.py:~990). The context reads the exposed child steps positionally, steps[0] as clock and steps[1] as calibration (workbench.py:551).",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "The outer bundle aliases the child. steps, runtimes and created_at must equal the child's exactly, and session_id must differ (checked in `ciw.acquired_window:_validate`, built by `ciw.acquired_window:_wrap`). Workbench attributes the aliased steps to the child owner (`ciw.workbench:_claims`). `ciw.workbench:Workbench._native_steps` yields child_window as owner. The context reads the exposed child steps positionally, steps[0] as clock and steps[1] as calibration (`ciw.workbench:_telemetry_context`), relying on `ciw.calibrated_window:_validate` fixing the step order to `ciw.calibrated_window:OPERATIONS`.",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.acquired_window:_validate",
+        "ciw.workbench:_claims",
+        "ciw.workbench:Workbench._native_steps",
+        "ciw.workbench:_telemetry_context"
+      ]
     },
     {
-      "rule": "The child receipt must be a SET verification-artifact with verifier_ref set:replay-binding.v1, exactly two named checks in fixed order, and a fixed binding structure (165-185). This is SET-specific receipt knowledge, not a generic kernel receipt.",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "The child receipt must be a SET verification-artifact with verifier_ref set:replay-binding.v1, exactly two named checks in fixed order, and a fixed binding structure (`ciw.acquired_window:_check_child_receipt`). This is SET-specific receipt knowledge, not a generic kernel receipt.",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.acquired_window:_check_child_receipt"
+      ]
     },
     {
-      "rule": "Upstream handling asymmetry. The upstream is fully re-validated, including the PPDA identity recompute, on every wrapper validation (_derive calls acquisition._validate at 86). It is never re-executed on replay: 290 reuses bundle['upstream_acquisition'], per POLICY acquisition_reexecution at 32. identified-design does the opposite and replays its upstream before use.",
-      "evidence": "added by adversarial verification; citations in the rule"
+      "rule": "Upstream handling asymmetry. The upstream is fully re-validated, including the PPDA identity recompute, on every wrapper validation (`ciw.acquired_window:_derive` calls acquisition._validate, which is `ciw.pipelines.runner:PipelineRunner._validate` with the `ciw.acquired_dataset:_check_data` hook). It is never re-executed on replay: `ciw.acquired_window:replay_session` reuses bundle['upstream_acquisition'] and `ciw.acquired_window:validate_replay` requires it unchanged, per the acquisition_reexecution entry of `ciw.acquired_window:POLICY`. identified-design does the opposite and replays its upstream before use (`ciw.identified_design:_replay_upstream`).",
+      "evidence": "added by adversarial verification; citations in the rule",
+      "code": [
+        "ciw.acquired_window:_derive",
+        "ciw.acquired_window:replay_session",
+        "ciw.acquired_window:validate_replay"
+      ]
     }
   ],
   "investigations": [

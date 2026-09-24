@@ -125,8 +125,9 @@ kinds.
 Each frozen kind has a `ciw.pipeline-descriptor.v1` in
 [`src/ciw/pipelines/descriptors`](../src/ciw/pipelines/descriptors): operation
 identity, inputs and upstream kinds, provider steps with exact pins,
-verification, refusal vocabulary, the domain rules its implementation keeps,
-investigations, operator surface and implementation. `pipelines.check()` binds
+verification, refusal vocabulary, the domain rules its implementation keeps
+(each citing the code that enforces it as `module:qualname` references that
+must resolve), investigations, operator surface and implementation. `pipelines.check()` binds
 every descriptor to the code that executes it, including exact pin equality, so
 a descriptor cannot drift. Three investigations group the pipelines; the
 operator surface is `operation.list` with `{"view": "investigations"}`, while
