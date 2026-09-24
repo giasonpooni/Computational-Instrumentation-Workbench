@@ -1026,7 +1026,22 @@ class Workbench:
             return {"schema": SCHEMA, "revision": self._revision, "sources": self.list_sources(),
                 "bundles": self.list_bundles(), "fusion_contexts": self.fusion_contexts(),
                 "instruments": self.instrument_views(), "candidates": self.list_candidates(),
-                "operations": self.describe_operations()}
+                "operations": self.describe_operations(), "project": self.project_view()}
+
+    def _upstream_ids(self, record):
+        ids = [record["upstream_bundle_id"]] if record["upstream_bundle_id"] is not None else []
+        if record["kind"] == "residual-monitor":
+            ids += _workflow(record["kind"]).requested_upstream_ids(
+                base64.b64decode(record["native"]["source"]["evidence"][0]["bytes_b64"], validate=True))
+        return ids
+
+    def project_view(self, current_pins=None):
+        """Read the retained records as the project graph; nothing executes."""
+        from .project_graph import view
+        with self._lock:
+            state = self.serialize()
+            upstream = {record["bundle_id"]: self._upstream_ids(record) for record in state["bundles"]}
+        return view(state, OPERATIONS, upstream, current_pins=current_pins)
 
     def serialize(self):
         with self._lock:

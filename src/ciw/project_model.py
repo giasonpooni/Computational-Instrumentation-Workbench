@@ -13,10 +13,13 @@ import re
 from .telemetry import canonical, digest
 
 SCHEMA = "ciw.project.v1"
-MAX_BYTES = 2 * 1024 * 1024
-MAX_HISTORY = 256
+MAX_BYTES = 16 * 1024 * 1024
+MAX_HISTORY = 4096
+MAX_OBJECTS = 1024
+MAX_EDGES = 2048
 KINDS = {"component", "signal", "computation", "result", "evidence", "thermal-model",
-         "evidence_bundle", "candidate_manifest", "challenge_report"}
+         "evidence_bundle", "candidate_manifest", "challenge_report", "workflow_result"}
+RESULT_KINDS = {"result", "workflow_result"}
 SEMANTICS = {"observed", "estimated", "command"}
 CONTEXT_FIELDS = {"place", "period", "purpose", "units", "resolution", "uncertainty", "use_policy"}
 _ID = re.compile(r"[A-Za-z][A-Za-z0-9_.:-]{0,79}\Z")
@@ -113,6 +116,25 @@ def _object(spec):
         for ref, revision in refs.items():
             _identifier(ref)
             _hash(revision)
+    elif kind == "workflow_result":
+        # A retained workflow bundle as a computation node. Content holds only
+        # replay-invariant numerical identities; execution occurrences stay in
+        # the workbench records, never in this revision.
+        if set(content) != {"operation", "source_kind", "numerical_result_ids", "input_revisions"}:
+            raise ValueError("Workflow result requires operation, source kind, numerical results and input revisions")
+        _identifier(content["operation"])
+        _identifier(content["source_kind"])
+        ids = content["numerical_result_ids"]
+        if type(ids) is not list or not ids or len(ids) > 64:
+            raise ValueError("Workflow result requires bounded numerical result identities")
+        for value in ids:
+            _text(value, 160)
+        refs = content["input_revisions"]
+        if type(refs) is not dict or not refs or len(refs) > 64:
+            raise ValueError("Workflow result requires bounded pinned input revisions")
+        for ref, revision in refs.items():
+            _identifier(ref)
+            _hash(revision)
     elif kind == "evidence":
         required = {"status", "source_digest", "locator"}
         if not required <= set(content) or not set(content) <= required | {"claims", "subject_id"}:
@@ -174,6 +196,20 @@ def _dag(edges):
         visit(node)
 
 
+def _reaches(adjacency, start, target):
+    if start == target:
+        return True
+    pending, seen = [start], {start}
+    while pending:
+        for child in adjacency.get(pending.pop(), ()):
+            if child == target:
+                return True
+            if child not in seen:
+                seen.add(child)
+                pending.append(child)
+    return False
+
+
 def _replay(project):
     if type(project) is not dict or set(project) != {"schema", "project_id", "history", "revision"} or project["schema"] != SCHEMA:
         raise ValueError("Require a ciw.project.v1 artifact")
@@ -184,7 +220,7 @@ def _replay(project):
         raise ValueError("Project history exceeds bound")
     if len(canonical(project)) > MAX_BYTES:
         raise ValueError("Project exceeds byte bound")
-    objects, edges, seen_revisions = {}, {}, {}
+    objects, edges, seen_revisions, adjacency = {}, {}, {}, {}
     previous, label, context = None, None, None
     for index, event in enumerate(history):
         if type(event) is not dict or set(event) != {"sequence", "previous_revision", "operation", "payload", "revision"}:
@@ -205,22 +241,27 @@ def _replay(project):
             object_id = record["object_id"]
             if object_id in objects and objects[object_id]["kind"] != record["kind"]:
                 raise ValueError("Stable object identifiers cannot change kind")
-            if record["kind"] == "result":
+            if record["kind"] in RESULT_KINDS:
                 for ref, revision in record["content"]["input_revisions"].items():
                     if revision not in seen_revisions.get(ref, set()):
                         raise ValueError("Result refers to an unknown historical input revision")
             objects[object_id] = record
             seen_revisions.setdefault(object_id, set()).add(record["revision"])
-            if len(objects) > 64:
+            if len(objects) > MAX_OBJECTS:
                 raise ValueError("Project object count exceeds bound")
         elif operation == "connect":
             edge = _edge(payload, objects)
             if edge["edge_id"] in edges:
                 raise ValueError("Edge identifiers must remain unique in project history")
             edges[edge["edge_id"]] = edge
-            if len(edges) > 128:
+            if len(edges) > MAX_EDGES:
                 raise ValueError("Project edge count exceeds bound")
-            _dag(edges)
+            if edge["relation"] == "computation":
+                # Incremental acyclicity: the new edge closes a cycle exactly
+                # when its target already reaches its source.
+                if _reaches(adjacency, edge["to"], edge["from"]):
+                    raise ValueError("Computation graph must be acyclic")
+                adjacency.setdefault(edge["from"], []).append(edge["to"])
         elif operation == "context":
             _context(payload)
             context = payload
@@ -248,6 +289,24 @@ def _append(project, operation, payload):
     event["revision"] = digest(event)
     value["history"].append(event)
     value["revision"] = event["revision"]
+    return validate(value)
+
+
+def extend(project, events):
+    """Append several ``(operation, payload)`` events and validate once.
+
+    Equivalent to successive put/connect/context calls, which each replay the
+    whole history; used when a graph is projected from retained records.
+    """
+    value = deepcopy(project)
+    for operation, payload in events:
+        if operation not in {"put", "connect", "context"}:
+            raise ValueError("Unknown project history operation")
+        event = {"sequence": len(value["history"]), "previous_revision": value["revision"],
+                 "operation": operation, "payload": deepcopy(payload)}
+        event["revision"] = digest(event)
+        value["history"].append(event)
+        value["revision"] = event["revision"]
     return validate(value)
 
 
@@ -301,7 +360,7 @@ def inspect(project):
         if object_id in statuses:
             return statuses[object_id]
         record = objects[object_id]
-        if record["kind"] != "result":
+        if record["kind"] not in RESULT_KINDS:
             return "declared"
         visiting = set() if visiting is None else set(visiting)
         if object_id in visiting:
@@ -309,7 +368,7 @@ def inspect(project):
         visiting.add(object_id)
         bindings = record["content"]["input_revisions"]
         reasons = [ref for ref, revision in bindings.items() if objects[ref]["revision"] != revision or
-                   (objects[ref]["kind"] == "result" and result_status(ref, visiting) == "needs_reevaluation")]
+                   (objects[ref]["kind"] in RESULT_KINDS and result_status(ref, visiting) == "needs_reevaluation")]
         missing_pins = ancestors(object_id) - set(bindings)
         status = "needs_reevaluation" if reasons or missing_pins else "current_for_declared_inputs"
         statuses[object_id] = status

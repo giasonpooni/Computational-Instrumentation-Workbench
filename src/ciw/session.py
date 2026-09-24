@@ -19,6 +19,7 @@ from .operations.runner import execute as execute_operation, check_seal, validat
 from .adapters.protocol import AdapterRefusal
 from .core.identities import validate_evidence_identity
 from .calibration_status import calibration_status
+from .kernel import VERBS as KERNEL_VERBS
 
 from .instruments import (
     compute_spectrum, compute_statistics, inspect_sample, run_metadata, validate_run,
@@ -279,6 +280,8 @@ class Session:
             kind, payload = request["type"], request["payload"]
             if not isinstance(kind, str) or not isinstance(payload, dict):
                 raise ProtocolError("invalid_request", "type must be a string and payload an object")
+            if kind not in KERNEL_VERBS:
+                raise ProtocolError("unknown_command", f"Unknown request type: {kind}; the kernel verb set is frozen")
             result = self._dispatch(kind, payload)
             response = envelope("response", result, request_id)
             if kind == "result.get" and payload["result_id"] in self.results:
