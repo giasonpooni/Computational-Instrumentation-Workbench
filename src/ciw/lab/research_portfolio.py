@@ -47,7 +47,7 @@ from .evidence import (AUTHORITY_DOMAINS, COMPARISONS, COMPUTATIONAL_DOMAINS, CO
                        ORIGINS, describe_basis, finding, finding_origin, supported_label, holds as compare)
 from ..core.identities import content_identity
 from .registry import load_implementations, load_queue, task
-from .report import validate_report
+from .report import WALL_CLOCK_TIMING, validate_report
 
 MODULE = "src/ciw/lab/research_portfolio.py"
 TESTS = "tests/test_lab_research_portfolio.py"
@@ -953,24 +953,72 @@ def counterexample_catalogue(ctx):
 
 # --------------------------------------------------------------- T158
 # Figure tasks re-executed on every run, chosen to fit the section's time
-# budget (about 10 s on one core). Every figure task that retains wall-clock
-# timings is re-executed as well; the others are listed as not compared.
+# budget (about 10 s on one core). Every task that declares a wall-clock timing
+# figure is re-executed as well; the others are listed as not compared, and
+# scripts/check_figures.py re-executes all of them outside the queue.
 REGENERATED = ("T013", "T020", "T023", "T030", "T031", "T033", "T035", "T037", "T048", "T049", "T050", "T052",
                "T053", "T054", "T055", "T056", "T057", "T060", "T061", "T062", "T063", "T065", "T066", "T069",
                "T070", "T071", "T072", "T073", "T074", "T112", "T120", "T121", "T122", "T127", "T129", "T132",
                "T142", "T147", "T148", "T152", "T154")
-WALL_CLOCK = re.compile(r"wall-clock|elapsed", re.I)
 FIGURE_HYPOTHESIS = "Retained SVG figures are byte-for-byte reproducible when their tasks are re-executed."
+FIGURE_CLAIM = ("Re-executed figure tasks regenerate their retained figures, byte-identical unless declared as "
+                "wall-clock timing figures")
+# Outcomes of compare_figure that refute FIGURE_CLAIM.
+MISMATCHES = ("not regenerated", "differs", "structure differs")
 
 
-def _well_formed(data) -> bool:
+def figure_structure(data) -> dict | None:
+    """Series and points of an SVG figure (its path and circle elements), or None when it is not well-formed SVG.
+
+    Grid lines and tick labels follow the plotted range, so they are left out: a figure plotting wall-clock
+    timings keeps this structure while its coordinates change.
+    """
     if data is None:
-        return False
+        return None
     try:
         root = ET.fromstring(data)
     except ET.ParseError:
-        return False
-    return root.tag.rsplit("}", 1)[-1] == "svg"
+        return None
+    if root.tag.rsplit("}", 1)[-1] != "svg":
+        return None
+    tags = Counter(element.tag.rsplit("}", 1)[-1] for element in root.iter())
+    return {"series": tags["path"], "points": tags["circle"]}
+
+
+def compare_figure(retained, fresh, declared: bool) -> str:
+    """Outcome of one regenerated figure against its retained bytes (``fresh`` None: the task no longer writes it).
+
+    A figure not declared as a wall-clock timing figure is ``identical`` or ``differs``. A declared one is
+    compared for presence and structure only: ``identical``, ``same structure`` (other bytes, as declared) or
+    ``structure differs``. The outcomes in :data:`MISMATCHES` refute byte reproducibility.
+    """
+    if fresh is None:
+        return "not regenerated"
+    if fresh == retained:
+        return "identical"
+    if not declared:
+        return "differs"
+    shape = figure_structure(fresh)
+    return "same structure" if shape is not None and shape == figure_structure(retained) else "structure differs"
+
+
+def providers_used(report) -> list:
+    """Provider roles a report's task found bound (its recorded ``provider:ROLE`` probes that succeeded)."""
+    identity = report.get("provider_runtime_identity")
+    probes = identity.get("requirement_probes") if isinstance(identity, dict) else None
+    return sorted(name.partition(":")[2] for name, present in (probes if isinstance(probes, dict) else {}).items()
+                  if name.startswith("provider:") and present is True)
+
+
+def _second_platform_step(roles) -> str:
+    bound = f" ({', '.join(roles)} in this run)" if roles else ""
+    return ("Compare the figures on Windows, the second platform, with scripts/check_figures.py: on a windows-latest "
+            "runner with Python 3.12, install the checkout whose lab/ is retained (python -m pip install -e "
+            "\".[dev,lab,plsr]\") and run python scripts/check_figures.py --retained lab --output-dir "
+            "results/figures-windows with --provider ROLE=PATH for every provider the retained figure tasks used"
+            f"{bound}, at the pins scripts/check_lab.py provisions and with plsr-python bound to that Python. It "
+            "re-executes every figure task without the section's time budget and records each figure's outcome "
+            "with the platform in figure-check.json; fix or declare every figure it reports as a mismatch.")
 
 
 def _figure_index(ctx, reports) -> list:
@@ -981,44 +1029,38 @@ def _figure_index(ctx, reports) -> list:
                 path = ctx.output_dir / artifact["path"]
                 data = path.read_bytes() if path.is_file() else None
                 figures.append({"task_id": report["task_id"], "path": artifact["path"], "sha256": artifact["sha256"],
+                                WALL_CLOCK_TIMING: artifact.get(WALL_CLOCK_TIMING) is True,
                                 "digest_matches": data is not None and hashlib.sha256(data).hexdigest() == artifact["sha256"],
-                                "well_formed": _well_formed(data)})
+                                "well_formed": figure_structure(data) is not None})
     return figures
-
-
-def _retains_wall_clock(ctx, report) -> bool:
-    """Whether a task retains a JSON artifact that describes wall-clock or elapsed timings."""
-    for artifact in report["generated_artifacts"]:
-        path = ctx.output_dir / artifact["path"]
-        if artifact["path"].endswith(".json") and path.is_file() and WALL_CLOCK.search(
-                path.read_text(encoding="utf-8", errors="replace")):
-            return True
-    return False
 
 
 @task("T158", changed_files=(MODULE, "src/ciw/lab/svg.py"),
       regression_tests=(f"{TESTS}::test_figures_are_reproducible",
-                        f"{TESTS}::test_a_changed_figure_is_a_mismatch_and_a_timing_figure_a_counterexample"))
+                        f"{TESTS}::test_a_changed_figure_is_a_mismatch_and_a_timing_figure_a_counterexample",
+                        f"{TESTS}::test_only_declared_timing_figures_are_exempt_from_the_byte_comparison"))
 def reproducible_figures(ctx):
     from .runner import Context, run_task
     reports = _reports_before(ctx, 158)
     fields = _fields(
         FIGURE_HYPOTHESIS,
         "Figure bytes are a function of the task's data: ciw.lab.svg uses no clock or randomness, so a regenerated "
-        "figure can differ only if its data does. A figure plotting wall-clock timings is expected to differ.",
+        "figure can differ only if its data does. A figure its task declares as plotting wall-clock timings is "
+        "expected to differ in bytes, not in structure (series and points).",
         [_earlier(158) + " and their SVG artifacts",
-         "Retained JSON artifacts of figure tasks (to recognize wall-clock timing records)",
+         "Wall-clock timing declarations of those figures (wall_clock_timing in the reports' generated artifacts)",
          "Task implementations re-executed in a scratch directory with this run's provider bindings"],
-        "A re-executed task that ends in its retained state writes every retained figure with the same SHA-256; "
-        "only figures plotting wall-clock timings may differ.",
+        "A re-executed task that ends in its retained state writes every retained figure: with the same SHA-256, or, "
+        "for a figure declared as a wall-clock timing figure, with the same series and points.",
         f"Hash and parse every retained SVG; re-execute the {len(REGENERATED)} declared inexpensive figure tasks plus "
-        "every figure task that retains wall-clock timings in a scratch directory, and compare each regenerated "
-        "figure's SHA-256 (and, for a difference, its bytes) with the retained one.",
+        "every task that declares a wall-clock timing figure in a scratch directory, and compare each regenerated "
+        "figure's bytes with the retained one (a declared timing figure: presence and structure).",
         ["figure bytes changed by nondeterministic data (timings, unseeded randomness, dictionary order)",
+         "a figure plotting wall-clock timings without its declaration (counted as a mismatch)",
+         "a declared timing figure that lost or gained series or points, or reproduced byte for byte (reported)",
          "re-executed task ending in another state (for example an unbound provider): its figures are not comparable",
          "retained figure edited after its report (digest mismatch)", "malformed SVG"],
-        "Have figure tasks declare timing figures in their reports, and re-execute every figure task on a second "
-        "platform (Windows CI) outside the section's time budget.")
+        _second_platform_step(()))
     if not reports:
         return _no_prior(fields)
     figures = _figure_index(ctx, reports)
@@ -1026,8 +1068,10 @@ def reproducible_figures(ctx):
     by_task: dict = {}
     for figure in figures:
         by_task.setdefault(figure["task_id"], []).append(figure)
-    timing = sorted(tid for tid in by_task if _retains_wall_clock(ctx, retained[tid]))
-    selected = sorted((set(REGENERATED) & set(by_task)) | set(timing))
+    fields["recommended_next_task"] = _second_platform_step(
+        sorted({role for task_id in by_task for role in providers_used(retained[task_id])}))
+    declaring = sorted({f["task_id"] for f in figures if f[WALL_CLOCK_TIMING]})
+    selected = sorted((set(REGENERATED) & set(by_task)) | set(declaring))
     implementations, _ = load_implementations()
     queue = {t["id"]: t for t in load_queue()["tasks"]}
     outcomes, not_comparable = [], {}
@@ -1038,68 +1082,70 @@ def reproducible_figures(ctx):
             if rerun["state"] != retained[task_id]["state"]:
                 not_comparable[task_id] = f"state {retained[task_id]['state']} -> {rerun['state']}"
                 continue
-            fresh = {a["path"]: a["sha256"] for a in rerun["generated_artifacts"]}
+            written = {a["path"] for a in rerun["generated_artifacts"]}
             for figure in by_task[task_id]:
-                if figure["path"] not in fresh:
-                    outcome = "not regenerated"
-                elif fresh[figure["path"]] == figure["sha256"]:
-                    outcome = "identical"
-                else:
-                    # Confirm a digest difference on the bytes themselves.
-                    original = ctx.output_dir / figure["path"]
-                    same = original.is_file() and (Path(directory) / figure["path"]).read_bytes() == original.read_bytes()
-                    outcome = "identical" if same else "differs"
-                outcomes.append({"task_id": task_id, "path": figure["path"], "timing": task_id in timing,
-                                 "outcome": outcome})
-    deterministic = [o for o in outcomes if not o["timing"]]
-    # A figure its re-executed task no longer writes is a mismatch, timing figure or not.
-    mismatched = [o["path"] for o in outcomes if o["outcome"] == "not regenerated"
-                  or (not o["timing"] and o["outcome"] != "identical")]
-    timing_outcomes = [o for o in outcomes if o["timing"]]
-    timing_differs = [o["path"] for o in timing_outcomes if o["outcome"] == "differs"]
+                original, fresh = ctx.output_dir / figure["path"], Path(directory) / figure["path"]
+                outcome = compare_figure(original.read_bytes() if original.is_file() else None,
+                                         fresh.read_bytes() if figure["path"] in written else None,
+                                         figure[WALL_CLOCK_TIMING])
+                outcomes.append({"task_id": task_id, "path": figure["path"],
+                                 WALL_CLOCK_TIMING: figure[WALL_CLOCK_TIMING], "outcome": outcome})
+    mismatched = [o["path"] for o in outcomes if o["outcome"] in MISMATCHES]
+    declared = [o for o in outcomes if o[WALL_CLOCK_TIMING]]
+    timing_differs = [o["path"] for o in declared if o["outcome"] == "same structure"]
+    timing_identical = [o["path"] for o in declared if o["outcome"] == "identical"]
     compared = {o["task_id"] for o in outcomes}
     uncompared = [tid for tid in sorted(by_task) if tid not in compared and tid not in not_comparable]
     digest_problems = sum(not f["digest_matches"] for f in figures)
     malformed = sum(not f["well_formed"] for f in figures)
-    ctx.artifact_json("figure-index.json", {"figures": figures, "wall_clock_tasks": timing, "regenerated": outcomes,
-                                            "not_comparable": not_comparable, "not_reexecuted": uncompared})
+    ctx.artifact_json("figure-index.json", {"figures": figures, "wall_clock_timing_tasks": declaring,
+                                            "regenerated": outcomes, "not_comparable": not_comparable,
+                                            "not_reexecuted": uncompared})
     findings = []
-    if deterministic:
-        findings.append(_count("Re-executed figure tasks without wall-clock timings regenerate byte-identical figures",
-                               "computational_pipeline", len(mismatched),
-                               [_check("regenerated timing-free figures whose SHA-256 differs from the retained one",
-                                       len(mismatched))], "figures"))
+    if outcomes:
+        findings.append(_count(FIGURE_CLAIM, "computational_pipeline", len(mismatched),
+                               [_check("regenerated figures missing, undeclared figures whose bytes differ and declared "
+                                       "timing figures whose series or points differ", len(mismatched))], "figures"))
     else:
-        findings.append(finding("Re-executed figure tasks without wall-clock timings regenerate byte-identical figures",
-                                "computational_pipeline", None, {}, expected_not_established=True))
+        findings.append(finding(FIGURE_CLAIM, "computational_pipeline", None, {}, expected_not_established=True))
     if timing_differs:
         findings.append(finding(
-            "Re-executed figures that plot wall-clock timings differ from their retained bytes",
+            "Re-executed figures declared as wall-clock timing figures differ from their retained bytes",
             "computational_pipeline", len(timing_differs),
-            {"checks": [_check("timing figures whose regenerated bytes differ from the retained bytes",
+            {"checks": [_check("declared timing figures whose regenerated bytes differ from the retained bytes",
                                len(timing_differs), 1, "ge")]},
             unit="figures", uncertainty=COUNT, tolerance=ZERO,
             counterexample={"statement": FIGURE_HYPOTHESIS, "witness": {"figures": timing_differs}}))
-    elif timing_outcomes and all(o["outcome"] == "identical" for o in timing_outcomes):
-        findings.append(_count("Re-executed figures that plot wall-clock timings reproduced byte for byte in this run",
-                               "computational_pipeline", 0,
-                               [_check("timing figures whose regenerated bytes differ", 0)], "figures"))
+    if timing_identical:
+        # A declaration exempts a figure from the byte comparison; one that reproduced is shown, not hidden.
+        findings.append(_count("Re-executed figures declared as wall-clock timing figures reproduced byte for byte in "
+                               "this run", "computational_pipeline", len(timing_identical),
+                               [_check("declared timing figures whose regenerated bytes equal the retained bytes",
+                                       len(timing_identical), 1, "ge")], "figures"))
     findings += [
         _count("Retained figures hash to the digests their reports record", "provenance", digest_problems,
                [_check("retained SVG files missing or differing from their recorded SHA-256", digest_problems)], "figures"),
         _count("Retained figures are well-formed SVG documents", "computational_pipeline", malformed,
                [_check("retained figures that do not parse as XML with an svg root", malformed)], "figures"),
     ]
-    compared_figures = len(outcomes)
     fields["numerical_result"] = (
-        f"{len(figures)} retained figures from {len(by_task)} tasks; {compared_figures} regenerated and compared from "
-        f"{len(compared)} tasks: {len(mismatched)} timing-free mismatches, {len(timing_differs)} of "
-        f"{len(timing_outcomes)} wall-clock timing figures differ; {len(uncompared)} tasks not re-executed, "
-        f"{len(not_comparable)} not comparable; {digest_problems} digest mismatches, {malformed} malformed.")
+        f"{len(figures)} retained figures from {len(by_task)} tasks, "
+        f"{sum(f[WALL_CLOCK_TIMING] for f in figures)} declared as wall-clock timing figures; {len(outcomes)} "
+        f"regenerated and compared from {len(compared)} tasks: {len(mismatched)} mismatched; of {len(declared)} "
+        f"declared timing figures {len(timing_differs)} differ in bytes with the same structure and "
+        f"{len(timing_identical)} are byte-identical; {len(uncompared)} tasks not re-executed, {len(not_comparable)} "
+        f"not comparable; {digest_problems} digest mismatches, {malformed} malformed.")
     fields["uncertainty"] = "Byte comparison on this platform only; other platforms are not compared."
-    assumptions = ["Wall-clock timing figures are recognized by a retained JSON artifact of their task that "
-                   "mentions wall-clock or elapsed time; a timing figure without such a note counts as a mismatch.",
-                   "Byte identity is established on one platform; Windows and other BLAS builds are not compared."]
+    assumptions = ["Wall-clock timing figures are those their tasks declare when writing them (wall_clock_timing in "
+                   "the report's generated artifacts); a figure plotting wall-clock time without the declaration "
+                   "counts as a mismatch, and whether a declared figure's data depends on the clock is a review "
+                   "question.",
+                   "Byte identity is established on this platform only; the second-platform (Windows) comparison is "
+                   "made outside the queue by scripts/check_figures.py and is not part of this report."]
+    if timing_identical:
+        assumptions.insert(0, "Declared wall-clock timing figures reproduced byte for byte here: "
+                           + ", ".join(timing_identical) + "; review whether their bytes depend on the clock, since "
+                           "the declaration exempts them from the byte comparison.")
     if uncompared:
         assumptions.insert(0, f"{len(uncompared)} figure tasks ({sum(len(by_task[t]) for t in uncompared)} figures) "
                               "were not re-executed within the section's time budget: " + ", ".join(uncompared))

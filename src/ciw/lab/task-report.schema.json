@@ -34,8 +34,14 @@
     "properties": {
      "path": {"type": "string", "pattern": "^artifacts/T[0-9]{3}/[^/\\\\]+$"},
      "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
-     "bytes": {"type": "integer", "minimum": 0}
-    }
+     "bytes": {"type": "integer", "minimum": 0},
+     "wall_clock_timing": {
+      "description": "Declared by the task that wrote this SVG figure: its bytes depend on wall-clock timing, so a re-execution compares it for presence and structure only (T158, scripts/check_figures.py). Absent on every other artifact.",
+      "const": true
+     }
+    },
+    "if": {"required": ["wall_clock_timing"]},
+    "then": {"properties": {"path": {"pattern": "\\.svg$"}}}
    }
   },
   "numerical_result": true,

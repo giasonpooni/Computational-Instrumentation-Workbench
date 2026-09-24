@@ -49,6 +49,22 @@ FIELD_NAMES = tuple(name for name, _ in FIELDS)
 # passed; it never means physically validated.
 STATES = ("completed", "partial", "deferred", "blocked")
 
+# Key of a generated-artifact entry declaring an SVG figure whose bytes depend on
+# wall-clock timing (``ctx.artifact_text(..., wall_clock_timing=True)``); present
+# only as ``true``. Figure re-executions compare such a figure for presence and
+# structure, never byte for byte (T158, scripts/check_figures.py).
+WALL_CLOCK_TIMING = "wall_clock_timing"
+
+
+def _timing_declaration_problem(artifacts) -> str | None:
+    """Why the wall-clock timing declarations of a generated-artifact list are malformed, or None."""
+    for artifact in artifacts if isinstance(artifacts, list) else []:
+        if isinstance(artifact, dict) and WALL_CLOCK_TIMING in artifact and (
+                artifact[WALL_CLOCK_TIMING] is not True or not str(artifact.get("path")).endswith(".svg")):
+            return (f"Artifact {artifact.get('path')!r}: {WALL_CLOCK_TIMING} is declared only as true, "
+                    "on an SVG figure")
+    return None
+
 
 def evidence_status(findings) -> dict:
     """Label counts plus the order-independent primary label, recomputed from the findings."""
@@ -86,6 +102,9 @@ def validate_report(report: dict) -> dict:
         raise EvidenceRefusal(f"Report is missing required fields: {missing}")
     if report.get("state") not in STATES:
         raise EvidenceRefusal(f"Report state must be one of {STATES}")
+    declaration = _timing_declaration_problem(report["generated_artifacts"])
+    if declaration:
+        raise EvidenceRefusal(declaration)
     findings = report.get("findings")
     if not isinstance(findings, list):
         raise EvidenceRefusal("Report findings must be a list")

@@ -166,7 +166,16 @@ holds a retained run, the comparison refuses and `--no-compare` is required.
 python -m pip install -e '.[dev,lab]'
 python -m pytest -q tests/test_lab_core.py
 python scripts/check_lab.py --output-dir results/lab-gate     # Python 3.12+
+python scripts/check_figures.py --output-dir results/figures  # re-execute every retained figure task
 ```
+
+`scripts/check_figures.py` re-executes every figure task of the retained run
+with the installed `ciw` and compares each SVG figure with `lab/` byte for
+byte (a figure declared as a wall-clock timing figure by structure only); it
+records the platform, Python, NumPy and BLAS build in `figure-check.json`,
+lists tasks whose providers are not bound (`--provider ROLE=PATH`) as not
+re-executed, and exits 3 on a mismatch. Run on Windows, it is the
+second-platform figure comparison (see [LAB.md](LAB.md#retained-evidence)).
 
 New lab tasks follow the [authoring contract](lab/AUTHORING.md). Regenerate
 the retained evidence only together with the code change that alters it, and

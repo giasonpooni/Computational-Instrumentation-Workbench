@@ -361,6 +361,37 @@ changed files, or provider and runtime identities. An edit confined to those,
 or one that widens a retained tolerance, passes both validation and verify;
 changes to `lab/` are reviewed in version control (`git diff lab`).
 
+Figures are compared by re-execution instead. A task whose figure plots
+wall-clock timings declares it when writing it,
+`ctx.artifact_text(name, svg, wall_clock_timing=True)`, which records
+`wall_clock_timing: true` on the figure's entry in the report's generated
+artifacts (today T142's `kernel-timings.svg`); `validate_report` and the
+schema accept the declaration only as `true` on an SVG figure. T158
+re-executes the figure tasks that fit the research section's time budget and
+compares every retained figure byte for byte, except a declared one, which is
+compared for presence and structure (series and points) only: an undeclared
+figure that differs is a mismatch, and a declared figure that reproduced byte
+for byte is reported, not hidden. `scripts/check_figures.py` re-executes every
+figure task of a retained run with the installed `ciw`, without a time budget,
+into a new directory, compares the figures the same way and writes
+`figure-check.json` (`ciw.lab-figure-check.v1`: each figure's outcome and the
+platform, Python, NumPy and BLAS build) and `figure-check.md`. A task whose
+retained report used a provider that is not bound (`--provider ROLE=PATH`) or
+recorded source digests that differ from the installed package's is listed as
+not re-executed, and one that ends in another state or with other
+requirement-probe outcomes as not comparable; neither counts as a match. It
+exits 3 on a mismatch or when no figure was compared. Run on Windows against
+the same `lab/`, it is the second-platform comparison T158 names as its next
+step:
+
+```sh
+python scripts/check_figures.py --retained lab --output-dir results/figures              # every figure task
+python scripts/check_figures.py --retained lab --output-dir results/figures T013 T020   # selected tasks
+python scripts/check_figures.py --retained lab --output-dir results/figures-windows \
+    --provider csg=/trusted/references/csg --provider scr=/trusted/references/scr \
+    --provider plsr-python=/path/to/python3.12   # the providers the retained figure tasks used
+```
+
 ## Hardware evidence
 
 The division of work is fixed: Claude designs and audits experiments, CIW

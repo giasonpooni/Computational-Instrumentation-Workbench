@@ -27,7 +27,7 @@ import numpy as np
 from .. import __version__
 from .evidence import AUTHORITY_DOMAINS, PHYSICAL_DOMAINS, EvidenceRefusal, origin_difference, validate_finding
 from .registry import SECTION_MODULES, base_section_modules, load_implementations, load_queue
-from .report import FIELDS, FIELD_NAMES, build_report, render_markdown, validate_report
+from .report import FIELDS, FIELD_NAMES, WALL_CLOCK_TIMING, build_report, render_markdown, validate_report
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[1]
 # Retained evidence is committed; one artifact larger than this is refused so
@@ -240,25 +240,32 @@ class Context:
         self.captured[role] = hashlib.sha256(data).hexdigest()
         return data
 
-    def _write(self, name: str, data: bytes) -> str:
+    def _write(self, name: str, data: bytes, wall_clock_timing: bool = False) -> str:
         if "/" in name or "\\" in name or name.startswith("."):
             raise ValueError("Artifact names are single file names")
         if len(data) > MAX_ARTIFACT_BYTES:
             raise ValueError(f"Artifact {name} exceeds {MAX_ARTIFACT_BYTES} bytes; retain a summary instead")
+        if wall_clock_timing and not name.endswith(".svg"):
+            raise ValueError(f"Only SVG figures are declared as wall-clock timing figures, not {name}")
         directory = self.output_dir / "artifacts" / self.task_id
         directory.mkdir(parents=True, exist_ok=True)
         (directory / name).write_bytes(data)
         relative = f"artifacts/{self.task_id}/{name}"
         # A rewrite replaces the earlier entry: one entry per path, matching the bytes on disk.
         self.artifacts[:] = [a for a in self.artifacts if a["path"] != relative]
-        self.artifacts.append({"path": relative, "sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data)})
+        entry = {"path": relative, "sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data)}
+        if wall_clock_timing:
+            entry[WALL_CLOCK_TIMING] = True
+        self.artifacts.append(entry)
         return relative
 
     def artifact_json(self, name: str, value) -> str:
         return self._write(name, dumps(value).encode("utf-8"))
 
-    def artifact_text(self, name: str, text: str) -> str:
-        return self._write(name, text.encode("utf-8"))
+    def artifact_text(self, name: str, text: str, *, wall_clock_timing: bool = False) -> str:
+        """Retain a text artifact; ``wall_clock_timing=True`` declares an SVG figure whose bytes depend on wall-clock
+        timing, recorded in the report's artifact list and compared for presence and structure only on re-execution."""
+        return self._write(name, text.encode("utf-8"), wall_clock_timing)
 
 
 # Linux powercap sysfs directory holding the intel-rapl energy counters.

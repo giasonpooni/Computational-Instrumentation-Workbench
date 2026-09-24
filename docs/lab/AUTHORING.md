@@ -276,7 +276,13 @@ exception by its type, not its message, when it may name a path.
   scipy/sympy/mpmath lazily inside functions and degrade when absent.
 - Deterministic: seeded `np.random.Generator(np.random.PCG64(seed))`, no wall
   clock in findings, no dict-order dependence. Keep elapsed-time measurements
-  out of findings (they are not reproducible); retain them in artifacts.
+  out of findings (they are not reproducible); retain them in artifacts. A
+  figure that plots them is declared when written,
+  `ctx.artifact_text("timings.svg", svg.line_plot(...), wall_clock_timing=True)`,
+  which records `wall_clock_timing: true` on its generated-artifact entry (only
+  SVG figures can be declared). T158 and `scripts/check_figures.py` compare a
+  declared figure for presence and structure only; every other figure must
+  regenerate byte for byte, so an undeclared timing figure is a mismatch.
 - Budget: the whole section run ≤ 60 s and its tests ≤ 60 s on one CPU core.
   The clean-room gate pins `OPENBLAS_NUM_THREADS=1`; do not rely on BLAS
   threading, and avoid large dense solves where a structured solver exists.

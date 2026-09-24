@@ -33,7 +33,10 @@ It takes about 6 s on one core. T142 and T146 compile a small Rust probe
 The probe is compiled with `--remap-path-prefix=<build dir>=ciw-lab-rust`, so
 its binary digest (part of the provider/runtime identity) is the same on every
 run. T142's report identity still changes between runs because its retained
-wall-clock timing artifacts do; no finding depends on them.
+wall-clock timing artifacts do; no finding depends on them. Its figure
+`kernel-timings.svg` is declared as a wall-clock timing figure, so figure
+re-executions (T158, `scripts/check_figures.py`) compare it for presence and
+structure only.
 
 **What this section does not establish.** No GPU, FPGA, Julia runtime or
 industrial C/C++ library runs here. Bitstreams, link statistics and
@@ -79,7 +82,7 @@ observation sections) are vectorized across runs and have no single-update
 kernel, so the row profiles a Joseph-form reference written in this section
 and is labelled "not a core kernel". Interpreter calls issued by `ciw` code per
 kernel call are counted with a profile hook. Wall-clock timings are kept only
-in `kernel-timings.json`.
+in `kernel-timings.json` and its declared timing figure `kernel-timings.svg`.
 
 | Kernel (restated) | Flops per call | Trig calls | Interpreter calls per call |
 | --- | --- | --- | --- |

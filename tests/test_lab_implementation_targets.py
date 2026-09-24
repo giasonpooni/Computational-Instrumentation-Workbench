@@ -117,6 +117,9 @@ def test_t142_kernel_counts_and_ranking(tmp_path):
     assert all(row["arithmetic_intensity"] == row["flops_per_call"] / row["bytes_per_call"] for row in rows)
     timings = json.loads((tmp_path / "artifacts" / "T142" / "kernel-timings.json").read_text(encoding="utf-8"))
     assert "seconds_per_call" in timings["timings"]
+    # The figure plotting those timings is declared, so figure re-executions compare it for structure only.
+    declared = [a["path"] for a in report["generated_artifacts"] if a.get("wall_clock_timing")]
+    assert declared == ["artifacts/T142/kernel-timings.svg"]
 
 
 def test_rust_fused_sphere_loop(rust_probe):
