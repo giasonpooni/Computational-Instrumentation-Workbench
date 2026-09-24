@@ -35,4 +35,6 @@ jobs:
           path: |
             results/figures-windows/figure-check.json
             results/figures-windows/figure-check.md
+            results/figures-windows/run/artifacts/**/*.svg
+            results/figures-windows/run/reports/*.json
           if-no-files-found: error
