@@ -68,6 +68,24 @@ sphere (great circles), cylinder (helices) and hyperbolic plane (semicircles);
 high-precision independent integration elsewhere (T002). Integrator orders
 1, 2, 4 and the adaptive Dormand–Prince 5(4) behavior are tested in T003.
 
+The hyperbolic closed form for `g = I/(k² y²)` with chart heading `α` is
+`x = x₀ + y₀ cos α sinh(ks)/D`, `y = y₀/D`, `D = cosh(ks) − sin α sinh(ks)`,
+evaluated without cancellation for every heading, near-vertical ones included.
+A chart point is regular when `g` is positive definite with
+`det g / (tr g)² > 10⁻¹²` (about a reciprocal condition number, so the test
+does not depend on the surface scale); otherwise it is refused as
+`degenerate_metric`, and points outside a chart's domain as `outside_chart`.
+A reparametrized chart `a ↦ φ(a)` keeps the base chart's domain (`φ(a)`
+outside it is refused as `outside_chart`, a nonfinite `φ(a)` as
+`degenerate_metric`); regularity is judged on its pullback metric `Jᵀ g J` by
+the same test, so a chart map that removes a base coordinate singularity (normal
+coordinates about a pole) is regular there. A frame change
+`X ↦ R X` requires `max |RᵀR − I| ≤ 10⁻¹²` and `det R = +1`. A negative length
+integrates backward from `s = 0` in both the fixed-step and adaptive
+integrators. Observed orders are least-squares log–log slopes; zero, negative
+or nonfinite errors or step sizes are refused rather than dropped, and so are
+tables with fewer than two distinct step sizes (the slope is then undetermined).
+
 ## Jacobi equation, transfer matrix and Wronskian
 
 Along a unit-speed geodesic with parallel unit normal `N`, a normal Jacobi
@@ -80,9 +98,11 @@ field `J = j N` satisfies `j'' + K(γ(s)) j = 0`. The transfer matrix
 
 has lateral-displacement and heading columns. `det Φ ≡ 1` (Wronskian; T007).
 For constant `K`: `j_head = sin(√K s)/√K`, `s`, or `sinh(√−K s)/√−K` (T005).
-Conjugate points are the zeros `s > 0` of `j_head`; focal points of the
-initial normal geodesic are the zeros of `j_lat` (T008). On the unit sphere
-they occur at `π` and `π/2`; on the outer torus equator at `π√(r(R+r))`.
+Conjugate points are the zeros `s ≠ 0` of `j_head` (`s > 0` on a forward
+geodesic); focal points of the initial normal geodesic are the zeros of
+`j_lat` (T008); both are listed in the order the geodesic meets them. On the
+unit sphere they occur at `π` and `π/2`; on the outer torus equator at
+`π√(r(R+r))`.
 
 ## First-order validity and focal counterexamples
 

@@ -72,34 +72,39 @@ def integrate_adaptive(f, y0, length, rtol=1e-8, atol=1e-10, h0=None, max_steps=
     """Dormand-Prince 5(4) with local extrapolation; returns (s, states, stats).
 
     The error norm is the RMS of (y5 - y4) / (atol + rtol * max|y|). Steps end
-    exactly at ``length``.
+    exactly at ``length``; a negative ``length`` integrates backward, as
+    :func:`integrate_fixed` does, with nodes running from 0 down to ``length``.
     """
+    if not math.isfinite(length):
+        raise ValueError("Adaptive integration needs a finite length")
+    direction, span = math.copysign(1.0, length), abs(length)
     y = np.array(y0, dtype=float)
-    s = 0.0
-    h = h0 or min(length, 0.01 * max(length, 1e-12))
+    s = 0.0  # distance covered, in the direction of ``length``
+    h = abs(h0) if h0 else min(span, 0.01 * max(span, 1e-12))
     nodes, states = [0.0], [y.copy()]
     accepted = rejected = evaluations = 0
     k1 = f(y)
     evaluations += 1
-    while s < length:
+    while s < span:
         if accepted + rejected > max_steps:
             raise FloatingPointError("Adaptive integration exceeded its step budget")
-        h = min(h, length - s)
+        h = min(h, span - s)
+        step = direction * h
         k = [k1]
         for stage in range(1, 7):
-            k.append(f(y + h * sum(a * kj for a, kj in zip(_A[stage], k))))
+            k.append(f(y + step * sum(a * kj for a, kj in zip(_A[stage], k))))
         evaluations += 6
-        y5 = y + h * sum(b * kj for b, kj in zip(_B5, k))
-        y4 = y + h * sum(b * kj for b, kj in zip(_B4, k))
+        y5 = y + step * sum(b * kj for b, kj in zip(_B5, k))
+        y4 = y + step * sum(b * kj for b, kj in zip(_B4, k))
         scale = atol + rtol * np.maximum(np.abs(y), np.abs(y5))
         error = math.sqrt(float(np.mean(((y5 - y4) / scale) ** 2)))
         if not math.isfinite(error):
             raise FloatingPointError("Adaptive integration produced a nonfinite error estimate")
         if error <= 1.0:
-            s = length if length - (s + h) < 1e-14 * max(1.0, length) else s + h
+            s = span if span - (s + h) < 1e-14 * max(1.0, span) else s + h
             y = y5
             k1 = k[6]  # first-same-as-last
-            nodes.append(s)
+            nodes.append(direction * s)
             states.append(y.copy())
             accepted += 1
             factor = 5.0 if error == 0 else min(5.0, max(0.2, 0.9 * error ** -0.2))
@@ -112,10 +117,22 @@ def integrate_adaptive(f, y0, length, rtol=1e-8, atol=1e-10, h0=None, max_steps=
 
 
 def observed_order(step_sizes, errors) -> float:
-    """Least-squares slope of log(error) against log(step size)."""
-    x = np.log(np.asarray(step_sizes, dtype=float))
-    y = np.log(np.asarray(errors, dtype=float))
-    slope, _ = np.polyfit(x, y, 1)
+    """Least-squares slope of log(error) against log(step size).
+
+    Refuses (ValueError) unless the pairs are positive and finite with at least
+    two distinct step sizes: an error of exactly zero (a bit-exact result) has
+    no logarithm, and dropping it silently would change the fit, so the caller
+    must decide; with fewer than two distinct step sizes the slope is
+    undetermined. A step size may repeat once two distinct ones are present.
+    """
+    h, e = np.asarray(step_sizes, dtype=float), np.asarray(errors, dtype=float)
+    if h.ndim != 1 or h.shape != e.shape or len(np.unique(h)) < 2:
+        raise ValueError("An observed order needs paired step sizes and errors with at least two distinct "
+                         "step sizes")
+    if not (np.all(np.isfinite(h)) and np.all(np.isfinite(e)) and np.all(h > 0) and np.all(e > 0)):
+        raise ValueError(f"An observed order needs positive finite step sizes and errors; got {h.tolist()} "
+                         f"and {e.tolist()}")
+    slope, _ = np.polyfit(np.log(h), np.log(e), 1)
     return float(slope)
 
 

@@ -16,7 +16,8 @@ import math
 
 import numpy as np
 
-# Coordinate regularity threshold on det(g), relative to the surface scale.
+# Coordinate regularity threshold on det(g) / trace(g)^2 = l1 l2 / (l1 + l2)^2 for the metric
+# eigenvalues l1, l2: about the reciprocal condition number, and independent of the surface scale.
 SINGULAR_DET = 1e-12
 
 
@@ -26,6 +27,14 @@ class SurfaceRefusal(ValueError):
     def __init__(self, message: str, code: str = "surface_refused"):
         super().__init__(message)
         self.code = code
+
+
+def finite_point(u) -> np.ndarray:
+    """Two finite chart coordinates as a float array; anything else is refused as ``nonfinite_point``."""
+    u = np.asarray(u, dtype=float)
+    if u.shape != (2,) or not np.all(np.isfinite(u)):
+        raise SurfaceRefusal("Surface coordinates must be two finite numbers", "nonfinite_point")
+    return u
 
 
 class Surface:
@@ -55,12 +64,16 @@ class Surface:
 
     # Generic geometry -------------------------------------------------
     def check(self, u) -> None:
-        """Refuse nonfinite points and coordinate singularities (degenerate metric)."""
-        u = np.asarray(u, dtype=float)
-        if u.shape != (2,) or not np.all(np.isfinite(u)):
-            raise SurfaceRefusal("Surface coordinates must be two finite numbers", "nonfinite_point")
+        """Refuse nonfinite points and coordinate singularities (degenerate metric).
+
+        The metric must be positive definite with det(g) / trace(g)^2 above
+        SINGULAR_DET, a condition-number test that does not depend on the scale
+        of the surface (a millimetre sphere in metres is regular away from its poles).
+        """
+        u = finite_point(u)
         g = self.metric(u)
-        if not np.all(np.isfinite(g)) or np.linalg.det(g) <= SINGULAR_DET * max(1.0, float(np.trace(g))) ** 2:
+        scale = float(np.trace(g)) if np.all(np.isfinite(g)) else math.nan
+        if not scale > 0 or np.linalg.det(g / scale) <= SINGULAR_DET:
             raise SurfaceRefusal(f"{self.name}: coordinate singularity or degenerate metric at {u.tolist()}",
                                  "degenerate_metric")
 
@@ -384,19 +397,34 @@ class HyperbolicPlane(Surface):
         return -self.k ** 2
 
     def exact_geodesic(self, u0, t0, s):
-        """Semicircles orthogonal to y = 0 (or vertical lines), parameterized by arclength."""
+        """Semicircles orthogonal to y = 0 (or vertical lines), parameterized by arclength.
+
+        With tau = k s and chart heading (cos a, sin a) the geodesic is the Mobius image
+        x = x0 + y0 cos(a) sinh(tau) / D, y = y0 / D, D = cosh(tau) - sin(a) sinh(tau).
+        D is summed from the nonnegative terms (1 - sin a) e^tau / 2 and (1 + sin a) e^-tau / 2;
+        whichever of 1 -+ sin a would cancel is formed as cos^2 a / (1 +- sin a), so no heading
+        (near-vertical ones included) loses accuracy, and both terms are scaled by e^-|tau| so
+        long arcs saturate rather than overflow. There is no inverse hyperbolic function to
+        leave its domain.
+        """
         s = np.asarray(s, dtype=float)
         x0, y0 = float(u0[0]), float(u0[1])
         direction = t0 / np.linalg.norm(t0)
         cos_a, sin_a = float(direction[0]), float(direction[1])
-        if abs(cos_a) < 1e-15:
+        cos2 = cos_a * cos_a
+        if cos2 == 0.0:
             y = y0 * np.exp(math.copysign(1.0, sin_a) * self.k * s)
             return np.column_stack([np.full_like(s, x0), y])
-        center = x0 + y0 * sin_a / cos_a
-        radius = y0 / abs(cos_a)
-        t_start = math.atanh((x0 - center) / radius)
-        t = t_start + math.copysign(1.0, cos_a) * self.k * s
-        return np.column_stack([center + radius * np.tanh(t), radius / np.cosh(t)])
+        one_minus_sin = cos2 / (1.0 + sin_a) if sin_a > 0 else 1.0 - sin_a
+        one_plus_sin = 1.0 + sin_a if sin_a > 0 else cos2 / (1.0 - sin_a)
+        tau = self.k * s
+        forward = tau >= 0
+        decay = np.exp(-np.abs(tau))
+        # 2 D e^-|tau| = (coefficient of e^|tau|) + (coefficient of e^-|tau|) e^-2|tau|
+        scaled = (np.where(forward, one_minus_sin, one_plus_sin)
+                  + np.where(forward, one_plus_sin, one_minus_sin) * decay * decay)
+        x = x0 + y0 * cos_a * np.sign(tau) * -np.expm1(-2.0 * np.abs(tau)) / scaled
+        return np.column_stack([x, 2.0 * y0 * decay / scaled])
 
 
 class ChartMap:
@@ -430,6 +458,30 @@ class Reparametrized(Surface):
     def describe(self):
         return {"name": self.name, "base": self.base.describe(), "chart": self.chart.name}
 
+    def check(self, a) -> None:
+        """Refuse points outside the base chart's domain, then judge regularity on J^T g J.
+
+        A nonfinite chart image phi(a) of a finite point is an unbounded chart
+        map (``degenerate_metric``). The base check keeps its own domain (for
+        example y > 0 on the half-plane, ``outside_chart``), but its
+        ``degenerate_metric`` is not propagated: that is conditioning in the base
+        chart, and a chart map may remove a base coordinate singularity (normal
+        coordinates about a pole of the sphere). The scale-relative test of the
+        pullback metric J^T g J then judges this chart: it refuses a singular,
+        unbounded or too ill-conditioned chart Jacobian J, and a base singularity
+        that the chart map does not remove (``degenerate_metric``).
+        """
+        a = finite_point(a)
+        u = np.asarray(self.chart.forward(a), dtype=float)
+        if not np.all(np.isfinite(u)):
+            raise SurfaceRefusal(f"{self.name}: chart map is not finite at {a.tolist()}", "degenerate_metric")
+        try:
+            self.base.check(u)
+        except SurfaceRefusal as refusal:
+            if refusal.code != "degenerate_metric":
+                raise
+        super().check(a)
+
     def metric(self, a):
         jac = self.chart.jacobian(a)
         return jac.T @ self.base.metric(self.chart.forward(a)) @ jac
@@ -458,11 +510,15 @@ class Reparametrized(Surface):
 
 
 class Rotated(EmbeddedSurface):
-    """Rigid rotation of an embedded surface: intrinsic quantities are unchanged."""
+    """Rigid rotation of an embedded surface: intrinsic quantities are unchanged.
+
+    The matrix must be a proper rotation: max |R^T R - I| <= 1e-12 (absolute, so
+    a uniformly scaled matrix is refused) and det R = +1 (reflections are refused).
+    """
 
     def __init__(self, base: EmbeddedSurface, rotation):
         rotation = np.asarray(rotation, dtype=float)
-        if rotation.shape != (3, 3) or not np.allclose(rotation.T @ rotation, np.eye(3), atol=1e-12) \
+        if rotation.shape != (3, 3) or not np.allclose(rotation.T @ rotation, np.eye(3), rtol=0.0, atol=1e-12) \
                 or np.linalg.det(rotation) <= 0:
             raise SurfaceRefusal("Frame change requires a proper rotation matrix")
         self.base, self.rotation = base, rotation

@@ -63,12 +63,17 @@ class Transfer:
         """|g(v, v) - 1| at every node, with no renormalization applied."""
         return np.array([abs(self.surface.speed_squared(y[:2], y[2:4]) - 1.0) for y in self.states])
 
+    def _in_travel_order(self, zeros):
+        """Zeros ordered as the geodesic meets them (descending s for a backward transfer)."""
+        return sorted(zeros, key=lambda z: abs(z - self.s[0]))
+
     def conjugate_points(self):
-        """Zeros of the heading column after the trivial zero at s = 0."""
-        return [z for z in hermite_zeros(self.s, self.states[:, 6], self.states[:, 7]) if z > self.s[0]]
+        """Zeros of the heading column other than the trivial zero at s = 0, in travel order."""
+        return self._in_travel_order(z for z in hermite_zeros(self.s, self.states[:, 6], self.states[:, 7])
+                                     if z != self.s[0])
 
     def focal_points(self):
-        return hermite_zeros(self.s, self.states[:, 4], self.states[:, 5])
+        return self._in_travel_order(hermite_zeros(self.s, self.states[:, 4], self.states[:, 5]))
 
     def curvature_along(self) -> np.ndarray:
         return np.array([self.surface.gaussian_curvature(y[:2]) for y in self.states])
