@@ -256,8 +256,10 @@ def test_unknown_calibration_crosscovariance_cannot_publish_partial_fusion(
         "operation_id": CALIBRATED_OPERATION,
         "parameters": {"source_id": source["source_id"]},
     })
-    assert reply["type"] == "error", reply
-    assert reply["payload"]["code"] == "CALIBRATED_MCUR_REFUSED"
+    # The provider refusal is retained as a refused execution with its code; no bundle or fusion is published.
+    assert reply["type"] == "response" and reply["payload"]["status"] == "refused", reply
+    assert reply["payload"]["result"] is None
+    assert reply["payload"]["execution"]["refusal"]["code"] == "CALIBRATED_MCUR_REFUSED"
     assert response(session, "source.list")["sources"] == [source]
     assert response(session, "bundle.list")["bundles"] == []
     assert response(session, "experiment.inspect", {"view": "fusion"})["contexts"] == []
@@ -330,7 +332,9 @@ def test_retained_workspace_reopens_without_code_binding_or_provider_execution(
     reply = request(session, "bundle.replay", {
         "bundle_id": retained_process["summary"]["bundle_id"],
     })
-    assert reply["type"] == "error", reply
+    # Reopening binds no provider, so replay is a refused replay naming its subject.
+    assert reply["type"] == "response" and reply["payload"]["status"] == "refused", reply
+    assert reply["payload"]["execution"]["subject_bundle_id"] == retained_process["summary"]["bundle_id"]
     assert len(response(session, "bundle.list")["bundles"]) == 1
 
 
