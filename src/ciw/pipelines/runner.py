@@ -235,7 +235,7 @@ def verification(bundle: dict, reproduced: dict, profile: RecordProfile = DECLAR
         raise ValueError("Native workload replay mismatch")
     value = {"schema": profile.verify_schema, "subject_ref": bundle["bundle_digest"], "outcome": "passed",
              "independent": False, "method": profile.verify_method, "runtime_digest": digest(bundle["runtimes"]),
-             "reproduction": reproduced, "authority": profile.authority}
+             "reproduction": deepcopy(reproduced), "authority": deepcopy(profile.authority)}
     value["verification_id"] = byte_digest(profile.verify_schema.encode() + b"\0" + canonical(value))
     return value
 

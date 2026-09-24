@@ -273,3 +273,13 @@ def test_declared_and_reproduced_kinds_follow_the_descriptor_verification_method
     assert not {"telemetry", "calibrated-observable", "identified-design"} & workbench.DECLARED_KINDS
     for kind in workbench.REPRODUCED_KINDS - {"instrument-exchange"}:
         assert methods[kind].endswith("fresh_occurrence_reproduction"), kind
+
+
+def test_verification_records_never_alias_the_profile_or_the_reproduced_step():
+    from ciw.pipelines.runner import DECLARED, verification
+    bundle = {"bundle_digest": "sha256:" + "1" * 64, "runtimes": {}, "steps": [{"numerical_result": {"x": 1}}]}
+    reproduced = {"numerical_result": {"x": 1}}
+    value = verification(bundle, reproduced)
+    value["authority"]["state_admission"] = "performed"
+    value["reproduction"]["numerical_result"]["x"] = 2
+    assert DECLARED.authority["state_admission"] == "not_performed" and reproduced["numerical_result"]["x"] == 1
