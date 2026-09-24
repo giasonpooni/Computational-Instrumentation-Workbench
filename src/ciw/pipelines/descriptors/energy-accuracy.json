@@ -96,6 +96,10 @@
     "entry": {
       "symbol": "ciw.energy_workflow:EnergyAccuracyWorkflow",
       "call": "none"
+    },
+    "view": {
+      "symbol": "ciw.energy_view:project",
+      "context": false
     }
   },
   "guide": "docs/ENERGY_ACCURACY.md"

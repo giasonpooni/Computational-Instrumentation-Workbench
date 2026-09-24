@@ -103,6 +103,10 @@
     "entry": {
       "symbol": "ciw.declared_workload:DeclaredWorkflow",
       "call": "kind"
+    },
+    "view": {
+      "symbol": "ciw.workload_view:project",
+      "context": false
     }
   },
   "guide": "docs/DECLARED_WORKLOADS.md"

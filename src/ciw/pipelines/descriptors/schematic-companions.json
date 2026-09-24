@@ -149,6 +149,10 @@
     "entry": {
       "symbol": "ciw.schematic_companions:SchematicCompanionWorkflow",
       "call": "none"
+    },
+    "view": {
+      "symbol": "ciw.workload_view:project",
+      "context": false
     }
   },
   "guide": "docs/INTEGRATED_MODULES.md"

@@ -134,6 +134,10 @@
     "entry": {
       "symbol": "ciw.residual_monitor:workflow",
       "call": "value"
+    },
+    "view": {
+      "symbol": "ciw.residual_view:project",
+      "context": false
     }
   },
   "guide": "docs/ACQUIRED_STREAM.md"

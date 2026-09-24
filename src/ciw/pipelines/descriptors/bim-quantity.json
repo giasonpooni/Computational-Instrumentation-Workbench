@@ -126,6 +126,10 @@
     "entry": {
       "symbol": "ciw.bim_quantity:workflow",
       "call": "value"
+    },
+    "view": {
+      "symbol": "ciw.workload_view:project",
+      "context": false
     }
   },
   "guide": "docs/INTEGRATED_MODULES.md"

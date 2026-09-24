@@ -308,6 +308,10 @@
     "entry": {
       "symbol": "ciw.identified_design",
       "call": "value"
+    },
+    "view": {
+      "symbol": "ciw.experiment_view:project",
+      "context": true
     }
   },
   "guide": "docs/IDENTIFIED_DESIGN.md"

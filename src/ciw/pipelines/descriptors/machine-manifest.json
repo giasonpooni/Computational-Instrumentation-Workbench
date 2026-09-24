@@ -137,6 +137,10 @@
     "entry": {
       "symbol": "ciw.machine_workflow:MachineManifestWorkflow",
       "call": "none"
+    },
+    "view": {
+      "symbol": "ciw.workload_view:project",
+      "context": false
     }
   },
   "guide": "docs/CONTRACT_FOUNDATIONS.md"

@@ -181,6 +181,10 @@
     "entry": {
       "symbol": "ciw.free_energy_workflow:FreeEnergyWorkflow",
       "call": "none"
+    },
+    "view": {
+      "symbol": "ciw.free_energy_view:project",
+      "context": false
     }
   },
   "guide": "docs/VARIATIONAL_FREE_ENERGY.md"

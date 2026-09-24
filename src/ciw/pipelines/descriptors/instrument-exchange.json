@@ -87,6 +87,10 @@
     "entry": {
       "symbol": "ciw.exchange_adapter",
       "call": "value"
+    },
+    "view": {
+      "symbol": "ciw.exchange_view:project",
+      "context": false
     }
   },
   "guide": "docs/EXCHANGE.md"

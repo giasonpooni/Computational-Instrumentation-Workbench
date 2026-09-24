@@ -111,6 +111,10 @@
     "entry": {
       "symbol": "ciw.geometric_circle:workflow",
       "call": "value"
+    },
+    "view": {
+      "symbol": "ciw.geometric_circle_view:project",
+      "context": false
     }
   },
   "guide": "docs/REMAINING_MODULES.md"

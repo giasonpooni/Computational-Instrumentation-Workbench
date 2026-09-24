@@ -116,6 +116,10 @@
     "entry": {
       "symbol": "ciw.acquired_dataset:workflow",
       "call": "value"
+    },
+    "view": {
+      "symbol": "ciw.workload_view:project",
+      "context": false
     }
   },
   "guide": "docs/ACQUIRED_DATASET.md"

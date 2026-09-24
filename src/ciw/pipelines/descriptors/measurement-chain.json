@@ -151,6 +151,10 @@
     "entry": {
       "symbol": "ciw.measurement_chain:workflow",
       "call": "value"
+    },
+    "view": {
+      "symbol": "ciw.measurement_chain_view:project",
+      "context": false
     }
   },
   "guide": "docs/REMAINING_MODULES.md"

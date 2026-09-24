@@ -225,12 +225,16 @@ def validate(value) -> dict:
     if value["authority"] != "read_only":
         raise ValueError("Every current pipeline is read-only with respect to equipment")
     implementation = value["implementation"]
-    _keys(implementation, {"module", "runner", "delegates", "entry"}, name="implementation")
+    _keys(implementation, {"module", "runner", "delegates", "entry", "view"}, name="implementation")
     entry = implementation["entry"]
     _keys(entry, {"symbol", "call"}, name="implementation.entry")
     if (not isinstance(entry["symbol"], str) or entry["call"] not in ENTRY_CALLS or
             entry["symbol"].partition(":")[0] != implementation["module"]):
         raise ValueError("implementation.entry names a symbol of its module and how to build the workflow")
+    view = implementation["view"]
+    _keys(view, {"symbol", "context"}, name="implementation.view")
+    if not isinstance(view["symbol"], str) or not re.fullmatch(r"ciw\.[a-z_]+_view:project", view["symbol"]) or type(view["context"]) is not bool:
+        raise ValueError("implementation.view names a ciw.*_view:project inspection projector and whether it takes fusion context")
     if implementation["runner"] not in IMPLEMENTATIONS or not implementation["module"].startswith("ciw."):
         raise ValueError("implementation names a CIW module and its runner class")
     if (not isinstance(implementation["delegates"], list)
@@ -360,6 +364,15 @@ def workflow(kind: str):
     return build(descriptor)
 
 
+def inspection(kind: str) -> tuple:
+    """The experiment inspection projector for a frozen kind and whether it takes fusion context."""
+    descriptor = _packaged()[0].get(kind)
+    if descriptor is None:
+        raise ValueError("Unknown workbench source kind")
+    view = descriptor["implementation"]["view"]
+    return resolve_symbol(view["symbol"]), view["context"]
+
+
 def session_kind(schema) -> str | None:
     """The kind whose retained session carries this schema, if any."""
     return _packaged()[1].get(schema) if isinstance(schema, str) else None
@@ -408,6 +421,8 @@ def check(descriptors: dict | None = None) -> dict:
             raise ValueError(f"{kind}: descriptor upstream differs from the registered upstream")
         import_module(value["implementation"]["module"])
         _check_runner(kind, value["implementation"]["runner"], flow)
+        if not callable(resolve_symbol(value["implementation"]["view"]["symbol"])):
+            raise ValueError(f"{kind}: inspection view is not callable")
         for rule in value["domain_rules"]:
             for reference in rule["code"]:
                 resolve_symbol(reference)

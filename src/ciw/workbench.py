@@ -995,7 +995,7 @@ class Workbench:
         return {"candidates": self.list_candidates()}
 
     def inspect_experiment(self, payload):
-        from .experiment_view import project
+        from .pipelines import inspection
         _keys(payload, {"bundle_id"})
         _text(payload["bundle_id"], "bundle_id")
         with self._lock:
@@ -1004,39 +1004,14 @@ class Workbench:
                 raise ValueError("Unknown retained workbench bundle")
             source = self._sources[record["source_id"]]
             declaration = _json(base64.b64decode(source["bytes_b64"], validate=True))
-            if record["kind"] == "energy-accuracy":
-                from .energy_view import project as project_energy
-                return project_energy(record, source, declaration, self._revision)
-            if record["kind"] == "variational-free-energy":
-                from .free_energy_view import project as project_free_energy
-                return project_free_energy(record, source, declaration, self._revision)
-            if record["kind"] in {"covariance-geometry", "mesh-path", "translation-flow"}:
-                from .geometry_research_view import project as project_geometry_research
-                return project_geometry_research(record, source, declaration, self._revision)
-            if record["kind"] in {"flat-torus-reference", "curved-path-transfer"}:
-                from .geodesic_reference_view import project as project_reference
-                return project_reference(record, source, declaration, self._revision)
-            if record["kind"] == "residual-monitor":
-                from .residual_view import project as project_residual
-                return project_residual(record, source, declaration, self._revision)
-            if record["kind"] == "measurement-chain":
-                from .measurement_chain_view import project as project_measurement
-                return project_measurement(record, source, declaration, self._revision)
-            if record["kind"] == "geometric-circle":
-                from .geometric_circle_view import project as project_geometry
-                return project_geometry(record, source, declaration, self._revision)
-            if record["kind"] == "identified-stability":
-                from .identified_stability_view import project as project_stability
-                return project_stability(record, source, declaration, self._revision)
-            if record["kind"] == "instrument-exchange":
-                from .exchange_view import project as project_exchange
-                return project_exchange(record, source, declaration, self._revision)
-            if record["kind"] == "acquired-calibrated-window":
-                declaration = _workflow(record["kind"]).mapped_source(record["native"])
-            if record["kind"] in DECLARED_KINDS:
-                from .workload_view import project as project_workload
-                return project_workload(record, source, declaration, self._revision)
-            return project(record, source, declaration, _context(record, self._sources), self._revision)
+            # Some kinds inspect a mapped declaration instead of their raw source bytes.
+            mapped = getattr(_workflow(record["kind"]), "mapped_source", None)
+            if mapped is not None:
+                declaration = mapped(record["native"])
+            project, context = inspection(record["kind"])
+            if context:
+                return project(record, source, declaration, _context(record, self._sources), self._revision)
+            return project(record, source, declaration, self._revision)
 
     def _native_steps(self):
         """Expose embedded replay occurrences without counting reused upstream twice."""

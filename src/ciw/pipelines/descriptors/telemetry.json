@@ -187,6 +187,10 @@
     "entry": {
       "symbol": "ciw.telemetry",
       "call": "value"
+    },
+    "view": {
+      "symbol": "ciw.experiment_view:project",
+      "context": true
     }
   },
   "guide": "docs/SHARED_TELEMETRY.md"

@@ -162,6 +162,8 @@ workflow and how it is built (`none`: a class with no argument, `kind`: a class
 given the source kind, `value`: used as-is). The workbench builds workflows
 only from these entries, and `pipelines.check()` binds every entry to its
 declared module and runner class.
+`implementation.view` names the kind's `experiment.inspect` projector and
+whether it takes fusion context, so the inspection verb has no per-kind branch.
 
 A pipeline verified by a proof instead of a reproduction (proved heat: an SP1
 proof checked against the registered guest) overrides `_verify`,

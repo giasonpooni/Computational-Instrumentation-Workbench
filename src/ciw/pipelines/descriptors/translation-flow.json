@@ -101,6 +101,10 @@
     "entry": {
       "symbol": "ciw.geometry_research:GeometryResearchWorkflow",
       "call": "kind"
+    },
+    "view": {
+      "symbol": "ciw.geometry_research_view:project",
+      "context": false
     }
   },
   "guide": "docs/GEOMETRY_RESEARCH.md"

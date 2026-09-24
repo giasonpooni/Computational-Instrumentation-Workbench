@@ -117,6 +117,10 @@
     "entry": {
       "symbol": "ciw.identified_stability:workflow",
       "call": "value"
+    },
+    "view": {
+      "symbol": "ciw.identified_stability_view:project",
+      "context": false
     }
   },
   "guide": "docs/REMAINING_MODULES.md"

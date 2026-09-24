@@ -117,6 +117,10 @@
     "entry": {
       "symbol": "ciw.geodesic_reference:GeodesicReferenceWorkflow",
       "call": "kind"
+    },
+    "view": {
+      "symbol": "ciw.geodesic_reference_view:project",
+      "context": false
     }
   },
   "guide": "docs/GEODESIC_REFERENCES.md"

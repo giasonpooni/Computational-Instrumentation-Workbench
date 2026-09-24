@@ -172,6 +172,10 @@
     "entry": {
       "symbol": "ciw.acquired_window",
       "call": "value"
+    },
+    "view": {
+      "symbol": "ciw.experiment_view:project",
+      "context": true
     }
   },
   "guide": "docs/ACQUIRED_STREAM.md"

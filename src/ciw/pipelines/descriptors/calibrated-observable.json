@@ -248,6 +248,10 @@
     "entry": {
       "symbol": "ciw.calibrated_observable",
       "call": "value"
+    },
+    "view": {
+      "symbol": "ciw.experiment_view:project",
+      "context": true
     }
   },
   "guide": "docs/CALIBRATED_OBSERVABLE.md"
