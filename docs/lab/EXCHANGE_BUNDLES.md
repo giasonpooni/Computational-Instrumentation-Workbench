@@ -32,7 +32,7 @@ when pinned provider checkouts are bound.
 
 Timing on this machine: without providers the section takes about 5 s. With every
 provider bound it takes about 16 s (the SCR locked build dominates, and it is
-shared by T097–T099). The tests take about 11 s offline and about 26 s with every
+shared by T097–T099). The tests take about 13 s offline and about 26 s with every
 provider variable set.
 
 `scripts/check_lab.py` provisions SET, PPDA and a second SCR checkout at the
@@ -61,11 +61,11 @@ only in artifacts.
 | T093 | 16 refused non-recording request classes, each compared with its expected `code: message`. Digests of in-memory state (selection, results, executions, catalog, revision, byte and reservation counters, identities, bindings) and of the session directory are taken before and after, plus a re-save comparison. | 16/16 refused with the expected text; state unchanged; a refused reopen writes nothing. The unchanged-state claim is scoped to those classes. Counterexample: a refused *recording* operation is retained as a refused execution record, by design. |
 | T094 | Golden workspaces saved by CIW itself, reopened with the current code under the guard. The retained heat bundle's runtime identity is compared with CIW's pins. | 3 workspaces reopen and their digests match `GOLDEN_MANIFEST`. The golden heat values equal the integer reference, and the bundle names SCR `a59aba2`, tree `4068a71` and the recorded engine digest (`numerically_verified`). Reopen cannot show which engine produced those values, so that claim is recorded as `not_established`. Unbound replay is refused. |
 | T095 | 14 committed malformed fixtures and 7 generated ones, each sent to the validator it targets. Wrong-type cases are single-field mutations of a valid input. Only a `ValueError` counts as a refusal; any other exception is retained as a crash. The committed fixtures are compared with their generator. | 19/21 inputs refused with their declared, exact CIW text (the 19 that have one). The other two are counterexamples, and a check requires every input without a declared text to be covered by one. Counterexamples: `session.read_json` accepts `1e999` as `inf` and raises `RecursionError` (not `ValueError`) on deep nesting. `Session.from_workspace` raises `AttributeError` on `{"workspace_version": 3}`, and accepts then silently drops unknown top-level fields. `source.add` words source-parse errors as a runtime response. |
-| T096 | `exchange._identity` over 24 seeded records sealed by a lab-written canonical encoder (written from the producer specification without calling `json.dumps`, and checked to agree byte for byte with the `json.dumps` call `_identity` uses), with 114 single-field mutations. `candidate_evidence.validate_response` over 72 synthetic ESM responses. | All valid records accepted in any member order; all mutations refused. Acceptance follows from the encoder agreement (same-origin code), not from an independent check. Counterexamples: observation-batch identities are caller-declared, and unknown ESM fields are accepted (the boundary checks bindings only). |
-| T097 | SCR through CIW's numerical-heat workflow and through SCR's own Python API; the SET contracts validator; the PPDA/SCR/SET producer roundtrip. | SCR output is `provider_backed` and equals the integer reference (`independently_verified`). SET and the roundtrip are *checked*: status, effective rank 2, the exact refusal text `covariance.matrix is not positive-semidefinite`, two matched links, preserved failed verification, `result_id` refusal, and `may_authorize` false. A contrary provider outcome refutes the finding (both parts have mocked as-expected and contrary tests). Parts that cannot run are recorded as `not_established` with the exact reason and commands, and any part that ran keeps the task `partial` rather than `blocked`. |
+| T096 | `exchange._identity` over 24 seeded records sealed by a lab-written canonical encoder (written from the producer specification without calling `json.dumps`, and checked to agree byte for byte with the `json.dumps` call `_identity` uses), with 114 single-field mutations. `candidate_evidence.validate_response` over 72 synthetic ESM responses. | All valid records accepted in any member order; all mutations refused. Acceptance follows from the encoder agreement (same-origin code), not from an independent check. Counterexamples: observation-batch identities are caller-declared, and unknown ESM fields are accepted (the boundary checks bindings only). Every finding declares the generator of its synthetic inputs (the seeded records, or the deterministic `_candidate_cases` for the ESM responses), so its Basis column names it; the checks still decide the label. |
+| T097 | SCR through CIW's numerical-heat workflow and through SCR's own Python API; the SET contracts validator; the PPDA/SCR/SET producer roundtrip. Each exchange checkout's head and tree go into `provider_runtime_identity` as T098 records them, so a runtime inventory (T165) lists each checkout once. | SCR output is `provider_backed` and equals the integer reference (`independently_verified`). SET and the roundtrip are *checked*: status, effective rank 2, the exact refusal text `covariance.matrix is not positive-semidefinite`, two matched links, preserved failed verification, `result_id` refusal, and `may_authorize` false. A contrary provider outcome refutes the finding (both parts have mocked as-expected and contrary tests). Every finding that rests on a provider's execution declares it as its `provider`, so the Basis column names it beside the label, which the checks still decide: SCR for the heat, reference and replay findings, and SET for the validator finding and for the roundtrip, whose one provider slot names the checker its checks read (the PPDA and SCR producers are in its basis notes). The reopen finding executes nothing and declares no provider. Parts that cannot run are recorded as `not_established` with the exact reason and commands, and any part that ran keeps the task `partial` rather than `blocked`. |
 | T098 | HEAD, tree, tracked-byte digest and the digest of every recognised lockfile (`Cargo.lock`, `uv.lock`, `poetry.lock`, `Pipfile.lock`, `package-lock.json` and the other names in `LOCKFILE_NAMES`, plus fully pinned `requirements*.txt`) of every bound checkout, and the engine digest. Bound interpreters (`plsr-python`, `ftr-python`) are probed for version and executable digest, and for the installed PLSR runtime's version and source digests. Also: an independent Git tree recomputation, the pin comparison, CIW's own adapter against every module pin plus a control revision, and pins grouped by repository. | Every bound checkout here is clean and at a CIW pin; CSG's `uv.lock` is recorded. The tracked and lockfile digests are read a second time from Git's HEAD objects (`git cat-file`, an `independent_check` of origin `git`). The adapter accepts the pins at HEAD and refuses a control revision taken from another repository's pin, so its refusal side is exercised even when every declared pin is at HEAD. The installed PLSR matches `ciw/plsr-runtime.json`. Interpreter and engine digests are provenance (artifact and `provider_runtime_identity`), not regression values. A refused checkout gets its own finding naming the reasons, each corroborated by a second reader, and the task becomes `partial`. CIW declares two SCR revisions (`a59aba2` for declared-workload and proved-heat, `5f04097` for the exchange workflow) and four SET revisions. |
-| T099 | `cargo build --release --locked --offline -p execution-cli` into two fresh target directories. | Exit codes 0 are checked, Cargo.lock and the checkout are unchanged, the two binaries are bit-identical, and the engine outputs `[0, 219, 313, 219, 0]` for `[0, 0, 1000, 0, 0]` after 3 steps. A failed build is recorded as a refuted claim, not hidden. The SP1 build is recorded with its full requirements and never attempted, so the state is `partial`. |
-| T100 | Label/domain and rendered-Markdown audit of every earlier report present in the output directory. Relabelling of CIW energy and free-energy records, reading the retained bundle's own classification. A fabricated numerical-heat bundle read through `bundle.get` and `ciw lab classify` (`classify_workspace`). | Relabels are refused where the record can detect them. Counterexamples: a resealed relabel under a fresh occurrence is accepted and its bundle is classified `physical_domain_measurement`; the fabricated heat bundle reopens and is labelled `provider_backed`, like a provider result. Its only reader-visible trace is a source tree that differs from CIW's pin, which neither reopen nor classify compares. The pipe-in-claim probe records whichever renderer behaviour it observes. |
+| T099 | `cargo build --release --locked --offline -p execution-cli` into two fresh target directories. | Exit codes 0 are checked, Cargo.lock and the checkout are unchanged, the two binaries are bit-identical, and the engine outputs `[0, 219, 313, 219, 0]` for `[0, 0, 1000, 0, 0]` after 3 steps. A failed build is recorded as a refuted claim, not hidden. The build, reproducibility and engine-output findings declare the bound SCR checkout as their provider. The SP1 build is recorded with its full requirements and never attempted, so the state is `partial`. |
+| T100 | Label/domain and rendered-Markdown audit of every earlier report present in the output directory. Each rendered row must equal `report.finding_row` (claim, value, label, declared basis), keep the label in the third of the header's four cells, and show in its Basis cell exactly the cell the finding's declared basis prescribes under [AUTHORING.md](AUTHORING.md). The audit builds that cell itself, without the renderer: every declared component in basis order, the generator with its name and seed, the executed provider as repository@revision, and an acquisition record as `hardware acquisition (<device>)` only on a physical finding it establishes (`hardware_measured` or `independently_verified`), `declared acquisition record (not accepted)` on every other. The whole cell is compared, so a component word inside a declared identity cannot stand in for the component, and a renderer that shows an unaccepted acquisition as hardware acquisition is a basis violation even though `report.finding_row` agrees with it. The label × basis-component counts (`evidence.origin_counts`) are retained in `label-by-basis.json`. Relabelling of CIW energy and free-energy records, reading the retained bundle's own classification. A fabricated numerical-heat bundle read through `bundle.get` and `ciw lab classify` (`classify_workspace`), sealed once with an invented source tree and once with the tree CIW pins for SCR `a59aba2` (`proved_heat.PIN`). | Over the 99 earlier reports of a full run: no label, rendering or basis violation, and every declared generator or executed provider is named beside its label. When the audited reports declare none, the visibility claim is recorded as untested (`not_established`, expected) rather than the counted absence. Relabels are refused where the record can detect them. The classifier labels the invented-tree bundle `not_established` (its tree is not the one CIW records for the pinned revision). Counterexamples: a resealed energy relabel under a fresh occurrence is accepted and its bundle is classified `physical_domain_measurement`; the bundle sealed with the pinned tree reopens and is labelled `provider_backed`, like a provider result, because the pins are public constants and the seals are unkeyed. The pipe-in-claim probe records whichever renderer behaviour it observes, and records a shifted label as a counterexample only when it observes the extra cell a raw pipe creates; a row that lost its label column otherwise refutes the label-column claim and carries no counterexample. |
 
 ## Golden fixtures
 
@@ -154,7 +154,23 @@ T099 records these requirements and never attempts the build.
   told apart from a real one (T100). Real GPU energy and real sensor
   performance are recorded as `not_established`.
 - **A retained runtime identity is a declaration too.** `ciw lab classify`
-  labels a fabricated, content-consistent bundle `provider_backed` (T100).
+  compares it with the pins CIW declares, so a fabricated, content-consistent
+  bundle whose source tree is not the pin is `not_established` for
+  numerical-heat, whose pinned revision has a tree CIW records
+  (`proved_heat.PIN`). For the kinds in `ciw.lab.bridge.pins_without_tree`
+  (telemetry, calibrated-observable and others) any tree is accepted
+  (`tree_pinned: false`), so an invented tree at a pinned revision still
+  classifies `provider_backed` there. Reopen does not compare the identity,
+  and a fabricated bundle sealed with the public pinned revision and tree is
+  labelled `provider_backed` (T100): the pins are constants and the seals are
+  unkeyed.
+- **The Basis column shows what a finding declares.** Generator names and
+  seeds and provider repositories are text in the basis. T100 checks that
+  every rendered row shows them beside the label, not that they are true. It
+  sees only declared components: a finding that rests on a generator or a
+  provider without declaring it is not detected, and one provider slot names
+  one provider of a result several providers produced (T097's roundtrip names
+  the SET checker; its producers are in the basis notes).
 - **A matching checkout digest is not authentication.** It does not
   authenticate the upstream repository, the Rust toolchain or a built engine;
   T098 records this as a `not_established` provenance finding. Binary digests
@@ -173,6 +189,42 @@ T099 records these requirements and never attempts the build.
   as validation recomputation (T091).
 - **T100 audits what is present.** A section-only run audits its own reports;
   the value records how many of T001–T099 were present.
+
+## Open questions
+
+Each task's recommended next step (`NEXT_STEPS` in the module) names its own
+open question rather than the next queue task, which has already run by the
+time anyone reads it; `ciw lab next` lists them as research rows, and
+`test_next_steps_name_forward_work` checks with `ciw.lab.planner` that none is
+a task pointer.
+
+- T091: intercept execution below the Python entry points during reopen (audit
+  hooks in a child process), and count validation recomputation for every kind.
+- T092: observe replay refusal for kinds other than numerical-heat, from real
+  bundles of bound providers (the telemetry stack pinned in
+  `telemetry-runtimes.json` for telemetry bundles, and the calibrated-observable
+  stack pinned in `calibrated-observable-runtimes.json` for calibrated-observable
+  bundles), and add example sources for the four kinds not exercised.
+- T093: generate refused requests from `Session._dispatch`'s request types, and
+  decide whether a refused recording operation belongs in the saved workspace.
+- T094: reopen the goldens on a second platform, and add goldens for other
+  provider kinds.
+- T095: extend the malformed matrix to the other kinds' source parsers, and
+  re-run it once CIW makes the changes requested below.
+- T096: combined mutations that restore consistency; content-bound batch
+  identities and refusal of unknown ESM fields (CIW changes).
+- T097: provision the telemetry provider stack and drive CIW's telemetry
+  workflow end to end; attest the engine a bound replay uses.
+- T098: authenticate checkouts and toolchains (signed commits or tags), and
+  settle CIW's several SCR and SET pins.
+- T099: run the SP1 proved-heat gate on a provisioned machine, and rebuild
+  with CI's rustc 1.94.0 to see whether the engine digest depends on the
+  toolchain.
+- T100: keyed seals or a provider-signed runtime identity, so a copied pin no
+  longer classifies `provider_backed`; a pin comparison on reopen; source trees
+  recorded in CIW's pin tables for the revisions `pins_without_tree` lists, so
+  the invented-tree check reaches those kinds; energy-log origin authenticated
+  at acquisition.
 
 ## Requested core changes
 

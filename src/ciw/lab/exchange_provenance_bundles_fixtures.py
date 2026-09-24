@@ -319,12 +319,21 @@ def _occurrence(prefix: str, seed: str) -> str:
     return prefix + sha256(seed.encode()).hexdigest()[:32]
 
 
-def fabricated_heat_catalog(values, *, experiment_id: str = "ciw-lab-fabricated-heat-claim") -> dict:
+FABRICATED_SOURCE_TREE = "0" * 40
+
+
+def fabricated_heat_catalog(values, *, experiment_id: str = "ciw-lab-fabricated-heat-claim",
+                            source_tree: str = FABRICATED_SOURCE_TREE) -> dict:
     """A retained-workbench catalog holding one content-consistent numerical-heat bundle.
 
     Every commitment is recomputed from ``values``, so CIW's reopen validation
     accepts it, but no provider computed those values and its runtime identity
-    is fabricated. Deterministic: no clock, no random occurrence identities.
+    is fabricated: CIW's pinned SCR revision, module and source root with
+    ``source_tree`` (by default an invented tree, :data:`FABRICATED_SOURCE_TREE`;
+    T100 also passes CIW's pinned tree to show that a copied pin still matches).
+    The bundle digest and verification are computed over that identity, so the
+    bundle is sealed with it. Deterministic: no clock, no random occurrence
+    identities.
     """
     from ..declared_workload import AUTHORITY, HEAT_DESCRIPTOR, PINS, RESULT_SCHEMA, DeclaredWorkflow, _commit, _verification
     from ..telemetry import _bundle_digest, byte_digest, canonical, digest
@@ -362,7 +371,7 @@ def fabricated_heat_catalog(values, *, experiment_id: str = "ciw-lab-fabricated-
 
     runtime = {"schema": "ciw.subprocess-runtime.v1", "adapter_version": "fabricated-by-ciw-lab",
                "repository_root": "/fabricated/not-a-provider-checkout", "revision": PINS["numerical-heat"]["revision"],
-               "source_tree": "0" * 40, "module": PINS["numerical-heat"]["module"],
+               "source_tree": source_tree, "module": PINS["numerical-heat"]["module"],
                "source_root": PINS["numerical-heat"]["source_root"], "python_executable": "/fabricated/python",
                "python_sha256": "0" * 64, "python_version": "0.0.0", "dependencies": {},
                "engine": {"sha256": "sha256:" + "0" * 64, "byte_count": 1,

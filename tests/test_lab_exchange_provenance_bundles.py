@@ -23,9 +23,9 @@ import pytest
 from ciw.lab import exchange_provenance_bundles as section
 from ciw.lab import exchange_provenance_bundles_fixtures as fixtures
 from ciw.lab import exchange_provenance_bundles_providers as providers
-from ciw.lab import registry, runner
-from ciw.lab.evidence import finding, validate_finding
-from ciw.lab.report import build_report, render_markdown
+from ciw.lab import planner, registry, research_portfolio, runner
+from ciw.lab.evidence import describe_origin, finding, finding_origin, validate_finding
+from ciw.lab.report import FINDINGS_RULE, build_report, finding_row, render_markdown
 
 ROOT = Path(__file__).resolve().parents[1]
 QUEUE = {item["id"]: item for item in registry.load_queue()["tasks"]}
@@ -347,6 +347,14 @@ def test_t096_provider_free_conformance(tmp_path):
     assert extra["counterexample"]["witness"]["fields"] == ["lab_admission_override", "candidate.lab_admitted"]
     assert claim(report, "Passing provider-free conformance")["evidence_status"] == "not_established"
     assert set(report["provider_runtime_identity"]["sources"]) == {section.MODULE, section.FIXTURES}
+    # Every finding that rests on synthetic inputs declares their generator, so its Basis column names it; the
+    # checks still decide the label.
+    records = "synthetic inputs (ciw.lab seeded nested JSON records, seed 9601)"
+    responses = f"synthetic inputs ({section.CANDIDATE_GENERATOR})"
+    for record, shown in ((identity, records), (candidate, responses), (batch, records), (extra, responses)):
+        assert record["basis"]["generator"] and shown in finding_row(record), record["claim"]
+        assert record["evidence_status"] == "numerically_verified"
+    assert candidate["basis"]["generator"]["count"] == 72
 
 
 def test_t097_is_blocked_without_scr(tmp_path):
@@ -420,6 +428,12 @@ def test_t097_keeps_set_results_when_the_engine_is_missing(tmp_path, monkeypatch
         assert set_finding["evidence_status"] == "not_established"
         assert report["evidence_status"]["primary"] == "not_established"
     assert "ciw" in report["provider_runtime_identity"]
+    # The executed SET checkout is declared as the finding's provider, so its Basis column names it either way.
+    head = report["provider_runtime_identity"]["set"]["head"]
+    assert set_finding["basis"]["provider"] == {"repository": providers.REPOSITORIES["set"], "revision": head,
+                                                "source_tree": report["provider_runtime_identity"]["set"]["tree"],
+                                                "executed": True}
+    assert f"pinned provider run ({providers.REPOSITORIES['set']}@{head[:12]})" in finding_row(set_finding)
 
 
 ROUNDTRIP_RESULT = {"status": "conformant", "links": ["matched_supplied_reference", "matched_supplied_reference"],
@@ -465,6 +479,92 @@ def test_t097_roundtrip_finding_is_refuted_by_a_contrary_producer_outcome(tmp_pa
         assert report["evidence_status"]["primary"] == "not_established"
     for role in ("ppda", "scr-exchange", "set"):
         assert roundtrip["basis"]["notes"]["provider"][role]["executed"] is True
+    # Its one provider slot names the SET checker whose verdict the checks read.
+    assert roundtrip["basis"]["provider"] == roundtrip["basis"]["notes"]["provider"]["set"]
+    assert f"pinned provider run ({providers.REPOSITORIES['set']}@" in finding_row(roundtrip)
+
+
+def test_t097_records_head_and_tree_of_each_exchange_checkout_as_t098_does(tmp_path, monkeypatch):
+    # A release inventory (T165) keys runtimes by (runtime, revision, tree): T097 and T098 must agree on all three.
+    if shutil.which("git") is None:
+        pytest.skip("git is not available")
+    bound = {role: str(_synthetic_repository(tmp_path / role)) for role in ("scr", "set", "ppda", "scr-exchange")}
+    matched = {"scr": ["ciw.declared_workload.PINS[numerical-heat]"], "set": ["ciw/exchange-runtime.json"],
+               "ppda": [".github/workflows/exchange.yml"], "scr-exchange": [".github/workflows/exchange.yml"]}
+    monkeypatch.setattr(providers, "compare_with_pins", lambda role, identity, pins: {
+        "role": role, "matched": matched[role], "unmatched": [], "tree_refusals": [], "accepted": True, "clean": True})
+    monkeypatch.setattr(section, "_engine", lambda ctx: None)
+    monkeypatch.setattr(providers, "set_exchange_inspection", lambda repository, directory: SET_RESULT)
+    monkeypatch.setattr(providers, "exchange_roundtrip", lambda ppda, scr, set_repo, directory: ROUNDTRIP_RESULT)
+    t097 = run("T097", tmp_path / "run", bound)
+    t098 = run("T098", tmp_path / "run", bound)
+    exchange = ("set", "ppda", "scr-exchange")
+    for role in exchange:
+        tree = subprocess.run(["git", "-C", bound[role], "rev-parse", "HEAD^{tree}"], capture_output=True,
+                              text=True, check=True).stdout.strip()
+        recorded = t097["provider_runtime_identity"][role]
+        assert recorded["state"] == "ready" and recorded["tree"] == tree == t098["provider_runtime_identity"][role]["tree"]
+    rows = {task["task_id"]: {(entry["runtime"], entry["revision"], entry["tree"])
+                              for entry in research_portfolio.runtime_identities(task["provider_runtime_identity"])
+                              if entry["runtime"] in exchange}
+            for task in (t097, t098)}
+    assert len(rows["T097"]) == 3 and rows["T097"] == rows["T098"]
+    assert t097["recommended_next_task"] == section.NEXT_STEPS["T097"]
+    assert t098["recommended_next_task"] == section.NEXT_STEPS["T098"]
+
+
+def _mocked_scr_run(monkeypatch):
+    """Stand-ins for the SCR engine, its workbench run and its Python API, returning the integer reference."""
+    from ciw.declared_workload import HEAT_DESCRIPTOR
+    binary = b"lab stand-in engine"
+    engine = {"origin": "cargo_build_locked_offline_in_this_run", "binary": binary,
+              "sha256": sha256(binary).hexdigest(), "build": {"binary": binary}}
+    run_record = {"initial_values": [0, 0, 64, 0, 0], "steps": 2, "values": fixtures.heat_reference([0, 0, 64, 0, 0], 2),
+                  "numerical_identity_equal": True, "fresh_occurrences": 4, "replay_numerical_match": True,
+                  "verification_independent": False}
+    workbench = {"runs": [run_record], "reopened_bindings": [], "reopened_available": [], "reopen_attempts": [],
+                 "unbound_replay": {"code": "operation_unavailable", "message": section.UNBOUND}}
+    api = {"cases": [{"values": fixtures.heat_reference(values, steps)} for steps, values in section.SURVEY_CASES],
+           "descriptor_sha256": sha256(HEAT_DESCRIPTOR).hexdigest()}
+    monkeypatch.setattr(section, "_engine", lambda ctx: engine)
+    monkeypatch.setattr(providers, "materialize", lambda data, directory: Path(directory) / "execution-cli")
+    monkeypatch.setattr(providers, "scr_workbench_integration", lambda scr, path, directory, sources: workbench)
+    monkeypatch.setattr(providers, "run_heat_kernel", lambda scr, path, cases: {**api, "cases": api["cases"][:len(cases)]})
+    return engine
+
+
+def test_t097_names_each_executed_provider_beside_its_label(tmp_path, monkeypatch):
+    # Every finding resting on a provider's execution declares it, so the Basis column names it; the labels stay.
+    if shutil.which("git") is None:
+        pytest.skip("git is not available")
+    bound = {role: str(_synthetic_repository(tmp_path / role)) for role in ("scr", "set", "ppda", "scr-exchange")}
+    matched = {"scr": ["ciw.declared_workload.PINS[numerical-heat]"], "set": ["ciw/exchange-runtime.json"],
+               "ppda": [".github/workflows/exchange.yml"], "scr-exchange": [".github/workflows/exchange.yml"]}
+    monkeypatch.setattr(providers, "compare_with_pins", lambda role, identity, pins: {
+        "role": role, "matched": matched[role], "unmatched": [], "tree_refusals": [], "accepted": True, "clean": True})
+    engine = _mocked_scr_run(monkeypatch)
+    monkeypatch.setattr(providers, "set_exchange_inspection", lambda repository, directory: SET_RESULT)
+    monkeypatch.setattr(providers, "exchange_roundtrip", lambda ppda, scr, set_repo, directory: ROUNDTRIP_RESULT)
+    report = run("T097", tmp_path / "run", bound)
+    assert report["state"] == "completed"
+    identities = report["provider_runtime_identity"]
+    expected = {"SCR executed through": ("provider_backed", "scr"),
+                "SCR heat outputs": ("independently_verified", "scr"),
+                "SCR replay reproduces": ("numerically_verified", "scr"),
+                "The pinned SET contracts validator": ("numerically_verified", "set"),
+                "PPDA and SCR exchange artifacts": ("numerically_verified", "set")}
+    for prefix, (label, role) in expected.items():
+        record = claim(report, prefix)
+        revision = identities[role]["revision" if role == "scr" else "head"]
+        assert record["evidence_status"] == label, prefix
+        assert "provider" in finding_origin(record) and record["basis"]["provider"]["revision"] == revision, prefix
+        assert f"pinned provider run ({providers.REPOSITORIES[role]}@{revision[:12]})" in finding_row(record), prefix
+    assert claim(report, "SCR replay reproduces")["basis"]["provider"]["runtime_digest"] == "sha256:" + engine["sha256"]
+    # Reopen executes nothing, so the refusal it records rests on CIW's reopen, not on a provider run.
+    assert "provider" not in finding_origin(claim(report, "The reopened SCR workspace"))
+    t100 = run("T100", tmp_path / "run")
+    sources = claim(t100, "Every finding of those reports whose basis declares a generator")
+    assert sources["value"]["provider_findings"] == len(expected) and sources["value"]["not_shown"] == 0
 
 
 def test_t097_t099_refuse_a_non_repository_scr_binding(tmp_path):
@@ -506,6 +606,7 @@ def test_t097_scr_numerical_heat_integration(tmp_path):
     assert claim(report, "SCR heat outputs")["evidence_status"] == "independently_verified"
     replay = claim(report, "SCR replay reproduces")
     assert replay["evidence_status"] == "numerically_verified" and replay["value"]["verification_independent"] is False
+    assert f"pinned provider run ({providers.REPOSITORIES['scr']}@a59aba283b03)" in finding_row(replay)
     assert claim(report, "The reopened SCR workspace")["evidence_status"] == "numerically_verified"
     retained = (tmp_path / "artifacts" / "T097" / "integration.json").read_text(encoding="utf-8")
     for role, path in bound.items():
@@ -519,6 +620,7 @@ def test_t097_scr_numerical_heat_integration(tmp_path):
         assert report["state"] == "completed"
         roundtrip = claim(report, "PPDA and SCR exchange artifacts")
         assert roundtrip["evidence_status"] == "numerically_verified"
+        assert f"pinned provider run ({providers.REPOSITORIES['set']}@542e672be512)" in finding_row(roundtrip)
         assert roundtrip["value"]["changed_result_refusal"] == "result_id does not match the artifact content"
 
 
@@ -714,18 +816,56 @@ def test_t099_locked_offline_scr_build(tmp_path):
     assert "probes here" not in prose
 
 
+def test_t099_names_the_built_checkout_beside_its_label(tmp_path, monkeypatch):
+    # The build and the engine run rest on the bound SCR checkout: each declares it, and the labels stay.
+    if shutil.which("git") is None:
+        pytest.skip("git is not available")
+    scr = _synthetic_repository(tmp_path / "scr")
+    which = shutil.which
+    monkeypatch.setattr(shutil, "which", lambda name, *args, **kwargs:
+                        "cargo" if name == "cargo" else which(name, *args, **kwargs))
+    monkeypatch.setattr(providers, "compare_with_pins", lambda role, identity, pins: {
+        "role": role, "matched": ["ciw.declared_workload.PINS[numerical-heat]"], "unmatched": [], "tree_refusals": [],
+        "accepted": True, "clean": True})
+    engine = _mocked_scr_run(monkeypatch)
+    digest = engine["sha256"]
+    build = {"builds": [{"returncode": 0, "binary_sha256": digest}, {"returncode": 0, "binary_sha256": digest}],
+             "binary": engine["binary"], "cargo_lock_sha256_before": "0" * 64, "cargo_lock_sha256_after": "0" * 64,
+             "cargo": "cargo (stand-in)", "rustc": "rustc (stand-in)"}
+    monkeypatch.setattr(section, "_locked_build", lambda ctx: build)
+    report = run("T099", tmp_path / "run", {"scr": str(scr)})
+    assert report["state"] == "partial"
+    head = report["provider_runtime_identity"]["scr"]["head"]
+    shown = f"pinned provider run ({providers.REPOSITORIES['scr']}@{head[:12]})"
+    for prefix, label in ((section.BUILD_CLAIM, "numerically_verified"), ("The locked build leaves", "numerically_verified"),
+                          ("The freshly built engine", "independently_verified")):
+        record = claim(report, prefix)
+        assert record["evidence_status"] == label and shown in finding_row(record), prefix
+    assert claim(report, "The freshly built engine")["basis"]["provider"]["runtime_digest"] == "sha256:" + digest
+
+
 def test_t100_labels_and_origins_stay_distinct(tmp_path):
-    run("T096", tmp_path)
-    run("T092", tmp_path)
+    t096 = run("T096", tmp_path)
+    t092 = run("T092", tmp_path)
     report = run("T100", tmp_path)
     assert report["state"] == "completed"
     primary = report["findings"][0]
     assert primary["value"] == {"reports_checked": 2, "reports_absent_of_T001_T099": 97, "label_violations": 0}
     rendered = claim(report, "Every finding of those reports shows its label")
-    assert rendered["value"]["rendering_violations"] == 0
+    assert rendered["value"]["rendering_violations"] == 0 and rendered["evidence_status"] == "numerically_verified"
+    basis = claim(report, "Every finding of those reports shows exactly its declared basis")
+    assert basis["value"]["basis_violations"] == 0 and basis["evidence_status"] == "numerically_verified"
+    # T096 seeds its records from a declared generator: the audit sees it and finds it named beside the label.
+    sources = claim(report, "Every finding of those reports whose basis declares a generator")
+    assert sources["evidence_status"] == "numerically_verified"
+    assert sources["value"]["generator_findings"] >= 1 and sources["value"]["not_shown"] == 0
+    table = artifact(tmp_path, "T100", "label-by-basis.json")
+    assert table["findings"] == len(t092["findings"]) + len(t096["findings"])
+    assert sum(row["synthetic_inputs"] for row in table["counts"].values()) == sources["value"]["generator_findings"]
     witness, row, kept = section._rendering_probe()
-    probe = claim(report, "render_markdown keeps" if kept else "An unescaped pipe")
-    assert probe["evidence_status"] == "numerically_verified"
+    assert kept is True and row == finding_row(witness)
+    probe = claim(report, "render_markdown keeps")
+    assert probe["evidence_status"] == "numerically_verified" and probe["value"]["row_cells"] == 4
     energy = claim(report, "CIW keeps the synthetic energy fixture")
     assert energy["evidence_status"] == "numerically_verified"
     assert energy["value"]["synthetic"]["classification"] == "synthetic_only"
@@ -735,29 +875,183 @@ def test_t100_labels_and_origins_stay_distinct(tmp_path):
     assert relabel["value"]["fresh_bundle"]["classification"] == "physical_domain_measurement"
     assert relabel["counterexample"]["statement"].startswith("CIW energy records can distinguish")
     assert claim(report, "CIW refuses free-energy sources")["evidence_status"] == "numerically_verified"
-    # Provider-backed versus fabricated: the classifier cannot tell them apart (T092's counterexample).
-    fabricated = claim(report, "A fabricated, content-consistent numerical-heat bundle")
-    assert fabricated["evidence_status"] == "numerically_verified"
-    assert fabricated["value"]["reopen"] == "accepted" and fabricated["value"]["numerical_labels"] == ["provider_backed"]
-    assert fabricated["value"]["reader_view"]["source_tree_is_ciw_pin"] is False
-    assert fabricated["counterexample"]["statement"].startswith("CIW's retained records and their classification")
+    # Provider-backed versus fabricated: the classifier refuses the invented tree, not a copied pin.
+    invented = claim(report, "The workspace classifier labels a fabricated")
+    assert invented["evidence_status"] == "numerically_verified" and invented.get("counterexample") is None
+    assert invented["value"]["reopen"] == "accepted" and invented["value"]["numerical_labels"] == ["not_established"]
+    assert invented["value"]["reader_view"]["source_tree_is_ciw_pin"] is False
+    copied = claim(report, "A fabricated numerical-heat bundle sealed with CIW's pinned")
+    assert copied["evidence_status"] == "numerically_verified"
+    assert copied["value"]["numerical_labels"] == ["provider_backed"]
+    assert copied["value"]["reader_view"]["source_tree_is_ciw_pin"] is True
+    assert copied["counterexample"]["statement"].startswith("CIW's retained records and their classification")
+    assert copied["counterexample"]["witness"]["matched_pins"] == ["ciw.declared_workload.PINS[numerical-heat]"]
+    assert not any(f["claim"].startswith("A fabricated, content-consistent") for f in report["findings"])
+    assumptions = " ".join(report["unresolved_assumptions"])
+    assert "Session.from_workspace (reopen) does not compare it" in assumptions
+    # The invented-tree check reaches only kinds whose pinned revision has a tree CIW records; the others are named.
+    from ciw.lab.bridge import pins_without_tree
+    kinds = sorted({kind for kind, _, _ in pins_without_tree()["kinds"]})
+    assert "telemetry" in kinds and "numerical-heat" not in kinds
+    assert f"ciw.lab.bridge.pins_without_tree ({', '.join(kinds)}) any tree is accepted (tree_pinned: false)" in assumptions
+    assert "pins_without_tree" in section.NEXT_STEPS["T100"] and "source tree" in section.NEXT_STEPS["T100"]
+    doc = (ROOT / "docs" / "lab" / "EXCHANGE_BUNDLES.md").read_text(encoding="utf-8")
+    non_claim = doc.split("- **A retained runtime identity is a declaration too.**", 1)[1].split("\n- **", 1)[0]
+    assert "`ciw.lab.bridge.pins_without_tree`" in non_claim and "`tree_pinned: false`" in non_claim
+    # The audit's reach: declared components only, and one provider slot per finding.
+    assert "The audit sees only the components a finding declares" in assumptions
+    assert "One provider slot shows one provider of a result several providers produced" in assumptions
     physical = [f for f in report["findings"] if f["domain"] in ("physical", "sensor_performance")]
     assert physical and all(f["evidence_status"] == "not_established" for f in physical)
+    for task_report in (t092, t096, report):
+        assert task_report["recommended_next_task"] == section.NEXT_STEPS[task_report["task_id"]]
+
+
+def test_t100_classifier_study_separates_an_invented_tree_from_a_copied_pin():
+    from ciw.proved_heat import PIN
+    study = section._provider_origin_study()
+    invented, copied = study["fabricated"], study["copied_pin"]
+    assert invented["reopen"] == copied["reopen"] == "accepted"
+    assert invented["numerical_labels"] == ["not_established"]
+    row, = invented["runtime_pins"]
+    assert row["matched"] is None and f"is not the tree {PIN['source_tree']}" in row["problem"]
+    assert copied["numerical_labels"] == ["provider_backed"]
+    row, = copied["runtime_pins"]
+    assert row["matched"] == ["ciw.declared_workload.PINS[numerical-heat]"] and row["tree_pinned"] is True
+    # Only the sealed source tree differs; the reader-visible traces of the fabrication are what this lab wrote.
+    assert invented["bundle_id"] != copied["bundle_id"]
+    assert {key: value for key, value in invented["reader_view"].items() if key != "source_tree_is_ciw_pin"} == \
+        {key: value for key, value in copied["reader_view"].items() if key != "source_tree_is_ciw_pin"}
+    catalog = fixtures.fabricated_heat_catalog([0, 1, 2, 3, 0], source_tree=PIN["source_tree"])
+    assert catalog["bundles"][0]["native"]["runtimes"]["scr"]["source_tree"] == PIN["source_tree"]
+
+
+def _report_with(findings):
+    return build_report(QUEUE["T001"], "partial", {}, findings)
+
+
+PROVIDER_FINDING = finding("Provider run of the probe workload", "numerical", 1.0,
+                           {"provider": {"repository": "owner/probe-runtime", "revision": "0123456789abcdef0123",
+                                         "source_tree": "f" * 40, "executed": True}})
+GENERATOR_FINDING = finding("Check on seeded synthetic inputs", "numerical", 0.0,
+                            {"generator": {"name": "ciw.lab.probe_bench", "seed": 602026},
+                             "checks": [{"reference_kind": "analytic", "reference": "probe", "observed": 0.0,
+                                         "tolerance": 0.0, "passed": True}]})
+
+
+def _origin_words_only(report):
+    """A renderer that keeps the label column but names only basis component words, not the generator or provider."""
+    lines = render_markdown(report).splitlines()
+    start = lines.index(FINDINGS_RULE) + 1
+    rows = [finding_row(record).rsplit(" | ", 1)[0] + f" | {describe_origin(finding_origin(record))} |"
+            for record in report["findings"]]
+    return "\n".join(lines[:start] + rows) + "\n"
+
+
+def test_t100_flags_a_rendered_row_that_hides_its_generator_or_provider(tmp_path, monkeypatch):
+    (tmp_path / "reports").mkdir()
+    (tmp_path / "reports" / "T001.json").write_text(
+        runner.dumps(_report_with([GENERATOR_FINDING, PROVIDER_FINDING])), encoding="utf-8")
+    report = run("T100", tmp_path)
+    sources = claim(report, "Every finding of those reports whose basis declares a generator")
+    assert sources["value"] == {"reports_checked": 1, "reports_absent_of_T001_T099": 98, "generator_findings": 1,
+                                "provider_findings": 1, "not_shown": 0}
+    assert sources["evidence_status"] == "numerically_verified" and report["state"] == "completed"
+    table = artifact(tmp_path, "T100", "label-by-basis.json")["counts"]
+    assert table["numerically_verified"]["synthetic_inputs"] == 1 and table["provider_backed"]["provider"] == 1
+    monkeypatch.setattr(section, "render_markdown", _origin_words_only)
+    hidden = run("T100", tmp_path)
+    sources = claim(hidden, "Every finding of those reports whose basis declares a generator")
+    assert sources["value"]["not_shown"] == 2 and sources["evidence_status"] == "not_established"
+    assert claim(hidden, "Every finding of those reports shows exactly its declared basis")["value"]["basis_violations"] == 2
+    assert hidden["state"] == "partial"
+    audit = artifact(tmp_path, "T100", "visibility-audit.json")
+    assert audit["hidden_generator_or_provider"] == ["T001[0]", "T001[1]"]
+
+
+ACQUISITION = {"device": "nvml:GPU-0", "raw_sha256": "a" * 64, "acquired_at": "epoch+0ns", "calibration": "declared"}
+FAILED_CHECK = {"reference_kind": "analytic", "reference": "probe", "observed": 1.0, "tolerance": 0.0, "passed": False}
+
+
+def _upgraded_acquisitions(record):
+    """A renderer that shows every declared acquisition record as an accepted hardware acquisition."""
+    from ciw.lab.evidence import ACCEPTED_ACQUISITION, UNACCEPTED_ACQUISITION, describe_basis
+    text = describe_basis(record)
+    if "acquisition" not in record["basis"]:
+        return text
+    return text.replace(UNACCEPTED_ACQUISITION, f"{ACCEPTED_ACQUISITION} ({record['basis']['acquisition']['device']})")
+
+
+def test_t100_flags_an_unaccepted_acquisition_shown_as_hardware_acquisition(tmp_path, monkeypatch):
+    from ciw.lab import report as report_module
+    authority = finding("The coupon energy draw is within its declared budget", "production_acceptance", None,
+                        {"acquisition": ACQUISITION})
+    refuted = finding("The heater reached its set temperature", "physical", None,
+                      {"acquisition": ACQUISITION, "checks": [FAILED_CHECK]})
+    assert authority["evidence_status"] == refuted["evidence_status"] == "not_established"
+    (tmp_path / "reports").mkdir()
+    (tmp_path / "reports" / "T001.json").write_text(runner.dumps(_report_with([authority, refuted])), encoding="utf-8")
+    honest = run("T100", tmp_path)
+    assert honest["state"] == "completed"
+    assert claim(honest, "Every finding of those reports shows exactly its declared basis")["value"]["basis_violations"] == 0
+    # No audited finding declares a generator or provider: the untested visibility claim is recorded as such.
+    untested = claim(honest, "Every finding of those reports whose basis declares a generator")
+    assert untested["claim"].endswith("(no audited finding declares one)")
+    assert untested["evidence_status"] == "not_established" and untested["expected_not_established"] is True
+    assert untested["value"]["generator_findings"] == untested["value"]["provider_findings"] == 0
+    assert not any(f["claim"].startswith("No finding of those reports declares") for f in honest["findings"])
+    # The shared renderer upgrades the display: finding_row agrees with it, the independently built cell does not.
+    monkeypatch.setattr(report_module, "describe_basis", _upgraded_acquisitions)
+    upgraded = run("T100", tmp_path)
+    assert claim(upgraded, "Every finding of those reports shows its label")["value"]["rendering_violations"] == 0
+    basis = claim(upgraded, "Every finding of those reports shows exactly its declared basis")
+    assert basis["value"]["basis_violations"] == 2 and basis["evidence_status"] == "not_established"
+    assert upgraded["state"] == "partial"
+    violations = artifact(tmp_path, "T100", "visibility-audit.json")["basis_violations"]
+    assert all(section.UPGRADED_ACQUISITION in violation for violation in violations) and len(violations) == 2
+
+
+def test_basis_audit_compares_the_whole_cell():
+    from ciw.lab.evidence import describe_basis
+    # A component word inside a declared identity does not stand in for the component.
+    bench = finding("Check on seeded inputs", "numerical", 0.0,
+                    {"generator": {"name": "derivation and reference checks bench", "seed": 1}, "derivation": "eq. 3",
+                     "checks": [dict(FAILED_CHECK, observed=0.0, passed=True)]})
+    assert section._basis_problems(bench, describe_basis(bench)) == []
+    dropped = "synthetic inputs (derivation and reference checks bench, seed 1)"
+    assert section._basis_problems(bench, dropped) == ["derivation", "reference_checks"]
+    reordered = "synthetic inputs (derivation and reference checks bench, seed 1), derivation, reference checks"
+    assert section._basis_problems(bench, reordered) == ["order or extra text"]
+    # An acquisition reads as hardware acquisition only on a physical finding it establishes.
+    measured = finding("The probe run drew the recorded energy", "physical", 1.0, {"acquisition": ACQUISITION})
+    assert measured["evidence_status"] == "hardware_measured"
+    assert section._basis_problems(measured, "hardware acquisition (nvml:GPU-0)") == []
+    assert section._basis_problems(measured, "hardware acquisition (nvml:GPU-1)") == ["acquisition"]
+    refuted = finding("The heater reached its set temperature", "physical", None,
+                      {"acquisition": ACQUISITION, "checks": [FAILED_CHECK]})
+    assert section._basis_problems(refuted, "declared acquisition record (not accepted), reference checks") == []
+    assert section._basis_problems(refuted, "hardware acquisition (x), reference checks") == [
+        "acquisition", section.UPGRADED_ACQUISITION]
+    # Nor anywhere a finding declares no acquisition at all.
+    assert section._basis_problems(GENERATOR_FINDING, "hardware acquisition (x), " + describe_basis(GENERATOR_FINDING)) \
+        == [section.UPGRADED_ACQUISITION]
+    assert section._basis_problems(finding("Nothing declared", "numerical", None, {}), "no declared basis") == []
+    assert section._basis_problems(finding("Nothing declared", "numerical", None, {}), "reference checks") == ["none"]
 
 
 def _unescaped_markdown(report):
     """The renderer before claim escaping: the claim goes into its cell verbatim."""
     lines = render_markdown(report).splitlines()
-    start = lines.index("| --- | --- | --- |") + 1
-    rows = [f"| {record['claim']} | value | `{record['evidence_status']}` |" for record in report["findings"]]
+    start = lines.index(FINDINGS_RULE) + 1
+    rows = [finding_row(record).replace(record["claim"].replace("|", "\\|"), record["claim"], 1)
+            for record in report["findings"]]
     return "\n".join(lines[:start] + rows) + "\n"
 
 
 def test_t100_flags_a_retained_report_whose_label_leaves_its_column(tmp_path, monkeypatch):
     record = finding("pipe | in a claim", "numerical", 1.0, {"generator": {"name": "probe"}})
     (tmp_path / "reports").mkdir()
-    (tmp_path / "reports" / "T001.json").write_text(
-        runner.dumps(build_report(QUEUE["T001"], "partial", {}, [record])), encoding="utf-8")
+    (tmp_path / "reports" / "T001.json").write_text(runner.dumps(_report_with([record])), encoding="utf-8")
     monkeypatch.setattr(section, "render_markdown", _unescaped_markdown)
     report = run("T100", tmp_path)
     assert report["findings"][0]["value"]["label_violations"] == 0
@@ -768,18 +1062,55 @@ def test_t100_flags_a_retained_report_whose_label_leaves_its_column(tmp_path, mo
 
 
 def test_render_markdown_pipe_probe_matches_the_renderer():
-    record = finding("claim with a | pipe", "numerical", 1.0, {"generator": {"name": "probe"}})
+    record = finding("claim with a | pipe", "numerical", 1.0, {"generator": {"name": "rendering probe"}})
     validate_finding(record)
     row = render_markdown(build_report(QUEUE["T100"], "partial", {}, [record])).splitlines()[-1]
     escaped = "claim with a \\| pipe" in row
-    # GitHub-flavoured Markdown drops cells beyond the header's three: unescaped, the label cell is lost.
-    assert section._cells(row) == (3 if escaped else 4)
+    # GitHub-flavoured Markdown drops cells beyond the header's four: unescaped, the label cell is lost.
+    assert section._cells(row) == (4 if escaped else 5)
     witness, probe_row, kept = section._rendering_probe()
-    assert probe_row == row and kept is escaped
+    assert probe_row == row == finding_row(witness) and kept is escaped
+    assert section.HEADER_CELLS == 4
     probe = section._probe_finding(witness, probe_row, kept)
-    assert probe["evidence_status"] == "numerically_verified"
+    assert probe["evidence_status"] == "numerically_verified" and probe.get("counterexample") is None
     assert probe["claim"].startswith("render_markdown keeps" if escaped else "An unescaped pipe")
-    assert section._cells(_unescaped_markdown(build_report(QUEUE["T100"], "partial", {}, [record])).splitlines()[-1]) == 4
+    unescaped = _unescaped_markdown(build_report(QUEUE["T100"], "partial", {}, [record])).splitlines()[-1]
+    assert section._cells(unescaped) == 5
+    shifted = section._probe_finding(witness, unescaped, False)
+    assert shifted["evidence_status"] == "numerically_verified" and shifted["counterexample"]
+    # A row that lost its label column without the extra cell a raw pipe makes is no witness of that counterexample.
+    reordered = f"| {record['claim'].replace('|', chr(92) + '|')} | `synthetic` | 1 | synthetic inputs (rendering probe) |"
+    assert section._cells(reordered) == 4
+    lost = section._probe_finding(witness, reordered, False)
+    # It refutes the label-column claim instead, and carries no counterexample for a catalogue (T157) to list.
+    assert lost["claim"] == section.KEEPS_LABEL_COLUMN and lost["evidence_status"] == "not_established"
+    assert "counterexample" not in lost and lost["value"]["label_column_shifted"] is True
+    assert [check["reference"] for check in lost["basis"]["checks"] if not check["passed"]] == [
+        "rendered rows whose third cell is not the finding's label", "rendered row differing from report.finding_row"]
+    assert research_portfolio._counterexample_statements([{"task_id": "T100", "findings": [lost]}], {"T100"}) == []
+
+
+def test_t092_next_step_names_the_manifest_that_pins_each_kind():
+    # Telemetry and calibrated-observable bundles come from different stacks pinned in different manifests.
+    from ciw.lab.bridge import declared_pins
+    kinds = declared_pins()["kinds"]
+    doc = (ROOT / "docs" / "lab" / "EXCHANGE_BUNDLES.md").read_text(encoding="utf-8")
+    open_question = doc.split("\n- T092:", 1)[1].split("\n- T093:", 1)[0]
+    for kind, manifest in (("telemetry", "telemetry-runtimes.json"),
+                           ("calibrated-observable", "calibrated-observable-runtimes.json")):
+        assert all(pin["declared_in"].startswith(f"ciw/{manifest}") for group in kinds[kind].values() for pin in group)
+        assert f"src/ciw/{manifest} for {kind} bundles" in section.NEXT_STEPS["T092"], kind
+        assert f"`{manifest}`" in open_question, kind
+
+
+def test_next_steps_name_forward_work():
+    # No next step of T091-T100 points at a queue task, since every queue task has run by the time it is read.
+    everything = {task["id"] for task in registry.load_queue()["tasks"]}
+    assert sorted(section.NEXT_STEPS) == [f"T{number:03d}" for number in range(91, 101)]
+    for task_id, text in section.NEXT_STEPS.items():
+        kept, stale = planner.next_step_items(text, task_id, everything)
+        assert stale == [] and kept and all(kind == "question" for kind, *_ in kept), task_id
+        assert not text.startswith("T") and "then T" not in text, task_id
 
 
 def test_relabelled_energy_origin_collides_within_one_workbench(tmp_path):

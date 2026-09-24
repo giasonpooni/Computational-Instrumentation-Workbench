@@ -33,18 +33,20 @@ import sys
 import tempfile
 
 from .. import __version__
-from .evidence import (AUTHORITY_DOMAINS, COMPUTATIONAL_DOMAINS, LABELS, PHYSICAL_DOMAINS, EvidenceRefusal,
-                       finding, holds, validate_finding)
+from .evidence import (ACCEPTED_ACQUISITION, AUTHORITY_DOMAINS, COMPUTATIONAL_DOMAINS, LABELS, NO_ORIGIN, ORIGINS,
+                       ORIGIN_WORDS, PHYSICAL_DOMAINS, UNACCEPTED_ACQUISITION, EvidenceRefusal, finding,
+                       finding_origin, holds, origin_counts, validate_finding)
 from .registry import task
-from .report import build_report, render_markdown, validate_report
+from .report import FINDINGS_HEADER, FINDINGS_RULE, build_report, finding_row, render_markdown, validate_report
 from .svg import line_plot
-from .exchange_provenance_bundles_fixtures import (GOLDEN_MANIFEST, GOLDEN_PLATFORM, GOLDEN_SCR_ENGINE_SHA256,
-                                                   SYNTHETIC_BINDING, Client, ExecutionForbidden,
-                                                   add_provider_content, build_energy_session, example_bytes,
-                                                   execution_guard, execution_paths, fabricated_heat_catalog,
-                                                   fixture_root, heat_reference, malformed_fixtures, merge_catalogs,
-                                                   path_label, platform_fingerprint, repository_example,
-                                                   source_payload, workflow_entry_points)
+from .exchange_provenance_bundles_fixtures import (FABRICATED_SOURCE_TREE, GOLDEN_MANIFEST, GOLDEN_PLATFORM,
+                                                   GOLDEN_SCR_ENGINE_SHA256, SYNTHETIC_BINDING, Client,
+                                                   ExecutionForbidden, add_provider_content, build_energy_session,
+                                                   example_bytes, execution_guard, execution_paths,
+                                                   fabricated_heat_catalog, fixture_root, heat_reference,
+                                                   malformed_fixtures, merge_catalogs, path_label,
+                                                   platform_fingerprint, repository_example, source_payload,
+                                                   workflow_entry_points)
 from . import exchange_provenance_bundles_providers as providers
 
 MODULE = "src/ciw/lab/exchange_provenance_bundles.py"
@@ -166,6 +168,71 @@ def _fields(hypothesis, model, inputs, observation, invariant, experiment, resul
             "observation_model": observation, "expected_invariant": invariant, "experiment": experiment,
             "numerical_result": result, "uncertainty": uncertainty, "failure_modes_checked": failures,
             "unresolved_assumptions": assumptions, "recommended_next_task": next_task}
+
+
+# Each task's recommended next step names its own open question, never a queue task that has already run.
+# ``ciw lab next`` lists them as research rows (tests/test_lab_exchange_provenance_bundles.py checks with
+# ciw.lab.planner that none is a pointer).
+NEXT_STEPS = {
+    "T091": ("Deferred research question: intercept execution below CIW's Python entry points while a workspace "
+             "reopens (a sys.addaudithook hook on subprocess.Popen, os.exec*, os.posix_spawn and ctypes.dlopen, run "
+             "in a child process because audit hooks cannot be removed), so that a workflow reached through a name "
+             "imported into another module, or through code outside the listed entry points, is caught; and count "
+             "validation recomputation for every retained kind, not only the energy analysis."),
+    "T092": ("Deferred research question: observe, rather than infer, replay refusal for the provider kinds other "
+             "than numerical-heat by retaining a bundle of each from its bound provider (the telemetry stack pinned "
+             "in src/ciw/telemetry-runtimes.json for telemetry bundles, and the calibrated-observable stack pinned in "
+             "src/ciw/calibrated-observable-runtimes.json for calibrated-observable bundles, both of which reach the "
+             "'No operator-bound ESM candidate adapter' refusal) and replaying it in a reopened unbound "
+             "session; and add example sources for acquired-calibrated-window, bim-quantity, identified-stability "
+             "and residual-monitor so that their execution refusal is observed too."),
+    "T093": ("Deferred research question: generate the refused requests from CIW's own request table (every request "
+             "type Session._dispatch accepts, each with an unknown identity, a wrong-typed field and an unknown field) "
+             "instead of the hand-written classes, and compare the same state digests; and decide, as a CIW design "
+             "question, whether a refused recording operation should stay in the saved workspace as an execution "
+             "record (the retained counterexample) or be kept out of it."),
+    "T094": ("Deferred research question: reopen the golden workspaces on a second platform (Windows x86-64, macOS "
+             "arm64 or another NumPy/LAPACK build) to learn whether the bit-for-bit energy recomputation refuses the "
+             "energy golden there, as the platform fingerprint in golden.json anticipates; and retain golden "
+             "workspaces for provider kinds other than numerical-heat, produced by their pinned providers, so that "
+             "validator drift in those kinds is caught at reopen."),
+    "T095": ("Deferred research question: apply the malformed matrix to the source parsers of the workbench kinds "
+             "other than energy-accuracy, which parse after the same canonical-base64 and byte-budget checks; and, "
+             "once CIW makes the changes docs/lab/EXCHANGE_BUNDLES.md requests (read_json refusing an overflowing "
+             "number and turning RecursionError into ValueError, Session.from_workspace refusing unknown or missing "
+             "top-level fields with a ValueError, source.add naming the source rather than a runtime), re-run it to "
+             "check that each of the five counterexamples becomes a refusal with its own text."),
+    "T096": ("Deferred research question: explore combined mutations that restore consistency (two or more fields "
+             "changed together, including a recomputed identity) against exchange._identity and "
+             "candidate_evidence.validate_response, which single-field mutations cannot reach; and, as CIW changes, "
+             "bind observation-batch identities to their content and refuse unknown ESM response fields, then re-run "
+             "to check that both counterexamples become refusals."),
+    "T097": ("Deferred research question: provision the telemetry provider stack (ppda, stfe, gsie, set and cbsr at "
+             "the src/ciw/telemetry-runtimes.json pins; scripts/check_lab.py provisions only ppda and set of these, at "
+             "other pins) and drive CIW's telemetry workflow end to end against it, as the exchange roundtrip here "
+             "does for PPDA, SCR and SET; and attest the SCR engine a bound replay uses (CIW records a bound engine as "
+             "operator_asserted_not_attested), for example by requiring a locked build of the bound checkout in the "
+             "same run before a replay is accepted."),
+    "T098": ("Deferred research question: authenticate what the digests only identify, by verifying signed upstream "
+             "commits or tags of each bound checkout against its maintainers' published keys and recording digests "
+             "of the Rust and Python toolchains, since a matching HEAD, tree and lock digest is not authentication; "
+             "and settle why CIW pins two SCR revisions (a59aba2 for declared-workload and proved-heat, 5f04097 for "
+             "the exchange workflow) and several SET revisions, converging them or recording each workflow's "
+             "reason."),
+    "T099": ("Run the SP1 proved-heat gate (scripts/check_proved_heat.py) on a machine that meets its recorded "
+             "requirements (network access to crates.io and GitHub releases, the SP1 checkout b38b612, protoc, at "
+             "least 7 GiB of RAM and 20 GiB of disk) and retain its outcome; and rebuild execution-cli with CI's "
+             "pinned rustc 1.94.0 beside this run's toolchain to find whether the engine digest depends on the "
+             "toolchain."),
+    "T100": ("Deferred research question (CIW change): key the workspace seals, or have the provider sign its runtime "
+             "identity at execution under a defined key custody, so that a bundle copying CIW's public pins (the "
+             "retained copied-pin counterexample) is refused or classified not_established; compare a retained "
+             "runtime identity with CIW's pins on reopen (Session.from_workspace), as ciw lab classify does; record "
+             "in CIW's pin tables the source tree of every pinned revision that has none (the kinds "
+             "ciw.lab.bridge.pins_without_tree lists, such as telemetry and calibrated-observable), so that the "
+             "invented-tree check reaches them; and authenticate energy-log origin at acquisition, outside the "
+             "workbench, so that a resealed relabel under a fresh occurrence is detected."),
+}
 
 
 def _outcome(response):
@@ -360,7 +427,7 @@ def save_reopen_without_providers(ctx):
          "Validation recomputation is counted only for the energy analysis (ciw.energy_records.analyze), separately "
          "from execution because it creates no occurrence and no result; in-process validation recomputation of "
          "other kinds is not counted."],
-        "T092: refuse replay of provider kinds without a binding in the reopened session.")
+        NEXT_STEPS["T091"])
     return {"state": _settle("completed", findings), "fields": fields, "findings": findings}
 
 
@@ -461,7 +528,8 @@ def _workflow_kinds(session) -> list:
 
 @task("T092", changed_files=(MODULE, FIXTURES),
       regression_tests=(f"{TESTS}::test_t092_unbound_replay_and_execution_are_refused",
-                        f"{TESTS}::test_fabricated_heat_bundle_is_content_consistent_but_wrong"))
+                        f"{TESTS}::test_fabricated_heat_bundle_is_content_consistent_but_wrong",
+                        f"{TESTS}::test_t092_next_step_names_the_manifest_that_pins_each_kind"))
 def replay_refusal_without_binding(ctx):
     with tempfile.TemporaryDirectory(prefix="ciw-lab-t092-") as scratch:
         (reopened, ids, sources, fabricated, reopen_attempts, upstream, unreachable,
@@ -567,7 +635,7 @@ def replay_refusal_without_binding(ctx):
          "unknown bundle", "unversioned and unregistered operation identities", "ESM on a non-telemetry bundle",
          "upstream bundle of the wrong kind", "provider adapter constructed before refusal"],
         assumptions,
-        "T093: show these refusals leave the saved workspace and in-memory state unchanged.")
+        NEXT_STEPS["T092"])
     return {"state": _settle("completed", findings), "fields": fields, "findings": findings}
 
 
@@ -720,7 +788,7 @@ def unchanged_after_refusal(ctx):
          "documented exception, not a leak.",
          "The saved workspace file is not rewritten by requests (no request can target it); the evidence is the "
          "state digests and the re-save comparison."],
-        "T094: reopen golden retained bundles with the current code.")
+        NEXT_STEPS["T093"])
     return {"state": _settle("completed", findings), "fields": fields, "findings": findings}
 
 
@@ -877,7 +945,7 @@ def golden_retained_bundles(ctx):
          "but reopen cannot show that the named engine produced the values.",
          "The golden numerical-heat workspace records host paths of the machine that produced it; they are "
          "identity metadata, never bindings."],
-        "T095: refuse malformed exchange fixtures with retained error text.")
+        NEXT_STEPS["T094"])
     return {"state": state, "fields": fields, "findings": findings}
 
 
@@ -1174,7 +1242,7 @@ def malformed_exchange_fixtures(ctx):
         ["The workbench validator is exercised through the energy-accuracy kind; other kinds apply their own "
          "source parsers after the same canonical-base64 and byte-budget checks.",
          "The exchange stage stops before the SET validator; conformance of well-formed artifacts needs SET (T097)."],
-        "T096: provider-free conformance of exchange identities and ESM candidate responses.")
+        NEXT_STEPS["T095"])
     return {"state": _settle("completed", findings), "fields": fields, "findings": findings}
 
 
@@ -1211,7 +1279,12 @@ def _mutated(value, generator):
     return {**value, "lab_mutation": True}
 
 
-def _identity_study(seed=9601, count=24):
+IDENTITY_SEED, IDENTITY_COUNT = 9601, 24
+# The deterministic, unseeded builder of T096's synthetic ESM inspect and capture responses.
+CANDIDATE_GENERATOR = "ciw.lab.exchange_provenance_bundles._candidate_cases"
+
+
+def _identity_study(seed=IDENTITY_SEED, count=IDENTITY_COUNT):
     """exchange._identity over records sealed by the lab-written canonical encoder.
 
     ``canonical_text`` is written from the producer specification (sorted
@@ -1421,13 +1494,16 @@ def provider_free_conformance(ctx):
     wrong_valid = sum(row["observed"] != "accepted" for row in valid)
     wrong_mutated = sum(not row["observed"].startswith("refused") for row in mutated)
     extras_accepted = sum(row["observed"] == "accepted" for row in extras)
+    # Every finding here rests on synthetic inputs and declares their generator, so its Basis column names it.
+    records = {"name": "ciw.lab seeded nested JSON records", "seed": IDENTITY_SEED, "count": IDENTITY_COUNT}
+    responses = {"name": CANDIDATE_GENERATOR, "count": len(candidates)}
     findings = [
         finding("exchange._identity accepts every synthetic result and verification record sealed by a lab-written "
                 "canonical encoder that agrees byte for byte with json.dumps, in any member order, and refuses every "
                 "single-field mutation and a forged identity", "computational_pipeline",
                 {key: identity[key] for key in ("valid", "accepted", "reordered_accepted", "encoder_agreement",
                                                 "mutations", "refused")},
-                {"generator": {"name": "ciw.lab seeded nested JSON records", "seed": 9601, "count": 24},
+                {"generator": records,
                  "checks": [_check("records whose lab canonical text differs from json.dumps canonical text",
                                    identity["valid"] - identity["encoder_agreement"]),
                             _check("valid records not accepted", identity["valid"] - identity["accepted"]),
@@ -1439,13 +1515,15 @@ def provider_free_conformance(ctx):
                 "boundary mutation", "computational_pipeline",
                 {"valid": len(valid), "valid_accepted": len(valid) - wrong_valid, "mutations": len(mutated),
                  "mutations_refused": len(mutated) - wrong_mutated},
-                {"checks": [_check("valid synthetic responses refused", wrong_valid),
+                {"generator": responses,
+                 "checks": [_check("valid synthetic responses refused", wrong_valid),
                             _check("boundary mutations accepted", wrong_mutated)]},
                 uncertainty=EXACT_COUNT, tolerance=EXACT),
         finding("Observation-batch identities are caller-declared: mutated batches pass exchange._identity",
                 "computational_pipeline",
                 {"mutations": identity["batch_mutations"], "accepted": identity["batch_mutations_accepted"]},
-                {"checks": [_check("mutated batches accepted", identity["batch_mutations_accepted"], 1, "ge",
+                {"generator": records,
+                 "checks": [_check("mutated batches accepted", identity["batch_mutations_accepted"], 1, "ge",
                                    "invariant")]},
                 uncertainty=EXACT_COUNT, tolerance=EXACT, counterexample={
                     "statement": "Every exchange artifact identity is bound to its content",
@@ -1453,7 +1531,8 @@ def provider_free_conformance(ctx):
                                 "identity_status": "caller_declared_reference"}}),
         finding("validate_response accepts unknown extra fields in an ESM response", "computational_pipeline",
                 {"cases": len(extras), "accepted": extras_accepted},
-                {"checks": [_check("responses with unknown fields accepted", extras_accepted, 1, "ge", "invariant")]},
+                {"generator": responses,
+                 "checks": [_check("responses with unknown fields accepted", extras_accepted, 1, "ge", "invariant")]},
                 uncertainty=EXACT_COUNT, tolerance=EXACT, counterexample={
                     "statement": "The CIW candidate boundary refuses any ESM response field it does not recognise",
                     "witness": {"fields": ["lab_admission_override", "candidate.lab_admitted"],
@@ -1466,8 +1545,9 @@ def provider_free_conformance(ctx):
         "every mutation of a bound field, without any provider checkout.",
         "exchange._identity: id = 'sha256:' + SHA-256(schema NUL canonical_json(record without id)); "
         "validate_response: equality of boundary fields with the explicit request and the selected bundle.",
-        ["24 seeded synthetic result/verification records (PCG64 seed 9601)",
-         f"{len(candidates)} synthetic ESM inspect/capture responses over telemetry and calibrated bundle stubs"],
+        [f"{IDENTITY_COUNT} seeded synthetic result/verification records (PCG64 seed {IDENTITY_SEED})",
+         f"{len(candidates)} synthetic ESM inspect/capture responses over telemetry and calibrated bundle stubs "
+         f"(deterministic, unseeded: {CANDIDATE_GENERATOR})"],
         "Accepted or refused (with message) per record or response.",
         "All valid accepted, all single-field mutations refused, identity invariant under member order.",
         "Seal records with the lab-written canonical encoder (checked byte for byte against the json.dumps call "
@@ -1486,7 +1566,7 @@ def provider_free_conformance(ctx):
          "record, so it is not an identity property and is not tested here.",
          "The bundle stubs contain only the fields validate_response reads; full native bundles need providers.",
          "Mutations are single-field; combined mutations that restore consistency are not explored."],
-        "T097: exact SCR/SET/PPDA integrations when the pinned checkouts are bound.")
+        NEXT_STEPS["T096"])
     return {"state": _settle("completed", findings), "fields": fields, "findings": findings}
 
 
@@ -1536,6 +1616,8 @@ def _engine_note(engine) -> dict:
 
 
 def _provider_basis(identity, engine):
+    """The executed SCR checkout and engine, declared by every finding that rests on the SCR run (even where a
+    check decides its label), so the Basis column names the provider."""
     return {"provider": {"repository": providers.REPOSITORIES["scr"], "revision": identity["head"],
                          "source_tree": identity["tree"], "runtime_digest": "sha256:" + engine["sha256"],
                          "executed": True},
@@ -1612,7 +1694,14 @@ def _optional_checkout(ctx, role, pins) -> dict:
     return dict(record, state="ready", reason=None)
 
 
-def _set_findings(result) -> list:
+def _executed_checkout(role, checkout) -> dict:
+    """The provider basis of a bound, ready exchange checkout that executed: repository, HEAD and tree."""
+    return {"repository": providers.REPOSITORIES[role], "revision": checkout["head"], "source_tree": checkout["tree"],
+            "executed": True}
+
+
+def _set_findings(result, optional) -> list:
+    """The SET validator finding; its basis declares the executed SET checkout, so the Basis column names it."""
     authority = result["authority"]
     return [finding(
         "The pinned SET contracts validator reports the synthetic observation conformant with effective covariance "
@@ -1626,13 +1715,15 @@ def _set_findings(result) -> list:
                              "covariance.matrix is not positive-semidefinite", result["indefinite_covariance"]),
                     _check("inspection input bytes changed", int(not result["unchanged_input"])),
                     _check("inspection reports that may authorize", int(authority.get("may_authorize") is not False))],
-         "notes": {"provider": {"repository": providers.REPOSITORIES["set"], "revision": result["validator"]["revision"],
-                                "validator_path": result["validator"]["path"],
-                                "validator_sha256": result["validator"]["sha256"], "executed": True}}},
+         "provider": _executed_checkout("set", optional["set"]),
+         "notes": {"validator": {"revision": result["validator"]["revision"], "path": result["validator"]["path"],
+                                 "sha256": result["validator"]["sha256"]}}},
         uncertainty=EXACT_COUNT, tolerance=EXACT)]
 
 
 def _roundtrip_findings(result, optional) -> list:
+    """The producer roundtrip finding. Its one provider slot declares the SET checker whose verdict the checks read;
+    the PPDA and SCR producers that wrote the artifacts are recorded, with SET, under ``notes.provider``."""
     authority = result["authority"]
     return [finding(
         "PPDA and SCR exchange artifacts pass the pinned SET checker, link to each other, keep a failed verification "
@@ -1646,8 +1737,8 @@ def _roundtrip_findings(result, optional) -> list:
                     _refusal("inspection after changing a component of the SCR result artifact",
                              "result_id does not match the artifact content", result["changed_result_refusal"]),
                     _check("inspection reports that may authorize", int(authority.get("may_authorize") is not False))],
-         "notes": {"provider": {role: {"repository": providers.REPOSITORIES[role], "revision": optional[role]["head"],
-                                       "source_tree": optional[role]["tree"], "executed": True}
+         "provider": _executed_checkout("set", optional["set"]),
+         "notes": {"provider": {role: _executed_checkout(role, optional[role])
                                 for role in ("ppda", "scr-exchange", "set")}}},
         uncertainty=EXACT_COUNT, tolerance=EXACT)]
 
@@ -1656,7 +1747,8 @@ def _roundtrip_findings(result, optional) -> list:
       regression_tests=(f"{TESTS}::test_t097_scr_numerical_heat_integration",
                         f"{TESTS}::test_t097_is_blocked_without_scr",
                         f"{TESTS}::test_t097_keeps_set_results_when_the_engine_is_missing",
-                        f"{TESTS}::test_t097_t099_refuse_a_non_repository_scr_binding"),
+                        f"{TESTS}::test_t097_t099_refuse_a_non_repository_scr_binding",
+                        f"{TESTS}::test_t097_names_each_executed_provider_beside_its_label"),
       requires=("provider:scr",), plan=_T097_PLAN)
 def exact_provider_integrations(ctx):
     fields = {k: v for k, v in deepcopy(_T097_PLAN).items() if k != "findings"}
@@ -1749,7 +1841,7 @@ def exact_provider_integrations(ctx):
                                                         "revision": identity["head"]},
                                            "checker": {"implementation": "ciw.lab.exchange_provenance_bundles_fixtures"
                                                                          ".heat_reference", "revision": __version__}},
-                     "notes": _engine_note(engine)},
+                     **_provider_basis(identity, engine)},
                     uncertainty=EXACT_INTEGER, tolerance=EXACT),
             finding("SCR replay reproduces the numerical identity with fresh execution occurrences and a "
                     "non-independent verification", "computational_pipeline",
@@ -1766,7 +1858,8 @@ def exact_provider_integrations(ctx):
                                 _check("runs whose verification claims independence",
                                        sum(run["verification_independent"] is not False for run in workbench["runs"])),
                                 _check("SCR descriptor digest differs from CIW's HEAT_DESCRIPTOR",
-                                       int(not descriptor_equal))]},
+                                       int(not descriptor_equal))],
+                     **_provider_basis(identity, engine)},
                     uncertainty=EXACT_COUNT, tolerance=EXACT),
             finding("The reopened SCR workspace carries no binding and refuses replay", "computational_pipeline",
                     {"bindings": workbench["reopened_bindings"], "available": workbench["reopened_available"],
@@ -1786,7 +1879,7 @@ def exact_provider_integrations(ctx):
              "required": "--provider scr-engine=<execution-cli> or cargo on PATH"}, {}, expected_not_established=True))
     findings += _engine_origin_findings(ctx, engine)
     if "set" in parts:
-        findings += _set_findings(parts["set"])
+        findings += _set_findings(parts["set"], optional)
     else:
         blocked.append("SET exchange validator: " + set_reason)
         findings.append(finding(
@@ -1834,13 +1927,14 @@ def exact_provider_integrations(ctx):
                                           "build only when an operator-bound engine and cargo are both present).",
                                           "The PPDA telemetry stack (ppda, stfe, gsie, set, cbsr at "
                                           "src/ciw/telemetry-runtimes.json pins) is a separate integration."],
-        recommended_next_task="T098: record the identities of every bound provider checkout.",
+        recommended_next_task=NEXT_STEPS["T097"],
         provider_runtime_identity=_runtime_identity(T097_FILES, {
             "scr": {"revision": identity["head"], "source_tree": identity["tree"],
                     "engine_sha256": None if engine is None else engine["sha256"],
                     "engine_origin": None if engine is None else engine["origin"]},
-            **{role: {"state": value["state"], "head": value.get("head"), "matched": value.get("matched")}
-               for role, value in optional.items()}}))
+            # Head and tree, as T098 records them, so a runtime inventory (T165) lists each checkout once.
+            **{role: {"state": value["state"], "head": value.get("head"), "tree": value.get("tree"),
+                      "matched": value.get("matched")} for role, value in optional.items()}}))
     return {"state": state, "fields": fields, "findings": findings}
 
 
@@ -2145,7 +2239,7 @@ def provider_identities(ctx):
          "regression values. A PLSR install commit is recorded only when the installer wrote one (direct_url.json).",
          "Pins declared only in .github/workflows/exchange.yml are mirrored in EXCHANGE_WORKFLOW_PINS.",
          "Checkout paths are kept in provider-identities.json only; report prose names repositories and revisions."],
-        "T099: verify the locked offline SCR build and record the SP1 build requirements.")
+        NEXT_STEPS["T098"])
     bound = {role: {"head": identities[role]["head"], "tree": identities[role]["tree"]} for role in sorted(identities)}
     if engine is not None:
         bound["scr"]["engine_sha256"] = engine["sha256"]
@@ -2209,7 +2303,8 @@ BUILD_CLAIM = "cargo build --release --locked --offline of SCR execution-cli suc
 
 @task("T099", changed_files=T099_FILES,
       regression_tests=(f"{TESTS}::test_t099_locked_offline_scr_build",
-                        f"{TESTS}::test_t097_t099_refuse_a_non_repository_scr_binding"),
+                        f"{TESTS}::test_t097_t099_refuse_a_non_repository_scr_binding",
+                        f"{TESTS}::test_t099_names_the_built_checkout_beside_its_label"),
       requires=("provider:scr", "tool:cargo"), plan=_T099_PLAN)
 def locked_cargo_build(ctx):
     fields = {k: v for k, v in deepcopy(_T099_PLAN).items() if k != "findings"}
@@ -2245,8 +2340,10 @@ def locked_cargo_build(ctx):
                                                 "attempted": False})
     digests = sorted({row["binary_sha256"] for row in ok})
     lock = identity["lockfiles"].get("crates/Cargo.lock")
-    provider_note = {"repository": providers.REPOSITORIES["scr"], "revision": identity["head"],
-                     "source_tree": identity["tree"], "binary_sha256": digests}
+    # The build and the engine run rest on the bound SCR checkout: each finding declares it as its provider, so the
+    # Basis column names it beside the label (a passing check still decides the label).
+    built = {"repository": providers.REPOSITORIES["scr"], "revision": identity["head"], "source_tree": identity["tree"],
+             "executed": True}
     findings = [finding(
         BUILD_CLAIM, "computational_pipeline",
         {"exit_codes": [row["returncode"] for row in build["builds"]], "flags": ["--release", "--locked", "--offline"],
@@ -2255,7 +2352,7 @@ def locked_cargo_build(ctx):
                            sum(row["returncode"] != 0 for row in build["builds"])),
                     _check("builds without an execution-cli binary",
                            sum(not row["binary_sha256"] for row in build["builds"]))],
-         "notes": {"provider": provider_note}},
+         "provider": built, "notes": {"binary_sha256": digests}},
         uncertainty=EXACT_COUNT, tolerance=EXACT)]
     if ok:
         values = output["cases"][0]["values"] if output else None
@@ -2273,7 +2370,8 @@ def locked_cargo_build(ctx):
                                        int(after["dirty"] or bool(after["mismatched_files"])
                                            or bool(after["untracked_outside_caches"]))),
                                 _check("builds that failed", len(build["builds"]) - len(ok)),
-                                _check("distinct binary digests beyond one", len(digests) - 1)]},
+                                _check("distinct binary digests beyond one", len(digests) - 1)],
+                     "provider": built},
                     uncertainty=EXACT_COUNT, tolerance=EXACT),
             finding("The freshly built engine's heat output equals an independent integer reference", "numerical",
                     values, {"independent_check": {
@@ -2282,7 +2380,8 @@ def locked_cargo_build(ctx):
                         "producer": {"implementation": "Scientific-Computation-Runtime execution-cli (locked build)",
                                      "revision": identity["head"]},
                         "checker": {"implementation": "ciw.lab.exchange_provenance_bundles_fixtures.heat_reference",
-                                    "revision": __version__}}},
+                                    "revision": __version__}},
+                     "provider": dict(built, runtime_digest="sha256:" + digests[0])},
                     uncertainty=EXACT_INTEGER, tolerance=EXACT),
         ]
     findings += [
@@ -2305,8 +2404,7 @@ def locked_cargo_build(ctx):
                                 "checkout, the Succinct compiler archive, protoc and >= 7 GiB RAM / 20 GiB disk "
                                 "(.github/workflows/proved-heat.yml); host probes are in sp1-requirements.json."]
         + ([f"The engine heat-kernel call failed ({api_error})."] if api_error else []),
-        recommended_next_task="Run the SP1 proved-heat gate (scripts/check_proved_heat.py) on a provisioned machine; "
-                              "then T100.",
+        recommended_next_task=NEXT_STEPS["T099"],
         provider_runtime_identity=_runtime_identity(T099_FILES, {
             "scr": {"head": identity["head"], "tree": identity["tree"], "engine_sha256": digests[0] if digests else None,
                     "cargo": build["cargo"], "rustc": build["rustc"]}}))
@@ -2318,6 +2416,10 @@ def locked_cargo_build(ctx):
 _COMPUTATIONAL_LABELS = frozenset({"analytic", "synthetic", "numerically_verified", "provider_backed"})
 # The packaged queue's tasks before T100 (T001-T099).
 EXPECTED_EARLIER_REPORTS = 99
+# The rendered finding table: header and rule as report.render_markdown writes them.
+FINDINGS_TABLE = FINDINGS_HEADER + "\n" + FINDINGS_RULE + "\n"
+# Basis components that name where a result's inputs or numbers came from, with the identity each shows.
+DECLARED_SOURCES = ("synthetic_inputs", "provider")
 
 
 def _cells(row: str) -> int:
@@ -2325,10 +2427,97 @@ def _cells(row: str) -> int:
     return len(re.findall(r"(?<!\\)\|", row)) - 1
 
 
-def _audit_reports(ctx):
-    """Label and rendering audit of every retained report numbered below 100 present in the output directory."""
+def _cell_texts(row: str) -> list:
+    """The text of each cell of a Markdown table row, split at unescaped pipes."""
+    return [cell.strip() for cell in re.split(r"(?<!\\)\|", row)[1:-1]]
+
+
+HEADER_CELLS = _cells(FINDINGS_HEADER)
+
+
+def _shown(value, limit=80) -> str:
+    """A declared identity as a reader should see it: whitespace collapsed, cut at ``limit`` with an ellipsis."""
+    text = value if isinstance(value, str) else json.dumps(value, sort_keys=True, ensure_ascii=False)
+    text = " ".join(text.split())
+    return text if len(text) <= limit else text[:limit - 1] + "…"
+
+
+# Names of the basis components in audit problems; the audit counts a finding whose generator or provider is
+# missing from its row as hiding its source.
+PROBLEM_NAMES = {"synthetic_inputs": "generator"}
+UPGRADED_ACQUISITION = "hardware acquisition shown without an acquisition the finding establishes"
+
+
+def _expected_basis(record) -> list:
+    """(component, text) of each part of the Basis cell the contract prescribes, in :data:`ORIGINS` order.
+
+    Restated here from docs/lab/AUTHORING.md rather than read from
+    ``describe_basis``, so a renderer that changes the cell cannot also change
+    what the audit expects: each declared component in words, a generator
+    with its name and seed, an executed provider with its repository and the
+    first 12 characters of its revision, and an acquisition record as
+    'hardware acquisition (<device>)' only on a physical-domain finding
+    labelled ``hardware_measured`` or ``independently_verified`` (one it
+    establishes), 'declared acquisition record (not accepted)' on every other.
+    """
+    basis, declared, parts = record["basis"], set(finding_origin(record)), []
+    for item in (item for item in ORIGINS if item in declared):
+        if item == "acquisition":
+            accepted = (record["domain"] in PHYSICAL_DOMAINS
+                        and record["evidence_status"] in ("hardware_measured", "independently_verified"))
+            text = (f"{ACCEPTED_ACQUISITION} ({_shown(basis['acquisition']['device'])})" if accepted
+                    else UNACCEPTED_ACQUISITION)
+        elif item == "synthetic_inputs":
+            generator = basis["generator"]
+            seed = f", seed {_shown(generator['seed'], 40)}" if generator.get("seed") is not None else ""
+            text = f"{ORIGIN_WORDS[item]} ({_shown(generator['name'])}{seed})"
+        elif item == "provider":
+            provider = basis["provider"]
+            text = f"{ORIGIN_WORDS[item]} ({_shown(provider['repository'])}@{_shown(provider['revision'])[:12]})"
+        else:
+            text = ORIGIN_WORDS[item]
+        parts.append((item, text))
+    return parts
+
+
+def _basis_problems(record, cell: str) -> list:
+    """How a rendered Basis cell departs from the cell the declared basis prescribes (``_expected_basis``).
+
+    The whole cell is compared, so an omitted component cannot hide behind the
+    same words inside a declared identity, and extra or reordered text is a
+    problem too. Each prescribed part missing from the comma-separated parts
+    of the cell is named ('generator', 'provider', 'acquisition',
+    'derivation', ...; 'none' for a finding declaring nothing that does not
+    read 'no declared basis'), 'hardware acquisition' shown on a finding
+    whose acquisition is not accepted (or that declares none) is named as
+    such, and any other difference reads 'order or extra text'.
+    """
+    shown = cell.replace("\\|", "|")
+    parts = _expected_basis(record)
+    expected = ", ".join(text for _, text in parts) or NO_ORIGIN
+    if shown == expected:
+        return []
+    present = f", {shown}, "
+    problems = [PROBLEM_NAMES.get(item, item) for item, text in parts if f", {text}, " not in present]
+    if not parts and f", {NO_ORIGIN}, " not in present:
+        problems.append("none")
+    # 'hardware acquisition' beyond the occurrences the prescribed cell holds (inside a declared identity, say).
+    if shown.count(ACCEPTED_ACQUISITION) > expected.count(ACCEPTED_ACQUISITION):
+        problems.append(UPGRADED_ACQUISITION)
+    return problems or ["order or extra text"]
+
+
+def _audit_reports(ctx) -> dict:
+    """Label, rendering and declared-basis audit of every retained report numbered below 100 in the output directory.
+
+    Each finding's rendered row must equal ``report.finding_row`` and have the
+    header's four cells, with the label in the third and, in the fourth,
+    exactly the Basis cell its declared basis prescribes (``_expected_basis``,
+    built without the renderer); a finding whose basis declares a generator of
+    synthetic inputs or an executed provider must name it there.
+    """
     directory = ctx.output_dir / "reports"
-    rows, labels, rendering = [], [], []
+    rows, labels, rendering, basis, hidden, audited = [], [], [], [], [], []
     for path in sorted(directory.glob("T*.json")) if directory.is_dir() else []:
         try:
             report = json.loads(path.read_text(encoding="utf-8"))
@@ -2343,30 +2532,43 @@ def _audit_reports(ctx):
             labels.append(f"{path.name}: refused by validate_report ({exc})")
             continue
         markdown = render_markdown(report)
-        table = markdown.split("| Finding | Value | Evidence status |\n| --- | --- | --- |\n", 1)
+        table = markdown.split(FINDINGS_TABLE, 1)
         lines = table[1].splitlines() if len(table) == 2 else []
         for index, record in enumerate(report["findings"]):
             label, domain = record["evidence_status"], record["domain"]
+            where = f"{report['task_id']}[{index}]"
             if label not in LABELS:
-                labels.append(f"{report['task_id']}[{index}]: unknown label {label}")
+                labels.append(f"{where}: unknown label {label}")
             if domain in PHYSICAL_DOMAINS and (label in _COMPUTATIONAL_LABELS or
                                                (label != "not_established" and not record["basis"].get("acquisition"))):
-                labels.append(f"{report['task_id']}[{index}]: physical finding labelled {label}")
+                labels.append(f"{where}: physical finding labelled {label}")
             if domain in AUTHORITY_DOMAINS and label != "not_established":
-                labels.append(f"{report['task_id']}[{index}]: authority finding labelled {label}")
+                labels.append(f"{where}: authority finding labelled {label}")
             if domain not in PHYSICAL_DOMAINS and label == "hardware_measured":
-                labels.append(f"{report['task_id']}[{index}]: computational finding labelled hardware_measured")
+                labels.append(f"{where}: computational finding labelled hardware_measured")
             row = lines[index] if index < len(lines) else ""
-            if not row.endswith(f"| `{label}` |") or _cells(row) != 3:
-                rendering.append(f"{report['task_id']}[{index}]: rendered row does not show `{label}` in its column")
+            cells = _cell_texts(row)
+            if row != finding_row(record) or len(cells) != HEADER_CELLS or cells[2] != f"`{label}`":
+                rendering.append(f"{where}: rendered row does not show `{label}` in its column")
+            missing = _basis_problems(record, cells[3]) if len(cells) == HEADER_CELLS else ["basis column"]
+            if missing:
+                basis.append(f"{where}: rendered Basis column differs from the declared basis ({', '.join(missing)})")
+            if set(DECLARED_SOURCES) & set(finding_origin(record)) and set(missing) & {"generator", "provider",
+                                                                                     "basis column"}:
+                hidden.append(where)
         if f"`{report['physical_validation_status']['status']}`" not in markdown:
             rendering.append(f"{report['task_id']}: physical validation status not rendered")
+        audited += report["findings"]
         rows.append({"task_id": report["task_id"], "findings": len(report["findings"]),
                      "pipe_claims": sum("|" in f["claim"] or "\n" in f["claim"] for f in report["findings"]),
                      "labels": sorted({f["evidence_status"] for f in report["findings"]}),
+                     "declared_sources": sorted({item for f in report["findings"] for item in finding_origin(f)
+                                                 if item in DECLARED_SOURCES}),
                      "physical_or_authority": sum(f["domain"] in PHYSICAL_DOMAINS | AUTHORITY_DOMAINS
                                                   for f in report["findings"])})
-    return rows, labels, rendering
+    declaring = {item: sum(item in finding_origin(record) for record in audited) for item in DECLARED_SOURCES}
+    return {"rows": rows, "labels": labels, "rendering": rendering, "basis": basis, "hidden_sources": hidden,
+            "declaring": declaring, "label_by_basis": origin_counts(audited), "findings": len(audited)}
 
 
 def _energy_data(client, bundle_id) -> dict:
@@ -2417,12 +2619,17 @@ def _energy_origin_study():
             "same_occurrence_collision": collision, "fresh_occurrence": fresh_outcome, "fresh_bundle": fresh_data}
 
 
-def _provider_origin_study():
-    """A fabricated, content-consistent numerical-heat bundle as CIW readers see it (T092's counterexample).
+FABRICATED_VALUES = [0, 1, 2, 3, 0]
+FABRICATED_EXPERIMENT = "ciw-lab-t100-fabricated-heat"
+
+
+def _classified_bundle(source_tree) -> dict:
+    """A fabricated, content-consistent numerical-heat bundle sealed with ``source_tree``, as CIW readers see it.
 
     The bundle is saved in a workspace, then read back through the workbench
     protocol and through ``ciw.lab.bridge.classify_workspace`` (``ciw lab
-    classify``), which validates the workspace like ``Session.from_workspace``.
+    classify``), which validates the workspace like ``Session.from_workspace``
+    and compares the retained runtime identity with the pins CIW declares.
     """
     from ..declared_workload import PINS
     from ..instruments import make_demo_run
@@ -2430,7 +2637,8 @@ def _provider_origin_study():
     from ..workbench import Workbench
     from .bridge import classify_workspace
     Session = _session_class()
-    fabricated = fabricated_heat_catalog([0, 1, 2, 3, 0], experiment_id="ciw-lab-t100-fabricated-heat")
+    fabricated = fabricated_heat_catalog(FABRICATED_VALUES, experiment_id=FABRICATED_EXPERIMENT,
+                                         source_tree=source_tree)
     bundle_id = fabricated["bundles"][0]["bundle_id"]
     with tempfile.TemporaryDirectory(prefix="ciw-lab-t100-provider-") as scratch:
         scratch = Path(scratch)
@@ -2443,17 +2651,40 @@ def _provider_origin_study():
             outcome = "accepted"
         except ValueError as exc:
             classification, outcome = None, str(exc)
-    labels = []
+    labels, pins, notes = [], [], None
     for item in (classification or {}).get("items", []):
         if item["kind"] == "workbench_bundle" and item["identity"] == bundle_id:
-            labels = [record["evidence_status"] for record in item["findings"]
-                      if record["claim"].endswith("numerical result")]
-    return {"reopen": outcome, "numerical_labels": labels,
+            numerical = [record for record in item["findings"] if record["claim"].endswith("numerical result")]
+            labels = [record["evidence_status"] for record in numerical]
+            notes = numerical[0]["basis"].get("notes") if numerical else None
+            pins = [{key: row.get(key) for key in ("role", "matched", "problem", "tree_pinned")}
+                    for row in item.get("runtime_pins", [])]
+    return {"reopen": outcome, "numerical_labels": labels, "runtime_pins": pins, "classifier_notes": notes,
             "reader_view": {"revision_is_ciw_pin": runtime["revision"] == PINS["numerical-heat"]["revision"],
                             "source_tree_is_ciw_pin": runtime["source_tree"] == PROVED_HEAT_PIN["source_tree"],
                             "engine_source_binding": runtime["engine"]["source_binding"],
-                            "adapter_version": runtime["adapter_version"]},
+                            "adapter_version": runtime["adapter_version"],
+                            "repository_root": runtime["repository_root"]},
             "bundle_id": bundle_id}
+
+
+def _provider_origin_study() -> dict:
+    """T092's fabricated heat bundle with an invented source tree, and the same bundle sealed with CIW's pinned tree.
+
+    ``fabricated``: tree ``'0' * 40`` (not CIW's pin); ``copied_pin``: the
+    tree ``ciw.proved_heat.PIN`` records for the pinned SCR revision, which is
+    a public constant any fabricator can copy.
+    """
+    from ..proved_heat import PIN as PROVED_HEAT_PIN
+    return {"fabricated": _classified_bundle(FABRICATED_SOURCE_TREE),
+            "copied_pin": _classified_bundle(PROVED_HEAT_PIN["source_tree"])}
+
+
+def _kinds_without_tree() -> list:
+    """Workflow kinds with a pin whose revision has no source tree in any CIW pin table (the classifier accepts any
+    tree there)."""
+    from .bridge import pins_without_tree
+    return sorted({kind for kind, _, _ in pins_without_tree()["kinds"]})
 
 
 def _free_energy_study():
@@ -2481,25 +2712,42 @@ def _free_energy_study():
 
 
 def _rendering_probe():
-    """Render a synthetic claim containing a pipe; returns the finding row and whether its label kept its column."""
+    """Render a synthetic claim containing a pipe; returns the finding, its rendered row and whether the label kept
+    its column (the header's cell count, with the label in the third cell)."""
     from .registry import load_queue
     witness = finding("claim with a | pipe", "numerical", 1.0, {"generator": {"name": "rendering probe"}})
     task_record = next(item for item in load_queue()["tasks"] if item["id"] == "T100")
     row = render_markdown(build_report(task_record, "partial", {}, [witness])).splitlines()[-1]
-    kept = _cells(row) == 3 and row.endswith(f"| `{witness['evidence_status']}` |")
+    cells = _cell_texts(row)
+    kept = len(cells) == HEADER_CELLS and cells[2] == f"`{witness['evidence_status']}`"
     return witness, row, kept
 
 
+KEEPS_LABEL_COLUMN = "render_markdown keeps the label column for a claim containing a pipe character"
+
+
 def _probe_finding(witness, row, kept):
-    """Records whichever renderer behaviour was observed, so the finding holds before and after escaping lands."""
-    if kept:
-        return finding("render_markdown keeps the label column for a claim containing a pipe character",
-                       "computational_pipeline", {"row_cells": _cells(row), "label_column_shifted": False},
-                       {"checks": [_check("rendered cells beyond three for a claim containing a pipe", _cells(row) - 3)]},
+    """Records whichever renderer behaviour was observed, so the finding holds before and after escaping lands.
+
+    The label-column claim is checked unless the row shows the extra cell a
+    raw pipe creates: then the shift is recorded as a counterexample. A row
+    that lost its label column without that extra cell (cells reordered, say)
+    refutes the label-column claim and witnesses no counterexample, so no
+    catalogue of counterexamples (T157, T160-T162) lists it.
+    """
+    extra = _cells(row) - HEADER_CELLS
+    if kept or extra < 1:
+        return finding(KEEPS_LABEL_COLUMN, "computational_pipeline",
+                       {"row_cells": _cells(row), "label_column_shifted": not kept},
+                       {"checks": [_check(f"rendered cells beyond the header's {HEADER_CELLS} for a claim containing "
+                                          "a pipe", extra),
+                                   _check("rendered rows whose third cell is not the finding's label", int(not kept)),
+                                   _check("rendered row differing from report.finding_row", int(row != finding_row(witness)))]},
                        uncertainty=EXACT_COUNT, tolerance=EXACT)
     return finding("An unescaped pipe character in a finding claim shifts the rendered label out of its Markdown column",
                    "computational_pipeline", {"row_cells": _cells(row), "label_column_shifted": True},
-                   {"checks": [_check("rendered rows keeping three cells for a claim containing a pipe", int(kept))]},
+                   {"checks": [_check(f"rendered cells beyond the header's {HEADER_CELLS} for a claim containing a pipe",
+                                      extra, 1, "ge", "invariant")]},
                    uncertainty=EXACT_COUNT, tolerance=EXACT, counterexample={
                        "statement": "render_markdown keeps every finding's label in the label column for any claim text",
                        "witness": {"claim": witness["claim"], "row": row}})
@@ -2508,12 +2756,20 @@ def _probe_finding(witness, row, kept):
 @task("T100", changed_files=(MODULE, FIXTURES),
       regression_tests=(f"{TESTS}::test_t100_labels_and_origins_stay_distinct",
                         f"{TESTS}::test_t100_flags_a_retained_report_whose_label_leaves_its_column",
-                        f"{TESTS}::test_render_markdown_pipe_probe_matches_the_renderer"))
+                        f"{TESTS}::test_t100_flags_a_rendered_row_that_hides_its_generator_or_provider",
+                        f"{TESTS}::test_t100_classifier_study_separates_an_invented_tree_from_a_copied_pin",
+                        f"{TESTS}::test_t100_flags_an_unaccepted_acquisition_shown_as_hardware_acquisition",
+                        f"{TESTS}::test_basis_audit_compares_the_whole_cell",
+                        f"{TESTS}::test_render_markdown_pipe_probe_matches_the_renderer",
+                        f"{TESTS}::test_next_steps_name_forward_work"))
 def visibly_distinct_results(ctx):
-    rows, violations, rendering = _audit_reports(ctx)
+    audit = _audit_reports(ctx)
+    rows, violations, rendering, basis = audit["rows"], audit["labels"], audit["rendering"], audit["basis"]
+    hidden, declaring = audit["hidden_sources"], audit["declaring"]
     energy = _energy_origin_study()
     free = _free_energy_study()
     provider = _provider_origin_study()
+    fabricated, copied = provider["fabricated"], provider["copied_pin"]
     # Validator self-test: a physical finding relabelled with a computational label is refused.
     physical = finding("Synthetic fixture reflects real device energy", "physical", 1.0,
                        {"generator": {"name": "synthetic fixture"}})
@@ -2528,9 +2784,16 @@ def visibly_distinct_results(ctx):
     ctx.artifact_json("visibility-audit.json", {"reports": rows, "task_ids_audited": present,
                                                 "reports_expected_for_the_full_queue": EXPECTED_EARLIER_REPORTS,
                                                 "label_violations": violations, "rendering_violations": rendering,
+                                                "basis_violations": basis, "hidden_generator_or_provider": hidden,
                                                 "energy": energy, "free_energy": free, "provider_origin": provider,
                                                 "forged_relabel": forged,
                                                 "rendering_probe_row": row})
+    # Label x declared basis component over every audited finding (a finding counts under each component it declares).
+    ctx.artifact_json("label-by-basis.json", {
+        "findings": audit["findings"], "task_ids_audited": present, "counts": audit["label_by_basis"],
+        "reading": "counts[label][component]: findings with that label declaring that basis component "
+                   "(ciw.lab.evidence.origin_counts); 'none' counts findings declaring no component. The label is "
+                   "decided by the rules; the components show what it rests on."})
     findings = []
     audited = bool(rows)
     coverage = {"reports_checked": len(rows), "reports_absent_of_T001_T099": EXPECTED_EARLIER_REPORTS - len(rows)}
@@ -2544,13 +2807,41 @@ def visibly_distinct_results(ctx):
         findings.append(finding(
             "Every finding of those reports shows its label in the label column of its rendered Markdown row",
             "computational_pipeline", dict(coverage, rendering_violations=len(rendering)),
-            {"checks": [_check("findings whose rendered label leaves its column", len(rendering))]},
+            {"checks": [_check("findings whose rendered row differs from report.finding_row or whose label leaves "
+                               "its column", len(rendering))]},
             uncertainty=EXACT_COUNT, tolerance=EXACT))
+        findings.append(finding(
+            "Every finding of those reports shows exactly its declared basis in the Basis column of its rendered "
+            "Markdown row, an acquisition record as hardware acquisition only on a physical finding it establishes",
+            "computational_pipeline", dict(coverage, basis_violations=len(basis)),
+            {"checks": [_check("findings whose rendered Basis column differs from the cell their declared basis "
+                               "prescribes (docs/lab/AUTHORING.md)", len(basis))]},
+            uncertainty=EXACT_COUNT, tolerance=EXACT))
+        if any(declaring.values()):
+            findings.append(finding(
+                "Every finding of those reports whose basis declares a generator of synthetic inputs or an executed "
+                "provider names that generator or provider beside its label", "computational_pipeline",
+                dict(coverage, generator_findings=declaring["synthetic_inputs"],
+                     provider_findings=declaring["provider"], not_shown=len(hidden)),
+                {"checks": [_check("findings declaring a generator or an executed provider whose rendered row does "
+                                   "not name it", len(hidden))]},
+                uncertainty=EXACT_COUNT, tolerance=EXACT))
+        else:
+            # Nothing to test: the visibility claim is recorded as unestablished, not the (counted) absence.
+            findings.append(finding(
+                "Every finding of those reports whose basis declares a generator of synthetic inputs or an executed "
+                "provider names it beside its label (no audited finding declares one)",
+                "computational_pipeline", dict(coverage, generator_findings=0, provider_findings=0), {},
+                expected_not_established=True))
     else:
         findings.append(finding(
             "No earlier report was present in the output directory to audit", "computational_pipeline",
             coverage, {}, expected_not_established=True))
     fresh = energy["fresh_bundle"] or {}
+
+    def pinned(study):
+        return sum(row["matched"] is not None for row in study["runtime_pins"])
+
     findings += [
         finding("A physical finding relabelled with a computational label is refused by the evidence validator",
                 "computational_pipeline", forged,
@@ -2601,64 +2892,115 @@ def visibly_distinct_results(ctx):
                             _check("view basis literals naming the synthetic reference",
                                    int("synthetic_reference_not_hardware_measurement" in free["view_basis_literals"]),
                                    1, "ge", "invariant")]}, uncertainty=EXACT_COUNT, tolerance=EXACT),
-        finding("A fabricated, content-consistent numerical-heat bundle reopens and is labelled provider_backed by the "
-                "workspace classifier, as a provider result is", "computational_pipeline",
-                {"reopen": provider["reopen"], "numerical_labels": provider["numerical_labels"],
-                 "reader_view": provider["reader_view"]},
+        finding("The workspace classifier labels a fabricated, content-consistent numerical-heat bundle whose source "
+                "tree is not CIW's pinned tree not_established", "computational_pipeline",
+                {"reopen": fabricated["reopen"], "numerical_labels": fabricated["numerical_labels"],
+                 "runtime_pins": fabricated["runtime_pins"], "reader_view": fabricated["reader_view"]},
                 {"checks": [_refusal("classify_workspace (Session.from_workspace validation) of the saved fabricated "
-                                     "bundle", "accepted", provider["reopen"]),
-                            _check("fabricated bundle numerical findings not labelled provider_backed",
-                                   sum(label != "provider_backed" for label in provider["numerical_labels"])
-                                   + int(not provider["numerical_labels"]))]},
+                                     "bundle", "accepted", fabricated["reopen"]),
+                            _check("fabricated bundle numerical findings labelled other than not_established",
+                                   sum(label != "not_established" for label in fabricated["numerical_labels"])
+                                   + int(not fabricated["numerical_labels"])),
+                            _check("runtime identities of the fabricated bundle compared with CIW's pins",
+                                   len(fabricated["runtime_pins"]), 1, "ge", "invariant"),
+                            _check("runtime identities of the fabricated bundle matched to a CIW pin",
+                                   pinned(fabricated))]},
+                uncertainty=EXACT_COUNT, tolerance=EXACT),
+        finding("A fabricated numerical-heat bundle sealed with CIW's pinned SCR revision and source tree reopens and "
+                "is labelled provider_backed by the workspace classifier, as a provider result is",
+                "computational_pipeline",
+                {"reopen": copied["reopen"], "numerical_labels": copied["numerical_labels"],
+                 "runtime_pins": copied["runtime_pins"], "reader_view": copied["reader_view"]},
+                {"checks": [_refusal("classify_workspace (Session.from_workspace validation) of the saved bundle "
+                                     "sealed with the pinned tree", "accepted", copied["reopen"]),
+                            _check("copied-pin bundle numerical findings not labelled provider_backed",
+                                   sum(label != "provider_backed" for label in copied["numerical_labels"])
+                                   + int(not copied["numerical_labels"]))]},
                 uncertainty=EXACT_COUNT, tolerance=EXACT, counterexample={
                     "statement": "CIW's retained records and their classification keep provider-backed results "
                                  "visibly distinct from fabricated ones",
-                    "witness": {"bundle_id": provider["bundle_id"], "values": [0, 1, 2, 3, 0],
-                                "classified": provider["numerical_labels"], **provider["reader_view"]}}),
+                    "witness": {"bundle_id": copied["bundle_id"], "values": FABRICATED_VALUES,
+                                "classified": copied["numerical_labels"],
+                                "matched_pins": sorted({pin for row in copied["runtime_pins"]
+                                                        for pin in row["matched"] or []}),
+                                **copied["reader_view"]}}),
         finding("The relabelled energy log is a physical GPU energy measurement", "physical",
                 "not established: origin is operator-declared and unauthenticated", {}),
         finding("The synthetic energy fixture characterizes real NVML counter accuracy", "sensor_performance",
                 "not established: synthetic fixture", {}),
     ]
+    counts = audit["label_by_basis"]
+    tree_free = _kinds_without_tree()
     fields = _fields(
-        "Retained lab reports keep synthetic, provider-backed and physical labels visibly distinct; CIW's own records "
-        "refuse a synthetic-to-physical relabel wherever the record can detect it; and CIW's records are tested for "
-        "whether they tell a provider result from a fabricated, content-consistent one (T092's counterexample, read "
-        "here through the workspace classifier).",
+        "Retained lab reports keep synthetic, provider-backed and physical results visibly distinct: every rendered "
+        "finding shows its label and, beside it, the basis it declares (the generator of synthetic inputs, the "
+        "executed provider, an acquisition); CIW's own records refuse a synthetic-to-physical relabel wherever the "
+        "record can detect it; and the workspace classifier tells a provider result from a fabricated, "
+        "content-consistent one exactly as far as its comparison with CIW's pins reaches (T092's counterexample).",
         "Allowed labels per domain: physical -> {not_established, hardware_measured, independently_verified with "
-        "acquisition}; authority -> {not_established}; computational -> never hardware_measured.",
+        "acquisition}; authority -> {not_established}; computational -> never hardware_measured. Rendered row = "
+        "report.finding_row: claim | value | label | declared basis. The Basis cell is compared whole with the cell "
+        "docs/lab/AUTHORING.md prescribes, built here without describe_basis: each declared component in basis "
+        "order, a generator with its name and seed, a provider as repository@revision, and an acquisition record as "
+        "hardware acquisition (device) only on a physical finding labelled hardware_measured or "
+        "independently_verified, as declared acquisition record (not accepted) on every other.",
         ["retained reports ctx.output_dir/reports/T001-T099 (only those present when T100 runs)",
          "examples/energy-accuracy/baseline.json (synthetic, embedded)", "ciw.free_energy_profile.POLICY",
          "ciw.free_energy_view source text",
-         "fabricated numerical-heat catalog (values [0, 1, 2, 3, 0], fabricated runtime identity at the CIW revision pin)"],
-        "validate_report, per-finding label/domain rules, rendered Markdown rows; CIW analysis/refusal outputs and "
-        "the retained bundle of a fresh-occurrence relabel; the workbench and classify_workspace views of a "
-        "fabricated provider-kind bundle.",
-        "Zero violations; relabels refused where detectable; physical claims not established.",
-        "Audit every retained report below T100 present in the output directory; forge a relabelled physical "
-        "finding; render a claim containing a pipe character; relabel the energy fixture unsealed, resealed in the "
-        "same occurrence and resealed in a fresh occurrence (reading the retained bundle's classification); relabel "
-        "free-energy source policies; inspect the free-energy truth panel basis; save a fabricated numerical-heat "
-        "bundle and read it through bundle.get and classify_workspace.",
-        f"{len(rows)} of {EXPECTED_EARLIER_REPORTS} earlier reports present and audited: {len(violations)} label "
-        f"violations, {len(rendering)} rendering violations; the pipe probe "
+         "fabricated numerical-heat catalog (values [0, 1, 2, 3, 0], fabricated runtime identity at the CIW revision "
+         "pin), sealed once with an invented source tree and once with ciw.proved_heat.PIN's tree"],
+        "validate_report, per-finding label/domain rules, rendered Markdown rows compared with report.finding_row "
+        "and their Basis cells with the declared basis; CIW analysis/refusal outputs and the retained bundle of a "
+        "fresh-occurrence relabel; the workbench and classify_workspace views (labels and runtime_pins rows) of "
+        "two fabricated provider-kind bundles.",
+        "Zero label, rendering and basis violations; every generator or executed provider a finding declares named "
+        "beside its label; relabels refused where detectable; the invented-tree bundle not_established; physical "
+        "claims not established.",
+        "Audit every retained report below T100 present in the output directory (labels, rendered rows, Basis "
+        "cells, label x basis counts); forge a relabelled physical finding; render a claim containing a pipe "
+        "character; relabel the energy fixture unsealed, resealed in the same occurrence and resealed in a fresh "
+        "occurrence (reading the retained bundle's classification); relabel free-energy source policies; inspect the "
+        "free-energy truth panel basis; save a fabricated numerical-heat bundle with an invented source tree and "
+        "again with CIW's pinned tree, and read each through bundle.get and classify_workspace.",
+        f"{len(rows)} of {EXPECTED_EARLIER_REPORTS} earlier reports present and audited ({audit['findings']} "
+        f"findings): {len(violations)} label violations, {len(rendering)} rendering violations, {len(basis)} basis "
+        f"violations; findings declaring synthetic inputs: {declaring['synthetic_inputs']}, an executed provider: "
+        f"{declaring['provider']}, either one not named beside the label: {len(hidden)}; label x basis counts in "
+        f"label-by-basis.json (numerically_verified findings declaring synthetic inputs: "
+        f"{counts['numerically_verified']['synthetic_inputs']}, a provider run: "
+        f"{counts['numerically_verified']['provider']}); the pipe probe "
         f"{'kept' if kept else 'lost'} its label column; fresh-occurrence energy relabel "
         f"{energy['fresh_occurrence']} and classified {fresh.get('classification')}; same-occurrence relabel: "
-        f"{energy['same_occurrence_collision']}; fabricated heat bundle reopen {provider['reopen']}, classified "
-        f"{provider['numerical_labels']}.",
+        f"{energy['same_occurrence_collision']}; fabricated heat bundle reopen {fabricated['reopen']}, classified "
+        f"{fabricated['numerical_labels']} with an invented tree and {copied['numerical_labels']} with the pinned "
+        "tree.",
         "Exact.",
         ["unknown label", "physical finding with computational label", "authority finding established",
-         "label missing from rendered row", "origin relabel with and without resealing", "occurrence rebinding",
-         "free-energy policy relabel", "fabricated provider-kind bundle classified as provider-backed"],
+         "label missing from rendered row", "rendered row differing from report.finding_row",
+         "declared basis, generator or provider missing from the rendered row",
+         "a component omitted but named inside a declared identity", "an unaccepted acquisition shown as hardware "
+         "acquisition",
+         "origin relabel with and without resealing", "occurrence rebinding", "free-energy policy relabel",
+         "fabricated provider-kind bundle classified as provider-backed",
+         "classifier accepting a runtime tree that is not CIW's pin"],
         ["The report audit covers only reports present in the output directory when T100 runs: a section-only run "
          "audits its own section, a full run T001-T099; stale reports from earlier runs in the same directory are "
          "included if present (task ids in visibility-audit.json).",
          f"Retained claims containing a pipe or newline: {pipe_claims}; the rendering probe uses a synthetic claim.",
-         "The only reader-visible trace of the fabricated bundle is a runtime source tree that differs from CIW's "
-         "pinned tree; neither reopen nor classify_workspace compares it (reader_view in visibility-audit.json)."],
-        ("Compare a retained provider runtime identity (revision and source tree) with CIW's pins when reopening "
-         "or classifying; authenticate energy-log origin at acquisition (outside the workbench)." if kept else
-         "Escape claim text in ciw.lab.report.render_markdown; compare a retained provider runtime identity with "
-         "CIW's pins when reopening or classifying; authenticate energy-log origin at acquisition (outside the "
-         "workbench)."))
+         "The Basis column shows the components and identities a finding declares; they are as recorded, not "
+         "authenticated (a generator name or provider repository is text in the basis).",
+         "The audit sees only the components a finding declares: a finding that rests on a generator or an executed "
+         "provider without declaring it in its basis is counted under the components it does declare, and nothing "
+         "here detects the omission. One provider slot shows one provider of a result several providers produced "
+         "(T097's producer roundtrip names the SET checker; the PPDA and SCR producers are in its basis notes).",
+         "classify_workspace compares a retained runtime identity with the pins CIW declares "
+         "(ciw.lab.bridge.declared_pins), so the invented tree is caught for numerical-heat, whose pinned revision "
+         "has a tree CIW records (ciw.proved_heat.PIN); for the kinds in ciw.lab.bridge.pins_without_tree "
+         f"({', '.join(tree_free)}) any tree is accepted (tree_pinned: false), so an invented tree at a pinned "
+         "revision is not caught there. Session.from_workspace (reopen) does not compare it. The pins are public "
+         "constants and workspace seals are unkeyed, so the bundle sealed with the pinned tree is labelled "
+         "provider_backed: nothing the classifier compares tells it from a provider result. Its adapter_version and "
+         "repository_root name the fabrication only because this lab wrote them so (reader_view in "
+         "visibility-audit.json)."],
+        NEXT_STEPS["T100"])
     return {"state": _settle("completed" if audited else "partial", findings), "fields": fields, "findings": findings}
