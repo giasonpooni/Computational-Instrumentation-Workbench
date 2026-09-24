@@ -29,6 +29,7 @@ import json
 from pathlib import Path
 import re
 import subprocess
+import sys
 import tempfile
 
 from .. import __version__
@@ -124,6 +125,28 @@ def _sanitized(message: str, paths) -> str:
         for spelling in {str(path), str(Path(path).resolve())}:
             message = message.replace(spelling, "<checkout>")
     return message
+
+
+def _located(value, bindings: dict):
+    """A retained artifact with host paths replaced by their role, e.g. ``<scr>`` or ``<python>``.
+
+    Checkout and interpreter locations differ between hosts and runs; the pins, trees and digests
+    recorded beside them identify the providers.
+    """
+    if isinstance(value, dict):
+        return {key: _located(item, bindings) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_located(item, bindings) for item in value]
+    if isinstance(value, str):
+        for role, path in sorted(bindings.items(), key=lambda item: -len(str(item[1]))):
+            for spelling in sorted({str(path), str(Path(path).resolve())}, key=len, reverse=True):
+                if spelling and spelling in value:
+                    value = value.replace(spelling, f"<{role}>")
+    return value
+
+
+def _host_bindings(ctx) -> dict:
+    return {**{role: path for role, path in ctx.providers.items() if path}, "python": sys.executable}
 
 
 def _refusal(reference, expected, observed):
@@ -1585,11 +1608,11 @@ def exact_provider_integrations(ctx):
             except (ValueError, OSError, subprocess.SubprocessError) as exc:
                 roundtrip_reason = "roundtrip failed: " + _sanitized(f"{type(exc).__name__}: {exc}",
                                                                      bound_paths + [scratch])
-    ctx.artifact_json("integration.json", {
+    ctx.artifact_json("integration.json", _located({
         "scr_identity": {k: identity[k] for k in ("head", "tree", "tracked_sha256", "tracked_files", "cargo_locks")},
         "scr_pins": comparison, "engine": None if engine is None else {"origin": engine["origin"], "sha256": engine["sha256"]},
         "optional_providers": optional, "blocked": blocked, "set_reason": set_reason,
-        "roundtrip_reason": roundtrip_reason or None, "parts": parts})
+        "roundtrip_reason": roundtrip_reason or None, "parts": parts}, _host_bindings(ctx)))
     if "workbench" in parts:
         workbench, api = parts["workbench"], parts["api"]
         demo = workbench["runs"][0]
@@ -1820,11 +1843,12 @@ def provider_identities(ctx):
                                                      providers.materialize(engine["binary"], scratch), SURVEY_CASES[:1])
             except (ValueError, OSError, subprocess.SubprocessError) as exc:
                 errors["scr-engine"] = type(exc).__name__
-    ctx.artifact_json("provider-identities.json", {
+    ctx.artifact_json("provider-identities.json", _located({
         "identities": identities, "comparisons": comparisons, "adapter_pin_checks": adapters, "errors": errors,
         "ciw_pins": pins, "pins_by_repository": consistency["by_repository"], "engine": None if engine is None else {
             "origin": engine["origin"], "sha256": engine["sha256"], "byte_count": len(engine["binary"]),
-            "toolchain": None if engine["build"] is None else {k: engine["build"][k] for k in ("cargo", "rustc")}}})
+            "toolchain": None if engine["build"] is None else {k: engine["build"][k] for k in ("cargo", "rustc")}}},
+        _host_bindings(ctx)))
     input_data = [f"{role}: {providers.REPOSITORIES[role]} at {identities[role]['head']}" if role in identities
                   else f"{role}: not a readable Git repository root" for role in roles]
     if not identities:

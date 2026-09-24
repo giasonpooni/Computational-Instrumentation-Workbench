@@ -370,6 +370,10 @@ def test_t097_scr_numerical_heat_integration(tmp_path):
     replay = claim(report, "SCR replay reproduces")
     assert replay["evidence_status"] == "numerically_verified" and replay["value"]["verification_independent"] is False
     assert claim(report, "The reopened SCR workspace")["evidence_status"] == "numerically_verified"
+    retained = (tmp_path / "artifacts" / "T097" / "integration.json").read_text(encoding="utf-8")
+    for role, path in bound.items():
+        assert path not in retained and str(Path(path).resolve()) not in retained, role
+    assert sys.executable not in retained
     if "set" in bound:
         set_finding = claim(report, "The pinned SET contracts validator")
         assert set_finding["evidence_status"] == "numerically_verified"
@@ -409,6 +413,10 @@ def test_t098_provider_identities(tmp_path):
     assert adapter["value"]["scr"]["refused"] == [] and len(adapter["value"]["scr"]["at_head"]) == 2
     assert claim(report, "A matching HEAD, tree and lock digest")["evidence_status"] == "not_established"
     assert all(os.environ["CIW_LAB_SCR_REPO"] not in line for line in report["input_data"])
+    retained = (tmp_path / "scr" / "artifacts" / "T098" / "provider-identities.json").read_text(encoding="utf-8")
+    for location in {os.environ["CIW_LAB_SCR_REPO"], str(Path(os.environ["CIW_LAB_SCR_REPO"]).resolve()), sys.executable}:
+        assert location not in retained
+    assert '"path": "<scr>"' in retained
 
 
 def test_t098_refuses_an_unpinned_checkout_and_is_location_independent(tmp_path):
@@ -566,3 +574,12 @@ def test_relabelled_energy_origin_collides_within_one_workbench(tmp_path):
                                                 "parameters": {"source_id": second["source_id"]}})
     assert refused["type"] == "error" and "Identity collision" in refused["payload"]["message"]
     assert base64.b64decode(client.ok("source.get", {"source_id": second["source_id"]})["bytes_b64"]) == canonical(relabel)
+
+
+def test_retained_artifacts_name_host_locations_by_role(tmp_path):
+    checkout = tmp_path / "checkouts" / "scr"
+    value = {"repository_root": str(checkout), "nested": [f"{checkout}/crates/Cargo.lock", "no path here"],
+             "python_executable": sys.executable}
+    located = section._located(value, {"scr": checkout, "python": sys.executable})
+    assert located == {"repository_root": "<scr>", "nested": ["<scr>/crates/Cargo.lock", "no path here"],
+                       "python_executable": "<python>"}

@@ -149,7 +149,8 @@ def run_ftr(checkout, interpreter, request: dict, timeout: float = 120.0) -> dic
     after = verify_checkout(checkout)
     if after != identity:
         raise ProviderRefusal("FTR_CHANGED_DURING_EXECUTION", "Provider checkout changed during execution")
-    runtime = dict(identity, interpreter=str(interpreter), python=data["python"], numpy=data["numpy"],
+    # The interpreter is named by its binding role; its location is host-specific and its version is recorded.
+    runtime = dict(identity, interpreter="<ftr-python>", python=data["python"], numpy=data["numpy"],
                    entry_points=list(ENTRY_POINTS), executed=True)
     return {"data": data, "identity": runtime}
 

@@ -216,6 +216,9 @@ def test_ftr_provider_agreement(tmp_path):
             "Flat-Torus-Geodesic-Reference@")
         assert out[tid]["provider_runtime_identity"]["provider"]["revision"] == \
             "dc918562cd9e351a65475d29f46963c9f2fd7db8"
+    for tid in ("T019", "T020", "T026"):
+        identity = out[tid]["provider_runtime_identity"]["provider"]
+        assert identity["interpreter"] == "<ftr-python>" and os.environ["CIW_LAB_FTR_PYTHON"] not in json.dumps(identity)
     assert _label(out["T019"], ftt.FTR_CLAIMS["T019"])["value"]["matrix_mismatches"] == 0
     assert _label(out["T020"], ftt.FTR_CLAIMS["T020"])["value"]["crossing_mismatches"] == 0
     assert any(a["path"].endswith("ftr-fold-lengths.json") for a in out["T026"]["generated_artifacts"])
