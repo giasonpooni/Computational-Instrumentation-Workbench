@@ -674,7 +674,9 @@ def test_t147_identity_digests_the_common_workload_sources(tmp_path, monkeypatch
 def test_ciw_producers_of_independent_checks_carry_a_revision(tmp_path):
     """Every ciw-side producer of an independent check names the package version and its module digest (C7)."""
     from ciw import __version__
-    for task_id in ("T145", "T146", "T148", "T149"):
+    # T145's only independent check is the SymPy derivation, which runs where SymPy (the lab extra) is installed.
+    symbolic = ("T145",) if importlib.util.find_spec("sympy") is not None else ()
+    for task_id in (*symbolic, "T146", "T148", "T149"):
         report, _ = _run(task_id, tmp_path / task_id)
         checks = [f["basis"]["independent_check"] for f in report["findings"] if "independent_check" in f["basis"]]
         assert checks, task_id
