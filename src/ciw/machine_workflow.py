@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import base64
 from copy import deepcopy
+from functools import lru_cache
 from hashlib import sha256
 from pathlib import Path
 import re
@@ -31,8 +32,11 @@ VERIFY_SCHEMA = "ciw.machine-manifest-verification.v1"
 OPERATION = manifest.OPERATION
 ROLE = "machine"
 ROLES = set()
-MAX_BYTES = manifest.MAX_BYTES
+# A retained bundle embeds the source as base64 plus the inspection, its
+# numerical copy and one reproduction, so the bundle budget exceeds the source
+# budget by the same factor the project graph workflow uses.
 SOURCE_LIMIT = manifest.MAX_BYTES
+MAX_BYTES = 8 * SOURCE_LIMIT
 CONFIGURATION = {
     "profile": "encoder_gearbox_leadscrew",
     "activation": "read_only",
@@ -53,6 +57,7 @@ def _text(value, limit=512):
         raise ValueError("Require bounded nonempty text")
 
 
+@lru_cache(maxsize=1)
 def _algorithm_identity():
     files = [Path(manifest.__file__), Path(__file__)]
     content = b"\0".join(
@@ -131,15 +136,26 @@ def validate_source(raw):
             report["candidate_digest"] != candidate["artifact_digest"] or
             report["evidence_bundle_digest"] != evidence["artifact_digest"]):
         raise ValueError("Machine source artifact identities are not linked")
-    manifest.compile(candidate, evidence, report)
+    _compiled(source)
     _request(source["request"])
     if len(canonical(source)) > SOURCE_LIMIT:
         raise ValueError("Machine manifest source exceeds the byte budget")
     return deepcopy(source)
 
 
+_COMPILED = {}
+
+
 def _compiled(source):
-    return manifest.compile(source["candidate_manifest"], source["evidence_bundle"], source["challenge_report"])
+    """Compile once per exact artifact triple; the compiler is pure and revalidates everything."""
+    key = digest([source["candidate_manifest"], source["evidence_bundle"], source["challenge_report"]])
+    compiled = _COMPILED.get(key)
+    if compiled is None:
+        compiled = manifest.compile(source["candidate_manifest"], source["evidence_bundle"], source["challenge_report"])
+        if len(_COMPILED) >= 8:
+            _COMPILED.pop(next(iter(_COMPILED)))
+        _COMPILED[key] = compiled
+    return deepcopy(compiled)
 
 
 def _native_data(source):

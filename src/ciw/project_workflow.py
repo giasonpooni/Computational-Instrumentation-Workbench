@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import base64
 from copy import deepcopy
+from functools import lru_cache
 from hashlib import sha256
 from pathlib import Path
 import platform
@@ -58,6 +59,7 @@ def _text(value, limit=512):
         raise ValueError("Require bounded nonempty text")
 
 
+@lru_cache(maxsize=1)
 def _algorithm_identity():
     files = [Path(project.__file__), Path(__file__)]
     content = b"\0".join(

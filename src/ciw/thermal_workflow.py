@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import base64
 from copy import deepcopy
+from functools import lru_cache
 from hashlib import sha256
 from pathlib import Path
 import re
@@ -35,6 +36,10 @@ AUTHORITY = {
     "state_admission": "not_performed",
     "hardware_actuation": "not_performed",
 }
+# Provenance the Python reference always records; a retained result claiming
+# the Julia worker's rendering or solver is not this reference's result.
+SYMBOLIC_RENDERING = "python-reference"
+SOLVER_NAME = "python-reference-enumeration"
 
 
 def _text(value, limit=512):
@@ -42,6 +47,7 @@ def _text(value, limit=512):
         raise ValueError("Require bounded nonempty text")
 
 
+@lru_cache(maxsize=1)
 def _algorithm_identity():
     files = [Path(contract.__file__), Path(reference.__file__), Path(__file__)]
     content = b"\0".join(
@@ -101,12 +107,12 @@ def _native_result(source):
             ],
             "native_state_order": contract.STATE_ORDER,
             "state_permutation": [1, 2],
-            "rendering": "python-reference",
+            "rendering": SYMBOLIC_RENDERING,
         },
     })
     selection = deepcopy(expected["selection"])
     solver = {
-        "name": "python-reference-enumeration",
+        "name": SOLVER_NAME,
         "termination_status": "INFEASIBLE" if selection["status"] == "infeasible" else "OPTIMAL",
         "primal_status": "NO_SOLUTION" if selection["status"] == "infeasible" else "FEASIBLE_POINT",
         "objective_value": selection["objective_nats"],
@@ -173,6 +179,9 @@ def _validate_step(step, source, evidence_id):
     if result["input_refs"] != [evidence_id] or result["authority"] != AUTHORITY:
         raise ValueError("Thermal native result authority or input binding differs")
     contract.validate_result(source["request"], result["data"])
+    if (result["data"]["model"]["symbolic"]["rendering"] != SYMBOLIC_RENDERING or
+            result["data"]["selection"]["solver"]["name"] != SOLVER_NAME):
+        raise ValueError("Thermal native result provenance differs from the Python reference")
     if result["result_id"] != digest({key: value for key, value in result.items() if key != "result_id"}):
         raise ValueError("Thermal native result identity differs")
     numerical = {"operation_id": OPERATION, "data": result["data"]}

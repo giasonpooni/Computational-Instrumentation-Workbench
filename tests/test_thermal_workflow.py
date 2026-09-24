@@ -145,3 +145,53 @@ def test_thermal_source_tampering_refuses_before_retention(tmp_path):
     retained["sources"][0]["bytes_b64"] = __import__("base64").b64encode(raw + b" ").decode()
     with pytest.raises(ValueError):
         session.workbench.restore(retained)
+
+
+def _reseal_thermal(bundle):
+    from ciw.telemetry import _bundle_digest, digest
+    for step in (bundle["steps"][0], bundle["verification"]["reproduction"]):
+        result = step["result"]
+        result["result_id"] = digest({key: value for key, value in result.items() if key != "result_id"})
+        step["result_id"] = result["result_id"]
+        step["result_sha256"] = digest(result)
+        step["numerical_result"] = {"operation_id": thermal_workflow.OPERATION, "data": deepcopy(result["data"])}
+        step["numerical_result_id"] = digest(step["numerical_result"])
+    bundle["bundle_digest"] = _bundle_digest(bundle)
+    bundle["verification"] = thermal_workflow._verification(bundle, bundle["verification"]["reproduction"])
+    return bundle
+
+
+def _retained_thermal(tmp_path):
+    import base64
+    session = Session(make_demo_run(), tmp_path)
+    raw = contract.canonical(_source())
+    added = session.handle({"protocol_version": 1, "request_id": "add", "type": "source.add", "payload": {
+        "kind": "thermal-observer", "label": "thermal fixture", "bytes_b64": base64.b64encode(raw).decode()}})
+    assert added["type"] == "response", added
+    completed = session.handle({"protocol_version": 1, "request_id": "run", "type": "operation.execute", "payload": {
+        "operation_id": "ciw.thermal-observer.v1", "parameters": {"source_id": added["payload"]["source_id"]}}})
+    assert completed["type"] == "response", completed
+    return session.workbench.get_bundle(completed["payload"]["bundle_id"])
+
+
+def test_resealing_preserves_an_untouched_thermal_bundle(tmp_path):
+    bundle = _retained_thermal(tmp_path)
+    resealed = _reseal_thermal(deepcopy(bundle))
+    assert resealed == bundle
+    thermal_workflow.ThermalWorkflow()._validate(resealed)
+
+
+@pytest.mark.parametrize("path,value", [
+    (("model", "symbolic", "rendering"), "Symbolics/Latexify"),
+    (("selection", "solver", "name"), "HiGHS"),
+])
+def test_resealed_thermal_bundle_cannot_claim_julia_provenance(tmp_path, path, value):
+    bundle = _retained_thermal(tmp_path)
+    for step in (bundle["steps"][0], bundle["verification"]["reproduction"]):
+        target = step["result"]["data"]
+        for key in path[:-1]:
+            target = target[key]
+        target[path[-1]] = value
+        contract.validate_result(step["request"], step["result"]["data"])  # the contract alone accepts it
+    with pytest.raises(ValueError, match="provenance differs from the Python reference"):
+        thermal_workflow.ThermalWorkflow()._validate(_reseal_thermal(bundle))

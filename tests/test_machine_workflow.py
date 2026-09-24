@@ -111,3 +111,19 @@ def test_machine_source_tampering_refuses_before_retention(tmp_path):
     retained["sources"][0]["bytes_b64"] = base64.b64encode(raw + b" ").decode()
     with pytest.raises(ValueError):
         session.workbench.restore(retained)
+
+
+def test_machine_source_near_its_byte_budget_still_executes_and_replays(tmp_path):
+    session = Session(make_demo_run(), tmp_path)
+    raw = manifest.canonical(_source())
+    padded = raw[:-1] + b" " * (900 * 1024 - len(raw)) + raw[-1:]
+    assert len(raw) < len(padded) <= machine_workflow.SOURCE_LIMIT
+    descriptor = _call(session, "source.add", {"kind": "machine-manifest", "label": "padded machine fixture",
+                                                "bytes_b64": base64.b64encode(padded).decode()})
+    completed = _call(session, "operation.execute", {"operation_id": "ciw.encoder-position.v1",
+                                                      "parameters": {"source_id": descriptor["source_id"]}})
+    bundle = _call(session, "bundle.get", {"bundle_id": completed["bundle_id"]})
+    assert base64.b64decode(bundle["source"]["evidence"][0]["bytes_b64"]) == padded
+    assert bundle["steps"][0]["result"]["data"]["position"]["position"] == pytest.approx(1.001)
+    replay = _call(session, "bundle.replay", {"bundle_id": completed["bundle_id"]})
+    assert replay["replay_receipt"]["numerical_match"] is True
