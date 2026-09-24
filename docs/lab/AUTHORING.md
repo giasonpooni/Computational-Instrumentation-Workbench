@@ -172,7 +172,8 @@ Rules that are never relaxed:
    platform: a content identity over float results (T081's
    `numerical_result_id`) changes with the BLAS kernel, so it belongs in an
    artifact while the value holds what the claim is about (the count of
-   distinct identities).
+   distinct identities and the result they identify, whose floats are compared
+   within a tolerance justified by their measured cross-kernel spread).
 4. A finding that honestly records an unestablished computational claim in a
    completed task sets `expected_not_established=True` (exactly the boolean
    `True`) with no checks and no independent check. A computational finding

@@ -198,18 +198,22 @@ canonically identical log. It is not a function of the analysed numbers alone.
 It is also stable only on one arithmetic platform: it hashes the analysed
 floats bit for bit, and their last bits depend on the BLAS kernel. T081 was
 regenerated on one Linux x86-64 host under the OpenBLAS kernels SkylakeX,
-Haswell and Sandybridge (`OPENBLAS_CORETYPE`). Each run had one identity over
-its twelve occurrences, but the three identities differed. Of the 47 analysed
-floats, 12 (Haswell) and 13 (Sandybridge) moved by at most 2.2e-16: the
-reference mean and covariance entries by at most 2.8e-16 relative, the rest
-being filter errors at rounding level. The identity finding's value therefore
-holds what its claim is about (occurrences, distinct numerical and result
-identities, recomputation mismatches), which `ciw lab verify` compares exactly
-on any kernel. T081 retains the run's own identity as
-`energy_numerical_result_id` in `numerical-identity.json`, beside the
-numerical result it hashes (`energy_numerical_result`); verify checks that
-artifact only against its recorded digest. The other identities in the
-artifact are replaced by role labels, because they are fresh per run.
+Haswell, Sandybridge, Nehalem and Katmai (`OPENBLAS_CORETYPE`). Each run had
+one identity over its twelve occurrences, but there were three identities
+(Nehalem and Katmai matched Sandybridge bit for bit). Of the 47 analysed
+floats, up to 13 moved, by at most 2.2e-16: the reference mean and covariance
+entries by at most 2.8e-16 relative, the rest being filter errors at rounding
+level. The identity finding's value therefore holds the counts its claim is
+about (occurrences, distinct numerical and result identities, recomputation
+mismatches) and the numerical result the identity hashes, not the identity
+itself. `ciw lab verify` compares the counts exactly and the result leaf by
+leaf within 2e-14 absolute, about 90 times the measured spread, so a kernel's
+last bits pass and a changed analysed number fails. T081 retains the run's own
+identity as `energy_numerical_result_id` in `numerical-identity.json`, beside
+that result (`energy_numerical_result`); verify checks that artifact only
+against its recorded digest. The run does not record which kernel produced its
+values. The other identities in the artifact are replaced by role labels,
+because they are fresh per run.
 
 ## Mutation matrix (T080–T090)
 
@@ -439,12 +443,13 @@ holds the first two).
   the ESM candidate rows, the candidate execution rows and the
   `ciw.subprocess-runtime.v1` rows are observed rather than read from code.
 - **Cross-platform reproduction** (T081). The bit-exact `numerical_result_id`
-  links occurrences on one arithmetic platform only: three OpenBLAS kernels on
+  links occurrences on one arithmetic platform only: five OpenBLAS kernels on
   one Linux x86-64 host gave three identities. Run T081 on Windows x86-64 and
-  macOS arm64, check that each run again has one identity over its
-  occurrences, and compare its energy numerical result leaf by leaf with the
-  `energy_numerical_result` retained in T081's `numerical-identity.json`. Do
-  the differences stay at rounding level? Should CIW link occurrences across
+  macOS arm64 and compare it with the retained run by `ciw lab verify`, which
+  checks that each run again has one identity over its occurrences and
+  compares the energy numerical result that identity hashes leaf by leaf
+  within 2e-14 absolute (the retained run does not record its kernel). Do the
+  differences stay at rounding level? Should CIW link occurrences across
   platforms by such a tolerance comparison, or by an identity over
   declared-precision data, instead of the bit-exact identity?
 
@@ -479,5 +484,6 @@ next queue task, which has already run.
   pinned-provider subprocess runtime identities (`ciw.subprocess-runtime.v1`)
   were not mutated.
 - The float-valued `numerical_result_id` is not stable across BLAS kernels
-  (three OpenBLAS kernels on one host gave three identities). Other operating
-  systems and BLAS libraries were not tested.
+  (five OpenBLAS kernels on one host gave three identities). Other operating
+  systems and BLAS libraries were not tested, and a run does not record which
+  kernel produced it.

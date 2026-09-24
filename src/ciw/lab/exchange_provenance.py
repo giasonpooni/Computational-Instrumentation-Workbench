@@ -141,13 +141,14 @@ NEXT_STEPS = {
 # The one cross-platform question T081 defers: float-valued numerical identities on another platform.
 PLATFORM_QUESTION_T081 = (
     "Deferred research question (cross-platform reproduction): the energy numerical_result_id hashes the analysed "
-    "floats bit for bit, so it links occurrences on one arithmetic platform only (three OpenBLAS kernels on one "
+    "floats bit for bit, so it links occurrences on one arithmetic platform only (five OpenBLAS kernels on one "
     "Linux x86-64 host gave three ids, each shared by every occurrence of its run). Run T081 on Windows x86-64 and "
-    "macOS arm64, check that each run again has one numerical_result_id over its occurrences, and compare its energy "
-    "numerical result leaf by leaf with the energy_numerical_result retained in T081's numerical-identity.json: do "
-    "all differences stay at rounding level, and should CIW link occurrences across platforms by such a tolerance "
-    "comparison, or by an identity over declared-precision data, instead of the bit-exact id (a CIW change, not "
-    "made here)?")
+    "macOS arm64 and compare it with the retained run by ciw lab verify, which checks that each run again has one "
+    "numerical_result_id over its occurrences and compares the energy numerical result that id hashes leaf by leaf "
+    "within 2e-14 absolute, about 90 times the spread between those kernels (the retained run does not record its "
+    "kernel): do all differences stay at rounding level, and should CIW link occurrences across platforms by such a "
+    "tolerance comparison, or by an identity over declared-precision data, instead of the bit-exact id (a CIW "
+    "change, not made here)?")
 LOG_DIGEST = "Retained log digest differs"
 ESM_SCOPE = "Native ESM inspection binding or scope mismatch"
 
@@ -1997,6 +1998,10 @@ def _direct_statistics(run: dict, parameters: dict) -> dict:
             "maximum": float(np.max(x)), "rms": float(np.sqrt(np.mean(x * x)))}
 
 
+# The analysed floats of the energy numerical result differ between OpenBLAS kernels in their last bits: across the
+# SkylakeX, Haswell, Sandybridge, Nehalem and Katmai kernels on one Linux x86-64 host by at most 2.2e-16 absolute.
+# The identity finding compares that result with this tolerance, about 90 times that spread.
+KERNEL_ROUNDING = {"abs": 2e-14, "rel": 0.0}
 T081_PLAN = _fields(
     "The energy numerical_result_id is a content identity of the analysed data, and that data includes the retained "
     "log's identity (data.log_digest, origin and device_uuid), so it is equal across every occurrence of a "
@@ -2044,9 +2049,9 @@ def numerical_identity(ctx):
     rows, harness = _task_rows(ctx, "T081"), _mutations(ctx)["harness"]
     _retain_rows(ctx, rows, "numerical-mutations")
     # The baseline's numerical_result_id hashes analysed floats whose last bits depend on the BLAS kernel, so it is
-    # stable across runs on one arithmetic platform only. It stays out of the compared finding values and is retained
-    # here verbatim, outside relabel() (which would mask any sha256 value), with the numerical result it hashes, so
-    # another platform can compare that result leaf by leaf.
+    # stable across runs on one arithmetic platform only. It stays out of the compared finding values, which hold the
+    # numerical result it hashes (compared within KERNEL_ROUNDING), and is retained here verbatim, outside relabel()
+    # (which would mask any sha256 value), beside that result.
     baseline_step = natives["B0"]["steps"][0]
     baseline_numerical = baseline_step["numerical_result_id"]
     identity = relabel(
@@ -2064,11 +2069,20 @@ def numerical_identity(ctx):
                   "reopen, replay of a replay and a separate session (same process and code) of one canonically "
                   "identical log",
                   {"occurrences": len(occurrences), "distinct_numerical_result_ids": len(numerical),
-                   "distinct_result_ids": len(result_ids), "recomputation_mismatches": recomputed},
+                   "distinct_result_ids": len(result_ids), "recomputation_mismatches": recomputed,
+                   "numerical_result": baseline_step["numerical_result"]},
                   [_count("distinct numerical_result_id values", len(numerical), 1),
                    _count("distinct result_id values (fresh occurrences)", len(result_ids), len(occurrences)),
                    _rederived("numerical_result_id differs from the lab's sha256 over {operation_id, data}",
-                              recomputed)]),
+                              recomputed)],
+                  uncertainty={"kind": "roundoff", "value": 2.2e-16,
+                               "basis": "counts, strings and integers are exact; the analysed floats of the numerical "
+                                        "result differ between OpenBLAS kernels in their last bits: across the "
+                                        "SkylakeX, Haswell, Sandybridge, Nehalem and Katmai kernels on one Linux "
+                                        "x86-64 host by at most 2.2e-16 absolute (reference mean and covariance by at "
+                                        "most 2.8e-16 relative, filter errors at rounding level). The regression "
+                                        "tolerance, 2e-14 absolute, is about 90 times that spread"},
+                  tolerance=KERNEL_ROUNDING),
         _verified("A resealed metadata-only log edit changes the energy numerical_result_id while every analysed "
                   "number stays equal: the identity binds the whole log through data.log_digest",
                   {"edit": "sensor.name renamed; log_digest resealed",
@@ -2125,14 +2139,16 @@ def numerical_identity(ctx):
                          f"{relative:.1e}; mutants: {_summary(rows)}",
         uncertainty="Stability was observed within one process on one arithmetic platform. numerical_result_id hashes "
                     "the analysed floats bit for bit, and their last bits depend on the BLAS kernel: regenerating T081 "
-                    "on one Linux x86-64 host under the OpenBLAS kernels SkylakeX, Haswell and Sandybridge "
-                    "(OPENBLAS_CORETYPE, NumPy 2.4.3) gave one id over the 12 occurrences of each run but three "
-                    "different ids, because 12 (Haswell) and 13 (Sandybridge) of the 47 analysed floats differed from "
-                    "the SkylakeX values by at most 2.2e-16 (the reference mean and covariance entries by at most "
-                    "2.8e-16 relative; the others are filter errors at rounding level). The identity finding therefore "
-                    "compares counts; this run's id and the numerical result it hashes are retained in "
-                    "numerical-identity.json. Value integrity after reopen is relative to the retained source bytes, "
-                    "which are themselves unauthenticated.",
+                    "on one Linux x86-64 host under the OpenBLAS kernels SkylakeX, Haswell, Sandybridge, Nehalem and "
+                    "Katmai (OPENBLAS_CORETYPE, NumPy 2.4.3) gave one id over the 12 occurrences of each run but three "
+                    "different ids (Nehalem and Katmai matched Sandybridge bit for bit), because up to 13 of the 47 "
+                    "analysed floats differed between kernels, by at most 2.2e-16 (the reference mean and covariance "
+                    "entries by at most 2.8e-16 relative; the others are filter errors at rounding level). The "
+                    "identity finding therefore compares the counts exactly and the numerical result the id hashes "
+                    "within 2e-14 absolute, about 90 times that spread; this run's id is retained beside that result "
+                    "in numerical-identity.json. The run does not record which kernel produced its values, so a "
+                    "retained id cannot be attributed to a kernel. Value integrity after reopen is relative to the "
+                    "retained source bytes, which are themselves unauthenticated.",
         failure_modes_checked=["occurrence leaking into numerical identity", "replay after reopen", "replay of a "
                                "replay", "separate session", "metadata-only resealed log edit",
                                "sealed and unsealed data edits with the source bytes unchanged",
