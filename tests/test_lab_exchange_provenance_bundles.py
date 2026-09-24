@@ -56,6 +56,8 @@ def test_every_section_task_is_registered_with_tests_in_this_file():
         assert implementation.regression_tests
         for node in implementation.regression_tests:
             path, name = node.split("::")
+            if path == section.RECORD_TESTS:  # T099's proved-heat record tests, checked in that file
+                continue
             assert path == "tests/test_lab_exchange_provenance_bundles.py" and name in globals(), node
 
 
@@ -818,16 +820,22 @@ def test_t099_locked_offline_scr_build(tmp_path):
     scr = os.environ.get("CIW_LAB_SCR_REPO")
     if not scr or shutil.which("cargo") is None:
         pytest.skip("set CIW_LAB_SCR_REPO and put cargo on PATH")
-    report = run("T099", tmp_path, {"scr": scr})
-    assert report["state"] == "partial"
+    bound = {"scr": scr}
+    record = os.environ.get("CIW_LAB_PROVED_HEAT_RECORD")  # the retained proved-heat gate record, when bound
+    if record:
+        bound[section.PROVED_HEAT_RECORD] = record
+    report = run("T099", tmp_path, bound)
+    assert report["state"] in ("completed", "partial")
     build = claim(report, section.BUILD_CLAIM)
     assert build["evidence_status"] == "numerically_verified" and build["value"]["exit_codes"] == [0, 0]
     assert build["value"]["cargo_lock_sha256"] == "24b1db68d762d3457eb40465dae6c3edc8a2da2925d42f3f794d090d18a5f2bc"
     assert claim(report, "The locked build leaves")["value"]["distinct_binary_digests"] == 1
     engine = claim(report, "The freshly built engine")
     assert engine["evidence_status"] == "independently_verified" and engine["value"] == [0, 219, 313, 219, 0]
-    sp1 = claim(report, "The SP1 proved-heat locked build")
-    assert sp1["evidence_status"] == "not_established" and sp1["value"]["attempted"] is False
+    # The SP1 gate's outcome enters only through a bound record, labelled provider_backed; T099 never runs it.
+    guest = claim(report, section.GUEST_CLAIM)
+    assert guest["evidence_status"] == ("provider_backed" if record else "not_established")
+    assert artifact(tmp_path, "T099", "sp1-requirements.json")["attempted"] is False
     # The observed toolchain and host probes stay out of the compared prose (they are in provider_runtime_identity).
     toolchain = report["provider_runtime_identity"]["scr"]
     prose = json.dumps({name: report[name] for name in runner.PROSE_FIELDS})
@@ -853,6 +861,7 @@ def test_t099_names_the_built_checkout_beside_its_label(tmp_path, monkeypatch):
              "binary": engine["binary"], "cargo_lock_sha256_before": "0" * 64, "cargo_lock_sha256_after": "0" * 64,
              "cargo": "cargo (stand-in)", "rustc": "rustc (stand-in)"}
     monkeypatch.setattr(section, "_locked_build", lambda ctx: build)
+    monkeypatch.setattr(section, "_pinned_build", lambda ctx: None)  # no CI-pinned toolchain rebuild here
     report = run("T099", tmp_path / "run", {"scr": str(scr)})
     assert report["state"] == "partial"
     head = report["provider_runtime_identity"]["scr"]["head"]

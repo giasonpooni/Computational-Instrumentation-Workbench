@@ -8,7 +8,9 @@ Retained operator hardware runs (``lab/hardware/<run-id>/``) are not
 recomputed here (one whose physical findings rest on a probe of the capture
 host's hardware cannot be); ``ciw lab verify`` (or ``ciw lab hardware verify``
 with ``--no-compare``) checks them for integrity only, and ``gate.json`` names
-them.
+them. Retained SP1 proved-heat gate records (``lab/proved-heat/<run-id>/``) are
+likewise checked for integrity only (``ciw lab proved-heat verify`` with
+``--no-compare``); T099 reads the one bound as ``proved-heat-record``.
 Each binding also reaches the lab tests as the ``CIW_LAB_*`` variable their
 provider-gated tests read. The retained run binds CSG, FTR, SCR, the exchange
 SET, PPDA and SCR checkouts and the Python 3.12 PLSR/FTR interpreter; ``scripts/check_lab.py`` provisions exactly
@@ -35,7 +37,8 @@ ROOT = Path(__file__).resolve().parents[1]
 TEST_VARIABLES = {"csg": "CIW_LAB_CSG_REPO", "ftr": "CIW_LAB_FTR_REPO", "scr": "CIW_LAB_SCR_REPO",
                   "set": "CIW_LAB_SET_REPO", "ppda": "CIW_LAB_PPDA_REPO",
                   "scr-exchange": "CIW_LAB_SCR_EXCHANGE_REPO", "scr-engine": "CIW_LAB_SCR_ENGINE",
-                  "ftr-python": "CIW_LAB_FTR_PYTHON", "plsr-python": "CIW_LAB_PLSR_PYTHON"}
+                  "ftr-python": "CIW_LAB_FTR_PYTHON", "plsr-python": "CIW_LAB_PLSR_PYTHON",
+                  "proved-heat-record": "CIW_LAB_PROVED_HEAT_RECORD"}
 # Operator hardware captures the energy tasks read; the gate acquires and analyzes none.
 OPERATOR_CAPTURES = ("CIW_LAB_RAPL_LOG", "CIW_LAB_ENERGY_LOG", "CIW_LAB_NVIDIA_SMI_CSV", "CIW_LAB_NVIDIA_SMI_UTC_OFFSET")
 # The clean room reproduces the packaged queue: interpreter paths, pytest options, queue
@@ -153,18 +156,26 @@ def main() -> int:
         # Hardware runs were made on their capture host; the clean room checks their integrity and recomputes nothing.
         hardware_runs = sorted(path.name for path in (args.retained / "hardware").iterdir()
                                if path.is_dir()) if (args.retained / "hardware").is_dir() else []
+        # Proved-heat gate records were made on their recording host; they too are checked for integrity only.
+        proved_heat_records = sorted(path.name for path in (args.retained / "proved-heat").iterdir()
+                                     if path.is_dir()) if (args.retained / "proved-heat").is_dir() else []
         if not args.no_compare:
             run([python, "-m", "ciw", "lab", "verify", "--retained", str(args.retained.resolve()), "--fresh", str(output)],
                 cwd=work, env=environment)
-        elif hardware_runs:
-            run([python, "-m", "ciw", "lab", "hardware", "verify", "--retained", str(args.retained.resolve())],
-                cwd=work, env=environment)
+        else:
+            if hardware_runs:
+                run([python, "-m", "ciw", "lab", "hardware", "verify", "--retained", str(args.retained.resolve())],
+                    cwd=work, env=environment)
+            if proved_heat_records:
+                run([python, "-m", "ciw", "lab", "proved-heat", "verify", "--retained", str(args.retained.resolve())],
+                    cwd=work, env=environment)
     # The record names the bindings the queue and tests received, and the clean-room interpreter's version.
     (output / "gate.json").write_text(json.dumps({"schema": "ciw.lab-clean-room-gate.v1", "wheel_sha256": wheel_sha256,
                                                    "compared_with": None if args.no_compare else str(args.retained),
                                                    "providers": [f"{role}={path}" for role, path in providers],
                                                    "python": sys.version.split()[0],
                                                    "hardware_runs_verified_for_integrity": hardware_runs,
+                                                   "proved_heat_records_verified_for_integrity": proved_heat_records,
                                                    "physical_validation": "not_established"}, indent=2) + "\n")
     print(f"PASS: clean-room lab queue from wheel {wheel_sha256[:16]}; reports in {output}")
     return 0

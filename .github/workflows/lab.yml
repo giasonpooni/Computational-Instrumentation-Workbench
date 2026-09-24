@@ -24,6 +24,8 @@ jobs:
         with:
           python-version: '3.12'
       - run: python -m pip install 'setuptools>=77' wheel
+      - name: Install the Rust toolchain the proved-heat gate pins (T099 rebuilds execution-cli with it)
+        run: rustup toolchain install 1.94.0 --profile minimal
       - name: Clean-room queue with pinned CSG, FTR and PLSR; verify retained reports
         run: python scripts/check_lab.py --output-dir results/lab-gate
       - uses: actions/upload-artifact@v4

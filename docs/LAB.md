@@ -8,7 +8,8 @@ physical measurements in the retained run, and no task there claims one. Tasks
 that need hardware, providers or tools that are unavailable are reported as
 blocked or partial with their planned protocol, not skipped silently; runs made
 on a hardware host are retained separately under `lab/hardware/` (see
-Hardware evidence).
+Hardware evidence), and runs of the SP1 proved-heat gate under
+`lab/proved-heat/` (see Proved-heat gate records).
 
 ```
 hypothesis
@@ -133,10 +134,12 @@ ciw lab next --retained results/lab --retained lab   # merge a work directory ov
 ciw lab dashboard --retained lab --output lab/index.html   # self-contained HTML view
 ciw lab classify results/workspace.json          # label results in an existing CIW workspace
 ciw lab queue --retained lab --section geodesic-jacobi --state partial
-ciw lab verify --retained lab --fresh results/lab   # also checks lab/hardware/ for integrity
+ciw lab verify --retained lab --fresh results/lab   # also checks lab/hardware/ and lab/proved-heat/ for integrity
 ciw lab run T138 --capture cmm=/captures/cmm-export.csv --output-dir results/cmm   # operator capture
 ciw lab hardware retain results/rtx2080 --retained lab --run-id rtx2080-2026-10-01 --host "RTX 2080 workstation"
 ciw lab hardware verify --retained lab           # integrity of every retained hardware run
+ciw lab proved-heat retain results/proved-heat --retained lab --run-id local-2026-09-24 --host "Linux x86-64, 16 GiB"
+ciw lab proved-heat verify --retained lab        # integrity of every retained proved-heat gate record
 ciw lab unmeasured --retained lab                # open physical claims beside each hardware run's counts
 ```
 
@@ -270,8 +273,10 @@ wording, artifacts matching their recorded digests, and finding values within
 each finding's declared regression tolerance. It exits 3 on any difference, on
 a task present on only one side, and when the retained directory is missing or
 holds no reports. It also checks every retained hardware run under
-`<retained>/hardware/` for integrity (listed under `hardware_runs` in its
-output) and exits 3 on any integrity problem there.
+`<retained>/hardware/` and every proved-heat gate record under
+`<retained>/proved-heat/` for integrity (listed under `hardware_runs` and
+`proved_heat_records` in its output) and exits 3 on any integrity problem
+there.
 
 `scripts/check_lab.py` is the clean-room gate that CI runs and the way to
 reproduce the retained run. It provisions CSG, FTR and SCR checkouts at CIW's
@@ -300,7 +305,11 @@ skipping. The bindings `check_lab.py` makes set `CIW_LAB_CSG_REPO`,
 `CIW_LAB_FTR_REPO`, `CIW_LAB_SCR_REPO`, `CIW_LAB_SET_REPO`, `CIW_LAB_PPDA_REPO`,
 `CIW_LAB_SCR_EXCHANGE_REPO`, `CIW_LAB_FTR_PYTHON` and `CIW_LAB_PLSR_PYTHON`;
 the SET, PPDA and exchange SCR checkouts let T097 run the SET contracts
-validator and the PPDA/SCR/SET producer roundtrip. Run without the bindings
+validator and the PPDA/SCR/SET producer roundtrip. `check_lab.py` also binds
+the latest retained proved-heat gate record from the checkout's
+`lab/proved-heat/` as `proved-heat-record` (`CIW_LAB_PROVED_HEAT_RECORD`),
+since the clean room has no copy of `lab/`, so T099 reads the same record there
+(see [Proved-heat gate records](#proved-heat-gate-records)). Run without the bindings
 `check_lab.py` makes, its comparison with `lab/` fails on the provider tasks.
 Paths are made absolute without following symlinks, so a virtual
 environment's interpreter stays bound as itself, and `gate.json` records the
@@ -334,8 +343,12 @@ and bindings for CSG, FTR, SCR, SET, PPDA, the exchange SCR and the PLSR/FTR
 interpreter, or whose reports
 carry a CSG, FTR or PLSR refusal code (a bound provider that did not run), and
 keeps elapsed times, the JUnit record and the gate record out of `lab/`. It
-never touches `lab/hardware/`: operator hardware runs enter `lab/` only
-through `ciw lab hardware retain` (see [Hardware evidence](#hardware-evidence)).
+never touches `lab/hardware/` or `lab/proved-heat/`: operator hardware runs
+and proved-heat gate runs enter `lab/` only through `ciw lab hardware retain`
+and `ciw lab proved-heat retain` (see [Hardware evidence](#hardware-evidence)
+and [Proved-heat gate records](#proved-heat-gate-records)). When
+`lab/proved-heat/` holds a record, it also refuses a run that bound none as
+`proved-heat-record`.
 
 `lab/` holds the retained run: `reports/T*.json`, `artifacts/T*/` (tables,
 SVG figures, drafts and ledgers), `queue-state.json` and `REPORTS.md`, the
@@ -491,6 +504,74 @@ alone involves no host device: it can be retained with
 capture, for example
 `ciw lab run T138 --capture cmm=lab/hardware/<run-id>/artifacts/T138/capture-cmm.csv --output-dir results/re`
 followed by `ciw lab verify --retained lab/hardware/<run-id> --fresh results/re`.
+
+## Proved-heat gate records
+
+The SP1 proved-heat gate (`.github/workflows/proved-heat.yml`; see
+[PROVED_HEAT.md](PROVED_HEAT.md)) rebuilds the registered guest ELF from SCR's
+committed recipe, builds the native engine and SP1 prover, and has
+`scripts/check_proved_heat.py` produce, verify, replay and re-verify a real
+SP1 proof from an installed CIW wheel and reject a tampered one. It needs
+network access, the SP1 checkout, the Succinct compiler archive and at least
+7 GiB of available memory (the retained run's largest process peaked at about
+10 GB), so the lab queue never runs it; its outcome enters `lab/` only as a
+retained record:
+
+1. On a provisioned Linux host, run the workflow's own gate steps with
+   `python scripts/run_proved_heat_locally.py --scr <clean SCR checkout>
+   --sp1 <fresh SP1 clone> --compiler-archive <Succinct archive> --python
+   <Python 3.12>`. It reads the workflow file, refuses when a provisioning
+   step's result is missing (tools, toolchains, the archive's pinned SHA-256,
+   clean checkouts at the pinned revisions and trees) or when the workflow has
+   a step it does not know, runs the gate steps unchanged and in order, and
+   writes `results/proved-heat/` as the workflow does, plus `local-run.json`
+   (`ciw.proved-heat-local-run.v1`: which steps ran and for how long, how the
+   others were satisfied, host facts, toolchain versions and source
+   identities; never a host path).
+2. Retain it: `ciw lab proved-heat retain results/proved-heat --retained lab
+   --run-id <run-id> --host "<host description>"`. The command refuses a gate
+   that did not pass and an incomplete output; it copies the gate outputs
+   needed to re-check the claims (the build and source-check records, the gate
+   record, test record, source, re-verification report, and the original and
+   replayed bundles with their proofs, compressed), leaves out the session
+   workspace once its two bundles are checked to be the retained ones, and
+   writes `run.json` (`ciw.lab-proved-heat-run.v1`) and `manifest.json`
+   (`ciw.lab-proved-heat-manifest.v1`, the SHA-256 of every file and of the
+   gate's bytes inside each compressed one). The copy must pass verification.
+3. Review `git diff lab/proved-heat` and commit it.
+
+Verification (`ciw lab verify`, `ciw lab proved-heat verify` and
+`scripts/check_lab.py`) checks each record for integrity only: every file
+matches the manifest and no unrecorded file is present, the gate passed with
+the native tests `check_proved_heat.py` requires, its SCR and SP1 revisions and
+trees, guest recipe, guest ELF and compiler archive are the pins CIW declares
+(`ciw.proved_heat.PIN`, `SP1_REQUIREMENTS`), and the retained bundles, replay
+receipt and re-verification report pass CIW's offline proved-heat validation,
+carry runtime identities that are proved-heat pins
+(`ciw.lab.bridge.declared_pins`) and name the engine, prover and guest the
+gate record names. No proof is
+re-verified; `ciw proof verify` can re-verify a retained proof on a host with
+the pinned binaries. `lab/proved-heat/local-2026-09-24/` holds the first
+record, a local replay of the workflow's gate steps; CI has not run the gate
+for it.
+
+T099 reads the record bound as `proved-heat-record`. A record that fails
+verification is refused by name: T099's record finding is refuted with the
+failing categories and the gate claims stay `not_established` with the
+reason. A valid record's claims (guest ELF rebuilt from the committed recipe
+and equal to the registered guest; real SP1 proof, verification, fresh
+replay, re-verification and tamper rejection) are `provider_backed`, the label
+of a retained provider record at a pin CIW declares: the gate's outcome as
+recorded, not a verification by T099. T099's own checks of the record
+(digests, pins, bundle consistency) are `numerically_verified`, and so is its
+rebuild of `execution-cli` with the CI-pinned rustup toolchain, compared byte
+for byte with the engine the gate proved against, when that toolchain is
+installed (`tool:cargo+1.94.0`; `lab.yml` installs it). The gate bound its
+engine and prover as `operator_asserted_not_attested`, which T099 records as a
+`not_established` provenance claim; its times, memory and proof sizes are
+measurements of its recording host, reported in T099's result and artifacts
+and never compared; and the digests are unkeyed, so a fabricated record that
+copies CIW's public pins and recomputes every digest passes.
 
 ## Sections
 

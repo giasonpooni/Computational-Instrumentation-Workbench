@@ -1,0 +1,2 @@
+# Retained gate outputs are exact bytes (each record's manifest.json holds their digests): no end-of-line conversion.
+* -text

@@ -16,6 +16,8 @@ retained artifact still hashes to its recorded digest.
 | `queue-state.json` | State, primary evidence label and report identity per task |
 | `reports/T*.json` | `ciw.lab-task-report.v1` records with content identities |
 | `artifacts/T*/` | Tables, SVG figures, drafts and ledgers retained by each task |
+| `hardware/<run-id>/` | Operator hardware runs, retained with `ciw lab hardware retain` ([hardware/README.md](hardware/README.md)) |
+| `proved-heat/<run-id>/` | Runs of the SP1 proved-heat gate, retained with `ciw lab proved-heat retain` and read by T099 ([proved-heat/README.md](proved-heat/README.md)) |
 
 Useful entry points: the counterexample catalogue
 (`artifacts/T157/COUNTEREXAMPLES.md`), uncertainty budgets
@@ -40,3 +42,11 @@ identities and artifact digests are unkeyed hashes: an accidental edit breaks
 them and `ciw lab report` refuses the report, while a deliberate edit that
 recomputes them is caught only by comparison with a fresh run (`ciw lab
 verify`).
+
+`proved-heat/` holds runs of the SP1 proved-heat gate made on a provisioned
+host (see [proved-heat/README.md](proved-heat/README.md)); neither the
+clean-room run nor `scripts/refresh_lab.py` writes there. `scripts/check_lab.py`
+binds the latest record for T099, which labels the gate's claims
+`provider_backed` (the gate's outcome as recorded at CIW's pins) and rebuilds
+the engine the gate proved against with the CI-pinned Rust toolchain; `ciw lab
+verify` checks every record for integrity. The records claim nothing physical.

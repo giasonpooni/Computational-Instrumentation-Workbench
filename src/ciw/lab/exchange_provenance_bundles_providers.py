@@ -7,7 +7,7 @@ objects, an independent recomputation of the Git tree id from the working
 bytes, comparison with every provider pin CIW declares, the identity of bound
 provider interpreters (version, executable digest and, for PLSR, the installed
 runtime's version and source digests), the SCR ``execution-cli`` locked offline
-build, execution of the SCR heat kernel through its own Python API and through
+build (with the default or a named rustup toolchain), execution of the SCR heat kernel through its own Python API and through
 CIW's numerical-heat workflow, and the SET/PPDA exchange integrations when their
 exact checkouts are bound.
 
@@ -74,6 +74,9 @@ SP1_REQUIREMENTS = {
     "resources": {"available_memory_bytes_at_least": 7 * 1024 ** 3, "free_disk_bytes_at_least": 20 * 1024 ** 3},
     "gate": "scripts/check_proved_heat.py via .github/workflows/proved-heat.yml",
 }
+# The rustup toolchain .github/workflows/proved-heat.yml builds execution-cli and sp1-host with (and lab.yml
+# installs, so that T099 rebuilds execution-cli with it); tests keep both workflows in step.
+NATIVE_TOOLCHAIN = "1.94.0"
 _CACHE_DIRS = (".venv", "venv", "__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache")
 # Dependency lockfiles recognised by name; requirements*.txt counts only when
 # every requirement in it is pinned (see is_lockfile).
@@ -341,34 +344,48 @@ def engine_name() -> str:
     return "execution-cli.exe" if os.name == "nt" else "execution-cli"
 
 
-def _version(tool: str) -> str | None:
+def _toolchain_environment(toolchain: str | None) -> dict | None:
+    """With a named rustup toolchain, rustup must not install it when it is missing (the call fails instead)."""
+    return {**os.environ, "RUSTUP_AUTO_INSTALL": "0"} if toolchain else None
+
+
+def _version(tool: str, toolchain: str | None = None) -> str | None:
+    command = [tool, f"+{toolchain}", "--version"] if toolchain else [tool, "--version"]
     try:
-        return subprocess.run([tool, "--version"], capture_output=True, text=True, timeout=60).stdout.strip() or None
+        return subprocess.run(command, capture_output=True, text=True, timeout=60,
+                              env=_toolchain_environment(toolchain)).stdout.strip() or None
     except (OSError, subprocess.SubprocessError):
         return None
 
 
-def build_engine(scr, builds: int = 2) -> dict:
+def build_engine(scr, builds: int = 2, toolchain: str | None = None) -> dict:
     """``cargo build --release --locked --offline`` of SCR ``execution-cli`` into fresh target dirs.
 
     Returns the command, return codes, Cargo.lock digests before and after, the
     toolchain versions, the binary bytes of the first build and every build's
     digest. Target directories are temporary; the checkout is never a target.
+    ``toolchain`` builds with that rustup toolchain (``cargo +TOOLCHAIN``)
+    instead of the default one; a missing toolchain fails the build.
     """
     scr = Path(scr).resolve()
     manifest = scr / "crates" / "Cargo.toml"
     lock = scr / "crates" / "Cargo.lock"
-    command = ["cargo", "build", "--release", "--locked", "--offline", "--manifest-path", str(manifest),
-               "-p", "execution-cli"]
-    record = {"command": " ".join(command[:5] + ["--manifest-path", "<scr>/crates/Cargo.toml", "-p", "execution-cli"]),
-              "cargo_target_dir": "fresh temporary directory per build", "cargo": _version("cargo"),
-              "rustc": _version("rustc"), "cargo_lock_sha256_before": sha256(lock.read_bytes()).hexdigest(),
+    selector = [f"+{toolchain}"] if toolchain else []
+    flags = ["build", "--release", "--locked", "--offline"]
+    command = ["cargo", *selector, *flags, "--manifest-path", str(manifest), "-p", "execution-cli"]
+    record = {"command": " ".join(["cargo", *selector, *flags, "--manifest-path", "<scr>/crates/Cargo.toml",
+                                   "-p", "execution-cli"]),
+              "cargo_target_dir": "fresh temporary directory per build", "cargo": _version("cargo", toolchain),
+              "rustc": _version("rustc", toolchain), "cargo_lock_sha256_before": sha256(lock.read_bytes()).hexdigest(),
               "builds": [], "binary": None}
+    if toolchain:
+        record["toolchain"] = toolchain
     for _ in range(builds):
         with tempfile.TemporaryDirectory(prefix="ciw-lab-scr-target-") as target:
             try:
                 completed = subprocess.run(command, capture_output=True, text=True, timeout=900,
-                                           env={**os.environ, "CARGO_TARGET_DIR": target})
+                                           env={**(_toolchain_environment(toolchain) or os.environ),
+                                                "CARGO_TARGET_DIR": target})
                 returncode, log = completed.returncode, completed.stderr.strip().splitlines()[-3:]
             except subprocess.TimeoutExpired:
                 returncode, log = None, ["cargo build exceeded 900 s and was stopped"]

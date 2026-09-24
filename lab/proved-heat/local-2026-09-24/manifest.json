@@ -1,0 +1,55 @@
+{
+ "files": {
+  "build.json": {
+   "bytes": 609,
+   "sha256": "321d80500310b7f2372d65789b40f1b0ef450b46d948d9ad442637b5bc6d7ecc"
+  },
+  "gate/gate.json": {
+   "bytes": 1905,
+   "sha256": "8b4f2bf10ea343043e1dccbb343477cacfca49ee1c03e28fb9f6d18ded24fea0"
+  },
+  "gate/original.json.gz": {
+   "bytes": 1986432,
+   "content": {
+    "bytes": 3712791,
+    "sha256": "170af3c3029c3e26f767ce86e27fea05ac2edc1a6a9a670b056d7585db63b50b"
+   },
+   "sha256": "80f8a545fc9d449d1aaf2ad41b63eef09b5f5b66d6695cc9cb03f2b1763e0089"
+  },
+  "gate/replay.json.gz": {
+   "bytes": 1978097,
+   "content": {
+    "bytes": 3714394,
+    "sha256": "f339ede5c5570994572693f6273b495cfa3990d3d58eb532cbe5e54dfcc57841"
+   },
+   "sha256": "960f064484c0b47601ddcde229bc094fc7a1c4254306da7a7733548bf1368539"
+  },
+  "gate/reverification.json": {
+   "bytes": 2215,
+   "sha256": "dca028d7b35700c11d7ac7573818ab1674c489b9eb60bc661afa4684d3156555"
+  },
+  "gate/source.json": {
+   "bytes": 397,
+   "sha256": "b27dd0b64b23771e1b74ebb3937c68dcb83098b984a940abc1486e4cf69b8ad8"
+  },
+  "gate/tests.xml": {
+   "bytes": 16361,
+   "sha256": "e2702379145bce7e9599a6ef4c12d828807dce3658ddfc5e880053fa0bcb0114"
+  },
+  "run.json": {
+   "bytes": 8388,
+   "sha256": "e544572fb6c236ebea181765e005de0c8d51cb4c2fcffea67a67e62e69d8a830"
+  },
+  "source-checks.json.gz": {
+   "bytes": 34292,
+   "content": {
+    "bytes": 381238,
+    "sha256": "f7a622c8b3bd320b2f9868fe12cf57cf70fabb9c75af85cd498da910f64867ac"
+   },
+   "sha256": "2c9623f2833a046e520a1a0b291c444b2fa23c87648c84036367263a3e12f9cc"
+  }
+ },
+ "note": "SHA-256 and size of every file of this record except this manifest; for a .gz file also of the gate's bytes inside it (content)",
+ "run_id": "local-2026-09-24",
+ "schema": "ciw.lab-proved-heat-manifest.v1"
+}

@@ -219,11 +219,13 @@ NEXT_STEPS = {
              "and settle why CIW pins two SCR revisions (a59aba2 for declared-workload and proved-heat, 5f04097 for "
              "the exchange workflow) and several SET revisions, converging them or recording each workflow's "
              "reason."),
-    "T099": ("Run the SP1 proved-heat gate (scripts/check_proved_heat.py) on a machine that meets its recorded "
-             "requirements (network access to crates.io and GitHub releases, the SP1 checkout b38b612, protoc, at "
-             "least 7 GiB of RAM and 20 GiB of disk) and retain its outcome; and rebuild execution-cli with CI's "
-             "pinned rustc 1.94.0 beside this run's toolchain to find whether the engine digest depends on the "
-             "toolchain."),
+    "T099": ("Deferred research question: have CI run the SP1 proved-heat gate itself (.github/workflows/"
+             "proved-heat.yml) and retain its output as a second record beside the local one, so that the gate's "
+             "outcome no longer rests on one operator host; attest the engine and prover the gate binds (build them "
+             "from the pinned sources in the same job and record that build, or sign them), so that "
+             "host_executable_binding is no longer operator_asserted_not_attested; and rebuild sp1-host with the "
+             "CI-pinned toolchain on a second host to learn whether the prover digest, like the engine's, depends "
+             "only on the toolchain."),
     "T100": ("Deferred research question (CIW change): key the workspace seals, or have the provider sign its runtime "
              "identity at execution under a defined key custody, so that a bundle copying CIW's public pins (the "
              "retained copied-pin counterexample) is refused or classified not_established; compare a retained "
@@ -2282,29 +2284,213 @@ def _git_version() -> str:
 
 # ---------------------------------------------------------------- T099
 
+# A retained run of the SP1 proved-heat gate (lab/proved-heat/<run-id>/, ciw.lab.proved_heat_records), bound by
+# scripts/check_lab.py from the repository so that the clean room, which has no copy of lab/, reads the same record.
+PROVED_HEAT_RECORD = "proved-heat-record"
+# The rustup toolchain CI pins for the proved-heat gate's engine and prover builds.
+PINNED_TOOLCHAIN = providers.NATIVE_TOOLCHAIN
 _T099_PLAN = _fields(
     "The pinned SCR execution engine builds with cargo build --release --locked --offline, leaves the checkout "
-    "and Cargo.lock unchanged, is reproducible across target directories and executes the heat kernel correctly.",
-    "Cargo resolution fixed by crates/Cargo.lock (no external crates); determinism = equal binary digests.",
-    ["SCR checkout at a59aba283b0304faeeb3e5d305087e7709e171ca", "Rust toolchain (cargo, rustc)"],
-    "cargo exit codes, Cargo.lock digests, binary digests, checkout cleanliness, engine output.",
-    "Exit 0; lock unchanged; clean checkout; equal digests; output equals the integer reference.",
+    "and Cargo.lock unchanged, is reproducible across target directories and executes the heat kernel correctly; "
+    "a retained run of the SP1 proved-heat gate is intact and names CIW's pins, and the CI-pinned Rust toolchain "
+    "rebuilds the engine that gate proved against byte for byte.",
+    "Cargo resolution fixed by crates/Cargo.lock (no external crates); determinism = equal binary digests; record "
+    "integrity = the SHA-256 of every retained file equal to its manifest entry.",
+    ["SCR checkout at a59aba283b0304faeeb3e5d305087e7709e171ca", "Rust toolchain (cargo, rustc)",
+     "retained SP1 proved-heat gate record lab/proved-heat/<run-id> (optional; role proved-heat-record)",
+     f"rustup toolchain {PINNED_TOOLCHAIN} (optional)"],
+    "cargo exit codes, Cargo.lock digests, binary digests, checkout cleanliness, engine output; the record's "
+    "manifest digests, gate outcome, test record and pinned identities, and CIW's offline validation of its bundles.",
+    "Exit 0; lock unchanged; clean checkout; equal digests; output equals the integer reference; record digests "
+    "equal its manifest and its identities equal CIW's pins; the pinned-toolchain engine digest equals the "
+    "record's engine digest.",
     "Bind --provider scr=<checkout> with cargo on PATH; command: CARGO_TARGET_DIR=<tmp> cargo build --release "
-    "--locked --offline --manifest-path <scr>/crates/Cargo.toml -p execution-cli. The SP1 proved-heat build is "
-    "recorded as blocked with its requirements and never attempted.",
+    "--locked --offline --manifest-path <scr>/crates/Cargo.toml -p execution-cli. Bind --provider "
+    "proved-heat-record=lab/proved-heat/<run-id> (scripts/check_lab.py binds the repository's latest record) to "
+    f"read a retained run of the SP1 proved-heat gate; with rustup toolchain {PINNED_TOOLCHAIN} installed, "
+    f"execution-cli is also built once with cargo +{PINNED_TOOLCHAIN} into a fresh target directory. T099 never "
+    "runs the SP1 build, prover or verifier itself.",
     "none", "not quantified", ["provider or toolchain unavailable"],
     ["The SCR checkout or cargo is unavailable in this run."],
     "Install a Rust toolchain, bind the pinned SCR checkout and rerun T099.")
 _T099_PLAN["findings"] = [finding("A successful locked build makes the engine acceptable for production use",
                                   "production_acceptance", "not decided by the workbench", {})]
-T099_FILES = (MODULE, FIXTURES, PROVIDERS)
+T099_FILES = (MODULE, FIXTURES, PROVIDERS, "src/ciw/lab/proved_heat_records.py")
 BUILD_CLAIM = "cargo build --release --locked --offline of SCR execution-cli succeeds at the pinned revision"
+RECORD_CLAIM = ("The bound SP1 proved-heat gate record matches its manifest digests, records a passing gate with its "
+                "required native tests, names CIW's pinned SCR, SP1, guest recipe, guest ELF and compiler archive, and "
+                "holds bundles that pass CIW's offline validation")
+GUEST_CLAIM = ("The SP1 proved-heat gate rebuilt the guest ELF from the committed recipe and it equals the "
+               "registered guest")
+PROOF_CLAIM = ("The SP1 proved-heat gate proved and verified the heat result with real SP1, and a fresh replay "
+               "reproduced it with its own verified proof")
+REVERIFY_CLAIM = ("The SP1 proved-heat gate re-verified the retained proof without re-execution and rejected a "
+                  "tampered proof")
+ATTESTED_CLAIM = "The engine and prover the SP1 proved-heat gate bound are attested builds of the pinned sources"
+PINNED_CLAIM = "The CI-pinned toolchain rebuilds the engine the SP1 gate proved against byte for byte"
+RECORD_TESTS = "tests/test_lab_proved_heat_records.py"
+# The gate's native tests behind the proof and re-verification claims (scripts/check_proved_heat.py requires them).
+PROOF_TESTS = ("test_native_proved_heat_shared_session",)
+REVERIFY_TESTS = ("test_native_retained_proof_can_be_reverified_without_reexecution",
+                  "test_native_tampered_proof_fails_fresh_verification")
+
+
+def _proved_heat_record(ctx) -> dict:
+    """The bound proved-heat gate record, inspected once per run: its ``state`` is not_bound, refused or valid."""
+    ctx.available(f"provider:{PROVED_HEAT_RECORD}")
+    if PROVED_HEAT_RECORD not in ctx.providers:
+        return {"state": "not_bound", "run_id": None, "problems": [], "categories": {}, "files": 0, "summary": None}
+    from . import proved_heat_records
+    path = ctx.providers[PROVED_HEAT_RECORD]
+    inspected = ctx.memo(("exchange-bundles:proved-heat-record", str(path)),
+                         lambda: proved_heat_records.inspect_record(path))
+    return {"state": "refused" if inspected["problems"] else "valid", **inspected}
+
+
+def _record_basis(summary) -> dict:
+    """The provider a retained gate record names: the pinned SCR checkout the gate executed, with SP1 in the notes."""
+    gate = summary["gate"]
+    return {"provider": {"repository": providers.REPOSITORIES["scr"], "revision": gate["scr"]["revision"],
+                         "source_tree": gate["scr"]["tree"], "executed": True},
+            "notes": {"proved_heat_record": summary["run_id"],
+                      "executed_in": "the retained proved-heat gate run, not in this task run",
+                      "sp1": {"repository": providers.SP1_REQUIREMENTS["sp1_checkout"]["repository"], **gate["sp1"]},
+                      "host_executable_binding": gate["host_executable_binding"],
+                      "native_artifacts": {role: entry["sha256"] for role, entry in gate["native_artifacts"].items()}}}
+
+
+def _record_findings(record) -> list:
+    """What a bound gate record establishes (provider_backed: a retained record at CIW's pins), or why nothing is."""
+    checks = [_check(f"record problems ({category})", len(items)) for category, items in record["categories"].items()]
+    if record["state"] != "valid":
+        reason = ("not established: no proved-heat record is bound (--provider "
+                  f"{PROVED_HEAT_RECORD}=lab/proved-heat/<run-id>)" if record["state"] == "not_bound" else
+                  f"not established: the bound proved-heat record {record['run_id']} is refused "
+                  f"({len(record['problems'])} problems, listed in proved-heat-record.json)")
+        refused = (finding(RECORD_CLAIM, "provenance",
+                           {"run_id": record["run_id"], "problems": len(record["problems"]),
+                            "first_problems": record["problems"][:3]},
+                           {"checks": checks}, uncertainty=EXACT_COUNT, tolerance=EXACT)
+                   if record["state"] == "refused" else finding(RECORD_CLAIM, "provenance", reason, {},
+                                                                expected_not_established=True))
+        return [refused] + [finding(claim, "computational_pipeline", reason, {}, expected_not_established=True)
+                            for claim in (GUEST_CLAIM, PROOF_CLAIM, REVERIFY_CLAIM)]
+    summary = record["summary"]
+    gate, build, bundles = summary["gate"], summary["build"], summary["bundles"]
+    basis = _record_basis(summary)
+    return [
+        finding(RECORD_CLAIM, "provenance",
+                {"run_id": summary["run_id"], "retained_files": record["files"], "problems": 0},
+                {"checks": checks, **deepcopy(basis)}, uncertainty=EXACT_COUNT, tolerance=EXACT),
+        finding(GUEST_CLAIM, "computational_pipeline",
+                {"recipe_identity": build["recipe_identity"], "guest_sha256": build["elf_sha256"],
+                 "guest_build": build["guest_build"], "sp1_revision": build["sp1_revision"]},
+                deepcopy(basis), uncertainty=EXACT_COUNT, tolerance=EXACT),
+        finding(PROOF_CLAIM, "computational_pipeline",
+                {"gate_status": gate["status"], "execution": gate["execution"], "tests_passed": gate["tests_passed"],
+                 "heat_values": bundles["values"], "replay_values": bundles["replay_values"],
+                 "verifier_outcomes": bundles["verifier_outcomes"],
+                 "replay_numerical_match": bundles["replay_numerical_match"], "native_tests": list(PROOF_TESTS)},
+                deepcopy(basis), uncertainty=EXACT_INTEGER, tolerance=EXACT),
+        finding(REVERIFY_CLAIM, "computational_pipeline",
+                {"reverification_outcome": bundles["reverification_outcome"], "native_tests": list(REVERIFY_TESTS)},
+                deepcopy(basis), uncertainty=EXACT_COUNT, tolerance=EXACT),
+        finding(ATTESTED_CLAIM, "provenance", gate["host_executable_binding"],
+                {"notes": {"proved_heat_record": summary["run_id"],
+                           "engine": "rebuilt from the pinned source with the CI-pinned toolchain where T099 runs "
+                                     "(the pinned-toolchain finding); a reproducible build is not an attestation",
+                           "prover": "not rebuilt by T099"}},
+                expected_not_established=True),
+    ]
+
+
+def _pinned_build(ctx):
+    """execution-cli built once with the CI-pinned rustup toolchain, or None when that toolchain is not installed."""
+    if not ctx.available(f"tool:cargo+{PINNED_TOOLCHAIN}"):
+        return None
+    return ctx.memo(("exchange-bundles:scr-pinned-build", str(ctx.providers["scr"]), PINNED_TOOLCHAIN),
+                    lambda: providers.build_engine(ctx.providers["scr"], builds=1, toolchain=PINNED_TOOLCHAIN))
+
+
+def _gate_engine(record) -> str | None:
+    return record["summary"]["gate"]["native_artifacts"]["engine"]["sha256"] if record["state"] == "valid" else None
+
+
+def _pinned_findings(pinned, record, built) -> list:
+    """The pinned-toolchain rebuild compared exactly with the engine the bound gate record names."""
+    if pinned is None:
+        return [finding(PINNED_CLAIM, "computational_pipeline",
+                        f"not built: the rustup toolchain {PINNED_TOOLCHAIN} is not installed here (rustup toolchain "
+                        f"install {PINNED_TOOLCHAIN} --profile minimal)", {}, expected_not_established=True)]
+    digests = [row["binary_sha256"] for row in pinned["builds"]]
+    notes = {"engine_sha256": digests, "rustc": pinned["rustc"], "cargo": pinned["cargo"]}
+    engine = _gate_engine(record)
+    if engine is None:
+        return [finding(PINNED_CLAIM, "computational_pipeline",
+                        "built, not compared: no valid proved-heat record is bound (the digest is in "
+                        "pinned-toolchain-build.json)", {"notes": notes}, expected_not_established=True)]
+    return [finding(
+        PINNED_CLAIM, "computational_pipeline",
+        {"toolchain": PINNED_TOOLCHAIN, "builds": len(digests), "equal_to_gate_engine": digests == [engine]},
+        {"checks": [_check("pinned-toolchain builds with a nonzero or missing exit code or no binary",
+                           sum(row["returncode"] != 0 or not row["binary_sha256"] for row in pinned["builds"])),
+                    _check("pinned-toolchain engine digests differing from the engine the SP1 gate proved against",
+                           sum(digest != engine for digest in digests))],
+         "provider": built,
+         "notes": {**notes, "gate_engine_sha256": engine, "proved_heat_record": record["summary"]["run_id"]}},
+        uncertainty=EXACT_COUNT, tolerance=EXACT)]
+
+
+def _record_result(record) -> str:
+    """The record's part of the numerical result; the gate's measurements are its recording host's, not compared."""
+    if record["state"] == "not_bound":
+        return "no proved-heat record bound, so the SP1 gate outcome is not established here"
+    if record["state"] == "refused":
+        return f"the bound proved-heat record {record['run_id']} is refused ({len(record['problems'])} problems)"
+    summary = record["summary"]
+    gate, build, bundles = summary["gate"], summary["build"], summary["bundles"]
+    original = summary["measurements"]["original"]
+    return (f"proved-heat record {summary['run_id']}: gate {gate['status']} with {gate['tests_passed']} tests, guest "
+            f"ELF {build['elf_sha256'][:12]} rebuilt from recipe {build['recipe_identity'][:12]}, heat "
+            f"{bundles['values']} proved, verified, replayed and re-verified; gate measurements on its recording host "
+            f"(host-specific, not compared): proof {original['proof_byte_count']} bytes, prove and verify "
+            f"{original['prove_and_verify_seconds']:.0f} s, re-verification {original['reverify_seconds']:.0f} s, "
+            f"peak RSS {original['memory'].get('bytes') or 'not measured'} bytes")
+
+
+def _pinned_result(pinned, record) -> str:
+    if pinned is None:
+        return f"rustup toolchain {PINNED_TOOLCHAIN} unavailable, so the engine was not rebuilt with it"
+    engine = _gate_engine(record)
+    if engine is None:
+        return f"cargo +{PINNED_TOOLCHAIN} rebuilt the engine, not compared (no valid record)"
+    same = [row["binary_sha256"] for row in pinned["builds"]] == [engine]
+    return f"cargo +{PINNED_TOOLCHAIN} rebuilt the engine {'equal to' if same else 'different from'} the gate's"
+
+
+def _toolchain_assumption(record) -> str:
+    experiment = ((record["summary"] or {}).get("observations") or {}).get("execution_cli_toolchain_experiment") \
+        if record["state"] == "valid" else None
+    if not experiment:
+        return ("The binary digest depends on the Rust toolchain recorded in provider_runtime_identity; CI pins rustc "
+                f"{PINNED_TOOLCHAIN} for the proved-heat gate, and other toolchains may produce different digests; "
+                "this run's digests are in pinned-toolchain-build.json.")
+    return ("The engine digest depends on the Rust toolchain and not on the checkout path, as the bound record's "
+            "run.json observes on its recording host (one rustc gave the gate's engine digest from three checkout "
+            "paths, another rustc a different digest from two); this run's pinned- and default-toolchain digests are "
+            "in pinned-toolchain-build.json. Another host's linker or C library may still change the digest, which "
+            "the pinned-toolchain rebuild tests wherever T099 runs.")
 
 
 @task("T099", changed_files=T099_FILES,
       regression_tests=(f"{TESTS}::test_t099_locked_offline_scr_build",
                         f"{TESTS}::test_t097_t099_refuse_a_non_repository_scr_binding",
-                        f"{TESTS}::test_t099_names_the_built_checkout_beside_its_label"),
+                        f"{TESTS}::test_t099_names_the_built_checkout_beside_its_label",
+                        f"{RECORD_TESTS}::test_t099_labels_a_valid_proved_heat_record_provider_backed",
+                        f"{RECORD_TESTS}::test_t099_refuses_a_tampered_proved_heat_record_by_name",
+                        f"{RECORD_TESTS}::test_t099_without_a_record_or_the_pinned_toolchain",
+                        f"{RECORD_TESTS}::test_t099_refutes_a_pinned_rebuild_that_differs_from_the_gate_engine",
+                        f"{RECORD_TESTS}::test_t099_rebuilds_the_gate_engine_with_the_pinned_toolchain"),
       requires=("provider:scr", "tool:cargo"), plan=_T099_PLAN)
 def locked_cargo_build(ctx):
     fields = {k: v for k, v in deepcopy(_T099_PLAN).items() if k != "findings"}
@@ -2333,12 +2519,34 @@ def locked_cargo_build(ctx):
                                                    providers.materialize(build["binary"], scratch), SURVEY_CASES[:1])
             except (ValueError, OSError, subprocess.SubprocessError) as exc:
                 api_error = type(exc).__name__
+    record = _proved_heat_record(ctx)
+    pinned = _pinned_build(ctx)
+    bindings = _host_bindings(ctx)
     ctx.artifact_json("cargo-build.json", {key: value for key, value in build.items() if key != "binary"})
     probes = {"protoc": providers.which("protoc") is not None, "sp1_bound": "sp1" in ctx.providers,
               "zk_manifest": (Path(ctx.providers["scr"]) / "zk" / "Cargo.toml").is_file()}
     ctx.artifact_json("sp1-requirements.json", {"requirements": providers.SP1_REQUIREMENTS, "probes": probes,
-                                                "attempted": False})
+                                                "attempted": False, "outcome_from_proved_heat_record": record["run_id"]
+                                                if record["state"] == "valid" else None})
+    from .proved_heat_records import NOTE as RECORD_NOTE
+    ctx.artifact_json("proved-heat-record.json", _located({
+        "binding": PROVED_HEAT_RECORD, "state": record["state"], "run_id": record["run_id"],
+        "files": record["files"], "problems": record["problems"], "summary": record["summary"],
+        "note": RECORD_NOTE}, bindings))
     digests = sorted({row["binary_sha256"] for row in ok})
+    pinned_digests = [] if pinned is None else [row["binary_sha256"] for row in pinned["builds"]]
+    gate_engine = _gate_engine(record)
+    # The default toolchain's digest is an observation of this host, reported beside the pinned rebuild, never compared.
+    ctx.artifact_json("pinned-toolchain-build.json", _located({
+        "toolchain": PINNED_TOOLCHAIN,
+        "pinned": None if pinned is None else {key: value for key, value in pinned.items() if key != "binary"},
+        "default": {"cargo": build["cargo"], "rustc": build["rustc"], "engine_sha256": digests},
+        "gate_engine_sha256": gate_engine,
+        "default_differs_from_gate_engine": None if gate_engine is None else digests != [gate_engine],
+        "default_differs_from_pinned": None if pinned is None else digests != pinned_digests,
+        "note": "The default toolchain's engine digest is a host-specific observation, reported and not compared; "
+                "the pinned-toolchain digest is compared exactly with the engine the bound gate record names."},
+        bindings))
     lock = identity["lockfiles"].get("crates/Cargo.lock")
     # The build and the engine run rest on the bound SCR checkout: each finding declares it as its provider, so the
     # Basis column names it beside the label (a passing check still decides the label).
@@ -2384,31 +2592,63 @@ def locked_cargo_build(ctx):
                      "provider": dict(built, runtime_digest="sha256:" + digests[0])},
                     uncertainty=EXACT_INTEGER, tolerance=EXACT),
         ]
-    findings += [
-        finding("The SP1 proved-heat locked build was not attempted", "computational_pipeline",
-                {"attempted": False, "requirements": providers.SP1_REQUIREMENTS}, {}, expected_not_established=True),
-        production,
-    ]
+    findings += _record_findings(record) + _pinned_findings(pinned, record, built) + [production]
+    complete = bool(ok) and record["state"] == "valid" and pinned_digests == [gate_engine]
+    assumptions = [_toolchain_assumption(record)]
+    if record["state"] == "valid":
+        summary = record["summary"]
+        how = ("was run locally by replaying the workflow's gate steps (scripts/run_proved_heat_locally.py), not by CI"
+               if summary["procedure"].get("kind") == "local_workflow_replay" else "was not run by this task")
+        assumptions += [
+            "The bound record is the gate's outcome as retained: T099 checks its digests, pins and bundle consistency "
+            "but re-verifies no proof, and the manifest digests are unkeyed, so a fabricated record that copies "
+            "CIW's public pins and recomputes every digest would pass.",
+            "The gate bound its engine and prover as operator_asserted_not_attested executables: the record shows "
+            "which bytes ran, not that they were built from the pinned sources. The pinned-toolchain rebuild shows "
+            "the engine bytes are reproducible from the pinned source where T099 runs; nothing here rebuilds the "
+            "prover.",
+            f"The recorded gate {how}, and its times, memory and proof sizes are measurements of its recording host.",
+        ]
+    else:
+        assumptions.append("The SP1 proved-heat gate needs crates.io and GitHub release downloads, the SP1 checkout, "
+                           "the Succinct compiler archive, protoc and >= 7 GiB RAM / 20 GiB disk "
+                           "(.github/workflows/proved-heat.yml; host probes are in sp1-requirements.json); its outcome "
+                           "enters T099 only as a retained record bound as proved-heat-record.")
     fields.update(
         numerical_result=(f"{len(ok)}/{len(build['builds'])} locked offline builds succeeded; distinct binary "
                           f"digests {len(digests)}; Cargo.lock {lock}; survey output "
-                          f"{None if output is None else output['cases'][0]['values']}; SP1 build not attempted."),
+                          f"{None if output is None else output['cases'][0]['values']}; {_record_result(record)}; "
+                          f"{_pinned_result(pinned, record)}; T099 never runs the SP1 build itself."),
         uncertainty="Exact digests and integers; the binary digest depends on the Rust toolchain and is recorded as "
-                    "provenance.",
+                    "provenance, except the pinned-toolchain digest, compared exactly with the gate record's engine; "
+                    "the gate's measurements belong to its recording host and are reported, not compared.",
         failure_modes_checked=["lockfile rewrite", "network access (--offline)", "writes into the checkout",
-                               "non-deterministic build output", "engine output drift", "build timeout"],
-        unresolved_assumptions=["The binary digest depends on the Rust toolchain recorded in "
-                                "provider_runtime_identity; CI pins rustc 1.94.0 for the proved-heat gate, and other "
-                                "toolchains may produce different digests.",
-                                "The SP1 proved-heat build needs crates.io and GitHub release downloads, the SP1 "
-                                "checkout, the Succinct compiler archive, protoc and >= 7 GiB RAM / 20 GiB disk "
-                                "(.github/workflows/proved-heat.yml); host probes are in sp1-requirements.json."]
-        + ([f"The engine heat-kernel call failed ({api_error})."] if api_error else []),
+                               "non-deterministic build output", "engine output drift", "build timeout",
+                               "proved-heat record files missing, unrecorded or differing from the manifest",
+                               "record naming another SCR, SP1, guest recipe, guest ELF or compiler archive than "
+                               "CIW's pins", "failed, skipped or missing native gate tests",
+                               "bundles, replay receipt or re-verification inconsistent with each other or the gate",
+                               "toolchain-dependent engine digest"],
+        unresolved_assumptions=assumptions + ([f"The engine heat-kernel call failed ({api_error})."] if api_error else []),
         recommended_next_task=NEXT_STEPS["T099"],
         provider_runtime_identity=_runtime_identity(T099_FILES, {
             "scr": {"head": identity["head"], "tree": identity["tree"], "engine_sha256": digests[0] if digests else None,
-                    "cargo": build["cargo"], "rustc": build["rustc"]}}))
-    return {"state": "partial", "fields": fields, "findings": findings}
+                    "cargo": build["cargo"], "rustc": build["rustc"], "pinned_toolchain": PINNED_TOOLCHAIN,
+                    "pinned_toolchain_rustc": None if pinned is None else pinned["rustc"],
+                    "pinned_toolchain_engine_sha256": pinned_digests[0] if pinned_digests else None},
+            "proved_heat_record": _record_identity(record)}))
+    return {"state": _settle("completed" if complete else "partial", findings), "fields": fields, "findings": findings}
+
+
+def _record_identity(record) -> dict:
+    """The bound record's identity: its SCR and SP1 revisions and trees and the gate's native artifact digests."""
+    if record["state"] != "valid":
+        return {"state": record["state"], "run_id": record["run_id"]}
+    summary = record["summary"]
+    gate = summary["gate"]
+    return {"state": "valid", "run_id": summary["run_id"], "manifest_sha256": summary["manifest_sha256"],
+            "scr": dict(gate["scr"]), "sp1": dict(gate["sp1"]),
+            "native_artifacts": {role: entry["sha256"] for role, entry in gate["native_artifacts"].items()}}
 
 
 # ---------------------------------------------------------------- T100

@@ -1,0 +1,9 @@
+{
+  "recipe_identity": "6e5d1687bcc55243d712553a2b7768b6c587a76418bb48a7a2c44224470d423d",
+  "elf_sha256": "a14e3750da7e221d31842bd6cf983fcc8c0f530b2811537e2a9a9fe803dacf82",
+  "elf_path": "/tmp/ste-stage/sp1-6e5d1687bcc55243/build-target/riscv64im-succinct-zkvm-elf/release/ste-guest-heat",
+  "toolchain_identity": "commit-hash: unknown; host: x86_64-unknown-linux-gnu; release: 1.94.0-dev",
+  "compiler_archive_sha256": "12c94435d41bfe4e20131bbcce40b35abd32270ad792befc653af4e3fabc192f",
+  "sp1_revision": "b38b61209e45e969289e70d5cf79dc763460bc41",
+  "guest_build": "verified_against_committed_registry"
+}

@@ -17,11 +17,18 @@ path, artifacts match their digests, every hardware-measured finding cites raw
 bytes its task retained after a hardware probe succeeded in that task itself,
 and ``capture.json`` agrees with the run. A run whose physical findings rest
 on a probe of the capture host's hardware cannot be recomputed here or in CI.
+The latest retained run of the SP1 proved-heat gate (``lab/proved-heat/<run-id>/``)
+is bound as ``proved-heat-record`` from this checkout, since the clean room has
+no copy of ``lab/``: T099 validates it and rebuilds its engine with the pinned
+Rust toolchain when that toolchain is installed. Every retained record is
+checked for integrity by ``ciw lab verify`` (or ``ciw lab proved-heat verify``
+with ``--no-compare``).
 """
 from __future__ import annotations
 
 import argparse
 import ast
+import json
 import os
 from pathlib import Path
 import subprocess
@@ -59,6 +66,23 @@ def pins() -> dict:
     if missing:
         raise SystemExit(f"Provider pins not found: {sorted(missing)}")
     return revisions
+
+
+def proved_heat_record(root: Path = ROOT / "lab" / "proved-heat") -> Path | None:
+    """The retained proved-heat gate record T099 reads: the latest under ``root`` by its run.json date, then run id.
+
+    ``ciw lab verify`` checks every record; an unreadable run.json sorts first rather than hiding the others.
+    """
+    records = []
+    for path in sorted(root.iterdir()) if root.is_dir() else []:
+        if not path.is_dir():
+            continue
+        try:
+            date = json.loads((path / "run.json").read_text(encoding="utf-8")).get("date")
+        except (OSError, ValueError, AttributeError):
+            date = None
+        records.append((date if isinstance(date, str) else "", path.name, path))
+    return max(records)[2] if records else None
 
 
 def main() -> int:
@@ -99,6 +123,9 @@ def main() -> int:
             command.append("--no-compare")
         for role, path in providers.items():
             command += ["--provider", f"{role}={path}"]
+        record = proved_heat_record()
+        if record is not None:
+            command += ["--provider", f"proved-heat-record={record}"]
         if sys.version_info >= (3, 12):
             # PLSR and FTR require Python 3.12; the clean-room interpreter hosts both.
             command += ["--extras", "dev,lab,mcp,plsr", "--provider", "plsr-python=@venv", "--provider", "ftr-python=@venv"]

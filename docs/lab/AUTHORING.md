@@ -254,7 +254,10 @@ requirements (another kind is refused at registration); pass `plan={...}` with t
 report is still informative; `plan["findings"]` may carry the physical or
 authority claims the blocked task cannot establish (they must validate as
 `not_established`-producing findings). Soft optional checks use
-`ctx.available(...)`. Tasks that read repository files (`examples/`,
+`ctx.available(...)`; `tool:NAME+TOOLCHAIN` (for example `tool:cargo+1.94.0`,
+which T099 probes) also requires that rustup toolchain to answer
+`NAME +TOOLCHAIN --version`, and rustup is told not to install a missing one.
+Tasks that read repository files (`examples/`,
 `tests/fixtures/`) locate them with `ciw.lab.runner.repository_path(...)`,
 which honours `CIW_LAB_REPOSITORY_ROOT` in the clean-room run and returns None
 in an installed package without them (report blocked in that case).

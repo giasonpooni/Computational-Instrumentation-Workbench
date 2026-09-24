@@ -202,7 +202,7 @@ def test_clean_room_tests_see_the_bound_providers(tmp_path, monkeypatch):
         "CIW_LAB_CSG_REPO": str(stack / "csg"), "CIW_LAB_FTR_REPO": str(stack / "ftr"),
         "CIW_LAB_SCR_REPO": str(stack / "scr"), "CIW_LAB_PLSR_PYTHON": str(python),
         "CIW_LAB_FTR_PYTHON": str(python), "CIW_LAB_SET_REPO": None, "CIW_LAB_PPDA_REPO": None,
-        "CIW_LAB_SCR_EXCHANGE_REPO": None, "CIW_LAB_SCR_ENGINE": None}
+        "CIW_LAB_SCR_EXCHANGE_REPO": None, "CIW_LAB_SCR_ENGINE": None, "CIW_LAB_PROVED_HEAT_RECORD": None}
     # A virtual environment's python is a symlink to a base interpreter that lacks the environment's
     # packages (PLSR): the binding is made absolute, never resolved to that interpreter.
     link = Path("plsr-venv") / "bin" / "python"
@@ -219,7 +219,8 @@ def test_clean_room_tests_see_the_bound_providers(tmp_path, monkeypatch):
     import re
     tests = "".join(path.read_text(encoding="utf-8") for path in Path(__file__).parent.glob("test_lab_*.py"))
     assert all(name in tests for name in reproduce.TEST_VARIABLES.values())
-    assert set(re.findall(r"CIW_LAB_[A-Z_]+_(?:REPO|PYTHON|ENGINE)\b", tests)) == set(reproduce.TEST_VARIABLES.values())
+    assert set(re.findall(r"CIW_LAB_[A-Z_]+_(?:REPO|PYTHON|ENGINE|RECORD)\b", tests)) == set(
+        reproduce.TEST_VARIABLES.values())
 
 
 def test_gate_compares_only_under_python_312_and_resolves_its_temporary_root(tmp_path, monkeypatch):
@@ -255,6 +256,9 @@ def test_refresh_retains_only_a_run_that_bound_every_provider(tmp_path, monkeypa
 
     bound = ["csg=/c", "ftr=/f", "scr=/s", "set=/e", "ppda=/p", "scr-exchange=/x", "plsr-python=/v/bin/python",
              "ftr-python=/v/bin/python"]
+    # check_lab.py also binds the retained proved-heat gate record whenever lab/proved-heat/ holds one.
+    records = Path(refresh.ROOT) / "lab" / "proved-heat"
+    record_bound = records.is_dir() and any(path.is_dir() for path in records.iterdir())
 
     def refresh_from(providers, python="3.12.3"):
         (run / "gate.json").write_text(json.dumps({"schema": "ciw.lab-clean-room-gate.v1", "providers": providers,
@@ -271,6 +275,9 @@ def test_refresh_retains_only_a_run_that_bound_every_provider(tmp_path, monkeypa
                                                                 "plsr-python=/v/bin/python", "ftr-python=/v/bin/python"])
     assert "Python 3.11.9" in refresh_from(bound, "3.11.9")
     assert "Python unrecorded" in refresh_from(bound, None)
+    if record_bound:
+        assert "bound no proved-heat-record" in refresh_from(bound)
+        bound.append("proved-heat-record=/r")
     # check_lab.py's bindings pass; this run then lacks its reports.
     assert "incomplete" in refresh_from(bound)
     # Every role bound, but the PLSR interpreter could not run PLSR: its tasks are not CI's.

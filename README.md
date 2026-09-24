@@ -512,7 +512,11 @@ self-contained dashboard (`lab/index.html`). `scripts/refresh_lab.py`
 regenerates that run from a clean-room gate run for review before it is
 committed. Hardware-dependent tasks are blocked or partial in the gate; runs
 made on a hardware host are retained under `lab/hardware/` and verified for
-integrity only. No report in the retained gate run claims a physical result.
+integrity only. A local run of the SP1 proved-heat gate is retained under
+`lab/proved-heat/`, verified for integrity and read by T099, whose gate claims
+are therefore `provider_backed` (the gate's recorded outcome), not a proof
+verification by the lab. No report in the retained gate run claims a physical
+result.
 
 See the [development guide](docs/DEVELOPMENT.md#validation-commands) for commands
 and environment requirements. The candidate-evidence gate runs in Ubuntu CI;

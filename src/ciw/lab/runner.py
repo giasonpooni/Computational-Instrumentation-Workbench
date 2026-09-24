@@ -214,7 +214,7 @@ class Context:
         elif kind == "provider":
             present = name in self.providers and self.providers[name].exists()
         elif kind == "tool":
-            present = shutil.which(name) is not None
+            present = _probe_tool(name)
         elif kind == "hardware":
             present = bool(_probe_hardware(name))
             if present:
@@ -272,6 +272,27 @@ class Context:
         """Retain a text artifact; ``wall_clock_timing=True`` declares an SVG figure whose bytes depend on wall-clock
         timing, recorded in the report's artifact list and compared for presence and structure only on re-execution."""
         return self._write(name, text.encode("utf-8"), wall_clock_timing)
+
+
+TOOLCHAIN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
+
+
+def _probe_tool(name: str) -> bool:
+    """A tool on PATH. ``TOOL+TOOLCHAIN`` (``tool:cargo+1.94.0``) also needs that rustup toolchain installed:
+    ``TOOL +TOOLCHAIN --version`` must answer, with rustup told not to install a missing toolchain."""
+    tool, plus, toolchain = name.partition("+")
+    if shutil.which(tool) is None:
+        return False
+    if not plus:
+        return True
+    if not TOOLCHAIN.fullmatch(toolchain):
+        return False
+    try:
+        answered = subprocess.run([tool, f"+{toolchain}", "--version"], capture_output=True, text=True, timeout=60,
+                                  env={**os.environ, "RUSTUP_AUTO_INSTALL": "0"})
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return answered.returncode == 0
 
 
 # Linux powercap sysfs directory holding the intel-rapl energy counters.
@@ -1397,11 +1418,15 @@ def retain_hardware_run(run_dir, retained, run_id, host) -> dict:
 
 
 def verify_retained(retained, fresh, tasks=None) -> dict:
-    """:func:`compare` plus the integrity of every retained hardware run (``hardware_runs`` in the result)."""
+    """:func:`compare` plus the integrity of every retained hardware run (``hardware_runs`` in the result) and of
+    every retained proved-heat gate record (``proved_heat_records``)."""
+    from .proved_heat_records import verify_records
     result = compare(retained, fresh, tasks)
     hardware = verify_hardware_runs(retained)
+    records = verify_records(retained)
     result["hardware_runs"] = {key: hardware[key] for key in ("verified", "runs", "note")}
-    result["problems"] = result["problems"] + hardware["problems"]
+    result["proved_heat_records"] = {key: records[key] for key in ("verified", "records", "note")}
+    result["problems"] = result["problems"] + hardware["problems"] + records["problems"]
     result["passed"] = not result["problems"]
     return result
 

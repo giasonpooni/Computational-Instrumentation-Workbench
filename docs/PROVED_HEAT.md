@@ -144,6 +144,15 @@ Missing providers and skipped tests fail this gate. Ordinary local tests use
 explicit synthetic proof bytes only for structural/refusal tests; those fixtures
 are not cryptographic evidence. ICRH has no separate proved-heat profile yet.
 
+`scripts/run_proved_heat_locally.py` runs the workflow's gate steps, read from
+the workflow file and unchanged, on a Linux host the operator provisioned
+(tools, the pinned Rust and Succinct toolchains, the compiler archive and clean
+SCR and SP1 checkouts, each checked first), and writes `results/proved-heat/`
+as the workflow does. `ciw lab proved-heat retain` keeps a passing run under
+`lab/proved-heat/` with a run description and a digest manifest; the lab
+queue's T099 reads it ([LAB.md](LAB.md#proved-heat-gate-records)). A retained
+run is the gate's outcome as recorded on that host, not a fresh verification.
+
 Stage durations distinguish native execution, SCR's combined prove-and-verify
 call, and additional verification. On Linux, `memory` records the largest waited
 child process's peak RSS in bytes (`scope: max_waited_child_peak_rss`), measured

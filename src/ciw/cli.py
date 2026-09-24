@@ -459,7 +459,8 @@ def parser() -> argparse.ArgumentParser:
     lab_next.add_argument("--provider", action="append", default=[], metavar="ROLE=PATH")
     lab_next.add_argument("--limit", type=int, default=10, help="Rows ranked in 'next'; every refinement is listed")
     lab_verify = lab_actions.add_parser("verify", help="Compare regenerated reports with retained ones and check "
-                                                       "retained hardware runs for integrity")
+                                                       "retained hardware runs and proved-heat gate records for "
+                                                       "integrity")
     lab_verify.add_argument("--retained", type=Path, required=True)
     lab_verify.add_argument("--fresh", type=Path, required=True)
     lab_hardware = lab_actions.add_parser("hardware", help="Retain and verify operator hardware runs")
@@ -474,6 +475,19 @@ def parser() -> argparse.ArgumentParser:
     hardware_verify = hardware_actions.add_parser(
         "verify", help="Check every retained hardware run for integrity; nothing is recomputed")
     hardware_verify.add_argument("--retained", type=Path, required=True)
+    lab_proved = lab_actions.add_parser("proved-heat", help="Retain and verify runs of the SP1 proved-heat gate")
+    proved_actions = lab_proved.add_subparsers(dest="proved_command", required=True)
+    proved_retain = proved_actions.add_parser(
+        "retain", help="Validate a passing proved-heat gate output (results/proved-heat with local-run.json) and "
+                       "retain it as RETAINED/proved-heat/ID")
+    proved_retain.add_argument("run_dir", type=Path)
+    proved_retain.add_argument("--retained", type=Path, required=True)
+    proved_retain.add_argument("--run-id", required=True, help="kebab-case identity, e.g. local-2026-09-24")
+    proved_retain.add_argument("--host", required=True,
+                               help="Operator-declared host description (no host paths), e.g. 'Linux x86-64, 16 GiB'")
+    proved_verify = proved_actions.add_parser(
+        "verify", help="Check every retained proved-heat gate record for integrity; no proof is re-verified")
+    proved_verify.add_argument("--retained", type=Path, required=True)
     lab_unmeasured = lab_actions.add_parser(
         "unmeasured", help="List what remains unmeasured: the main run's count beside each retained hardware run's, "
                            "never merged; runs nothing")
@@ -771,6 +785,15 @@ def main(argv: list[str] | None = None) -> int:
                     print_json(runner.retain_hardware_run(args.run_dir, args.retained, args.run_id, args.host))
                 else:
                     result = runner.verify_hardware_runs(args.retained)
+                    print_json(result)
+                    if not result["passed"]:
+                        return 3
+            elif args.lab_command == "proved-heat":
+                from .lab import proved_heat_records
+                if args.proved_command == "retain":
+                    print_json(proved_heat_records.retain_record(args.run_dir, args.retained, args.run_id, args.host))
+                else:
+                    result = proved_heat_records.verify_records(args.retained)
                     print_json(result)
                     if not result["passed"]:
                         return 3

@@ -1,0 +1,61 @@
+{
+  "schema": "ciw.proved-heat-gate.v1",
+  "status": "passed",
+  "execution": "real_sp1_proof_fresh_replay_and_verification",
+  "physical_truth": "not_established",
+  "scr": {
+    "revision": "a59aba283b0304faeeb3e5d305087e7709e171ca",
+    "tree": "4068a711534932e8d89bb0d87d373376dafdf6cd"
+  },
+  "sp1": {
+    "revision": "b38b61209e45e969289e70d5cf79dc763460bc41",
+    "tree": "7deca3aced8d8eb84dfcede98285a192c862ea4c"
+  },
+  "native_artifacts": {
+    "engine": {
+      "sha256": "636b24475b64d1aa7892ebd8f07871e1adaed3325344e41085f08b6b08cc212e",
+      "byte_count": 509160
+    },
+    "prover": {
+      "sha256": "c6889f4d9f2dc3b689f599155b3dd0766a53b48ea67b89015f461589d193c95b",
+      "byte_count": 55555664
+    },
+    "guest": {
+      "sha256": "a14e3750da7e221d31842bd6cf983fcc8c0f530b2811537e2a9a9fe803dacf82",
+      "byte_count": 50264
+    }
+  },
+  "host_executable_binding": "operator_asserted_not_attested",
+  "tests_passed": 111,
+  "installed_wheel": {
+    "filename": "computational_instrumentation_workbench-0.1.0-py3-none-any.whl",
+    "sha256": "b85197c9d740f7618ec7a89b8cf7ce638857dd91a185e6dbe5412e5e494db905",
+    "byte_count": 1543921
+  },
+  "measurements": {
+    "original": {
+      "proof_byte_count": 2778024,
+      "native_seconds": 0.001877836000858224,
+      "prove_and_verify_seconds": 354.45507419500063,
+      "reverify_seconds": 92.09879494199959,
+      "memory": {
+        "bytes": 10067357696,
+        "scope": "max_waited_child_peak_rss",
+        "status": "measured",
+        "unit": "byte"
+      }
+    },
+    "replay": {
+      "proof_byte_count": 2778024,
+      "native_seconds": 0.0018099770004482707,
+      "prove_and_verify_seconds": 480.6547993490003,
+      "reverify_seconds": 172.87093776899928,
+      "memory": {
+        "bytes": 10066411520,
+        "scope": "max_waited_child_peak_rss",
+        "status": "measured",
+        "unit": "byte"
+      }
+    }
+  }
+}

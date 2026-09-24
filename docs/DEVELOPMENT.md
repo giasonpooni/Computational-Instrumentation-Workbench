@@ -4,6 +4,11 @@ The [proved heat guide](PROVED_HEAT.md) gives the exact Linux build and
 `scripts/check_proved_heat.py` acceptance command for SCR/SP1. The native gate
 requires a real original proof, fresh proved replay, retained-proof reverification
 and corrupted-proof rejection from an installed CIW wheel; skipped tests fail it.
+On a provisioned Linux host, `scripts/run_proved_heat_locally.py` runs the gate
+steps of `.github/workflows/proved-heat.yml` unchanged and refuses when a
+provisioning result is missing; `ciw lab proved-heat retain` keeps a passing
+run under `lab/proved-heat/` for the lab queue (T099; see
+[LAB.md](LAB.md#proved-heat-gate-records)).
 `tests/test_proved_heat.py` separately exercises structural/refusal boundaries
 with explicit test doubles. Such tests never count as cryptographic evidence.
 The [Julia and SP1 contract](JULIA_SP1.md) records the later persistent-worker,
@@ -185,6 +190,21 @@ only from a clean-room gate run under Python 3.12+ with every provider bound:
 `ciw lab run` output into `lab/`: outside the clean room T164 is partial, the
 provider tasks differ and the run log would be retained. Review `git diff lab`
 and the `ciw lab verify` differences.
+
+The gate also binds the latest retained SP1 proved-heat gate record
+(`lab/proved-heat/<run-id>/`) for T099, which rebuilds `execution-cli` with
+the Rust toolchain the proved-heat workflow pins; `lab.yml` installs it with
+`rustup toolchain install 1.94.0 --profile minimal`, and a local reproduction
+needs the same toolchain for T099 to match the retained report. To add a
+record, run the proved-heat gate's steps on a provisioned Linux host and
+retain the output:
+
+```sh
+python scripts/run_proved_heat_locally.py --scr <clean SCR checkout> --sp1 <fresh SP1 clone> \
+    --compiler-archive <succinct-1.94.0 archive> --python <Python 3.12+ with setuptools 77+ and wheel>
+ciw lab proved-heat retain results/proved-heat --retained lab --run-id local-<date> --host "<host description>"
+ciw lab proved-heat verify --retained lab
+```
 
 ## Documenting an integrated tool
 

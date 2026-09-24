@@ -1,0 +1,191 @@
+{
+ "compiler_archive": {
+  "checked": "SHA-256 of the downloaded archive equals the workflow's pin; checked by the operator before linking and again when this record was written",
+  "sha256": "12c94435d41bfe4e20131bbcce40b35abd32270ad792befc653af4e3fabc192f"
+ },
+ "date": "2026-09-24",
+ "host": "Linux x86-64 container, 4 CPUs, 16 GiB memory, Ubuntu 24.04",
+ "host_facts": {
+  "cpus": 4,
+  "kernel": "6.18.44-fc-v37",
+  "machine": "x86_64",
+  "memory_total_bytes": 16877547520,
+  "os": "Ubuntu 24.04.4 LTS",
+  "system": "Linux"
+ },
+ "limitations": [
+  "The gate binds its engine and prover as operator_asserted_not_attested executables: the record shows which bytes ran, not that they were built from the pinned sources.",
+  "Times, memory and proof sizes in gate/gate.json and the bundles are measurements of the recording host.",
+  "Gate outputs are retained as the gate wrote them and name the recording host's temporary and checkout locations as identity metadata; run.json and manifest.json hold no host path.",
+  "Digests are unkeyed: they detect accidental edits, not who produced the record. Nothing here re-runs the prover or the verifier."
+ ],
+ "note": "Retained proved-heat gate records are verified for integrity only: every retained file matches the manifest and no unrecorded file is present, the gate passed with its required native tests, its SCR and SP1 revisions and trees, guest recipe, guest ELF and compiler archive are the pins CIW declares, and the retained bundles, replay receipt and re-verification report pass CIW's offline proved-heat validation. No proof is re-verified and nothing is re-executed; the digests are unkeyed.",
+ "notes": [
+  "This description was written after the run from the step logs, the gate outputs and the host: the driver then in use, an earlier form of scripts/run_proved_heat_locally.py, wrote none, so driver_sha256 is null and git is not recorded.",
+  "The CIW commit is the one the checkout's reflog names as HEAD while the gate ran; uncommitted changes are not recorded. The installed wheel's digest is in gate/gate.json. src/ciw/proved_heat.py, tests/test_proved_heat.py, tests/test_proved_heat_session.py, scripts/check_proved_heat.py and the workflow are the same at that commit as at the commit that retained this record.",
+  "Step durations are whole seconds as the driver printed them."
+ ],
+ "observations": {
+  "execution_cli_toolchain_experiment": {
+   "builds": [
+    {
+     "sha256": "636b24475b64d1aa7892ebd8f07871e1adaed3325344e41085f08b6b08cc212e",
+     "source": "<scr>",
+     "toolchain": "rustc 1.94.0 (4a4ef493e 2026-03-02)"
+    },
+    {
+     "sha256": "636b24475b64d1aa7892ebd8f07871e1adaed3325344e41085f08b6b08cc212e",
+     "source": "<proved-heat-stack>/scr, the gate's link to <scr>",
+     "toolchain": "rustc 1.94.0 (4a4ef493e 2026-03-02)"
+    },
+    {
+     "sha256": "636b24475b64d1aa7892ebd8f07871e1adaed3325344e41085f08b6b08cc212e",
+     "source": "<scr>, built again",
+     "toolchain": "rustc 1.94.0 (4a4ef493e 2026-03-02)"
+    },
+    {
+     "sha256": "b9f40b3094ecf4b793676c766ffd559dc69abc4fada564c1bde94e79c6f0b201",
+     "source": "<scr>",
+     "toolchain": "rustc 1.94.1 (e408947bf 2026-03-25)"
+    },
+    {
+     "sha256": "b9f40b3094ecf4b793676c766ffd559dc69abc4fada564c1bde94e79c6f0b201",
+     "source": "a second clone of SCR at the pin, at another path",
+     "toolchain": "rustc 1.94.1 (e408947bf 2026-03-25)"
+    }
+   ],
+   "command": "cargo +<toolchain> build --release --locked --offline --manifest-path <source>/crates/Cargo.toml -p execution-cli, with a fresh CARGO_TARGET_DIR per build",
+   "kind": "operator_observation",
+   "result": "On this host the execution-cli digest depends on the toolchain and not on the source path: rustc 1.94.0 gives the engine gate/gate.json names, rustc 1.94.1 another digest.",
+   "scr_revision": "a59aba283b0304faeeb3e5d305087e7709e171ca"
+  }
+ },
+ "omitted": {
+  "gate/workspace.json": {
+   "bytes": 7739572,
+   "reason": "its two proved-heat bundles are gate/original.json and gate/replay.json (checked equal when the run was retained); the rest is the session's synthetic demonstration run",
+   "sha256": "0e867420390cb89bdaf9cfcbf113f62df0acb3a8fb36452d3978eb77f381d232"
+  },
+  "local-logs": {
+   "files": [
+    "01-Rebuild-and-verify-the-committed-heat-ELF-recipe.log",
+    "02-Build-native-execution-and-CPU-proving-hosts.log",
+    "03-Check-build-source-bytes-and-provision-clean-SP1-reference.log",
+    "04-Exercise-actual-proofs-through-an-isolated-installed-CIW-whe.log"
+   ],
+   "reason": "per-step console output of the local driver (compiler and pip output naming host paths); each step's outcome and duration are in run.json"
+  }
+ },
+ "procedure": {
+  "cargo_build_jobs": "2",
+  "driver": "scripts/run_proved_heat_locally.py",
+  "driver_sha256": null,
+  "job": "native-proof",
+  "kind": "local_workflow_replay",
+  "outcome": "passed",
+  "workflow": ".github/workflows/proved-heat.yml",
+  "workflow_sha256": "3351eecb2f288a1c7dbcf2b3602cd0622508f9253e4c716e9a3e3c79270219e3"
+ },
+ "record_origin": "written_after_the_run",
+ "run_id": "local-2026-09-24",
+ "schema": "ciw.lab-proved-heat-run.v1",
+ "sources": {
+  "ciw": {
+   "commit": "411a6aa76021e56f8bc8ac22357d5d833fba28d8",
+   "uncommitted_changes": null
+  },
+  "scr": {
+   "provisioning": "existing clean operator checkout linked into the stack",
+   "revision": "a59aba283b0304faeeb3e5d305087e7709e171ca",
+   "tree": "4068a711534932e8d89bb0d87d373376dafdf6cd"
+  },
+  "sp1": {
+   "provisioning": "fresh clone of https://github.com/succinctlabs/sp1.git linked into the stack",
+   "revision": "b38b61209e45e969289e70d5cf79dc763460bc41",
+   "tree": "7deca3aced8d8eb84dfcede98285a192c862ea4c"
+  }
+ },
+ "started_utc": "2026-09-24T12:52:30Z",
+ "steps": [
+  {
+   "name": "actions/checkout@v4",
+   "reason": "the gate ran from the operator's CIW checkout",
+   "status": "not_run"
+  },
+  {
+   "name": "actions/setup-python@v5",
+   "reason": "the host's Python 3.12.3 was `python` for every step",
+   "status": "not_run"
+  },
+  {
+   "name": "Check Linux resource budget",
+   "reason": "not run by the driver then in use, so no resources.json was written; the host's total memory is in host_facts and the gate's measured peak RSS in gate/gate.json",
+   "status": "not_run"
+  },
+  {
+   "name": "Install native build dependencies",
+   "reason": "provisioned by the operator: the workflow's apt packages, and rustup toolchain 1.94.0 (minimal profile)",
+   "status": "not_run"
+  },
+  {
+   "name": "Check out exact SCR and upstream SP1 sources",
+   "reason": "provisioned by the operator: an existing clean SCR checkout at the pin and a fresh clone of upstream SP1 checked out at the pin, linked into the stack",
+   "status": "not_run"
+  },
+  {
+   "name": "Restore exact pinned host builds and Cargo downloads",
+   "reason": "no build cache: a miss, so the build step ran",
+   "status": "not_run"
+  },
+  {
+   "name": "Install the recipe's exact Succinct compiler archive",
+   "reason": "provisioned by the operator: the archive was downloaded from the workflow's URL, its SHA-256 checked against the pin, extracted and linked as the succinct toolchain",
+   "status": "not_run"
+  },
+  {
+   "exit_code": 0,
+   "name": "Rebuild and verify the committed heat ELF recipe",
+   "seconds": 83,
+   "status": "ran"
+  },
+  {
+   "exit_code": 0,
+   "name": "Build native execution and CPU proving hosts",
+   "seconds": 970,
+   "status": "ran"
+  },
+  {
+   "exit_code": 0,
+   "name": "Check build source bytes and provision clean SP1 reference",
+   "seconds": 2,
+   "status": "ran"
+  },
+  {
+   "name": "Save completed pinned hosts before running proof tests",
+   "reason": "no build cache",
+   "status": "not_run"
+  },
+  {
+   "exit_code": 0,
+   "name": "Exercise actual proofs through an isolated installed CIW wheel",
+   "seconds": 1331,
+   "status": "ran"
+  },
+  {
+   "name": "actions/upload-artifact@v4",
+   "reason": "the outputs stayed in the local output directory",
+   "status": "not_run"
+  }
+ ],
+ "toolchains": {
+  "cargo": "cargo 1.94.0 (85eff7c80 2026-01-15)",
+  "clang": "Ubuntu clang version 18.1.3 (1ubuntu1)",
+  "default_rustc": "rustc 1.94.1 (e408947bf 2026-03-25)",
+  "git": null,
+  "protoc": "libprotoc 3.21.12",
+  "python": "3.12.3",
+  "rustc": "rustc 1.94.0 (4a4ef493e 2026-03-02)",
+  "rustc_succinct": "rustc 1.94.0-dev (commit-hash unknown)",
+  "rustup": "rustup 1.29.0 (28d1352db 2026-03-05)"
+ }
+}
