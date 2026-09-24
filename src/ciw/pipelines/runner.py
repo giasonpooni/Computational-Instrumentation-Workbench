@@ -409,9 +409,8 @@ class PipelineRunner:
         return code, raw
 
     def _unchanged(self, adapter, runtime, when):
-        current = self._runtime_projection(adapter.runtime_identity())
-        retained = self._runtime_projection(runtime)
-        if any(key not in retained or canonical(retained[key]) != canonical(value) for key, value in current.items()):
+        # The whole host-independent identity, so a field the provider stops reporting is a change too.
+        if canonical(self._runtime_projection(adapter.runtime_identity())) != canonical(self._runtime_projection(runtime)):
             raise ValueError(f"{self.LABEL} provider changed {when} execution")
 
     def _step(self, source, evidence_id, bound):

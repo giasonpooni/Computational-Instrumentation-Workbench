@@ -160,6 +160,17 @@ def test_binding_refusal_and_drift():
         ToyRunner(drift=1).create_session(source_bytes(), {"toy": "/host/a"})
 
 
+def test_a_provider_that_stops_reporting_an_identity_field_has_changed():
+    runner = ToyRunner()
+    adapter, runtime, extra = runner._adapters({"toy": "/host/a"})
+    adapter.identity = {key: value for key, value in adapter.identity.items() if key != "dependencies"}
+    with pytest.raises(ValueError, match="changed before execution"):
+        runner._step(json.loads(source_bytes()), "sha256:" + "0" * 64, (adapter, runtime, extra))
+    # Host paths are bindings, not identity: moving them is not a change.
+    adapter.identity = runtime | {"repository_root": "/host/b", "python_executable": "/opt/python3"}
+    runner._step(json.loads(source_bytes()), "sha256:" + "0" * 64, (adapter, runtime, extra))
+
+
 @pytest.mark.parametrize("path, value", [
     (("steps", 0, "result", "data", "sum"), 7),
     (("steps", 0, "result", "authority", "state_admission"), "performed"),
