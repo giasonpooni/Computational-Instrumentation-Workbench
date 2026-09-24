@@ -148,12 +148,12 @@
       ]
     },
     {
-      "rule": "Inspection cannot see covariance produced by the post-hook. The CIW-computed temporal_covariance and joint_time_value_covariance are written into the step-0/1 result data by `ciw.calibrated_window:_invoke` and sealed by `ciw.calibrated_window:_execute`. `ciw.calibrated_window:_project` and `ciw.calibrated_window:_jacobians` are called only in `ciw.calibrated_window:_invoke`, never in `ciw.calibrated_window:_validate`, which repeats neither the value-block extraction nor the MCUR marginal-variance check. If that covariance is edited and every identity re-digested consistently, inspection still passes: an edited MCUR temporal_covariance flows into the STFE request rebuilt by `ciw.calibrated_window:_request`, and `ciw.workbench:_telemetry_context` exposes an edited joint_time_value_covariance. Only replay catches it, at the template comparison `ciw.telemetry:_compare_reproduction` in `ciw.calibrated_window:replay_session`.",
+      "rule": "Inspection cannot see covariance produced by the post-hook. The CIW-computed temporal_covariance and joint_time_value_covariance are written into the step-0/1 result data by `ciw.calibrated_window:_invoke` and sealed by `ciw.calibrated_window:_execute`. `ciw.calibrated_window:_project` and `ciw.calibrated_window:_jacobians` are called only in `ciw.calibrated_window:_invoke`, never in `ciw.calibrated_window:_validate`, which repeats neither the value-block extraction nor the MCUR marginal-variance check. If that covariance is edited and every identity re-digested consistently, inspection still passes: an edited MCUR temporal_covariance flows into the STFE request rebuilt by `ciw.calibrated_window:_request`, and `ciw.fusion_context:_telemetry_context` exposes an edited joint_time_value_covariance. Only replay catches it, at the template comparison `ciw.telemetry:_compare_reproduction` in `ciw.calibrated_window:replay_session`.",
       "evidence": "added by adversarial verification; citations in the rule",
       "code": [
         "ciw.calibrated_window:_invoke",
         "ciw.calibrated_window:_validate",
-        "ciw.workbench:_telemetry_context",
+        "ciw.fusion_context:_telemetry_context",
         "ciw.telemetry:_compare_reproduction"
       ]
     },
@@ -185,13 +185,13 @@
       ]
     },
     {
-      "rule": "Retained step order is a public contract. `ciw.calibrated_window:_validate` fixes the steps to `ciw.calibrated_window:OPERATIONS` (tbrt, mcur, stfe, gsie), and consumers index them positionally: `ciw.residual_monitor:_request` reads steps[3] as the GSIE result and steps[0] as the mapped event times, and `ciw.workbench:_telemetry_context` reads steps[0] as the clock result and steps[1] as the calibration result, for calibrated-window and for acquired-calibrated-window, whose outer steps `ciw.acquired_window:_validate` requires to equal the child's. Reordering or renaming OPERATIONS breaks these consumers and every retained bundle. The descriptor's own step list is matched by role set only, so its order is not the contract.",
+      "rule": "Retained step order is a public contract. `ciw.calibrated_window:_validate` fixes the steps to `ciw.calibrated_window:OPERATIONS` (tbrt, mcur, stfe, gsie), and consumers index them positionally: `ciw.residual_monitor:_request` reads steps[3] as the GSIE result and steps[0] as the mapped event times, and `ciw.fusion_context:_telemetry_context` reads steps[0] as the clock result and steps[1] as the calibration result, for calibrated-window and for acquired-calibrated-window, whose outer steps `ciw.acquired_window:_validate` requires to equal the child's. Reordering or renaming OPERATIONS breaks these consumers and every retained bundle. The descriptor's own step list is matched by role set only, so its order is not the contract.",
       "evidence": "added by adversarial verification; citations in the rule",
       "code": [
         "ciw.calibrated_window:OPERATIONS",
         "ciw.calibrated_window:_validate",
         "ciw.residual_monitor:_request",
-        "ciw.workbench:_telemetry_context",
+        "ciw.fusion_context:_telemetry_context",
         "ciw.acquired_window:_validate"
       ]
     },

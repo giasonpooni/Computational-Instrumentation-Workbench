@@ -260,11 +260,11 @@
       ]
     },
     {
-      "rule": "Downstream positional contract. `ciw.identified_stability:_binding` binds design steps[0] and steps[2]. `ciw.workbench:_context` reads step index 2 for design and 4 for calibrated, and reads upstream steps[5]/steps[6]. The step order is a public output contract: `ciw.identified_design:_validate` accepts only the order of `ciw.identified_design:OPERATIONS`, so that order must stay frozen or be exposed as named outputs.",
+      "rule": "Downstream positional contract. `ciw.identified_stability:_binding` binds design steps[0] and steps[2]. `ciw.fusion_context:project` reads step index 2 for design and 4 for calibrated, and reads upstream steps[5]/steps[6]. The step order is a public output contract: `ciw.identified_design:_validate` accepts only the order of `ciw.identified_design:OPERATIONS`, so that order must stay frozen or be exposed as named outputs.",
       "evidence": "added by adversarial verification; citations in the rule",
       "code": [
         "ciw.identified_stability:_binding",
-        "ciw.workbench:_context",
+        "ciw.fusion_context:project",
         "ciw.identified_design:OPERATIONS"
       ]
     },

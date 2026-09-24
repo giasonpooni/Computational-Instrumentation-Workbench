@@ -108,7 +108,7 @@
     },
     {
       "rule": "The mapping source must declare that the window prior is an explicit independent reference, not the previous posterior, and that inter-window cross-covariance is not inferred. This is a declared policy checked by equality, not a verified property: no code path verifies that the child's prior is not a previous posterior.",
-      "evidence": "`ciw.acquired_window:POLICY` holds window_prior 'explicit_independent_reference_not_previous_posterior' and inter_window_cross_covariance 'not_inferred'; `ciw.acquired_window:_source` only checks configuration == POLICY. The child checks its own source (`ciw.calibrated_window:_source` requires prior_measurement_crosscov_policy 'declared_zero', not the prior's origin); `ciw.workbench:_telemetry_context` emits its own fixed labels (reference_prior_policy, inter_window_covariance), not read from POLICY.",
+      "evidence": "`ciw.acquired_window:POLICY` holds window_prior 'explicit_independent_reference_not_previous_posterior' and inter_window_cross_covariance 'not_inferred'; `ciw.acquired_window:_source` only checks configuration == POLICY. The child checks its own source (`ciw.calibrated_window:_source` requires prior_measurement_crosscov_policy 'declared_zero', not the prior's origin); `ciw.fusion_context:_telemetry_context` emits its own fixed labels (reference_prior_policy, inter_window_covariance), not read from POLICY.",
       "code": [
         "ciw.acquired_window:POLICY",
         "ciw.acquired_window:_source"
@@ -133,13 +133,13 @@
       ]
     },
     {
-      "rule": "The outer bundle aliases the child. steps, runtimes and created_at must equal the child's exactly, and session_id must differ (checked in `ciw.acquired_window:_validate`, built by `ciw.acquired_window:_wrap`). Workbench attributes the aliased steps to the child owner (`ciw.workbench:_claims`). `ciw.workbench:Workbench._native_steps` yields child_window as owner. The context reads the exposed child steps positionally, steps[0] as clock and steps[1] as calibration (`ciw.workbench:_telemetry_context`), relying on `ciw.calibrated_window:_validate` fixing the step order to `ciw.calibrated_window:OPERATIONS`.",
+      "rule": "The outer bundle aliases the child. steps, runtimes and created_at must equal the child's exactly, and session_id must differ (checked in `ciw.acquired_window:_validate`, built by `ciw.acquired_window:_wrap`). Workbench attributes the aliased steps to the child owner (`ciw.workbench:_claims`). `ciw.workbench:Workbench._native_steps` yields child_window as owner. The context reads the exposed child steps positionally, steps[0] as clock and steps[1] as calibration (`ciw.fusion_context:_telemetry_context`), relying on `ciw.calibrated_window:_validate` fixing the step order to `ciw.calibrated_window:OPERATIONS`.",
       "evidence": "added by adversarial verification; citations in the rule",
       "code": [
         "ciw.acquired_window:_validate",
         "ciw.workbench:_claims",
         "ciw.workbench:Workbench._native_steps",
-        "ciw.workbench:_telemetry_context"
+        "ciw.fusion_context:_telemetry_context"
       ]
     },
     {
