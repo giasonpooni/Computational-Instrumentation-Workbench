@@ -1,5 +1,12 @@
+import dataclasses
 import importlib.util
+import json
 import math
+import os
+from pathlib import Path
+import subprocess
+import sys
+import textwrap
 
 import numpy as np
 import pytest
@@ -7,6 +14,7 @@ import pytest
 from ciw.lab import observation, runner
 from ciw.lab import observation_chord as chord
 from ciw.lab import observation_modes as om
+from ciw.lab import sensor_fusion_intake as intake
 from ciw.lab.evidence import COMPUTATIONAL_DOMAINS, primary_label
 from ciw.lab.registry import load_queue, section_implementations
 from ciw.lab.report import validate_report
@@ -74,6 +82,11 @@ def _derivation_label():
     return IV if _sympy() else "analytic"
 
 
+def _derivation_primary():
+    """Without sympy the derivation finding is analytic, the weakest established label, so it is the primary."""
+    return NV if _sympy() else "analytic"
+
+
 def test_every_section_task_is_registered_with_tests():
     assert set(IMPLEMENTATIONS) == {f"T0{n}" for n in range(45, 60)}
     for implementation in IMPLEMENTATIONS.values():
@@ -87,7 +100,7 @@ def test_every_section_task_is_registered_with_tests():
 
 def test_t045_modes_and_refusals(tmp_path):
     report = _run("T045", tmp_path)
-    _completed(report, [NV, NV, NV, NV, NE])
+    _completed(report, [NV, NV, NV, NV, NV, NE])
     assert _find(report, "Seven typed")["value"]["intrinsic"] == ["intrinsic_geodesic_distance",
                                                                   "reconstructed_surface_distance"]
     assert _find(report, "Validation refuses")["value"][:4] == ["missing_frame", "missing_clock", "missing_epoch",
@@ -106,6 +119,71 @@ def test_t045_modes_and_refusals(tmp_path):
     assert refused.value.code == "surface_model_required"
     converted = om.chord_to_surface_distance(record, observation.CYLINDER_MODEL)
     assert converted.mode == "reconstructed_surface_distance" and converted.value[0] == pytest.approx(0.12, abs=1e-14)
+    # The runner retains operator captures; what is missing is a section-4 parser that reads one, and an
+    # authenticated route for these instruments (a capture alone never supports hardware_measured).
+    step = report["recommended_next_task"]
+    assert "operator capture" in step and "capture parser" in step and "the runner does not have" not in step
+    assert "trust anchor" in step and "No hardware_measured observation exists" in step
+
+
+def test_reconstructed_distance_carries_the_t044_split(tmp_path):
+    report = _run("T045", tmp_path)
+    split = _find(report, "A model-derived surface distance carries separate geometry and sensor")
+    assert split["evidence_status"] == NV and set(split["value"]["components"]) == {"geometry_m2", "sensor_m2"}
+    assert all(abs(z) < observation.Z999 for z in split["value"]["z"].values())
+    assert split["value"]["finite_difference_relative_gap"] < 1e-6
+    assert om.MODES["reconstructed_surface_distance"].variance_components == ("geometry_m2", "sensor_m2")
+    assert om.MODES["reconstructed_surface_distance"].variance_required is True
+    # The conversion fills both components by first-order propagation of the declared uncertainties.
+    chord_record = observation.example_observation("camera_chord_distance")
+    derived = om.chord_to_surface_distance(chord_record, observation.CYLINDER_MODEL)
+    gains = om.arc_length_sensitivities(chord_record.value[0], observation.CYLINDER_MODEL)
+    sigma = observation.CYLINDER_MODEL["parameter_sigma"]
+    assert derived.variance_components["sensor_m2"] == pytest.approx(gains["chord"] ** 2 * observation.CHORD_SENSOR_M2)
+    assert derived.variance_components["geometry_m2"] == pytest.approx(
+        (gains["radius"] * sigma["radius"]) ** 2 + (gains["path_angle_rad"] * sigma["path_angle_rad"]) ** 2)
+    # A surface distance without both components, or a conversion without the inputs of either, is refused.
+    for record, code in ((dataclasses.replace(derived, variance_components={"sensor_m2": 1e-8}),
+                          "variance_split_mismatch"),
+                         (dataclasses.replace(derived, variance_components=None), "variance_split_mismatch"),
+                         (dataclasses.replace(derived, variance_components={"geometry_m2": -1.0, "sensor_m2": 0.0}),
+                          "invalid_variance"),
+                         (dataclasses.replace(observation.example_observation("tracker_measurement"),
+                                              variance_components={"sensor_m2": 1e-8}), "variance_split_mismatch")):
+        with pytest.raises(om.ObservationRefusal) as refused:
+            om.validate(record)
+        assert refused.value.code == code
+    with pytest.raises(om.ObservationRefusal) as refused:
+        om.chord_to_surface_distance(dataclasses.replace(chord_record, variance_components=None),
+                                     observation.CYLINDER_MODEL)
+    assert refused.value.code == "variance_split_required"
+    bare = {k: v for k, v in observation.CYLINDER_MODEL.items() if k != "parameter_sigma"}
+    with pytest.raises(om.ObservationRefusal) as refused:
+        om.chord_to_surface_distance(chord_record, bare)
+    assert refused.value.code == "geometry_uncertainty_required"
+    # A plane has no parameters: its geometry component is zero only because the model states so.
+    plane = om.chord_to_surface_distance(chord_record, {"kind": "plane", "parameter_sigma": {}})
+    assert plane.variance_components == {"geometry_m2": 0.0, "sensor_m2": observation.CHORD_SENSOR_M2}
+    # Components that are not a mapping are refused with a code, not a crash, also when a retained record is admitted.
+    listed = dataclasses.replace(chord_record, variance_components=["sensor_m2"])
+    with pytest.raises(om.ObservationRefusal) as refused:
+        om.validate(listed)
+    assert refused.value.code == "invalid_variance"
+    ledger = om.ObservationLedger(read_only=False)
+    kept = ledger.retain(listed)
+    with pytest.raises(om.ObservationRefusal) as refused:
+        ledger.admit(kept["observation_digest"], "test")
+    assert refused.value.code == "invalid_variance"
+    # An empty mapping declares nothing: it validates and has the digest of the record without components, so one
+    # measurement cannot be retained under two digests. A required split is not met by it.
+    for record in (observation.example_observation("encoder_displacement"),
+                   dataclasses.replace(chord_record, variance_components=None)):
+        empty = dataclasses.replace(record, variance_components={})
+        assert om.validate(empty) is empty and empty.digest() == record.digest()
+        assert "variance_components" not in empty.record()
+    with pytest.raises(om.ObservationRefusal) as refused:
+        om.validate(dataclasses.replace(derived, variance_components={}))
+    assert refused.value.code == "variance_split_mismatch"
 
 
 def _fields(record):
@@ -119,7 +197,7 @@ def _fields(record):
 
 def test_t046_chord_expansion(tmp_path):
     report = _run("T046", tmp_path)
-    _completed(report, [_derivation_label(), NV, NV, NV, NV, NE])
+    _completed(report, [_derivation_label(), NV, NV, NV, NV, NE], primary=_derivation_primary())
     derivation = _find(report, "Chord expansion")
     if _sympy():
         # The Frenet recursion shares the Frenet model, so it is an ordinary check; the explicit-curve route
@@ -177,7 +255,7 @@ def test_chord_derivation_degrades_without_sympy(tmp_path):
 
 def test_t047_cylinder_coefficient(tmp_path):
     report = _run("T047", tmp_path)
-    _completed(report, [_derivation_label(), NV, NV, NV, NV, NE])
+    _completed(report, [_derivation_label(), NV, NV, NV, NV, NE], primary=_derivation_primary())
     if _sympy():
         independent = _find(report, "The exact helix chord")["basis"]["independent_check"]
         # A symbolic residual count, not a float comparison of 30-digit values.
@@ -420,7 +498,7 @@ def test_t057_filter_and_smoother(tmp_path):
 
 def test_t058_frame_and_clock_basis(tmp_path):
     report = _run("T058", tmp_path)
-    _completed(report, [NV, NV, NV, NV, NE])
+    _completed(report, [NV, NV, NV, NV, NV, NE])
     rigid = _find(report, "A declared rigid frame")
     assert rigid["value"]["exact_gap_m"] == 0.0 and rigid["value"]["distance_change_m"] <= 1.1e-14
     assert rigid["regression_tolerance"]["abs"] >= 1e-14
@@ -428,22 +506,242 @@ def test_t058_frame_and_clock_basis(tmp_path):
     refused = _find(report, "Combining observations")["value"]
     assert refused == {"frame_mismatch": "frame_mismatch", "clock_mismatch": "clock_mismatch",
                        "epoch_mismatch": "epoch_mismatch", "clock_basis_mismatch": "clock_basis_mismatch"}
+    # The intake applies no acquisition-age limit (T056); the report says so rather than implying it.
+    assert any(assumption.startswith("Acquisition-age staleness (T056) is not applied at the fusion intake")
+               for assumption in report["unresolved_assumptions"])
 
 
 def test_t059_retained_without_admission(tmp_path):
     report = _run("T059", tmp_path)
-    _completed(report, [NV, NV, NV, NV, NE])
+    _completed(report, [NV, NV, NV, NV, NV, NV, NV, NE])
     assert set(_find(report, "Updating state")["value"].values()) == {"not_admitted"}
     assert _find(report, "Admission as workbench")["domain"] == "actuator_authority"
-    store = om.StateStore("encoder_displacement", 0.0, 1.0)
+    assert _find(report, "On a writable store")["value"]["state_admission"] == "synthetic_only"
+    store = om.StateStore("encoder_displacement", 0.0, 1.0, read_only=False)
     before = store.digest()
     record = store.retain(observation.example_observation("encoder_displacement"))
     assert store.digest() == before and record["state_admission"] == "not_performed"
     with pytest.raises(om.ObservationRefusal) as refused:
         store.update(record, 0.5)
     assert refused.value.code == "not_admitted" and store.digest() == before
-    store.admit(record["observation_digest"], "test")
+    assert store.admit(record["observation_digest"], "test")["state_admission"] == "synthetic_only"
     assert store.update(record, 1.0)["mean"] == [0.02125]
+
+
+def test_state_store_defaults_to_read_only(tmp_path):
+    report = _run("T059", tmp_path)
+    defaults = _find(report, "A state store defaults to read-only")
+    assert defaults["evidence_status"] == NV and defaults["value"]["authority_state_admission"] == ["not_performed"]
+    assert {code for codes in defaults["value"]["refusals"].values() for code in codes.values()} == {
+        "read_only_session"}
+    store = om.StateStore("encoder_displacement", 0.0, 1.0)
+    assert store.read_only is True and store.authority["state_admission"] == "not_performed"
+    record = store.retain(observation.example_observation("encoder_displacement"))
+    before = store.digest()
+    for action in (lambda: store.admit(record["observation_digest"], "test"), lambda: store.update(record, 0.5)):
+        with pytest.raises(om.ObservationRefusal) as refused:
+            action()
+        assert refused.value.code == "read_only_session"
+    assert store.digest() == before
+    ledger = om.ObservationLedger()
+    with pytest.raises(om.ObservationRefusal) as refused:
+        ledger.read_only = False
+    assert refused.value.code == "read_only_session" and ledger.read_only is True
+    # The store's flag is fixed too, including the ledger that carries it.
+    for name, value in (("read_only", False), ("authority", {"state_admission": "synthetic_only"}),
+                        ("_ledger", om.ObservationLedger(read_only=False))):
+        with pytest.raises(om.ObservationRefusal) as refused:
+            setattr(store, name, value)
+        assert refused.value.code == "read_only_session", name
+    assert store.read_only is True and store.authority["state_admission"] == "not_performed"
+    with pytest.raises(om.ObservationRefusal) as refused:
+        store.admit(record["observation_digest"], "test")
+    assert refused.value.code == "read_only_session" and store.digest() == before
+    # Nothing in this section writes a state_admission value outside the CIW vocabulary.
+    assert not hasattr(om, "ADMITTED") and om.ADMISSION_VOCABULARY == ("not_performed", "synthetic_only")
+    writable = om.StateStore("encoder_displacement", 0.0, 1.0, read_only=False)
+    assert writable.authority["state_admission"] == writable.authority["sensor_fusion"] == "synthetic_only"
+
+
+def test_variance_split_survives_retention_and_digesting(tmp_path):
+    report = _run("T059", tmp_path)
+    split = _find(report, "The geometry and sensor variance components")["value"]
+    assert split["digest_preserved"] is True and split["tampered_update"] == "admission_digest_mismatch"
+    assert split["altered_component_changes_digest"] == {"geometry_m2": True, "sensor_m2": True}
+    derived = om.chord_to_surface_distance(observation.example_observation("camera_chord_distance"),
+                                           observation.CYLINDER_MODEL)
+    ledger = om.ObservationLedger(read_only=False)
+    kept = ledger.retain(derived)
+    assert kept["observation"]["variance_components"] == derived.variance_components
+    ledger.admit(kept["observation_digest"], "test")
+    assert ledger.admitted(kept["observation_digest"]).variance_components == derived.variance_components
+    # Records of modes without components keep the key out of their content, so their digests are unchanged.
+    assert "variance_components" not in observation.example_observation("tracker_measurement").record()
+
+
+def test_state_update_takes_the_declared_variance(tmp_path):
+    report = _run("T059", tmp_path)
+    split = _find(report, "The geometry and sensor variance components")
+    assert split["evidence_status"] == NV and split["value"]["update_posterior_variance_gap_m2"] == 0.0
+    assert split["value"]["update_variance_refusal"] == "variance_split_mismatch"
+    assert _find(report, "Tampered, unretained")["value"]["invalid_variance"] == "invalid_variance"
+    derived = om.chord_to_surface_distance(observation.example_observation("camera_chord_distance"),
+                                           observation.CYLINDER_MODEL)
+    total = om.declared_variance(derived)
+    assert total == pytest.approx(sum(derived.variance_components.values()), rel=1e-15) and total > 0
+
+    def admitted(record, prior_variance=1.0):
+        store = om.StateStore(record.mode, 0.12, prior_variance, read_only=False)
+        kept = store.retain(record)
+        store.admit(kept["observation_digest"], "test")
+        return store, kept
+
+    # The declared total is the update variance, whether or not the caller repeats it.
+    for given in (None, total):
+        store, kept = admitted(derived)
+        assert store.update(kept, given)["variance"][0] == pytest.approx(total / (1.0 + total), rel=1e-6)
+    # Any other caller variance, zero included, is refused and leaves the state unchanged.
+    for given in (1e-12, 0.0, 2 * total):
+        store, kept = admitted(derived)
+        before = store.digest()
+        with pytest.raises(om.ObservationRefusal) as refused:
+            store.update(kept, given)
+        assert refused.value.code == "variance_split_mismatch" and store.digest() == before
+    # A record without a split needs a finite, positive caller variance of the right shape.
+    for given in (None, 0.0, -1.0, float("nan"), float("inf"), [1.0, 2.0]):
+        store, kept = admitted(observation.example_observation("encoder_displacement"))
+        before = store.digest()
+        with pytest.raises(om.ObservationRefusal) as refused:
+            store.update(kept, given)
+        assert refused.value.code == "invalid_variance" and store.digest() == before, given
+    # The section-4 store and the fusion intake treat one record's noise the same way.
+    assert intake.declared_covariance(derived)[0, 0] == total
+
+
+def test_intake_import_failure_blocks_only_its_tasks(tmp_path):
+    """An intake that cannot be imported blocks T058 and T059, not the other observation tasks."""
+    script = textwrap.dedent("""
+        import json, sys
+        sys.modules["ciw.lab.sensor_fusion_intake"] = None  # any import of the intake now fails
+        from ciw.lab import runner
+        from ciw.lab.registry import load_queue, section_implementations
+        queue = {t["id"]: t for t in load_queue()["tasks"]}
+        implementations = section_implementations("observation")
+        ctx = runner.Context(sys.argv[1])
+        reports = {t: runner.run_task(queue[t], implementations[t], ctx, {}) for t in ("T054", "T058", "T059")}
+        print(json.dumps({"registered": sorted(implementations),
+                          "states": {t: r["state"] for t, r in reports.items()},
+                          "reasons": {t: " ".join(r["failure_modes_checked"]) for t, r in reports.items()}}))
+    """)
+    source = str(Path(observation.__file__).resolve().parents[2])
+    env = dict(os.environ, PYTHONPATH=os.pathsep.join(filter(None, [source, os.environ.get("PYTHONPATH")])))
+    result = subprocess.run([sys.executable, "-c", script, str(tmp_path)], capture_output=True, text=True, env=env,
+                            timeout=300)
+    assert result.returncode == 0, result.stderr
+    outcome = json.loads(result.stdout.strip().splitlines()[-1])
+    assert outcome["registered"] == sorted(IMPLEMENTATIONS)
+    assert outcome["states"] == {"T054": "completed", "T058": "blocked", "T059": "blocked"}
+    assert all("sensor_fusion_intake" in outcome["reasons"][t] for t in ("T058", "T059"))
+
+
+def test_intake_refuses_unadmitted_records(tmp_path):
+    report = _run("T059", tmp_path)
+    fused = _find(report, "The fusion intake refuses a retained but unadmitted record")
+    assert fused["evidence_status"] == NV
+    assert {k: v["intake"] for k, v in fused["value"]["refusals"].items()} == {
+        "not_retained": "not_retained", "not_admitted": "not_admitted", "missing_calibration": "not_admitted"}
+    assert fused["value"]["refusals"]["missing_calibration"]["admission"] == "missing_calibration"
+    session = intake.FusionSession(read_only=False, dt=intake.DT, q=intake.Q_SPECTRAL)
+    session.register_calibration(intake.CalibrationRecord("trk-cal", "tracker", "tracker:cell", 0, 100))
+    session.initialize(intake.PRIOR_MEAN, intake.PRIOR_COV, 0)
+    route = intake.ObservationIntake(session, intake.FUSION_CLOCK, (intake.TRACKER_CHANNEL,),
+                                     frame_mappings=(intake.ROOM_TO_CELL,),
+                                     clock_mappings=(intake.ARRIVAL_TO_ACQUISITION, intake.TRACKER_TO_FUSION))
+    ledger = om.ObservationLedger(read_only=False)
+    record = intake.tracker_records(ticks=1)[1][0]
+    digest = ledger.retain(record)["observation_digest"]
+    with pytest.raises(intake.IntakeRefusal) as refused:
+        route.fuse(ledger, digest)
+    assert refused.value.code == "not_admitted" and session.tick == 0 and session.log == []
+    assert route.log[-1]["disposition"] == "refused:not_admitted"
+    ledger.admit(digest, "test")
+    candidate = route.fuse(ledger, digest)
+    assert candidate.tick == 1 and route.trace()[0]["observation_digest"] == digest
+    assert route.trace()[0]["state_admission"] == "synthetic_only"
+
+
+def test_intake_maps_frames_and_clocks_or_refuses(tmp_path):
+    report = _run("T058", tmp_path)
+    mapped = _find(report, "A section-4 record reaches the fusion session only through declared")
+    assert mapped["evidence_status"] == NV and mapped["value"]["value_gap_m"] == 0.0
+    assert mapped["value"]["tick"] == intake.DEMO_TICKS and mapped["value"]["mappings_recorded"] == 3
+    assert mapped["value"]["refusals"] == {
+        "unmapped_frame": "unmapped_frame", "unmapped_clock": "unmapped_clock", "unmapped_epoch": "unmapped_clock",
+        "arrival_without_latency_mapping": "unmapped_clock", "latency_mismatch": "latency_mismatch",
+        "combined_latency_and_synchronization": "unmapped_clock", "off_tick_grid": "off_tick_grid"}
+    # The arrival stamp reaches the fusion tick only through the declared latency and synchronization.
+    session = intake.FusionSession(read_only=False, dt=intake.DT, q=intake.Q_SPECTRAL)
+    session.register_calibration(intake.CalibrationRecord("trk-cal", "tracker", "tracker:cell", 0, 100))
+    route = intake.ObservationIntake(session, intake.FUSION_CLOCK, (intake.TRACKER_CHANNEL,),
+                                     frame_mappings=(intake.ROOM_TO_CELL,),
+                                     clock_mappings=(intake.ARRIVAL_TO_ACQUISITION, intake.TRACKER_TO_FUSION))
+    ledger = om.ObservationLedger(read_only=False)
+    record = intake.tracker_records(ticks=3)[1][2]
+    digest = ledger.retain(record)["observation_digest"]
+    ledger.admit(digest, "test")
+    reading, link = route.convert(ledger, digest)
+    assert reading.tick == 3 and reading.frame_id == "world" and reading.origin_frame_id == "tracker:cell"
+    assert reading.value == (-record.value[1] + 0.25, record.value[0] - 0.5)
+    assert link["mappings"] == [intake.ROOM_TO_CELL.identity(), intake.ARRIVAL_TO_ACQUISITION.identity(),
+                                intake.TRACKER_TO_FUSION.identity()]
+    # A basis change must be a latency mapping on one clock and epoch, checked against the record. A record with a
+    # one-tick latency reaches its tick 3 through the two-step declaration; one mapping that changes clock and basis
+    # together is refused whether it forgets the latency (it would land one tick late) or folds it into its offset.
+    late = dataclasses.replace(record, latency_s=intake.DT, time_s=record.time_s - intake.LATENCY_S + intake.DT,
+                               sequence=77, raw_ref="raw:tracker:late")
+    late_digest = ledger.retain(late)["observation_digest"]
+    ledger.admit(late_digest, "test")
+
+    def route_with(*clock_mappings):
+        return intake.ObservationIntake(session, intake.FUSION_CLOCK, (intake.TRACKER_CHANNEL,),
+                                        frame_mappings=(intake.ROOM_TO_CELL,), clock_mappings=clock_mappings)
+
+    def clock(source, target, offset, reference="declared"):
+        return om.ClockMapping(*source, *target, 1.0, offset, reference)
+
+    tracker_arrival = ("clock:tracker", "epoch:run-0", "arrival")
+    tracker_acquisition = ("clock:tracker", "epoch:run-0", "acquisition")
+    fusion = ("clock:fusion", "epoch:fusion-0", "acquisition")
+    latency = clock(tracker_arrival, tracker_acquisition, -intake.DT)
+    assert route_with(latency, intake.TRACKER_TO_FUSION).convert(ledger, late_digest)[0].tick == 3
+    for combined in (clock(tracker_arrival, fusion, intake.SYNC_OFFSET_S),
+                     clock(tracker_arrival, fusion, intake.SYNC_OFFSET_S - intake.DT)):
+        with pytest.raises(intake.IntakeRefusal) as refused:
+            route_with(combined).convert(ledger, late_digest)
+        assert refused.value.code == "unmapped_clock"
+    # A detour back to the arrival basis cannot add an unchecked offset between two checked latency mappings.
+    detour = (intake.ARRIVAL_TO_ACQUISITION, clock(tracker_acquisition, tracker_arrival, intake.LATENCY_S + intake.DT),
+              clock(tracker_arrival, tracker_acquisition, -intake.LATENCY_S, "declared latency, again"),
+              intake.TRACKER_TO_FUSION)
+    with pytest.raises(intake.IntakeRefusal) as refused:
+        route_with(*detour).convert(ledger, digest)
+    assert refused.value.code == "unmapped_clock"
+    # An intake whose clock does not match the session step, or a channel of another geometry, is refused.
+    with pytest.raises(intake.IntakeRefusal) as refused:
+        intake.ObservationIntake(intake.FusionSession(read_only=False), intake.FUSION_CLOCK)
+    assert refused.value.code == "malformed_intake"
+    with pytest.raises(intake.IntakeRefusal) as refused:
+        intake.ObservationIntake(session, intake.FUSION_CLOCK, (intake.TRACKER_CHANNEL,), geometry="intrinsic")
+    assert refused.value.code == "channel_geometry_mismatch"
+
+
+def test_next_steps_are_forward_research_questions(tmp_path):
+    """No completed task in this section points at a queue task that has already run (R04/R09)."""
+    ctx = runner.Context(tmp_path)
+    for task_id in sorted(IMPLEMENTATIONS):
+        report = runner.run_task(QUEUE[task_id], IMPLEMENTATIONS[task_id], ctx, {})
+        assert report["state"] == "completed", task_id
+        assert report["recommended_next_task"].startswith("Deferred research question: "), task_id
 
 
 def test_reports_regenerate_identically(tmp_path):

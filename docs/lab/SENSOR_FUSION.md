@@ -6,7 +6,10 @@ bench tasks T060–T062), `sensor_fusion_geometry.py` (T063–T064),
 (T069–T071) and `sensor_fusion_admission.py` (T072–T076). Shared code:
 `sensor_fusion_bench.py` (bench generator and filter algebra),
 `sensor_fusion_objects.py` (typed observation, candidate and admitted-state
-API) and `sensor_fusion_common.py` (evidence helpers). Tests:
+API), `sensor_fusion_intake.py` (the adapter from section-4 observation
+records to fusion readings, see
+[From section-4 records to fusion](#from-section-4-records-to-fusion-the-intake))
+and `sensor_fusion_common.py` (evidence helpers). Tests:
 `tests/test_lab_sensor_fusion.py`.
 
 `sensor_fusion.py` imports each sibling module separately. If one fails to
@@ -85,7 +88,9 @@ PCG64 generator, so changing one sensor's settings leaves the other streams
 untouched. Noise is drawn through Cholesky factors, not SVD, so that draws do
 not depend on the platform's SVD sign convention. The bench retains the
 truth, the raw readings, the noise draws and the declared covariances. The
-encoder and IMU are nonlinear in the state; no experiment here fuses them.
+encoder and IMU are nonlinear in the state, and no experiment here fuses
+them. T060 records an EKF/UKF fusion of both streams, under the T052 and T053
+error models, as its deferred research question.
 
 The later experiments use the same model with dt = 0.1 s, q = 0.05 (q = 0.5 in
 T066), the camera R, prior mean (0, 0, 1, 0.5) and prior covariance
@@ -101,6 +106,104 @@ T070, frame mismatch in T071, post-expiry drift in T072), its size is
 predicted this way,
 or by running the same linear filter on noise-free mean readings, and the
 simulation is checked against the prediction with a run-level z-test.
+
+## From section-4 records to fusion (the intake)
+
+Section 4 ([OBSERVATION.md](OBSERVATION.md)) defines typed observation
+records: mode, frame id, clock id, epoch, clock basis, time, calibration
+reference, raw reference, latency and variance components. It also defines
+their retention and admission in an `ObservationLedger`.
+`ciw.lab.sensor_fusion_intake.ObservationIntake` turns those records into
+`FusionSession` readings. The pipeline is:
+
+```
+typed observation (section 4)
+→ retained, then admitted in an ObservationLedger (synthetic_only)
+→ declared FrameMapping / ClockMapping chain to the channel frame and the fusion clock
+→ fusion reading (sensor, frame, tick, projected value and covariance, calibration)
+→ FusionSession.fuse → CandidateState
+→ explicit FusionSession.admit → AdmittedState
+```
+
+An intake binds one session to three kinds of declaration:
+
+* `IntakeChannel` records say which mode feeds which fusion sensor, from which
+  frame, through which rank-2 projection and offset, for which section-4
+  calibration reference and which fusion `CalibrationRecord`.
+* A `FusionClock` says that tick k is k·dt on a named clock and epoch, in the
+  acquisition basis. Its dt must equal the session's step.
+* The section-4 frame and clock mappings.
+
+The intake declares the geometry class of the session state:
+
+* `extrinsic`: a position in an embedding frame.
+* `intrinsic`: a position in a surface chart.
+
+The reading's covariance is the mode's declared noise covariance, carried
+through the applied frame rotations and the projection. For a record that
+carries variance components (the T044 split) it is their sum, the same
+variance the section-4 `StateStore` updates with. A record reaches the
+session only if every step below passes. The step order fixes which code a
+record with several faults receives:
+
+1. This intake has not fused it already (`already_fused`). A measurement is
+   counted once.
+2. It is retained (`not_retained`), admitted (`not_admitted`) and unchanged
+   since (`admission_digest_mismatch`). A record whose admission was refused,
+   for example for a missing calibration reference, never gets this far.
+3. It validates as a section-4 record, with the section-4 codes.
+4. Its mode has the state's geometry class (`extrinsic_for_intrinsic`,
+   `geometry_mismatch`).
+5. A channel is declared for its mode (`no_channel`).
+6. It cites a calibration (`uncalibrated_record` for `not_applied`), and the
+   one its channel was declared for (`calibration_not_declared`).
+7. Declared mappings take it to the channel frame (`unmapped_frame`) and to
+   the fusion clock in the acquisition basis (`unmapped_clock`). The time
+   basis changes only through a latency mapping from arrival to acquisition
+   that keeps its clock and epoch. So an arrival stamp needs a declared
+   latency mapping on its own clock. A mapping that changes the basis
+   together with the clock or epoch, or back to arrival, is refused
+   (`unmapped_clock`), because the latency folded into it cannot be checked.
+   The latency mapping must agree with the record's own latency
+   (`latency_mismatch`). A record that declares no latency takes the
+   mapping's.
+8. The mapped time lies on the tick grid (`off_tick_grid`) and not before the
+   epoch (`before_epoch`).
+9. The fusion calibration is registered for the sensor (`calibration_unknown`),
+   not revoked (`calibration_revoked`), declared for the channel frame
+   (`calibration_frame_mismatch`) and valid at the tick
+   (`calibration_expired`). It must not declare a latency again, since the
+   clock mapping already applied it (`double_latency`).
+10. Its reading differs from every reading this intake has fused
+    (`duplicate_reading`). A re-sent copy of a record, with a new sequence
+    number and raw reference but the same measurement, converts to an
+    identical reading and is refused here.
+
+Then the session fuses the reading, and its own refusals pass through
+unchanged (`read_only_session`, `out_of_order`, the NIS gate, track loss). A
+record the session refused was not fused and may be offered again.
+Every submission is logged with its disposition. Every fused submission keeps
+its own lineage entry, in fusion order: the section-4 digest, raw reference,
+mapping identities, channel identity, calibrations and ledger admission.
+`trace()` compares the readings the session used (fused or reacquired), in
+order, with the intake's lineage. It refuses (`untraced_reading`) on any
+difference, so a reading fused directly on the session is caught, even a
+repeat of one the intake fused. The intake has no reacquisition of its own,
+so a session reacquired from readings that did not come through it fails the
+trace too. The intake has no authority of its own. It fuses through the
+session, so a default session keeps it read-only.
+
+No section-4 mode delivers a two-component intrinsic position. A
+surface-chart session therefore has no admissible channel, and the intrinsic
+case appears only as a refusal. Scalar records (distances, encoder
+displacement) and the IMU orientation have no channel into the planar
+position session. Both are deferred research questions (T075, T060).
+
+The demonstration (`sensor_fusion_intake.demonstration`, seed 752027) uses
+twelve room-frame tracker records. Each is stamped on arrival at the tracker
+clock, with the tracker mode's declared σ = 0.5 mm and a 1/128 s latency. The
+fusion step is 0.125 s, so every mapped stamp is dyadic and lands on the
+grid exactly. T058, T059, T075 and T076 share one run of it.
 
 ## Consistency tests and their limits
 
@@ -178,6 +281,11 @@ simulation is checked against the prediction with a run-level z-test.
   reaches 10% error at a heading std of 0.32 rad on the sphere (s = 0.9π) but
   0.034 rad on the hyperbolic plane (s = 3). Gauss–Hermite quadrature of the
   exact closed forms (asin(sin a sin s), asinh(sin a sinh s)) is the reference.
+  Only constant curvature is covered. The references variable curvature
+  needs already exist: T002 validates the geodesic integrator against
+  34-digit solutions on the torus, saddle and Gaussian bump, and T006 checks
+  the Jacobi columns against finite-difference flow on the torus and bump.
+  Repeating this study on those surfaces is T064's deferred research question.
 - **T065: filter-induced correlation.** Successive errors are correlated with
   Cov(e_{k+j}, e_k) = [(I - K H) F]^j P. The scalar case q = 1, r = 30 has the
   rational steady state M = 6, P = 5, K = 1/6. *Counterexample:* averaging 20
@@ -345,7 +453,26 @@ simulation is checked against the prediction with a run-level z-test.
   scenario uses a session constructed read-only, because the flag cannot be
   flipped. Because the declared quantile applies to each carried innovation,
   a consistent track with n innovations since its last admission is refused
-  with probability 1 - p^n.
+  with probability 1 - p^n. *End to end through the intake:* twelve tracker
+  records are retained and admitted in a ledger, mapped and fused. The fused
+  state equals the block-eliminated batch posterior of the hand-mapped
+  readings to 4e-15 (mean) and 4e-16 (covariance), relative. Both are CIW
+  code, so this is a `cross_implementation` check. Nothing is admitted before
+  the explicit gate call, which uses declared thresholds (NIS 0.999, position
+  σ ≤ 1 cm) and admits one state. All twelve fused readings trace to
+  ledger-admitted records with raw references. Before fusing, and leaving the
+  session state untouched, the intake refuses the following: a tracker record
+  or a camera chord offered to an intrinsic surface-chart state
+  (`extrinsic_for_intrinsic`); an encoder record (`geometry_mismatch`); a
+  chord in the extrinsic session (`no_channel`); uncalibrated or
+  undeclared-calibration records; an expired or revoked fusion
+  calibration, or one that declares the latency twice; the first record
+  offered again (`already_fused`); and a re-sent copy of it under a new
+  sequence number and raw reference (`duplicate_reading`). The session's own
+  `out_of_order` refusal of a reading older than its clock passes through.
+  The twelve traced readings come from twelve distinct records. On a second
+  session, fusing again directly a reading the intake fused makes `trace()`
+  refuse with `untraced_reading`.
 - **T076: defaults.** `FusionSession()` is read-only. Its authority equals
   `ciw.declared_workload.AUTHORITY`: `sensor_fusion` and `state_admission` are
   `not_performed` and `physical_truth` is `not_established`. Every estimation
@@ -358,7 +485,17 @@ simulation is checked against the prediction with a run-level z-test.
   read-only mapping derived from the flag, so it cannot disagree with it.
   Enabling fusion at construction changes the authority only to
   `synthetic_only`. T076 runs no generator, so its `production_acceptance`
-  finding cites the default-argument audit, not a seed.
+  finding cites the default-argument audit, not a seed. The defaults hold
+  through the intake. A default `ObservationLedger` refuses admission with
+  `read_only_session`, so the intake refuses its records as `not_admitted`.
+  A default session refuses an admitted record's fusion with
+  `read_only_session`, and no state is created. The vocabulary audit
+  (`admission_vocabulary_audit`) collects every `state_admission` value
+  written by the section-4 `StateStore` and `ObservationLedger`, the session
+  with its candidate and admitted states, and the intake lineage, each both
+  read-only and writable. The values seen are exactly `not_performed` and
+  `synthetic_only`. The section-4 store used to write `admitted` and now
+  writes `synthetic_only` on a writable store, which defaults to read-only.
 
 ## Refusal vocabulary of the session API
 
@@ -378,7 +515,17 @@ its stamp minus the latency declared in its calibration record),
 `unknown_candidate`, `frame_mismatch`, `stale_candidate`, `track_lost`,
 `uncertainty_exceeds_limit`, `inconsistent_innovation`,
 `calibration_revoked`, `admission_requires_gate` and
-`admitted_state_immutable`. Every refusal leaves the estimate, covariance,
+`admitted_state_immutable`. The intake adds `malformed_intake`,
+`channel_geometry_mismatch`, `extrinsic_for_intrinsic`, `geometry_mismatch`,
+`no_channel`, `no_declared_covariance`, `uncalibrated_record`,
+`calibration_not_declared`, `unmapped_frame`, `unmapped_clock`,
+`latency_mismatch`, `off_tick_grid`, `before_epoch`, `calibration_unknown`,
+`calibration_revoked`, `calibration_frame_mismatch`, `double_latency`,
+`calibration_expired`, `already_fused`, `duplicate_reading` and
+`untraced_reading`. It also passes on the section-4
+codes: `not_retained`, `not_admitted`, `admission_digest_mismatch` and the
+validation codes. An `IntakeRefusal` is both a `FusionRefusal` and an
+`ObservationRefusal`. Every refusal leaves the estimate, covariance,
 clock, track status and candidate evidence unchanged. The refused observation
 is retained in the log with its disposition, and both readings of a refused
 reacquisition carry its code. T069 and T070 test fusion and prediction
@@ -389,14 +536,38 @@ the evidence convention.
 ## Open questions
 
 - **Nonlinear sensors.** The encoder speed and IMU heading rate are generated
-  but not fused. An EKF/UKF consistency study, with linearization breakdown
-  measured as in T064, is the natural next step.
+  but not fused. The open question is an EKF/UKF that fuses them under the
+  T052 (scale, bias, backlash) and T053 (gyro bias, angle random walk) error
+  models, as `encoder_displacement` and `imu_orientation` records through
+  intake channels or as the bench streams. Its consistency and linearization
+  breakdown would be measured as in T064, against a Gauss-Newton batch
+  reference (T074).
+- **Intrinsic channel.** No section-4 mode gives a two-component
+  surface-chart position, so an intrinsic session has no admissible input
+  (T075). Candidates are a pair of tape readings along declared geodesics,
+  or a tracker position unrolled through a declared surface model, as T045
+  does for chords. Either would carry the geometry/sensor split.
 - **Uncertain extrinsics and clocks.** T063 and T071 treat the transform as
   exact, and T070 treats the lag as a constant. The fusion API applies a
   declared integer latency but neither estimates one nor retrodicts a reading
   older than its clock (no out-of-sequence update). Uncertain extrinsics need a
   J_theta Sigma_theta J_theta^T term, and drifting clocks need random-walk
-  offset states.
+  offset states. The intake likewise treats every declared frame and clock
+  mapping as exact and refuses stamps off the tick grid (T058, T063).
+- **Staleness at the fusion boundary.** The intake applies no
+  acquisition-age limit (T056's `admit_fresh`). The session fuses each
+  reading at its own acquisition tick and refuses one older than its state
+  (`out_of_order`), so a reading older than the state is never fused. But
+  neither the intake nor `FusionSession.admit` declares the time at which an
+  admitted state is used. So the age of the state's newest reading at use is
+  not checked. The open question is a declared use time at admission, with
+  `stale_observation` for a candidate whose newest reading is older than a
+  declared limit then (T058).
+- **Reacquisition through the intake.** The intake fuses but does not
+  reacquire. A track lost behind an intake can be reacquired only directly
+  on the session, and `trace()` then refuses the reacquired readings, since
+  they have no lineage. A reacquisition that takes two admitted records and
+  keeps their lineage is not implemented.
 - **Gate lock-out.** Recovery from lock-out, by covariance inflation or by
   automatic reacquisition after repeated rejections, is implemented neither in
   run_gated nor in the session gate. T073's explicit reacquisition is the only

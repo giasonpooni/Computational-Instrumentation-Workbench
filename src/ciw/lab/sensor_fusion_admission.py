@@ -7,9 +7,13 @@ declared lost, refuses fusion and admission of a lost track without side
 effects and requires explicit two-point reacquisition. T074 checks the Kalman
 estimate against the exact batch (information-form) posterior, in floating
 point and in rational arithmetic. T075 keeps observations, candidate states
-and admitted states as separate types and runs mutation tests on every
-admission check. T076 verifies that the session API defaults to read-only
-with the CIW authority vocabulary.
+and admitted states as separate types, runs mutation tests on every
+admission check, and drives the section-4 to section-5 pipeline end to end
+through :mod:`ciw.lab.sensor_fusion_intake` (typed records, declared
+mappings, fusion, candidate, explicit admission) with its refusals. T076
+verifies that the session API defaults to read-only with the CIW authority
+vocabulary, that the intake inherits that default, and that no lab estimator
+writes a ``state_admission`` value outside ``{not_performed, synthetic_only}``.
 
 Non-claims: admission here is a software gate over synthetic data; calibration
 records, thresholds and authority values are declared. Nothing here validates
@@ -25,6 +29,8 @@ import math
 
 import numpy as np
 
+from . import observation_modes as om
+from . import sensor_fusion_intake as intake
 from . import svg
 from .evidence import finding
 from .registry import task
@@ -258,7 +264,10 @@ def calibration_expiry(ctx):
         "unresolved_assumptions": ["Expiry is a hard tick boundary; real calibrations degrade gradually and their "
                                    "validity depends on temperature, shocks and use.",
                                    "Readings are not re-labelled retroactively under a renewed calibration."],
-        "recommended_next_task": "T073: a sensor that stops altogether, and the explicit track-lost state.",
+        "recommended_next_task": ("Deferred research question: a calibration that degrades gradually (R inflated, or "
+                                  "a drift growing with time since calibration) instead of expiring at a hard tick, "
+                                  "and whether readings retained after expiry may be re-fused under a renewed "
+                                  "calibration with their original digests preserved."),
     }
     return outcome(fields, findings)
 
@@ -567,7 +576,9 @@ def track_lost(ctx):
                                    "ambiguity).",
                                    "The turning truth adds white acceleration through the turn dynamics; other "
                                    "manoeuvre noise models change the random part of the expectation."],
-        "recommended_next_task": "T074: compare the fused state with the exact batch posterior.",
+        "recommended_next_task": ("Deferred research question: reacquisition under association ambiguity (a second "
+                                  "target or clutter near the lost track), where two-point reacquisition can lock "
+                                  "onto the wrong target; this task assumes both readings belong to the lost target."),
     }
     return outcome(fields, findings)
 
@@ -720,7 +731,10 @@ def analytic_ground_truth(ctx):
         "unresolved_assumptions": ["Equality with the batch posterior validates the algebra for the declared "
                                    "model, not the model against reality.",
                                    "Nonlinear sensors (encoder speed, IMU heading rate) are not fused here."],
-        "recommended_next_task": "T075: keep the fused estimate a candidate until an explicit admission gate.",
+        "recommended_next_task": ("Deferred research question: extend the batch-posterior reference to the nonlinear "
+                                  "encoder-speed and IMU heading-rate readings (a Gauss-Newton MAP over the window) "
+                                  "and measure how far an EKF's estimate and covariance depart from it; equality with "
+                                  "the batch posterior is established here only for linear position readings."),
     }
     return outcome(fields, findings)
 
@@ -920,12 +934,39 @@ def admission_study() -> dict:
             "inheritance": inheritance_study(tracked, z)}
 
 
-@task("T075", changed_files=files("sensor_fusion_admission"), regression_tests=_tests(
+INTAKE_FILES = files("sensor_fusion_admission", "sensor_fusion_intake", "observation_modes")
+INTAKE_REFUSALS = {"extrinsic_for_intrinsic": "extrinsic_for_intrinsic",
+                   "extrinsic_chord_for_intrinsic": "extrinsic_for_intrinsic",
+                   "geometry_mismatch": "geometry_mismatch", "no_channel": "no_channel",
+                   "uncalibrated_record": "uncalibrated_record", "calibration_not_declared": "calibration_not_declared",
+                   "calibration_expired": "calibration_expired", "calibration_revoked": "calibration_revoked",
+                   "double_latency": "double_latency", "already_fused": "already_fused",
+                   "duplicate_reading": "duplicate_reading", "out_of_order": "out_of_order"}
+
+
+def _intake_demonstration(ctx) -> dict:
+    """The shared observation -> mapping -> fusion -> admission run (also used by T058, T059 and T076)."""
+    return ctx.memo("sensor_fusion_intake.demonstration", intake.demonstration)
+
+
+def _intake_generator(demo) -> dict:
+    """Basis entry for the seeded synthetic tracker records the intake findings rest on."""
+    return generator_basis(demo["seed"], records="ciw.lab.sensor_fusion_intake.tracker_records",
+                           ticks=demo["ticks"], sensor="tracker_measurement")
+
+
+@task("T075", changed_files=INTAKE_FILES, regression_tests=_tests(
     "T075", "test_typed_objects_and_admission_mutations",
-    "test_candidates_inherit_inconsistent_innovations_and_revocations"))
+    "test_candidates_inherit_inconsistent_innovations_and_revocations",
+    "test_observation_to_admission_pipeline_end_to_end", "test_intake_refusals_leave_the_session_unchanged",
+    "test_intake_counts_each_measurement_once_and_trace_refuses_bypasses"))
 def typed_admission(ctx):
     study = admission_study()
+    demo = _intake_demonstration(ctx)
     ctx.artifact_json("admission_mutations.json", as_json(study))
+    ctx.artifact_json("intake_demonstration.json", as_json(demo))
+    reference, trace = demo["reference"], demo["trace"]
+    intake_codes = {name: demo["refusals"][name]["intake"] for name in INTAKE_REFUSALS}
     rows, total = study["rows"], study["scenarios"]
     checks = len(study["checks"])
     mutations = study["mutations"]
@@ -996,14 +1037,70 @@ def typed_admission(ctx):
                     check("invariant", "an observation accepted an attribute assignment (frozen dataclass)",
                           is_not(mutations["mutate_observation"], "frozen_instance"), 0.0)]},
                 uncertainty=exact("deterministic type and gate outcomes"), tolerance=TOL_EXACT),
+        finding("End to end, section-4 tracker records pass through declared frame and clock mappings into a "
+                "writable fusion session whose candidate equals the batch posterior of the hand-mapped readings; "
+                "nothing is admitted until one explicit gate call, and every reading the session fused traces to its "
+                "own retained, ledger-admitted section-4 record with a raw reference", "numerical",
+                {"reference": {k: reference[k] for k in ("relative_mean_gap", "relative_covariance_gap")},
+                 "auto_admitted_before_gate": demo["auto_admitted_before_gate"],
+                 "admitted_after_gate": demo["admitted_after_gate"], "admitted_checks": demo["admitted_checks"],
+                 "declared_admission": demo["declared_admission"],
+                 "trace": {k: trace[k] for k in ("readings", "fused_by_session", "distinct_records",
+                                                 "all_ledger_admitted_with_raw_ref", "final_source_is_last_record",
+                                                 "final_raw_ref")}},
+                {**_intake_generator(demo), "checks": [
+                    check("cross_implementation", "fused mean against the block-eliminated batch posterior of the "
+                                                  "hand-mapped readings (max relative)",
+                          reference["relative_mean_gap"], 1e-9),
+                    check("cross_implementation", "fused covariance against the batch posterior (max relative)",
+                          reference["relative_covariance_gap"], 1e-9),
+                    check("exact_arithmetic", "states admitted before the explicit gate call",
+                          demo["auto_admitted_before_gate"], 0),
+                    check("exact_arithmetic", "admitted states after one gate call minus one",
+                          demo["admitted_after_gate"] - 1, 0),
+                    check("invariant", "admitted state not bound to the final candidate",
+                          float(not demo["admitted_candidate_digest_matches"]), 0.0),
+                    check("exact_arithmetic", "fused readings minus traced readings",
+                          trace["fused_by_session"] - trace["readings"], 0),
+                    check("exact_arithmetic", "traced readings minus the tracker records",
+                          trace["readings"] - demo["ticks"], 0),
+                    check("exact_arithmetic", "distinct section-4 records behind the traced readings minus the "
+                                              "tracker records", trace["distinct_records"] - demo["ticks"], 0),
+                    check("invariant", "a traced reading without a ledger admission or raw reference",
+                          float(not trace["all_ledger_admitted_with_raw_ref"]), 0.0)]},
+                uncertainty=roundoff(max(reference["relative_mean_gap"], reference["relative_covariance_gap"]),
+                                     "largest relative difference between the fused and batch posteriors"),
+                tolerance={"abs": 1e-9, "rel": 0.0}),
+        finding("The intake refuses, before fusing and without changing the session, an extrinsic record offered to "
+                "an intrinsic surface-chart state, a mode of another geometry class, a mode without a declared "
+                "channel, an uncalibrated record or one citing an undeclared calibration, an expired or revoked "
+                "fusion calibration, a latency declared twice, a record it already fused and a re-sent copy of one; "
+                "the session's own out-of-order refusal passes through, and the lineage trace refuses a session "
+                "that fused a reading around the intake", "computational_pipeline",
+                {"refusals": intake_codes, "state_unchanged": demo["state_unchanged_by_refusals"],
+                 "bypass": trace["bypass"]},
+                {"derivation": "ObservationIntake._convert and FusionSession.fuse", **_intake_generator(demo),
+                 "checks": [
+                    refusal(f"intake: {name.replace('_', ' ')}", code, intake_codes[name])
+                    for name, code in INTAKE_REFUSALS.items()] + [
+                    check("invariant", "session state, clock, candidate or admissions changed by the refusals",
+                          float(not demo["state_unchanged_by_refusals"]), 0.0),
+                    refusal("trace after a reading the intake fused is fused again directly on the session",
+                            "untraced_reading", trace["bypass"]["trace_after_direct_fusion"])]},
+                uncertainty=exact("refusal codes and a state digest"), tolerance=TOL_EXACT),
         unreal("An admitted synthetic state may command actuators", "actuator_authority", 75_2026,
                "not established: admission is a software gate over synthetic data; authority is decided elsewhere"),
+        unreal("The declared tracker latency, synchronization and room-to-cell mapping are those of a real tracker "
+               "installation", "calibration", demo["seed"],
+               "not established: every mapping, latency and noise value in the intake demonstration is declared"),
     ]
     fields = {
         "hypothesis": "Keeping observations, candidate states and admitted states as separate types, with a single "
                       "explicit gate whose every check is load-bearing and candidates that carry the evidence of "
                       "every update their state depends on, guards against a candidate becoming state by accident, "
-                      "naive tampering or omission, including a prediction issued after an inconsistent update.",
+                      "naive tampering or omission, including a prediction issued after an inconsistent update; the "
+                      "same separation holds end to end from a typed section-4 record through declared mappings, "
+                      "fusion and a candidate to an explicit admission.",
         "mathematical_model": "Admission = ordered conjunction of declared checks (declared, writable, typed, "
                               "finite, covariance, integrity, provenance, frame, fresh, track, uncertainty, "
                               "innovation, calibration); fresh means the most recently issued candidate at the "
@@ -1013,7 +1110,10 @@ def typed_admission(ctx):
                               "removes check i.",
         "input_data": ["one synthetic camera run (seed 752026) driving a FusionSession for each scenario and for the "
                        "inheritance sequence",
-                       f"{total} violation scenarios covering all {checks} checks, plus one valid control"],
+                       f"{total} violation scenarios covering all {checks} checks, plus one valid control",
+                       f"intake demonstration: {demo['ticks']} room-frame tracker records (seed {demo['seed']}, "
+                       f"declared sigma {demo['declared_sigma_m']} m), stamped on arrival, 0.125 s fusion tick, "
+                       f"{len(INTAKE_REFUSALS)} refusal cases"],
         "observation_model": "Typed Observation objects; candidates issued by the session and sealed by a content "
                              "digest.",
         "expected_invariant": "Full gate refuses each scenario with its check's code; the gate without that check "
@@ -1022,19 +1122,33 @@ def typed_admission(ctx):
         "experiment": "Build each violating candidate (private state corruption simulates internal faults), run "
                       "the full gate and the gate with the targeted check deleted, follow an outlier update with a "
                       "prediction, a later update and an explicit re-initialization, and exercise construction and "
-                      "mutation of each type.",
+                      "mutation of each type. Retain tracker records in a writable ledger, admit them, fuse them "
+                      "through the intake, offer the intake records it must refuse, compare the fused state with the "
+                      "batch posterior of the hand-mapped readings, admit the final candidate explicitly and trace "
+                      "every fused reading back to its record.",
         "numerical_result": f"{study['refused_as_expected']}/{total} scenarios refused with the expected code; "
                             f"{study['killed']}/{total} mutants killed; in {study['sole_guard']} scenarios the "
                             f"targeted check is the sole guard; backed up by a later check: "
                             f"{', '.join(study['backed_up_scenarios'])} (the provenance check adds a specific "
-                            f"refusal code, but freshness already implies an issued digest).",
-        "uncertainty": "None: the outcomes are deterministic.",
+                            f"refusal code, but freshness already implies an issued digest). Intake: fused state "
+                            f"within {reference['relative_mean_gap']:.1e} (mean) and "
+                            f"{reference['relative_covariance_gap']:.1e} (covariance) of the batch posterior, "
+                            f"{trace['readings']} readings traced, {demo['admitted_after_gate']} admission after "
+                            f"the gate; refusals {sorted(set(intake_codes.values()))}.",
+        "uncertainty": "None for the gate outcomes and refusals (deterministic). The intake's agreement with the "
+                       "batch posterior carries roundoff only; both are ciw code, so it is a cross_implementation "
+                       "check.",
         "failure_modes_checked": ["subclass imposter", "tampered mean with a stale digest", "forged digest",
                                   "NaN state", "indefinite covariance", "candidate stale by tick",
                                   "candidate superseded at the same tick", "lost track", "excess uncertainty",
                                   "inconsistent innovation", "prediction issued after an inconsistent update",
                                   "revoked calibration", "prediction issued after a revocation",
-                                  "read-only session", "missing declaration", "frame mismatch"],
+                                  "read-only session", "missing declaration", "frame mismatch",
+                                  "intake: extrinsic record for an intrinsic state", "intake: undeclared mode or "
+                                  "geometry class", "intake: uncalibrated, undeclared, expired or revoked calibration",
+                                  "intake: latency declared twice", "intake: reading older than the session clock",
+                                  "intake: a record fused twice or re-sent under a new sequence number and raw "
+                                  "reference", "intake: a reading fused directly on the session around the intake"],
         "unresolved_assumptions": ["Python objects can be forced (object.__setattr__) by code with that intent; the "
                                    "gate defends against accident and naive tampering, not a hostile process.",
                                    "The declared thresholds are inputs; choosing them is outside this experiment.",
@@ -1042,9 +1156,18 @@ def typed_admission(ctx):
                                    "a consistent track with n innovations since its last admission is refused with "
                                    "probability 1 - p^n; frequent admission keeps n small.",
                                    "After an inconsistent innovation the only recovery is explicit: re-initialization, "
-                                   "or reacquisition once the track is declared lost."],
-        "recommended_next_task": "T076: confirm that the session defaults to read-only with sensor fusion and state "
-                                 "admission not performed.",
+                                   "or reacquisition once the track is declared lost.",
+                                   "No section-4 mode delivers a two-component intrinsic position, so a surface-chart "
+                                   "session has no admissible intake channel; the intrinsic case is exercised only as "
+                                   "a refusal.",
+                                   "The intake fuses a record only at the tick its mapped acquisition time lands on; "
+                                   "scalar records (distances, encoder displacement) and nonlinear ones (IMU "
+                                   "orientation) have no channel into the planar position session."],
+        "recommended_next_task": "Deferred research question: an intrinsic surface-chart channel, a record mode that "
+                                 "delivers a two-component chart position with its geometry/sensor split (for example "
+                                 "a pair of tape readings along declared geodesics, or a tracker position unrolled "
+                                 "through a declared surface model as T045 does for chords), so the intrinsic session "
+                                 "has an admissible input instead of only a refusal; then repeat this pipeline on it.",
     }
     return outcome(fields, findings)
 
@@ -1090,17 +1213,39 @@ def defaults_study() -> dict:
             "no_state": session.x is None and session.P is None and session.tick is None,
             "admitted": len(session.admitted),
             "enabled_authority": {key: enabled.authority.get(key, "missing") for key in keys},
-            "enabled_matches_synthetic": dict(enabled.authority) == SYNTHETIC_AUTHORITY}
+            "enabled_matches_synthetic": dict(enabled.authority) == SYNTHETIC_AUTHORITY,
+            "intake": intake_defaults_study()}
 
 
-@task("T076", changed_files=files("sensor_fusion_admission"), regression_tests=_tests(
-    "T076", "test_defaults_are_read_only_and_not_performed"))
+def intake_defaults_study() -> dict:
+    """What a section-4 record can reach with default objects: a default ledger admits nothing."""
+    ledger = om.ObservationLedger()
+    record = intake.tracker_records(ticks=1)[1][0]
+    digest = ledger.retain(record)["observation_digest"]
+    session = FusionSession(dt=intake.DT, q=intake.Q_SPECTRAL)
+    session.register_calibration(CalibrationRecord("trk-cal", "tracker", "tracker:cell", 0, 1_000_000))
+    route = intake.ObservationIntake(session, intake.FUSION_CLOCK, (intake.TRACKER_CHANNEL,),
+                                     frame_mappings=(intake.ROOM_TO_CELL,),
+                                     clock_mappings=(intake.ARRIVAL_TO_ACQUISITION, intake.TRACKER_TO_FUSION))
+    return {"ledger_read_only": ledger.read_only, "ledger_authority": dict(ledger.authority),
+            "ledger_admit": intake.refusal_code(lambda: ledger.admit(digest, "declared")),
+            "intake_on_default_ledger": intake.refusal_code(lambda: route.fuse(ledger, digest)),
+            "intake_authority": dict(route.authority), "session_state_created": session.x is not None}
+
+
+@task("T076", changed_files=INTAKE_FILES, regression_tests=_tests(
+    "T076", "test_defaults_are_read_only_and_not_performed", "test_no_lab_estimator_leaves_the_admission_vocabulary"))
 def read_only_defaults(ctx):
     study = defaults_study()
+    demo = _intake_demonstration(ctx)
+    audit = intake.admission_vocabulary_audit(demo)
+    study["intake"]["read_only_session_through_intake"] = demo["refusals"]["read_only_session"]["intake"]
+    study["admission_vocabulary_audit"] = audit
     ctx.artifact_json("defaults.json", as_json(study))
     codes = study["codes"]
     authority = study["ciw_authority"]
     enabled = study["enabled_authority"]
+    through = study["intake"]
     findings = [
         finding("The CIW authority vocabulary declares state_admission and sensor_fusion not_performed and "
                 "physical_truth not_established, and the fusion session's default authority equals it",
@@ -1159,6 +1304,36 @@ def read_only_defaults(ctx):
                     check("invariant", "enabled session physical_truth is not not_established",
                           is_not(enabled["physical_truth"], "not_established"), 0.0)]},
                 uncertainty=exact("string comparison of declared constants"), tolerance=TOL_EXACT),
+        finding("Through the fusion intake the defaults still hold: a default ledger refuses admission with "
+                "read_only_session, so the intake refuses its records as not_admitted, and a default session refuses "
+                "fusion of an admitted record with read_only_session; no state is created", "computational_pipeline",
+                through,
+                {"derivation": "ObservationLedger(), FusionSession() and ObservationIntake",
+                 **_intake_generator({"seed": intake.DEMO_SEED, "ticks": 1}), "checks": [
+                    refusal("admission on a default ledger", "read_only_session", through["ledger_admit"]),
+                    refusal("intake fusion of a record retained in a default ledger", "not_admitted",
+                            through["intake_on_default_ledger"]),
+                    refusal("intake fusion of an admitted record into a default session", "read_only_session",
+                            through["read_only_session_through_intake"]),
+                    check("invariant", "a state created on the default session", float(through["session_state_created"]),
+                          0.0),
+                    check("invariant", "default ledger authority state_admission is not not_performed",
+                          is_not(through["ledger_authority"]["state_admission"], "not_performed"), 0.0)]},
+                uncertainty=exact("refusal codes"), tolerance=TOL_EXACT),
+        finding("No lab estimator writes a state_admission value outside {not_performed, synthetic_only}: section-4 "
+                "state stores and ledgers, the fusion session with its candidate and admitted states, and the "
+                "intake lineage, read-only and writable", "computational_pipeline",
+                {"estimators": audit["estimators"], "values_seen": audit["values_seen"],
+                 "outside_vocabulary": audit["outside_vocabulary"]},
+                {"derivation": "ciw.lab.sensor_fusion_intake.admission_vocabulary_audit", **_intake_generator(demo),
+                 "checks": [
+                    check("exact_arithmetic", "state_admission values outside the vocabulary",
+                          len(audit["outside_vocabulary"]), 0),
+                    check("exact_arithmetic", "estimators audited that wrote no state_admission value",
+                          len(audit["estimators_without_values"]), 0),
+                    check("invariant", "vocabulary values seen differ from {not_performed, synthetic_only}",
+                          is_not(audit["values_seen"], sorted(om.ADMISSION_VOCABULARY)), 0.0)]},
+                uncertainty=exact("string comparison of emitted records"), tolerance=TOL_EXACT),
         unreal("Synthetic fusion output is admissible as production state", "production_acceptance", None,
                "not established: sensor_fusion and state_admission are not_performed by default and synthetic_only "
                "when enabled", source="default-argument and refusal audit of FusionSession against "
@@ -1167,32 +1342,49 @@ def read_only_defaults(ctx):
     fields = {
         "hypothesis": "The fusion API cannot estimate, fuse or admit anything unless a caller constructs a writable "
                       "session, the flag cannot be flipped afterwards, and its authority record uses the CIW "
-                      "vocabulary (sensor_fusion and state_admission not_performed).",
-        "mathematical_model": "Not numerical: a default-argument and refusal audit of FusionSession against "
+                      "vocabulary (sensor_fusion and state_admission not_performed); the section-4 ledger and the "
+                      "intake inherit the same default, and no lab estimator writes a state_admission value outside "
+                      "{not_performed, synthetic_only}.",
+        "mathematical_model": "Not numerical: a default-argument and refusal audit of FusionSession, "
+                              "ObservationLedger, StateStore and ObservationIntake against "
                               "ciw.declared_workload.AUTHORITY.",
-        "input_data": ["FusionSession() with default arguments", "ciw.declared_workload.AUTHORITY"],
+        "input_data": ["FusionSession() with default arguments", "ciw.declared_workload.AUTHORITY",
+                       "ObservationLedger() and StateStore() with default arguments",
+                       "the intake demonstration's session, candidate, admitted state and lineage"],
         "observation_model": "One camera observation offered to fuse and record.",
         "expected_invariant": "read_only default True; authority == CIW AUTHORITY; initialize, predict, handle_gap, "
                               "fuse, reacquire and admit refused with read_only_session; record allowed; rebinding "
                               "read_only or authority refused; authority mapping immutable.",
         "experiment": "Inspect the constructor signature, compare authority dictionaries, call every estimation and "
                       "admission method on a default session, try to rebind the flag and edit the authority, then "
-                      "construct a session with read_only=False.",
+                      "construct a session with read_only=False; admit and fuse a tracker record through the intake "
+                      "with a default ledger and a default session; collect every state_admission value the "
+                      "section-4 and section-5 estimators write.",
         "numerical_result": f"read_only default {study['read_only_default']}; authority {study['session_authority']}; "
                             f"refusals {sorted(set(codes.values()))}; rebinding {sorted(set(study['rebinding'].values()))}; "
-                            f"enabled authority {enabled}.",
+                            f"enabled authority {enabled}; through the intake: ledger admission "
+                            f"{through['ledger_admit']}, fusion {through['intake_on_default_ledger']} and "
+                            f"{through['read_only_session_through_intake']}; state_admission values written "
+                            f"{audit['values_seen']}.",
         "uncertainty": "None: the outcomes are deterministic.",
         "failure_modes_checked": ["writable default", "authority drift from the CIW vocabulary", "silent fusion in "
                                   "a read-only session", "loss of a refused observation", "authority upgrade on "
                                   "enabling fusion", "flipping read_only after construction", "editing the authority "
                                   "record in place", "a missing vocabulary key (reported as missing, failing the "
-                                  "checks rather than raising)"],
+                                  "checks rather than raising)", "admission on a default section-4 ledger",
+                                  "fusion through the intake into a default session",
+                                  "a state_admission value outside the vocabulary (for example admitted)"],
         "unresolved_assumptions": ["The CIW vocabulary is read from ciw.declared_workload; if it changes, this "
                                    "task's checks fail rather than silently following it.",
                                    "Calibration records can be registered and revoked on a read-only session; they "
-                                   "are record-keeping, not estimation, and grant nothing."],
-        "recommended_next_task": "T113: connect filtered residuals to the Lyapunov runtime without putting sensors "
-                                 "inside the kernel.",
-        "provider_runtime_identity": identity(files("sensor_fusion_admission"), DECLARED_WORKLOAD),
+                                   "are record-keeping, not estimation, and grant nothing.",
+                                   "The vocabulary audit covers the estimators this lab defines (StateStore, "
+                                   "ObservationLedger, FusionSession and the intake); another module that writes "
+                                   "state_admission is not audited until it is added to the audit."],
+        "recommended_next_task": "Deferred research question: make the audit structural rather than enumerated, a "
+                                 "shared authority type that every lab estimator must construct its records through "
+                                 "and that refuses any state_admission value outside the vocabulary, so a new "
+                                 "estimator cannot bypass the check; today the audit lists the estimators by hand.",
+        "provider_runtime_identity": identity(INTAKE_FILES, DECLARED_WORKLOAD),
     }
     return outcome(fields, findings)

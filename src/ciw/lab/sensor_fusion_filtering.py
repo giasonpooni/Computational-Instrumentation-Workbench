@@ -318,8 +318,10 @@ def filter_induced_correlation(ctx):
         "unresolved_assumptions": ["The model is known exactly; with a mismatched model the innovations are no "
                                    "longer white either.",
                                    "Only steady state is analysed; transients have time-varying cross-covariances."],
-        "recommended_next_task": "T066: verify that residuals are normalized by the filter covariance, not the raw "
-                                 "sensor covariance.",
+        "recommended_next_task": ("Deferred research question: the transient (time-varying) cross-covariance between "
+                                  "successive estimates from initialization to steady state, and its size under a "
+                                  "mismatched q where the innovations are no longer white; this task analyses only "
+                                  "the steady state under the exact model."),
     }
     return outcome(fields, findings)
 
@@ -492,7 +494,10 @@ def residual_covariance(ctx):
         "unresolved_assumptions": ["A deployed monitor has no truth; it sees only these residual statistics.",
                                    "q = 0.5 was chosen so the raw-R bias is visible per tick; smaller q shrinks "
                                    "tr(R^-1 H P- H^T) but never removes it."],
-        "recommended_next_task": "T067: gate with a chi-square quantile of the correctly normalized NIS.",
+        "recommended_next_task": ("Deferred research question: a truth-free consistency monitor built from NIS and "
+                                  "its lag-one autocorrelation over a sliding window, with its detection power "
+                                  "against a declared R understatement computed exactly (noncentral chi-square) as a "
+                                  "function of window length."),
     }
     return outcome(fields, findings)
 
@@ -672,7 +677,11 @@ def mahalanobis_gating(ctx):
                                    f"The fusion API is replayed on {API_RUNS} of the runs (reading-by-reading "
                                    "agreement there); the rates over all runs come from run_gated.",
                                    "No re-acquisition logic follows repeated rejections (see T073)."],
-        "recommended_next_task": "T068: inject outliers and measure detection, false alarms and estimate error.",
+        "recommended_next_task": ("Deferred research question: bound the closed-loop gate excess (the rejection rate "
+                                  "above 1 - p caused by the gate's feedback on the state) analytically, or with a "
+                                  "Monte Carlo large enough that its interval either excludes zero or bounds the "
+                                  "excess below 0.1 percentage point; this task finds it inside the sampling "
+                                  "interval, not zero."),
     }
     return outcome(fields, findings)
 
@@ -999,6 +1008,9 @@ def outlier_rejection(ctx):
                                    "Lock-out recovery (covariance inflation or automatic reacquisition) is "
                                    "implemented neither in run_gated nor in the session gate; T073's explicit "
                                    "reacquisition is the only recovery path in the fusion API."],
-        "recommended_next_task": "T069: missing data must be handled by prediction only, never by zero-filling.",
+        "recommended_next_task": ("Deferred research question: lock-out recovery, covariance inflation or automatic "
+                                  "reacquisition after k consecutive gate rejections, and its trade-off between "
+                                  "recovering from a real manoeuvre and admitting an outlier burst; neither run_gated "
+                                  "nor the session gate implements recovery."),
     }
     return outcome(fields, findings)

@@ -17,9 +17,12 @@ propagation and compared with the simulation.
 This module holds the bench tasks T060-T062 and imports the sibling modules
 that register T063-T064 (``sensor_fusion_geometry``), T065-T068
 (``sensor_fusion_filtering``), T069-T071 (``sensor_fusion_robustness``) and
-T072-T076 (``sensor_fusion_admission``). Each sibling is imported on its own:
-if one fails to import, its tasks are registered as placeholders that report
-the import error as blocked, and the other tasks still run.
+T072-T076 (``sensor_fusion_admission``). ``sensor_fusion_intake`` (no tasks of
+its own) turns section-4 observation records into fusion readings through
+declared mappings; T058, T059, T075 and T076 exercise it. Each sibling is
+imported on its own: if one fails to import, its tasks are registered as
+placeholders that report the import error as blocked, and the other tasks
+still run.
 
 Non-claims: all readings are synthetic draws from declared distributions.
 Nothing here measures a real sensor, validates a calibration, certifies a
@@ -218,7 +221,13 @@ def multi_sensor_bench(ctx):
                                    "The heading-rate truth of white-noise-acceleration motion is rough; the IMU "
                                    "stream is kept for completeness but the linear experiments use positions.",
                                    "Encoder and IMU are nonlinear in the state; no experiment here fuses them."],
-        "recommended_next_task": "T061: verify the empirical noise covariance against the declared covariance.",
+        "recommended_next_task": ("Deferred research question: an EKF (and a UKF) that fuses the encoder and IMU "
+                                  "streams with the position sensors under the T052 (scale, bias, backlash) and T053 "
+                                  "(gyro bias, angle random walk) error models, as encoder_displacement and "
+                                  "imu_orientation records through intake channels or as this bench's speed and "
+                                  "heading-rate streams, with NEES/NIS consistency and linearization breakdown "
+                                  "measured as in T064; the bench generates both streams but no experiment fuses "
+                                  "them."),
     }
     return outcome(fields, findings)
 
@@ -467,7 +476,10 @@ def known_truth_covariance(ctx):
                                    "defined as the gyro's own integrated increment.",
                                    "The camera's stream power is bounded, not exact, because its axis variances "
                                    "are correlated (both bounds exceed 0.999)."],
-        "recommended_next_task": "T062: test independent versus correlated noise in the filter.",
+        "recommended_next_task": ("Deferred research question: repeat the covariance-moment test on heavy-tailed "
+                                  "(Student-t) and autocorrelated residuals, with the kurtosis-corrected variance of "
+                                  "S_ij, and measure how far the Gaussian-law z-test's false-alarm rate and power "
+                                  "drift; this task's residuals are Gaussian and independent by construction."),
     }
     return outcome(fields, findings)
 
@@ -687,7 +699,10 @@ def correlated_noise(ctx):
         "unresolved_assumptions": ["White common-mode error; a slowly varying common bias would defeat both "
                                    "filters and needs state augmentation.",
                                    "NEES needs ground truth, which a deployed system does not have."],
-        "recommended_next_task": "T066: show that residual consistency needs the filter covariance S, not raw R.",
+        "recommended_next_task": ("Deferred research question: a slowly varying common-mode bias (first-order "
+                                  "Gauss-Markov) shared by camera and tracker, fused with and without an augmented "
+                                  "bias state, and its detection from NIS alone (no ground truth); this task covers "
+                                  "only white common-mode error."),
     }
     return outcome(fields, findings)
 

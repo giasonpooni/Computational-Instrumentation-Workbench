@@ -12,7 +12,9 @@ from ciw.lab import sensor_fusion_bench as bench
 from ciw.lab import sensor_fusion_common as common
 from ciw.lab import sensor_fusion_filtering as filtering
 from ciw.lab import sensor_fusion_geometry as section_geometry
+from ciw.lab import sensor_fusion_intake as intake
 from ciw.lab import sensor_fusion_objects as objects
+from ciw.lab import observation_modes as om
 from ciw.lab.evidence import AUTHORITY_DOMAINS, COMPUTATIONAL_DOMAINS, PHYSICAL_DOMAINS, finding, validate_finding
 from ciw.lab.registry import load_queue, section_implementations
 from ciw.lab.report import validate_report
@@ -65,7 +67,8 @@ def test_section_reports_labels_and_states(reports, task_id):
                  "recommended_next_task"):
         assert isinstance(report[name], str) and report[name].strip(), name
     assert report["failure_modes_checked"] and report["unresolved_assumptions"]
-    assert report["recommended_next_task"].startswith("T")
+    # Forward work, never a pointer to a queue task that already ran in this run (R04/R09).
+    assert report["recommended_next_task"].startswith("Deferred research question: ")
     assert report["generated_artifacts"]
     has_counterexample = any("counterexample" in f for f in report["findings"])
     assert has_counterexample == (task_id in COUNTEREXAMPLE_TASKS)
@@ -470,6 +473,134 @@ def test_typed_objects_and_admission_mutations(reports):
     with pytest.raises(objects.FusionRefusal) as caught:
         objects.Observation("camera", "world", 1, (0.0, 0.0), -np.eye(2), "cal")
     assert caught.value.code == "covariance_not_positive_definite"
+
+
+def test_observation_to_admission_pipeline_end_to_end(reports):
+    report = reports["T075"]
+    pipeline = _find(report, "End to end, section-4 tracker records")
+    assert pipeline["evidence_status"] == "numerically_verified"
+    kinds = {check["reference_kind"] for check in pipeline["basis"]["checks"]}
+    assert "cross_implementation" in kinds and "independent_check" not in pipeline["basis"]
+    value = pipeline["value"]
+    assert value["reference"]["relative_mean_gap"] < 1e-9 and value["reference"]["relative_covariance_gap"] < 1e-9
+    assert value["auto_admitted_before_gate"] == 0 and value["admitted_after_gate"] == 1
+    assert value["trace"]["readings"] == value["trace"]["fused_by_session"] == intake.DEMO_TICKS
+    assert value["trace"]["all_ledger_admitted_with_raw_ref"] is True
+    assert _find(report, "The declared tracker latency")["domain"] == "calibration"
+    # Direct run: every stage of observation -> mapping -> fusion -> candidate -> explicit admission.
+    demo = intake.demonstration()
+    assert demo["ledger"]["admission_values"] == ["synthetic_only"]
+    assert demo["final_reading"]["value_gap_m"] == 0.0 and demo["final_reading"]["tick"] == intake.DEMO_TICKS
+    assert demo["admitted_candidate_digest_matches"] is True
+    assert dict(demo["authorities"]["admitted"])["state_admission"] == "synthetic_only"
+
+
+def test_intake_refusals_leave_the_session_unchanged(reports):
+    refused = _find(reports["T075"], "The intake refuses, before fusing")["value"]
+    assert refused["state_unchanged"] is True
+    assert refused["refusals"] == {
+        "extrinsic_for_intrinsic": "extrinsic_for_intrinsic", "extrinsic_chord_for_intrinsic": "extrinsic_for_intrinsic",
+        "geometry_mismatch": "geometry_mismatch", "no_channel": "no_channel",
+        "uncalibrated_record": "uncalibrated_record", "calibration_not_declared": "calibration_not_declared",
+        "calibration_expired": "calibration_expired", "calibration_revoked": "calibration_revoked",
+        "double_latency": "double_latency", "already_fused": "already_fused",
+        "duplicate_reading": "duplicate_reading", "out_of_order": "out_of_order"}
+    assert refused["bypass"] == {"traced_before_bypass": 1, "fused_by_session_after_bypass": 2,
+                                 "trace_after_direct_fusion": "untraced_reading"}
+    # An intrinsic (surface-chart) state accepts no extrinsic record, whatever channel is offered.
+    chart = objects.FusionSession(read_only=False, frame_id="surface_chart:cylinder-r0.1", dt=intake.DT)
+    route = intake.ObservationIntake(chart, intake.FUSION_CLOCK, (), geometry="intrinsic")
+    ledger = om.ObservationLedger(read_only=False)
+    digest = ledger.retain(intake.tracker_records(ticks=1)[1][0])["observation_digest"]
+    ledger.admit(digest, "test")
+    with pytest.raises(objects.FusionRefusal) as caught:
+        route.fuse(ledger, digest)
+    assert caught.value.code == "extrinsic_for_intrinsic" and chart.log == [] and chart.x is None
+    # An intake refusal is both a fusion and an observation refusal.
+    assert isinstance(caught.value, om.ObservationRefusal)
+
+
+def _intake_route(ticks=3, initialize=True):
+    """A writable session behind the demonstration's declarations, a writable ledger and admitted tracker records."""
+    session = objects.FusionSession(read_only=False, dt=intake.DT, q=intake.Q_SPECTRAL)
+    session.register_calibration(objects.CalibrationRecord("trk-cal", "tracker", "tracker:cell", 0, 1_000_000))
+    if initialize:
+        session.initialize(intake.PRIOR_MEAN, intake.PRIOR_COV, 0)
+    route = intake.ObservationIntake(session, intake.FUSION_CLOCK, (intake.TRACKER_CHANNEL,),
+                                     frame_mappings=(intake.ROOM_TO_CELL,),
+                                     clock_mappings=(intake.ARRIVAL_TO_ACQUISITION, intake.TRACKER_TO_FUSION))
+    ledger = om.ObservationLedger(read_only=False)
+    records = intake.tracker_records(ticks=ticks)[1]
+    digests = [ledger.retain(record)["observation_digest"] for record in records]
+    for digest in digests:
+        ledger.admit(digest, "test")
+    return session, route, ledger, records, digests
+
+
+def test_intake_counts_each_measurement_once_and_trace_refuses_bypasses(reports):
+    pipeline = _find(reports["T075"], "End to end, section-4 tracker records")["value"]
+    assert pipeline["trace"]["distinct_records"] == pipeline["trace"]["readings"] == intake.DEMO_TICKS
+    # (a) The same admitted record is fused once; the second offer is refused before the session sees it.
+    session, route, ledger, records, digests = _intake_route()
+    first = route.fuse(ledger, digests[0])
+    log_length = len(session.log)
+    with pytest.raises(intake.IntakeRefusal) as refused:
+        route.fuse(ledger, digests[0])
+    assert refused.value.code == "already_fused" and len(session.log) == log_length
+    assert session.x.tolist() == list(first.mean) and route.log[-1]["disposition"] == "refused:already_fused"
+    # (b) A re-sent copy under a new sequence number and raw reference converts to the same reading: refused, and
+    # the original record keeps its own lineage entry.
+    copy = dataclasses.replace(records[0], sequence=99, raw_ref="raw:tracker:resent")
+    copy_digest = ledger.retain(copy)["observation_digest"]
+    ledger.admit(copy_digest, "test")
+    with pytest.raises(intake.IntakeRefusal) as refused:
+        route.fuse(ledger, copy_digest)
+    assert refused.value.code == "duplicate_reading" and len(session.log) == log_length
+    route.fuse(ledger, digests[1])
+    assert [link["raw_ref"] for link in route.trace()] == ["raw:tracker:1", "raw:tracker:2"]
+    assert [link["observation_digest"] for link in route.trace()] == digests[:2]
+    # A record the session refused may be offered again: it was never fused.
+    session, route, ledger, records, digests = _intake_route()
+    route.fuse(ledger, digests[1])
+    with pytest.raises(objects.FusionRefusal) as refused:
+        route.fuse(ledger, digests[0])
+    assert refused.value.code == "out_of_order"
+    with pytest.raises(objects.FusionRefusal) as refused:
+        route.fuse(ledger, digests[0])
+    assert refused.value.code == "out_of_order"
+    # (c) A reading fused directly on the session, even a repeat of one the intake fused, makes trace() refuse.
+    session, route, ledger, records, digests = _intake_route()
+    route.fuse(ledger, digests[0])
+    session.fuse(session.log[-1]["observation"])
+    with pytest.raises(intake.IntakeRefusal) as refused:
+        route.trace()
+    assert refused.value.code == "untraced_reading"
+    # So does a reacquisition from readings that were converted but never fused through the intake.
+    session, route, ledger, records, digests = _intake_route(initialize=False)
+    session.reacquire(*(route.convert(ledger, digest)[0] for digest in digests[:2]))
+    route.fuse(ledger, digests[2])
+    with pytest.raises(intake.IntakeRefusal) as refused:
+        route.trace()
+    assert refused.value.code == "untraced_reading"
+
+
+def test_no_lab_estimator_leaves_the_admission_vocabulary(reports):
+    report = reports["T076"]
+    audit = _find(report, "No lab estimator writes a state_admission value")
+    assert audit["evidence_status"] == "numerically_verified"
+    assert audit["value"]["outside_vocabulary"] == [] and audit["value"]["values_seen"] == ["not_performed",
+                                                                                              "synthetic_only"]
+    assert set(audit["value"]["estimators"]) == {
+        "StateStore (default)", "StateStore (writable)", "ObservationLedger (default)",
+        "ObservationLedger (writable)", "FusionSession (default)", "FusionSession (writable)", "ObservationIntake"}
+    through = _find(report, "Through the fusion intake the defaults still hold")["value"]
+    assert through["ledger_admit"] == "read_only_session" and through["intake_on_default_ledger"] == "not_admitted"
+    assert through["read_only_session_through_intake"] == "read_only_session"
+    assert through["session_state_created"] is False
+    # The audit would catch an estimator that wrote a value outside the vocabulary.
+    demo = intake.demonstration()
+    demo["authorities"]["lineage"] = [dict(demo["authorities"]["lineage"][0], state_admission="admitted")]
+    assert intake.admission_vocabulary_audit(demo)["outside_vocabulary"] == ["admitted"]
 
 
 def test_defaults_are_read_only_and_not_performed(reports):

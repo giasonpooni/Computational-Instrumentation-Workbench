@@ -1,6 +1,8 @@
 """Typed observations, candidate states and admitted states for the synthetic fusion bench.
 
 Scope: the API boundary used by the sensor-fusion experiments (T066-T076).
+Section-4 observation records (:mod:`ciw.lab.observation_modes`) become these
+readings through the declared mappings of :mod:`ciw.lab.sensor_fusion_intake`.
 An :class:`Observation` is a retained reading; a :class:`CandidateState` is what
 a filter prediction or update proposes; an :class:`AdmittedState` exists only
 after :meth:`FusionSession.admit` has evaluated declared consistency checks.

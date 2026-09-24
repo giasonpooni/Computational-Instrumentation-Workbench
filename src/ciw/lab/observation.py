@@ -36,6 +36,9 @@ MODES_FILE = "src/ciw/lab/observation_modes.py"
 CAMERA_FILE = "src/ciw/lab/observation_camera.py"
 SIGNALS_FILE = "src/ciw/lab/observation_signals.py"
 CHORD_FILE = "src/ciw/lab/observation_chord.py"
+# The fusion intake (T058, T059) and the session and bench it drives.
+INTAKE_FILES = ("src/ciw/lab/sensor_fusion_intake.py", "src/ciw/lab/sensor_fusion_objects.py",
+                "src/ciw/lab/sensor_fusion_bench.py")
 DOC = "docs/lab/OBSERVATION.md"
 TESTS = "tests/test_lab_observation.py"
 PRODUCER = {"implementation": "ciw.lab.observation", "revision": __version__}
@@ -87,6 +90,23 @@ def _refusal_check(reference, expected, observed) -> dict:
 
 def _refusal(reference, expected, action) -> dict:
     return _refusal_check(reference, expected, refusal_code(action))
+
+
+def _intake_demonstration(ctx) -> dict:
+    """The shared observation -> mapping -> fusion -> admission run (also used by T075 and T076).
+
+    The intake is imported here, not with this module, so that an intake import
+    failure blocks only the tasks that use it (T058, T059), not the section.
+    """
+    from . import sensor_fusion_intake as intake
+
+    return ctx.memo("sensor_fusion_intake.demonstration", intake.demonstration)
+
+
+def _intake_generator(demo) -> dict:
+    """The seeded synthetic tracker records the intake findings rest on."""
+    return _generator("ciw.lab.sensor_fusion_intake.tracker_records", demo["seed"], bit_generator="PCG64",
+                      ticks=demo["ticks"], declared_sigma_m=demo["declared_sigma_m"])
 
 
 def _unestablished(claim, domain, reason) -> dict:
@@ -144,11 +164,15 @@ EXAMPLE_VALUES = {"intrinsic_geodesic_distance": 0.12, "camera_chord_distance": 
                   "imu_orientation": (0.001, -0.002, 0.0005)}
 FRAME_NAMES = {"surface_chart": "cylinder-r0.1", "camera_rig": "stereo-0", "reconstruction": "cylinder-r0.1",
                "axis": "x", "tracker": "room", "image": "left", "body": "imu-0"}
-CYLINDER_MODEL = {"kind": "cylinder_geodesic", "name": "cylinder-r0.1", "radius": 0.1, "path_angle_rad": 0.0}
+# Declared (placeholder) standard deviations of the model parameters: the geometry part of a model-derived
+# surface distance (T044 split); the chord's own metric variance is its sensor part.
+CYLINDER_MODEL = {"kind": "cylinder_geodesic", "name": "cylinder-r0.1", "radius": 0.1, "path_angle_rad": 0.0,
+                  "parameter_sigma": {"radius": 5e-4, "path_angle_rad": 5e-3}}
+CHORD_SENSOR_M2 = om.MODES["camera_chord_distance"].noise_model["chord_sigma_m"] ** 2
 
 
 def example_observation(mode: str, **overrides) -> om.Observation:
-    """A well-formed record of ``mode`` with declared (synthetic) references."""
+    """A well-formed record of ``mode`` with declared (synthetic) references and variance components."""
     declared = om.MODES[mode]
     fields = {"unit": declared.unit, "frame_id": f"{declared.frame_kind}:{FRAME_NAMES[declared.frame_kind]}",
               "clock_id": "clock:daq", "clock_basis": declared.clock_basis, "epoch": "epoch:run-0", "time_s": 1.0,
@@ -158,15 +182,89 @@ def example_observation(mode: str, **overrides) -> om.Observation:
     if declared.clock_basis == "arrival":
         fields["latency_s"] = 0.0078125
     value = overrides.pop("value", EXAMPLE_VALUES[mode])
+    if mode == "camera_chord_distance":
+        fields["variance_components"] = {"sensor_m2": CHORD_SENSOR_M2}
+    elif mode == "reconstructed_surface_distance":
+        # The split the chord conversion would attach to the chord of this arc on the declared model.
+        model = overrides.get("surface_model") or CYLINDER_MODEL
+        chord_m = float(chord.helix_chord(float(value), model["radius"], model["path_angle_rad"]))
+        fields["variance_components"] = om.surface_distance_variance(chord_m, CHORD_SENSOR_M2, model)
     fields.update(overrides)
     return om.observe(mode, value, **fields)
 
 
 # --------------------------------------------------------------- T045
 CONVERSION_ARCS_M = (0.015, 0.06, 0.12)
+SPLIT_SEED, SPLIT_SAMPLES = 45_2026, 4000
 
 
-@task("T045", changed_files=(MODULE, MODES_FILE, CHORD_FILE, DOC), regression_tests=_tests("test_t045_modes_and_refusals"))
+def _arcs(chords, radii, alphas, iterations=80):
+    """Vectorized bisection of the helix chord law over per-sample chord, radius and path angle."""
+    chords, radii, alphas = np.broadcast_arrays(*(np.asarray(v, dtype=float) for v in (chords, radii, alphas)))
+    cos, sin = np.cos(alphas), np.sin(alphas)
+    low, high = chords.copy(), np.pi * radii / np.abs(cos)
+    for _ in range(iterations):
+        middle = 0.5 * (low + high)
+        below = np.hypot(2 * radii * np.sin(middle * cos / (2 * radii)), middle * sin) < chords
+        low, high = np.where(below, middle, low), np.where(below, high, middle)
+    return 0.5 * (low + high)
+
+
+def variance_split_study() -> dict:
+    """T044's geometry/sensor split carried into the reconstructed_surface_distance mode.
+
+    The chord conversion attaches geometry_m2 = sum_p (ds/dp)^2 sigma_p^2 over
+    the declared model parameters and sensor_m2 = (ds/dc)^2 sigma_c^2. The
+    analytic sensitivities are compared with central differences of the
+    bisection inverse, and each component with the Monte Carlo variance of the
+    arc under that source alone (and the sum under both).
+    """
+    alpha, arc_m, radius = math.radians(30.0), 0.12, CYLINDER_MODEL["radius"]
+    model = dict(CYLINDER_MODEL, path_angle_rad=alpha)
+    chord_m = float(chord.helix_chord(arc_m, radius, alpha))
+    derived = om.chord_to_surface_distance(example_observation("camera_chord_distance", value=chord_m), model)
+    split = derived.variance_components
+    sphere = {"kind": "sphere", "name": "sphere-r0.1", "radius": 0.1, "parameter_sigma": {"radius": 5e-4}}
+    fd_gap = 0.0
+    for surface, point in ((model, chord_m), (sphere, 0.11)):
+        gains = om.arc_length_sensitivities(point, surface)
+        for name, gain in gains.items():
+            h = 1e-6
+            if name == "chord":
+                plus, minus = (om.arc_length_from_chord(point + d, surface) for d in (h, -h))
+            else:
+                plus, minus = (om.arc_length_from_chord(point, dict(surface, **{name: surface[name] + d}))
+                               for d in (h, -h))
+            fd_gap = max(fd_gap, abs((plus - minus) / (2 * h) - gain) / abs(gain))
+    sigma = model["parameter_sigma"]
+    rng = np.random.Generator(np.random.PCG64(SPLIT_SEED))
+    n = SPLIT_SAMPLES
+    chords, radii, alphas = (chord_m + math.sqrt(CHORD_SENSOR_M2) * rng.standard_normal(n),
+                             radius + sigma["radius"] * rng.standard_normal(n),
+                             alpha + sigma["path_angle_rad"] * rng.standard_normal(n))
+    samples = {"sensor": _arcs(chords, radius, alpha), "geometry": _arcs(chord_m, radii, alphas),
+               "total": _arcs(chords, radii, alphas)}
+    predicted = {"sensor": split["sensor_m2"], "geometry": split["geometry_m2"],
+                 "total": split["sensor_m2"] + split["geometry_m2"]}
+    ratios = {k: float(np.var(samples[k], ddof=1) / predicted[k]) for k in samples}
+    se = math.sqrt(2.0 / (n - 1))
+    refusals = {
+        "variance_split_mismatch": refusal_code(lambda: om.validate(replace(derived, variance_components=None))),
+        "variance_split_required": refusal_code(lambda: om.chord_to_surface_distance(
+            replace(example_observation("camera_chord_distance"), variance_components=None), model)),
+        "geometry_uncertainty_required": refusal_code(lambda: om.chord_to_surface_distance(
+            example_observation("camera_chord_distance"), {k: v for k, v in model.items() if k != "parameter_sigma"})),
+    }
+    return {"alpha_deg": 30.0, "arc_m": arc_m, "chord_m": chord_m, "radius_m": radius, "recovered_arc_m": derived.value[0],
+            "components": split, "geometry_share": split["geometry_m2"] / predicted["total"],
+            "sensitivities": om.arc_length_sensitivities(chord_m, model), "parameter_sigma": dict(sigma),
+            "chord_sigma_m": math.sqrt(CHORD_SENSOR_M2), "finite_difference_relative_gap": fd_gap,
+            "samples": n, "variance_ratio": ratios, "z": {k: (r - 1.0) / se for k, r in ratios.items()},
+            "ratio_standard_error": se, "refusals": refusals, "derived_record": derived.record()}
+
+
+@task("T045", changed_files=(MODULE, MODES_FILE, CHORD_FILE, DOC),
+      regression_tests=_tests("test_t045_modes_and_refusals", "test_reconstructed_distance_carries_the_t044_split"))
 def typed_observation_modes(ctx):
     registry = {name: mode.describe() for name, mode in sorted(om.MODES.items())}
     required = ("quantity", "unit", "frame_kind", "clock_basis", "geometry", "noise_model", "cannot_observe")
@@ -223,10 +321,12 @@ def typed_observation_modes(ctx):
         _check("recovered arc length against the arc length of Cylinder.exact_geodesic embeddings (m)", worst,
                1e-13, kind="analytic")]
 
+    split = variance_split_study()
     ctx.artifact_json("observation-modes.json", registry)
     ctx.artifact_json("refusals.json", {"records": [{"case": label, "expected": code, "observed": check["observed_refusal"]}
                                                     for (label, code, _), check in zip(cases, record_checks)],
                                         "substitutions": substitutions, "chord_conversions": conversions})
+    ctx.artifact_json("variance-split.json", split)
     findings = [
         finding("Seven typed observation modes declare quantity, unit, frame kind, clock basis, geometry class, "
                 "noise model and non-observables", "computational_pipeline",
@@ -251,37 +351,93 @@ def typed_observation_modes(ctx):
                 uncertainty=_roundoff(1e-15, "a few ulp of the 0.12 m chord amplified by 1/(dc/ds) <= 1.22; the "
                                       "bisection converges to adjacent doubles"),
                 tolerance={"abs": 1e-12, "rel": 0}),
+        finding("A model-derived surface distance carries separate geometry and sensor variance components (the "
+                "T044 split): the first-order sensitivities match finite differences, each component matches the "
+                "Monte Carlo variance of the arc under its own source, and their sum matches both sources together",
+                "numerical",
+                {k: split[k] for k in ("components", "geometry_share", "sensitivities", "variance_ratio", "z",
+                                       "finite_difference_relative_gap", "refusals")},
+                {"generator": _generator("numpy.random.PCG64", SPLIT_SEED, samples=split["samples"],
+                                         chord_sigma_m=split["chord_sigma_m"], parameter_sigma=split["parameter_sigma"]),
+                 "checks": [_check("analytic arc-length sensitivities against central differences of the bisection "
+                                   "inverse (max relative, cylinder and sphere)", split["finite_difference_relative_gap"],
+                                   1e-6, "le", kind="cross_implementation")]
+                           + [_z_check(f"Monte Carlo arc variance under the {k} source over the declared "
+                                       f"{'sum' if k == 'total' else k + '_m2'}", split["z"][k])
+                              for k in ("sensor", "geometry", "total")]
+                           + [_refusal_check(f"split: {name.replace('_', ' ')}", name, code)
+                              for name, code in split["refusals"].items()]},
+                unit="variance ratio (Monte Carlo over linearized)",
+                uncertainty=_mc95(_half_width(split["ratio_standard_error"]),
+                                  f"95 % half-width of a variance ratio from {split['samples']} Gaussian samples"),
+                tolerance={"abs": 1e-9, "rel": 1e-6}),
         _unestablished("The declared noise-model parameters describe real instruments of these modes",
                        "sensor_performance", "Noise parameters are declared placeholders; no instrument was acquired."),
     ]
     fields = _fields(
         hypothesis="A typed registry can make every observation declare its frame, clock basis, calibration and "
-                   "geometry class, and can refuse malformed records and silent substitution of one mode for another.",
+                   "geometry class, and can refuse malformed records and silent substitution of one mode for another; "
+                   "a model-derived surface distance can carry T044's geometry and sensor variance components "
+                   "separately.",
         mathematical_model="Each mode is a tuple (quantity, unit, components, frame kind, clock basis in "
                            "{acquisition, arrival}, geometry in {intrinsic, extrinsic, none}, noise model, "
                            "non-observables). A camera chord is extrinsic; it maps to a surface distance only through "
-                           "an inverted chord-arc relation of a declared surface model (T046/T047).",
+                           "an inverted chord-arc relation of a declared surface model (T046/T047). The derived "
+                           "distance carries T044's split: sensor_m2 = (ds/dc)^2 sigma_c^2 and geometry_m2 = "
+                           "sum_p (ds/dp)^2 sigma_p^2 over the declared model parameters (implicit differentiation "
+                           "of c^2 = 4 R^2 sin^2(s cos(alpha)/(2R)) + s^2 sin^2(alpha)).",
         input_data=["Seven declared modes in ciw.lab.observation_modes.MODES",
                     "One synthetic well-formed record per mode (example_observation)",
                     "Chords of Cylinder.exact_geodesic embeddings on a declared cylinder R = 0.1 m at alpha = 0, "
-                    "30, 60, 90 deg and s = 0.015, 0.06, 0.12 m"],
+                    "30, 60, 90 deg and s = 0.015, 0.06, 0.12 m",
+                    f"Variance split at s = 0.12 m, alpha = 30 deg: declared chord sigma 0.2 mm, radius sigma "
+                    f"0.5 mm, path-angle sigma 5 mrad; {SPLIT_SAMPLES} Monte Carlo samples per source "
+                    f"(seed {SPLIT_SEED})"],
         observation_model="No instrument: records are generated with declared (synthetic) calibration references.",
         expected_invariant="Every well-formed record validates; every record with a missing reference or a "
                            "substituted mode is refused with a stable code; conversion needs a declared model.",
         experiment="Validate the registry declarations; strip each reference from a valid record; attempt all 42 "
-                   "ordered mode substitutions; convert chords to arc lengths with and without a surface model.",
+                   "ordered mode substitutions; convert chords to arc lengths with and without a surface model; "
+                   "compare the attached geometry and sensor variance components with finite differences and with "
+                   "Monte Carlo draws of each source alone and of both.",
         numerical_result=f"{len(registry)} modes, {len(missing)} missing declarations; {len(record_checks)} record "
                          f"refusals as expected; {refused}/{len(substitutions)} substitutions refused; chord-to-arc "
-                         f"inversion error {worst:.2e} m.",
+                         f"inversion error {worst:.2e} m; variance split geometry "
+                         f"{split['components']['geometry_m2']:.3g} m^2 and sensor "
+                         f"{split['components']['sensor_m2']:.3g} m^2 (geometry share {split['geometry_share']:.3f}), "
+                         f"Monte Carlo ratios sensor {split['variance_ratio']['sensor']:.3f}, geometry "
+                         f"{split['variance_ratio']['geometry']:.3f}, total {split['variance_ratio']['total']:.3f}; "
+                         f"sensitivities agree with finite differences to {split['finite_difference_relative_gap']:.1e}.",
         uncertainty="Refusals and counts are exact; the chord inversion is a bisection converged to adjacent "
-                    "doubles, so the recovered arc carries rounding of about 1e-16 m.",
+                    "doubles, so the recovered arc carries rounding of about 1e-16 m. The variance ratios carry "
+                    "Monte Carlo error with relative standard error sqrt(2/(N-1)) = 0.022; the components are first "
+                    "order and omit the undeclared model-form error.",
         failure_modes_checked=["missing frame, clock, epoch, calibration or clock basis",
                                "arrival stamp on an acquisition-stamped mode", "frame kind or unit mismatch",
                                "surface distance without surface model", "all 42 mode substitutions",
-                               "model-derived distance presented as a direct intrinsic observation"],
+                               "model-derived distance presented as a direct intrinsic observation",
+                               "surface distance without its geometry/sensor split",
+                               "chord conversion without the chord's sensor variance",
+                               "surface model without declared parameter uncertainty"],
         unresolved_assumptions=["Noise-model values are placeholders, not instrument characteristics",
-                                "Frame kinds are declared strings; their physical realization is not checked"],
-        recommended_next_task="T058: track exact frame and clock bases and apply declared mappings")
+                                "Frame kinds are declared strings; their physical realization is not checked",
+                                "The variance split is first order and covers parametric models (plane, sphere, "
+                                "cylinder geodesic); a mesh-reconstructed surface's geometry component "
+                                "sigma_vertex^2 |grad d|^2 (T043/T044) can be declared on a record but no mesh "
+                                "conversion computes it here",
+                                "An intrinsic_geodesic_distance record carries no split: its geometry uncertainty "
+                                "enters the model prediction it is compared with (T044's residual), not the reading"],
+        recommended_next_task="Deferred research question: a mesh-reconstruction conversion that fills geometry_m2 = "
+                              "sigma_vertex^2 |grad d|^2 from T043's linearized vertex-noise gain (valid only while "
+                              "the unfolded segment stays in its face corridor), checked against T044's nested Monte "
+                              "Carlo, so a reconstructed_surface_distance derived from a scanned mesh carries the "
+                              "same split as one derived from a parametric model. A physical check of the split needs "
+                              "paired chord and tape readings. The runner can retain their raw export as an operator "
+                              "capture (ciw lab run --capture ROLE=PATH), but no section-4 task reads a capture or "
+                              "parses a camera, tracker or tape export, so a capture parser for chord and tape "
+                              "readings is missing; and a capture is unauthenticated, so without an instrument probe "
+                              "or a signed-capture trust anchor for these roles its physical findings stay "
+                              "not_established. No hardware_measured observation exists.")
     return {"state": "completed", "fields": fields, "findings": findings}
 
 
@@ -441,7 +597,10 @@ def chord_geodesic_correction(ctx):
                                 "Both sympy references are curve models written in ciw.lab.observation_chord; sympy's "
                                 "independence covers their series expansion, simplification and exact arithmetic, and "
                                 "the explicit-curve route is evaluated at three rational curves, not symbolically"],
-        recommended_next_task="T047: validate the cylinder chord coefficient cos^4(alpha)/(24 R^2)")
+        recommended_next_task=("Deferred research question: estimate kappa0 and kappa0' from the chords of three or more "
+                               "markers along one geodesic (inverting the series derived here) and propagate their "
+                               "estimation error into the chord correction, so the correction no longer needs a "
+                               "curvature known in advance; T047 validates the coefficient only for a known cylinder."))
     return {"state": "completed", "fields": fields, "findings": findings}
 
 
@@ -572,7 +731,10 @@ def cylinder_chord_coefficient(ctx):
                                 "Markers lie exactly on one geodesic",
                                 "The sympy reference's chord expression is written in ciw.lab.observation_chord; "
                                 "sympy's independence covers its series expansion and simplification"],
-        recommended_next_task="T048: generate synthetic stereo-camera measurements of markers on the cylinder")
+        recommended_next_task=("Deferred research question: bound the cylinder chord correction when the part departs "
+                               "from an exact cylinder (a declared radius taper or ovality) or the markers sit a "
+                               "declared lateral offset off the geodesic, and report through the T045 geometry/sensor "
+                               "split which term then dominates the chord-derived distance."))
     return {"state": "completed", "fields": fields, "findings": findings}
 
 
@@ -774,7 +936,10 @@ def synthetic_camera_measurements(ctx):
                                 "is quantified in T050); occlusion is not modelled",
                                 "Rounding errors are independent between markers: the grid phase is drawn per marker, "
                                 "camera and axis (a phase shared by the markers of a camera is studied in T051)"],
-        recommended_next_task="T049: perturb focal length, principal point and extrinsic rotation")
+        recommended_next_task=("Deferred research question: model occluded and mismatched markers (a marker seen by one "
+                               "camera only, or two correspondences swapped) and test that triangulation refuses or "
+                               "flags them instead of returning a chord; T048-T051 assume every marker is seen by both "
+                               "cameras and matched correctly."))
     return {"state": "completed", "fields": fields, "findings": findings}
 
 
@@ -988,7 +1153,10 @@ def camera_calibration_perturbations(ctx):
                                 "Aspect ratio and skew of either camera are not perturbed; left-camera pose errors are "
                                 "not listed separately because a rigid motion of the whole believed rig, which leaves "
                                 "chords unchanged, turns them into right-camera pose errors"],
-        recommended_next_task="T050: add perspective and lens-distortion perturbations")
+        recommended_next_task=("Deferred research question: propagate a declared calibration covariance (intrinsics and "
+                               "extrinsic rotation, including the aspect ratio and skew held fixed here) to the chord "
+                               "variance and attach it as a calibration component beside T045's geometry/sensor split, "
+                               "instead of evaluating fixed perturbations one at a time."))
     return {"state": "completed", "fields": fields, "findings": findings}
 
 
@@ -1405,7 +1573,9 @@ def lens_distortion_perturbations(ctx):
         unresolved_assumptions=["Both cameras share one distortion model", "Principal point equals distortion centre",
                                 "Circular markers are flat discs in the tangent plane and the detector returns the "
                                 "exact ellipse centre; perspective and distortion are studied separately"],
-        recommended_next_task="T051: add quantization and pixel noise")
+        recommended_next_task=("Deferred research question: give each camera its own distortion model and a distortion "
+                               "centre offset from the principal point, and measure how much chord error an unmodelled "
+                               "centre offset adds to T050's shared-model case."))
     return {"state": "completed", "fields": fields, "findings": findings}
 
 
@@ -1596,7 +1766,10 @@ def quantization_and_pixel_noise(ctx):
                                 "is neither independent per marker nor exactly shared, so its rounding correlation lies "
                                 "outside both modelled cases",
                                 "Grid phase is uniform, which a fixed rig and target do not guarantee"],
-        recommended_next_task="T052: add encoder bias, scale and backlash")
+        recommended_next_task=("Deferred research question: a partially correlated grid-phase model (correlation rho "
+                               "between the markers of one camera) that interpolates T051's independent and shared "
+                               "cases, with its predicted chord variance checked by Monte Carlo, so a real rig's phase "
+                               "correlation becomes one declared parameter to measure."))
     return {"state": "completed", "fields": fields, "findings": findings}
 
 
@@ -1730,7 +1903,10 @@ def encoder_bias_scale_backlash(ctx):
                                "fitting without a direction term"],
         unresolved_assumptions=["Backlash width, scale and bias are constant", "The reference position is known "
                                 "exactly (a real calibration needs an independent reference instrument)"],
-        recommended_next_task="T053: add IMU drift and orientation noise")
+        recommended_next_task=("Deferred research question: estimate encoder scale, bias and backlash jointly against a "
+                               "reference instrument that has its own declared noise (errors in variables), and report "
+                               "whether backlash stays identifiable from direction reversals; this task assumes the "
+                               "reference position is exact."))
     return {"state": "completed", "fields": fields, "findings": findings}
 
 
@@ -1882,7 +2058,9 @@ def imu_drift_and_noise(ctx):
                                "variance versus mean squared error", "anisotropy hidden by a trace-only test "
                                "(per-axis checks)"],
         unresolved_assumptions=["Bias is constant (no bias instability)", "Truth rotation rate is constant and known"],
-        recommended_next_task="T054: add asynchronous timestamps")
+        recommended_next_task=("Deferred research question: add bias instability (a random-walk gyro bias with a "
+                               "declared Allan-variance floor) and a time-varying rotation rate, and test whether this "
+                               "task's orientation-error prediction still holds or needs an estimated bias state."))
     return {"state": "completed", "fields": fields, "findings": findings}
 
 
@@ -2078,7 +2256,9 @@ def asynchronous_timestamps(ctx):
                                "combining clocks without a mapping", "mapping applied to the wrong epoch"],
         unresolved_assumptions=["Clock offset is constant (no drift)", "Jitter is white and much smaller than the "
                                 "sample interval"],
-        recommended_next_task="T055: add dropped observations")
+        recommended_next_task=("Deferred research question: estimate a drifting clock offset (random-walk offset and "
+                               "rate) online from paired stamps and report its identifiability against jitter; this "
+                               "task's offset is constant and its jitter white."))
     return {"state": "completed", "fields": fields, "findings": findings}
 
 
@@ -2309,7 +2489,9 @@ def dropped_observations(ctx):
                                "burst versus independent loss", "start-up before the first received sample (burn-in)"],
         unresolved_assumptions=["Drops are independent of the signal value", "Received samples are not delayed "
                                 "(delay is T056)"],
-        recommended_next_task="T056: add stale-state observations")
+        recommended_next_task=("Deferred research question: signal-dependent (missing-not-at-random) drops, for example "
+                               "a marker lost whenever it leaves the field of view, and the bias they leave in the T057 "
+                               "filter even with prediction-only gaps; this task's drops are independent of the signal."))
     return {"state": "completed", "fields": fields, "findings": findings}
 
 
@@ -2436,7 +2618,9 @@ def stale_state_observations(ctx):
         failure_modes_checked=["arrival stamp without latency", "future observation", "short arrival age with long "
                                "latency", "second-order motion"],
         unresolved_assumptions=["Latency is known per record", "Use time is on the same clock as the stamps"],
-        recommended_next_task="T057: compare raw, filtered and smoothed measurements")
+        recommended_next_task=("Deferred research question: an unknown or variable latency estimated from the data "
+                               "(cross-correlation with a reference stream) with a declared uncertainty, and a staleness "
+                               "decision taken on that uncertain acquisition age rather than a known one."))
     return {"state": "completed", "fields": fields, "findings": findings}
 
 
@@ -2619,7 +2803,10 @@ def raw_filtered_smoothed(ctx):
                                "per-sample versus ensemble ordering", "chi-square quantile approximation"],
         unresolved_assumptions=["Model matches the generator exactly (no mismatch)", "Measurements are synchronous "
                                 "and none are dropped"],
-        recommended_next_task="T066: verify that filtered residuals use filter covariance, not raw sensor covariance")
+        recommended_next_task=("Deferred research question: compare filter and smoother under a mismatched process model "
+                               "(a wrong q) and with dropped samples, where the smoother's gain over the filter can "
+                               "shrink or reverse; this task compares them only under the exact model with every sample "
+                               "present."))
     return {"state": "completed", "fields": fields, "findings": findings}
 
 
@@ -2689,9 +2876,23 @@ def frame_clock_study() -> dict:
             "final_record": other.record()}
 
 
-@task("T058", changed_files=(MODULE, MODES_FILE, DOC), regression_tests=_tests("test_t058_frame_and_clock_basis"))
+FUSION_FRAME_CLOCK_CASES = {"unmapped_frame": "unmapped_frame", "unmapped_clock": "unmapped_clock",
+                            "unmapped_epoch": "unmapped_clock", "arrival_without_latency_mapping": "unmapped_clock",
+                            "latency_mismatch": "latency_mismatch",
+                            "combined_latency_and_synchronization": "unmapped_clock",
+                            "off_tick_grid": "off_tick_grid"}
+
+
+@task("T058", changed_files=(MODULE, MODES_FILE, DOC) + INTAKE_FILES,
+      regression_tests=_tests("test_t058_frame_and_clock_basis", "test_intake_maps_frames_and_clocks_or_refuses",
+                              "test_intake_import_failure_blocks_only_its_tasks"))
 def frame_and_clock_basis(ctx):
     study = frame_clock_study()
+    demo = _intake_demonstration(ctx)
+    reading = demo["final_reading"]
+    fusion_refusals = {name: demo["refusals"][name]["intake"] for name in FUSION_FRAME_CLOCK_CASES}
+    study["fusion_intake"] = {"final_reading": reading, "refusals": fusion_refusals, "clock": demo["clock"],
+                              "mappings": demo["mappings"], "lineage_mappings": demo["trace"]["final_mappings"]}
     ctx.artifact_json("frame-clock-study.json", study)
     expected = {"frame_mismatch": "frame_mismatch", "clock_mismatch": "clock_mismatch",
                 "epoch_mismatch": "epoch_mismatch", "clock_basis_mismatch": "clock_basis_mismatch",
@@ -2734,6 +2935,28 @@ def frame_and_clock_basis(ctx):
         finding("A mapping declared for another frame, frame kind or epoch is refused", "computational_pipeline",
                 {k: study["refusals"][k] for k in list(expected)[4:]}, {"checks": refusal_checks[4:]},
                 uncertainty=_exact(), tolerance={"abs": 0, "rel": 0}),
+        finding("A section-4 record reaches the fusion session only through declared frame and clock mappings: the "
+                "intake applies the declared room-to-cell mapping, latency and synchronization exactly and refuses "
+                "an unmapped frame, clock or epoch, an arrival stamp without its latency mapping, a latency that "
+                "contradicts the record, a mapping that changes time basis and clock together (so the record's "
+                "latency cannot be checked) and a stamp off the fusion tick grid", "computational_pipeline",
+                {"refusals": fusion_refusals, "tick": reading["tick"], "value_gap_m": reading["value_gap_m"],
+                 "covariance_gap_m2": reading["covariance_gap_m2"], "origin_frame_id": reading["origin_frame_id"],
+                 "mappings_recorded": len(demo["trace"]["final_mappings"])},
+                {"derivation": "ciw.lab.sensor_fusion_intake.ObservationIntake on the declared tracker channel",
+                 "generator": _intake_generator(demo),
+                 "checks": [_check("fusion reading minus the hand-written quarter turn and projection (dyadic "
+                                   "translation, m)", reading["value_gap_m"], 0.0, kind="exact_arithmetic"),
+                            _check("fusion tick minus the tick of the dyadic acquisition time",
+                                   reading["tick"] - demo["ticks"], 0, kind="exact_arithmetic"),
+                            _check("fusion covariance minus the declared tracker sigma^2 I (m^2)",
+                                   reading["covariance_gap_m2"], 0.0, kind="exact_arithmetic"),
+                            _check("recorded mapping identities (frame, latency, synchronization) minus three",
+                                   len(demo["trace"]["final_mappings"]) - 3, 0, kind="exact_arithmetic")]
+                           + [_refusal_check(f"intake: {name.replace('_', ' ')}", code, fusion_refusals[name])
+                              for name, code in FUSION_FRAME_CLOCK_CASES.items()]},
+                uncertainty=_exact("dyadic stamps, offsets and translation; the quarter turn permutes coordinates"),
+                tolerance={"abs": 0, "rel": 0}),
         _unestablished("The declared frame and clock mappings equal the real extrinsic calibration and clock "
                        "synchronization", "calibration", "Mappings are declared synthetic values; no calibration or "
                        "synchronization procedure was run."),
@@ -2751,17 +2974,40 @@ def frame_and_clock_basis(ctx):
         expected_invariant="Exact agreement with hand-written maps on dyadic inputs; inverse round trip to rounding; "
                            "refusal of every undeclared combination.",
         experiment="Combine mismatched records; apply declared frame and clock mappings; compare with independent "
-                   "hand-written formulas; attempt mappings with the wrong source frame, kind or epoch.",
+                   "hand-written formulas; attempt mappings with the wrong source frame, kind or epoch; pass tracker "
+                   "records through the fusion intake (declared room-to-cell mapping, arrival-to-acquisition latency, "
+                   "tracker-to-fusion synchronization, 0.125 s tick grid) and offer it records whose frame, clock, "
+                   "epoch, latency or stamp is not covered by a declaration, including a one-tick-latency record "
+                   "offered through a single mapping that synchronizes its arrival stamp as an acquisition time.",
         numerical_result=f"exact gap {study['exact_gap']}, round trip {study['round_trip_error']:.1e} m and distance "
                          f"change {study['distance_change']:.1e} m (bound {study['rounding_bound']:.1e} m), time gap "
-                         f"{study['time_gap']} s; refusals {sorted(set(study['refusals'].values()))}.",
+                         f"{study['time_gap']} s; refusals {sorted(set(study['refusals'].values()))}; intake "
+                         f"reading gap {reading['value_gap_m']} m at tick {reading['tick']}, intake refusals "
+                         f"{sorted(set(fusion_refusals.values()))}.",
         uncertainty="Exact arithmetic for dyadic inputs; general rotations within 16 eps of the largest coordinate "
                     "(about 1e-14 m), since each mapped coordinate is rounded.",
         failure_modes_checked=["frame, clock, epoch and basis mismatches", "mapping for another source frame",
                                "mapping across frame kinds", "clock mapping for another epoch",
-                               "mapping identity recorded on the result"],
-        unresolved_assumptions=["Clock rates are exactly 1 (drift not modelled)", "Mappings are static"],
-        recommended_next_task="T059: retain observations without admitting them as state")
+                               "mapping identity recorded on the result",
+                               "fusion intake: unmapped frame, clock or epoch; arrival stamp without a latency "
+                               "mapping; contradictory latency; latency folded into a synchronization mapping; "
+                               "stamp off the tick grid"],
+        unresolved_assumptions=["Clock rates are exactly 1 (drift not modelled)", "Mappings are static",
+                                "The fusion intake takes a mapped time to a tick only when it lies on the grid; it "
+                                "neither interpolates nor retrodicts, so asynchronous sensors need their own grid or "
+                                "an out-of-sequence update",
+                                "An arrival record that declares no latency of its own takes the latency of its "
+                                "declared latency mapping unchecked",
+                                "Acquisition-age staleness (T056) is not applied at the fusion intake: the session "
+                                "fuses each reading at its own acquisition tick and refuses one older than its state "
+                                "(out_of_order), so a reading older than the state is never fused; but neither the "
+                                "intake nor the admission gate declares a use time, so the age of an admitted "
+                                "state's newest reading at the time the state is used is not checked"],
+        recommended_next_task="Deferred research question: give ClockMapping an uncertain rate and offset (a declared "
+                              "drift covariance) and carry it into the fusion intake as extra measurement covariance "
+                              "(velocity times time uncertainty), then test NEES consistency against a drifting "
+                              "synthetic clock; the intake today refuses any stamp that a static, exact mapping does "
+                              "not put on the tick grid.")
     return {"state": "completed", "fields": fields, "findings": findings}
 
 
@@ -2770,41 +3016,104 @@ def retention_study() -> dict:
     per_mode = {}
     for name in sorted(om.MODES):
         components = om.MODES[name].components
-        store = om.StateStore(name, [0.0] * components, [1.0] * components)
-        before = store.digest()
         observations = [example_observation(name, sequence=k, raw_ref=f"raw:{name}:{k}") for k in range(3)]
+        # A writable store, so that a refused update is refused for want of admission, not for read-only.
+        store = om.StateStore(name, [0.0] * components, [1.0] * components, read_only=False)
+        before = store.digest()
         records = [store.retain(o) for o in observations]
         after = store.digest()
+        default = om.StateStore(name, [0.0] * components, [1.0] * components)
+        kept = default.retain(observations[0])
+        default_before = default.digest()
         per_mode[name] = {
             "state_unchanged": before == after, "retained": len(store.retained()),
             "admission": sorted({r["state_admission"] for r in records}),
             "retention": sorted({r["retention"] for r in records}),
             "update_code": refusal_code(lambda s=store, r=records[0]: s.update(r, 0.5)),
-            "state_after_refusal_unchanged": store.digest() == before}
-    store = om.StateStore("intrinsic_geodesic_distance", 1.0, 0.5)
+            "state_after_refusal_unchanged": store.digest() == before,
+            "default_read_only": default.read_only,
+            "default_admit_code": refusal_code(lambda s=default, k=kept: s.admit(k["observation_digest"], "declared")),
+            "default_update_code": refusal_code(lambda s=default, k=kept: s.update(k, 0.5)),
+            "default_state_unchanged": default.digest() == default_before,
+            "default_authority": dict(default.authority)}
+    store = om.StateStore("intrinsic_geodesic_distance", 1.0, 0.5, read_only=False)
     record = store.retain(example_observation("intrinsic_geodesic_distance", value=2.0))
     admission = store.admit(record["observation_digest"], "declared synthetic admission")
     updated = store.update(record, 0.5)
     exact = {"mean": updated["mean"][0] - 1.5, "variance": updated["variance"][0] - 0.25}
     tampered = dict(record, observation=dict(record["observation"], value=[2.5]))
     stranger = example_observation("intrinsic_geodesic_distance", value=3.0, sequence=9)
-    chord_store = om.StateStore("intrinsic_geodesic_distance", 0.0, 1.0)
+    chord_store = om.StateStore("intrinsic_geodesic_distance", 0.0, 1.0, read_only=False)
     chord_record = chord_store.retain(example_observation("camera_chord_distance"))
     refusals = {"admission_digest_mismatch": refusal_code(lambda: store.update(tampered, 0.5)),
                 "not_retained": refusal_code(lambda: store.admit(stranger.digest(), "declared")),
                 "mode_substitution": refusal_code(lambda: chord_store.admit(chord_record["observation_digest"],
-                                                                             "declared"))}
+                                                                             "declared")),
+                # A zero update variance would collapse the state variance; the admitted record is otherwise valid.
+                "invalid_variance": refusal_code(lambda: store.update(record, 0.0))}
     return {"per_mode": per_mode, "admission": admission, "updated_state": updated, "exact_update_gap": exact,
-            "refusals": refusals}
+            "writable_authority": dict(store.authority), "refusals": refusals, "split": split_retention_study()}
 
 
-@task("T059", changed_files=(MODULE, MODES_FILE, DOC), regression_tests=_tests("test_t059_retained_without_admission"))
+def split_retention_study() -> dict:
+    """Both variance components of a derived surface distance survive retention, admission and digesting."""
+    derived = om.chord_to_surface_distance(example_observation("camera_chord_distance"), CYLINDER_MODEL)
+    ledger = om.ObservationLedger(read_only=False)
+    kept = ledger.retain(derived)
+    restored = om.observation_from_record(kept["observation"])
+    ledger.admit(kept["observation_digest"], "declared synthetic admission")
+    admitted = ledger.admitted(kept["observation_digest"])
+    altered = {name: replace(derived, variance_components=dict(derived.variance_components,
+                                                               **{name: 2 * derived.variance_components[name]}))
+               for name in ("geometry_m2", "sensor_m2")}
+    store = om.StateStore("reconstructed_surface_distance", 0.12, 1.0, read_only=False)
+    record = store.retain(derived)
+    store.admit(record["observation_digest"], "declared synthetic admission")
+    tampered = dict(record, observation=dict(record["observation"], variance_components=dict(
+        record["observation"]["variance_components"], geometry_m2=0.0)))
+    # The update variance is the declared total. A prior variance equal to that total makes the gain exactly 1/2,
+    # so the posterior variance is exactly half the total only if the update used it; another caller variance is
+    # refused.
+    total = om.declared_variance(derived)
+    split_store = om.StateStore("reconstructed_surface_distance", 0.12, total, read_only=False)
+    kept_split = split_store.retain(derived)
+    split_store.admit(kept_split["observation_digest"], "declared synthetic admission")
+    variance_refusal = refusal_code(lambda: split_store.update(kept_split, 1e-12))
+    posterior = split_store.update(kept_split)["variance"][0]
+    return {"components": derived.variance_components, "restored": restored.variance_components,
+            "admitted": admitted.variance_components,
+            "digest_preserved": restored.digest() == derived.digest() == kept["observation_digest"]
+            == admitted.digest(),
+            "altered_component_changes_digest": {name: record_.digest() != derived.digest()
+                                                  for name, record_ in altered.items()},
+            "tampered_update": refusal_code(lambda: store.update(tampered, 1e-6)),
+            "declared_total_m2": total, "update_posterior_variance_gap_m2": posterior - total / 2,
+            "update_variance_refusal": variance_refusal}
+
+
+FUSION_RETENTION_CASES = {"not_retained": "not_retained", "not_admitted": "not_admitted",
+                          "missing_calibration": "not_admitted"}
+
+
+@task("T059", changed_files=(MODULE, MODES_FILE, DOC) + INTAKE_FILES,
+      regression_tests=_tests("test_t059_retained_without_admission", "test_state_store_defaults_to_read_only",
+                              "test_variance_split_survives_retention_and_digesting",
+                              "test_state_update_takes_the_declared_variance",
+                              "test_intake_refuses_unadmitted_records",
+                              "test_intake_import_failure_blocks_only_its_tasks"))
 def retained_without_admission(ctx):
     study = retention_study()
+    demo = _intake_demonstration(ctx)
     per_mode = study["per_mode"]
+    split = study["split"]
+    fusion = {name: demo["refusals"][name] for name in FUSION_RETENTION_CASES}
+    study["fusion_intake"] = {"refusals": fusion, "ledger": demo["ledger"], "trace": demo["trace"]}
     ctx.artifact_json("retention-study.json", study)
     unchanged = sum(v["state_unchanged"] and v["state_after_refusal_unchanged"] for v in per_mode.values())
     labelled = sum(v["admission"] == ["not_performed"] and v["retention"] == ["retained"] for v in per_mode.values())
+    read_only = {name: {"admit": v["default_admit_code"], "update": v["default_update_code"]}
+                 for name, v in per_mode.items()}
+    default_authorities = {v["default_authority"]["state_admission"] for v in per_mode.values()}
     findings = [
         finding("Every observation mode can be retained without changing estimator state; retained records carry "
                 "state_admission not_performed", "computational_pipeline",
@@ -2814,51 +3123,141 @@ def retained_without_admission(ctx):
                             _check("modes whose records lack retention retained / admission not_performed",
                                    len(per_mode) - labelled, 0, kind="exact_arithmetic")]},
                 uncertainty=_exact(), tolerance={"abs": 0, "rel": 0}),
+        finding("A state store defaults to read-only: for every mode it retains records but refuses admission and "
+                "update with read_only_session, its state is unchanged and its authority is state_admission "
+                "not_performed", "computational_pipeline",
+                {"refusals": read_only, "authority_state_admission": sorted(default_authorities)},
+                {"checks": [_refusal_check(f"{action} on a default {name} store", "read_only_session", code)
+                            for name, codes in read_only.items() for action, code in codes.items()]
+                           + [_check("default stores not read-only or with a changed state",
+                                     sum(not (v["default_read_only"] and v["default_state_unchanged"])
+                                         for v in per_mode.values()), 0, kind="exact_arithmetic"),
+                              _check("default authorities other than not_performed",
+                                     len(default_authorities - {"not_performed"}), 0, kind="exact_arithmetic")]},
+                uncertainty=_exact(), tolerance={"abs": 0, "rel": 0}),
         finding("Updating state from a retained but unadmitted observation is refused for every mode",
                 "computational_pipeline", {name: v["update_code"] for name, v in per_mode.items()},
                 {"checks": [{"reference_kind": "refusal", "reference": f"update from unadmitted {name}",
                              "expected_refusal": "not_admitted", "observed_refusal": v["update_code"],
                              "passed": v["update_code"] == "not_admitted"} for name, v in per_mode.items()]},
                 uncertainty=_exact(), tolerance={"abs": 0, "rel": 0}),
-        finding("An admitted, digest-bound observation updates state by the exact Kalman formula", "numerical",
-                {"mean": study["updated_state"]["mean"][0], "variance": study["updated_state"]["variance"][0]},
+        finding("On a writable store an admission is recorded as synthetic_only, and an admitted, digest-bound "
+                "observation updates state by the exact Kalman formula", "numerical",
+                {"mean": study["updated_state"]["mean"][0], "variance": study["updated_state"]["variance"][0],
+                 "state_admission": study["admission"]["state_admission"],
+                 "authority": study["writable_authority"]},
                 {"checks": [_check("posterior mean minus 1.5 (prior 1.0/0.5, observation 2.0/0.5)",
                                    study["exact_update_gap"]["mean"], 0.0, kind="exact_arithmetic"),
                             _check("posterior variance minus 0.25", study["exact_update_gap"]["variance"], 0.0,
+                                   kind="exact_arithmetic"),
+                            _check("admission recorded as anything but synthetic_only",
+                                   float(study["admission"]["state_admission"] != "synthetic_only"), 0.0,
+                                   kind="exact_arithmetic"),
+                            _check("writable store authority state_admission other than synthetic_only",
+                                   float(study["writable_authority"]["state_admission"] != "synthetic_only"), 0.0,
                                    kind="exact_arithmetic")]},
                 uncertainty=_exact("dyadic prior, observation and variances; the update is exact"),
                 tolerance={"abs": 0, "rel": 0}),
-        finding("Tampered, unretained and mode-substituted admissions are refused", "computational_pipeline",
+        finding("Tampered, unretained and mode-substituted admissions and a zero update variance are refused",
+                "computational_pipeline",
                 study["refusals"],
                 {"checks": [{"reference_kind": "refusal", "reference": name.replace("_", " "), "expected_refusal": name,
                              "observed_refusal": code, "passed": code == name}
                             for name, code in study["refusals"].items()]},
+                uncertainty=_exact(), tolerance={"abs": 0, "rel": 0}),
+        finding("The geometry and sensor variance components of a derived surface distance survive retention, "
+                "admission and digesting, a state update uses their sum and refuses any other variance, and "
+                "altering either one changes the content digest", "computational_pipeline",
+                {k: split[k] for k in ("components", "digest_preserved", "altered_component_changes_digest",
+                                       "tampered_update", "declared_total_m2", "update_posterior_variance_gap_m2",
+                                       "update_variance_refusal")},
+                {"checks": [_check("retained or admitted components differing from the derived record",
+                                   sum(split[k] != split["components"] for k in ("restored", "admitted")), 0,
+                                   kind="exact_arithmetic"),
+                            _check("digest not preserved through retention and admission",
+                                   float(not split["digest_preserved"]), 0.0, kind="exact_arithmetic"),
+                            _check("altered components leaving the digest unchanged",
+                                   sum(not v for v in split["altered_component_changes_digest"].values()), 0,
+                                   kind="exact_arithmetic"),
+                            _refusal_check("update from a retained record whose geometry component was zeroed after "
+                                           "admission", "admission_digest_mismatch", split["tampered_update"]),
+                            _check("posterior variance minus half the declared total, from a prior variance equal "
+                                   "to that total (gain exactly 1/2; m^2)", split["update_posterior_variance_gap_m2"],
+                                   0.0, kind="exact_arithmetic"),
+                            _refusal_check("update given a variance other than the record's declared total",
+                                           "variance_split_mismatch", split["update_variance_refusal"])]},
+                uncertainty=_exact("JSON round trip of binary64 values and SHA-256 content digests"),
+                tolerance={"abs": 0, "rel": 0}),
+        finding("The fusion intake refuses a retained but unadmitted record and an unretained one, a record whose "
+                "admission was refused never reaches fusion, and the same record is fused once admitted",
+                "computational_pipeline",
+                {"refusals": fusion, "final_source_is_last_record": demo["trace"]["final_source_is_last_record"],
+                 "ledger_admissions": demo["ledger"]["admission_values"]},
+                {"derivation": "ciw.lab.sensor_fusion_intake.ObservationIntake.fuse against an ObservationLedger",
+                 "generator": _intake_generator(demo),
+                 "checks": [_refusal_check(f"intake: {name.replace('_', ' ')}", code, fusion[name]["intake"])
+                            for name, code in FUSION_RETENTION_CASES.items()]
+                           + [_refusal_check("ledger admission of a record without a calibration reference",
+                                             "missing_calibration", fusion["missing_calibration"]["admission"]),
+                              _check("the refused tick-12 record not fused after its admission",
+                                     float(not demo["trace"]["final_source_is_last_record"]), 0.0,
+                                     kind="exact_arithmetic"),
+                              _check("ledger admissions recorded as anything but synthetic_only",
+                                     float(demo["ledger"]["admission_values"] != ["synthetic_only"]), 0.0,
+                                     kind="exact_arithmetic")]},
                 uncertainty=_exact(), tolerance={"abs": 0, "rel": 0}),
         _unestablished("Admission as workbench state confers authority to act on a machine", "actuator_authority",
                        "Admission is bookkeeping inside the workbench; actuator authority is decided outside it."),
     ]
     fields = _fields(
         hypothesis="Retention and admission are separate: any observation can be retained as evidence without "
-                   "changing state, and only a retained, validated, admitted observation bound by content digest can "
-                   "update state.",
+                   "changing state; a store or ledger is read-only unless constructed writable; and only a retained, "
+                   "validated, admitted observation bound by content digest (admission recorded as synthetic_only) "
+                   "can update state or reach the fusion session.",
         mathematical_model="State (mean, variance) per component; retain(o) stores (o, digest(o)) with "
-                           "state_admission = not_performed; admit(digest) validates mode and references; update "
-                           "applies K = P/(P + R), m' = m + K (z - m), P' = (1 - K) P only for admitted digests.",
+                           "state_admission = not_performed; admit(digest) on a writable ledger validates mode and "
+                           "references and records synthetic_only; update applies K = P/(P + R), m' = m + K (z - m), "
+                           "P' = (1 - K) P only for admitted digests, with R the record's declared total variance "
+                           "(geometry_m2 + sensor_m2) when it carries a split and R > 0 always; the fusion intake "
+                           "converts only ledger-admitted records.",
         input_data=["One synthetic record per mode, three sequences each", "Prior 1.0 / 0.5 and observation "
-                    "2.0 / 0.5 for the exact update"],
+                    "2.0 / 0.5 for the exact update",
+                    "A chord-derived surface distance with its geometry/sensor split (T045)",
+                    f"The intake demonstration's tracker records (seed {demo['seed']}, {demo['ticks']} ticks)"],
         observation_model="Synthetic records; no instrument.",
-        expected_invariant="State digest unchanged by retention and by refused updates; exact posterior on dyadic "
-                           "numbers.",
-        experiment="Retain records of all seven modes, attempt updates before admission, admit and update one "
-                   "record, then tamper with it, admit an unretained digest and admit a chord into a geodesic-"
-                   "distance store.",
+        expected_invariant="State digest unchanged by retention and by refused updates; admission and update "
+                           "refused on a default store; exact posterior on dyadic numbers; split preserved by "
+                           "retention and digesting and used as the update variance; the intake fuses only "
+                           "ledger-admitted records.",
+        experiment="Retain records of all seven modes, attempt admission and updates on default and writable stores, "
+                   "admit and update one record, then tamper with it, admit an unretained digest and admit a chord "
+                   "into a geodesic-distance store and update with a zero variance; round-trip a split-carrying "
+                   "distance through ledger and store and update state from it, with no caller variance and with a "
+                   "different one; "
+                   "offer the fusion intake unretained, unadmitted and admission-refused records, then admit and "
+                   "fuse the refused one.",
         numerical_result=f"{unchanged}/{len(per_mode)} modes unchanged by retention; all unadmitted updates refused; "
-                         f"posterior {study['updated_state']['mean'][0]} / {study['updated_state']['variance'][0]}; "
-                         f"refusals {study['refusals']}.",
+                         f"default stores refuse admit and update with "
+                         f"{sorted({c for v in read_only.values() for c in v.values()})}; "
+                         f"posterior {study['updated_state']['mean'][0]} / {study['updated_state']['variance'][0]} "
+                         f"with admission {study['admission']['state_admission']}; refusals {study['refusals']}; "
+                         f"split preserved {split['digest_preserved']}, update posterior gap "
+                         f"{split['update_posterior_variance_gap_m2']} m^2 with the declared total and "
+                         f"{split['update_variance_refusal']} for another variance; intake refusals "
+                         f"{ {k: v['intake'] for k, v in fusion.items()} }.",
         uncertainty="Exact; no stochastic component.",
-        failure_modes_checked=["update before admission (every mode)", "record altered after admission",
-                               "admission of an unretained digest", "camera chord admitted as intrinsic distance"],
+        failure_modes_checked=["update before admission (every mode)", "admission or update on a default read-only "
+                               "store (every mode)", "record altered after admission",
+                               "admission of an unretained digest", "camera chord admitted as intrinsic distance",
+                               "variance component altered after admission",
+                               "state update with a variance other than the record's declared split, or zero",
+                               "fusion of an unretained, unadmitted or admission-refused record"],
         unresolved_assumptions=["Admission decisions are declared, not reviewed by an operator",
-                                "State is per-component independent (no cross-covariance)"],
-        recommended_next_task="T060: build the deterministic multi-sensor synthetic bench")
+                                "State is per-component independent (no cross-covariance)",
+                                "A retention record keeps state_admission not_performed after a later admission; "
+                                "the admission is a separate record, looked up by digest"],
+        recommended_next_task="Deferred research question: record who or what decided each ledger admission (an "
+                              "operator review record bound to the observation digest) and refuse fusion of an "
+                              "admission without one; today the decision is a declared free-text string, so the "
+                              "ledger shows that a record was admitted but not on whose review.")
     return {"state": "completed", "fields": fields, "findings": findings}

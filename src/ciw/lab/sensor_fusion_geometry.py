@@ -268,8 +268,10 @@ def frame_transform_covariance(ctx):
                                    "covariance) adds a J_theta Sigma_theta J_theta^T term not modelled here.",
                                    "Only affine maps are covered; nonlinear maps (range-bearing) need a "
                                    "linearization check such as T064's."],
-        "recommended_next_task": "T064: propagate covariance through the Jacobi transfer matrix, where the map is "
-                                 "only first-order.",
+        "recommended_next_task": ("Deferred research question: an uncertain extrinsic, a rotation angle with a "
+                                  "declared variance, adding J_theta Sigma_theta J_theta^T to the transformed "
+                                  "covariance, checked by Monte Carlo over the angle and carried through the fusion "
+                                  "intake's frame mapping, which today treats every mapping as exact."),
     }
     return outcome(fields, findings)
 
@@ -631,12 +633,19 @@ def jacobi_transfer_covariance(ctx):
                                   "chart singularity (sweep limited to sigma <= 0.3 on the sphere)",
                                   "linearization breakdown", "matched-arclength vs closest-point lateral offset "
                                   "(equal to first order)"],
-        "unresolved_assumptions": ["Only constant-curvature surfaces were used, where exact nonlinear references "
-                                   "exist; variable-curvature surfaces need a numerical reference.",
+        "unresolved_assumptions": ["Only constant-curvature surfaces were used here, where exact nonlinear "
+                                   "references exist. The numerical reference variable curvature needs already "
+                                   "exists: T002 validates the geodesic integrator against 34-digit references on "
+                                   "the torus, saddle and Gaussian bump, and T006 checks the Jacobi columns against "
+                                   "finite-difference flow on the torus and bump; this task has not been run on "
+                                   "those surfaces.",
                                    "The perturbation is Gaussian in (lateral, heading); real path errors may have "
                                    "other shapes and correlations with speed."],
-        "recommended_next_task": "T065: model the correlation that a filter itself induces between successive "
-                                 "estimates.",
+        "recommended_next_task": ("Deferred research question: repeat the Jacobi covariance propagation and the "
+                                  "linearization-breakdown study on the variable-curvature torus and Gaussian bump, "
+                                  "using as references the geodesic integrator that T002 validates against 34-digit "
+                                  "solutions on those surfaces (largest gap 6.4e-14) and the Jacobi columns that T006 "
+                                  "checks against finite-difference flow there."),
         # The numbers depend on the core Jacobi, integrator and surface modules; their digests are recorded.
         "provider_runtime_identity": identity(files("sensor_fusion_geometry"), *CORE_GEOMETRY),
     }

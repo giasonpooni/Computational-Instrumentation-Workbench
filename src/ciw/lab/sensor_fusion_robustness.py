@@ -275,7 +275,11 @@ def missing_data(ctx):
                                    "a genuine reading at the origin: the API refuses requested substitutes, not "
                                    "zero-filling done before an Observation is constructed.",
                                    "Long gaps stay consistent only while the motion model holds (see T073)."],
-        "recommended_next_task": "T070: stale clocks, where a reading is present but refers to the wrong time.",
+        "recommended_next_task": ("Deferred research question: require every fused reading to cite a retained "
+                                  "section-4 raw reference (the fusion intake's lineage) and refuse readings that "
+                                  "bypass the intake, so a caller-built (0, 0) reading, which the session cannot tell "
+                                  "from a genuine reading at the origin, is refusable; the session refuses requested "
+                                  "substitutes but not a fabricated Observation."),
     }
     return outcome(fields, findings)
 
@@ -625,7 +629,10 @@ def stale_clock(ctx):
                                    "it refuses rather than retrodicts a reading older than its clock (no "
                                    "out-of-sequence update), so the caller must deliver readings in the order of "
                                    "the ticks they refer to."],
-        "recommended_next_task": "T071: frame mismatch, the spatial analogue of a stale clock.",
+        "recommended_next_task": ("Deferred research question: an out-of-sequence measurement update (retrodiction) "
+                                  "for readings older than the session clock, compared with this task's refusal and "
+                                  "with the batch posterior, so a late reading can be used rather than refused; the "
+                                  "session and the intake refuse such readings today."),
     }
     return outcome(fields, findings)
 
@@ -820,6 +827,8 @@ def frame_mismatch(ctx):
                                   "frame-id mismatch at the API"],
         "unresolved_assumptions": ["The transform is exact; an uncertain extrinsic needs its own covariance term.",
                                    "Rotation about the world origin only; a translated frame adds a constant bias."],
-        "recommended_next_task": "T072: calibration expiry, the temporal validity of the declared transform and noise.",
+        "recommended_next_task": ("Deferred research question: a translated (lever-arm) frame mismatch, which adds a "
+                                  "constant bias instead of a rotation, and its detection by T070's mean-innovation "
+                                  "test; this task rotates about the world origin only."),
     }
     return outcome(fields, findings)

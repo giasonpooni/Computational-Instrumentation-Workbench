@@ -1,14 +1,26 @@
 """Typed instrument observation modes, frame and clock bases, and retention without admission.
 
 Scope: the record types and refusals used by the observation experiments
-(T045, T048, T054-T056, T058, T059). A mode declares the quantity it observes, its
-unit, the frame kind and clock basis a record must carry, whether it sees
-intrinsic or extrinsic surface geometry, declared noise-model parameters and
-what it cannot observe. Validation refuses records without frame, clock or
+(T045, T048, T054-T056, T058, T059) and by the fusion intake
+(:mod:`ciw.lab.sensor_fusion_intake`, T058, T059, T075, T076). A mode declares
+the quantity it observes, its unit, the frame kind and clock basis a record
+must carry, whether it sees intrinsic or extrinsic surface geometry, declared
+noise-model parameters, the variance components a record carries and what it
+cannot observe. Validation refuses records without frame, clock or
 calibration references and refuses substituting one mode for another. Frame
 and clock mappings are applied only when declared, and are recorded on the
-result. Retaining an observation never changes estimator state; only an
-admitted observation, bound by content digest, may update it.
+result. A model-derived surface distance carries separate geometry and sensor
+variance components (the T044 split), both bound into its content digest; a
+state update from it uses their sum, as the fusion intake does.
+
+Retaining an observation never changes estimator state. An
+:class:`ObservationLedger` (and the :class:`StateStore` built on it) defaults
+to read-only: records can be retained, but admission and state updates are
+refused with ``read_only_session``. A writable ledger records an admission as
+``synthetic_only``, the CIW vocabulary; no value outside
+``{not_performed, synthetic_only}`` is ever written as ``state_admission``.
+Only an admitted observation, bound by content digest, may update state or
+reach the fusion session.
 
 Non-claims: the noise parameters are declared placeholders, not measured
 instrument characteristics. A validated record is well formed, not physically
@@ -17,9 +29,11 @@ calibration or actuator authority.
 """
 from __future__ import annotations
 
+from collections.abc import Mapping
 from copy import deepcopy
 from dataclasses import dataclass, replace
 import math
+from types import MappingProxyType
 
 import numpy as np
 
@@ -28,7 +42,11 @@ from .observation_chord import arc_from_chord, helix_chord
 
 CLOCK_BASES = ("acquisition", "arrival")
 GEOMETRY_CLASSES = ("intrinsic", "extrinsic", "none")
-RETENTION, NOT_ADMITTED, ADMITTED = "retained", "not_performed", "admitted"
+RETENTION, NOT_ADMITTED, SYNTHETIC_ONLY = "retained", "not_performed", "synthetic_only"
+# The only values any lab estimator may write as ``state_admission`` (the CIW vocabulary).
+ADMISSION_VOCABULARY = (NOT_ADMITTED, SYNTHETIC_ONLY)
+LEDGER_AUTHORITY = {"state_admission": NOT_ADMITTED, "sensor_fusion": "not_performed",
+                    "physical_truth": "not_established"}
 
 
 class ObservationRefusal(ValueError):
@@ -51,12 +69,17 @@ class ObservationMode:
     requires_surface_model: bool
     noise_model: dict
     cannot_observe: tuple
+    # Names of the per-record variance components (m^2) a record may carry; all of them are required when
+    # ``variance_required`` is set. Records of a mode that declares none carry none.
+    variance_components: tuple = ()
+    variance_required: bool = False
 
     def describe(self) -> dict:
         return {"name": self.name, "quantity": self.quantity, "unit": self.unit, "components": self.components,
                 "frame_kind": self.frame_kind, "clock_basis": self.clock_basis, "geometry": self.geometry,
                 "requires_surface_model": self.requires_surface_model, "noise_model": deepcopy(self.noise_model),
-                "cannot_observe": list(self.cannot_observe)}
+                "cannot_observe": list(self.cannot_observe), "variance_components": list(self.variance_components),
+                "variance_required": self.variance_required}
 
 
 _PIXEL_NOISE = {"model": "gaussian_pixel_noise_then_integer_rounding", "pixel_sigma_px": 0.25,
@@ -72,16 +95,23 @@ MODES = {mode.name: mode for mode in (
          "the pose of the part in any sensor frame")),
     ObservationMode(
         "camera_chord_distance", "straight-line distance between two triangulated markers", "m", 1,
-        "camera_rig", "acquisition", "extrinsic", False, dict(_PIXEL_NOISE),
+        "camera_rig", "acquisition", "extrinsic", False,
+        dict(_PIXEL_NOISE, chord_sigma_m=2e-4, chord_sigma_basis="declared metric chord noise carried as the "
+                                                               "record's sensor_m2 component"),
         ("intrinsic geodesic distance unless a surface model is declared",
-         "the surface between the markers", "occluded or unmatched markers")),
+         "the surface between the markers", "occluded or unmatched markers"),
+        variance_components=("sensor_m2",)),
     ObservationMode(
         "reconstructed_surface_distance", "geodesic length on a declared or reconstructed surface model", "m", 1,
         "reconstruction", "acquisition", "intrinsic", True,
-        {"model": "input_noise_propagated_through_surface_model", "point_sigma_m": 2e-4,
+        {"model": "sensor_plus_geometry_variance", "sensor_sigma_m": 2e-4,
+         "split": "T044 law of total variance: Var = sensor_m2 + geometry_m2, each propagated to first order "
+                  "(geometry_m2 = sum_p (ds/dp)^2 sigma_p^2 over the declared surface-model parameters, or "
+                  "sigma_vertex^2 |grad d|^2 for a mesh)",
          "model_form_error_m": "undeclared", "status": "declared_placeholder"},
         ("the true surface where it departs from the model", "curvature below the model resolution",
-         "the physical path actually followed")),
+         "the physical path actually followed"),
+        variance_components=("geometry_m2", "sensor_m2"), variance_required=True),
     ObservationMode(
         "encoder_displacement", "actuator axis displacement", "m", 1, "axis", "acquisition", "none", False,
         {"model": "scale_bias_backlash", "scale": 0.0, "bias_m": 0.0, "backlash_m": 2e-5, "resolution_m": 1e-6,
@@ -125,13 +155,24 @@ class Observation:
     surface_model: dict | None = None
     derived_from: tuple = ()
     mappings: tuple = ()
+    variance_components: dict | None = None
 
     def record(self) -> dict:
-        return {"mode": self.mode, "value": list(self.value), "unit": self.unit, "frame_id": self.frame_id,
-                "clock_id": self.clock_id, "clock_basis": self.clock_basis, "epoch": self.epoch,
-                "time_s": self.time_s, "calibration_ref": self.calibration_ref, "sequence": self.sequence,
-                "raw_ref": self.raw_ref, "latency_s": self.latency_s, "surface_model": deepcopy(self.surface_model),
-                "derived_from": list(self.derived_from), "mappings": list(self.mappings)}
+        record = {"mode": self.mode, "value": list(self.value), "unit": self.unit, "frame_id": self.frame_id,
+                  "clock_id": self.clock_id, "clock_basis": self.clock_basis, "epoch": self.epoch,
+                  "time_s": self.time_s, "calibration_ref": self.calibration_ref, "sequence": self.sequence,
+                  "raw_ref": self.raw_ref, "latency_s": self.latency_s, "surface_model": deepcopy(self.surface_model),
+                  "derived_from": list(self.derived_from), "mappings": list(self.mappings)}
+        # Present only when declared, so records of modes without components keep their digests. An empty
+        # mapping declares nothing and is recorded like None, so one measurement has one digest. A value that
+        # is not a mapping is kept as retained evidence; validate() refuses it.
+        components = self.variance_components
+        if isinstance(components, Mapping):
+            if components:
+                record["variance_components"] = dict(sorted(components.items()))
+        elif components is not None:
+            record["variance_components"] = deepcopy(components)
+        return record
 
     def digest(self) -> str:
         return content_identity(self.record())
@@ -142,6 +183,8 @@ def observation_from_record(record: dict) -> Observation:
     fields["value"] = tuple(float(v) for v in fields["value"])
     fields["derived_from"] = tuple(fields.get("derived_from", ()))
     fields["mappings"] = tuple(fields.get("mappings", ()))
+    if isinstance(fields.get("variance_components"), Mapping):
+        fields["variance_components"] = dict(fields["variance_components"])
     return Observation(**fields)
 
 
@@ -183,7 +226,29 @@ def validate(observation: Observation) -> Observation:
         raise ObservationRefusal("missing_time", "Observation has no finite time")
     if mode.requires_surface_model and not observation.surface_model:
         raise ObservationRefusal("surface_model_required", f"{mode.name} requires a declared surface model")
+    components = observation.variance_components
+    if components is not None and not isinstance(components, Mapping):
+        raise ObservationRefusal("invalid_variance", "Variance components must be a mapping from component name "
+                                                     "to variance (m^2)")
+    if components or mode.variance_required:
+        names = set(components or ())
+        if not names <= set(mode.variance_components) or (
+                mode.variance_required and names != set(mode.variance_components)):
+            raise ObservationRefusal("variance_split_mismatch",
+                                     f"{mode.name} records carry variance components "
+                                     f"{sorted(mode.variance_components) or 'none'}, not {sorted(names)}")
+        if not all(isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v) and v >= 0
+                   for v in (components or {}).values()):
+            raise ObservationRefusal("invalid_variance", "Variance components must be finite and nonnegative")
     return observation
+
+
+def declared_variance(observation: Observation) -> float | None:
+    """The record's total declared variance (m^2), the sum of its variance components, or None without any."""
+    components = observation.variance_components
+    if not isinstance(components, Mapping) or not components:
+        return None
+    return float(math.fsum(float(components[name]) for name in sorted(components)))
 
 
 def require_mode(observation: Observation, expected: str) -> Observation:
@@ -216,17 +281,78 @@ def arc_length_from_chord(chord: float, model: dict) -> float:
     raise ObservationRefusal("unsupported_surface_model", f"Unsupported surface model: {kind!r}")
 
 
+def arc_length_sensitivities(chord: float, model: dict) -> dict:
+    """First-order sensitivities of the arc length s(chord; model) to the chord and to each model parameter.
+
+    Implicit differentiation of the forward chord law: for the cylinder geodesic
+    c^2 = 4 R^2 sin^2(theta/2) + s^2 sin^2(alpha) with theta = s cos(alpha)/R,
+    ds/dc = 2c / d(c^2)/ds and ds/dp = -d(c^2)/dp / d(c^2)/ds.
+    """
+    kind = model.get("kind")
+    arc = arc_length_from_chord(chord, model)
+    if kind == "plane":
+        return {"chord": 1.0}
+    if kind == "sphere":
+        radius = float(model["radius"])
+        root = math.sqrt(1.0 - (chord / (2 * radius)) ** 2)
+        if root == 0.0:
+            raise ObservationRefusal("chord_outside_model", "The arc length is not differentiable at the diameter")
+        return {"chord": 1.0 / root, "radius": arc / radius - chord / (radius * root)}
+    radius, alpha = float(model["radius"]), float(model["path_angle_rad"])
+    theta = arc * math.cos(alpha) / radius
+    d_ds = 2 * radius * math.cos(alpha) * math.sin(theta) + 2 * arc * math.sin(alpha) ** 2
+    if d_ds <= 0.0:
+        raise ObservationRefusal("chord_outside_model", "The chord law is not invertible at this arc length")
+    d_dr = 8 * radius * math.sin(theta / 2) ** 2 - 2 * radius * theta * math.sin(theta)
+    d_da = -2 * radius * arc * math.sin(alpha) * math.sin(theta) + arc ** 2 * math.sin(2 * alpha)
+    return {"chord": 2 * chord / d_ds, "radius": -d_dr / d_ds, "path_angle_rad": -d_da / d_ds}
+
+
+def surface_distance_variance(chord: float, sensor_m2: float, model: dict) -> dict:
+    """Geometry and sensor variance of the arc length derived from a chord (first order, T044 split).
+
+    ``sensor_m2`` is the chord's metric variance; the geometry part propagates the
+    declared model-parameter standard deviations ``model["parameter_sigma"]``,
+    which must be stated (an empty mapping for a parameter-free plane), so a
+    perfect model is never assumed silently.
+    """
+    sigmas = model.get("parameter_sigma")
+    if not isinstance(sigmas, dict):
+        raise ObservationRefusal("geometry_uncertainty_required",
+                                 "A surface distance needs the declared model's parameter uncertainty "
+                                 "(parameter_sigma; state zeros explicitly)")
+    gains = arc_length_sensitivities(chord, model)
+    unknown = sorted(set(sigmas) - (set(gains) - {"chord"}))
+    if unknown or not all(isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v) and v >= 0
+                          for v in sigmas.values()):
+        raise ObservationRefusal("unsupported_model_parameter",
+                                 f"Parameter uncertainties must be finite and nonnegative for known parameters; "
+                                 f"unknown: {unknown}")
+    geometry = sum((gains[name] * float(sigma)) ** 2 for name, sigma in sorted(sigmas.items()))
+    return {"geometry_m2": float(geometry), "sensor_m2": float(gains["chord"] ** 2 * sensor_m2)}
+
+
 def chord_to_surface_distance(observation: Observation, surface_model: dict | None = None) -> Observation:
-    """A camera chord becomes a model-derived surface distance, never an intrinsic observation."""
+    """A camera chord becomes a model-derived surface distance, never an intrinsic observation.
+
+    The result carries separate ``geometry_m2`` (declared model-parameter
+    uncertainty) and ``sensor_m2`` (the chord's own variance) components.
+    """
     require_mode(observation, "camera_chord_distance")
     if not surface_model:
         raise ObservationRefusal("surface_model_required",
                                  "A camera chord is extrinsic; a surface distance requires a declared surface model")
+    if not observation.variance_components or "sensor_m2" not in observation.variance_components:
+        raise ObservationRefusal("variance_split_required",
+                                 "A surface distance carries a sensor variance; the chord must declare sensor_m2")
     arc = arc_length_from_chord(observation.value[0], surface_model)
+    split = surface_distance_variance(observation.value[0], float(observation.variance_components["sensor_m2"]),
+                                      surface_model)
     return replace(observation, mode="reconstructed_surface_distance", value=(arc,),
                    frame_id="reconstruction:" + str(surface_model.get("name", surface_model["kind"])),
                    surface_model=deepcopy(surface_model), derived_from=(observation.digest(),),
-                   mappings=observation.mappings + ("surface_model:" + content_identity(surface_model),))
+                   mappings=observation.mappings + ("surface_model:" + content_identity(surface_model),),
+                   variance_components=split)
 
 
 # Frame and clock mappings ---------------------------------------------------
@@ -360,16 +486,95 @@ def admit_fresh(observation: Observation, now_s: float, limit_s: float) -> float
 
 # Retention without admission ------------------------------------------------
 
+class ObservationLedger:
+    """Retention and admission bookkeeping for observation records; it holds no estimator state.
+
+    Retention keeps any record as evidence without validating or using it.
+    Admission validates a retained record, binds its content digest and is
+    recorded as ``synthetic_only``. The ledger defaults to read-only: retention
+    is allowed, admission is refused with ``read_only_session``, and its
+    authority is the CIW vocabulary. The flag is fixed at construction.
+    """
+
+    _FIXED = ("read_only", "authority", "_read_only")
+
+    def __init__(self, *, read_only: bool = True):
+        object.__setattr__(self, "_read_only", bool(read_only))
+        self._retained: dict = {}
+        self._admissions: dict = {}
+
+    def __setattr__(self, name, value):
+        if name in self._FIXED:
+            raise ObservationRefusal("read_only_session", f"{name} is fixed when the ledger is constructed")
+        object.__setattr__(self, name, value)
+
+    @property
+    def read_only(self) -> bool:
+        return self._read_only
+
+    @property
+    def authority(self):
+        return MappingProxyType(dict(LEDGER_AUTHORITY, state_admission=NOT_ADMITTED if self._read_only
+                                     else SYNTHETIC_ONLY))
+
+    def retain(self, observation: Observation) -> dict:
+        """Keep the evidence; nothing is validated or used and admission stays not_performed."""
+        record = {"observation": observation.record(), "observation_digest": observation.digest(),
+                  "retention": RETENTION, "state_admission": NOT_ADMITTED}
+        self._retained[record["observation_digest"]] = deepcopy(record)
+        return record
+
+    def retained(self) -> list:
+        return [deepcopy(self._retained[key]) for key in sorted(self._retained)]
+
+    def admit(self, digest: str, decision: str, *, mode: str | None = None) -> dict:
+        """Admit a retained record (validated, and of ``mode`` when given) as ``synthetic_only``."""
+        if self._read_only:
+            raise ObservationRefusal("read_only_session", "The ledger is read-only; admission is not performed")
+        if digest not in self._retained:
+            raise ObservationRefusal("not_retained", "Only a retained observation can be admitted")
+        observation = observation_from_record(self._retained[digest]["observation"])
+        if mode is None:
+            validate(observation)
+        else:
+            require_mode(observation, mode)
+        admission = {"observation_digest": digest, "state_admission": SYNTHETIC_ONLY, "decision": decision}
+        self._admissions[digest] = admission
+        return deepcopy(admission)
+
+    def admission(self, digest: str) -> dict | None:
+        admission = self._admissions.get(digest)
+        return None if admission is None else deepcopy(admission)
+
+    def admitted(self, digest: str) -> Observation:
+        """The retained, admitted record behind ``digest``, checked against its digest."""
+        if digest not in self._retained:
+            raise ObservationRefusal("not_retained", "The record was never retained")
+        if digest not in self._admissions:
+            raise ObservationRefusal("not_admitted", "A retained observation was not admitted")
+        observation = observation_from_record(self._retained[digest]["observation"])
+        if observation.digest() != digest:
+            raise ObservationRefusal("admission_digest_mismatch", "Retained content does not match its digest")
+        return observation
+
+
 class StateStore:
     """Estimator state for one mode that only admitted, digest-bound observations may update.
 
     The state is a mean and an independent variance per component of the
-    mode. Retention keeps any record as evidence without validating or using
-    it; admission validates a retained record and binds its content digest;
-    only then may :meth:`update` apply a per-component Kalman update.
+    mode. Retention and admission use an :class:`ObservationLedger`. The store
+    defaults to ``read_only=True``: records are retained, but admission and
+    :meth:`update` are refused with ``read_only_session``. The flag is fixed at
+    construction: rebinding ``read_only``, ``authority`` or the ledger that
+    carries the flag is refused with ``read_only_session``, as for the ledger
+    and the fusion session. A writable store records admissions as
+    ``synthetic_only`` and applies a per-component Kalman update only to
+    admitted records, with the record's declared variance when it carries one.
     """
 
-    def __init__(self, mode: str, mean, variance):
+    _FIXED = ("read_only", "authority", "_ledger")
+
+    def __init__(self, mode: str, mean, variance, *, read_only: bool = True):
         if mode not in MODES:
             raise ObservationRefusal("unknown_mode", f"Unknown observation mode: {mode!r}")
         components = MODES[mode].components
@@ -380,8 +585,22 @@ class StateStore:
         self.mode = mode
         self._state = {"mode": mode, "mean": [float(v) for v in mean], "variance": [float(v) for v in variance],
                        "updates": []}
-        self._retained: dict = {}
-        self._admissions: dict = {}
+        object.__setattr__(self, "_ledger", ObservationLedger(read_only=read_only))
+
+    def __setattr__(self, name, value):
+        if name in self._FIXED:
+            raise ObservationRefusal("read_only_session", f"{name} is fixed when the store is constructed")
+        object.__setattr__(self, name, value)
+
+    @property
+    def read_only(self) -> bool:
+        return self._ledger.read_only
+
+    @property
+    def authority(self):
+        """The ledger's authority; a writable store's updates are synthetic_only sensor fusion."""
+        return MappingProxyType(dict(self._ledger.authority, sensor_fusion="not_performed" if self.read_only
+                                     else SYNTHETIC_ONLY))
 
     @property
     def state(self) -> dict:
@@ -392,32 +611,34 @@ class StateStore:
 
     def retain(self, observation: Observation) -> dict:
         """Keep the evidence; the state is untouched and admission stays not_performed."""
-        record = {"observation": observation.record(), "observation_digest": observation.digest(),
-                  "retention": RETENTION, "state_admission": NOT_ADMITTED}
-        self._retained[record["observation_digest"]] = deepcopy(record)
-        return record
+        return self._ledger.retain(observation)
 
     def retained(self) -> list:
-        return [deepcopy(self._retained[key]) for key in sorted(self._retained)]
+        return self._ledger.retained()
 
     def admit(self, digest: str, decision: str) -> dict:
-        if digest not in self._retained:
-            raise ObservationRefusal("not_retained", "Only a retained observation can be admitted")
-        require_mode(observation_from_record(self._retained[digest]["observation"]), self.mode)
-        admission = {"observation_digest": digest, "state_admission": ADMITTED, "decision": decision}
-        self._admissions[digest] = admission
-        return deepcopy(admission)
+        return self._ledger.admit(digest, decision, mode=self.mode)
 
-    def update(self, record: dict, variance) -> dict:
-        """Per-component Kalman update from an admitted record; everything else is refused."""
+    def update(self, record: dict, variance=None) -> dict:
+        """Per-component Kalman update from an admitted record; everything else is refused.
+
+        A record that carries variance components (the T044 split) is updated
+        with their sum; a caller ``variance`` is then optional and refused with
+        ``variance_split_mismatch`` if it differs. A record without components
+        needs a caller variance. The update variance must be finite and
+        positive (``invalid_variance``), so no record can collapse the state
+        variance to zero.
+        """
+        if self.read_only:
+            raise ObservationRefusal("read_only_session", "The store is read-only; no state update is performed")
         observation = observation_from_record(record["observation"])
         digest = observation.digest()
         if digest != record.get("observation_digest"):
             raise ObservationRefusal("admission_digest_mismatch", "Record content does not match its digest")
-        if digest not in self._admissions:
+        if self._ledger.admission(digest) is None:
             raise ObservationRefusal("not_admitted", "A retained observation was not admitted as state")
         require_mode(observation, self.mode)
-        variance = np.broadcast_to(np.asarray(variance, dtype=float), (len(observation.value),))
+        variance = self._update_variance(observation, variance)
         means, variances = [], []
         for prior_mean, prior_variance, value, noise in zip(self._state["mean"], self._state["variance"],
                                                             observation.value, variance):
@@ -427,6 +648,30 @@ class StateStore:
         self._state["mean"], self._state["variance"] = means, variances
         self._state["updates"].append(digest)
         return self.state
+
+    @staticmethod
+    def _update_variance(observation: Observation, variance) -> np.ndarray:
+        """The per-component update variance: the record's declared total, or the caller's when it declares none."""
+        components = len(observation.value)
+        declared = declared_variance(observation)
+        if variance is None and declared is None:
+            raise ObservationRefusal("invalid_variance", f"The {observation.mode} record declares no variance "
+                                                         f"components; the update needs a variance")
+        try:
+            given = None if variance is None else np.broadcast_to(np.asarray(variance, dtype=float), (components,))
+        except (TypeError, ValueError):
+            raise ObservationRefusal("invalid_variance", f"The update variance must be a number or {components} "
+                                                         f"numbers") from None
+        if declared is not None:
+            if given is not None and not all(math.isclose(float(v), declared, rel_tol=1e-12, abs_tol=0.0)
+                                             for v in given):
+                raise ObservationRefusal("variance_split_mismatch",
+                                         f"The record declares a total variance of {declared!r} m^2 (its geometry "
+                                         f"and sensor components); the update was given {variance!r}")
+            given = np.full(components, declared)
+        if not (np.all(np.isfinite(given)) and np.all(given > 0)):
+            raise ObservationRefusal("invalid_variance", "The update variance must be finite and positive")
+        return given
 
 
 # Dropped observations ---------------------------------------------------------

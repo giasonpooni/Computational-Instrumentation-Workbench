@@ -10,11 +10,15 @@ physical instrument. Each task records that boundary as a `not_established`
 finding in its physical, calibration, sensor-performance or authority domain.
 
 Code: `src/ciw/lab/observation.py` (task registrations) with helpers
-`observation_modes.py` (typed records, refusals, mappings, retention),
+`observation_modes.py` (typed records, refusals, mappings, the geometry/sensor
+variance split, the retention and admission ledger),
 `observation_chord.py` (chord expansion, sympy references, integrated geodesics),
 `observation_camera.py` (pinhole stereo rig, distortion, triangulation,
 circular markers under perspective, shared-phase rounding) and
 `observation_signals.py` (encoder, IMU, timing, Kalman/RTS, statistics).
+Section 5 consumes these records through `sensor_fusion_intake.py` (see
+[From observation to fusion](#from-observation-to-fusion) and
+[SENSOR_FUSION.md](SENSOR_FUSION.md#from-section-4-records-to-fusion-the-intake)).
 Tests: `tests/test_lab_observation.py`.
 
 ```
@@ -52,7 +56,7 @@ mode declares what the record may contain:
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `intrinsic_geodesic_distance` | arc length of a declared geodesic along the surface | m | 1 | `surface_chart` | acquisition | intrinsic | chord or any embedding quantity; the path unless declared; the part's pose |
 | `camera_chord_distance` | straight-line distance between two triangulated markers | m | 1 | `camera_rig` | acquisition | extrinsic | intrinsic distance without a surface model; the surface between markers; occluded markers |
-| `reconstructed_surface_distance` | geodesic length on a declared or reconstructed surface model | m | 1 | `reconstruction` | acquisition | intrinsic (model) | the true surface where it departs from the model; sub-resolution curvature; the path actually followed |
+| `reconstructed_surface_distance` | geodesic length on a declared or reconstructed surface model, with separate `geometry_m2` and `sensor_m2` variance components | m | 1 | `reconstruction` | acquisition | intrinsic (model) | the true surface where it departs from the model; sub-resolution curvature; the path actually followed |
 | `encoder_displacement` | actuator axis displacement | m | 1 | `axis` | acquisition | none | load position without kinematics; surface geometry; backlash state without direction history |
 | `tracker_measurement` | marker position | m | 3 | `tracker` | arrival | extrinsic | distance along the surface; acquisition time without declared latency; body orientation |
 | `image_residual` | reprojection residual | px | 2 | `image` | acquisition | none | depth along the ray; metric scale without calibration; surface geometry |
@@ -61,6 +65,35 @@ mode declares what the record may contain:
 Noise-model parameters in the registry (for example 0.25 px pixel noise,
 20 µm backlash, 1 mrad/s gyro bias) are declared placeholders
 (`"status": "declared_placeholder"`), not instrument characteristics.
+
+**Geometry and sensor variance (the T044 split).** A mode may declare the
+variance components (m²) its records carry: `ObservationMode.variance_components`,
+all of them required when `variance_required` is set. A
+`reconstructed_surface_distance` record must carry both `geometry_m2` and
+`sensor_m2`. A `camera_chord_distance` record may carry `sensor_m2`, its own
+metric chord variance, and must carry it to be converted. Records of the
+other modes carry none. The components are part of the record, so they are
+bound into its content digest. The key is omitted from records that do not
+declare it, so those records keep their digests. An empty mapping declares
+nothing and is recorded the same way, so one measurement cannot be retained
+under two digests. Components that are not a mapping are refused
+(`invalid_variance`). A state update from a record that carries components
+uses their sum as its variance, and so does the fusion intake. T044 shows that for a
+distance on an uncertain surface Var = σ_s² + σ_g²|∇d|², that the two parts
+can be separated, and that averaging sensor readings cannot remove the
+geometry part. The chord conversion applies the same law to a parametric
+model: sensor_m2 = (ds/dc)² σ_c² and geometry_m2 = Σ_p (ds/dp)² σ_p² over the
+model's declared `parameter_sigma`. The sensitivities come from implicit
+differentiation of c² = 4R² sin²(s cos α/(2R)) + s² sin²α on the cylinder, and
+from the closed form on the sphere; `arc_length_sensitivities` returns them.
+A model must state `parameter_sigma`, as an empty mapping for a plane, so a
+perfect model is never assumed silently. For a mesh-reconstructed surface
+the geometry component is σ_vertex²|∇d|², using T043's linearized gain (valid
+while the unfolded segment stays in its face corridor). A record can declare
+that value, but no mesh conversion computes it here. An
+`intrinsic_geodesic_distance` record carries no split: its reading is
+sensor-only, and the geometry part enters the model prediction it is
+compared with, which is T044's residual.
 
 Refusal codes (`ObservationRefusal.code`):
 
@@ -75,13 +108,37 @@ Refusal codes (`ObservationRefusal.code`):
 | `missing_latency`, `future_observation`, `stale_observation` | an age cannot be computed, is negative, or exceeds the validity limit |
 | `zero_filled_missing`, `unbacked_value`, `sequence_gap` | a stream fills gaps with fabricated values or loses sequence positions |
 | `not_retained`, `not_admitted`, `admission_digest_mismatch` | state is updated from evidence that was not retained, not admitted, or altered after admission |
+| `read_only_session` | admission or a state update on a ledger or store constructed read-only (the default), or an attempt to rebind its flag (`read_only`, `authority`, and on a store the ledger that carries the flag) |
+| `variance_split_mismatch`, `invalid_variance` | a record carries variance components its mode does not declare, lacks a required one, has a negative or non-finite one, or carries them in something other than a mapping; a store update is given a variance other than the record's declared total (`variance_split_mismatch`), or a missing, nonpositive or non-finite variance (`invalid_variance`) |
+| `variance_split_required`, `geometry_uncertainty_required`, `unsupported_model_parameter` | a chord is converted without its `sensor_m2`, through a model without `parameter_sigma`, or with an uncertainty for an unknown parameter |
 
 A camera chord becomes a distance along the surface only through
 `chord_to_surface_distance(record, surface_model)`. The result has mode
 `reconstructed_surface_distance`. It records the chord's digest in
 `derived_from` and the model's identity in `mappings`. It is still refused
 where an `intrinsic_geodesic_distance` is required, because it was derived
-through a model and not observed intrinsically.
+through a model and not observed intrinsically. It carries the geometry and
+sensor variance components described above.
+
+**Retention and admission.** An `ObservationLedger` keeps retention and
+admission separate from any estimator. `retain` stores any record with
+`retention: retained` and `state_admission: not_performed`. `admit` validates
+a retained record and binds its digest. `admitted(digest)` returns it only if
+it is retained, admitted and still matches its digest. The ledger defaults to
+read-only: it retains records but refuses admission with `read_only_session`.
+A ledger constructed writable records each admission as
+`state_admission: synthetic_only`. `StateStore(mode, mean, variance)` is the
+per-component estimator built on a ledger, with the same read-only default.
+It refuses `admit` and `update` with `read_only_session`, and its flag, like
+the ledger's and the fusion session's, is fixed at construction. A writable
+store reports `synthetic_only` for both `state_admission` and
+`sensor_fusion`. `update(record)` takes the variance from the record when it
+carries components, and refuses a caller variance that differs from their
+sum. A record without components needs a caller variance. Either way the
+variance must be finite and positive, so no update can collapse the state
+variance to zero. No
+value outside `{not_performed, synthetic_only}` (`ADMISSION_VOCABULARY`) is
+ever written as `state_admission`; T076 audits this across both sections.
 
 ## Chord versus geodesic correction
 
@@ -181,7 +238,16 @@ Validate the registry declarations. Strip each reference from a valid record
 arc lengths with and without a declared cylinder model. The chords come from
 embedded points of `Cylinder.exact_geodesic` (straight lines in the (φ, z)
 chart), a forward model independent of the closed-form helix chord that the
-conversion inverts; the recovered arcs agree to 3e-17 m.
+conversion inverts; the recovered arcs agree to 3e-17 m. At s = 0.12 m,
+α = 30° on the R = 0.1 m cylinder, with a declared chord σ of 0.2 mm, radius σ
+of 0.5 mm and path-angle σ of 5 mrad, the derived distance carries
+geometry_m2 = 4.4e-9 m² and sensor_m2 = 4.9e-8 m² (geometry share 0.08). The
+analytic sensitivities match central differences of the bisection inverse to
+6e-10, on the cylinder and on a sphere. The Monte Carlo variance of the arc
+under each source alone, and under both together, matches its component
+(4000 samples per source, |z| ≤ 1.7 against 3.29). Refused: a surface
+distance without both components, a chord without `sensor_m2`, and a model
+without `parameter_sigma`.
 
 ### T046 Chord-versus-geodesic correction
 Hand derivation and the two sympy references above: a symbolic identity for
@@ -440,14 +506,63 @@ through a frame mapping unchanged by design, so their invariance is a
 property of `apply_frame`, not a measurement. Clock mappings (arrival →
 acquisition by the declared latency, then clock → clock) are exact on dyadic
 times. Mappings for another frame, frame kind or epoch are refused.
+The same declarations carry a record into sensor fusion. In the intake
+demonstration (see [From observation to fusion](#from-observation-to-fusion)),
+room-frame tracker records stamped on arrival reach the fusion tick grid
+through the declared room-to-cell mapping, the arrival-to-acquisition latency
+and the tracker-to-fusion synchronization. The fusion reading equals the
+hand-written quarter turn and projection exactly, on the exact tick, with
+covariance exactly σ²I, and records the three mapping identities. The intake
+refuses an unmapped frame (`unmapped_frame`), an unmapped clock or epoch, or
+an arrival stamp with no declared latency mapping (`unmapped_clock`). It also
+refuses a latency mapping that contradicts the record's declared latency
+(`latency_mismatch`) and a stamp off the tick grid (`off_tick_grid`). The
+time basis changes only through a latency mapping on one clock and epoch. A
+single mapping that synchronizes an arrival stamp as if it were an
+acquisition time is refused (`unmapped_clock`). Without that rule, a record
+with a one-tick latency would land on the grid one tick late and its
+declared latency would never be checked.
 
 ### T059 Retained without admission
 Records of all seven modes are retained with `retention: retained` and
-`state_admission: not_performed`, and the state digest does not change.
-Updates from unadmitted records are refused. Admission validates the record
-and binds its digest. An admitted scalar update is exact (prior 1.0/0.5,
+`state_admission: not_performed`, and the state digest does not change. A
+default store is read-only. For every mode it retains records, but refuses
+admission and update with `read_only_session` and keeps authority
+`not_performed`. On a writable store, updates from unadmitted records are
+refused. Admission validates the record, binds its digest and is recorded as
+`synthetic_only`. An admitted scalar update is exact (prior 1.0/0.5,
 observation 2.0/0.5 → 1.5/0.25). Tampered, unretained and mode-substituted
-admissions are refused.
+admissions are refused. A chord-derived surface distance keeps both variance
+components through retention, admission and digesting. Doubling either
+component changes the digest, and a retained record whose geometry component
+is zeroed after admission is refused (`admission_digest_mismatch`). A state
+update from the admitted record uses the sum of its components: from a prior
+variance equal to that sum the posterior variance is exactly half of it. A
+different caller variance is refused (`variance_split_mismatch`), and a zero
+variance for a record without components is refused (`invalid_variance`).
+The fusion intake refuses an unretained record (`not_retained`) and a retained
+but unadmitted one (`not_admitted`). A record without a calibration
+reference cannot be admitted (`missing_calibration`), so it never reaches
+fusion. The refused tick-12 record is fused once it is admitted.
+
+## From observation to fusion
+
+Section 5's `FusionSession` consumes section-4 records only through
+`ciw.lab.sensor_fusion_intake.ObservationIntake`, which is documented in
+[SENSOR_FUSION.md](SENSOR_FUSION.md#from-section-4-records-to-fusion-the-intake).
+The pipeline is: typed observation → retention and admission in an
+`ObservationLedger` → declared frame and clock mappings → fusion reading →
+candidate state → explicit `FusionSession.admit`. T058 checks the mapping
+step, T059 the admission step, T075 the whole path and its calibration and
+geometry refusals, and T076 the read-only defaults and the admission
+vocabulary. The intake counts each measurement once and traces every fused
+reading to its own record. Acquisition-age staleness (T056) is not applied at
+the intake. The session fuses each reading at its own acquisition tick and
+refuses one older than its state (`out_of_order`). No use time is declared
+at admission, so the age of an admitted state's newest reading at use is not
+checked. T058 records this as an unresolved assumption. The intake is
+imported only by the tasks that use it, so an intake that fails to import
+blocks T058 and T059 and leaves T045–T057 running.
 
 ## What remains physically unverified
 
@@ -461,12 +576,24 @@ None of the following is established by this section:
 * Physical geometry: whether a real part is a cylinder of known radius and
   axis, whether markers lie on one geodesic, and whether the chord correction
   computed from nominal curvature holds for measured chords.
-* Authority: admission in `StateStore` is workbench bookkeeping and confers no
-  actuator, safety or production authority.
+* Authority: admission in `ObservationLedger` and `StateStore` is
+  `synthetic_only` workbench bookkeeping and confers no actuator, safety or
+  production authority.
 
 The next step toward any of these is acquisition. Retain raw bytes with device
 identity, acquisition time and calibration reference, as required for a
-`hardware_measured` finding, then repeat T048–T056 against that data.
-Recommended follow-ups in the queue: T060 (multi-sensor bench) and T066
-(filtered residuals must use the filter covariance, not the raw sensor
-covariance).
+`hardware_measured` finding, then repeat T048–T056 against that data. The
+runner can retain such bytes as an operator capture (`ciw lab run TASK
+--capture ROLE=PATH`; see [AUTHORING.md](AUTHORING.md#operator-captures)).
+But no task in this section reads a capture or parses a camera, tracker or
+tape export: a capture parser for chord and tape readings is missing (T045's
+deferred question). A capture is also unauthenticated. Until an instrument
+probe or a signed-capture trust anchor exists for these roles, physical
+findings computed from one stay `not_established`. So no `hardware_measured`
+observation exists. Every task in this section names its
+own deferred research question as its recommended next step, rather than a
+queue task that has already run. Examples: estimating curvature from marker
+chords (T046); occluded and mismatched markers (T048); a calibration
+covariance component beside the geometry/sensor split (T049); a drifting
+clock offset (T054, T058); and an operator review record for each ledger
+admission (T059).
