@@ -128,8 +128,11 @@ identity, inputs and upstream kinds, provider steps with exact pins,
 verification, refusal vocabulary, the domain rules its implementation keeps
 (each citing the code that enforces it as `module:qualname` references that
 must resolve), investigations, operator surface and implementation. `pipelines.check()` binds
-every descriptor to the code that executes it, including exact pin equality, so
-a descriptor cannot drift. Three investigations group the pipelines; the
+every descriptor to the code that executes it. Descriptors are the only
+definition of a provider pin: modules read their pins through `pin_map`,
+`provider_pin` or `provider_descriptor`, and the check refuses a revision
+literal anywhere else in the package, so what executes cannot drift from what
+is declared. Three investigations group the pipelines; the
 operator surface is `operation.list` with `{"view": "investigations"}`, while
 every pipeline stays executable and replayable. [PIPELINES.md](PIPELINES.md) is
 generated from the descriptors, including the provider pin matrix that keys

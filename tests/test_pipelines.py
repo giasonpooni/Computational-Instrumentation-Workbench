@@ -17,15 +17,18 @@ def test_every_frozen_kind_has_a_descriptor_bound_to_its_code():
     assert set(descriptors) == kernel.FROZEN_KINDS
     for kind, value in descriptors.items():
         assert value["pipeline_id"] == OPERATIONS[kind]
-        assert {step["role"]: step["pin"] for step in value["steps"] if "pin" in step} == pipelines.live_pins(kind)
+        assert {step["role"]: step["pin"] for step in value["steps"] if "pin" in step} == pipelines.pin_map(kind)
 
 
-def test_descriptor_pin_drift_is_detected():
-    descriptors = deepcopy(pipelines.load())
-    step = next(step for step in descriptors["geometric-circle"]["steps"] if "pin" in step)
-    step["pin"]["revision"] = "0" * 40
-    with pytest.raises(ValueError, match="pins differ"):
-        pipelines.check(descriptors)
+def test_a_revision_written_into_package_code_is_refused(tmp_path):
+    package = tmp_path / "ciw"
+    package.mkdir()
+    (package / "module.py").write_text('VENDOR_REVISION = "' + "a" * 40 + '"\nPIN = {"revision": "' + "b" * 40 + '"}\n')
+    with pytest.raises(ValueError, match="writes revision b{40}"):
+        pipelines.check_pin_literals(package)
+    (package / "module.py").write_text('VENDOR_REVISION = "' + "a" * 40 + '"\nNOTE = "not a pin: ' + "c" * 40 + '"\n')
+    pipelines.check_pin_literals(package)
+    pipelines.check_pin_literals()  # the shipped package declares no stray pin
 
 
 @pytest.mark.parametrize("change, message", [

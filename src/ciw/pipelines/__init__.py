@@ -7,10 +7,11 @@ investigation and its operator surface. Descriptors are trusted process data
 shipped with CIW; saved workspaces never supply or extend them, and a
 descriptor never loads code.
 
-Until each kind's module reads its pins from its descriptor, ``live_pins``
-normalizes the pins the module currently declares (module constants and
-runtime manifests) and ``check`` requires the two to agree exactly, so the
-descriptor cannot drift from what executes.
+Descriptors are the only definition of a provider pin: every module reads its
+pins through ``pin_map``/``provider_pin`` (pipelines) or
+``provider_descriptor`` (providers), and ``check`` refuses a revision literal
+anywhere else in the package, so what executes cannot drift from what is
+declared.
 """
 from __future__ import annotations
 
@@ -38,16 +39,9 @@ _LINE_CITATION = re.compile(r"\.(py|jl|json):\d")
 WORKBENCH_REFUSALS = ("operation_unavailable", "workbench_capacity")
 
 # Transitional table of where each kind's module declares its pins today.
-_DESCRIPTOR_DEFINED = frozenset({"calibrated-observable", "identified-design", "calibrated-window",
-                                 "acquired-calibrated-window", "telemetry", "instrument-exchange",
-                                 "variational-free-energy", "measurement-chain", "schematic-companions",
-                                 "residual-monitor", "identified-stability", "proved-heat"})
+DECLARED_LITERALS = frozenset({"VENDOR_REVISION", "VENDOR_SOURCE_TREE"})
 _PIN_FIELDS = ("revision", "source_tree", "module", "source_root", "source_sha256", "path", "sha256", "repository")
-_BINARY_ROLES = frozenset({"engine", "prover", "guest"})
 
-
-def _normalize(pin):
-    return {key: pin[key] for key in _PIN_FIELDS if key in pin}
 
 
 def _refusal_codes(tree, roles):
@@ -105,33 +99,28 @@ def code_refusals(descriptor: dict, descriptors: dict | None = None) -> list[str
     return sorted(codes)
 
 
-def live_pins(kind: str) -> dict:
-    """The pins the kind's module declares today, normalized by provider role."""
-    from ..workbench import _workflow
-    workflow = _workflow(kind)
-    roles = sorted(set(getattr(workflow, "ROLES", ())) - _BINARY_ROLES)
-    if kind in _DESCRIPTOR_DEFINED:
-        # These modules read their pins from the descriptor (pin_map), so the
-        # descriptor is the definition and the binding is by construction.
-        return {role: _normalize(pin) for role, pin in pin_map(kind).items()}
-    module = import_module(type(workflow).__module__ if not hasattr(workflow, "__file__") else workflow.__name__)
-    pins = getattr(module, "PINS", None)
-    if isinstance(pins, dict) and kind in pins:
-        pin = dict(pins[kind])
-        role = pin.pop("role")
-        return {role: _normalize(pin)}
-    if isinstance(pins, dict) and roles and set(roles) <= set(pins):
-        trees = getattr(module, "SOURCE_TREES", {})
-        return {role: _normalize({**pins[role], **({"source_tree": trees[role]} if role in trees else {})})
-                for role in roles}
-    pin = getattr(workflow, "pin", None)
-    if isinstance(pin, dict) and len(roles) == 1:
-        trees = getattr(module, "SOURCE_TREES", {})
-        extra = {"source_tree": trees[pin["revision"]]} if pin.get("revision") in trees else {}
-        return {roles[0]: _normalize({**pin, **extra})}
-    if not roles:
-        return {}
-    raise ValueError(f"No normalized pin source for {kind}")
+def check_pin_literals(package: Path | None = None) -> None:
+    """Refuse a revision written into package code instead of read from a descriptor.
+
+    A 40-hex string constant is a pin literal. The only ones allowed are the
+    module-level constants in ``DECLARED_LITERALS``, which ``ci/gates.json``
+    binds through ``defined_by`` (the SCOUT vendor gitlink fixed by the PPDA
+    commit).
+    """
+    import ast
+    package = Path(__file__).resolve().parents[1] if package is None else Path(package)
+    for path in sorted(package.rglob("*.py")):
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        allowed = set()
+        for node in tree.body:
+            if (isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name) and
+                    node.targets[0].id in DECLARED_LITERALS):
+                allowed |= {id(item) for item in ast.walk(node.value)}
+        for node in ast.walk(tree):
+            if (isinstance(node, ast.Constant) and isinstance(node.value, str) and _HEX40.fullmatch(node.value) and
+                    id(node) not in allowed):
+                raise ValueError(f"{path.relative_to(package.parent)} writes revision {node.value}; "
+                                 "read it from its descriptor")
 
 
 def pin_map(kind: str) -> dict:
@@ -374,9 +363,6 @@ def check(descriptors: dict | None = None) -> dict:
         workflow_roles = set(getattr(_workflow(kind), "ROLES", ()))
         if roles != workflow_roles:
             raise ValueError(f"{kind}: descriptor roles {sorted(roles)} differ from bound roles {sorted(workflow_roles)}")
-        declared = {step["role"]: step["pin"] for step in value["steps"] if "pin" in step}
-        if declared != live_pins(kind):
-            raise ValueError(f"{kind}: descriptor pins differ from the pins its module executes")
         upstream = [UPSTREAM_KINDS[kind]] if kind in UPSTREAM_KINDS else []
         if kind != "residual-monitor" and value["inputs"]["upstream_kinds"] != upstream:
             raise ValueError(f"{kind}: descriptor upstream differs from the registered upstream")
@@ -418,6 +404,7 @@ def check(descriptors: dict | None = None) -> dict:
         if value["surface"] == "inner" and not value["investigations"]:
             raise ValueError(f"{kind}: an inner pipeline belongs to an investigation")
     check_providers()
+    check_pin_literals()
     return descriptors
 
 
