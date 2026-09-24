@@ -129,6 +129,14 @@ bound to the original attempt. Historical replay requires the legacy checkouts.
 checks provider-object isolation for successful and refused executions, and
 `test_invalid_runtime_refusal_remains_restorable` checks that invalid runtime
 identities prevent execution while preserving save/restore.
+The provider-free typed contract foundations are exercised by
+`tests/test_machine_manifest.py`, `tests/test_project_model.py` and
+`tests/test_thermal_contract.py`; these cover evidence-bound machine binding,
+project-history invalidation and independent thermal-reference replay. The
+machine and thermal operation lifecycles are covered by
+`tests/test_machine_workflow.py` and `tests/test_thermal_workflow.py`, including
+save/reopen and fresh replay. Project operation/execution/result registration
+remains the next integration gate; see [contract foundations](CONTRACT_FOUNDATIONS.md).
 Coverage is not exhaustive: the off-allowlist `runtime_mismatch`,
 `RUNTIME_UNAVAILABLE` and `RUNTIME_IO` branches, covariance CLI argument parsing,
 and the calibration-refusal exit code lack dedicated assertions in the current

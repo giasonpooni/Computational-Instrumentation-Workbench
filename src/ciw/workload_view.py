@@ -11,7 +11,8 @@ def project(record, source, declaration, revision):
     schematic = kind in {"schematic-assessment", "schematic-companions"}
     object_kinds = {"schematic-assessment": "declared_schematic", "schematic-companions": "local_model_analysis",
                     "numerical-heat": "integer_numerical_field", "proved-heat": "proved_integer_numerical_field", "bim-quantity": "construction_quantity",
-                    "acquired-dataset": "acquired_evidence"}
+                    "acquired-dataset": "acquired_evidence", "thermal-observer": "thermal_observer_reference",
+                    "machine-manifest": "machine_manifest_reference"}
     context = {"object_kind": object_kinds[kind],
                "owner": step["runtime_ref"], "configuration": native["configuration"],
                "covariance_status": "not_applicable", "sensor_fusion": "not_performed",
@@ -65,6 +66,42 @@ def project(record, source, declaration, revision):
                              ["1"] * len(labels), None, provenance, **context))
         panels.append(_panel("final", "SCR final integer field", labels, data["values"], ["1"] * len(labels), None,
                              {**provenance, "result_id": step["result_id"], "execution_id": step["execution_id"]}, **context))
+    elif kind == "thermal-observer":
+        observer = data["observer"]
+        selection = data["selection"]
+        context.update(
+            summary="Provider-free linear thermal observer reference",
+            physical_validation="not_established",
+            uncertainty_scope="conditional_on_declared_linear_model_and_noise",
+            selection_status=selection["status"],
+            selected_sensor_mask=selection["selected_mask"],
+            information_gain_nats=selection["objective_nats"],
+            model=deepcopy(data["model"]),
+        )
+        panels.append(_panel("state", "Thermal posterior state", data["model"]["state_order"],
+                             observer["final_mean"], ["K", "K"],
+                             observer["final_covariance"],
+                             {**provenance, "result_id": step["result_id"], "execution_id": step["execution_id"]},
+                             uncertainty_scope=context["uncertainty_scope"]))
+    elif kind == "machine-manifest":
+        position = data["position"]
+        context.update(
+            summary="Provider-free read-only encoder position evaluation",
+            machine_id=data["machine_id"],
+            compiled_manifest_digest=data["compiled_manifest_digest"],
+            frame=position["frame"],
+            time_basis=position["time_basis"],
+            uncertainty_scope="first_order_joint_covariance_declared_prior_or_explicit_evaluation",
+            physical_validation="not_performed",
+            hardware_actuation="not_performed",
+            manifest=deepcopy(data["manifest"]),
+        )
+        panels.append(_panel("position", "Estimated encoder position", ["position"],
+                             [position["position"]], [position["unit"]],
+                             [[position["variance"]]],
+                             {**provenance, "result_id": step["result_id"], "execution_id": step["execution_id"]},
+                             frame=position["frame"], time_basis=position["time_basis"],
+                             uncertainty_scope=context["uncertainty_scope"], claim_scope=data["claim_scope"]))
     return deepcopy({"schema": SCHEMA, "catalog_revision": revision, "bundle_id": record["bundle_id"],
         "kind": record["kind"], "label": source["label"], "source_id": source["source_id"], "evidence_id": source["evidence_id"],
         "upstream_bundle_id": record["upstream_bundle_id"], "replay_source_bundle_ids": [r["source_bundle_digest"] for r in native.get("replay_receipts", [])],

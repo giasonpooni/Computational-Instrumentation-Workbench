@@ -122,7 +122,7 @@ def test_shared_catalog_native_results_and_restore(retained, monkeypatch):
     assert session.workbench.serialize() == before
     restored = Session.from_workspace(path, path.parent / "restored")
     assert restored.workbench.serialize() == before
-    assert {o["operation_id"] for o in restored.workbench.describe_operations() if o["available"]} == {"ciw.energy-accuracy.v1"}
+    assert {o["operation_id"] for o in restored.workbench.describe_operations() if o["available"]} == {"ciw.energy-accuracy.v1", "ciw.encoder-position.v1", "ciw.thermal-observer.v1"}
     call(restored, "bundle.replay", {"bundle_id": bundles[KINDS[0]][0]["bundle_digest"]}, error=True)
     assert restored.workbench.pending_operations == 0
 

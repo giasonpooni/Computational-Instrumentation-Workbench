@@ -209,7 +209,7 @@ def test_saved_common_bench_restores_without_host_binding_or_execution(retained,
     workspace = original.save_workspace(tmp_path / "workspace.json")
     restored = Session.from_workspace(workspace, tmp_path / "restored")
     assert restored.workbench.serialize() == original.workbench.serialize()
-    assert {o["operation_id"] for o in restored.workbench.describe_operations() if o["available"]} == {"ciw.energy-accuracy.v1"}
+    assert {o["operation_id"] for o in restored.workbench.describe_operations() if o["available"]} == {"ciw.energy-accuracy.v1", "ciw.encoder-position.v1", "ciw.thermal-observer.v1"}
     for kind, bundle in [*retained["originals"].items(), *retained.get("held", {}).items()]:
         assert call(restored, "bundle.get", {"bundle_id": bundle["bundle_digest"]}) == bundle
         view = call(restored, "experiment.inspect", {"bundle_id": bundle["bundle_digest"]})

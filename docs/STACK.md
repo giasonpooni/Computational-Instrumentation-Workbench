@@ -1,5 +1,9 @@
 # Notation Systems computational instrumentation stack
 
+The concise provider and loose-tool map is [SYSTEMS_CATALOG.md](SYSTEMS_CATALOG.md).
+This page remains the detailed responsibility, boundary and numerical-foundation
+reference.
+
 Notation Systems develops computational instrumentation and evidence infrastructure for industrial and cyber-physical systems. The engineering mandate is to connect source observations, explicit mathematical models, computation, inspection and governed state while retaining the evidence needed to reproduce and challenge a result.
 
 The public repositories are components of this stack. Their scientific and engineering functions define their names. The existing physical-economy corpus, acquisition, policy and information-delivery capabilities remain part of the architecture; adding instruments does not replace them.
@@ -36,7 +40,7 @@ This is the public repository inventory reviewed on 2026-09-23. “Executable”
 
 | Component | Responsibility | Present scope | CIW connection |
 | --- | --- | --- | --- |
-| [Computational Instrumentation Workbench](https://github.com/giasonpooni/Computational-Instrumentation-Workbench) | Operation, inspection and replay | Executable prototype | Host; retained telemetry, calibrated process, identified observation decision, measurement/covariance, geometry, Lyapunov and read-only exchange paths |
+| [Notation Systems Workbench](https://github.com/giasonpooni/Notation-Systems-Workbench) | Operation, inspection and replay | Executable prototype | Host; retained telemetry, calibrated process, identified observation decision, measurement/covariance, geometry, Lyapunov, thermal-reference and read-only exchange paths |
 | [Provenance Preserving Data Acquisition](https://github.com/giasonpooni/Provenance-Preserving-Data-Acquisition) | Source acquisition and observation lineage | Executable acquisition, storage and source adapters | Shared native snapshot acquisition, exact record-to-calibrated-window mapping and retained telemetry |
 | [Streaming Telemetry Feature Extraction](https://github.com/giasonpooni/Streaming-Telemetry-Feature-Extraction) | Signal conditioning and stream-quality diagnostics | Executable bounded regular-grid causal scalar window mean | Shared telemetry and calibrated windows with declared full covariance and native replay |
 | [Geometric State Inference Engine](https://github.com/giasonpooni/Geometric-State-Inference-Engine) | Declared geometric state estimation | Executable linear prediction/update and bounded geometry; not a universal inference authority | Pinned telemetry and calibrated process paths with full prior/model/observation retention and explicit OIT gate in the latter |
@@ -159,3 +163,4 @@ Current entry points describe engineering roles, executable behavior, contracts,
 Public documentation describes reusable interfaces. Customer state, private deployment configuration, proprietary calibration knowledge and internal generative planning remain outside that interface documentation. Existing licenses and source rights control reuse; this stack map neither relicenses repositories nor changes visibility.
 
 When an integration changes, update the producer's role page, the consumer's operating guide and this map together. Identify the supported source pins, exact input/output contract, failure behavior and validation scope. An architecture arrow or a related-repository link alone is not an implemented integration.
+

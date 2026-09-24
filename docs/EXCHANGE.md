@@ -1,9 +1,11 @@
 # Read-only instrument-exchange inspection
 
-Status: experimental terminal conformance integration. This is not a CIW
-measurement adapter or execution backend. It extends the workbench with one
-read-only inspection path; the existing `run.v1`, operation, workspace and
-`covariance-artifact.v1` contracts are unchanged.
+Status: experimental terminal conformance integration. The original inspector
+remains read-only; the workbench now also has a bounded typed exchange adapter
+(`ciw.instrument-exchange.v1`). It projects a retained producer envelope into
+the shared session only after the pinned SET contract accepts every artifact.
+It remains a read-only evidence operation: no source admission, physical
+validation, state admission or equipment authorization is performed.
 
 ## Setup and worked example
 
@@ -131,6 +133,45 @@ successful hosted run; the same producer/validator/CLI path is exercised locally
 
 There is no automated conversion to native CIW covariance: exchange records do
 not provide all the native artifact's provenance, reference-value and assumption
-requirements. There is no shared session/viewport, save/reopen operation, remote
-execution, corpus admission, sensor-fusion solver, physical calibration check,
-cryptographic proof verification, or independent-verifier authentication here.
+requirements. The inspector path has no shared session/viewport, save/reopen
+operation, remote execution, corpus admission, sensor-fusion solver, physical
+calibration check, cryptographic proof verification, or independent-verifier
+authentication. The typed adapter adds a separate native session boundary
+without changing those claims. It retains the exact source envelope bytes and
+producer artifact IDs, then assigns distinct CIW operation, execution, result
+and numerical-result identities. A native result links the original typed
+artifacts and the inspector's conformance report; it does not reinterpret an
+external producer ID as a CIW execution or result.
+
+## Typed adapter and replay
+
+The adapter input is a bounded `ciw.instrument-exchange-source.v1` object:
+
+```json
+{
+  "schema": "ciw.instrument-exchange-source.v1",
+  "producer": {"name": "...", "revision": "...", "operation_ids": ["..."]},
+  "artifacts": ["one or more notation.instrument.*.v1 records"]
+}
+```
+
+Bind the exact SET checkout before executing the operation. The binding checks
+the revision, checked source path and normalized source digest from
+[`exchange-runtime.json`](../src/ciw/exchange-runtime.json). The operation is
+available through the shared `Session` API after that trusted host binding:
+
+```sh
+python -m ciw serve --exchange-set-repo ../State-Estimation-Evaluation-Testbed
+```
+
+`source.add` retains the exact envelope; an `operation.execute` request with
+`ciw.instrument-exchange.v1` creates the native result. `workspace.save` and
+`Session.from_workspace` validate the retained bytes and native identity graph
+without executing a provider. A later `bundle.replay` requires the trusted SET
+binding and reruns the checker. Fresh execution and result identities must
+differ from the original while the numerical projection identity remains
+equal. The replay receipt is explicit about `admission: not_performed`.
+
+The adapter has its own native view (`ciw.instrument-exchange-view.v1`) and is
+catalogued beside the existing operations. It has no shortcut into the legacy
+`run.v1` measurement record and cannot authorize an action.

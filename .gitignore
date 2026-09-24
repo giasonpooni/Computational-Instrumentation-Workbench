@@ -3,6 +3,10 @@
 __pycache__/
 *.py[cod]
 .pytest_cache/
+.pytest-*/
+.ciw-*/
+.ciw-*.log
+exchange-session/
 *.egg-info/
 build/
 dist/

@@ -1,7 +1,8 @@
 # Instruments: instructions and specifications
 
 For the current public component inventory and integration boundaries, see the
-[Notation Systems stack map](STACK.md) and [this component's role](STACK_ROLE.md).
+[systems catalog](SYSTEMS_CATALOG.md), [Notation Systems stack map](STACK.md)
+and [this component's role](STACK_ROLE.md).
 
 This catalogue records tools that can be used through the workbench and the
 contracts needed to reproduce their results. An external tool is listed as
@@ -345,7 +346,14 @@ The testbed is source-pinned in [`exchange-runtime.json`](../src/ciw/exchange-ru
 This bounded path has been exercised with actual acquisition/runtime builders
 and synthetic native-byte execution commitments. It is not a native observation
 adapter, an execution backend, independent verification, physical validation,
-a new covariance representation, or a session/viewport integration.
+a new covariance representation, or a session/viewport integration. The
+companion `ciw.instrument-exchange.v1` adapter accepts the typed source envelope
+after an exact SET binding, retains its bytes and producer artifact identities,
+and creates a native CIW session result with distinct operation, execution,
+result and numerical-result identities. It can save, reopen and replay through
+the shared session API; replay creates fresh execution/result identities and
+records `admission: not_performed`. This adapter remains read-only and does not
+authorize equipment or admit a physical claim.
 
 ## Bounded mathematical geometry
 
@@ -363,7 +371,7 @@ state admission or a dedicated independent ICRH conformance receipt.
 
 ## Related components
 
-The [related stack catalogue](../README.md#related-stack-components) records the
+The [related stack catalogue](SYSTEMS_CATALOG.md) records the
 current technical names and responsibilities of Scientific Computation Runtime,
 Provenance-Preserving Data Acquisition, Geospatial State Visualization, State
 Estimation Evaluation Testbed, Evidence and State Management, and Constraint-Based
@@ -385,3 +393,4 @@ setup and workbench commands, input ordering/units/time conventions, versioned
 output and status semantics, saved-evidence and replay instructions, verification
 state and limits, and links to validation evidence. A successful installation or
 standalone example alone does not establish a completed workbench integration.
+

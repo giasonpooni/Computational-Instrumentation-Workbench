@@ -16,7 +16,7 @@ calculation, a content digest and a verification receipt answer different questi
 
 | View | What it explains |
 | --- | --- |
-| [Workbench overview](../README.md#workbench-at-a-glance) | Capture, execution, retained outcomes and inspection |
+| [Workbench overview](WORKBENCH_OVERVIEW.md) | Capture, execution, retained outcomes and inspection |
 | [Implemented stack paths](STACK.md#how-to-read-the-stack) | Which external workflows share a container |
 | [Retained scalar telemetry](TELEMETRY.md#retained-data-and-calculation-flow) | Full covariance, declared models and optional reconciliation |
 | [Operation admission](ARCHITECTURE.md#admission-and-retained-outcomes) | Pre-admission rejection versus retained execution refusal |
@@ -29,7 +29,7 @@ calculation, a content digest and a verification receipt answer different questi
 This is a responsibility map, not an end-to-end execution graph. A domain
 engine's output needs the receiving subsystem's explicit contract and admission
 rules before it becomes that subsystem's state. ESM now offers a separate
-[native telemetry candidate-evidence adapter](https://github.com/giasonpooni/Evidence-and-State-Management/blob/claude/payload-os-frontend-cm3d22/docs/INSTRUMENT_CANDIDATE_EVIDENCE.md): fresh replay and source-policy checks
+[native telemetry candidate-evidence adapter](https://github.com/giasonpooni/Evidence-and-State-Management/blob/main/docs/INSTRUMENT_CANDIDATE_EVIDENCE.md): fresh replay and source-policy checks
 permit read-only review or explicitly requested retention as `UNADMITTED`.
 This does not admit canonical state or activate a release. The telemetry command
 itself performs no ESM admission. CIW has no SCR execution adapter or GSV
@@ -113,7 +113,7 @@ diagrams. These groups organize documentation, not a universal execution order.
 
 | Repository | Diagram focus |
 | --- | --- |
-| [Computational Instrumentation Workbench](https://github.com/giasonpooni/Computational-Instrumentation-Workbench#readme) | Operation, persistence and replay |
+| [Notation Systems Workbench](https://github.com/giasonpooni/Notation-Systems-Workbench#readme) | Operation, persistence and replay |
 | [Provenance Preserving Data Acquisition](https://github.com/giasonpooni/Provenance-Preserving-Data-Acquisition#readme) | Source retention and extraction lineage |
 | [Scientific Computation Runtime](https://github.com/giasonpooni/Scientific-Computation-Runtime#readme) | Checked computation and state boundaries |
 | [Evidence and State Management](https://github.com/giasonpooni/Evidence-and-State-Management#readme) | Admission, review and release |
@@ -175,3 +175,4 @@ the corresponding contract. Preserve historical evidence and frozen identities.
 Use graphs of measured performance only when the plotted values have a retained
 source, units and experimental conditions; these architecture diagrams make no
 empirical performance claims.
+
