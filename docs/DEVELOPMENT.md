@@ -171,8 +171,14 @@ whose OpenBLAS kernels are the SkylakeX set; `OPENBLAS_CORETYPE=Haswell` or
 `python tests/fixtures/retained/generate.py` only when the retained format
 changes on purpose, and say so in the commit; a silent regeneration hides
 exactly the incompatibility the gate exists to catch.
-Coverage is not exhaustive: covariance CLI argument parsing and the
-calibration-refusal exit code lack dedicated assertions in the current suite.
+Covariance CLI argument parsing and the pre-execution refusal of non-object
+parameters are asserted by
+`tests/test_adapter_cli.py::test_covariance_verbs_parse_and_refuse_non_object_parameters_before_execution`;
+the serving-time calibration refusal and its exit status through the `ciw`
+process by
+`tests/test_workbench_cli.py::test_send_reports_calibration_time_refusals_through_the_exit_status`.
+The covariance and investigation replay-mismatch exit paths still need the
+pinned providers and are exercised only by the provider gates.
 The off-allowlist `runtime_mismatch` refusal is asserted by
 `tests/test_runtime_allowlist.py` without binding an adapter; the
 `RUNTIME_UNAVAILABLE` and `RUNTIME_IO` adapter refusals by

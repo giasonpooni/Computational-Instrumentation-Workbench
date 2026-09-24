@@ -10,9 +10,11 @@ import sys
 import pytest
 
 from ciw.cli import parser, request_remote
+from ciw.core.identities import evidence_id
 from ciw.instruments import make_demo_run
 from ciw.server import run_server
 from ciw.session import Session
+from test_calibration_status import status_run
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = ROOT / "examples" / "uncertainty-validation" / "consistent.json"
@@ -95,6 +97,52 @@ def test_terminal_retains_executes_inspects_and_replays_against_a_live_session(t
                                          "--upstream", "sha256:" + "0" * 64)
             assert code == 2 and refused["type"] == "error"
             assert len(session.workbench.list_bundles()) == 2
+        finally:
+            stopped.set()
+            await asyncio.wait_for(task, 10)
+    asyncio.run(exercise())
+
+
+def test_send_reports_calibration_time_refusals_through_the_exit_status(tmp_path):
+    """The serving-time calibration status needs an aware instant; a refusal exits 2 with the error envelope."""
+    async def exercise():
+        run = make_demo_run()
+        run["metadata"].update(status_run()["metadata"])
+        run["evidence_id"] = evidence_id(run)
+        session = Session(run, tmp_path)
+        stopped = asyncio.Event()
+        port = _available_port()
+        url = f"ws://127.0.0.1:{port}"
+        task = asyncio.create_task(run_server(session, port, stop_event=stopped))
+        try:
+            for _ in range(100):
+                try:
+                    await request_remote(url, "session.get", {})
+                    break
+                except OSError:
+                    await asyncio.sleep(0.02)
+            else:
+                pytest.fail("Server did not start")
+
+            async def send(payload):
+                process = await asyncio.create_subprocess_exec(
+                    sys.executable, "-m", "ciw", "send", "session.get", "--payload", payload, "--url", url,
+                    env=_environment(), stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+                stdout, stderr = await asyncio.wait_for(process.communicate(), 120)
+                return process.returncode, (json.loads(stdout) if stdout else None), stderr.decode()
+
+            code, expired, stderr = await send('{"evaluated_at": "2026-09-20T12:00:00Z"}')
+            assert code == 0, stderr
+            assert expired["type"] == "response"
+            assert expired["payload"]["calibration"][0]["serving"]["expired"] is True
+            code, refused, _ = await send('{"evaluated_at": "2026-01-01T00:00:00"}')
+            assert code == 2 and refused["type"] == "error" and refused["payload"]["code"] == "invalid_payload"
+            assert "timezone-aware" in refused["payload"]["message"]
+            code, refused, _ = await send('{"evaluated_at": null}')
+            assert code == 2 and refused["type"] == "error"
+            code, nothing, stderr = await send("[]")
+            assert code == 2 and nothing is None and "payload must be a JSON object" in stderr
+            assert session.results == {}
         finally:
             stopped.set()
             await asyncio.wait_for(task, 10)

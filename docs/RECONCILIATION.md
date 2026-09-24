@@ -321,6 +321,13 @@ uncertainty representation; in-terminal plots.
 
 ## Checks executed
 
+- `python -m pytest -q` (Python 3.11, no external checkouts) on the
+  `claude/sleepy-planck-mar1u3` branch after the retained-workspace compatibility
+  gate, kernel probe, verification verb and CLI gap tests: **1405 passed,
+  577 skipped, 38 subtests passed**; the same suite runs green in Prototype
+  checks on Ubuntu and Windows for Python 3.11 and 3.12, while the PLSR
+  terminal job and the provider gates stay red until the private providers are
+  reachable (see [provider availability](PROVIDER_AVAILABILITY.md)).
 - `python -m pytest` (Python 3.12 venv, no external checkouts) on 646aada: **404 passed, 46 skipped,
   38 subtests passed** in 92.09 s. Skips by reason: 1 × "Set CIW_RCI_REPO and CIW_FSRT_REPO to the pinned source checkouts" (test_adapter_cli.py); 12 × "Requires three clean pinned scientific checkouts" (test_covariance_integration.py); 19 × "Set CIW_GTE_REPO to exercise the real pinned GTE subprocess" (test_geodesic.py); 14 × "Set CIW_RCI_REPO and CIW_FSRT_REPO to exercise pinned domain subprocesses" (test_investigation.py) — 46 in total.
 - `python scripts/check_adapters.py` on 646aada (clones the current pins rci f863bdd / fsrt 09a756d /

@@ -11,7 +11,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from ciw.cli import health_remote, main, print_investigation
+from ciw.cli import health_remote, main, parser, print_investigation
 from ciw.instruments import make_demo_run
 from ciw.session import Session
 
@@ -69,6 +69,28 @@ def test_investigation_rejects_non_object_input_without_creating_workspace(tmp_p
                  "--output-dir", str(output)]) == 2
     assert "must be a JSON object" in capsys.readouterr().err
     assert not output.exists()
+
+
+def test_covariance_verbs_parse_and_refuse_non_object_parameters_before_execution(tmp_path, capsys):
+    workspace, parameters, output = tmp_path / "workspace.json", tmp_path / "parameters.json", tmp_path / "output"
+    parsed = parser().parse_args(["covariance", str(workspace), "--parameters", str(parameters),
+                                  "--jspt-repo", "jspt", "--output-dir", str(output), "--python", "py3", "--json"])
+    assert (parsed.command, parsed.path, parsed.parameters, parsed.jspt_repo, parsed.output_dir) == \
+        ("covariance", workspace, parameters, Path("jspt"), output)
+    assert (parsed.python_executable, parsed.json) == (Path("py3"), True)
+    replay = parser().parse_args(["covariance-replay", str(workspace), "--jspt-repo", "jspt", "--output-dir", str(output)])
+    assert (replay.command, replay.python_executable, replay.json) == ("covariance-replay", None, False)
+    for arguments in (["covariance", str(workspace), "--jspt-repo", "jspt", "--output-dir", str(output)],
+                      ["covariance", str(workspace), "--parameters", str(parameters), "--output-dir", str(output)],
+                      ["covariance-replay", str(workspace), "--parameters", str(parameters), "--jspt-repo", "jspt",
+                       "--output-dir", str(output)]):
+        with pytest.raises(SystemExit):
+            parser().parse_args(arguments)
+    parameters.write_text("[1, 2, 3]", encoding="utf-8")
+    assert main(["covariance", str(workspace), "--parameters", str(parameters),
+                 "--jspt-repo", "unbound-jspt", "--output-dir", str(output)]) == 2
+    assert "must be a JSON object" in capsys.readouterr().err
+    assert not output.exists() and not workspace.exists()
 
 
 def test_real_cli_create_inspect_and_offline_replay(tmp_path):
