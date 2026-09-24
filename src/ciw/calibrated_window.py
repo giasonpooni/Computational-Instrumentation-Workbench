@@ -172,6 +172,19 @@ def _source(raw):
             raise ValueError("Joint calibration parameter block differs from the retained profile")
         configuration = source["configuration"]
         _keys(configuration, {"window", "gsie", "composition"})
+        window = configuration["window"]
+        _keys(window, {"start", "end", "received_by", "decision_time", "sample_period", "max_lateness"})
+        for key in ("start", "end", "received_by", "decision_time", "sample_period", "max_lateness"):
+            _number(window[key])
+        if not window["start"] < window["end"] or window["sample_period"] <= 0 or window["max_lateness"] < 0:
+            raise ValueError("Window bounds, sample period and lateness must describe a forward window")
+        prior = configuration["gsie"]["prior"]
+        _number(prior["time"])
+        if not isinstance(prior["mean"], list) or not prior["mean"]:
+            raise ValueError("Prior mean must be a nonempty list of numbers")
+        for value in prior["mean"]:
+            _number(value)
+        _covariance(prior["covariance"], len(prior["mean"]))
         if configuration["composition"] != COMPOSITION:
             raise ValueError("Only declared affine calibration before a window mean on the nominal time grid is implemented")
         gsie = configuration["gsie"]

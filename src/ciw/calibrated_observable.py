@@ -10,6 +10,7 @@ from copy import deepcopy
 from datetime import datetime, timedelta
 from importlib import resources
 import json
+import math
 from pathlib import Path
 import re
 import uuid
@@ -237,7 +238,7 @@ def _invoke(role, adapters, request):
 def _source(raw):
     try:
         return _source_inner(raw)
-    except (KeyError, TypeError, IndexError, OverflowError, RecursionError) as exc:
+    except (KeyError, TypeError, IndexError, AttributeError, OverflowError, RecursionError) as exc:
         raise ValueError("Malformed calibrated experiment") from exc
 
 
@@ -267,8 +268,72 @@ def _source_inner(raw):
         raise ValueError("This bounded timing policy requires a stationary hold model")
     if configuration["alignment"].get("measurement_time_policy") != "nominal_alignment_with_retained_time_uncertainty":
         raise ValueError("Timing uncertainty policy must be explicit")
+    _numeric_fields(value)
     canonical(value)
     return value
+
+
+def _finite(value, name):
+    if type(value) not in (int, float) or not math.isfinite(value):
+        raise ValueError(f"{name} must be a finite number")
+
+
+def _numbers(values, name, count=None):
+    if not isinstance(values, list) or (count is not None and len(values) != count):
+        raise ValueError(f"{name} must be a list of {count if count is not None else 'finite'} numbers")
+    for value in values:
+        _finite(value, name + " entry")
+
+
+def _matrix(rows, name, shape=None):
+    if not isinstance(rows, list) or not rows or (shape is not None and len(rows) != shape[0]):
+        raise ValueError(f"{name} must be a numeric matrix")
+    width = len(rows[0]) if isinstance(rows[0], list) else None
+    for row in rows:
+        _numbers(row, name + " row", shape[1] if shape is not None else width)
+
+
+def _numeric_fields(value):
+    """Every quantity the pinned providers will read must already be a finite number at retention."""
+    for channel in value["channels"]:
+        observation, clock, profile = channel["observation"], channel["clock_model"], channel["calibration_profile"]
+        for key in ("device_time", "indicated_value", "raw_value"):
+            _finite(observation[key], "observation." + key)
+        for key in ("device_origin", "reference_origin", "skew", "offset"):
+            _finite(clock[key], "clock_model." + key)
+        _numbers(clock["valid_device_interval"], "clock_model.valid_device_interval", 2)
+        _matrix(channel["clock_joint_covariance"], "clock_joint_covariance", (3, 3))
+        for key in ("gain", "offset"):
+            _finite(profile[key], "calibration_profile." + key)
+        _numbers(profile["input_range"], "calibration_profile.input_range", 2)
+        _matrix(profile["coefficient_covariance"], "calibration_profile.coefficient_covariance", (2, 2))
+        _matrix(channel["calibration_joint_covariance"]["values"], "calibration_joint_covariance.values", (3, 3))
+    _matrix(value["calibrated_covariance"]["matrix"], "calibrated_covariance.matrix", (2, 2))
+    configuration = value["configuration"]
+    _finite(configuration["alignment"]["maximum_nominal_separation_s"], "alignment.maximum_nominal_separation_s")
+    observability = configuration["observability"]
+    _matrix(observability["transition"], "observability.transition", (2, 2))
+    _matrix(observability["observation"], "observability.observation", (2, 2))
+    _numbers(observability["state_scales"], "observability.state_scales", 2)
+    _finite(observability["condition_limit"], "observability.condition_limit")
+    if type(observability["horizon"]) is not int or observability["horizon"] < 1:
+        raise ValueError("observability.horizon must be a positive integer")
+    gsie = configuration["gsie"]
+    _finite(gsie["prior"]["time"], "gsie.prior.time")
+    _numbers(gsie["prior"]["mean"], "gsie.prior.mean", 2)
+    _matrix(gsie["prior"]["covariance"], "gsie.prior.covariance", (2, 2))
+    _matrix(gsie["dynamics"]["matrix"], "gsie.dynamics.matrix", (2, 2))
+    _matrix(gsie["dynamics"]["process_covariance"], "gsie.dynamics.process_covariance", (2, 2))
+    _matrix(gsie["observation_model"]["matrix"], "gsie.observation_model.matrix", (2, 2))
+    constraints = configuration["cbsr"]["constraints"]
+    _matrix(constraints["coefficients"], "cbsr.constraints.coefficients")
+    _numbers(constraints["rhs"], "cbsr.constraints.rhs", len(constraints["coefficients"]))
+    _finite(configuration["cbsr"]["max_normalized_residual"], "cbsr.max_normalized_residual")
+    fdir = configuration["fdir"]
+    for key in ("detection_threshold", "max_unexplained_nis"):
+        _finite(fdir[key], "fdir." + key)
+    for name, signature in fdir["fault_signatures"].items():
+        _numbers(signature, "fdir.fault_signatures." + str(name))
 
 
 def _data(step):
@@ -430,7 +495,7 @@ def _validate(bundle):
                 raise ValueError("Verification subject mismatch")
             _identity(bundle["verification"], "verification_id")
         return raw
-    except (KeyError, TypeError, IndexError, OverflowError, RecursionError) as exc:
+    except (KeyError, TypeError, IndexError, AttributeError, OverflowError, RecursionError) as exc:
         raise ValueError("Malformed calibrated-observable session") from exc
 
 

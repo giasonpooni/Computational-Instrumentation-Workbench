@@ -172,7 +172,7 @@ def _source(raw):
         if source["certificate_unit"] != "1/(" + unit + "*" + unit + ")":
             raise ValueError("Declare certificate and margin units in the native common-unit basis")
         return source
-    except (KeyError, TypeError, IndexError, OverflowError, RecursionError) as exc:
+    except (KeyError, TypeError, IndexError, AttributeError, OverflowError, RecursionError) as exc:
         raise ValueError("Malformed stability source") from exc
 
 

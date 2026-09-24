@@ -181,7 +181,7 @@ def _declared_refs(source):
 def _source(raw, upstream):
     try:
         return _source_inner(raw, upstream)
-    except (KeyError, TypeError, IndexError, OverflowError, RecursionError) as exc:
+    except (KeyError, TypeError, IndexError, AttributeError, OverflowError, RecursionError) as exc:
         raise ValueError("Malformed identified-design input") from exc
 
 

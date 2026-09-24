@@ -282,5 +282,5 @@ def validate_outputs(bundle):
         _gsie(data[2], steps[2]["request"]["inputs"], declaration, model_id)
         _edspt(data[3], steps[3]["request"]["inputs"], eligible, model_id)
         _ywir(data[4], steps[4]["request"]["inputs"], data[3]["selected_candidate_id"], steps[3]["numerical_result_id"])
-    except (KeyError, TypeError, IndexError, OverflowError, RecursionError) as exc:
+    except (KeyError, TypeError, IndexError, AttributeError, OverflowError, RecursionError) as exc:
         raise ValueError("Malformed identified-design provider semantics") from exc

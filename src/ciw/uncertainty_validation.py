@@ -109,7 +109,9 @@ def _definite_covariance(value, size, name):
     if np.any(np.diag(matrix) <= 0):
         raise ValueError(f"{name} must have strictly positive variances for a normalized square")
     eigenvalues = np.linalg.eigvalsh(matrix)
-    if eigenvalues.min() <= 0 or eigenvalues.max() / eigenvalues.min() > MAX_CONDITION:
+    # Multiply rather than divide: a vanishing smallest eigenvalue must refuse
+    # cleanly instead of overflowing the quotient first.
+    if eigenvalues.min() <= 0 or eigenvalues.max() > MAX_CONDITION * eigenvalues.min():
         raise ValueError(f"{name} must be positive definite with a bounded condition number")
     return [[float(item) for item in row] for row in value]
 

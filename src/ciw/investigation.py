@@ -104,7 +104,7 @@ def _validate_batch(batch, request):
 def _validate_source(run):
     try:
         return _validate_source_fields(run)
-    except (KeyError, TypeError, IndexError, UnicodeError) as exc:
+    except (KeyError, TypeError, IndexError, AttributeError, UnicodeError) as exc:
         raise ValueError("Invalid retained RCI source structure") from exc
 
 

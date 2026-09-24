@@ -80,3 +80,44 @@ def test_unknown_workspace_and_oscillator_run_keys_are_refused_on_reopen(tmp_pat
     with pytest.raises(ValueError, match="Unknown run keys"):
         validate_run(dict(run, sidecar=[]))
     Session.from_workspace(saved, tmp_path / "clean")
+
+
+def test_ill_conditioned_covariances_are_refused_without_a_numerical_warning():
+    import warnings
+    from ciw import uncertainty_validation as validation
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        with pytest.raises(ValueError, match="condition number"):
+            validation._definite_covariance([[1e300, 0.0], [0.0, 1e-300]], 2, "covariance")
+        with pytest.raises(ValueError, match="condition number"):
+            validation._definite_covariance([[1.0, 1.0], [1.0, 1.0]], 2, "covariance")
+        assert validation._definite_covariance([[2.0, 0.5], [0.5, 1.0]], 2, "covariance") == [[2.0, 0.5], [0.5, 1.0]]
+
+
+@pytest.mark.parametrize("kind,example,changes", [
+    ("calibrated-observable", "examples/calibrated-observable/source.json", [
+        lambda v: v["channels"][0]["observation"].__setitem__("indicated_value", ""),
+        lambda v: v["configuration"]["gsie"]["prior"]["covariance"][1].__setitem__(0, True),
+        lambda v: v["channels"][1]["clock_joint_covariance"].__setitem__(1, [0.0, 0.0]),
+        lambda v: v["configuration"]["cbsr"]["constraints"]["coefficients"][0].__setitem__(0, {}),
+        lambda v: v["configuration"]["fdir"]["fault_signatures"].__setitem__("sensor:tank-1:bias", ["a", 1]),
+        lambda v: v["configuration"].__setitem__("alignment", []),
+        lambda v: v["configuration"]["gsie"].__setitem__("prior_measurement_crosscov_policy", 1e308)]),
+    ("calibrated-window", "examples/calibrated-window/source.json", [
+        lambda v: v["configuration"]["window"].__setitem__("sample_period", []),
+        lambda v: v["configuration"]["gsie"]["prior"]["covariance"][0].__setitem__(0, ""),
+        lambda v: v["configuration"]["window"].update(start=v["configuration"]["window"]["end"] + 1)]),
+])
+def test_provider_backed_sources_refuse_non_numeric_quantities_before_retention(kind, example, changes):
+    import json
+    from copy import deepcopy
+    from ciw.workbench import Workbench
+    source = json.loads((ROOT / example).read_text(encoding="utf-8"))
+    def add(value):
+        return Workbench().add_source({"kind": kind, "label": "probe", "bytes_b64": base64.b64encode(json.dumps(value).encode()).decode()})
+    assert add(source)["kind"] == kind
+    for change in changes:
+        mutated = deepcopy(source)
+        change(mutated)
+        with pytest.raises(ValueError):
+            add(mutated)

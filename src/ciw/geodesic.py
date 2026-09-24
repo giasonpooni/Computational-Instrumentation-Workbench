@@ -105,7 +105,7 @@ def validate_source(run):
                 or metadata["provenance"]["time_origin"] != observation["time_origin"]):
             raise ValueError("GTE channels or metadata differ from retained observations")
         return request
-    except (KeyError, TypeError, IndexError, UnicodeError) as exc:
+    except (KeyError, TypeError, IndexError, AttributeError, UnicodeError) as exc:
         raise ValueError("Invalid retained GTE source structure") from exc
 
 
