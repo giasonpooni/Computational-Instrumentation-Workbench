@@ -217,7 +217,7 @@ def esm_configuration(retained, repositories):
         pytest.skip("set CIW_ESM_ROOT and CIW_ESM_REPLAY_CIW for actual ESM replay/capture")
     import sys
     node = str(Path(shutil.which("node")).resolve())
-    pins = read_json(Path(telemetry.__file__).with_name("telemetry-runtimes.json"))
+    pins = __import__("ciw.pipelines", fromlist=["pin_map"]).pin_map("telemetry")
     pin = __import__("ciw.pipelines", fromlist=["provider_descriptor"]).provider_descriptor("esm")["pin"]
     registration = {"registrationId": "synthetic-telemetry-raw-policy", "sourceId": "synthetic-telemetry-raw",
         "displayName": "Synthetic telemetry fixture only", "sourceClass": "OPERATOR_DECLARATION", "licenseId": "synthetic-test-only",

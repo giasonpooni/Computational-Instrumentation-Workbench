@@ -10,6 +10,9 @@ import sys
 import tempfile
 import xml.etree.ElementTree as ET
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from provider_checkouts import descriptor_pins  # noqa: E402
+
 
 IDENTIFIED_REPOSITORIES = {
     "fsrt": "Fluid-State-Reconstruction-Testbed", "tbrt": "Time-Base-Reconciliation-Runtime",
@@ -64,11 +67,11 @@ def main():
         raise RuntimeError("The identified upstream YWIR provider requires Python 3.12 or newer")
     root = Path(__file__).resolve().parents[1]
     package = root / "src/ciw"
-    process = json.loads((package / "calibrated-observable-runtimes.json").read_text())
-    design = json.loads((package / "identified-design-runtimes.json").read_text())
-    if set(process) & set(design) or set(process) | set(design) != set(IDENTIFIED_REPOSITORIES):
+    process = descriptor_pins("calibrated-observable", root)
+    design = descriptor_pins("identified-design", root)
+    if any(design.get(role) != pin for role, pin in process.items()) or set(design) != set(IDENTIFIED_REPOSITORIES):
         raise ValueError("The identified upstream requires its complete unchanged eleven-provider pin set")
-    identified_pins = {role: pin["revision"] for role, pin in {**process, **design}.items()}
+    identified_pins = {role: pin["revision"] for role, pin in design.items()}
     measurement = literal(package / "measurement_chain.py", "PINS")
     if set(measurement) != set(MEASUREMENT_REPOSITORIES):
         raise ValueError("The measurement chain requires exactly RCI, FSRT and JSPT")

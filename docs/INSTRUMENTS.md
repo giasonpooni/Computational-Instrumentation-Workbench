@@ -342,7 +342,7 @@ it is never substituted with a zero covariance. Exit zero means conformance,
 including a structurally valid *failed* verification record. Exit two means
 invalid input, unsupported schema, numerical refusal or validator source drift.
 
-The testbed is source-pinned in [`exchange-runtime.json`](../src/ciw/exchange-runtime.json).
+The testbed is source-pinned in the [`instrument-exchange` descriptor](../src/ciw/pipelines/descriptors/instrument-exchange.json).
 This bounded path has been exercised with actual acquisition/runtime builders
 and synthetic native-byte execution commitments. It is not a native observation
 adapter, an execution backend, independent verification, physical validation,

@@ -9,7 +9,6 @@ from __future__ import annotations
 
 from dataclasses import asdict
 from hashlib import sha256
-from importlib import resources
 import json
 import math
 import os
@@ -17,6 +16,8 @@ from pathlib import Path
 import stat
 import sys
 from types import ModuleType
+
+from .pipelines import pin_map
 
 
 ADAPTER_VERSION = "ciw-exchange-inspector.v1"
@@ -77,7 +78,7 @@ def _validator(repo: Path) -> tuple[ModuleType, dict]:
     avoids both importing a checkout's package initializer and a second source
     read between checking and execution. The local Python runtime is trusted.
     """
-    manifest = json.loads(resources.files("ciw").joinpath("exchange-runtime.json").read_text())
+    manifest = pin_map("instrument-exchange")["set"]
     source = _read(repo / manifest["path"], 131_072).replace(b"\r\n", b"\n")
     if sha256(source).hexdigest() != manifest["sha256"]:
         raise ValueError("exchange validator source differs from the approved source pin")

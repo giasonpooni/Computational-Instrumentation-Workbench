@@ -52,7 +52,7 @@
     },
     {
       "rule": "Security: execute only the allowlisted source bytes after hashing, and never import the checkout's package initializer",
-      "evidence": "`ciw.exchange:_validator` hashes the pinned source path against the packaged exchange-runtime.json pin and executes only those already-read bytes in a fresh module; `ciw.exchange_adapter:_runtime` first requires the pinned revision and source digest",
+      "evidence": "`ciw.exchange:_validator` hashes the pinned source path against the instrument-exchange descriptor pin (`ciw.pipelines:pin_map`) and executes only those already-read bytes in a fresh module; `ciw.exchange_adapter:_runtime` first requires the pinned revision and source digest",
       "code": [
         "ciw.exchange:_validator",
         "ciw.exchange_adapter:_runtime"

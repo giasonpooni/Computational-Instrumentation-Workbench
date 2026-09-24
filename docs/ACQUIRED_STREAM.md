@@ -49,9 +49,9 @@ requires zero skipped tests. PPDA's SCOUT submodule is also pinned. The adapters
 verify complete source trees before and after native execution.
 
 The five window provider revisions come from
-[`calibrated-window-runtimes.json`](../src/ciw/calibrated-window-runtimes.json).
+the [`calibrated-window` descriptor](../src/ciw/pipelines/descriptors/calibrated-window.json).
 FDIR and OIT use the revisions in
-[`calibrated-observable-runtimes.json`](../src/ciw/calibrated-observable-runtimes.json).
+the [`calibrated-observable` descriptor](../src/ciw/pipelines/descriptors/calibrated-observable.json).
 PPDA and SCOUT use the constants in
 [`ppda_acquisition.py`](../src/ciw/adapters/ppda_acquisition.py).
 An existing checkout set can be supplied with `--stack-root`; individual

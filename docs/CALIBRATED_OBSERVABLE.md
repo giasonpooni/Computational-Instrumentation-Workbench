@@ -38,7 +38,7 @@ flowchart TD
 | SET | Replay verifier | Content binding and numerical replay verification artifact |
 
 The pinned revisions and source roots are recorded in
-[`calibrated-observable-runtimes.json`](../src/ciw/calibrated-observable-runtimes.json).
+the [`calibrated-observable` descriptor](../src/ciw/pipelines/descriptors/calibrated-observable.json).
 Every scientific operation executes in its owner's checkout. CIW supplies the
 fixed operation graph and retained identity structure.
 

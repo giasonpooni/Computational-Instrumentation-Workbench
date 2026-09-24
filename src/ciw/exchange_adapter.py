@@ -21,6 +21,7 @@ import uuid
 
 from . import exchange
 from .core.canonical import canonical, digest
+from .pipelines import pin_map
 
 SOURCE_SCHEMA = "ciw.instrument-exchange-source.v1"
 SESSION_SCHEMA = "ciw.instrument-exchange-session.v1"
@@ -31,7 +32,8 @@ OPERATION = "ciw.instrument-exchange.v1"
 ROLES = {"set"}
 MAX_BYTES = 4 * 1024 * 1024
 MAX_ARTIFACTS = 32
-PIN = json.loads((Path(__file__).with_name("exchange-runtime.json")).read_text(encoding="utf-8"))
+# The instrument-exchange descriptor is the SET validator pin definition.
+PIN = pin_map("instrument-exchange")["set"]
 
 
 def _keys(value, required, optional=()):

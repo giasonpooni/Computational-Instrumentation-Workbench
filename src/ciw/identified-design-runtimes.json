@@ -1,5 +1,0 @@
-{
-  "sidt": {"revision": "b7e81402d5f4e854b3c8bb0d0354afe4de9269c6", "module": "sidt.declared", "source_root": "src"},
-  "edspt": {"revision": "89d5ea52f46676eabf13e906166e3ab701451680", "module": "edspt.budgeted", "source_root": "src"},
-  "ywir": {"revision": "e1f4a8c128a9c14e5b82acad76696219a5b5b6a9", "module": "ywir.integration", "source_root": "src"}
-}

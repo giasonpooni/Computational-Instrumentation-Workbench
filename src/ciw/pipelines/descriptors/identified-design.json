@@ -249,7 +249,7 @@
       ]
     },
     {
-      "rule": "Runtimes and pins are coupled to the upstream kind. The bundle retains runtime identities for all 11 roles (`ciw.identified_design:ROLES`, written by `ciw.identified_design:_execute` and required by `ciw.identified_design:_validate`), including fsrt/tbrt/mcur/cbsr/fdir, which no design step invokes. The oit/gsie/set pins are taken from calibrated-observable-runtimes.json by `ciw.identified_design:_pins`. Checkouts are bound twice: design `ciw.identified_design:_adapters` (in create_session and replay_session) and calibrated.replay_session's own adapters via `ciw.identified_design:_replay_upstream`.",
+      "rule": "Runtimes and pins are coupled to the upstream kind. The bundle retains runtime identities for all 11 roles (`ciw.identified_design:ROLES`, written by `ciw.identified_design:_execute` and required by `ciw.identified_design:_validate`), including fsrt/tbrt/mcur/cbsr/fdir, which no design step invokes. The oit/gsie/set pins are taken from the calibrated-observable descriptor pins (`ciw.pipelines:pin_map`) by `ciw.identified_design:_pins`. Checkouts are bound twice: design `ciw.identified_design:_adapters` (in create_session and replay_session) and calibrated.replay_session's own adapters via `ciw.identified_design:_replay_upstream`.",
       "evidence": "added by adversarial verification; citations in the rule",
       "code": [
         "ciw.identified_design:ROLES",

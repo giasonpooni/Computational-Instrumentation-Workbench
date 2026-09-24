@@ -8,8 +8,6 @@ from __future__ import annotations
 import base64
 from copy import deepcopy
 from datetime import datetime, timedelta
-from importlib import resources
-import json
 from pathlib import Path
 import re
 import uuid
@@ -19,6 +17,7 @@ from .adapters.subprocess import PinnedSubprocessAdapter, _json
 from .exchange import _read, _identity
 from .session import write_json
 from .core.canonical import canonical, digest, byte_digest, utc_now, bundle_digest
+from .pipelines import pin_map
 
 SCHEMA = "ciw.calibrated-observable-session.v1"
 RESULT_SCHEMA = "ciw.calibrated-operation-result.v1"
@@ -198,7 +197,7 @@ print(json.dumps(result, allow_nan=False, ensure_ascii=False))
 def _adapters(repositories, expected=None):
     if set(repositories) != ROLES:
         raise ValueError("Bind exactly the eight required repositories")
-    pins = json.loads(resources.files("ciw").joinpath("calibrated-observable-runtimes.json").read_text())
+    pins = pin_map("calibrated-observable")
     adapters = {}
     for role in sorted(ROLES):
         pin = pins[role]
@@ -383,7 +382,7 @@ def _validate(bundle):
         steps = bundle["steps"]
         if [(s["runtime_ref"], s["operation_id"]) for s in steps] != list(OPERATIONS) or set(bundle["runtimes"]) != ROLES:
             raise ValueError("Calibrated operation order/runtime mismatch")
-        pins = json.loads(resources.files("ciw").joinpath("calibrated-observable-runtimes.json").read_text())
+        pins = pin_map("calibrated-observable")
         for role, runtime in bundle["runtimes"].items():
             if runtime.get("schema") != "ciw.subprocess-runtime.v1" or any(
                 runtime.get(key) != pins[role][key] for key in ("revision", "module", "source_root")

@@ -11,7 +11,7 @@ validation, state admission or equipment authorization is performed.
 
 Use Python 3.11+ with CIW's ordinary dependencies. The checker uses the standalone
 stdlib `state_estimation_testbed/contracts.py` from the source pin in
-[`exchange-runtime.json`](../src/ciw/exchange-runtime.json). Acquire that exact
+the [`instrument-exchange` descriptor](../src/ciw/pipelines/descriptors/instrument-exchange.json). Acquire that exact
 repository revision or export that exact file under the declared path. There is
 no automatic download, arbitrary plugin discovery, or fallback to another checker.
 
@@ -158,7 +158,7 @@ The adapter input is a bounded `ciw.instrument-exchange-source.v1` object:
 
 Bind the exact SET checkout before executing the operation. The binding checks
 the revision, checked source path and normalized source digest from
-[`exchange-runtime.json`](../src/ciw/exchange-runtime.json). The operation is
+the [`instrument-exchange` descriptor](../src/ciw/pipelines/descriptors/instrument-exchange.json). The operation is
 available through the shared `Session` API after that trusted host binding:
 
 ```sh

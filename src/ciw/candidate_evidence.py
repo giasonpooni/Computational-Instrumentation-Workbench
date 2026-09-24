@@ -13,6 +13,7 @@ from pathlib import Path
 
 from .adapters.protocol import AdapterRefusal
 from .adapters.subprocess import _bounded_process, _json
+from .pipelines import pin_map
 
 OPERATIONS = {"esm.inspect-candidate.v1": "inspect", "esm.capture-candidate.v1": "capture"}
 
@@ -135,8 +136,7 @@ class CandidateAdapter:
         if not isinstance(runtime["repositories"], dict):
             raise ValueError("Candidate runtime map must be explicit")
         self.kind = "telemetry" if "ppda" in runtime["repositories"] else "calibrated-observable"
-        manifest = "telemetry-runtimes.json" if self.kind == "telemetry" else "calibrated-observable-runtimes.json"
-        expected = {role: value["revision"] for role, value in _json(Path(__file__).with_name(manifest).read_bytes()).items()}
+        expected = {role: value["revision"] for role, value in pin_map(self.kind).items()}
         if self.kind == "telemetry" and "cbsr" not in runtime["repositories"]:
             expected.pop("cbsr")
         expected["ciw"] = self.pin["replay_ciw_revision"]

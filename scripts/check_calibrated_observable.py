@@ -1,6 +1,5 @@
 """Clone the reviewed eight-provider pins and exercise the process experiment."""
 import argparse
-import json
 import os
 from pathlib import Path
 import subprocess
@@ -8,9 +7,9 @@ import sys
 import tempfile
 
 if __package__:
-    from .provider_checkouts import validate_checkout
+    from .provider_checkouts import descriptor_pins, validate_checkout
 else:
-    from provider_checkouts import validate_checkout
+    from provider_checkouts import descriptor_pins, validate_checkout
 
 REPOSITORIES = {
     "fsrt": "Fluid-State-Reconstruction-Testbed",
@@ -30,7 +29,7 @@ def main(argv=None):
                         help="Existing exact checkouts, named by manifest role")
     args = parser.parse_args(argv)
     root = Path(__file__).resolve().parents[1]
-    pins = json.loads((root / "src/ciw/calibrated-observable-runtimes.json").read_text())
+    pins = descriptor_pins("calibrated-observable", root)
     if set(pins) != set(REPOSITORIES):
         raise ValueError("Calibrated runtime manifest must bind all eight providers")
     with tempfile.TemporaryDirectory(prefix="ciw-calibrated-providers-") as directory:

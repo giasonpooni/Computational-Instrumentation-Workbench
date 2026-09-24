@@ -61,9 +61,11 @@ def configured_gate(name, tmp_path, monkeypatch):
     else:
         monkeypatch.setattr(gate, "__file__", str(root / "scripts" / ("check_" + name + ".py")))
         monkeypatch.setattr(gate, "REPOSITORIES", {"engine": "Example-Provider"})
-        manifest = "telemetry-runtimes.json" if name == "telemetry" else "calibrated-observable-runtimes.json"
+        manifest = "telemetry" if name == "telemetry" else "calibrated-observable"
     if manifest:
-        (manifests / manifest).write_text(json.dumps({"engine": pin}), encoding="utf-8")
+        descriptors = manifests / "pipelines" / "descriptors"
+        descriptors.mkdir(parents=True)
+        (descriptors / (manifest + ".json")).write_text(json.dumps({"steps": [{"role": "engine", "pin": pin}]}), encoding="utf-8")
     return gate, stack, path, historical, previous
 
 

@@ -54,9 +54,11 @@ and transport semantics.
 | `deploy/` | Native and container operation guides |
 
 `recordings/`, `results/` and `.ciw/` hold local runtime output and are ignored by
-Git. Scientific source pins live in the `src/ciw/*-runtimes.json` manifests,
-`src/ciw/pipelines/providers/plsr.json`, and the explicit `PIN`/`PINS` declarations in native
-workflow modules linked by their operating guides. Update pins only with the
+Git. Scientific source pins live in the pipeline descriptors
+(`src/ciw/pipelines/descriptors/*.json`), the provider descriptors
+(`src/ciw/pipelines/providers/*.json`) and the remaining explicit `PIN`/`PINS`
+declarations in native workflow modules, which `pipelines.check()` binds to
+their descriptors. Update pins only with the
 relevant compatibility and replay checks. The covariance examples in `examples/adapters/` include
 `two-reservoir-covariance.json` and `tank-covariance-map.json`; the original
 `two-reservoir.json` fixture remains available.

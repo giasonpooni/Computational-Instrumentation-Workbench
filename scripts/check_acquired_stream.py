@@ -1,7 +1,6 @@
 """Check installed acquisition, calibrated windows and retained residual monitoring."""
 import argparse
 import ast
-import json
 import os
 from pathlib import Path
 import shutil
@@ -9,6 +8,9 @@ import subprocess
 import sys
 import tempfile
 import xml.etree.ElementTree as ET
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from provider_checkouts import descriptor_pins  # noqa: E402
 
 REPOSITORIES = {
     "ppda": "Provenance-Preserving-Data-Acquisition",
@@ -36,8 +38,8 @@ def exact_revision(repository, revision):
 def pins(root):
     """Read literal pin data without importing source-tree CIW code."""
     package = root / "src/ciw"
-    windows = json.loads((package / "calibrated-window-runtimes.json").read_text())
-    process = json.loads((package / "calibrated-observable-runtimes.json").read_text())
+    windows = descriptor_pins("calibrated-window", root)
+    process = descriptor_pins("calibrated-observable", root)
     constants = {}
     for statement in ast.parse((package / "adapters/ppda_acquisition.py").read_text()).body:
         if isinstance(statement, ast.Assign) and len(statement.targets) == 1:

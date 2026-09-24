@@ -16,7 +16,7 @@ python examples/shared-workbench/run.py --with-design --with-telemetry
 ```
 
 The telemetry root contains role-named `ppda`, `stfe`, `gsie`, `set`, `cbsr`
-checkouts at `telemetry-runtimes.json` pins. Keep it separate from the process
+checkouts at the `telemetry` descriptor pins pins. Keep it separate from the process
 root: the two profiles use different reviewed GSIE/CBSR/SET revisions. CLI startup
 binds all five telemetry roles. Embedding applications may omit CBSR; requesting
 reconciliation then refuses until it is explicitly bound. Unrequested CBSR never

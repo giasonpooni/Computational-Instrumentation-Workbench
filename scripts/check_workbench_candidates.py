@@ -10,6 +10,9 @@ import sys
 import tempfile
 import xml.etree.ElementTree as ET
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from provider_checkouts import descriptor_pins  # noqa: E402
+
 TELEMETRY_REPOSITORIES = {
     "ppda": "Provenance-Preserving-Data-Acquisition", "stfe": "Streaming-Telemetry-Feature-Extraction",
     "gsie": "Geometric-State-Inference-Engine", "set": "State-Estimation-Evaluation-Testbed",
@@ -58,7 +61,7 @@ def main():
         providers = args.telemetry_stack_root.resolve() if args.telemetry_stack_root else temporary / "telemetry-providers"
         if not args.telemetry_stack_root:
             providers.mkdir()
-            pins = json.loads((root / "src/ciw/telemetry-runtimes.json").read_text())
+            pins = descriptor_pins("telemetry", root)
             for role, repository in TELEMETRY_REPOSITORIES.items():
                 path = providers / role
                 call(["git", "clone", "--quiet", "--no-checkout", "https://github.com/giasonpooni/" + repository + ".git", str(path)])

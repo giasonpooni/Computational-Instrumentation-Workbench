@@ -105,3 +105,11 @@ def provider_pin(name: str) -> dict:
     """The pin a provider descriptor declares (terminal instruments, ESM, the Julia worker)."""
     import json
     return dict(json.loads((_ROOT / "src/ciw/pipelines/providers" / f"{name}.json").read_text(encoding="utf-8"))["pin"])
+
+
+def descriptor_pins(kind: str, root: Path | None = None) -> dict:
+    """Every pinned provider step of a pipeline descriptor, by role (the pin definition)."""
+    import json
+    root = Path(root) if root is not None else _ROOT
+    descriptor = json.loads((root / "src/ciw/pipelines/descriptors" / f"{kind}.json").read_text(encoding="utf-8"))
+    return {step["role"]: dict(step["pin"]) for step in descriptor["steps"] if "pin" in step}

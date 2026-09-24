@@ -61,7 +61,7 @@ physical accuracy, observability, calibration validity or unique fault isolation
 ## Commands
 
 Install CIW with its normal developer dependencies. Bind explicit local checkouts
-at the revisions in `src/ciw/telemetry-runtimes.json`; no branch or artifact-supplied
+at the revisions in `src/ciw/pipelines/descriptors/telemetry.json`; no branch or artifact-supplied
 executable is selected. The examples below assume sibling checkouts.
 
 ```sh

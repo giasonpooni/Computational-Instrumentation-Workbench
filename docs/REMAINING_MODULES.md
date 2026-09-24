@@ -14,7 +14,7 @@ python examples/remaining-modules/run.py --url ws://127.0.0.1:8765
 ```
 
 The identified stack contains eleven role-named checkouts at the pins in
-`calibrated-observable-runtimes.json` and `identified-design-runtimes.json`.
+the `calibrated-observable` descriptor pins and the `identified-design` descriptor pins.
 The measurement stack contains `rci`, `fsrt` and `jspt` at the pins in
 `measurement_chain.py`. Keep those stacks separate: the two FSRT interfaces
 require different revisions. GTE and PLSR have one explicit checkout each.

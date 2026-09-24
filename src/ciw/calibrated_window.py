@@ -9,8 +9,6 @@ from __future__ import annotations
 import base64
 from copy import deepcopy
 from fractions import Fraction
-from importlib import resources
-import json
 import math
 import re
 import uuid
@@ -21,6 +19,7 @@ from .adapters.subprocess import PinnedSubprocessAdapter, _json
 from .exchange import _identity
 from .calibrated_observable import _exact_timestamp
 from .core.canonical import canonical, digest, byte_digest, bundle_digest, utc_instant, utc_now, exact_keys
+from .pipelines import pin_map
 
 SCHEMA = "ciw.calibrated-window-session.v1"
 SOURCE_SCHEMA = "ciw.calibrated-window-source.v1"
@@ -253,7 +252,7 @@ print(json.dumps(result, allow_nan=False, ensure_ascii=False))
 
 
 def _pins():
-    return json.loads(resources.files("ciw").joinpath("calibrated-window-runtimes.json").read_text())
+    return pin_map("calibrated-window")
 
 
 def _adapters(repositories, expected=None):

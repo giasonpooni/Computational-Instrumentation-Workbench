@@ -16,8 +16,8 @@ The flags select directories; they do not select alternate numerical versions.
 | Gate | Manifest | Directory names under `--stack-root` |
 | --- | --- | --- |
 | `scripts/check_adapters.py` | `src/ciw/pipelines/providers/{rci,fsrt,jspt,gte}.json` | `rci`, `fsrt`, `jspt`, `gte`; also `rci-legacy` and `fsrt-legacy` unless a separate historical root is supplied |
-| `scripts/check_telemetry.py` | `src/ciw/telemetry-runtimes.json` | `Provenance-Preserving-Data-Acquisition`, `Streaming-Telemetry-Feature-Extraction`, `Geometric-State-Inference-Engine`, `State-Estimation-Evaluation-Testbed`, `Constraint-Based-State-Reconciliation` |
-| `scripts/check_calibrated_observable.py` | `src/ciw/calibrated-observable-runtimes.json` | `fsrt`, `tbrt`, `mcur`, `oit`, `gsie`, `cbsr`, `fdir`, `set` |
+| `scripts/check_telemetry.py` | `src/ciw/pipelines/descriptors/telemetry.json` | `Provenance-Preserving-Data-Acquisition`, `Streaming-Telemetry-Feature-Extraction`, `Geometric-State-Inference-Engine`, `State-Estimation-Evaluation-Testbed`, `Constraint-Based-State-Reconciliation` |
+| `scripts/check_calibrated_observable.py` | `src/ciw/pipelines/descriptors/calibrated-observable.json` | `fsrt`, `tbrt`, `mcur`, `oit`, `gsie`, `cbsr`, `fdir`, `set` |
 
 These layouts use ordinary directories and need no symlinks on Windows. Different
 lanes pin different revisions of some providers; use separate checkout roots.

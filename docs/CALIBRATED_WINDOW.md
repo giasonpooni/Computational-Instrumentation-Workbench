@@ -14,7 +14,7 @@ fixtures, not calibrated physical measurements.
 ## Bind and run
 
 Use the five exact role-named checkouts in
-`src/ciw/calibrated-window-runtimes.json`. This lane has its own SET revision;
+`src/ciw/pipelines/descriptors/calibrated-window.json`. This lane has its own SET revision;
 existing telemetry and process provider pins remain unchanged.
 
 ```sh

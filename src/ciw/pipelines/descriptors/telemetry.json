@@ -94,7 +94,7 @@
     },
     {
       "rule": "PPDA standalone execution scope: only the approved bytes of bridge/instrumentation.py may execute, never the PPDA vendor tree",
-      "evidence": "`ciw.telemetry:_PPDAProjection.checked_source` refuses a symlinked bridge/instrumentation.py or bridge directory, or bytes whose SHA-256 differs from the ppda source_sha256 pin that `ciw.telemetry:_runtime` loads from telemetry-runtimes.json; `ciw.telemetry:_invoke` sends only those checked bytes, and the ppda branch of `ciw.telemetry:_BOOTSTRAP` execs them without adding the checkout to sys.path.",
+      "evidence": "`ciw.telemetry:_PPDAProjection.checked_source` refuses a symlinked bridge/instrumentation.py or bridge directory, or bytes whose SHA-256 differs from the ppda source_sha256 pin that `ciw.telemetry:_runtime` loads from the telemetry descriptor pins (`ciw.pipelines:pin_map`); `ciw.telemetry:_invoke` sends only those checked bytes, and the ppda branch of `ciw.telemetry:_BOOTSTRAP` execs them without adding the checkout to sys.path.",
       "code": [
         "ciw.telemetry:_PPDAProjection.checked_source",
         "ciw.telemetry:_invoke",

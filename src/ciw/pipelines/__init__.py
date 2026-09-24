@@ -38,19 +38,10 @@ _LINE_CITATION = re.compile(r"\.(py|jl|json):\d")
 WORKBENCH_REFUSALS = ("operation_unavailable", "workbench_capacity")
 
 # Transitional table of where each kind's module declares its pins today.
-_MANIFESTS = {
-    "calibrated-observable": ("calibrated-observable-runtimes.json",),
-    "identified-design": ("calibrated-observable-runtimes.json", "identified-design-runtimes.json"),
-    "calibrated-window": ("calibrated-window-runtimes.json",),
-    "acquired-calibrated-window": ("calibrated-window-runtimes.json",),
-    "telemetry": ("telemetry-runtimes.json",),
-}
+_DESCRIPTOR_DEFINED = frozenset({"calibrated-observable", "identified-design", "calibrated-window",
+                                 "acquired-calibrated-window", "telemetry", "instrument-exchange"})
 _PIN_FIELDS = ("revision", "source_tree", "module", "source_root", "source_sha256", "path", "sha256", "repository")
 _BINARY_ROLES = frozenset({"engine", "prover", "guest"})
-
-
-def _package_json(name):
-    return json.loads(resources.files("ciw").joinpath(name).read_text(encoding="utf-8"))
 
 
 def _normalize(pin):
@@ -117,13 +108,10 @@ def live_pins(kind: str) -> dict:
     from ..workbench import _workflow
     workflow = _workflow(kind)
     roles = sorted(set(getattr(workflow, "ROLES", ())) - _BINARY_ROLES)
-    if kind in _MANIFESTS:
-        merged = {}
-        for name in _MANIFESTS[kind]:
-            merged.update(_package_json(name))
-        return {role: _normalize(merged[role]) for role in roles}
-    if kind == "instrument-exchange":
-        return {"set": _normalize(_package_json("exchange-runtime.json"))}
+    if kind in _DESCRIPTOR_DEFINED:
+        # These modules read their pins from the descriptor (pin_map), so the
+        # descriptor is the definition and the binding is by construction.
+        return {role: _normalize(pin) for role, pin in pin_map(kind).items()}
     if kind == "variational-free-energy":
         from ..free_energy_native import PINS
         return {role: _normalize(PINS[role]) for role in roles}
@@ -145,6 +133,13 @@ def live_pins(kind: str) -> dict:
     if not roles:
         return {}
     raise ValueError(f"No normalized pin source for {kind}")
+
+
+def pin_map(kind: str) -> dict:
+    """Every pinned provider step of a pipeline, by role: the definition its module executes."""
+    path = _descriptor_dir() / f"{kind}.json"
+    value = validate(json.loads(path.read_text(encoding="utf-8")))
+    return {step["role"]: deepcopy(step["pin"]) for step in value["steps"] if "pin" in step}
 
 
 def provider_pin(kind: str, role: str | None = None) -> dict:

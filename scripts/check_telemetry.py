@@ -1,6 +1,5 @@
 """Exercise only reviewed manifest pins; no branch-following provider installs."""
 import argparse
-import json
 import os
 from pathlib import Path
 import subprocess
@@ -8,9 +7,9 @@ import sys
 import tempfile
 
 if __package__:
-    from .provider_checkouts import validate_checkout
+    from .provider_checkouts import descriptor_pins, validate_checkout
 else:
-    from provider_checkouts import validate_checkout
+    from provider_checkouts import descriptor_pins, validate_checkout
 
 
 REPOSITORIES = {
@@ -28,7 +27,7 @@ def main(argv=None):
                         help="Existing exact checkouts, using full repository directory names")
     args = parser.parse_args(argv)
     root = Path(__file__).resolve().parents[1]
-    pins = json.loads((root / "src/ciw/telemetry-runtimes.json").read_text())
+    pins = descriptor_pins("telemetry", root)
     with tempfile.TemporaryDirectory(prefix="ciw-telemetry-providers-") as directory:
         stack_root = args.stack_root.resolve() if args.stack_root else Path(directory)
         for role, repository in REPOSITORIES.items():

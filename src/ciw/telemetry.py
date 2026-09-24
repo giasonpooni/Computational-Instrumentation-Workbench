@@ -8,8 +8,6 @@ from __future__ import annotations
 import base64
 from copy import deepcopy
 from hashlib import sha256
-from importlib import resources
-import json
 import math
 from pathlib import Path
 import sys
@@ -20,6 +18,7 @@ from .adapters.subprocess import PinnedSubprocessAdapter, _json
 from .exchange import _read, _identity, RESULT_SCHEMA
 from .core.canonical import bundle_digest, byte_digest, canonical, digest, exact_keys, utc_instant, utc_now
 from .session import write_json
+from .pipelines import pin_map
 
 SCHEMA = "ciw.telemetry-session.v1"
 MAX_BYTES = 4 * 1024 * 1024
@@ -56,7 +55,7 @@ class _PPDAProjection(PinnedSubprocessAdapter):
 
 
 def _runtime(role, repositories, expected=None):
-    manifest = json.loads(resources.files("ciw").joinpath("telemetry-runtimes.json").read_text())
+    manifest = pin_map("telemetry")
     if role not in ROLES or role not in repositories:
         raise ValueError("Missing explicitly bound telemetry runtime: " + role)
     pin = manifest[role]

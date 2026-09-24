@@ -10,8 +10,6 @@ import base64
 from copy import deepcopy
 from fractions import Fraction
 from hashlib import sha256
-from importlib import resources
-import json
 import math
 from pathlib import Path
 import re
@@ -23,6 +21,7 @@ from .adapters.subprocess import PinnedSubprocessAdapter, _json
 from .exchange import _identity, _read
 from .session import write_json
 from .core.canonical import canonical, digest, byte_digest, bundle_digest, utc_now
+from .pipelines import pin_map
 
 SCHEMA = "ciw.identified-design-session.v1"
 SOURCE_SCHEMA = "ciw.identified-design-input.v1"
@@ -103,11 +102,10 @@ print(json.dumps(native(result),allow_nan=False,ensure_ascii=False))
 
 
 def _pins():
-    base = json.loads(resources.files("ciw").joinpath("calibrated-observable-runtimes.json").read_text())
-    extra = json.loads(resources.files("ciw").joinpath("identified-design-runtimes.json").read_text())
-    if set(extra) != {"sidt", "edspt", "ywir"} or set(base) != calibrated.ROLES:
-        raise ValueError("Unexpected identified design runtime manifest")
-    return {**base, **extra}
+    pins = pin_map("identified-design")
+    if set(pins) != calibrated.ROLES | {"sidt", "edspt", "ywir"}:
+        raise ValueError("Unexpected identified design runtime pins")
+    return pins
 
 
 def _adapters(repositories, expected=None):

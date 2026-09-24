@@ -1,6 +1,5 @@
 """Installed-wheel gate for shared calibrated window execution and replay."""
 import argparse
-import json
 import os
 from pathlib import Path
 import shutil
@@ -8,6 +7,9 @@ import subprocess
 import sys
 import tempfile
 import xml.etree.ElementTree as ET
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from provider_checkouts import descriptor_pins  # noqa: E402
 
 REPOSITORIES = {"tbrt": "Time-Base-Reconciliation-Runtime", "mcur": "Metrological-Calibration-Uncertainty-Runtime",
                 "stfe": "Streaming-Telemetry-Feature-Extraction", "gsie": "Geometric-State-Inference-Engine",
@@ -24,7 +26,7 @@ def main():
     parser.add_argument("--output-dir", type=Path, help="Retain actual original/replay bundles for ICRH")
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
-    pins = json.loads((root / "src/ciw/calibrated-window-runtimes.json").read_text())
+    pins = descriptor_pins("calibrated-window", root)
     if set(pins) != set(REPOSITORIES): raise ValueError("Required five-provider pin manifest mismatch")
     with tempfile.TemporaryDirectory(prefix="ciw-window-gate-") as directory:
         temporary = Path(directory)

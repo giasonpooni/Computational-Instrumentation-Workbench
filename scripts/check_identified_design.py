@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import argparse
-import json
 import os
 from pathlib import Path
 import shutil
@@ -10,6 +9,9 @@ import subprocess
 import sys
 import tempfile
 import xml.etree.ElementTree as ET
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from provider_checkouts import descriptor_pins  # noqa: E402
 
 
 REPOSITORIES = {
@@ -39,11 +41,10 @@ def main() -> int:
     if sys.version_info < (3, 12):
         raise RuntimeError("The YWIR provider requires Python 3.12 or newer")
     root = Path(__file__).resolve().parents[1]
-    inherited = json.loads((root / "src/ciw/calibrated-observable-runtimes.json").read_text())
-    added = json.loads((root / "src/ciw/identified-design-runtimes.json").read_text())
-    if set(inherited) & set(added):
+    inherited = descriptor_pins("calibrated-observable", root)
+    pins = descriptor_pins("identified-design", root)
+    if any(pins.get(role) != pin for role, pin in inherited.items()):
         raise ValueError("Identified-design pins must extend, never replace, calibrated provider pins")
-    pins = {**inherited, **added}
     if set(pins) != set(REPOSITORIES):
         raise ValueError("Identified-design manifest must bind all eleven providers")
     with tempfile.TemporaryDirectory(prefix="ciw-identified-design-") as directory:
