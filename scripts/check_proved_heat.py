@@ -1,7 +1,7 @@
 """Require real SP1 proving, fresh replay and verification from an installed CIW wheel.
 
 Providers and executables are explicit host bindings. This gate does not clone,
-repair, rebind or build them; the accompanying Linux workflow provisions their
+repair, rebind or build them; scripts/provision_proved_heat.py provisions their
 exact sources and verifies the committed guest build recipe first.
 """
 from __future__ import annotations
@@ -17,12 +17,13 @@ import sys
 import tempfile
 import xml.etree.ElementTree as ET
 
-from provider_checkouts import validate_checkout
+from provider_checkouts import descriptor_pin, extra_pin, validate_checkout
 
-SCR_REVISION = "a59aba283b0304faeeb3e5d305087e7709e171ca"
-SCR_TREE = "4068a711534932e8d89bb0d87d373376dafdf6cd"
-SP1_REVISION = "b38b61209e45e969289e70d5cf79dc763460bc41"
-SP1_TREE = "7deca3aced8d8eb84dfcede98285a192c862ea4c"
+# SCR is the proved-heat pipeline's pinned provider; SP1 is the guest recipe's
+# pinned source, declared in ci/gates.json.
+_SCR, _SP1 = descriptor_pin("proved-heat", "scr"), extra_pin("sp1")
+SCR_REVISION, SCR_TREE = _SCR["revision"], _SCR["source_tree"]
+SP1_REVISION, SP1_TREE = _SP1["revision"], _SP1["source_tree"]
 GUEST_SHA256 = "a14e3750da7e221d31842bd6cf983fcc8c0f530b2811537e2a9a9fe803dacf82"
 TESTS = ("test_proved_heat.py", "test_proved_heat_session.py")
 REQUIRED_NATIVE_TESTS = {

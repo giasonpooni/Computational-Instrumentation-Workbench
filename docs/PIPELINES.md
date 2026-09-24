@@ -101,6 +101,14 @@ Do observed positions and quantities agree with the declared geometry and buildi
 | tsde | `5e72693e7e57` | `ciw.translation-flow.v1` |
 | ywir | `e1f4a8c128a9` | `ciw.identified-design.v1` |
 
+## Providers outside pipelines
+
+Providers that no frozen pipeline step names are declared by a `ciw.provider-descriptor.v1`; its `pin` is the definition the implementation executes and `pipelines.check()` binds it to `provider_binding()` of the implementation.
+
+| Provider | Role | Invocation | Operations | Boundary | Guide |
+| --- | --- | --- | --- | --- | --- |
+| `ciw.julia-model-worker.v1` | julia | persistent worker | `ciw.model.simulate.v1`, `ciw.model.linearize.v1`, `ciw.model.measurement-selection.v1`, `ciw.model.symbolic.v1` | scr `a59aba283b03` | [MODEL_CORE.md](MODEL_CORE.md) |
+
 ## Pipeline details
 
 Refusal codes are derived from the code on each pipeline's execution path and checked by `pipelines.check()`; every pinned-subprocess pipeline can also raise the adapter codes (`INPUT_LIMIT`, `INVALID_INPUT`, `MALFORMED_RESPONSE`, `OUTPUT_LIMIT`, `RUNTIME_FAILED`, `RUNTIME_IO`, `RUNTIME_PIN_MISMATCH`, `RUNTIME_UNAVAILABLE`, `SOURCE_PIN_MISMATCH`, `TIMEOUT`) and every pipeline the workbench admission codes (`operation_unavailable`, `workbench_capacity`). Domain rules are the checks the implementation keeps beyond the shared runner shape, with code evidence, from the verified inventory.
@@ -482,3 +490,38 @@ Specific refusals: `DECLARED_WORKLOAD_REFUSED`, `FREE_ENERGY_NATIVE_REFUSED`, `F
 - The inspect view does domain back-transforms: the reference posterior and the held-out prediction are rescaled by the latent and observation scales, plus the held-out bias (free_energy_view.py:21-24, 36-42). (added by adversarial verification; citations in the rule)
 
 Providers pinned at more than one revision in one session: cbsr (b543969cb80a, daf43fc870ba); fsrt (09a756dd9cdd, d7c181fb9967); gsie (5241eee6dab4, de38873db1ba); jspt (7399ab03087b, d910f5a1d7f6); plsr (19ea69670601, 9d0e7b4a1162); ppda (209985a8c748, 477d6cb45442); set (1467ec5058b3, 2f838f4e196f, 542e672be512, 5e7bda36f521).
+
+## Provider gates
+
+CI has three jobs ([`ci.yml`](../.github/workflows/ci.yml)): `descriptors` binds every descriptor to code and derives the matrices, `kernel` runs the kernel surfaces below and `providers` runs one row per gate, platform and Python, keyed by the digest of the exact pins the gate binds. Gates are declared in [`ci/gates.json`](../ci/gates.json) and run by `python scripts/ci_matrix.py run GATE`.
+
+| Gate | Pin key | Pipelines and providers | Pins | Platforms |
+| --- | --- | --- | --- | --- |
+| `adapters` | `d65e47fc81ce` | adapter-runtimes.json (terminal) | fsrt, gte, jspt, rci | ubuntu, windows · py3.12 |
+| `plsr-terminal` | `302c8c323142` | plsr-runtime.json (terminal) | plsr | ubuntu, windows · py3.12 |
+| `calibrated-observable` | `2f9253582318` | `ciw.calibrated-observable.v1` | cbsr, fdir, fsrt, gsie, mcur, oit, set, tbrt | ubuntu · py3.11/3.12 |
+| `calibrated-window` | `b709dc3e02ed` | `ciw.calibrated-window.v1` | gsie, mcur, set, stfe, tbrt | ubuntu · py3.11/3.12 |
+| `acquired-stream` | `2110f5eeef22` | `ciw.acquired-dataset.v1`, `ciw.acquired-calibrated-window.v1`, `ciw.residual-monitor.v1` | fdir, gsie, mcur, oit, ppda, scout, set, stfe, tbrt | ubuntu · py3.12 |
+| `declared-workloads` | `b8d26eae056d` | `ciw.schematic-assessment.v1`, `ciw.numerical-heat.v1` | scr, sra | ubuntu · py3.12 |
+| `energy-accuracy` | `none` | `ciw.energy-accuracy.v1` | none | ubuntu, windows · py3.12 |
+| `exchange` | `25dc0ffbcef9` | `ciw.instrument-exchange.v1` | exchange-ppda, exchange-scr, set | ubuntu · py3.12 |
+| `free-energy` | `a6891fde21cb` | `ciw.variational-free-energy.v1` | csg, gsie, plsr | ubuntu, windows · py3.12 |
+| `geodesic-references` | `8b99c86bfb0c` | `ciw.flat-torus-reference.v1`, `ciw.curved-path-transfer.v1` | csg, ftr, icrh | ubuntu, windows · py3.12 |
+| `geometry-research` | `ce892d546e4c` | `ciw.covariance-geometry.v1`, `ciw.mesh-path.v1`, `ciw.translation-flow.v1` | cggt, isgt, tsde | ubuntu, windows · py3.12 |
+| `identified-design` | `f9b9567bab1f` | `ciw.identified-design.v1` | cbsr, edspt, fdir, fsrt, gsie, mcur, oit, set, sidt, tbrt, ywir | ubuntu · py3.12 |
+| `integrated-modules` | `6b6a78e00f3b` | `ciw.acquired-dataset.v1`, `ciw.bim-quantity.v1`, `ciw.schematic-companions.v1`, `ciw.schematic-assessment.v1` | cse, jspt, plsr, ppda, scout, sra | ubuntu · py3.12 |
+| `model-core` | `401cf370ad9b` | `ciw.julia-model-worker.v1` | julia, scr | ubuntu · py3.12 |
+| `proved-heat` | `aaa9a1ec7b88` | `ciw.proved-heat.v1` | scr, sp1 | ubuntu-24.04 · py3.12 |
+| `remaining-modules` | `1ba606675697` | `ciw.measurement-chain.v1`, `ciw.geometric-circle.v1`, `ciw.identified-stability.v1`, `ciw.identified-design.v1` | cbsr, edspt, fdir, fsrt, gsie, gte, jspt, mcur, oit, plsr, rci, set, sidt, tbrt, ywir | ubuntu · py3.12 |
+| `telemetry` | `facaa21a00ce` | `ciw.telemetry.v1` | cbsr, gsie, ppda, set, stfe | ubuntu · py3.11/3.12 |
+| `workbench-candidates` | `f63d4b8b2c5b` | `ciw.telemetry.v1`, `ciw.calibrated-observable.v1`, esm-runtime.json (terminal) | cbsr, esm, fdir, fsrt, gsie, mcur, oit, ppda, set, stfe, tbrt | ubuntu · py3.12 |
+
+Kernel surfaces: `tests` (kernel, descriptor and offline pipeline tests); `installed-package` (wheel installed outside the checkout); `container` (container build, deploy, restart and persisted workspace); `windows-service` (owned-process start, stop and persisted restart); `godot-bridge` (pinned Godot client over both WebSocket bridges).
+
+Pins beyond the descriptors:
+
+- `icrh` — giasonpooni/Instrument-Conformance-and-Replay-Harness `dc4d826ecd1f`: independent conformance checker for the geodesic reference evidence
+- `scout` — notationsystems/scout-retrieval-agent `5e146d592467`: vendor gitlink inside the pinned PPDA checkout
+- `sp1` — succinctlabs/sp1 `b38b61209e45`: SP1 zkVM source for the committed heat guest recipe
+- `exchange-ppda` — giasonpooni/Provenance-Preserving-Data-Acquisition `a29845e13e55`: exchange artifact producer (test input, not a pipeline provider)
+- `exchange-scr` — giasonpooni/Scientific-Computation-Runtime `5f0409743e00`: exchange artifact producer (test input, not a pipeline provider)

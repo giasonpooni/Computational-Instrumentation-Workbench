@@ -1,24 +1,108 @@
-name: Calibrated adapter integration
+# One CI shape: kernel surfaces, descriptor validation and a provider-gate
+# matrix keyed by pin. Gates, their pipelines and their pins are declared in
+# ci/gates.json and the pipeline/provider descriptors; scripts/ci_matrix.py
+# derives the matrices and runs each entry. Add a gate there, not here.
+name: CIW
 
 on:
   push:
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: ciw-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  calibrated-investigation:
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
+  descriptors:
+    name: descriptors
+    runs-on: ubuntu-latest
     timeout-minutes: 15
+    outputs:
+      kernel: ${{ steps.matrix.outputs.kernel }}
+      providers: ${{ steps.matrix.outputs.providers }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
       - run: python -m pip install -e ".[dev]"
-      - name: Exercise pinned RCI, FSRT and GTE with offline replay and refusal gates
-        run: python scripts/check_adapters.py
+      - name: Bind every descriptor to the code it declares
+        run: python -c "from ciw import pipelines; pipelines.check()"
+      - name: Kernel freeze, descriptors and generated catalogue
+        run: python -m pytest -q tests/test_kernel_freeze.py tests/test_pipelines.py tests/test_pipeline_runner.py tests/test_ci_matrix.py
+      - name: Derive the kernel and provider-gate matrices
+        id: matrix
+        run: python scripts/ci_matrix.py matrix --github-output
+
+  kernel:
+    name: kernel ${{ matrix.gate }} (${{ matrix.os }}, py${{ matrix.python }})
+    needs: descriptors
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.descriptors.outputs.kernel) }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: ${{ matrix.timeout }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Run ${{ matrix.gate }}
+        run: python scripts/ci_matrix.py run ${{ matrix.gate }}
+      - uses: actions/upload-artifact@v4
+        if: success() && matrix.artifacts != ''
+        with:
+          name: kernel-${{ matrix.gate }}-${{ matrix.os }}-py${{ matrix.python }}
+          path: ${{ matrix.artifacts }}
+
+  providers:
+    name: gate ${{ matrix.gate }} (${{ matrix.os }}, py${{ matrix.python }}, pins ${{ matrix.pin_key }})
+    needs: descriptors
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.descriptors.outputs.providers) }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: ${{ matrix.timeout }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - if: matrix.rust != ''
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ matrix.rust }}
+      - if: matrix.node != ''
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - if: matrix.apt != ''
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ${{ matrix.apt }}
+      # Host builds are cached under a key derived from the gate's exact pins
+      # and toolchain; no proof, verdict or receipt is ever cached.
+      - if: matrix.cache_key != ''
+        id: cache
+        uses: actions/cache/restore@v4
+        with:
+          key: ${{ matrix.cache_key }}-${{ runner.os }}-${{ runner.arch }}
+          path: ${{ matrix.cache_paths }}
+      - if: matrix.provision
+        name: Provision ${{ matrix.gate }}
+        run: python scripts/ci_matrix.py run ${{ matrix.gate }} --phase provision
+      - if: matrix.cache_key != '' && steps.cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          key: ${{ matrix.cache_key }}-${{ runner.os }}-${{ runner.arch }}
+          path: ${{ matrix.cache_paths }}
+      - name: Run ${{ matrix.gate }}
+        run: python scripts/ci_matrix.py run ${{ matrix.gate }}
+      - uses: actions/upload-artifact@v4
+        if: matrix.artifacts != '' && (success() || matrix.artifacts_always)
+        with:
+          name: gate-${{ matrix.gate }}-${{ matrix.os }}-py${{ matrix.python }}
+          path: ${{ matrix.artifacts }}
+          if-no-files-found: warn

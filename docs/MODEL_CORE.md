@@ -123,7 +123,11 @@ evidence remains the CIW view's job.
 The worker lives in [`src/ciw/model/julia`](../src/ciw/model/julia) and ships in
 the wheel: `Project.toml`, the machine-generated `Manifest.toml` produced by
 instantiating and testing the environment, `src/*.jl` and `bin/worker.jl`.
-[`src/ciw/julia-model-runtime.json`](../src/ciw/julia-model-runtime.json) pins
+The worker's provider descriptor
+[`src/ciw/pipelines/providers/julia-model-worker.json`](../src/ciw/pipelines/providers/julia-model-worker.json)
+is its pin definition: `pipelines.check()` binds its `Project.toml`, `Manifest.toml`
+and worker-source digests and its operations to the packaged worker, and its
+SCR boundary pin is the revision the gate checks out. It pins
 Julia **1.10.12 LTS** (tarball SHA-256, executable and system-image digests on
 Linux x86-64) and the package versions:
 

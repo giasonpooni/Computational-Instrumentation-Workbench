@@ -17,7 +17,6 @@ from collections import deque
 from dataclasses import dataclass, field
 import hashlib
 from importlib import resources
-import json
 import os
 from pathlib import Path
 import queue
@@ -90,7 +89,18 @@ def worker_root() -> Path:
 
 
 def pinned_runtime() -> dict:
-    return json.loads((resources.files("ciw") / "julia-model-runtime.json").read_text("utf-8"))
+    """The worker's pin, defined by its provider descriptor."""
+    from ..pipelines import provider_descriptor
+    return provider_descriptor("julia-model-worker")["pin"]
+
+
+def provider_binding() -> dict:
+    """What this worker executes, for ``pipelines.check_providers``."""
+    root = worker_root()
+    return {"pin": {"project_sha256": file_sha256(root / "Project.toml"),
+                    "manifest_sha256": file_sha256(root / "Manifest.toml"),
+                    "worker_source_sha256": source_sha256(root)},
+            "operations": {profile: list(operations) for profile, operations in PROFILES.items()}}
 
 
 def file_sha256(path: Path) -> str | None:

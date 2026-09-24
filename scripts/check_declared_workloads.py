@@ -9,9 +9,13 @@ import sys
 import tempfile
 import xml.etree.ElementTree as ET
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from provider_checkouts import descriptor_pin  # noqa: E402
+
+# The pipeline descriptors are the pin definitions these providers execute.
 PROVIDERS = {
-    "sra": ("Schematics-Retrieval-Agent", "a6e79585950bb6860e5edce5ebd2cce39ea481f2"),
-    "scr": ("Scientific-Computation-Runtime", "a59aba283b0304faeeb3e5d305087e7709e171ca"),
+    "sra": ("Schematics-Retrieval-Agent", descriptor_pin("schematic-assessment", "sra")["revision"]),
+    "scr": ("Scientific-Computation-Runtime", descriptor_pin("numerical-heat", "scr")["revision"]),
 }
 
 

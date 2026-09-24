@@ -130,8 +130,8 @@ closure. Curved fixtures exercise zero, positive and negative constant curvature
 transfer matrices and propagation of a declared starting covariance. Inspection
 of saved bytes is content conformance; it does not itself rerun a provider.
 
-The native gate runs on Ubuntu and Windows in
-[`geodesic-references.yml`](../.github/workflows/geodesic-references.yml).
+The `geodesic-references` provider gate runs on Ubuntu and Windows in the
+[CI matrix](PIPELINES.md#provider-gates).
 Tests include malformed declarations, bounded-input refusals, retained-record
 tampering, native original/replay pairs and provider-free workspace restore.
 

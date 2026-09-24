@@ -150,7 +150,7 @@ python scripts/check_geometry_research.py \
   --stack-root /trusted/geometry --output-dir results/geometry-gate-local
 ```
 
-The [Linux/Windows gate](../.github/workflows/geometry-research.yml) retains all
+The Linux/Windows `geometry-research` [provider gate](PIPELINES.md#provider-gates) retains all
 three original/replay pairs and the shared workspace. It checks analytic
 anchors, refusal cases, provider drift, retained bindings, live session changes,
 offline restore and read-only inspection. Native repositories separately test

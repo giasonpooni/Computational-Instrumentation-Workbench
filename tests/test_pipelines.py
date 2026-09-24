@@ -64,7 +64,9 @@ def test_provider_matrix_keys_gates_by_pin():
 
 
 def test_generated_catalog_is_current():
-    assert (ROOT / "docs" / "PIPELINES.md").read_text(encoding="utf-8") == pipelines.render_catalog(), \
+    import runpy
+    render = runpy.run_path(str(ROOT / "scripts" / "generate_pipeline_catalog.py"))["render"]
+    assert (ROOT / "docs" / "PIPELINES.md").read_text(encoding="utf-8") == render(), \
         "Run python scripts/generate_pipeline_catalog.py"
 
 

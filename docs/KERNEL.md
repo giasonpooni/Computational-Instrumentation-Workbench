@@ -99,3 +99,34 @@ operator surface is `operation.list` with `{"view": "investigations"}`, while
 every pipeline stays executable and replayable. [PIPELINES.md](PIPELINES.md) is
 generated from the descriptors, including the provider pin matrix that keys
 provider gates.
+
+## Shared runner
+
+A declared pipeline with one pinned provider step runs through
+[`ciw.pipelines.runner`](../src/ciw/pipelines/runner.py). The runner owns every
+record that carries an identity (step, result, bundle, same-runtime
+reproduction, replay receipt) and every pin check; the pipeline supplies named
+hooks only: `parse_source`, `invoke`, `check_data`, `check_runtime`,
+`make_adapter` and `bind_extra`. A descriptor whose runner is `generic_runner`
+is refused by `pipelines.check()` if its class overrides anything else. Canonical
+record content and its identities live in
+[`ciw.core.canonical`](../src/ciw/core/canonical.py).
+
+## Providers outside pipelines
+
+A provider that no frozen pipeline step names (the Julia model worker) is
+declared by a `ciw.provider-descriptor.v1` in
+[`src/ciw/pipelines/providers`](../src/ciw/pipelines/providers). Its `pin` is the
+definition the implementation executes, and `pipelines.check()` compares it with
+the implementation's `provider_binding()`. Adding a provider is a descriptor, a
+pin and a gate entry; it adds no kernel verb, kind or workflow file.
+
+## CI
+
+One workflow, [`ci.yml`](../.github/workflows/ci.yml), with three jobs:
+`descriptors` binds every descriptor to code and derives the matrices, `kernel`
+runs the kernel surfaces, and `providers` runs one row per gate, platform and
+Python, keyed by the digest of the exact pins the gate binds. Gates and pins
+beyond the descriptors are declared in [`ci/gates.json`](../ci/gates.json);
+`python scripts/ci_matrix.py check` refuses a pinned pipeline or provider
+without a gate and any revision restated in a gate script or workflow.

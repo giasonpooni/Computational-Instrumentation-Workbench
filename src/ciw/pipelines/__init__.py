@@ -240,6 +240,67 @@ def validate(value) -> dict:
     return value
 
 
+PROVIDER_SCHEMA = "ciw.provider-descriptor.v1"
+PROVIDER_FIELDS = frozenset({"schema", "provider_id", "role", "summary", "invocation", "pin", "boundary", "operations",
+                             "surface", "authority", "implementation", "guide"})
+PROVIDER_INVOCATIONS = frozenset({"persistent_worker"})
+
+
+def _provider_dir() -> Path:
+    return Path(resources.files("ciw.pipelines") / "providers")
+
+
+def load_providers() -> dict:
+    """Provider descriptors for providers that no frozen pipeline step names (terminal surfaces)."""
+    providers = {}
+    for path in sorted(_provider_dir().glob("*.json")):
+        value = json.loads(path.read_text(encoding="utf-8"))
+        _keys(value, PROVIDER_FIELDS, name="provider descriptor")
+        if value["schema"] != PROVIDER_SCHEMA or value["invocation"] not in PROVIDER_INVOCATIONS:
+            raise ValueError(f"{path.name}: unsupported provider descriptor schema or invocation")
+        for key in ("provider_id", "summary", "guide"):
+            _text(value[key], key)
+        if not _ROLE.fullmatch(value["role"]) or value["surface"] != "terminal" or value["authority"] != "read_only":
+            raise ValueError(f"{path.name}: a provider descriptor declares a role, the terminal surface and read-only authority")
+        for item in value["boundary"]:
+            _keys(item, {"role", "purpose", "pin"}, name="provider boundary")
+            if not re.fullmatch(r"[0-9a-f]{40}", item["pin"].get("revision", "")):
+                raise ValueError(f"{path.name}: a boundary pin is an exact revision")
+        if path.stem in providers:
+            raise ValueError(f"Duplicate provider descriptor {path.stem}")
+        providers[path.stem] = value
+    return providers
+
+
+def provider_descriptor(name: str) -> dict:
+    """One provider descriptor; its ``pin`` is the definition the implementation executes."""
+    providers = load_providers()
+    if name not in providers:
+        raise ValueError(f"No provider descriptor {name}")
+    return deepcopy(providers[name])
+
+
+def check_providers(providers: dict | None = None) -> dict:
+    """Bind provider descriptors to what their implementation executes.
+
+    The implementation module's ``provider_binding()`` reports the live pin
+    fields it would run (for example digests of packaged files) and the
+    operations it serves; both must equal the descriptor.
+    """
+    providers = load_providers() if providers is None else providers
+    root = Path(__file__).resolve().parents[3]
+    for name, value in providers.items():
+        binding = import_module(value["implementation"]["module"]).provider_binding()
+        for key, live in binding["pin"].items():
+            if value["pin"].get(key) != live:
+                raise ValueError(f"{name}: pinned {key} differs from what {value['implementation']['module']} executes")
+        if binding["operations"] != value["operations"]:
+            raise ValueError(f"{name}: declared operations differ from the operations its implementation serves")
+        if (root / "docs").is_dir() and not (root / value["guide"]).is_file():
+            raise ValueError(f"{name}: guide {value['guide']} does not exist")
+    return providers
+
+
 def load_investigations() -> dict:
     value = json.loads((Path(resources.files("ciw.pipelines")) / "investigations.json").read_text(encoding="utf-8"))
     if value.get("schema") != INVESTIGATION_SCHEMA or not isinstance(value.get("investigations"), list):
@@ -332,6 +393,7 @@ def check(descriptors: dict | None = None) -> dict:
             raise ValueError(f"{kind}: entry surfaces are exactly the default-pipeline stages")
         if value["surface"] == "inner" and not value["investigations"]:
             raise ValueError(f"{kind}: an inner pipeline belongs to an investigation")
+    check_providers()
     return descriptors
 
 
@@ -373,6 +435,19 @@ def render_catalog(descriptors: dict | None = None) -> str:
     for entry in matrix:
         lines.append(f"| {entry['role']} | `{entry['pin']['revision'][:12]}` | "
                      + ", ".join(f"`{p}`" for p in entry["pipelines"]) + " |")
+    providers = load_providers()
+    if providers:
+        lines += ["", "## Providers outside pipelines", "",
+                  "Providers that no frozen pipeline step names are declared by a `ciw.provider-descriptor.v1`; its "
+                  "`pin` is the definition the implementation executes and `pipelines.check()` binds it to "
+                  "`provider_binding()` of the implementation.", "",
+                  "| Provider | Role | Invocation | Operations | Boundary | Guide |", "| --- | --- | --- | --- | --- | --- |"]
+        for value in providers.values():
+            operations = ", ".join(f"`{op}`" for ops in value["operations"].values() for op in ops)
+            boundary = ", ".join(f"{item['role']} `{item['pin']['revision'][:12]}`" for item in value["boundary"]) or "none"
+            guide = value["guide"].removeprefix("docs/")
+            lines.append(f"| `{value['provider_id']}` | {value['role']} | {value['invocation'].replace('_', ' ')} | "
+                         f"{operations} | {boundary} | [{guide}]({guide}) |")
     common = set(WORKBENCH_REFUSALS) | {"INPUT_LIMIT", "INVALID_INPUT", "MALFORMED_RESPONSE", "OUTPUT_LIMIT",
                                          "RUNTIME_FAILED", "RUNTIME_IO", "RUNTIME_PIN_MISMATCH", "RUNTIME_UNAVAILABLE",
                                          "SOURCE_PIN_MISMATCH", "TIMEOUT"}

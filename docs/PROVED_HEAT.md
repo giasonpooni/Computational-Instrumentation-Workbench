@@ -44,9 +44,10 @@ the guest does not read an arbitrary policy document.
 | Backend report | `sp1-cpu v6.1.0` |
 | Guest recipe | SCR `zk/recipes/sp1-heat.recipe`, identity `6e5d1687bcc55243d712553a2b7768b6c587a76418bb48a7a2c44224470d423d` |
 | Guest ELF SHA-256 | `a14e3750da7e221d31842bd6cf983fcc8c0f530b2811537e2a9a9fe803dacf82` |
-| Guest compiler | `succinct-1.94.0-64bit`, Linux x86-64, exact archive SHA-256 in the workflow |
+| Guest compiler | `succinct-1.94.0-64bit`, Linux x86-64, exact archive SHA-256 in `scripts/provision_proved_heat.py` |
 
-The [Linux workflow](../.github/workflows/proved-heat.yml) provisions the exact
+The `proved-heat` [provider gate](PIPELINES.md#provider-gates)
+([`scripts/provision_proved_heat.py`](../scripts/provision_proved_heat.py)) provisions the exact
 compiler, checks the committed recipe through `execution.build.verify_build`,
 builds `execution-cli` and `sp1-host`, and runs the installed-wheel gate. It
 uses the publicly available upstream commit at the same identity as SCR's

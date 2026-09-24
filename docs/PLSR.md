@@ -244,7 +244,7 @@ The [terminal and persistence tests](../tests/test_plsr.py) and
 [engine adapter tests](../tests/test_plsr_engine.py) cover import, explicit
 samples, runtime pin enforcement, verdict/refusal preservation, retained
 evidence, tamper rejection and replay.
-The [PLSR CI job](../.github/workflows/test.yml) runs these checks on Windows and
+The `plsr-terminal` [provider gate](PIPELINES.md#provider-gates) runs these checks on Windows and
 Linux with Python 3.12, then builds a wheel and runs the
 [installed-package acceptance check](../scripts/check_plsr_installed.py) outside
 the source tree for both supplied models.

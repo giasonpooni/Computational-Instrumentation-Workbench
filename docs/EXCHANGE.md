@@ -126,10 +126,11 @@ pin is enforced in both CLI and integration tests. Producer modules in the
 roundtrip are resolved against the explicitly supplied checkout paths and may
 not be substituted by an unrelated installed module.
 
-The [dedicated CI gate](../.github/workflows/exchange.yml) checks out these exact
-public revisions and supplies all three paths, so its conformance tests do not
-depend on optional local bindings. Adding that workflow is not evidence of a
-successful hosted run; the same producer/validator/CLI path is exercised locally.
+The `exchange` provider gate ([`scripts/check_exchange.py`](../scripts/check_exchange.py),
+declared in [`ci/gates.json`](../ci/gates.json)) checks out the validator at the
+instrument-exchange descriptor pin and the two producers at their declared extra
+pins, and supplies all three paths, so its conformance tests do not depend on
+optional local bindings.
 
 There is no automated conversion to native CIW covariance: exchange records do
 not provide all the native artifact's provenance, reference-value and assumption

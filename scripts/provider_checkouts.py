@@ -70,3 +70,32 @@ def validate_checkout(path: Path, revision: str) -> Path:
         if actual != expected:
             raise ValueError(f"Provider tracked bytes differ from their pin: {item}")
     return path
+
+
+_ROOT = Path(__file__).resolve().parents[1]
+
+
+def descriptor_pin(kind: str, role: str) -> dict:
+    """The exact pin a pipeline descriptor declares for one provider role (the pin definition)."""
+    import json
+    descriptor = json.loads((_ROOT / "src/ciw/pipelines/descriptors" / f"{kind}.json").read_text(encoding="utf-8"))
+    pins = [step["pin"] for step in descriptor["steps"] if step["role"] == role and "pin" in step]
+    if len(pins) != 1:
+        raise ValueError(f"{kind} declares no single pinned {role} step")
+    return dict(pins[0])
+
+
+def extra_pin(name: str) -> dict:
+    """A pin the CI gate registry declares beyond the descriptors (checkers, producers, vendored sources)."""
+    import json
+    registry = json.loads((_ROOT / "ci/gates.json").read_text(encoding="utf-8"))
+    return dict(registry["extra_pins"][name])
+
+
+def clone_at(repository: str, revision: str, destination: Path) -> Path:
+    """Clone ``owner/name`` and detach at the exact revision; the tracked bytes are then validated."""
+    subprocess.run(["git", "clone", "--quiet", "--no-checkout", f"https://github.com/{repository}.git", str(destination)],
+                   check=True, timeout=600)
+    subprocess.run(["git", "-C", str(destination), "-c", "core.autocrlf=false", "checkout", "--quiet", "--detach", revision],
+                   check=True, timeout=600)
+    return validate_checkout(destination, revision)

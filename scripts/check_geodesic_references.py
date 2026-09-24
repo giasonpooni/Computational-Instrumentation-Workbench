@@ -11,8 +11,12 @@ import xml.etree.ElementTree as ET
 
 REPOSITORIES = {"ftr": "Flat-Torus-Geodesic-Reference",
                 "csg": "Curved-Surface-Geodesic-Sensitivity-Runtime"}
-# Exact independent checker validated against the retained native fixture pairs.
-ICRH_REVISION = "dc4d826ecd1f28c1d55b724618380ce44e58bedd"
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from provider_checkouts import extra_pin  # noqa: E402
+
+# Exact independent checker validated against the retained native fixture pairs,
+# declared in ci/gates.json.
+ICRH_REVISION = extra_pin("icrh")["revision"]
 TESTS = ("test_geodesic_reference.py", "test_geodesic_reference_session.py")
 
 

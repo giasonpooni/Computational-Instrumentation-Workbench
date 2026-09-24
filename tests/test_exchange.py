@@ -114,11 +114,14 @@ def test_replaced_regular_path_cannot_hang_on_a_fifo(tmp_path, monkeypatch):
 def test_ci_gate_pins_the_same_checker_and_exact_producer_revisions():
     import re
     manifest = json.loads((ROOT / "src/ciw/exchange-runtime.json").read_text())
-    workflow = (ROOT / ".github/workflows/exchange.yml").read_text()
-    assert manifest["revision"] in workflow
-    refs = re.findall(r"^\s+ref: (\S+)$", workflow, re.MULTILINE)
-    assert len(refs) == 3
-    assert all(re.fullmatch(r"[0-9a-f]{40}", ref) for ref in refs)
+    descriptor = json.loads((ROOT / "src/ciw/pipelines/descriptors/instrument-exchange.json").read_text())
+    registry = json.loads((ROOT / "ci/gates.json").read_text())
+    gate, = (entry for entry in registry["gates"] if entry["gate"] == "exchange")
+    # The gate checks out the checker the pipeline executes and exact producer revisions.
+    assert gate["kinds"] == ["instrument-exchange"]
+    assert descriptor["steps"][0]["pin"]["revision"] == manifest["revision"]
+    producers = [registry["extra_pins"][name]["revision"] for name in gate["extra_pins"]]
+    assert len(producers) == 2 and all(re.fullmatch(r"[0-9a-f]{40}", ref) for ref in producers)
 
 
 def test_cli_failure_is_explicit_without_output_or_workspace(tmp_path, capsys):

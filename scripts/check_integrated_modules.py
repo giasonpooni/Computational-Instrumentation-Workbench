@@ -8,15 +8,20 @@ import sys
 import tempfile
 import xml.etree.ElementTree as ET
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from provider_checkouts import descriptor_pin, extra_pin  # noqa: E402
+
+# Pins come from the pipeline descriptors these providers serve; the SCOUT
+# vendor gitlink of the pinned PPDA checkout is declared in ci/gates.json.
 PROVIDERS = {
-    "sra": ("Schematics-Retrieval-Agent", "a6e79585950bb6860e5edce5ebd2cce39ea481f2"),
-    "jspt": ("Jacobian-Sensitivity-Propagation-Testbed", "7399ab03087b27683620b4c57f97b2ac14546c7f"),
-    "plsr": ("Parameterized-Lyapunov-Stability-Runtime", "9d0e7b4a1162e038150a71c63d986945d78135d4"),
-    "cse": ("Construction-State-Estimator-for-BIM", "4b74abda40bba3277de69bf61e9e09283ae2d5b3"),
-    "ppda": ("Provenance-Preserving-Data-Acquisition", "477d6cb454423a27543b16961d3b169709c40c31"),
+    "sra": ("Schematics-Retrieval-Agent", descriptor_pin("schematic-companions", "sra")["revision"]),
+    "jspt": ("Jacobian-Sensitivity-Propagation-Testbed", descriptor_pin("schematic-companions", "jspt")["revision"]),
+    "plsr": ("Parameterized-Lyapunov-Stability-Runtime", descriptor_pin("schematic-companions", "plsr")["revision"]),
+    "cse": ("Construction-State-Estimator-for-BIM", descriptor_pin("bim-quantity", "cse")["revision"]),
+    "ppda": ("Provenance-Preserving-Data-Acquisition", descriptor_pin("acquired-dataset", "ppda")["revision"]),
 }
 VENDOR_PATH = "vendor/scout-retrieval-agent"
-VENDOR_REVISION = "5e146d5924675cd7b6e1d1ed44fb39f5da012610"
+VENDOR_REVISION = extra_pin("scout")["revision"]
 TEST_FILES = (
     "test_integrated_modules_gate.py",
     "test_schematic_companions.py",

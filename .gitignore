@@ -27,3 +27,4 @@ docs/adr/
 /docs/coordination.md
 /.internal/
 /docs/internal/
+.ci-work/

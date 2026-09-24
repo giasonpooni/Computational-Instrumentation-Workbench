@@ -22,7 +22,6 @@ import time
 import urllib.request
 import xml.etree.ElementTree as ET
 
-SCR_REVISION = "a59aba283b0304faeeb3e5d305087e7709e171ca"
 TESTS = ("test_model_spec.py", "test_model_transform.py", "test_model_compose.py", "test_model_latex.py",
          "test_model_codec.py", "test_model_worker_protocol.py", "test_model_julia.py",
          "test_model_scr_boundary.py", "test_model_cli.py")
@@ -85,7 +84,11 @@ def main():
         raise RuntimeError("pdflatex is required to check generated LaTeX; pass --without-latex-compile to record it as not run")
     root = Path(__file__).resolve().parents[1]
     sys.path.insert(0, str(root / "scripts"))
-    pin = json.loads((root / "src/ciw/julia-model-runtime.json").read_text(encoding="utf-8"))
+    # The provider descriptor is the worker's pin definition, including its SCR boundary.
+    descriptor = json.loads((root / "src/ciw/pipelines/providers/julia-model-worker.json").read_text(encoding="utf-8"))
+    pin = descriptor["pin"]
+    scr_pin, = (item["pin"] for item in descriptor["boundary"] if item["role"] == "scr")
+    scr_revision = scr_pin["revision"]
     destination = args.output_dir.resolve()
     destination.mkdir(parents=True, exist_ok=True)
     timings = {}
@@ -98,11 +101,10 @@ def main():
             scr = args.scr_repo.resolve(strict=True)
         else:
             scr = temporary / "scr"
-            call(["git", "clone", "--quiet", "--no-checkout",
-                  "https://github.com/giasonpooni/Scientific-Computation-Runtime.git", str(scr)])
-            call(["git", "-C", str(scr), "-c", "core.autocrlf=false", "checkout", "--quiet", "--detach", SCR_REVISION])
+            call(["git", "clone", "--quiet", "--no-checkout", scr_pin["repository"] + ".git", str(scr)])
+            call(["git", "-C", str(scr), "-c", "core.autocrlf=false", "checkout", "--quiet", "--detach", scr_revision])
         from provider_checkouts import validate_checkout
-        validate_checkout(scr, SCR_REVISION)
+        validate_checkout(scr, scr_revision)
 
         # Snapshot sources, tests and examples together before the long
         # provisioning step, so the wheel and its tests describe one revision.
@@ -150,11 +152,11 @@ def main():
         suites = list(ET.parse(report).getroot().iter("testsuite"))
         if any(int(suite.get("skipped", 0)) for suite in suites):
             raise AssertionError("The model-core gate cannot pass skipped tests")
-        validate_checkout(scr, SCR_REVISION)
+        validate_checkout(scr, scr_revision)
         summary = {
             "gate": "model-core", "installed_wheel": wheel.name, "platform": platform_key(),
             "julia": {"version": pin["julia_version"], "executable_sha256": sha256(julia)},
-            "worker": committed, "scr_revision": SCR_REVISION,
+            "worker": committed, "scr_revision": scr_revision,
             "tests": {"count": sum(int(s.get("tests", 0)) for s in suites),
                       "failures": sum(int(s.get("failures", 0)) + int(s.get("errors", 0)) for s in suites),
                       "skipped": 0, "latex_compile": "not_run" if args.without_latex_compile else "passed"},

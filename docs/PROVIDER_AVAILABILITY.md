@@ -58,9 +58,9 @@ behavior. Their checkout commands preserve committed bytes with
   `git+https://github.com/...` dependency in `[project.optional-dependencies].plsr`.
   Installing that extra would require authenticated Git access or an explicitly
   reviewed package-distribution change. The local stack flags do not affect pip.
-- **Exchange CI:** `.github/workflows/exchange.yml` checks out SET, PPDA and SCR
-  directly with `actions/checkout`. Those pinned cross-repository checkouts need
-  their own private-access provisioning before a visibility change.
+- **Exchange CI:** `scripts/check_exchange.py` clones SET, PPDA and SCR at their
+  declared pins. Those pinned cross-repository checkouts need their own
+  private-access provisioning before a visibility change.
 - **Nested ESM provisioning:** `scripts/check_workbench_candidates.py` clones ESM
   and invokes ESM's pinned `scripts/check_calibrated_workbench.py`, which provisions
   its own provider graph. Existing `--esm-root`, `--fixture-root` and
