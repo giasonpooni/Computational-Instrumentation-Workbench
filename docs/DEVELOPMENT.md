@@ -42,7 +42,9 @@ and transport semantics.
 
 | Path | Contents |
 | --- | --- |
-| `src/ciw/core/` | Record, identity and covariance contracts |
+| `src/ciw/core/` | Record, identity and covariance contracts; `core/canonical.py` holds canonical content and digests |
+| `src/ciw/pipelines/` | Pipeline and provider descriptors, `pipelines.check()`, and the shared runner (`runner.py`) every declared pipeline executes through |
+| `src/ciw/fusion_context.py` | Read-only fusion-context projection of the pinned-set estimation kinds |
 | `src/ciw/adapters/` | Adapter bindings and trusted saved-payload validators, including RCI provenance and covariance dependency checks |
 | `src/ciw/operations/` | Operation registry, execution records and schema dispatch |
 | `src/ciw/session.py`, `server.py`, `cli.py` | Shared state, transport and terminal commands |
