@@ -56,15 +56,20 @@ behavior. Their checkout commands preserve committed bytes with
   [GitHub's token scope documentation](https://docs.github.com/en/actions/concepts/security/github_token).
 - **Optional PLSR installation:** `pyproject.toml` still has a pinned
   `git+https://github.com/...` dependency in `[project.optional-dependencies].plsr`.
-  Installing that extra would require authenticated Git access or an explicitly
-  reviewed package-distribution change. The local stack flags do not affect pip.
+  Installing that extra from a private provider requires authenticated Git access
+  or an explicitly reviewed package-distribution change; the `plsr-terminal` job
+  in `.github/workflows/test.yml` routes that clone through `PROVIDER_READ_TOKEN`
+  when the secret exists and clones anonymously otherwise. The local stack flags
+  do not affect pip.
 - **Exchange and geometry CI:** `.github/workflows/exchange.yml` checks out SET,
   PPDA and SCR directly with `actions/checkout`, and
   `.github/workflows/geometry-research.yml` provisions the three geometry
   providers the same way before passing them to the gate as `--stack-root`. The
-  geometry checkouts accept an optional `PROVIDER_READ_TOKEN` repository secret
-  and otherwise use the workflow's own token; the exchange checkouts still need
-  their own private-access provisioning before a visibility change.
+  checkouts in both workflows accept an optional `PROVIDER_READ_TOKEN`
+  repository secret, a read-only token covering those providers, and otherwise
+  use the workflow's own token, which reaches public providers only. The other
+  gates still clone their providers inside their scripts and need the same
+  explicit provisioning before a visibility change.
 - **Nested ESM provisioning:** `scripts/check_workbench_candidates.py` clones ESM
   and invokes ESM's pinned `scripts/check_calibrated_workbench.py`, which provisions
   its own provider graph. Existing `--esm-root`, `--fixture-root` and

@@ -32,6 +32,17 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      # The plsr extra is a pinned git+https dependency. A private provider needs
+      # PROVIDER_READ_TOKEN, a repository secret holding a read-only token; when it
+      # is absent pip clones anonymously, exactly as before.
+      - name: Route the pinned PLSR dependency through the provider read token when one is configured
+        shell: bash
+        env:
+          PROVIDER_READ_TOKEN: ${{ secrets.PROVIDER_READ_TOKEN }}
+        run: |
+          if [ -n "${PROVIDER_READ_TOKEN}" ]; then
+            git config --global url."https://x-access-token:${PROVIDER_READ_TOKEN}@github.com/".insteadOf "https://github.com/"
+          fi
       - name: Install pinned optional instrument and run adapter tests
         run: |
           python -m pip install -e ".[dev,plsr]"
