@@ -250,7 +250,8 @@ def validate(value) -> dict:
 PROVIDER_SCHEMA = "ciw.provider-descriptor.v1"
 PROVIDER_FIELDS = frozenset({"schema", "provider_id", "role", "summary", "invocation", "pin", "boundary", "operations",
                              "surface", "authority", "implementation", "guide"})
-PROVIDER_INVOCATIONS = frozenset({"persistent_worker"})
+PROVIDER_INVOCATIONS = frozenset({"persistent_worker", "pinned_subprocess", "installed_package", "pinned_artifact"})
+PROVIDER_SURFACES = frozenset({"terminal", "workbench"})
 
 
 def _provider_dir() -> Path:
@@ -267,8 +268,11 @@ def load_providers() -> dict:
             raise ValueError(f"{path.name}: unsupported provider descriptor schema or invocation")
         for key in ("provider_id", "summary", "guide"):
             _text(value[key], key)
-        if not _ROLE.fullmatch(value["role"]) or value["surface"] != "terminal" or value["authority"] != "read_only":
-            raise ValueError(f"{path.name}: a provider descriptor declares a role, the terminal surface and read-only authority")
+        if (not _ROLE.fullmatch(value["role"]) or value["surface"] not in PROVIDER_SURFACES or
+                value["authority"] != "read_only"):
+            raise ValueError(f"{path.name}: a provider descriptor declares a role, a provider surface and read-only authority")
+        if not isinstance(value["pin"], dict) or not value["pin"]:
+            raise ValueError(f"{path.name}: a provider descriptor declares its pin")
         for item in value["boundary"]:
             _keys(item, {"role", "purpose", "pin"}, name="provider boundary")
             if not re.fullmatch(r"[0-9a-f]{40}", item["pin"].get("revision", "")):
@@ -290,14 +294,18 @@ def provider_descriptor(name: str) -> dict:
 def check_providers(providers: dict | None = None) -> dict:
     """Bind provider descriptors to what their implementation executes.
 
-    The implementation module's ``provider_binding()`` reports the live pin
-    fields it would run (for example digests of packaged files) and the
-    operations it serves; both must equal the descriptor.
+    The implementation module's ``provider_binding()`` maps each provider it
+    runs to the live pin fields it would execute (for example digests of
+    packaged files) and the operations it serves; both must equal the
+    descriptor.
     """
     providers = load_providers() if providers is None else providers
     root = Path(__file__).resolve().parents[3]
     for name, value in providers.items():
-        binding = import_module(value["implementation"]["module"]).provider_binding()
+        bindings = import_module(value["implementation"]["module"]).provider_binding()
+        if name not in bindings:
+            raise ValueError(f"{name}: {value['implementation']['module']} does not bind this provider")
+        binding = bindings[name]
         for key, live in binding["pin"].items():
             if value["pin"].get(key) != live:
                 raise ValueError(f"{name}: pinned {key} differs from what {value['implementation']['module']} executes")

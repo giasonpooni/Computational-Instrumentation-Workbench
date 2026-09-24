@@ -15,6 +15,11 @@ from .adapters.protocol import AdapterRefusal
 from .adapters.subprocess import _bounded_process, _json
 
 OPERATIONS = {"esm.inspect-candidate.v1": "inspect", "esm.capture-candidate.v1": "capture"}
+
+
+def provider_binding():
+    """The ESM candidate operations this module runs, for ``pipelines.check_providers``."""
+    return {"esm": {"pin": {}, "operations": {"default": list(OPERATIONS)}}}
 MAX_RESPONSE = 4 * 1024 * 1024
 
 
@@ -121,7 +126,8 @@ class CandidateAdapter:
             raise ValueError("Candidate capture requires both a store and separate derived-source registration")
         self.node = _path(configuration["node"])
         self.artifact = _path(configuration["artifact"])
-        self.pin = _json(Path(__file__).with_name("esm-runtime.json").read_bytes())
+        from .pipelines import provider_descriptor
+        self.pin = provider_descriptor("esm")["pin"]
         runtime = configuration["runtime"]
         _keys(runtime, {"python", "pythonSha256", "helperPath", "repositories"})
         _path(runtime["python"])

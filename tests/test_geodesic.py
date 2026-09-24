@@ -81,7 +81,7 @@ def test_exact_raw_request_covariance_and_identity_are_retained(investigation):
     assert result["data"]["diagnostics"]["radial_residual_before_m"][0] != 0
     assert not any(name == "geodesic_telemetry" or name.startswith("geodesic_telemetry.")
                    for name in investigation["new_modules"])
-    pin = json.loads((ROOT / "src/ciw/adapter-runtimes.json").read_text())["gte"]
+    pin = {role: __import__("ciw.pipelines", fromlist=["provider_descriptor"]).provider_descriptor(role)["pin"] for role in ("rci", "fsrt", "jspt", "gte")}["gte"]
     assert result["runtime"]["revision"] == pin["revision"]
     assert result["runtime"]["module"] == pin["module"]
 

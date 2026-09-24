@@ -45,7 +45,7 @@ release activation and source-truth claims. Unknown cross-covariance stays expli
 
 ## Operator setup
 
-Check out the ESM revision in `src/ciw/esm-runtime.json`, then run
+Check out the ESM revision in `src/ciw/pipelines/providers/esm.json`, then run
 `npm ci --ignore-scripts && npm run instrument:workbench:build` in ESM. CIW checks
 artifact/helper SHA256 before and after each action. The Node executable hash is
 operator-declared; NODE_OPTIONS/NODE_PATH are removed. Hashes detect drift; they

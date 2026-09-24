@@ -97,7 +97,7 @@ def test_provider_descriptor_binds_the_julia_worker():
     value = pipelines.provider_descriptor("julia-model-worker")
     from ciw.model import worker
     assert worker.pinned_runtime() == value["pin"]
-    binding = worker.provider_binding()
+    binding = worker.provider_binding()["julia-model-worker"]
     assert all(value["pin"][key] == digest for key, digest in binding["pin"].items())
     broken = {"julia-model-worker": deepcopy(value)}
     broken["julia-model-worker"]["pin"]["manifest_sha256"] = "0" * 64
@@ -110,11 +110,11 @@ def test_provider_descriptor_binds_the_julia_worker():
     assert json.loads((ROOT / "ci" / "gates.json").read_text())["gates"]  # registry stays readable JSON
 
 
-def test_manifest_pins_include_historical_checkouts():
+def test_provider_pins_include_historical_checkouts():
     registry = ci_matrix.load()
     gate, = (entry for entry in registry["gates"] if entry["gate"] == "adapters")
     pins = {(pin["role"], pin["revision"]) for pin in ci_matrix.gate_pins(gate, registry)}
-    manifest = json.loads((ROOT / "src/ciw/adapter-runtimes.json").read_text())
+    manifest = {role: __import__("ciw.pipelines", fromlist=["provider_descriptor"]).provider_descriptor(role)["pin"] for role in ("rci", "fsrt", "jspt", "gte")}
     for role, pin in manifest.items():
         for historical in pin.get("historical", []):
             assert (role, historical["revision"]) in pins

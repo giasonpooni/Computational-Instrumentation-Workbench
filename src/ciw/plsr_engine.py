@@ -66,8 +66,9 @@ def _canonical(value: Any) -> str:
 
 
 def _manifest() -> dict[str, Any]:
-    return json.loads(resources.files("ciw").joinpath("plsr-runtime.json")
-                      .read_text(encoding="utf-8"))
+    """The pinned PLSR package, defined by its provider descriptor."""
+    from .pipelines import provider_descriptor
+    return provider_descriptor("plsr")["pin"]
 
 
 def _source_files(root: Any, prefix: str = "") -> dict[str, str]:

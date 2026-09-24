@@ -38,7 +38,8 @@ def main():
     if bool(args.esm_root) != bool(args.fixture_root):
         parser.error("Existing fixture and ESM roots must be supplied together")
     root = Path(__file__).resolve().parents[1]
-    pin = json.loads((root / "src/ciw/esm-runtime.json").read_text())
+    # The ESM lane's pin is defined by its provider descriptor.
+    pin = json.loads((root / "src/ciw/pipelines/providers/esm.json").read_text())["pin"]
     with tempfile.TemporaryDirectory(prefix="ciw-candidate-gate-") as directory:
         temporary = Path(directory)
         if args.esm_root:

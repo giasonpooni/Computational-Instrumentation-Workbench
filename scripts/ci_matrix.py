@@ -1,12 +1,11 @@
 """The CI shape: kernel surfaces, descriptor validation and a provider-gate matrix keyed by pin.
 
-``ci/gates.json`` names each gate, the pipelines (source kinds) it exercises
-with real providers and the pins it adds beyond their descriptors. A gate's
-pins are therefore derived, never restated: the descriptors define pipeline
-provider pins, package runtime manifests define terminal instrument pins, and
-provider descriptors define providers no pipeline step names (the Julia
-model worker), and ``extra_pins`` define the rest (checkers, producers,
-vendored sources). The
+``ci/gates.json`` names each gate, the pipelines (source kinds) and providers
+it exercises with real code, and the pins it adds beyond their descriptors. A
+gate's pins are therefore derived, never restated: pipeline descriptors define
+pipeline provider pins, provider descriptors define the providers no pipeline
+step names (terminal instruments, the ESM lane, the Julia model worker), and
+``extra_pins`` define the rest (checkers, producers, vendored sources). The
 ``pin_key`` of a gate is the digest of that pin set, so a pin change is a new
 matrix row and a new cache key.
 
@@ -15,7 +14,7 @@ matrix row and a new cache key.
     python scripts/ci_matrix.py pins GATE        # the exact pins a gate binds
     python scripts/ci_matrix.py run GATE [--phase preflight|provision|run]
 
-Gate scripts read pins from the descriptors, runtime manifests and
+Gate scripts read pins from the pipeline and provider descriptors and
 ``ci/gates.json`` and never from a moving branch; ``check`` refuses any
 revision literal in a gate script or workflow, so each pin has one definition.
 """
@@ -36,7 +35,7 @@ DESCRIPTORS = ROOT / "src" / "ciw" / "pipelines" / "descriptors"
 PROVIDERS = ROOT / "src" / "ciw" / "pipelines" / "providers"
 PACKAGE = ROOT / "src" / "ciw"
 WORKFLOWS = ROOT / ".github" / "workflows"
-GATE_FIELDS = {"gate", "summary", "kinds", "providers", "manifests", "extra_pins", "os", "python", "timeout", "run", "provision",
+GATE_FIELDS = {"gate", "summary", "kinds", "providers", "extra_pins", "os", "python", "timeout", "run", "provision",
                "preflight", "artifacts", "artifacts_always", "artifact_name", "rust", "node", "apt", "apt_recommends", "env",
                "cache", "linux_only_reason"}
 SURFACE_FIELDS = {"gate", "summary", "os", "python", "timeout", "run", "artifacts", "artifact_name"}
@@ -59,32 +58,22 @@ def providers() -> dict:
 
 
 def provider_pins(name: str) -> list[dict]:
-    """A provider descriptor's own pin (as one content digest) and its boundary pins."""
+    """A provider descriptor's exact pins: its revision (with historical revisions a gate checks out)
+    or, for a runtime without a revision, one content digest of its pin; plus its boundary pins."""
     value = providers()[name]
-    own = sha256(json.dumps(value["pin"], sort_keys=True, separators=(",", ":")).encode()).hexdigest()
-    return ([{"role": value["role"], "revision": "sha256:" + own, "source": f"provider:{name}"}] +
+    pin, role = value["pin"], value["role"]
+    revision = pin.get("revision", pin.get("commit"))
+    if revision:
+        own = [revision, *(item["revision"] for item in pin.get("historical", []))]
+    else:
+        own = ["sha256:" + sha256(json.dumps(pin, sort_keys=True, separators=(",", ":")).encode()).hexdigest()]
+    return ([{"role": role, "revision": item, "source": f"provider:{name}"} for item in own] +
             [{"role": item["role"], "revision": item["pin"]["revision"], "source": f"provider:{name}"}
              for item in value["boundary"]])
 
 
-def manifest_pins(name: str) -> list[dict]:
-    """Terminal instrument pins from a package runtime manifest, including historical revisions a gate checks out."""
-    value = json.loads((PACKAGE / name).read_text(encoding="utf-8"))
-    if "commit" in value:  # plsr-runtime.json names one instrument
-        entries = {"plsr": value | {"revision": value["commit"]}}
-    elif "revision" in value:  # esm-runtime.json names one repository
-        entries = {"esm": value}
-    else:
-        entries = value
-    pins = []
-    for role, pin in sorted(entries.items()):
-        for revision in [pin["revision"], *(item["revision"] for item in pin.get("historical", []))]:
-            pins.append({"role": role, "repository": pin["repository"], "revision": revision})
-    return pins
-
-
 def gate_pins(gate: dict, registry: dict, pipelines: dict | None = None) -> list[dict]:
-    """Every exact pin a gate binds: descriptor steps of its kinds, manifests and extra pins."""
+    """Every exact pin a gate binds: descriptor steps of its kinds, provider descriptors and extra pins."""
     pipelines = descriptors() if pipelines is None else pipelines
     pins = {}
     for kind in gate.get("kinds", []):
@@ -95,9 +84,6 @@ def gate_pins(gate: dict, registry: dict, pipelines: dict | None = None) -> list
     for name in gate.get("providers", []):
         for pin in provider_pins(name):
             pins[(pin["role"], pin["revision"])] = pin
-    for name in gate.get("manifests", []):
-        for pin in manifest_pins(name):
-            pins[(pin["role"], pin["revision"])] = {"role": pin["role"], "revision": pin["revision"], "source": f"manifest:{name}"}
     for name in gate.get("extra_pins", []):
         pin = registry["extra_pins"][name]
         pins[(name, pin["revision"])] = {"role": name, "revision": pin["revision"], "source": "ci/gates.json"}
@@ -144,9 +130,8 @@ def check(registry: dict | None = None, pipelines: dict | None = None) -> dict:
         unknown = set(gate["kinds"]) - set(pipelines)
         if unknown:
             raise ValueError(f"Gate {gate['gate']} names undeclared pipelines {sorted(unknown)}")
-        if (set(gate.get("manifests", [])) - set(registry["manifests"]) or
-                set(gate.get("extra_pins", [])) - set(registry["extra_pins"]) or set(gate.get("providers", [])) - set(providers())):
-            raise ValueError(f"Gate {gate['gate']} names an undeclared provider, manifest or extra pin")
+        if set(gate.get("extra_pins", [])) - set(registry["extra_pins"]) or set(gate.get("providers", [])) - set(providers()):
+            raise ValueError(f"Gate {gate['gate']} names an undeclared provider or extra pin")
         if not gate_pins(gate, registry, pipelines) and not gate["kinds"]:
             raise ValueError(f"Gate {gate['gate']} binds no pipeline and no pin")
         covered |= set(gate["kinds"])
@@ -160,15 +145,14 @@ def check(registry: dict | None = None, pipelines: dict | None = None) -> dict:
     if ungated:
         raise ValueError(f"Provider descriptors without a provider gate: {sorted(ungated)}")
     used_extra = {name for gate in registry["gates"] for name in gate.get("extra_pins", [])}
-    used_manifests = {name for gate in registry["gates"] for name in gate.get("manifests", [])}
-    if set(registry["extra_pins"]) - used_extra or set(registry["manifests"]) - used_manifests:
-        raise ValueError("Every declared extra pin and manifest is bound by a gate")
+    if set(registry["extra_pins"]) - used_extra:
+        raise ValueError("Every declared extra pin is bound by a gate")
     for name, pin in registry["extra_pins"].items():
         if "defined_by" in pin:
             path, _, constant = pin["defined_by"].partition(":")
             if _literal(ROOT / path, constant) != pin["revision"]:
                 raise ValueError(f"Extra pin {name} differs from its definition {pin['defined_by']}")
-    # Pins live only in the JSON registries (descriptors, manifests, ci/gates.json):
+    # Pins live only in the JSON registries (pipeline and provider descriptors, ci/gates.json):
     # a revision literal in a gate script or workflow is a second definition.
     scanned = {*WORKFLOWS.glob("*.yml"), *(path for entry in registry["surfaces"] + registry["gates"] for path in _script_paths(entry))}
     scanned |= {ROOT / "scripts" / "provider_checkouts.py"}
@@ -177,7 +161,7 @@ def check(registry: dict | None = None, pipelines: dict | None = None) -> dict:
         if found:
             shown = path.relative_to(ROOT) if path.is_relative_to(ROOT) else path
             raise ValueError(f"{shown} restates revision(s) {sorted(found)}; read them from the "
-                             "descriptors, runtime manifests or ci/gates.json")
+                             "pipeline or provider descriptors or ci/gates.json")
     return registry
 
 
@@ -227,7 +211,6 @@ def render_gates(registry: dict | None = None) -> str:
         pins = gate_pins(gate, registry, pipelines)
         bound = [f"`{pipelines[kind]['pipeline_id']}`" for kind in gate["kinds"]]
         bound += [f"`{providers()[name]['provider_id']}`" for name in gate.get("providers", [])]
-        bound += [f"{name} (terminal)" for name in gate.get("manifests", [])]
         platforms = ", ".join(os_name.removesuffix("-latest") for os_name in gate["os"]) + " · py" + "/".join(gate["python"])
         roles = ", ".join(sorted({pin["role"] for pin in pins})) or "none"
         lines.append(f"| `{gate['gate']}` | `{pin_key(pins) if pins else 'none'}` | {', '.join(bound) or 'none'} | "

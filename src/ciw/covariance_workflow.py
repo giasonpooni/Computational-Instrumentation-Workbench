@@ -22,6 +22,11 @@ MAP_FIELDS = {"jacobian", "output_quantity_ids", "output_units", "output_frame",
 PARAMETER_FIELDS = MAP_FIELDS | {"source_result_id", "source_artifact", "source_covariance"}
 
 
+
+def provider_binding():
+    """The terminal JSPT operation this module runs, for ``pipelines.check_providers``."""
+    return {"jspt": {"pin": {}, "operations": {"default": [JSPT_OPERATION]}}}
+
 def result_covariance(result, name):
     if not isinstance(name, str):
         raise ValueError("A covariance source needs an artifact name")

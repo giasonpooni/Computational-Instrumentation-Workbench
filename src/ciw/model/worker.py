@@ -97,10 +97,11 @@ def pinned_runtime() -> dict:
 def provider_binding() -> dict:
     """What this worker executes, for ``pipelines.check_providers``."""
     root = worker_root()
-    return {"pin": {"project_sha256": file_sha256(root / "Project.toml"),
-                    "manifest_sha256": file_sha256(root / "Manifest.toml"),
-                    "worker_source_sha256": source_sha256(root)},
-            "operations": {profile: list(operations) for profile, operations in PROFILES.items()}}
+    return {"julia-model-worker": {
+        "pin": {"project_sha256": file_sha256(root / "Project.toml"),
+                "manifest_sha256": file_sha256(root / "Manifest.toml"),
+                "worker_source_sha256": source_sha256(root)},
+        "operations": {profile: list(operations) for profile, operations in PROFILES.items()}}}
 
 
 def file_sha256(path: Path) -> str | None:

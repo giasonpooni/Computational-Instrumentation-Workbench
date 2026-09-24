@@ -135,7 +135,7 @@ an explicit positive version suffix (`.v1`, `.v2`, ...); a syntactically valid
 identity never binds code. Unregistered operations produce retained refusals.
 The new trusted payload schemas are `fsrt.tank-reconstruct.v2` and
 `jspt.covariance-propagate.v1`. Calibration acquisition uses `rci.calibrate.v2`.
-Their exact domain versions are pinned in `adapter-runtimes.json`.
+Their exact domain versions are pinned in the terminal provider descriptors in `src/ciw/pipelines/providers`.
 
 `covariance-artifact.v1` carries `covariance_id`, ordered `quantity_ids` and
 `units`, `frame`, `reference_values`, full `matrix`, `method`, `basis`,

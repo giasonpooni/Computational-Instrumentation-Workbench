@@ -21,6 +21,11 @@ from . import plsr_engine as engine
 
 BUNDLE_SCHEMA = "ciw-plsr-run-v1"
 OPERATION_ID = "plsr.verdict.v1"
+
+
+def provider_binding():
+    """The terminal PLSR operation this module runs, for ``pipelines.check_providers``."""
+    return {"plsr": {"pin": {}, "operations": {"default": [OPERATION_ID]}}}
 _FIELDS = {
     "bundle_schema", "instrument", "evidence_id", "operation_id",
     "execution_id", "result_id", "created_at", "verification_id",

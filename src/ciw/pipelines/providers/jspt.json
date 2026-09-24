@@ -1,0 +1,24 @@
+{
+  "schema": "ciw.provider-descriptor.v1",
+  "provider_id": "ciw.terminal-jspt.v1",
+  "role": "jspt",
+  "summary": "Jacobian sensitivity propagation for the terminal covariance workflow",
+  "invocation": "pinned_subprocess",
+  "pin": {
+    "repository": "https://github.com/giasonpooni/Jacobian-Sensitivity-Propagation-Testbed",
+    "revision": "d910f5a1d7f6dd5f2dd87dfca66990f714f97b18",
+    "module": "sensitivity.ciw_adapter"
+  },
+  "boundary": [],
+  "operations": {
+    "default": [
+      "jspt.covariance-propagate.v1"
+    ]
+  },
+  "surface": "terminal",
+  "authority": "read_only",
+  "implementation": {
+    "module": "ciw.covariance_workflow"
+  },
+  "guide": "docs/COVARIANCE.md"
+}

@@ -210,7 +210,7 @@ python -m ciw investigation replay results/two-reservoir/workspace.json --rci-re
 
 | Contract | Delivered specification |
 | --- | --- |
-| Source/adapter pins | Full upstream revisions in [`adapter-runtimes.json`](../src/ciw/adapter-runtimes.json); CIW adapter version retained with the execution |
+| Source/adapter pins | Full upstream revisions in the terminal provider descriptors ([`rci`](../src/ciw/pipelines/providers/rci.json), [`fsrt`](../src/ciw/pipelines/providers/fsrt.json), [`jspt`](../src/ciw/pipelines/providers/jspt.json), [`gte`](../src/ciw/pipelines/providers/gte.json)); CIW adapter version retained with the execution |
 | Input | Two distinct synthetic mass measurement chains at the same acquisition instant, explicit calibration profiles and covariance, declared two-reservoir model |
 | Calibration | Exact raw bytes retained; corrected observations get distinct evidence identities; missing, expired or mismatched calibration refuses a derived result |
 | Uncertainty | Parameter covariance and ordering retained; propagated observation covariance passed to FSRT |
@@ -229,7 +229,7 @@ before extending the snapshot fixture to a new measurement arrangement.
 
 The [covariance guide](COVARIANCE.md) gives exact setup, schema, commands and
 limits for the RCI v2 → FSRT v2 → JSPT path. Exact source revisions are retained
-in [`adapter-runtimes.json`](../src/ciw/adapter-runtimes.json), including historical
+in the terminal provider descriptors ([`rci`](../src/ciw/pipelines/providers/rci.json), [`fsrt`](../src/ciw/pipelines/providers/fsrt.json), [`jspt`](../src/ciw/pipelines/providers/jspt.json), [`gte`](../src/ciw/pipelines/providers/gte.json)), including historical
 pins needed by older saved investigations. Numerical calculations stay in the
 domain repositories; the workbench validates and retains their artifacts.
 
@@ -309,7 +309,7 @@ python -m ciw geodesic replay results/circle/workspace.json --gte-repo ../gte --
 
 | Contract | Delivered specification |
 | --- | --- |
-| Tool and adapter pins | Full GTE revision in [`adapter-runtimes.json`](../src/ciw/adapter-runtimes.json); `ciw-pinned-subprocess-v1` |
+| Tool and adapter pins | Full GTE revision in the terminal provider descriptors ([`rci`](../src/ciw/pipelines/providers/rci.json), [`fsrt`](../src/ciw/pipelines/providers/fsrt.json), [`jspt`](../src/ciw/pipelines/providers/jspt.json), [`gte`](../src/ciw/pipelines/providers/gte.json)); `ciw-pinned-subprocess-v1` |
 | Input | `gte.circle-request.v1`; metre `[x,y]` observations, explicit frame/time origin, full sample-major joint covariance, versioned exact circle and policy |
 | Operation | `gte.project-circle.v1`; candidate projection and first-order tangent/ambient covariance, retained original residuals and signed shortest-arc diagnostics |
 | Outcome | Eligible or held candidate distinct from a refused execution; no physical verification or state-commit authority |

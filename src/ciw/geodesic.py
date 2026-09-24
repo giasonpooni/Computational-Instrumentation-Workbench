@@ -23,6 +23,11 @@ GTE_INSTRUMENT = "org.notationsystems.gte"
 MAX_REQUEST_BYTES = 4 * 1024 * 1024
 
 
+
+def provider_binding():
+    """The terminal GTE operation this module runs, for ``pipelines.check_providers``."""
+    return {"gte": {"pin": {}, "operations": {"default": [GTE_OPERATION]}}}
+
 def _parse(raw: bytes) -> dict:
     if len(raw) > MAX_REQUEST_BYTES:
         raise ValueError("GTE request exceeds the 4 MiB evidence limit")

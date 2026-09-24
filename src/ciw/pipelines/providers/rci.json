@@ -1,0 +1,31 @@
+{
+  "schema": "ciw.provider-descriptor.v1",
+  "provider_id": "ciw.terminal-rci.v1",
+  "role": "rci",
+  "summary": "Retrofitted computational instrumentation: calibration of the terminal tank investigation",
+  "invocation": "pinned_subprocess",
+  "pin": {
+    "repository": "https://github.com/giasonpooni/Retrofitted-Computational-Instrumentation",
+    "revision": "f863bdd69d49224e0cdc871943bbb052e5b0a975",
+    "module": "instrument_chain.ciw_adapter",
+    "historical": [
+      {
+        "revision": "97fcc01a45985defd6a76532b1fefe90d66dd159",
+        "module": "instrument_chain.ciw_adapter"
+      }
+    ]
+  },
+  "boundary": [],
+  "operations": {
+    "default": [
+      "rci.calibrate.v1",
+      "rci.calibrate.v2"
+    ]
+  },
+  "surface": "terminal",
+  "authority": "read_only",
+  "implementation": {
+    "module": "ciw.investigation"
+  },
+  "guide": "docs/INSTRUMENTS.md"
+}

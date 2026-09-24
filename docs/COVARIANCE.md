@@ -13,7 +13,7 @@ certificate or a qualified measurement system.
 
 Use Python 3.12+ with CIW's development dependencies installed. Prepare clean
 RCI, FSRT and JSPT checkouts at the current full revisions recorded in
-[`adapter-runtimes.json`](../src/ciw/adapter-runtimes.json). For fresh sibling
+the terminal provider descriptors ([`rci`](../src/ciw/pipelines/providers/rci.json), [`fsrt`](../src/ciw/pipelines/providers/fsrt.json), [`jspt`](../src/ciw/pipelines/providers/jspt.json), [`gte`](../src/ciw/pipelines/providers/gte.json)). For fresh sibling
 checkouts, this script uses those exact pins:
 
 ```sh
@@ -23,7 +23,7 @@ import json
 from pathlib import Path
 import subprocess
 
-pins = json.loads(Path('src/ciw/adapter-runtimes.json').read_text())
+pins = {r: json.loads(Path(f'src/ciw/pipelines/providers/{r}.json').read_text())['pin'] for r in ('rci', 'fsrt', 'jspt', 'gte')}
 for name in ('rci', 'fsrt', 'jspt'):
     destination = Path('..') / name
     spec = pins[name]

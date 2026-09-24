@@ -19,11 +19,6 @@
                      "revision": "5f0409743e0098a0691a88302a9b3dcdcbcf25fd",
                      "purpose": "exchange artifact producer (test input, not a pipeline provider)"}
   },
-  "manifests": {
-    "adapter-runtimes.json": "terminal RCI, FSRT and GTE adapters",
-    "plsr-runtime.json": "terminal PLSR instrument",
-    "esm-runtime.json": "ESM replay lane of the candidate workbench"
-  },
   "surfaces": [
     {"gate": "tests", "summary": "kernel, descriptor and offline pipeline tests",
      "os": ["ubuntu-latest", "windows-latest"], "python": ["3.11", "3.12"], "timeout": 30,
@@ -55,12 +50,12 @@
   ],
   "gates": [
     {"gate": "adapters", "summary": "terminal RCI, FSRT and GTE adapters with offline replay and refusal",
-     "kinds": [], "manifests": ["adapter-runtimes.json"],
+     "kinds": [], "providers": ["rci", "fsrt", "jspt", "gte"],
      "os": ["ubuntu-latest", "windows-latest"], "python": ["3.12"], "timeout": 15,
      "run": [["{python}", "-m", "pip", "install", "-e", ".[dev]"],
              ["{python}", "scripts/check_adapters.py"]]},
     {"gate": "plsr-terminal", "summary": "pinned PLSR package, adapter tests and installed replay",
-     "kinds": [], "manifests": ["plsr-runtime.json"],
+     "kinds": [], "providers": ["plsr"],
      "os": ["ubuntu-latest", "windows-latest"], "python": ["3.12"], "timeout": 20,
      "run": [["{python}", "-m", "pip", "install", "-e", ".[dev,plsr]"],
              ["{python}", "-m", "pytest", "-q", "tests/test_plsr.py", "tests/test_plsr_engine.py"],
@@ -161,7 +156,7 @@
      "run": [["{python}", "-m", "pip", "install", "-e", ".[dev]"],
              ["{python}", "scripts/check_telemetry.py"]]},
     {"gate": "workbench-candidates", "summary": "installed candidate workbench and both ESM replay lanes",
-     "kinds": ["telemetry", "calibrated-observable"], "manifests": ["esm-runtime.json"], "node": "22.13",
+     "kinds": ["telemetry", "calibrated-observable"], "providers": ["esm"], "node": "22.13",
      "os": ["ubuntu-latest"], "python": ["3.12"], "timeout": 30,
      "run": [["{python}", "-m", "pip", "install", "setuptools>=77", "wheel", "numpy==2.4.3", "websockets==16.0"],
              ["{python}", "scripts/check_workbench_candidates.py"]]}

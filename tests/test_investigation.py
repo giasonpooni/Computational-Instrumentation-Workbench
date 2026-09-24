@@ -120,7 +120,7 @@ def test_domain_engines_execute_in_separate_pinned_processes(investigation):
     workspace = investigation["workspace"]
     rci = workspace["run"]["metadata"]["rci_source"]["runtime"]
     fsrt = workspace["executions"][0]["runtime"]
-    pins = json.loads((Path(__file__).parents[1] / "src" / "ciw" / "adapter-runtimes.json").read_text())
+    pins = {role: __import__("ciw.pipelines", fromlist=["provider_descriptor"]).provider_descriptor(role)["pin"] for role in ("rci", "fsrt", "jspt", "gte")}
     assert rci["revision"] == pins["rci"]["revision"]
     assert fsrt["revision"] == pins["fsrt"]["revision"]
     assert rci["module"] == "instrument_chain.ciw_adapter"

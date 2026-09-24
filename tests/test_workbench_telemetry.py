@@ -218,7 +218,7 @@ def esm_configuration(retained, repositories):
     import sys
     node = str(Path(shutil.which("node")).resolve())
     pins = read_json(Path(telemetry.__file__).with_name("telemetry-runtimes.json"))
-    pin = read_json(Path(telemetry.__file__).with_name("esm-runtime.json"))
+    pin = __import__("ciw.pipelines", fromlist=["provider_descriptor"]).provider_descriptor("esm")["pin"]
     registration = {"registrationId": "synthetic-telemetry-raw-policy", "sourceId": "synthetic-telemetry-raw",
         "displayName": "Synthetic telemetry fixture only", "sourceClass": "OPERATOR_DECLARATION", "licenseId": "synthetic-test-only",
         "policyVersion": "1", "effectiveFrom": "2026-09-01T00:00:00Z", "allowedOperations": ["RETRIEVE", "DERIVE", "INGEST"],

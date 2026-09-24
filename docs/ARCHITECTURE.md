@@ -20,7 +20,7 @@ and their qualifications are listed in [INSTRUMENTS.md](INSTRUMENTS.md).
 | `src/ciw/server.py` | Local WebSocket transport for the authoritative session |
 | `src/ciw/cli.py` | Terminal commands for analysis, service access and supported investigations |
 | `godot/` | Optional oscillator 2D/3D rendering and interaction client |
-| `src/ciw/adapter-runtimes.json` | Explicit current and historical source pins for external numerical providers |
+| `src/ciw/pipelines/providers/{rci,fsrt,jspt,gte}.json` | Explicit current and historical source pins for external numerical providers |
 
 Scientific engines remain in their authoritative repositories. The workbench
 maps inputs, checks declared record structure and source relationships, retains

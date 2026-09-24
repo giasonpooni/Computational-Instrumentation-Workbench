@@ -55,7 +55,7 @@ and transport semantics.
 
 `recordings/`, `results/` and `.ciw/` hold local runtime output and are ignored by
 Git. Scientific source pins live in the `src/ciw/*-runtimes.json` manifests,
-`src/ciw/plsr-runtime.json`, and the explicit `PIN`/`PINS` declarations in native
+`src/ciw/pipelines/providers/plsr.json`, and the explicit `PIN`/`PINS` declarations in native
 workflow modules linked by their operating guides. Update pins only with the
 relevant compatibility and replay checks. The covariance examples in `examples/adapters/` include
 `two-reservoir-covariance.json` and `tank-covariance-map.json`; the original

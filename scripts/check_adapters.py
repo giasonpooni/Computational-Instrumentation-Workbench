@@ -26,7 +26,12 @@ def main(argv=None):
     args = parser.parse_args(argv)
     if args.historical_stack_root and not args.stack_root:
         parser.error("--historical-stack-root requires --stack-root")
-    pins = json.loads((ROOT / "src/ciw/adapter-runtimes.json").read_text())
+    # Terminal adapter pins are defined by their provider descriptors.
+    pins = {}
+    for path in sorted((ROOT / "src/ciw/pipelines/providers").glob("*.json")):
+        descriptor = json.loads(path.read_text(encoding="utf-8"))
+        if descriptor["invocation"] == "pinned_subprocess" and descriptor["surface"] == "terminal":
+            pins[descriptor["role"]] = descriptor["pin"]
     with tempfile.TemporaryDirectory(prefix="ciw-domain-pins-") as directory:
         environment = dict(os.environ)
         for name, spec in pins.items():

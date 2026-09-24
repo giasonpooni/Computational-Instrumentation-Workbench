@@ -45,7 +45,7 @@ on the adapter's capabilities.
 
 Use Python 3.12 or newer for this external-tool example. CIW itself supports
 Python 3.11 and newer. The executable revision pins are retained in
-[`adapter-runtimes.json`](../src/ciw/adapter-runtimes.json). Keep both domain
+the terminal provider descriptors ([`rci`](../src/ciw/pipelines/providers/rci.json), [`fsrt`](../src/ciw/pipelines/providers/fsrt.json), [`jspt`](../src/ciw/pipelines/providers/jspt.json), [`gte`](../src/ciw/pipelines/providers/gte.json)). Keep both domain
 repositories as separate clean checkouts at those commits. Preserve their exact
 tracked bytes by disabling Git line-ending conversion for these checkouts.
 

@@ -52,13 +52,18 @@ def configured_gate(name, tmp_path, monkeypatch):
         git(path, "commit", "-qm", "current fixture")
         pin["revision"] = git(path, "rev-parse", "HEAD")
         pin["historical"] = [{"revision": previous, "module": "provider"}]
-        manifest = "adapter-runtimes.json"
+        manifest = None
+        providers = manifests / "pipelines" / "providers"
+        providers.mkdir(parents=True)
+        (providers / "engine.json").write_text(json.dumps({"role": "engine", "invocation": "pinned_subprocess",
+                                                            "surface": "terminal", "pin": pin}), encoding="utf-8")
         monkeypatch.setattr(gate, "ROOT", root)
     else:
         monkeypatch.setattr(gate, "__file__", str(root / "scripts" / ("check_" + name + ".py")))
         monkeypatch.setattr(gate, "REPOSITORIES", {"engine": "Example-Provider"})
         manifest = "telemetry-runtimes.json" if name == "telemetry" else "calibrated-observable-runtimes.json"
-    (manifests / manifest).write_text(json.dumps({"engine": pin}), encoding="utf-8")
+    if manifest:
+        (manifests / manifest).write_text(json.dumps({"engine": pin}), encoding="utf-8")
     return gate, stack, path, historical, previous
 
 

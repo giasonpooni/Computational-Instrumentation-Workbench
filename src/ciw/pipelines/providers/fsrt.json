@@ -1,0 +1,31 @@
+{
+  "schema": "ciw.provider-descriptor.v1",
+  "provider_id": "ciw.terminal-fsrt.v1",
+  "role": "fsrt",
+  "summary": "Fluid-state reconstruction for the terminal tank investigation",
+  "invocation": "pinned_subprocess",
+  "pin": {
+    "repository": "https://github.com/giasonpooni/Fluid-State-Reconstruction-Testbed",
+    "revision": "09a756dd9cdd3a9bb6cb14b5cd498f6259937ac2",
+    "module": "set_lcm.bridge.ciw",
+    "historical": [
+      {
+        "revision": "d34588819f657b6639c8e9a19450215844610007",
+        "module": "set_lcm.bridge.ciw"
+      }
+    ]
+  },
+  "boundary": [],
+  "operations": {
+    "default": [
+      "fsrt.tank-reconstruct.v1",
+      "fsrt.tank-reconstruct.v2"
+    ]
+  },
+  "surface": "terminal",
+  "authority": "read_only",
+  "implementation": {
+    "module": "ciw.investigation"
+  },
+  "guide": "docs/INSTRUMENTS.md"
+}

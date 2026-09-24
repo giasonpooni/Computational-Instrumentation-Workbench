@@ -99,3 +99,9 @@ def clone_at(repository: str, revision: str, destination: Path) -> Path:
     subprocess.run(["git", "-C", str(destination), "-c", "core.autocrlf=false", "checkout", "--quiet", "--detach", revision],
                    check=True, timeout=600)
     return validate_checkout(destination, revision)
+
+
+def provider_pin(name: str) -> dict:
+    """The pin a provider descriptor declares (terminal instruments, ESM, the Julia worker)."""
+    import json
+    return dict(json.loads((_ROOT / "src/ciw/pipelines/providers" / f"{name}.json").read_text(encoding="utf-8"))["pin"])

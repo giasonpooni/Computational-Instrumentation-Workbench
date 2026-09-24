@@ -160,7 +160,7 @@ def test_historical_pins_remain_replayable_after_runtime_upgrade(monkeypatch, so
         pytest.skip('Historical clean pins are provided by scripts/check_adapters.py')
     import ciw.investigation as module
     from ciw.adapters.subprocess import PinnedSubprocessAdapter
-    pins = json.loads((ROOT / 'src/ciw/adapter-runtimes.json').read_text())
+    pins = {role: __import__("ciw.pipelines", fromlist=["provider_descriptor"]).provider_descriptor(role)["pin"] for role in ("rci", "fsrt", "jspt", "gte")}
     original_runtime = module._runtime
 
     def historic(name, repo, python_executable=None, expected=None):

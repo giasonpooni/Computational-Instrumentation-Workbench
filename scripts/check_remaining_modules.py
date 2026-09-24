@@ -75,7 +75,7 @@ def main():
     measurement_pins = {role: pin["revision"] for role, pin in measurement.items()}
     # The pipeline descriptor is the GTE pin definition the module executes.
     geometry = json.loads((package / "pipelines/descriptors/geometric-circle.json").read_text())["steps"][0]["pin"]["revision"]
-    stability = json.loads((package / "plsr-runtime.json").read_text())["commit"]
+    stability = json.loads((package / "pipelines/providers/plsr.json").read_text())["pin"]["commit"]
     with tempfile.TemporaryDirectory(prefix="ciw-remaining-modules-gate-") as directory:
         temporary = Path(directory)
         checked = []

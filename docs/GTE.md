@@ -22,11 +22,11 @@ Use Python 3.11 or newer and install CIW's declared environment:
 ```sh
 python -m pip install -e '.[dev]'
 git clone https://github.com/giasonpooni/Geometric-Telemetry-Engine.git ../gte
-python -c "import json,subprocess; p=json.load(open('src/ciw/adapter-runtimes.json'))['gte']; subprocess.run(['git','-C','../gte','checkout','--detach',p['revision']],check=True)"
+python -c "import json,subprocess; p=json.load(open('src/ciw/pipelines/providers/gte.json'))['pin']; subprocess.run(['git','-C','../gte','checkout','--detach',p['revision']],check=True)"
 ```
 
 The full GTE commit is pinned in
-[`adapter-runtimes.json`](../src/ciw/adapter-runtimes.json). The entry point is
+the terminal provider descriptors ([`rci`](../src/ciw/pipelines/providers/rci.json), [`fsrt`](../src/ciw/pipelines/providers/fsrt.json), [`jspt`](../src/ciw/pipelines/providers/jspt.json), [`gte`](../src/ciw/pipelines/providers/gte.json)). The entry point is
 `geodesic_telemetry.ciw_adapter` under GTE's `src/` directory. The generic adapter
 version is `ciw-pinned-subprocess-v1`; every execution retains the Git commit and
 tree, Python executable digest/version, and NumPy/SciPy versions. Source and

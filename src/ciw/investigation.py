@@ -13,7 +13,6 @@ import sys
 import tempfile
 import uuid
 from datetime import datetime, timezone
-from importlib.resources import files
 from pathlib import Path
 
 from .adapters.protocol import AdapterRefusal, InstrumentManifest
@@ -29,9 +28,15 @@ RCI_OPERATION_V2 = "rci.calibrate.v2"
 FSRT_OPERATION_V2 = "fsrt.tank-reconstruct.v2"
 
 
+def provider_binding():
+    """The terminal RCI and FSRT operations this module runs, for ``pipelines.check_providers``."""
+    return {"rci": {"pin": {}, "operations": {"default": [RCI_OPERATION, RCI_OPERATION_V2]}},
+            "fsrt": {"pin": {}, "operations": {"default": [FSRT_OPERATION, FSRT_OPERATION_V2]}}}
+
+
 def _runtime(name, repo, python_executable=None, expected=None):
-    pins = json.loads(files("ciw").joinpath("adapter-runtimes.json").read_text())
-    spec = pins[name]
+    from .pipelines import provider_descriptor
+    spec = provider_descriptor(name)["pin"]
     kwargs = {}
     if expected:
         allowed = [spec, *spec.get("historical", [])]
