@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import base64
 import binascii
+import re
 from copy import deepcopy
 from hashlib import sha256
 from pathlib import Path
@@ -314,15 +315,9 @@ def _claims(record):
             verification(receipt["verification"])
 
     bundle(record["native"])
-    if record["kind"] == "measurement-chain":
-        from .measurement_chain import identity_claims
-        for step in _catalog_steps(record["native"]):
-            claim(step["operation_id"], "operation", step["operation_id"])
-        for identity, (role, body) in identity_claims(record["native"]).items():
-            claim(identity, role, body)
-    if record["kind"] == "variational-free-energy":
-        from .free_energy_workflow import identity_claims
-        for identity, (role, body) in identity_claims(record["native"]).items():
+    native_claims = getattr(_workflow(record["kind"]), "identity_claims", None)
+    if native_claims is not None:
+        for identity, (role, body) in native_claims(record["native"]).items():
             claim(identity, role, body)
     if record["kind"] == "energy-accuracy":
         native = record["native"]
@@ -338,13 +333,18 @@ def _claims(record):
 def _catalog_steps(native):
     """Expose retained native occurrences without manufacturing new results."""
     steps = list(native["steps"])
-    if native["schema"] == "ciw.measurement-chain-session.v1":
-        from .measurement_chain import catalog_steps
-        steps.extend(catalog_steps(native))
-    if native["schema"] == "ciw.variational-free-energy-session.v1":
-        from .free_energy_workflow import catalog_steps
-        steps.extend(catalog_steps(native))
+    catalog = _native_hook(native, "catalog_steps")
+    if catalog is not None:
+        steps.extend(catalog(native))
     return steps
+
+
+def _native_hook(native, name):
+    """A retained session's workflow hook, found from its ``ciw.<kind>-session.v1`` schema."""
+    match = re.fullmatch(r"ciw\.([a-z0-9-]+)-session\.v1", native.get("schema", ""))
+    if match is None or match.group(1) not in OPERATIONS:
+        return None
+    return getattr(_workflow(match.group(1)), name, None)
 
 
 def _source_claims(source):
@@ -413,26 +413,14 @@ def _validate_links(record, bundles):
                     raise ValueError("Acquired windows must retain fresh native execution and result occurrences")
     if record["kind"] == "residual-monitor":
         _workflow(record["kind"]).validate_upstreams(native, {key: value["native"] for key, value in bundles.items()})
-    if record["kind"] == "measurement-chain":
-        from .measurement_chain import native_occurrences
-        occurrences = native_occurrences(native)
+    workflow = _workflow(record["kind"])
+    occurrences_of = getattr(workflow, "native_occurrences", None)
+    occurrences = occurrences_of(native) if occurrences_of is not None else None
+    if occurrences is not None:
         for other in bundles.values():
-            if other["bundle_id"] != record["bundle_id"] and other["kind"] == record["kind"]:
-                if not occurrences.isdisjoint(native_occurrences(other["native"])):
-                    raise ValueError("Measurement chains must retain fresh native execution occurrences")
-    if record["kind"] == "schematic-companions":
-        from .schematic_companions import native_occurrences
-        occurrences = native_occurrences(native)
-        for other in bundles.values():
-            if (other["bundle_id"] != record["bundle_id"] and other["kind"] == "schematic-companions"
-                    and not occurrences.isdisjoint(native_occurrences(other["native"]))):
-                raise ValueError("Companion bundles must retain fresh native execution occurrences")
-    if record["kind"] == "variational-free-energy":
-        from .free_energy_workflow import native_occurrences
-        occurrences = native_occurrences(native)
-        for other in bundles.values():
-            if other["bundle_id"] != record["bundle_id"] and other["kind"] == "variational-free-energy" and not occurrences.isdisjoint(native_occurrences(other["native"])):
-                raise ValueError("Free-energy experiments require fresh native stage occurrences")
+            if (other["bundle_id"] != record["bundle_id"] and other["kind"] == record["kind"]
+                    and not occurrences.isdisjoint(occurrences_of(other["native"]))):
+                raise ValueError(workflow.FRESH_OCCURRENCE_MESSAGE)
     if record["kind"] in DECLARED_KINDS and record["kind"] != "instrument-exchange":
         occurrences = {native["steps"][0]["execution_id"]}
         if record["kind"] in REPRODUCED_KINDS:

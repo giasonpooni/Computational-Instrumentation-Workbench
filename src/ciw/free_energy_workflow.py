@@ -12,7 +12,8 @@ from . import free_energy_math as mathematics
 from . import free_energy_native as native
 from .free_energy_profile import KIND, validate_source, csg_request, problems
 from .core.canonical import canonical, exact_keys
-from .pipelines.runner import PipelineRunner, StageChain, check_chain, check_step, seal_step
+from .pipelines.runner import (PipelineRunner, StageChain, chain_catalog, chain_claims, chain_occurrences, check_chain,
+                               check_step, seal_step)
 
 DATA_SCHEMA = "ciw.variational-free-energy-result.v1"
 OPERATION = "ciw.variational-free-energy.v1"
@@ -84,33 +85,24 @@ def _compute(source, evidence, adapters):
             "kl_gap":final["kl_to_reference"]}, "stages":chain.stages}
 
 
-def catalog_steps(bundle):
-    return deepcopy(bundle["steps"][0]["result"]["data"]["stages"])
-
-
-def native_occurrences(bundle):
-    return {s["execution_id"] for outer in (bundle["steps"][0],bundle["verification"]["reproduction"])
-            for s in outer["result"]["data"]["stages"]}
-
-
-def identity_claims(bundle):
-    claims = {}
-    for outer in (bundle["steps"][0],bundle["verification"]["reproduction"]):
-        for s in outer["result"]["data"]["stages"]:
-            for identity, role, body in ((s["execution_id"],"execution",{"step":s}),
-                    (s["result_id"],"result",{"result":s["result"]}),
-                    (s["numerical_result_id"],"numerical_result",s["numerical_result"]),
-                    (s["operation_id"],"operation",s["operation_id"])):
-                if identity in claims:
-                    _same(claims[identity], (role,body))
-                claims[identity] = (role,deepcopy(body))
-    return claims
+# Module names kept for callers; the chained-stage versions live in the runner.
+catalog_steps, native_occurrences, identity_claims = chain_catalog, chain_occurrences, chain_claims
 
 
 class FreeEnergyWorkflow(PipelineRunner):
     """CSG with GSIE and PLSR companions: one aggregate step over three chained native stages."""
 
     LABEL = "Free-energy"
+    FRESH_OCCURRENCE_MESSAGE = "Free-energy experiments require fresh native stage occurrences"
+
+    def catalog_steps(self, bundle):
+        return chain_catalog(bundle)
+
+    def identity_claims(self, bundle):
+        return chain_claims(bundle)
+
+    def native_occurrences(self, bundle):
+        return chain_occurrences(bundle)
 
     def __init__(self):
         super().__init__(KIND, {**native.PINS["csg"], "role": "csg"})

@@ -270,6 +270,22 @@ def native_occurrences(bundle):
 
 
 class MeasurementChainWorkflow(DeclaredWorkflow):
+    FRESH_OCCURRENCE_MESSAGE = "Measurement chains must retain fresh native execution occurrences"
+
+    def catalog_steps(self, bundle):
+        return catalog_steps(bundle)
+
+    def identity_claims(self, bundle):
+        claims = {step["operation_id"]: ("operation", step["operation_id"]) for step in catalog_steps(bundle)}
+        for identity, content in identity_claims(bundle).items():
+            if identity in claims and canonical(claims[identity]) != canonical(content):
+                raise ValueError("Retained identity collision")
+            claims[identity] = content
+        return claims
+
+    def native_occurrences(self, bundle):
+        return native_occurrences(bundle)
+
     def __init__(self):
         self.kind, self.role = "measurement-chain", "rci"
         self.ROLES, self.SOURCE_SCHEMA = ROLES, SOURCE_SCHEMA

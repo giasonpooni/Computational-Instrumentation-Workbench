@@ -154,6 +154,9 @@ call with `StageChain`, re-checks the sequence with `check_chain` (exact roles
 and operations in order, cumulative `input_refs`, distinct occurrences) and
 overrides `_step`, `_validate_step` and `_check_runtimes`. The bundle,
 verification and replay receipt remain the runner's records.
+Native occurrences inside a step reach the workbench through three workflow
+hooks, `catalog_steps`, `identity_claims` and `native_occurrences` (runner
+defaults: none), so the workbench has no per-kind branch for them.
 
 A pipeline verified by a proof instead of a reproduction (proved heat: an SP1
 proof checked against the registered guest) overrides `_verify`,

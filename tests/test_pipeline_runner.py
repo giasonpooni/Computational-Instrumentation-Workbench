@@ -225,3 +225,15 @@ def test_stage_chain_seals_cumulative_order_and_check_chain_refuses_every_rebind
                          (reused, {stages[1]["execution_id"]})):
         with pytest.raises(ValueError):
             check_chain(deepcopy(broken), operations, "sha256:" + "e" * 64, seen=set(seen), label="Probe")
+
+
+def test_workbench_reads_native_occurrences_from_the_workflow_not_the_kind():
+    from ciw import workbench
+    for kind in ("variational-free-energy", "measurement-chain", "schematic-companions"):
+        flow = workbench._workflow(kind)
+        assert flow.native_occurrences is not PipelineRunner.native_occurrences and flow.FRESH_OCCURRENCE_MESSAGE
+    plain = workbench._workflow("geometric-circle")
+    assert plain.native_occurrences({}) is None and plain.identity_claims({}) == {} and plain.catalog_steps({}) == []
+    assert workbench._native_hook({"schema": "ciw.unknown-kind-session.v1"}, "catalog_steps") is None
+    source = (workbench.__file__ and open(workbench.__file__, encoding="utf-8").read())
+    assert "from .free_energy_workflow import native_occurrences" not in source

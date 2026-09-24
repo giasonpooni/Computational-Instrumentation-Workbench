@@ -336,6 +336,17 @@ class SchematicCompanionWorkflow(DeclaredWorkflow):
 
     def _source(self, raw): return _source(raw)
 
+    FRESH_OCCURRENCE_MESSAGE = "Companion bundles must retain fresh native execution occurrences"
+
+    def catalog_steps(self, bundle):
+        return []
+
+    def identity_claims(self, bundle):
+        return {}
+
+    def native_occurrences(self, bundle):
+        return native_occurrences(bundle)
+
     def _adapters(self, repositories, expected=None):
         if set(repositories) != ROLES:
             raise ValueError("Bind exactly the native SRA, JSPT and PLSR companion checkouts")

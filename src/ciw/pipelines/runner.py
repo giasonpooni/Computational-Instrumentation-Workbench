@@ -187,6 +187,32 @@ def check_chain(stages, operations: dict, evidence_id: str, *, seen: set, label:
         seen.add(stage["execution_id"])
 
 
+def chain_catalog(bundle: dict) -> list:
+    """The primary step's sealed stages, for the workbench execution/result catalog."""
+    return deepcopy(bundle["steps"][0]["result"]["data"]["stages"])
+
+
+def chain_occurrences(bundle: dict) -> set:
+    """Stage occurrences of the primary step and its reproduction."""
+    return {stage["execution_id"] for outer in (bundle["steps"][0], bundle["verification"]["reproduction"])
+            for stage in outer["result"]["data"]["stages"]}
+
+
+def chain_claims(bundle: dict) -> dict:
+    """Every stage identity with the one content it may name; a reused identity must name the same content."""
+    claims = {}
+    for outer in (bundle["steps"][0], bundle["verification"]["reproduction"]):
+        for stage in outer["result"]["data"]["stages"]:
+            for identity, role, body in ((stage["execution_id"], "execution", {"step": stage}),
+                                         (stage["result_id"], "result", {"result": stage["result"]}),
+                                         (stage["numerical_result_id"], "numerical_result", stage["numerical_result"]),
+                                         (stage["operation_id"], "operation", stage["operation_id"])):
+                if identity in claims:
+                    same(claims[identity], (role, body), "Stage identity names different content")
+                claims[identity] = (role, deepcopy(body))
+    return claims
+
+
 def verification(bundle: dict, reproduced: dict) -> dict:
     """Same-runtime reproduction of a bundle's primary step; never independent verification."""
     if canonical(bundle["steps"][0]["numerical_result"]) != canonical(reproduced["numerical_result"]):
@@ -243,6 +269,22 @@ class PipelineRunner:
         self.SOURCE_SCHEMA = "ciw." + kind + "-source.v1"
         self.schema = "ciw." + kind + "-session.v1"
         self.operation = "ciw." + kind + ".v1"
+
+    # Workbench catalog hooks ---------------------------------------------
+    # Native occurrences inside a step beyond the step itself. The workbench
+    # lists ``catalog_steps``, merges ``identity_claims`` into its collision
+    # check and refuses two bundles of one kind sharing ``native_occurrences``.
+
+    FRESH_OCCURRENCE_MESSAGE = "Bundles must retain fresh native execution occurrences"
+
+    def catalog_steps(self, bundle):
+        return []
+
+    def identity_claims(self, bundle):
+        return {}
+
+    def native_occurrences(self, bundle):
+        return None
 
     # Domain hooks -------------------------------------------------------
 
