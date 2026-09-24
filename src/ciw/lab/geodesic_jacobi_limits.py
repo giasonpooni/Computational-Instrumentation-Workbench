@@ -636,10 +636,42 @@ T012_EMBEDDED = (("sphere", lambda: Sphere(1.0), SPHERE_START[0], SPHERE_START[1
 T012_ROTATIONS = (((1.0, 2.0, 3.0), 0.7), ((0.0, 0.0, 1.0), math.pi / 3), ((1.0, -1.0, 0.0), 2.5))
 T012_BASIS_ANGLES = (0.3, 1.1, 2.5, -2.0)
 T012_STEPS = 64
+# Orientation reversal off the sphere: the generic Torus(2, 1) path, no symmetry that makes the separation odd in eps.
+T012_TORUS_LENGTH = 3.0
+T012_TORUS_EPS = (1e-3, 1e-2, 4e-2)
 
 
 def _state_with_tangent(u0, tangent):
     return np.concatenate([np.asarray(u0, dtype=float), tangent, [1.0, 0.0, 0.0, 1.0]])
+
+
+def _orientation_runs(surface, u0, heading, length, eps, steps=T012_STEPS):
+    """Signed embedded separations for a heading change +eps stated in (e1, e2) and in the left-handed (e1, -e2).
+
+    (e1, -e2) is orthonormal but left-handed: its heading -h + eps is the right-handed heading h - eps (the
+    geometric perturbation -eps) and its +90 degree normal is -N. Returns the base arclength grid and, at every
+    node, the right-handed separation along N and the left-handed one along N and along its own normal -N (RK4).
+    """
+    u0 = np.asarray(u0, dtype=float)
+    e1, e2 = surface.orthonormal_frame(u0)
+    base = jacobi.transfer(surface, u0, heading, length, steps=steps)
+    points = np.array([surface.embedding(y[:2]) for y in base.states])
+    normals = np.array([core.embedded_normal(surface, y) for y in base.states])
+    delta = {}
+    for name, (f1, f2, local) in {"right-handed": (e1, e2, heading), "left-handed": (e1, -e2, -heading)}.items():
+        tangent = math.cos(local + eps) * f1 + math.sin(local + eps) * f2
+        _, states = integrators.integrate_fixed(surface.geodesic_rhs, np.concatenate([u0, tangent]), length,
+                                                steps, "rk4")
+        delta[name] = np.array([surface.embedding(y[:2]) for y in states]) - points
+    return base.s, {"right-handed along N": np.einsum("ij,ij->i", delta["right-handed"], normals),
+                    "left-handed along N": np.einsum("ij,ij->i", delta["left-handed"], normals),
+                    "left-handed along its own normal -N": np.einsum("ij,ij->i", delta["left-handed"], -normals)}
+
+
+def _orientation_pair(surface, u0, heading, length, eps, steps=T012_STEPS):
+    """Right-handed separation along N and left-handed separation along its own normal -N, at L."""
+    _, series = _orientation_runs(surface, u0, heading, length, eps, steps)
+    return float(series["right-handed along N"][-1]), float(series["left-handed along its own normal -N"][-1])
 
 
 def frame_study():
@@ -674,26 +706,20 @@ def frame_study():
             basis_rows.append({"surface": key, "beta": beta,
                                "tangent_difference": float(np.max(np.abs(tangent - reference.states[0, 2:4]))),
                                "max_state_difference": float(np.max(np.abs(states - reference.states)))})
-    # Orientation reversal: (e1, -e2) is also orthonormal but left-handed. Its "+eps" heading change is the
-    # geometric perturbation -eps, and its +90 degree normal is -N; used consistently, nothing changes.
+    # Orientation reversal on the unit sphere, where the separation sin(s) sin(eps) is odd in eps, so the
+    # left-handed "+eps" (geometric -eps) measured along its own normal -N equals the right-handed one exactly.
     sphere = Sphere(1.0)
-    u0, heading = np.asarray(SPHERE_START[0], dtype=float), SPHERE_START[1]
-    e1, e2 = sphere.orthonormal_frame(u0)
     eps, length = 1e-3, 2.0
-    base = jacobi.transfer(sphere, u0, heading, length, steps=T012_STEPS)
-    points = np.array([sphere.embedding(y[:2]) for y in base.states])
-    normals = np.array([core.embedded_normal(sphere, y) for y in base.states])
-    delta = {}
-    for name, (f1, f2, local) in {"right-handed": (e1, e2, heading), "left-handed": (e1, -e2, -heading)}.items():
-        tangent = math.cos(local + eps) * f1 + math.sin(local + eps) * f2
-        _, states = integrators.integrate_fixed(sphere.geodesic_rhs, np.concatenate([u0, tangent]), length,
-                                                T012_STEPS, "rk4")
-        delta[name] = np.array([sphere.embedding(y[:2]) for y in states]) - points
-    series = {"right-handed along N": np.einsum("ij,ij->i", delta["right-handed"], normals),
-              "left-handed along N": np.einsum("ij,ij->i", delta["left-handed"], normals),
-              "left-handed along its own normal -N": np.einsum("ij,ij->i", delta["left-handed"], -normals)}
-    exact = np.sin(base.s) * math.sin(eps)   # unit sphere: exactly sin(s) sin(eps), odd in eps
+    s, series = _orientation_runs(sphere, SPHERE_START[0], SPHERE_START[1], length, eps)
+    exact = np.sin(s) * math.sin(eps)
     end = {name: float(values[-1]) for name, values in series.items()}
+    # Off the sphere the separation d(eps) = eps j + C2 eps^2 + ... is not odd, and the left-handed run along -N
+    # is -d(-eps) = eps j - C2 eps^2 + ...: the two agree only to first order, so own/right - 1 ~ -2 C2 eps / j.
+    torus = Torus(2.0, 1.0)
+    t_u0, t_heading = TORUS_PATHS["generic"]
+    pairs = {n: [_orientation_pair(torus, t_u0, t_heading, T012_TORUS_LENGTH, e, n) for e in T012_TORUS_EPS]
+             for n in (T012_STEPS, 2 * T012_STEPS)}
+    gaps = {n: [own / right - 1.0 for right, own in rows] for n, rows in pairs.items()}
     refusal = "none"
     try:
         Rotated(sphere, np.diag([1.0, 1.0, -1.0]))
@@ -706,8 +732,14 @@ def frame_study():
                             "ratio_along_right_handed_normal": end["left-handed along N"] / end["right-handed along N"],
                             "ratio_along_own_normal":
                                 end["left-handed along its own normal -N"] / end["right-handed along N"],
-                            "s": base.s.tolist(), "series": {k: v.tolist() for k, v in series.items()},
+                            "s": s.tolist(), "series": {k: v.tolist() for k, v in series.items()},
                             "exact": exact.tolist()},
+            "orientation_torus": {"surface": "Torus(2, 1)", "start": list(t_u0), "heading": t_heading,
+                                  "length": T012_TORUS_LENGTH, "eps": list(T012_TORUS_EPS), "steps": T012_STEPS,
+                                  "right_handed_along_N": [r for r, _ in pairs[T012_STEPS]],
+                                  "left_handed_along_own_normal": [o for _, o in pairs[T012_STEPS]],
+                                  "own_over_right_minus_1": gaps[T012_STEPS],
+                                  "own_over_right_minus_1_at_2N": gaps[2 * T012_STEPS]},
             "improper_rotation_refusal": refusal}
 
 
@@ -745,6 +777,13 @@ def frame_change_invariance(ctx):
     expected = "Frame change requires a proper rotation matrix"
     orientation_basis = ("RK4 truncation (N = 64) of the difference between the +eps and -eps runs; the exact "
                          "sphere separation sin(s) sin(eps) is odd in eps, so no eps^2 term enters the ratio")
+    torus = study["orientation_torus"]
+    torus_eps, torus_gap = torus["eps"], torus["own_over_right_minus_1"]
+    torus_abs = [abs(v) for v in torus_gap]
+    torus_slope = core.loglog_slope(torus_eps, torus_abs)
+    torus_step_change = max(abs(b / a - 1.0) for a, b in zip(torus_gap, torus["own_over_right_minus_1_at_2N"]))
+    torus_path = (f"Torus(2, 1) from ({', '.join(_g(v, 3) for v in torus['start'])}), heading "
+                  f"{_g(torus['heading'], 3)}, L = {_g(torus['length'], 3)}")
     findings = [
         finding("Ambient rotations leave chart trajectories and Jacobi fields unchanged to roundoff", "numerical",
                 rot_state, {"generator": _gen("frame-study", rotations=len(T012_ROTATIONS), steps=T012_STEPS),
@@ -779,12 +818,13 @@ def frame_change_invariance(ctx):
                  "derivation": _derivation("t012-frame-change-invariance"),
                  "checks": [core.check("analytic", "right-handed signed separation at L minus sin(L) sin(eps)",
                                        orient["right_handed_minus_exact"], 1e-10),
-                            core.check("invariant", "left-handed / right-handed separation along N, plus 1",
+                            core.check("invariant", "left-handed / right-handed separation along N on the unit sphere, plus 1",
                                        flip + 1.0, 1e-9)]},
                 uncertainty=core.uncertainty("truncation_bound", abs(flip + 1.0), orientation_basis),
                 tolerance={"abs": 1e-9, "rel": 0.0}),
-        finding("Signed separations are invariant under an orientation-reversing basis change when the perturbation "
-                "and the normal are both expressed in the new basis",
+        finding("On the unit sphere, where the separation sin(s) sin(eps) is odd in eps, signed separations are "
+                "invariant under an orientation-reversing basis change when the perturbation and the normal are both "
+                "expressed in the new basis",
                 "numerical", own,
                 {"generator": _gen("frame-study", eps=orient["eps"], length=orient["length"]),
                  "derivation": _derivation("t012-frame-change-invariance"),
@@ -792,6 +832,27 @@ def frame_change_invariance(ctx):
                                        own - 1.0, 1e-9)]},
                 uncertainty=core.uncertainty("truncation_bound", abs(own - 1.0), orientation_basis),
                 tolerance={"abs": 1e-9, "rel": 0.0}),
+        finding("On a non-symmetric surface the orientation-reversed separation agrees only to first order: "
+                "own/right - 1 is proportional to eps (Torus(2, 1) generic path)",
+                "numerical", {"eps": torus_eps, "own_over_right_minus_1": torus_gap, "loglog_slope": torus_slope},
+                {"generator": _gen("frame-study", surface=torus["surface"], start=torus["start"],
+                                   heading=torus["heading"], length=torus["length"], eps=torus_eps,
+                                   steps=torus["steps"]),
+                 "derivation": _derivation("t012-frame-change-invariance"),
+                 "checks": [core.check("analytic", "log-log slope of |own/right - 1| against eps minus 1",
+                                       torus_slope - 1.0, 0.05),
+                            core.check("invariant", "|own/right - 1| at eps = 1e-3", torus_abs[0], 1e-5, "ge"),
+                            core.check("self_convergence", "max relative change of own/right - 1 from N = "
+                                       f"{torus['steps']} to {2 * torus['steps']} (the gap is not truncation)",
+                                       torus_step_change, 1e-4, "le")]},
+                uncertainty=core.uncertainty("fit_spread", core.slope_spread(torus_eps, torus_abs),
+                                             "largest gap between the fitted slope and consecutive-eps slopes "
+                                             "(eps^3 terms of the separation)"),
+                tolerance={"abs": 1e-6, "rel": 1e-3},
+                counterexample={"statement": "Finite-eps signed separations are invariant under an "
+                                             "orientation-reversing basis change expressed consistently",
+                                "witness": {"path": torus_path, "eps": torus_eps,
+                                            "own_over_right_minus_1": torus_gap}}),
         finding("An improper rotation (reflection) is refused as a frame change", "computational_pipeline",
                 study["improper_rotation_refusal"],
                 {"checks": [core.refusal_check("Rotated(sphere, diag(1, 1, -1))", expected,
@@ -803,45 +864,62 @@ def frame_change_invariance(ctx):
         hypothesis=("Geodesics and Jacobi fields are intrinsic: an ambient rotation changes only the embedded "
                     "coordinates (which rotate exactly), and the choice of reference basis for headings is a "
                     "relabeling; an orientation-reversing basis changes the meaning of '+eps' and of the normal "
-                    "together, so a consistently expressed signed separation is unchanged."),
+                    "together, so a consistently expressed first-order (Jacobi) separation is unchanged; the "
+                    "finite-eps separation is unchanged exactly only where it is odd in eps."),
         mathematical_model=("Rotated(base, R): X' = R X, so X'_i . X'_j = X_i . X_j and the second fundamental form is "
                             "unchanged; in exact arithmetic the chart ODE is identical. A basis (e1', e2') rotated by "
                             "beta with heading h - beta yields the same unit tangent. In the left-handed basis "
                             "(e1, -e2) the heading -h + eps is the right-handed heading h - eps, and its +90 degree "
-                            "normal is -N, so (J_eps . (-N)) equals the right-handed J_eps . N; on the unit sphere "
-                            "J_eps . N = sin(s) sin(eps) exactly."),
+                            "normal is -N. With d(eps) = J_eps . N = eps j + C2 eps^2 + ..., the left-handed run "
+                            "measured along -N is -d(-eps) = eps j - C2 eps^2 + ..., so (J_eps . (-N)) equals the "
+                            "right-handed J_eps . N to first order in eps; the eps^2 parts have opposite signs, so the "
+                            "finite separations agree exactly only where the separation is odd in eps, as on the unit "
+                            "sphere (sin(s) sin(eps)), and otherwise own/right - 1 = -2 C2 eps / j + O(eps^2)."),
         input_data=["Sphere, Torus(2, 1), Saddle(1), GaussianBump(0.5, 1) on declared paths; HyperbolicPlane(1) for "
                     "basis changes", f"Rotations: {rotations_text}",
                     f"Basis angles beta = {', '.join(_g(b, 3) for b in T012_BASIS_ANGLES)}; RK4 with N = {T012_STEPS}; "
-                    f"orientation test on the unit sphere with eps = {orient['eps']:g}, L = {orient['length']:g}"],
+                    f"orientation test on the unit sphere with eps = {orient['eps']:g}, L = {orient['length']:g}, and "
+                    f"on {torus_path} with eps = {', '.join(_g(e, 3) for e in torus_eps)} (RK4 N = {torus['steps']}, "
+                    f"checked at {2 * torus['steps']})"],
         observation_model=("Chart states (u, v, Jacobi columns) at every node, embedded endpoints, curvature along "
                            "the path, and the signed embedded separation along the base geodesic's in-surface normal "
                            "(N, or -N for the left-handed basis)."),
         expected_invariant=("Differences at roundoff level; exact rotation of X(L); separation ratio -1 when a "
-                            "left-handed '+eps' is measured along N, +1 when measured along its own normal -N."),
+                            "left-handed '+eps' is measured along N on the unit sphere; along its own normal -N the "
+                            "ratio is +1 on the unit sphere and 1 + O(eps) on a non-symmetric surface."),
         experiment=("Integrate each path in the base and rotated surfaces and with rotated reference bases; compare "
                     "node by node; integrate +eps heading perturbations in right- and left-handed bases and project "
-                    "each onto N and -N."),
+                    "each onto N and -N, on the unit sphere and, for three eps, on a generic torus path."),
         numerical_result=(f"Rotation: max state difference {_g(rot_state, 2)}, endpoint rotation error {_g(rot_end, 2)}, "
                           f"curvature difference {_g(rot_k, 2)}; basis rotation: max state difference "
-                          f"{_g(basis_state, 2)}; left-handed '+eps' along N: ratio {_g(flip, 13)}; along its own "
-                          f"normal: ratio {_g(own, 13)}; right-handed separation minus sin(L) sin(eps) "
-                          f"{_g(orient['right_handed_minus_exact'], 2)}; reflection refused: "
+                          f"{_g(basis_state, 2)}; unit sphere: left-handed '+eps' along N: ratio {_g(flip, 13)}; along "
+                          f"its own normal: ratio {_g(own, 13)}; right-handed separation minus sin(L) sin(eps) "
+                          f"{_g(orient['right_handed_minus_exact'], 2)}; torus: own/right - 1 = "
+                          f"{', '.join(_g(v, 4) for v in torus_gap)} for eps = {', '.join(_g(e, 3) for e in torus_eps)} "
+                          f"(log-log slope {_g(torus_slope, 4)}); reflection refused: "
                           f"'{study['improper_rotation_refusal']}'."),
         uncertainty=(f"Roundoff differences depend on platform arithmetic (observed up to {_g(max(rot_state, basis_state), 2)}); "
-                     f"the regression tolerances allow 1e-11. The orientation ratios differ from -1 and +1 by at most "
-                     f"{_g(residual, 2)}: RK4 truncation of the +eps and -eps runs, not a second-order eps term, "
-                     "because the exact sphere separation is odd in eps."),
+                     f"the regression tolerances allow 1e-11. On the unit sphere the orientation ratios differ from -1 "
+                     f"and +1 by at most {_g(residual, 2)}: RK4 truncation of the +eps and -eps runs, not a "
+                     "second-order eps term, because the exact sphere separation is odd in eps. On the torus the gap "
+                     f"own/right - 1 is a second-order term of the separation, not truncation: it changes by "
+                     f"{_g(torus_step_change, 2)} relative from N = {torus['steps']} to {2 * torus['steps']}, and its "
+                     f"slope in eps is within {_g(core.slope_spread(torus_eps, torus_abs), 2)} of the consecutive-eps "
+                     "slopes."),
         failure_modes_checked=["bitwise equality is not assumed (rotation changes rounding of dot products)",
                                "improper rotation refused by the core",
                                "curvature recomputed from the rotated embedding, not reused",
                                "orientation conventions separated: sign flip under mixed conventions, invariance "
                                "under consistent ones",
-                               "right-handed separation compared with its closed form sin(L) sin(eps)"],
+                               "right-handed separation compared with its closed form sin(L) sin(eps)",
+                               "orientation invariance not generalized from the sphere, whose separation is odd in "
+                               "eps: a non-symmetric torus path shows the first-order-only agreement, checked against "
+                               "a doubled step count"],
         unresolved_assumptions=["Rotations only; translations and reflections of the embedding are not exercised",
                                 "Hyperbolic-plane isometries (Mobius maps) are not tested, only basis changes",
-                                "The orientation test uses one sphere path; other surfaces are covered only by the "
-                                "basis-rotation test"],
+                                "The orientation test uses one sphere path and one torus path; saddle and bump are "
+                                "covered only by the basis-rotation test, and the coefficient C2 of the torus gap is "
+                                "measured, not derived"],
         recommended_next_task="T013 (flat/developable limit) and an isometry test for HyperbolicPlane under Mobius maps",
     )
     return {"state": "completed", "fields": fields, "findings": findings}
@@ -1628,6 +1706,9 @@ def negative_curvature(ctx):
     increments = [b["accepted_steps"] - a["accepted_steps"] for a, b in zip(saddle, saddle[1:])]
     beyond = study["beyond_pole"]
     im, gl = implicit["implicit-midpoint"], implicit["gauss-legendre-2"]
+    # Same order p = 4, so N_GL / N_RK4 = (|c_GL| / |c_RK4|)^(1/4) = (120/720)^(1/4) from N(tau) ~ |c|^(1/p).
+    gl_over_rk4_predicted = (120.0 / 720.0) ** 0.25
+    gl_over_rk4 = max(abs(v / gl_over_rk4_predicted - 1.0) for v in gl["over_rk4_steps"])
     step_checks = [core.check("cross_implementation", "max relative difference of j_head between matrix powers and "
                               "the scalar stability function on the eigenmodes (RK4, implicit midpoint, Gauss-Legendre, "
                               "at the required N)", modes_mismatch, 1e-10),
@@ -1678,7 +1759,7 @@ def negative_curvature(ctx):
                 "accuracy, not stability, sets the step",
                 "numerical", {"steps_required_over_stability_limit": stiffness,
                               "jacobian_eigenvalues": {_g(r["k"], 3): r["jacobi_eigenvalues"] for r in rows},
-                              "geodesic_endpoint_distance_error": geo_err, "log_growth_slope_in_kL": growth},
+                              "log_growth_slope_in_kL": growth},
                 {"generator": _gen("hyperbolic-k"),
                  "derivation": _derivation("t016-strongly-negative-curvature"),
                  "checks": [core.check("analytic", "max |eigenvalue -/+ k| / k of the Jacobi generator at the path "
@@ -1708,6 +1789,8 @@ def negative_curvature(ctx):
                             core.check("analytic", "max |required / predicted - 1| over both implicit methods",
                                        max(abs(v - 1.0) for m in implicit.values() for v in m["required_over_predicted"]),
                                        0.2),
+                            core.check("analytic", "max |GL/RK4 steps / (120/720)^(1/4) - 1| (same order p = 4, "
+                                       "error constants 1/720 and 1/120)", gl_over_rk4, 0.05),
                             core.check("invariant", "sign changes of the implicit-midpoint j at kh > 2",
                                        beyond["implicit_midpoint_sign_changes"], 1, "ge")] + step_checks},
                 uncertainty=core.uncertainty("fit_spread", max(m["spread"] for m in implicit.values()),
@@ -1775,7 +1858,8 @@ def negative_curvature(ctx):
                            "geodesic/Jacobi integration); hyperbolic distance of the geodesic endpoint to the exact "
                            "semicircle."),
         expected_invariant=("Exponents 5 (error), 5/4 (RK4 and Gauss-Legendre steps), 3/2 (implicit midpoint), ~1 "
-                            "(DP45 steps); saddle local exponents approaching sqrt(2)."),
+                            "(DP45 steps); Gauss-Legendre/RK4 step ratio (120/720)^(1/4) = 0.639 at every k; saddle "
+                            "local exponents approaching sqrt(2)."),
         experiment=("Integrate the joint geodesic/Jacobi system per k (adaptive and RK4), compute the Jacobi "
                     "generator's eigenvalues at the path curvature, search the minimal step counts, compare with "
                     "stability limits, iterate implicit midpoint beyond its pole, and integrate the saddle ridge "
@@ -1786,7 +1870,8 @@ def negative_curvature(ctx):
                           f"implicit midpoint {', '.join(str(v) for v in im['steps_required'])} (exponent "
                           f"{_g(im['exponent'], 3)}), 2-stage Gauss-Legendre {', '.join(str(v) for v in gl['steps_required'])} "
                           f"(exponent {_g(gl['exponent'], 3)}, {_g(min(gl['over_rk4_steps']), 3)} to "
-                          f"{_g(max(gl['over_rk4_steps']), 3)} times the RK4 steps), DP45 "
+                          f"{_g(max(gl['over_rk4_steps']), 3)} times the RK4 steps, predicted (120/720)^(1/4) = "
+                          f"{_g(gl_over_rk4_predicted, 3)}), DP45 "
                           f"{', '.join(str(r['adaptive_accepted_steps']) for r in rows)} (exponent {_g(adaptive_exp, 3)}); "
                           f"accuracy/stability step ratio {_g(min(stiffness), 3)}-{_g(max(stiffness), 3)}; Jacobi "
                           f"eigenvalues +/-k to {_g(eigen_error, 2)}; RK4 geodesic endpoint error {_g(geo_err[0], 2)} "
@@ -2263,7 +2348,12 @@ def curvature_versus_integrator_error(ctx):
     floor_ratio = max(v for m in T018_METHODS for v in floor["methods"][m]["ratios"] if v is not None)
     floor_nonzero = sum(1 for m in T018_METHODS for v in floor["methods"][m]["computed_deviation"] if v != 0.0)
     near_floor = by_name["sphere R=1e7"]
-    near_floor_roundoff = all(all(near_floor["methods"][m]["roundoff_limited"]) for m in T018_METHODS)
+    near_floor_truncation = sum(1 for m in T018_METHODS for flag in near_floor["methods"][m]["roundoff_limited"]
+                                if not flag)
+    near_floor_roundoff = near_floor_truncation == 0
+    # Where roundoff limits each method (reported, never used in a ratio claim other than the K = 1e-16 floor).
+    roundoff_where = {m: [f"{r['surface']} (from N = {T018_STEPS[r['methods'][m]['roundoff_limited'].index(True)]})"
+                          for r in curved if any(r["methods"][m]["roundoff_limited"])] for m in T018_METHODS}
     sphere = by_name["sphere R=1"]
     orders = {m: -core.loglog_slope(T018_STEPS[2:], sphere["methods"][m]["errors"][2:]) for m in T018_METHODS}
     flat = [r for r in rows if r["curvature_signal"] == 0.0]
@@ -2325,7 +2415,9 @@ def curvature_versus_integrator_error(ctx):
                 {"generator": _gen("resolvability", surfaces=["sphere R=1e7", "sphere R=1e8"]),
                  "checks": [core.check("invariant", "max ratio over methods and N for K = 1e-16", floor_ratio, 1.0, "le"),
                             core.check("exact_arithmetic", "nonzero computed deviations for K = 1e-16", floor_nonzero,
-                                       0.0)]},
+                                       0.0),
+                            core.check("invariant", "K = 1e-14 runs (all methods and N) not classed roundoff-limited",
+                                       near_floor_truncation, 0.0)]},
                 uncertainty=core.uncertainty("roundoff", math.ulp(T018_LENGTH),
                                              "one unit in the last place of L = 2"),
                 tolerance={"abs": 1e-12, "rel": 0.0},
@@ -2391,9 +2483,13 @@ def curvature_versus_integrator_error(ctx):
                           f"(truncation-limited at N = 16): {' | '.join(resolved_text)}. Optional SciPy DOP853 "
                           f"cross-check of the adaptive references: {scipy_text} (artifact only; it shares ciw's "
                           "right-hand side, so it checks the integrator, not the geometry)."),
-        uncertainty=(f"Reference spread up to {_g(spread, 2)}. Roundoff-limited ratios (marked (r) in "
-                     "resolvability.md, mostly K <= 1e-8 with RK4 and K <= 1e-14 with every method) depend on the "
-                     "rounding sequence; they are kept in the artifacts and out of every checked value and witness. "
+        uncertainty=(f"Reference spread up to {_g(spread, 2)}. Roundoff-limited errors (marked (r) in "
+                     "resolvability.md) occur for "
+                     + "; ".join(f"{m} on {', '.join(where) if where else 'no surface'}"
+                                 for m, where in roundoff_where.items())
+                     + ". Their ratios depend on the rounding sequence; they are kept in the artifacts and out of every "
+                     "checked ratio and witness except the K = 1e-16 floor finding, whose claim is about roundoff and "
+                     "whose computed deviations are exactly zero. "
                      f"The threshold {RESOLVED:g} and the roundoff classification are declared conventions."),
         failure_modes_checked=["exact zero errors on flat surfaces kept as 'no signal', not as infinite ratios",
                                "flat surfaces tested with K from the second fundamental form, not the closed-form "

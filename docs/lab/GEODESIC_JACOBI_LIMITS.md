@@ -21,8 +21,12 @@ envelope. Where a task invites such a conclusion, the claim is recorded in its
 physical or authority domain and is `not_established`. Agreement between two
 `ciw` computations is reported as numerical verification against a closed
 form, an invariant or self-convergence — never as independent verification.
-An optional SciPy DOP853 cross-check (T018) is retained as an artifact only, so
-no label depends on an optional module.
+A reference computed by the same `ciw` integrator at a tighter tolerance is
+labelled `self_convergence`, never `high_precision`. An optional SciPy DOP853
+cross-check (T018) is retained as an artifact only, so no label depends on an
+optional module; it integrates `ciw`'s own right-hand side
+(`ciw.lab.jacobi.rhs`), so it checks the time stepper, not the geometry, and
+could not support an independent geometric claim even where SciPy is present.
 
 Notation: along a unit-speed geodesic, `j'' + K j = 0`; `j_head` has
 `j(0) = 0, j'(0) = 1`, `j_lat` has `j(0) = 1, j'(0) = 0`. A heading
@@ -57,7 +61,9 @@ in-surface normal; sphere runs compared node by node with great circles.
 −0.99 (generic) and −1.01 (equator); relative error 3.8 one step before `s*`
 at `ε = 0.04`. After `s*` the signed separation equals `ε j` to 0.4 % with
 `j < 0`. `chord(s*)/chord(s*/2) = 1.6e−4` on the equator. Sphere relative
-error uniform at −1.667e−5 (`ε = 0.02`), including one step from `π`.
+error uniform at −1.667e−5 (`ε = 0.02`, largest deviation from uniform
+7.7e−8), including one step from `π`. Halving the torus grid changes the
+smallest separation at `s*` by 1.5e−4 relative.
 
 *Counterexamples.* "The separation of neighbouring geodesics grows
 monotonically with length"; "the first-order separation is accurate along the
@@ -84,12 +90,18 @@ exponential stretch, near-fold (`μ = 0.2, 0.1`), identity. RK4 with
 `N = 64, 128, 256`; DP45 at `rtol = 1e−10`; references exact (plane, sphere) or
 DP45 at `rtol = 1e−13` (torus).
 
+The torus reference is the same DP45 at a tighter tolerance, so its check is a
+self-convergence check.
+
 *Result.* Converged (adaptive) agreement in every chart within 1.3e−10 for the
-endpoint, length and transfer matrix; RK4 order ≥ 3.95 in every chart; the
-identity chart reproduces the base chart bit for bit. The `μ = 0.1` fold
-multiplies the `N = 256` error by 1.1e6 (sphere) and 9.8e4 (torus); smooth
-charts change it by 1.4–17×. The plane is exact to roundoff in its base chart
-and 1.2e−5 in the fold chart.
+endpoint and transfer matrix and 1.9e−10 for the length; the identity chart
+reproduces the base chart bit for bit. RK4 error falls at least like `h^{3.7}` in every chart
+(smallest order 3.95 between `N = 128` and 256): the smooth charts show order 4
+within 0.05, while the near-fold charts are still pre-asymptotic, with orders
+4.4–5.5 above 4, so fourth order is not demonstrated for them at these steps.
+The `μ = 0.1` fold multiplies the `N = 256` error by 1.1e6 (sphere) and 9.8e4
+(torus); smooth charts change it by 1.4–17×. The plane is exact to roundoff in
+its base chart and 1.2e−5 in the fold chart.
 
 *Counterexample.* "A change of chart that preserves the geometry leaves the
 fixed-step integration error unchanged."
@@ -102,30 +114,71 @@ scaling law in `μ` is open.
 *Prediction.* `Rotated(base, R)` changes only the embedding (`X' = R X`); the
 metric, second fundamental form and hence the chart ODE are unchanged in exact
 arithmetic. Rotating the reference basis by `β` with heading `h − β` gives the
-same tangent. A left-handed basis `(e1, −e2)` maps "+ε" to "−ε" in the
-right-handed convention, so signed separations flip sign.
+same tangent. A left-handed basis `(e1, −e2)` changes two conventions at once:
+its heading `−h + ε` is the right-handed heading `h − ε`, and its +90° normal is
+`−N`. A "+ε" stated in the left-handed basis is therefore the geometric
+perturbation `−ε`; measured along the right-handed normal `N` its separation has
+the opposite sign. Measured along its own normal `−N` it agrees with the
+right-handed separation to first order only: with
+`d(ε) = ε j + C₂ ε² + …` along `N`, the left-handed run along `−N` is
+`−d(−ε) = ε j − C₂ ε² + …`, so the Jacobi (first-order) separation is unchanged,
+the `ε²` parts have opposite signs, and `own/right − 1 = −2 C₂ ε / j + O(ε²)`.
+The finite separations agree exactly only where the separation is odd in `ε`:
+on the unit sphere it is exactly `sin(s) sin(ε)`, so no `ε²` term enters either
+ratio there, while on a surface without that symmetry the ratio along `−N` is
+`1 + O(ε)`.
 
 *Result.* Rotations (sphere, torus, saddle, bump; three rotations): max chart
 and Jacobi state difference 1.8e−15, embedded endpoints rotate exactly to
-1.4e−15, curvature differences 2e−15. Basis rotations: 1.8e−15. Orientation
-reversal: separation ratio −1.000000000002. A reflection matrix is refused by
-the core ("Frame change requires a proper rotation matrix").
+1.4e−15, curvature differences 2e−15. Basis rotations: 1.8e−15. Orientation on
+the unit sphere (`ε = 10⁻³`, `L = 2`, RK4 `N = 64`): the right-handed separation
+matches `sin(L) sin(ε)` to 8.4e−12; a left-handed "+ε" measured along `N` gives
+the ratio −1.000000000002, and measured along `−N` the ratio +1.000000000002.
+The 2.5e−12 residual is RK4 truncation of the `+ε` and `−ε` runs. Orientation
+on the generic `Torus(2, 1)` path (start `(0, 0.3)`, heading 0.5, `L = 3`, RK4
+`N = 64`): `own/right − 1` = −4.763e−4, −4.753e−3, −1.885e−2 for
+`ε = 10⁻³, 10⁻², 0.04`, log-log slope 0.997 in `ε`; doubling `N` changes the
+gap by 1e−7 relative, so it is the `ε²` term of the separation, not truncation.
+A reflection matrix is refused by the core ("Frame change requires a proper
+rotation matrix").
 
-*Counterexample.* "Signed Jacobi separations are invariant under every change
-of orthonormal tangent basis" (only up to orientation).
+*Counterexample.* "Finite-`ε` signed separations are invariant under an
+orientation-reversing basis change expressed consistently": on the torus path
+the separation along the left-handed normal differs from the right-handed one
+by `4.8e−4` relative at `ε = 10⁻³`, proportional to `ε`. What is invariant is
+the first-order (Jacobi) separation; the exact agreement on the unit sphere is
+a consequence of its odd separation, and the sign flip under mixed conventions
+is recorded as its own convention finding.
 
 ## T013 Flat and developable limit
 
-*Prediction.* `K = 0` on the cylinder, so `j_head(s) = s` exactly, as on the
-plane, while a helix of angle `α` has the shorter chord
-`√((2R sin(L cos α/(2R)))² + (L sin α)²)`. On the outer equator of `Torus(R, 1)`,
-`K = 1/(R + 1)` and `L − j_head(L) = K L³/6 − K² L⁵/120 + …`, exponent −1 in
-`R`; the chord deficit of that circle is `L³/(24 (R + 1)²)`, exponent −2.
+*Prediction.* The cylinder's second fundamental form has only the `φφ` entry,
+so `K = 0` and `j_head(s) = s` exactly, as on the plane, while a helix of angle
+`α` has the shorter chord `√((2R sin(L cos α/(2R)))² + (L sin α)²)`. On the
+outer equator of `Torus(R, 1)`, `K = 1/(R + 1)` and
+`L − j_head(L) = K L³/6 − K² L⁵/120 + …`, so the deviation has exponent −1 in
+`R + 1` up to the relative correction `K L²/20`; the equator is a circle of
+radius `R + 1` with chord deficit `2(R + 1)(x − sin x)`, `x = L/(2(R + 1))`,
+`= L³/(24 (R + 1)²) + …`, exponent −2 in `R + 1`. Both closed forms are
+evaluated without cancellation (a series for `x − sin x` below 0.1).
 
-*Result.* Plane and cylinder Jacobi columns identical bit for bit; chords 3.000
-(plane) versus 2.538 (cylinder). Torus deviation matches the closed form to
-1.8e−9 relative; fitted exponent (R = 16…1024) −0.9847, equal to the
-closed-form value over the same radii; chord-deficit exponent −1.974.
+*Protocol.* `Plane` and `Cylinder` return a literal `K = 0`, so their bitwise
+agreement only shows that the same Jacobi arithmetic runs on both; it is
+recorded as a `computational_pipeline` finding. Flatness itself is tested by
+integrating the cylinder again with `K` recomputed from its second fundamental
+form (`SecondFormCurvature`). Tori with `R = 2 … 1024`, RK4 `N = 64`,
+`L = 2`; exponents fitted for `R ≥ 16`, in `R` and in `R + 1`.
+
+*Result.* Plane and cylinder Jacobi columns identical bit for bit; the
+second-form `K` along the helix is exactly 0 and `max |j_head(s) − s|` is
+2.7e−15; chords 3.000 (plane) versus 2.538 (cylinder). The torus deviation
+matches its closed form to 1.8e−9 relative and the chord deficit to 5.1e−9.
+Fitted exponents: deviation −0.98472 in `R` (equal to the closed-form value over
+the same radii) and −0.99749 in `R + 1`; chord deficit −1.9744 in `R` and
+−1.99997 in `R + 1`. Of the 0.015 offset of the deviation exponent from −1,
+0.013 comes from `K = 1/(R + 1)` rather than `1/R` (the fit of `K L³/6` alone)
+and 0.0025 from the `K L²/20` correction; the chord-deficit offset in `R` is the
+same `R/(R + 1)` effect.
 
 *Counterexamples.* "Surfaces with identical Jacobi fields have identical chords";
 "intrinsic and extrinsic signatures of curvature vanish at the same rate in the
@@ -165,48 +218,90 @@ unit-sphere great circle; `h = 1/8` for Euler, midpoint, RK4; DP45 at
 nonfinite state or at the sphere chart's poles.
 
 *Result.* Adaptive energy exponents 0.93 (torus) and 1.00 (sphere); sphere
-position exponents 1.02 (RK4) and 2.05 (adaptive). The RK4 energy envelope is
-nearly flat over this horizon (exponents 0.15 and 0.007; a secular part appears
-on the torus after `L ≈ 100`). Euler on the torus keeps the speed error below
-3.5 % yet its Clairaut constant drifts across the separatrix and the orbit
-winds around the tube (`max |θ| = 285` against the turning latitude 1.37);
-Euler on the sphere reaches the pole of the chart at `s = 14`.
+position exponents 1.02 (RK4) and 2.05 (adaptive); adaptive torus Clairaut
+exponent 1.08. The RK4 energy envelope is flat up to `L = 160` on the torus
+(exponent 0.03 over `L = 10 … 160`) and up to `L = 320` on the sphere
+(exponent 0.007). On the torus its local slopes are 0, 0, 0, 0.14 and 0.86, so
+a secular term emerges between `L = 160` and 320; a single exponent over all
+six checkpoints (0.15) would hide it. Fixed-step Clairaut envelopes are not
+described by one exponent (Euler saturates, local slopes 1.3 down to 0.005;
+RK4 local slopes rise from 0.18 to 0.74), so only the adaptive Clairaut
+exponent is claimed. Euler on the torus keeps the speed error below 3.5 % yet
+its Clairaut constant drifts across the separatrix and the orbit winds around
+the tube (`max |θ| = 285` against the turning latitude 1.37); Euler on the
+sphere reaches the pole of the chart at `s = 14`.
 
 *Counterexamples.* "The energy error of a non-symplectic fixed-step integrator
-grows linearly at every horizon"; "a bounded speed error implies a
-qualitatively correct long-horizon geodesic".
+grows linearly at every horizon" (witness: torus RK4 over `L = 10 … 160`);
+"a bounded speed error implies a qualitatively correct long-horizon
+geodesic".
 
 *Does not prove.* Asymptotic drift laws beyond `L = 320`; symplectic or
 symmetric integrators are not compared.
 
 ## T016 Strongly negative curvature
 
-*Prediction.* On `K = −k²`, `j_head = sinh(kL)/k`. RK4 applied to the growing
-mode has `R(z) = e^z (1 − z⁵/120 + …)`, so the relative error is
-`≈ L k⁵ h⁴/120` and the steps for relative accuracy `τ` are
-`N = L (L k⁵/(120 τ))^{1/4} ∝ k^{5/4}`. The Jacobi linearization has
+*Prediction.* On `K = −k²`, `j_head = sinh(kL)/k`. A one-step method of order
+`p` whose stability function on the growing mode is
+`R(z) = e^z (1 + c z^{p+1} + …)` has relative error `N |c| (kh)^{p+1}` after `N`
+steps, so the steps for relative accuracy `τ` are
+`N(τ) = L (L |c| k^{p+1}/τ)^{1/p} ∝ k^{(p+1)/p}`. RK4 has `c = −1/120`
+(`N ∝ k^{5/4}`); implicit midpoint `c = 1/12` (`N ∝ k^{3/2}`, a pole at
+`kh = 2` and a negative step factor beyond); the 2-stage Gauss–Legendre method
+(the (2, 2) Padé approximant, implicit, A-stable, order 4) `c = −1/720`
+(`N ∝ k^{5/4}`, no real pole), so at equal order it needs
+`(120/720)^{1/4} = 0.639` times the RK4 steps at every `k`. The Jacobi generator `[[0, 1], [−K, 0]]` has
 eigenvalues `±k` (ratio 1): the step is limited by accuracy on the growing
 mode, not by stability of a fast decaying mode, so this is intrinsic
-exponential instability, not classical stiffness. Implicit midpoint has
-`R(z) = e^z (1 + z³/12 + …)` (steps `∝ k^{3/2}`) and a pole at `kh = 2`.
-Along the saddle ridge `y = 0`, `K = −c²/(1 + c²x²)² ≈ −1/(4s²)` away from the
-saddle point, so growth is a power law, heuristically `j_head(L) ∝ c^{√2}`.
+exponential instability, not classical stiffness, and A-stability cannot remove
+the `k^{(p+1)/p}` growth. Comparing implicit midpoint (order 2) with RK4 (order
+4) alone would confuse order with implicitness; the Gauss–Legendre method
+separates them.
 
-*Result.* Adaptive `j_head(L)` within 2.6e−10 of `sinh(kL)/k` for
-`k = 1, 2, 4, 8`. RK4 error exponent 4.94 (measured/predicted 0.90–1.02).
-Required RK4 steps 23, 54, 127, 303 (exponent 1.24); implicit midpoint 832 …
-18476 (exponent 1.49); DP45 81 … 505 (exponent 0.88). Accuracy needs 23–50×
-the RK4 stability limit. The RK4 geodesic endpoint error grows from 2.2e−9
-(`k = 1`) to 0.46 (`k = 8`). Implicit midpoint at `kh = 2.29` changes sign six
-times in seven steps. Saddle: `j_head(L)` = 3.2, 14.3, 105.8, 794, 5775 for
-`c = 1 … 256` (fitted exponent 1.44 for `c ≥ 16`), DP45 steps grow by about
-48 per factor 4 in `c` (logarithmically).
+Saddle ridge (matched asymptotics, not a proof). Along the ridge `y = 0` of
+`Saddle(c)`, `K = −c²/(1 + c²x²)²`. For `c|x| ≫ 1` the arclength from the saddle
+point is `s ≈ c x²/2`, so `K ≈ −1/(4s²)`, independent of `c`. Then
+`j'' = j/(4s²)` has the power solutions `|s|^a` with `a(a − 1) = 1/4`,
+`a± = (1 ± √2)/2`. The field starts at `s = −1` with `j = 0, j' = 1`; inbound
+to the core `|s| ~ 1/c` the `a−` mode grows by `c^{−a−}`, the core of width
+`~1/c` passes a generic mixture, and outbound to `s = 1` the `a+` mode grows by
+`c^{a+}`. Hence `j_head(L) ∝ c^{a+ − a−} = c^{√2}`: polynomial in `c`, although
+`√(peak |K|) L = cL` grows without bound.
 
-*Counterexamples.* "An implicit (A-stable) integrator removes the step
-restriction on strongly negatively curved surfaces"; "Jacobi growth is
-exponential in √(peak |K|) × length".
+*Protocol.* `HyperbolicPlane(k)`, `k = 1, 2, 4, 8`, `L = 2`: adaptive DP45 at
+`rtol = 1e−10`, RK4 with `N = 128`, and the minimal `N` for relative accuracy
+`1e−6` by doubling and bisection on the exact step matrices of RK4, implicit
+midpoint and Gauss–Legendre. The matrix-power step counts are checked against
+the scalar stability functions on the eigenmodes (`1e−10`) and, for RK4, against
+the full geodesic/Jacobi integration (`1e−12`); the eigenvalues are computed
+from the generator at the curvature along the integrated path, and the
+exponential growth rate is fitted from the adaptive `j_head`, not from the
+closed form. `Saddle(c)` ridge geodesic from arclength 1 before the saddle
+point, `c = 1 … 16384`, DP45 at `rtol = 1e−9` checked at `1e−11`; the mirror
+symmetry `x(L) = −x0` is checked (`y = 0` holds by construction of the start).
 
-*Does not prove.* The `√2` saddle exponent is a heuristic far-field argument.
+*Result.* Adaptive `j_head(L)` within 2.6e−10 of `sinh(kL)/k`; growth rate
+fitted from the adaptive runs 1.0009 in `kL`; eigenvalues `±k` to 2.2e−16
+relative. RK4 error exponent 4.94 (measured/predicted 0.90–1.02). Required
+steps: RK4 23, 54, 127, 303 (exponent 1.24); implicit midpoint 832, 2311, 6532,
+18476 (exponent 1.49); Gauss–Legendre 15, 35, 83, 196 (exponent 1.24, 0.647–0.654
+times the RK4 steps, within 2.3 % of the predicted `(120/720)^{1/4} = 0.639`); DP45 81 … 505 (exponent 0.88). Accuracy needs 23–50× the RK4
+stability limit. The RK4 geodesic endpoint error grows from 2.2e−9 (`k = 1`) to
+0.46 (`k = 8`). Implicit midpoint at `kh = 2.29` changes sign six times in seven
+steps. Saddle: `j_head(L)` = 3.2, 14.3, 105.8, 794, 5775, 4.1e4, 2.9e5, 2.1e6
+for `c = 1, 4, … , 16384`; local exponents from `c = 16` decrease
+monotonically, 1.454, 1.431, 1.420, 1.416, 1.415, the last within 0.001 of `√2`;
+DP45 steps grow by about 47 per factor 4 in `c` (logarithmically).
+
+*Counterexamples.* "An implicit (A-stable) integrator removes the growth of
+the step count with `k` on strongly negatively curved surfaces" (an implicit
+method of the same order as RK4 needs fewer steps, but the same `k^{5/4}`
+growth); "Jacobi growth is exponential in √(peak |K|) × length".
+
+*Does not prove.* The `√2` saddle limit is a matched-asymptotics argument
+supported by the local exponents, not a proof; only the ridge geodesic is
+studied; the implicit methods are evaluated on the constant-curvature Jacobi
+system through their exact step matrices.
 
 ## T017 Validity domains of the first-order approximation
 
@@ -218,13 +313,17 @@ unsigned separation. The first-order prediction is within relative tolerance
 `C₂(s*) ≠ 0`, so `ε_max ∝ |s − s*| → 0`; symmetric ones (outer equator) have
 `C₂ ≡ 0` and `ε_max ∝ √|s − s*|`.
 
-*Result* (`τ = 0.01`). Generic torus: `C₂(s*) = 1.52`, `ε_max(s*) ≈ 1e−12`,
-`ε_max(s*/2) = 0.041`; a new integration at `0.9 s*` gives relative error
-0.0050 at `ε_max/2` and 0.020 at `2 ε_max`, confirming the predicted boundary.
+*Result* (`τ = 0.01`). Generic torus: `C₂(s*) = 1.52`, `ε_max(s*) ≈ 9e−13`,
+`ε_max(s*/2) = 0.041`. The remainder model predicts relative errors of exactly
+`τ/2` at `ε_max/2` and `2τ` at `2 ε_max`; new integrations at `0.9 s*` give
+0.00499 and 0.0201, within 0.2 % and 0.5 % of those predictions (checked to
+5 %, so a `C₂` wrong by more than about 5 % would fail the check).
 Sphere, pure heading: `ε_max = 0.490` at `0.999π` and `1.001π`; C₃ matches its
-closed form to 8e−5. Hyperbolic `ε_max` 0.475 … 0.080 for `s = 0.25 … 2.5`
-(within 0.35 % of the closed form). Sphere lateral+heading: `C₂(3π/4) = 0.500`.
-Equator: `max |C₂| = 5e−6`, cubic remainder at `s*`.
+closed form to 8e−5 wherever that closed form is nonzero (at `s = π/2` it is
+zero and the fitted remainder is roundoff). Hyperbolic `ε_max` 0.475 … 0.080 for
+`s = 0.25 … 2.5` (within 0.35 % of the closed form; the fitted C₃ absorbs
+`ε⁵` terms, up to 0.8 % at `s = 2.5`). Sphere lateral+heading:
+`C₂(3π/4) = 0.500`. Equator: `max |C₂| = 5e−6`, cubic remainder at `s*`.
 
 *Counterexample.* "The validity domain of the first-order approximation
 shrinks to zero at every conjugate point." Using these domains to certify
@@ -241,22 +340,34 @@ error enters at `O(K² h⁴)`, so its ratio grows like `1/K`. The actual limit i
 floating point: once `S` approaches `ulp(L)` the computed deviation is rounded
 away.
 
-*Protocol.* Thirteen length-2 paths (plane, cylinder, spheres of radius 1 to
-1e8, two tori, saddle, two bumps, hyperbolic plane); Euler, midpoint, RK4 with
-`N = 4 … 128`; true deviations from cancellation-free closed forms or DP45 at
-`rtol = 1e−12`; resolved when `S/E ≥ 10` for every finer step.
+*Protocol.* Fourteen length-2 paths (plane, cylinder, six spheres of radius 1
+to 1e8, two tori, saddle, two bumps, hyperbolic plane); the plane and cylinder
+use `K` recomputed from their second fundamental form, so a zero signal there
+tests the embedding and not the literal `K = 0` of the core classes. Euler,
+midpoint, RK4 with `N = 4 … 128`; true deviations from cancellation-free closed
+forms or DP45 at `rtol = 1e−12` (checked at `1e−11`, a self-convergence
+reference); resolved when `S/E ≥ 10` for every finer step. Each error is
+classed per method and step as roundoff-limited when it is below 64 ulp(L), or
+below 1000 ulp(L) and not decreasing at the next step (a declared convention);
+roundoff-limited ratios stay in the artifacts and out of the ratio claims and
+witnesses.
 
-*Result.* RK4 resolves every truncation-limited signal from `N = 16`
-(minimum ratio 1.2e5). Euler needs `N = 32` (64 on the hyperbolic plane),
-midpoint `N = 4` (8), on every such surface regardless of `K`: at `N = 16` the
-Euler and midpoint ratios for `K = 1e−8` and `K = 1e−2` agree within 2 %,
-and the RK4 ratio grows 98× from `K = 1e−2` to `1e−4`. At `K = 1e−16` the
-computed deviation is exactly zero for every method and step (ratio 1), and at
-`K = 1e−14` refining RK4 lowers the ratio from 63 to 9.9. Flat surfaces show
-no spurious signal.
+*Result.* RK4 resolves every truncation-limited signal from `N = 16` (minimum
+ratio 1.2e5, hyperbolic plane); its errors are roundoff-limited for `K = 1e−4`
+from `N = 32` and at every step for `K ≤ 1e−8`. Euler needs `N = 32` (64 on the
+hyperbolic plane), midpoint `N = 4` (8). Between `K = 1` and `1e−2` weaker
+curvature *is* harder for Euler and midpoint (ratio factors 0.64 and 0.41 at
+`N = 16`); below `K = 1e−2` their ratios no longer depend on `K` (`K = 1e−8`
+against `1e−2`: 0.996 and 0.984), and the RK4 ratio grows 98× from `K = 1e−2`
+to `1e−4`. At `K = 1e−16` the computed deviation is exactly zero for every
+method and step (ratio 1); at `K = 1e−14` every run is roundoff-limited. Flat
+surfaces show no spurious signal and a second-form `K` of exactly 0. The
+optional SciPy DOP853 runs agree with the DP45 references to 3.4e−13; they
+share `ciw`'s right-hand side and check the stepper only.
 
 *Counterexamples.* "Weaker intrinsic curvature is harder to resolve at a fixed
-step size"; "refining the step size always makes a nonzero curvature effect
+step size" (it holds for Euler and midpoint only down to `K ~ 1e−2`, and not
+for RK4); "refining the step size always makes a nonzero curvature effect
 resolvable". Transfer to measured sensor data is a `sensor_performance` claim
 and is `not_established`.
 
@@ -268,3 +379,8 @@ and is `not_established`.
   allow tori with `R ≥ 10⁶`; today `det g / tr(g)²` refuses them as degenerate.
 * Hyperbolic-plane isometries (Möbius maps) as a `ChartMap` would extend T012 to
   intrinsic surfaces.
+* A second-form (embedding-derived) curvature option in the core surfaces would
+  let flatness tests run without the local `SecondFormCurvature` wrapper.
+* An implicit geodesic integrator (for example Gauss–Legendre collocation) in
+  `ciw.lab.integrators` would let T016 compare implicit methods on the full
+  nonlinear system instead of the constant-curvature step matrices.

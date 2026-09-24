@@ -156,8 +156,17 @@ def test_t012_frame_invariance_and_refusal(run):
     flipped = _labelled(report, "left-handed basis (e1, -e2) is the geometric perturbation -eps")
     assert flipped["value"]["ratio_along_right_handed_normal"] == pytest.approx(-1.0, abs=1e-9)
     assert abs(flipped["value"]["right_handed_minus_exact"]) < 1e-10 and "counterexample" not in flipped
-    invariant = _labelled(report, "orientation-reversing basis change when the perturbation and the normal")
-    assert invariant["value"] == pytest.approx(1.0, abs=1e-9)
+    invariant = _labelled(report, "On the unit sphere, where the separation sin(s) sin(eps) is odd in eps")
+    assert invariant["value"] == pytest.approx(1.0, abs=1e-9) and "counterexample" not in invariant
+    # Off the sphere the orientation-reversed separation agrees only to first order: own/right - 1 ~ eps.
+    torus = _labelled(report, "agrees only to first order")
+    assert torus["evidence_status"] == "numerically_verified"
+    assert torus["value"]["eps"] == [1e-3, 1e-2, 4e-2]
+    assert torus["value"]["own_over_right_minus_1"][0] == pytest.approx(-4.763e-4, rel=1e-2)
+    assert torus["value"]["loglog_slope"] == pytest.approx(1.0, abs=0.05)
+    assert torus["counterexample"]["statement"].startswith("Finite-eps signed separations are invariant")
+    assert any(c["reference_kind"] == "self_convergence" for c in torus["basis"]["checks"])
+    assert "to first order in eps" in report["mathematical_model"]
     artifacts = {a["path"].rsplit("/", 1)[-1] for a in report["generated_artifacts"]}
     assert {"frame-invariance.svg", "orientation-separation.svg"} <= artifacts
     refusal = _labelled(report, "improper rotation")
@@ -234,6 +243,9 @@ def test_t016_negative_curvature_is_not_stiffness(run):
     assert implicit["value"]["gauss_legendre_2"]["exponent"] == pytest.approx(1.25, abs=0.05)
     # An implicit method of the same order as RK4 needs fewer steps: the growth is not about implicitness.
     assert max(implicit["value"]["gauss_legendre_2"]["over_rk4_steps"]) < 1.0
+    ratio_check = [c for c in implicit["basis"]["checks"] if "GL/RK4 steps" in c["reference"]]
+    assert len(ratio_check) == 1 and ratio_check[0]["passed"] and ratio_check[0]["observed"] < 0.05
+    assert "geodesic_endpoint_distance_error" not in stiffness["value"]
     assert implicit["value"]["sign_changes_at_kh"][1] >= 1 and "A-stable" in implicit["counterexample"]["statement"]
     references = {c["reference"]: c for f in report["findings"] for c in f["basis"].get("checks", [])}
     assert any(c["reference_kind"] == "cross_implementation" and "full geodesic/Jacobi" in name
@@ -298,6 +310,9 @@ def test_t018_resolvability_report(run):
     assert floor["value"] == {"max_ratio_K_1e-16": 1.0, "nonzero_computed_deviations_K_1e-16": 0,
                               "K_1e-14_all_runs_roundoff_limited": True}
     assert "rk4_ratios_sphere_1e7" not in floor["counterexample"]["witness"]
+    # Every value in the floor finding is checked, including the K = 1e-14 roundoff classification.
+    assert any("K = 1e-14" in c["reference"] for c in floor["basis"]["checks"])
+    assert "except the K = 1e-16 floor finding" in report["uncertainty"]
     flat = _labelled(report, "no spurious curvature")["value"]
     assert flat == {"max_abs_deviation": 0.0, "max_abs_path_curvature": 0.0}
     assert "{" not in report["numerical_result"] and "K = 1e-14 RK4 ratios" not in report["numerical_result"]
