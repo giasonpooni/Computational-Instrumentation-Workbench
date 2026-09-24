@@ -91,6 +91,19 @@ The Julia worker remains outside the packaged operation path until its project
 and manifest are instantiated, its runtime identity is pinned, and successful,
 refusal and replay gates run in CI.
 
+## Shared reference lifecycle
+
+The thermal, machine-manifest and project-graph operations share one lifecycle in
+`src/ciw/reference_workflow.py`: exact source retention, a fresh execution
+occurrence with separate result and numerical-result identities, a verification
+that reproduces the occurrence in the same process, save/reopen validation
+without a provider, and replay with a receipt. Each workflow supplies its
+constants and four hooks: source validation, native data, the runtime identity
+it publishes and the configuration a bundle retains. The thermal workflow
+overrides the data check to use the contract's tolerances while pinning the
+Python reference's provenance. The shared module is part of every reference's
+algorithm identity, so a change to it is a runtime change for replay.
+
 ## Current boundary and next gate
 
 The thermal profile is now registered as the provider-free

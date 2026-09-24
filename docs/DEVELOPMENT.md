@@ -43,6 +43,7 @@ and transport semantics.
 | Path | Contents |
 | --- | --- |
 | `src/ciw/core/` | Record, identity and covariance contracts |
+| `src/ciw/reference_workflow.py` | Shared lifecycle of the provider-free Python reference operations |
 | `src/ciw/adapters/` | Adapter bindings and trusted saved-payload validators, including RCI provenance and covariance dependency checks |
 | `src/ciw/operations/` | Operation registry, execution records and schema dispatch |
 | `src/ciw/session.py`, `server.py`, `cli.py` | Shared state, transport and terminal commands |
