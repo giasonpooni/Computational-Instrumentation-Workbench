@@ -4,6 +4,7 @@ from __future__ import annotations
 import base64
 import json
 import os
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -102,7 +103,17 @@ def test_native_exchange_survives_save_reopen_and_replay(monkeypatch, tmp_path):
 def test_provider_revision_mismatch_is_refused(tmp_path):
     fake = tmp_path / "provider"
     fake.mkdir()
-    with pytest.raises(ValueError, match="revision"):
+    git = ["git", "-C", str(fake), "-c", "user.name=ciw", "-c", "user.email=ciw@example.invalid"]
+    subprocess.run([*git, "init", "-q"], check=True)
+    subprocess.run([*git, "commit", "-q", "--allow-empty", "-m", "other revision"], check=True)
+    with pytest.raises(ValueError, match="revision differs from the exchange pin"):
+        adapter._runtime(fake)
+
+
+def test_provider_outside_a_git_checkout_is_refused(tmp_path):
+    fake = tmp_path / "provider"
+    fake.mkdir()
+    with pytest.raises(ValueError, match="readable git checkout"):
         adapter._runtime(fake)
 
 
