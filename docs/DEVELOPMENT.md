@@ -172,12 +172,22 @@ whose OpenBLAS kernels are the SkylakeX set; `OPENBLAS_CORETYPE=Haswell` or
 changes on purpose, and say so in the commit; a silent regeneration hides
 exactly the incompatibility the gate exists to catch.
 `python scripts/check_reference_mutants.py` is the mutation gate for the same
-module: it removes one identity check at a time (evidence binding, request
-and numerical commitments, bundle digest, session identity shape, code
-digest shape, fresh-occurrence and self-referencing receipt rules, runtime
-identity comparison, tolerance and kernel probe) and requires the reference
-tests to fail for every one. `tests/test_reference_identity_checks.py` holds
-the guarding cases; a surviving mutant means a check has lost its test.
+module and for the retained workbench: it removes one check at a time and
+requires the guarding tests to fail for every one. The `reference` target
+removes identity checks of `src/ciw/reference_workflow.py` (evidence
+binding, request and numerical commitments, bundle digest, session identity
+shape, code digest shape, fresh-occurrence and self-referencing receipt
+rules, runtime identity comparison, tolerance and kernel probe), guarded by
+`tests/test_reference_identity_checks.py`. The `workbench` target removes
+record checks of `src/ciw/workbench.py` (source kind and byte binding,
+bundle identity, verification presence, receipt count, receipt digest and
+identity, restored source content, duplicate bundles, identity collisions
+and the upstream requirement), guarded by
+`tests/test_workbench_record_checks.py`; several of these repeat checks the
+reference workflows make themselves, so the guarding cases exercise the
+workbench functions directly, with a stub workflow where the workbench check
+is the only guard for a provider-backed kind. A surviving mutant means a
+check has lost its test.
 Covariance CLI argument parsing and the pre-execution refusal of non-object
 parameters are asserted by
 `tests/test_adapter_cli.py::test_covariance_verbs_parse_and_refuse_non_object_parameters_before_execution`;
