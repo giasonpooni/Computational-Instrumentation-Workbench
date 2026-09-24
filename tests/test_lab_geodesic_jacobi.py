@@ -3,7 +3,8 @@
 All tasks share one module-scoped context so memoized integrations run once.
 Optional modules are skipped with importorskip; the numpy-only fallbacks are
 exercised by hiding them from the context. The pinned provider comparison runs
-only when CIW_LAB_CSG_REPO names a checkout.
+only when CIW_LAB_CSG_REPO names a checkout: the module context then binds it
+as ``csg`` (as the clean-room gate does), so T005 and T008 run with it once.
 """
 import json
 import math
@@ -28,6 +29,8 @@ IMPLEMENTATIONS = module_implementations("geodesic_jacobi")
 OPTIONAL = frozenset({"module:sympy", "module:mpmath", "module:scipy"})
 HAND_CLAIM = ("The hand-derived metrics, Christoffel symbols, geodesic equations and curvatures of the section doc, "
               "as transcribed in hand_geometry, match ciw.lab.surfaces on nine charts")
+CSG_EVENTS_CLAIM = ("ciw conjugate and focal points match the pinned CSG provider's focus events on "
+                    "constant-curvature paths")
 EGREGIUM_CLAIM = ("The second-fundamental-form curvature (LN - M^2)/det g equals the intrinsic curvature on the six "
                   "embedded charts (Theorema Egregium)")
 
@@ -49,7 +52,8 @@ def _run(ctx, task_id):
 
 @pytest.fixture(scope="module")
 def lab(tmp_path_factory):
-    ctx = runner.Context(tmp_path_factory.mktemp("geodesic-jacobi"))
+    checkout = os.environ.get("CIW_LAB_CSG_REPO")
+    ctx = runner.Context(tmp_path_factory.mktemp("geodesic-jacobi"), {"csg": Path(checkout)} if checkout else {})
     reports = {}
 
     def run(task_id):
@@ -198,13 +202,14 @@ def test_t002_references_agree(lab):
     rows = _artifact(lab.ctx, "T002", "references.json")["rows"]
     assert all(rows[k]["reference_error_estimate"] < 1e-18 for k in gj.VARIABLE_KEYS)
     assert all(rows[k]["scipy_vs_reference"]["max"] < 1e-11 for k in rows)
-    # agreement.svg plots each binary64 end state's gap to a reference exact to 1e-18, below 1e-12. Rounding, whose
+    # binary64-gaps.svg plots each binary64 end state's gap to a reference exact to 1e-18, below 1e-12. Rounding, whose
     # last bits follow the BLAS kernel, moves each gap by at most the 64 eps it records as every point's bound: at most
     # 128 ulps of the path's largest end-state entry, all of order one. The smallest gap, which sets the log axis, is
     # within that bound, so the figure's bytes follow the kernel: it is declared a rounding-level figure and compared
-    # by its recorded values; clairaut.svg plots RK4 truncation drift and is not.
+    # by its recorded values; clairaut.svg plots RK4 truncation drift and agreement.svg rounding-free 44-digit gaps, and
+    # neither is.
     eps = np.finfo(float).eps
-    recorded = _recorded(lab.ctx, "T002", "agreement.svg")
+    recorded = _recorded(lab.ctx, "T002", "binary64-gaps.svg")
     index = _artifact(lab.ctx, "T002", "references.json")["figure_path_index"]
     order = [index[str(i)] for i in range(1, len(index) + 1)]
     for name, gap in (("ciw Richardson", "ciw_vs_reference"), ("scipy DOP853", "scipy_vs_reference")):
@@ -214,7 +219,7 @@ def test_t002_references_agree(lab):
                for row in rows.values())
     plotted = [y for series in recorded.values() for y in series["y"]]
     assert max(plotted) < 1e-12 and min(plotted) <= 64 * eps
-    assert _figure_declarations(report) == {"agreement.svg": True, "clairaut.svg": None}
+    assert _figure_declarations(report) == {"binary64-gaps.svg": True, "agreement.svg": None, "clairaut.svg": None}
     closed = _findings(report)["ciw Richardson RK4 end states match closed-form geodesics and transfer matrices on "
                                "the six closed-form charts"]
     # scipy integrates the ciw equations: a high_precision check, not an independent one.
@@ -226,13 +231,113 @@ def test_t002_references_agree(lab):
 
 
 @pytest.mark.lab_task("T002")
+def test_t002_reference_integrator_agrees_with_mpmath_odefun(lab):
+    for name in ("sympy", "mpmath"):
+        pytest.importorskip(name)
+    import mpmath
+
+    report = lab("T002")
+    table = _artifact(lab.ctx, "T002", "odefun.json")
+    assert table["dps"] == gj.MP_DPS >= 34 and table["degree"] == gj.ODEFUN_DEGREE
+    assert table["guarded_dps"] == gj.MP_DPS + gj.MP_GUARD and table["gbs_order"] == 2 * len(gj.GBS_SEQUENCE) == 16
+    for key in gj.VARIABLE_KEYS:
+        record = _findings(report)[gjt.odefun_claim(key)]
+        assert record["evidence_status"] == "independently_verified" and "order-16" in record["claim"]
+        independent = record["basis"]["independent_check"]
+        # The ciw-authored integrator is the producer, identified by version and module digest; mpmath's is the checker.
+        producer, checker = independent["producer"], independent["checker"]
+        assert producer["implementation"] == "ciw.lab.geodesic_jacobi_common.gbs_integrate"
+        assert producer["revision"].startswith("ciw ")
+        assert producer["source_sha256"] == runner.source_digest(gjt.COMMON) and len(producer["source_sha256"]) == 64
+        assert checker == {"implementation": "mpmath.odefun", "revision": mpmath.__version__}
+        assert independent["comparison"] == "le" and independent["tolerance"] == 1.0
+        assert independent["observed"] == record["value"]["gap_over_estimate"] < 1e-3
+        assert record["value"]["gbs_minus_odefun"] < 1e-24
+        assert all(check["passed"] for check in record["basis"]["checks"])
+        # The estimate measures the error of the 10-step result, 2^p - 1 times that of the retained 20-step one, so
+        # log2(estimate / gap + 1) observes the order p = 16 of eight stages; the check is two-sided.
+        order = [check for check in record["basis"]["checks"] if check["reference_kind"] == "analytic"]
+        assert len(order) == 1 and order[0]["comparison"] == "abs_le" and order[0]["tolerance"] == 1.0
+        assert order[0]["observed"] == record["value"]["observed_order"] - 16 and abs(order[0]["observed"]) < 0.5
+        row = table["rows"][key]
+        assert abs(row["odefun_speed_squared_drift"]) < 1e-30 and abs(row["odefun_determinant_minus_one"]) < 1e-30
+        assert row["odefun_evaluations"] == row["odefun_taylor_steps"] * gj.ODEFUN_DEGREE
+        # The uncertainty is the measured rounding of the 34-digit end state (against the same macro-steps at 44
+        # digits), which bounds how far it moves the gap; the regression tolerance sits well above that share.
+        assert record["uncertainty"]["kind"] == "roundoff" and record["uncertainty"]["value"] == row["gbs_rounding"]
+        assert 0 < row["gbs_rounding"] < 1e-31
+        assert abs(row["gbs_minus_odefun"] - row["guarded_gbs_minus_odefun"]) <= row["gbs_rounding"] * (1 + 1e-9)
+        assert gjt.TOL_ODEFUN["rel"] >= 5 * row["gbs_rounding"] / row["gbs_minus_odefun"]
+        assert record["regression_tolerance"] == gjt.TOL_ODEFUN
+    assert "mpmath.odefun" in report["numerical_result"] and "observed orders" in report["numerical_result"]
+    # The figure plots the estimate and the rounding-free gap at two significant digits: neither the 34-digit gap
+    # (which a few-ulp change of the binary64 start moves by up to 1.2e-3) nor the rerun's 1e-6 moves it.
+    figure = (lab.ctx.output_dir / "artifacts" / "T002" / "agreement.svg").read_text(encoding="utf-8")
+    assert figure == gjt.agreement_figure(table["rows"])
+    nudged = {key: dict(row, gbs_minus_odefun=row["gbs_minus_odefun"] * (1 + 2e-3),
+                        guarded_gbs_minus_odefun=row["guarded_gbs_minus_odefun"] * (1 + 1e-6),
+                        gbs_error_estimate=row["gbs_error_estimate"] * (1 - 1e-8))
+              for key, row in table["rows"].items()}
+    assert gjt.agreement_figure(nudged) == figure
+    paths = list(ET.fromstring(figure).iter("{http://www.w3.org/2000/svg}path"))
+    assert len(paths) == 2 and len(table["figure_path_index"]) == len(gj.VARIABLE_KEYS)
+
+
+@pytest.mark.lab_task("T002")
+def test_odefun_order_check_refutes_a_lower_order_extrapolation(lab):
+    # One stage short (sequence 2..14, order 14) the reference still agrees with odefun within its own estimate, but
+    # its observed order is about 14, so the order check refutes the order-16 finding instead of keeping its wording.
+    for name in ("sympy", "mpmath"):
+        pytest.importorskip(name)
+    lab("T002")
+    derived = gjt._derived(lab.ctx, gj.path("saddle").surface)
+    short = gj.GBS_SEQUENCE[:-1]
+    ref = gj.mp_reference("saddle", derived=derived, sequence=short)
+    row = gjt.odefun_row(ref, gjt._odefun(lab.ctx, "saddle"), gj.mp_guarded_state("saddle", derived, sequence=short))
+    assert abs(row["observed_order"] - 2 * len(short)) < 0.5 and row["gap_over_estimate"] < 1e-3
+    record = gjt._odefun_finding("saddle", row)
+    assert record["evidence_status"] == "not_established" and record["basis"]["independent_check"]["passed"]
+    assert [check["reference_kind"] for check in record["basis"]["checks"] if not check["passed"]] == ["analytic"]
+
+
+@pytest.mark.lab_task("T002")
+def test_odefun_reference_follows_the_closed_form_on_the_sphere():
+    # The odefun harness (joint lambdify, state order, Jacobi block) against closed forms, independently of the GBS.
+    pytest.importorskip("sympy")
+    pytest.importorskip("mpmath")
+    length = 0.6
+    derived = gj.derive("sphere")
+    result = gj.odefun_reference("sphere", derived, dps=20, degree=16, length=length)
+    assert result["dps"] == 20 and result["taylor_steps"] >= 1
+    assert result["evaluations"] == 16 * result["taylor_steps"]
+    state = np.array(result["state"])
+    exact = gj.exact_position("sphere", [length])[0]
+    assert np.linalg.norm(gj.position("sphere", state[:2]) - exact) < 1e-14
+    # K = 1: lateral column (cos s, -sin s), heading column (sin s, cos s).
+    assert np.allclose(state[4:], [math.cos(length), -math.sin(length), math.sin(length), math.cos(length)],
+                       rtol=0.0, atol=1e-15)
+    assert abs(result["determinant_minus_one"]) < 1e-18 and abs(result["speed_squared_drift"]) < 1e-18
+    # The Taylor degree sets the cost, not the result: mpmath's default degree (3 + 1.5 dps) agrees to rounding.
+    default = gj.odefun_reference("sphere", derived, dps=20, degree=33, length=length)
+    assert gj.mp_difference(result["mpf_state"], default["mpf_state"], dps=20) < 1e-18
+
+
+@pytest.mark.lab_task("T002")
 def test_t002_without_optional_modules(tmp_path):
     report = _run(BareContext(tmp_path), "T002")
     assert report["state"] == "partial"
-    assert set(_labels(report).values()) == {"numerically_verified"}
-    assert "ciw Richardson RK4 is self-convergent on the torus path (no independent reference available)" \
-        in _labels(report)
+    labels = _labels(report)
+    assert "ciw Richardson RK4 is self-convergent on the torus path (no independent reference available)" in labels
+    # The mpmath.odefun comparison keeps its claims and is recorded as not established, not dropped.
+    odefun = [gjt.odefun_claim(key) for key in gj.VARIABLE_KEYS]
+    assert all(labels.pop(claim) == "not_established" for claim in odefun)
+    assert all(_findings(report)[claim].get("expected_not_established") is True for claim in odefun)
+    assert set(labels.values()) == {"numerically_verified"}
+    assert report["evidence_status"]["primary"] == "numerically_verified"
     assert any("Unavailable optional modules" in item for item in report["unresolved_assumptions"])
+    assert any("mpmath.odefun comparison does not run" in item for item in report["unresolved_assumptions"])
+    written = {Path(artifact["path"]).name for artifact in report["generated_artifacts"]}
+    assert {"references.json", "binary64-gaps.svg"} <= written and not written & {"odefun.json", "agreement.svg"}
 
 
 @pytest.mark.lab_task("T003")
@@ -408,9 +513,10 @@ def test_t005_separation_law(lab):
 
 @pytest.mark.lab_task("T005")
 @pytest.mark.skipif(not os.environ.get("CIW_LAB_CSG_REPO"), reason="CIW_LAB_CSG_REPO names no CSG checkout")
-def test_t005_csg_provider_agreement(tmp_path):
-    ctx = runner.Context(tmp_path, {"csg": Path(os.environ["CIW_LAB_CSG_REPO"])})
-    report = _run(ctx, "T005")
+def test_t005_csg_provider_agreement(lab):
+    # The module context binds the checkout, so the provider comparison runs once, with the other T005/T008 tests.
+    assert lab.ctx.providers["csg"] == Path(os.environ["CIW_LAB_CSG_REPO"])
+    report = lab("T005")
     claim = ("ciw joint geodesic + Jacobi transfer matrices match the pinned CSG provider on six constant-curvature "
              "paths")
     record = _findings(report)[claim]
@@ -423,9 +529,8 @@ def test_t005_csg_provider_agreement(tmp_path):
     pin = gj.csg_pin()
     assert report["provider_runtime_identity"]["provider"]["revision"] == pin["revision"]
     assert report["provider_runtime_identity"]["provider"]["source_tree"] == pin["source_tree"]
-    focus = _run(ctx, "T008")
-    events = _findings(focus)["ciw conjugate and focal points match the pinned CSG provider's focus events on "
-                              "constant-curvature paths"]
+    focus = lab("T008")
+    events = _findings(focus)[CSG_EVENTS_CLAIM]
     assert events["evidence_status"] == "independently_verified"
     assert all(c["reference_kind"] != "cross_implementation" for c in events["basis"]["checks"])
 
@@ -437,7 +542,14 @@ def _git_prefix(repo, tmp_path):
 
 
 @pytest.mark.lab_task("T005", "T008")
-def test_csg_checkout_refusals(tmp_path, monkeypatch):
+def test_csg_checkout_refusals(lab, tmp_path, monkeypatch):
+    # The refusal runs below reuse the module run's memoized integrations and run only their own provider step.
+    lab("T005"), lab("T008")
+
+    class Refusing(runner.Context):
+        def memo(self, key, compute):
+            return super().memo(key, compute) if key == "gj-csg" else lab.ctx.memo(key, compute)
+
     # No repository above tmp_path can be discovered, so a plain directory is unreadable by construction.
     monkeypatch.setenv("GIT_CEILING_DIRECTORIES", str(tmp_path))
     plain = tmp_path / "plain"
@@ -463,7 +575,7 @@ def test_csg_checkout_refusals(tmp_path, monkeypatch):
         (repo / "src" / "numpy.py").write_text("", encoding="utf-8")
         (repo / "src" / "__pycache__" / "x.pyc").write_bytes(b"")
         assert gj.untracked_sources(repo) == ["src/numpy.py"]
-    ctx = runner.Context(tmp_path / "out", {"csg": plain})
+    ctx = Refusing(tmp_path / "out", {"csg": plain})
     for task_id in ("T005", "T008"):
         report = _run(ctx, task_id)
         assert report["state"] == "partial", task_id
@@ -661,7 +773,10 @@ def test_t007_symbolic_step_determinants():
 def test_t008_conjugate_and_focal_points(lab):
     report = lab("T008")
     assert report["state"] == "completed"
-    assert set(_labels(report).values()) == {"numerically_verified"}
+    labels = _labels(report)
+    if "csg" in lab.ctx.providers:  # CIW_LAB_CSG_REPO: the provider's focus events are the one independent finding
+        assert labels.pop(CSG_EVENTS_CLAIM) == "independently_verified"
+    assert set(labels.values()) == {"numerically_verified"}
     found = _findings(report)
     sphere = found["Sphere conjugate points lie at pi R and 2 pi R and focal points at pi R/2 and 3 pi R/2 "
                    "(R = 1 and R = 2)"]["value"]

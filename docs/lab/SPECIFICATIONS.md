@@ -167,8 +167,12 @@ For an embedding `X(u)` the metric is `gᵢⱼ = Xᵢ·Xⱼ` and
 `g(u̇, u̇)` is a first integral; the integrators never renormalize it, so its
 drift is a measured quantity (T004). References: exact geodesics on the plane,
 sphere (great circles), cylinder (helices) and hyperbolic plane (semicircles);
-high-precision independent integration elsewhere (T002). Integrator orders
-1, 2, 4 and the adaptive Dormand–Prince 5(4) behavior are tested in T003.
+elsewhere a 34-digit integration of independently (sympy) derived equations,
+whose extrapolation integrator must agree with mpmath's Taylor-series solver
+`mpmath.odefun` within its own macro-step error estimate and at its nominal
+order 16, observed as log₂(estimate / gap + 1) (T002; the reference's rounding
+is measured against a 44-digit rerun, not assumed). Integrator orders 1, 2, 4
+and the adaptive Dormand–Prince 5(4) behavior are tested in T003.
 The symmetric Gauss collocation methods (implicit midpoint, order 2; two-stage
 Gauss–Legendre, order 4) solve their stage equations `K = f(y + hAK)` by
 fixed-point iteration from `K = f(y)` until the stage values change by at most
