@@ -109,19 +109,31 @@ no conjugate point within the horizon, so their margins are tied at "more than
 about 8". Those routes amplify heading errors 20 to 100 times more than
 route 0. Focus-margin groups, best first: [[3, 4, 5, 8], [7], [6], [0], [1], [2]].
 
-The rankings are decided by gaps of at least 3.3e-3 relative (routes 1 and 2
-by length) and 0.39 between focus-margin groups. The ranking finding checks
-both against ten times the route-value uncertainty (5.6e-6). Route values
-differ between OpenBLAS kernels in their last digits: the torus metric and its
-derivatives are BLAS dot products of 3-vectors, which kernels round
-differently (with those dot products written out, five kernels agree bit for
-bit). Across the SkylakeX, Haswell, Sandybridge, Nehalem and Katmai kernels,
-routes 6, 7 and 8 differ by at most 1.4e-14 in focus margin and 1.5e-15
-relative in amplification; lengths, headings and rankings are identical. The
-ranking finding's counterexample witness quotes route values, so it carries a
-regression tolerance of 1e-12 absolute plus 1e-13 relative, about 70 to 100
-times that spread. The route table keeps the route-accuracy tolerance (1e-6
-absolute plus 1e-5 relative).
+The rankings are decided by gaps of at least 3.3e-3 relative in length
+(routes 1 and 2), 1.8e-2 relative in amplification (routes 4 and 3) and 0.39
+between focus-margin groups. The ranking finding checks each gap against ten
+times the uncertainty of its own quantity. Lengths: 1.6e-7 relative, the
+endpoint distance to the lift of q (3.1e-7 in chart units) times the largest
+metric scale R + r = 3, over the shortest length. Amplifications: 2.4e-7
+relative, from batch RK4 against ciw.lab.jacobi and from scipy/sympy when
+they are installed. Focus margins: about 1.5e-6 in length units. That is the
+5.2e-7 move of the conjugate points when the ciw.lab.jacobi step is halved (or
+the scipy/sympy difference of 5.6e-7, when larger), plus the length
+uncertainty. The halved-step run needs neither scipy nor sympy, so the
+focus-margin uncertainty is measured in every configuration.
+
+Route values differ between OpenBLAS kernels in their last digits: the torus
+metric and its derivatives are BLAS dot products of 3-vectors, which kernels
+round differently (with those dot products written out, five kernels agree bit
+for bit). Across the SkylakeX, Haswell, Sandybridge, Nehalem and Katmai
+kernels, routes 6, 7 and 8 differ by at most 1.5e-14 in focus margin and
+1.6e-15 relative in amplification and targeting condition; lengths, headings
+and rankings are identical. The ranking finding's counterexample witness
+quotes routes 0, 2, 3, 4, 5 and 8. Of its entries only route 8's amplification
+and targeting condition vary, by at most 1.4e-15 relative, so the witness
+carries a regression tolerance of 1e-13 relative, about 75 times that spread.
+The route table keeps the route-accuracy tolerance (1e-6 absolute plus 1e-5
+relative).
 
 A 360-heading fan misses route 5. At 1440 headings the search finds 9 routes,
 and 2880 headings give the same 9. Each run of adjacent rays that pass the same

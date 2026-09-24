@@ -342,7 +342,7 @@ the triangulation's rounding (BLAS camera products and the LAPACK SVD, about
 1e-15 m) over twice the step, which depends on the OpenBLAS kernel. With a
 1e-3 px step the residual differed between kernels by up to 1.5e-6 relative,
 beyond its regression tolerance of 1e-6. With 0.01 px it differs by at most
-2.5e-8 across the SkylakeX, Haswell, Sandybridge, Nehalem and Katmai kernels
+2.6e-8 across the SkylakeX, Haswell, Sandybridge, Nehalem and Katmai kernels
 (about 40 times below the tolerance), and the step's h² truncation shifts it
 by 1.5e-6 relative, the same on every kernel.
 Undistorting with the true (k₁, k₂, p₁, p₂) model removes the bias to
@@ -383,7 +383,7 @@ the closed form. The closed form matches it to 2.3e-13 px. Two controls give
 projection. The largest offset is 0.011, 0.045 and 0.178 px (slope 2.0000 in
 ρ). Triangulating the ellipse centres biases the chords by J_pix·δ_pix to
 first order (residual 4e-4 relative; with the same 0.01 px step it differs
-between the five kernels by at most 5.5e-8 relative, about 18 times below its
+between the five kernels by at most 5.6e-8 relative, about 18 times below its
 tolerance of 1e-6). At 8 mm the bias reaches 80 µm on the
 circumferential helix, 40 µm at 45° and 12 µm on the ruling, with slope 2 in
 ρ. For comparison, the 0.25 px noise gives a chord RMS of about 0.19 mm.

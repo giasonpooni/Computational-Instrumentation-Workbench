@@ -27,6 +27,7 @@ from ciw.lab import runner
 from ciw.lab.evidence import finding
 from ciw.lab.registry import load_queue, section_implementations
 from ciw.lab.report import validate_report
+from ciw.lab.surfaces import Sphere
 
 TASKS = [f"T0{n}" for n in range(19, 33)]
 IMPLEMENTATIONS = section_implementations("flat-torus-topology")
@@ -354,6 +355,11 @@ def test_route_helpers():
     record = finding("claim", "numerical", 0, basis)
     assert record["evidence_status"] == NE
     assert all(math.isfinite(check["observed"]) for check in basis["checks"])
+    # The halved-step conjugate-point change (T024's focus-margin uncertainty): along the equator of the unit sphere
+    # the first conjugate point is pi, so a recorded point off by 1e-3 moves by that much; censored routes are skipped.
+    equator = {"first_conjugate": math.pi + 1e-3, "transfer_step": math.pi / 40, "heading": math.pi / 2}
+    change = ftt._halved_step_conjugate_change(Sphere(1.0), [math.pi / 2, 0.0], [equator, {"first_conjugate": None}])
+    assert change == pytest.approx(1e-3, abs=1e-6)
 
 
 def test_independent_disagreement_makes_t024_partial_not_blocked(tmp_path, monkeypatch):
@@ -394,11 +400,14 @@ def test_t024_t025_route_ranking_and_front(reports):
     assert ranks["value"]["by_focus_margin"] == [[3, 4, 5, 8], [7], [6], [0], [1], [2]]
     assert "counterexample" in ranks
     # The witness quotes route values, whose last digits depend on the BLAS kernel: a declared rounding tolerance,
-    # not an exact one. The orderings are decided by gaps far above the route-value uncertainty.
-    assert ranks["regression_tolerance"] == ftt.KERNEL_ROUNDING == {"abs": 1e-12, "rel": 1e-13}
+    # not an exact one. The orderings are decided by gaps far above the uncertainty of each ranked quantity; the
+    # focus-margin one is measured (halved ciw.lab.jacobi step) with or without scipy and sympy.
+    assert ranks["regression_tolerance"] == ftt.KERNEL_ROUNDING == {"abs": 0, "rel": 1e-13}
     gaps = [check for check in ranks["basis"]["checks"] if check["reference"].startswith("smallest")]
-    assert len(gaps) == 2 and all(check["passed"] and check["tolerance"] > 0 for check in gaps)
-    assert gaps[0]["observed"] == pytest.approx(0.0033434, rel=1e-4) and gaps[1]["observed"] > 0.3
+    assert len(gaps) == 3 and all(check["passed"] and check["tolerance"] > 0 for check in gaps)
+    assert gaps[0]["observed"] == pytest.approx(0.0033434, rel=1e-4) and gaps[1]["observed"] > 0.01
+    assert gaps[2]["observed"] > 0.3 and gaps[2]["tolerance"] > 10 * 1e-7
+    assert "a halved ciw.lab.jacobi step moves conjugate points by at most" in report["uncertainty"]
     assert _label(report, "A flat torus has no conjugate points")["value"] == pytest.approx(1.0, abs=1e-12)
     front = _label(reports["T025"], "The three-objective front")["value"]
     assert front["front"] == [0, 1, 2, 3, 4] and front["front_members_past_conjugate_point"] == [2]

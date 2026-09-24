@@ -1181,7 +1181,7 @@ FOLD = {"k1": -0.6, "r_true": 0.85, "undistort_iterations": 400}
 # Central-difference step of T050's pixel Jacobians. The first-order residuals |direct - J_pix delta_pix| / |direct|
 # see J's rounding error, the triangulation's rounding (BLAS camera products, LAPACK SVD; about 1e-15 m) over 2h, which
 # differs between OpenBLAS kernels: at 1e-3 px it moved the residuals by up to 1.5e-6 relative, at 1e-2 px by at most
-# 5.5e-8, while the h^2 truncation shifts them by 1e-6 to 1e-5 relative (deterministic).
+# 5.6e-8, while the h^2 truncation shifts them by 1e-6 to 1e-5 relative (deterministic).
 JACOBIAN_STEP_PX = 1e-2
 
 
@@ -1419,7 +1419,7 @@ def lens_distortion_perturbations(ctx):
                                         "Its rounding part, the triangulation's rounding over the "
                                         f"{JACOBIAN_STEP_PX:g} px central-difference step of J_pix, differs between "
                                         "the SkylakeX, Haswell, Sandybridge, Nehalem and Katmai OpenBLAS kernels by "
-                                        "at most 2.5e-8 relative; the regression tolerance (1e-6 relative) is about "
+                                        "at most 2.6e-8 relative; the regression tolerance (1e-6 relative) is about "
                                         "40 times that spread"),
                 tolerance={"abs": 1e-12, "rel": 1e-6}),
         finding("Undistorting with the true Brown-Conrady model (radial and tangential) removes the chord bias",
@@ -1505,7 +1505,7 @@ def lens_distortion_perturbations(ctx):
                                                   "is that truncation. Its rounding part, the triangulation's rounding "
                                                   f"over the {JACOBIAN_STEP_PX:g} px central-difference step of J_pix, "
                                                   "differs between the SkylakeX, Haswell, Sandybridge, Nehalem and "
-                                                  "Katmai OpenBLAS kernels by at most 5.5e-8 relative; the regression "
+                                                  "Katmai OpenBLAS kernels by at most 5.6e-8 relative; the regression "
                                                   "tolerance (1e-6 relative) is about 18 times that spread"),
                 tolerance={"abs": 1e-12, "rel": 1e-6}),
         _unestablished("A two-term radial plus tangential Brown-Conrady model describes a real lens to the required "
