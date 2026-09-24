@@ -16,7 +16,13 @@ from threading import RLock
 from .adapters.protocol import AdapterRefusal
 from .adapters.subprocess import _json
 DECLARED_KINDS = frozenset({"schematic-assessment", "numerical-heat", "proved-heat", "schematic-companions", "bim-quantity", "acquired-dataset", "residual-monitor", "measurement-chain", "geometric-circle", "identified-stability", "flat-torus-reference", "curved-path-transfer", "covariance-geometry", "mesh-path", "translation-flow", "variational-free-energy", "energy-accuracy", "instrument-exchange", "thermal-observer", "machine-manifest", "project-graph"})
-REPRODUCED_KINDS = DECLARED_KINDS - {"proved-heat"}
+# The exchange adapter retains a checker verdict, not a fresh reproduction step,
+# so it is a declared kind without a reproduction occurrence.
+REPRODUCED_KINDS = DECLARED_KINDS - {"proved-heat", "instrument-exchange"}
+# Verification artifacts whose reproduction is a complete fresh step; its
+# occurrence identities are claimed exactly like a retained step's.
+REPRODUCTION_CLAIM_SCHEMAS = frozenset({"ciw.declared-workload-verification.v1", "ciw.thermal-observer-verification.v1",
+                                        "ciw.machine-manifest-verification.v1", "ciw.project-graph-verification.v1"})
 UPSTREAM_KINDS = {"identified-design": "calibrated-observable", "schematic-companions": "schematic-assessment",
                   "acquired-calibrated-window": "acquired-dataset", "identified-stability": "identified-design"}
 INSTRUMENT_ROLES = frozenset({"ppda", "tbrt", "mcur", "stfe", "gsie", "cbsr", "fdir", "oit", "sra", "scr", "cse", "rci", "fsrt", "jspt", "gte", "plsr", "ftr", "csg", "cggt", "isgt", "tsde", "energy", "exchange", "thermal", "machine", "project"})
@@ -224,7 +230,7 @@ def _claims(record):
         claim(value["verification_id"], "verification", value)
         if value.get("schema") == "ciw.proved-heat-verification.v1":
             claim(value["verification_operation_id"], "verification_execution", value)
-        if value.get("schema") == "ciw.declared-workload-verification.v1":
+        if value.get("schema") in REPRODUCTION_CLAIM_SCHEMAS:
             step = value["reproduction"]
             claim(step["execution_id"], "execution", {"step": step})
             claim(step["result_id"], "result", {"result": step["result"]})
@@ -394,7 +400,7 @@ def _validate_links(record, bundles):
         for other in bundles.values():
             if other["bundle_id"] != record["bundle_id"] and other["kind"] == "variational-free-energy" and not occurrences.isdisjoint(native_occurrences(other["native"])):
                 raise ValueError("Free-energy experiments require fresh native stage occurrences")
-    if record["kind"] in DECLARED_KINDS and record["kind"] != "instrument-exchange":
+    if record["kind"] in DECLARED_KINDS:
         occurrences = {native["steps"][0]["execution_id"]}
         if record["kind"] in REPRODUCED_KINDS:
             occurrences.add(native["verification"]["reproduction"]["execution_id"])
@@ -431,7 +437,7 @@ def _validate_links(record, bundles):
             _workflow(record["kind"]).validate_replay(original["native"], native, receipt)
         if record["kind"] == "proved-heat":
             _workflow("proved-heat").validate_replay(original["native"], native, receipt)
-        if record["kind"] in REPRODUCED_KINDS and record["kind"] != "instrument-exchange":
+        if record["kind"] in REPRODUCED_KINDS:
             workflow = _workflow(record["kind"])
             raw = workflow._validate(original["native"])
             workflow._check_verification(original["native"], receipt["verification"], workflow._source(raw),

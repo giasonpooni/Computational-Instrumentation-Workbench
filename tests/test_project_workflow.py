@@ -199,3 +199,18 @@ def test_project_retained_records_refuse_tampering_before_any_restore(tmp_path):
         session.workbench.restore(tampered_result)
     assert json.loads(json.dumps(retained)) == retained
     session.workbench.restore(retained)
+
+
+def test_project_reproduction_occurrences_are_claimed_identities(tmp_path):
+    from ciw import workbench as catalog
+    session = Session(make_demo_run(), tmp_path)
+    source = _add(session, _source())
+    completed = _call(session, "operation.execute", {"operation_id": "ciw.project-graph.v1",
+                                                      "parameters": {"source_id": source["source_id"]}})
+    record = session.workbench._bundles[completed["bundle_id"]]
+    claims = catalog._claims(record)
+    reproduction = record["native"]["verification"]["reproduction"]
+    assert claims[reproduction["execution_id"]][0] == "execution"
+    assert claims[reproduction["result_id"]][0] == "result"
+    assert claims[reproduction["numerical_result_id"]][0] == "numerical_result"
+    assert reproduction["execution_id"] != record["native"]["steps"][0]["execution_id"]

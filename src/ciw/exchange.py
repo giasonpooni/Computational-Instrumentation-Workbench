@@ -16,6 +16,7 @@ import os
 from pathlib import Path
 import stat
 import sys
+import threading
 from types import ModuleType
 
 
@@ -70,6 +71,9 @@ def _read(path: Path, limit: int) -> bytes:
     return raw
 
 
+_VALIDATOR_LOCK = threading.Lock()
+
+
 def _validator(repo: Path) -> tuple[ModuleType, dict]:
     """Execute only allowlisted source bytes, never an artifact-supplied module.
 
@@ -83,16 +87,18 @@ def _validator(repo: Path) -> tuple[ModuleType, dict]:
         raise ValueError("exchange validator source differs from the approved source pin")
     name = "_ciw_exchange_validator_" + manifest["sha256"]
     module = ModuleType(name)
-    # dataclasses resolves annotations through sys.modules while creating types.
-    previous = sys.modules.get(name)
-    sys.modules[name] = module
-    try:
-        exec(compile(source, str(repo / manifest["path"]), "exec"), module.__dict__)
-    finally:
-        if previous is None:
-            sys.modules.pop(name, None)
-        else:
-            sys.modules[name] = previous
+    # dataclasses resolves annotations through sys.modules while creating types;
+    # concurrent inspections must not race on that shared slot.
+    with _VALIDATOR_LOCK:
+        previous = sys.modules.get(name)
+        sys.modules[name] = module
+        try:
+            exec(compile(source, str(repo / manifest["path"]), "exec"), module.__dict__)
+        finally:
+            if previous is None:
+                sys.modules.pop(name, None)
+            else:
+                sys.modules[name] = previous
     return module, manifest
 
 

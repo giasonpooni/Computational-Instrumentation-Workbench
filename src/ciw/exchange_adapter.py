@@ -20,6 +20,8 @@ import tempfile
 import uuid
 
 from . import exchange
+from .adapters.protocol import AdapterRefusal
+from .adapters.subprocess import _json
 from .telemetry import canonical, digest
 
 SOURCE_SCHEMA = "ciw.instrument-exchange-source.v1"
@@ -30,7 +32,19 @@ REPLAY_SCHEMA = "ciw.instrument-exchange-replay.v1"
 OPERATION = "ciw.instrument-exchange.v1"
 ROLES = {"set"}
 MAX_BYTES = 4 * 1024 * 1024
-MAX_ARTIFACTS = 32
+MAX_ARTIFACTS = exchange.MAX_ARTIFACTS
+RESULT_CLAIM_SCOPE = "typed_exchange_content_conformance_only"
+NATIVE_AUTHORITY = {"may_authorize": False, "state_admission": "not_performed",
+                    "physical_validation": "not_established"}
+VERIFIER_REF = "ciw-exchange-adapter.v1"
+VERIFICATION_AUTHORITY = {"may_authorize": False, "state_admission": "not_performed"}
+VERIFICATION_CHECKS = [{"name": "pinned_set_conformance", "outcome": "passed",
+                        "basis": "typed producer records accepted by the pinned SET contract"}]
+VERIFICATION_LIMITATIONS = ["content conformance is not physical validation",
+                            "source admission, execution behavior and verifier independence remain unestablished"]
+_SESSION_ID = re.compile(r"session:[0-9a-f]{32}\Z")
+_EXECUTION_ID = re.compile(r"execution:[0-9a-f]{32}\Z")
+_RESULT_ID = re.compile(r"result:[0-9a-f]{32}\Z")
 PIN = json.loads((Path(__file__).with_name("exchange-runtime.json")).read_text(encoding="utf-8"))
 
 
@@ -49,34 +63,24 @@ def _id(value, name):
     _text(value, name, 256)
 
 
-def _json(raw):
-    return json.loads(raw.decode("utf-8"), object_pairs_hook=_unique_pairs,
-                      parse_constant=lambda value: (_ for _ in ()).throw(
-                          ValueError(f"nonfinite JSON number: {value}")))
-
-
-def _unique_pairs(pairs):
-    value = {}
-    for key, item in pairs:
-        if key in value:
-            raise ValueError(f"duplicate JSON member: {key}")
-        value[key] = item
-    return value
+def _parse(raw):
+    try:
+        return _json(raw)
+    except AdapterRefusal as exc:
+        raise ValueError("Exchange source must be finite, unambiguous JSON") from exc
 
 
 def _source(raw):
     """Validate the structural envelope without executing the checker."""
     if not isinstance(raw, bytes) or not 1 <= len(raw) <= MAX_BYTES:
         raise ValueError("Exchange source exceeds its byte budget")
-    value = _json(raw)
+    value = _parse(raw)
     _keys(value, {"schema", "artifacts", "producer"})
     if value["schema"] != SOURCE_SCHEMA:
         raise ValueError("Unsupported typed exchange source schema")
     if not isinstance(value["producer"], dict):
         raise ValueError("Producer declaration must be an object")
     _keys(value["producer"], {"name", "revision", "operation_ids"})
-    if set(value["producer"]) - {"name", "revision", "operation_ids"}:
-        raise ValueError("Unknown producer declaration field")
     _text(value["producer"]["name"], "producer.name", 128)
     _text(value["producer"]["revision"], "producer.revision", 128)
     if (not isinstance(value["producer"]["operation_ids"], list) or
@@ -100,10 +104,6 @@ def _source(raw):
             raise ValueError("Exchange producer supplied duplicate artifact identity")
         identities.add(identity)
     return deepcopy(value)
-
-
-def _source_bytes(value):
-    return canonical(value)
 
 
 def _git(repo: Path, *args):
@@ -163,20 +163,26 @@ def _inspect(source, repo):
     return report
 
 
-def _native_verification(subject_ref, report):
+def _native_verification(subject_ref):
     value = {
         "schema": exchange.VERIFICATION_SCHEMA,
         "subject_ref": subject_ref,
-        "verifier_ref": "ciw-exchange-adapter.v1",
+        "verifier_ref": VERIFIER_REF,
         "outcome": "passed",
-        "checks": [{"name": "pinned_set_conformance", "outcome": "passed",
-                    "basis": "typed producer records accepted by the pinned SET contract"}],
-        "limitations": ["content conformance is not physical validation",
-                        "source admission, execution behavior and verifier independence remain unestablished"],
-        "authority": {"may_authorize": False, "state_admission": "not_performed"},
+        "checks": deepcopy(VERIFICATION_CHECKS),
+        "limitations": deepcopy(VERIFICATION_LIMITATIONS),
+        "authority": deepcopy(VERIFICATION_AUTHORITY),
     }
     value["verification_id"] = _identity(value, "verification_id")
     return value
+
+
+def _check_verification_scope(value):
+    if (value["verifier_ref"] != VERIFIER_REF or value["outcome"] != "passed" or
+            canonical(value["checks"]) != canonical(VERIFICATION_CHECKS) or
+            canonical(value["limitations"]) != canonical(VERIFICATION_LIMITATIONS) or
+            canonical(value["authority"]) != canonical(VERIFICATION_AUTHORITY)):
+        raise ValueError("Native exchange verification scope differs from the adapter's fixed statement")
 
 
 def _identity(value, field):
@@ -216,7 +222,7 @@ def _make_native(raw, source, report, runtime, *, replay_of=None):
         "artifacts": deepcopy(numerical["artifacts"]), "links": deepcopy(numerical["links"]),
         "covariance_validation": deepcopy(numerical["covariance_validation"]),
         "validator": deepcopy(report["validator"]), "authority": deepcopy(report["authority"]),
-        "claim_scope": "typed_exchange_content_conformance_only",
+        "claim_scope": RESULT_CLAIM_SCOPE,
         "physical_validation": "not_established", "state_admission": "not_performed",
     }
     step = {
@@ -236,24 +242,31 @@ def _make_native(raw, source, report, runtime, *, replay_of=None):
                           "authority": "read_only_content_conformance"},
         "runtimes": {"set": runtime}, "steps": [step],
         "verification": None, "replay_receipts": [],
-        "authority": {"may_authorize": False, "state_admission": "not_performed",
-                       "physical_validation": "not_established"},
+        "authority": deepcopy(NATIVE_AUTHORITY),
     }
     if replay_of is not None:
         native["replay_of"] = replay_of
     native["bundle_digest"] = _bundle_digest(native)
-    native["verification"] = _native_verification(native["bundle_digest"], report)
+    native["verification"] = _native_verification(native["bundle_digest"])
     _validate(native)
     return native
 
 
 def _validate(native):
-    """Validate a retained native bundle without executing the provider."""
+    """Validate a retained native bundle without executing the provider.
+
+    Every statement the adapter fixes at execution (authority, claim scope,
+    verifier scope, validator pin, identity shapes) is pinned again here, so a
+    resealed workspace cannot promote the retained verdict.
+    """
     _keys(native, {"schema", "session_id", "source", "configuration", "runtimes", "steps", "verification",
                    "replay_receipts", "authority", "bundle_digest"}, {"replay_of"})
     if native["schema"] != SESSION_SCHEMA:
         raise ValueError("Unsupported native exchange session schema")
-    _text(native["session_id"], "session_id")
+    if not isinstance(native["session_id"], str) or not _SESSION_ID.fullmatch(native["session_id"]):
+        raise ValueError("Native exchange session identity has an unexpected shape")
+    if canonical(native["authority"]) != canonical(NATIVE_AUTHORITY):
+        raise ValueError("Native exchange authority differs from the adapter's fixed scope")
     _keys(native["source"], {"schema", "evidence", "source_kind"})
     if native["source"]["schema"] != SOURCE_SCHEMA or native["source"]["source_kind"] != "typed_exchange_producer":
         raise ValueError("Native exchange source declaration differs")
@@ -282,7 +295,9 @@ def _validate(native):
         raise ValueError("Native exchange session must retain the SET runtime identity")
     runtime = runtimes["set"]
     _keys(runtime, {"repository", "revision", "source_tree", "module", "source_sha256", "execution_scope"})
-    if runtime["repository"] != PIN["repository"] or runtime["revision"] != PIN["revision"] or runtime["module"] != PIN["path"] or runtime["source_sha256"] != PIN["sha256"]:
+    if (runtime["repository"] != PIN["repository"] or runtime["revision"] != PIN["revision"] or
+            runtime["module"] != PIN["path"] or runtime["source_sha256"] != PIN["sha256"] or
+            runtime["execution_scope"] != "standalone_checked_source_only"):
         raise ValueError("Retained SET runtime identity differs from the pin")
     steps = native["steps"]
     if not isinstance(steps, list) or len(steps) != 1:
@@ -292,41 +307,70 @@ def _validate(native):
                  "result", "result_sha256", "result_id", "numerical_result", "numerical_result_id"})
     if step["runtime_ref"] != "exchange" or step["operation_id"] != OPERATION or step["input_refs"] != [source_id]:
         raise ValueError("Native exchange occurrence binding differs")
-    _text(step["execution_id"], "execution_id")
+    if not isinstance(step["execution_id"], str) or not _EXECUTION_ID.fullmatch(step["execution_id"]):
+        raise ValueError("Native exchange execution identity has an unexpected shape")
     if step["request_sha256"] != digest(source) or canonical(step["request"]) != canonical(source):
         raise ValueError("Native exchange request is not the retained source")
     result = step["result"]
     _keys(result, {"schema", "operation_id", "execution_ref", "execution_id", "result_id", "numerical_result_id",
                    "producer_artifact_ids", "artifacts", "links", "covariance_validation", "validator", "authority",
                    "claim_scope", "physical_validation", "state_admission"})
-    if result["schema"] != RESULT_SCHEMA or result["operation_id"] != OPERATION or result["execution_id"] != step["execution_id"] or result["execution_ref"] != step["execution_id"] or result["result_id"] != step["result_id"]:
+    if (result["schema"] != RESULT_SCHEMA or result["operation_id"] != OPERATION or
+            result["execution_id"] != step["execution_id"] or result["execution_ref"] != step["execution_id"] or
+            result["result_id"] != step["result_id"]):
         raise ValueError("Native result does not bind its execution occurrence")
+    if not isinstance(result["result_id"], str) or not _RESULT_ID.fullmatch(result["result_id"]):
+        raise ValueError("Native exchange result identity has an unexpected shape")
+    if (result["claim_scope"] != RESULT_CLAIM_SCOPE or result["physical_validation"] != "not_established" or
+            result["state_admission"] != "not_performed" or not isinstance(result["authority"], dict) or
+            result["authority"].get("may_authorize") is not False):
+        raise ValueError("Native exchange result claims exceed the adapter's fixed scope")
+    if canonical(result["validator"]) != canonical(PIN):
+        raise ValueError("Native exchange result validator differs from the pin")
     if step["result_sha256"] != digest(result) or step["numerical_result_id"] != result["numerical_result_id"]:
         raise ValueError("Native result commitment differs")
     numerical = step["numerical_result"]
+    _keys(numerical, {"schema", "artifacts", "links", "validator", "covariance_validation", "authority"})
     if digest(numerical) != step["numerical_result_id"] or numerical["schema"] != NUMERICAL_SCHEMA:
         raise ValueError("Native numerical result commitment differs")
-    if canonical(result["artifacts"]) != canonical(numerical["artifacts"]) or canonical(result["links"]) != canonical(numerical["links"]):
-        raise ValueError("Native result projection differs from its numerical content")
-    source_artifacts = source["artifacts"]
-    if canonical(result["artifacts"]) != canonical(source_artifacts):
+    for field in ("artifacts", "links", "validator", "covariance_validation", "authority"):
+        if canonical(result[field]) != canonical(numerical[field]):
+            raise ValueError("Native result projection differs from its numerical content")
+    if canonical(result["artifacts"]) != canonical(source["artifacts"]):
         raise ValueError("Native result does not retain typed producer artifacts")
-    _keys(native["verification"], {"schema", "subject_ref", "verifier_ref", "outcome", "checks", "limitations", "authority", "verification_id"})
-    if native["verification"]["schema"] != exchange.VERIFICATION_SCHEMA or native["verification"]["subject_ref"] != native["bundle_digest"]:
+    expected_ids = [item[exchange._SCHEMAS[item["schema"]][0]] for item in result["artifacts"]]
+    if result["producer_artifact_ids"] != expected_ids:
+        raise ValueError("Native result producer identities differ from the retained artifacts")
+    verification = native["verification"]
+    _keys(verification, {"schema", "subject_ref", "verifier_ref", "outcome", "checks", "limitations", "authority",
+                         "verification_id"})
+    if verification["schema"] != exchange.VERIFICATION_SCHEMA or verification["subject_ref"] != native["bundle_digest"]:
         raise ValueError("Native verification does not bind the bundle")
-    exchange._identity(native["verification"], "verification_id")
+    _check_verification_scope(verification)
+    exchange._identity(verification, "verification_id")
     if native["bundle_digest"] != _bundle_digest(native):
         raise ValueError("Native bundle digest differs")
     receipts = native["replay_receipts"]
     if not isinstance(receipts, list) or len(receipts) > 1:
         raise ValueError("Native exchange retains at most one replay receipt")
     for receipt in receipts:
-        _keys(receipt, {"schema", "source_bundle_digest", "replayed_bundle_digest", "numerical_match", "verification", "admission", "replay_id"})
-        if receipt["schema"] != REPLAY_SCHEMA or receipt["source_bundle_digest"] == receipt["replayed_bundle_digest"] or receipt["replayed_bundle_digest"] != native["bundle_digest"] or receipt["numerical_match"] is not True or receipt["admission"] != "not_performed" or receipt["replay_id"] != digest({k: v for k, v in receipt.items() if k != "replay_id"}):
+        _keys(receipt, {"schema", "source_bundle_digest", "replayed_bundle_digest", "numerical_match", "verification",
+                        "admission", "replay_id"})
+        if (receipt["schema"] != REPLAY_SCHEMA or receipt["source_bundle_digest"] == receipt["replayed_bundle_digest"] or
+                receipt["replayed_bundle_digest"] != native["bundle_digest"] or receipt["numerical_match"] is not True or
+                receipt["admission"] != "not_performed" or
+                receipt["replay_id"] != digest({k: v for k, v in receipt.items() if k != "replay_id"})):
             raise ValueError("Native exchange replay receipt differs")
-        if receipt["verification"]["schema"] != exchange.VERIFICATION_SCHEMA or receipt["verification"]["subject_ref"] != receipt["source_bundle_digest"]:
+        if native.get("replay_of") != receipt["source_bundle_digest"]:
+            raise ValueError("Native exchange replay must name the bundle it replayed")
+        replay_verification = receipt["verification"]
+        _keys(replay_verification, {"schema", "subject_ref", "verifier_ref", "outcome", "checks", "limitations",
+                                    "authority", "verification_id"})
+        if (replay_verification["schema"] != exchange.VERIFICATION_SCHEMA or
+                replay_verification["subject_ref"] != receipt["source_bundle_digest"]):
             raise ValueError("Replay verification does not bind the original bundle")
-        exchange._identity(receipt["verification"], "verification_id")
+        _check_verification_scope(replay_verification)
+        exchange._identity(replay_verification, "verification_id")
     return raw
 
 
@@ -347,7 +391,7 @@ def replay_session(native, repositories):
     numerical_match = fresh["steps"][0]["numerical_result_id"] == old_numerical
     if not numerical_match:
         raise ValueError("Pinned exchange replay changed the numerical projection")
-    verification = _native_verification(native["bundle_digest"], report)
+    verification = _native_verification(native["bundle_digest"])
     receipt = {"schema": REPLAY_SCHEMA, "source_bundle_digest": native["bundle_digest"],
                "replayed_bundle_digest": fresh["bundle_digest"], "numerical_match": True,
                "verification": verification, "admission": "not_performed"}
