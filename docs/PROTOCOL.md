@@ -13,7 +13,7 @@ replay occurrences separate from measurement samples.
 
 ## Transport
 
-Status: first implementation contract. Python is authoritative; terminal and Godot are independent clients. Local endpoint: `ws://127.0.0.1:8765`. Text JSON only in v1; no terminal scraping.
+Status: first implementation contract. Python is authoritative; terminal and Godot are independent clients. Local endpoint: `ws://127.0.0.1:8765`. Text JSON only in v1; no terminal scraping. The served endpoint accepts text frames up to 8 MiB: a larger frame closes only that connection with close code 1009, and a non-JSON frame within the limit is answered with an `invalid_request` error.
 
 Request: `{"protocol_version":1,"request_id":"unique-client-id","type":"session.get","payload":{}}`.
 Success: `{"protocol_version":1,"request_id":"...","type":"response","payload":{...}}`.

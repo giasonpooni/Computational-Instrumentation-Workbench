@@ -138,10 +138,16 @@ machine, thermal and project graph operation lifecycles are covered by
 `tests/test_project_workflow.py`, including save/reopen, fresh replay and refusal
 cases. Independent ICRH profiles for these provider-free operations remain the
 next integration gate; see [contract foundations](CONTRACT_FOUNDATIONS.md).
-Coverage is not exhaustive: the off-allowlist `runtime_mismatch`,
-`RUNTIME_UNAVAILABLE` and `RUNTIME_IO` branches, covariance CLI argument parsing,
-and the calibration-refusal exit code lack dedicated assertions in the current
-suite. Passing shared helper tests does not separately validate those paths.
+Coverage is not exhaustive: covariance CLI argument parsing and the
+calibration-refusal exit code lack dedicated assertions in the current suite.
+The off-allowlist `runtime_mismatch` refusal is asserted by
+`tests/test_runtime_allowlist.py` without binding an adapter; the
+`RUNTIME_UNAVAILABLE` and `RUNTIME_IO` adapter refusals by
+`tests/test_subprocess_adapter.py`, where the shell-script interpreter and
+orphaned-pipe cases run on POSIX only; a version-1 workspace carrying executions
+by `tests/test_operation_runner.py`; and the 8 MiB transport frame limit of the
+served process by `tests/test_deployment.py`. Passing shared helper tests does
+not separately validate other paths.
 [RECONCILIATION.md](RECONCILIATION.md) records, per contract area, the behavior
 the current tests assert, what they cover in part, and what is not implemented.
 
