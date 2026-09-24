@@ -4,6 +4,7 @@
   "source_kind": "calibrated-window",
   "session_schema": "ciw.calibrated-window-session.v1",
   "summary": "Clock alignment and calibration of raw device samples into a windowed state with full joint covariance",
+  "operation_role": "state_estimator",
   "inputs": {
     "source_schema": "ciw.calibrated-window-source.v1",
     "upstream_kinds": [],

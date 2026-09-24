@@ -4,6 +4,7 @@
   "source_kind": "telemetry",
   "session_schema": "ciw.telemetry-session.v1",
   "summary": "Scalar telemetry: acquired projection, causal window features, GSIE predict/update and SET replay verification",
+  "operation_role": "state_estimator",
   "inputs": {
     "source_schema": "ciw.telemetry-source.v1",
     "upstream_kinds": [],

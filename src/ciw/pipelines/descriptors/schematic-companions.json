@@ -4,6 +4,7 @@
   "source_kind": "schematic-companions",
   "session_schema": "ciw.schematic-companions-session.v1",
   "summary": "Selected native JSPT/PLSR companion calls bound to a typed schematic",
+  "operation_role": "local_model_analysis",
   "inputs": {
     "source_schema": "ciw.schematic-companions-source.v1",
     "upstream_kinds": [

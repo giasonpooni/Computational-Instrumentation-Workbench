@@ -4,6 +4,7 @@
   "source_kind": "instrument-exchange",
   "session_schema": "ciw.instrument-exchange-session.v1",
   "summary": "Pinned SET contract conformance of an exchange artifact",
+  "operation_role": "typed_exchange_adapter",
   "inputs": {
     "source_schema": "ciw.instrument-exchange-source.v1",
     "upstream_kinds": [],

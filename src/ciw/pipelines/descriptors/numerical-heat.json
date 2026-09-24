@@ -4,6 +4,7 @@
   "source_kind": "numerical-heat",
   "session_schema": "ciw.numerical-heat-session.v1",
   "summary": "Bounded native integer heat diffusion with exact byte commitments",
+  "operation_role": "numerical_execution",
   "inputs": {
     "source_schema": "ciw.numerical-heat-source.v1",
     "upstream_kinds": [],

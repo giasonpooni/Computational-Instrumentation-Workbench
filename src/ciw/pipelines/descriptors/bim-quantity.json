@@ -4,6 +4,7 @@
   "source_kind": "bim-quantity",
   "session_schema": "ciw.bim-quantity-session.v1",
   "summary": "Condition a declared IFC quantity on an independent scalar observation",
+  "operation_role": "construction_quantity",
   "inputs": {
     "source_schema": "ciw.bim-quantity-source.v1",
     "upstream_kinds": [],

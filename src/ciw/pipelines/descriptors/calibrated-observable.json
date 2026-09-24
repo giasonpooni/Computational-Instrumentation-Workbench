@@ -4,6 +4,7 @@
   "source_kind": "calibrated-observable",
   "session_schema": "ciw.calibrated-observable-session.v1",
   "summary": "Align two raw channels, apply declared calibration, gate estimation on observability, reconcile total mass and assess residuals",
+  "operation_role": "state_estimator",
   "inputs": {
     "source_schema": "ciw.calibrated-observable-source.v1",
     "upstream_kinds": [],

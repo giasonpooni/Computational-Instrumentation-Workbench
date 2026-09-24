@@ -4,6 +4,7 @@
   "source_kind": "mesh-path",
   "session_schema": "ciw.mesh-path-session.v1",
   "summary": "Bounded native mesh-edge path baseline",
+  "operation_role": "mesh_path_baseline",
   "inputs": {
     "source_schema": "ciw.mesh-path-source.v1",
     "upstream_kinds": [],

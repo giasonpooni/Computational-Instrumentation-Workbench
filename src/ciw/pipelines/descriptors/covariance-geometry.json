@@ -4,6 +4,7 @@
   "source_kind": "covariance-geometry",
   "session_schema": "ciw.covariance-geometry-session.v1",
   "summary": "Bounded native SPD covariance geometry",
+  "operation_role": "covariance_geometry",
   "inputs": {
     "source_schema": "ciw.covariance-geometry-source.v1",
     "upstream_kinds": [],

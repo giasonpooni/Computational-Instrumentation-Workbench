@@ -4,6 +4,7 @@
   "source_kind": "machine-manifest",
   "session_schema": "ciw.machine-manifest-session.v1",
   "summary": "Evidence-bound read-only machine asset, signal and model manifest",
+  "operation_role": "machine_manifest_reference",
   "inputs": {
     "source_schema": "ciw.machine-manifest-source.v1",
     "upstream_kinds": [],

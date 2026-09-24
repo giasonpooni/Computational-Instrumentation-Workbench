@@ -4,6 +4,7 @@
   "source_kind": "thermal-observer",
   "session_schema": "ciw.thermal-observer-session.v1",
   "summary": "Two-capacity linear thermal observer Python reference with held-out prediction",
+  "operation_role": "thermal_observer_reference",
   "inputs": {
     "source_schema": "ciw.thermal-observer-source.v1",
     "upstream_kinds": [],

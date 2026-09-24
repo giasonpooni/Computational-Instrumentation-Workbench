@@ -4,6 +4,7 @@
   "source_kind": "residual-monitor",
   "session_schema": "ciw.residual-monitor-session.v1",
   "summary": "FDIR/OIT assessment of an ordered sequence of retained window innovations",
+  "operation_role": "residual_diagnostics",
   "inputs": {
     "source_schema": "ciw.residual-monitor-source.v1",
     "upstream_kinds": [

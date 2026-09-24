@@ -4,6 +4,7 @@
   "source_kind": "schematic-assessment",
   "session_schema": "ciw.schematic-assessment-session.v1",
   "summary": "Declared eligibility, stale certificates and two-hop neighborhoods of a typed instrument schematic",
+  "operation_role": "schematic_assessment",
   "inputs": {
     "source_schema": "ciw.schematic-assessment-source.v1",
     "upstream_kinds": [],

@@ -4,6 +4,7 @@
   "source_kind": "acquired-dataset",
   "session_schema": "ciw.acquired-dataset-session.v1",
   "summary": "Bounded PPDA snapshot acquisition with retained source bytes and evidence graph",
+  "operation_role": "evidence_acquisition",
   "inputs": {
     "source_schema": "ciw.acquired-dataset-source.v1",
     "upstream_kinds": [],

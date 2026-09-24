@@ -31,7 +31,7 @@ IMPLEMENTATIONS = frozenset({"hand_written", "declared_workflow", "generic_runne
 # built with no argument or with the source kind, or an object used as-is.
 ENTRY_CALLS = frozenset({"none", "kind", "value"})
 UPSTREAM_CARDINALITIES = frozenset({"none", "one", "ordered_many"})
-FIELDS = frozenset({"schema", "pipeline_id", "source_kind", "session_schema", "summary", "inputs", "steps",
+FIELDS = frozenset({"schema", "pipeline_id", "source_kind", "session_schema", "summary", "operation_role", "inputs", "steps",
                     "verification", "refusals", "domain_rules", "investigations", "surface", "authority",
                     "implementation", "guide"})
 _HEX40 = re.compile(r"[0-9a-f]{40}\Z")
@@ -222,6 +222,8 @@ def validate(value) -> dict:
         raise ValueError("investigations must be a list of distinct identifiers")
     if value["surface"] not in SURFACES:
         raise ValueError("surface must be entry, inner, bench, certification or source_only")
+    if not isinstance(value["operation_role"], str) or not re.fullmatch(r"[a-z][a-z_]{2,63}", value["operation_role"]):
+        raise ValueError("operation_role is the lowercase label operation listings show for the kind")
     if value["authority"] != "read_only":
         raise ValueError("Every current pipeline is read-only with respect to equipment")
     implementation = value["implementation"]
@@ -354,6 +356,14 @@ def build(descriptor: dict):
 def _packaged() -> tuple:
     descriptors = load()
     return descriptors, {value["session_schema"]: kind for kind, value in descriptors.items()}
+
+
+def descriptor(kind: str) -> dict:
+    """A frozen kind's packaged descriptor (a copy; the packaged set is read once)."""
+    value = _packaged()[0].get(kind)
+    if value is None:
+        raise ValueError("Unknown workbench source kind")
+    return deepcopy(value)
 
 
 def workflow(kind: str):

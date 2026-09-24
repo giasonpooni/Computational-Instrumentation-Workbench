@@ -4,6 +4,7 @@
   "source_kind": "proved-heat",
   "session_schema": "ciw.proved-heat-session.v1",
   "summary": "Registered SCR/SP1 heat computation with proof production and full-ELF verification",
+  "operation_role": "proved_numerical_execution",
   "inputs": {
     "source_schema": "ciw.proved-heat-source.v1",
     "upstream_kinds": [],

@@ -4,6 +4,7 @@
   "source_kind": "flat-torus-reference",
   "session_schema": "ciw.flat-torus-reference-session.v1",
   "summary": "Native flat-torus lattice and winding trajectory reference",
+  "operation_role": "geometric_reference",
   "inputs": {
     "source_schema": "ciw.flat-torus-reference-source.v1",
     "upstream_kinds": [],

@@ -4,6 +4,7 @@
   "source_kind": "identified-stability",
   "session_schema": "ciw.identified-stability-session.v1",
   "summary": "PLSR stability verdict for a selected identified model and GSIE prediction",
+  "operation_role": "stability_assessment",
   "inputs": {
     "source_schema": "ciw.identified-stability-source.v1",
     "upstream_kinds": [

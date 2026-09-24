@@ -4,6 +4,7 @@
   "source_kind": "variational-free-energy",
   "session_schema": "ciw.variational-free-energy-session.v1",
   "summary": "Synthetic curved-surface Gaussian variational inference with native CSG/GSIE/PLSR checks",
+  "operation_role": "variational_inference",
   "inputs": {
     "source_schema": "ciw.variational-free-energy-source.v1",
     "upstream_kinds": [],

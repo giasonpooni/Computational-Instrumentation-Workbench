@@ -4,6 +4,7 @@
   "source_kind": "acquired-calibrated-window",
   "session_schema": "ciw.acquired-calibrated-window-session.v1",
   "summary": "Explicit PPDA record selection mapped into the calibrated window pipeline",
+  "operation_role": "state_estimator",
   "inputs": {
     "source_schema": "ciw.acquired-calibrated-window-source.v1",
     "upstream_kinds": [

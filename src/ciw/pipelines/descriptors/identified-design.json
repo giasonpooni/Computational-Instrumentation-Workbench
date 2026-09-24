@@ -4,6 +4,7 @@
   "source_kind": "identified-design",
   "session_schema": "ciw.identified-design-session.v1",
   "summary": "Identify declared dynamics from a retained calibrated experiment and rank the next budgeted observation",
+  "operation_role": "decision",
   "inputs": {
     "source_schema": "ciw.identified-design-input.v1",
     "upstream_kinds": [

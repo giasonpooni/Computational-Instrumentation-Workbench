@@ -4,6 +4,7 @@
   "source_kind": "curved-path-transfer",
   "session_schema": "ciw.curved-path-transfer-session.v1",
   "summary": "Native constant-curvature Jacobi transfer and declared covariance",
+  "operation_role": "geometric_sensitivity",
   "inputs": {
     "source_schema": "ciw.curved-path-transfer-source.v1",
     "upstream_kinds": [],

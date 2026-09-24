@@ -4,6 +4,7 @@
   "source_kind": "translation-flow",
   "session_schema": "ciw.translation-flow-session.v1",
   "summary": "Bounded native square-tiled translation dynamics",
+  "operation_role": "translation_dynamics",
   "inputs": {
     "source_schema": "ciw.translation-flow-source.v1",
     "upstream_kinds": [],

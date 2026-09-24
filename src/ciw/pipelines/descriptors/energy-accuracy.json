@@ -4,6 +4,7 @@
   "source_kind": "energy-accuracy",
   "session_schema": "ciw.energy-accuracy-session.v1",
   "summary": "Offline analysis of retained NVML energy logs against posterior accuracy",
+  "operation_role": "offline_energy_accuracy_analysis",
   "inputs": {
     "source_schema": "ciw.energy-accuracy-log.v1",
     "upstream_kinds": [],

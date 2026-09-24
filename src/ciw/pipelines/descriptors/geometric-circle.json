@@ -4,6 +4,7 @@
   "source_kind": "geometric-circle",
   "session_schema": "ciw.geometric-circle-session.v1",
   "summary": "GTE projection of 2D telemetry onto a declared circle with tangent covariance",
+  "operation_role": "geometric_reconciliation",
   "inputs": {
     "source_schema": "ciw.geometric-circle-source.v1",
     "upstream_kinds": [],

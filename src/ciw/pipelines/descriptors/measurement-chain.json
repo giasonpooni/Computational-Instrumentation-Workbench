@@ -4,6 +4,7 @@
   "source_kind": "measurement-chain",
   "session_schema": "ciw.measurement-chain-session.v1",
   "summary": "RCI calibration, FSRT reconstruction and JSPT covariance transport for one tank investigation",
+  "operation_role": "measurement_chain_testbed",
   "inputs": {
     "source_schema": "ciw.measurement-chain-source.v1",
     "upstream_kinds": [],
