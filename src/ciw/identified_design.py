@@ -231,6 +231,21 @@ def validate_declaration(raw):
                     raise ValueError("Identification sample times must increase")
                 _numeric_rows(ident[split]["states"], f"identification.{split}.states", width, len(times))
                 _numeric_rows(ident[split]["inputs"], f"identification.{split}.inputs", inputs, len(times) - 1)
+        _finite(ident["sample_interval"], "identification.sample_interval")
+        if ident["sample_interval"] <= 0:
+            raise ValueError("identification.sample_interval must be positive")
+        for owner, holder in (("identification", ident), ("design", design)):
+            limit = holder["condition_limit"]
+            if limit is not None:
+                _finite(limit, owner + ".condition_limit")
+                if limit < 1:
+                    raise ValueError(owner + ".condition_limit must be at least one or explicit unknown")
+        if type(design["horizon"]) is not int or not 1 <= design["horizon"] <= 64:
+            raise ValueError("The finite observability horizon must be an integer from one to 64")
+        if not isinstance(prediction["next_input"], list) or len(prediction["next_input"]) != inputs:
+            raise ValueError("prediction.next_input must list one value per declared input")
+        for value in prediction["next_input"]:
+            _finite(value, "prediction.next_input entry")
         _numeric_rows(prediction["process_covariance"], "prediction.process_covariance", width, width)
         if not isinstance(design["state_scales"], list) or len(design["state_scales"]) != width:
             raise ValueError("Ordered positive state scales are required")

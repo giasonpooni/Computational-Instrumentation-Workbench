@@ -7,6 +7,7 @@ provider science is implemented here and no GSIE fusion context is inferred.
 from __future__ import annotations
 
 import base64
+import math
 from copy import deepcopy
 from pathlib import Path
 import re
@@ -42,6 +43,17 @@ FSRT_OPERATION = "fsrt.tank-reconstruct.v2"
 JSPT_OPERATION = "jspt.covariance-propagate.v1"
 
 
+def _numeric_matrix(rows, name, size=None):
+    if not isinstance(rows, list) or not rows or (size is not None and len(rows) != size):
+        raise ValueError(f"{name} must be a square numeric matrix")
+    for row in rows:
+        if not isinstance(row, list) or len(row) != len(rows):
+            raise ValueError(f"{name} must be a square numeric matrix")
+        for value in row:
+            if type(value) not in (int, float) or not math.isfinite(value):
+                raise ValueError(f"{name} must contain finite numbers")
+
+
 def _source(raw):
     if not isinstance(raw, bytes) or len(raw) > 262144:
         raise ValueError("Measurement-chain source exceeds the 256 KiB budget")
@@ -59,6 +71,13 @@ def _source(raw):
     _text(declared["source_description"])
     if not isinstance(declared["model"], dict) or not isinstance(declared["sensors"], list) or len(declared["sensors"]) != 2:
         raise ValueError("Declare exactly two sensors and their native FSRT model")
+    model = declared["model"]
+    for key in ("prior_std", "total_mass_kg", "total_mass_variance_kg2"):
+        if key in model and (type(model[key]) not in (int, float) or not math.isfinite(model[key])):
+            raise ValueError(f"FSRT model {key} must be a finite number")
+    if "prior_mean" in model and (not isinstance(model["prior_mean"], list) or
+                                  any(type(v) not in (int, float) or not math.isfinite(v) for v in model["prior_mean"])):
+        raise ValueError("FSRT model prior_mean must be a list of finite numbers")
     names = []
     for sensor in declared["sensors"]:
         _keys(sensor, {"name", "request"})
@@ -74,6 +93,20 @@ def _source(raw):
             raise ValueError("Require bounded exact assembly text")
         if not isinstance(inputs["calibration"], dict) or inputs["calibration"].get("schema") != "rci-calibration-binding.v2":
             raise ValueError("Require native calibration covariance provenance")
+        calibration = inputs["calibration"]
+        order = calibration.get("parameter_order")
+        if not isinstance(order, list) or not order:
+            raise ValueError("Calibration must declare its ordered parameters")
+        _numeric_matrix(calibration.get("parameter_covariance"), "calibration parameter covariance", len(order))
+        basis = calibration.get("covariance_basis")
+        if not isinstance(basis, dict) or not isinstance(basis.get("parameter_components"), list):
+            raise ValueError("Calibration covariance basis must list its parameter components")
+        for component in basis["parameter_components"]:
+            if not isinstance(component, dict):
+                raise ValueError("Calibration covariance components must be objects")
+            if component.get("covariance") is not None:
+                _numeric_matrix(component["covariance"], "calibration component covariance", len(order))
+        _numeric_matrix(inputs["raw_covariance"], "raw observation covariance")
         if not isinstance(inputs["records"], list) or len(inputs["records"]) != 1:
             raise ValueError("The snapshot consumes exactly one record per sensor")
         record = inputs["records"][0]

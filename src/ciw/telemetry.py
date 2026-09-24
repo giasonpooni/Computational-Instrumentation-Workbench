@@ -233,6 +233,12 @@ def _source_inner(raw):
         raise ValueError("Unknown cross-covariance cannot enter this bounded estimation path")
     if source["covariance"] is None or source["covariance_status"] not in {"reported", "estimated", "propagated"}:
         raise ValueError("This path requires declared sample covariance")
+    count = len(source["samples"])
+    covariance = source["covariance"]
+    if (not isinstance(covariance, list) or len(covariance) != count or
+            any(not isinstance(row, list) or len(row) != count for row in covariance) or
+            any(type(value) not in (int, float) or not math.isfinite(value) for row in covariance for value in row)):
+        raise ValueError("Declared sample covariance must be a finite matrix over the retained samples")
     units = {row["unit"] for row in source["samples"]}
     if len(units) != 1:
         raise ValueError("A window contains one scalar channel with one declared unit")
