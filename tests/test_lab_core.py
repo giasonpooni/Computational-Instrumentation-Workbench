@@ -1,5 +1,8 @@
 import hashlib
 import json
+import os
+import pathlib
+import sys
 
 import pytest
 
@@ -550,3 +553,183 @@ def test_code_git_is_told_to_overlook_makes_a_provider_checkout_dirty(tmp_path, 
         subprocess.run(git + ["update-index", flag, "engine.py"], check=True)
         (tmp_path / "engine.py").write_text("VALUE = 999\n")
     assert runner.git_identity(tmp_path)["dirty"] is True
+
+
+@pytest.mark.skipif(os.name == "nt", reason="powercap zone names contain ':'")
+def test_rapl_probe_needs_a_readable_counter_not_a_present_one(tmp_path, monkeypatch):
+    zone = tmp_path / "intel-rapl:0"
+    zone.mkdir()
+    (zone / "energy_uj").write_text("123456\n", encoding="utf-8")
+    monkeypatch.setattr(runner, "POWERCAP", tmp_path)
+    assert runner._probe_hardware("rapl") is True
+    read_text = pathlib.Path.read_text
+
+    def root_only(path, *args, **kwargs):  # the counter exists, but only root may read it
+        if path.name == "energy_uj":
+            raise PermissionError(13, "Permission denied", str(path))
+        return read_text(path, *args, **kwargs)
+    with monkeypatch.context() as patch:
+        patch.setattr(pathlib.Path, "read_text", root_only)
+        assert runner._probe_hardware("rapl") is False
+        ctx = runner.Context(tmp_path / "out")
+        ctx.begin("T115")
+        assert ctx.available("hardware:rapl") is False and not ctx.hardware
+    (zone / "energy_uj").write_text("", encoding="utf-8")
+    assert runner._probe_hardware("rapl") is False
+
+
+def test_builtin_identity_records_optional_modules_that_fail_to_identify(tmp_path, monkeypatch):
+    (tmp_path / "scipy.py").write_text("raise ImportError('compiled against another numpy')\n", encoding="utf-8")
+    (tmp_path / "sympy.py").write_text("", encoding="utf-8")  # importable, states no __version__
+    (tmp_path / "mpmath.py").write_text("__version__ = '9.9.9'\n", encoding="utf-8")
+    names = ("scipy", "sympy", "mpmath")
+    for name in names:  # start without them, as a session that never imported them (the CI test job has none)
+        monkeypatch.setitem(sys.modules, name, None)
+        monkeypatch.delitem(sys.modules, name)
+    with monkeypatch.context() as patch:
+        for name in names:
+            patch.setitem(sys.modules, name, None)  # records the entry, or its absence, for the undo
+            patch.delitem(sys.modules, name)
+        patch.syspath_prepend(str(tmp_path))
+        identity = runner.builtin_identity([])
+    assert not set(names) & set(sys.modules)  # the fakes never outlive the test
+    assert identity["mpmath"] == "9.9.9"
+    assert identity["sympy"] == "unknown (AttributeError: module 'sympy' has no attribute '__version__')"
+    assert "scipy" not in identity  # a module that fails on import is not present
+    assert identity["optional_module_errors"] == {"scipy": "ImportError: compiled against another numpy"}
+
+
+def _probing(ctx):
+    cargo, scr = ctx.available("tool:cargo"), ctx.available("provider:scr")
+    basis = {"checks": [CHECK]} if cargo and scr else {"derivation": "docs"}
+    return {"state": "completed" if cargo else "partial", "findings": [finding("kernel", "numerical", 1.0, basis)]}
+
+
+def test_reports_record_requirement_probes_and_comparison_names_their_differences(tmp_path, monkeypatch):
+    import shutil
+    item = {t["id"]: t for t in load_queue()["tasks"]}["T116"]
+    checkout = tmp_path / "scr-checkout"
+    checkout.mkdir()
+    which = shutil.which
+    monkeypatch.setattr(shutil, "which", lambda name, *a, **k: "/opt/cargo" if name == "cargo" else which(name, *a, **k))
+    built = {}
+    for name, providers in (("with", {"scr": checkout}), ("again", {"scr": checkout}), ("unbound", {})):
+        ctx = runner.Context(tmp_path / name, providers)
+        built[name] = runner.run_task(item, _implementation(_probing), ctx, {})
+    assert built["with"]["provider_runtime_identity"]["requirement_probes"] == {"provider:scr": True, "tool:cargo": True}
+    assert built["with"]["report_id"] == built["again"]["report_id"]  # deterministic in one environment
+    monkeypatch.setattr(shutil, "which", lambda name, *a, **k: None if name == "cargo" else which(name, *a, **k))
+    built["no-cargo"] = runner.run_task(item, _implementation(_probing), runner.Context(tmp_path / "x", {"scr": checkout}), {})
+    blocked = runner.run_task(item, _implementation(_probing, ("tool:cargo",)), runner.Context(tmp_path / "y"), {})
+    assert blocked["state"] == "blocked" and blocked["provider_runtime_identity"]["requirement_probes"] == {
+        "tool:cargo": False}
+    # A task that probes nothing keeps the plain built-in identity.
+    quiet = runner.run_task(item, _implementation(lambda ctx: {"findings": [finding("k", "numerical", 1.0, {
+        "checks": [CHECK]})]}), runner.Context(tmp_path / "z"), {})
+    assert "requirement_probes" not in quiet["provider_runtime_identity"]
+    for name, value in built.items():
+        (tmp_path / name / "reports").mkdir(parents=True, exist_ok=True)
+        (tmp_path / name / "reports" / "T116.json").write_text(runner.dumps(value))
+    assert runner.compare(tmp_path / "with", tmp_path / "again")["passed"]
+    assert runner.compare(tmp_path / "with", tmp_path / "unbound")["problems"] == [
+        "T116: 'kernel' label numerically_verified -> analytic (requirement probes differ: provider:scr available -> "
+        "unavailable)"]
+    assert runner.compare(tmp_path / "with", tmp_path / "no-cargo")["problems"] == [
+        "T116: state completed -> partial (requirement probes differ: tool:cargo available -> unavailable)",
+        "T116: 'kernel' label numerically_verified -> analytic (requirement probes differ: tool:cargo available -> "
+        "unavailable)"]
+
+
+def test_tasks_sharing_a_memo_record_the_probes_its_computation_made(tmp_path, monkeypatch):
+    item = {t["id"]: t for t in load_queue()["tasks"]}["T116"]
+    monkeypatch.setattr(runner, "_probe_hardware", lambda name: True)
+    computed = []
+
+    def reference(ctx):
+        computed.append(ctx.task_id)
+        return 1.0 if ctx.available("module:json") and ctx.available("hardware:nvidia-gpu") else 0.0
+
+    def shared(ctx):
+        value = ctx.memo("shared", lambda: reference(ctx))
+        return {"findings": [finding("k", "numerical", value, {"checks": [CHECK]})]}
+
+    def outer(ctx):  # a memo computation that reuses another memo records its probes too
+        value = ctx.memo("outer", lambda: ctx.memo("shared", lambda: reference(ctx)) + 1.0)
+        return {"findings": [finding("k", "numerical", value, {"checks": [CHECK]})]}
+    ctx = runner.Context(tmp_path / "run")
+    first, second = (runner.run_task(item, _implementation(shared), ctx, {}) for _ in range(2))
+    assert computed == ["T116"] and not ctx.hardware  # a replayed hardware probe is not the task's own
+    alone = runner.run_task(item, _implementation(shared), runner.Context(tmp_path / "alone"), {})
+    probes = {"hardware:nvidia-gpu": True, "module:json": True}
+    assert first["provider_runtime_identity"]["requirement_probes"] == probes
+    assert second["report_id"] == alone["report_id"] == first["report_id"]
+    nested, again = (runner.run_task(item, _implementation(outer), ctx, {}) for _ in range(2))
+    assert computed == ["T116", "T116"] and nested["report_id"] == again["report_id"]  # "alone" computed once more
+    assert again["provider_runtime_identity"]["requirement_probes"] == probes
+
+
+def test_a_self_blocked_task_that_probed_is_not_proposed_again(tmp_path):
+    import dataclasses
+    from ciw.lab import planner
+    from ciw.lab.registry import load_implementations
+    registered = load_implementations()[0]["T098"]
+    assert registered.requires == ()  # blocked without a declared requirement
+    item = {t["id"]: t for t in load_queue()["tasks"]}["T098"]
+
+    def self_blocked(ctx):
+        ctx.available("tool:git")
+        return {"state": "blocked", "findings": []}
+
+    def refused(ctx):
+        ctx.available("tool:git")
+        return {"state": "completed", "findings": []}  # the contract refuses it; it is retained as blocked
+    (tmp_path / "reports").mkdir()
+    for run in (self_blocked, refused):
+        built = runner.run_task(item, dataclasses.replace(registered, run=run), runner.Context(tmp_path / "work"), {})
+        assert built["state"] == "blocked"
+        (tmp_path / "reports" / "T098.json").write_text(runner.dumps(built))
+        plan = planner.next_tasks(tmp_path, limit=200)
+        # Re-running it unchanged reproduces the same report, so the plan must not propose it.
+        assert "T098" not in [row["task_id"] for row in plan["next"]]
+        assert "T098" in [row["task_id"] for row in plan["still_blocked"]]
+
+
+def test_physical_statement_counts_findings_on_acquired_hardware():
+    none = "Physical validation requires acquired hardware evidence; none was acquired for this task."
+    task = {t["id"]: t for t in load_queue()["tasks"]}["T116"]
+    energy = finding("GPU energy", "physical", 1.0, {"acquisition": ACQUISITION})
+    power = finding("GPU power", "physical", 2.0, {"acquisition": ACQUISITION})
+    accuracy = finding("NVML accuracy", "physical", None, {})
+    checked = finding("rate", "numerical", 4.0, {"checks": [CHECK]})
+    cases = (([checked], "not_established", none),
+             ([checked, accuracy], "not_established", none),
+             ([energy, accuracy], "not_established",
+              "1 of 2 physical-domain findings rests on acquired hardware evidence; the rest are not_established."),
+             ([energy, power, accuracy], "not_established",
+              "2 of 3 physical-domain findings rest on acquired hardware evidence; the rest are not_established."),
+             ([energy, power, checked], "hardware_measured",
+              "2 of 2 physical-domain findings rest on acquired hardware evidence."))
+    for findings, status, statement in cases:
+        built = report.validate_report(report.build_report(task, "completed", {}, findings))
+        assert built["physical_validation_status"] == {"status": status, "statement": statement}
+    # A GPU-host report that measured one of its two claims may neither deny it nor claim validation.
+    partly = report.build_report(task, "completed", {}, [energy, accuracy])
+    for forged in ({"status": "not_established", "statement": none},
+                   {"status": "not_established", "statement": cases[4][2]},
+                   {"status": "hardware_measured", "statement": cases[2][2]}):
+        edited = dict(json.loads(json.dumps(partly)), physical_validation_status=forged)
+        edited["report_id"] = report.report_identity(edited)
+        with pytest.raises(EvidenceRefusal, match="derived statement: 1 of 2"):
+            report.validate_report(edited)
+
+
+def test_independence_is_symmetric_between_distinct_known_origins():
+    for producer, checker in (("ciw.lab.jacobi", "scipy"), ("scipy.integrate", "ciw.lab.jacobi"),
+                              ("parameterized-lyapunov-stability-runtime", "ciw.lab.lyapunov_reference"),
+                              ("sympy", "mpmath")):
+        check = dict(CHECK, producer={"implementation": producer}, checker={"implementation": checker})
+        assert supported_label({"independent_check": check}, "numerical") == "independently_verified"
+    for producer, checker in (("ciw.lab.a", "ciw.lab.b"), ("scipy.linalg", "scipy.integrate"), ("homemade", "ciw")):
+        check = dict(CHECK, producer={"implementation": producer}, checker={"implementation": checker})
+        with pytest.raises(EvidenceRefusal):
+            supported_label({"independent_check": check}, "numerical")

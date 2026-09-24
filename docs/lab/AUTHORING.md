@@ -59,10 +59,12 @@ independent.
 `independent_check` = a check object plus `producer` and `checker`, each
 `{"implementation": "...", "revision": "..."}`. The origin of an implementation
 is its leading ASCII name token after NFKC normalization, casefolded
-(`scipy.integrate.solve_ivp` → `scipy`). The producer must be `ciw` or a
-recognised external family, and the checker a recognised family different from
-the producer: `scipy`, `sympy`, `mpmath`, `numpy`, `cpython`, `zlib`, `git` and
-the pinned providers (`curved-surface-geodesic-sensitivity-runtime`,
+(`scipy.integrate.solve_ivp` → `scipy`). Producer and checker must each be
+`ciw` or a recognised external family, and their origins must differ; the
+rule is symmetric, so a pinned provider's result checked by a `ciw` reference
+counts as independent just as `ciw` checked by the provider does. The
+recognised external families are `scipy`, `sympy`, `mpmath`, `numpy`,
+`cpython`, `zlib`, `git` and the pinned providers (`curved-surface-geodesic-sensitivity-runtime`,
 `flat-torus-geodesic-reference`, `parameterized-lyapunov-stability-runtime`,
 `scientific-computation-runtime`). Unknown families, non-ASCII look-alikes and
 names that embed `ciw` (`ciw-rust`, `python:ciw`) are refused, so independence
@@ -183,7 +185,13 @@ in an installed package without them (report blocked in that case).
   or aggregated tables rather than full trajectories.
 - Tests: `tests/test_lab_<section>.py`, Python 3.11 and Windows compatible, no
   network, `pytest.importorskip` for optional modules, env-gated skips for
-  providers (`CIW_LAB_<ROLE>_REPO`). Tests should call the task functions via
+  providers (`CIW_LAB_<ROLE>_REPO`, `CIW_LAB_<ROLE>_PYTHON`). The clean-room
+  gate sets these only for the roles `scripts/check_lab.py` binds (CSG, FTR,
+  SCR and the PLSR/FTR interpreter), through `TEST_VARIABLES` in
+  `scripts/reproduce_lab.py`; tests of any other role skip in CI. A new role
+  needs its variable in `TEST_VARIABLES` and its provisioning in
+  `scripts/check_lab.py` (`REPOSITORIES` and its pin) before its tests run
+  there. Tests should call the task functions via
   `ciw.lab.runner.run_task` or the underlying computation, and assert the
   labels, not just the numbers.
 - Style follows the surrounding code: module docstring stating scope and

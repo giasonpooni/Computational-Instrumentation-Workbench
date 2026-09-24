@@ -69,13 +69,34 @@ def source_digest(relative: str) -> str | None:
     return hashlib.sha256(path.read_bytes().replace(b"\r\n", b"\n")).hexdigest()
 
 
+OPTIONAL_MODULES = ("scipy", "sympy", "mpmath")
+
+
 def builtin_identity(changed_files) -> dict:
+    """The workbench runtime: sources, interpreter and the optional reference modules that import here.
+
+    An installed optional module that fails on import is recorded under
+    ``optional_module_errors`` (it is not present), and one without a string
+    ``__version__`` as ``unknown (...)``; identifying the runtime never aborts a run.
+    """
     sources = {name: source_digest(name) for name in changed_files if source_digest(name)}
     identity = {"implementation": "ciw.lab", "ciw_version": __version__,
                 "python": platform.python_version(), "numpy": np.__version__, "sources": sources}
-    for optional in ("scipy", "sympy", "mpmath"):
-        if importlib.util.find_spec(optional) is not None:
-            identity[optional] = __import__(optional).__version__
+    errors = {}
+    for optional in OPTIONAL_MODULES:
+        try:
+            if importlib.util.find_spec(optional) is None:
+                continue
+            module = importlib.import_module(optional)
+        except Exception as exc:  # recorded, never raised
+            errors[optional] = f"{type(exc).__name__}: {exc}"
+            continue
+        try:
+            identity[optional] = str(module.__version__)
+        except Exception as exc:
+            identity[optional] = f"unknown ({type(exc).__name__}: {exc})"
+    if errors:
+        identity["optional_module_errors"] = errors
     return identity
 
 
@@ -113,30 +134,55 @@ class Context:
         self.task_id: str | None = None
         self.artifacts: list = []
         self.hardware: set = set()
+        self.probes: dict = {}
+        self._recording: list = []  # the probes of each memo computation in progress
 
     def begin(self, task_id: str) -> None:
-        self.task_id, self.artifacts, self.hardware = task_id, [], set()
+        self.task_id, self.artifacts, self.hardware, self.probes = task_id, [], set(), {}
 
     def memo(self, key, compute):
-        """Share one deterministic computation between tasks in a run."""
+        """Share one deterministic computation between tasks in a run.
+
+        Every task that uses the value records the requirement probes its
+        computation made, so a report does not depend on which tasks ran
+        before it. A replayed hardware probe is not the task's own: a physical
+        finding still needs a probe that succeeded in its task.
+        """
         if key not in self._memo:
-            self._memo[key] = compute()
-        return self._memo[key]
+            made: dict = {}
+            self._recording.append(made)
+            try:
+                value = compute()
+            finally:
+                self._recording.pop()
+            self._memo[key] = (value, made)
+        value, made = self._memo[key]
+        for requirement, present in made.items():
+            self._probed(requirement, present)
+        return value
+
+    def _probed(self, requirement: str, present: bool) -> None:
+        self.probes[requirement] = present
+        for made in self._recording:
+            made[requirement] = present
 
     def available(self, requirement: str) -> bool:
+        """Whether a requirement is met here; the task's report records each outcome (the latest per requirement)."""
         kind, _, name = requirement.partition(":")
         if kind == "module":
-            return importlib.util.find_spec(name) is not None
-        if kind == "provider":
-            return name in self.providers and self.providers[name].exists()
-        if kind == "tool":
-            return shutil.which(name) is not None
-        if kind == "hardware":
-            present = _probe_hardware(name)
+            present = importlib.util.find_spec(name) is not None
+        elif kind == "provider":
+            present = name in self.providers and self.providers[name].exists()
+        elif kind == "tool":
+            present = shutil.which(name) is not None
+        elif kind == "hardware":
+            present = bool(_probe_hardware(name))
             if present:
                 self.hardware.add(name)  # a physical finding needs a probe that succeeded in its task
-            return present
-        raise ValueError(f"Unsupported lab requirement: {requirement}")
+        else:
+            raise ValueError(f"Unsupported lab requirement: {requirement}")
+        self._probed(requirement, present)
+        return present
 
     def _write(self, name: str, data: bytes) -> str:
         if "/" in name or "\\" in name or name.startswith("."):
@@ -159,6 +205,10 @@ class Context:
         return self._write(name, text.encode("utf-8"))
 
 
+# Linux powercap sysfs directory holding the intel-rapl energy counters.
+POWERCAP = Path("/sys/class/powercap")
+
+
 def _probe_hardware(name: str) -> bool:
     if name == "nvidia-gpu":
         if shutil.which("nvidia-smi") is None:
@@ -169,8 +219,8 @@ def _probe_hardware(name: str) -> bool:
             return False
         return result.returncode == 0 and "GPU" in result.stdout
     if name == "rapl":
-        # The counters often exist but are readable only by root.
-        for path in Path("/sys/class/powercap").glob("intel-rapl:*/energy_uj"):
+        # The counters often exist but are readable only by root: a counter answers only if it reads as a number.
+        for path in POWERCAP.glob("intel-rapl:*/energy_uj"):
             try:
                 int(path.read_text().strip())
                 return True
@@ -296,6 +346,18 @@ def _blocked(task, reason, failure):
     return "blocked", fields, []
 
 
+def _with_probes(identity, ctx, state, requires):
+    """The runtime identity plus the requirement probes the task queried and their outcomes (none: unchanged).
+
+    A blocked task that declares no requirement keeps its identity unchanged:
+    the planner retries it only when that identity differs from the current
+    built-in one, which recorded probes always would.
+    """
+    if not ctx.probes or not isinstance(identity, dict) or (state == "blocked" and not requires):
+        return identity
+    return dict(identity, requirement_probes=dict(sorted(ctx.probes.items())))
+
+
 def _unavailable(requires, ctx) -> list:
     missing = []
     for need in requires:
@@ -347,12 +409,14 @@ def run_task(task, implementation, ctx: Context, junit: dict, import_error: str 
                 state, fields, findings = _blocked(task, reason,
                                                    traceback.format_exception_only(type(exc), exc)[-1].strip())
     changed = list(implementation.changed_files) if implementation else []
+    requires = implementation.requires if implementation else ()
     fields.setdefault("changed_files", changed)
     if not fields.get("changed_files"):
         fields["changed_files"] = changed
     fields["generated_artifacts"] = deepcopy(ctx.artifacts)
     if not fields.get("provider_runtime_identity"):
         fields["provider_runtime_identity"] = builtin_identity(changed)
+    fields["provider_runtime_identity"] = _with_probes(fields["provider_runtime_identity"], ctx, state, requires)
     # Checks count as tests only when the implementation ran; a blocked plan's checks never executed.
     passed, skipped, failed = _test_fields(implementation, findings if executed else [], junit)
     fields["tests_passed"], fields["tests_skipped"] = passed, skipped
@@ -367,7 +431,8 @@ def run_task(task, implementation, ctx: Context, junit: dict, import_error: str 
         # A report the contract refuses is retained as blocked so the queue continues.
         state, fields, _ = _blocked(task, f"Blocked: report refused by the evidence contract: {exc}", str(exc))
         fields.update(changed_files=changed, generated_artifacts=deepcopy(ctx.artifacts),
-                      provider_runtime_identity=builtin_identity(changed), tests_passed=[], tests_skipped=[])
+                      provider_runtime_identity=_with_probes(builtin_identity(changed), ctx, state, requires),
+                      tests_passed=[], tests_skipped=[])
         return validate_report(build_report(task, state, {k: v for k, v in fields.items() if k in FIELD_NAMES}, []))
 
 
@@ -490,9 +555,6 @@ def _close(retained, fresh, tolerance):
     return retained == fresh
 
 
-OPTIONAL_MODULES = ("scipy", "sympy", "mpmath")
-
-
 def _optional_difference(old, new) -> str:
     """Optional reference modules present in one run's identity but not the other's."""
     def present(report):
@@ -500,6 +562,28 @@ def _optional_difference(old, new) -> str:
         return {name for name in OPTIONAL_MODULES if name in identity}
     before, after = present(old), present(new)
     return ", ".join([f"-{m}" for m in sorted(before - after)] + [f"+{m}" for m in sorted(after - before)])
+
+
+def _probes(report) -> dict:
+    identity = report.get("provider_runtime_identity")
+    probes = identity.get("requirement_probes") if isinstance(identity, dict) else None
+    return probes if isinstance(probes, dict) else {}
+
+
+def _probe_difference(old, new) -> str:
+    """Requirement probes (module:, tool:, provider:, hardware:) whose recorded outcome differs between runs."""
+    def outcome(value):
+        return {True: "available", False: "unavailable", None: "not recorded"}.get(value, repr(value))
+    before, after = _probes(old), _probes(new)
+    return ", ".join(f"{name} {outcome(before.get(name))} -> {outcome(after.get(name))}"
+                     for name in sorted(set(before) | set(after)) if before.get(name) != after.get(name))
+
+
+def _environment_note(old, new) -> str:
+    """Environment differences between two runs that can explain a changed state or label."""
+    notes = [f"{kind} differ: {text}" for kind, text in (("optional modules", _optional_difference(old, new)),
+                                                        ("requirement probes", _probe_difference(old, new))) if text]
+    return f" ({'; '.join(notes)})" if notes else ""
 
 
 PROSE_FIELDS = ("hypothesis", "mathematical_model", "input_data", "observation_model", "expected_invariant",
@@ -540,7 +624,9 @@ def compare(retained_dir, fresh_dir, tasks=None) -> dict:
     Every task retained or regenerated is compared, or only ``tasks`` (the
     identities of a partial run), each of which must then be in both
     directories. A missing or empty retained directory, or an empty
-    ``tasks``, fails: comparing nothing verifies nothing.
+    ``tasks``, fails: comparing nothing verifies nothing. A changed state or
+    label names the optional modules and requirement probes whose recorded
+    outcomes differ between the two runs.
     """
     selected = None if tasks is None else set(tasks)
     retained_reports = load_reports(retained_dir)
@@ -561,7 +647,7 @@ def compare(retained_dir, fresh_dir, tasks=None) -> dict:
         if new is None:
             continue
         if old["state"] != new["state"]:
-            problems.append(f"{task_id}: state {old['state']} -> {new['state']}")
+            problems.append(f"{task_id}: state {old['state']} -> {new['state']}" + _environment_note(old, new))
         for name in PROSE_FIELDS:
             if _skeleton(old[name]) != _skeleton(new[name]):
                 problems.append(f"{task_id}: '{name}' wording differs")
@@ -579,9 +665,8 @@ def compare(retained_dir, fresh_dir, tasks=None) -> dict:
                 continue
             validate_finding(other)
             if record["evidence_status"] != other["evidence_status"]:
-                note = _optional_difference(old, new)
                 problems.append(f"{task_id}: '{claim}' label {record['evidence_status']} -> {other['evidence_status']}"
-                                + (f" (optional modules differ: {note})" if note else ""))
+                                + _environment_note(old, new))
             if record.get("unit") != other.get("unit") or record["domain"] != other["domain"]:
                 problems.append(f"{task_id}: '{claim}' unit or domain differs")
             if record.get("expected_not_established") != other.get("expected_not_established"):

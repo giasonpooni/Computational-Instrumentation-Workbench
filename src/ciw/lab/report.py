@@ -2,8 +2,9 @@
 
 A report answers the same nineteen questions for every task, including tasks
 that could not be executed here. Reports never state physical validation
-unless a physical-domain finding cites acquired hardware evidence, and their
-evidence status is recomputed from the retained findings.
+unless every physical-domain finding rests on acquired hardware evidence, and
+they say how many do; their evidence status is recomputed from the retained
+findings.
 """
 from __future__ import annotations
 
@@ -49,16 +50,26 @@ def evidence_status(findings) -> dict:
     return {"primary": primary_label(findings), "counts": summarize(findings)}
 
 
-PHYSICAL_STATEMENTS = {
-    "not_established": "Physical validation requires acquired hardware evidence; none was acquired for this task.",
-    "hardware_measured": "Physical-domain findings cite acquired hardware evidence.",
-}
+NO_HARDWARE_STATEMENT = "Physical validation requires acquired hardware evidence; none was acquired for this task."
 
 
 def physical_validation(findings) -> dict:
-    """Derived physical validation status with its fixed statement."""
-    status = physical_status([f for f in findings if f["domain"] in PHYSICAL_DOMAINS])
-    return {"status": status, "statement": PHYSICAL_STATEMENTS[status]}
+    """Derived physical validation status with its derived statement.
+
+    The status is ``hardware_measured`` only when every physical-domain finding
+    is; the statement counts the physical-domain findings that rest on acquired
+    hardware evidence, so a partly measured task neither claims validation nor
+    denies the evidence it acquired.
+    """
+    physical = [f for f in findings if f["domain"] in PHYSICAL_DOMAINS]
+    status = physical_status(physical)
+    measured = sum(physical_status([record]) == "hardware_measured" for record in physical)
+    if not measured:
+        return {"status": status, "statement": NO_HARDWARE_STATEMENT}
+    statement = (f"{measured} of {len(physical)} physical-domain findings {'rests' if measured == 1 else 'rest'} "
+                 "on acquired hardware evidence")
+    rest = "." if measured == len(physical) else "; the rest are not_established."
+    return {"status": status, "statement": statement + rest}
 
 
 def validate_report(report: dict) -> dict:
@@ -79,7 +90,8 @@ def validate_report(report: dict) -> dict:
         raise EvidenceRefusal("Report evidence status differs from its findings")
     expected_physical = physical_validation(findings)
     if report["physical_validation_status"] != expected_physical:
-        raise EvidenceRefusal(f"Physical validation status must be {expected_physical['status']} with its derived statement")
+        raise EvidenceRefusal(f"Physical validation status must be {expected_physical['status']} with its derived "
+                              f"statement: {expected_physical['statement']}")
     claims = [f["claim"] for f in findings]
     if len(claims) != len(set(claims)):
         raise EvidenceRefusal("Finding claims must be unique within a report")

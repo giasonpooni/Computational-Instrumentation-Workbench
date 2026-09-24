@@ -27,10 +27,12 @@ declared generator, `D` a derivation and `A` a hardware acquisition record:
    `not_established`.
 5. Origin rule: `I` requires `origin(producer) ≠ origin(checker)`, where
    `origin` is the leading ASCII name token of the NFKC-normalized,
-   casefolded implementation identifier, both origins belong to a closed
-   allowlist (`ciw` plus the recognised external families), and the checker is
-   not `ciw`. Code in one family never verifies itself independently, and a
-   `cross_implementation` check is never `I`.
+   casefolded implementation identifier, and both origins belong to a closed
+   allowlist (`ciw` plus the recognised external families). The rule is
+   symmetric: a pinned provider's output checked by a `ciw` reference is as
+   independent as `ciw` output checked by the provider. Code in one family
+   never verifies itself independently, and a `cross_implementation` check is
+   never `I`.
 6. Non-upgrade: a stated label must equal `L(basis, domain)`
    (`validate_finding`); a derived physical status is `hardware_measured` only
    if every input is (`physical_status`).

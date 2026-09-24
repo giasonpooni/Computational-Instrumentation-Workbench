@@ -148,9 +148,11 @@ def _identity(value, name):
 
 
 # Implementation families recognised as independent of the workbench's own
-# code. An origin outside this set, or the ciw family itself, cannot supply an
-# independent check. numpy counts only for routines the compared ciw code does
-# not itself call; reviewers check that per finding.
+# code. An independent check pairs two known origins that differ: ciw against
+# one of these, one of these against ciw, or two of these. An origin outside
+# this set cannot take part, and ciw never checks ciw. numpy counts only for
+# routines the compared ciw code does not itself call; reviewers check that
+# per finding.
 CIW_ORIGIN = "ciw"
 INDEPENDENT_ORIGINS = frozenset({
     "scipy", "sympy", "mpmath", "numpy", "cpython", "zlib", "git",
