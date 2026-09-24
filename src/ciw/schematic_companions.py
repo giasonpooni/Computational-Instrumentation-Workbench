@@ -19,16 +19,14 @@ from .adapters.subprocess import PinnedSubprocessAdapter, _json
 from .declared_workload import (AUTHORITY, DeclaredWorkflow, MAX_BYTES, RESULT_SCHEMA,
                                SOURCE_LIMIT, _graph, _text, _verification)
 from .core.canonical import canonical, digest, byte_digest, bundle_digest, exact_keys, utc_now
+from .pipelines import pin_map
 
 KIND = "schematic-companions"
 SOURCE_SCHEMA = "ciw.schematic-companions-source.v1"
 OPERATION = "ciw.schematic-companions.v1"
 ROLES = frozenset({"sra", "jspt", "plsr"})
-PINS = {
-    "sra": {"revision": "a6e79585950bb6860e5edce5ebd2cce39ea481f2", "source_root": "src", "module": "schematics.eligibility"},
-    "jspt": {"revision": "7399ab03087b27683620b4c57f97b2ac14546c7f", "source_root": "src", "module": "sensitivity.jacobian"},
-    "plsr": {"revision": "9d0e7b4a1162e038150a71c63d986945d78135d4", "source_root": "src", "module": "lyapunov.runtime"},
-}
+# The pipeline descriptor is the pin definition this module executes.
+PINS = pin_map("schematic-companions")
 POLICY = {
     "companion_execution": "selected_function_only",
     "model_semantics": "continuous_scalar_state_derivative",

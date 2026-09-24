@@ -22,7 +22,6 @@ if TYPE_CHECKING:
     from lyapunov import ModelArtifact
 
 ADAPTER_VERSION = "ciw-plsr-adapter-v1"
-RUNTIME_COMMIT = "19ea6967060166ba09db6cd4563bd87bd6b3d196"
 RUNTIME_REPOSITORY = "https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime"
 EVALUATION_SCHEMA = "ciw-plsr-evaluation-v1"
 SAMPLE_SCHEMA = "plsr-sample-v1"
@@ -69,6 +68,10 @@ def _manifest() -> dict[str, Any]:
     """The pinned PLSR package, defined by its provider descriptor."""
     from .pipelines import provider_descriptor
     return provider_descriptor("plsr")["pin"]
+
+
+# The provider descriptor is the PLSR package pin definition.
+RUNTIME_COMMIT = _manifest()["commit"]
 
 
 def _source_files(root: Any, prefix: str = "") -> dict[str, str]:

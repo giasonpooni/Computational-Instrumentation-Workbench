@@ -25,14 +25,16 @@ from .adapters.subprocess import _json
 from .declared_workload import (AUTHORITY, DeclaredWorkflow, MAX_BYTES, RESULT_SCHEMA,
                                SOURCE_LIMIT, _text, _verification)
 from .core.canonical import canonical, digest, byte_digest, bundle_digest, exact_keys, utc_now
+from .pipelines import pin_map
 
 KIND = "identified-stability"
 SOURCE_SCHEMA = "ciw.identified-stability-source.v1"
 OPERATION = "ciw.identified-stability.v1"
 ROLES = frozenset({"plsr"})
-PIN = {"revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
-       "source_root": "src", "module": "lyapunov.model_artifact"}
-SOURCE_TREE = "e261315f46851d99053e305ef2c03d4160f02a92"
+# The pipeline descriptor is the pin definition this module executes.
+_DECLARED = pin_map("identified-stability")["plsr"]
+PIN = {k: v for k, v in _DECLARED.items() if k != "source_tree"}
+SOURCE_TREE = _DECLARED["source_tree"]
 POLICY = {
     "model_semantics": "discrete_linear_zero_input_zero_equilibrium",
     "state_selection": "retained_gsie_conditional_prediction_mean",

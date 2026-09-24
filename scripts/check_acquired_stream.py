@@ -44,11 +44,11 @@ def pins(root):
     for statement in ast.parse((package / "adapters/ppda_acquisition.py").read_text()).body:
         if isinstance(statement, ast.Assign) and len(statement.targets) == 1:
             target = statement.targets[0]
-            if isinstance(target, ast.Name) and target.id in {"PPDA_REVISION", "VENDOR_REVISION", "VENDOR_PATH"}:
+            if isinstance(target, ast.Name) and target.id in {"VENDOR_REVISION", "VENDOR_PATH"}:
                 constants[target.id] = ast.literal_eval(statement.value)
     revisions = {role: windows[role]["revision"] for role in ("tbrt", "mcur", "stfe", "gsie", "set")}
     revisions.update({role: process[role]["revision"] for role in ("oit", "fdir")})
-    revisions["ppda"] = constants["PPDA_REVISION"]
+    revisions["ppda"] = descriptor_pins("acquired-dataset", root)["ppda"]["revision"]
     if set(revisions) != set(REPOSITORIES):
         raise ValueError("Acquired stream requires its complete eight-provider pin set")
     return revisions, constants["VENDOR_PATH"], constants["VENDOR_REVISION"]

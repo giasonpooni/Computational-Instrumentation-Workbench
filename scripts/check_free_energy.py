@@ -1,6 +1,5 @@
 """Run pinned CSG, GSIE and PLSR free-energy experiments from an isolated wheel."""
 import argparse
-import ast
 from hashlib import sha256
 import json
 import os
@@ -11,7 +10,7 @@ import sys
 import tempfile
 import xml.etree.ElementTree as ET
 
-from provider_checkouts import validate_checkout
+from provider_checkouts import descriptor_pins, validate_checkout
 
 REPOSITORIES = {"csg":"Curved-Surface-Geodesic-Sensitivity-Runtime",
     "gsie":"Geometric-State-Inference-Engine", "plsr":"Parameterized-Lyapunov-Stability-Runtime"}
@@ -28,13 +27,6 @@ REQUIRED_TESTS = {
 
 def call(command, **kwargs):
     return subprocess.run(command, check=True, timeout=kwargs.pop("timeout",300), **kwargs)
-
-
-def pins(path):
-    for node in ast.parse(path.read_text(encoding="utf-8")).body:
-        if isinstance(node,ast.Assign) and any(isinstance(t,ast.Name) and t.id == "PINS" for t in node.targets):
-            return ast.literal_eval(node.value)
-    raise ValueError("Missing exact free-energy provider pins")
 
 
 def exact_source(path,pin):
@@ -55,7 +47,7 @@ def main():
     parser.add_argument("--temporary-root",type=Path,help="Optional parent for isolated build and test directories")
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
-    declarations = pins(root/"src/ciw/free_energy_native.py")
+    declarations = descriptor_pins("variational-free-energy", root)
     if set(declarations) != set(REPOSITORIES):
         raise ValueError("Require all three pinned free-energy providers")
     tests = sorted((root/"tests").glob("test_free_energy_*.py"))

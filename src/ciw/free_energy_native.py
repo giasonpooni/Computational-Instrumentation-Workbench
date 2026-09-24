@@ -19,18 +19,10 @@ import numpy as np
 from .adapters.protocol import AdapterRefusal
 from .adapters.subprocess import PinnedSubprocessAdapter, _json
 from .core.canonical import canonical, digest
+from .pipelines import pin_map
 
-PINS = {
-    "csg": {"revision":"bbc535af29c30997e56fd120320c570830676462",
-            "source_tree":"181b6eb73288d001f45c39bb149b1a80a431f34b",
-            "module":"geodesic_testbed.jacobi", "source_root":"src"},
-    "gsie": {"revision":"5241eee6dab434533bdf0cf0e824bc43b4a79831",
-             "source_tree":"375c031c07592d5bcb1d224780f18ceb886df4a1",
-             "module":"geometric_state_inference.contracts", "source_root":"src"},
-    "plsr": {"revision":"19ea6967060166ba09db6cd4563bd87bd6b3d196",
-             "source_tree":"e261315f46851d99053e305ef2c03d4160f02a92",
-             "module":"lyapunov.model_artifact", "source_root":"src"},
-}
+# The pipeline descriptor is the pin definition this module executes.
+PINS = pin_map("variational-free-energy")
 ROLES = frozenset(PINS)
 MAX_REQUEST_BYTES = 256 * 1024
 FRAME = "ciw.free-energy.normalized-initial-transverse-state.v1"

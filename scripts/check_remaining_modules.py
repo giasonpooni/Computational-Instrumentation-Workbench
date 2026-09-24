@@ -1,6 +1,5 @@
 """Check three remaining native instruments together from an isolated CIW wheel."""
 import argparse
-import ast
 import json
 import os
 from pathlib import Path
@@ -36,14 +35,6 @@ def call(command, **kwargs):
     return subprocess.run(command, check=True, timeout=kwargs.pop("timeout", 300), **kwargs)
 
 
-def literal(path, name):
-    """Read fixed pin declarations without importing source-tree CIW code."""
-    for statement in ast.parse(path.read_text()).body:
-        if isinstance(statement, ast.Assign) and any(isinstance(t, ast.Name) and t.id == name for t in statement.targets):
-            return ast.literal_eval(statement.value)
-    raise ValueError(f"Missing literal pin declaration {name}: {path}")
-
-
 def exact_source(repository, revision):
     actual = call(["git", "-C", str(repository), "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
     if actual != revision:
@@ -72,7 +63,7 @@ def main():
     if any(design.get(role) != pin for role, pin in process.items()) or set(design) != set(IDENTIFIED_REPOSITORIES):
         raise ValueError("The identified upstream requires its complete unchanged eleven-provider pin set")
     identified_pins = {role: pin["revision"] for role, pin in design.items()}
-    measurement = literal(package / "measurement_chain.py", "PINS")
+    measurement = descriptor_pins("measurement-chain", root)
     if set(measurement) != set(MEASUREMENT_REPOSITORIES):
         raise ValueError("The measurement chain requires exactly RCI, FSRT and JSPT")
     measurement_pins = {role: pin["revision"] for role, pin in measurement.items()}

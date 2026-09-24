@@ -19,6 +19,7 @@ from .adapters.subprocess import PinnedSubprocessAdapter, _json
 from .declared_workload import (AUTHORITY, DeclaredWorkflow, RESULT_SCHEMA,
                                SOURCE_LIMIT, _text, _verification)
 from .core.canonical import canonical, digest, byte_digest, bundle_digest, exact_keys, utc_now, utc_instant
+from .pipelines import pin_map
 
 KIND = "residual-monitor"
 SOURCE_SCHEMA = "ciw.residual-monitor-source.v1"
@@ -26,12 +27,10 @@ SCHEMA = "ciw.residual-monitor-session.v1"
 OPERATION = "ciw.residual-monitor.v1"
 MAX_BYTES = 4 * 1024 * 1024
 ROLES = frozenset({"fdir", "oit"})
-PINS = {
-    "fdir": {"revision": "29e4b306492b793487d47a96b97a56548217aa12", "module": "fdir.diagnostics", "source_root": "src"},
-    "oit": {"revision": "db4c564bddbe1911f96585bd18f58659a0026fb7", "module": "oit.diagnostics", "source_root": "src"},
-}
-SOURCE_TREES = {"fdir": "c7dc21c64377368341a2029ecd4f3e2a70d31646",
-                "oit": "3ba42834535b396a13395e5053c6fd5b4f1302c9"}
+# The pipeline descriptor is the pin definition this module executes.
+_DECLARED = pin_map("residual-monitor")
+PINS = {role: {k: v for k, v in pin.items() if k != "source_tree"} for role, pin in _DECLARED.items()}
+SOURCE_TREES = {role: pin["source_tree"] for role, pin in _DECLARED.items()}
 POLICY = {
     "stream": "scalar_marginal_normalized_innovation",
     "temporal_covariance_policy": "unknown",

@@ -13,7 +13,7 @@ from hashlib import sha256
 import json
 import re
 
-from .adapters.ppda_acquisition import AcquisitionAdapter, PPDA_REVISION, VENDOR_REVISION
+from .adapters.ppda_acquisition import AcquisitionAdapter, VENDOR_REVISION
 from .adapters.protocol import AdapterRefusal
 from .adapters.subprocess import _json
 from .pipelines import provider_pin
@@ -26,10 +26,9 @@ POLICY = {"mode": "incremental", "source_format": "json_records_with_declared_se
           "sensor_fusion": "not_performed"}
 DATA_SCHEMA = "ciw.ppda-acquisition.v1"
 ADAPTER_VERSION = "352e01125ba1fe5c751ab78bd70740f8ab999590c8ef253068d07213d7a7cdf7"
-SOURCE_TREES = {PPDA_REVISION: "5d7515101f00763cff7165aa4c61c0b4ae69e152",
-                VENDOR_REVISION: "145f0617b2da7e4d391985f0a03fb58f408992ee"}
-# The SCOUT vendor is a gitlink inside the PPDA checkout, pinned with it.
-VENDOR_PIN = {"revision": VENDOR_REVISION, "source_tree": SOURCE_TREES[VENDOR_REVISION],
+# The SCOUT vendor is a gitlink inside the PPDA checkout, pinned by that commit.
+VENDOR_SOURCE_TREE = "145f0617b2da7e4d391985f0a03fb58f408992ee"
+VENDOR_PIN = {"revision": VENDOR_REVISION, "source_tree": VENDOR_SOURCE_TREE,
               "module": "evidence.types", "source_root": "."}
 
 

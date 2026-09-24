@@ -20,16 +20,14 @@ from .declared_workload import DeclaredWorkflow, RESULT_SCHEMA, AUTHORITY, _text
 from .investigation import _runtime, _make_run, _validate_model_independence, create_investigation
 from .session import Session, read_json, write_json
 from .core.canonical import canonical, digest, byte_digest, bundle_digest, exact_keys
+from .pipelines import pin_map
 
 MAX_BYTES = 4 * 1024 * 1024
 SOURCE_SCHEMA = "ciw.measurement-chain-source.v1"
 DATA_SCHEMA = "ciw.measurement-chain-native.v1"
 ROLES = {"rci", "fsrt", "jspt"}
-PINS = {
-    "rci": {"revision": "f863bdd69d49224e0cdc871943bbb052e5b0a975", "module": "instrument_chain.ciw_adapter", "source_root": "src", "source_tree": "038522430744d4a7027f9a48669834c46bd94987"},
-    "fsrt": {"revision": "09a756dd9cdd3a9bb6cb14b5cd498f6259937ac2", "module": "set_lcm.bridge.ciw", "source_root": "src", "source_tree": "c79c44f90d5ff3920e58a53e9c277104e7e07bd3"},
-    "jspt": {"revision": "d910f5a1d7f6dd5f2dd87dfca66990f714f97b18", "module": "sensitivity.ciw_adapter", "source_root": "src", "source_tree": "5643cc8204b7aa6cbb73df6bf8984abdcec47d3b"},
-}
+# The pipeline descriptor is the pin definition this module executes.
+PINS = pin_map("measurement-chain")
 POLICY = {
     "scope": "measurement-chain-testbed", "acquisition": "retained_simultaneous_records",
     "cross_assembly_covariance": "explicit_independence_required",

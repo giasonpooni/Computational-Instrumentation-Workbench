@@ -23,15 +23,15 @@ from .declared_workload import (
 )
 from .exchange import _identity
 from .core.canonical import canonical, digest, byte_digest, bundle_digest, utc_now, exact_keys
+from .pipelines import pin_map
 
 MAX_BYTES = 24 * 1024 * 1024
 PROOF_LIMIT = 8 * 1024 * 1024
 SOURCE_LIMIT = 32 * 1024
 PROVE_TIMEOUT = 1800
 BINARY_LIMITS = {"engine": 32 * 1024 * 1024, "prover": 256 * 1024 * 1024, "guest": 16 * 1024 * 1024}
-PIN = {"revision": "a59aba283b0304faeeb3e5d305087e7709e171ca",
-       "source_tree": "4068a711534932e8d89bb0d87d373376dafdf6cd",
-       "module": "execution.proving", "source_root": "."}
+# The pipeline descriptor is the pin definition this module executes.
+PIN = pin_map("proved-heat")["scr"]
 GUEST_SHA256 = "a14e3750da7e221d31842bd6cf983fcc8c0f530b2811537e2a9a9fe803dacf82"
 BACKEND = "sp1-cpu v6.1.0"
 POLICY = {**HEAT_POLICY, "proof_policy": "required_before_result"}

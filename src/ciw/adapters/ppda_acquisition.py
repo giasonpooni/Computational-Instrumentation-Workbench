@@ -7,8 +7,10 @@ from pathlib import Path
 
 from .protocol import AdapterRefusal
 from .subprocess import PinnedSubprocessAdapter
+from ..pipelines import pin_map
 
-PPDA_REVISION = "477d6cb454423a27543b16961d3b169709c40c31"
+# The acquired-dataset descriptor defines the PPDA pin; the SCOUT gitlink is fixed by that commit.
+PPDA_REVISION = pin_map("acquired-dataset")["ppda"]["revision"]
 VENDOR_REVISION = "5e146d5924675cd7b6e1d1ed44fb39f5da012610"
 VENDOR_PATH = "vendor/scout-retrieval-agent"
 

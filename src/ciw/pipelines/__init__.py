@@ -39,7 +39,9 @@ WORKBENCH_REFUSALS = ("operation_unavailable", "workbench_capacity")
 
 # Transitional table of where each kind's module declares its pins today.
 _DESCRIPTOR_DEFINED = frozenset({"calibrated-observable", "identified-design", "calibrated-window",
-                                 "acquired-calibrated-window", "telemetry", "instrument-exchange"})
+                                 "acquired-calibrated-window", "telemetry", "instrument-exchange",
+                                 "variational-free-energy", "measurement-chain", "schematic-companions",
+                                 "residual-monitor", "identified-stability", "proved-heat"})
 _PIN_FIELDS = ("revision", "source_tree", "module", "source_root", "source_sha256", "path", "sha256", "repository")
 _BINARY_ROLES = frozenset({"engine", "prover", "guest"})
 
@@ -112,9 +114,6 @@ def live_pins(kind: str) -> dict:
         # These modules read their pins from the descriptor (pin_map), so the
         # descriptor is the definition and the binding is by construction.
         return {role: _normalize(pin) for role, pin in pin_map(kind).items()}
-    if kind == "variational-free-energy":
-        from ..free_energy_native import PINS
-        return {role: _normalize(PINS[role]) for role in roles}
     module = import_module(type(workflow).__module__ if not hasattr(workflow, "__file__") else workflow.__name__)
     pins = getattr(module, "PINS", None)
     if isinstance(pins, dict) and kind in pins:

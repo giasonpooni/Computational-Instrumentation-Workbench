@@ -19,6 +19,7 @@
       "purpose": "Lyapunov stability verdict",
       "pin": {
         "revision": "19ea6967060166ba09db6cd4563bd87bd6b3d196",
+        "source_tree": "e261315f46851d99053e305ef2c03d4160f02a92",
         "module": "lyapunov.model_artifact",
         "source_root": "src"
       }
