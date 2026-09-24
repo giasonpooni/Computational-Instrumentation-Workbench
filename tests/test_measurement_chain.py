@@ -139,3 +139,22 @@ def test_large_balance_disagreement_preserves_native_hold(declared, repos):
     assert fsrt["diagnostics"]["reconciliation_status"] == "model_inconsistent"
     for field in ("values", "covariance", "unit"):
         assert fsrt["estimate"][field] == fsrt["unprojected_estimate"][field]
+
+
+@pytest.mark.parametrize("field", ["admission", "numerical_match", "source_bundle_digest", "authority"])
+def test_a_tampered_replay_receipt_is_refused_on_reopen(replayed, field):
+    """Reopen validates the retained replay receipt, not only the fresh occurrence."""
+    session = deepcopy(replayed["session"])
+    receipt = session["replay_receipts"][0]
+    if field == "admission":
+        receipt["admission"] = "performed"
+    elif field == "numerical_match":
+        receipt["numerical_match"] = False
+    elif field == "source_bundle_digest":
+        receipt["source_bundle_digest"] = "sha256:" + "0" * 64
+    else:
+        receipt["verification"]["authority"]["state_admission"] = "performed"
+    receipt["replay_id"] = digest({k: v for k, v in receipt.items() if k != "replay_id"})
+    session["bundle_digest"] = bundle_digest(session)
+    with pytest.raises(ValueError):
+        module._validate(session)
