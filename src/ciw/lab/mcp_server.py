@@ -7,17 +7,32 @@ label: no tool accepts a finding, a label, a report or a physical result, and
 every report returned has been revalidated, so evidence status can only come
 from ``ciw.lab.evidence``. Running a task never acquires hardware data.
 
+The run directory must be separate from the retained directory, so retained
+reports are never rewritten: neither may contain the other, compared both as
+resolved paths and as file identities (so a second mount point or a case
+variant is caught), and no entry of one may be the same file as an entry of
+the other (symlinked ``reports``/``artifacts`` directories, hard-linked copies).
+The file check is repeated before every run. Tools run in worker threads;
+those that read or write the run directory are serialized, within a process by
+a lock and across every server process on the same directory by an OS lock on
+``.ciw-lab-mcp.lock`` in it, because a run replaces reports and artifact
+directories in place.
+
 Requires the optional ``mcp`` extra. The numerical core does not import this
 module or depend on MCP.
 """
 from __future__ import annotations
 
-from contextlib import redirect_stdout
+from contextlib import contextmanager, redirect_stdout
+import errno
 import functools
+import inspect
 import json
+import os
 from pathlib import Path
 import re
 import sys
+import threading
 
 from .bridge import classify_workspace
 from .evidence import BOUNDARY, LABELS
@@ -36,6 +51,8 @@ INSTRUCTIONS = (
     "acquires any. Use ciw_lab_plan_next to choose work, ciw_lab_run_tasks to execute it, ciw_lab_get_report "
     "to read the nineteen-question report and ciw_lab_verify_run to compare with retained reports.")
 TASK_ID = re.compile(r"T[0-9]{3}")
+STATES = ("completed", "partial", "blocked", "deferred", "not_run")
+LOCK_FILE = ".ciw-lab-mcp.lock"
 
 
 def _format(value, response_format, markdown):
@@ -54,8 +71,98 @@ def _report(task_id, directories):
     raise ValueError(f"No report for {task_id} in the run or retained directories; run it with ciw_lab_run_tasks.")
 
 
+def _identity(path) -> tuple | None:
+    """(st_dev, st_ino) of a path with links followed, or None when it cannot be read."""
+    try:
+        status = os.stat(path)
+    except (OSError, ValueError):
+        return None
+    return (status.st_dev, status.st_ino) if status.st_ino else None
+
+
+def _ancestry(path: Path) -> set:
+    return {identity for identity in map(_identity, (path, *path.parents)) if identity}
+
+
+def _entries(root: Path) -> dict:
+    """Identities of ``root`` and every entry beneath it (links followed), each with one of its paths."""
+    found = {}
+    for directory, directories, files in os.walk(root):
+        for path in (directory, *(os.path.join(directory, name) for name in directories + files)):
+            identity = _identity(path)
+            if identity is not None:
+                found.setdefault(identity, path)
+    return found
+
+
+def _separate(retained, workdir) -> None:
+    """Refuse a run directory that is, contains, lies inside or shares a file with the retained directory.
+
+    Resolved paths miss a second mount point, a case variant on a
+    case-insensitive file system, symlinked subdirectories and hard links, so
+    file identities are compared as well.
+    """
+    if retained is None:
+        return
+    kept, work = Path(retained).resolve(), Path(workdir).resolve()
+    refusal = f"The work directory {workdir} must be separate from the retained directory {retained}: "
+    if (kept == work or kept.is_relative_to(work) or work.is_relative_to(kept)
+            or _identity(kept) in _ancestry(work) or _identity(work) in _ancestry(kept)):
+        raise ValueError(refusal + "runs replace reports and delete artifact directories in the work directory")
+    kept_entries = _entries(kept)
+    for identity, path in _entries(work).items():
+        if identity in kept_entries:
+            raise ValueError(refusal + f"{path} is the same file as {kept_entries[identity]}, "
+                             "and a run would rewrite or delete it through the link")
+
+
+@contextmanager
+def workdir_lock(workdir):
+    """Hold an exclusive OS lock on ``workdir`` so every server process using it takes turns."""
+    workdir = Path(workdir)
+    workdir.mkdir(parents=True, exist_ok=True)
+    with open(workdir / LOCK_FILE, "a+b") as handle:
+        handle.seek(0)
+        if os.name == "nt":
+            import msvcrt
+            while True:
+                try:
+                    msvcrt.locking(handle.fileno(), msvcrt.LK_LOCK, 1)
+                    break
+                except OSError as exc:  # LK_LOCK gives up after ten seconds; a run may take longer
+                    if exc.errno != errno.EDEADLOCK:
+                        raise
+            try:
+                yield
+            finally:
+                handle.seek(0)
+                msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+        else:
+            import fcntl
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX)  # released when the handle closes
+            yield
+
+
+def _task_of(problem: str) -> str | None:
+    head = problem.split(":", 1)[0]
+    return head if TASK_ID.fullmatch(head) else None
+
+
+def _compare_tasks(retained, workdir, tasks) -> dict:
+    """compare() restricted to ``tasks``: passed to compare when it accepts them, and problems filtered."""
+    if "tasks" in inspect.signature(compare).parameters:
+        result = compare(retained, workdir, tasks=list(tasks))
+    else:
+        result = compare(retained, workdir)
+    wanted = set(tasks)
+    kept = [p for p in result["problems"] if _task_of(p) is None or _task_of(p) in wanted]
+    dropped = len(result["problems"]) - len(kept)
+    return dict(result, problems=kept, passed=not kept and (result["passed"] or dropped > 0))
+
+
 def build_server(retained, workdir, providers=None):
     """Create the MCP server; ``workdir`` receives runs, ``retained`` is read only."""
+    _separate(retained, workdir)
     from mcp.server.mcpserver import MCPServer
     from mcp.server.mcpserver.exceptions import ToolError
     from mcp.types import ToolAnnotations
@@ -70,6 +177,17 @@ def build_server(retained, workdir, providers=None):
                 raise ToolError(str(exc)) from exc
         return wrapper
 
+    lock = threading.Lock()
+
+    def exclusive(function):
+        """One workdir tool at a time, across threads and server processes: runs rewrite reports
+        non-atomically and delete artifact directories."""
+        @functools.wraps(function)
+        def wrapper(*args, **kwargs):
+            with lock, workdir_lock(workdir):
+                return function(*args, **kwargs)
+        return wrapper
+
     retained = Path(retained) if retained else None
     workdir = Path(workdir)
     providers = dict(providers or {})
@@ -81,6 +199,7 @@ def build_server(retained, workdir, providers=None):
 
     @server.tool(name="ciw_lab_list_tasks", annotations=read_only)
     @guarded
+    @exclusive
     def list_tasks(section: str | None = None, state: str | None = None, offset: int = 0, limit: int = 50,
                    response_format: str = "markdown") -> str:
         """List queue tasks with their state and primary evidence label.
@@ -92,11 +211,17 @@ def build_server(retained, workdir, providers=None):
         """
         if not 1 <= limit <= 200 or offset < 0:
             raise ValueError("Use 0 <= offset and 1 <= limit <= 200")
+        queue = load_queue()
+        sections = sorted({item["section_key"] for item in queue["tasks"]})
+        if state is not None and state not in STATES:
+            raise ValueError(f"Unknown state {state!r}; use one of: {', '.join(STATES)}")
+        if section is not None and section not in sections:
+            raise ValueError(f"Unknown section {section!r}; use one of: {', '.join(sections)}")
         known = {}
         for directory in reversed(sources()):
             known.update({r["task_id"]: r for r in load_reports(directory)})
         rows = []
-        for item in load_queue()["tasks"]:
+        for item in queue["tasks"]:
             report = known.get(item["id"])
             row = {"task_id": item["id"], "section": item["section_key"], "title": item["title"],
                    "state": report["state"] if report else "not_run",
@@ -112,6 +237,7 @@ def build_server(retained, workdir, providers=None):
 
     @server.tool(name="ciw_lab_get_report", annotations=read_only)
     @guarded
+    @exclusive
     def get_report(task_id: str, response_format: str = "markdown") -> str:
         """Return one task's revalidated nineteen-question report (run directory first, then retained)."""
         report, directory = _report(task_id, sources())
@@ -120,24 +246,33 @@ def build_server(retained, workdir, providers=None):
 
     @server.tool(name="ciw_lab_plan_next", annotations=read_only)
     @guarded
+    @exclusive
     def plan_next(limit: int = 10, response_format: str = "markdown") -> str:
-        """Rank the next experiments: ready, newly unblocked, partial, then follow-up tasks. Runs nothing."""
-        plan = next_tasks(sources()[0] if sources() else None, providers, max(1, min(limit, 50)))
+        """Rank the next experiments: ready, newly unblocked, retry, partial, then follow-up tasks. Runs nothing.
+
+        Reports come from this server's run directory first, then the retained reports.
+        """
+        plan = next_tasks(sources() or None, providers, max(1, min(limit, 50)))
         lines = [f"- {r['task_id']} ({r['kind']}): {r['title']} — {r['reason']}" for r in plan["next"]]
         lines += ["", f"Still blocked: {len(plan['still_blocked'])}; unimplemented: {len(plan['unimplemented'])}"]
         return _format(plan, response_format, "\n".join(lines))
 
+    # Destructive: a run deletes the tasks' artifact directories and replaces their
+    # reports and run-log.json in the run directory (never the retained one).
     @server.tool(name="ciw_lab_run_tasks", annotations=ToolAnnotations(
-        readOnlyHint=False, destructiveHint=False, idempotentHint=True, openWorldHint=False))
+        readOnlyHint=False, destructiveHint=True, idempotentHint=False, openWorldHint=False))
     @guarded
+    @exclusive
     def run_tasks(task_ids: list[str]) -> str:
         """Execute up to 20 queue tasks into this server's run directory and return their states and labels.
 
-        Replaces earlier reports of the same tasks in the run directory only;
-        retained reports are never modified. Physical data is never acquired.
+        Deletes and replaces earlier reports, artifacts and the run log of the
+        same tasks in the run directory only; retained reports are never
+        modified. Physical data is never acquired.
         """
         if not task_ids or len(task_ids) > MAX_TASKS_PER_RUN or not all(TASK_ID.fullmatch(t) for t in task_ids):
             raise ValueError(f"Pass 1-{MAX_TASKS_PER_RUN} task identities such as ['T003', 'T005']")
+        _separate(retained, workdir)  # links into the retained directory may have appeared since startup
         with redirect_stdout(sys.stderr):  # stdout carries the MCP protocol
             summary = run_queue(workdir, task_ids, providers)
         reports = {r["task_id"]: r for r in load_reports(workdir)}
@@ -150,11 +285,24 @@ def build_server(retained, workdir, providers=None):
 
     @server.tool(name="ciw_lab_verify_run", annotations=read_only)
     @guarded
+    @exclusive
     def verify_run() -> str:
-        """Compare this server's run directory with the retained reports (states, labels, tolerances)."""
+        """Compare the tasks in this server's run directory with their retained reports (states, labels, tolerances).
+
+        Retained tasks that were not run here are listed under not_regenerated
+        and do not fail the comparison.
+        """
         if retained is None or not (retained / "reports").is_dir():
             raise ValueError("The server was started without a retained report directory")
-        return json.dumps(compare(retained, workdir), indent=1, sort_keys=True)
+        kept = {r["task_id"] for r in load_reports(retained)}
+        if not kept:
+            raise ValueError(f"The retained directory {retained} holds no reports; there is nothing to compare against")
+        ran = sorted(r["task_id"] for r in load_reports(workdir)) if (workdir / "reports").is_dir() else []
+        if not ran:
+            raise ValueError("The run directory has no reports yet; run tasks with ciw_lab_run_tasks first")
+        result = _compare_tasks(retained, workdir, ran)
+        result.update(compared=len(kept & set(ran)), tasks=ran, not_regenerated=sorted(kept - set(ran)))
+        return json.dumps(result, indent=1, sort_keys=True)
 
     @server.tool(name="ciw_lab_classify_workspace", annotations=read_only)
     @guarded
@@ -179,5 +327,6 @@ def build_server(retained, workdir, providers=None):
 
 def serve(retained, workdir, providers=None) -> None:
     """Run the adapter over stdio; nothing else may write to stdout."""
+    _separate(retained, workdir)
     Path(workdir).mkdir(parents=True, exist_ok=True)
     build_server(retained, workdir, providers).run("stdio")

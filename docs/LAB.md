@@ -69,8 +69,8 @@ Generated artifacts, Numerical result, Uncertainty, Evidence status,
 Provider/runtime identity, Failure modes checked, Tests passed, Tests skipped,
 Physical validation status, Unresolved assumptions and Recommended next task.
 Evidence status and physical validation status are derived from the retained
-findings. Each report has a content identity; editing a retained report makes
-it fail validation.
+findings. Each report has a content identity that detects accidental edits
+(see [Retained evidence](#retained-evidence)).
 
 States: `completed` (the planned computation ran and its checks passed),
 `partial` (some planned parts could not run here, named in the report),
@@ -98,11 +98,21 @@ ciw lab verify --retained lab --fresh results/lab
 
 `ciw lab next` is the persistent-queue view: it ranks implemented tasks that
 were never reported, blocked tasks whose requirements have become available,
-partial tasks with their own next step, and completed tasks' recommended
-follow-up research questions. Hardware-blocked tasks stay listed as blocked
-until the hardware is bound. `ciw lab run --budget-seconds N` lists tasks that
-exceed a time budget; elapsed times go to `run-log.json`, never into reports,
-because timing is not a reproducible finding.
+blocked tasks that declare no requirement as `retry` only when a re-run could
+end differently (the block was an unexpected exception, or the task's sources
+or runtime changed since its report; otherwise re-running reproduces the same
+report, so the task stays blocked), in both cases with the report's
+unresolved assumptions as the reason, partial tasks with their own next step,
+and completed tasks' recommended follow-up research questions.
+Hardware-blocked tasks stay listed as blocked until the hardware is bound.
+`ciw lab run --budget-seconds N` lists tasks that exceed a time budget;
+elapsed times go to `run-log.json`, never into reports, because timing is not
+a reproducible finding.
+
+`ciw lab dashboard` shows an SVG figure only when its file lies inside the
+retained directory and hashes to the sha256 its report recorded; it embeds the
+figure as an `<img>` data URI, so nothing inside an SVG can run in the page,
+and otherwise prints a note saying why the figure is not shown.
 
 `ciw lab classify WORKSPACE` applies the same labels to results retained in an
 existing CIW workspace, as a derived projection that never edits sealed
@@ -111,9 +121,20 @@ is bound; built-in offline analyses such as the energy-accuracy log analysis
 may be recomputed to check retained data), then labels the run evidence, each
 operation result, each workbench bundle and each replay receipt. Replay
 receipts are same-runtime determinism checks, never independent verification.
-Only an energy log that declares `physical_measurement` with device, digest,
-clock and calibration fields yields `hardware_measured`, and that recorder
-assertion remains unauthenticated.
+Results are `synthetic` only under a structured declaration: a run provenance
+`generator` that is a known CIW generator identity (today only
+`ciw.instruments.make_demo_run`) or an exact value CIW's validators pin
+(`origin: synthetic_fixture` and the variational free-energy policy values);
+any other generator name (an acquisition script, a vendor API, an instrument
+driver class) and wording such as "synthetic aperture radar" or "function
+generator" do not count. An energy log that merely
+declares `physical_measurement` stays `not_established`: `hardware_measured`
+needs a declared `raw_sha256` that the raw acquisition bytes of another
+workspace source hash to, device, clock and calibration fields, and no
+synthetic or generated declaration (CIW's energy logs carry no raw digest, and
+their `log_digest` hashes the JSON record). Workspace seals are unkeyed, so
+they detect alteration but do not authenticate origin; the output says so, and
+every label is as recorded.
 
 ## Assistant access over MCP
 
@@ -129,9 +150,9 @@ ciw lab mcp --retained lab --workdir results/lab-mcp --provider csg=/trusted/ref
 | --- | --- |
 | `ciw_lab_list_tasks` | Paginated task list with state and primary label |
 | `ciw_lab_get_report` | One revalidated nineteen-question report |
-| `ciw_lab_plan_next` | The ranked next experiments; runs nothing |
-| `ciw_lab_run_tasks` | Runs up to 20 tasks into the server's work directory |
-| `ciw_lab_verify_run` | Compares the work directory with retained reports |
+| `ciw_lab_plan_next` | The ranked next experiments over work and retained reports; runs nothing |
+| `ciw_lab_run_tasks` | Runs up to 20 tasks into the server's work directory (destructive there) |
+| `ciw_lab_verify_run` | Compares the tasks in the work directory with their retained reports |
 | `ciw_lab_classify_workspace` | Labels results in a saved CIW workspace |
 | `ciw_lab_explain_labels` | The label definitions and the boundary table |
 
@@ -141,7 +162,21 @@ answer through the tools themselves.
 
 No tool accepts a label, finding, report or physical result: an assistant can
 design, run and read experiments, but evidence status comes only from the
-validator, and retained reports are never modified through the adapter.
+validator, and retained reports are never modified through the adapter: the
+server refuses a work directory equal to, inside or containing the retained
+directory, or sharing any file with it. It compares file identities as well
+as paths, so a second mount point, symlinked `reports` or `artifacts`
+directories and hard-linked copies are refused, and it repeats the file check
+before every run. `ciw_lab_run_tasks` is annotated destructive because it
+deletes and replaces the tasks' reports, artifacts and run log in the work
+directory. Tools that read or write the work directory run one at a time,
+across every server process using that directory (an OS lock on
+`.ciw-lab-mcp.lock` in it). Task state and
+the plan come from the work directory first, then the retained reports;
+`ciw_lab_verify_run` compares only the tasks present in the work directory,
+lists retained tasks not regenerated there without failing on them, and
+refuses when either side has no reports. An unknown `state` or `section` in
+`ciw_lab_list_tasks` is refused with the valid values.
 
 `src/ciw/lab/task-report.schema.json` is the structural JSON Schema of
 `ciw.lab-task-report.v1` for consumers in other languages. Passing it does not
@@ -151,13 +186,21 @@ checked by `ciw.lab.report.validate_report`.
 `--provider ROLE=PATH` binds a pinned provider checkout or interpreter; tasks
 verify the checkout revision and tree against CIW's own pins before using it
 and run provider code in a subprocess. `ciw lab verify` compares a fresh run
-with retained reports: same states, same labels, and finding values within
-each finding's declared regression tolerance. It exits 3 on any difference.
+with retained reports: same states, labels, claims, units, domains and
+wording, artifacts matching their recorded digests, and finding values within
+each finding's declared regression tolerance. It exits 3 on any difference, on
+a task present on only one side, and when the retained directory is missing or
+holds no reports.
 
 `scripts/reproduce_lab.py` is the one-command clean-room reproduction: it
 builds a wheel, installs it with the lab extras into a new virtual
 environment, runs the lab tests with a JUnit record, runs the whole queue and
-verifies it against `lab/`.
+verifies it against `lab/`. It refuses to start when the retained directory
+holds no reports unless `--no-compare` is given, and it runs the packaged
+queue only (`CIW_LAB_EXTENSIONS` and `CIW_LAB_MODULES` are removed). T164
+records a run as a clean-room reproduction only when the imported `ciw`
+package holds exactly the named wheel's files, byte for byte, inside an
+isolated interpreter; a marker naming any other file stays `not_established`.
 
 ## Retained evidence
 
@@ -174,6 +217,21 @@ full report book. Aggregates generated by the research tasks include the
 counterexample catalogue (`artifacts/T157/COUNTEREXAMPLES.md`), uncertainty
 budgets (`T159`), the release report (`T165`), unresolved assumptions
 (`T166`) and what remains unmeasured (`T167`).
+
+Report content identities and artifact digests are unkeyed hashes. They
+detect accidental edits and corruption: validation refuses a report whose
+identity no longer matches, and `ciw lab verify` refuses artifacts whose bytes
+differ from their recorded digest. A deliberate edit that recomputes the
+identities and digests passes validation. Verifying the retained run against a
+fresh one (`ciw lab verify`, the clean-room gate) catches it only in what
+verify recomputes: states, finding claims, labels, units, domains, values and
+counterexamples (within the regression tolerance the retained finding
+records), and the report prose with numbers masked. Verify does not compare
+artifact bytes with the fresh run's (timing records, drafts and aggregates
+differ between identical runs), finding bases, tests passed or skipped,
+changed files, or provider and runtime identities. An edit confined to those,
+or one that widens a retained tolerance, passes both validation and verify;
+changes to `lab/` are reviewed in version control (`git diff lab`).
 
 ## Sections
 

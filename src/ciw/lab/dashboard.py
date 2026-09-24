@@ -3,10 +3,14 @@
 The page is a deterministic function of the retained reports and their SVG
 artifacts: no clock, no network resources and no computation beyond counting.
 It displays labels exactly as retained and never restates a result that is not
-in a finding.
+in a finding. A figure is shown only when its file lies inside the retained
+directory and hashes to the digest its report recorded, and it is embedded as
+an ``<img>`` data URI, so markup or script inside an SVG never runs in the page.
 """
 from __future__ import annotations
 
+import base64
+import hashlib
 from html import escape
 import json
 from pathlib import Path
@@ -32,9 +36,9 @@ p.lead{color:var(--muted);margin:0 0 20px}.tiles{display:grid;grid-template-colu
 table{width:100%;border-collapse:collapse;margin:8px 0}th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
 th{font-size:13px;color:var(--muted);font-weight:600}.scroll{overflow-x:auto}details{background:var(--card);border:1px solid var(--line);border-radius:8px;margin:8px 0;padding:8px 12px}
 summary{cursor:pointer;font-weight:600}dl{display:grid;grid-template-columns:minmax(120px,220px) 1fr;gap:4px 12px;margin:10px 0}
-dt{color:var(--muted);font-size:13px}dd{margin:0;overflow-wrap:anywhere}dd ul{margin:0;padding-left:18px}figure{margin:12px 0}figure svg{max-width:100%;height:auto;background:#fff;border-radius:6px}
+dt{color:var(--muted);font-size:13px}dd{margin:0;overflow-wrap:anywhere}dd ul{margin:0;padding-left:18px}figure{margin:12px 0}figure img{max-width:100%;height:auto;background:#fff;border-radius:6px}
 .filters{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.filters button{border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:999px;padding:3px 10px;cursor:pointer}
-.filters button[aria-pressed=true]{outline:2px solid var(--fg)}
+.filters button[aria-pressed=true]{outline:2px solid var(--fg)}p.note{color:var(--muted);font-size:13px}
 """
 
 SCRIPT = """
@@ -71,6 +75,24 @@ def _answer(name, value):
         shown = {k: (f"{len(v)} source digests" if k == "sources" and isinstance(v, dict) else v) for k, v in value.items()}
         return "; ".join(f"{escape(str(k))}: {_text(v, 200)}" for k, v in sorted(shown.items()))
     return _text(value)
+
+
+def _figure(retained: Path, artifact) -> str:
+    """An SVG artifact as an inert image, or a note saying why it is not shown."""
+    name = escape(artifact["path"])
+    try:  # a link loop, a NUL byte or an unreadable file must not abort the page
+        path = (retained / artifact["path"]).resolve()
+        if not path.is_relative_to(retained.resolve()):
+            return f'<p class="note">Figure {name} not shown: it lies outside the retained directory.</p>'
+        if not path.is_file():
+            return f'<p class="note">Figure {name} not shown: the file is missing.</p>'
+        data = path.read_bytes()
+    except (OSError, RuntimeError, ValueError):
+        return f'<p class="note">Figure {name} not shown: the file cannot be read.</p>'
+    if hashlib.sha256(data).hexdigest() != artifact.get("sha256"):
+        return f'<p class="note">Figure {name} not shown: the file differs from its recorded sha256.</p>'
+    source = "data:image/svg+xml;base64," + base64.b64encode(data).decode("ascii")
+    return f'<figure><img src="{source}" alt="Figure {name}"><figcaption>{name}</figcaption></figure>'
 
 
 def render(retained) -> str:
@@ -131,10 +153,7 @@ def render(retained) -> str:
                 out.append("</table></div>")
             for artifact in report["generated_artifacts"]:
                 if artifact["path"].endswith(".svg"):
-                    path = retained / artifact["path"]
-                    if path.is_file():
-                        out.append(f'<figure>{path.read_text(encoding="utf-8")}<figcaption>{escape(artifact["path"])}'
-                                   f'</figcaption></figure>')
+                    out.append(_figure(retained, artifact))
             out.append("</details>")
     out.append(f"</main><script>{SCRIPT}</script></body></html>")
     return "\n".join(out) + "\n"

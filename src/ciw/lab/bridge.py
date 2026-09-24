@@ -14,26 +14,54 @@ Rules applied:
   ``provider_backed``; results over generated inputs are ``synthetic``;
   built-in analyses over caller-declared data are ``not_established``, which
   matches CIW's own ``verification_status: not_verified``.
+* Generated inputs are recognised only from structured declarations: a run
+  provenance ``generator`` that is a known CIW generator identity
+  (:data:`KNOWN_GENERATORS`, today ``ciw.instruments.make_demo_run``) or one
+  of the exact values CIW's own validators pin (``origin: synthetic_fixture``
+  and the variational free-energy policy values). Any other generator name,
+  such as an acquisition script, a vendor API or an instrument driver class,
+  and free text such as "synthetic aperture radar" never make a recording
+  synthetic; such results stay ``not_established``.
 * Replay receipts with a numerical match are a same-runtime reproduction
   check (``numerically_verified`` for replay determinism, never independent).
-* Every retained item gets a physical-truth claim. It is ``hardware_measured``
-  only for an energy log that declares ``physical_measurement`` with device,
-  digest, clock and calibration fields, and even then the recorder's assertion
-  is not authenticated. Everything else is ``not_established``.
+* Every retained item gets a physical-truth claim, ``not_established`` unless
+  an energy log that declares ``physical_measurement`` also declares a
+  ``raw_sha256`` that the raw bytes of another workspace source hash to, has
+  device, clock and calibration fields, and nothing in it declares synthetic
+  or generated inputs. A log's ``log_digest`` is a self-digest of the JSON
+  record, not raw device bytes, and CIW's energy logs carry no raw digest, so
+  a log that merely calls itself a measurement stays ``not_established``.
+  Seals are unkeyed: they detect alteration, not origin, so even a
+  ``hardware_measured`` label is the recorder's assertion as recorded.
 """
 from __future__ import annotations
 
 import base64
+import binascii
+from hashlib import sha256
 import json
 from pathlib import Path
-import re
 import tempfile
 
 from ..session import Session, read_json
 from .evidence import LABELS, finding
 
 SCHEMA = "ciw.lab-workspace-classification.v1"
-SYNTHETIC_KEYS = frozenset({"origin", "claim_scope", "observations", "basis", "source", "coverage"})
+# Exact (key, value) declarations of generated inputs pinned by CIW's validators
+# (energy_records origin, free_energy_profile POLICY, free_energy_contract scope).
+SYNTHETIC_DECLARATIONS = frozenset({
+    ("origin", "synthetic_fixture"),
+    ("observations", "retained_synthetic_values"),
+    ("coverage", "synthetic_prior_predictive_ensemble"),
+    ("claim_scope", "synthetic_static_linear_gaussian_inference"),
+})
+# Closed allowlist of the run generators CIW itself emits (adapters/oscillator.py).
+# A dotted name alone proves nothing: acquisition scripts, vendor APIs and
+# instrument driver classes look the same, so any other name stays not_established.
+KNOWN_GENERATORS = frozenset({"ciw.instruments.make_demo_run"})
+UNAUTHENTICATED = ("Workspace seals and digests are unkeyed self-digests: they detect alteration of a record, "
+                   "not who produced it or whether it came from hardware. Every label is derived from the "
+                   "records as retained, and declared origins are not authenticated.")
 
 
 def _providers(value, found=None):
@@ -51,30 +79,35 @@ def _providers(value, found=None):
     return found
 
 
-def _declares_synthetic(text: str) -> bool:
-    """A clause that begins with 'synthetic' (e.g. 'synthetic_fixture', 'synthetic evidence').
-
-    Negated or embedded mentions such as 'non-synthetic field measurement' or
-    'not synthetic: operator log' do not declare synthetic inputs.
-    """
-    for clause in re.split(r"[;,]", text.lower()):
-        clause = clause.strip()
-        if clause.startswith("synthetic") or clause == "retained_synthetic_values":
-            return True
-    return False
-
-
 def _synthetic(value) -> bool:
-    """True when a record declares synthetic inputs under a provenance-bearing key."""
+    """True when a record carries an exact, CIW-pinned declaration of generated inputs."""
     if isinstance(value, dict):
         for key, child in value.items():
-            if key in SYNTHETIC_KEYS and isinstance(child, str) and _declares_synthetic(child):
+            if isinstance(child, str) and (key, child) in SYNTHETIC_DECLARATIONS:
                 return True
             if _synthetic(child):
                 return True
     elif isinstance(value, list):
         return any(_synthetic(child) for child in value)
     return False
+
+
+def _generator(provenance) -> str | None:
+    """The known CIW generator identity a run provenance declares, if any."""
+    name = provenance.get("generator") if isinstance(provenance, dict) else None
+    return name if isinstance(name, str) and name in KNOWN_GENERATORS else None
+
+
+def _mentions_generated(value) -> bool:
+    """Conservative screen for the physical label: any generator key or synthetic/fixture wording.
+
+    Used only to withhold ``hardware_measured``, never to assign ``synthetic``.
+    """
+    if isinstance(value, dict):
+        return any(key == "generator" or _mentions_generated(child) for key, child in value.items())
+    if isinstance(value, list):
+        return any(_mentions_generated(child) for child in value)
+    return isinstance(value, str) and any(word in value.lower() for word in ("synthetic", "fixture"))
 
 
 def _result_basis(record, synthetic_input, name):
@@ -86,18 +119,46 @@ def _result_basis(record, synthetic_input, name):
     return {}
 
 
-def _energy_acquisition(source):
-    """Acquisition record for an energy log that declares a physical measurement."""
-    if source.get("schema") != "ciw.energy-accuracy-log.v1" or source.get("origin") != "physical_measurement":
+def _declares_physical(source) -> bool:
+    return (isinstance(source, dict) and source.get("schema") == "ciw.energy-accuracy-log.v1"
+            and source.get("origin") == "physical_measurement")
+
+
+def _energy_acquisition(source, raw_digests):
+    """Acquisition record for an energy log whose raw acquisition bytes are retained, else None.
+
+    ``raw_digests`` holds the SHA-256 of the bytes of the workspace's other
+    sources. The log must declare ``raw_sha256`` equal to one of them (its own
+    ``log_digest`` hashes the JSON record, not device bytes), name its device,
+    clock and calibration, and declare nothing synthetic or generated.
+    """
+    if not _declares_physical(source) or _synthetic(source) or _mentions_generated(source):
         return None
-    sensor, clock = source["sensor"], source["clock"]
-    starts = [phase["start_ns"] for phase in source.get("phases", []) if isinstance(phase, dict)]
-    accuracy = sensor.get("accuracy_j")
-    return {"device": f"{sensor.get('backend')}:{sensor.get('device_uuid')}",
-            "raw_sha256": source["log_digest"].removeprefix("sha256:"),
-            "acquired_at": f"{clock['epoch_id']}+{min(starts) if starts else clock['monotonic_origin_ns']}ns",
+    sensor, clock = source.get("sensor"), source.get("clock")
+    if not isinstance(sensor, dict) or not isinstance(clock, dict) or "accuracy_j" not in sensor:
+        return None
+    backend, device, epoch = sensor.get("backend"), sensor.get("device_uuid"), clock.get("epoch_id")
+    raw = source.get("raw_sha256")
+    if not all(isinstance(text, str) and text for text in (backend, device, epoch, raw)):
+        return None
+    raw = raw.removeprefix("sha256:")
+    if raw not in raw_digests:
+        return None
+    starts = [phase["start_ns"] for phase in source.get("phases", []) if isinstance(phase, dict) and "start_ns" in phase]
+    origin = min(starts) if starts else clock.get("monotonic_origin_ns")
+    if origin is None:
+        return None
+    accuracy = sensor["accuracy_j"]
+    return {"device": f"{backend}:{device}", "raw_sha256": raw, "acquired_at": f"{epoch}+{origin}ns",
             "calibration": ("declared_accuracy_j=" + repr(accuracy)) if accuracy is not None
             else "vendor_counter_accuracy_not_declared"}
+
+
+def _source_bytes(record):
+    try:
+        return base64.b64decode(record["bytes_b64"], validate=True)
+    except (KeyError, TypeError, ValueError, binascii.Error):
+        return None
 
 
 def classify_workspace(path) -> dict:
@@ -108,14 +169,15 @@ def classify_workspace(path) -> dict:
     saved = read_json(path)
     run = saved["run"]
     provenance = run["metadata"].get("provenance", {})
-    synthetic_run = _synthetic(provenance) or "generator" in provenance
+    generator = _generator(provenance)
+    synthetic_run = generator is not None or _synthetic(provenance)
     items = []
 
     def item(kind, identity, findings):
         items.append({"kind": kind, "identity": identity, "findings": findings,
                       "labels": sorted({f["evidence_status"] for f in findings})})
 
-    run_basis = {"generator": {"name": str(provenance.get("generator", "declared synthetic source"))}} if synthetic_run else {}
+    run_basis = {"generator": {"name": generator or "declared synthetic source"}} if synthetic_run else {}
     item("run", run["evidence_id"], [
         finding(f"Run {run['run_id']} content", "numerical", run["evidence_id"], run_basis,
                 expected_not_established=not synthetic_run),
@@ -132,22 +194,34 @@ def classify_workspace(path) -> dict:
         ])
     workbench = saved.get("workbench") or {}
     sources = {s["source_id"]: s for s in workbench.get("sources", [])}
+    raw = {source_id: _source_bytes(record) for source_id, record in sources.items()}
+    digests = {source_id: sha256(data).hexdigest() for source_id, data in raw.items() if data is not None}
     for bundle in workbench.get("bundles", []):
         native, kind = bundle["native"], bundle["kind"]
-        source_record = sources.get(bundle.get("source_id"))
         try:
-            source = json.loads(base64.b64decode(source_record["bytes_b64"])) if source_record else {}
-        except (ValueError, KeyError):
+            source = json.loads(raw.get(bundle.get("source_id")) or b"{}")
+        except ValueError:
+            source = {}
+        if not isinstance(source, dict):
             source = {}
         synthetic_input = _synthetic(source) or _synthetic(native.get("configuration")) or _synthetic(native.get("steps"))
         basis = _result_basis({"runtimes": native.get("runtimes"), "steps": native.get("steps")}, synthetic_input, f"{kind} source")
         findings = [finding(f"{kind} bundle {bundle['bundle_id']} numerical result", "numerical", bundle["bundle_id"], basis,
                             expected_not_established=not basis)]
-        acquisition = _energy_acquisition(source) if isinstance(source, dict) else None
+        # Raw acquisition bytes must be another retained source, rehashed here.
+        acquisition = _energy_acquisition(source, {digest for source_id, digest in digests.items()
+                                                   if source_id != bundle.get("source_id")})
+        if acquisition:
+            physical = {"acquisition": acquisition, "notes": "Retained raw bytes hash to the declared raw_sha256; "
+                        "the recorder's assertion as recorded, origin not authenticated."}
+        elif _declares_physical(source):
+            physical = {"notes": "Operator declares physical_measurement (retained_operator_record_not_authenticated); "
+                        "no retained raw acquisition bytes hash to a declared raw_sha256, or the log declares "
+                        "synthetic or generated inputs. The self-sealed log_digest does not authenticate origin."}
+        else:
+            physical = {}
         findings.append(finding(f"{kind} bundle {bundle['bundle_id']} rests on a physical measurement", "physical",
-                                source.get("log_digest") if acquisition else None,
-                                {"acquisition": acquisition, "notes": "recorder assertion; hardware provenance not authenticated"}
-                                if acquisition else {}))
+                                acquisition["raw_sha256"] if acquisition else None, physical))
         for receipt in native.get("replay_receipts", []) or []:
             matched = receipt.get("numerical_match") is True and receipt.get("verification", {}).get("outcome") == "passed"
             findings.append(finding(
@@ -161,5 +235,5 @@ def classify_workspace(path) -> dict:
             counts[record["evidence_status"]] += 1
     return {"schema": SCHEMA, "workspace": str(path), "validated_without_provider_execution": True,
             "validation_scope": "Session.from_workspace; built-in offline analyses may be recomputed to check retained data",
-            "items": items, "label_counts": counts,
+            "items": items, "label_counts": counts, "origin_authentication": UNAUTHENTICATED,
             "note": "Derived projection; retained records are unchanged and replay is never independent verification."}
