@@ -611,3 +611,52 @@ def test_no_queue_task_reads_retained_hardware_runs():
     found = sorted(path.name for path in (runner.PACKAGE_ROOT / "lab").glob("*.py")
                    if path.name not in outside and readers.search(path.read_text(encoding="utf-8")))
     assert found == [], f"queue modules read retained hardware runs: {found}"
+
+
+def test_retain_refuses_a_malformed_run_and_removes_a_copy_that_fails_verification(lab, tmp_path, monkeypatch):
+    """Every refusal of retain_hardware_run leaves lab/hardware untouched; a failed verification removes the copy."""
+    retained, run = lab
+    host = "RTX 2080 workstation"
+
+    def variant(name, edit):
+        copy = tmp_path / name
+        shutil.copytree(run, copy)
+        edit(copy)
+        return copy
+
+    def edit_record(change):
+        def edit(copy):
+            record = json.loads((copy / "run-record.json").read_text(encoding="utf-8"))
+            change(record)
+            (copy / "run-record.json").write_text(json.dumps(record), encoding="utf-8")
+        return edit
+
+    wrong_schema = variant("schema", edit_record(lambda record: record.update(schema="ciw.lab-run-record.v0")))
+    with pytest.raises(ValueError, match="is not ciw.lab-run-record"):
+        runner.retain_hardware_run(wrong_schema, retained, RUN_ID, host)
+    invalid = variant("invalid", lambda copy: (copy / "reports" / "T116.json").write_text("{}", encoding="utf-8"))
+    with pytest.raises(ValueError, match="Refusing the run: reports/T116.json refused"):
+        runner.retain_hardware_run(invalid, retained, RUN_ID, host)
+    # Bindings reach capture.json, so a host path in them is refused before anything is copied.
+    leaked = variant("leaked", edit_record(lambda record: record.update(providers={"scr": "/home/operator/scr"})))
+    with pytest.raises(ValueError, match="Refusing the run: .*host path"):
+        runner.retain_hardware_run(leaked, retained, RUN_ID, host)
+    assert not (retained / "hardware").exists()
+    # A copy that fails its own verification is removed again.
+    monkeypatch.setattr(runner, "_inspect_hardware_run", lambda path: ({"problems": ["reports/T116.json edited"]}, None))
+    with pytest.raises(ValueError, match="The retained copy fails verification: reports/T116.json edited"):
+        runner.retain_hardware_run(run, retained, RUN_ID, host)
+    assert not (retained / "hardware" / RUN_ID).exists()
+
+
+def test_capture_json_keeps_the_run_records_bindings_and_settings(lab, tmp_path):
+    retained, run = lab
+    bound = tmp_path / "bound"
+    shutil.copytree(run, bound)
+    record = json.loads((bound / "run-record.json").read_text(encoding="utf-8"))
+    record["providers"] = {"scr": {"role": "scr", "head": "a" * 40}}
+    record["settings"] = {"OPENBLAS_NUM_THREADS": "1"}
+    (bound / "run-record.json").write_text(json.dumps(record), encoding="utf-8")
+    runner.retain_hardware_run(bound, retained, RUN_ID, "RTX 2080 workstation")
+    capture = json.loads((retained / "hardware" / RUN_ID / "capture.json").read_text(encoding="utf-8"))
+    assert capture["providers"] == record["providers"] and capture["settings"] == record["settings"]

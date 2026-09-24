@@ -1095,3 +1095,164 @@ def test_independent_checks_name_the_revision_each_side_ran(revision):
     checker["revision"] = "scipy 1.16.2"
     assert supported_label({"independent_check": dict(CHECK, producer=producer, checker=checker)},
                            "numerical") == "independently_verified"
+
+
+def test_regression_closeness_keeps_types_and_non_finite_values_exact():
+    """runner._close, the value comparison behind ciw lab verify: tolerance applies to finite numbers only."""
+    close, exact = runner._close, {"abs": 0.0, "rel": 0.0}
+    # True is not the number 1, and None and text compare exactly.
+    assert close(True, True, exact) and not close(True, False, exact)
+    assert not close(True, 1, exact) and not close(1, True, exact) and not close(False, 0.0, {"abs": 1.0})
+    assert close(None, None, exact) and not close(None, 0.0, {"abs": 1.0}) and not close(0.0, None, {"abs": 1.0})
+    assert close("a", "a", exact) and not close("a", "b", exact) and not close("1", 1, {"abs": 1.0})
+    assert close(1, 1.0, exact)
+    # A non-finite value must match exactly, whatever the tolerance.
+    inf, generous = float("inf"), {"abs": 1e308, "rel": 1.0}
+    assert close(inf, inf, exact) and not close(inf, -inf, generous) and not close(inf, 1e308, generous)
+    assert not close(1e308, inf, generous) and not close(float("nan"), 1.0, generous)
+    assert not close(1.0, float("nan"), generous)
+    # |fresh - retained| <= abs + rel |retained|, relative to the retained value; missing keys mean zero.
+    tolerance = {"abs": 0.25, "rel": 0.5}
+    assert close(2.0, 3.25, tolerance) and not close(2.0, 3.5, tolerance)
+    assert not close(2.0, 3.3, tolerance) and close(3.3, 2.0, tolerance)
+    assert close(-2.0, -3.25, tolerance) and not close(-2.0, -3.5, tolerance)
+    assert close(1.0, 1.0, {}) and not close(1.0, 1.0 + 2.0 ** -52, {})
+    assert close(1.0, 1.0 + 2.0 ** -52, {"rel": 1e-15}) and close(1.0, 1.25, {"abs": 0.25})
+    # Containers match element by element, with the same length and keys.
+    assert close([1.0, [2.0, "x"]], [1.0, [2.0, "x"]], exact) and not close([1.0, [2.0]], [1.0, [2.5]], exact)
+    assert not close([1.0], [1.0, 2.0], generous) and not close([1.0, 2.0], [1.0], generous)
+    assert close({"a": 1.0, "b": [2.0]}, {"a": 1.1, "b": [2.1]}, {"abs": 0.2})
+    assert not close({"a": 1.0}, {"a": 1.0, "b": 2.0}, generous) and not close({"a": 1.0}, {"b": 1.0}, generous)
+    assert not close({"a": 1.0}, {"a": 1.5}, {"abs": 0.2}) and not close([1.0], {"0": 1.0}, generous)
+    # A value that changed shape is a difference, never a crash of the comparison.
+    assert not close(1.0, [1.0], generous) and not close([1.0], 1.0, generous)
+    assert not close(1.0, {"a": 1.0}, generous) and not close({"a": 1.0}, 1.0, generous)
+
+
+def test_verification_holds_values_to_a_relative_1e_9_by_default(tmp_path):
+    """A finding without a declared regression tolerance must reproduce to a relative 1e-9."""
+    task = load_queue()["tasks"][0]
+    for fresh, expected in ((4.0 * (1 + 5e-10), True), (4.0 * (1 + 2e-9), False)):
+        for name, value in (("old", 4.0), ("new", fresh)):
+            (tmp_path / name / "reports").mkdir(parents=True, exist_ok=True)
+            built = report.build_report(task, "completed", {}, [finding("rate", "numerical", value, {"checks": [CHECK]})])
+            (tmp_path / name / "reports" / "T001.json").write_text(runner.dumps(built), encoding="utf-8")
+        problems = runner.compare(tmp_path / "old", tmp_path / "new")["problems"]
+        assert (problems == []) is expected, problems
+        assert expected or problems == ["T001: 'rate' value outside regression tolerance"]
+
+
+_PRODUCER = {"implementation": "ciw.lab.jacobi", "revision": "ciw 0.1.0"}
+_CHECKER = {"implementation": "scipy.integrate", "revision": "scipy 1.16.2"}
+_INDEPENDENT = dict(CHECK, producer=_PRODUCER, checker=_CHECKER)
+
+
+@pytest.mark.parametrize("basis,domain,refusal", [
+    ({"checks": [dict(CHECK, observed="1e-10")]}, "numerical", "observed must be a finite number"),
+    ({"checks": [dict(CHECK, observed=True)]}, "numerical", "observed must be a finite number"),
+    ({"checks": [dict(CHECK, tolerance=float("inf"))]}, "numerical", "tolerance must be a finite number"),
+    ({"checks": [dict(CHECK, comparison="lt")]}, "numerical", "comparison must be abs_le, le, ge, signed_le or signed_ge"),
+    ({"checks": ["passed"]}, "numerical", r"checks\[0\] must be an object"),
+    ({"checks": [dict(CHECK, reference_kind="hunch")]}, "numerical", "reference_kind must be one of"),
+    ({"checks": [dict(CHECK, passed=False)]}, "numerical", "passed does not match its observed value"),
+    ({"checks": [dict(CHECK, tolerance=1.0000000000000001e100 * 10)]}, "numerical", "makes the comparison vacuous"),
+    ({"checks": [{"reference_kind": "refusal", "reference": "r", "expected_refusal": "E1", "observed_refusal": None,
+                  "passed": False}]}, "numerical", "observed_refusal must be a string"),
+    ({"checks": [{"reference_kind": "refusal", "reference": "r", "expected_refusal": "E1", "observed_refusal": "E1",
+                  "passed": False}]}, "numerical", "passed does not match its expected and observed refusal codes"),
+    ({"independent_check": dict(_INDEPENDENT, producer="ciw")}, "numerical", "implementation identity object"),
+    ({"independent_check": dict(_INDEPENDENT, checker={"implementation": "sсipy", "revision": "1"})}, "numerical",
+     "nonempty ASCII"),
+    ({"independent_check": dict(_INDEPENDENT, checker={"implementation": "...", "revision": "1"})}, "numerical",
+     "has no family name"),
+    ({"independent_check": dict(_INDEPENDENT, checker={"implementation": "homegrown.solver", "revision": "1"})},
+     "numerical", "not a recognised implementation family"),
+    ({"independent_check": dict(_INDEPENDENT, checker={"implementation": "scipy.ciw_wrapper", "revision": "1"})},
+     "numerical", "names the ciw family inside another family"),
+    ({"acquisition": "camera-1"}, "physical", "acquisition must be an object"),
+    ({"derivation": "d"}, "astrology", "Unsupported claim domain"),
+    (["derivation"], "numerical", "basis must be an object"),
+    ({"derivation": "d", "vibes": True}, "numerical", "Unsupported basis fields"),
+    ({"checks": CHECK}, "numerical", "basis.checks must be a list"),
+    ({"provider": "scr"}, "numerical", "provider must be an object"),
+    ({"provider": {"repository": "scr", "revision": "a" * 40, "executed": True}}, "numerical",
+     "provider requires source_tree or runtime_digest"),
+    ({"generator": "seeded"}, "numerical", "generator must be an object"),
+])
+def test_every_malformed_basis_is_refused_by_name(basis, domain, refusal):
+    with pytest.raises(EvidenceRefusal, match=refusal):
+        supported_label(basis, domain)
+
+
+@pytest.mark.parametrize("basis,refusal", [
+    ({"independent_check": "agreed"}, "independent_check must be an object"),
+    ({"provider": "scr"}, "provider must be an object"),
+    ({"provider": {"repository": "scr", "revision": "a" * 40, "executed": True}},
+     "provider requires source_tree or runtime_digest"),
+    ({"generator": ["seeded"]}, "generator must be an object"),
+    ({"generator": {}}, "generator.name must be a nonempty string"),
+    ({"checks": CHECK}, "basis.checks must be a list"),
+])
+def test_components_beside_an_authority_label_must_still_be_well_formed(basis, refusal):
+    """Authority domains are not_established before the basis is read; the shown basis is still checked."""
+    assert supported_label(basis, "production_acceptance") == "not_established"
+    with pytest.raises(EvidenceRefusal, match=refusal):
+        finding("Release the lot", "production_acceptance", None, basis)
+    with pytest.raises(EvidenceRefusal, match="basis must be an object"):
+        evidence.basis_origin("provider")
+
+
+def test_validation_refuses_malformed_findings_and_misused_flags():
+    with pytest.raises(EvidenceRefusal, match="finding must be an object"):
+        validate_finding(["rate"])
+    record = finding("rate", "numerical", 1.0, {"checks": [CHECK]})
+    with pytest.raises(EvidenceRefusal, match="Unknown evidence status"):
+        validate_finding(dict(record, evidence_status="certain"))
+    # A refuted claim with checks is refuted, not "expected to be unestablished".
+    with pytest.raises(EvidenceRefusal, match="A claim with checks is supported or refuted"):
+        finding("rate", "numerical", 1.0, {"checks": [dict(CHECK, observed=1.0, passed=False)]},
+                expected_not_established=True)
+    # Boundaries of a check: zero tolerance and a zero magnitude are allowed, a negative tolerance is not.
+    for comparison in ("abs_le", "le"):
+        exact = dict(CHECK, observed=0.0, tolerance=0.0, comparison=comparison)
+        assert supported_label({"checks": [exact]}, "numerical") == "numerically_verified"
+        with pytest.raises(EvidenceRefusal, match=f"tolerance must be nonnegative for {comparison}"):
+            supported_label({"checks": [dict(exact, tolerance=-1e-300)]}, "numerical")
+    assert supported_label({"checks": [dict(CHECK, observed=0.5, tolerance=1.0, comparison="le")]},
+                           "numerical") == "numerically_verified"
+    refusal = {"reference_kind": "refusal", "reference": "r", "expected_refusal": "E1", "observed_refusal": "E1",
+               "passed": True}
+    assert supported_label({"checks": [refusal]}, "numerical") == "numerically_verified"
+    assert supported_label({"checks": [dict(refusal, observed_refusal="none", passed=False)]},
+                           "numerical") == "not_established"
+    # The flag marks only a claim that is not established.
+    with pytest.raises(EvidenceRefusal, match="applies only to not_established findings"):
+        finding("rate", "numerical", 1.0, {"checks": [CHECK]}, expected_not_established=True)
+    # The largest nonvacuous tolerance is accepted, holds() refuses an unknown comparison.
+    assert supported_label({"checks": [dict(CHECK, tolerance=evidence.MAX_THRESHOLD)]}, "numerical") \
+        == "numerically_verified"
+    with pytest.raises(EvidenceRefusal, match="comparison must be one of"):
+        evidence.holds(0.0, 1.0, "lt")
+
+
+def test_a_physical_acquisition_with_an_independent_check_is_independently_verified():
+    basis = {"acquisition": ACQUISITION, "independent_check": _INDEPENDENT}
+    assert supported_label(basis, "physical") == "independently_verified"
+    assert supported_label({"acquisition": ACQUISITION}, "physical") == "hardware_measured"
+    failing = dict(_INDEPENDENT, observed=1.0, passed=False)
+    assert supported_label({"acquisition": ACQUISITION, "independent_check": failing}, "physical") == "not_established"
+
+
+def test_the_decline_window_ends_after_six_words():
+    """A negated decision verb exempts an outcome at most six words later, and only before a relative clause."""
+    outcomes = evidence.authority_outcomes
+    assert outcomes("The pipeline never marks the one two three four lot released for production.") == []
+    assert outcomes("The pipeline never marks the one two three four five lot released for production.") \
+        == ["released for production"]
+    assert outcomes("The log records the lot released for production as pending.") == []
+    assert outcomes("The log records the lot as pending, then it is released for production.") \
+        == ["released for production"]
+    assert outcomes("The lot that never marks anything released for production.") == ["released for production"]
+    # A decline at the very start of the claim counts; a record made after the outcome does not decline it.
+    assert outcomes("No claim that the lot is released for production is made here.") == []
+    assert outcomes("The lot released for production is recorded as pending.") == ["released for production"]
