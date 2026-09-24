@@ -1,0 +1,24 @@
+name: Provider read token
+description: >-
+  Route git clones of github.com through PROVIDER_READ_TOKEN when that repository
+  secret is configured, so gate scripts and pip can read private provider
+  repositories at their pins. Without a token nothing changes: clones stay
+  anonymous exactly as before.
+inputs:
+  token:
+    description: Read-only token covering the provider repositories; empty leaves clones anonymous.
+    required: false
+    default: ""
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        PROVIDER_READ_TOKEN: ${{ inputs.token }}
+      run: |
+        if [ -n "${PROVIDER_READ_TOKEN}" ]; then
+          git config --global url."https://x-access-token:${PROVIDER_READ_TOKEN}@github.com/".insteadOf "https://github.com/"
+          echo "Provider clones use the configured read token."
+        else
+          echo "No provider read token is configured; clones stay anonymous."
+        fi

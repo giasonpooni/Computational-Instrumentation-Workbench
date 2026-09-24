@@ -61,15 +61,16 @@ behavior. Their checkout commands preserve committed bytes with
   in `.github/workflows/test.yml` routes that clone through `PROVIDER_READ_TOKEN`
   when the secret exists and clones anonymously otherwise. The local stack flags
   do not affect pip.
-- **Exchange and geometry CI:** `.github/workflows/exchange.yml` checks out SET,
-  PPDA and SCR directly with `actions/checkout`, and
-  `.github/workflows/geometry-research.yml` provisions the three geometry
-  providers the same way before passing them to the gate as `--stack-root`. The
-  checkouts in both workflows accept an optional `PROVIDER_READ_TOKEN`
-  repository secret, a read-only token covering those providers, and otherwise
-  use the workflow's own token, which reaches public providers only. The other
-  gates still clone their providers inside their scripts and need the same
-  explicit provisioning before a visibility change.
+- **CI provisioning:** every provider workflow accepts the optional
+  `PROVIDER_READ_TOKEN` repository secret, a read-only token covering the
+  provider repositories. `.github/workflows/exchange.yml` and
+  `.github/workflows/geometry-research.yml` pass it to their pinned
+  `actions/checkout` steps; the other gates run the shared
+  `.github/actions/provider-read-token` step, which routes `github.com` clones
+  through the token so their scripts and pip reach private providers at the
+  same pins. Without the secret every clone stays anonymous, exactly as before.
+  Creating the secret, or restoring the providers' public visibility, is an
+  owner action; no workflow can grant itself that access.
 - **Nested ESM provisioning:** `scripts/check_workbench_candidates.py` clones ESM
   and invokes ESM's pinned `scripts/check_calibrated_workbench.py`, which provisions
   its own provider graph. Existing `--esm-root`, `--fixture-root` and

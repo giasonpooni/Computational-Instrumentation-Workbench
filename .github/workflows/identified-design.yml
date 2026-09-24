@@ -16,6 +16,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Route provider clones through the read token when one is configured
+        uses: ./.github/actions/provider-read-token
+        with:
+          token: ${{ secrets.PROVIDER_READ_TOKEN }}
       - run: python -m pip install "setuptools>=77" wheel
       - name: Verify installed wheel against all eleven provider pins
         run: python scripts/check_identified_design.py

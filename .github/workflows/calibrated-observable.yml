@@ -19,6 +19,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
+      - name: Route provider clones through the read token when one is configured
+        uses: ./.github/actions/provider-read-token
+        with:
+          token: ${{ secrets.PROVIDER_READ_TOKEN }}
       - run: python -m pip install -e ".[dev]"
       - name: Verify pinned calibration, alignment, observability and residual path
         run: python scripts/check_calibrated_observable.py
