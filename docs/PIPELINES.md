@@ -101,4 +101,384 @@ Do observed positions and quantities agree with the declared geometry and buildi
 | tsde | `5e72693e7e57` | `ciw.translation-flow.v1` |
 | ywir | `e1f4a8c128a9` | `ciw.identified-design.v1` |
 
+## Pipeline details
+
+Refusal codes are derived from the code on each pipeline's execution path and checked by `pipelines.check()`; every pinned-subprocess pipeline can also raise the adapter codes (`INPUT_LIMIT`, `INVALID_INPUT`, `MALFORMED_RESPONSE`, `OUTPUT_LIMIT`, `RUNTIME_FAILED`, `RUNTIME_IO`, `RUNTIME_PIN_MISMATCH`, `RUNTIME_UNAVAILABLE`, `SOURCE_PIN_MISMATCH`, `TIMEOUT`) and every pipeline the workbench admission codes (`operation_unavailable`, `workbench_capacity`). Domain rules are the checks the implementation keeps beyond the shared runner shape, with code evidence, from the verified inventory.
+
+### `ciw.acquired-calibrated-window.v1`
+
+Implementation `ciw.acquired_window` (hand written, delegates to `ciw.calibrated_window`); verification: pinned_set_replay_verification.
+
+Specific refusals: `CALIBRATED_WINDOW_GSIE_REFUSED`, `CALIBRATED_WINDOW_MCUR_REFUSED`, `CALIBRATED_WINDOW_SET_REFUSED`, `CALIBRATED_WINDOW_STFE_REFUSED`, `CALIBRATED_WINDOW_TBRT_REFUSED`.
+
+- PPDA evidence-graph lineage join. The selected observation must cite exactly the selected record, that record must cite the selected document, the observation content must equal the exact snapshot row, and the document's retrieved_at must equal the snapshot's requested_at (the first snapshot that introduced the row). (acquired_window.py:98-110)
+- Typed-row-to-declaration consistency with no value or timestamp overrides. Row channel, epoch, frame, clocks, clock-map ref, calibration ref, cross-covariance policy and uncertainty evidence ids must all equal the window declaration. The row's window_id must equal the experiment. (acquired_window.py:113-122 (POLICY mapping at line 31))
+- The window prior must be an explicit independent reference, not the previous posterior, and inter-window cross-covariance is not inferred. (acquired_window.py:34-35 declare this only as POLICY constants checked by equality (acquired_window.py:57). No code path verifies that the child's prior is not a previous posterior; the child validates its own source (calibrated_window._source at acquired_window.py:136).)
+- The lineage join depends on acquired-dataset's first-appearance dedupe. The check document.retrieved_at == snapshot.requested_at (acquired_window.py:107) accepts only the snapshot that first introduced the row, because documents are created only for rows with sequence > seen (acquired_dataset.py:165-169). A later snapshot that also contains the row is rejected. This is semantic knowledge of the upstream pipeline's internals. (added by adversarial verification; citations in the rule)
+- The derived child source is byte-exact and carries identity. canonical(dict(declaration, schema=window.SOURCE_SCHEMA, samples=...)) (130-131) must equal the child's retained evidence bytes (208, 236). The id namespacing 'ppda-observation:'/'ppda-record:' (122-123) and the selected-record fields (sequence, snapshot_sha256, source_id, mapped ids at 125-129) are part of acquisition_binding, which is checked by exact equality (144, 205). Any mapping DSL must reproduce these bytes exactly or every retained bundle breaks. (added by adversarial verification; citations in the rule)
+- The outer bundle aliases the child. steps, runtimes and created_at must equal the child's exactly, and session_id must differ (211-213, 239-243). Workbench attributes the aliased steps to the child owner (workbench.py:241). _native_steps yields child_window as owner (workbench.py:~990). The context reads the exposed child steps positionally, steps[0] as clock and steps[1] as calibration (workbench.py:551). (added by adversarial verification; citations in the rule)
+- The child receipt must be a SET verification-artifact with verifier_ref set:replay-binding.v1, exactly two named checks in fixed order, and a fixed binding structure (165-185). This is SET-specific receipt knowledge, not a generic kernel receipt. (added by adversarial verification; citations in the rule)
+- Upstream handling asymmetry. The upstream is fully re-validated, including the PPDA identity recompute, on every wrapper validation (_derive calls acquisition._validate at 86). It is never re-executed on replay: 290 reuses bundle['upstream_acquisition'], per POLICY acquisition_reexecution at 32. identified-design does the opposite and replays its upstream before use. (added by adversarial verification; citations in the rule)
+
+### `ciw.acquired-dataset.v1`
+
+Implementation `ciw.acquired_dataset` (declared workflow); verification: same_runtime_fresh_occurrence_reproduction.
+
+Specific refusals: `ACQUISITION_REFUSED`, `DECLARED_WORKLOAD_REFUSED`.
+
+- Recompute the PPDA native evidence graph from the retained snapshot bytes: source, document, record, observation and artifact ids using PPDA's ensure_ascii sha256 formula, a 12-digit zero-padded locator and checkpoint position, per-run pool fingerprints, and the final checkpoint and restored pool fingerprint. (acquired_dataset.py:140-190. _native_hash is at 140-141. The identity formulas are at 162-172. The checkpoint and fingerprint logic is at 179-189. The docstring at 145-149 limits this to an integrity check.)
+- Incremental append-only acquisition semantics: request times must be strictly increasing and tz-aware, record sequences strictly increasing, each snapshot must extend the previous one as a prefix, and revisions require a new plan. (acquired_dataset.py:49-76 (53-55, 68-74))
+- Native acquisition driver: register SourceDefinition and AdapterRegistry, call execute_plan per snapshot, and restore DurablePool between runs. Also refuse if any declared record fails admission. (acquired_dataset.py:83-137 (refusal condition at 114-115))
+- Incremental first-appearance semantics. _check_data skips rows whose sequence is <= the last seen (acquired_dataset.py:165-166), so each document, record and observation carries the retrieved_at/extracted_at of the first snapshot that contained the row (169, 175). acquired_window.py:107 depends on this: document.retrieved_at == snapshot.requested_at only holds for that first snapshot. This is cross-pipeline semantic coupling that no descriptor field captures. (added by adversarial verification; citations in the rule)
+- The derived filename carries identity. _filename = 'dataset-' + sha256(canonical(source.source)) + '.json' (79-80) is not just an argv convenience. It enters the plan parameters (154), the locator (168), and therefore record.id (171-172) and artifact_id (176). Changing the derivation formula invalidates every retained bundle, so it must be frozen with the pipeline version. (added by adversarial verification; citations in the rule)
+- Three different JSON serializations mirror the provider. Row content uses json.dumps with default separators and ensure_ascii (167). Ids use compact separators with ensure_ascii=True (140-141). The shim output uses ensure_ascii=False (136). (added by adversarial verification; citations in the rule)
+- All-or-nothing admission. The shim refuses if any declared record fails admission (115). It restores the DurablePool between runs (107, 123), and the restored fingerprint must equal the last run's (189). The pool fingerprint includes empty provider-internal categories (referents, claimed_relationships, derived_values, derived_groundings at 182), and the checkpoint position is zero-padded to 12 digits (183). (added by adversarial verification; citations in the rule)
+
+### `ciw.bim-quantity.v1`
+
+Implementation `ciw.bim_quantity` (declared workflow); verification: same_runtime_fresh_occurrence_reproduction.
+
+Specific refusals: `BIM_QUANTITY_REFUSED`, `DECLARED_WORKLOAD_REFUSED`.
+
+- Held-reason ladder: ordered first-match predicates (cross covariance unknown -> frame unresolved -> frame mismatch -> IFC binding -> target binding -> target missing -> derived quantity -> unit -> assumed units -> initial invariants) with held/accepted/refused consistency (bim_quantity.py:272-286; duplicated natively inside the provider shim at bim_quantity.py:133-145)
+- CSE execution-ledger integrity: sha256 hash chain from 64 zeros, per-event verification_digest and event_hash over canonical JSON, ledger head equals integrity.head, genesis binds prior world/belief and module/configuration digests, ledger replay counts, and exact expected observe_quantity operation and provenance (noise_sigma=sqrt(variance)) (bim_quantity.py:295-355)
+- World/belief binary commitments: world_digest = sha256(module_digest \|\| little-endian float64 mean\|\|covariance), belief_digest over the raw-role sub-block (bim_quantity.py:228-236 (and little-endian guard in shim at bim_quantity.py:104))
+- State covariance domain: symmetric, nonnegative marginals, correlation-eigenvalue PSD via core.covariance._validate_matrix on the full (possibly singular, derived quantities) matrix and on the raw sub-block; no jitter or clipping (bim_quantity.py:168-208)
+- Invariant report consistency: passed == no FAIL rows, bounded rows/detail (bim_quantity.py:211-225)
+- An in-provider ledger replay check. The shim replays the CSE ledger and raises if the replayed world digest differs (bim_quantity.py:156-157). This exits nonzero and becomes BIM_QUANTITY_REFUSED (bim_quantity.py:375-376). The kind therefore has a second verification method, native ledger replay, besides same_runtime_fresh_occurrence_reproduction. (added by adversarial verification; citations in the rule)
+- A 64-full-variable budget is enforced inside the provider process (bim_quantity.py:125-126), plus a little-endian host guard for the binary state commitment (bim_quantity.py:104). Both are re-checked on the payload (bim_quantity.py:174-175, 228-236). (added by adversarial verification; citations in the rule)
+- The shim is CIW-written code that drives provider internals: GatSession.from_text, ObserveQuantity.single, replay_ledger, verification_payload and length_unit_context (bim_quantity.py:94-165). It runs through the private adapter._run path, which bypasses the ciw.adapter-request envelope (adapters/subprocess.py:294 vs 328-369). Under 'untouched providers' this is a hand-written adapter that must stay, or be moved upstream as a provider-owned ciw_adapter, as GTE already has. (added by adversarial verification; citations in the rule)
+
+### `ciw.calibrated-observable.v1`
+
+Implementation `ciw.calibrated_observable` (hand written); verification: pinned_set_replay_verification.
+
+Specific refusals: `CALIBRATED_CBSR_REFUSED`, `CALIBRATED_FDIR_REFUSED`, `CALIBRATED_FSRT_REFUSED`, `CALIBRATED_GSIE_REFUSED`, `CALIBRATED_MCUR_REFUSED`, `CALIBRATED_OIT_REFUSED`, `CALIBRATED_SET_REFUSED`, `CALIBRATED_TBRT_REFUSED`.
+
+- Two-channel time alignment: exact rational check reference_origin + event_time_delta == event_time, declared maximum nominal separation tolerance, target_time = max(channel times), retained time-uncertainty policy (calibrated_observable.py:91-115)
+- Calibrated covariance combination: refuse unknown calibrated cross-covariance or missing evidence, require the declared combined covariance diagonal to equal each channel's MCUR-propagated variance exactly, and require zero off-diagonal under declared_zero (calibrated_observable.py:144-155)
+- Calibration applicability evidence: reference_ids non-empty, unique strings; joint covariance evidence_ids required; acquired_at = epoch + aligned event_time without microsecond loss; epoch must be UTC (calibrated_observable.py:117-143)
+- Observability-gated estimation: GSIE update_observable receives an ObservabilityAssessment assembled from OIT output, OIT's declared transition and the dynamics model id; non-observable statuses refuse estimation (calibrated_observable.py:157-180 (wiring 294-306); docs/CALIBRATED_OBSERVABLE.md flowchart; tests/test_calibrated_observable.py:167-176)
+- Stationary-hold model and OIT-assesses-exact-estimator-model admission (calibrated_observable.py:261-267)
+- FDIR residual basis is the retained GSIE prior innovation, with CBSR status piped in (calibrated_observable.py:184-191, 314-320)
+- Exact ISO timestamp precision (fraction digits beyond microseconds, fractional offsets, UTC requirement) (calibrated_observable.py:37-57 (imported by calibrated_window.py:22))
+- Completed steps with non-success outcome statuses are not refusals. CBSR can return status 'held' with reconciled None, and FDIR still runs, consuming cbsr_status (calibrated_observable.py:316-320, 191; tests/test_calibrated_observable.py:187-194). FDIR returns isolability 'ambiguous' with no isolated fault under unknown fault cross-covariance (tests/test_calibrated_observable.py:179-184). A generic 'failed -> retained refusal' split must not classify these. (added by adversarial verification; citations in the rule)
+- Execution-invariant identity binding. GSIE's observation_id, evidence_refs and observability assessment_id/evidence_refs use prior numerical_result_ids, not result_ids (calibrated_observable.py:296-305), so GSIE state_id, replay_snapshot and observability_assessment_id (176-178) stay identical across fresh-id replays. CBSR and FDIR receive execution-dependent result_ids (312-320), and their numerical views strip exactly those fields (325-337). The test asserts result_ids differ while numerical ids match (tests/test_calibrated_observable.py:142-145). This is a correctness invariant tying wiring to numerical views, not just 'use numerical_result_id as identity'. (added by adversarial verification; citations in the rule)
+- Serialization normalization changes content. The bootstrap native() converts dataclasses, ndarrays, enums and datetimes, and maps non-finite floats to None (calibrated_observable.py:66-81). An infinite OIT condition_number becomes null (163) and flows into GSIE's ObservabilityAssessment (295-296). Telemetry has no such normalization (telemetry.py:172). (added by adversarial verification; citations in the rule)
+- MCUR pairs input channels with TBRT per-channel rows by position via zip, without a channel_id cross-check (calibrated_observable.py:122). It stamps acquired_at with each channel's own aligned event_time (125-128), while GSIE is evaluated at target_time = max(times) (114, 291). This nominal-alignment semantics is valid only under the stationary-hold admission (265-267). (added by adversarial verification; citations in the rule)
+- TBRT is always called with require_synchronization_evidence=True (calibrated_observable.py:103), a hard-coded authority policy. OIT reshaping takes state_dimension from diagnostics.input_dimension and echoes observation_matrix and declaration from the request (163-166). (added by adversarial verification; citations in the rule)
+- Two digest schemes for the same experiment. bundle.source.experiment_digest = digest(experiment), unprefixed (calibrated_observable.py:361, 379). The FSRT declaration's experiment_digest is schema-prefixed sha256 (416-421). Wrapped result_id = digest(envelope), also unprefixed (353). The descriptor must carry per-identity hash schemes, not one scheme. (added by adversarial verification; citations in the rule)
+
+### `ciw.calibrated-window.v1`
+
+Implementation `ciw.calibrated_window` (hand written); verification: pinned_set_replay_verification.
+
+Specific refusals: `CALIBRATED_WINDOW_GSIE_REFUSED`, `CALIBRATED_WINDOW_MCUR_REFUSED`, `CALIBRATED_WINDOW_SET_REFUSED`, `CALIBRATED_WINDOW_STFE_REFUSED`, `CALIBRATED_WINDOW_TBRT_REFUSED`.
+
+- Exact Schur-complement PSD certification of the full joint covariance, with no tolerance, jitter or diagonal substitution (src/ciw/calibrated_window.py:64-82 (comment 70-71); reused by src/ciw/geometric_circle.py:100)
+- Exact rational propagation J*Sigma*J^T, refusing binary64 overflow or underflow (src/ciw/calibrated_window.py:85-100)
+- Joint covariance layout: device times, clock skew/offset, indicated values, gain/offset; TBRT uses the 3x3 sub-block [i,n,n+1] and MCUR uses [n+2+i,2n+2,2n+3]; Jacobian re-embedding (src/ciw/calibrated_window.py:58-61, 217, 239, 275-289)
+- Cross-provider covariance composition: the joint time/value covariance from TBRT and MCUR Jacobians must reproduce MCUR's native marginal variance exactly (src/ciw/calibrated_window.py:309-314)
+- TBRT/MCUR adapter shim: builds the native dataclasses, checks origin+delta exactness and microsecond precision, requires MCUR feature compatibility to be 'compatible' (src/ciw/calibrated_window.py:192-252 (222, 237, 246-247))
+- Source applicability rules: clock map frames, UTC seconds, identity quantity-frame map, profile applicability per sample, declared-zero consistency, calibration block equal to the profile covariance, fixed COMPOSITION, scalar stationary GSIE hold model (src/ciw/calibrated_window.py:133-186)
+- No silent window selection: every mapped event time must fall inside the declared window before STFE runs (src/ciw/calibrated_window.py:341-343)
+- Inspection cannot see covariance produced by the post-hook. The CIW-computed temporal_covariance and joint_time_value_covariance are written into the sealed step-0/1 result data (calibrated_window.py:306-314, 363). _project and _jacobians are called only in _invoke (308, 311), never in _validate (382-433). If that covariance is edited and re-digested consistently, it flows into the rebuilt STFE request (330-331) and inspection still passes. Only replay's template comparison (telemetry.py:536-542) would catch it. (added by adversarial verification; citations in the rule)
+- Reproduction reuses the template occurrence, which is the opposite of the declared kinds. Requests embed execution_id and created_at (337, 348), and the reproduction reuses both from the template (358-359). Verification is exact digest equality of request, result and numerical_result_id (telemetry.py:541), plus SET. Declared kinds instead require a fresh occurrence (declared_workload.py:303-304). (added by adversarial verification; citations in the rule)
+- Replay calls SET twice with different subjects (455-459). The receipt's verification is SET(original bundle vs fresh numerical results); fresh['verification'] is SET(fresh bundle vs a template reproduction of the old bundle). replay_session also returns an extra 'replay_results' key (468), which the declared kinds do not (declared_workload.py:369). (added by adversarial verification; citations in the rule)
+- The shims pass CIW assertions to the providers as arguments: require_synchronization_evidence=True plus expected_reference to TBRT (219), and same_profile_for_all_samples=True plus joint_temporal_covariance_declared=True to MCUR (245-246). These assertions are only true because of the source predicates at 159-161 and 165-166, so the shim and the predicates cannot be separated. (added by adversarial verification; citations in the rule)
+- Step order acts as a public contract. residual-monitor, acquired-calibrated-window and the workbench fusion context all index steps[0], steps[1] and steps[3] directly (residual_monitor.py:133, 180; workbench.py:549-552). Any descriptor reordering or renaming breaks three consumers. (added by adversarial verification; citations in the rule)
+- The source predicates also run at inspection (_source is called inside _validate at 394). Turning them into admission-time retained refusals changes what reopening an existing bundle means. (added by adversarial verification; citations in the rule)
+
+### `ciw.covariance-geometry.v1`
+
+Implementation `ciw.geometry_research` (declared workflow); verification: same_runtime_fresh_occurrence_reproduction.
+
+Specific refusals: `DECLARED_WORKLOAD_REFUSED`, `GEOMETRY_PROVIDER_REFUSED`.
+
+- Spectral evidence consistency for each input, the relative covariance and every sample. Eigenvalues are ordered and above a strict floor (a declared floor, or a relative floor of 8*n*EPS*max\|lambda\|). min, max, margin and condition number are derived exactly. The condition number is within the declared limit. The decomposition residual is within abs+rel*norm. log-det equals fsum(log lambda). The Frobenius norm equals hypot(lambda) and the matrix norm. The trace equals the sum of eigenvalues. (src/ciw/geometry_covariance_contract.py:142-176, tolerance model _close 79-84 (64*EPS*scale + 8 ulp + residual))
+- Affine-invariant distance = \|\|log eig(relative covariance)\|\|_2. For each sample, constant-speed invariants (distance_from_a = t*d, distance_to_b = (1-t)*d) and log-det affinity, plus endpoint residuals at t=0 and t=1. The ordered invariants list must match these names and budgets exactly. (src/ciw/geometry_covariance_contract.py:179-189,215-252)
+- Roundoff symmetry evidence for each ordered stage: the asymmetry is at most the symmetry tolerance times max(1,norm); the averaging adjustment lies between asymmetry/2 and n*asymmetry; the stage norms match the spectral norms. No input projection or regularisation ('no silent repair'). (src/ciw/geometry_covariance_contract.py:243-270)
+- Request profile: 1-8 distinct named coordinates with units; settings within fixed ranges; 2-33 parameters strictly increasing from 0 to 1; exactly symmetric square input matrices with entries of magnitude at most 1e6. (src/ciw/geometry_covariance_contract.py:21-23,91-139)
+- The spectral contract explicitly checks internal consistency of the reported eigen-evidence without solving an eigenproblem (src/ciw/geometry_covariance_contract.py:1-7). The validator's trust model is therefore 'consistency of retained evidence plus a fresh reproduction', a domain-specific verification semantic the descriptor's verification block must name. It is not 'payload valid'. (added by adversarial verification; citations in the rule)
+
+### `ciw.curved-path-transfer.v1`
+
+Implementation `ciw.geodesic_reference` (declared workflow); verification: same_runtime_fresh_occurrence_reproduction.
+
+Specific refusals: `DECLARED_WORKLOAD_REFUSED`, `GEODESIC_REFERENCE_REFUSED`.
+
+- The arclength grid must be refined for the declared curvature: abs(K)*(s[i+1]-s[i])^2 <= 0.01 (with slack 1e-14), with the grid starting at 0 and strictly increasing. (src/ciw/geodesic_reference.py:105-113)
+- The declared starting covariance must be exactly symmetric positive-semidefinite in rational arithmetic (b==c, a,d >= 0, ad >= b^2), with entries of magnitude at most 1 and basis 'assumed'. (src/ciw/geodesic_reference.py:67-72,119-126)
+- The native record's source_digest must equal 'sha256:' + sha256(canonical({curvature:[K], constant:true, span:[0, s_end]})) truncated to 32 hex digits. (src/ciw/geodesic_reference.py:278-281)
+- Transfer consistency: per-sample vectors of length n; initial [a,a',b,b'] = [1,0,0,1]; curvature broadcast; grid and resolution min/max step equal to the retained arclength deltas; resolution method rk4; propagated covariance of length n with nonnegative variances and first matrix == C0; separation and heading_change at index 0 equal to the declared perturbation. (src/ciw/geodesic_reference.py:270-302,318-329)
+- Claim limits: validity is heading-only (max_lateral null, directions ['heading'], reference 'closed-form', pointwise_error == relative_tolerance, max_heading > 0). Convergence records must be established=false with a 'not-established:' basis and null metrics (a single solve cannot claim step-doubling convergence). Calibration is unbound. Provenance and path_type_basis are fixed text. (src/ciw/geodesic_reference.py:283-317)
+- Invocation shim composing integrate_jacobi, then as_transfer_record(units, StartingCovariance(units, **covariance), relative_tolerance, observation_mode), then propagate_declared_covariance, separation, heading_change and determinant. (src/ciw/geodesic_reference.py:156-168)
+- The validity scope is fixed to observation_mode 'intrinsic-surface-distance' in two places: the source configuration const (src/ciw/geodesic_reference.py:31-33) and the native validity record (geodesic_reference.py:297). The pointwise_error must equal the declared relative_tolerance (298). Together these bound the scientific claim to heading-only transfer under one observation mode, so they are a claim policy, not a schema const. (added by adversarial verification; citations in the rule)
+
+### `ciw.encoder-position.v1`
+
+Implementation `ciw.machine_workflow` (hand written); verification: same_python_reference_fresh_occurrence_reproduction.
+
+Specific refusals: none.
+
+- Deterministic challenge is re-run from scratch and yields 12 finding codes (identity mismatch, stale evidence revision, unbound claim evidence, reused provenance from another machine, firmware configuration digest binding, ambiguous count basis, homing not established) (src/ciw/machine_manifest.py:269-315)
+- compile refuses a stale challenge report (canonical inequality against a fresh challenge) and any unresolved status (src/ciw/machine_manifest.py:318-330)
+- Kinematic binder x = x0 + s*(N-N0)*L/(C*g) with a 6-coordinate Jacobian, first-order joint covariance, fsum, a 64-eps roundoff bound and a negative-variance clamp; mm/m scaling; no coverage claim (src/ciw/machine_manifest.py:333-374)
+- Joint covariance must be exactly symmetric with nonnegative diagonal and zero cross terms for zero-variance coordinates, and PSD after correlation normalisation within 64*eps*n (src/ciw/machine_manifest.py:128-145)
+- Candidate claim typing: positive integer counts per revolution, bounded gear ratio, positive lead, orientation exactly +/-1, integer reference count, m/mm units only, unit compatibility per claim (src/ciw/machine_manifest.py:164-214)
+- Artifact content seal (artifact_digest over the unsigned mapping, 1 MiB bound) (src/ciw/machine_manifest.py:66-85)
+- Request covariance defaulting across artifacts. When request.covariance is null, evaluate uses candidate_manifest.uncertainty.covariance and records basis 'declared_prior_covariance' instead of 'explicit_evaluation_covariance' (src/ciw/machine_manifest.py:352, 371). This is wiring from an embedded artifact into the step input. (added by adversarial verification; citations in the rule)
+- Nested sealed identities inside the payload. The compiled manifest is sealed (src/ciw/machine_manifest.py:327-330), and the position result carries its own artifact_digest plus manifest_digest (:362). data.compiled_manifest_digest is added on top (src/ciw/machine_workflow.py:153). These are extra content identities beyond the kernel's DISTINCT_IDENTITIES (src/ciw/kernel.py:71). (added by adversarial verification; citations in the rule)
+- validate(COMPILED) re-derives by full recompilation (src/ciw/machine_manifest.py:248-253), and evaluate and inspect both call validate (:340, 378). Each _native_data therefore reruns the challenge three times, and _validate repeats this for the source, the step and the reproduction. (added by adversarial verification; citations in the rule)
+- Exact-recompute reopen combined with a permissive retained-runtime check (src/ciw/machine_workflow.py:205-207 vs :293-312). A bundle produced by older code passes the runtime check. If any output bit differs under the current code or numpy, it then fails, and the whole workbench restore is rejected (src/ciw/workbench.py:1087-1088, 1110-1111) instead of marking needs_reevaluation. Replay, by contrast, requires exact runtime equality (src/ciw/machine_workflow.py:92-95). (added by adversarial verification; citations in the rule)
+- Evidence-bundle provenance rules: source_digest is recomputed from content_utf8, duplicate provenance bytes and reused ids are rejected, and source kinds come from a fixed vocabulary (src/ciw/machine_manifest.py:94-109). Challenge findings must remain 'unresolved', and status is 'validated' exactly when there are no findings (:226-234). (added by adversarial verification; citations in the rule)
+- Configuration differs from authority. CONFIGURATION adds profile 'encoder_gearbox_leadscrew' and activation 'read_only' (src/ciw/machine_workflow.py:36-42) on top of AUTHORITY (:43-47). The runtime identity carries state_admission and hardware_actuation (:78-80), which thermal's does not. (added by adversarial verification; citations in the rule)
+
+### `ciw.energy-accuracy.v1`
+
+Implementation `ciw.energy_workflow` (declared workflow); verification: same_runtime_fresh_occurrence_reproduction.
+
+Specific refusals: `DECLARED_WORKLOAD_REFUSED`.
+
+- Retained NVML log validation: five ordered, non-overlapping phases; sample/batch budgets; clock and UUID formats; origin must be physical_measurement or synthetic_fixture; seal/log_digest (src/ciw/energy_records.py:265-330 (_validate/validate_log), :332-343 (seal), :133-262 (plan/sensor/runtime/sample validators))
+- Gross counter-difference energy per phase with bracket and alignment checks; reset/wrap ambiguity; per-batch KL against the reference; eligibility reasons and the classification physical_domain_measurement / synthetic_only / ineligible (src/ciw/energy_records.py:345-389 (_phase_analysis), :390-445 (analyze))
+- Capture tooling (CUDA PTX Gaussian VI worker, NVML counter reader, five-phase capture journal) (src/ciw/energy_bench.py:35-205, energy_cuda.py:209-318, energy_nvml.py:101-223; only reachable from cli.py:435-446)
+- validate_log rebuilds the float64 CUDA device input from information_system(problem), the initial precision, alpha and beta. It then requires the hash of that input to equal workload.prepared_input_sha256 (energy_records.py:224-231). (added by adversarial verification; citations in the rule)
+- The workload's iterations, replicas, solver and problem digest must equal the plan (energy_records.py:216-223), and the CUDA workload profile is fixed (:197-206). (added by adversarial verification; citations in the rule)
+- Plan admission runs gaussian_reference to validate the numerical domain before any measurement is considered (energy_records.py:136-138). (added by adversarial verification; citations in the rule)
+- The run_id to log_digest binding holds across bundles through the workbench-wide identity map: claims at workbench.py:290-297, checked at :825 and merged at :829. It is a catalog-level uniqueness rule, not a per-bundle check. (added by adversarial verification; citations in the rule)
+
+### `ciw.flat-torus-reference.v1`
+
+Implementation `ciw.geodesic_reference` (declared workflow); verification: same_runtime_fresh_occurrence_reproduction.
+
+Specific refusals: `DECLARED_WORKLOAD_REFUSED`, `GEODESIC_REFERENCE_REFUSED`.
+
+- The native start must equal the declared cover point modulo the retained lattice. alpha and beta must be integers within 1e-12, and the reduced coordinates must lie in [0,1). Lattice orientation must have omega1 real and positive and Im(omega2) > 0. (src/ciw/geodesic_reference.py:196-208)
+- Trajectory consistency: exactly `samples` path parameters strictly increasing from 0 to 1. Both point lists start within 1e-12 of the reference start. Crossings are ordered in (prev,1], their count is at most \|m\|+\|n\|, and lattice steps lie in {-1,0,1}. The trajectory's lattice, winding, start, length and closed fields agree with the reference. (src/ciw/geodesic_reference.py:220-254)
+- Native geometry invariants: closed loop, zero Gaussian curvature, positive area and length, arclength interval [0,length], plus a fixed handoff object and a fixed list of three limitation strings. (src/ciw/geodesic_reference.py:209-219)
+- Provider invocation shim. It builds complex tau and start, unpacks the winding, calls flat_geodesic_reference and trace_closed_geodesic, and serialises dataclasses, ndarrays and complex values to JSON. (src/ciw/geodesic_reference.py:134-155,171)
+- The shim encodes complex values as {'re','im'} (src/ciw/geodesic_reference.py:143), and _pair and _check_flat assume that encoding (geodesic_reference.py:172-174,188-190). The validator and the invocation shim are coupled, so they have to be versioned together as one plugin; they cannot be split into a descriptor shim plus a generic payload schema. (added by adversarial verification; citations in the rule)
+
+### `ciw.geometric-circle.v1`
+
+Implementation `ciw.geometric_circle` (declared workflow); verification: same_runtime_fresh_occurrence_reproduction.
+
+Specific refusals: `DECLARED_WORKLOAD_REFUSED`.
+
+- Input joint covariance must be exactly symmetric PSD in rational arithmetic (exact Schur complements, no jitter/averaging) before retention, stricter than GTE's native roundoff-tolerant domain (geometric_circle.py:95-102 calling calibrated_window._covariance (calibrated_window.py:64-76) and gte_records._covariance; policy flag at geometric_circle.py:31)
+- Fixed-exact circle applicability: constraint frame equals observation frame, kind circle, euclidean metric, radius>0, validity window [start,end) contains every sample time, no observed point equals the circle centre, geometry_uncertainty fixed_exact (geometric_circle.py:103-114)
+- Typed GTE result must echo request bindings (source_id, observation ids, times, frame, observed points, constraint, policy) and full-batch selection (adapters/gte_records.py:51-70 (continues to :132))
+- The GTE reconciliation status must follow from the policy thresholds (held with reasons correction_limit_exceeded or linearization_limit_exceeded, else eligible), and reconciled_points must be null when held (adapters/gte_records.py:113-121). This is a hand-written provider-payload validator shared with geodesic.py (geodesic.py:154-161). (added by adversarial verification; citations in the rule)
+- The selection-support convention: duration = last sample + 1 s as half-open selection support, not a measured period (geodesic.py:71-77). It is used only to build the synthetic run that the validator needs. (added by adversarial verification; citations in the rule)
+- The input covariance is checked in two different domains on the same matrix. The first is exact rational PSD (geometric_circle.py:100 -> calibrated_window.py:64-76). The second is a float correlation-eigenvalue check with 1e-10 tolerance (geometric_circle.py:101 -> gte_records.py:27-48). The descriptor must say that both apply. (added by adversarial verification; citations in the rule)
+
+### `ciw.identified-design.v1`
+
+Implementation `ciw.identified_design` (hand written, delegates to `ciw.calibrated_observable`); verification: pinned_set_replay_verification.
+
+Specific refusals: `CALIBRATED_CBSR_REFUSED`, `CALIBRATED_FDIR_REFUSED`, `CALIBRATED_FSRT_REFUSED`, `CALIBRATED_GSIE_REFUSED`, `CALIBRATED_MCUR_REFUSED`, `CALIBRATED_OIT_REFUSED`, `CALIBRATED_SET_REFUSED`, `CALIBRATED_TBRT_REFUSED`, `DESIGN_CBSR_REFUSED`, `DESIGN_EDSPT_REFUSED`, `DESIGN_FDIR_REFUSED`, `DESIGN_FSRT_REFUSED`, `DESIGN_GSIE_REFUSED`, `DESIGN_MCUR_REFUSED`, `DESIGN_MODEL_*`, `DESIGN_NO_AFFORDABLE_CANDIDATE`, `DESIGN_NO_OBSERVABLE_CANDIDATE`, `DESIGN_OIT_REFUSED`, `DESIGN_SET_REFUSED`, `DESIGN_SIDT_REFUSED`, `DESIGN_TBRT_REFUSED`, `DESIGN_YWIR_REFUSED`.
+
+- Provider-output semantic re-derivation. It checks SIDT identity hashes, rank, degrees of freedom, condition limit and unknown parameter covariance; OIT eligibility; the GSIE snapshot and state id; EDSPT normalized covariance, D-opt/A-opt gains, affordability and tie-break ordering; and the YWIR admission verdict and token cap. (identified_semantics.py:51-99 (SIDT), 146-173 (GSIE), 174-241 (gain and EDSPT), 242-272 (YWIR), entry validate_outputs at 273-286. Called from identified_design.py:506-507.)
+- Source compatibility with the retained upstream. Identification state names, units and frame must equal the retained GSIE state. Every telemetry channel must use the same reference clock as the identification. Identification samples may not be later than the prior time. (identified_design.py:200-207, 215-216)
+- Uncertainty gates. Prior-process and prior-candidate cross-covariance must be the declared zero (unknown blocks the operation). next_input must be an explicit zero. uncertainty_scope must be conditional on the point model. Candidate matrices must be exactly float-representable. (identified_design.py:220-228, 250-251, 261-266)
+- Budget separation. The observation cost unit may never be inference_token, candidate cost units must match the budget, and YWIR owns only the inference-token budget. (identified_design.py:240-241, 247-248, 279-280)
+- Exact prediction time. target_time = prior.time + sample_interval must be exact in rational arithmetic. (identified_design.py:317-321)
+- Shim numeric transforms. EDSPT prior covariance is divided by the state scales, observation matrices are multiplied by the scales, and OIT eligibility is filtered to status 'observable'. (identified_design.py:66-71, 81-91)
+- Declared evidence refs must be disjoint from operation ids and the model id. (identified_design.py:166-178, 281-282)
+- The occurrence id is injected into the provider. The kernel execution_id is passed into SIDT's input (identified_design.py:301) and validated as echoed in the output (identified_semantics.py:55). created_at is embedded in every result artifact (369). result_sha256 therefore depends on occurrence identity, which forces template recomputation that reuses the template's execution ids and created_at (381-382) and compares result_sha256 (534-537). Only sidt's numerical projection strips this (292-293). (added by adversarial verification; citations in the rule)
+- Partial-chain refusal. A guard refusal after sidt/oit/gsie/edspt have run propagates out of _execute (384) and create_session (560), and none of the executed steps are retained. The owner's kernel 'retain refusal' would have to define whether partial executions are sealed. (added by adversarial verification; citations in the rule)
+- Runtimes and pins are coupled to the upstream kind. The bundle retains runtime identities for all 11 roles (38, 397, 457), including fsrt/tbrt/mcur/cbsr/fdir, which no design step invokes. The oit/gsie/set pins are taken from calibrated-observable-runtimes.json (105-110). Checkouts are bound twice: design _adapters (559, 569) and calibrated.replay_session's own adapters (552-554). (added by adversarial verification; citations in the rule)
+- Downstream positional contract. identified_stability binds design steps[0] and steps[2] (identified_stability.py:180-181). Workbench reads step index 2 for design and 4 for calibrated (workbench.py:465), and reads upstream steps[5]/steps[6] (workbench.py:502, 511). The step order is a public output contract and must be frozen or exposed as named outputs. (added by adversarial verification; citations in the rule)
+- Source admission needs the upstream. _source_inner fully validates and inspects the upstream (197, 206) before the compatibility checks. Workbench therefore bypasses the kind's _source at add_source (workbench.py:177-184). (added by adversarial verification; citations in the rule)
+- The source envelope differs from the other kinds. It uses 'configuration_digest' (394, 453) instead of 'experiment_digest' (declared_workload.py:348, acquired_window.py:240), and configuration is the whole source (395, 453). Unifying envelopes in the kernel requires either a migration or per-pipeline field names. (added by adversarial verification; citations in the rule)
+- Shim-derived fields feed guards. eligible_candidate_ids is computed inside the shim (70-71), consumed by the edspt guard (325-327), and re-verified in identified_semantics._oit (identified_semantics.py:100+). The shim output is not raw provider output. (added by adversarial verification; citations in the rule)
+
+### `ciw.identified-stability.v1`
+
+Implementation `ciw.identified_stability` (declared workflow); verification: same_runtime_fresh_occurrence_reproduction.
+
+Specific refusals: `DECLARED_WORKLOAD_REFUSED`, `IDENTIFIED_STABILITY_REFUSED`, `STABILITY_SCHEMA_UNAVAILABLE`.
+
+- Independent re-derivation of the PLSR float64-decrease-v1 verdict: decrease matrix A^T P A - P symmetrised, floating-point resolution bound with gamma=(n+3)u/(1-(n+3)u), scaled value/decrease/min_P/max_decrease checked to rel 1e-12, and the status ladder NOT_CERTIFIED / CERTIFIED_WITH_MARGIN / MARGIN_LOW / DECREASE_NOT_DEFINITE / NUMERICAL_INCONCLUSIVE (identified_stability.py:270-289 (plus plsr_engine._validate_diagnostics at plsr_engine.py:254-336 called at identified_stability.py:268-269))
+- Certificate P must be exactly symmetric positive definite: numpy eigvalsh check plus exact Fraction Schur-complement pivots > 0, no repair (identified_stability.py:106-117)
+- PLSR companion record authority/content binding: fixed claim_scope computational-integrity-only, may_authorize False, maturity block, proof_status NOT_CHECKED, record_digest over provider digest rule excluding generated_at/cargo_prove_available/guest_manifest, operationally_acceptable iff CERTIFIED_WITH_MARGIN, sampleless codes refused (identified_stability.py:244-267)
+- Model convention: discrete-time linear plant with explicit positive sample period, common unit across coordinates, zero equilibrium in native coordinate order, certificate unit 1/(u*u), margin quantity named negative-largest-eigenvalue-of-decrease-matrix, required_margin >= 0 (identified_stability.py:79-145, 161-173)
+- A containment guard inside the provider process: lyapunov.__file__ must lie under the bound source root (identified_stability.py:224-225). (added by adversarial verification; citations in the rule)
+- The receipt proof aliasing and the strict runtime-digest equality on replay (identified_stability.py:409-417), described above. (added by adversarial verification; citations in the rule)
+- A bound on the selected state mean, \|x\| <= 1e12, applied to upstream data before invocation (identified_stability.py:214-215). (added by adversarial verification; citations in the rule)
+
+### `ciw.instrument-exchange.v1`
+
+Implementation `ciw.exchange_adapter` (hand written); verification: pinned_set_contract_validation.
+
+Specific refusals: none.
+
+- Artifact identity rule: the identity field must equal sha256(schema \|\| 0 \|\| canonical(payload without the field)), except batch_id, which is a caller-declared reference (src/ciw/exchange.py:99-108)
+- Link classification: each input_refs / subject_ref / source_artifact_refs reference is either matched_supplied_reference or unresolved_external_reference. Covariance validation is delegated to the pinned SET contract functions (src/ciw/exchange.py:151-190)
+- Security: execute only the allowlisted source bytes after hashing, and never import the checkout's package initializer (src/ciw/exchange.py:73-97)
+- Bounds and shape rules apply before the pinned validator runs: at most 1 MiB per artifact and 8 MiB in total, JSON depth at most 64, and 1..64 components for non-verification artifacts (exchange.py:21-25, 117-150). (added by adversarial verification; citations in the rule)
+- A producer verification artifact that records a failed outcome is still a conformant record, not a failure (exchange.py:111-116 docstring; status fixed at :193). (added by adversarial verification; citations in the rule)
+
+### `ciw.measurement-chain.v1`
+
+Implementation `ciw.measurement_chain` (declared workflow, delegates to `ciw.investigation`, `ciw.covariance_workflow`); verification: same_runtime_fresh_occurrence_reproduction.
+
+Specific refusals: `DECLARED_WORKLOAD_REFUSED`, `MEASUREMENT_CHAIN_REFUSED`, `invalid_parameters`, `replay_mismatch`, `replay_unavailable`, `runtime_mismatch`, `unit_mismatch`, `unsupported_covariance`, `unsupported_cross_assembly_dependence`, `unsupported_measurement_batch`, `unsupported_model_dependence`, `unsupported_temporal_covariance`.
+
+- Tank investigation orchestration: RCI v2 calibration per sensor, the native run recording (_make_run), and FSRT reconstruction with explicit cross-assembly independence and model independence (src/ciw/investigation.py:161-166 (_validate_model_independence), 201 (_make_run), 342-418 (create_investigation); called from measurement_chain.py:153, 312)
+- JSPT must consume the unchanged FSRT covariance artifact that the source selects (posterior or reconciled) (src/ciw/measurement_chain.py:84-85, 158-163; covariance_workflow.py:80-95)
+- Numerical projection replaces the enumerated occurrence-dependent native ids (run evidence, calibration, FSRT and JSPT covariance ids, and the coordinate-map id that embeds the input covariance id) so replays compare numerically (src/ciw/measurement_chain.py:168-198 (comment 185-187))
+- Source shape: exactly two sensors, the original rci.calibrate.v2 request, one record per sensor as canonical base64 JSON, a 2-column JSPT Jacobian, and an allowed map_kind (src/ciw/measurement_chain.py:45-108)
+- Two pin sources are reconciled only after execution. The seams bind from adapter-runtimes.json, which has no source_root or source_tree and whose _runtime does not pass source_root (investigation.py:32-48). The outer PINS require source_root 'src' and an exact source_tree (measurement_chain.py:28-30, 122). The runtime records pulled from the native workspace (_runtime_records at 111-115) must equal the preflight identities (324) and the outer retained runtimes (385-389). (added by adversarial verification; citations in the rule)
+- The workspace file is handed between seams through a temp directory, and the JSPT parameters are derived from FSRT's result id (310-316). (added by adversarial verification; citations in the rule)
+
+### `ciw.mesh-path.v1`
+
+Implementation `ciw.geometry_research` (declared workflow); verification: same_runtime_fresh_occurrence_reproduction.
+
+Specific refusals: `DECLARED_WORKLOAD_REFUSED`, `GEOMETRY_PROVIDER_REFUSED`.
+
+- Mesh topology recomputed from the declaration. No coincident vertices. Triangles non-degenerate under exact Fraction cross products. Triangle quality (twice area over longest edge squared) above the declared threshold. No duplicate triangles. Manifold edges (at most two incident) and connected vertex links with degrees in {1,2}. No isolated vertices. Component labels, boundary and orientation-conflict counts. The retained mesh_quality must equal the recomputation, with an ulp tolerance on minimum quality. (src/ciw/geometry_mesh_contract.py:50-122,203-209)
+- Dijkstra optimality certificate. Every retained finite distance must satisfy the edge inequality \|d_a - d_b\| <= w + 64*n*ulp. There must be a tight-predecessor chain from the source that witnesses every reachable vertex; hop rank is used so binary64 plateaus are tolerated. Unreachable vertices have null distances. (src/ciw/geometry_mesh_contract.py:216-230,243-267)
+- The target path is simple, uses only declared edges, runs from source to target, and has a length equal (fsum within the ulp budget) to the target distance. Reachability matches the connected components. (src/ciw/geometry_mesh_contract.py:228-242, _near 40-47)
+- Euclidean lower bounds for each vertex, target lower and upper bounds, a triangle-inequality residual within distance_absolute_tolerance, and a nonnegative gap max(0, d - lower). Unreachable targets have null bounds. (src/ciw/geometry_mesh_contract.py:268-292)
+- Admission-time mesh topology and quality policy. The minimum triangle quality threshold is a declared setting in [0, .01] (src/ciw/geometry_mesh_contract.py:164-165), enforced when the source is admitted (geometry_mesh_contract.py:75) and again on the result (geometry_mesh_contract.py:205-209). Non-manifold and isolated-vertex meshes are refused as unsupported, not as malformed JSON (geometry_mesh_contract.py:85-97). (added by adversarial verification; citations in the rule)
+
+### `ciw.numerical-heat.v1`
+
+Implementation `ciw.declared_workload` (declared workflow); verification: same_runtime_fresh_occurrence_reproduction.
+
+Specific refusals: `DECLARED_WORKLOAD_REFUSED`.
+
+- Recompute the SCR execution commitments. Each is a length-prefixed, domain-separated SHA-256 tagged 'scout.execution.<tag>.v1', over program, input, output and specification. The computation identity is commit(program_id, input_id, output_id, u32 exit=0), and every native identity must equal CIW's recomputation (src/ciw/declared_workload.py:149-152, :200-204. _commit is reused for the proof identity at proved_heat.py:155)
+- The specification must equal CIW's embedded HEAT_DESCRIPTOR program bytes and the little-endian input [steps u32][n u32][n x i64] derived from the source JSON. The displayed values must re-encode to the native output bytes, with \|u\| ≤ 2^40 (src/ciw/declared_workload.py:35-42, :191-199)
+- CIW admits 3..256 cells and 0..1024 steps (declared_workload.py:110-114). The embedded native descriptor allows n<=4096 and steps<=100000 (:37), and proved-heat narrows further to 3..32 and 0..64 (proved_heat.py:59-63). The bounds are three CIW policy tiers over one native kernel, so a descriptor 'extends' must be able to narrow bounds, not only add policy keys (added by adversarial verification; citations in the rule)
+- exit_code and engine_occurrence are checked with 'type(x) is int' (a bool is rejected), and detail must be None (declared_workload.py:193). The reader's 'equals' block needs strict typing to preserve this (added by adversarial verification; citations in the rule)
+
+### `ciw.proved-heat.v1`
+
+Implementation `ciw.proved_heat` (declared workflow); verification: fresh_registered_guest_verification.
+
+Specific refusals: `DECLARED_WORKLOAD_REFUSED`, `PROVED_HEAT_REFUSED`.
+
+- SP1 proof byte binding. The proof must be 1..8 MiB of canonical base64 with a matching sha256 and byte_count, backend sp1-cpu v6.1.0, and guest_sha256 equal to the registered guest. The proof identity must equal the SCR commitment _commit('proof', [b'sp1-cpu', b'v6.1.0', raw]) (src/ciw/proved_heat.py:143-158)
+- The verifier report must equal exactly {command: verify, outcome: verified, coverage: 'program=true input=true output=true exit_code=true', proof_identity, backend, statement_program = native.program_identity} (src/ciw/proved_heat.py:161-166, :381-382)
+- The registered guest ELF hash is enforced before SCR is loaded. The verify-only path rebuilds ExecutionResult from the retained native data and verifies the retained proof without re-executing. It accepts a different compatible host, but only with the approved source, guest and backend (src/ciw/proved_heat.py:112-122 (bootstrap verify branch), :233-235, :273-274, :387-405; tests/test_proved_heat.py:115, :224)
+- Memory and timing semantics. Memory is read with RUSAGE_CHILDREN ru_maxrss, i.e. the largest waited child's peak RSS in KiB converted to bytes. not_measured must carry bytes=null, measured bytes must be a multiple of 1024, and stage durations must lie in [0, 3600] s (src/ciw/proved_heat.py:68-85, :169-186)
+- A retained verification is a historical report, not fresh trust. Inspection must report cryptographic_verification 'not_performed_by_inspection' along with the trust_scope. The replay receipt binds the fresh proof identity, the fresh verification id and the original runtime digest (src/ciw/proved_heat.py:40, :205-213, :408-458; workbench.py:199-201)
+- Adapter implementation version is pinned as part of the proof runtime identity (proved_heat.py:254) (added by adversarial verification; citations in the rule)
+- Receipt ownership: proved-heat validates its own replay receipts inside _validate (proved_heat.py:378-382). DeclaredWorkflow._validate accepts replay_receipts as an optional key but never checks them (declared_workload.py:311), so that check lives only in workbench.py:349-366 and :436-447 (added by adversarial verification; citations in the rule)
+- The create bootstrap is a three-stage in-provider pipeline: run_specification -> prove_and_verify_result(prove_timeout=1800) -> verify_existing_proof. It has perf_counter stage timing and a proof-size gate inside the provider (proved_heat.py:100-121). The CIW adapter timeout is 3100 s (:238). There are two nested timeouts (added by adversarial verification; citations in the rule)
+
+### `ciw.residual-monitor.v1`
+
+Implementation `ciw.residual_monitor` (declared workflow); verification: same_runtime_fresh_occurrence_reproduction.
+
+Specific refusals: `DECLARED_WORKLOAD_REFUSED`, `RESIDUAL_MONITOR_REFUSED`.
+
+- One residual sequence must share an identical scope (channel, frame, units, clock, calibration, model, reference prior); targets strictly increase; no GSIE result, physical window or sample set counts twice; a repeated observation id cannot change content (src/ciw/residual_monitor.py:139-170)
+- The analytic oracle re-derives NIS, whitened residual, ambiguous isolability, two-sided CUSUM with reset, and trivial 1x1 observability, then compares at rel_tol 2e-12 / abs_tol 1e-14 with exact integers (src/ciw/residual_monitor.py:255-331)
+- Stateful CUSUM across windows, advanced only when OIT reports 'observable' (observability hold does not advance the state); interpretation flags are fixed to limited authority (src/ciw/residual_monitor.py:230-248)
+- Overlap annotations record interval overlap and shared observation/artifact ids, with residual_cross_covariance declared unknown (src/ciw/residual_monitor.py:179-187)
+- The monitor reads calibrated-window's internal step layout: GSIE at child['steps'][3] (133), and mapped event times from the CIW-wrapped TBRT data at child['steps'][0]['result']['data']['samples'] (180). It also builds the OIT declaration from the upstream GSIE dynamics and observation matrices (192-194). (added by adversarial verification; citations in the rule)
+- Upstreams are validated in depth, again and again. _unwrap re-runs acquired_window._validate, calibrated_window._validate and _check_child_receipt for every selected window (106-119). That happens at create (478), at every reopen (_validate calls validate_upstreams at 455), and again at link time against the catalog (workbench.py:377-378). (added by adversarial verification; citations in the rule)
+- In the bootstrap, CUSUM state advances only when OIT returns 'observable'; the pre and post state is recorded, and the interpretation flags are fixed (bootstrap roughly 230-250). This is a fold over the windows that carries state from one to the next. (added by adversarial verification; citations in the rule)
+
+### `ciw.schematic-assessment.v1`
+
+Implementation `ciw.declared_workload` (declared workflow); verification: same_runtime_fresh_occurrence_reproduction.
+
+Specific refusals: `DECLARED_WORKLOAD_REFUSED`.
+
+- NsObservabilitySchematic@0.1 typed-graph validity. It checks the node-kind enum, the function-class enum, the certificate-owner enum {jspt,plsr,rci,cse}, duplicate node ids, node budget 1..256 and edge budget 1024. Each edge kind's (src kind, dst kind) pair must match the _EDGES relation table (src/ciw/declared_workload.py:48-52, :60-88. Reused by schematic_companions.py:63, :198)
+- Stale-marking invariant. Provider output may differ from the submitted graph only on certificate nodes whose prior result was SAMPLED, and only by the exact attribute set {historical_result=SAMPLED, result=NOT_ELIGIBLE, currentness=stale, stale_reason=...} (src/ciw/declared_workload.py:162-170. Duplicated in schematic_companions.py:212-220)
+- The provider's retrieval (schematics.retrieve.blanket) must equal CIW's own two-hop undirected neighbourhood over the declared edges for every query (src/ciw/declared_workload.py:179-186)
+- The output graph must keep the declared node order exactly (list(nodes) == [n['id'] for n in original['nodes']]), with edges and meta byte-identical (declared_workload.py:158-161). This is order preservation, not just set-level topology (added by adversarial verification; citations in the rule)
+- The stale-marking check hard-codes SRA's internal stale_reason text and attribute values (declared_workload.py:166-167). They must match invalidate_stale_results at the pinned revision (bootstrap :129). This couples CIW to provider-internal text. It is duplicated at schematic_companions.py:217-218 (added by adversarial verification; citations in the rule)
+- The neighbourhoods are computed over the SOURCE edges (original['edges'], declared_workload.py:183), undirected, include the query node, and are sorted. The provider's retrieval over its (possibly stale-marked) output graph must agree with that (added by adversarial verification; citations in the rule)
+
+### `ciw.schematic-companions.v1`
+
+Implementation `ciw.schematic_companions` (declared workflow); verification: same_runtime_fresh_occurrence_reproduction.
+
+Specific refusals: `DECLARED_WORKLOAD_REFUSED`, `SCHEMATIC_COMPANION_REFUSED`.
+
+- Target admissibility. The selected node must be a declared function with model_ref 'jspt.reference.quadratic_drag' and class nonlinear or unknown. x_star must be one finite value with \|x*\| ≤ 1e6, and c must satisfy 0 ≤ c ≤ 1e6. The chart must be identity and the units SI. sigma_x is optional and must be a scalar in [0, 1e12]. No undeclared attributes are allowed (src/ciw/schematic_companions.py:66-82)
+- Certificate naming and collision rules. The provider adds cert:jspt:<f>, cert:jspt.structure:<f>, cert:jspt.cov:<f> and cert:lyapunov:<f>, which must not collide with declared non-certificates. The appended edges must be 'linearizes', or 'certifies' for Lyapunov, in exact order. The declared topology is a prefix. The target may change only in rank/invisible_dim, and other nodes change only by stale marking (src/ciw/schematic_companions.py:83-86, :108-110, :196-227)
+- SRA eligibility policy for this model and chart. There are four tools in a fixed order, owned by jspt or plsr, and every event that is not NOT_ELIGIBLE must carry NATIVE_JSPT or NATIVE_PLSR. The eligibility table inserts jspt.sweep_perturbation_scale for non-unknown classes. check_coordinate_consistency is always NOT_ELIGIBLE. For the unknown class everything is NOT_ELIGIBLE and no companion executes. For nonlinear, jacobian_at and sweep are ELIGIBLE (src/ciw/schematic_companions.py:228-254)
+- Analytic Jacobian cross-check: A = -2·c·\|x*\|. The SRA binding is also recomputed: declaration_id = _native_digest('sra.declaration.v1', _declaration(graph, target)) and result_id = _native_digest('sra.jacobian-result.v1', binding+A). This uses SRA's own JSON hashing, namespace + NUL, without ensure_ascii=False. Also checked are the schema NsJacobianBinding@0.1, kernel == NATIVE_JSPT, provenance == NATIVE_PROVENANCE, fixture false, and that the execution_id matches the sra-execution:<uuid> pattern and does not appear in the submitted schematic (src/ciw/schematic_companions.py:113-126, :255-274)
+- Dependent certificates must bind the same Jacobian result and execution. Local structure: rank = 1[\|A\| > rank_absolute_tolerance], the singular value is \|A\|, the visible and invisible bases are unit-norm, and target rank/invisible_dim are consistent. Covariance: sigma_y = A·sigma_x·A to 1e-12 relative, with sigma_x copied and exact_for_affine false. Lyapunov: a < 0, p > 0, 2ap = -1, V = p·x², decrease = 2ap·x², verdict certified, and event detail must match the certificate (src/ciw/schematic_companions.py:275-310)
+- Companions require a freshly SAMPLED Jacobian. When sigma_x is not declared, the covariance event must be NOT_ELIGIBLE, so input covariance is never invented (src/ciw/schematic_companions.py:311-314)
+- Provider-echoed scope: data.scope must equal POLICY and data.function_id must equal the source selection (schematic_companions.py:196-197) (added by adversarial verification; citations in the rule)
+- The fresh SRA occurrence must match the 'sra-execution:<uuid>' pattern and must not appear as a SUBSTRING anywhere in canonical(source.schematic) (schematic_companions.py:259-262). This is a text-containment rule, not a path check (added by adversarial verification; citations in the rule)
+
+### `ciw.telemetry.v1`
+
+Implementation `ciw.telemetry` (hand written); verification: pinned_set_replay_verification.
+
+Specific refusals: `TELEMETRY_RUNTIME_REFUSED`.
+
+- GSIE composite operation ciw.gsie-predict-update.v1: import feature batch through GSIE exchange with SET as validator, predict to target_time, update, export result artifact with a CIW-authored applicability statement (telemetry.py:141-162)
+- PPDA standalone execution scope: only the approved bytes of bridge/instrumentation.py may execute, never the PPDA vendor tree (telemetry.py:29-55, 131-137, 184; telemetry-runtimes.json:2)
+- Window-selected covariance submatrix: all samples are passed but only indices with window.start <= t < window.end select covariance rows/cols and observation_refs (telemetry.py:265-267, 276-278)
+- Feature-to-observation transport: STFE window-mean result is reinterpreted as an observation batch at gsie.target_time with admission_status reference_only and admission_ref ciw:feature-transport-only (telemetry.py:285-296 (reused by calibrated_window.py:347))
+- Exact microsecond representability of epoch+seconds mapped instants (telemetry.py:86-93 (used at 218, 247-248, 291-292; imported by residual_monitor.py:21, calibrated_window.py:23))
+- Identity aliasing by prefix swap: batch_id is derived from the evidence digest (telemetry.py:246), and the feature batch id is derived from the STFE result id (telemetry.py:290). The workbench treats the PPDA id as a stable non-result claim (workbench.py:247-250, 453-456). (added by adversarial verification; citations in the rule)
+- Acquisition time basis: observed_at = epoch + max(event_time) and received_at = epoch + max(received_at) (telemetry.py:247-248). The feature observation's received_at comes from configuration.window.received_by (telemetry.py:292), a caller value that is never validated against the samples. (added by adversarial verification; citations in the rule)
+- Provenance assertions written by CIW into the PPDA request: covariance_method 'caller-declared full temporal covariance', and covariance_source_refs/source_artifact_refs = [evidence] (telemetry.py:252-253). (added by adversarial verification; citations in the rule)
+- The GSIE composite, including the CIW applicability string 'declared scalar telemetry feature observation model only', is shared with calibrated-window through telemetry._invoke (telemetry.py:141-162; calibrated_window.py:294). Moving it into a shim changes two pipelines at once. (added by adversarial verification; citations in the rule)
+- The CBSR precondition checks state_labels, state_units and frame_ref (telemetry.py:381-386). The calibrated variant checks only units and frame (calibrated_observable.py:308-310), so it cannot be one shared predicate without a behaviour change. (added by adversarial verification; citations in the rule)
+
+### `ciw.thermal-observer.v1`
+
+Implementation `ciw.thermal_workflow` (hand written); verification: same_python_reference_fresh_occurrence_reproduction.
+
+Specific refusals: none.
+
+- Joseph-form observation-space conditioning with explicit per-channel dropout mask, NIS and innovation conditioning (src/ciw/thermal_reference.py:40-66)
+- Exact constant-input ZOH via the symmetric eigensystem of the capacity-scaled conductance matrix, requiring a dissipative plant, independent of the Julia symbolic path (src/ciw/thermal_reference.py:14-33)
+- Prospective four-subset sensor selection by log-det information gain before future observations, with cost budget, minimum sensors and lowest-mask tie policy (src/ciw/thermal_reference.py:69-92; thermal_contract.py:136-138)
+- Source admission replays the synthetic generator: every retained state and observation must equal the forward simulation with the declared noise rows within tolerance, including held-out rows (src/ciw/thermal_contract.py:163-207)
+- Result acceptance against the independent reference with strict shape/type and abs 1e-7/rel 1e-8. Also: symbolic permutation must be a bijection, an infeasible selection must not invent a solver solution, and an unchecked incumbent or nonzero gap is refused (src/ciw/thermal_contract.py:32, 144-160, 209-267)
+- Covariance exactly symmetric (no repair), positive-definite, eigenvalues in [1e-10, 1e4] with condition number <= 1e8; inputs keep equilibrium in 100..1000 K (src/ciw/thermal_contract.py:66-76, 101-105)
+- Projection of the reference into the Julia-shaped contract result: fixed equations/LaTeX, state_permutation, and a synthesized 'python-reference-enumeration' solver block mapping infeasible to INFEASIBLE/NO_SOLUTION (src/ciw/thermal_workflow.py:85-130)
+- Operation-identity aliasing. request.operation_id must equal 'julia.thermal-design.v1' (src/ciw/thermal_contract.py:18, 109-110), and the constant configuration POLICY names inference 'julia_time_varying_kalman_filter' (:26). The executed operation, however, is ciw.thermal-observer.v1 (src/ciw/thermal_workflow.py:26), run by a runtime with execution_scope 'independent_python_reference_only' (:65). A runner that requires request operation == step operation would reject every valid source. (added by adversarial verification; citations in the rule)
+- Truth isolation. The provider receives only source['request'] (src/ciw/thermal_workflow.py:86), and reference() explicitly accepts no source truth (src/ciw/thermal_reference.py:91-92). The synthetic truth in source['evaluation'] is used only at admission (src/ciw/thermal_contract.py:175-205). This request projection is a scientific-integrity rule, not just wiring. (added by adversarial verification; citations in the rule)
+- Generator model and request model are distinct (truth vs belief). The held-out input must be admissible under both (src/ciw/thermal_contract.py:198-199), and states are replayed with generator_model while inference uses request.model (:179-181 vs src/ciw/thermal_reference.py:95). (added by adversarial verification; citations in the rule)
+- Fixed profile constraints: an identity observation matrix, fixed state/input/sensor order and units, parameter ratios <= 1e4 (src/ciw/thermal_contract.py:84-98), 1..128 steps spanning at most one day (:119-120), and an exact tie tolerance of 1e-10 with 'lowest_mask_within_tolerance' (:135-136). (added by adversarial verification; citations in the rule)
+- Reopen is recompute. Workbench.restore runs workflow._validate on every bundle (src/ciw/workbench.py:1087-1088). That re-runs the reference through validate_result (src/ciw/thermal_workflow.py:175; src/ciw/thermal_contract.py:218). Any failure rejects the whole workbench (src/ciw/workbench.py:1110-1111) instead of marking the bundle needs_reevaluation (the concept exists only in src/ciw/project_model.py:367-373). (added by adversarial verification; citations in the rule)
+- The retained runtime is checked only structurally on reopen (src/ciw/thermal_workflow.py:258-272) but by exact equality on replay (:78-81). The runtime-match policy is therefore split by verb. (added by adversarial verification; citations in the rule)
+- Asymmetric covariance policy. Admission forbids repairing input covariances (src/ciw/thermal_contract.py:70-71), but the reference symmetrises intermediate covariances (src/ciw/thermal_reference.py:36-37, 52, 56, 104). (added by adversarial verification; citations in the rule)
+
+### `ciw.translation-flow.v1`
+
+Implementation `ciw.geometry_research` (declared workflow); verification: same_runtime_fresh_occurrence_reproduction.
+
+Specific refusals: `DECLARED_WORKLOAD_REFUSED`, `GEOMETRY_PROVIDER_REFUSED`.
+
+- The gluing must consist of two complete permutations (right and up) of 1-32 tiles forming a connected surface. The start is strictly inside a square. The direction is nonzero and bounded by 1024. The duration is in [0,1024]. Rationals are canonical, reduced and within 64- or 256-bit budgets. (src/ciw/geometry_translation_contract.py:45-54,72-105)
+- Corner-class topology derived from the gluing: corner equivalence classes, cone angles that are multiples of 2π, Euler characteristic <= 0 and even, and the genus. The retained gluing_validation must equal the derived structure exactly. (src/ciw/geometry_translation_contract.py:108-143)
+- Exact rational replay of the retained segment and event chain. Each segment is affine motion along the direction within the closed unit square. Event times strictly increase. Each event is a single outgoing edge, never a corner continuation, mapped by the gluing permutation. Segments must account for every event and for the elapsed time. (src/ciw/geometry_translation_contract.py:169-212)
+- Stop semantics. 'completed' requires remaining = 0 and no pending edge. 'stopped_at_vertex' requires two simultaneous outgoing edges and the correct vertex id. 'event_budget_exhausted' requires one pending edge and events == max_events. The invariants map must be consistent with the status. (src/ciw/geometry_translation_contract.py:213-233)
+- The workbench profile is narrower than the provider's. CIW caps max_events at 0..256 (src/ciw/geometry_translation_contract.py:71,101-102), tighter than the native 64-bit profile. This workbench policy is layered on the provider's request profile; the descriptor or plugin must record it separately from the provider-owned profile. (added by adversarial verification; citations in the rule)
+
+### `ciw.variational-free-energy.v1`
+
+Implementation `ciw.free_energy_workflow` (declared workflow, delegates to `ciw.free_energy_native`); verification: same_runtime_fresh_occurrence_reproduction.
+
+Specific refusals: `DECLARED_WORKLOAD_REFUSED`, `FREE_ENERGY_NATIVE_REFUSED`, `FREE_ENERGY_SCHEMA_UNAVAILABLE`.
+
+- Coordinate normalization that turns the CSG transfer matrices into the normalized training and held-out Gaussian problems, including the log-Jacobian (src/ciw/free_energy_profile.py:171-193 (problems), :165-168 (csg_request))
+- Gaussian VI solver, independent reference posterior, held-out prediction and ensemble coverage metrics (src/ciw/free_energy_math.py:162-176 (gaussian_reference), :255-329 (variational_fit), :356-360 (predict_held_out), :391-440 (evaluate_ensemble))
+- The native GSIE posterior must match the independent reference within 1e-9 (max abs, mean and covariance); physical back-transform; objective units with Jacobian (src/ciw/free_energy_workflow.py:76-99; re-checked offline at free_energy_contract.py:339-355)
+- Offline re-validation of the retained aggregate: fit recurrence, ensemble Wilson intervals/counts, and cross-stage request reconstruction (src/ciw/free_energy_contract.py:138-222 (validate_fit), :233-304 (validate_ensemble), :314-355 (_validate_data))
+- Provider response semantics: the CSG record is re-checked through geodesic_reference._check_curved; the GSIE Kalman update is recomputed (gain, innovation, NIS, domain-separated state/numerical ids); the PLSR response must equal the bridge-authored model artifact and pass identified_stability._record (src/ciw/free_energy_native.py:244-276, 278-295 (uses geodesic_reference.py:257), 297-351, 353-364; identified_stability.py:244)
+- The bridge authors the PLSR quadratic model (A = I - alpha*Lambda, P = Lambda/2, margin provenance) and a child-process dispatch that calls provider APIs (src/ciw/free_energy_native.py:382-406 (plsr_model_document), :408-452 (_dispatch))
+- Source admission includes algebra. validate_source recomputes the synthetic observations from analytic_transfer(grid, generator.gaussian_curvature) and requires each sample to equal G@truth + bias + noise at rtol 1e-13 (free_energy_profile.py:122-129; analytic_transfer at :149-162). The generator must be numpy_pcg64 with numpy 2.4.3 (:108-111). (added by adversarial verification; citations in the rule)
+- A numerical-domain gate runs before fusion: gaussian_reference and predict_held_out must succeed before GSIE is invoked (free_energy_workflow.py:63-65). (added by adversarial verification; citations in the rule)
+- Validators are reused across kinds. CSG responses are checked with geodesic_reference._check_curved against a source built by csg_source from geodesic_reference.POLICIES['curved-path-transfer'] (free_energy_native.py:124-133, 278-293). PLSR responses are checked with identified_stability._record (:266-270). Neither module is in the code hash (free_energy_workflow.py:32). The curved-path-transfer and identified-stability modules therefore cannot be folded into descriptors without breaking this kind. (added by adversarial verification; citations in the rule)
+- input_refs record cumulative order, not data lineage. Each stage cites the evidence plus every earlier stage result_id (free_energy_workflow.py:58), so plsr cites gsie's result although it consumes only fit and reference (:70-73). _validate_step enforces this exact list (:190-196). (added by adversarial verification; citations in the rule)
+- The inspect view does domain back-transforms: the reference posterior and the held-out prediction are rescaled by the latent and observation scales, plus the held-out bias (free_energy_view.py:21-24, 36-42). (added by adversarial verification; citations in the rule)
+
 Providers pinned at more than one revision in one session: cbsr (b543969cb80a, daf43fc870ba); fsrt (09a756dd9cdd, d7c181fb9967); gsie (5241eee6dab4, de38873db1ba); jspt (7399ab03087b, d910f5a1d7f6); plsr (19ea69670601, 9d0e7b4a1162); ppda (209985a8c748, 477d6cb45442); set (1467ec5058b3, 2f838f4e196f, 542e672be512, 5e7bda36f521).

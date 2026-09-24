@@ -26,8 +26,56 @@
     "method": "same_runtime_fresh_occurrence_reproduction",
     "role": null
   },
-  "refusals": [],
-  "domain_rules": [],
+  "refusals": [
+    "BIM_QUANTITY_REFUSED",
+    "DECLARED_WORKLOAD_REFUSED",
+    "INPUT_LIMIT",
+    "INVALID_INPUT",
+    "MALFORMED_RESPONSE",
+    "OUTPUT_LIMIT",
+    "RUNTIME_FAILED",
+    "RUNTIME_IO",
+    "RUNTIME_PIN_MISMATCH",
+    "RUNTIME_UNAVAILABLE",
+    "SOURCE_PIN_MISMATCH",
+    "TIMEOUT",
+    "operation_unavailable",
+    "workbench_capacity"
+  ],
+  "domain_rules": [
+    {
+      "rule": "Held-reason ladder: ordered first-match predicates (cross covariance unknown -> frame unresolved -> frame mismatch -> IFC binding -> target binding -> target missing -> derived quantity -> unit -> assumed units -> initial invariants) with held/accepted/refused consistency",
+      "evidence": "bim_quantity.py:272-286; duplicated natively inside the provider shim at bim_quantity.py:133-145"
+    },
+    {
+      "rule": "CSE execution-ledger integrity: sha256 hash chain from 64 zeros, per-event verification_digest and event_hash over canonical JSON, ledger head equals integrity.head, genesis binds prior world/belief and module/configuration digests, ledger replay counts, and exact expected observe_quantity operation and provenance (noise_sigma=sqrt(variance))",
+      "evidence": "bim_quantity.py:295-355"
+    },
+    {
+      "rule": "World/belief binary commitments: world_digest = sha256(module_digest || little-endian float64 mean||covariance), belief_digest over the raw-role sub-block",
+      "evidence": "bim_quantity.py:228-236 (and little-endian guard in shim at bim_quantity.py:104)"
+    },
+    {
+      "rule": "State covariance domain: symmetric, nonnegative marginals, correlation-eigenvalue PSD via core.covariance._validate_matrix on the full (possibly singular, derived quantities) matrix and on the raw sub-block; no jitter or clipping",
+      "evidence": "bim_quantity.py:168-208"
+    },
+    {
+      "rule": "Invariant report consistency: passed == no FAIL rows, bounded rows/detail",
+      "evidence": "bim_quantity.py:211-225"
+    },
+    {
+      "rule": "An in-provider ledger replay check. The shim replays the CSE ledger and raises if the replayed world digest differs (bim_quantity.py:156-157). This exits nonzero and becomes BIM_QUANTITY_REFUSED (bim_quantity.py:375-376). The kind therefore has a second verification method, native ledger replay, besides same_runtime_fresh_occurrence_reproduction.",
+      "evidence": "added by adversarial verification; citations in the rule"
+    },
+    {
+      "rule": "A 64-full-variable budget is enforced inside the provider process (bim_quantity.py:125-126), plus a little-endian host guard for the binary state commitment (bim_quantity.py:104). Both are re-checked on the payload (bim_quantity.py:174-175, 228-236).",
+      "evidence": "added by adversarial verification; citations in the rule"
+    },
+    {
+      "rule": "The shim is CIW-written code that drives provider internals: GatSession.from_text, ObserveQuantity.single, replay_ledger, verification_payload and length_unit_context (bim_quantity.py:94-165). It runs through the private adapter._run path, which bypasses the ciw.adapter-request envelope (adapters/subprocess.py:294 vs 328-369). Under 'untouched providers' this is a hand-written adapter that must stay, or be moved upstream as a provider-owned ciw_adapter, as GTE already has.",
+      "evidence": "added by adversarial verification; citations in the rule"
+    }
+  ],
   "investigations": [
     "geometry-bim"
   ],
@@ -35,7 +83,8 @@
   "authority": "read_only",
   "implementation": {
     "module": "ciw.bim_quantity",
-    "runner": "declared_workflow"
+    "runner": "declared_workflow",
+    "delegates": []
   },
   "guide": "docs/INTEGRATED_MODULES.md"
 }

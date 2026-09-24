@@ -15,14 +15,48 @@
     "method": "same_runtime_fresh_occurrence_reproduction",
     "role": null
   },
-  "refusals": [],
-  "domain_rules": [],
+  "refusals": [
+    "DECLARED_WORKLOAD_REFUSED",
+    "operation_unavailable",
+    "workbench_capacity"
+  ],
+  "domain_rules": [
+    {
+      "rule": "Retained NVML log validation: five ordered, non-overlapping phases; sample/batch budgets; clock and UUID formats; origin must be physical_measurement or synthetic_fixture; seal/log_digest",
+      "evidence": "src/ciw/energy_records.py:265-330 (_validate/validate_log), :332-343 (seal), :133-262 (plan/sensor/runtime/sample validators)"
+    },
+    {
+      "rule": "Gross counter-difference energy per phase with bracket and alignment checks; reset/wrap ambiguity; per-batch KL against the reference; eligibility reasons and the classification physical_domain_measurement / synthetic_only / ineligible",
+      "evidence": "src/ciw/energy_records.py:345-389 (_phase_analysis), :390-445 (analyze)"
+    },
+    {
+      "rule": "Capture tooling (CUDA PTX Gaussian VI worker, NVML counter reader, five-phase capture journal)",
+      "evidence": "src/ciw/energy_bench.py:35-205, energy_cuda.py:209-318, energy_nvml.py:101-223; only reachable from cli.py:435-446"
+    },
+    {
+      "rule": "validate_log rebuilds the float64 CUDA device input from information_system(problem), the initial precision, alpha and beta. It then requires the hash of that input to equal workload.prepared_input_sha256 (energy_records.py:224-231).",
+      "evidence": "added by adversarial verification; citations in the rule"
+    },
+    {
+      "rule": "The workload's iterations, replicas, solver and problem digest must equal the plan (energy_records.py:216-223), and the CUDA workload profile is fixed (:197-206).",
+      "evidence": "added by adversarial verification; citations in the rule"
+    },
+    {
+      "rule": "Plan admission runs gaussian_reference to validate the numerical domain before any measurement is considered (energy_records.py:136-138).",
+      "evidence": "added by adversarial verification; citations in the rule"
+    },
+    {
+      "rule": "The run_id to log_digest binding holds across bundles through the workbench-wide identity map: claims at workbench.py:290-297, checked at :825 and merged at :829. It is a catalog-level uniqueness rule, not a per-bundle check.",
+      "evidence": "added by adversarial verification; citations in the rule"
+    }
+  ],
   "investigations": [],
   "surface": "bench",
   "authority": "read_only",
   "implementation": {
     "module": "ciw.energy_workflow",
-    "runner": "declared_workflow"
+    "runner": "declared_workflow",
+    "delegates": []
   },
   "guide": "docs/ENERGY_ACCURACY.md"
 }

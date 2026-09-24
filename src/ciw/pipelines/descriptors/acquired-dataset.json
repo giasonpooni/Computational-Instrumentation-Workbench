@@ -27,8 +27,52 @@
     "method": "same_runtime_fresh_occurrence_reproduction",
     "role": null
   },
-  "refusals": [],
-  "domain_rules": [],
+  "refusals": [
+    "ACQUISITION_REFUSED",
+    "DECLARED_WORKLOAD_REFUSED",
+    "INPUT_LIMIT",
+    "INVALID_INPUT",
+    "MALFORMED_RESPONSE",
+    "OUTPUT_LIMIT",
+    "RUNTIME_FAILED",
+    "RUNTIME_IO",
+    "RUNTIME_PIN_MISMATCH",
+    "RUNTIME_UNAVAILABLE",
+    "SOURCE_PIN_MISMATCH",
+    "TIMEOUT",
+    "operation_unavailable",
+    "workbench_capacity"
+  ],
+  "domain_rules": [
+    {
+      "rule": "Recompute the PPDA native evidence graph from the retained snapshot bytes: source, document, record, observation and artifact ids using PPDA's ensure_ascii sha256 formula, a 12-digit zero-padded locator and checkpoint position, per-run pool fingerprints, and the final checkpoint and restored pool fingerprint.",
+      "evidence": "acquired_dataset.py:140-190. _native_hash is at 140-141. The identity formulas are at 162-172. The checkpoint and fingerprint logic is at 179-189. The docstring at 145-149 limits this to an integrity check."
+    },
+    {
+      "rule": "Incremental append-only acquisition semantics: request times must be strictly increasing and tz-aware, record sequences strictly increasing, each snapshot must extend the previous one as a prefix, and revisions require a new plan.",
+      "evidence": "acquired_dataset.py:49-76 (53-55, 68-74)"
+    },
+    {
+      "rule": "Native acquisition driver: register SourceDefinition and AdapterRegistry, call execute_plan per snapshot, and restore DurablePool between runs. Also refuse if any declared record fails admission.",
+      "evidence": "acquired_dataset.py:83-137 (refusal condition at 114-115)"
+    },
+    {
+      "rule": "Incremental first-appearance semantics. _check_data skips rows whose sequence is <= the last seen (acquired_dataset.py:165-166), so each document, record and observation carries the retrieved_at/extracted_at of the first snapshot that contained the row (169, 175). acquired_window.py:107 depends on this: document.retrieved_at == snapshot.requested_at only holds for that first snapshot. This is cross-pipeline semantic coupling that no descriptor field captures.",
+      "evidence": "added by adversarial verification; citations in the rule"
+    },
+    {
+      "rule": "The derived filename carries identity. _filename = 'dataset-' + sha256(canonical(source.source)) + '.json' (79-80) is not just an argv convenience. It enters the plan parameters (154), the locator (168), and therefore record.id (171-172) and artifact_id (176). Changing the derivation formula invalidates every retained bundle, so it must be frozen with the pipeline version.",
+      "evidence": "added by adversarial verification; citations in the rule"
+    },
+    {
+      "rule": "Three different JSON serializations mirror the provider. Row content uses json.dumps with default separators and ensure_ascii (167). Ids use compact separators with ensure_ascii=True (140-141). The shim output uses ensure_ascii=False (136).",
+      "evidence": "added by adversarial verification; citations in the rule"
+    },
+    {
+      "rule": "All-or-nothing admission. The shim refuses if any declared record fails admission (115). It restores the DurablePool between runs (107, 123), and the restored fingerprint must equal the last run's (189). The pool fingerprint includes empty provider-internal categories (referents, claimed_relationships, derived_values, derived_groundings at 182), and the checkpoint position is zero-padded to 12 digits (183).",
+      "evidence": "added by adversarial verification; citations in the rule"
+    }
+  ],
   "investigations": [
     "manufacturing-cycle"
   ],
@@ -36,7 +80,8 @@
   "authority": "read_only",
   "implementation": {
     "module": "ciw.acquired_dataset",
-    "runner": "declared_workflow"
+    "runner": "declared_workflow",
+    "delegates": []
   },
   "guide": "docs/ACQUIRED_DATASET.md"
 }

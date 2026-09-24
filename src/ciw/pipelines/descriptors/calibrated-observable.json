@@ -96,8 +96,82 @@
     "method": "pinned_set_replay_verification",
     "role": "set"
   },
-  "refusals": [],
-  "domain_rules": [],
+  "refusals": [
+    "CALIBRATED_CBSR_REFUSED",
+    "CALIBRATED_FDIR_REFUSED",
+    "CALIBRATED_FSRT_REFUSED",
+    "CALIBRATED_GSIE_REFUSED",
+    "CALIBRATED_MCUR_REFUSED",
+    "CALIBRATED_OIT_REFUSED",
+    "CALIBRATED_SET_REFUSED",
+    "CALIBRATED_TBRT_REFUSED",
+    "INPUT_LIMIT",
+    "INVALID_INPUT",
+    "MALFORMED_RESPONSE",
+    "OUTPUT_LIMIT",
+    "RUNTIME_FAILED",
+    "RUNTIME_IO",
+    "RUNTIME_PIN_MISMATCH",
+    "RUNTIME_UNAVAILABLE",
+    "SOURCE_PIN_MISMATCH",
+    "TIMEOUT",
+    "operation_unavailable",
+    "workbench_capacity"
+  ],
+  "domain_rules": [
+    {
+      "rule": "Two-channel time alignment: exact rational check reference_origin + event_time_delta == event_time, declared maximum nominal separation tolerance, target_time = max(channel times), retained time-uncertainty policy",
+      "evidence": "calibrated_observable.py:91-115"
+    },
+    {
+      "rule": "Calibrated covariance combination: refuse unknown calibrated cross-covariance or missing evidence, require the declared combined covariance diagonal to equal each channel's MCUR-propagated variance exactly, and require zero off-diagonal under declared_zero",
+      "evidence": "calibrated_observable.py:144-155"
+    },
+    {
+      "rule": "Calibration applicability evidence: reference_ids non-empty, unique strings; joint covariance evidence_ids required; acquired_at = epoch + aligned event_time without microsecond loss; epoch must be UTC",
+      "evidence": "calibrated_observable.py:117-143"
+    },
+    {
+      "rule": "Observability-gated estimation: GSIE update_observable receives an ObservabilityAssessment assembled from OIT output, OIT's declared transition and the dynamics model id; non-observable statuses refuse estimation",
+      "evidence": "calibrated_observable.py:157-180 (wiring 294-306); docs/CALIBRATED_OBSERVABLE.md flowchart; tests/test_calibrated_observable.py:167-176"
+    },
+    {
+      "rule": "Stationary-hold model and OIT-assesses-exact-estimator-model admission",
+      "evidence": "calibrated_observable.py:261-267"
+    },
+    {
+      "rule": "FDIR residual basis is the retained GSIE prior innovation, with CBSR status piped in",
+      "evidence": "calibrated_observable.py:184-191, 314-320"
+    },
+    {
+      "rule": "Exact ISO timestamp precision (fraction digits beyond microseconds, fractional offsets, UTC requirement)",
+      "evidence": "calibrated_observable.py:37-57 (imported by calibrated_window.py:22)"
+    },
+    {
+      "rule": "Completed steps with non-success outcome statuses are not refusals. CBSR can return status 'held' with reconciled None, and FDIR still runs, consuming cbsr_status (calibrated_observable.py:316-320, 191; tests/test_calibrated_observable.py:187-194). FDIR returns isolability 'ambiguous' with no isolated fault under unknown fault cross-covariance (tests/test_calibrated_observable.py:179-184). A generic 'failed -> retained refusal' split must not classify these.",
+      "evidence": "added by adversarial verification; citations in the rule"
+    },
+    {
+      "rule": "Execution-invariant identity binding. GSIE's observation_id, evidence_refs and observability assessment_id/evidence_refs use prior numerical_result_ids, not result_ids (calibrated_observable.py:296-305), so GSIE state_id, replay_snapshot and observability_assessment_id (176-178) stay identical across fresh-id replays. CBSR and FDIR receive execution-dependent result_ids (312-320), and their numerical views strip exactly those fields (325-337). The test asserts result_ids differ while numerical ids match (tests/test_calibrated_observable.py:142-145). This is a correctness invariant tying wiring to numerical views, not just 'use numerical_result_id as identity'.",
+      "evidence": "added by adversarial verification; citations in the rule"
+    },
+    {
+      "rule": "Serialization normalization changes content. The bootstrap native() converts dataclasses, ndarrays, enums and datetimes, and maps non-finite floats to None (calibrated_observable.py:66-81). An infinite OIT condition_number becomes null (163) and flows into GSIE's ObservabilityAssessment (295-296). Telemetry has no such normalization (telemetry.py:172).",
+      "evidence": "added by adversarial verification; citations in the rule"
+    },
+    {
+      "rule": "MCUR pairs input channels with TBRT per-channel rows by position via zip, without a channel_id cross-check (calibrated_observable.py:122). It stamps acquired_at with each channel's own aligned event_time (125-128), while GSIE is evaluated at target_time = max(times) (114, 291). This nominal-alignment semantics is valid only under the stationary-hold admission (265-267).",
+      "evidence": "added by adversarial verification; citations in the rule"
+    },
+    {
+      "rule": "TBRT is always called with require_synchronization_evidence=True (calibrated_observable.py:103), a hard-coded authority policy. OIT reshaping takes state_dimension from diagnostics.input_dimension and echoes observation_matrix and declaration from the request (163-166).",
+      "evidence": "added by adversarial verification; citations in the rule"
+    },
+    {
+      "rule": "Two digest schemes for the same experiment. bundle.source.experiment_digest = digest(experiment), unprefixed (calibrated_observable.py:361, 379). The FSRT declaration's experiment_digest is schema-prefixed sha256 (416-421). Wrapped result_id = digest(envelope), also unprefixed (353). The descriptor must carry per-identity hash schemes, not one scheme.",
+      "evidence": "added by adversarial verification; citations in the rule"
+    }
+  ],
   "investigations": [
     "manufacturing-cycle",
     "process-balance"
@@ -106,7 +180,8 @@
   "authority": "read_only",
   "implementation": {
     "module": "ciw.calibrated_observable",
-    "runner": "hand_written"
+    "runner": "hand_written",
+    "delegates": []
   },
   "guide": "docs/CALIBRATED_OBSERVABLE.md"
 }

@@ -67,8 +67,63 @@
     "method": "pinned_set_replay_verification",
     "role": "set"
   },
-  "refusals": [],
-  "domain_rules": [],
+  "refusals": [
+    "INPUT_LIMIT",
+    "INVALID_INPUT",
+    "MALFORMED_RESPONSE",
+    "OUTPUT_LIMIT",
+    "RUNTIME_FAILED",
+    "RUNTIME_IO",
+    "RUNTIME_PIN_MISMATCH",
+    "RUNTIME_UNAVAILABLE",
+    "SOURCE_PIN_MISMATCH",
+    "TELEMETRY_RUNTIME_REFUSED",
+    "TIMEOUT",
+    "operation_unavailable",
+    "workbench_capacity"
+  ],
+  "domain_rules": [
+    {
+      "rule": "GSIE composite operation ciw.gsie-predict-update.v1: import feature batch through GSIE exchange with SET as validator, predict to target_time, update, export result artifact with a CIW-authored applicability statement",
+      "evidence": "telemetry.py:141-162"
+    },
+    {
+      "rule": "PPDA standalone execution scope: only the approved bytes of bridge/instrumentation.py may execute, never the PPDA vendor tree",
+      "evidence": "telemetry.py:29-55, 131-137, 184; telemetry-runtimes.json:2"
+    },
+    {
+      "rule": "Window-selected covariance submatrix: all samples are passed but only indices with window.start <= t < window.end select covariance rows/cols and observation_refs",
+      "evidence": "telemetry.py:265-267, 276-278"
+    },
+    {
+      "rule": "Feature-to-observation transport: STFE window-mean result is reinterpreted as an observation batch at gsie.target_time with admission_status reference_only and admission_ref ciw:feature-transport-only",
+      "evidence": "telemetry.py:285-296 (reused by calibrated_window.py:347)"
+    },
+    {
+      "rule": "Exact microsecond representability of epoch+seconds mapped instants",
+      "evidence": "telemetry.py:86-93 (used at 218, 247-248, 291-292; imported by residual_monitor.py:21, calibrated_window.py:23)"
+    },
+    {
+      "rule": "Identity aliasing by prefix swap: batch_id is derived from the evidence digest (telemetry.py:246), and the feature batch id is derived from the STFE result id (telemetry.py:290). The workbench treats the PPDA id as a stable non-result claim (workbench.py:247-250, 453-456).",
+      "evidence": "added by adversarial verification; citations in the rule"
+    },
+    {
+      "rule": "Acquisition time basis: observed_at = epoch + max(event_time) and received_at = epoch + max(received_at) (telemetry.py:247-248). The feature observation's received_at comes from configuration.window.received_by (telemetry.py:292), a caller value that is never validated against the samples.",
+      "evidence": "added by adversarial verification; citations in the rule"
+    },
+    {
+      "rule": "Provenance assertions written by CIW into the PPDA request: covariance_method 'caller-declared full temporal covariance', and covariance_source_refs/source_artifact_refs = [evidence] (telemetry.py:252-253).",
+      "evidence": "added by adversarial verification; citations in the rule"
+    },
+    {
+      "rule": "The GSIE composite, including the CIW applicability string 'declared scalar telemetry feature observation model only', is shared with calibrated-window through telemetry._invoke (telemetry.py:141-162; calibrated_window.py:294). Moving it into a shim changes two pipelines at once.",
+      "evidence": "added by adversarial verification; citations in the rule"
+    },
+    {
+      "rule": "The CBSR precondition checks state_labels, state_units and frame_ref (telemetry.py:381-386). The calibrated variant checks only units and frame (calibrated_observable.py:308-310), so it cannot be one shared predicate without a behaviour change.",
+      "evidence": "added by adversarial verification; citations in the rule"
+    }
+  ],
   "investigations": [
     "process-balance"
   ],
@@ -76,7 +131,8 @@
   "authority": "read_only",
   "implementation": {
     "module": "ciw.telemetry",
-    "runner": "hand_written"
+    "runner": "hand_written",
+    "delegates": []
   },
   "guide": "docs/SHARED_TELEMETRY.md"
 }

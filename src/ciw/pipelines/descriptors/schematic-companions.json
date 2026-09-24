@@ -48,14 +48,63 @@
     "method": "same_runtime_fresh_occurrence_reproduction",
     "role": null
   },
-  "refusals": [],
-  "domain_rules": [],
+  "refusals": [
+    "DECLARED_WORKLOAD_REFUSED",
+    "INPUT_LIMIT",
+    "INVALID_INPUT",
+    "MALFORMED_RESPONSE",
+    "OUTPUT_LIMIT",
+    "RUNTIME_FAILED",
+    "RUNTIME_IO",
+    "RUNTIME_PIN_MISMATCH",
+    "RUNTIME_UNAVAILABLE",
+    "SCHEMATIC_COMPANION_REFUSED",
+    "SOURCE_PIN_MISMATCH",
+    "TIMEOUT",
+    "operation_unavailable",
+    "workbench_capacity"
+  ],
+  "domain_rules": [
+    {
+      "rule": "Target admissibility. The selected node must be a declared function with model_ref 'jspt.reference.quadratic_drag' and class nonlinear or unknown. x_star must be one finite value with |x*| \u2264 1e6, and c must satisfy 0 \u2264 c \u2264 1e6. The chart must be identity and the units SI. sigma_x is optional and must be a scalar in [0, 1e12]. No undeclared attributes are allowed",
+      "evidence": "src/ciw/schematic_companions.py:66-82"
+    },
+    {
+      "rule": "Certificate naming and collision rules. The provider adds cert:jspt:<f>, cert:jspt.structure:<f>, cert:jspt.cov:<f> and cert:lyapunov:<f>, which must not collide with declared non-certificates. The appended edges must be 'linearizes', or 'certifies' for Lyapunov, in exact order. The declared topology is a prefix. The target may change only in rank/invisible_dim, and other nodes change only by stale marking",
+      "evidence": "src/ciw/schematic_companions.py:83-86, :108-110, :196-227"
+    },
+    {
+      "rule": "SRA eligibility policy for this model and chart. There are four tools in a fixed order, owned by jspt or plsr, and every event that is not NOT_ELIGIBLE must carry NATIVE_JSPT or NATIVE_PLSR. The eligibility table inserts jspt.sweep_perturbation_scale for non-unknown classes. check_coordinate_consistency is always NOT_ELIGIBLE. For the unknown class everything is NOT_ELIGIBLE and no companion executes. For nonlinear, jacobian_at and sweep are ELIGIBLE",
+      "evidence": "src/ciw/schematic_companions.py:228-254"
+    },
+    {
+      "rule": "Analytic Jacobian cross-check: A = -2\u00b7c\u00b7|x*|. The SRA binding is also recomputed: declaration_id = _native_digest('sra.declaration.v1', _declaration(graph, target)) and result_id = _native_digest('sra.jacobian-result.v1', binding+A). This uses SRA's own JSON hashing, namespace + NUL, without ensure_ascii=False. Also checked are the schema NsJacobianBinding@0.1, kernel == NATIVE_JSPT, provenance == NATIVE_PROVENANCE, fixture false, and that the execution_id matches the sra-execution:<uuid> pattern and does not appear in the submitted schematic",
+      "evidence": "src/ciw/schematic_companions.py:113-126, :255-274"
+    },
+    {
+      "rule": "Dependent certificates must bind the same Jacobian result and execution. Local structure: rank = 1[|A| > rank_absolute_tolerance], the singular value is |A|, the visible and invisible bases are unit-norm, and target rank/invisible_dim are consistent. Covariance: sigma_y = A\u00b7sigma_x\u00b7A to 1e-12 relative, with sigma_x copied and exact_for_affine false. Lyapunov: a < 0, p > 0, 2ap = -1, V = p\u00b7x\u00b2, decrease = 2ap\u00b7x\u00b2, verdict certified, and event detail must match the certificate",
+      "evidence": "src/ciw/schematic_companions.py:275-310"
+    },
+    {
+      "rule": "Companions require a freshly SAMPLED Jacobian. When sigma_x is not declared, the covariance event must be NOT_ELIGIBLE, so input covariance is never invented",
+      "evidence": "src/ciw/schematic_companions.py:311-314"
+    },
+    {
+      "rule": "Provider-echoed scope: data.scope must equal POLICY and data.function_id must equal the source selection (schematic_companions.py:196-197)",
+      "evidence": "added by adversarial verification; citations in the rule"
+    },
+    {
+      "rule": "The fresh SRA occurrence must match the 'sra-execution:<uuid>' pattern and must not appear as a SUBSTRING anywhere in canonical(source.schematic) (schematic_companions.py:259-262). This is a text-containment rule, not a path check",
+      "evidence": "added by adversarial verification; citations in the rule"
+    }
+  ],
   "investigations": [],
   "surface": "certification",
   "authority": "read_only",
   "implementation": {
     "module": "ciw.schematic_companions",
-    "runner": "declared_workflow"
+    "runner": "declared_workflow",
+    "delegates": []
   },
   "guide": "docs/INTEGRATED_MODULES.md"
 }

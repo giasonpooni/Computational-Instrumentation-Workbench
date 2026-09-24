@@ -27,8 +27,44 @@
     "method": "same_runtime_fresh_occurrence_reproduction",
     "role": null
   },
-  "refusals": [],
-  "domain_rules": [],
+  "refusals": [
+    "DECLARED_WORKLOAD_REFUSED",
+    "GEOMETRY_PROVIDER_REFUSED",
+    "INPUT_LIMIT",
+    "INVALID_INPUT",
+    "MALFORMED_RESPONSE",
+    "OUTPUT_LIMIT",
+    "RUNTIME_FAILED",
+    "RUNTIME_IO",
+    "RUNTIME_PIN_MISMATCH",
+    "RUNTIME_UNAVAILABLE",
+    "SOURCE_PIN_MISMATCH",
+    "TIMEOUT",
+    "operation_unavailable",
+    "workbench_capacity"
+  ],
+  "domain_rules": [
+    {
+      "rule": "The gluing must consist of two complete permutations (right and up) of 1-32 tiles forming a connected surface. The start is strictly inside a square. The direction is nonzero and bounded by 1024. The duration is in [0,1024]. Rationals are canonical, reduced and within 64- or 256-bit budgets.",
+      "evidence": "src/ciw/geometry_translation_contract.py:45-54,72-105"
+    },
+    {
+      "rule": "Corner-class topology derived from the gluing: corner equivalence classes, cone angles that are multiples of 2\u03c0, Euler characteristic <= 0 and even, and the genus. The retained gluing_validation must equal the derived structure exactly.",
+      "evidence": "src/ciw/geometry_translation_contract.py:108-143"
+    },
+    {
+      "rule": "Exact rational replay of the retained segment and event chain. Each segment is affine motion along the direction within the closed unit square. Event times strictly increase. Each event is a single outgoing edge, never a corner continuation, mapped by the gluing permutation. Segments must account for every event and for the elapsed time.",
+      "evidence": "src/ciw/geometry_translation_contract.py:169-212"
+    },
+    {
+      "rule": "Stop semantics. 'completed' requires remaining = 0 and no pending edge. 'stopped_at_vertex' requires two simultaneous outgoing edges and the correct vertex id. 'event_budget_exhausted' requires one pending edge and events == max_events. The invariants map must be consistent with the status.",
+      "evidence": "src/ciw/geometry_translation_contract.py:213-233"
+    },
+    {
+      "rule": "The workbench profile is narrower than the provider's. CIW caps max_events at 0..256 (src/ciw/geometry_translation_contract.py:71,101-102), tighter than the native 64-bit profile. This workbench policy is layered on the provider's request profile; the descriptor or plugin must record it separately from the provider-owned profile.",
+      "evidence": "added by adversarial verification; citations in the rule"
+    }
+  ],
   "investigations": [
     "geometry-bim"
   ],
@@ -36,7 +72,8 @@
   "authority": "read_only",
   "implementation": {
     "module": "ciw.geometry_research",
-    "runner": "declared_workflow"
+    "runner": "declared_workflow",
+    "delegates": []
   },
   "guide": "docs/GEOMETRY_RESEARCH.md"
 }

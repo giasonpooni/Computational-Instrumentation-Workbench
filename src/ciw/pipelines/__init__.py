@@ -31,7 +31,9 @@ FIELDS = frozenset({"schema", "pipeline_id", "source_kind", "session_schema", "s
                     "implementation", "guide"})
 _HEX40 = re.compile(r"[0-9a-f]{40}\Z")
 _ROLE = re.compile(r"[a-z][a-z0-9]{1,15}\Z")
-_CODE = re.compile(r"[A-Za-z][A-Za-z0-9_]{1,63}\Z")
+_CODE = re.compile(r"[A-Za-z][A-Za-z0-9_]{1,63}\*?\Z")
+# Admission codes the workbench itself raises for every pipeline.
+WORKBENCH_REFUSALS = ("operation_unavailable", "workbench_capacity")
 
 # Transitional table of where each kind's module declares its pins today.
 _MANIFESTS = {
@@ -51,6 +53,58 @@ def _package_json(name):
 
 def _normalize(pin):
     return {key: pin[key] for key in _PIN_FIELDS if key in pin}
+
+
+def _refusal_codes(tree, roles):
+    import ast
+    codes = set()
+
+    def pieces(node):
+        if isinstance(node, ast.Constant) and isinstance(node.value, str):
+            return [node.value]
+        if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
+            left, right = pieces(node.left), pieces(node.right)
+            return None if left is None or right is None else [a + b for a in left for b in right]
+        if (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.func.attr == "upper"
+                and isinstance(node.func.value, ast.Name) and node.func.value.id == "role"):
+            return [role.upper() for role in roles] or ["*"]
+        return ["*"]
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call) and node.args and (
+                (isinstance(node.func, ast.Name) and node.func.id in {"AdapterRefusal", "_refuse"}) or
+                (isinstance(node.func, ast.Attribute) and node.func.attr == "AdapterRefusal")):
+            for code in pieces(node.args[0]) or []:
+                if code != "*":
+                    codes.add(code.split("*")[0] + "*" if "*" in code else code)
+    return codes
+
+
+def code_refusals(descriptor: dict, descriptors: dict | None = None) -> list[str]:
+    """Refusal codes raised on the pipeline's execution path.
+
+    The path is the implementation module, its declared delegates (modules
+    whose pipelines it executes), the DeclaredWorkflow base when that is its
+    runner, the pinned-subprocess adapter when a step uses it, and the
+    workbench's own admission codes. Role-templated codes expand over the
+    roles of the pipeline that owns the module.
+    """
+    import ast
+    package = Path(__file__).resolve().parents[1]
+    owners = {value["implementation"]["module"]: value for value in (descriptors or {}).values()}
+    implementation = descriptor["implementation"]
+    modules = [(implementation["module"], descriptor)]
+    modules += [(module, owners.get(module, descriptor)) for module in implementation["delegates"]]
+    if implementation["runner"] == "declared_workflow":
+        modules.append(("ciw.declared_workload", descriptor))
+    codes = set(WORKBENCH_REFUSALS)
+    for module, owner in modules:
+        path = package / (module.removeprefix("ciw.").replace(".", "/") + ".py")
+        roles = [step["role"] for step in owner["steps"]]
+        codes |= _refusal_codes(ast.parse(path.read_text(encoding="utf-8")), roles)
+    if any(step["invocation"] == "pinned_subprocess" for step in descriptor["steps"]):
+        codes |= _refusal_codes(ast.parse((package / "adapters" / "subprocess.py").read_text(encoding="utf-8")), [])
+    return sorted(codes)
 
 
 def live_pins(kind: str) -> dict:
@@ -174,9 +228,12 @@ def validate(value) -> dict:
     if value["authority"] != "read_only":
         raise ValueError("Every current pipeline is read-only with respect to equipment")
     implementation = value["implementation"]
-    _keys(implementation, {"module", "runner"}, name="implementation")
+    _keys(implementation, {"module", "runner", "delegates"}, name="implementation")
     if implementation["runner"] not in IMPLEMENTATIONS or not implementation["module"].startswith("ciw."):
         raise ValueError("implementation names a CIW module and its runner class")
+    if (not isinstance(implementation["delegates"], list)
+            or any(not isinstance(item, str) or not item.startswith("ciw.") for item in implementation["delegates"])):
+        raise ValueError("implementation.delegates lists CIW modules whose pipelines this one executes")
     return value
 
 
@@ -220,6 +277,10 @@ def check(descriptors: dict | None = None) -> dict:
         if kind != "residual-monitor" and value["inputs"]["upstream_kinds"] != upstream:
             raise ValueError(f"{kind}: descriptor upstream differs from the registered upstream")
         import_module(value["implementation"]["module"])
+        for module in value["implementation"]["delegates"]:
+            import_module(module)
+        if value["refusals"] != code_refusals(value, descriptors):
+            raise ValueError(f"{kind}: descriptor refusals differ from the codes its implementation raises")
         if (root / "docs").is_dir() and not (root / value["guide"]).is_file():
             raise ValueError(f"{kind}: guide {value['guide']} does not exist")
         for item in value["investigations"]:
@@ -289,6 +350,25 @@ def render_catalog(descriptors: dict | None = None) -> str:
     for entry in matrix:
         lines.append(f"| {entry['role']} | `{entry['pin']['revision'][:12]}` | "
                      + ", ".join(f"`{p}`" for p in entry["pipelines"]) + " |")
+    common = set(WORKBENCH_REFUSALS) | {"INPUT_LIMIT", "INVALID_INPUT", "MALFORMED_RESPONSE", "OUTPUT_LIMIT",
+                                         "RUNTIME_FAILED", "RUNTIME_IO", "RUNTIME_PIN_MISMATCH", "RUNTIME_UNAVAILABLE",
+                                         "SOURCE_PIN_MISMATCH", "TIMEOUT"}
+    lines += ["", "## Pipeline details", "",
+              "Refusal codes are derived from the code on each pipeline's execution path and checked by "
+              "`pipelines.check()`; every pinned-subprocess pipeline can also raise the adapter codes "
+              "(`" + "`, `".join(sorted(common - set(WORKBENCH_REFUSALS))) + "`) and every pipeline the workbench "
+              "admission codes (`operation_unavailable`, `workbench_capacity`). Domain rules are the checks the "
+              "implementation keeps beyond the shared runner shape, with code evidence, from the verified inventory."]
+    for value in sorted(descriptors.values(), key=lambda v: v["pipeline_id"]):
+        specific = [code for code in value["refusals"] if code not in common]
+        lines += ["", f"### `{value['pipeline_id']}`", "",
+                  f"Implementation `{value['implementation']['module']}` ({value['implementation']['runner'].replace('_', ' ')}"
+                  + (", delegates to " + ", ".join(f"`{d}`" for d in value["implementation"]["delegates"])
+                     if value["implementation"]["delegates"] else "") + f"); verification: {value['verification']['method']}.",
+                  "", "Specific refusals: " + (", ".join(f"`{code}`" for code in specific) if specific else "none") + "."]
+        if value["domain_rules"]:
+            lines.append("")
+            lines += [f"- {rule['rule']} ({rule['evidence']})".replace("|", "\\|") for rule in value["domain_rules"]]
     multiple = {}
     for entry in matrix:
         multiple.setdefault(entry["role"], []).append(entry["pin"]["revision"][:12])

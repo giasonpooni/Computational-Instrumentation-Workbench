@@ -27,14 +27,39 @@
     "method": "pinned_set_contract_validation",
     "role": "set"
   },
-  "refusals": [],
-  "domain_rules": [],
+  "refusals": [
+    "operation_unavailable",
+    "workbench_capacity"
+  ],
+  "domain_rules": [
+    {
+      "rule": "Artifact identity rule: the identity field must equal sha256(schema || 0 || canonical(payload without the field)), except batch_id, which is a caller-declared reference",
+      "evidence": "src/ciw/exchange.py:99-108"
+    },
+    {
+      "rule": "Link classification: each input_refs / subject_ref / source_artifact_refs reference is either matched_supplied_reference or unresolved_external_reference. Covariance validation is delegated to the pinned SET contract functions",
+      "evidence": "src/ciw/exchange.py:151-190"
+    },
+    {
+      "rule": "Security: execute only the allowlisted source bytes after hashing, and never import the checkout's package initializer",
+      "evidence": "src/ciw/exchange.py:73-97"
+    },
+    {
+      "rule": "Bounds and shape rules apply before the pinned validator runs: at most 1 MiB per artifact and 8 MiB in total, JSON depth at most 64, and 1..64 components for non-verification artifacts (exchange.py:21-25, 117-150).",
+      "evidence": "added by adversarial verification; citations in the rule"
+    },
+    {
+      "rule": "A producer verification artifact that records a failed outcome is still a conformant record, not a failure (exchange.py:111-116 docstring; status fixed at :193).",
+      "evidence": "added by adversarial verification; citations in the rule"
+    }
+  ],
   "investigations": [],
   "surface": "certification",
   "authority": "read_only",
   "implementation": {
     "module": "ciw.exchange_adapter",
-    "runner": "hand_written"
+    "runner": "hand_written",
+    "delegates": []
   },
   "guide": "docs/EXCHANGE.md"
 }

@@ -27,8 +27,44 @@
     "method": "same_runtime_fresh_occurrence_reproduction",
     "role": null
   },
-  "refusals": [],
-  "domain_rules": [],
+  "refusals": [
+    "DECLARED_WORKLOAD_REFUSED",
+    "GEODESIC_REFERENCE_REFUSED",
+    "INPUT_LIMIT",
+    "INVALID_INPUT",
+    "MALFORMED_RESPONSE",
+    "OUTPUT_LIMIT",
+    "RUNTIME_FAILED",
+    "RUNTIME_IO",
+    "RUNTIME_PIN_MISMATCH",
+    "RUNTIME_UNAVAILABLE",
+    "SOURCE_PIN_MISMATCH",
+    "TIMEOUT",
+    "operation_unavailable",
+    "workbench_capacity"
+  ],
+  "domain_rules": [
+    {
+      "rule": "The native start must equal the declared cover point modulo the retained lattice. alpha and beta must be integers within 1e-12, and the reduced coordinates must lie in [0,1). Lattice orientation must have omega1 real and positive and Im(omega2) > 0.",
+      "evidence": "src/ciw/geodesic_reference.py:196-208"
+    },
+    {
+      "rule": "Trajectory consistency: exactly `samples` path parameters strictly increasing from 0 to 1. Both point lists start within 1e-12 of the reference start. Crossings are ordered in (prev,1], their count is at most |m|+|n|, and lattice steps lie in {-1,0,1}. The trajectory's lattice, winding, start, length and closed fields agree with the reference.",
+      "evidence": "src/ciw/geodesic_reference.py:220-254"
+    },
+    {
+      "rule": "Native geometry invariants: closed loop, zero Gaussian curvature, positive area and length, arclength interval [0,length], plus a fixed handoff object and a fixed list of three limitation strings.",
+      "evidence": "src/ciw/geodesic_reference.py:209-219"
+    },
+    {
+      "rule": "Provider invocation shim. It builds complex tau and start, unpacks the winding, calls flat_geodesic_reference and trace_closed_geodesic, and serialises dataclasses, ndarrays and complex values to JSON.",
+      "evidence": "src/ciw/geodesic_reference.py:134-155,171"
+    },
+    {
+      "rule": "The shim encodes complex values as {'re','im'} (src/ciw/geodesic_reference.py:143), and _pair and _check_flat assume that encoding (geodesic_reference.py:172-174,188-190). The validator and the invocation shim are coupled, so they have to be versioned together as one plugin; they cannot be split into a descriptor shim plus a generic payload schema.",
+      "evidence": "added by adversarial verification; citations in the rule"
+    }
+  ],
   "investigations": [
     "geometry-bim"
   ],
@@ -36,7 +72,8 @@
   "authority": "read_only",
   "implementation": {
     "module": "ciw.geodesic_reference",
-    "runner": "declared_workflow"
+    "runner": "declared_workflow",
+    "delegates": []
   },
   "guide": "docs/GEODESIC_REFERENCES.md"
 }

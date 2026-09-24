@@ -49,8 +49,58 @@
     "method": "same_runtime_fresh_occurrence_reproduction",
     "role": null
   },
-  "refusals": [],
-  "domain_rules": [],
+  "refusals": [
+    "DECLARED_WORKLOAD_REFUSED",
+    "INPUT_LIMIT",
+    "INVALID_INPUT",
+    "MALFORMED_RESPONSE",
+    "MEASUREMENT_CHAIN_REFUSED",
+    "OUTPUT_LIMIT",
+    "RUNTIME_FAILED",
+    "RUNTIME_IO",
+    "RUNTIME_PIN_MISMATCH",
+    "RUNTIME_UNAVAILABLE",
+    "SOURCE_PIN_MISMATCH",
+    "TIMEOUT",
+    "invalid_parameters",
+    "operation_unavailable",
+    "replay_mismatch",
+    "replay_unavailable",
+    "runtime_mismatch",
+    "unit_mismatch",
+    "unsupported_covariance",
+    "unsupported_cross_assembly_dependence",
+    "unsupported_measurement_batch",
+    "unsupported_model_dependence",
+    "unsupported_temporal_covariance",
+    "workbench_capacity"
+  ],
+  "domain_rules": [
+    {
+      "rule": "Tank investigation orchestration: RCI v2 calibration per sensor, the native run recording (_make_run), and FSRT reconstruction with explicit cross-assembly independence and model independence",
+      "evidence": "src/ciw/investigation.py:161-166 (_validate_model_independence), 201 (_make_run), 342-418 (create_investigation); called from measurement_chain.py:153, 312"
+    },
+    {
+      "rule": "JSPT must consume the unchanged FSRT covariance artifact that the source selects (posterior or reconciled)",
+      "evidence": "src/ciw/measurement_chain.py:84-85, 158-163; covariance_workflow.py:80-95"
+    },
+    {
+      "rule": "Numerical projection replaces the enumerated occurrence-dependent native ids (run evidence, calibration, FSRT and JSPT covariance ids, and the coordinate-map id that embeds the input covariance id) so replays compare numerically",
+      "evidence": "src/ciw/measurement_chain.py:168-198 (comment 185-187)"
+    },
+    {
+      "rule": "Source shape: exactly two sensors, the original rci.calibrate.v2 request, one record per sensor as canonical base64 JSON, a 2-column JSPT Jacobian, and an allowed map_kind",
+      "evidence": "src/ciw/measurement_chain.py:45-108"
+    },
+    {
+      "rule": "Two pin sources are reconciled only after execution. The seams bind from adapter-runtimes.json, which has no source_root or source_tree and whose _runtime does not pass source_root (investigation.py:32-48). The outer PINS require source_root 'src' and an exact source_tree (measurement_chain.py:28-30, 122). The runtime records pulled from the native workspace (_runtime_records at 111-115) must equal the preflight identities (324) and the outer retained runtimes (385-389).",
+      "evidence": "added by adversarial verification; citations in the rule"
+    },
+    {
+      "rule": "The workspace file is handed between seams through a temp directory, and the JSPT parameters are derived from FSRT's result id (310-316).",
+      "evidence": "added by adversarial verification; citations in the rule"
+    }
+  ],
   "investigations": [
     "process-balance"
   ],
@@ -58,7 +108,11 @@
   "authority": "read_only",
   "implementation": {
     "module": "ciw.measurement_chain",
-    "runner": "declared_workflow"
+    "runner": "declared_workflow",
+    "delegates": [
+      "ciw.investigation",
+      "ciw.covariance_workflow"
+    ]
   },
   "guide": "docs/REMAINING_MODULES.md"
 }

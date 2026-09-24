@@ -36,6 +36,7 @@ def test_descriptor_pin_drift_is_detected():
     (lambda d: d.update(refusals=["ok", "ok"]), "distinct"),
     (lambda d: d["inputs"].update(upstream_cardinality="one"), "upstream"),
     (lambda d: d.update(extra=True), "fields"),
+    (lambda d: d["implementation"].update(delegates=["os"]), "delegates"),
 ])
 def test_descriptor_structure_is_validated(change, message):
     descriptor = deepcopy(pipelines.load()["geometric-circle"])
@@ -81,3 +82,13 @@ def test_operator_sees_investigations_and_inner_pipelines_stay_listed(tmp_path):
     thermal = next(item for item in everything if item["operation_id"] == "ciw.thermal-observer.v1")
     assert thermal["surface"] == "bench" and thermal["investigations"] == []
     assert _list(session, {"view": "flat"})["payload"]["code"] == "invalid_payload"
+
+
+def test_refusal_vocabulary_is_the_code_on_the_execution_path():
+    descriptors = pipelines.load()
+    assert "CALIBRATED_WINDOW_TBRT_REFUSED" in descriptors["acquired-calibrated-window"]["refusals"]  # delegate
+    assert "TELEMETRY_RUNTIME_REFUSED" not in descriptors["geometric-circle"]["refusals"]  # helper import only
+    changed = deepcopy(descriptors)
+    changed["telemetry"]["refusals"] = [code for code in changed["telemetry"]["refusals"] if code != "TELEMETRY_RUNTIME_REFUSED"]
+    with pytest.raises(ValueError, match="refusals differ"):
+        pipelines.check(changed)

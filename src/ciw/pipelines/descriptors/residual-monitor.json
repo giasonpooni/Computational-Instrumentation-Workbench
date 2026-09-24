@@ -41,8 +41,52 @@
     "method": "same_runtime_fresh_occurrence_reproduction",
     "role": null
   },
-  "refusals": [],
-  "domain_rules": [],
+  "refusals": [
+    "DECLARED_WORKLOAD_REFUSED",
+    "INPUT_LIMIT",
+    "INVALID_INPUT",
+    "MALFORMED_RESPONSE",
+    "OUTPUT_LIMIT",
+    "RESIDUAL_MONITOR_REFUSED",
+    "RUNTIME_FAILED",
+    "RUNTIME_IO",
+    "RUNTIME_PIN_MISMATCH",
+    "RUNTIME_UNAVAILABLE",
+    "SOURCE_PIN_MISMATCH",
+    "TIMEOUT",
+    "operation_unavailable",
+    "workbench_capacity"
+  ],
+  "domain_rules": [
+    {
+      "rule": "One residual sequence must share an identical scope (channel, frame, units, clock, calibration, model, reference prior); targets strictly increase; no GSIE result, physical window or sample set counts twice; a repeated observation id cannot change content",
+      "evidence": "src/ciw/residual_monitor.py:139-170"
+    },
+    {
+      "rule": "The analytic oracle re-derives NIS, whitened residual, ambiguous isolability, two-sided CUSUM with reset, and trivial 1x1 observability, then compares at rel_tol 2e-12 / abs_tol 1e-14 with exact integers",
+      "evidence": "src/ciw/residual_monitor.py:255-331"
+    },
+    {
+      "rule": "Stateful CUSUM across windows, advanced only when OIT reports 'observable' (observability hold does not advance the state); interpretation flags are fixed to limited authority",
+      "evidence": "src/ciw/residual_monitor.py:230-248"
+    },
+    {
+      "rule": "Overlap annotations record interval overlap and shared observation/artifact ids, with residual_cross_covariance declared unknown",
+      "evidence": "src/ciw/residual_monitor.py:179-187"
+    },
+    {
+      "rule": "The monitor reads calibrated-window's internal step layout: GSIE at child['steps'][3] (133), and mapped event times from the CIW-wrapped TBRT data at child['steps'][0]['result']['data']['samples'] (180). It also builds the OIT declaration from the upstream GSIE dynamics and observation matrices (192-194).",
+      "evidence": "added by adversarial verification; citations in the rule"
+    },
+    {
+      "rule": "Upstreams are validated in depth, again and again. _unwrap re-runs acquired_window._validate, calibrated_window._validate and _check_child_receipt for every selected window (106-119). That happens at create (478), at every reopen (_validate calls validate_upstreams at 455), and again at link time against the catalog (workbench.py:377-378).",
+      "evidence": "added by adversarial verification; citations in the rule"
+    },
+    {
+      "rule": "In the bootstrap, CUSUM state advances only when OIT returns 'observable'; the pre and post state is recorded, and the interpretation flags are fixed (bootstrap roughly 230-250). This is a fold over the windows that carries state from one to the next.",
+      "evidence": "added by adversarial verification; citations in the rule"
+    }
+  ],
   "investigations": [
     "manufacturing-cycle",
     "process-balance"
@@ -51,7 +95,8 @@
   "authority": "read_only",
   "implementation": {
     "module": "ciw.residual_monitor",
-    "runner": "declared_workflow"
+    "runner": "declared_workflow",
+    "delegates": []
   },
   "guide": "docs/ACQUIRED_STREAM.md"
 }

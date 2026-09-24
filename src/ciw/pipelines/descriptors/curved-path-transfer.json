@@ -27,8 +27,52 @@
     "method": "same_runtime_fresh_occurrence_reproduction",
     "role": null
   },
-  "refusals": [],
-  "domain_rules": [],
+  "refusals": [
+    "DECLARED_WORKLOAD_REFUSED",
+    "GEODESIC_REFERENCE_REFUSED",
+    "INPUT_LIMIT",
+    "INVALID_INPUT",
+    "MALFORMED_RESPONSE",
+    "OUTPUT_LIMIT",
+    "RUNTIME_FAILED",
+    "RUNTIME_IO",
+    "RUNTIME_PIN_MISMATCH",
+    "RUNTIME_UNAVAILABLE",
+    "SOURCE_PIN_MISMATCH",
+    "TIMEOUT",
+    "operation_unavailable",
+    "workbench_capacity"
+  ],
+  "domain_rules": [
+    {
+      "rule": "The arclength grid must be refined for the declared curvature: abs(K)*(s[i+1]-s[i])^2 <= 0.01 (with slack 1e-14), with the grid starting at 0 and strictly increasing.",
+      "evidence": "src/ciw/geodesic_reference.py:105-113"
+    },
+    {
+      "rule": "The declared starting covariance must be exactly symmetric positive-semidefinite in rational arithmetic (b==c, a,d >= 0, ad >= b^2), with entries of magnitude at most 1 and basis 'assumed'.",
+      "evidence": "src/ciw/geodesic_reference.py:67-72,119-126"
+    },
+    {
+      "rule": "The native record's source_digest must equal 'sha256:' + sha256(canonical({curvature:[K], constant:true, span:[0, s_end]})) truncated to 32 hex digits.",
+      "evidence": "src/ciw/geodesic_reference.py:278-281"
+    },
+    {
+      "rule": "Transfer consistency: per-sample vectors of length n; initial [a,a',b,b'] = [1,0,0,1]; curvature broadcast; grid and resolution min/max step equal to the retained arclength deltas; resolution method rk4; propagated covariance of length n with nonnegative variances and first matrix == C0; separation and heading_change at index 0 equal to the declared perturbation.",
+      "evidence": "src/ciw/geodesic_reference.py:270-302,318-329"
+    },
+    {
+      "rule": "Claim limits: validity is heading-only (max_lateral null, directions ['heading'], reference 'closed-form', pointwise_error == relative_tolerance, max_heading > 0). Convergence records must be established=false with a 'not-established:' basis and null metrics (a single solve cannot claim step-doubling convergence). Calibration is unbound. Provenance and path_type_basis are fixed text.",
+      "evidence": "src/ciw/geodesic_reference.py:283-317"
+    },
+    {
+      "rule": "Invocation shim composing integrate_jacobi, then as_transfer_record(units, StartingCovariance(units, **covariance), relative_tolerance, observation_mode), then propagate_declared_covariance, separation, heading_change and determinant.",
+      "evidence": "src/ciw/geodesic_reference.py:156-168"
+    },
+    {
+      "rule": "The validity scope is fixed to observation_mode 'intrinsic-surface-distance' in two places: the source configuration const (src/ciw/geodesic_reference.py:31-33) and the native validity record (geodesic_reference.py:297). The pointwise_error must equal the declared relative_tolerance (298). Together these bound the scientific claim to heading-only transfer under one observation mode, so they are a claim policy, not a schema const.",
+      "evidence": "added by adversarial verification; citations in the rule"
+    }
+  ],
   "investigations": [
     "geometry-bim"
   ],
@@ -36,7 +80,8 @@
   "authority": "read_only",
   "implementation": {
     "module": "ciw.geodesic_reference",
-    "runner": "declared_workflow"
+    "runner": "declared_workflow",
+    "delegates": []
   },
   "guide": "docs/GEODESIC_REFERENCES.md"
 }

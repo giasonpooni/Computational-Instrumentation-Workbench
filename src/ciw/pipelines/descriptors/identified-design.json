@@ -128,8 +128,100 @@
     "method": "pinned_set_replay_verification",
     "role": "set"
   },
-  "refusals": [],
-  "domain_rules": [],
+  "refusals": [
+    "CALIBRATED_CBSR_REFUSED",
+    "CALIBRATED_FDIR_REFUSED",
+    "CALIBRATED_FSRT_REFUSED",
+    "CALIBRATED_GSIE_REFUSED",
+    "CALIBRATED_MCUR_REFUSED",
+    "CALIBRATED_OIT_REFUSED",
+    "CALIBRATED_SET_REFUSED",
+    "CALIBRATED_TBRT_REFUSED",
+    "DESIGN_CBSR_REFUSED",
+    "DESIGN_EDSPT_REFUSED",
+    "DESIGN_FDIR_REFUSED",
+    "DESIGN_FSRT_REFUSED",
+    "DESIGN_GSIE_REFUSED",
+    "DESIGN_MCUR_REFUSED",
+    "DESIGN_MODEL_*",
+    "DESIGN_NO_AFFORDABLE_CANDIDATE",
+    "DESIGN_NO_OBSERVABLE_CANDIDATE",
+    "DESIGN_OIT_REFUSED",
+    "DESIGN_SET_REFUSED",
+    "DESIGN_SIDT_REFUSED",
+    "DESIGN_TBRT_REFUSED",
+    "DESIGN_YWIR_REFUSED",
+    "INPUT_LIMIT",
+    "INVALID_INPUT",
+    "MALFORMED_RESPONSE",
+    "OUTPUT_LIMIT",
+    "RUNTIME_FAILED",
+    "RUNTIME_IO",
+    "RUNTIME_PIN_MISMATCH",
+    "RUNTIME_UNAVAILABLE",
+    "SOURCE_PIN_MISMATCH",
+    "TIMEOUT",
+    "operation_unavailable",
+    "workbench_capacity"
+  ],
+  "domain_rules": [
+    {
+      "rule": "Provider-output semantic re-derivation. It checks SIDT identity hashes, rank, degrees of freedom, condition limit and unknown parameter covariance; OIT eligibility; the GSIE snapshot and state id; EDSPT normalized covariance, D-opt/A-opt gains, affordability and tie-break ordering; and the YWIR admission verdict and token cap.",
+      "evidence": "identified_semantics.py:51-99 (SIDT), 146-173 (GSIE), 174-241 (gain and EDSPT), 242-272 (YWIR), entry validate_outputs at 273-286. Called from identified_design.py:506-507."
+    },
+    {
+      "rule": "Source compatibility with the retained upstream. Identification state names, units and frame must equal the retained GSIE state. Every telemetry channel must use the same reference clock as the identification. Identification samples may not be later than the prior time.",
+      "evidence": "identified_design.py:200-207, 215-216"
+    },
+    {
+      "rule": "Uncertainty gates. Prior-process and prior-candidate cross-covariance must be the declared zero (unknown blocks the operation). next_input must be an explicit zero. uncertainty_scope must be conditional on the point model. Candidate matrices must be exactly float-representable.",
+      "evidence": "identified_design.py:220-228, 250-251, 261-266"
+    },
+    {
+      "rule": "Budget separation. The observation cost unit may never be inference_token, candidate cost units must match the budget, and YWIR owns only the inference-token budget.",
+      "evidence": "identified_design.py:240-241, 247-248, 279-280"
+    },
+    {
+      "rule": "Exact prediction time. target_time = prior.time + sample_interval must be exact in rational arithmetic.",
+      "evidence": "identified_design.py:317-321"
+    },
+    {
+      "rule": "Shim numeric transforms. EDSPT prior covariance is divided by the state scales, observation matrices are multiplied by the scales, and OIT eligibility is filtered to status 'observable'.",
+      "evidence": "identified_design.py:66-71, 81-91"
+    },
+    {
+      "rule": "Declared evidence refs must be disjoint from operation ids and the model id.",
+      "evidence": "identified_design.py:166-178, 281-282"
+    },
+    {
+      "rule": "The occurrence id is injected into the provider. The kernel execution_id is passed into SIDT's input (identified_design.py:301) and validated as echoed in the output (identified_semantics.py:55). created_at is embedded in every result artifact (369). result_sha256 therefore depends on occurrence identity, which forces template recomputation that reuses the template's execution ids and created_at (381-382) and compares result_sha256 (534-537). Only sidt's numerical projection strips this (292-293).",
+      "evidence": "added by adversarial verification; citations in the rule"
+    },
+    {
+      "rule": "Partial-chain refusal. A guard refusal after sidt/oit/gsie/edspt have run propagates out of _execute (384) and create_session (560), and none of the executed steps are retained. The owner's kernel 'retain refusal' would have to define whether partial executions are sealed.",
+      "evidence": "added by adversarial verification; citations in the rule"
+    },
+    {
+      "rule": "Runtimes and pins are coupled to the upstream kind. The bundle retains runtime identities for all 11 roles (38, 397, 457), including fsrt/tbrt/mcur/cbsr/fdir, which no design step invokes. The oit/gsie/set pins are taken from calibrated-observable-runtimes.json (105-110). Checkouts are bound twice: design _adapters (559, 569) and calibrated.replay_session's own adapters (552-554).",
+      "evidence": "added by adversarial verification; citations in the rule"
+    },
+    {
+      "rule": "Downstream positional contract. identified_stability binds design steps[0] and steps[2] (identified_stability.py:180-181). Workbench reads step index 2 for design and 4 for calibrated (workbench.py:465), and reads upstream steps[5]/steps[6] (workbench.py:502, 511). The step order is a public output contract and must be frozen or exposed as named outputs.",
+      "evidence": "added by adversarial verification; citations in the rule"
+    },
+    {
+      "rule": "Source admission needs the upstream. _source_inner fully validates and inspects the upstream (197, 206) before the compatibility checks. Workbench therefore bypasses the kind's _source at add_source (workbench.py:177-184).",
+      "evidence": "added by adversarial verification; citations in the rule"
+    },
+    {
+      "rule": "The source envelope differs from the other kinds. It uses 'configuration_digest' (394, 453) instead of 'experiment_digest' (declared_workload.py:348, acquired_window.py:240), and configuration is the whole source (395, 453). Unifying envelopes in the kernel requires either a migration or per-pipeline field names.",
+      "evidence": "added by adversarial verification; citations in the rule"
+    },
+    {
+      "rule": "Shim-derived fields feed guards. eligible_candidate_ids is computed inside the shim (70-71), consumed by the edspt guard (325-327), and re-verified in identified_semantics._oit (identified_semantics.py:100+). The shim output is not raw provider output.",
+      "evidence": "added by adversarial verification; citations in the rule"
+    }
+  ],
   "investigations": [
     "manufacturing-cycle"
   ],
@@ -137,7 +229,10 @@
   "authority": "read_only",
   "implementation": {
     "module": "ciw.identified_design",
-    "runner": "hand_written"
+    "runner": "hand_written",
+    "delegates": [
+      "ciw.calibrated_observable"
+    ]
   },
   "guide": "docs/IDENTIFIED_DESIGN.md"
 }

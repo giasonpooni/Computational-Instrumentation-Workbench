@@ -27,8 +27,44 @@
     "method": "same_runtime_fresh_occurrence_reproduction",
     "role": null
   },
-  "refusals": [],
-  "domain_rules": [],
+  "refusals": [
+    "DECLARED_WORKLOAD_REFUSED",
+    "GEOMETRY_PROVIDER_REFUSED",
+    "INPUT_LIMIT",
+    "INVALID_INPUT",
+    "MALFORMED_RESPONSE",
+    "OUTPUT_LIMIT",
+    "RUNTIME_FAILED",
+    "RUNTIME_IO",
+    "RUNTIME_PIN_MISMATCH",
+    "RUNTIME_UNAVAILABLE",
+    "SOURCE_PIN_MISMATCH",
+    "TIMEOUT",
+    "operation_unavailable",
+    "workbench_capacity"
+  ],
+  "domain_rules": [
+    {
+      "rule": "Mesh topology recomputed from the declaration. No coincident vertices. Triangles non-degenerate under exact Fraction cross products. Triangle quality (twice area over longest edge squared) above the declared threshold. No duplicate triangles. Manifold edges (at most two incident) and connected vertex links with degrees in {1,2}. No isolated vertices. Component labels, boundary and orientation-conflict counts. The retained mesh_quality must equal the recomputation, with an ulp tolerance on minimum quality.",
+      "evidence": "src/ciw/geometry_mesh_contract.py:50-122,203-209"
+    },
+    {
+      "rule": "Dijkstra optimality certificate. Every retained finite distance must satisfy the edge inequality |d_a - d_b| <= w + 64*n*ulp. There must be a tight-predecessor chain from the source that witnesses every reachable vertex; hop rank is used so binary64 plateaus are tolerated. Unreachable vertices have null distances.",
+      "evidence": "src/ciw/geometry_mesh_contract.py:216-230,243-267"
+    },
+    {
+      "rule": "The target path is simple, uses only declared edges, runs from source to target, and has a length equal (fsum within the ulp budget) to the target distance. Reachability matches the connected components.",
+      "evidence": "src/ciw/geometry_mesh_contract.py:228-242, _near 40-47"
+    },
+    {
+      "rule": "Euclidean lower bounds for each vertex, target lower and upper bounds, a triangle-inequality residual within distance_absolute_tolerance, and a nonnegative gap max(0, d - lower). Unreachable targets have null bounds.",
+      "evidence": "src/ciw/geometry_mesh_contract.py:268-292"
+    },
+    {
+      "rule": "Admission-time mesh topology and quality policy. The minimum triangle quality threshold is a declared setting in [0, .01] (src/ciw/geometry_mesh_contract.py:164-165), enforced when the source is admitted (geometry_mesh_contract.py:75) and again on the result (geometry_mesh_contract.py:205-209). Non-manifold and isolated-vertex meshes are refused as unsupported, not as malformed JSON (geometry_mesh_contract.py:85-97).",
+      "evidence": "added by adversarial verification; citations in the rule"
+    }
+  ],
   "investigations": [
     "geometry-bim"
   ],
@@ -36,7 +72,8 @@
   "authority": "read_only",
   "implementation": {
     "module": "ciw.geometry_research",
-    "runner": "declared_workflow"
+    "runner": "declared_workflow",
+    "delegates": []
   },
   "guide": "docs/GEOMETRY_RESEARCH.md"
 }

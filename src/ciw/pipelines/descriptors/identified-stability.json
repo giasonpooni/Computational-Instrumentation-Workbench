@@ -28,8 +28,53 @@
     "method": "same_runtime_fresh_occurrence_reproduction",
     "role": null
   },
-  "refusals": [],
-  "domain_rules": [],
+  "refusals": [
+    "DECLARED_WORKLOAD_REFUSED",
+    "IDENTIFIED_STABILITY_REFUSED",
+    "INPUT_LIMIT",
+    "INVALID_INPUT",
+    "MALFORMED_RESPONSE",
+    "OUTPUT_LIMIT",
+    "RUNTIME_FAILED",
+    "RUNTIME_IO",
+    "RUNTIME_PIN_MISMATCH",
+    "RUNTIME_UNAVAILABLE",
+    "SOURCE_PIN_MISMATCH",
+    "STABILITY_SCHEMA_UNAVAILABLE",
+    "TIMEOUT",
+    "operation_unavailable",
+    "workbench_capacity"
+  ],
+  "domain_rules": [
+    {
+      "rule": "Independent re-derivation of the PLSR float64-decrease-v1 verdict: decrease matrix A^T P A - P symmetrised, floating-point resolution bound with gamma=(n+3)u/(1-(n+3)u), scaled value/decrease/min_P/max_decrease checked to rel 1e-12, and the status ladder NOT_CERTIFIED / CERTIFIED_WITH_MARGIN / MARGIN_LOW / DECREASE_NOT_DEFINITE / NUMERICAL_INCONCLUSIVE",
+      "evidence": "identified_stability.py:270-289 (plus plsr_engine._validate_diagnostics at plsr_engine.py:254-336 called at identified_stability.py:268-269)"
+    },
+    {
+      "rule": "Certificate P must be exactly symmetric positive definite: numpy eigvalsh check plus exact Fraction Schur-complement pivots > 0, no repair",
+      "evidence": "identified_stability.py:106-117"
+    },
+    {
+      "rule": "PLSR companion record authority/content binding: fixed claim_scope computational-integrity-only, may_authorize False, maturity block, proof_status NOT_CHECKED, record_digest over provider digest rule excluding generated_at/cargo_prove_available/guest_manifest, operationally_acceptable iff CERTIFIED_WITH_MARGIN, sampleless codes refused",
+      "evidence": "identified_stability.py:244-267"
+    },
+    {
+      "rule": "Model convention: discrete-time linear plant with explicit positive sample period, common unit across coordinates, zero equilibrium in native coordinate order, certificate unit 1/(u*u), margin quantity named negative-largest-eigenvalue-of-decrease-matrix, required_margin >= 0",
+      "evidence": "identified_stability.py:79-145, 161-173"
+    },
+    {
+      "rule": "A containment guard inside the provider process: lyapunov.__file__ must lie under the bound source root (identified_stability.py:224-225).",
+      "evidence": "added by adversarial verification; citations in the rule"
+    },
+    {
+      "rule": "The receipt proof aliasing and the strict runtime-digest equality on replay (identified_stability.py:409-417), described above.",
+      "evidence": "added by adversarial verification; citations in the rule"
+    },
+    {
+      "rule": "A bound on the selected state mean, |x| <= 1e12, applied to upstream data before invocation (identified_stability.py:214-215).",
+      "evidence": "added by adversarial verification; citations in the rule"
+    }
+  ],
   "investigations": [
     "manufacturing-cycle"
   ],
@@ -37,7 +82,8 @@
   "authority": "read_only",
   "implementation": {
     "module": "ciw.identified_stability",
-    "runner": "declared_workflow"
+    "runner": "declared_workflow",
+    "delegates": []
   },
   "guide": "docs/REMAINING_MODULES.md"
 }

@@ -31,14 +31,46 @@
     "method": "same_runtime_fresh_occurrence_reproduction",
     "role": null
   },
-  "refusals": [],
-  "domain_rules": [],
+  "refusals": [
+    "DECLARED_WORKLOAD_REFUSED",
+    "INPUT_LIMIT",
+    "INVALID_INPUT",
+    "MALFORMED_RESPONSE",
+    "OUTPUT_LIMIT",
+    "RUNTIME_FAILED",
+    "RUNTIME_IO",
+    "RUNTIME_PIN_MISMATCH",
+    "RUNTIME_UNAVAILABLE",
+    "SOURCE_PIN_MISMATCH",
+    "TIMEOUT",
+    "operation_unavailable",
+    "workbench_capacity"
+  ],
+  "domain_rules": [
+    {
+      "rule": "Recompute the SCR execution commitments. Each is a length-prefixed, domain-separated SHA-256 tagged 'scout.execution.<tag>.v1', over program, input, output and specification. The computation identity is commit(program_id, input_id, output_id, u32 exit=0), and every native identity must equal CIW's recomputation",
+      "evidence": "src/ciw/declared_workload.py:149-152, :200-204. _commit is reused for the proof identity at proved_heat.py:155"
+    },
+    {
+      "rule": "The specification must equal CIW's embedded HEAT_DESCRIPTOR program bytes and the little-endian input [steps u32][n u32][n x i64] derived from the source JSON. The displayed values must re-encode to the native output bytes, with |u| \u2264 2^40",
+      "evidence": "src/ciw/declared_workload.py:35-42, :191-199"
+    },
+    {
+      "rule": "CIW admits 3..256 cells and 0..1024 steps (declared_workload.py:110-114). The embedded native descriptor allows n<=4096 and steps<=100000 (:37), and proved-heat narrows further to 3..32 and 0..64 (proved_heat.py:59-63). The bounds are three CIW policy tiers over one native kernel, so a descriptor 'extends' must be able to narrow bounds, not only add policy keys",
+      "evidence": "added by adversarial verification; citations in the rule"
+    },
+    {
+      "rule": "exit_code and engine_occurrence are checked with 'type(x) is int' (a bool is rejected), and detail must be None (declared_workload.py:193). The reader's 'equals' block needs strict typing to preserve this",
+      "evidence": "added by adversarial verification; citations in the rule"
+    }
+  ],
   "investigations": [],
   "surface": "certification",
   "authority": "read_only",
   "implementation": {
     "module": "ciw.declared_workload",
-    "runner": "declared_workflow"
+    "runner": "declared_workflow",
+    "delegates": []
   },
   "guide": "docs/DECLARED_WORKLOADS.md"
 }

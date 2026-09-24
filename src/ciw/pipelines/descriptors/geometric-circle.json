@@ -26,8 +26,47 @@
     "method": "same_runtime_fresh_occurrence_reproduction",
     "role": null
   },
-  "refusals": [],
-  "domain_rules": [],
+  "refusals": [
+    "DECLARED_WORKLOAD_REFUSED",
+    "INPUT_LIMIT",
+    "INVALID_INPUT",
+    "MALFORMED_RESPONSE",
+    "OUTPUT_LIMIT",
+    "RUNTIME_FAILED",
+    "RUNTIME_IO",
+    "RUNTIME_PIN_MISMATCH",
+    "RUNTIME_UNAVAILABLE",
+    "SOURCE_PIN_MISMATCH",
+    "TIMEOUT",
+    "operation_unavailable",
+    "workbench_capacity"
+  ],
+  "domain_rules": [
+    {
+      "rule": "Input joint covariance must be exactly symmetric PSD in rational arithmetic (exact Schur complements, no jitter/averaging) before retention, stricter than GTE's native roundoff-tolerant domain",
+      "evidence": "geometric_circle.py:95-102 calling calibrated_window._covariance (calibrated_window.py:64-76) and gte_records._covariance; policy flag at geometric_circle.py:31"
+    },
+    {
+      "rule": "Fixed-exact circle applicability: constraint frame equals observation frame, kind circle, euclidean metric, radius>0, validity window [start,end) contains every sample time, no observed point equals the circle centre, geometry_uncertainty fixed_exact",
+      "evidence": "geometric_circle.py:103-114"
+    },
+    {
+      "rule": "Typed GTE result must echo request bindings (source_id, observation ids, times, frame, observed points, constraint, policy) and full-batch selection",
+      "evidence": "adapters/gte_records.py:51-70 (continues to :132)"
+    },
+    {
+      "rule": "The GTE reconciliation status must follow from the policy thresholds (held with reasons correction_limit_exceeded or linearization_limit_exceeded, else eligible), and reconciled_points must be null when held (adapters/gte_records.py:113-121). This is a hand-written provider-payload validator shared with geodesic.py (geodesic.py:154-161).",
+      "evidence": "added by adversarial verification; citations in the rule"
+    },
+    {
+      "rule": "The selection-support convention: duration = last sample + 1 s as half-open selection support, not a measured period (geodesic.py:71-77). It is used only to build the synthetic run that the validator needs.",
+      "evidence": "added by adversarial verification; citations in the rule"
+    },
+    {
+      "rule": "The input covariance is checked in two different domains on the same matrix. The first is exact rational PSD (geometric_circle.py:100 -> calibrated_window.py:64-76). The second is a float correlation-eigenvalue check with 1e-10 tolerance (geometric_circle.py:101 -> gte_records.py:27-48). The descriptor must say that both apply.",
+      "evidence": "added by adversarial verification; citations in the rule"
+    }
+  ],
   "investigations": [
     "geometry-bim"
   ],
@@ -35,7 +74,8 @@
   "authority": "read_only",
   "implementation": {
     "module": "ciw.geometric_circle",
-    "runner": "declared_workflow"
+    "runner": "declared_workflow",
+    "delegates": []
   },
   "guide": "docs/REMAINING_MODULES.md"
 }

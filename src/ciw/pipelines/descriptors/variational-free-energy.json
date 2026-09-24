@@ -49,14 +49,78 @@
     "method": "same_runtime_fresh_occurrence_reproduction",
     "role": null
   },
-  "refusals": [],
-  "domain_rules": [],
+  "refusals": [
+    "DECLARED_WORKLOAD_REFUSED",
+    "FREE_ENERGY_NATIVE_REFUSED",
+    "FREE_ENERGY_SCHEMA_UNAVAILABLE",
+    "INPUT_LIMIT",
+    "INVALID_INPUT",
+    "MALFORMED_RESPONSE",
+    "OUTPUT_LIMIT",
+    "RUNTIME_FAILED",
+    "RUNTIME_IO",
+    "RUNTIME_PIN_MISMATCH",
+    "RUNTIME_UNAVAILABLE",
+    "SOURCE_PIN_MISMATCH",
+    "TIMEOUT",
+    "operation_unavailable",
+    "workbench_capacity"
+  ],
+  "domain_rules": [
+    {
+      "rule": "Coordinate normalization that turns the CSG transfer matrices into the normalized training and held-out Gaussian problems, including the log-Jacobian",
+      "evidence": "src/ciw/free_energy_profile.py:171-193 (problems), :165-168 (csg_request)"
+    },
+    {
+      "rule": "Gaussian VI solver, independent reference posterior, held-out prediction and ensemble coverage metrics",
+      "evidence": "src/ciw/free_energy_math.py:162-176 (gaussian_reference), :255-329 (variational_fit), :356-360 (predict_held_out), :391-440 (evaluate_ensemble)"
+    },
+    {
+      "rule": "The native GSIE posterior must match the independent reference within 1e-9 (max abs, mean and covariance); physical back-transform; objective units with Jacobian",
+      "evidence": "src/ciw/free_energy_workflow.py:76-99; re-checked offline at free_energy_contract.py:339-355"
+    },
+    {
+      "rule": "Offline re-validation of the retained aggregate: fit recurrence, ensemble Wilson intervals/counts, and cross-stage request reconstruction",
+      "evidence": "src/ciw/free_energy_contract.py:138-222 (validate_fit), :233-304 (validate_ensemble), :314-355 (_validate_data)"
+    },
+    {
+      "rule": "Provider response semantics: the CSG record is re-checked through geodesic_reference._check_curved; the GSIE Kalman update is recomputed (gain, innovation, NIS, domain-separated state/numerical ids); the PLSR response must equal the bridge-authored model artifact and pass identified_stability._record",
+      "evidence": "src/ciw/free_energy_native.py:244-276, 278-295 (uses geodesic_reference.py:257), 297-351, 353-364; identified_stability.py:244"
+    },
+    {
+      "rule": "The bridge authors the PLSR quadratic model (A = I - alpha*Lambda, P = Lambda/2, margin provenance) and a child-process dispatch that calls provider APIs",
+      "evidence": "src/ciw/free_energy_native.py:382-406 (plsr_model_document), :408-452 (_dispatch)"
+    },
+    {
+      "rule": "Source admission includes algebra. validate_source recomputes the synthetic observations from analytic_transfer(grid, generator.gaussian_curvature) and requires each sample to equal G@truth + bias + noise at rtol 1e-13 (free_energy_profile.py:122-129; analytic_transfer at :149-162). The generator must be numpy_pcg64 with numpy 2.4.3 (:108-111).",
+      "evidence": "added by adversarial verification; citations in the rule"
+    },
+    {
+      "rule": "A numerical-domain gate runs before fusion: gaussian_reference and predict_held_out must succeed before GSIE is invoked (free_energy_workflow.py:63-65).",
+      "evidence": "added by adversarial verification; citations in the rule"
+    },
+    {
+      "rule": "Validators are reused across kinds. CSG responses are checked with geodesic_reference._check_curved against a source built by csg_source from geodesic_reference.POLICIES['curved-path-transfer'] (free_energy_native.py:124-133, 278-293). PLSR responses are checked with identified_stability._record (:266-270). Neither module is in the code hash (free_energy_workflow.py:32). The curved-path-transfer and identified-stability modules therefore cannot be folded into descriptors without breaking this kind.",
+      "evidence": "added by adversarial verification; citations in the rule"
+    },
+    {
+      "rule": "input_refs record cumulative order, not data lineage. Each stage cites the evidence plus every earlier stage result_id (free_energy_workflow.py:58), so plsr cites gsie's result although it consumes only fit and reference (:70-73). _validate_step enforces this exact list (:190-196).",
+      "evidence": "added by adversarial verification; citations in the rule"
+    },
+    {
+      "rule": "The inspect view does domain back-transforms: the reference posterior and the held-out prediction are rescaled by the latent and observation scales, plus the held-out bias (free_energy_view.py:21-24, 36-42).",
+      "evidence": "added by adversarial verification; citations in the rule"
+    }
+  ],
   "investigations": [],
   "surface": "bench",
   "authority": "read_only",
   "implementation": {
     "module": "ciw.free_energy_workflow",
-    "runner": "declared_workflow"
+    "runner": "declared_workflow",
+    "delegates": [
+      "ciw.free_energy_native"
+    ]
   },
   "guide": "docs/VARIATIONAL_FREE_ENERGY.md"
 }

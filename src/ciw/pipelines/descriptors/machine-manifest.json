@@ -15,8 +15,60 @@
     "method": "same_python_reference_fresh_occurrence_reproduction",
     "role": null
   },
-  "refusals": [],
-  "domain_rules": [],
+  "refusals": [
+    "operation_unavailable",
+    "workbench_capacity"
+  ],
+  "domain_rules": [
+    {
+      "rule": "Deterministic challenge is re-run from scratch and yields 12 finding codes (identity mismatch, stale evidence revision, unbound claim evidence, reused provenance from another machine, firmware configuration digest binding, ambiguous count basis, homing not established)",
+      "evidence": "src/ciw/machine_manifest.py:269-315"
+    },
+    {
+      "rule": "compile refuses a stale challenge report (canonical inequality against a fresh challenge) and any unresolved status",
+      "evidence": "src/ciw/machine_manifest.py:318-330"
+    },
+    {
+      "rule": "Kinematic binder x = x0 + s*(N-N0)*L/(C*g) with a 6-coordinate Jacobian, first-order joint covariance, fsum, a 64-eps roundoff bound and a negative-variance clamp; mm/m scaling; no coverage claim",
+      "evidence": "src/ciw/machine_manifest.py:333-374"
+    },
+    {
+      "rule": "Joint covariance must be exactly symmetric with nonnegative diagonal and zero cross terms for zero-variance coordinates, and PSD after correlation normalisation within 64*eps*n",
+      "evidence": "src/ciw/machine_manifest.py:128-145"
+    },
+    {
+      "rule": "Candidate claim typing: positive integer counts per revolution, bounded gear ratio, positive lead, orientation exactly +/-1, integer reference count, m/mm units only, unit compatibility per claim",
+      "evidence": "src/ciw/machine_manifest.py:164-214"
+    },
+    {
+      "rule": "Artifact content seal (artifact_digest over the unsigned mapping, 1 MiB bound)",
+      "evidence": "src/ciw/machine_manifest.py:66-85"
+    },
+    {
+      "rule": "Request covariance defaulting across artifacts. When request.covariance is null, evaluate uses candidate_manifest.uncertainty.covariance and records basis 'declared_prior_covariance' instead of 'explicit_evaluation_covariance' (src/ciw/machine_manifest.py:352, 371). This is wiring from an embedded artifact into the step input.",
+      "evidence": "added by adversarial verification; citations in the rule"
+    },
+    {
+      "rule": "Nested sealed identities inside the payload. The compiled manifest is sealed (src/ciw/machine_manifest.py:327-330), and the position result carries its own artifact_digest plus manifest_digest (:362). data.compiled_manifest_digest is added on top (src/ciw/machine_workflow.py:153). These are extra content identities beyond the kernel's DISTINCT_IDENTITIES (src/ciw/kernel.py:71).",
+      "evidence": "added by adversarial verification; citations in the rule"
+    },
+    {
+      "rule": "validate(COMPILED) re-derives by full recompilation (src/ciw/machine_manifest.py:248-253), and evaluate and inspect both call validate (:340, 378). Each _native_data therefore reruns the challenge three times, and _validate repeats this for the source, the step and the reproduction.",
+      "evidence": "added by adversarial verification; citations in the rule"
+    },
+    {
+      "rule": "Exact-recompute reopen combined with a permissive retained-runtime check (src/ciw/machine_workflow.py:205-207 vs :293-312). A bundle produced by older code passes the runtime check. If any output bit differs under the current code or numpy, it then fails, and the whole workbench restore is rejected (src/ciw/workbench.py:1087-1088, 1110-1111) instead of marking needs_reevaluation. Replay, by contrast, requires exact runtime equality (src/ciw/machine_workflow.py:92-95).",
+      "evidence": "added by adversarial verification; citations in the rule"
+    },
+    {
+      "rule": "Evidence-bundle provenance rules: source_digest is recomputed from content_utf8, duplicate provenance bytes and reused ids are rejected, and source kinds come from a fixed vocabulary (src/ciw/machine_manifest.py:94-109). Challenge findings must remain 'unresolved', and status is 'validated' exactly when there are no findings (:226-234).",
+      "evidence": "added by adversarial verification; citations in the rule"
+    },
+    {
+      "rule": "Configuration differs from authority. CONFIGURATION adds profile 'encoder_gearbox_leadscrew' and activation 'read_only' (src/ciw/machine_workflow.py:36-42) on top of AUTHORITY (:43-47). The runtime identity carries state_admission and hardware_actuation (:78-80), which thermal's does not.",
+      "evidence": "added by adversarial verification; citations in the rule"
+    }
+  ],
   "investigations": [
     "manufacturing-cycle"
   ],
@@ -24,7 +76,8 @@
   "authority": "read_only",
   "implementation": {
     "module": "ciw.machine_workflow",
-    "runner": "hand_written"
+    "runner": "hand_written",
+    "delegates": []
   },
   "guide": "docs/CONTRACT_FOUNDATIONS.md"
 }

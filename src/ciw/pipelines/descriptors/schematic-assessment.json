@@ -26,14 +26,54 @@
     "method": "same_runtime_fresh_occurrence_reproduction",
     "role": null
   },
-  "refusals": [],
-  "domain_rules": [],
+  "refusals": [
+    "DECLARED_WORKLOAD_REFUSED",
+    "INPUT_LIMIT",
+    "INVALID_INPUT",
+    "MALFORMED_RESPONSE",
+    "OUTPUT_LIMIT",
+    "RUNTIME_FAILED",
+    "RUNTIME_IO",
+    "RUNTIME_PIN_MISMATCH",
+    "RUNTIME_UNAVAILABLE",
+    "SOURCE_PIN_MISMATCH",
+    "TIMEOUT",
+    "operation_unavailable",
+    "workbench_capacity"
+  ],
+  "domain_rules": [
+    {
+      "rule": "NsObservabilitySchematic@0.1 typed-graph validity. It checks the node-kind enum, the function-class enum, the certificate-owner enum {jspt,plsr,rci,cse}, duplicate node ids, node budget 1..256 and edge budget 1024. Each edge kind's (src kind, dst kind) pair must match the _EDGES relation table",
+      "evidence": "src/ciw/declared_workload.py:48-52, :60-88. Reused by schematic_companions.py:63, :198"
+    },
+    {
+      "rule": "Stale-marking invariant. Provider output may differ from the submitted graph only on certificate nodes whose prior result was SAMPLED, and only by the exact attribute set {historical_result=SAMPLED, result=NOT_ELIGIBLE, currentness=stale, stale_reason=...}",
+      "evidence": "src/ciw/declared_workload.py:162-170. Duplicated in schematic_companions.py:212-220"
+    },
+    {
+      "rule": "The provider's retrieval (schematics.retrieve.blanket) must equal CIW's own two-hop undirected neighbourhood over the declared edges for every query",
+      "evidence": "src/ciw/declared_workload.py:179-186"
+    },
+    {
+      "rule": "The output graph must keep the declared node order exactly (list(nodes) == [n['id'] for n in original['nodes']]), with edges and meta byte-identical (declared_workload.py:158-161). This is order preservation, not just set-level topology",
+      "evidence": "added by adversarial verification; citations in the rule"
+    },
+    {
+      "rule": "The stale-marking check hard-codes SRA's internal stale_reason text and attribute values (declared_workload.py:166-167). They must match invalidate_stale_results at the pinned revision (bootstrap :129). This couples CIW to provider-internal text. It is duplicated at schematic_companions.py:217-218",
+      "evidence": "added by adversarial verification; citations in the rule"
+    },
+    {
+      "rule": "The neighbourhoods are computed over the SOURCE edges (original['edges'], declared_workload.py:183), undirected, include the query node, and are sorted. The provider's retrieval over its (possibly stale-marked) output graph must agree with that",
+      "evidence": "added by adversarial verification; citations in the rule"
+    }
+  ],
   "investigations": [],
   "surface": "certification",
   "authority": "read_only",
   "implementation": {
     "module": "ciw.declared_workload",
-    "runner": "declared_workflow"
+    "runner": "declared_workflow",
+    "delegates": []
   },
   "guide": "docs/DECLARED_WORKLOADS.md"
 }

@@ -27,8 +27,44 @@
     "method": "same_runtime_fresh_occurrence_reproduction",
     "role": null
   },
-  "refusals": [],
-  "domain_rules": [],
+  "refusals": [
+    "DECLARED_WORKLOAD_REFUSED",
+    "GEOMETRY_PROVIDER_REFUSED",
+    "INPUT_LIMIT",
+    "INVALID_INPUT",
+    "MALFORMED_RESPONSE",
+    "OUTPUT_LIMIT",
+    "RUNTIME_FAILED",
+    "RUNTIME_IO",
+    "RUNTIME_PIN_MISMATCH",
+    "RUNTIME_UNAVAILABLE",
+    "SOURCE_PIN_MISMATCH",
+    "TIMEOUT",
+    "operation_unavailable",
+    "workbench_capacity"
+  ],
+  "domain_rules": [
+    {
+      "rule": "Spectral evidence consistency for each input, the relative covariance and every sample. Eigenvalues are ordered and above a strict floor (a declared floor, or a relative floor of 8*n*EPS*max|lambda|). min, max, margin and condition number are derived exactly. The condition number is within the declared limit. The decomposition residual is within abs+rel*norm. log-det equals fsum(log lambda). The Frobenius norm equals hypot(lambda) and the matrix norm. The trace equals the sum of eigenvalues.",
+      "evidence": "src/ciw/geometry_covariance_contract.py:142-176, tolerance model _close 79-84 (64*EPS*scale + 8 ulp + residual)"
+    },
+    {
+      "rule": "Affine-invariant distance = ||log eig(relative covariance)||_2. For each sample, constant-speed invariants (distance_from_a = t*d, distance_to_b = (1-t)*d) and log-det affinity, plus endpoint residuals at t=0 and t=1. The ordered invariants list must match these names and budgets exactly.",
+      "evidence": "src/ciw/geometry_covariance_contract.py:179-189,215-252"
+    },
+    {
+      "rule": "Roundoff symmetry evidence for each ordered stage: the asymmetry is at most the symmetry tolerance times max(1,norm); the averaging adjustment lies between asymmetry/2 and n*asymmetry; the stage norms match the spectral norms. No input projection or regularisation ('no silent repair').",
+      "evidence": "src/ciw/geometry_covariance_contract.py:243-270"
+    },
+    {
+      "rule": "Request profile: 1-8 distinct named coordinates with units; settings within fixed ranges; 2-33 parameters strictly increasing from 0 to 1; exactly symmetric square input matrices with entries of magnitude at most 1e6.",
+      "evidence": "src/ciw/geometry_covariance_contract.py:21-23,91-139"
+    },
+    {
+      "rule": "The spectral contract explicitly checks internal consistency of the reported eigen-evidence without solving an eigenproblem (src/ciw/geometry_covariance_contract.py:1-7). The validator's trust model is therefore 'consistency of retained evidence plus a fresh reproduction', a domain-specific verification semantic the descriptor's verification block must name. It is not 'payload valid'.",
+      "evidence": "added by adversarial verification; citations in the rule"
+    }
+  ],
   "investigations": [
     "geometry-bim"
   ],
@@ -36,7 +72,8 @@
   "authority": "read_only",
   "implementation": {
     "module": "ciw.geometry_research",
-    "runner": "declared_workflow"
+    "runner": "declared_workflow",
+    "delegates": []
   },
   "guide": "docs/GEOMETRY_RESEARCH.md"
 }
