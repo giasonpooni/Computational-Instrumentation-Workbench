@@ -1,0 +1,418 @@
+{
+ "candidate_manifest": {
+  "artifact_digest": "sha256:2f250ee5cc0c6e2e555a2512b68ecec31c4909fb5cf4096b9a09ceb364b291b3",
+  "claims": {
+   "C": {
+    "evidence_refs": [
+     "evidence:C"
+    ],
+    "status": "validated",
+    "unit": "count/rev_motor",
+    "value": 1000
+   },
+   "L": {
+    "evidence_refs": [
+     "evidence:L"
+    ],
+    "status": "validated",
+    "unit": "m/rev_output",
+    "value": 0.01
+   },
+   "N0": {
+    "evidence_refs": [
+     "evidence:N0"
+    ],
+    "status": "validated",
+    "unit": "count",
+    "value": 100
+   },
+   "count_basis": {
+    "evidence_refs": [
+     "evidence:count_basis"
+    ],
+    "status": "validated",
+    "unit": null,
+    "value": "firmware_decoded_counts"
+   },
+   "firmware": {
+    "evidence_refs": [
+     "evidence:firmware"
+    ],
+    "status": "validated",
+    "unit": null,
+    "value": {
+     "configuration_digest": "sha256:0be5e59514c6e97c655dd56ad5fb3a5fe17773762b3464c79aaee09c70be90c0",
+     "id": "drive-fw-1"
+    }
+   },
+   "frame": {
+    "evidence_refs": [
+     "evidence:frame"
+    ],
+    "status": "validated",
+    "unit": null,
+    "value": "frame:carriage"
+   },
+   "g": {
+    "evidence_refs": [
+     "evidence:g"
+    ],
+    "status": "validated",
+    "unit": "rev_motor/rev_output",
+    "value": 2.0
+   },
+   "homing": {
+    "evidence_refs": [
+     "evidence:homing"
+    ],
+    "status": "validated",
+    "unit": null,
+    "value": {
+     "method": "hard-stop",
+     "reference_established": true
+    }
+   },
+   "s": {
+    "evidence_refs": [
+     "evidence:s"
+    ],
+    "status": "validated",
+    "unit": "1",
+    "value": 1
+   },
+   "time_basis": {
+    "evidence_refs": [
+     "evidence:time_basis"
+    ],
+    "status": "validated",
+    "unit": null,
+    "value": "clock:machine-utc"
+   },
+   "x0": {
+    "evidence_refs": [
+     "evidence:x0"
+    ],
+    "status": "validated",
+    "unit": "m",
+    "value": 1.0
+   }
+  },
+  "evidence_bundle_digest": "sha256:79f6c07652edc50c8b41e0be4f59433e78198d0ad212516f75142fa85596e10d",
+  "machine_id": "machine:example-carriage",
+  "role": "candidate_manifest",
+  "schema": "ciw.machine-candidate.v1",
+  "status": "candidate",
+  "uncertainty": {
+   "basis": "declared_prior_covariance",
+   "confidence_level": null,
+   "coordinates": [
+    "N",
+    "N0",
+    "x0",
+    "L",
+    "C",
+    "g"
+   ],
+   "covariance": [
+    [
+     4.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.01,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1e-06,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1e-08,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     1e-08
+    ]
+   ],
+   "distribution": "unspecified",
+   "evidence_refs": [
+    "evidence:uncertainty"
+   ],
+   "method": "first_order_joint_covariance",
+   "status": "validated",
+   "units": [
+    "count",
+    "count",
+    "m",
+    "m/rev_output",
+    "count/rev_motor",
+    "rev_motor/rev_output"
+   ]
+  }
+ },
+ "challenge_report": {
+  "artifact_digest": "sha256:f387f868b3ab53cbbcf1d64a6e1e71728e95b243220fb36fa1c2b6ed11ae6bcc",
+  "candidate_digest": "sha256:2f250ee5cc0c6e2e555a2512b68ecec31c4909fb5cf4096b9a09ceb364b291b3",
+  "claim_scope": "declared_evidence_consistency_and_algebra_not_independent_physical_validation",
+  "evidence_bundle_digest": "sha256:79f6c07652edc50c8b41e0be4f59433e78198d0ad212516f75142fa85596e10d",
+  "findings": [],
+  "machine_id": "machine:example-carriage",
+  "role": "challenge_report",
+  "schema": "ciw.machine-challenge.v1",
+  "status": "validated",
+  "validator": "ciw.machine-manifest-validator.v1"
+ },
+ "configuration": {
+  "activation": "read_only",
+  "hardware_actuation": "not_performed",
+  "physical_validation": "not_performed",
+  "profile": "encoder_gearbox_leadscrew",
+  "state_admission": "not_performed"
+ },
+ "evidence_bundle": {
+  "artifact_digest": "sha256:79f6c07652edc50c8b41e0be4f59433e78198d0ad212516f75142fa85596e10d",
+  "evidence": [
+   {
+    "claims": {
+     "C": "sha256:5aaf516c2217a6d5c8b521480e1299841829754bda84ead1e63deb0037a668be"
+    },
+    "evidence_id": "evidence:C",
+    "machine_id": "machine:example-carriage",
+    "source_digest": "sha256:0628d3217976ed39027e09fe51e561c3185727f6e4d83029a5f9fc914422d91a",
+    "source_id": "source:counts",
+    "status": "validated"
+   },
+   {
+    "claims": {
+     "g": "sha256:f5691bb9d0d6d1b542c4197a76f91646d3de490d78053fb7536325f582edee59"
+    },
+    "evidence_id": "evidence:g",
+    "machine_id": "machine:example-carriage",
+    "source_digest": "sha256:892ed8e0b9305e535178b9dd4876ea288e9e26960e14249437f1d7009081ddb1",
+    "source_id": "source:gear",
+    "status": "validated"
+   },
+   {
+    "claims": {
+     "L": "sha256:5ef2f01a2e5e36e518d8aca8b4b39d7122f517d040e7745715d2ee48c0301f5b"
+    },
+    "evidence_id": "evidence:L",
+    "machine_id": "machine:example-carriage",
+    "source_digest": "sha256:e3456bc1f4d270f4a97933758645fdc21e39642b31ca343c1818f7972ac27906",
+    "source_id": "source:lead",
+    "status": "validated"
+   },
+   {
+    "claims": {
+     "s": "sha256:034a6d134063ac2226fcf09c21f1177ab3cd0b91c905cb0f2c996b771c8f6d45"
+    },
+    "evidence_id": "evidence:s",
+    "machine_id": "machine:example-carriage",
+    "source_digest": "sha256:c59cf32b132c815c214c02a125da297903e6ff8d108526259b7d338c593500c6",
+    "source_id": "source:sign",
+    "status": "validated"
+   },
+   {
+    "claims": {
+     "N0": "sha256:c4abed70aa99a643e40b78e629d6915cdb27b25730cef1dd2f93d6eb7b7dd781"
+    },
+    "evidence_id": "evidence:N0",
+    "machine_id": "machine:example-carriage",
+    "source_digest": "sha256:29362c589ffaa20a1110e9bcf517740a6a60cc9b999a8e27e82bd8f8178b4490",
+    "source_id": "source:offset",
+    "status": "validated"
+   },
+   {
+    "claims": {
+     "x0": "sha256:84cdca8cab4085c8b32260c9ec1a9453e271c2134b27701f4a6041bb2613ccd7"
+    },
+    "evidence_id": "evidence:x0",
+    "machine_id": "machine:example-carriage",
+    "source_digest": "sha256:29362c589ffaa20a1110e9bcf517740a6a60cc9b999a8e27e82bd8f8178b4490",
+    "source_id": "source:offset",
+    "status": "validated"
+   },
+   {
+    "claims": {
+     "count_basis": "sha256:2088f2cb6efbf8ec04d119119e0be739c1f7b315b4c73f36c2284ada1131ff6f"
+    },
+    "evidence_id": "evidence:count_basis",
+    "machine_id": "machine:example-carriage",
+    "source_digest": "sha256:0628d3217976ed39027e09fe51e561c3185727f6e4d83029a5f9fc914422d91a",
+    "source_id": "source:counts",
+    "status": "validated"
+   },
+   {
+    "claims": {
+     "firmware": "sha256:4d893fb74f312b38ae36987fce9e63bde2a8485add953e8249d0a8a1f2d71613"
+    },
+    "evidence_id": "evidence:firmware",
+    "machine_id": "machine:example-carriage",
+    "source_digest": "sha256:0be5e59514c6e97c655dd56ad5fb3a5fe17773762b3464c79aaee09c70be90c0",
+    "source_id": "source:firmware",
+    "status": "validated"
+   },
+   {
+    "claims": {
+     "homing": "sha256:4777292faf116c01a7cb46d96ee1be8d2ddd78190a934dfe4db1748e6133b4aa"
+    },
+    "evidence_id": "evidence:homing",
+    "machine_id": "machine:example-carriage",
+    "source_digest": "sha256:3134110c345d32e5ae1be437afc45ac66c7325bd2f49bc3786b8ccfb60a71af5",
+    "source_id": "source:home",
+    "status": "validated"
+   },
+   {
+    "claims": {
+     "frame": "sha256:997fe2137898379fe608672b98bfe6e9e06e498d211ddc0eef870f952a1b3152"
+    },
+    "evidence_id": "evidence:frame",
+    "machine_id": "machine:example-carriage",
+    "source_digest": "sha256:9dff50df08c635815f4b19da10f756605a34a79a48d4ba48712782502975a70e",
+    "source_id": "source:frame",
+    "status": "validated"
+   },
+   {
+    "claims": {
+     "time_basis": "sha256:06bb9265b546c196b7a3d4cb71034b53559fdd51ba36387f2b06d5be93baa8f6"
+    },
+    "evidence_id": "evidence:time_basis",
+    "machine_id": "machine:example-carriage",
+    "source_digest": "sha256:d8198efa3604d164853468608c55efa148bc56e3564d5a30232bf98b8ab43aeb",
+    "source_id": "source:time",
+    "status": "validated"
+   },
+   {
+    "claims": {
+     "uncertainty": "sha256:a62e3f8e0af31dd580aa76f4b603771c51b12724146e4dd528d560fdec8abbc5"
+    },
+    "evidence_id": "evidence:uncertainty",
+    "machine_id": "machine:example-carriage",
+    "source_digest": "sha256:efc78e69399efccf3cd87130f17f87b27296ca48a09f0716a14b85ac11dec0ba",
+    "source_id": "source:uncertainty",
+    "status": "validated"
+   }
+  ],
+  "machine_id": "machine:example-carriage",
+  "origin": "synthetic_fixture",
+  "role": "evidence_bundle",
+  "schema": "ciw.machine-evidence.v1",
+  "sources": [
+   {
+    "content_utf8": "decoded-counts",
+    "kind": "documentation",
+    "locator": "fixture://source:counts",
+    "machine_id": "machine:example-carriage",
+    "source_digest": "sha256:0628d3217976ed39027e09fe51e561c3185727f6e4d83029a5f9fc914422d91a",
+    "source_id": "source:counts"
+   },
+   {
+    "content_utf8": "gear-ratio",
+    "kind": "documentation",
+    "locator": "fixture://source:gear",
+    "machine_id": "machine:example-carriage",
+    "source_digest": "sha256:892ed8e0b9305e535178b9dd4876ea288e9e26960e14249437f1d7009081ddb1",
+    "source_id": "source:gear"
+   },
+   {
+    "content_utf8": "lead",
+    "kind": "documentation",
+    "locator": "fixture://source:lead",
+    "machine_id": "machine:example-carriage",
+    "source_digest": "sha256:e3456bc1f4d270f4a97933758645fdc21e39642b31ca343c1818f7972ac27906",
+    "source_id": "source:lead"
+   },
+   {
+    "content_utf8": "orientation",
+    "kind": "observation",
+    "locator": "fixture://source:sign",
+    "machine_id": "machine:example-carriage",
+    "source_digest": "sha256:c59cf32b132c815c214c02a125da297903e6ff8d108526259b7d338c593500c6",
+    "source_id": "source:sign"
+   },
+   {
+    "content_utf8": "homing",
+    "kind": "observation",
+    "locator": "fixture://source:home",
+    "machine_id": "machine:example-carriage",
+    "source_digest": "sha256:3134110c345d32e5ae1be437afc45ac66c7325bd2f49bc3786b8ccfb60a71af5",
+    "source_id": "source:home"
+   },
+   {
+    "content_utf8": "frame",
+    "kind": "documentation",
+    "locator": "fixture://source:frame",
+    "machine_id": "machine:example-carriage",
+    "source_digest": "sha256:9dff50df08c635815f4b19da10f756605a34a79a48d4ba48712782502975a70e",
+    "source_id": "source:frame"
+   },
+   {
+    "content_utf8": "clock",
+    "kind": "observation",
+    "locator": "fixture://source:time",
+    "machine_id": "machine:example-carriage",
+    "source_digest": "sha256:d8198efa3604d164853468608c55efa148bc56e3564d5a30232bf98b8ab43aeb",
+    "source_id": "source:time"
+   },
+   {
+    "content_utf8": "firmware-config",
+    "kind": "firmware_configuration",
+    "locator": "fixture://source:firmware",
+    "machine_id": "machine:example-carriage",
+    "source_digest": "sha256:0be5e59514c6e97c655dd56ad5fb3a5fe17773762b3464c79aaee09c70be90c0",
+    "source_id": "source:firmware"
+   },
+   {
+    "content_utf8": "joint-prior",
+    "kind": "validation",
+    "locator": "fixture://source:uncertainty",
+    "machine_id": "machine:example-carriage",
+    "source_digest": "sha256:efc78e69399efccf3cd87130f17f87b27296ca48a09f0716a14b85ac11dec0ba",
+    "source_id": "source:uncertainty"
+   },
+   {
+    "content_utf8": "reference-offset",
+    "kind": "observation",
+    "locator": "fixture://source:offset",
+    "machine_id": "machine:example-carriage",
+    "source_digest": "sha256:29362c589ffaa20a1110e9bcf517740a6a60cc9b999a8e27e82bd8f8178b4490",
+    "source_id": "source:offset"
+   }
+  ]
+ },
+ "experiment_id": "machine:example-carriage",
+ "request": {
+  "counts": 300,
+  "covariance": null
+ },
+ "schema": "ciw.machine-manifest-source.v1"
+}

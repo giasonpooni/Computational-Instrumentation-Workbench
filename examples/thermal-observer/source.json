@@ -1,0 +1,253 @@
+{
+ "configuration": {
+  "inference": "julia_time_varying_kalman_filter",
+  "observations": "retained_synthetic_values_with_explicit_dropout",
+  "physical_validation": "not_established",
+  "plant": "two_capacity_linear_thermal",
+  "proof": "not_requested",
+  "reference": "independent_python_analytical_rc_and_joseph_conditioning",
+  "selection": "prospective_four_subset_information_gain_under_declared_cost_budget",
+  "state_admission": "not_performed"
+ },
+ "evaluation": {
+  "generator_model": {
+   "capacities_j_per_k": [
+    100.0,
+    200.0
+   ],
+   "conductances_w_per_k": [
+    10.0,
+    5.0
+   ],
+   "input_order": [
+    "heat_power",
+    "ambient_temperature"
+   ],
+   "input_units": [
+    "W",
+    "K"
+   ],
+   "observation_matrix": [
+    [
+     1,
+     0
+    ],
+    [
+     0,
+     1
+    ]
+   ],
+   "sensor_order": [
+    "core",
+    "shell"
+   ],
+   "sensor_units": [
+    "K",
+    "K"
+   ],
+   "state_order": [
+    "core_temperature",
+    "shell_temperature"
+   ],
+   "state_units": [
+    "K",
+    "K"
+   ]
+  },
+  "held_out": {
+   "input": [
+    50.0,
+    290.0
+   ],
+   "measurement_noise": [
+    0.0,
+    0.0
+   ],
+   "observations": [
+    302.2984428904421,
+    299.57890881717213
+   ],
+   "process_noise": [
+    0.0,
+    0.0
+   ],
+   "state": [
+    302.2984428904421,
+    299.57890881717213
+   ]
+  },
+  "initial_state": [
+   300.0,
+   300.0
+  ],
+  "measurement_noise": [
+   [
+    0.5,
+    -0.25
+   ],
+   [
+    0.25,
+    0.0
+   ],
+   [
+    -0.25,
+    0.5
+   ]
+  ],
+  "noise_law": "operator_declared_not_authenticated",
+  "origin": "synthetic_fixture",
+  "process_noise": [
+   [
+    0.1,
+    0.0
+   ],
+   [
+    0.0,
+    0.1
+   ],
+   [
+    0.0,
+    0.1
+   ]
+  ],
+  "states": [
+   [
+    301.0406048906988,
+    299.78254760765145
+   ],
+   [
+    301.6741364622522,
+    299.7232995674104
+   ],
+   [
+    302.0529113565069,
+    299.6925241866578
+   ]
+  ]
+ },
+ "experiment_id": "thermal:example-two-capacity",
+ "request": {
+  "inputs": [
+   [
+    100.0,
+    290.0
+   ],
+   [
+    80.0,
+    290.0
+   ],
+   [
+    60.0,
+    290.0
+   ]
+  ],
+  "model": {
+   "capacities_j_per_k": [
+    100.0,
+    200.0
+   ],
+   "conductances_w_per_k": [
+    10.0,
+    5.0
+   ],
+   "input_order": [
+    "heat_power",
+    "ambient_temperature"
+   ],
+   "input_units": [
+    "W",
+    "K"
+   ],
+   "observation_matrix": [
+    [
+     1,
+     0
+    ],
+    [
+     0,
+     1
+    ]
+   ],
+   "sensor_order": [
+    "core",
+    "shell"
+   ],
+   "sensor_units": [
+    "K",
+    "K"
+   ],
+   "state_order": [
+    "core_temperature",
+    "shell_temperature"
+   ],
+   "state_units": [
+    "K",
+    "K"
+   ]
+  },
+  "observation_noise_covariance": [
+   [
+    0.5,
+    0.0
+   ],
+   [
+    0.0,
+    0.75
+   ]
+  ],
+  "observations": [
+   [
+    301.5406048906988,
+    299.53254760765145
+   ],
+   [
+    301.9241364622522,
+    299.7232995674104
+   ],
+   [
+    301.8029113565069,
+    300.1925241866578
+   ]
+  ],
+  "operation_id": "julia.thermal-design.v1",
+  "prior": {
+   "covariance": [
+    [
+     4.0,
+     0.2
+    ],
+    [
+     0.2,
+     9.0
+    ]
+   ],
+   "mean": [
+    300.0,
+    300.0
+   ]
+  },
+  "process_noise_covariance": [
+   [
+    0.1,
+    0.0
+   ],
+   [
+    0.0,
+    0.2
+   ]
+  ],
+  "sample_interval_s": 1.0,
+  "schema": "ciw.thermal-observer-request.v1",
+  "selection": {
+   "budget": 2.0,
+   "costs": [
+    1.0,
+    2.0
+   ],
+   "minimum_sensors": 1,
+   "tie_policy": "lowest_mask_within_tolerance",
+   "tie_tolerance_nats": 1e-10
+  }
+ },
+ "schema": "ciw.thermal-observer-source.v1"
+}
