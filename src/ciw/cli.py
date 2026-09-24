@@ -427,6 +427,33 @@ def parser() -> argparse.ArgumentParser:
     return root
 
 
+# Named serve options that bind one kind: a single role at a checkout, or every
+# declared role of the kind at role-named directories under a stack root.
+ROLE_OPTIONS = {"schematic_repo": ("schematic-assessment", "sra"), "construction_repo": ("bim-quantity", "cse"),
+                "acquisition_repo": ("acquired-dataset", "ppda"), "exchange_set_repo": ("instrument-exchange", "set"),
+                "geometry_repo": ("geometric-circle", "gte"), "stability_repo": ("identified-stability", "plsr"),
+                "flat_torus_repo": ("flat-torus-reference", "ftr"), "curved_surface_repo": ("curved-path-transfer", "csg"),
+                "covariance_geometry_repo": ("covariance-geometry", "cggt"), "intrinsic_surface_repo": ("mesh-path", "isgt"),
+                "translation_surface_repo": ("translation-flow", "tsde")}
+STACK_OPTIONS = {"telemetry_stack_root": "telemetry", "calibrated_window_stack_root": "calibrated-window",
+                 "measurement_chain_stack_root": "measurement-chain", "free_energy_stack_root": "variational-free-energy"}
+
+
+def bind_named_options(session, args, names):
+    """Bind the given named options, in order, through the workbench's role and pin checks."""
+    from .workbench import _workflow
+    for name in names:
+        value = getattr(args, name)
+        if value is None:
+            continue
+        if name in ROLE_OPTIONS:
+            kind, role = ROLE_OPTIONS[name]
+            session.workbench.bind_workflow(kind, {role: value})
+        else:
+            kind = STACK_OPTIONS[name]
+            session.workbench.bind_workflow(kind, {role: value / role for role in sorted(_workflow(kind).ROLES)})
+
+
 def parse_bindings(values):
     """Group ``KIND:ROLE=PATH`` operator bindings by kind; each role is bound once."""
     grouped = {}
@@ -513,24 +540,12 @@ def main(argv: list[str] | None = None) -> int:
                         role: stack_root / role for role in DESIGN_ROLES})
             if args.esm_binding is not None:
                 session.workbench.bind_candidate_adapter(read_json(args.esm_binding))
-            if args.telemetry_stack_root is not None:
-                from .telemetry import ROLES as TELEMETRY_ROLES
-                session.workbench.bind_workflow("telemetry", {role: args.telemetry_stack_root / role for role in TELEMETRY_ROLES})
-            if args.calibrated_window_stack_root is not None:
-                from .calibrated_window import ROLES as WINDOW_ROLES
-                session.workbench.bind_workflow("calibrated-window", {role: args.calibrated_window_stack_root / role for role in WINDOW_ROLES})
-            if args.schematic_repo is not None:
-                session.workbench.bind_workflow("schematic-assessment", {"sra": args.schematic_repo})
+            bind_named_options(session, args, ("telemetry_stack_root", "calibrated_window_stack_root", "schematic_repo"))
             if args.schematic_companions_root is not None:
                 root = args.schematic_companions_root
                 session.workbench.bind_workflow("schematic-assessment", {"sra": root / "sra"})
                 session.workbench.bind_workflow("schematic-companions", {role: root / role for role in ("sra", "jspt", "plsr")})
-            if args.construction_repo is not None:
-                session.workbench.bind_workflow("bim-quantity", {"cse": args.construction_repo})
-            if args.acquisition_repo is not None:
-                session.workbench.bind_workflow("acquired-dataset", {"ppda": args.acquisition_repo})
-            if args.exchange_set_repo is not None:
-                session.workbench.bind_workflow("instrument-exchange", {"set": args.exchange_set_repo})
+            bind_named_options(session, args, ("construction_repo", "acquisition_repo", "exchange_set_repo"))
             if args.acquired_stream_stack_root is not None:
                 root = args.acquired_stream_stack_root
                 from .calibrated_window import ROLES as WINDOW_ROLES
@@ -538,25 +553,10 @@ def main(argv: list[str] | None = None) -> int:
                 for kind in ("calibrated-window", "acquired-calibrated-window"):
                     session.workbench.bind_workflow(kind, {role: root / role for role in WINDOW_ROLES})
                 session.workbench.bind_workflow("residual-monitor", {role: root / role for role in ("oit", "fdir")})
-            if args.measurement_chain_stack_root is not None:
-                session.workbench.bind_workflow("measurement-chain", {
-                    role: args.measurement_chain_stack_root / role for role in ("rci", "fsrt", "jspt")})
-            if args.geometry_repo is not None:
-                session.workbench.bind_workflow("geometric-circle", {"gte": args.geometry_repo})
-            if args.stability_repo is not None:
-                session.workbench.bind_workflow("identified-stability", {"plsr": args.stability_repo})
-            if args.flat_torus_repo is not None:
-                session.workbench.bind_workflow("flat-torus-reference", {"ftr": args.flat_torus_repo})
-            if args.curved_surface_repo is not None:
-                session.workbench.bind_workflow("curved-path-transfer", {"csg": args.curved_surface_repo})
-            if args.free_energy_stack_root is not None:
-                session.workbench.bind_workflow("variational-free-energy", {role: args.free_energy_stack_root / role for role in ("csg", "gsie", "plsr")})
-            if args.covariance_geometry_repo is not None:
-                session.workbench.bind_workflow("covariance-geometry", {"cggt": args.covariance_geometry_repo})
-            if args.intrinsic_surface_repo is not None:
-                session.workbench.bind_workflow("mesh-path", {"isgt": args.intrinsic_surface_repo})
-            if args.translation_surface_repo is not None:
-                session.workbench.bind_workflow("translation-flow", {"tsde": args.translation_surface_repo})
+            bind_named_options(session, args, ("measurement_chain_stack_root", "geometry_repo", "stability_repo",
+                                               "flat_torus_repo", "curved_surface_repo", "free_energy_stack_root",
+                                               "covariance_geometry_repo", "intrinsic_surface_repo",
+                                               "translation_surface_repo"))
             if (args.computation_repo is None) != (args.computation_engine is None):
                 raise ValueError("--computation-repo and --computation-engine must be supplied together")
             if args.computation_repo is not None:
