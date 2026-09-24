@@ -134,6 +134,9 @@ def main() -> int:
         for role, path in providers:
             command += ["--provider", f"{role}={path}"]
         run(command, cwd=work, env=environment)
+        # The dashboard is rendered by the installed wheel, so refreshing lab/ needs no CIW dependencies on the host.
+        run([python, "-m", "ciw", "lab", "dashboard", "--retained", str(output), "--output", str(output / "index.html")],
+            cwd=work, env=environment)
         if not args.no_compare:
             run([python, "-m", "ciw", "lab", "verify", "--retained", str(args.retained.resolve()), "--fresh", str(output)],
                 cwd=work, env=environment)

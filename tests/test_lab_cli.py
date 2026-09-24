@@ -270,6 +270,7 @@ def test_refresh_retains_only_a_run_that_bound_every_provider(tmp_path, monkeypa
     (run / "artifacts").mkdir()
     (run / "queue-state.json").write_text("{}")
     (run / "REPORTS.md").write_text("")
+    (run / "index.html").write_text("")
     (run / "reports" / "T100.json").write_text(json.dumps({"task_id": "T100", "state": "partial"}))
     (run / "reports" / "T101.json").write_text(json.dumps({"task_id": "T101", "state": "partial", "unresolved_assumptions": [
         "Provider plsr-python refused: PLSR_UNAVAILABLE: PackageNotFoundError: No package metadata"]}))

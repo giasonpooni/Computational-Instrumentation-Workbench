@@ -2,6 +2,7 @@ import hashlib
 import json
 import os
 import pathlib
+import re
 import sys
 
 import pytest
@@ -733,3 +734,14 @@ def test_independence_is_symmetric_between_distinct_known_origins():
         check = dict(CHECK, producer={"implementation": producer}, checker={"implementation": checker})
         with pytest.raises(EvidenceRefusal):
             supported_label({"independent_check": check}, "numerical")
+
+
+def test_markdown_rows_keep_the_label_column_for_any_claim_text():
+    task = load_queue()["tasks"][0]
+    record = finding("a | b\nsplit claim", "numerical", 1.0, {"checks": [CHECK]}, unit="m|s")
+    lines = report.render_markdown(report.build_report(task, "completed", {}, [record])).splitlines()
+    table = lines[lines.index("| Finding | Value | Evidence status |"):]
+    assert len(table) == 3  # header, separator and exactly one row: the newline did not split it
+    row = table[2]
+    assert "a \\| b split claim" in row and "m\\|s" in row
+    assert len(re.findall(r"(?<!\\)\|", row)) == 4 and row.endswith("| `numerically_verified` |")

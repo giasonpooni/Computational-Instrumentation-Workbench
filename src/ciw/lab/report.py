@@ -156,8 +156,10 @@ def render_markdown(report: dict) -> str:
     if report["findings"]:
         lines += ["", "| Finding | Value | Evidence status |", "| --- | --- | --- |"]
         for record in report["findings"]:
-            lines.append(f"| {record['claim']} | {_inline(record['value'], limit=80)}"
-                         f"{' ' + record['unit'] if record.get('unit') else ''} | `{record['evidence_status']}` |")
+            # Claims and units are escaped like every other cell: a raw pipe would shift the label column.
+            unit = f" {_inline(record['unit'])}" if record.get("unit") else ""
+            lines.append(f"| {_inline(record['claim'])} | {_inline(record['value'], limit=80)}{unit}"
+                         f" | `{record['evidence_status']}` |")
     return "\n".join(lines) + "\n"
 
 

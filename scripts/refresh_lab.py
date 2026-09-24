@@ -4,8 +4,9 @@ Runs ``scripts/check_lab.py --no-compare`` (isolated wheel, pinned providers,
 lab tests, whole queue) under Python 3.12+, or takes such a run with
 ``--from-run`` (it must have run under Python 3.12+ with CSG, FTR, SCR and the
 PLSR/FTR interpreter bound, none of them refused, as in the CI comparison),
-then replaces the retained reports, artifacts, queue state and report book
-with the fresh ones and renders ``lab/index.html``.
+then replaces the retained reports, artifacts, queue state, report book and
+dashboard (rendered inside the clean room by the installed wheel) with the
+fresh ones.
 Elapsed times, JUnit records and gate records stay with the run output: they
 are machine-specific and not retained evidence. Review ``git diff lab`` and
 ``ciw lab verify`` output before committing a refresh.
@@ -23,7 +24,7 @@ import sys
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
-RETAINED = ("reports", "artifacts", "queue-state.json", "REPORTS.md")
+RETAINED = ("reports", "artifacts", "queue-state.json", "REPORTS.md", "index.html")
 # The bindings scripts/check_lab.py makes on Python 3.12+; CI compares with a run that had all of them.
 REQUIRED_PROVIDERS = ("csg", "ftr", "scr", "plsr-python", "ftr-python")
 # Refusal codes of those providers (CSG_TREE_MISMATCH, FTR_INTERPRETER_UNBOUND, PLSR_UNAVAILABLE, ...): a
@@ -83,9 +84,6 @@ def main() -> int:
                 destination.unlink()
             source = run / name
             (shutil.copytree if source.is_dir() else shutil.copy2)(source, destination)
-    subprocess.run([sys.executable, "-m", "ciw", "lab", "dashboard", "--retained", str(target),
-                    "--output", str(target / "index.html")], check=True,
-                   env={**os.environ, "PYTHONPATH": str(ROOT / "src")})
     print(f"Refreshed {target}; review git diff before committing")
     return 0
 
