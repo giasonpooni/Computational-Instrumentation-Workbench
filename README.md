@@ -231,9 +231,20 @@ Each finding (a claim with its value and declared basis) carries one evidence
 label: `analytic`, `synthetic`, `numerically_verified`, `provider_backed`,
 `hardware_measured`, `independently_verified` or `not_established`.
 `independently_verified` means agreement between implementations of distinct
-origin, such as `ciw` against SciPy or a pinned provider; it is not review by
-another party. A deterministic validator (`ciw.lab.evidence`) computes the
-label from the finding's declared basis and refuses any other. Running a task
+origin, such as `ciw` against SciPy or a pinned provider: independent
+implementation agreement. Independent verification by another party is
+outside what the queue can establish. A deterministic validator
+(`ciw.lab.evidence`) computes the label from the finding's declared basis and
+refuses any other. Because a passing check outranks provenance, the label
+alone does not say where a result came from; each finding also records the
+basis components it declares (for example reference checks on synthetic
+inputs, or a pinned provider run; not to be confused with the implementation
+origin that `independently_verified` compares), and reports and the
+dashboard show them beside the label, with the declared generator and seed,
+provider repository@revision or acquisition device, without changing it. A
+computational finding cannot cite an acquisition record, and one is shown as
+a hardware acquisition only on a physical-domain finding it establishes.
+Running a task
 never acquires hardware data. A finding in a physical domain (physical,
 calibration or sensor performance) is `not_established` without an acquisition
 record (device, raw-byte digest, acquisition time and calibration reference)
@@ -241,12 +252,25 @@ for device bytes captured outside the runner, such as an operator's GPU energy
 log. When the validator labels such a finding from its acquisition record, the
 runner refuses the report and records the task as `blocked` unless those raw
 bytes are a retained artifact of the task and a hardware probe succeeded in the
-same task. The lab retains the bytes; it does not authenticate the capture.
+same task. Bytes of an operator capture (`ciw lab run --capture ROLE=PATH`)
+also need a probe of that capture's instrument on the host, so a capture from
+an instrument the host cannot probe (a CMM, a photogrammetry rig) keeps its
+physical claims `not_established`. The lab retains the bytes; it does not
+authenticate the capture.
 A report's physical validation status is `hardware_measured` only when it has
 physical-domain findings and each rests on acquired hardware evidence;
-otherwise it is `not_established`. Machine-safety, industrial-readiness,
-customer-demand, actuator-authority and production-acceptance claims are always
-`not_established`; the workbench does not decide them.
+otherwise it is `not_established`. Claims filed in the machine-safety,
+industrial-readiness, customer-demand, actuator-authority or
+production-acceptance domains are always `not_established`; the workbench
+does not decide them. The domain is chosen by the finding's author and
+reviewed. An authority statement filed under a computational domain was once
+labelled by its checks (T141), so the validator now refuses computational-
+and physical-domain claims worded as such an outcome ("accepted for
+production", "safe to operate"). The only exemption is a clause that says,
+before the outcome, that the software does not make, mark or record it ("the
+lab API cannot mark a lot accepted for production"); a negation elsewhere in
+the claim exempts nothing. The screen matches phrases, not every paraphrase,
+so choosing the domain remains a review question.
 
 The labels grade what supports a finding; the five classifications above say
 what kind of result it is. No code assigns the five classifications or maps one
@@ -485,8 +509,9 @@ reports with the reviewed run retained in [`lab/`](lab/README.md): every
 report, artifact and figure, the report book (`lab/REPORTS.md`) and a
 self-contained dashboard (`lab/index.html`). `scripts/refresh_lab.py`
 regenerates that run from a clean-room gate run for review before it is
-committed. Hardware-dependent tasks remain blocked in the gate, and no retained
-report claims a physical result.
+committed. Hardware-dependent tasks are blocked or partial in the gate; runs
+made on a hardware host are retained under `lab/hardware/` and verified for
+integrity only. No report in the retained gate run claims a physical result.
 
 See the [development guide](docs/DEVELOPMENT.md#validation-commands) for commands
 and environment requirements. The candidate-evidence gate runs in Ubuntu CI;

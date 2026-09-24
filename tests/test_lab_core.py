@@ -51,10 +51,10 @@ def test_check_passed_flag_must_match_numbers():
 
 
 def test_independence_requires_distinct_implementations():
-    check = dict(CHECK, producer={"implementation": "ciw.lab"}, checker={"implementation": "scipy.integrate"})
+    check = dict(CHECK, producer={"implementation": "ciw.lab", "revision": "r1"}, checker={"implementation": "scipy.integrate", "revision": "r1"})
     assert supported_label({"independent_check": check}, "numerical") == "independently_verified"
     for sibling in ("ciw.lab", "ciw.lab.analytic", "ciw@other-revision", "CIW:reference"):
-        same = dict(check, checker={"implementation": sibling, "revision": "other"})
+        same = dict(check, checker={"implementation": sibling, "revision": "other", "revision": "r1"})
         with pytest.raises(EvidenceRefusal, match="share an implementation origin"):
             supported_label({"independent_check": same}, "numerical")
     assert evidence.origin("Curved-Surface-Geodesic-Sensitivity-Runtime@bbc535a") != evidence.origin("ciw.lab")
@@ -213,7 +213,7 @@ def test_signed_thresholds_are_allowed_for_directional_checks():
 
 def test_label_changes_name_differing_optional_modules(tmp_path):
     task = load_queue()["tasks"][0]
-    independent = dict(CHECK, producer={"implementation": "ciw.lab"}, checker={"implementation": "sympy"})
+    independent = dict(CHECK, producer={"implementation": "ciw.lab", "revision": "r1"}, checker={"implementation": "sympy", "revision": "r1"})
     runs = (("full", {"independent_check": independent}, {"implementation": "ciw.lab", "sympy": "1.14.0"}),
             ("bare", {"derivation": "docs"}, {"implementation": "ciw.lab"}))
     for name, basis, identity in runs:
@@ -233,7 +233,7 @@ def test_module_implementations_returns_only_that_module():
 @pytest.mark.parametrize("checker", ["ciw-rust", "python:ciw", "rust ciw", "https://github.com/x/ciw",
                                      "сiw.lab", "ciw​.lab", "ｃｉｗ.lab", "homemade.solver"])
 def test_independence_cannot_be_minted_by_spelling(checker):
-    check = dict(CHECK, producer={"implementation": "ciw.lab"}, checker={"implementation": checker})
+    check = dict(CHECK, producer={"implementation": "ciw.lab", "revision": "r1"}, checker={"implementation": checker, "revision": "r1"})
     with pytest.raises(EvidenceRefusal):
         supported_label({"independent_check": check}, "numerical")
 
@@ -241,7 +241,7 @@ def test_independence_cannot_be_minted_by_spelling(checker):
 @pytest.mark.parametrize("checker", ["scipy.integrate.solve_ivp(DOP853)", "sympy", "git rev-parse HEAD^{tree}",
                                      "Curved-Surface-Geodesic-Sensitivity-Runtime@bbc535a", "cpython.math.fsum"])
 def test_recognised_external_origins_are_independent(checker):
-    check = dict(CHECK, producer={"implementation": "ciw.lab"}, checker={"implementation": checker})
+    check = dict(CHECK, producer={"implementation": "ciw.lab", "revision": "r1"}, checker={"implementation": checker, "revision": "r1"})
     assert supported_label({"independent_check": check}, "numerical") == "independently_verified"
     same_origin = dict(check, reference_kind="cross_implementation")
     with pytest.raises(EvidenceRefusal, match="same-origin"):
@@ -278,7 +278,7 @@ def test_acquisition_needs_a_raw_digest_and_flags_are_strict():
 
 def test_primary_label_is_order_independent_and_conservative():
     strong = finding("independent", "numerical", 1.0, {"independent_check": dict(
-        CHECK, producer={"implementation": "ciw.lab"}, checker={"implementation": "sympy"})})
+        CHECK, producer={"implementation": "ciw.lab", "revision": "r1"}, checker={"implementation": "sympy", "revision": "r1"})})
     checked = finding("checked", "numerical", 1.0, {"checks": [CHECK]})
     honest = finding("unsupported", "provenance", None, {}, expected_not_established=True)
     physical = finding("physical", "physical", None, {})
@@ -728,10 +728,10 @@ def test_independence_is_symmetric_between_distinct_known_origins():
     for producer, checker in (("ciw.lab.jacobi", "scipy"), ("scipy.integrate", "ciw.lab.jacobi"),
                               ("parameterized-lyapunov-stability-runtime", "ciw.lab.lyapunov_reference"),
                               ("sympy", "mpmath")):
-        check = dict(CHECK, producer={"implementation": producer}, checker={"implementation": checker})
+        check = dict(CHECK, producer={"implementation": producer, "revision": "r1"}, checker={"implementation": checker, "revision": "r1"})
         assert supported_label({"independent_check": check}, "numerical") == "independently_verified"
     for producer, checker in (("ciw.lab.a", "ciw.lab.b"), ("scipy.linalg", "scipy.integrate"), ("homemade", "ciw")):
-        check = dict(CHECK, producer={"implementation": producer}, checker={"implementation": checker})
+        check = dict(CHECK, producer={"implementation": producer, "revision": "r1"}, checker={"implementation": checker, "revision": "r1"})
         with pytest.raises(EvidenceRefusal):
             supported_label({"independent_check": check}, "numerical")
 
@@ -740,8 +740,330 @@ def test_markdown_rows_keep_the_label_column_for_any_claim_text():
     task = load_queue()["tasks"][0]
     record = finding("a | b\nsplit claim", "numerical", 1.0, {"checks": [CHECK]}, unit="m|s")
     lines = report.render_markdown(report.build_report(task, "completed", {}, [record])).splitlines()
-    table = lines[lines.index("| Finding | Value | Evidence status |"):]
+    table = lines[lines.index(report.FINDINGS_HEADER):]
     assert len(table) == 3  # header, separator and exactly one row: the newline did not split it
     row = table[2]
     assert "a \\| b split claim" in row and "m\\|s" in row
-    assert len(re.findall(r"(?<!\\)\|", row)) == 4 and row.endswith("| `numerically_verified` |")
+    assert len(re.findall(r"(?<!\\)\|", row)) == 5 and row.endswith("| `numerically_verified` | reference checks |")
+    assert row == report.finding_row(record)
+
+
+
+# ---------------------------------------------------------------- origin beside the label
+
+def test_origin_is_derived_from_the_basis_and_never_changes_the_label():
+    independent = dict(CHECK, producer={"implementation": "ciw.lab", "revision": "r1"}, checker={"implementation": "scipy", "revision": "r1"})
+    cases = [
+        ({}, "numerical", [], "not_established"),
+        ({"derivation": "docs"}, "mathematical", ["derivation"], "analytic"),
+        ({"generator": {"name": "seeded"}}, "numerical", ["synthetic_inputs"], "synthetic"),
+        ({"generator": {"name": "seeded"}, "checks": [CHECK]}, "numerical", ["reference_checks", "synthetic_inputs"],
+         "numerically_verified"),
+        ({"provider": PROVIDER, "checks": [CHECK]}, "numerical", ["provider", "reference_checks"],
+         "numerically_verified"),
+        ({"provider": PROVIDER}, "numerical", ["provider"], "provider_backed"),
+        ({"provider": dict(PROVIDER, executed=False), "derivation": "d"}, "numerical", ["derivation"], "analytic"),
+        ({"independent_check": independent, "provider": PROVIDER}, "numerical", ["independent_check", "provider"],
+         "independently_verified"),
+        ({"acquisition": ACQUISITION}, "physical", ["acquisition"], "hardware_measured"),
+        ({"checks": [], "notes": "n", "inputs": {"x": 1}}, "numerical", [], "not_established"),
+    ]
+    for basis, domain, origin, label in cases:
+        record = finding("claim", domain, 1.0, basis)
+        assert record["origin"] == origin == evidence.basis_origin(basis) == evidence.finding_origin(record)
+        assert record["evidence_status"] == label == supported_label(basis, domain)
+    # Same label, different origins: the label alone does not say where a result came from.
+    on_generator = finding("a", "numerical", 1.0, {"generator": {"name": "g"}, "checks": [CHECK]})
+    on_provider = finding("b", "numerical", 1.0, {"provider": PROVIDER, "checks": [CHECK]})
+    assert on_generator["evidence_status"] == on_provider["evidence_status"] == "numerically_verified"
+    assert evidence.describe_origin(on_generator["origin"]) == "reference checks, synthetic inputs"
+    assert evidence.describe_origin(on_provider["origin"]) == "pinned provider run, reference checks"
+    assert evidence.describe_origin([]) == "no declared basis"
+    assert evidence.origin_difference(on_generator, on_provider) == \
+        "basis components reference_checks, synthetic_inputs -> provider, reference_checks"
+    assert evidence.origin_difference(on_generator, dict(on_generator, claim="c")) == ""
+
+
+def test_a_stated_origin_must_equal_the_derived_one():
+    record = finding("rate", "numerical", 4.0, {"generator": {"name": "g"}, "checks": [CHECK]})
+    for forged in (["reference_checks"], ["provider", "reference_checks"], [], "synthetic_inputs", None):
+        with pytest.raises(EvidenceRefusal, match="origin refused"):
+            validate_finding(dict(record, origin=forged))
+    # A finding retained before origins were recorded has none; its origin is derived, never trusted.
+    legacy = {key: value for key, value in record.items() if key != "origin"}
+    assert validate_finding(legacy) is legacy and evidence.finding_origin(legacy) == record["origin"]
+    # A malformed component is refused even where the label rules never reach it (a check outranks it).
+    with pytest.raises(EvidenceRefusal, match="generator"):
+        finding("x", "numerical", 1.0, {"generator": "seeded", "checks": [CHECK]})
+    with pytest.raises(EvidenceRefusal, match="provider"):
+        finding("x", "numerical", 1.0, {"provider": {"executed": True}, "checks": [CHECK]})
+
+
+def test_new_reports_carry_origins_and_render_them_beside_each_label():
+    task = load_queue()["tasks"][0]
+    synthetic = finding("On synthetic inputs", "numerical", 1.0, {"generator": {"name": "g"}, "checks": [CHECK]})
+    provider = finding("On a provider run", "numerical", 2.0, {"provider": PROVIDER})
+    built = report.build_report(task, "completed", {}, [synthetic, provider])
+    assert [f["origin"] for f in built["findings"]] == [["reference_checks", "synthetic_inputs"], ["provider"]]
+    markdown = report.render_markdown(built)
+    assert report.FINDINGS_HEADER == "| Finding | Value | Evidence status | Basis |" and report.FINDINGS_HEADER in markdown
+    assert "| On synthetic inputs | 1 | `numerically_verified` | reference checks, synthetic inputs (g) |" in markdown
+    assert "| On a provider run | 2 | `provider_backed` | pinned provider run (owner/provider@aaaaaaaaaaaa) |" in markdown
+    assert ("declared basis — pinned provider run: 1, reference checks: 1, synthetic inputs: 1" in markdown)
+    assert "declared origins" not in markdown and "| Origin |" not in markdown
+    counts = evidence.origin_counts(built["findings"])
+    assert counts["numerically_verified"]["synthetic_inputs"] == 1 and counts["provider_backed"]["provider"] == 1
+    assert sum(counts["not_established"].values()) == 0
+    legacy = {key: value for key, value in synthetic.items() if key != "origin"}
+    with pytest.raises(EvidenceRefusal, match="lacks its derived origin"):
+        report.build_report(task, "completed", {}, [legacy])
+
+
+def test_the_report_schema_accepts_only_derived_origin_components():
+    pytest.importorskip("jsonschema")
+    task = load_queue()["tasks"][0]
+    record = dict(finding("c", "numerical", 1.0, {"checks": [CHECK]}), origin=["reference_checks"])
+    built = report.build_report(task, "completed", {"provider_runtime_identity": {"runtime": "builtin"}}, [record])
+    assert runner.schema_errors(built) == []
+    built["findings"][0]["origin"] = ["hardware"]    # structural only: validate_report compares it with the basis
+    assert any("origin" in problem for problem in runner.schema_errors(built))
+
+
+def test_an_acquisition_record_is_shown_as_hardware_only_where_it_establishes_the_finding():
+    failing = dict(CHECK, observed=1.0, passed=False)
+    # A computational claim cannot cite an acquisition, whatever its checks say (a failing check used to decide
+    # the label first, so the record entered the report and was shown as a hardware acquisition).
+    for basis in ({"acquisition": {"device": "none"}, "checks": [failing]},
+                  {"acquisition": ACQUISITION, "checks": [failing]}, {"acquisition": ACQUISITION}):
+        with pytest.raises(EvidenceRefusal, match="computational claim cannot cite hardware acquisition"):
+            finding("Claim", "numerical", 1.0, basis)
+    refuted = finding("Claim", "numerical", 1.0, {"checks": [failing]})
+    with pytest.raises(EvidenceRefusal, match="computational claim cannot cite hardware acquisition"):
+        validate_finding(dict(refuted, basis=dict(refuted["basis"], acquisition=ACQUISITION),
+                              origin=["acquisition", "reference_checks"]))
+    # A malformed record is refused wherever it appears, even where the label rules never inspect it.
+    for domain, basis in (("machine_safety", {"acquisition": {}}),
+                          ("physical", {"acquisition": {"device": "x"}, "checks": [failing]}),
+                          ("physical", {"acquisition": dict(ACQUISITION, raw_sha256="C" * 64), "checks": [failing]})):
+        with pytest.raises(EvidenceRefusal, match="acquisition"):
+            finding("Claim", domain, 1.0, basis)
+    # A well-formed record reads as hardware acquisition only on the physical finding it establishes.
+    measured = finding("Measured", "physical", 1.0, {"acquisition": ACQUISITION})
+    assert measured["evidence_status"] == "hardware_measured"
+    assert evidence.describe_basis(measured) == "hardware acquisition (camera-1)"
+    for record in (finding("Refuted", "physical", 1.0, {"acquisition": ACQUISITION, "checks": [failing]}),
+                   finding("Authority", "production_acceptance", "accepted", {"acquisition": ACQUISITION})):
+        assert record["evidence_status"] == "not_established" and record["origin"][0] == "acquisition"
+        assert evidence.describe_basis(record).startswith("declared acquisition record (not accepted)")
+        assert "hardware" not in evidence.describe_basis(record)
+    task = load_queue()["tasks"][0]
+    markdown = report.render_markdown(report.build_report(task, "partial", {}, [measured, refuted]))
+    assert "| Measured | 1 | `hardware_measured` | hardware acquisition (camera-1) |" in markdown
+    assert "declared basis — acquisition record: 1, reference checks: 1" in markdown
+
+
+def test_the_rendered_basis_names_the_generator_provider_and_device_it_declares():
+    generator = finding("On generated inputs", "numerical", 1.0,
+                        {"generator": {"name": "ciw.lab.bench | v2", "seed": 602026}, "checks": [CHECK]})
+    unseeded = finding("Unseeded", "numerical", 1.0, {"generator": {"name": "sphere\ngeodesic"}})
+    provider = finding("On a provider run", "numerical", 2.0, {"provider": PROVIDER, "checks": [CHECK]})
+    assert evidence.describe_basis(generator) == "reference checks, synthetic inputs (ciw.lab.bench | v2, seed 602026)"
+    assert evidence.describe_basis(unseeded) == "synthetic inputs (sphere geodesic)"
+    assert evidence.describe_basis(provider) == "pinned provider run (owner/provider@aaaaaaaaaaaa), reference checks"
+    row = report.finding_row(generator)            # the declared identity is escaped like every other cell
+    assert row.endswith("| `numerically_verified` | reference checks, synthetic inputs (ciw.lab.bench \\| v2, "
+                        "seed 602026) |")
+    assert len(re.findall(r"(?<!\\)\|", row)) == 5
+    assert evidence.origin_counts([generator])["numerically_verified"]["synthetic_inputs"] == 1
+
+
+def test_retained_rows_name_their_generator_and_provider():
+    reports = pathlib.Path(__file__).resolve().parents[1] / "lab" / "reports"
+    if not (reports / "T060.json").is_file():
+        pytest.skip("retained lab reports are not in this checkout")
+    t060 = json.loads((reports / "T060.json").read_text(encoding="utf-8"))
+    generated = [f for f in t060["findings"] if (f["basis"].get("generator") or {}).get("name")
+                 == "ciw.lab.sensor_fusion_bench"]
+    assert generated, "T060 declares ciw.lab.sensor_fusion_bench as its generator"
+    rows = report.render_markdown(t060).splitlines()
+    for record in generated:
+        assert report.finding_row(record) in rows and "(ciw.lab.sensor_fusion_bench" in report.finding_row(record)
+    provided = [f for path in sorted(reports.glob("T*.json"))
+                for f in json.loads(path.read_text(encoding="utf-8"))["findings"]
+                if (f["basis"].get("provider") or {}).get("executed") is True]
+    assert provided
+    for record in provided:
+        provider = record["basis"]["provider"]
+        assert f"({provider['repository']}@{provider['revision'][:12]})" in report.finding_row(record)
+
+
+# ---------------------------------------------------------------- authority wording
+
+REFUSED_OUTCOMES = [
+    "Coupon lot accepted for production",
+    "Coupon lot rejected for production",
+    "The measurement system is approved for production use",
+    "The part is certified for use",
+    "The press is safe to operate",
+    "Machine safety is established by the simulated guard",
+    "The controller is authorized to actuate the axis",
+    "The monitor is ready for industrial deployment",
+    "Industrial readiness is demonstrated by these runs",
+    "There is strong customer demand for drift monitors",
+    "Customers want the geodesic sensitivity feature",
+    # A negation or recording word elsewhere in the claim exempts nothing: the exemption is clause-local
+    # and must come before the outcome (these five were labelled numerically_verified before).
+    "Coupon lot accepted for production; it does not need rework",
+    "Coupon lot accepted for production and was not reworked",
+    "The press is safe to operate and never exceeds 2 kN",
+    "Customers want the drift monitor; no claim beyond the survey is made",
+    "Coupon lot accepted for production, recorded as lot 7",
+    # A negation that modifies something else in the same clause exempts nothing either.
+    "The coupon lot that never failed inspection is accepted for production",
+    "Since it does not drift the monitor is ready for industrial deployment",
+    "The press that does not report faults is safe to operate",
+    "The lot is not only accepted for production",
+    "The press is not safe to operate",
+    "The workbench records the lot as accepted for production",
+    # Software as the subject is no exemption: the software's own readiness is an authority outcome.
+    "The workbench is ready for industrial deployment",
+    # Safe to use or run with a physical subject, or with people or production as the object.
+    "The coupon is safe to use",
+    "The part, after rework, is safe to use",
+    "The monitor is safe to use by operators",
+    "The fitted surrogate is qualified for use in production",
+]
+
+
+@pytest.mark.parametrize("claim", REFUSED_OUTCOMES)
+def test_an_authority_outcome_filed_in_a_computational_domain_is_refused(claim):
+    passing = {"checks": [CHECK]}
+    for domain in sorted(evidence.COMPUTATIONAL_DOMAINS):
+        with pytest.raises(EvidenceRefusal, match="authority outcome"):
+            finding(claim, domain, "accepted", passing)
+    honest = finding("placeholder", "numerical", "accepted", passing)
+    with pytest.raises(EvidenceRefusal, match="authority outcome"):
+        validate_finding(dict(honest, claim=claim))     # a claim swapped in after construction
+    for domain in sorted(evidence.AUTHORITY_DOMAINS):  # where it belongs: recorded, never established
+        assert finding(claim, domain, "accepted", passing)["evidence_status"] == "not_established"
+
+
+@pytest.mark.parametrize("claim", REFUSED_OUTCOMES)
+def test_an_authority_outcome_filed_in_a_physical_domain_is_refused(claim):
+    # With an acquisition record it would be hardware_measured: the screen covers physical domains too.
+    for domain in sorted(evidence.PHYSICAL_DOMAINS):
+        assert supported_label({"acquisition": ACQUISITION}, domain) == "hardware_measured"
+        with pytest.raises(EvidenceRefusal, match=f"authority outcome .* in the physical domain {domain}"):
+            finding(claim, domain, "accepted", {"acquisition": ACQUISITION})
+    honest = finding("placeholder", "physical", 1.0, {"acquisition": ACQUISITION})
+    with pytest.raises(EvidenceRefusal, match="authority outcome"):
+        validate_finding(dict(honest, claim=claim))
+
+
+@pytest.mark.parametrize("claim", [
+    "The acceptance policy refuses accept, reject and conditional production decisions",
+    "The lab API cannot mark a lot accepted for production",
+    "The workbench records production acceptance as not performed",
+    "A verified computation does not authorize actuation",
+    "DP45 accepted steps grow about linearly in k",
+    "PLSR certifies exactly when eps > eps*",
+    "A safe step size keeps the local error below 1e-8",
+    "The conformance suite rejects every seeded defect mutant",
+    # Ordinary numerical and software claims the phrase list once refused.
+    "The step size h = 0.01 is safe to use for RK4 on this stiff problem",
+    "The lock-free queue is safe to run from two threads",
+    "The fitted surrogate is qualified for use inside the declared input box",
+    "Samples accepted for use in the estimator all lie inside the trust region",
+    "The real parts are safe to use as initial guesses",
+    # The software declining the decision, before the outcome and in the same clause.
+    "The simulation never claims that the press is safe to operate",
+    "The lab makes no claim that the lot is accepted for production",
+    "The workbench records the lot accepted for production as not performed",
+    "The validator refuses to mark lots accepted for production",
+    "The workbench neither marks nor records lots accepted for production",
+    "The validator does not certify the part for use",
+])
+def test_claims_about_the_software_or_ordinary_vocabulary_pass_the_screen(claim):
+    assert finding(claim, "computational_pipeline", 1.0, {"checks": [CHECK]})["evidence_status"] == \
+        "numerically_verified"
+    assert finding(claim, "physical", 1.0, {"acquisition": ACQUISITION})["evidence_status"] == "hardware_measured"
+
+
+def test_no_retained_claim_is_refused_by_the_authority_screen():
+    reports = pathlib.Path(__file__).resolve().parents[1] / "lab" / "reports"
+    if not reports.is_dir():
+        pytest.skip("retained lab reports are not in this checkout")
+    claims = 0
+    for path in sorted(reports.glob("T*.json")):
+        for record in json.loads(path.read_text(encoding="utf-8"))["findings"]:
+            evidence.screen_authority_claim(record["claim"], record["domain"])
+            claims += 1
+    assert claims > 900
+
+
+# ---------------------------------------------------------------- specification of record
+
+def _specification():
+    path = pathlib.Path(__file__).resolve().parents[1] / "docs" / "lab" / "SPECIFICATIONS.md"
+    if not path.is_file():
+        pytest.skip("docs/lab is not in this checkout")
+    text = path.read_text(encoding="utf-8")
+    return {section.partition("\n")[0].strip(): section for section in re.split(r"^## ", text, flags=re.M)[1:]}
+
+
+def test_specification_states_what_the_chord_and_validity_tasks_measured():
+    sections = _specification()
+    chord = " ".join(sections["Chord versus geodesic distance"].split())
+    assert "κ₀ κ₀′ s⁴/24" in chord and "arc midpoint" in chord          # T046: the s⁴ term, not O(s⁵)
+    assert "torsion `τ = 0`" in chord and "κ² τ² s⁵ / 720" in chord     # T046: a helix is not a circle
+    validity = " ".join(sections["First-order validity and focal counterexamples"].split())
+    assert "normal separation" not in validity and "at matched arclength" in validity
+    assert "shrinks to zero at conjugate points" not in validity       # refuted by T017's sphere witness
+    assert "does not shrink for a pure heading" in validity and "√(24τ)" in validity
+    assert "stays bounded" in validity and "−ε²/24" in validity and "−ε² cos² s / 6" in validity
+
+
+def test_specification_states_the_evidence_rules_the_code_enforces():
+    sections = _specification()
+    rules = " ".join(sections["Evidence labels"].split())
+    assert "succeeded in the same task" in rules                      # Context.begin resets probes per task
+    assert "author chooses it" in rules and "T141" in rules and "evidence.screen_authority_claim" in rules
+    assert "evidence.AUTHORITY_OUTCOME" in rules and "Basis components" in rules and "declared_pins" in rules
+    # Rule 10 states the screen as implemented: computational and physical domains, clause-local exemption.
+    assert "in a computational or physical domain" in rules and "evidence.DECLINED_DECISION" in rules
+    assert "evidence.CLAUSE_BREAK" in rules and "RECORDED_DECISION" not in rules
+    assert "not the implementation origin of rule 5" in rules and "pins_without_tree" in rules
+    assert "independent verification by another party is outside what the queue can establish" in rules
+    serialization = " ".join(sections["Deterministic serialization and reduction"].split())
+    assert "ciw.core.identities.canonical_json" in serialization and "ensure_ascii=True" in serialization
+    # The identity rule the specification states is the one report_identity implements.
+    value = {"claim": "Grüße", "n": 1.5}
+    assert report.content_identity(value) == "sha256:" + hashlib.sha256(
+        json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")).hexdigest()
+    assert report.content_identity(value) != "sha256:" + hashlib.sha256(
+        json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")).hexdigest()
+
+
+def test_verification_reports_an_origin_change_behind_an_unchanged_label(tmp_path):
+    task = load_queue()["tasks"][0]
+    checked = finding("rate", "numerical", 4.0, {"checks": [CHECK]}, tolerance={"abs": 1e-6, "rel": 0.0})
+    synthetic = finding("rate", "numerical", 4.0, {"generator": {"name": "g"}, "checks": [CHECK]},
+                        tolerance={"abs": 1e-6, "rel": 0.0})
+    assert checked["evidence_status"] == synthetic["evidence_status"] == "numerically_verified"
+    for name, record in (("old", checked), ("new", synthetic)):
+        (tmp_path / name / "reports").mkdir(parents=True)
+        built = report.build_report(task, "completed", {}, [record])
+        (tmp_path / name / "reports" / "T001.json").write_text(runner.dumps(built), encoding="utf-8")
+    problems = runner.compare(tmp_path / "old", tmp_path / "new")["problems"]
+    assert any("'rate'" in problem and "synthetic_inputs" in problem for problem in problems)
+
+
+@pytest.mark.parametrize("revision", [None, "", "unversioned", "  Unknown "])
+def test_independent_checks_name_the_revision_each_side_ran(revision):
+    producer = {"implementation": "ciw.lab.jacobi", "revision": "ciw 0.1.0"}
+    checker = {"implementation": "scipy.integrate", **({} if revision is None else {"revision": revision})}
+    with pytest.raises(EvidenceRefusal, match="revision"):
+        supported_label({"independent_check": dict(CHECK, producer=producer, checker=checker)}, "numerical")
+    checker["revision"] = "scipy 1.16.2"
+    assert supported_label({"independent_check": dict(CHECK, producer=producer, checker=checker)},
+                           "numerical") == "independently_verified"

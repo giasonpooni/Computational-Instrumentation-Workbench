@@ -433,6 +433,10 @@ def parser() -> argparse.ArgumentParser:
     lab_run.add_argument("--output-dir", type=Path, required=True)
     lab_run.add_argument("--provider", action="append", default=[], metavar="ROLE=PATH",
                          help="Bind a pinned provider checkout or interpreter for provider-backed tasks")
+    lab_run.add_argument("--capture", action="append", default=[], metavar="ROLE=PATH",
+                         help="Bind an operator capture file (raw bytes from an instrument) to a capture role; tasks "
+                              "read and retain it through ctx.capture(ROLE). Captures are not authenticated and never "
+                              "make a physical label by themselves")
     lab_run.add_argument("--junit", type=Path, help="pytest JUnit XML used to report regression-test outcomes")
     lab_run.add_argument("--budget-seconds", type=float, help="List tasks whose elapsed time exceeds this budget")
     lab_report = lab_actions.add_parser("report", help="Print one retained task report")
@@ -450,21 +454,40 @@ def parser() -> argparse.ArgumentParser:
     lab_mcp.add_argument("--workdir", type=Path, required=True, help="Directory that receives runs requested by clients")
     lab_mcp.add_argument("--provider", action="append", default=[], metavar="ROLE=PATH")
     lab_next = lab_actions.add_parser("next", help="Rank the next experiments from retained state; runs nothing")
-    lab_next.add_argument("--retained", type=Path)
+    lab_next.add_argument("--retained", type=Path, action="append",
+                          help="Directory of lab reports; repeat to merge, the first holding a task winning")
     lab_next.add_argument("--provider", action="append", default=[], metavar="ROLE=PATH")
-    lab_next.add_argument("--limit", type=int, default=10)
-    lab_verify = lab_actions.add_parser("verify", help="Compare regenerated reports with retained ones")
+    lab_next.add_argument("--limit", type=int, default=10, help="Rows ranked in 'next'; every refinement is listed")
+    lab_verify = lab_actions.add_parser("verify", help="Compare regenerated reports with retained ones and check "
+                                                       "retained hardware runs for integrity")
     lab_verify.add_argument("--retained", type=Path, required=True)
     lab_verify.add_argument("--fresh", type=Path, required=True)
+    lab_hardware = lab_actions.add_parser("hardware", help="Retain and verify operator hardware runs")
+    hardware_actions = lab_hardware.add_subparsers(dest="hardware_command", required=True)
+    hardware_retain = hardware_actions.add_parser(
+        "retain", help="Validate a `ciw lab run` output made on the capture host and copy it to RETAINED/hardware/ID")
+    hardware_retain.add_argument("run_dir", type=Path)
+    hardware_retain.add_argument("--retained", type=Path, required=True)
+    hardware_retain.add_argument("--run-id", required=True, help="kebab-case identity, e.g. rtx2080-2026-10-01")
+    hardware_retain.add_argument("--host", required=True,
+                                 help="Operator-declared host description (no host paths), e.g. 'RTX 2080 workstation'")
+    hardware_verify = hardware_actions.add_parser(
+        "verify", help="Check every retained hardware run for integrity; nothing is recomputed")
+    hardware_verify.add_argument("--retained", type=Path, required=True)
+    lab_unmeasured = lab_actions.add_parser(
+        "unmeasured", help="List what remains unmeasured: the main run's count beside each retained hardware run's, "
+                           "never merged; runs nothing")
+    lab_unmeasured.add_argument("--retained", type=Path, action="append", required=True,
+                                help="Directory of lab reports; repeat to merge, the first holding a task winning")
     return root
 
 
-def _lab_providers(bindings: list[str]) -> dict:
+def _lab_providers(bindings: list[str], kind: str = "Provider") -> dict:
     providers = {}
     for binding in bindings:
         role, separator, path = binding.partition("=")
         if not separator or not role or not path:
-            raise ValueError("Provider bindings use ROLE=PATH")
+            raise ValueError(f"{kind} bindings use ROLE=PATH")
         providers[role] = Path(path)
     return providers
 
@@ -729,21 +752,28 @@ def main(argv: list[str] | None = None) -> int:
             from .lab.registry import configure
             configure(args.extension, args.module)
             if args.lab_command == "queue":
-                from .lab.registry import load_queue
-                reports = ({r["task_id"]: r for r in runner.load_reports(args.retained)}
-                           if args.retained else {})
-                for item in load_queue()["tasks"]:
-                    retained = reports.get(item["id"])
-                    state = retained["state"] if retained else "not_run"
-                    label = retained["evidence_status"]["primary"] if retained else "not_established"
-                    if (args.section and item["section_key"] != args.section) or (args.state and state != args.state):
+                for row in runner.queue_view(args.retained):
+                    if (args.section and row["section"] != args.section) or (args.state and row["state"] != args.state):
                         continue
-                    print(f"{item['id']}  {state:<9}  {label:<22}  {item['title']}")
+                    hardware = runner.hardware_note(row["hardware_run"])
+                    print(f"{row['id']}  {row['state']:<9}  {row['evidence_status']:<22}  {row['title']}"
+                          + (f"  [{hardware}]" if hardware else ""))
             elif args.lab_command == "run":
                 if bool(args.all) == bool(args.tasks):
                     raise ValueError("Name task identities or pass --all, not both")
                 print_json(runner.run_queue(args.output_dir, None if args.all else args.tasks,
-                                            _lab_providers(args.provider), args.junit, args.budget_seconds))
+                                            _lab_providers(args.provider), args.junit, args.budget_seconds,
+                                            captures=_lab_providers(args.capture, "Capture")))
+            elif args.lab_command == "unmeasured":
+                print_json(runner.unmeasured_view(args.retained))
+            elif args.lab_command == "hardware":
+                if args.hardware_command == "retain":
+                    print_json(runner.retain_hardware_run(args.run_dir, args.retained, args.run_id, args.host))
+                else:
+                    result = runner.verify_hardware_runs(args.retained)
+                    print_json(result)
+                    if not result["passed"]:
+                        return 3
             elif args.lab_command == "report":
                 path = args.retained / "reports" / f"{args.task}.json"
                 from .lab.report import render_markdown, validate_report
@@ -769,9 +799,12 @@ def main(argv: list[str] | None = None) -> int:
                 print_json(classify_workspace(args.workspace))
             elif args.lab_command == "next":
                 from .lab.planner import next_tasks
-                print_json(next_tasks(args.retained, _lab_providers(args.provider), args.limit))
+                retained = args.retained or None
+                if retained is not None and len(retained) == 1:
+                    retained = retained[0]
+                print_json(next_tasks(retained, _lab_providers(args.provider), args.limit))
             else:
-                result = runner.compare(args.retained, args.fresh)
+                result = runner.verify_retained(args.retained, args.fresh)
                 print_json(result)
                 if not result["passed"]:
                     return 3

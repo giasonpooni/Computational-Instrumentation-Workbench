@@ -248,13 +248,27 @@ def build_server(retained, workdir, providers=None):
     @guarded
     @exclusive
     def plan_next(limit: int = 10, response_format: str = "markdown") -> str:
-        """Rank the next experiments: ready, newly unblocked, retry, partial, then follow-up tasks. Runs nothing.
+        """Rank the next experiments: ready, newly unblocked, retry, partial (all listed), follow-up tasks, then
+        open research questions. Runs nothing.
 
-        Reports come from this server's run directory first, then the retained reports.
+        Reports come from this server's run directory first, then the retained reports and their retained
+        hardware runs; a row ranked from a hardware run names it. Pointers to completed tasks are listed as
+        stale, never proposed. The json format lists every follow-up under 'follow_ups' and every research
+        question under 'research', whatever the limit.
         """
         plan = next_tasks(sources() or None, providers, max(1, min(limit, 50)))
-        lines = [f"- {r['task_id']} ({r['kind']}): {r['title']} — {r['reason']}" for r in plan["next"]]
-        lines += ["", f"Still blocked: {len(plan['still_blocked'])}; unimplemented: {len(plan['unimplemented'])}"]
+
+        def line(row):
+            marker = f" [hardware run {row['hardware_run']['run_id']}]" if row.get("hardware_run") else ""
+            target = f" -> {row['points_to']}" if row.get("points_to") else ""
+            return f"- {row['task_id']} ({row['kind']}{target}){marker}: {row['title']} — {row['reason']}"
+        lines = [line(r) for r in plan["next"]]
+        lines += [line(r) for r in plan["follow_ups"] if r not in plan["next"]]  # never hidden by the limit
+        lines += ["", f"Still blocked: {len(plan['still_blocked'])}; follow-ups: {len(plan['follow_ups'])}; "
+                      f"research questions: {len(plan['research'])}; "
+                      f"stale pointers: {len(plan['stale_pointers'])}; unimplemented: {len(plan['unimplemented'])}"]
+        if plan["hardware_run_problems"]:
+            lines.append(f"Hardware runs ignored for integrity problems: {len(plan['hardware_run_problems'])}")
         return _format(plan, response_format, "\n".join(lines))
 
     # Destructive: a run deletes the tasks' artifact directories and replaces their

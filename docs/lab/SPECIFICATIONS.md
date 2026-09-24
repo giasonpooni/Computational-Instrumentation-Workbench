@@ -22,12 +22,20 @@ declared generator, `D` a derivation and `A` a hardware acquisition record:
 
 1. Authority domains (`machine_safety`, `industrial_readiness`,
    `customer_demand`, `actuator_authority`, `production_acceptance`):
-   `L = not_established` for every basis.
+   `L = not_established` for every basis. The domain is an input: the
+   finding's author chooses it and review checks it, and `L` never infers it
+   from the claim. T141 showed what that leaves open: the same acceptance
+   statement filed under `computational_pipeline` with a passing check was
+   labelled `numerically_verified` (and filed under `physical` with `A` it
+   would be `hardware_measured`). Rule 10 is a phrase screen against it, not
+   a proof that every authority statement is caught.
 2. Any failed check (`F ≠ ∅` or `I` failing): `L = not_established`.
 3. Physical domains (`physical`, `calibration`, `sensor_performance`):
    `L = not_established` unless `A` is present; then
    `independently_verified` if `I` passes, else `hardware_measured`.
-4. Computational domains: `A` is refused; otherwise the first applicable of
+4. Computational domains: `A` is refused (by `L` when no check fails; by
+   `finding` and `validate_finding` whatever the checks say); otherwise the
+   first applicable of
    `I → independently_verified`, `C ≠ ∅ → numerically_verified`,
    `P → provider_backed`, `G → synthetic`, `D → analytic`, else
    `not_established`.
@@ -38,7 +46,9 @@ declared generator, `D` a derivation and `A` a hardware acquisition record:
    symmetric: a pinned provider's output checked by a `ciw` reference is as
    independent as `ciw` output checked by the provider. Code in one family
    never verifies itself independently, and a `cross_implementation` check is
-   never `I`.
+   never `I`. `independently_verified` therefore means independent
+   implementation agreement; independent verification by another party is
+   outside what the queue can establish.
 6. Non-upgrade: a stated label must equal `L(basis, domain)`
    (`validate_finding`); a derived physical status is `hardware_measured` only
    if every input is (`physical_status`).
@@ -53,8 +63,82 @@ declared generator, `D` a derivation and `A` a hardware acquisition record:
    numerically_verified < independently_verified`. The function is
    order-independent and monotone: adding a weaker finding never raises it.
 9. Physical gate: an acquisition record enters a report only when a hardware
-   probe succeeded in the run and its `raw_sha256` equals the digest of a
-   retained artifact of the same task.
+   probe succeeded in the same task and its `raw_sha256` equals the digest of
+   a retained artifact of that task. When the raw bytes are an operator
+   capture (`ctx.capture`), the probe must be of that capture's instrument
+   (`runner.CAPTURE_INSTRUMENTS`); a capture whose instrument has no probe on
+   the host keeps its physical findings `not_established`. The runner resets
+   probes and captures when each task begins, so a probe that succeeded for
+   another task, or one replayed from another task's memo, does not count.
+10. Authority wording: `finding` and `validate_finding` refuse
+    (`evidence.screen_authority_claim`) a claim in a computational or physical
+    domain whose wording asserts an authority outcome
+    (production acceptance or disposition, certification for use, machine
+    safety, actuator authorization, industrial readiness, customer demand;
+    `evidence.AUTHORITY_OUTCOME`). An outcome phrase is exempt only when the
+    clause that holds it says, before the phrase, that the software does not
+    make, mark or record it: a negated decision verb whose object reaches the
+    phrase (`evidence.DECLINED_DECISION`: "cannot mark a lot accepted for
+    production", "never claims that the press is safe to operate", "no claim
+    that ..."), a negation directly before a phrase that starts with an active
+    verb ("does not authorize actuation"), or "records <phrase> as not
+    performed, refused, external or pending"
+    (`evidence.RECORDED_AS_UNDECIDED`). Clauses end at `; : ! ?`, a comma or
+    full stop followed by a space, dashes, parentheses and the words *and*,
+    *but*, *while*, *whereas*, *although*, *though*, *yet*, *so* and
+    *because* (`evidence.CLAUSE_BREAK`); a negation after a relative pronoun
+    ("the lot that never failed ...") is not counted, and making the software
+    the subject exempts nothing ("the workbench is ready for industrial
+    deployment" is refused). So "accepted
+    for production; it does not need rework" and "accepted for production,
+    recorded as lot 7" are refused. Filed in an authority domain the same claim is recorded as
+    `not_established` (rule 1). The screen matches phrases, not every
+    paraphrase, so assigning a free-text claim to a domain stays a review
+    question; the manufacturing section additionally refuses its own decision
+    words outside authority domains
+    (`manufacturing_records.screen_acceptance_language`, applied to that
+    section only). Every retained claim passes the screen.
+11. Basis components: every finding carries the sorted list of the basis
+    components it declares (`evidence.basis_origin`, stored under the key
+    `origin`), drawn from `acquisition` (`A`), `derivation` (`D`),
+    `independent_check` (`I`), `provider` (`P`, executed only),
+    `reference_checks` (`C ∪ F ≠ ∅`) and `synthetic_inputs` (`G`). These are
+    parts of the basis, not the implementation origin of rule 5. They never
+    enter `L`, so no label changes; they are derived like the label, a stated
+    list must equal them (`validate_finding`), and every component named must
+    be well formed even where `L` never inspects it (an `A` beside a failing
+    check or in an authority domain). Reports and the dashboard show them
+    beside every label as the finding's basis, with the identity each
+    declares (`evidence.describe_basis`: generator name and seed,
+    provider repository@revision, acquisition device): rule 4 ranks a passing
+    check above provenance, so `numerically_verified` from synthetic inputs and
+    `numerically_verified` from a provider's output differ only in their
+    basis. `A` is shown as a hardware acquisition only on a physical-domain
+    finding labelled `hardware_measured` or `independently_verified` (the
+    findings rule 9 gates), and otherwise as a declared acquisition record
+    that was not accepted. A finding retained before basis components were
+    recorded has no `origin` key; readers derive it from the basis, and
+    `build_report` refuses a new finding without one.
+12. Workspace classification (`ciw lab classify`): `P` is formed only from a
+    retained runtime identity that is a pin CIW itself declares for the
+    workflow kind (the revision of a pin for the role it is recorded under, or
+    of any pin of the kind for an identity nested inside a role's runtime or
+    recorded in a step; the pin's module and source root where declared; and
+    the source tree CIW records for that revision wherever any CIW pin table
+    records one; `ciw.lab.bridge.declared_pins`). Any other identity leaves the
+    result `not_established` with the reason, so a content-consistent bundle
+    whose tree is not the pin (T100's fabricated bundle) is not
+    `provider_backed`. Where no CIW table records a tree for the revision, any
+    tree is accepted and the row shows `tree_pinned: false`
+    (`ciw.lab.bridge.pins_without_tree`: today every pin of
+    `calibrated-window`, `acquired-calibrated-window`, `telemetry`,
+    `residual-monitor`, `schematic-assessment`, `schematic-companions` and
+    `bim-quantity`, every `calibrated-observable` and `identified-design` pin
+    except `gsie`, and the historical `fsrt` and `rci` adapter pins), so for
+    those kinds an invented tree is not detected. The pins are public
+    constants and workspace seals are unkeyed: a record that copies the pinned
+    revision and tree still classifies `provider_backed`. The comparison checks
+    CIW's declarations, not who produced the record.
 
 T155 compares `L` with a reference oracle that restates rules 1–5 here,
 independently of `ciw.lab.evidence`, on every basis of a finite grammar in
@@ -63,9 +147,11 @@ and an unexecuted provider, acquisition, and eight independent-check variants
 (none, `ciw` against `scipy`, a pinned provider against `ciw`, a failing one,
 same origin, `cross_implementation` kind, an unknown family and a name that
 embeds `ciw`). Refusals are part of the comparison, and every rule branch of
-the oracle must be exercised. Rules 6–9 are enforced by the validator and the
-runner and tested in `tests/test_lab_core.py`, not by T155. T100 checks that
-synthetic, provider-backed and physical results remain visibly distinct.
+the oracle must be exercised. Rules 6–12 are enforced by the validator, the
+report builder, the runner and the workspace classifier and tested in
+`tests/test_lab_core.py` and `tests/test_lab_bridge.py`, not by T155. T100
+checks that synthetic, provider-backed and physical results remain visibly
+distinct.
 
 ## Geodesic equation and references
 
@@ -122,19 +208,51 @@ unit sphere they occur at `π` and `π/2`; on the outer torus equator at
 
 ## First-order validity and focal counterexamples
 
-A heading perturbation `ε` produces normal separation
-`d(s) = ε j_head(s) + r(ε, s)` with `|r| ≤ C(s) ε²`. The first-order
-prediction is valid to relative tolerance `τ` while `ε ≤ τ |j_head(s)| / C(s)`,
-a domain that shrinks to zero at conjugate points (T017). Near and after a
-focus the relative first-order error diverges and the image inverts (T010).
+A heading perturbation `ε` moves the geodesic by the separation `d(s)`
+between the base and perturbed geodesics at matched arclength: the intrinsic
+geodesic distance on the sphere and the hyperbolic plane, the embedded chord
+on the torus (the two agree to `O(d³)`). It is unsigned and not purely normal
+(it includes any along-track offset), and it linearizes to `ε |j_head(s)|`:
+`d(s) = ε |j_head(s)| + r(ε, s)` with `r = C₂(s) ε² + C₃(s) ε³ + O(ε⁴)`. The
+first-order prediction is valid to relative tolerance `τ` while
+`|r| ≤ τ ε |j_head(s)|`, that is for `ε ≤ ε_max(s)` with
+`ε_max ≈ τ |j_head(s)| / |C₂(s)|` where `C₂ ≠ 0` and
+`ε_max ≈ √(τ |j_head(s)| / |C₃(s)|)` where `C₂ = 0` (T017).
+
+`C₂`, `C₃` and `ε_max` depend on the observable. For a pure heading
+perturbation on the unit sphere the relative first-order error is
+`−ε²/24` for the embedded chord at every `s` (T010), `−ε² cos² s / 24` for the
+geodesic distance (T017) and `−ε² cos² s / 6` for the signed distance to the
+base geodesic (Fermi normal offset) `asin(sin ε sin s)` (T064).
+
+At a conjugate point `s*` (`j_head(s*) = 0`) the domain shrinks to zero on a
+generic path, linearly in `|s − s*|` because `C₂(s*) ≠ 0` (generic torus
+geodesic), and on a reflection-symmetric path with `C₂ ≡ 0` like
+`√|s − s*|` (torus outer equator). It does not shrink for a pure heading
+perturbation on the unit sphere, which refocuses exactly: `C₂ = 0` and
+`C₃ = −|sin s| cos² s / 24` vanishes with `j_head`, so
+`ε_max = √(24τ)/|cos s|`, equal to `√(24τ)` at `s = π` (T017). At the
+first-order zero `s₀ = 3π/4` of a combined lateral and heading perturbation on
+the sphere the domain again shrinks linearly: `C₂(s₀) = ½`, an along-track
+offset that a purely normal observable would not see (T017).
+Approaching a generic or symmetric conjugate point the relative first-order
+error diverges like `1/|s − s*|` and falls again like `1/|s − s*|` past it;
+for the sphere's pure heading perturbation it stays bounded (uniform for the
+chord). In every case measured the image inverts after the conjugate point
+(T010).
 
 ## Chord versus geodesic distance
 
-A unit-speed curve with curvature `κ` has chord `c = s − κ² s³/24 + O(s⁵)`;
-for constant `κ`, `c = 2 sin(κ s/2)/κ`. A geodesic's space curvature equals
-its normal curvature. On a cylinder of radius `R`, a helix making angle `α`
-with the circumferential direction has `κ = cos²α / R`, so
-`s − c ≈ cos⁴α s³ / (24 R²)` (T046, T047). A camera measures `c`, not `s`.
+A unit-speed curve whose curvature is `κ₀` at the start point and changes at
+rate `κ₀′` has chord `c = s − κ₀² s³/24 − κ₀ κ₀′ s⁴/24 + O(s⁵)`; with `κ`
+taken at the arc midpoint instead, the `s⁴` term cancels, so `s − κ² s³/24`
+with an end-point `κ` is only the leading order. `c = 2 sin(κ s/2)/κ` holds
+for a plane circle (constant `κ`, torsion `τ = 0`); a helix, whose curvature is
+also constant, has a chord longer by `κ² τ² s⁵ / 720` (T046). A geodesic's
+space curvature equals its normal curvature. On a cylinder of radius `R`, a
+helix making angle `α` with the circumferential direction has constant
+`κ = cos²α / R`, so to leading order `s − c ≈ cos⁴α s³ / (24 R²)` (T046,
+T047). A camera measures `c`, not `s`.
 
 ## Filter consistency (NEES/NIS)
 
@@ -155,9 +273,24 @@ spectrum (T026). Closed geodesics correspond to primitive vectors
 
 ## Deterministic serialization and reduction
 
-Canonical JSON: sorted keys, no insignificant whitespace, UTF-8, finite
-binary64 values in shortest round-trip form, NaN and infinities refused
-(T146). Floating-point summation is not associative; a declared reduction
+Canonical JSON (`ciw.canonical-json.v1`): sorted keys, no insignificant
+whitespace, UTF-8, finite binary64 values in shortest round-trip form, NaN and
+infinities refused (T146).
+
+Report and artifact identities do not use `ciw.canonical-json.v1`. A report's
+`report_id` (and every `content_identity` in CIW) is `sha256:` over the UTF-8
+bytes of `ciw.core.identities.canonical_json(value)`, which is
+`json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False)`
+over the report without its `report_id`. Its default `ensure_ascii=True`
+writes every non-ASCII character as a `\uXXXX` escape, so its bytes differ
+from the specification wherever a value holds non-ASCII text (T146 lists the
+differing vectors; the retained T032, T095, T096 and T146 reports hash
+differently under the specification). It also accepts what the specification
+refuses (integers beyond ±2⁵³, non-string keys, lone surrogates, nesting
+deeper than 64), and it turns non-string keys into strings, so `{1: "x"}` and
+`{"1": "x"}` share an identity (T146); a report read back from JSON has string
+keys only. A second implementation reproduces report identities with this
+encoding, not with `ciw.canonical-json.v1`. Floating-point summation is not associative; a declared reduction
 order (fixed pairwise tree or compensated summation) makes results
 reproducible across implementations (T148), and reduction order can change a
 threshold decision near its boundary (T121).

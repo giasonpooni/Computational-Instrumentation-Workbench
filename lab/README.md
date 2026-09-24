@@ -20,14 +20,23 @@ retained artifact still hashes to its recorded digest.
 Useful entry points: the counterexample catalogue
 (`artifacts/T157/COUNTEREXAMPLES.md`), uncertainty budgets
 (`artifacts/T159/uncertainty-budget.md`), the release report
-(`artifacts/T165/RELEASE.md`), unresolved assumptions
-(`artifacts/T166/UNRESOLVED_ASSUMPTIONS.md`) and what remains unmeasured
-(`artifacts/T167/UNMEASURED.md`).
+(`artifacts/T165/RELEASE.md`; it covers T001–T164, the tasks that ran before
+it, while `queue-state.json` and the dashboard cover the whole run), unresolved
+assumptions (`artifacts/T166/UNRESOLVED_ASSUMPTIONS.md`) and what remains
+unmeasured in this run (`artifacts/T167/UNMEASURED.md`; hardware runs under
+`hardware/` are counted by `ciw lab unmeasured`).
 
-Nothing here is a physical measurement. Tasks that need hardware (GPU energy,
-RAPL counters, FPGA toolchains, metrology instruments) are reported as blocked
-with their protocol, and every physical, safety or authority claim is
-`not_established`. Report identities and artifact digests are unkeyed hashes:
-an accidental edit breaks them and `ciw lab report` refuses the report, while
-a deliberate edit that recomputes them is caught only by comparison with a
-fresh run (`ciw lab verify`).
+Nothing in the clean-room run (`reports/`, `artifacts/`, `REPORTS.md`,
+`index.html`, `queue-state.json`) is a physical measurement. A task is blocked
+when a hardware, provider or tool requirement it declares as hard is
+unavailable (T116, T118); a task missing an optional one is partial, with the
+unmeasured part named in its report (for example T115, T117, T119–T121, T138,
+T139, T145 and T147), and the FPGA tasks (T149–T151) run on synthetic records
+and claim no hardware. Every physical, safety or authority claim in that run
+is `not_established`. Operator hardware runs retained under `hardware/` carry
+their own labels, which may include `hardware_measured` (see
+[hardware/README.md](hardware/README.md)). Report
+identities and artifact digests are unkeyed hashes: an accidental edit breaks
+them and `ciw lab report` refuses the report, while a deliberate edit that
+recomputes them is caught only by comparison with a fresh run (`ciw lab
+verify`).

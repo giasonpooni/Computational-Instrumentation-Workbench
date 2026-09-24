@@ -25,7 +25,7 @@ import xml.etree.ElementTree as ET
 import numpy as np
 
 from .. import __version__
-from .evidence import PHYSICAL_DOMAINS, EvidenceRefusal, validate_finding
+from .evidence import AUTHORITY_DOMAINS, PHYSICAL_DOMAINS, EvidenceRefusal, origin_difference, validate_finding
 from .registry import SECTION_MODULES, base_section_modules, load_implementations, load_queue
 from .report import FIELDS, FIELD_NAMES, build_report, render_markdown, validate_report
 
@@ -124,21 +124,55 @@ def git_identity(path: Path) -> dict:
             "dirty": bool(status or overlooked)}
 
 
-class Context:
-    """Per-run services: artifact retention, shared memo and requirement probes."""
+# Capture roles and retained hardware run identities: lower-case kebab-case names.
+NAME = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
+MAX_NAME = 64
 
-    def __init__(self, output_dir: Path, providers: dict | None = None):
+
+def check_name(value, what: str) -> str:
+    """A capture role or hardware run identity: lower-case kebab-case, at most 64 characters."""
+    if not isinstance(value, str) or len(value) > MAX_NAME or not NAME.fullmatch(value):
+        raise ValueError(f"A {what} is lower-case kebab-case of at most {MAX_NAME} characters "
+                         f"(for example rtx2080-2026-10-01), not {value!r}")
+    return value
+
+
+def _readable(path) -> bool:
+    """Whether a bound capture is a regular file this process can read."""
+    try:
+        if path is None or not Path(path).is_file():
+            return False
+        with open(path, "rb") as handle:
+            handle.read(1)
+        return True
+    except OSError:
+        return False
+
+
+class Context:
+    """Per-run services: artifact retention, shared memo, requirement probes and operator captures.
+
+    ``captures`` binds operator capture roles to files (``ciw lab run --capture
+    ROLE=PATH``): raw bytes an operator acquired from an instrument. The lab
+    retains the bytes it reads and does not authenticate them, so a capture
+    never supports a physical label by itself (see :func:`_gate_physical`).
+    """
+
+    def __init__(self, output_dir: Path, providers: dict | None = None, captures: dict | None = None):
         self.output_dir = Path(output_dir)
         self.providers = {role: Path(path) for role, path in (providers or {}).items()}
+        self.captures = {check_name(role, "capture role"): Path(path) for role, path in (captures or {}).items()}
         self._memo: dict = {}
         self.task_id: str | None = None
         self.artifacts: list = []
         self.hardware: set = set()
+        self.captured: dict = {}          # role -> sha256 of the bytes ctx.capture retained in this task
         self.probes: dict = {}
         self._recording: list = []  # the probes of each memo computation in progress
 
     def begin(self, task_id: str) -> None:
         self.task_id, self.artifacts, self.hardware, self.probes = task_id, [], set(), {}
+        self.captured = {}
 
     def memo(self, key, compute):
         """Share one deterministic computation between tasks in a run.
@@ -179,10 +213,32 @@ class Context:
             present = bool(_probe_hardware(name))
             if present:
                 self.hardware.add(name)  # a physical finding needs a probe that succeeded in its task
+        elif kind == "capture":
+            present = _readable(self.captures.get(name))
         else:
             raise ValueError(f"Unsupported lab requirement: {requirement}")
         self._probed(requirement, present)
         return present
+
+    def capture(self, role: str) -> bytes:
+        """The bytes bound to capture ``role``, retained as the task's artifact ``capture-<role><suffix>``.
+
+        Probes ``capture:<role>`` in this task and raises ValueError when no
+        readable file is bound. The lab retains the bytes and does not
+        authenticate them: findings computed from them are computational, and
+        a physical finding citing them passes the physical gate only with a
+        probe of the role's instrument on this host (:data:`CAPTURE_INSTRUMENTS`)
+        that succeeded in this task. A role without such a probe (a CMM, a
+        photogrammetry rig) keeps its physical claims ``not_established``.
+        """
+        if not self.available(f"capture:{role}"):
+            raise ValueError(f"No readable capture is bound to role {role}; bind one with --capture {role}=PATH")
+        path = self.captures[role]
+        data = path.read_bytes()
+        suffix = path.suffix.lower() if re.fullmatch(r"\.[a-z0-9]{1,10}", path.suffix.lower()) else ""
+        self._write(f"capture-{role}{suffix}", data)
+        self.captured[role] = hashlib.sha256(data).hexdigest()
+        return data
 
     def _write(self, name: str, data: bytes) -> str:
         if "/" in name or "\\" in name or name.startswith("."):
@@ -328,14 +384,37 @@ def _executed_defaults(task):
             for name, value in _default_fields(task, "").items()}
 
 
+def _capture_refusal(role: str, probed) -> str | None:
+    """Why bytes of operator capture ``role`` cannot back a physical label given this task's own hardware probes."""
+    instrument = CAPTURE_INSTRUMENTS.get(role)
+    if instrument is None:
+        return (f"its raw bytes are the operator capture {role}, and no probe of its instrument exists on this host "
+                "(the lab retains operator captures and does not authenticate them)")
+    if instrument not in probed:
+        return (f"its raw bytes are the operator capture {role}, and no probe of its instrument succeeded in this "
+                f"task (needs hardware:{instrument})")
+    return None
+
+
 def _gate_physical(findings, ctx):
-    """Refuse physical labels unless hardware answered a probe and the raw bytes were retained."""
+    """Refuse physical labels unless hardware answered a probe in this task and the raw bytes were retained.
+
+    A probe replayed from another task's memo does not count. Bytes an operator
+    capture bound (:meth:`Context.capture`) count only with a probe of that
+    capture role's instrument that succeeded in this task; a capture by itself
+    is retained and unauthenticated, never hardware evidence.
+    """
     retained = {artifact["sha256"] for artifact in ctx.artifacts}
     for record in findings:
         if record["domain"] in PHYSICAL_DOMAINS and record["evidence_status"] != "not_established":
             digest = record["basis"]["acquisition"]["raw_sha256"]
             if not ctx.hardware:
-                raise EvidenceRefusal(f"Hardware evidence refused for '{record['claim']}': no hardware probe succeeded in this task")
+                raise EvidenceRefusal(f"Hardware evidence refused for '{record['claim']}': no hardware probe succeeded "
+                                      "in this task")
+            for role in sorted(role for role, captured in ctx.captured.items() if captured == digest):
+                why = _capture_refusal(role, ctx.hardware)
+                if why:
+                    raise EvidenceRefusal(f"Hardware evidence refused for '{record['claim']}': {why}")
             if digest not in retained:
                 raise EvidenceRefusal(f"Hardware evidence refused for '{record['claim']}': raw bytes {digest[:12]} are not a retained artifact")
 
@@ -346,16 +425,25 @@ def _blocked(task, reason, failure):
     return "blocked", fields, []
 
 
-def _with_probes(identity, ctx, state, requires):
+def _with_probes(identity, ctx, state, requires, measured=False):
     """The runtime identity plus the requirement probes the task queried and their outcomes (none: unchanged).
 
     A blocked task that declares no requirement keeps its identity unchanged:
     the planner retries it only when that identity differs from the current
-    built-in one, which recorded probes always would.
+    built-in one, which recorded probes always would. A task with a
+    hardware-measured finding (``measured``) also records the hardware probes
+    that succeeded in the task itself, which the physical gate relied on;
+    other reports leave them out, so they stay independent of which task
+    first computed a shared memo.
     """
     if not ctx.probes or not isinstance(identity, dict) or (state == "blocked" and not requires):
         return identity
-    return dict(identity, requirement_probes=dict(sorted(ctx.probes.items())))
+    extra = {"requirement_probes": dict(sorted(ctx.probes.items()))}
+    if measured and ctx.hardware:  # never a probe replayed from another task's memo
+        extra["hardware_probed_in_task"] = sorted(ctx.hardware)
+    if ctx.captured:  # the operator captures this task retained, by role and digest (never a host path)
+        extra["operator_captures"] = {role: ctx.captured[role] for role in sorted(ctx.captured)}
+    return dict(identity, **extra)
 
 
 def _unavailable(requires, ctx) -> list:
@@ -416,7 +504,9 @@ def run_task(task, implementation, ctx: Context, junit: dict, import_error: str 
     fields["generated_artifacts"] = deepcopy(ctx.artifacts)
     if not fields.get("provider_runtime_identity"):
         fields["provider_runtime_identity"] = builtin_identity(changed)
-    fields["provider_runtime_identity"] = _with_probes(fields["provider_runtime_identity"], ctx, state, requires)
+    measured = any(f["domain"] in PHYSICAL_DOMAINS and f["evidence_status"] != "not_established" for f in findings)
+    fields["provider_runtime_identity"] = _with_probes(fields["provider_runtime_identity"], ctx, state, requires,
+                                                       measured)
     # Checks count as tests only when the implementation ran; a blocked plan's checks never executed.
     passed, skipped, failed = _test_fields(implementation, findings if executed else [], junit)
     fields["tests_passed"], fields["tests_skipped"] = passed, skipped
@@ -450,11 +540,128 @@ def _section_import_error(section, errors) -> str | None:
     return "; ".join(f"{name}: {errors[name]}" for name in sorted(names) if name in errors) or None
 
 
-def run_queue(output_dir, task_ids=None, providers=None, junit_path=None, budget_seconds=None) -> dict:
+# Operator capture variables the energy tasks read (T115, T116, T118, T119), as capture roles: a
+# `--capture ROLE=PATH` binding of one of these roles also sets its variable for the run, and a variable
+# set by the operator is recorded as that role's binding.
+OPERATOR_CAPTURE_VARIABLES = {"energy-log": "CIW_LAB_ENERGY_LOG", "nvidia-smi-csv": "CIW_LAB_NVIDIA_SMI_CSV",
+                              "rapl-log": "CIW_LAB_RAPL_LOG"}
+# The instrument whose hardware probe must succeed in a task before bytes of a capture role can back a physical
+# label there (the task still binds the capture to the probed device's identity, as the energy tasks do with NVML
+# and RAPL). A role without an entry has no instrument probe: its physical claims stay not_established until an
+# instrument probe or a signed-capture trust anchor exists.
+CAPTURE_INSTRUMENTS = {"energy-log": "nvidia-gpu", "nvidia-smi-csv": "nvidia-gpu", "rapl-log": "rapl"}
+# Operator settings that qualify a capture; recorded by value (they hold no path).
+OPERATOR_SETTINGS = ("CIW_LAB_NVIDIA_SMI_UTC_OFFSET",)
+RUN_RECORD = "run-record.json"
+RUN_RECORD_SCHEMA = "ciw.lab-run-record.v1"
+
+
+def operator_captures(captures=None) -> dict:
+    """Capture roles of a run: explicit bindings plus the operator capture variables that are set.
+
+    A role bound both ways must name the same file; otherwise the binding is refused.
+    """
+    bound = {check_name(role, "capture role"): Path(path) for role, path in (captures or {}).items()}
+    for role, variable in OPERATOR_CAPTURE_VARIABLES.items():
+        value = os.environ.get(variable, "").strip()
+        if not value:
+            continue
+        if role in bound and os.path.abspath(bound[role]) != os.path.abspath(value):
+            raise ValueError(f"Capture role {role} is bound to one file and {variable} names another; bind one")
+        bound.setdefault(role, Path(value))
+    return bound
+
+
+class _OperatorVariables:
+    """Set the operator capture variable of each bound role for the run, restoring the caller's afterwards."""
+
+    def __init__(self, captures):
+        self.values = {OPERATOR_CAPTURE_VARIABLES[role]: os.path.abspath(path)
+                       for role, path in captures.items() if role in OPERATOR_CAPTURE_VARIABLES}
+        self.saved: dict = {}
+
+    def __enter__(self):
+        for variable, value in self.values.items():
+            self.saved[variable] = os.environ.get(variable)
+            os.environ[variable] = value
+        return self
+
+    def __exit__(self, *exc):
+        for variable, value in self.saved.items():
+            if value is None:
+                os.environ.pop(variable, None)
+            else:
+                os.environ[variable] = value
+
+
+def _file_identity(path: Path) -> dict:
+    data = Path(path).read_bytes()
+    return {"sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data)}
+
+
+def binding_identity(path) -> dict:
+    """A provider binding as digests only: a Git checkout's revision and tree, or a file's sha256 (never its path)."""
+    path = Path(path)
+    try:
+        if path.is_dir():
+            try:
+                identity = git_identity(path)
+            except (OSError, subprocess.CalledProcessError):
+                return {"kind": "directory", "digest": None}
+            return {"kind": "git_checkout", "revision": identity["revision"], "source_tree": identity["source_tree"],
+                    "dirty": identity["dirty"]}
+        if path.is_file():
+            return {"kind": "file", **_file_identity(path)}
+    except OSError as exc:
+        return {"kind": "unreadable", "error": type(exc).__name__}
+    return {"kind": "missing"}
+
+
+def package_digest() -> str:
+    """SHA-256 over the imported ``ciw`` package files (relative path and normalized bytes), caches excluded."""
+    digest = hashlib.sha256()
+    for path in sorted(PACKAGE_ROOT.rglob("*")):
+        if not path.is_file() or "__pycache__" in path.parts or path.suffix in (".pyc", ".pyo"):
+            continue
+        content = hashlib.sha256(path.read_bytes().replace(b"\r\n", b"\n")).hexdigest()
+        digest.update(f"{path.relative_to(PACKAGE_ROOT).as_posix()}\0{content}\n".encode("utf-8"))
+    return digest.hexdigest()
+
+
+def _ciw_identity() -> dict:
+    identity = {"version": __version__, "package_digest": package_digest()}
+    try:  # the clean-room marker names the wheel this package was installed from
+        wheel = json.loads(os.environ.get("CIW_LAB_CLEAN_ROOM") or "{}").get("wheel_sha256")
+    except (ValueError, AttributeError):
+        wheel = None
+    if isinstance(wheel, str) and re.fullmatch(r"[0-9a-f]{64}", wheel):
+        identity["wheel_sha256"] = wheel
+    return identity
+
+
+def run_record(started_utc: str, task_ids, providers, captures) -> dict:
+    """The bindings of one run as role names and digests (``run-record.json``); it holds no host path."""
+    capture_rows = {}
+    for role, path in sorted(captures.items()):
+        row = _file_identity(path) if _readable(path) else {"readable": False}
+        row["variable"] = OPERATOR_CAPTURE_VARIABLES.get(role)
+        capture_rows[role] = row
+    return {"schema": RUN_RECORD_SCHEMA,
+            "note": "Bindings of this run as role names and digests; no host path is recorded",
+            "started_utc": started_utc, "ciw": _ciw_identity(), "python": platform.python_version(),
+            "tasks": list(task_ids),
+            "providers": {role: binding_identity(path) for role, path in sorted((providers or {}).items())},
+            "captures": capture_rows,
+            "settings": {name: os.environ[name] for name in OPERATOR_SETTINGS if os.environ.get(name)}}
+
+
+def run_queue(output_dir, task_ids=None, providers=None, junit_path=None, budget_seconds=None, captures=None) -> dict:
     """Run selected tasks (default: all) in queue order and retain their reports.
 
     Elapsed times are written to ``run-log.json`` beside the reports, never into
-    them: timing is not reproducible and is not a finding.
+    them: timing is not reproducible and is not a finding. ``captures`` binds
+    operator capture roles to files (see :class:`Context`); ``run-record.json``
+    records the run's provider and capture bindings as digests.
     """
     output_dir = Path(output_dir)
     queue = load_queue()
@@ -463,24 +670,30 @@ def run_queue(output_dir, task_ids=None, providers=None, junit_path=None, budget
     unknown = (selected or set()) - {t["id"] for t in queue["tasks"]}
     if unknown:
         raise ValueError(f"Unknown lab task identities: {sorted(unknown)}")
+    captures = operator_captures(captures)
     junit = read_junit(Path(junit_path)) if junit_path else {}
-    ctx = Context(output_dir, providers)
+    ctx = Context(output_dir, providers, captures)
     reports, timings = [], []
+    started_utc = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    record = run_record(started_utc, [t["id"] for t in queue["tasks"] if selected is None or t["id"] in selected],
+                        providers, captures)
     (output_dir / "reports").mkdir(parents=True, exist_ok=True)
     import_errors = {s["section"]: _section_import_error(s, errors) for s in queue["sections"]}
-    for item in queue["tasks"]:
-        if selected is not None and item["id"] not in selected:
-            continue
-        artifact_dir = output_dir / "artifacts" / item["id"]
-        if artifact_dir.exists():
-            shutil.rmtree(artifact_dir)
-        error = import_errors[item["section"]]
-        started = time.perf_counter()
-        report = run_task(item, implementations.get(item["id"]), ctx, junit, error)
-        timings.append({"task_id": item["id"], "state": report["state"],
-                        "seconds": round(time.perf_counter() - started, 3)})
-        (output_dir / "reports" / f"{item['id']}.json").write_text(dumps(report), encoding="utf-8")
-        reports.append(report)
+    with _OperatorVariables(captures):
+        for item in queue["tasks"]:
+            if selected is not None and item["id"] not in selected:
+                continue
+            artifact_dir = output_dir / "artifacts" / item["id"]
+            if artifact_dir.exists():
+                shutil.rmtree(artifact_dir)
+            error = import_errors[item["section"]]
+            started = time.perf_counter()
+            report = run_task(item, implementations.get(item["id"]), ctx, junit, error)
+            timings.append({"task_id": item["id"], "state": report["state"],
+                            "seconds": round(time.perf_counter() - started, 3)})
+            (output_dir / "reports" / f"{item['id']}.json").write_text(dumps(report), encoding="utf-8")
+            reports.append(report)
+    (output_dir / RUN_RECORD).write_text(dumps(record), encoding="utf-8")
     if selected is None:
         write_index(output_dir, queue)
     total = round(sum(t["seconds"] for t in timings), 3)
@@ -667,6 +880,10 @@ def compare(retained_dir, fresh_dir, tasks=None) -> dict:
             if record["evidence_status"] != other["evidence_status"]:
                 problems.append(f"{task_id}: '{claim}' label {record['evidence_status']} -> {other['evidence_status']}"
                                 + _environment_note(old, new))
+            elif change := origin_difference(record, other):
+                # With the label unchanged, a different basis origin is its own regression; a label change
+                # already reports the basis change behind it, with its environment note.
+                problems.append(f"{task_id}: '{claim}' {change}")
             if record.get("unit") != other.get("unit") or record["domain"] != other["domain"]:
                 problems.append(f"{task_id}: '{claim}' unit or domain differs")
             if record.get("expected_not_established") != other.get("expected_not_established"):
@@ -679,6 +896,501 @@ def compare(retained_dir, fresh_dir, tasks=None) -> dict:
                     _witness(old_counter), _witness(new_counter), tolerance):
                 problems.append(f"{task_id}: '{claim}' counterexample differs")
     return {"compared": len(retained), "problems": problems, "passed": not problems}
+
+
+# Retained operator hardware runs ------------------------------------------------
+# A run made on a capture host, in which a hardware probe succeeded or an
+# operator capture was retained, is retained under <retained>/hardware/<run-id>/
+# with capture.json. It is verified for integrity only.
+HARDWARE_DIRECTORY = "hardware"
+HARDWARE_RUN_SCHEMA = "ciw.lab-hardware-run.v1"
+HARDWARE_ENTRIES = {"reports", "artifacts", "capture.json", "run-log.json"}
+HARDWARE_NOTE = ("Retained hardware runs are verified for integrity only: their reports validate and hold no host "
+                 "path, their artifacts match the recorded digests, every hardware-measured finding cites raw bytes "
+                 "its task retained after a hardware probe succeeded in that task itself (and, for an operator "
+                 "capture, a probe of that capture's instrument), and capture.json agrees with the run. A run whose "
+                 "physical findings rest on a probe of the capture host's hardware cannot be recomputed in CI or on "
+                 "any other host. Operator captures are retained and not authenticated: they are bound to no device "
+                 "and never support a hardware-measured finding by themselves.")
+ARTIFACT_PATH = re.compile(r"artifacts/(T[0-9]{3})/([^/\\]+)")
+# In capture.json and the declared host: an absolute POSIX, home-relative, UNC or drive path at the start of a word
+# ("RTX 2080 / Linux" is not one).
+HOST_PATH = re.compile(r"(?:^|\s)(?:/[^\s/]|~[\w/]|\\\\|[A-Za-z]:[\\/])")
+# In report text, where "~1e-6", "0.2 /mm" and "3/2" are quantities: an absolute POSIX path of at least two
+# components, a home-relative path, a UNC path or a drive path, after a space, quote, bracket, '=' or ':'.
+REPORT_HOST_PATH = re.compile(r"(?:^|[\s'\"`(\[{=:,])(?:/[^\s/'\"`]+/|~(?:[A-Za-z_][\w.-]*)?/|\\\\[^\s\\]|[A-Za-z]:[\\/])")
+
+
+def _host_paths(value, where="capture.json", pattern=HOST_PATH) -> list:
+    """Strings that look like absolute host paths anywhere inside ``value``."""
+    if isinstance(value, dict):
+        return [problem for key, item in value.items() for problem in _host_paths(item, f"{where}.{key}", pattern)]
+    if isinstance(value, list):
+        return [problem for index, item in enumerate(value)
+                for problem in _host_paths(item, f"{where}[{index}]", pattern)]
+    return [f"{where} holds a host path"] if isinstance(value, str) and pattern.search(value) else []
+
+
+def _report_host_paths(reports: dict) -> list:
+    """Host paths quoted anywhere in a run's reports (an exception message naming an operator's file, say)."""
+    return [problem for task_id, report in sorted(reports.items())
+            for problem in _host_paths(report, f"reports/{task_id}.json", REPORT_HOST_PATH)]
+
+
+def _identity(report) -> dict:
+    identity = report.get("provider_runtime_identity")
+    return identity if isinstance(identity, dict) else {}
+
+
+def _own_hardware(report) -> set:
+    """Hardware whose probe the report records as having succeeded in the task itself (never a memo replay).
+
+    Recorded only in reports with a hardware-measured finding, the ones the physical gate relied on it for.
+    """
+    names = _identity(report).get("hardware_probed_in_task")
+    probes = _probes(report)
+    return {name for name in names if isinstance(name, str) and probes.get(f"hardware:{name}") is True} \
+        if isinstance(names, list) else set()
+
+
+def _operator_captures(report) -> dict:
+    captures = _identity(report).get("operator_captures")
+    return captures if isinstance(captures, dict) else {}
+
+
+def _hardware_probed(report) -> bool:
+    """Whether a hardware probe succeeded while the report's task ran (made there or replayed from a memo)."""
+    return any(value is True and name.startswith("hardware:") for name, value in _probes(report).items())
+
+
+def _measured(report) -> list:
+    """Physical-domain findings resting on acquired hardware evidence (hardware_measured or independently checked)."""
+    return [f for f in report["findings"] if f["domain"] in PHYSICAL_DOMAINS and f["evidence_status"] != "not_established"]
+
+
+def _physical_problems(report) -> list:
+    """The physical gate, checked on a retained report (:func:`_gate_physical`).
+
+    A hardware-measured finding must cite raw bytes its own task retained,
+    after a hardware probe that succeeded in the task itself; bytes of an
+    operator capture also need a probe of that capture's instrument.
+    """
+    problems = []
+    digests = {artifact["sha256"] for artifact in report["generated_artifacts"]}
+    probed, captures = _own_hardware(report), _operator_captures(report)
+    for record in _measured(report):
+        digest = record["basis"]["acquisition"]["raw_sha256"]
+        where = f"{report['task_id']}: '{record['claim']}'"
+        if digest not in digests:
+            problems.append(f"{where} raw bytes {digest[:12]} are not a retained artifact of {report['task_id']}")
+        if not probed:
+            problems.append(f"{where} is hardware evidence but the report records no hardware probe succeeded in the "
+                            "task itself (hardware_probed_in_task)")
+            continue
+        for role in sorted(role for role, captured in captures.items() if captured == digest):
+            why = _capture_refusal(str(role), probed)
+            if why:
+                problems.append(f"{where} cites the operator capture {role}: {why}")
+    return problems
+
+
+def _run_artifact_problems(directory: Path, reports: dict) -> list:
+    """Every recorded artifact present with its digest, inside its task's directory; no unrecorded file."""
+    problems, recorded = [], set()
+    for task_id, report in sorted(reports.items()):
+        for artifact in report["generated_artifacts"]:
+            match = ARTIFACT_PATH.fullmatch(str(artifact.get("path", "")))
+            if not match or match.group(1) != task_id:
+                problems.append(f"{task_id}: artifact path {artifact.get('path')!r} is outside artifacts/{task_id}/")
+                continue
+            recorded.add(artifact["path"])
+            path = directory / artifact["path"]
+            if path.is_symlink():
+                problems.append(f"{task_id}: artifact {artifact['path']} is a link, not retained bytes")
+            elif not path.is_file():
+                problems.append(f"{task_id}: artifact {artifact['path']} missing")
+            elif hashlib.sha256(path.read_bytes()).hexdigest() != artifact["sha256"]:
+                problems.append(f"{task_id}: artifact {artifact['path']} differs from its recorded digest")
+    root = directory / "artifacts"
+    if root.is_dir():
+        for path in sorted(root.rglob("*")):
+            relative = path.relative_to(directory).as_posix()
+            if (path.is_file() or path.is_symlink()) and relative not in recorded:
+                problems.append(f"{relative} is not recorded by any report")
+    return problems
+
+
+def _load_run_reports(directory: Path) -> tuple[dict, list]:
+    reports, problems = {}, []
+    folder = directory / "reports"
+    for path in sorted(folder.glob("*.json")) if folder.is_dir() else []:
+        try:
+            report = validate_report(json.loads(path.read_text(encoding="utf-8")))
+        except (OSError, ValueError, TypeError, KeyError) as exc:  # EvidenceRefusal is a ValueError
+            problems.append(f"reports/{path.name} refused: {exc}")
+            continue
+        if path.name != f"{report['task_id']}.json":
+            problems.append(f"reports/{path.name} holds {report['task_id']}")
+            continue
+        reports[report["task_id"]] = report
+    if not reports:
+        problems.append("no valid reports")
+    return reports, problems
+
+
+def _run_summary(reports: dict) -> dict:
+    return {"tasks": sorted(reports),
+            "states": {s: sum(r["state"] == s for r in reports.values()) for s in ("completed", "partial", "deferred", "blocked")},
+            "labels": _label_totals(reports.values()),
+            "hardware_measured": sum(len(_measured(r)) for r in reports.values())}
+
+
+CAPTURE_KEYS = {"schema", "run_id", "host", "date", "ciw", "python", "tasks", "reports", "providers", "captures",
+                "settings", "hardware_measured", "note"}
+
+
+def _capture_problems(capture, run_id: str, reports: dict, summary: dict) -> list:
+    """capture.json against the run it describes."""
+    if not isinstance(capture, dict) or capture.get("schema") != HARDWARE_RUN_SCHEMA:
+        return [f"capture.json is not {HARDWARE_RUN_SCHEMA}"]
+    problems = []
+    if set(capture) != CAPTURE_KEYS:
+        problems.append(f"capture.json fields differ from {HARDWARE_RUN_SCHEMA}: {sorted(set(capture) ^ CAPTURE_KEYS)}")
+    if capture.get("run_id") != run_id:
+        problems.append(f"capture.json names run {capture.get('run_id')!r}, retained as {run_id!r}")
+    if not isinstance(capture.get("host"), str) or not capture["host"].strip():
+        problems.append("capture.json declares no host")
+    if not isinstance(capture.get("date"), str) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", capture["date"]):
+        problems.append("capture.json date is not YYYY-MM-DD")
+    if capture.get("tasks") != summary["tasks"]:
+        problems.append(f"capture.json tasks {capture.get('tasks')} differ from the retained reports {summary['tasks']}")
+    if capture.get("reports") != {task_id: report["report_id"] for task_id, report in sorted(reports.items())}:
+        problems.append("capture.json report identities differ from the retained reports")
+    if capture.get("hardware_measured") != summary["hardware_measured"]:
+        problems.append(f"capture.json counts {capture.get('hardware_measured')} hardware-measured findings; the "
+                        f"reports hold {summary['hardware_measured']}")
+    ciw = capture.get("ciw") if isinstance(capture.get("ciw"), dict) else {}
+    if not isinstance(ciw.get("version"), str) or not re.fullmatch(r"[0-9a-f]{64}", str(ciw.get("package_digest"))):
+        problems.append("capture.json lacks the CIW version and package digest")
+    for task_id, report in sorted(reports.items()):
+        identity = report.get("provider_runtime_identity")
+        if (isinstance(identity, dict) and identity.get("implementation") == "ciw.lab"
+                and identity.get("ciw_version") != ciw.get("version")):
+            problems.append(f"{task_id} ran CIW {identity.get('ciw_version')}; capture.json names {ciw.get('version')}")
+    artifacts = {a["path"]: a["sha256"] for r in reports.values() for a in r["generated_artifacts"]}
+    captures = capture.get("captures")
+    for role, entry in sorted(captures.items()) if isinstance(captures, dict) else []:
+        if not NAME.fullmatch(str(role)) or not isinstance(entry, dict):
+            problems.append(f"capture.json capture {role!r} is malformed")
+            continue
+        for path in entry.get("artifacts") or []:
+            if artifacts.get(path) != entry.get("sha256"):
+                problems.append(f"capture.json capture {role} names {path}, which is not retained with its digest")
+    if not isinstance(captures, dict) or not isinstance(capture.get("providers"), dict):
+        problems.append("capture.json providers and captures must be objects keyed by role")
+    return problems + _host_paths(capture)
+
+
+def _inspect_hardware_run(directory: Path) -> tuple[dict, dict | None]:
+    """Integrity summary of one retained hardware run, and the run itself when it has no problem."""
+    directory = Path(directory)
+    problems = []
+    try:
+        check_name(directory.name, "hardware run identity")
+    except ValueError as exc:
+        problems.append(str(exc))
+    extra = sorted(entry.name for entry in directory.iterdir() if entry.name not in HARDWARE_ENTRIES)
+    if extra:
+        problems.append(f"unexpected entries {extra}")
+    reports, refused = _load_run_reports(directory)
+    problems += refused
+    summary = _run_summary(reports)
+    problems += _run_artifact_problems(directory, reports)
+    for report in reports.values():
+        problems += _physical_problems(report)
+    problems += _report_host_paths(reports)
+    try:
+        capture = json.loads((directory / "capture.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        capture = None
+        problems.append(f"capture.json unreadable: {type(exc).__name__}: {exc}")
+    if capture is not None:
+        problems += _capture_problems(capture, directory.name, reports, summary)
+    summary = {"run_id": directory.name, **summary, "problems": problems}
+    if isinstance(capture, dict):
+        summary.update(date=capture.get("date"), host=capture.get("host"))
+    if problems:
+        return summary, None
+    return summary, {"run_id": directory.name, "date": capture["date"], "host": capture["host"],
+                     "directory": directory, "capture": capture, "reports": reports,
+                     "hardware_measured": summary["hardware_measured"]}
+
+
+def _directories(retained) -> list:
+    if retained is None:
+        return []
+    return [Path(retained)] if isinstance(retained, (str, Path)) else [Path(d) for d in retained]
+
+
+def _run_directories(retained) -> list:
+    found = []
+    for base in _directories(retained):
+        root = base / HARDWARE_DIRECTORY
+        if root.is_dir():
+            found += [path for path in sorted(root.iterdir()) if path.is_dir()]
+    return found
+
+
+def verify_hardware_runs(retained) -> dict:
+    """Integrity of every run under ``<retained>/hardware`` (a directory or a list); nothing is recomputed."""
+    runs = [_inspect_hardware_run(directory)[0] for directory in _run_directories(retained)]
+    problems = [f"hardware/{run['run_id']}: {problem}" for run in runs for problem in run["problems"]]
+    return {"verified": len(runs), "runs": runs, "problems": problems, "passed": not problems, "note": HARDWARE_NOTE}
+
+
+def hardware_runs(retained, problems: list | None = None) -> list:
+    """Retained hardware runs that pass :func:`verify_hardware_runs`, oldest first (by date, then run identity).
+
+    Each run is ``{"run_id", "date", "host", "directory", "capture", "reports",
+    "hardware_measured"}``: ``reports`` maps task identities to validated
+    reports and ``hardware_measured`` counts the physical-domain findings that
+    rest on acquired hardware evidence. A run with any integrity problem is
+    left out; its problems are appended to ``problems`` when a list is given.
+    """
+    runs = []
+    for directory in _run_directories(retained):
+        summary, run = _inspect_hardware_run(directory)
+        if run is None:
+            if problems is not None:
+                problems += [f"hardware/{summary['run_id']}: {problem}" for problem in summary["problems"]]
+            continue
+        runs.append(run)
+    return sorted(runs, key=lambda run: (run["date"], run["run_id"]))
+
+
+def latest_hardware(retained, problems: list | None = None) -> dict:
+    """Per task, the latest valid retained hardware run holding it: run identity, date, host, state and labels.
+
+    Each value is ``{"run_id", "date", "host", "state", "evidence_status",
+    "physical_validation_status", "counts", "hardware_measured", "report"}``;
+    labels are the hardware run's own, never merged into the main run's.
+    """
+    latest = {}
+    for run in hardware_runs(retained, problems):
+        for task_id, report in run["reports"].items():
+            latest[task_id] = {"run_id": run["run_id"], "date": run["date"], "host": run["host"],
+                               "state": report["state"], "evidence_status": report["evidence_status"]["primary"],
+                               "physical_validation_status": report["physical_validation_status"]["status"],
+                               "counts": {k: v for k, v in report["evidence_status"]["counts"].items() if v},
+                               "hardware_measured": len(_measured(report)), "report": report}
+    return latest
+
+
+def hardware_note(entry) -> str:
+    """One line naming a task's latest hardware run, its state and labels; empty without one."""
+    if not entry:
+        return ""
+    count = entry["hardware_measured"]
+    return (f"hardware run {entry['run_id']} ({entry['date']}): {entry['state']}, "
+            f"{entry['evidence_status']}, {count} hardware-measured finding{'' if count == 1 else 's'}")
+
+
+def queue_view(retained, queue=None) -> list:
+    """Queue rows with the main run's state and label, plus the latest hardware run of each task that has one.
+
+    Rows are ``{"id", "section", "title", "state", "evidence_status",
+    "report_id", "hardware_run"}``; ``hardware_run`` is None or a
+    :func:`latest_hardware` entry without its report. The main state and label
+    are never replaced by a hardware run's.
+    """
+    queue = queue or load_queue()
+    reports = {r["task_id"]: r for r in load_reports(retained)} if retained and Path(retained, "reports").is_dir() else {}
+    hardware = latest_hardware(retained) if retained else {}
+    rows = []
+    for item in queue["tasks"]:
+        report, entry = reports.get(item["id"]), hardware.get(item["id"])
+        rows.append({"id": item["id"], "section": item["section_key"], "title": item["title"],
+                     "state": report["state"] if report else "not_run",
+                     "evidence_status": report["evidence_status"]["primary"] if report else "not_established",
+                     "report_id": report["report_id"] if report else None,
+                     "hardware_run": {k: v for k, v in entry.items() if k != "report"} if entry else None})
+    return rows
+
+
+UNMEASURED_SCHEMA = "ciw.lab-unmeasured.v1"
+UNMEASURED_NOTE = ("The main run is the retained clean-room run; its hardware-measured count and T167's ledger cover "
+                   "its reports only. Each valid retained hardware run's counts are its own, listed per run and per "
+                   "task, and never added to the main run's count or to T167's. " + HARDWARE_NOTE)
+
+
+def _open_claims(report) -> list:
+    """Physical and authority claims a report records as not established."""
+    return [f["claim"] for f in report["findings"]
+            if f["domain"] in PHYSICAL_DOMAINS | AUTHORITY_DOMAINS and f["evidence_status"] == "not_established"]
+
+
+def _ledger_count(directory: Path, report) -> int | None:
+    """Hardware-measured findings T167 counted, from its retained ``unmeasured.json`` when its digest matches."""
+    for artifact in report["generated_artifacts"]:
+        if artifact["path"] != "artifacts/T167/unmeasured.json":
+            continue
+        try:
+            data = (directory / artifact["path"]).read_bytes()
+            measured = json.loads(data).get("hardware_measured_findings")
+        except (OSError, ValueError, AttributeError):
+            return None
+        if hashlib.sha256(data).hexdigest() == artifact["sha256"] and isinstance(measured, list):
+            return len(measured)
+    return None
+
+
+def unmeasured_view(retained) -> dict:
+    """What remains unmeasured, hardware-aware: the main run beside each valid retained hardware run.
+
+    ``retained`` is a directory or a list of directories in precedence order
+    (the first holding a task's report wins); hardware runs are read from each
+    directory's ``hardware/``. For every task with an open physical or
+    authority claim in the main run, or held by a hardware run, a row gives
+    the main run's state, hardware-measured count and open claims, and each
+    hardware run's own state, labels and measured claims. The main run's count
+    and T167's are reported as they are; hardware runs are never merged into
+    them. Nothing runs inside the queue, so the clean-room reproduction never
+    reads ``hardware/``.
+    """
+    directories = _directories(retained)
+    reports, sources = {}, {}
+    for directory in reversed(directories):
+        if Path(directory, "reports").is_dir():
+            for report in load_reports(directory):
+                reports[report["task_id"]], sources[report["task_id"]] = report, Path(directory)
+    problems: list = []
+    runs = hardware_runs(directories, problems)
+
+    def main(task_id):
+        report = reports.get(task_id)
+        if report is None:
+            return {"state": "not_run", "hardware_measured": 0, "not_established": []}
+        return {"state": report["state"], "hardware_measured": len(_measured(report)),
+                "not_established": _open_claims(report)}
+
+    rows = {task_id: {"task_id": task_id, "main": main(task_id)} for task_id, report in reports.items()
+            if _open_claims(report) or _measured(report)}
+    for run in runs:
+        for task_id, report in sorted(run["reports"].items()):
+            row = rows.setdefault(task_id, {"task_id": task_id, "main": main(task_id)})
+            row.setdefault("hardware_runs", []).append({
+                "run_id": run["run_id"], "date": run["date"], "host": run["host"], "state": report["state"],
+                "evidence_status": report["evidence_status"]["primary"],
+                "physical_validation_status": report["physical_validation_status"]["status"],
+                "hardware_measured": len(_measured(report)), "measured_claims": [f["claim"] for f in _measured(report)]})
+    ledger = reports.get("T167")
+    return {"schema": UNMEASURED_SCHEMA, "retained": [str(d) for d in directories],
+            "main_run": {"hardware_measured": sum(len(_measured(r)) for r in reports.values()),
+                         "not_established_claims": sum(len(_open_claims(r)) for r in reports.values()),
+                         "t167": None if ledger is None else {
+                             "report_id": ledger["report_id"], "state": ledger["state"],
+                             "hardware_measured_findings": _ledger_count(sources["T167"], ledger)}},
+            "hardware_runs": [{"run_id": run["run_id"], "date": run["date"], "host": run["host"],
+                               "tasks": sorted(run["reports"]), "hardware_measured": run["hardware_measured"]}
+                              for run in runs],
+            "tasks": [rows[task_id] for task_id in sorted(rows)],
+            "hardware_run_problems": problems, "note": UNMEASURED_NOTE}
+
+
+def _declared_host(host) -> str:
+    text = " ".join(str(host or "").split())
+    if not text or len(text) > 300:
+        raise ValueError("Declare the capture host in one line of at most 300 characters (--host)")
+    if HOST_PATH.search(text):
+        raise ValueError("The host description must not hold a host path")
+    return text
+
+
+def retain_hardware_run(run_dir, retained, run_id, host) -> dict:
+    """Validate a ``ciw lab run`` output made on the capture host and copy it to ``<retained>/hardware/<run_id>``.
+
+    The run must hold the reports of exactly the tasks its ``run-record.json``
+    names, all valid and free of host paths, with artifacts matching their
+    digests, at least one task in which a hardware probe succeeded or an
+    operator capture was retained, and every hardware-measured finding passing
+    the physical gate again (:func:`_physical_problems`). ``capture.json`` records the
+    declared host, the run date, the CIW version and package digest, the tasks
+    and report identities, and the provider and capture bindings as role
+    names with digests, never host paths. The copy is verified again before
+    this returns; a failed verification removes it.
+    """
+    run_dir, run_id = Path(run_dir), check_name(run_id, "hardware run identity")
+    host = _declared_host(host)
+    destination = Path(retained) / HARDWARE_DIRECTORY / run_id
+    if destination.exists():
+        raise ValueError(f"Hardware run {run_id} is already retained at {destination}")
+    try:
+        record = json.loads((run_dir / RUN_RECORD).read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise ValueError(f"Not a lab run of this CIW version (no readable {RUN_RECORD}): {run_dir}") from exc
+    if not isinstance(record, dict) or record.get("schema") != RUN_RECORD_SCHEMA:
+        raise ValueError(f"{run_dir / RUN_RECORD} is not {RUN_RECORD_SCHEMA}")
+    reports, problems = _load_run_reports(run_dir)
+    if problems:
+        raise ValueError("Refusing the run: " + "; ".join(problems[:5]))
+    if sorted(reports) != sorted(record.get("tasks") or []):
+        raise ValueError(f"The run's reports {sorted(reports)} are not those of its recorded run {record.get('tasks')}; "
+                         "retain the output directory of one `ciw lab run`")
+    problems = _run_artifact_problems(run_dir, reports)
+    for report in reports.values():
+        problems += _physical_problems(report)
+    problems += _report_host_paths(reports)
+    if problems:
+        raise ValueError("Refusing the run: " + "; ".join(problems[:5]))
+    if not any(_hardware_probed(report) or _operator_captures(report) for report in reports.values()):
+        raise ValueError("No hardware probe succeeded and no operator capture was retained in any task of this run; "
+                         "it is not a hardware run")
+    summary = _run_summary(reports)
+    artifacts = {}
+    for report in reports.values():
+        for artifact in report["generated_artifacts"]:
+            artifacts.setdefault(artifact["sha256"], []).append(artifact["path"])
+    captures = {role: dict(entry, artifacts=sorted(artifacts.get(entry.get("sha256"), [])))
+                for role, entry in sorted((record.get("captures") or {}).items())}
+    capture = {"schema": HARDWARE_RUN_SCHEMA, "run_id": run_id, "host": host,
+               "date": str(record.get("started_utc", ""))[:10], "ciw": record.get("ciw"),
+               "python": record.get("python"), "tasks": summary["tasks"],
+               "reports": {task_id: report["report_id"] for task_id, report in sorted(reports.items())},
+               "providers": record.get("providers") or {}, "captures": captures,
+               "settings": record.get("settings") or {}, "hardware_measured": summary["hardware_measured"],
+               "note": HARDWARE_NOTE}
+    paths = _host_paths(capture)
+    if paths:
+        raise ValueError("Refusing the run: " + "; ".join(paths[:5]))
+    destination.mkdir(parents=True)
+    try:
+        (destination / "reports").mkdir()
+        for task_id in summary["tasks"]:
+            shutil.copy2(run_dir / "reports" / f"{task_id}.json", destination / "reports" / f"{task_id}.json")
+            if reports[task_id]["generated_artifacts"]:
+                shutil.copytree(run_dir / "artifacts" / task_id, destination / "artifacts" / task_id)
+        if (run_dir / "run-log.json").is_file():
+            shutil.copy2(run_dir / "run-log.json", destination / "run-log.json")
+        (destination / "capture.json").write_text(dumps(capture), encoding="utf-8")
+        verified, _ = _inspect_hardware_run(destination)
+        if verified["problems"]:
+            raise ValueError("The retained copy fails verification: " + "; ".join(verified["problems"][:5]))
+    except BaseException:
+        shutil.rmtree(destination, ignore_errors=True)
+        raise
+    return {"run_id": run_id, "retained": str(destination), "date": capture["date"], "host": host,
+            "tasks": summary["tasks"], "states": summary["states"], "hardware_measured": summary["hardware_measured"],
+            "note": HARDWARE_NOTE}
+
+
+def verify_retained(retained, fresh, tasks=None) -> dict:
+    """:func:`compare` plus the integrity of every retained hardware run (``hardware_runs`` in the result)."""
+    result = compare(retained, fresh, tasks)
+    hardware = verify_hardware_runs(retained)
+    result["hardware_runs"] = {key: hardware[key] for key in ("verified", "runs", "note")}
+    result["problems"] = result["problems"] + hardware["problems"]
+    result["passed"] = not result["problems"]
+    return result
 
 
 REPORT_QUESTIONS = [label for _, label in FIELDS]

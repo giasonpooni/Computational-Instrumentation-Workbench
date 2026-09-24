@@ -57,7 +57,7 @@ def test_run_read_plan_and_verify_through_mcp(tmp_path):
     error, text = _call(server, "ciw_lab_verify_run")
     assert not error and json.loads(text)["passed"] is True
     error, text = _call(server, "ciw_lab_plan_next", {"limit": 3, "response_format": "json"})
-    assert not error and json.loads(text)["schema"] == "ciw.lab-next.v1"
+    assert not error and json.loads(text)["schema"] == "ciw.lab-next.v2"
     error, text = _call(server, "ciw_lab_explain_labels")
     assert "independently_verified" in text and "Machine safety" in text
 
@@ -177,13 +177,13 @@ def test_plan_next_merges_the_run_directory_over_retained_reports(tmp_path, smal
     _retain(retained, "T003", "completed")
     _retain(retained, "T005", "blocked", unresolved_assumptions=["Blocked by unexpected TimeoutError"])
     server = build_server(retained, work)
-    expected = {"T001": "ready", "T005": "retry", "T002": "refinement", "T003": "follow_up"}
+    expected = {"T001": "ready", "T005": "retry", "T002": "refinement", "T003": "research"}
     error, text = _call(server, "ciw_lab_plan_next", {"response_format": "json"})
     assert not error and {r["task_id"]: r["kind"] for r in json.loads(text)["next"]} == expected
     _retain(work, "T002", "completed")                      # a run through the server completes T002
     error, text = _call(server, "ciw_lab_plan_next", {"response_format": "json"})
     plan = json.loads(text)
-    assert {r["task_id"]: r["kind"] for r in plan["next"]} == dict(expected, T002="follow_up")
+    assert {r["task_id"]: r["kind"] for r in plan["next"]} == dict(expected, T002="research")
     assert plan["retained"] == [str(work), str(retained)]
     assert [r["task_id"] for r in plan["still_blocked"]] == ["T004"]
 
@@ -334,3 +334,27 @@ def test_tools_are_serialized_across_server_processes(tmp_path):
     finally:
         other.wait(timeout=30)
     assert not error and json.loads(text)["items"][0]["task_id"] == "T002"
+
+
+def test_plan_next_marks_hardware_runs_and_counts_research(tmp_path, small_registry, monkeypatch):
+    retained = tmp_path / "retained"
+    _retain(retained, "T003", "completed", recommended_next_task="T002: refine; then bind a signed capture")
+    _retain(retained, "T004", "blocked")
+    measured = _retain(tmp_path / "hardware-run", "T004", "completed", recommended_next_task="T005 (compare)")
+    entry = {"run_id": "rtx2080-2026-10-01", "date": "2026-10-01", "host": "h", "state": "completed",
+             "evidence_status": "numerically_verified", "physical_validation_status": "not_established",
+             "counts": {}, "hardware_measured": 0, "report": measured}
+    monkeypatch.setattr(planner, "latest_hardware", lambda directories, problems: {"T004": entry})
+    server = build_server(retained, tmp_path / "work")
+    error, text = _call(server, "ciw_lab_plan_next", {"limit": 50})
+    assert not error
+    # T004 is blocked in the main run and ranked from its hardware run, which the row names.
+    assert "- T004 (follow_up -> T005) [hardware run rtx2080-2026-10-01]:" in text
+    assert "- T003 (research):" in text and "bind a signed capture" in text
+    assert "follow-ups: 2; research questions: 1; stale pointers: 0" in text
+    # A follow-up is listed whatever the limit, however many rows rank above it.
+    error, text = _call(server, "ciw_lab_plan_next", {"limit": 1})
+    assert not error and "- T004 (follow_up -> T005)" in text and "- T003 (follow_up -> T002)" in text
+    error, text = _call(server, "ciw_lab_plan_next", {"response_format": "json"})
+    plan = json.loads(text)
+    assert "T004" not in [r["task_id"] for r in plan["still_blocked"]] and plan["research"][0]["task_id"] == "T003"

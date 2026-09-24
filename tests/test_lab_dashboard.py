@@ -78,3 +78,43 @@ def test_an_unreadable_figure_is_a_note_not_a_crash(tmp_path, capsys):
     report["report_id"] = report_identity(report)
     (retained / "reports" / "T003.json").write_text(runner.dumps(report))
     assert "the file cannot be read" in render(retained)
+
+
+def test_every_label_is_shown_beside_its_declared_basis(tmp_path):
+    ctx = runner.Context(tmp_path)
+    task = {t["id"]: t for t in load_queue()["tasks"]}["T003"]
+    report = runner.run_task(task, Implementation("T003", _figure_task), ctx, {})
+    (tmp_path / "reports").mkdir()
+    (tmp_path / "reports" / "T003.json").write_text(runner.dumps(report))
+    page = render(tmp_path)
+    assert "<th>Label</th><th>Basis</th>" in page and "<th>Origin</th>" not in page
+    # The same label reads differently by basis: a check on synthetic inputs names them and their generator.
+    assert '<td class="basis">reference checks, synthetic inputs (g)</td>' in page
+    assert '<td class="basis">no declared basis</td>' in page
+    assert "Findings by label and declared basis" in page and "not the implementation origin" in page
+    assert "<th>acquisition record</th>" in page and "hardware acquisition" not in page
+    row = page.split('<tr><td><span class="label" style="background:#15803d">numerically_verified</span></td>', 1)[1]
+    cells = row.split("</tr>", 1)[0]
+    # columns: acquisition, derivation, independent check, provider, reference checks, synthetic inputs, none
+    assert cells == "<td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>1</td><td>0</td>"
+
+
+def _identity_task(ctx):
+    check = {"reference_kind": "analytic", "reference": "r", "observed": 0.0, "tolerance": 0.0, "passed": True}
+    provider = {"repository": "owner/repo", "revision": "0123456789abcdef" * 2 + "01234567", "source_tree": "t" * 40,
+                "executed": True}
+    return {"findings": [finding("Generated", "numerical", 1.0,
+                                 {"generator": {"name": "<b>bench</b>", "seed": 7}, "checks": [check]}),
+                         finding("Provided", "numerical", 2.0, {"provider": provider})]}
+
+
+def test_the_basis_cell_names_the_declared_generator_and_provider_escaped(tmp_path):
+    task = {t["id"]: t for t in load_queue()["tasks"]}["T003"]
+    report = runner.run_task(task, Implementation("T003", _identity_task), runner.Context(tmp_path), {})
+    assert [f["evidence_status"] for f in report["findings"]] == ["numerically_verified", "provider_backed"]
+    (tmp_path / "reports").mkdir()
+    (tmp_path / "reports" / "T003.json").write_text(runner.dumps(report))
+    page = render(tmp_path)
+    assert '<td class="basis">reference checks, synthetic inputs (&lt;b&gt;bench&lt;/b&gt;, seed 7)</td>' in page
+    assert '<td class="basis">pinned provider run (owner/repo@0123456789ab)</td>' in page
+    assert "<b>bench</b>" not in page

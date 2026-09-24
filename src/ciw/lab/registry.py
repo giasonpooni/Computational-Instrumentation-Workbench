@@ -38,15 +38,17 @@ class Implementation:
 
 
 _REGISTRY: dict[str, Implementation] = {}
-REQUIREMENT_KINDS = ("module", "provider", "tool", "hardware")
+REQUIREMENT_KINDS = ("module", "provider", "tool", "hardware", "capture")
 
 
 def task(task_id: str, *, changed_files=(), regression_tests=(), requires=(), plan=None):
     """Register one queue task.
 
     ``requires`` lists hard requirements (``module:<name>``, ``provider:<role>``,
-    ``tool:<name>`` or ``hardware:<name>``); when one is unavailable the task is
-    reported as blocked using the static ``plan`` fields instead of running.
+    ``tool:<name>``, ``hardware:<name>`` or ``capture:<role>``, an operator
+    capture bound with ``ciw lab run --capture``); when one is unavailable the
+    task is reported as blocked using the static ``plan`` fields instead of
+    running.
     """
     for need in requires:
         kind, _, name = str(need).partition(":")

@@ -4,15 +4,20 @@ A report answers the same nineteen questions for every task, including tasks
 that could not be executed here. Reports never state physical validation
 unless every physical-domain finding rests on acquired hardware evidence, and
 they say how many do; their evidence status is recomputed from the retained
-findings.
+findings. Every rendered finding shows its declared basis beside its label:
+the basis components (the finding's ``origin`` key) with the generator,
+provider or device each names, so a check on synthetic inputs and a check on a
+provider's output read differently although both are ``numerically_verified``.
+The basis components are not the implementation origin that
+``independently_verified`` compares.
 """
 from __future__ import annotations
 
 from copy import deepcopy
 
 from ..core.identities import canonical_json, content_identity
-from .evidence import (AUTHORITY_DOMAINS, LABELS, PHYSICAL_DOMAINS, EvidenceRefusal, physical_status,
-                       primary_label, summarize, validate_finding)
+from .evidence import (AUTHORITY_DOMAINS, LABELS, ORIGINS, PHYSICAL_DOMAINS, EvidenceRefusal, describe_basis,
+                       describe_origin, finding_origin, physical_status, primary_label, summarize, validate_finding)
 
 REPORT_SCHEMA = "ciw.lab-task-report.v1"
 
@@ -127,6 +132,10 @@ def build_report(task: dict, state: str, fields: dict, findings: list, extra: di
         raise EvidenceRefusal("Evidence and physical validation status are derived, not supplied")
     for record in findings:
         validate_finding(record)
+        if "origin" not in record:
+            # Only reports retained before origins were recorded lack them; new ones never do.
+            raise EvidenceRefusal(f"Finding lacks its derived origin; build it with ciw.lab.evidence.finding: "
+                                  f"{record.get('claim')!r}")
     report = {"schema": REPORT_SCHEMA, "task_id": task["id"], "number": task["number"],
               "section": task["section_key"], "title": task["title"], "state": state}
     for name in FIELD_NAMES:
@@ -142,24 +151,47 @@ def build_report(task: dict, state: str, fields: dict, findings: list, extra: di
     return report
 
 
+# The finding table of a rendered report. The label keeps its own column and the
+# declared basis sits in the next one (``finding_row``). Other renderers and
+# audits use these constants and ``finding_row`` rather than restating them.
+FINDINGS_HEADER = "| Finding | Value | Evidence status | Basis |"
+FINDINGS_RULE = "| --- | --- | --- | --- |"
+
+
+def origin_summary(findings) -> str:
+    """Findings per declared basis component, in :data:`ORIGINS` order: 'reference checks: 5, synthetic inputs: 2'."""
+    counts = {}
+    for record in findings:
+        for item in finding_origin(record) or ["none"]:
+            counts[item] = counts.get(item, 0) + 1
+    words = [(describe_origin([item]) if item != "none" else describe_origin([]), counts[item])
+             for item in (*ORIGINS, "none") if counts.get(item)]
+    return ", ".join(f"{word}: {count}" for word, count in words) or "none"
+
+
+def finding_row(record: dict) -> str:
+    """One Markdown row: claim, value with unit, label in backticks, then the declared basis in words."""
+    # Claims, units and declared identities are escaped like every other cell: a raw pipe would shift a column.
+    unit = f" {_inline(record['unit'])}" if record.get("unit") else ""
+    return (f"| {_inline(record['claim'])} | {_inline(record['value'], limit=80)}{unit}"
+            f" | `{record['evidence_status']}` | {_inline(describe_basis(record))} |")
+
+
 def render_markdown(report: dict) -> str:
-    """Render the nineteen questions in their required order."""
+    """Render the nineteen questions in their required order, then the findings with label and declared basis."""
     lines = [f"### {report['task_id']} — {report['title']}", "", f"State: `{report['state']}`", ""]
     for name, label in FIELDS:
         value = report[name]
         if name == "evidence_status":
             counts = ", ".join(f"{k}: {v}" for k, v in value["counts"].items() if v)
-            value = f"`{value['primary']}` (findings — {counts or 'none'})"
+            value = (f"`{value['primary']}` (findings — {counts or 'none'}; declared basis — "
+                     f"{origin_summary(report['findings'])})")
         elif name == "physical_validation_status":
             value = f"`{value['status']}` — {value['statement']}"
         lines.append(f"- **{label}:** {_inline(value)}")
     if report["findings"]:
-        lines += ["", "| Finding | Value | Evidence status |", "| --- | --- | --- |"]
-        for record in report["findings"]:
-            # Claims and units are escaped like every other cell: a raw pipe would shift the label column.
-            unit = f" {_inline(record['unit'])}" if record.get("unit") else ""
-            lines.append(f"| {_inline(record['claim'])} | {_inline(record['value'], limit=80)}{unit}"
-                         f" | `{record['evidence_status']}` |")
+        lines += ["", FINDINGS_HEADER, FINDINGS_RULE]
+        lines += [finding_row(record) for record in report["findings"]]
     return "\n".join(lines) + "\n"
 
 

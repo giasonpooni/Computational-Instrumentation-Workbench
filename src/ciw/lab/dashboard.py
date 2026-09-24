@@ -2,8 +2,10 @@
 
 The page is a deterministic function of the retained reports and their SVG
 artifacts: no clock, no network resources and no computation beyond counting.
-It displays labels exactly as retained and never restates a result that is not
-in a finding. A figure is shown only when its file lies inside the retained
+It displays labels exactly as retained, each beside the finding's declared
+basis (its basis components, derived from the basis by ``ciw.lab.evidence``,
+with the generator, provider or device each names), and never restates a
+result that is not in a finding. A figure is shown only when its file lies inside the retained
 directory and hashes to the digest its report recorded, and it is embedded as
 an ``<img>`` data URI, so markup or script inside an SVG never runs in the page.
 """
@@ -15,10 +17,10 @@ from html import escape
 import json
 from pathlib import Path
 
-from .evidence import LABELS
+from .evidence import LABELS, ORIGINS, describe_basis, describe_origin, origin_counts
 from .registry import load_queue
 from .report import FIELDS
-from .runner import load_reports
+from .runner import hardware_note, latest_hardware, load_reports
 
 LABEL_COLORS = {"analytic": "#6d28d9", "synthetic": "#b45309", "numerically_verified": "#15803d",
                 "provider_backed": "#1d4ed8", "hardware_measured": "#0f766e",
@@ -100,12 +102,15 @@ def render(retained) -> str:
     retained = Path(retained)
     queue = load_queue()
     reports = {r["task_id"]: r for r in load_reports(retained)}
+    hardware = latest_hardware(retained)
     labels = {label: 0 for label in LABELS}
     states = {state: 0 for state in STATE_ORDER}
     for report in reports.values():
         states[report["state"]] += 1
         for label, count in report["evidence_status"]["counts"].items():
             labels[label] += count
+    by_origin = origin_counts([record for report in reports.values() for record in report["findings"]])
+    columns = (*ORIGINS, "none")
     physical = sum(1 for r in reports.values() if r["physical_validation_status"]["status"] != "not_established")
     out = ['<!doctype html><html lang="en"><head><meta charset="utf-8">',
            '<meta name="viewport" content="width=device-width,initial-scale=1">',
@@ -119,7 +124,18 @@ def render(retained) -> str:
     out.append('</div><h2>Findings by evidence label</h2><div class="tiles">')
     for label in LABELS:
         out.append(f'<div class="tile"><b>{labels[label]}</b><span>{_chip(label)}</span></div>')
-    out.append('</div><div class="filters" role="group" aria-label="Filter tasks by label">')
+    out.append('</div><h2>Findings by label and declared basis</h2>'
+               '<p class="note">A label says what supports a finding; its declared basis says which basis '
+               'components it rests on. These are parts of the basis, not the implementation origin that '
+               '<code>independently_verified</code> compares. A finding counts once under each component it '
+               'declares.</p>'
+               '<div class="scroll"><table class="basis"><tr><th>Label</th>'
+               + "".join(f"<th>{escape(describe_origin([c]) if c != 'none' else describe_origin([]))}</th>"
+                         for c in columns) + "</tr>")
+    for label in LABELS:
+        out.append(f"<tr><td>{_chip(label)}</td>"
+                   + "".join(f"<td>{by_origin[label][c]}</td>" for c in columns) + "</tr>")
+    out.append('</table></div><div class="filters" role="group" aria-label="Filter tasks by label">')
     for label in LABELS:
         out.append(f'<button type="button" data-label="{label}" aria-pressed="false">{escape(label)}</button>')
     out.append("</div>")
@@ -133,7 +149,8 @@ def render(retained) -> str:
                 continue
             used = sorted({f["evidence_status"] for f in report["findings"]})
             out.append(f'<details data-labels="{" ".join(used)}"><summary>{item["id"]} — {escape(item["title"])} · '
-                       f'{escape(report["state"])} · {_chip(report["evidence_status"]["primary"])}</summary><dl>')
+                       f'{escape(report["state"])} · {_chip(report["evidence_status"]["primary"])}'
+                       f'{escape(" · " + hardware_note(hardware[item["id"]])) if item["id"] in hardware else ""}</summary><dl>')
             for name, label in FIELDS:
                 if name in ("evidence_status", "generated_artifacts", "tests_passed", "tests_skipped", "changed_files"):
                     continue
@@ -144,12 +161,14 @@ def render(retained) -> str:
             out.append(f'<dt>Tests</dt><dd>{len(report["tests_passed"])} passed, {len(report["tests_skipped"])} skipped'
                        f'{", " + str(len(report.get("tests_failed", []))) + " failed" if report.get("tests_failed") else ""}</dd></dl>')
             if report["findings"]:
-                out.append('<div class="scroll"><table><tr><th>Finding</th><th>Value</th><th>Label</th></tr>')
+                out.append('<div class="scroll"><table><tr><th>Finding</th><th>Value</th><th>Label</th>'
+                           '<th>Basis</th></tr>')
                 for record in report["findings"]:
                     unit = f' {escape(record["unit"])}' if record.get("unit") else ""
                     flag = " (counterexample)" if record.get("counterexample") else ""
                     out.append(f'<tr><td>{escape(record["claim"])}{flag}</td><td>{_value(record["value"])}{unit}</td>'
-                               f'<td>{_chip(record["evidence_status"])}</td></tr>')
+                               f'<td>{_chip(record["evidence_status"])}</td>'
+                               f'<td class="basis">{escape(describe_basis(record))}</td></tr>')
                 out.append("</table></div>")
             for artifact in report["generated_artifacts"]:
                 if artifact["path"].endswith(".svg"):

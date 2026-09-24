@@ -112,12 +112,23 @@
                  {"type": "object", "required": ["producer", "checker"]}]
       },
       "acquisition": {"type": "object",
-                      "required": ["device", "raw_sha256", "acquired_at", "calibration"]},
+                      "required": ["device", "raw_sha256", "acquired_at", "calibration"],
+                      "properties": {"device": {"type": "string", "minLength": 1},
+                                     "raw_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+                                     "acquired_at": {"type": "string", "minLength": 1},
+                                     "calibration": {"type": "string", "minLength": 1}}},
       "inputs": true,
       "notes": true
      }
     },
     "evidence_status": {"$ref": "#/$defs/label"},
+    "origin": {
+     "description": "Basis components the finding declares (the key keeps its historical name), derived from basis by ciw.lab.evidence.basis_origin and sorted; rendered as the finding's declared basis beside the label. These are parts of the basis, not the implementation origin that independently_verified compares. Present in every report built since basis components were recorded.",
+     "type": "array",
+     "uniqueItems": true,
+     "items": {"enum": ["acquisition", "derivation", "independent_check", "provider", "reference_checks",
+                        "synthetic_inputs"]}
+    },
     "assigned_by": {"const": "ciw.lab.evidence"},
     "regression_tolerance": {
      "type": "object",

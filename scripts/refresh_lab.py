@@ -9,8 +9,11 @@ then replaces the retained reports, artifacts, queue state, report book and
 dashboard (rendered inside the clean room by the installed wheel) with the
 fresh ones.
 Elapsed times, JUnit records and gate records stay with the run output: they
-are machine-specific and not retained evidence. Review ``git diff lab`` and
-``ciw lab verify`` output before committing a refresh.
+are machine-specific and not retained evidence. Retained operator hardware
+runs (``lab/hardware/``) and ``lab/README.md`` are never touched: a clean-room
+run cannot reproduce a hardware run, which is retained with
+``ciw lab hardware retain``. Review ``git diff lab`` and ``ciw lab verify``
+output before committing a refresh.
 """
 from __future__ import annotations
 
@@ -26,6 +29,9 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 RETAINED = ("reports", "artifacts", "queue-state.json", "REPORTS.md", "index.html")
+# Entries of lab/ a refresh never replaces: operator hardware runs and the directory's README.
+PRESERVED = ("hardware", "README.md")
+assert not set(RETAINED) & set(PRESERVED)
 # The bindings scripts/check_lab.py makes on Python 3.12+; CI compares with a run that had all of them.
 REQUIRED_PROVIDERS = ("csg", "ftr", "scr", "set", "ppda", "scr-exchange", "plsr-python", "ftr-python")
 # Refusal codes of those providers (CSG_TREE_MISMATCH, FTR_INTERPRETER_UNBOUND, PLSR_UNAVAILABLE, ...): a

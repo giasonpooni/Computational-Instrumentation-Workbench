@@ -4,6 +4,11 @@ Builds a wheel from this checkout (with pip build isolation), installs it with
 the lab extras into a new virtual environment outside the checkout, runs the
 lab tests with a JUnit record, runs every queue task with the given provider
 bindings, and compares the fresh reports with the retained ones in ``lab/``.
+Retained operator hardware runs (``lab/hardware/<run-id>/``) are not
+recomputed here (one whose physical findings rest on a probe of the capture
+host's hardware cannot be); ``ciw lab verify`` (or ``ciw lab hardware verify``
+with ``--no-compare``) checks them for integrity only, and ``gate.json`` names
+them.
 Each binding also reaches the lab tests as the ``CIW_LAB_*`` variable their
 provider-gated tests read. The retained run binds CSG, FTR, SCR, the exchange
 SET, PPDA and SCR checkouts and the Python 3.12 PLSR/FTR interpreter; ``scripts/check_lab.py`` provisions exactly
@@ -137,14 +142,21 @@ def main() -> int:
         # The dashboard is rendered by the installed wheel, so refreshing lab/ needs no CIW dependencies on the host.
         run([python, "-m", "ciw", "lab", "dashboard", "--retained", str(output), "--output", str(output / "index.html")],
             cwd=work, env=environment)
+        # Hardware runs were made on their capture host; the clean room checks their integrity and recomputes nothing.
+        hardware_runs = sorted(path.name for path in (args.retained / "hardware").iterdir()
+                               if path.is_dir()) if (args.retained / "hardware").is_dir() else []
         if not args.no_compare:
             run([python, "-m", "ciw", "lab", "verify", "--retained", str(args.retained.resolve()), "--fresh", str(output)],
+                cwd=work, env=environment)
+        elif hardware_runs:
+            run([python, "-m", "ciw", "lab", "hardware", "verify", "--retained", str(args.retained.resolve())],
                 cwd=work, env=environment)
     # The record names the bindings the queue and tests received, and the clean-room interpreter's version.
     (output / "gate.json").write_text(json.dumps({"schema": "ciw.lab-clean-room-gate.v1", "wheel_sha256": wheel_sha256,
                                                    "compared_with": None if args.no_compare else str(args.retained),
                                                    "providers": [f"{role}={path}" for role, path in providers],
                                                    "python": sys.version.split()[0],
+                                                   "hardware_runs_verified_for_integrity": hardware_runs,
                                                    "physical_validation": "not_established"}, indent=2) + "\n")
     print(f"PASS: clean-room lab queue from wheel {wheel_sha256[:16]}; reports in {output}")
     return 0

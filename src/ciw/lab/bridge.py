@@ -11,9 +11,22 @@ The labels are a derived projection: nothing is written into sealed records.
 Rules applied:
 
 * Results computed by a runtime identity with a revision and source tree are
-  ``provider_backed``; results over generated inputs are ``synthetic``;
-  built-in analyses over caller-declared data are ``not_established``, which
-  matches CIW's own ``verification_status: not_verified``.
+  ``provider_backed`` only when that identity is a pin CIW itself declares for
+  the workflow kind (:func:`declared_pins`): the revision equals a declared
+  pin of the role it is recorded under (an identity nested inside a role's
+  runtime, or recorded in a step, may match any pin of the kind), the module
+  and source root equal the pin's where it declares them, and the source tree
+  equals the tree CIW records for that revision wherever any CIW pin table
+  records one. Where no table records a tree for the revision
+  (:func:`pins_without_tree`), any tree is accepted and the row says
+  ``tree_pinned: false``. Any other runtime identity leaves the result
+  ``not_established`` with the reason. Results over
+  generated inputs are ``synthetic``; built-in analyses over caller-declared
+  data are ``not_established``, which matches CIW's own
+  ``verification_status: not_verified``. The pin tables are public constants,
+  so a fabricated record that copies a pinned revision and tree still passes
+  this comparison: it is a check against CIW's declarations, not
+  authentication.
 * Generated inputs are recognised only from structured declarations: a run
   provenance ``generator`` that is a known CIW generator identity
   (:data:`KNOWN_GENERATORS`, today ``ciw.instruments.make_demo_run``) or one
@@ -44,7 +57,7 @@ from pathlib import Path
 import tempfile
 
 from ..session import Session, read_json
-from .evidence import LABELS, finding
+from .evidence import LABELS, finding, supported_label
 
 SCHEMA = "ciw.lab-workspace-classification.v1"
 # Exact (key, value) declarations of generated inputs pinned by CIW's validators
@@ -59,9 +72,15 @@ SYNTHETIC_DECLARATIONS = frozenset({
 # A dotted name alone proves nothing: acquisition scripts, vendor APIs and
 # instrument driver classes look the same, so any other name stays not_established.
 KNOWN_GENERATORS = frozenset({"ciw.instruments.make_demo_run"})
+PIN_RULE = ("provider_backed only when every retained runtime identity with a revision and source tree is a pin CIW "
+            "declares for the workflow kind (revision, and module, source root and source tree where CIW records "
+            "them); otherwise not_established with the reason. Where CIW records no source tree for a pinned "
+            "revision, any tree is accepted and the row shows tree_pinned false. An identity nested inside a role's "
+            "runtime, or recorded in a step, may match any pin of the kind. The pins are public constants: a "
+            "record that copies them still matches.")
 UNAUTHENTICATED = ("Workspace seals and digests are unkeyed self-digests: they detect alteration of a record, "
                    "not who produced it or whether it came from hardware. Every label is derived from the "
-                   "records as retained, and declared origins are not authenticated.")
+                   "records as retained, and declared producers are not authenticated.")
 
 
 def _providers(value, found=None):
@@ -69,14 +88,152 @@ def _providers(value, found=None):
     found = [] if found is None else found
     if isinstance(value, dict):
         if isinstance(value.get("revision"), str) and isinstance(value.get("source_tree"), str):
-            found.append({"repository": str(value.get("module") or value.get("repository") or "pinned provider"),
-                          "revision": value["revision"], "source_tree": value["source_tree"], "executed": True})
+            found.append(value)
         for child in value.values():
             _providers(child, found)
     elif isinstance(value, list):
         for child in value:
             _providers(child, found)
     return found
+
+
+def _manifest(name):
+    from importlib import resources
+    return json.loads(resources.files("ciw").joinpath(name).read_text(encoding="utf-8"))
+
+
+def _pin(entry, declared_in, **extra):
+    fields = {key: entry[key] for key in ("revision", "module", "source_root", "source_tree") if key in entry}
+    return {**fields, **extra, "declared_in": declared_in}
+
+
+def declared_pins() -> dict:
+    """Runtime pins CIW declares, read from CIW's own pin tables.
+
+    Returns ``{"kinds": {kind: {role: [pin, ...]}}, "operations": [pin, ...],
+    "trees": {revision: [source_tree, ...]}}``. A pin holds ``revision`` and,
+    where its table declares them, ``module``, ``source_root`` and
+    ``source_tree``, plus ``declared_in``. ``operations`` are the session
+    adapter pins (``adapter-runtimes.json``, historical revisions included).
+    ``trees`` gathers every source tree any table records for a revision: a
+    source tree is the commit's root tree, so it binds every kind that pins
+    that revision (the SCR numerical-heat pin records no tree, the proved-heat
+    pin of the same revision does).
+    """
+    from .. import (acquired_dataset, bim_quantity, declared_workload, free_energy_native, geodesic_reference,
+                    geometric_circle, geometry_research, identified_stability, measurement_chain, proved_heat,
+                    residual_monitor, schematic_companions)
+    from ..adapters.ppda_acquisition import VENDOR_REVISION
+    kinds: dict = {}
+
+    def add(kind, role, pin):
+        kinds.setdefault(kind, {}).setdefault(role, []).append(pin)
+
+    for module, name in ((geodesic_reference, "geodesic_reference"), (declared_workload, "declared_workload"),
+                         (geometry_research, "geometry_research")):
+        for kind, entry in sorted(module.PINS.items()):
+            add(kind, entry["role"], _pin(entry, f"ciw.{name}.PINS[{kind}]"))
+    add("proved-heat", "scr", _pin(proved_heat.PIN, "ciw.proved_heat.PIN"))
+    add("geometric-circle", "gte",
+        _pin(geometric_circle.PIN, "ciw.geometric_circle.PIN", source_tree=geometric_circle.SOURCE_TREE))
+    add("bim-quantity", bim_quantity.PIN["role"], _pin(bim_quantity.PIN, "ciw.bim_quantity.PIN"))
+    add("identified-stability", "plsr",
+        _pin(identified_stability.PIN, "ciw.identified_stability.PIN", source_tree=identified_stability.SOURCE_TREE))
+    for kind, module, name in (("schematic-companions", schematic_companions, "schematic_companions"),
+                               ("measurement-chain", measurement_chain, "measurement_chain"),
+                               ("residual-monitor", residual_monitor, "residual_monitor"),
+                               ("variational-free-energy", free_energy_native, "free_energy_native")):
+        for role, entry in sorted(module.PINS.items()):
+            add(kind, role, _pin(entry, f"ciw.{name}.PINS[{role}]"))
+    manifests = {name: _manifest(name) for name in ("calibrated-observable-runtimes.json",
+                                                    "calibrated-window-runtimes.json",
+                                                    "identified-design-runtimes.json", "telemetry-runtimes.json")}
+    for kind, names in (("calibrated-observable", ("calibrated-observable-runtimes.json",)),
+                        ("calibrated-window", ("calibrated-window-runtimes.json",)),
+                        ("acquired-calibrated-window", ("calibrated-window-runtimes.json",)),
+                        ("identified-design",
+                         ("calibrated-observable-runtimes.json", "identified-design-runtimes.json")),
+                        ("telemetry", ("telemetry-runtimes.json",))):
+        for name in names:
+            for role, entry in sorted(manifests[name].items()):
+                add(kind, role, _pin(entry, f"ciw/{name}[{role}]"))
+    # The PPDA runtime and the vendor runtime nested inside it (a nested identity may match any pin of
+    # its kind), with the trees acquired_dataset pins for both.
+    vendor = {"revision": VENDOR_REVISION, "module": "evidence.types", "source_root": "."}
+    ppda = acquired_dataset.AcquisitionWorkflow().pin
+    for role, pin, declared_in in (("ppda", ppda, "ciw.acquired_dataset.AcquisitionWorkflow.pin"),
+                                   ("ppda.vendor", vendor, "ciw.acquired_dataset vendor pin")):
+        tree = acquired_dataset.SOURCE_TREES[pin["revision"]]
+        add("acquired-dataset", role, _pin(pin, declared_in, source_tree=tree))
+    operations = []
+    for role, entry in sorted(_manifest("adapter-runtimes.json").items()):
+        for index, pin in enumerate([entry, *entry.get("historical", [])]):
+            suffix = f".historical[{index - 1}]" if index else ""
+            operations.append(_pin(pin, f"ciw/adapter-runtimes.json[{role}]{suffix}"))
+    trees: dict = {}
+    for pin in [pin for roles in kinds.values() for group in roles.values() for pin in group] + operations:
+        if pin.get("source_tree"):
+            trees.setdefault(pin["revision"], set()).add(pin["source_tree"])
+    return {"kinds": kinds, "operations": operations,
+            "trees": {revision: sorted(values) for revision, values in sorted(trees.items())}}
+
+
+def pins_without_tree(pins: dict | None = None) -> dict:
+    """Declared pins whose revision has no source tree in any CIW pin table.
+
+    For these, :func:`_pin_check` compares revision, module and source root
+    only and accepts any source tree (``tree_pinned: false``), so a record that
+    invents a tree still matches. Returns ``{"kinds": [(kind, role, revision),
+    ...], "operations": [declared_in, ...]}``, sorted.
+    """
+    pins = declared_pins() if pins is None else pins
+    trees = pins["trees"]
+    kinds = sorted({(kind, role, pin["revision"]) for kind, roles in pins["kinds"].items()
+                    for role, group in roles.items() for pin in group if not trees.get(pin["revision"])})
+    operations = sorted(pin["declared_in"] for pin in pins["operations"] if not trees.get(pin["revision"]))
+    return {"kinds": kinds, "operations": operations}
+
+
+def _pin_check(identity, candidates, trees, scope) -> dict:
+    """Compare one retained runtime identity with the pins CIW declares for its scope."""
+    revision, tree = identity["revision"], identity["source_tree"]
+    row = {"revision": revision, "source_tree": tree, "module": identity.get("module"),
+           "repository": str(identity.get("module") or identity.get("repository") or "pinned provider"),
+           "matched": None, "problem": None}
+    same = [pin for pin in candidates if pin["revision"] == revision]
+    fitting = [pin for pin in same if all(identity.get(key) == pin[key] for key in ("module", "source_root")
+                                          if key in pin)]
+    recorded = trees.get(revision, [])
+    if not candidates:
+        row["problem"] = f"CIW declares no runtime pin for {scope}"
+    elif not same:
+        row["problem"] = f"revision {revision} is not a revision CIW pins for {scope}"
+    elif not fitting:
+        row["problem"] = f"module or source root differs from every CIW pin of revision {revision} for {scope}"
+    elif len(recorded) > 1:
+        row["problem"] = f"CIW records conflicting source trees for revision {revision}: {', '.join(recorded)}"
+    elif recorded and tree != recorded[0]:
+        row["problem"] = f"source tree {tree} is not the tree {recorded[0]} CIW records for revision {revision}"
+    else:
+        row["matched"] = sorted(pin["declared_in"] for pin in fitting)
+        row["tree_pinned"] = bool(recorded)
+    return row
+
+
+def _runtime_rows(runtimes, steps, kind, pins) -> list:
+    """Pin comparison for every revision-and-tree identity in a bundle's runtimes (by role) and steps."""
+    roles = pins["kinds"].get(kind, {})
+    everything = [pin for group in roles.values() for pin in group]
+    rows = []
+    for role, value in sorted(runtimes.items()) if isinstance(runtimes, dict) else []:
+        for identity in _providers(value):
+            # A nested identity (for example PPDA's vendor runtime) may match any pin of the kind.
+            candidates = roles.get(role, []) if identity is value else everything
+            rows.append({"role": role, **_pin_check(identity, candidates, pins["trees"],
+                                                    f"role {role} of workflow kind {kind}")})
+    for identity in _providers(steps):
+        rows.append({"role": None, **_pin_check(identity, everything, pins["trees"], f"workflow kind {kind}")})
+    return rows
 
 
 def _synthetic(value) -> bool:
@@ -110,10 +267,21 @@ def _mentions_generated(value) -> bool:
     return isinstance(value, str) and any(word in value.lower() for word in ("synthetic", "fixture"))
 
 
-def _result_basis(record, synthetic_input, name):
-    providers = _providers(record)
-    if providers:
-        return {"provider": providers[0], "notes": f"{len(providers)} pinned runtime identities in the record"}
+def _result_basis(rows, synthetic_input, name):
+    """Provider basis when every retained runtime identity is a CIW pin; otherwise the reason, or synthetic/none."""
+    if rows:
+        problems = [row["problem"] for row in rows if row["problem"]]
+        if problems:
+            return {"notes": "Runtime identity does not match a CIW pin: " + "; ".join(problems)
+                    + ". provider_backed needs the retained revision and source tree to be a pin CIW declares "
+                    "for this workflow kind."}
+        first = rows[0]
+        trees = "every source tree equals the tree CIW records" if all(row.get("tree_pinned") for row in rows) \
+            else "CIW records no source tree for some pinned revisions; those trees are as recorded"
+        return {"provider": {"repository": first["repository"], "revision": first["revision"],
+                             "source_tree": first["source_tree"], "executed": True},
+                "notes": f"{len(rows)} pinned runtime identities in the record; every revision is a CIW pin "
+                         f"({', '.join(sorted({d for row in rows for d in row['matched']}))}) and {trees}."}
     if synthetic_input:
         return {"generator": {"name": name}}
     return {}
@@ -167,15 +335,23 @@ def classify_workspace(path) -> dict:
     with tempfile.TemporaryDirectory(prefix="ciw-lab-classify-") as directory:
         Session.from_workspace(path, Path(directory))
     saved = read_json(path)
+    pins = declared_pins()
     run = saved["run"]
     provenance = run["metadata"].get("provenance", {})
     generator = _generator(provenance)
     synthetic_run = generator is not None or _synthetic(provenance)
     items = []
 
-    def item(kind, identity, findings):
-        items.append({"kind": kind, "identity": identity, "findings": findings,
-                      "labels": sorted({f["evidence_status"] for f in findings})})
+    def item(kind, identity, findings, rows=None):
+        entry = {"kind": kind, "identity": identity, "findings": findings,
+                 "labels": sorted({f["evidence_status"] for f in findings})}
+        if rows is not None:
+            entry["runtime_pins"] = rows
+        items.append(entry)
+
+    def numerical(claim, value, basis):
+        return finding(claim, "numerical", value, basis,
+                       expected_not_established=supported_label(basis, "numerical") == "not_established")
 
     run_basis = {"generator": {"name": generator or "declared synthetic source"}} if synthetic_run else {}
     item("run", run["evidence_id"], [
@@ -186,12 +362,13 @@ def classify_workspace(path) -> dict:
     results = saved.get("results", {})
     for result in (results.values() if isinstance(results, dict) else results):
         identity = result.get("result_id", "legacy-result")
-        basis = _result_basis(result.get("runtime") or {}, synthetic_run, f"{result.get('operation_id')} over {run['run_id']}")
+        rows = [_pin_check(runtime, pins["operations"], pins["trees"], "session operation adapters")
+                for runtime in _providers(result.get("runtime") or {})]
+        basis = _result_basis(rows, synthetic_run, f"{result.get('operation_id')} over {run['run_id']}")
         item("operation_result", identity, [
-            finding(f"{result.get('operation_id')} result {identity}", "numerical", result.get("record_digest"), basis,
-                    expected_not_established=not basis),
+            numerical(f"{result.get('operation_id')} result {identity}", result.get("record_digest"), basis),
             finding(f"{result.get('operation_id')} result {identity} is physically valid", "physical", None, {}),
-        ])
+        ], rows)
     workbench = saved.get("workbench") or {}
     sources = {s["source_id"]: s for s in workbench.get("sources", [])}
     raw = {source_id: _source_bytes(record) for source_id, record in sources.items()}
@@ -205,9 +382,9 @@ def classify_workspace(path) -> dict:
         if not isinstance(source, dict):
             source = {}
         synthetic_input = _synthetic(source) or _synthetic(native.get("configuration")) or _synthetic(native.get("steps"))
-        basis = _result_basis({"runtimes": native.get("runtimes"), "steps": native.get("steps")}, synthetic_input, f"{kind} source")
-        findings = [finding(f"{kind} bundle {bundle['bundle_id']} numerical result", "numerical", bundle["bundle_id"], basis,
-                            expected_not_established=not basis)]
+        rows = _runtime_rows(native.get("runtimes"), native.get("steps"), kind, pins)
+        basis = _result_basis(rows, synthetic_input, f"{kind} source")
+        findings = [numerical(f"{kind} bundle {bundle['bundle_id']} numerical result", bundle["bundle_id"], basis)]
         # Raw acquisition bytes must be another retained source, rehashed here.
         acquisition = _energy_acquisition(source, {digest for source_id, digest in digests.items()
                                                    if source_id != bundle.get("source_id")})
@@ -228,7 +405,7 @@ def classify_workspace(path) -> dict:
                 f"{kind} replay {receipt.get('replay_id')} reproduces the retained numerical result", "provenance",
                 matched, {"checks": [{"reference_kind": "self_convergence", "reference": "same-runtime fresh reproduction",
                                       "observed": 0.0 if matched else 1.0, "tolerance": 0.0, "passed": matched}]}))
-        item("workbench_bundle", bundle["bundle_id"], findings)
+        item("workbench_bundle", bundle["bundle_id"], findings, rows)
     counts = {label: 0 for label in LABELS}
     for entry in items:
         for record in entry["findings"]:
@@ -236,4 +413,5 @@ def classify_workspace(path) -> dict:
     return {"schema": SCHEMA, "workspace": str(path), "validated_without_provider_execution": True,
             "validation_scope": "Session.from_workspace; built-in offline analyses may be recomputed to check retained data",
             "items": items, "label_counts": counts, "origin_authentication": UNAUTHENTICATED,
+            "runtime_pin_rule": PIN_RULE,
             "note": "Derived projection; retained records are unchanged and replay is never independent verification."}

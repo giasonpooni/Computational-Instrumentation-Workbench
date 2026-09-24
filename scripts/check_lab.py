@@ -10,7 +10,13 @@ environment, lab tests with a JUnit record (provider-gated tests against the
 bound providers), the whole queue, and a tolerance-aware comparison with
 ``lab/``. The comparison needs Python 3.12+, like the retained run; older
 interpreters may only run with ``--no-compare``. Hardware-dependent tasks
-remain blocked; no physical measurement is acquired.
+remain blocked; no physical measurement is acquired. Retained operator
+hardware runs (``lab/hardware/<run-id>/``, made on their capture host) are
+verified for integrity only, in either mode: reports validate and hold no host
+path, artifacts match their digests, every hardware-measured finding cites raw
+bytes its task retained after a hardware probe succeeded in that task itself,
+and ``capture.json`` agrees with the run. A run whose physical findings rest
+on a probe of the capture host's hardware cannot be recomputed here or in CI.
 """
 from __future__ import annotations
 
