@@ -264,3 +264,12 @@ def test_every_upstream_kind_binds_its_upstream_through_its_workflow():
     upstream = {"kind": "calibrated-observable", "bundle_id": "u", "native": {"a": 2}}
     with pytest.raises(ValueError, match="Design upstream must exactly match"):
         workbench._validate_links(record, {"d": record, "u": upstream})
+
+
+def test_declared_and_reproduced_kinds_follow_the_descriptor_verification_method():
+    from ciw import pipelines, workbench
+    methods = {kind: value["verification"]["method"] for kind, value in pipelines.load().items()}
+    assert "proved-heat" in workbench.DECLARED_KINDS - workbench.REPRODUCED_KINDS
+    assert not {"telemetry", "calibrated-observable", "identified-design"} & workbench.DECLARED_KINDS
+    for kind in workbench.REPRODUCED_KINDS - {"instrument-exchange"}:
+        assert methods[kind].endswith("fresh_occurrence_reproduction"), kind

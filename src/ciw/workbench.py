@@ -15,8 +15,14 @@ from threading import RLock
 
 from .adapters.protocol import AdapterRefusal
 from .adapters.subprocess import _json
-DECLARED_KINDS = frozenset({"schematic-assessment", "numerical-heat", "proved-heat", "schematic-companions", "bim-quantity", "acquired-dataset", "residual-monitor", "measurement-chain", "geometric-circle", "identified-stability", "flat-torus-reference", "curved-path-transfer", "covariance-geometry", "mesh-path", "translation-flow", "variational-free-energy", "energy-accuracy", "instrument-exchange", "thermal-observer", "machine-manifest"})
-REPRODUCED_KINDS = DECLARED_KINDS - {"proved-heat"}
+from .pipelines import load as _load_descriptors
+
+# A declared kind retains one sealed native step and its own verification; a
+# kind verified against a pinned provider set replays that set instead. Every
+# declared kind except a proof-verified one verifies by fresh reproduction.
+_METHODS = {kind: value["verification"]["method"] for kind, value in _load_descriptors().items()}
+DECLARED_KINDS = frozenset(kind for kind, method in _METHODS.items() if method != "pinned_set_replay_verification")
+REPRODUCED_KINDS = frozenset(kind for kind in DECLARED_KINDS if _METHODS[kind] != "fresh_registered_guest_verification")
 UPSTREAM_KINDS = {"identified-design": "calibrated-observable", "schematic-companions": "schematic-assessment",
                   "acquired-calibrated-window": "acquired-dataset", "identified-stability": "identified-design"}
 INSTRUMENT_ROLES = frozenset({"ppda", "tbrt", "mcur", "stfe", "gsie", "cbsr", "fdir", "oit", "sra", "scr", "cse", "rci", "fsrt", "jspt", "gte", "plsr", "ftr", "csg", "cggt", "isgt", "tsde", "energy", "exchange", "thermal", "machine"})
