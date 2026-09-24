@@ -79,7 +79,7 @@ RUNTIME_FIELDS = frozenset({"schema", "adapter_version", "repository_root", "rev
                             "source_root", "python_executable", "python_sha256", "python_version", "dependencies"})
 HOST_FIELDS = frozenset({"repository_root", "python_executable"})
 HOOKS = frozenset({"__init__", "parse_source", "invoke", "check_data", "check_runtime", "make_adapter", "bind_extra",
-                   "step_request"})
+                   "step_request", "experiment_id", "configuration"})
 _EXECUTION = re.compile(r"execution-[a-f0-9]{32}")
 _SESSION = re.compile(r"session-[a-f0-9]{32}")
 _SHA256 = re.compile(r"sha256:[a-f0-9]{64}")
@@ -317,9 +317,17 @@ class PipelineRunner:
     def check_runtime(self, runtime: dict) -> None:
         return None
 
-    def step_request(self, source: dict):
+    def step_request(self, source: dict, evidence_id: str):
         """What a step retains as its request: the whole source unless the pipeline narrows it."""
         return source
+
+    def experiment_id(self, source: dict) -> str:
+        """The experiment a bundle names for this source."""
+        return source["experiment_id"]
+
+    def configuration(self, source: dict):
+        """The configuration a bundle retains for this source."""
+        return source["configuration"]
 
     def make_adapter(self, repository, retained: dict):
         return PinnedSubprocessAdapter(
@@ -386,11 +394,11 @@ class PipelineRunner:
         data = self.invoke(source, bound)
         self._unchanged(adapter, runtime, "during")
         self.check_data(source, data)
-        return seal_step(self.role, self.operation, self.step_request(source), self._input_refs(source, evidence_id), data,
+        return seal_step(self.role, self.operation, self.step_request(source, evidence_id), self._input_refs(source, evidence_id), data,
                          profile=self.PROFILE)
 
     def _validate_step(self, step, source, evidence_id):
-        check_step(step, role=self.role, operation=self.operation, source=source, request=self.step_request(source),
+        check_step(step, role=self.role, operation=self.operation, source=source, request=self.step_request(source, evidence_id),
                    profile=self.PROFILE,
                    input_refs=self._input_refs(source, evidence_id), check_data=self.check_data, label=self.LABEL)
 
@@ -416,9 +424,9 @@ class PipelineRunner:
         source = self._source(raw)
         if (evidence != {"artifact_ref": byte_digest(raw), "sha256": byte_digest(raw),
                          "bytes_b64": base64.b64encode(raw).decode()} or
-                bundle["source"] != {"experiment_id": source["experiment_id"], "experiment_digest": digest(source),
+                bundle["source"] != {"experiment_id": self.experiment_id(source), "experiment_digest": digest(source),
                                      "evidence": [evidence]} or
-                canonical(bundle["configuration"]) != canonical(source["configuration"])):
+                canonical(bundle["configuration"]) != canonical(self.configuration(source))):
             raise ValueError(f"{self.LABEL} source/configuration binding mismatch")
         return raw, source, evidence["artifact_ref"]
 
@@ -456,10 +464,10 @@ class PipelineRunner:
         evidence = byte_digest(raw)
         step = self._step(source, evidence, bound)
         bundle = {"schema": self.schema, "session_id": "session-" + uuid.uuid4().hex, "created_at": utc_now(),
-                  "source": {"experiment_id": source["experiment_id"], "experiment_digest": digest(source),
+                  "source": {"experiment_id": self.experiment_id(source), "experiment_digest": digest(source),
                              "evidence": [{"artifact_ref": evidence, "sha256": evidence,
                                            "bytes_b64": base64.b64encode(raw).decode()}]},
-                  "configuration": deepcopy(source["configuration"]), "runtimes": {self.role: bound[1]}, "steps": [step]}
+                  "configuration": deepcopy(self.configuration(source)), "runtimes": {self.role: bound[1]}, "steps": [step]}
         bundle["bundle_digest"] = bundle_digest(bundle)
         bundle["verification"] = self._verify(bundle, source, evidence, bound)
         self._validate(bundle)

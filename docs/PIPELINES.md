@@ -252,7 +252,7 @@ Specific refusals: none.
 
 Implementation `ciw.energy_workflow` (declared workflow); verification: same_runtime_fresh_occurrence_reproduction.
 
-Specific refusals: `DECLARED_WORKLOAD_REFUSED`.
+Specific refusals: none.
 
 - Retained NVML log validation: five ordered, non-overlapping phases; sample/batch budgets; clock and UUID formats; origin must be physical_measurement or synthetic_fixture; seal/log_digest. The analysis source admits a log only through this validation. (`ciw.energy_records:validate_log` and `ciw.energy_records:_validate`, `ciw.energy_records:seal`, plan/sensor/runtime/sample validators `ciw.energy_records:_plan`, `ciw.energy_records:_sensor`, `ciw.energy_records:_runtime`, `ciw.energy_records:_sample`; applied on admission by `ciw.energy_workflow:EnergyAccuracyWorkflow._source`; code: `ciw.energy_records:validate_log`, `ciw.energy_records:_validate`, `ciw.energy_records:seal`, `ciw.energy_records:_sensor`, `ciw.energy_workflow:EnergyAccuracyWorkflow._source`)
 - Gross counter-difference energy per phase with bracket and alignment checks; reset/wrap ambiguity; per-batch KL against the reference; eligibility reasons and the classification physical_domain_measurement / synthetic_only / ineligible (`ciw.energy_records:_phase_analysis`, `ciw.energy_records:analyze`; code: `ciw.energy_records:_phase_analysis`, `ciw.energy_records:analyze`)

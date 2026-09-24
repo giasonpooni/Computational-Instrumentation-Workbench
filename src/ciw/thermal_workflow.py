@@ -123,7 +123,7 @@ class ThermalWorkflow(PipelineRunner):
     def parse_source(self, raw):
         return contract.validate_source(raw)
 
-    def step_request(self, source):
+    def step_request(self, source, evidence_id):
         return source["request"]
 
     def check_data(self, source, data):
@@ -142,7 +142,7 @@ class ThermalWorkflow(PipelineRunner):
     def _step(self, source, evidence_id, bound):
         data = _native_result(source)
         self.check_data(source, data)
-        return seal_step(ROLE, OPERATION, self.step_request(source), [evidence_id], data, profile=self.PROFILE)
+        return seal_step(ROLE, OPERATION, self.step_request(source, evidence_id), [evidence_id], data, profile=self.PROFILE)
 
     def _check_runtimes(self, runtimes):
         exact_keys(runtimes, {ROLE})
