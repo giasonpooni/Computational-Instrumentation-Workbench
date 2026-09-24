@@ -1,6 +1,7 @@
 """Scientific invariants of the demo and full-resolution analysis contract."""
 
 from copy import deepcopy
+import json
 import math
 
 import numpy as np
