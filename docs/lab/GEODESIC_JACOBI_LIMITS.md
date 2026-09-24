@@ -2,7 +2,9 @@
 
 Implementation: `src/ciw/lab/geodesic_jacobi_limits.py` (tasks) and
 `src/ciw/lab/geodesic_jacobi_limits_core.py` (chart maps, perturbation
-families, closed forms, constant-curvature transfer matrices). Tests:
+families, closed forms, constant-curvature transfer matrices); the implicit
+Gauss collocation integrators that T014 and T016 run are in the geometry
+core, `src/ciw/lab/integrators.py`. Tests:
 `tests/test_lab_geodesic_jacobi_limits.py`. Run with
 
 ```
@@ -232,8 +234,61 @@ So the return error is `O(h)` for Euler, `O(h³)` for explicit midpoint and
 `1 + z⁶/72 + …`). Truncating and continuing on an identical grid is the same
 arithmetic as direct integration.
 
+A symmetric method has `Φ₋ₕ = Φₕ⁻¹`, and every Runge–Kutta method commutes
+with the flip `ρ` (`Φₕ(ρy) = ρΦ₋ₕ(y)`, because `ρ f(ρy) = −f(y)`), so
+`ρ Φₕᴺ ρ Φₕᴺ = id`: the return error of implicit midpoint (the one-stage
+Gauss method) and two-stage Gauss–Legendre is only their stage-solve residual
+plus rounding, not `O(h^p)` (linear check: `R(z)R(−z) = 1` exactly for
+`(1 + z/2)/(1 − z/2)` and the (2, 2) Padé approximant), while their forward
+error is still `O(h²)` and `O(h⁴)`.
+
+*Implicit integrators.* `ciw.lab.integrators.integrate_implicit` (and
+`step_gauss`) integrate with the Gauss collocation methods `implicit-midpoint`
+(order 2) and `gauss-legendre-2` (order 4). The stage equations
+`K = f(y + hAK)` are solved by fixed-point iteration from `K = f(y)`, stopping
+at the first iterate whose stage values change by at most `SOLVE_TOL = 1e−13`
+times the magnitude of the terms they are summed from, componentwise (about
+450 units of roundoff, so rounding noise cannot keep a contracting iteration
+from meeting it). The test bounds the last change, not the remainder: for a
+contraction factor `q` the stage values then differ from the exact ones by at
+most `q/(1 − q)` times that change (1.5 times it at `q = 0.6`, about the
+largest `q` the iteration cap admits), and the returned step, formed from `f`
+of the previous iterate, by at most `|h| Lip(f)/(1 − q)` times it
+(`2q/(1 − q)`, 3 at `q = 0.6`, for implicit midpoint); on `y′ = y` both bounds
+are attained. The iteration contracts
+while `|h| × Lip(f) × ρ(A) < 1` (`ρ(A) = 1/2` and `1/√12`). A step whose
+iteration has not converged after `SOLVE_MAX_ITERATIONS = 60` iterations, or
+whose iterate is nonfinite or outside the domain of `f`, raises
+`ImplicitSolveRefusal` (code `implicit_solve_not_converged`) naming the step;
+no unconverged state is returned. The run reports its iterations (total, largest
+and mean per step). Stage sums are formed elementwise, like the explicit steps,
+so the method adds no BLAS-dependent rounding.
+
+*Protocol (symmetric methods).* The same three cases and `N = 20 … 160`, joint
+geodesic/Jacobi state, forward then reversed; forward end-point error against
+the great circle, the exact semicircle (hyperbolic distance) or a DP45
+`rtol = 1e−13` torus end point (checked at `1e−12`); on the torus also the
+stage tolerances `1e−4, 1e−6, 1e−8` at `N = 20, 80`, far above rounding so
+that rounding cannot move a fixed-point stop across them, checked for the
+bound `tolerance × state size` at each, for a return error at least 100 times
+the rounding bound (`1e−12`) at `1e−4` and `1e−6`, and for a smallest return
+error within the rounding bound at `1e−8`.
+
 *Result.* Reversal orders 1.05, 3.00, 5.00 (means over sphere, torus,
-hyperbolic plane); adaptive return error ≤ 0.95 × rtol. Dyadic continuation
+hyperbolic plane); adaptive return error ≤ 0.95 × rtol. The symmetric methods
+return at rounding level at every step size: at most 6.7e−14 (implicit
+midpoint) and 3.4e−14 (Gauss–Legendre), against 3.3e−4 (explicit midpoint)
+and 2.5e−7 (RK4) at `N = 20`, although they are not exact forward (orders
+1.999 and 3.995–4.000, forward errors from 4e−8 at `N = 20`). They need 10.2
+to 5.8 (implicit midpoint) and 8.9 to 5.0 (Gauss–Legendre) fixed-point
+iterations per step from `N = 20` to 160. The stage tolerance bounds the
+return error but does not set it: at `1e−4`, `1e−6` and `1e−8` the return
+error spans 1.6e−6–3.8e−5, 6.2e−10–5.3e−7 and 3.7e−14–1.9e−9, at most
+0.22 × tolerance × state size, so the solve, not `h^p`, bounds it. It clears
+the rounding bound by at least 620 times at `1e−6`, but at `1e−8`
+Gauss–Legendre at `N = 80` is already at rounding level, and at `N = 80` a
+100 times tighter tolerance (`1e−6` to `1e−8`) lowers the implicit-midpoint
+return error only from 1.3e−9 to 1.05e−9. Dyadic continuation
 (`h = 2⁻⁷`) is bitwise identical for all three methods; decimal truncation
 lengths (first witness `L1 = 1.13`, `L2 = 3`, `N2 = 300`) change the step by
 one ulp and break bitwise identity at the 4e−16 level. The witness records that
@@ -243,8 +298,18 @@ only. Adaptive restart agrees
 to 0.011 × rtol but not bitwise.
 
 *Counterexamples.* "Forward-then-reversed integration with a method of order p
-returns with error ∝ h^p"; "truncate-and-continue is bitwise reproducible for
-any truncation length".
+returns with error ∝ h^p"; "the forward-then-reversed return error of an
+integrator measures its global error" (Gauss–Legendre on the sphere at
+`N = 20`: forward error 4.3e−7, return error at rounding level);
+"truncate-and-continue is bitwise reproducible for any truncation length".
+
+*Cross-kernel behavior.* The rounding-level return errors change in their last
+bits between OpenBLAS kernels (below 1e−15), so their regression tolerance is
+the 1e−12 rounding bound itself. Where a fixed-point iteration stops can move
+by one iteration between platforms (one step in 640 did between kernels in
+T016), changing a mean iteration count by `1/(2N)` and a state by up to about
+1e−14; the iteration means are compared within 1 % and the forward orders,
+fitted down to errors of 1e−11, within 5e−3.
 
 *Deferred research question (cross-platform reproduction).* Run T014 on
 Windows x86-64 and macOS arm64 besides the retained Linux x86-64 run: the two
@@ -300,8 +365,10 @@ grows linearly at every horizon" (witness: torus RK4 over `L = 10 … 160`);
 geodesic"; "the fixed-step RK4 position error on the sphere is the phase error
 of its speed error".
 
-*Does not prove.* Asymptotic drift laws beyond `L = 320`; symplectic or
-symmetric integrators are not compared.
+*Does not prove.* Asymptotic drift laws beyond `L = 320`; the symmetric
+integrators of the core (implicit midpoint, Gauss–Legendre) are not run on
+these two geodesics (T016 compares them with RK4 on a winding torus geodesic
+and on escaping ones).
 
 ## T016 Strongly negative curvature
 
@@ -364,15 +431,101 @@ for `c = 1, 4, … , 16384`; local exponents from `c = 16` decrease
 monotonically, 1.454, 1.431, 1.420, 1.416, 1.415, the last within 0.001 of `√2`;
 DP45 steps grow by about 47 per factor 4 in `c` (logarithmically).
 
+*Full nonlinear systems (prediction).* The fixed-point Gauss–Legendre
+integrator of T014 is the same collocation method as the step matrix, so on
+constant `K` its Jacobi columns must equal the step-matrix powers up to the
+stage-solve tolerance, with order 4, a `j_head` error tending to
+`(1/720)/(1/120) = 1/6` of RK4's and the same minimal step counts. The geodesic
+equation itself is nonlinear, where the linear error constants predict
+nothing, and on the saddle `K` varies along the path. Gauss methods are
+symmetric (in the chart position–velocity coordinates used here they are not
+symplectic for the geodesic Hamiltonian), so on a reversible integrable
+problem with recurrent (quasi-periodic) orbits their error in the first
+integrals stays bounded, while a non-symmetric method such as RK4 accumulates
+a secular drift. On an escaping geodesic nothing recurs: the hyperbolic
+geodesic turns toward the vertical ray, where the right-hand side is linear
+along `v = qy`, so every Runge–Kutta method keeps the speed there, and the
+saddle's Christoffel symbols decay like `1/r`; the speed errors can saturate
+for any method.
+
+*Protocol (nonlinear).* Gauss–Legendre (stage tolerance 1e−13, at most 60
+iterations) and RK4 on the full `HyperbolicPlane(k)` geodesic/Jacobi system
+(`k = 1, 2, 4, 8`, `N = 64, 128, 256`), against `sinh(kL)/k` and the exact
+semicircle; Gauss–Legendre rerun at the step-matrix counts `N` and `N − 1`.
+`Saddle(c)`, `c = 1, 4, 16`: the ridge geodesic and an oblique one from
+`(x0, 0.5/c)` with chart heading −0.3, which misses the saddle point (peak `|K|`
+0.82, 6.7 and 0.56 instead of 1, 16 and 256), at `N = 32, 64, 128` (`c = 1, 4`)
+and `64, 128, 256` (`c = 16`) against DP45 at `rtol = 1e−13` (checked at
+`1e−12`, a self-convergence reference); errors below 1e−11 are left out of
+fits and ratios. Speed-error envelopes `max_{s ≤ L} |g(v, v) − 1|` of RK4,
+implicit midpoint and Gauss–Legendre at `h = 1/4`: `HyperbolicPlane(1)` and the
+oblique `Saddle(1)` geodesic to `L = 32` (escaping), and a `Torus(2, 1)`
+geodesic from `(0, 0)` with heading 1.3 to `L = 160`, which winds around the
+tube (θ from 0 to 134.5) and crosses the inner equator (`K = −1`) on every
+turn (recurrent). Implicit midpoint on the full `HyperbolicPlane(8)` system at
+`kh = 2.29`.
+
+*Result (nonlinear).* Gauss–Legendre `j_head` orders 4.000–4.002 (RK4
+3.89–3.99), GL/RK4 `j_head` error at `N = 256` 0.168, 0.169, 0.171, 0.176 for
+`k = 1 … 8` (1/6 = 0.167); the nonlinear result equals its step-matrix power to
+4.4e−14, and the step-matrix counts 15, 35, 83, 196 give relative errors up to
+9.87e−7 while one step fewer gives at least 1.007e−6, so they hold for the
+nonlinear integrator. The hyperbolic end point is another matter: for
+`k ≤ 4` the GL/RK4 end-point error ratio is 0.70–1.28 and the speed-error
+ratio 0.70–1.06 (orders 3.80–4.00). On the saddle both methods have `j_head`
+orders 3.93–4.15, but the GL/RK4 `j_head` error ratio at the finest resolved
+`N` is 0.83, 1.32, 0.36, 0.30, 0.27, 2.45 (`c = 1` ridge, oblique, `c = 4`
+ridge, oblique, `c = 16` ridge, oblique): Gauss–Legendre is less accurate than
+RK4 on two oblique geodesics, while its speed error is at most 0.21 of RK4's.
+Gauss–Legendre needs 5.0–14.9 fixed-point iterations per step on the
+hyperbolic plane (more at larger `kh`) and 4.8–9.4 on the saddle. Winding torus:
+the envelope grows from `L = 20` to 160 by 10.5 for RK4 (local slopes 1.32,
+1.00, 1.07: secular) and by 1.0001 (implicit midpoint) and 1.00004
+(Gauss–Legendre). Escaping geodesics: every envelope grows by at most 1.007
+after `L/8`, RK4's by exactly 1.0; on the vertical hyperbolic ray every method
+keeps the speed to 2.2e−15. Implicit midpoint at `kh = 2.29` is refused:
+"implicit-midpoint stage equations did not converge within 60 fixed-point
+iterations at step size 0.2857142857142857 (step 1 of 7)", where the
+fixed-point iteration diverges. At smaller `kh` the iteration contracts ever
+more slowly as `kh` grows, so the 60-iteration cap refuses first: it refuses
+whole `L = 2` runs of implicit midpoint from `kh ≈ 0.6` (0.62 at `k = 4, 8`,
+0.67 at `k = 2`) and of Gauss–Legendre from `kh ≈ 1.1` (1.07 at `k = 8`, 1.14
+at `k = 4`). With a cap of 20000 iterations the same runs still converge up to
+`kh = 0.89` (implicit midpoint, 834 iterations for its slowest step) and 1.23
+(Gauss–Legendre), and fail only from `kh ≈ 0.94–1` and 1.33, at step 3 or 4;
+the first implicit-midpoint step of `HyperbolicPlane(8)` alone converges up to
+`kh = 1.3` (1096 iterations). All of this lies below the pole at `kh = 2`.
+
 *Counterexamples.* "An implicit (A-stable) integrator removes the growth of
 the step count with `k` on strongly negatively curved surfaces" (an implicit
 method of the same order as RK4 needs fewer steps, but the same `k^{5/4}`
-growth); "Jacobi growth is exponential in √(peak |K|) × length".
+growth); "Jacobi growth is exponential in √(peak |K|) × length"; "an
+integrator with a six times smaller error constant on the constant-curvature
+Jacobi equation is correspondingly more accurate for the geodesic itself"
+(`k = 1`, `N = 256`: `j_head` ratio 0.168, end-point ratio 0.70, speed ratio
+0.70); "Gauss–Legendre's constant-curvature advantage over RK4 holds on
+variable-curvature geodesics" (oblique `Saddle(16)` geodesic: ratio 2.45);
+"over long horizons RK4's speed error drifts while a symmetric integrator's
+stays bounded" (on the escaping geodesics RK4's saturates too; the prediction
+holds on the recurrent winding torus geodesic).
+
+*Cross-kernel behavior.* Where a fixed-point iteration stops can move by one
+iteration between platforms (it did for one step in 640 on the winding torus
+between OpenBLAS kernels), which moves a Gauss–Legendre state by up to about
+1e−14 relative: up to 1e−3 of the smallest errors used (1e−11). Orders and
+error ratios built from them are therefore compared within 1e−3 (hyperbolic
+`j_head`) to 5e−3 (hyperbolic end point and speed, saddle), while the speed
+envelopes (1e−6 and larger) moved by less than 2e−8 relative and are compared
+within 1e−6.
 
 *Does not prove.* The `√2` saddle limit is a matched-asymptotics argument
-supported by the local exponents, not a proof; only the ridge geodesic is
-studied; the implicit methods are evaluated on the constant-curvature Jacobi
-system through their exact step matrices.
+supported by the local exponents, not a proof, and is fitted on the ridge
+geodesic only (the oblique geodesics are compared for integrator accuracy);
+why the Gauss–Legendre/RK4 error ratio varies between saddle geodesics is
+measured, not derived; within its 60-iteration cap the fixed-point stage
+solve reaches only `kh` below about 0.6 (implicit midpoint) and 1.1
+(Gauss–Legendre) here (without the cap it stops converging near `kh = 1` and
+1.3), and a Newton solve that would reach larger steps is not implemented.
 
 ## T017 Validity domains of the first-order approximation
 
@@ -491,14 +644,19 @@ back to T005), never a queue task that has already run. The cross-platform
 question T014 defers is recorded once among its unresolved assumptions
 (`PLATFORM_QUESTION_T014`).
 
-* A symmetric (reversible) integrator in `ciw.lab.integrators` would make the
-  reversal test exact and give a long-horizon comparison (T014, T015).
+* The symmetric Gauss collocation integrators now in `ciw.lab.integrators`
+  (T014, T016) are not yet run on T015's two geodesics and horizons.
+* A time-reversible adaptive step control for the Gauss–Legendre integrator
+  would test whether an adaptive return can also be exact (T014), and a Newton
+  stage solve would reach steps beyond the fixed-point limit (`kh ≈ 0.6` for
+  implicit midpoint, `≈ 1.1` for Gauss–Legendre), where the fixed-point
+  iteration is refused (T016).
 * A `Surface.check` scale that is invariant under anisotropic charts would
   allow tori with `R ≥ 10⁶`; today `det g / tr(g)²` refuses them as degenerate.
 * Hyperbolic-plane isometries (Möbius maps) as a `ChartMap` would extend T012 to
   intrinsic surfaces.
 * A second-form (embedding-derived) curvature option in the core surfaces would
   let flatness tests run without the local `SecondFormCurvature` wrapper.
-* An implicit geodesic integrator (for example Gauss–Legendre collocation) in
-  `ciw.lab.integrators` would let T016 compare implicit methods on the full
-  nonlinear system instead of the constant-curvature step matrices.
+* The Gauss–Legendre/RK4 error ratio on variable-curvature geodesics (T016
+  measures it from 0.27 to 2.45 on the saddle) is not yet derived from the
+  methods' global error coefficients.

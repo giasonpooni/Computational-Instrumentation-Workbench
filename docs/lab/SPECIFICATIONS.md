@@ -169,6 +169,15 @@ drift is a measured quantity (T004). References: exact geodesics on the plane,
 sphere (great circles), cylinder (helices) and hyperbolic plane (semicircles);
 high-precision independent integration elsewhere (T002). Integrator orders
 1, 2, 4 and the adaptive Dormand–Prince 5(4) behavior are tested in T003.
+The symmetric Gauss collocation methods (implicit midpoint, order 2; two-stage
+Gauss–Legendre, order 4) solve their stage equations `K = f(y + hAK)` by
+fixed-point iteration from `K = f(y)` until the stage values change by at most
+`10⁻¹³` times the magnitude of the terms they are summed from, componentwise;
+a step not converged within 60 iterations, or with a nonfinite iterate or one
+outside the domain of `f`, is refused (`implicit_solve_not_converged`), never
+returned. Their forward-then-reversed return is exact up to that residual and
+rounding (T014); their accuracy on the full nonlinear systems and their
+long-horizon speed error are compared with RK4 in T016.
 
 The hyperbolic closed form for `g = I/(k² y²)` with chart heading `α` is
 `x = x₀ + y₀ cos α sinh(ks)/D`, `y = y₀/D`, `D = cosh(ks) − sin α sinh(ks)`,

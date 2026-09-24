@@ -383,8 +383,9 @@ def step_matrix(method: str, curvature, h) -> np.ndarray:
     raise ValueError(f"Unsupported Jacobi step method: {method}")
 
 
-# Scalar stability functions R(z) of the same one-step methods (y' = lambda y, z = h lambda).
-IMPLICIT_ORDERS = {"implicit-midpoint": 2, "gauss-legendre-2": 4}
+# Scalar stability functions R(z) of the same one-step methods (y' = lambda y, z = h lambda). The implicit
+# methods are the Gauss collocation methods that ciw.lab.integrators also integrates nonlinear systems with.
+IMPLICIT_ORDERS = integrators.IMPLICIT_ORDERS
 
 
 def stability_function(method: str, z: float) -> float:
