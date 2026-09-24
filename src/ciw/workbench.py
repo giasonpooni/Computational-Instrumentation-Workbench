@@ -23,6 +23,7 @@ INSTRUMENT_ROLES = frozenset({"ppda", "tbrt", "mcur", "stfe", "gsie", "cbsr", "f
 
 SCHEMA = "ciw.retained-workbench.v1"
 SOURCE_SCHEMA = "ciw.workbench-source.v1"
+RECEIPT_SEAL_SCHEMA = "ciw.replay-receipt-seal.v1"
 OPERATIONS = {
     "calibrated-observable": "ciw.calibrated-observable.v1",
     "identified-design": "ciw.identified-design.v1",
@@ -326,6 +327,20 @@ def _validate_record(record, sources):
         raise ValueError("This workflow needs an explicitly selected upstream bundle")
     _validate_receipts(native, record["kind"])
     return _claims(record)
+
+
+def receipt_seal(bundles):
+    """Catalog-level seal over which retained bundle holds which replay receipt.
+
+    ``sha256`` over CIW's canonical JSON of the ``(bundle_id, replay_id)``
+    pairs in catalog order. A bundle's own digest excludes its receipts, so this
+    is what detects a receipt deleted, added or moved without the seal being
+    recomputed. It is unkeyed: anyone holding the workspace can recompute it,
+    so it neither authenticates a receipt nor binds one to a replay event.
+    """
+    return _digest({"schema": RECEIPT_SEAL_SCHEMA, "receipts": [
+        {"bundle_id": record["bundle_id"], "replay_id": receipt["replay_id"]}
+        for record in bundles for receipt in record["native"].get("replay_receipts", [])]})
 
 
 def _validate_receipts(native, kind):
@@ -1017,7 +1032,8 @@ class Workbench:
         with self._lock:
             return deepcopy({"schema": "ciw.retained-workbench.v2" if self._candidates else SCHEMA, "revision": self._revision,
                 "sources": list(self._sources.values()), "bundles": list(self._bundles.values()),
-                **({"candidates": list(self._candidates.values())} if self._candidates else {})})
+                **({"candidates": list(self._candidates.values())} if self._candidates else {}),
+                "replay_receipt_seal": receipt_seal(self._bundles.values())})
 
     @classmethod
     def restore(cls, value):
@@ -1027,7 +1043,9 @@ class Workbench:
                 raise ValueError("Retained workbench exceeds the byte budget")
             value = deepcopy(value)
             new = value.get("schema") == "ciw.retained-workbench.v2"
-            _keys(value, {"schema", "revision", "sources", "bundles"} | ({"candidates"} if new else set()))
+            # A catalog saved before the receipt seal existed has none and is still accepted.
+            _keys(value, {"schema", "revision", "sources", "bundles"} | ({"candidates"} if new else set()),
+                  {"replay_receipt_seal"})
             candidates = value.get("candidates", [])
             if not isinstance(candidates, list) or len(candidates) > MAX_BUNDLES:
                 raise ValueError("Malformed candidate receipt catalog")
@@ -1067,6 +1085,10 @@ class Workbench:
                 restored._used_bytes += len(_canonical(record))
             if restored._used_bytes + _OVERHEAD > MAX_BYTES:
                 raise ValueError("Retained workbench exceeds the storage byte budget")
+            # Checked after every record and link, so it names only receipt edits nothing else refuses.
+            if "replay_receipt_seal" in value and value["replay_receipt_seal"] != receipt_seal(
+                    restored._bundles.values()):
+                raise ValueError("Retained replay receipt seal differs")
             restored._revision = value["revision"]
             # Check projections now, so a restored catalog can always be read.
             restored.fusion_contexts()

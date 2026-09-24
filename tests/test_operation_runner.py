@@ -9,7 +9,7 @@ import pytest
 from ciw.adapters.protocol import AdapterRefusal
 from ciw.instruments import make_demo_run
 from ciw.operations.registry import Operation, OperationRegistry, default_registry
-from ciw.operations.runner import check_seal, seal
+from ciw.operations.runner import check_seal, numerical_result_id, seal
 from ciw.session import Session, read_json, write_json
 
 
@@ -89,6 +89,36 @@ def test_resealed_semantic_corruption_is_rejected_before_any_write(tmp_path, mut
         with pytest.raises(ValueError):
             Session.from_workspace(path, tmp_path / "rejected")
         writer.assert_not_called()
+
+
+def test_results_carry_a_numerical_identity_that_reopen_recomputes(tmp_path):
+    session = Session(make_demo_run(), tmp_path / "initial")
+    first, second = (request(session, parameters={"channel": "v", "interval_s": [1., 2.]})["payload"]["result"]
+                     for _ in range(2))
+    assert first["numerical_result_id"] == numerical_result_id("statistics.v1", first["data"])
+    # Equal numbers from two executions share it; the occurrences stay distinct.
+    assert first["numerical_result_id"] == second["numerical_result_id"] and first["result_id"] != second["result_id"]
+    path = session.save_workspace(tmp_path / "workspace.json")
+    workspace = read_json(path)
+    stale = deepcopy(workspace)
+    data = stale["results"][0]["data"]
+    data["mean"] = 0.5 * (data["minimum"] + data["maximum"])
+    seal(stale["results"][0])  # the seal is redone, the numerical identity is not
+    write_json(path, stale)
+    with pytest.raises(ValueError, match="numerical_result_id differs from its data"):
+        Session.from_workspace(path, tmp_path / "stale")
+    # Unkeyed: recomputing it too reopens the edit.
+    stale["results"][0]["numerical_result_id"] = numerical_result_id("statistics.v1", data)
+    seal(stale["results"][0])
+    write_json(path, stale)
+    assert Session.from_workspace(path, tmp_path / "resealed").results
+    # Results saved before the identity existed carry none and still reopen.
+    for result in workspace["results"]:
+        del result["numerical_result_id"]
+        seal(result)
+    write_json(path, workspace)
+    older = Session.from_workspace(path, tmp_path / "older")
+    assert older.results and all("numerical_result_id" not in result for result in older.results.values())
 
 
 def test_duplicate_json_keys_are_rejected_at_workspace_boundary(tmp_path):

@@ -1,21 +1,46 @@
 # Exchange and provenance, part 1: identity matrix and workspace mutations (T077–T090)
 
 Implementation: `src/ciw/lab/exchange_provenance.py` (tasks) and
-`src/ciw/lab/exchange_provenance_common.py` (offline fixtures and forgery
-harness). Tests: `tests/test_lab_exchange_provenance.py`.
+`src/ciw/lab/exchange_provenance_common.py` (fixtures and forgery harness).
+Tests: `tests/test_lab_exchange_provenance.py`.
 
 ```
-python -m ciw lab run T077 T078 T079 T080 T081 T082 T083 T084 T085 T086 T087 T088 T089 T090 --output-dir results/lab-exchange
+python -m ciw lab run T077 T078 T079 T080 T081 T082 T083 T084 T085 T086 T087 T088 T089 T090 --output-dir results/lab-exchange \
+    --provider telemetry-stack=/trusted/references/telemetry-stack   # optional: T077's telemetry session
 python -m ciw lab report T084 --retained results/lab-exchange
-python -m pytest -q tests/test_lab_exchange_provenance.py
+CIW_LAB_TELEMETRY_STACK=/trusted/references/telemetry-stack python -m pytest -q tests/test_lab_exchange_provenance.py
 ```
 
-These experiments test the unmodified CIW integrity layer (`ciw.session`,
+These experiments test the CIW integrity layer (`ciw.session`,
 `ciw.operations.runner`, `ciw.workbench`, `ciw.energy_workflow`,
 `ciw.energy_records`, `ciw.exchange`, `ciw.candidate_evidence`,
-`ciw.core.identities`, `ciw.telemetry`) with no network, provider checkout,
-GPU or hardware. The section runs in about 13 s and its tests in about 13 s
-on one core.
+`ciw.core.identities`, `ciw.telemetry`) without network, GPU or hardware. The
+tasks change no CIW code; the two CIW changes T077 asked for, the oscillator
+`numerical_result_id` and the catalog-level replay-receipt seal, were made in
+the integrity layer itself (see [CIW changes made](#ciw-changes-made)). Only
+T077's telemetry session runs provider code, and only when the telemetry stack
+pinned in `src/ciw/telemetry-runtimes.json` is bound as `telemetry-stack`: one
+directory holding the PPDA, STFE, GSIE, SET and CBSR checkouts under their
+repository names, as `scripts/check_telemetry.py --stack-root` lays them out.
+`scripts/check_lab.py` provisions and binds it, and sets
+`CIW_LAB_TELEMETRY_STACK` for the tests.
+
+**Time budget (a recorded exception).** Without the stack the section runs in
+about 14 s and its tests in about 13 s on one core. With it, on Python 3.12,
+the lab gate's interpreter, the section run and its tests each take about
+62–69 s of wall time (52–57 s of CPU time) on one core with
+`OPENBLAS_NUM_THREADS=1`; on Python 3.11 about 47–52 s. That is over the 60 s
+budget of the [authoring rules](AUTHORING.md), and the exception is recorded
+here. Nearly all of the extra time is 106 interpreter probes by CIW's pinned
+adapters: each starts `python -I -B -X pycache_prefix=<new directory>`, which
+recompiles `importlib.metadata` and its imports from source (about 0.35 s each
+on 3.12, 0.25 s on 3.11), and CIW probes a runtime whenever it constructs or
+re-checks its adapter. Binding the five checkouts takes 10, the execution with
+its reproduction and SET verification 44, and the replay 48; the two forgeries
+take 2 each, because they stop at the runtime identity comparison. The
+binding, execution and replay are what the runtime row observes, so the lab
+keeps them whole, and the second forgery meets only the replay's comparison,
+not a full replay (about 48 more probes).
 
 ## What was built
 
@@ -37,6 +62,16 @@ One offline session fixture is shared by the tasks:
   same bytes under the same label and under a second label, and executes only
   the same-label source (B4). It is not an independent reproduction.
 
+With the telemetry stack bound, T077 adds a **telemetry session** in the shared
+workbench: every checkout is first compared with its
+`ciw/telemetry-runtimes.json` pin (the lab's reading of HEAD, tree and working
+bytes; a checkout off its pin, modified or unreadable leaves the session
+unrun, with the reason), then the whole stack is bound (`bind_workflow`
+checks each pin again), `examples/telemetry/source.json` is retained and
+executed with `examples/telemetry/configuration.json` (no reconciliation, so
+CBSR is bound but does not execute), saved, replayed, saved again, classified
+by `ciw.lab.bridge` (as `ciw lab classify` does) and reopened offline.
+
 A second fixture serves T077–T079 and T081:
 
 - **Byte-variant workbench.** The four fixture logs plus eight byte variants of
@@ -51,10 +86,12 @@ A second fixture serves T077–T079 and T081:
   (`Identity collision across retained workbench artifacts`, recorded in T081).
 
 A **mutant** is a copy of the saved workspace with one edit. After the edit, the
-harness recomputes *none*, the *local* digests the edit touches, or *all*
-downstream digests. Every digest, including the log author's `log_digest`, is an
-unkeyed SHA-256 over CIW's own public canonicalization, so anyone holding the
-file can recompute it. The mutant is written to disk and reopened with
+harness recomputes *none*, the *local* digests the edit touches (inside the
+edited record: an oscillator record's `numerical_result_id` and seal, a
+receipt's `verification_id` and `replay_id`), or *all* downstream digests,
+the catalog's replay-receipt seal included. Every digest, including the log
+author's `log_digest`, is an unkeyed SHA-256 over CIW's own public
+canonicalization, so anyone holding the file can recompute it. The mutant is written to disk and reopened with
 `Session.from_workspace`. The outcome is either `accepted` or the exact refusal
 message. Pure-validator rows run `candidate_evidence.validate_response` or
 `exchange._identity` on synthetic records instead of reopening a workspace.
@@ -75,18 +112,23 @@ Both controls hold.
 
 ## Identity matrix (T077)
 
-The matrix has 30 identities. 28 are exercised offline, and all 97 predicted
-properties hold. Of those, 11 are re-derivations of a CIW digest with the lab's
-own canonical JSON and SHA-256 (same implementation origin, recorded as
-`cross_implementation`). The other 86 observe CIW's outputs, its refusal
-messages, or its own validators (for example, `EnergyAccuracyWorkflow._validate_step`
-judges a step moved to a new occurrence).
+The matrix has 31 identities. 29 are exercised offline, with 106 predicted
+properties; with the telemetry stack bound, 30 are exercised, with 119. Every
+predicted property holds. Of them, 14 (16 with the stack) are re-derivations
+of a CIW digest with the lab's own canonical JSON and SHA-256 (same
+implementation origin, recorded as `cross_implementation`). The others observe
+CIW's outputs, its refusal messages, or its own validators (for example,
+`EnergyAccuracyWorkflow._validate_step` judges a step moved to a new
+occurrence), and two cite rows of the mutation matrix below rather than run a
+forgery twice (the deleted receipts of T083 and T081's resealed statistics).
 
-The *Across reopen* column is checked row by row. For each of the 22 exercised
-identities predicted stable, and for the absent oscillator numerical identity,
-a property compares the value saved before reopen with the value the reopened
-session saves again. Records are paired by catalog position, not by identity,
-so no identity is assumed stable. All 23 hold.
+The *Across reopen* column is checked row by row. For each of the 24 exercised
+identities predicted stable (25 with the stack), a property compares the value
+saved before reopen with the value the reopened session saves again. Records
+are paired by catalog position, not by identity, so no identity is assumed
+stable. The catalog's receipt seal changes when the reopened session adds
+replays, so its row compares the seal the restored catalog writes again. All
+hold.
 
 Checks that could not fail by construction are not counted as properties:
 identifier prefix tests, an ESM digest the lab itself set, a `source_id` count
@@ -94,15 +136,20 @@ that differing labels guaranteed, and the fixture's placeholder producer hashes.
 The placeholder hashes are a fact about the repository fixture, not about CIW,
 so they are recorded as a value on the physical finding below.
 
-**T077 is `partial`.** Two planned rows cannot run offline, and their
-predictions are read from the code, not observed:
-- the ESM `candidate_id` and candidate execution identities, which need an
-  operator-bound ESM adapter and a telemetry or calibrated bundle;
-- the pinned-provider runtime identity (`ciw.subprocess-runtime.v1`), which
-  needs a provider checkout bound to a declared-workload or telemetry workflow.
+**T077 is `partial`.** The ESM `candidate_id` and candidate execution
+identities are planned rows that do not run here: an ESM candidate action needs
+the ESM runtime pinned in `src/ciw/esm-runtime.json` (its built
+workbench-candidate artifact and replay helper, a node binary and a CIW
+checkout at its replay revision) bound as an operator candidate adapter, which
+the lab gate does not provision. Their predictions are read from the code. The
+pinned-provider runtime identity (`ciw.subprocess-runtime.v1`) is observed on
+the telemetry session when the stack is bound, and read from the code, with the
+reason, when it is not (or when a checkout is off its pin).
 
 The full matrix, with per-property results and the observed refusal messages, is
-retained as `artifacts/T077/identity-matrix.{json,md}`.
+retained as `artifacts/T077/identity-matrix.{json,md}`; with the stack bound,
+the checkout states and the session's runtime identities, without host paths,
+as `artifacts/T077/telemetry-runtimes.json`.
 
 | Identity | Derivation | Binds | Across replay | Across reopen | Validated at |
 | --- | --- | --- | --- | --- | --- |
@@ -120,13 +167,14 @@ retained as `artifacts/T077/identity-matrix.{json,md}`.
 | oscillator `result_id` | fresh `result-<uuid4>` | one occurrence; content bound only by the unkeyed seal | fresh | stable | `session.py:_validate_saved_result` |
 | energy `result_id` | content hash of the result record including `execution_ref` | content and fresh occurrence | fresh | stable | `_validate_step` |
 | energy `numerical_result_id` | content hash of `{operation_id, data}` | analysed numbers **and the log identity**: `data.log_digest` (canonical digest of the whole log, including unanalysed metadata), `origin`, `device_uuid` | **stable for canonically identical logs** | stable | `_validate_step`, `_validate_links` |
-| oscillator numerical-result identity | **absent** | nothing | absent | absent | none |
+| oscillator `numerical_result_id` | content hash of `{operation_id, data}` (the native workflows' scheme), inside the record seal | operation and analysed numbers only; equal numbers from two executions share it | stable for equal data | stable | `runner.py:numerical_result_id`, `check_numerical_result_id`, `session.py:_validate_saved_result` |
 | energy `verification_id` | `sha256(schema ‖ NUL ‖ canonical)` | subject, outcome, independent, method, runtime digest, reproduction, authority | fresh | stable | `_check_verification`, `exchange.py:_identity` |
 | oscillator `verification_id` | always `null`, status `not_verified` | nothing | n/a | stable | `_validate_saved_result` |
-| `bundle_digest` (= workbench `bundle_id`) | content hash excluding `bundle_digest`, `verification`, `replay_receipts` | session, time, source, configuration, runtimes, steps; **not verification or receipts** | fresh | stable | `telemetry.py:_bundle_digest`, `_validate` |
+| `bundle_digest` (= workbench `bundle_id`) | content hash excluding `bundle_digest`, `verification`, `replay_receipts` | session, time, source, configuration, runtimes, steps; **not verification or receipts** (the catalog seal binds receipts) | fresh | stable | `telemetry.py:_bundle_digest`, `_validate` |
 | bundle `session_id` | fresh `session-<uuid4>` | one workflow session | fresh | stable | `_validate`, `workbench.py:_claims` |
 | protocol `Session.session_id` | fresh `session-<uuid4>` | live session only; never saved | n/a | fresh | `session.py:Session.__init__` |
 | `replay_id` | content hash of the receipt | source/replayed digests, verification, admission | fresh | stable | `workbench.py:_validate_receipts`, `_validate` |
+| workbench `replay_receipt_seal` | content hash of the `(bundle_id, replay_id)` pairs in catalog order, written by every save | which bundle holds which receipt; **unkeyed**, and optional on reopen (a catalog without it is accepted as saved before it existed) | fresh (changes when a replay adds a receipt) | stable | `workbench.py:receipt_seal`, `Workbench.serialize`, `Workbench.restore` |
 | oscillator `record_digest` | **unkeyed** seal over the record | whole record, recomputable by anyone | n/a | stable | `runner.py:check_seal` |
 | oscillator runtime identity | provider-declared `{provider, version}` | a name and version string | n/a | never re-checked | `runner.py:validate_execution` (non-empty only) |
 | energy runtime identity | sha256 of three CIW source files plus self-reported Python/NumPy versions | analysis code bytes and version strings | compared on replay | format-checked only | `energy_workflow.py:_check_runtime`, `_adapters` |
@@ -135,12 +183,73 @@ retained as `artifacts/T077/identity-matrix.{json,md}`.
 | ESM `requestId` / `inspectedAt` | caller-declared | equality of request and response only | n/a | n/a | `candidate_evidence.py:validate_response` |
 | ESM `bundleBytesDigest` | byte hash of the bytes CIW passes (its canonical serialization of the bundle) | those exact bytes; a digest over another layout of the same bundle is refused | n/a | n/a | `validate_response`, `workbench.py:Workbench._validate_candidate` |
 | ESM `candidate_id` / candidate execution | content hash / fresh uuid4 | response bytes, policy, adapter identity | n/a | stable | `workbench.py:Workbench._validate_candidate` (not exercised offline) |
-| pinned-provider runtime identity (`ciw.subprocess-runtime.v1`) | pinned revision, module and source root, beside host-measured `source_tree` and `python_sha256` | the pinned provider revision and the host's tree and interpreter digests | compared on replay (runtime projection without host paths) | pin and format checked | `declared_workload.py:DeclaredWorkflow._validate`, `_runtime_projection`, `workbench.py:_validate_links` (not exercised offline) |
+| pinned-provider runtime identity (`ciw.subprocess-runtime.v1`) | CIW's pinned revision, module and source root (`ciw/telemetry-runtimes.json`) beside Git's tree of the bound checkout, the interpreter's SHA-256 and probed versions, and the host's checkout and interpreter paths | the pinned revision plus host-measured tree, interpreter digest and versions, and **host paths** | telemetry: revision, source tree, module, source root, interpreter digest, Python and dependency versions compared (PPDA also its source digest and scope); a forged revision is refused, but **`schema`, `adapter_version` and unknown keys are not compared** (a forged `adapter_version` with an injected key passes). Declared workloads compare every field but the host paths (read from code) | stable, bound by `bundle_digest`; **the pin is not re-checked on reopen** | `adapters/subprocess.py:PinnedSubprocessAdapter.runtime_identity`, `telemetry.py:_runtime`, `_validate_retained`, `workbench.py:Workbench.bind_workflow` (observed with the telemetry stack bound; without it, read from the declared-workload code: pin and format checked on reopen) |
 
 The log's producer identities are placeholders in the fixture (`aaaa…`,
 `cccc…`, `dddd…`) and CIW checks only their format: a resealed log with other
 well-formed values is accepted. T077 therefore records the physical claim that
 they identify the producing GPU and code as `not_established`.
+
+**Oscillator `numerical_result_id` and the catalog receipt seal.** R1 and R2
+carry one `numerical_result_id` beside distinct result identities, the lab's
+own SHA-256 over `{operation_id, data}` reproduces it, and the legacy RL
+carries none. Reopen refuses R1 with its mean moved and its seal, but not its
+identity, recomputed (`Saved operation numerical_result_id differs from its
+data`); T081's `oscillator-stats.resealed`, which recomputes the identity too,
+reopens. The saved catalog's `replay_receipt_seal` is the lab's SHA-256 over
+its one `(bundle_id, replay_id)` pair; T083's `receipt.deleted` is refused with
+`Retained replay receipt seal differs`, while the same deletion with the seal
+recomputed or removed reopens. Both are unkeyed, so each finding records what
+refuses it and what passes it; neither enters the authentication claim.
+
+### Telemetry runtime identities (T077, with the telemetry stack bound)
+
+The four runtimes the session executes (PPDA, STFE, GSIE, SET) are retained as
+`ciw.subprocess-runtime.v1` identities whose revision, module and source root
+are the `ciw/telemetry-runtimes.json` pins (PPDA's with its pinned standalone
+source digest), whose source tree is Git's HEAD tree of the bound checkout and
+equals the lab's recomputation from its working bytes, and whose interpreter
+digest is the SHA-256 of the interpreter that ran. The replay retains the same
+identities, and so does the reopened session's save. `ciw.lab.bridge` (as
+`ciw lab classify`) labels both telemetry bundles `provider_backed`, every
+runtime matched to its pin with `tree_pinned: false`, since no CIW table
+records a tree for these revisions.
+
+Labels follow what ran. Each executed runtime's retained identity is a
+`provider_backed` finding: a pinned runtime's record that matches the pin CIW
+declares, with repository, revision and tree in its basis. A retained
+identity that `ciw.lab.bridge` does not match to its declared pin alone would
+record that failed comparison as a check, so the claim would be refuted rather
+than left unsupported. CIW's own recomputations and the lab's comparisons
+(trees, interpreter digest, replay and reopen stability, the classification)
+are the row's `numerically_verified` properties. Three counterexamples come
+from the same session:
+
+- **The pin is not re-checked on reopen.** The first save with its GSIE
+  revision replaced and every unkeyed digest over it recomputed (bundle digest,
+  SET verification subject and identity, catalog identity, receipt seal)
+  reopens: `telemetry._validate_retained` checks only the runtime role set.
+  Only a replay on the bound stack refuses it (`Telemetry replay runtime
+  identity mismatch`). The declared-workload code's reopen-time pin check, read
+  from the code for the unbound row, does not cover telemetry bundles.
+- **Replay compares only some runtime fields.** `telemetry._runtime` compares
+  the retained `revision`, `source_tree`, `module`, `source_root`,
+  `python_sha256`, `python_version` and `dependencies` with the live adapter's
+  (PPDA's also `source_sha256` and `execution_scope`). It does not compare
+  `schema` or `adapter_version`, and it does not refuse unknown keys. The
+  first save with the GSIE `adapter_version` replaced and an `audited_by` key
+  injected, every unkeyed digest recomputed as above, reopens, and that
+  comparison (for GSIE, with the reopened retained identity as expected, as
+  `replay_session` calls it) accepts it. The full replay is not run on this
+  forgery: after the comparison it re-executes the pinned code, about 48 more
+  interpreter probes (see the time budget above).
+- **Host paths are retained.** Each saved runtime identity (8 over the original
+  and the replay) records the bound checkout's `repository_root` and the
+  interpreter's `python_executable`, although reopening restores no binding
+  (the reopened session offers no telemetry operation). The report and its
+  artifacts keep them out; `telemetry-runtimes.json` and the report's provider
+  runtime identity hold the interpreter digest, versions and dependencies,
+  which depend on the host and are never compared.
 
 T079 treats the variants' own properties (eight distinct input byte strings,
 one shared label) as harness preconditions. They are asserted before any
@@ -215,16 +324,23 @@ against its recorded digest. The run does not record which kernel produced its
 values. The other identities in the artifact are replaced by role labels,
 because they are fresh per run.
 
+Oscillator results now carry a `numerical_result_id` of the same scheme over
+their statistics (T077). Reopen recomputes it from the retained numbers, so it
+refuses a stale identity but not an edit that recomputes it: the statistics
+survivors below recompute it with the seal. It hashes NumPy reductions, so no
+finding value holds it.
+
 ## Mutation matrix (T080–T090)
 
-There are 72 rows: 65 edit and reopen a saved workspace, and 7 run pure
-validators. 52 are refused. 19 distinct workspace forgeries survive. One
+There are 75 rows: 68 edit and reopen a saved workspace, and 7 run pure
+validators. 54 are refused. 20 distinct workspace forgeries survive. One
 validator row, `exchange.verification-independent`, is accepted by design and
-is not counted as a survivor. The kill/survive prediction matched in 72 of 72
-rows, and every refusal matched its pinned message (52 of 52). Each forgery is
+is not counted as a survivor. The kill/survive prediction matched in 75 of 75
+rows, and every refusal matched its pinned message (54 of 54). Each forgery is
 run once. The T086 subject-with-source rebinding is the same edit as T084's
-`receipt-source.sibling-execution`, so T086 cites that row instead of re-running
-it. The full matrix, with a post-reopen witness for each survivor, is retained
+`receipt-source.sibling-execution-resealed`, so T086 cites that row instead of
+re-running it; T077 cites the receipt deletions and the resealed statistics
+the same way. The full matrix, with a post-reopen witness for each survivor, is retained
 as `artifacts/T090/mutation-matrix.{json,md}`, and each task also retains its
 own rows.
 
@@ -240,7 +356,7 @@ own rows.
 | T081 | `energy-data.reforged` (every derived digest recomputed; source bytes unchanged) | full | `Retained energy analysis binding differs` |
 | T081 | `energy-source.resealed` (retained log edited and resealed; every derived record rebuilt) | full | **accepted** |
 | T081 | `oscillator-stats.naive` | none | `Operation record integrity mismatch` |
-| T081 | `oscillator-stats.out-of-bounds` | local | `Saved statistics mean is outside its bounds` |
+| T081 | `oscillator-stats.out-of-bounds` (`numerical_result_id` and seal recomputed, as in the two below) | local | `Saved statistics mean is outside its bounds` |
 | T081 | `oscillator-stats.resealed` (mean moved inside its bounds) | local | **accepted** |
 | T081 | `oscillator-stats.impossible-moments` (R1: \|mean\| > rms; R2: rms > max\|x\|) | local | **accepted** |
 | T081 | `oscillator-stats.legacy` (unsealed legacy result) | none | **accepted** |
@@ -253,11 +369,14 @@ own rows.
 | T083 | `receipt.transplanted-resealed` (replayed digest and `replay_id` recomputed; the donor's reproduction step kept) | local | `Retained energy analysis binding differs` |
 | T083 | `receipt.transplanted-full` (receipt rebuilt on B0b from B0 and B0b's own step) | full | **accepted** |
 | T083 | `receipt.fabricated` (new receipt on the never-replayed original B0b, claiming it replays B0) | full | **accepted** |
-| T083 | `receipt.deleted` | none | **accepted** |
+| T083 | `receipt.deleted` (the catalog receipt seal left stale) | none | `Retained replay receipt seal differs` |
+| T083 | `receipt.deleted-resealed` (the catalog receipt seal recomputed) | full | **accepted** |
+| T083 | `receipt.deleted-seal-removed` (receipt and catalog seal both deleted) | none | **accepted** |
 | T084 | `receipt-source.naive`, `receipt-source.self` | none / local | `Invalid retained energy replay receipt` |
 | T084 | `receipt-source.replay-id` | local | `Retained energy analysis binding differs` |
 | T084 | `receipt-source.subject-rebound`, `receipt-source.other-source` | local | `Replay source must already belong to this workbench` |
-| T084 | `receipt-source.sibling-execution` (source and subject moved together) | local | **accepted** |
+| T084 | `receipt-source.sibling-execution` (source and subject moved together; the catalog receipt seal left stale) | local | `Retained replay receipt seal differs` |
+| T084 | `receipt-source.sibling-execution-resealed` (the same, with the catalog receipt seal recomputed) | full | **accepted** |
 | T085 | `receipt-replayed.{naive,replay-id,source,sibling}` | none / local | `Invalid retained energy replay receipt` |
 | T085 | `receipt-replayed.reidentified-bundle` (dated 2001, before its source; new session; all digests recomputed) | full | **accepted** |
 | T086 | `receipt-subject.naive` | none | `Invalid retained energy replay receipt` |
@@ -292,8 +411,10 @@ own rows.
 
 The ESM rows use a synthetic telemetry-shaped record: a schema, a digest and
 three step occurrences. `Workbench._validate_candidate` submits only calibrated
-or telemetry bundles, and a validated telemetry session needs provider
-checkouts, so no telemetry workflow ever validated this record.
+or telemetry bundles, and the mutation matrix runs no provider, so no
+telemetry workflow ever validated this record (T077's telemetry session, when
+the stack is bound, is not used here: without an ESM binding no candidate
+action can act on it).
 
 ### What the kills show
 
@@ -310,8 +431,17 @@ verification edit is refused":
   digest. That source must be a retained bundle with the same kind, `source_id`
   and upstream.
 - **Moving subject and source together.** The subject and the source can be
-  moved together to any retained bundle of the same source. That is the
-  surviving mutant `receipt-source.sibling-execution`.
+  moved together to any retained bundle of the same source. The catalog's
+  receipt seal refuses the move while it is stale
+  (`receipt-source.sibling-execution`); recomputed, the move survives
+  (`receipt-source.sibling-execution-resealed`).
+- **The catalog receipt seal.** It refuses a receipt deleted, added or moved
+  while the seal is left stale (`receipt.deleted`), which is what it is for:
+  catching accidental edits, since a bundle's own digest excludes its
+  receipts. A forger recomputes it (`receipt.deleted-resealed` and every full
+  recomputation) or deletes it with the receipt (`receipt.deleted-seal-removed`,
+  accepted because a catalog without a seal is read as saved before it
+  existed).
 - **Other refusals.** Replay freshness, cross-namespace collisions, and edits
   to analysed numbers that leave the source bytes unchanged are refused. A
   receipt moved onto another bundle is refused only while its replayed digest is
@@ -342,9 +472,10 @@ the source instead of adding a second one beside it.
 | Survivor | What a reader of the reopened workspace sees | Cause |
 | --- | --- | --- |
 | `energy-source.resealed` | B0, B0b and B1 report a gross energy of 0.25 J instead of 0.2 J, under their original session ids and times | The retained log is protected only by its author's unkeyed `log_digest`; reopen re-analyses whatever bytes are retained |
-| `receipt-source.sibling-execution` | B1 claims to replay B0b, with its verification subject also B0b, although it replayed B0 | Any retained bundle with the same source bytes, configuration and runtime satisfies the receipt checks; the receipt is consistent, not authenticated |
+| `receipt-source.sibling-execution-resealed` | B1 claims to replay B0b, with its verification subject also B0b, although it replayed B0 | Any retained bundle with the same source bytes, configuration and runtime satisfies the receipt checks, and the catalog receipt seal is recomputable; the receipt is consistent, not authenticated |
 | `receipt-replayed.reidentified-bundle` | The replay is dated 2001, before its source (created at run time), and has a new `session_id` | `created_at` and `session_id` sit inside an unkeyed `bundle_digest`, which the forger recomputes along with the receipt; no check compares a replay's time with its source's |
-| `receipt.deleted` | B1 is listed with no receipt, like an original execution | `_bundle_digest` excludes `replay_receipts`, and nothing else records that the replay happened |
+| `receipt.deleted-resealed` | B1 is listed with no receipt, like an original execution | `_bundle_digest` excludes `replay_receipts`, and the catalog receipt seal that binds them is unkeyed, so the forger recomputes it; nothing else records that the replay happened |
+| `receipt.deleted-seal-removed` | As above, from a catalog that no longer carries a receipt seal | Reopen accepts a catalog without the seal as one saved before the seal existed |
 | `receipt.transplanted-full` | B0b, an original execution, claims to replay B0; the actual replay B1 has no receipt | Every receipt field (source and replayed digests, verification with the containing bundle's own step, `replay_id`) is computable from retained bundles |
 | `receipt.fabricated` | B0b claims to replay B0 although it was never replayed; B1 keeps its genuine receipt | As for the transplant: a sibling of the same bytes, configuration and runtime satisfies every receipt check, and no record of replay events exists |
 | `alias.swap-pairing` | R1 names E2 as its execution and R2 names E1 | Oscillator execution and result identities are uuid4 draws; reopen checks only that each pair agrees (ids, creation time, runtime), and both pairs are resealed |
@@ -386,6 +517,31 @@ receipts authorize admission. T083 adds the claim that replay agreement is
 verification by an independent party. T078 and T077 add physical claims about
 the logs and their producer identities. All of these remain `not_established`.
 
+## CIW changes made
+
+Two of the changes T077 asked for were made in the integrity layer; the tasks
+observe them and change no CIW code themselves.
+
+- **Oscillator `numerical_result_id`** (`ciw.operations.runner`,
+  `ciw.session`). Every `ciw.operation-result.v1` result carries the SHA-256 of
+  CIW's canonical JSON of `{operation_id, data}`, the native workflows' scheme,
+  inside its seal. Equal numbers from two executions share it (R1 and R2), and
+  reopen refuses a result whose data no longer give it (`Saved operation
+  numerical_result_id differs from its data`). Results saved before it existed
+  carry none and still reopen, as the golden oscillator workspace of T094 does.
+- **Catalog-level replay-receipt seal** (`ciw.workbench`). Every save writes
+  `replay_receipt_seal`, the SHA-256 of CIW's canonical JSON of the
+  `(bundle_id, replay_id)` pairs in catalog order, and reopen recomputes and
+  compares it after every other check (`Retained replay receipt seal differs`).
+  A catalog without it is accepted as one saved before it existed.
+
+Both are unkeyed, like every other seal here: they detect an edit that was not
+recomputed (a stale identity, a receipt deleted under a stale seal), not a
+forger, who recomputes or removes them (`oscillator-stats.resealed`,
+`receipt.deleted-resealed`, `receipt.deleted-seal-removed`). "Retained
+workspace records are authenticated" therefore stays `not_established`, and
+the key-custody question below is unchanged.
+
 ## Recommended CIW changes (not made here)
 
 1. **Keyed authentication.** Add an HMAC or Ed25519 signature over every sealed
@@ -395,30 +551,41 @@ the logs and their producer identities. All of these remain `not_established`.
    unkeyed digest can only detect accidental edits, not deliberate ones. It is
    also the only way to authenticate a runtime identity: sign it on the
    producing host.
-2. **Bind receipts into identity.** Include replay receipts, or their
-   `replay_id`s, in a catalog-level workspace seal, or give the replay bundle a
-   second digest that covers them. Also refuse a replay dated before its source.
-   An unkeyed seal only stops accidental deletion or re-pointing. A forger who
-   transplants or fabricates a receipt recomputes the seal too, so binding a
-   receipt to an actual replay event needs the keyed signature of change 1.
+2. **Bind receipts to replay events.** The catalog seal now binds which bundle
+   holds which receipt, but only against accidental edits: a forger who
+   transplants, fabricates or deletes a receipt recomputes or removes the seal
+   too, so binding a receipt to an actual replay event needs the keyed
+   signature of change 1 (and a workspace saved with a seal should then refuse
+   to reopen without it). Also refuse a replay dated before its source.
 3. **Closed record schemas.** Refuse unknown keys in `ciw.execution.v1` and
    `ciw.operation-result.v1` records, so that verification subject, method,
    independence or admission claims cannot be added through the seal.
-4. **Stronger checks on operation results.** Add a content-level
-   `numerical_result_id` to oscillator operation results. Recompute
-   `statistics.v1` on reopen, which is cheap, or at least check the moment
-   inequalities |mean| ≤ rms ≤ max(|min|, |max|) as well as the bounds.
-5. **Seal or retire legacy results.** Either seal legacy `analysis.stats` results
+4. **Stronger checks on operation results.** Recompute `statistics.v1` on
+   reopen, which is cheap, or at least check the moment inequalities
+   |mean| ≤ rms ≤ max(|min|, |max|) as well as the bounds; the
+   `numerical_result_id` is recomputed from the retained numbers and cannot
+   tell whether they are statistics of the recording.
+5. **Re-check telemetry runtime pins on reopen, and compare whole identities.**
+   A telemetry bundle's retained runtime identities are checked against CIW's
+   pins only by a replay (T077's forged revision reopens); reopen could compare
+   each with `ciw/telemetry-runtimes.json` as the declared workloads do, and
+   leave the host's paths out of the retained identity. Replay and reopen
+   should also compare the whole retained identity except the host paths, as
+   the declared workloads' replay does, and refuse unknown keys: today
+   `schema`, `adapter_version` and any injected key are not compared (T077's
+   forged `adapter_version` with an injected key reopens and passes the replay
+   comparison).
+6. **Seal or retire legacy results.** Either seal legacy `analysis.stats` results
    or refuse to reopen them without an explicit legacy flag.
-6. **Label historical runtimes.** On reopen, label a retained energy runtime that
+7. **Label historical runtimes.** On reopen, label a retained energy runtime that
    differs from the current `analysis_identity()` as historical and unverified.
    Do not refuse it, because that would make every earlier workspace unopenable
    after any code change, even when the recomputed numbers agree. Do not treat
    a match as authentication either, because a forger can simply write the
    current hash.
-7. **Persist selection history.** Save the selection history, or drop
+8. **Persist selection history.** Save the selection history, or drop
    `selection_revision` from sealed records.
-8. **Clearer error text.** Word the byte-order-mark refusal for sources as a
+9. **Clearer error text.** Word the byte-order-mark refusal for sources as a
    source-bytes error.
 
 ## Deferred research questions
@@ -435,13 +602,18 @@ holds the first two).
   before it can be made. Until records are signed and T077 and T080–T090 are
   re-run against them, "Retained workspace records are authenticated" stays
   `not_established`.
-- **Telemetry provider stack** (`TELEMETRY_STACK_QUESTION`; T077, T086 and
-  T088–T090). Provision the stack pinned in `src/ciw/telemetry-runtimes.json`
-  (ppda, stfe, gsie, set, cbsr). Today `scripts/check_lab.py` provisions only
-  ppda and set of these, and `TEST_VARIABLES` has no variable for stfe, gsie or
-  cbsr. Then bind the stack to a telemetry or declared-workload workflow, so
-  the ESM candidate rows, the candidate execution rows and the
-  `ciw.subprocess-runtime.v1` rows are observed rather than read from code.
+- **ESM candidate binding** (`ESM_CANDIDATE_QUESTION`; T077, T086, T088 and
+  T089). The telemetry stack is now provisioned by `scripts/check_lab.py` and
+  bound to T077's telemetry session, which observes the
+  `ciw.subprocess-runtime.v1` rows. What remains read from code are the ESM
+  `candidate_id` and candidate execution rows, and the ESM validator rows still
+  run on a synthetic telemetry-shaped record: bind the ESM runtime pinned in
+  `src/ciw/esm-runtime.json` (its built workbench-candidate artifact and replay
+  helper at their pinned SHA-256, a node binary and a CIW checkout at the
+  replay revision) to that session. The lab gate provisions none of these;
+  `scripts/check_workbench_candidates.py` exercises them outside the queue,
+  and an ESM action runs ESM's replay helper against that CIW checkout and the
+  provider checkouts, for up to 330 s in CIW's candidate adapter.
 - **Cross-platform reproduction** (T081). The bit-exact `numerical_result_id`
   links occurrences on one arithmetic platform only: five OpenBLAS kernels on
   one Linux x86-64 host gave three identities. Run T081 on Windows x86-64 and
@@ -475,14 +647,22 @@ next queue task, which has already run.
   admission authority, or verification by another party.
 - The separate session runs in the same process with the same code. It shows
   stability, not independent reproduction.
-- Only the binding-free energy-accuracy workflow and the oscillator operations
-  were exercised. Provider-backed workflows (telemetry, declared workloads,
-  proved heat), bound ESM candidates and the full exchange inspector need
-  checkouts that are not used here. The ESM validator ran on a synthetic
-  telemetry-shaped record. T090 therefore mutates only the CIW-internal
-  oscillator provider identity and CIW's own energy analysis identity. The
+- Besides the binding-free energy-accuracy workflow and the oscillator
+  operations, only the telemetry workflow was exercised, and only by T077 with
+  the telemetry stack bound, on a synthetic telemetry source. Declared
+  workloads, proved heat, bound ESM candidates and the full exchange inspector
+  need checkouts that are not used here. The ESM validator ran on a synthetic
+  telemetry-shaped record. T090 mutates only the CIW-internal oscillator
+  provider identity and CIW's own energy analysis identity; of the
   pinned-provider subprocess runtime identities (`ciw.subprocess-runtime.v1`)
-  were not mutated.
+  only T077's forged GSIE revision and forged GSIE `adapter_version` with an
+  injected key were tried, and the second only against the replay's runtime
+  identity comparison, not a full replay.
+- A `provider_backed` telemetry runtime finding says that the retained record
+  of a pinned runtime matches the pin CIW declares. CIW records no source tree
+  for the telemetry pins, the pins are public and the seals unkeyed, so a
+  fabricated record copying them would match too; the tree is compared with
+  the bound checkout only in the run that bound it.
 - The float-valued `numerical_result_id` is not stable across BLAS kernels
   (five OpenBLAS kernels on one host gave three identities). Other operating
   systems and BLAS libraries were not tested, and a run does not record which

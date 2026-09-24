@@ -267,7 +267,8 @@ def test_clean_room_tests_see_the_bound_providers(tmp_path, monkeypatch):
         "CIW_LAB_CSG_REPO": str(stack / "csg"), "CIW_LAB_FTR_REPO": str(stack / "ftr"),
         "CIW_LAB_SCR_REPO": str(stack / "scr"), "CIW_LAB_PLSR_PYTHON": str(python),
         "CIW_LAB_FTR_PYTHON": str(python), "CIW_LAB_SET_REPO": None, "CIW_LAB_PPDA_REPO": None,
-        "CIW_LAB_SCR_EXCHANGE_REPO": None, "CIW_LAB_SCR_ENGINE": None, "CIW_LAB_PROVED_HEAT_RECORD": None}
+        "CIW_LAB_SCR_EXCHANGE_REPO": None, "CIW_LAB_SCR_ENGINE": None, "CIW_LAB_PROVED_HEAT_RECORD": None,
+        "CIW_LAB_TELEMETRY_STACK": None}
     # A virtual environment's python is a symlink to a base interpreter that lacks the environment's
     # packages (PLSR): the binding is made absolute, never resolved to that interpreter.
     link = Path("plsr-venv") / "bin" / "python"
@@ -284,7 +285,7 @@ def test_clean_room_tests_see_the_bound_providers(tmp_path, monkeypatch):
     import re
     tests = "".join(path.read_text(encoding="utf-8") for path in Path(__file__).parent.glob("test_lab_*.py"))
     assert all(name in tests for name in reproduce.TEST_VARIABLES.values())
-    assert set(re.findall(r"CIW_LAB_[A-Z_]+_(?:REPO|PYTHON|ENGINE|RECORD)\b", tests)) == set(
+    assert set(re.findall(r"CIW_LAB_[A-Z_]+_(?:REPO|PYTHON|ENGINE|RECORD|STACK)\b", tests)) == set(
         reproduce.TEST_VARIABLES.values())
 
 
@@ -326,7 +327,7 @@ def test_refresh_retains_only_a_run_that_bound_every_provider(tmp_path, monkeypa
     before = sorted((Path(refresh.ROOT) / "lab").rglob("*"))
 
     bound = ["csg=/c", "ftr=/f", "scr=/s", "set=/e", "ppda=/p", "scr-exchange=/x", "plsr-python=/v/bin/python",
-             "ftr-python=/v/bin/python"]
+             "ftr-python=/v/bin/python", "telemetry-stack=/t"]
     # check_lab.py also binds the retained proved-heat gate record whenever lab/proved-heat/ holds one.
     records = Path(refresh.ROOT) / "lab" / "proved-heat"
     record_bound = records.is_dir() and any(path.is_dir() for path in records.iterdir())
@@ -363,6 +364,13 @@ def test_refresh_retains_only_a_run_that_bound_every_provider(tmp_path, monkeypa
     (run / "reports" / "T019.json").write_text(json.dumps({"task_id": "T019", "findings": [
         {"value": {"refusal": "FTR_EXECUTION_FAILED", "message": "Provider subprocess did not complete"}}]}))
     assert "refused to run in T019, T101" in refresh_from(bound)
+    # Every provider ran, but T077 did not run its telemetry session on the bound stack: absent, or off its pins.
+    for name in ("T019", "T101"):
+        (run / "reports" / f"{name}.json").unlink()
+    assert "did not run its telemetry session" in refresh_from(bound)
+    (run / "reports" / "T077.json").write_text(json.dumps({"task_id": "T077", "provider_runtime_identity": {
+        "telemetry-stack": {"gsie": {"state": "off_pin"}, "ppda": {"state": "ready"}}}}))
+    assert "did not run its telemetry session" in refresh_from(bound)
     assert sorted((Path(refresh.ROOT) / "lab").rglob("*")) == before
 
 
@@ -385,7 +393,7 @@ def test_lab_docs_describe_the_gate_as_implemented(monkeypatch):
     assert "add a new role there" not in authoring and "`scripts/check_lab.py` (`REPOSITORIES` and its pin)" in authoring
     monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[1] / "scripts"))
     check, reproduce = _script("check_lab"), _script("reproduce_lab")
-    gate_roles = [*check.REPOSITORIES, "plsr-python", "ftr-python"]  # the latter two on Python 3.12+
+    gate_roles = [*check.REPOSITORIES, check.TELEMETRY_STACK, "plsr-python", "ftr-python"]  # the last two on 3.12+
     documented = re.search(r"The bindings `check_lab.py` makes set (.*?);", lab).group(1)
     assert set(re.findall(r"CIW_LAB_\w+", documented)) == {reproduce.TEST_VARIABLES[role] for role in gate_roles}
     assert all(f"`{name}`" in lab for name in reproduce.OPERATOR_CAPTURES)

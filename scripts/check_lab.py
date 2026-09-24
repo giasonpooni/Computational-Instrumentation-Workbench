@@ -1,8 +1,10 @@
 """Run the lab queue from an isolated wheel with pinned providers and verify retained reports.
 
 Provisions the exact CSG, FTR and SCR revisions pinned by ``ciw.geodesic_reference``
-and ``ciw.declared_workload``, and the SET, PPDA and SCR revisions of
-``.github/workflows/exchange.yml`` for the exchange roundtrip (T097),
+and ``ciw.declared_workload``, the SET, PPDA and SCR revisions of
+``.github/workflows/exchange.yml`` for the exchange roundtrip (T097), and the
+telemetry stack of ``src/ciw/telemetry-runtimes.json`` (PPDA, STFE, GSIE, SET and
+CBSR, bound together as ``telemetry-stack`` for T077's telemetry session),
 installs the pinned PLSR runtime through the ``plsr`` extra on Python 3.12+,
 where the clean-room interpreter also runs FTR,
 and delegates to ``scripts/reproduce_lab.py``: wheel build, clean virtual
@@ -45,6 +47,15 @@ ROOT = Path(__file__).resolve().parents[1]
 REPOSITORIES = {"csg": "Curved-Surface-Geodesic-Sensitivity-Runtime", "ftr": "Flat-Torus-Geodesic-Reference",
                 "scr": "Scientific-Computation-Runtime", "set": "State-Estimation-Evaluation-Testbed",
                 "ppda": "Provenance-Preserving-Data-Acquisition", "scr-exchange": "Scientific-Computation-Runtime"}
+# The telemetry workflow's stack (src/ciw/telemetry-runtimes.json), bound to T077 as one directory
+# ``telemetry-stack`` holding a checkout per role under its repository name, as scripts/check_telemetry.py lays
+# them out; ciw.lab.exchange_provenance_common.TELEMETRY_REPOSITORIES reads the same names.
+TELEMETRY_STACK = "telemetry-stack"
+TELEMETRY_REPOSITORIES = {"ppda": "Provenance-Preserving-Data-Acquisition",
+                          "stfe": "Streaming-Telemetry-Feature-Extraction",
+                          "gsie": "Geometric-State-Inference-Engine",
+                          "set": "State-Estimation-Evaluation-Testbed",
+                          "cbsr": "Constraint-Based-State-Reconciliation"}
 
 
 def call(command, **kwargs):
@@ -72,6 +83,24 @@ def pins() -> dict:
     return revisions
 
 
+def telemetry_pins() -> dict:
+    """The telemetry stack's revisions by role, exactly as src/ciw/telemetry-runtimes.json pins them."""
+    manifest = json.loads((ROOT / "src" / "ciw" / "telemetry-runtimes.json").read_text(encoding="utf-8"))
+    missing = set(TELEMETRY_REPOSITORIES) - set(manifest)
+    if missing:
+        raise SystemExit(f"Telemetry pins not found: {sorted(missing)}")
+    return {role: manifest[role]["revision"] for role in TELEMETRY_REPOSITORIES}
+
+
+def provision(path: Path, repository: str, revision: str, clone: bool) -> Path:
+    """Clone ``repository`` at ``revision`` into ``path`` when asked, then require the exact clean pin there."""
+    if clone:
+        call(["git", "-c", "core.autocrlf=false", "clone", "--quiet", f"https://github.com/giasonpooni/{repository}.git",
+              path])
+        call(["git", "-C", path, "-c", "core.autocrlf=false", "checkout", "--quiet", "--detach", revision])
+    return validate_checkout(path, revision)
+
+
 def proved_heat_record(root: Path = ROOT / "lab" / "proved-heat") -> Path | None:
     """The retained proved-heat gate record T099 reads: the latest under ``root`` by its run.json date, then run id.
 
@@ -93,7 +122,9 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output-dir", type=Path, default=ROOT / "results" / "lab-gate")
     parser.add_argument("--stack-root", type=Path, default=os.environ.get("CIW_LAB_STACK_ROOT"),
-                        help="Existing clean checkouts named csg, ftr, scr, set, ppda and scr-exchange; cloned when absent")
+                        help="Existing clean checkouts named csg, ftr, scr, set, ppda and scr-exchange, and a "
+                             "telemetry-stack directory holding the telemetry checkouts under their repository "
+                             "names; cloned when absent")
     parser.add_argument("--temporary-root", type=Path)
     parser.add_argument("--no-compare", action="store_true")
     parser.add_argument("--blas-core", metavar="CORE",
@@ -111,16 +142,15 @@ def main() -> int:
         if not reports.is_dir() or not any(reports.glob("T*.json")):
             raise SystemExit(f"No retained reports to compare with in {reports}; retain a reviewed run first "
                              "(scripts/refresh_lab.py) or pass --no-compare")
-    revisions = pins()
+    revisions, telemetry = pins(), telemetry_pins()
     with tempfile.TemporaryDirectory(prefix="ciw-lab-providers-", dir=args.temporary_root) as directory:
-        providers = {}
-        for role, repository in REPOSITORIES.items():
-            path = (Path(args.stack_root) / role) if args.stack_root else Path(directory) / role
-            if not args.stack_root:
-                call(["git", "-c", "core.autocrlf=false", "clone", "--quiet",
-                      f"https://github.com/giasonpooni/{repository}.git", path])
-                call(["git", "-C", path, "-c", "core.autocrlf=false", "checkout", "--quiet", "--detach", revisions[role]])
-            providers[role] = validate_checkout(path, revisions[role])
+        root = Path(args.stack_root) if args.stack_root else Path(directory)
+        providers = {role: provision(root / role, repository, revisions[role], not args.stack_root)
+                     for role, repository in REPOSITORIES.items()}
+        stack = root / TELEMETRY_STACK
+        for role, repository in TELEMETRY_REPOSITORIES.items():
+            provision(stack / repository, repository, telemetry[role], not args.stack_root)
+        providers[TELEMETRY_STACK] = stack.resolve()
         command = [sys.executable, ROOT / "scripts" / "reproduce_lab.py", "--output-dir", args.output_dir,
                    "--extras", "dev,lab,mcp"]
         if args.temporary_root:

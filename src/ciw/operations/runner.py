@@ -33,6 +33,24 @@ def check_seal(record: dict) -> None:
         raise ValueError("Operation record integrity mismatch")
 
 
+def numerical_result_id(operation_id: str, data: dict) -> str:
+    """Content identity of an operation's numbers, as the native workflows derive theirs.
+
+    ``sha256`` over CIW's canonical JSON of ``{operation_id, data}``: equal data
+    from two executions share it, and it excludes every occurrence field
+    (execution, result, time, selection). It is unkeyed, like the record seal.
+    """
+    from ..telemetry import digest as content_digest  # telemetry imports session, which imports this module
+    return content_digest({"operation_id": operation_id, "data": data})
+
+
+def check_numerical_result_id(result: dict) -> None:
+    """A result that carries a numerical identity must carry the one its data give (older results carry none)."""
+    if "numerical_result_id" in result and result["numerical_result_id"] != numerical_result_id(
+            result.get("operation_id"), result.get("data")):
+        raise ValueError("Saved operation numerical_result_id differs from its data")
+
+
 def execute(registry: OperationRegistry, run: dict, selection: dict, recording_file: str,
             operation_id: str, parameters: dict) -> tuple[dict, dict | None]:
     parameters = copy.deepcopy(parameters)
@@ -83,6 +101,7 @@ def execute(registry: OperationRegistry, run: dict, selection: dict, recording_f
         "recording_file": recording_file, "verification_id": None,
         "verification_status": "not_verified", "role": operation.role,
         "runtime": execution["runtime"], "parameters": copy.deepcopy(parameters), "data": data,
+        "numerical_result_id": numerical_result_id(operation_id, data),
     }
     execution.update(status="completed", result_id=result["result_id"])
     return seal(execution), seal(result)

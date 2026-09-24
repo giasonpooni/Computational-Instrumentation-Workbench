@@ -13,8 +13,8 @@ likewise checked for integrity only (``ciw lab proved-heat verify`` with
 ``--no-compare``); T099 reads the one bound as ``proved-heat-record``.
 Each binding also reaches the lab tests as the ``CIW_LAB_*`` variable their
 provider-gated tests read. The retained run binds CSG, FTR, SCR, the exchange
-SET, PPDA and SCR checkouts and the Python 3.12 PLSR/FTR interpreter; ``scripts/check_lab.py`` provisions exactly
-that, and a comparison without those bindings fails. ``--blas-core`` runs the
+SET, PPDA and SCR checkouts, the telemetry stack and the Python 3.12 PLSR/FTR interpreter; ``scripts/check_lab.py``
+provisions exactly that, and a comparison without those bindings fails. ``--blas-core`` runs the
 clean room on another OpenBLAS kernel (``OPENBLAS_CORETYPE``), so the retained
 evidence can be verified on the kernels other hosts would pick; ``gate.json``
 records the kernel the clean room's NumPy ran. Nothing here acquires
@@ -42,7 +42,7 @@ TEST_VARIABLES = {"csg": "CIW_LAB_CSG_REPO", "ftr": "CIW_LAB_FTR_REPO", "scr": "
                   "set": "CIW_LAB_SET_REPO", "ppda": "CIW_LAB_PPDA_REPO",
                   "scr-exchange": "CIW_LAB_SCR_EXCHANGE_REPO", "scr-engine": "CIW_LAB_SCR_ENGINE",
                   "ftr-python": "CIW_LAB_FTR_PYTHON", "plsr-python": "CIW_LAB_PLSR_PYTHON",
-                  "proved-heat-record": "CIW_LAB_PROVED_HEAT_RECORD"}
+                  "proved-heat-record": "CIW_LAB_PROVED_HEAT_RECORD", "telemetry-stack": "CIW_LAB_TELEMETRY_STACK"}
 # Operator hardware captures the energy tasks read; the gate acquires and analyzes none.
 OPERATOR_CAPTURES = ("CIW_LAB_RAPL_LOG", "CIW_LAB_ENERGY_LOG", "CIW_LAB_NVIDIA_SMI_CSV", "CIW_LAB_NVIDIA_SMI_UTC_OFFSET")
 # The clean room reproduces the packaged queue: interpreter paths, pytest options, queue

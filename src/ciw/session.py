@@ -15,7 +15,8 @@ from pathlib import Path
 from typing import Any
 
 from .operations.registry import default_registry as default_operations, valid_operation_id
-from .operations.runner import execute as execute_operation, check_seal, validate_execution
+from .operations.runner import (execute as execute_operation, check_numerical_result_id, check_seal,
+                                validate_execution)
 from .adapters.protocol import AdapterRefusal
 from .core.identities import validate_evidence_identity
 from .calibration_status import calibration_status
@@ -208,6 +209,9 @@ def _validate_saved_result(result: Any, run: dict, revision: int, recording_file
         validate_role(result["operation_id"], result["role"])
         validate_payload(result["operation_id"], result["data"], run, result["parameters"],
                          {"channel": channel, "interval_s": [start, end]})
+        # Recomputed from the retained numbers, so it detects a data edit whose seal was redone but not a
+        # forger who recomputes it too: both digests are unkeyed.
+        check_numerical_result_id(result)
         return
     from .operations.schemas import validate_payload
     validate_payload(result["operation_id"], result["data"], run, {},

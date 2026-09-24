@@ -3,8 +3,9 @@
 Runs ``scripts/check_lab.py --no-compare`` (isolated wheel, pinned providers,
 lab tests, whole queue) under Python 3.12+, or takes such a run with
 ``--from-run`` (it must have run under Python 3.12+ with CSG, FTR, SCR, the
-exchange SET, PPDA and SCR checkouts and the PLSR/FTR interpreter bound, none
-of them refused, as in the CI comparison),
+exchange SET, PPDA and SCR checkouts, the telemetry stack and the PLSR/FTR
+interpreter bound, none of them refused and T077's telemetry session run, as
+in the CI comparison),
 then replaces the retained reports, artifacts, queue state, report book and
 dashboard (rendered inside the clean room by the installed wheel) with the
 fresh ones.
@@ -38,7 +39,8 @@ RETAINED = ("reports", "artifacts", "queue-state.json", "REPORTS.md", "index.htm
 PRESERVED = ("hardware", "proved-heat", "README.md")
 assert not set(RETAINED) & set(PRESERVED)
 # The bindings scripts/check_lab.py makes on Python 3.12+; CI compares with a run that had all of them.
-REQUIRED_PROVIDERS = ("csg", "ftr", "scr", "set", "ppda", "scr-exchange", "plsr-python", "ftr-python")
+REQUIRED_PROVIDERS = ("csg", "ftr", "scr", "set", "ppda", "scr-exchange", "plsr-python", "ftr-python",
+                      "telemetry-stack")
 # Refusal codes of those providers (CSG_TREE_MISMATCH, FTR_INTERPRETER_UNBOUND, PLSR_UNAVAILABLE, ...): a
 # report carrying one did not run its bound provider, whatever the binding was named.
 PROVIDER_REFUSAL = re.compile(r"\b(?:CSG|FTR|PLSR)_[A-Z]+(?:_[A-Z]+)*\b")
@@ -55,6 +57,18 @@ def pinned_toolchain_probed(run: Path) -> bool:
     pinned = [found for name, found in probes.items() if name.startswith("tool:cargo+")] if isinstance(
         probes, dict) else []
     return bool(pinned) and all(found is True for found in pinned)
+
+
+def telemetry_session_ran(run: Path) -> bool:
+    """Whether T077's report in ``run`` ran its telemetry session on the bound stack: every checkout of the
+    ``telemetry-stack`` binding at its pin and the executed runtimes recorded (a bound stack that did not run
+    leaves T077 as a run without the binding would)."""
+    try:
+        identity = json.loads((run / "reports" / "T077.json").read_text(encoding="utf-8"))["provider_runtime_identity"]
+        states = [record["state"] for record in identity["telemetry-stack"].values()]
+    except (OSError, ValueError, KeyError, TypeError, AttributeError):
+        return False
+    return bool(states) and all(state == "ready" for state in states) and bool(identity.get("executed_runtimes"))
 
 
 def main() -> int:
@@ -103,6 +117,10 @@ def main() -> int:
         if refused:
             raise SystemExit(f"A bound provider refused to run in {', '.join(refused)}; retain a run of "
                              "scripts/check_lab.py whose providers ran")
+        if not telemetry_session_ran(run):
+            raise SystemExit("T077 did not run its telemetry session on the bound telemetry stack (a checkout off "
+                             "its pin, or the session failed; its report says which); retain a run of "
+                             "scripts/check_lab.py whose telemetry stack ran")
         if "proved-heat-record" in required and not pinned_toolchain_probed(run):
             raise SystemExit("T099 did not find the CI-pinned rustup toolchain in the clean-room run (its "
                              "tool:cargo+<toolchain> probe), so it could not rebuild the gate's engine as CI's lab "

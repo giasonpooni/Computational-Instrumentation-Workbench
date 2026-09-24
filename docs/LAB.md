@@ -126,6 +126,7 @@ ciw lab run T003 T005 --output-dir results/lab   # selected tasks
 ciw lab run --all --output-dir results/lab \
     --provider csg=/trusted/references/csg \
     --provider ftr=/trusted/references/ftr \
+    --provider telemetry-stack=/trusted/references/telemetry-stack \
     --provider plsr-python=/path/to/python3.12   # interpreter with the pinned PLSR
 ciw lab report T010 --retained lab               # the nineteen answers for one task
 ciw lab report T010 --retained lab --schema      # also check task-report.schema.json
@@ -280,9 +281,15 @@ there.
 
 `scripts/check_lab.py` is the clean-room gate that CI runs and the way to
 reproduce the retained run. It provisions CSG, FTR and SCR checkouts at CIW's
-pins and SET, PPDA and a second SCR checkout at the exchange workflow's pins
-for the T097 roundtrip (cloned, or clean checkouts named `csg`, `ftr`, `scr`,
-`set`, `ppda` and `scr-exchange` under `--stack-root`) and runs `scripts/reproduce_lab.py` with them bound, plus the
+pins, SET, PPDA and a second SCR checkout at the exchange workflow's pins
+for the T097 roundtrip, and the telemetry stack pinned in
+`src/ciw/telemetry-runtimes.json` (PPDA, STFE, GSIE, SET and CBSR) for T077's
+telemetry session (cloned, or clean checkouts named `csg`, `ftr`, `scr`,
+`set`, `ppda` and `scr-exchange` under `--stack-root`, beside a
+`telemetry-stack` directory holding the telemetry checkouts under their
+repository names, as `scripts/check_telemetry.py --stack-root` lays them out)
+and runs `scripts/reproduce_lab.py` with them bound, the telemetry directory as
+`telemetry-stack`, plus the
 clean-room interpreter, which has the pinned PLSR installed, as `plsr-python`
 and `ftr-python`. Reproducing the retained run needs Python 3.12+ (PLSR and
 FTR run there), Git, and those bound providers; on an older interpreter the
@@ -303,9 +310,11 @@ the fresh reports against `lab/`. Each binding also reaches the tests as the
 variable its provider-gated tests read, so those tests run instead of
 skipping. The bindings `check_lab.py` makes set `CIW_LAB_CSG_REPO`,
 `CIW_LAB_FTR_REPO`, `CIW_LAB_SCR_REPO`, `CIW_LAB_SET_REPO`, `CIW_LAB_PPDA_REPO`,
-`CIW_LAB_SCR_EXCHANGE_REPO`, `CIW_LAB_FTR_PYTHON` and `CIW_LAB_PLSR_PYTHON`;
-the SET, PPDA and exchange SCR checkouts let T097 run the SET contracts
-validator and the PPDA/SCR/SET producer roundtrip. `check_lab.py` also binds
+`CIW_LAB_SCR_EXCHANGE_REPO`, `CIW_LAB_TELEMETRY_STACK`, `CIW_LAB_FTR_PYTHON` and
+`CIW_LAB_PLSR_PYTHON`; the SET, PPDA and exchange SCR checkouts let T097 run the
+SET contracts validator and the PPDA/SCR/SET producer roundtrip, and T077 checks
+each telemetry checkout against its pin before its telemetry session runs the
+pinned providers. `check_lab.py` also binds
 the latest retained proved-heat gate record from the checkout's
 `lab/proved-heat/` as `proved-heat-record` (`CIW_LAB_PROVED_HEAT_RECORD`),
 since the clean room has no copy of `lab/`, so T099 reads the same record there
@@ -375,9 +384,10 @@ git diff --stat lab
 ```
 
 `refresh_lab.py` refuses a run whose gate record does not show Python 3.12+
-and bindings for CSG, FTR, SCR, SET, PPDA, the exchange SCR and the PLSR/FTR
-interpreter, or whose reports
-carry a CSG, FTR or PLSR refusal code (a bound provider that did not run), and
+and bindings for CSG, FTR, SCR, SET, PPDA, the exchange SCR, the telemetry
+stack and the PLSR/FTR interpreter, whose reports
+carry a CSG, FTR or PLSR refusal code (a bound provider that did not run), or
+whose T077 did not run its telemetry session on the bound stack, and
 keeps elapsed times, the JUnit record and the gate record out of `lab/`. It
 never touches `lab/hardware/` or `lab/proved-heat/`: operator hardware runs
 and proved-heat gate runs enter `lab/` only through `ciw lab hardware retain`

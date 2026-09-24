@@ -296,8 +296,8 @@ a task pointer.
   re-run it once CIW makes the changes requested below.
 - T096: combined mutations that restore consistency; content-bound batch
   identities and refusal of unknown ESM fields (CIW changes).
-- T097: provision the telemetry provider stack and drive CIW's telemetry
-  workflow end to end; attest the engine a bound replay uses.
+- T097: attest the engine a bound replay uses (the telemetry stack is now
+  provisioned by `scripts/check_lab.py`, and T077 runs its workflow end to end).
 - T098: authenticate checkouts and toolchains (signed commits or tags), and
   settle CIW's several SCR and SET pins.
 - T099: retain the output of a CI run of the proved-heat gate (the workflow
