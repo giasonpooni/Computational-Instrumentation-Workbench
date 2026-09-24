@@ -26,8 +26,8 @@ SECTION = tuple(f"T00{i}" for i in range(1, 10))
 # Only this module is imported: the other geodesic/Jacobi module belongs to another task set.
 IMPLEMENTATIONS = module_implementations("geodesic_jacobi")
 OPTIONAL = frozenset({"module:sympy", "module:mpmath", "module:scipy"})
-HAND_CLAIM = ("The hand-derived metrics, Christoffel symbols, geodesic equations and curvatures of the section doc "
-              "match ciw.lab.surfaces on nine charts")
+HAND_CLAIM = ("The hand-derived metrics, Christoffel symbols, geodesic equations and curvatures of the section doc, "
+              "as transcribed in hand_geometry, match ciw.lab.surfaces on nine charts")
 EGREGIUM_CLAIM = ("The second-fundamental-form curvature (LN - M^2)/det g equals the intrinsic curvature on the six "
                   "embedded charts (Theorema Egregium)")
 
@@ -166,22 +166,29 @@ def test_t002_references_agree(lab):
     assert report["state"] == "completed"
     labels = _labels(report)
     for key in gj.VARIABLE_KEYS:
-        claim = f"ciw Richardson RK4 matches the 34-digit mpmath reference on the {key} path"
+        claim = f"ciw Richardson RK4 matches a 34-digit integration of the sympy-derived equations on the {key} path"
         assert labels[claim] == "independently_verified"
         record = _findings(report)[claim]
-        assert record["basis"]["independent_check"]["checker"]["implementation"] == "mpmath"
+        # The independent origin is the sympy derivation; the extrapolation integrator is ciw-authored.
+        checker = record["basis"]["independent_check"]["checker"]["implementation"]
+        assert checker.startswith("sympy") and "ciw-authored" in record["basis"]["independent_check"]["reference"]
         assert record["basis"]["independent_check"]["tolerance"] == 1e-12
         assert record["value"]["ciw_minus_reference"] < 1e-12
         # Extrapolation, not only a fine step, produced the agreement: the gap is far below the RK4 estimate.
         ratio = [c for c in record["basis"]["checks"] if c["reference"].startswith("gap over")][0]
         assert ratio["passed"] and ratio["observed"] < 0.1
-        assert record["uncertainty"]["kind"] == "reference_error" and record["uncertainty"]["value"] < 1e-18
+        # The reported end state and gap are binary64, so rounding bounds the uncertainty from below.
+        assert record["uncertainty"]["kind"] == "roundoff" and 1e-16 < record["uncertainty"]["value"] < 1e-14
     rows = _artifact(lab.ctx, "T002", "references.json")["rows"]
     assert all(rows[k]["reference_error_estimate"] < 1e-18 for k in gj.VARIABLE_KEYS)
     assert all(rows[k]["scipy_vs_reference"]["max"] < 1e-11 for k in rows)
     closed = _findings(report)["ciw Richardson RK4 end states match closed-form geodesics and transfer matrices on "
                                "the six closed-form charts"]
-    assert closed["evidence_status"] == "independently_verified" and len(closed["value"]) == 6
+    # scipy integrates the ciw equations: a high_precision check, not an independent one.
+    assert closed["evidence_status"] == "numerically_verified" and len(closed["value"]) == 6
+    assert "independent_check" not in closed["basis"]
+    assert any(c["reference_kind"] == "high_precision" and "only the integrator" in c["reference"]
+               for c in closed["basis"]["checks"])
     assert labels["Clairaut's integral rho^2 phi' is conserved along the torus reference path"] == "numerically_verified"
 
 
@@ -213,9 +220,13 @@ def test_t003_integrator_orders(lab):
     assert set(_labels(report).values()) == {"numerically_verified"}
     found = _findings(report)
     for name, p, tol in (("Explicit Euler", 1, 0.1), ("Explicit midpoint", 2, 0.1), ("Classical RK4", 4, 0.25)):
-        orders = found[f"{name} global endpoint error converges at order {p} on every curved chart"]["value"]
-        assert set(orders) == set(gjt.CURVED_CHARTS)
+        orders = found[f"{name} global endpoint error converges at order {p} on every chart with nonzero "
+                       "Christoffel symbols"]["value"]
+        assert set(orders) == set(gjt.GAMMA_CHARTS)
         assert all(abs(v - p) <= tol for v in orders.values())
+    # Every chart contributes its own data point: the two polar charts share a metric but not a path.
+    table = _artifact(lab.ctx, "T003", "orders.json")["table"]
+    assert len({tuple(e["error"] for e in table[k]["rk4"]) for k in gjt.GAMMA_CHARTS}) == len(gjt.GAMMA_CHARTS)
     effective = found["Adaptive Dormand-Prince error falls with function evaluations at a median effective order "
                       "near 5"]
     assert gjt.ADAPTIVE_ORDER_THRESHOLD < effective["value"] < 6
@@ -237,8 +248,11 @@ def test_t004_speed_drift_and_no_renormalization(lab):
     report = lab("T004")
     assert report["state"] == "completed"
     found = _findings(report)
-    orders = found["Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every curved "
-                   "chart"]["value"]
+    orders = found["Unit-speed drift max|g(v,v) - 1| scales like h^p for Euler, midpoint and RK4 on every chart "
+                   "with nonzero Christoffel symbols"]["value"]
+    assert set(orders["euler"]) == set(gjt.GAMMA_CHARTS)
+    # The two polar charts share a metric but not a path, so their drift orders are distinct data points.
+    assert orders["euler"]["plane-polar"] != orders["euler"]["cylinder-polar"]
     assert all(abs(v - 1) < 0.1 for v in orders["euler"].values())
     assert all(abs(v - 4) < 0.3 for v in orders["rk4"].values())
     nonunit = found["A non-unit initial speed stays non-unit: g(v,v) remains 1.69 to integrator accuracy"]
@@ -305,11 +319,21 @@ def test_t005_separation_law(lab):
                      "Jacobi columns obey the model-space laws"]["value"]
     assert equators["torus-outer-equator"]["curvature"] == pytest.approx(1 / 3)
     assert equators["torus-inner-equator"]["curvature"] == pytest.approx(-1.0)
-    separation = found["Neighbouring closed-form geodesics on the sphere and hyperbolic plane separate as |sn_K| "
-                       "(heading) and |cn_K| (lateral) per unit perturbation"]
+    separation = found["Neighbouring closed-form geodesics on the sphere, the plane (seen in its polar chart) and the "
+                       "hyperbolic plane separate as |sn_K| (heading) and |cn_K| (lateral) per unit perturbation "
+                       "(K = 1, 0, -1)"]
     assert separation["evidence_status"] == "numerically_verified"
+    assert set(separation["value"]) == {"sphere-great-circle", "plane-polar", "hyperbolic-long"}
+    # On K = 0 parallel geodesics keep their distance exactly; every other column has an O(eps^2) remainder.
+    flat_lateral = separation["value"]["plane-polar"]["lateral"]
+    assert flat_lateral["order"] is None and flat_lateral["error_at_smallest_eps"] < 1e-9
     assert all(abs(c["order"] - 2) < 0.15 and c["error_at_smallest_eps"] < 5e-3
-               for row in separation["value"].values() for c in row.values())
+               for row in separation["value"].values() for c in row.values() if c is not flat_lateral)
+    # The K = 0 measurement fails for a separation law that is wrong there (sin s instead of s on the heading side).
+    study = gjt.separation_study("plane-polar")
+    assert study["curvature"] == 0.0 and study["heading"]["errors"][-1] < 1e-5
+    s = np.linspace(0.0, gj.path("plane-polar").length, 5)
+    assert gjt._discrepancy(np.sin(s), s) > 0.1
     # Reference curvatures come from surface parameters, never from gaussian_curvature.
     assert gjt._constant_curvature_of("sphere-great-circle") == 1.0 / gj.surface("sphere").radius ** 2
     assert gjt._constant_curvature_of("hyperbolic-long") == -gj.surface("hyperbolic-plane").k ** 2
@@ -331,15 +355,18 @@ def test_t005_csg_provider_agreement(tmp_path):
     record = _findings(report)[claim]
     assert record["evidence_status"] == "independently_verified"
     assert record["basis"]["independent_check"]["checker"]["implementation"].startswith(gj.CSG_IMPLEMENTATION + "@")
+    # Different origins running the same method are not a same-origin cross_implementation pair.
+    assert all(c["reference_kind"] != "cross_implementation" for c in record["basis"]["checks"])
     assert max(v["ciw_rk4_vs_csg_rk4"] for v in record["value"].values()) < 1e-9
     assert max(v["ciw_rk4_vs_csg_closed_form"] for v in record["value"].values()) < 1e-7
     pin = gj.csg_pin()
     assert report["provider_runtime_identity"]["provider"]["revision"] == pin["revision"]
     assert report["provider_runtime_identity"]["provider"]["source_tree"] == pin["source_tree"]
     focus = _run(ctx, "T008")
-    labels = _labels(focus)
-    assert labels["ciw conjugate and focal points match the pinned CSG provider's focus events on constant-curvature "
-                  "paths"] == "independently_verified"
+    events = _findings(focus)["ciw conjugate and focal points match the pinned CSG provider's focus events on "
+                              "constant-curvature paths"]
+    assert events["evidence_status"] == "independently_verified"
+    assert all(c["reference_kind"] != "cross_implementation" for c in events["basis"]["checks"])
 
 
 def _git_prefix(repo, tmp_path):
@@ -577,15 +604,45 @@ def test_t008_conjugate_and_focal_points(lab):
     assert outer["conjugate"][0] == pytest.approx(math.pi * math.sqrt(3), abs=1e-7)
     negative = found["No conjugate or focal point occurs on the torus inner equator or the hyperbolic plane (K < 0)"]
     assert all(v["conjugate_count"] == 0 for v in negative["value"].values())
-    sturm = found["Sturm comparison bound holds on every seeded torus geodesic and declared bump chord that reaches "
-                  "a conjugate point: none occurs before pi/sqrt(max K)"]
-    # The bound is exercised on both surfaces, not vacuous.
-    assert all(n >= 1 for n in sturm["value"]["paths_with_conjugate_point"].values())
-    assert all(m >= 0 for m in sturm["value"]["margins"].values())
-    assert sturm["value"]["bounds"]["torus"] == pytest.approx(math.pi * math.sqrt(3))
-    assert sturm["value"]["bounds"]["gaussian-bump"] == pytest.approx(2 * math.pi)
+    sturm = found["Sturm comparison bound holds on every seeded torus geodesic that reaches a conjugate point (none "
+                  "occurs before pi/sqrt(max K)) and rejects a heading column integrated with 2K"]["value"]
+    # The torus bound is reached and can fail: the column integrated with 2K violates it.
+    assert sturm["paths_with_conjugate_point"] >= 1 and sturm["margin"] >= 0
+    assert sturm["bound"] == pytest.approx(math.pi * math.sqrt(3)) and sturm["control_margin"] < 0
+    # The global bump bound 2 pi is not claimed: the chords meet K > 0 only after s = 2 pi.
+    assert not any("gaussian-bump" in f["claim"] and "pi/sqrt(max K)" in f["claim"] for f in report["findings"])
+    assert any("not exercised on the gaussian bump" in note for note in report["unresolved_assumptions"])
+    two_sided = found["Two-sided Sturm comparison with piecewise-constant curvature envelopes brackets the heading "
+                      "column on every seeded torus and bump geodesic and declared bump chord, and rejects the column "
+                      "integrated with 2K"]
+    assert two_sided["evidence_status"] == "numerically_verified"
+    value = two_sided["value"]
+    assert value["chords_with_conjugate_point"] >= 1 and value["largest_control_gap"] < -1e-3
+    for entry in value["zero_brackets"].values():
+        low, high = entry["bracket"]
+        assert low <= entry["conjugate"] <= high and high - low < 1.5
     counter = found["On variable curvature the first focal point is not half the first conjugate distance"]
     assert abs(counter["value"]["focal"] - counter["value"]["conjugate"] / 2) > 0.3 and counter["counterexample"]
+
+
+def test_t008_envelope_comparison_rejects_wrong_curvature(lab):
+    """The two-sided bracket fails for a bump chord column integrated with 5K or 0.5K, where the global bound cannot."""
+    u0, heading, length = gjt.BUMP_CHORDS[0], 0.0, gjt.BUMP_CHORD_LENGTH
+    bump = gj.surface("gaussian-bump")
+    right = jacobi.transfer(bump, u0, heading, length, rtol=gjt.STURM_RTOL[0], atol=1e-11)
+    for scale in (5.0, 0.5):
+        wrong = gjt._scaled_transfer(bump, u0, heading, length, scale, gjt.STURM_RTOL[0], 1e-11)
+        result = gjt.two_sided_comparison("gaussian-bump", u0, heading, length, wrong, right)
+        assert min(result["lower_gap"], result["upper_gap"]) < -0.1, scale
+        assert result["control_gap"] > -gjt.ANGLE_ALLOWANCE  # the correct column, passed as the control, is inside
+        if scale > 1:
+            # The global bound would accept this wrong column: its first zero is still beyond 2 pi.
+            assert wrong.conjugate_points()[0] > 2 * math.pi
+    # A comparison solution for constant K reproduces the model-space zero pi/sqrt(K) exactly.
+    nodes = np.linspace(0.0, 4.0, 81)
+    solution = gjt.comparison_solution(nodes, [1.0] * 80)
+    assert solution["first_zero"] == pytest.approx(math.pi, abs=1e-12)
+    assert gjt.comparison_angles(solution, [math.pi / 2])[0] == pytest.approx(math.pi / 2, abs=1e-12)
 
 
 def test_t008_missing_witness_is_recorded_not_raised(lab, tmp_path, monkeypatch):

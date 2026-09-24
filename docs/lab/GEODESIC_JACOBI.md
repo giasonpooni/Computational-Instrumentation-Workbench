@@ -30,8 +30,11 @@ g = I/y² (K = −1). Two extra charts, `plane-polar` and `cylinder-polar`, view
 the flat surfaces through the polar map (r, t) ↦ (r cos t, r sin t), which
 gives flat geometry nonzero Christoffel symbols. For R = 1 the cylinder's
 development is isometric to the plane, so the two polar charts carry the same
-metric and their integrations coincide; they differ only in the embedding used
-to measure distances.
+metric; identical paths on them would integrate one ODE twice and count one data
+point twice in per-chart statistics. Their declared paths therefore differ:
+`plane-polar` starts at (r, t) = (1.5, 0.4) with heading 1.2 and moves outward
+(L = 2), `cylinder-polar` starts at (2.0, −0.6) with heading 2.2 and passes its
+closest approach r = 1.62 to the pole (L = 2.5).
 
 Standard paths (`STANDARD`) and constant-curvature paths (`SPECIAL`) are listed
 in `geodesic_jacobi_common.py` with start point, heading (from the first
@@ -68,12 +71,13 @@ for example on the torus φ'' = 2 r sin θ φ'θ'/(R + r cos θ) and
 y'' = (y'² − x'²)/y. The bump curvature is positive for ρ < σ and negative
 outside, with maximum h²/σ⁴ = 0.25 at the summit.
 
-The table is not only prose: `hand_geometry(key, u, v)` in
-`geodesic_jacobi.py` codes every row (metric, Γ, geodesic acceleration, K; the
-torus and half-plane accelerations as written above) from the surface
-parameters alone, and T001 compares it with `ciw.lab.surfaces` at the seeded
-points, so a transcription error in the table or in the implementation fails a
-check.
+`hand_geometry(key, u, v)` in `geodesic_jacobi.py` is a Python transcription
+of every row (metric, Γ, geodesic acceleration, K; the torus and half-plane
+accelerations as written above) from the surface parameters alone, and T001
+compares it with `ciw.lab.surfaces` at the seeded points, so a transcription
+error in `hand_geometry` or an error in the implementation fails a check. The
+Markdown table itself is not parsed: its agreement with `hand_geometry` rests on
+review, and the report records that as an unresolved assumption.
 
 **Experiment.** Sampling boxes are `ciw.lab.surfaces.SAMPLING_DOMAINS` plus
 r ∈ [0.5, 2.5] on the polar charts, 8 seeded points per chart. The hand table
@@ -120,16 +124,31 @@ table and the ciw-only checks.
 * Compared against it: ciw `richardson_rk4` (200/400 steps) and scipy
   `solve_ivp(DOP853, rtol=1e-13, atol=1e-15)` on the ciw right-hand side.
 
+**What is independent.** The 34-digit comparison is recorded as an independent
+check with checker `sympy.lambdify(derived geodesic and Jacobi equations)`:
+sympy derives the equations from the embedding, independently of
+`ciw.lab.surfaces`. The Gragg–Bulirsch–Stoer integrator (`gbs_integrate`) and the
+assembly of the Jacobi block are ciw-authored and mpmath supplies only the
+arithmetic, so neither is named as the checker, and the check's reference text
+says so. The scipy DOP853 comparison integrates the ciw right-hand side, so only
+its integrator is independent: on the closed-form charts, whose claim is about
+ciw-coded closed forms, it is a `high_precision` check, not an independent one
+(that finding is `numerically_verified`).
+
 **Checks.** Gaps to the reference must be at most 1e-12 (the expected
 invariant), and at most a tenth of the Richardson error estimate wherever that
 estimate exceeds 1e-13: without extrapolation (or with a wrong factor) the RK4
 end state misses the reference by about the estimate itself, so a gap far below
 it shows that the extrapolation produced the agreement.
 
-**Result.** mpmath self-estimates 1.4e-24 (saddle), 4.4e-23 (torus), 6.4e-22
+**Result.** 34-digit self-estimates 1.4e-24 (saddle), 4.4e-23 (torus), 6.4e-22
 (bump); largest ciw-vs-reference gap 6.4e-14; gap over the Richardson estimate
 0.001–0.017; scipy DOP853 within 2e-14 of every reference; torus Clairaut drift
 |ρ²φ' − C₀| is 6.8e-14 for the ciw end state and below 1e-20 for the reference.
+The reported end states and gaps are binary64, so each per-finding uncertainty
+is the larger of the self-estimate and the binary64 rounding of the end state
+and gap (4 ε times the end-state scale, 1.6e-15 to 2.1e-15); the saddle gap of
+9.2e-16 is at that rounding level.
 Fallbacks: without sympy/mpmath the variable references come from scipy DOP853
 applied to the ciw right-hand side — an independent integrator, but the
 equations are not independently checked (recorded as an unresolved
@@ -142,13 +161,18 @@ Endpoint error against the T002 reference (embedded distance; chart distance
 on the half-plane). Steps: Euler 64–512, midpoint 32–256, RK4 24–192, adaptive
 Dormand–Prince rtol = atol ∈ {1e-8, …, 1e-12}.
 
-| Method | Fitted orders on the seven curved charts |
+The claims are about the seven charts with nonzero Christoffel symbols: the
+sphere, saddle, torus, gaussian bump and half-plane, and the two flat polar
+charts (K = 0), each with its own declared path (the polar charts share a
+metric but not a path, see above), so each chart is one distinct data point.
+
+| Method | Fitted orders on the seven charts with nonzero Christoffel symbols |
 | --- | --- |
 | Euler | 1.001–1.008 |
 | midpoint | 1.982–2.039 |
 | RK4 | 3.888–4.023 (bump slightly pre-asymptotic; pairwise slopes retained) |
-| DP5(4) vs evaluations | per chart 4.61–5.86 (artifact only), median 5.39 (claimed) |
-| DP5(4) vs tolerance | per chart rtol^0.87…0.99 (artifact only), median 0.971 (claimed) |
+| DP5(4) vs evaluations | per chart 4.61–5.86 (artifact only), median 5.30 (claimed) |
+| DP5(4) vs tolerance | per chart rtol^0.87…1.01 (artifact only), median 0.971 (claimed) |
 
 The adaptive checks must separate two hypotheses: DP5(4) advancing with the
 fifth-order solution (local extrapolation: error ∝ evaluations⁻⁵ ∝ tol) and a
@@ -158,7 +182,7 @@ exponent ≥ 0.9 (and ≤ 1.1). Only medians over the seven charts are claimed,
 because one accept/reject decision moves a single chart's slope by up to about
 0.3 (the per-chart values stay in `orders.json`). As a falsification, T003 runs
 `dormand_prince_y4` — the same tableau and controller advancing with y4 — and
-records that it fails both thresholds (medians 4.20 and 0.77). Loose tolerances
+records that it fails both thresholds (medians 4.19 and 0.78). Loose tolerances
 (1e-6, 1e-7) are excluded from the adaptive fit: the controller's start-step
 ramp dominates the evaluation count there. Counterexample: on the flat
 Cartesian charts (plane, cylinder) Γ ≡ 0, every method reproduces u₀ + s v₀,
@@ -200,16 +224,24 @@ and at twice the step. The model-space K comes from the surface parameters
 (1/R², −k², 0, and the equator formulas), never from `gaussian_curvature`,
 which the integrated Jacobi equation itself uses. Largest relative error of Φ
 against the model law 2.7e-9; step-halving orders 3.98–4.00; K stays constant
-to rounding along both equators.
+to rounding along both equators. On the flat Cartesian charts RK4 integrates
+j'' = 0 exactly (errors near 2e-15), so those two scalar checks only confirm
+that K = 0 is what is integrated; they cannot test the separation law.
 
-The law is also tested on geodesics rather than on the scalar equation: on the
-sphere and the half-plane, closed-form geodesics started from the exact lateral
-offset or heading rotation of `jacobi.perturbed_start` are compared with the
-unperturbed closed form by exact intrinsic distance
-(2R asin(chord/2R); (2/k) asinh(|Δ|/(2√(y₁y₂)))). d(γ_ε(s), γ₀(s))/ε
-approaches |sn_K(s)| and |cn_K(s)| with an O(ε²) remainder (sin(d/2) =
-sin(ε/2)|sin s| on the unit sphere): order 2.00 on the sphere and 1.99 on the
-half-plane, remainder 1.6e-6 and 4.2e-4 at ε = 0.01.
+The law is therefore also tested on geodesics rather than on the scalar
+equation, for K = +1, 0 and −1: on the sphere, the plane seen through its polar
+chart (`plane-polar`, K = 0 with nonzero Christoffel symbols, so the perturbed
+starts are built by integrating the normal geodesic and parallel transport in a
+chart where they are not trivial) and the half-plane, closed-form geodesics
+started from the exact lateral offset or heading rotation of
+`jacobi.perturbed_start` are compared with the unperturbed closed form by exact
+intrinsic distance (2R asin(chord/2R); |Δ| of the Cartesian points;
+(2/k) asinh(|Δ|/(2√(y₁y₂)))). d(γ_ε(s), γ₀(s))/ε approaches |sn_K(s)| and
+|cn_K(s)| with an O(ε²) remainder (sin(d/2) = sin(ε/2)|sin s| on the unit
+sphere; d = 2s sin(ε/2) for the heading pair on the plane): order 2.00 on the
+sphere and the plane (heading) and 1.99 on the half-plane, remainder 1.6e-6,
+4.2e-6 and 4.2e-4 at ε = 0.01. On K = 0 the lateral pair is two parallel lines,
+so d/ε = 1 with no remainder: checked to 1e-9 at every ε (observed 4.5e-14).
 
 **Provider comparison (optional).** With `--provider csg=<checkout>`, the
 checkout is verified with `ciw.lab.runner.git_identity` against the pin shared
@@ -225,10 +257,11 @@ its closed-form `constant_curvature_transfer`. The independent check (checker
 `Curved-Surface-Geodesic-Sensitivity-Runtime@bbc535a…`) compares the ciw
 integrated Φ with the provider's closed form: 2.7e-9, the RK4 error. The two
 RK4 traces agree to 4.1e-15. That comparison is between two origins running the
-same method on the same grid; the contract's `cross_implementation` kind is
-defined for same-origin pairs, and it is used here only for want of a kind for
-this case, with the caveat stated in the check's reference text (the label
-comes from the independent check either way). The provider output is refused
+same method on the same grid, so it is recorded as a `high_precision` check
+whose reference text says so, not as `cross_implementation`, which the contract
+reserves for same-origin pairs (the label comes from the independent check
+either way; T008 records its RK4 focus-event comparison the same way). The
+provider output is refused
 (`CSG_EXECUTION_FAILED`) unless it answers every requested case in the expected
 shape (finite 2×2 matrices and determinants on the requested grid). The
 checkout is refused as dirty (`CSG_CHECKOUT_DIRTY`) under the core rule of
@@ -302,17 +335,44 @@ on (j, j'). Sphere: π R, 2π R and π R/2, 3π R/2 for R = 1 and R = 2 (error
 2π√3 and half-way points (error 1.7e-8, order 4.00). None on the inner equator
 or the half-plane, where Sturm comparison gives j_head ≥ s and j_lat ≥ 1
 (verified for s > 0, where both differences are strictly negative, so the
-signed checks are not satisfied trivially by the node s = 0). Sturm
-upper-curvature bound: with K ≤ K_max = 1/3 on the torus, no conjugate point
-occurs before π√3; on six seeded torus geodesics (L = 12) two reach a conjugate
-point, the first at 7.79 (margin 2.34). Seeded bump geodesics leave the
-positive-curvature cap before focusing, so four declared chords through the
-summit region (start (−8, 0), (−8, 0.2), (−10, 0), (−10, 0.2), heading 0,
-L = 30) exercise the bump bound 2π = π/√(h²/σ⁴): all four reach a conjugate
-point, the first at 18.5 (margin 12.2 — the bound holds but is far from tight
-there). Each surface must have at least one geodesic that reaches a conjugate
-point, otherwise the check fails rather than passing vacuously. Zero locations
-move by at most 3e-8 between rtol 1e-9 and 1e-10, with no count change.
+signed checks are not satisfied trivially by the node s = 0).
+
+**Global Sturm bound (torus only).** With K ≤ K_max = 1/3 on the torus, no
+conjugate point occurs before π√3; on six seeded torus geodesics (L = 12) two
+reach a conjugate point, the first at 7.79 (margin 2.34). At least one geodesic
+must reach a conjugate point, and the check must be able to fail: as a negative
+control the heading column is integrated along the same geodesics with 2K,
+and its first zero (4.51) must fall before π√3 (margin −0.93, checked
+negative). On the gaussian bump the global bound 2π = π/√(h²/σ⁴) is *not
+claimed*: K > 0 only for ρ < σ, a stretch about 2 long on any geodesic, so no
+bump geodesic comes near it. The four declared chords through the summit
+region (start (−8, 0), (−8, 0.2), (−10, 0), (−10, 0.2), heading 0, L = 30)
+first meet K > 0 at s = 7.04–9.06, beyond 2π; on [0, 2π] K ≤ 0 there, so
+j_head ≥ s and the bound would hold whatever the Jacobi integration did (a
+column integrated with 20K still passes it). The report records the bump bound
+as not exercised.
+
+**Two-sided comparison (torus and bump).** The Prüfer angle θ = atan2(j, j')
+of the heading column obeys θ' = cos²θ + K sin²θ, which increases with K, so
+K_lo(s) ≤ K(s) ≤ K_hi(s) along the geodesic gives θ_lo ≤ θ ≤ θ_hi at every s,
+and the first conjugate point lies between the first zeros of the two envelope
+solutions. The envelopes are piecewise constant on a fixed-step RK4 copy of
+each geodesic (step ≤ 0.01): K depends on one coordinate q (θ on the torus, ρ
+on the bump) that moves at most c h/2 from the mean of its end values within a
+step (c = 1/r for θ since r²θ'² ≤ 1; c = 1 for ρ since the Monge metric is at
+least the identity), each q-interval is widened by 1e-6 for the fixed-step path
+error (the fixed-step and adaptive paths end 3e-9 apart), and K's range on it
+follows from monotonicity (K increases with cos θ on the torus; on the bump K
+decreases up to its flank minimum ρ* = 1.44 and increases beyond, checked on a
+grid). The envelope solutions are exact products of constant-curvature transfer
+matrices. On all six seeded torus geodesics, four seeded bump geodesics and
+four bump chords the adaptive ciw column stays inside the bracket (to within
+5.5e-11 rad; allowance 1e-7); the zero brackets are 0.03–0.05 wide on the torus
+(7.770 ≤ 7.785 ≤ 7.800) and 0.4–1.4 on the chords (18.42 ≤ 18.73 ≤ 19.05).
+The same column integrated with 2K is rejected on every path, by at least
+3.2e-3 rad; a test also rejects a chord column integrated with 5K (which the
+global bound would accept) or with 0.5K. Zero locations move by at most 3e-8
+between rtol 1e-9 and 1e-10, with no count change.
 Counterexample: on variable curvature the first focal point is not half the
 first conjugate distance (3.47 against 3.89). If no seeded geodesic provided a
 witness, the finding would be recorded, not raised: `not_established` with
@@ -321,7 +381,8 @@ witness, the finding would be recorded, not raised: `not_established` with
 counterexample was not found; the task stays completed. With the
 provider bound, ciw zeros match the focus events of the provider's closed-form
 transfer (independent check) and of its RK4 trace (same method, different
-origin), with equal zero counts.
+origin: a `high_precision` check, not `cross_implementation`), with equal zero
+counts.
 
 ## T009 — lateral and heading columns separately
 
@@ -352,8 +413,11 @@ points: 1.2e-11. Heading sensitivity therefore cannot distinguish a path from
 its reverse; lateral sensitivity can.
 
 Model spaces: j_head/j_lat = tan(√K L)/√K, L, tanh(√−K L)/√−K (verified; on the
-half-plane both columns approach e^L/2). Over 16 declared paths the two
-rankings have Kendall τ = 0.23 (43 discordant pairs of 120). Witness at equal
+half-plane both columns approach e^L/2). Over 14 declared paths the two
+rankings have Kendall τ = 0.26 (33 discordant pairs of 91). The polar charts
+are left out of the ranking: the columns are intrinsic, and those charts only
+re-express flat paths whose rows (|j_lat| = 1, |j_head| = L) the plane and the
+cylinder already carry. Witness at equal
 length (L = 3, same torus): `torus-outer-to-inner` (K > 0 first) has |j_lat|
 0.857 and |j_head| 3.907, `torus-inner-to-outer` (K < 0 first) has 1.803 and
 2.846 — lateral error ranks the second path worse, heading error ranks the
@@ -369,18 +433,22 @@ differences (ε = 1e-3) confirm the endpoint sensitivities to 1.9e-6.
 
 ## Limits and open questions
 
-* Agreement with sympy, mpmath, scipy or the CSG provider is independent
-  *implementation* agreement on declared equations; it is not physical
-  validation and not review by another party.
-* The mpmath reference is an extrapolated integration whose error estimate is
-  empirical (macro-step halving), not a proof.
+* Agreement with sympy (T001 derivations, the equations of the T002 34-digit
+  reference), scipy (an independent integrator of the ciw equations, recorded
+  as a `high_precision` check where the claim is about ciw closed forms) or the
+  CSG provider is agreement between implementations on declared equations; it
+  is not physical validation and not review by another party.
+* The 34-digit reference is an extrapolated integration whose error estimate is
+  empirical (macro-step halving), not a proof; its equations come from sympy,
+  but its integrator is ciw-authored (only the equations are independent).
 * Orders are least-squares fits over four halvings; fixed-step tolerances
   were set to cover the observed pre-asymptotic spread and are declared in each
   check. The adaptive thresholds (4.5, 0.9) come from the two competing
   theories, not from the data; per-chart adaptive slopes are not claimed.
 * Every numerical finding carries an uncertainty object (`kind`, `value`,
-  `basis`): reference error of the mpmath or closed-form reference, RK4
-  truncation estimated by step halving, the spread of pairwise log-log slopes
+  `basis`): reference error of the closed-form reference, binary64 rounding of
+  the 34-digit reference's end state and gap (which dominates its self-estimate),
+  RK4 truncation estimated by step halving, the spread of pairwise log-log slopes
   around a fitted order, or binary64 rounding.
 * The RK4 O(h⁶) per-step determinant defect assumes smooth K along the stage
   points; curvature discontinuities (meshes, CAD patches) were not tested.
@@ -389,5 +457,6 @@ differences (ε = 1e-3) confirm the endpoint sensitivities to 1.9e-6.
   stage offsets e₂, e₃ included), and whether a Wronskian-preserving
   (symplectic) integrator for the Jacobi block changes conjugate-point accuracy
   near foci (T010–T011).
-* Physical claims (T005 separation of real trajectories, T009 which error
-  dominates a real tool or vehicle path) are recorded as `not_established`.
+* Physical claims (T005 separation of real trajectories, T009 that the computed
+  lateral/heading ranking predicts which start error dominates a real tool or
+  vehicle path) are recorded as `not_established`.

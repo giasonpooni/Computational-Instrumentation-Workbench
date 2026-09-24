@@ -91,8 +91,11 @@ class PathSpec:
 
 
 # Standard paths stay inside their charts: the sphere path keeps theta in
-# [0.77, 1.9] (Clairaut), the polar paths keep r >= 1.39, the hyperbolic path
-# keeps y > 0.5.
+# [0.77, 1.9] (Clairaut), the polar paths keep r >= 1.5 (plane-polar, moving
+# outward) and r >= 1.61 (cylinder-polar, passing its closest approach to the
+# pole), the hyperbolic path keeps y > 0.5. The two polar charts carry the same
+# flat metric, so their paths differ: identical paths would integrate one ODE
+# twice and count one data point twice in per-chart statistics.
 STANDARD = {
     "plane": PathSpec("plane", "plane", (0.3, -0.2), 0.7, 2.0),
     "sphere": PathSpec("sphere", "sphere", (1.1, 0.4), 0.9, 2.0, "inclined great-circle arc"),
@@ -102,8 +105,8 @@ STANDARD = {
     "gaussian-bump": PathSpec("gaussian-bump", "gaussian-bump", (-1.2, 0.3), 0.2, 2.5, "passes over the bump"),
     "hyperbolic-plane": PathSpec("hyperbolic-plane", "hyperbolic-plane", (0.0, 1.0), 0.6, 1.5, "semicircle arc"),
     "plane-polar": PathSpec("plane-polar", "plane-polar", (1.5, 0.4), 1.2, 2.0, "straight line seen in polar chart"),
-    "cylinder-polar": PathSpec("cylinder-polar", "cylinder-polar", (1.5, 0.4), 1.2, 2.0,
-                               "helix seen in a polar chart of the (phi, z) development"),
+    "cylinder-polar": PathSpec("cylinder-polar", "cylinder-polar", (2.0, -0.6), 2.2, 2.5,
+                               "helix seen in a polar chart of the (phi, z) development, passing r = 1.62"),
 }
 
 # Paths along which the curvature is constant by construction.
