@@ -5,6 +5,12 @@ checks mean. Task identities point to the executable experiments; their
 retained reports hold the numbers. Textbook results are cited as such; the
 workbench contribution is the executable, evidence-labelled test of them.
 
+The sections below state the evidence rules and seven experiment families in
+formal notation. The other families are specified by their pages, listed in
+[Specifications of record by family](#specifications-of-record-by-family):
+those pages give each family's model, references and decision rules as
+method descriptions, not in one uniform notation.
+
 ## Evidence labels
 
 Let a finding be a tuple (claim, domain, value, basis). The label function
@@ -50,8 +56,16 @@ declared generator, `D` a derivation and `A` a hardware acquisition record:
    probe succeeded in the run and its `raw_sha256` equals the digest of a
    retained artifact of the same task.
 
-T155 checks rules 1–4 exhaustively over a finite basis grammar. T100 checks
-that synthetic, provider-backed and physical results remain visibly distinct.
+T155 compares `L` with a reference oracle that restates rules 1–5 here,
+independently of `ciw.lab.evidence`, on every basis of a finite grammar in
+every domain: derivation, generator, passing and failing checks, an executed
+and an unexecuted provider, acquisition, and eight independent-check variants
+(none, `ciw` against `scipy`, a pinned provider against `ciw`, a failing one,
+same origin, `cross_implementation` kind, an unknown family and a name that
+embeds `ciw`). Refusals are part of the comparison, and every rule branch of
+the oracle must be exercised. Rules 6–9 are enforced by the validator and the
+runner and tested in `tests/test_lab_core.py`, not by T155. T100 checks that
+synthetic, provider-backed and physical results remain visibly distinct.
 
 ## Geodesic equation and references
 
@@ -147,3 +161,57 @@ binary64 values in shortest round-trip form, NaN and infinities refused
 order (fixed pairwise tree or compensated summation) makes results
 reproducible across implementations (T148), and reduction order can change a
 threshold decision near its boundary (T121).
+
+## Specifications of record by family
+
+Each page below is the specification of record for the tasks its title names
+(and any others it names). T155 checks that every computational task
+(T001–T154) is named by this page or one of these, and that every
+specification unit is exercised by retained established findings.
+
+| Family | Tasks | Specification |
+| --- | --- | --- |
+| Geodesic and Jacobi fields | T001–T009 | [GEODESIC_JACOBI.md](GEODESIC_JACOBI.md) |
+| Geodesic/Jacobi limits and counterexamples | T010–T018 | [GEODESIC_JACOBI_LIMITS.md](GEODESIC_JACOBI_LIMITS.md) |
+| Flat torus and topology | T019–T032 | [FLAT_TORUS_TOPOLOGY.md](FLAT_TORUS_TOPOLOGY.md) |
+| Surface interface, charts and singularities | T033–T037 | [SURFACE_INTERFACE.md](SURFACE_INTERFACE.md) |
+| Triangle-mesh geodesics | T038–T044 | [MESH_GEODESICS.md](MESH_GEODESICS.md) |
+| Instrument observation | T045–T059 | [OBSERVATION.md](OBSERVATION.md) |
+| Sensor fusion | T060–T076 | [SENSOR_FUSION.md](SENSOR_FUSION.md) |
+| Exchange and provenance: identities and mutations | T077–T090 | [EXCHANGE_PROVENANCE.md](EXCHANGE_PROVENANCE.md) |
+| Exchange and provenance: bundles and providers | T091–T100 | [EXCHANGE_BUNDLES.md](EXCHANGE_BUNDLES.md) |
+| Lyapunov runtime | T101–T114 | [LYAPUNOV.md](LYAPUNOV.md) |
+| Energy and GPU | T115–T125 | [ENERGY_GPU.md](ENERGY_GPU.md) |
+| Manufacturing and robotic use cases | T126–T141 | [MANUFACTURING.md](MANUFACTURING.md) |
+| Implementation targets | T142–T154 | [IMPLEMENTATION_TARGETS.md](IMPLEMENTATION_TARGETS.md) |
+
+## Research and portfolio aggregates
+
+T155–T168 read the reports retained for the tasks before them in queue order
+(this section's earlier tasks included) and never a report of a later task.
+Each aggregate is backed by a check through a second path that fails for a
+wrong aggregate, never by re-reading what was just written:
+
+- raw-text recounts of the report files (states, finding labels, domains,
+  counterexample keys, numerical values without an uncertainty, assumption
+  items), located by the retained layout (`runner.dumps`: one-space indent,
+  sorted keys) without parsing JSON;
+- parsing a written Markdown table back and comparing each row with its source
+  finding: task, claim, unit, label, report identity, and a value headline that
+  states only numbers of the value (`…(+N)` marks entries left out; numbers are
+  never cut);
+- for T158, re-executing a declared set of inexpensive figure tasks plus every
+  figure task that retains wall-clock timings (a retained JSON artifact that
+  mentions wall-clock or elapsed time) and comparing figure bytes. A timing
+  figure that differs is recorded as a counterexample to byte reproducibility;
+  a timing-free figure that differs refutes it; figures not re-executed leave
+  the task `partial`;
+- for T168, a static tie analysis (a registered test names its task and
+  mentions an evidence label), itself checked on probe cases, and the JUnit
+  outcomes the reports recorded.
+
+Every count finding declares an exact uncertainty and a zero regression
+tolerance. The release digest (T165) covers task states, headline labels,
+claims and their labels, never values or artifact bytes, so two clean-room
+runs give the same digest although timing figures differ.
+
