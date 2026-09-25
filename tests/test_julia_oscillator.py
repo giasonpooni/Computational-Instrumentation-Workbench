@@ -115,10 +115,13 @@ def test_session_registers_and_retains_the_julia_operation(fake_worker, monkeypa
     completed = session.handle({"protocol_version": 1, "request_id": "execute", "type": "operation.execute",
                                 "payload": {"operation_id": jo.OPERATION, "parameters": {"source_id": source_id}}})
     assert completed["type"] == "response"
-    assert completed["payload"]["bundle"]["kind"] == jo.KIND
+    summary = completed["payload"]
+    assert summary["kind"] == jo.KIND
+    assert session.handle({"protocol_version": 1, "request_id": "get", "type": "bundle.get",
+                            "payload": {"bundle_id": summary["bundle_id"]}})["payload"]["schema"] == jo.SCHEMA
     session.save_workspace(tmp_path / "workspace.json")
     reopened = Session.from_workspace(tmp_path / "workspace.json", tmp_path / "reopened")
-    assert reopened.handle({"protocol_version": 1, "request_id": "list", "type": "bundle.list", "payload": {}})["bundles"]
+    assert reopened.handle({"protocol_version": 1, "request_id": "list", "type": "bundle.list", "payload": {}})["payload"]["bundles"]
 
 
 @pytest.mark.integration
