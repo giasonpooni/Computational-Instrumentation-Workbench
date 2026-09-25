@@ -81,7 +81,11 @@ func set_run(run: Dictionary) -> void:
 	var transform: Dictionary = render.get("transform", {})
 	_origin = _vector(transform.get("origin", [0, 0, 0]))
 	_scale = _vector(transform.get("scale", [1, 1, 1]))
-	_sample_indices = render.get("sample_indices", [])
+	## JSON numbers arrive as floats; keep retained indices as integers so a
+	## backend sample index resolves to its render point.
+	_sample_indices.clear()
+	for value in render.get("sample_indices", []):
+		_sample_indices.append(int(value))
 	var surface: Dictionary = render.get("surface", {})
 	var vertices := PackedVector3Array()
 	var low := Vector3(INF, INF, INF)

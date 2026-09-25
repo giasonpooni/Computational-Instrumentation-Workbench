@@ -15,6 +15,8 @@ results, and marks disconnected data stale. See the [experiment view guide](../d
 for provider setup, protocol, scientific boundaries and testing. The existing
 oscillator viewport is available in the **Oscillator** tab.
 
+The Oscillator tab also displays a retained Julia oscillator projection written by `ciw julia-oscillator run` (`ciw serve --recording recording.json`): the same phase portrait, timeline cursor and `q`/`v`/`energy` cards, with every value coming from the retained record; see the [Julia oscillator guide](../docs/JULIA_OSCILLATOR.md).
+
 The phase view plots retained position and velocity samples. Click within 20 pixels of a trajectory point to move the shared playback cursor to that retained sample time. The timeline and Play button also update this cursor. Channel and half-open `[start,end)` interval are shared with terminal clients; playback never changes the interval or recomputes analyses. The 3D view displays Python-supplied energy-surface and trajectory meshes using the declared visual transform. Drag to orbit and use the mouse wheel to zoom. All three numeric cards are `sample.get` results, never values reconstructed from displayed geometry.
 
 Selection updates carry the observed revision, coalesce at no more than 10 requests per second, and permit only one outstanding update. Responses are matched by request ID. On a revision conflict the client discards pending selection intent and refreshes authoritative state. Sample requests are also coalesced, and an obsolete response cannot replace the latest requested sample. A fresh snapshot is checked every five seconds; unanswered requests time out after eight seconds. Disconnects retain the last view with a visible STALE indication and disable shared interaction. Use Reconnect after restarting the service.
@@ -25,9 +27,10 @@ Checks, run from the repository root:
 godot --headless --path godot --editor --import --quit
 godot --headless --path godot --script res://tests/protocol_smoke.gd
 godot --headless --path godot --script res://tests/channel_generality.gd
+godot --headless --path godot --script res://tests/julia_projection.gd -- /path/to/recording.json
 ```
 
-The channel generality check needs no service: it supplies snapshots directly and asserts that the channel selector, the numeric cards, the selection round-trip and the phase-portrait axes all come from the record rather than from any compiled-in channel list, across records of two, three and five channels.
+The Julia projection check needs no service either: it loads an actual retained `run.v1` projection of a Julia oscillator bundle and asserts that the legacy viewport, phase axes, render mapping, selection and sample cards all come from that record. The channel generality check needs no service: it supplies snapshots directly and asserts that the channel selector, the numeric cards, the selection round-trip and the phase-portrait axes all come from the record rather than from any compiled-in channel list, across records of two, three and five channels.
 
 The protocol smoke needs a running service. It connects two clients, loads the recorded run, changes the cursor in one, observes the broadcast in the other, checks numerical inspection against the retained record, verifies the interval did not change, restores the original cursor, and verifies inspection refresh after reconnect at the same revision. It fails after 15 seconds if the service is unavailable. Do not run it during an interactive session where another user is changing the same selection.
 

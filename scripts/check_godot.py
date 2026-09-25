@@ -132,6 +132,20 @@ def run_godot(executable: str, label: str, arguments: list[str], timeout: int) -
 
 GENERALITY_PASS = "PASS: the viewport builds channels"
 BOUNDARY_PASS = "PASS: generic adapters remain terminal-only"
+JULIA_PASS = "PASS: the existing viewport displays the retained Julia trajectory"
+
+
+def check_julia_projection(executable: str, recording: Path, view: Path | None) -> None:
+    """Display an actual retained Julia oscillator recording; no service is needed."""
+    output = run_godot(executable, "Julia oscillator projection",
+                       ["--script", "res://tests/julia_projection.gd", "--", str(recording.resolve())], timeout=60)
+    if not any(line.startswith(JULIA_PASS) for line in output.splitlines()):
+        raise CheckError("Julia projection check exited without its PASS sentinel")
+    if view is not None:
+        retained = run_godot(executable, "retained Julia experiment view",
+                             ["--script", "res://tests/retained_views.gd", "--", str(view.resolve())], timeout=60)
+        if "PASS: all actual retained projections rendered" not in retained:
+            raise CheckError("Retained Julia experiment view exited without its PASS sentinel")
 
 
 def check(executable: str) -> None:
@@ -194,13 +208,23 @@ def check(executable: str) -> None:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--godot", required=True, help="Godot executable path or command available on PATH")
+    parser.add_argument("--julia-recording", type=Path,
+                        help="Retained run.v1 projection written by `ciw julia-oscillator run`; adds the Julia viewport check")
+    parser.add_argument("--julia-view", type=Path,
+                        help="Retained ciw.experiment-view.v1 JSON of a julia-oscillator bundle; requires --julia-recording")
     args = parser.parse_args(argv)
     executable = shutil.which(args.godot)
     if executable is None:
         print(f"FAIL: Godot executable not found: {args.godot}", file=sys.stderr)
         return 2
+    if args.julia_view is not None and args.julia_recording is None:
+        print("FAIL: --julia-view requires --julia-recording", file=sys.stderr)
+        return 2
     try:
         check(executable)
+        if args.julia_recording is not None:
+            check_julia_projection(executable, args.julia_recording, args.julia_view)
+            print("PASS: retained Julia oscillator recording and experiment view rendered by the existing client.", flush=True)
     except KeyboardInterrupt:
         print("FAIL: Check interrupted; temporary service stopped.", file=sys.stderr)
         return 130
