@@ -111,8 +111,9 @@ def test_session_registers_and_retains_the_julia_operation(fake_worker, monkeypa
                                  "payload": {"kind": jo.KIND, "label": "Julia test", "bytes_b64": base64.b64encode(canonical(source())).decode()}})
     operation = next(item for item in session.handle({"protocol_version": 1, "request_id": "ops", "type": "operation.list", "payload": {}})["payload"]["operations"] if item["operation_id"] == jo.OPERATION)
     assert operation["available"] is True
+    source_id = descriptor["payload"]["source_id"]
     completed = session.handle({"protocol_version": 1, "request_id": "execute", "type": "operation.execute",
-                                "payload": {"operation_id": jo.OPERATION, "parameters": {"source_id": descriptor["source_id"]}}})
+                                "payload": {"operation_id": jo.OPERATION, "parameters": {"source_id": source_id}}})
     assert completed["type"] == "response"
     assert completed["payload"]["bundle"]["kind"] == jo.KIND
     session.save_workspace(tmp_path / "workspace.json")
@@ -127,3 +128,4 @@ def test_real_julia_provider_is_explicitly_gated(tmp_path):
     runtime = tmp_path / "runtime"
     if not executable.is_file() or not runtime.is_dir():
         pytest.skip("Julia 1.10 runtime and instantiated project are not provisioned")
+

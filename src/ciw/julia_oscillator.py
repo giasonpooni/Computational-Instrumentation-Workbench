@@ -250,6 +250,20 @@ def _compare(source, output):
             "relative_tolerance": ORACLE_RTOL, "components": arrays}
 
 
+def _numerical_result(data):
+    """Return the occurrence-independent numerical projection.
+
+    The framed response carries a request id so the transport binding can be
+    checked. That id is deliberately removed from the numerical comparison;
+    otherwise a fresh replay would differ merely because it is a new execution.
+    """
+    value = deepcopy(data)
+    output = deepcopy(value["output"])
+    output["request_id"] = "request-bound"
+    value["output"] = output
+    return {"operation_id": OPERATION, "data": value}
+
+
 def _frame(value: bytes) -> bytes:
     if len(value) > FRAME_LIMIT:
         raise ValueError("worker frame exceeds the bounded protocol limit")
@@ -329,7 +343,7 @@ def _step(source, evidence_id, repositories, runtime, execution_id=None):
               "input_refs": [evidence_id], "data": data, "request_bytes_sha256": byte_digest(request_bytes),
               "response_bytes_sha256": byte_digest(response_bytes), "authority": deepcopy(AUTHORITY)}
     result["result_id"] = digest(result)
-    numerical = {"operation_id": OPERATION, "data": data}
+    numerical = _numerical_result(data)
     return {"runtime_ref": ROLE, "operation_id": OPERATION, "execution_id": occurrence,
             "input_refs": [evidence_id], "request": request, "request_sha256": digest(request),
             "request_bytes_b64": base64.b64encode(request_bytes).decode(),
@@ -372,7 +386,7 @@ def _validate_step(step, source, evidence_id, runtime):
                                               "request_bytes_sha256", "response_bytes_sha256", "authority")}
     if result["result_id"] != digest(unsigned) or step["result_id"] != result["result_id"] or step["result_sha256"] != digest(result):
         raise ValueError("Julia result identity differs")
-    numerical = {"operation_id": OPERATION, "data": data}
+    numerical = _numerical_result(data)
     if step["numerical_result"] != numerical or step["numerical_result_id"] != digest(numerical):
         raise ValueError("Julia numerical result identity differs")
 
@@ -496,3 +510,4 @@ def to_run(result_data: dict) -> dict:
                       "transform": {"origin": [0, 0, 0], "scale": [1, 1, 1], "note": "Derived display scaling only."}}
     validate_run(run)
     return run
+
