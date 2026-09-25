@@ -1,0 +1,14 @@
+name = "CIWJuliaOscillatorRuntime"
+uuid = "4cb8c4a1-9cc1-4c5a-8d4b-f3be8cf0a1e0"
+version = "0.1.0"
+
+[deps]
+JSON3 = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
+OrdinaryDiffEqTsit5 = "b1df2697-797e-41e3-8120-5422d3b24e4a"
+SciMLBase = "0bca4576-84f4-4d90-8ffe-ffa030f20462"
+
+[compat]
+JSON3 = "1"
+OrdinaryDiffEqTsit5 = "1"
+SciMLBase = "2"
+julia = "1.10"

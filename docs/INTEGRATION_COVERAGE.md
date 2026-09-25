@@ -18,7 +18,7 @@ operating point.
 
 ## Shared operating session
 
-The [Workbench desktop tab](EXPERIMENT_VIEW.md) projects all twenty-five shared workflow
+The [Workbench desktop tab](EXPERIMENT_VIEW.md) projects all twenty-six shared workflow
 kinds through `experiment.inspect`: retained measurements, state/covariance,
 residuals, native dependencies, evidence and verification. It follows committed
 session changes and keeps replay occurrences separate. This read-only display
@@ -34,7 +34,8 @@ The live Session now hosts `ciw.telemetry.v1`, `ciw.calibrated-observable.v1` an
 `ciw.acquired-calibrated-window.v1`, `ciw.residual-monitor.v1`,
 `ciw.measurement-chain.v1`, `ciw.geometric-circle.v1` and
 `ciw.identified-stability.v1`, `ciw.flat-torus-reference.v1`,
-`ciw.curved-path-transfer.v1`, `ciw.thermal-observer.v1` and
+`ciw.curved-path-transfer.v1`, `ciw.thermal-observer.v1`,
+`ciw.julia-oscillator.v1` and
 `ciw.encoder-position.v1`, through
 `operation.list/execute`.
 `source.*`, `bundle.*` and `fusion.list` expose retained inputs, native bundles
@@ -76,10 +77,11 @@ keep their native owners; the table below distinguishes implemented ICRH profile
 | Declared geographic context → GSV | `spatial.inspect`, exact source bytes through native GSV provider/WorldStore | ICRH geographic declaration checks; actual CIW WebSocket/provider tests | Source-only CRS84 nodes with declared constant states; no inferred geometry or estimator. |
 | Flat lattice and winding → FTR | Shared `ciw.flat-torus-reference.v1`; native trajectory, geometry digest and fresh replay | ICRH `flat-torus-reference.v1`; analytic lattice/closure and retained pair checks | Area-one flat quotient; no embedded torus, physical units or observed uncertainty. |
 | Declared constant curvature → CSG | Shared `ciw.curved-path-transfer.v1`; native Jacobi transfer, separation and declared covariance propagation | ICRH `curved-path-transfer.v1`; constant-curvature oracle, covariance and replay binding checks | Curvature profile only; no embedded path, surveyed geometry or calibrated sensor claim. |
-| Declared integer field → SCR/SP1 | Shared `ciw.proved-heat.v1`; native execution, registered guest proof, full-ELF verification, exact retained proof bytes and fresh replay | Separate verifier invocation through pinned SCR/SP1; installed-wheel real-proof gate with corrupted-proof rejection; no separate ICRH proved-heat profile | Bounded integer arithmetic only. Offline consistency is not fresh cryptographic verification; Julia and F2 topology remain planned. |
+| Declared integer field → SCR/SP1 | Shared `ciw.proved-heat.v1`; native execution, registered guest proof, full-ELF verification, exact retained proof bytes and fresh replay | Separate verifier invocation through pinned SCR/SP1; installed-wheel real-proof gate with corrupted-proof rejection; no separate ICRH proved-heat profile | Bounded integer arithmetic only. Offline consistency is not fresh cryptographic verification; F2 topology remains planned. |
 | Declared SPD matrices, meshes and square-tiled surfaces → geometry providers | Three native shared-session profiles with inspection, retained evidence and fresh replay | Provider analytical fixtures and CIW installed-wheel gate on Linux/Windows; no dedicated ICRH profiles | Mesh paths are edge constrained; flows retain explicit partial status; no physical calibration or state admission. |
 | CSG → Gaussian variational inference / GSIE → PLSR | Shared `ciw.variational-free-energy.v1`; two latent path errors, exact reference, full covariance iteration, objective/held-out/coverage diagnostics and fresh native replay | CIW algebraic, native and installed-wheel session gates; no dedicated ICRH profile | Synthetic constant-curvature model; optimizer convergence and simulation coverage do not establish physical validity, calibration or plant stability. |
 | Two-capacity thermal model → Python reference observer | Shared `ciw.thermal-observer.v1`; ordered state/input/sensor declarations, dropout-aware observer, bounded sensor selection, read-only authority and fresh replay | CIW contract and save/reopen/replay tests; Julia parity and independent ICRH profile pending | Synthetic thermal source only; no physical telemetry, Julia provider admission, hardware actuation or calibration claim. |
+| Declared oscillator source → Julia OrdinaryDiffEqTsit5 → Python analytic oracle | Shared `ciw.julia-oscillator.v1`; bounded framed data-only worker, exact request/response bytes, solver diagnostics, componentwise oracle comparison, distinct execution/result/verification identities and fresh replay | Contract, framing, refusal, oracle, offline projection and replay tests; genuine Julia 1.10.12 environment and headless Godot run remain pending | Simulated trajectory only; no physical calibration, measurement uncertainty, SP1 proof or actuation. |
 | Evidence bundle → machine manifest compiler | Shared `ciw.encoder-position.v1`; evidence-bound encoder/gearbox/leadscrew candidate, deterministic challenge, position/covariance evaluation, separate execution/result identities and fresh replay | CIW machine contract plus save/reopen/replay, tamper and runtime-identity refusal tests; independent ICRH profile pending | Read-only reference evaluation only; no document retrieval, physical calibration, state admission, firmware loading or actuation. |
 
 “Independent harness” means a separately implemented conformance checker. It

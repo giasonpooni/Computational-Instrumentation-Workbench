@@ -63,12 +63,9 @@ source is explicitly synthetic and carries `physical_validation:
 not_established`.
 
 The contract can validate a future Julia result against the independent Python
-reference, including state/input/sensor ordering, symbolic-rendering metadata,
-solver status, objective bounds and held-out diagnostics. It does not claim a
-Julia runtime is installed or that the model describes a physical machine.
-The Julia worker remains outside the packaged operation path until its project
-and manifest are instantiated, its runtime identity is pinned, and successful,
-refusal and replay gates run in CI.
+reference. The separate [Julia oscillator operation](JULIA_OSCILLATOR.md) now
+supplies the first executable cross-language seam; its generated manifest,
+runtime identity and genuine provider/refusal/replay gates remain required.
 
 ## Current boundary and next gate
 

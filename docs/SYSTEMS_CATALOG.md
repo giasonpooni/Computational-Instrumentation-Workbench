@@ -71,10 +71,12 @@ is part of this checkout.
 | [Curved-Surface-Geodesic-Sensitivity-Runtime](https://github.com/giasonpooni/Curved-Surface-Geodesic-Sensitivity-Runtime#readme) | Constant-curvature Jacobi transfer reference. | Pinned reference provider; [GEODESIC_REFERENCES.md](GEODESIC_REFERENCES.md) |
 | [Instrument-Conformance-and-Replay-Harness](https://github.com/giasonpooni/Instrument-Conformance-and-Replay-Harness#readme) | Versioned external profile conformance. | Pinned validator; [EXCHANGE.md](EXCHANGE.md) |
 
+The Julia Tsit5 oscillator is the first registered Julia provider seam; its
+contract and offline retention path are implemented in [JULIA_OSCILLATOR.md](JULIA_OSCILLATOR.md).
 JuliaControl, JuMP, ModelingToolkit, RxInfer, OpenFOAM, FreeCAD, TensorFlow
-Lattice, an FPGA toolchain and a persistent Julia worker remain candidate
-providers. Their contracts can be prepared without claiming that their
-environments or hardware are integrated.
+Lattice, an FPGA toolchain and the broader persistent Julia scientific runtime
+remain candidate providers. A registered seam does not pass the environment or
+physical validation gate by itself.
 
 ## The collapse rule for loose tooling
 
@@ -111,4 +113,3 @@ The Julia worker scaffold is deliberately not presented as resolved until its
 environment, lockfile and CI lane are reproducible. Physical calibration,
 FPGA programming, MCP authority, and independent ICRH validation remain
 separate gates.
-

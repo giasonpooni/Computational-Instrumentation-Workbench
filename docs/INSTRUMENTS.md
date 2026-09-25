@@ -16,6 +16,7 @@ existing benches.
 | Tool and role | Workbench status | Entry point |
 | --- | --- | --- |
 | `analytic-damped-oscillator.v1` | Integrated built-in synthetic instrument | `python -m ciw demo`, `analyze stats`, `analyze spectrum` |
+| `ciw.julia-oscillator.v1` | Typed Julia `OrdinaryDiffEqTsit5` provider seam; Python analytic oracle and retained replay are implemented, external runtime gate remains explicit | `ciw julia-oscillator create`, `inspect`, `replay`; [Julia operating guide](JULIA_OSCILLATOR.md) |
 | RCI measurement-chain/calibration adapter | Integrated experimental pinned subprocess; synthetic mass fixture | `python -m ciw investigation create`, `inspect`, `replay` |
 | FSRT state-estimation operation | Integrated experimental pinned subprocess; one simultaneous two-reservoir snapshot | Same investigation; shared `operation.execute` after explicit runtime binding |
 | Parameterized Lyapunov Stability Runtime (PLSR) verification operation | Integrated experimental terminal operation; Python 3.12+ and optional `plsr` extra | `python -m ciw plsr import`, `evaluate`, `inspect`, `replay` |
@@ -365,8 +366,10 @@ State Reconciliation. PPDA, SET and CBSR participate in the scoped executable
 paths above. SCR provides shared integer execution and a separately selected
 [registered SP1 proof operation](PROVED_HEAT.md), as well as exchange inspection.
 GSV provides the read-only declared geographic projection; ESM remains at
-separately requested candidate-evidence retention. Julia and exact F2 topology
-have [planned contracts](JULIA_SP1.md), with no available operation yet.
+separately requested candidate-evidence retention. The Julia Tsit5 oscillator has
+a [registered provider contract](JULIA_OSCILLATOR.md) with an explicit environment
+gate; exact F2 topology remains a [planned contract](JULIA_SP1.md) with no
+available operation yet.
 These distinct integration states are recorded in the
 [coverage matrix](INTEGRATION_COVERAGE.md). Their boundaries retain existing
 evidence, operation, execution, result, verification and runtime identities.
@@ -379,4 +382,3 @@ setup and workbench commands, input ordering/units/time conventions, versioned
 output and status semantics, saved-evidence and replay instructions, verification
 state and limits, and links to validation evidence. A successful installation or
 standalone example alone does not establish a completed workbench integration.
-

@@ -19,6 +19,12 @@ work/
 docs/adr/
 .decisions/
 
+# Local provider/tool installations and package depots
+/tools/
+/.julia-depot/
+/.julia-depot2/
+/.julia-depot3/
+
 # Non-public working material
 /AGENTS.md
 /CLAUDE.md

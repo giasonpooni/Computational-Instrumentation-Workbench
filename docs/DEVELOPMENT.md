@@ -6,8 +6,10 @@ requires a real original proof, fresh proved replay, retained-proof reverificati
 and corrupted-proof rejection from an installed CIW wheel; skipped tests fail it.
 `tests/test_proved_heat.py` separately exercises structural/refusal boundaries
 with explicit test doubles. Such tests never count as cryptographic evidence.
-The [Julia and SP1 contract](JULIA_SP1.md) records the later persistent-worker,
-oscillator, F2 checker and benchmark requirements.
+The [Julia oscillator guide](JULIA_OSCILLATOR.md) records the bounded worker,
+oracle, raw-byte replay and environment gates. The broader [Julia and SP1
+contract](JULIA_SP1.md) records the later persistent-worker, F2 checker and
+benchmark requirements.
 
 Public documentation describes implemented behavior, executable contracts,
 reproducible examples and measured limitations. The [architecture](ARCHITECTURE.md)

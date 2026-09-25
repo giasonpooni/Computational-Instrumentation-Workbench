@@ -273,6 +273,10 @@ def parser() -> argparse.ArgumentParser:
     server.add_argument("--sp1-heat-guest", type=Path, help="Exact registered SP1 heat guest ELF; requires --sp1-prover")
     server.add_argument("--python", dest="python_executable", type=Path,
                         help="Python for FSRT/JSPT/GTE adapters; workbench stacks use this running interpreter")
+    server.add_argument("--julia-oscillator-runtime", type=Path,
+                        help="Pinned checkout containing the instantiated Julia Tsit5 oscillator environment")
+    server.add_argument("--julia-executable", type=Path,
+                        help="Explicit Julia 1.10 executable paired with --julia-oscillator-runtime")
     health = commands.add_parser("health", help="Check a live session with a bounded read-only request")
     health.add_argument("--url", default="ws://127.0.0.1:8765")
     send = commands.add_parser("send", help="Send a structured request to a running session")
@@ -419,6 +423,22 @@ def parser() -> argparse.ArgumentParser:
     energy_replay = energy_actions.add_parser("replay", help="Recompute analysis from raw logs; never acquire new measurements")
     energy_replay.add_argument("path", type=Path)
     energy_replay.add_argument("--output", type=Path)
+    julia = commands.add_parser("julia-oscillator", help="Run, inspect or replay the pinned Julia Tsit5 oscillator")
+    julia_actions = julia.add_subparsers(dest="julia_command", required=True)
+    julia_create = julia_actions.add_parser("create", help="Execute a bounded data-only Julia request")
+    julia_create.add_argument("--source", type=Path, required=True)
+    julia_create.add_argument("--julia-oscillator-runtime", type=Path, required=True)
+    julia_create.add_argument("--julia-executable", type=Path, required=True)
+    julia_create.add_argument("--output", type=Path, required=True)
+    julia_create.add_argument("--recording-output", type=Path,
+                             help="Optional run.v1 trajectory projection for the read-only Godot viewport")
+    julia_inspect = julia_actions.add_parser("inspect", help="Inspect a retained Julia session without Julia")
+    julia_inspect.add_argument("path", type=Path)
+    julia_replay = julia_actions.add_parser("replay", help="Replay a retained Julia session with a fresh occurrence")
+    julia_replay.add_argument("path", type=Path)
+    julia_replay.add_argument("--julia-oscillator-runtime", type=Path, required=True)
+    julia_replay.add_argument("--julia-executable", type=Path, required=True)
+    julia_replay.add_argument("--output", type=Path, required=True)
     return root
 
 
@@ -448,6 +468,28 @@ def main(argv: list[str] | None = None) -> int:
                 if args.output:
                     _write_new_proof_report(args.output, report)
                 print_json(report)
+        elif args.command == "julia-oscillator":
+            from .julia_oscillator import workflow as julia_workflow
+            if args.julia_command == "inspect":
+                julia_workflow._validate(json.loads(args.path.read_bytes().decode("utf-8")))
+                print_json({"status": "inspectable", "schema": "ciw.julia-oscillator-session.v1"})
+            else:
+                bindings = {"julia_runtime": args.julia_oscillator_runtime, "julia": args.julia_executable}
+                if args.julia_command == "create":
+                    bundle = julia_workflow.create_session(args.source.read_bytes(), bindings)
+                    write_json(args.output, bundle)
+                    if args.recording_output is not None:
+                        write_json(args.recording_output, julia_workflow.to_run(bundle["steps"][0]["result"]["data"]))
+                    print_json({"status": "completed", "bundle_file": str(args.output),
+                                "bundle_id": bundle["bundle_digest"], "operation_id": julia_workflow.operation,
+                                **({"recording_file": str(args.recording_output)} if args.recording_output is not None else {})})
+                else:
+                    original = json.loads(args.path.read_bytes().decode("utf-8"))
+                    replay = julia_workflow.replay_session(original, bindings)
+                    write_json(args.output, replay["session"])
+                    print_json({"status": "completed", "bundle_file": str(args.output),
+                                "bundle_id": replay["session"]["bundle_digest"],
+                                "replay_id": replay["replay_receipt"]["replay_id"]})
         elif args.command == "demo":
             run = make_demo_run()
             write_json(args.output, run)
@@ -479,6 +521,11 @@ def main(argv: list[str] | None = None) -> int:
             if args.gte_repo is not None:
                 from .geodesic import bind_gte
                 bind_gte(session, args.gte_repo, python_executable=args.python_executable)
+            if (args.julia_oscillator_runtime is None) != (args.julia_executable is None):
+                raise ValueError("--julia-oscillator-runtime and --julia-executable must be supplied together")
+            if args.julia_oscillator_runtime is not None:
+                session.workbench.bind_workflow("julia-oscillator", {
+                    "julia_runtime": args.julia_oscillator_runtime, "julia": args.julia_executable})
             if args.calibrated_stack_root is not None or args.identified_stack_root is not None:
                 from .calibrated_observable import ROLES
                 stack_root = args.calibrated_stack_root or args.identified_stack_root

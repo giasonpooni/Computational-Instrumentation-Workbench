@@ -70,11 +70,11 @@ The executable persistence and admission rules are in
 | Terminal and Python API | Authoritative local session, operation dispatch, saved workspaces and replay. |
 | Optional Godot client | Read-only 2D/3D representations of supported retained data; it is not a second state store. |
 | Provider processes | Explicitly pinned numerical engines invoked outside the session lock. |
-| Julia direction | Planned scientific core for shared model definitions, estimation, control and experiment design; no resolved worker is currently part of CIW validation. |
+| Julia direction | The bounded Tsit5 oscillator provider seam is registered with retained replay and a Python oracle; the generated Julia environment and Godot headless gates remain explicit. Broader JuliaControl/JuMP scientific-core work is still planned. |
 | GPU and machine interfaces | Captured through bounded providers and host-side telemetry; deadline-critical protection remains local to the machine. |
 | MCP and agents | Optional tools at the workbench boundary. They propose or inspect work; deterministic contracts decide acceptance. |
 
-The workbench currently has twenty-five registered workflow kinds in the shared
+The workbench currently has twenty-six registered workflow kinds in the shared
 session. Their exact status, commands and limits are maintained in
 [INSTRUMENTS.md](INSTRUMENTS.md) and
 [INTEGRATION_COVERAGE.md](INTEGRATION_COVERAGE.md), rather than duplicated here.

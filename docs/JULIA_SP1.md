@@ -11,14 +11,16 @@ admission of evidence for a downstream purpose.
 | Increment | Scope | Readiness |
 | --- | --- | --- |
 | 1. Existing SCR proof workload | Expose bounded integer heat diffusion, retained input/output and independently checked SCR proof records in one shared investigation | First implementation increment; a successful native SP1 build/prove/verify gate is required before claiming a working cryptographic path |
-| 2. Julia oscillator | Run numerical integration through SCR and compare with CIW's analytical oscillator reference | Planned; no Julia operation or verified Julia environment is supplied by this document |
+| 2. Julia oscillator | Run numerical integration through the CIW/SCR-shaped provider seam and compare with CIW's analytical oscillator reference | Contract, adapter, offline replay and oracle tests are present; Julia 1.10.12 manifest and genuine provider execution remain release gates; see [JULIA_OSCILLATOR.md](JULIA_OSCILLATOR.md) |
 | 3. Exact topology | Compute candidate ordinary Betti numbers over F2 in Julia, then independently recompute them in a registered Rust/SP1 checker | Planned; no topology operation, registered guest or proof is supplied by this document |
 | 4. Measured scaling | Record execution, proving and verification time, peak memory and guest cycles before widening bounds | Required before expanding workloads; no performance capacity is asserted here |
 
 An unavailable runtime, a protocol fixture and a mock verifier must remain
-distinguishable from a successfully verified cryptographic computation. Installing
-Julia or SP1 does not by itself pass an integration gate. This document specifies
-the next contracts; it does not add planned operations to the available catalog.
+distinguishable from a successfully verified cryptographic computation. The Julia
+oscillator is registered, but its generated manifest and genuine provider tests
+remain required before it is called available. Installing Julia or SP1 does not
+by itself pass an integration gate. This document specifies the broader
+contracts; the executable oscillator details live in [JULIA_OSCILLATOR.md](JULIA_OSCILLATOR.md).
 
 | Component | Responsibility |
 | --- | --- |
@@ -54,9 +56,9 @@ Repeated requests may share a specification identity. They still produce distinc
 execution occurrences and retained result records. Numerical agreement on replay
 is a separate comparison; matching evidence bytes do not erase execution history.
 
-## Planned Julia oscillator operation
+## Julia oscillator operation profile
 
-The first Julia operation should numerically integrate
+The registered first Julia operation numerically integrates
 
 ```text
 q' = v

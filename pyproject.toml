@@ -29,3 +29,4 @@ ciw = ["plsr-runtime.json", "adapter-runtimes.json", "exchange-runtime.json", "t
 testpaths = ["tests"]
 pythonpath = ["src"]
 addopts = "-ra"
+markers = ["integration: requires an operator-provisioned external runtime"]
