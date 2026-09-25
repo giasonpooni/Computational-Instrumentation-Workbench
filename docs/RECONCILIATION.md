@@ -380,8 +380,12 @@ uncertainty representation; in-terminal plots.
   as repeated by a neighbouring check. Over the
   identified-design declaration validator (a provider-backed kind whose
   retention checks were added during this audit) 146 of 152 checks are
-  still unguarded; that table is the recorded next step, not part of the
-  gate.
+  still unguarded, over the machine manifest artifact validator
+  (`machine_manifest`) 86 of 88, and over the project graph model
+  (`project_model`) 61 of 66: the source-level tables above reach only the
+  outermost checks of these two. Those three tables are the recorded next
+  steps, not part of the gate; each is a `TARGETS` entry in the gate script
+  plus a `tests/test_*_checks.py` table written the same way.
 - `python -m pytest` (Python 3.12 venv, no external checkouts) on 646aada: **404 passed, 46 skipped,
   38 subtests passed** in 92.09 s. Skips by reason: 1 × "Set CIW_RCI_REPO and CIW_FSRT_REPO to the pinned source checkouts" (test_adapter_cli.py); 12 × "Requires three clean pinned scientific checkouts" (test_covariance_integration.py); 19 × "Set CIW_GTE_REPO to exercise the real pinned GTE subprocess" (test_geodesic.py); 14 × "Set CIW_RCI_REPO and CIW_FSRT_REPO to exercise pinned domain subprocesses" (test_investigation.py) — 46 in total.
 - `python scripts/check_adapters.py` on 646aada (clones the current pins rci f863bdd / fsrt 09a756d /
