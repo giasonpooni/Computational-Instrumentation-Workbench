@@ -16,6 +16,7 @@ from .telemetry import canonical, digest
 
 SCHEMA = "ciw.educational-model-card.v1"
 PREVIEW_SCHEMA = "ciw.educational-model-preview.v1"
+SWEEP_SCHEMA = "ciw.educational-model-sweep.v1"
 _OVERRIDE_FIELDS = {
     "model.omega_0_rad_s": ("model", "omega_0_rad_s"),
     "model.gamma_s_inv": ("model", "gamma_s_inv"),
@@ -209,4 +210,49 @@ def preview_oscillator(source, overrides):
     }
     preview["preview_id"] = digest(preview)
     return preview
+
+
+def sensitivity_oscillator(source, path, values):
+    """Evaluate a bounded one-parameter sensitivity sweep offline.
+
+    Each case is an ordinary hypothetical preview. The sweep groups those
+    cases for teaching and comparison, but never creates operation,
+    execution, or result identities.
+    """
+    source = validate_source(canonical(source))
+    if not isinstance(path, str) or path not in _OVERRIDE_FIELDS:
+        raise ValueError(f"Unsupported sensitivity parameter: {path}")
+    if not isinstance(values, (list, tuple)) or not 2 <= len(values) <= 9:
+        raise ValueError("A sensitivity sweep requires between two and nine values")
+    values = [_finite(value, path) for value in values]
+    if len(set(values)) != len(values):
+        raise ValueError("Sensitivity sweep values must be distinct")
+    cases = []
+    for value in values:
+        preview = preview_oscillator(source, {path: value})
+        cases.append({
+            "value": value,
+            "preview_id": preview["preview_id"],
+            "output": preview["output"],
+            "comparison": preview["comparison"],
+        })
+    sweep = {
+        "schema": SWEEP_SCHEMA,
+        "model_family": "linear_damped_harmonic_oscillator",
+        "base_source_digest": digest(source),
+        "swept_path": path,
+        "values": values,
+        "cases": cases,
+        "authority": {
+            "kind": "hypothetical_offline_sensitivity",
+            "retention": "not_performed",
+            "execution_id": "not_assigned",
+            "result_id": "not_assigned",
+            "physical_validation": "not_established",
+            "state_admission": "not_performed",
+        },
+        "next_step": "Submit selected augmented sources to ciw.julia-oscillator.v1 to retain new executions and results.",
+    }
+    sweep["sweep_id"] = digest(sweep)
+    return sweep
 
