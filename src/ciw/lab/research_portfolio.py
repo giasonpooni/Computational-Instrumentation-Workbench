@@ -1066,6 +1066,18 @@ def providers_used(report) -> list:
     return sorted(roles)
 
 
+def task_sources(report) -> dict:
+    """The source digests a report's task ran with: its runtime identity's ``sources`` and, for a provider-backed task
+    (T005, T008, T097), the CIW sources it records under ``ciw`` beside the provider's identity."""
+    identity = report.get("provider_runtime_identity")
+    identity = identity if isinstance(identity, dict) else {}
+    sources = {}
+    for record in (identity, identity.get("ciw")):
+        if isinstance(record, dict) and isinstance(record.get("sources"), dict):
+            sources.update(record["sources"])
+    return dict(sorted(sources.items()))
+
+
 DECLARE_ONLY = ("declaring one only when its plotted data are wall-clock timings or when values at rounding level, "
                 "whose last bits follow the BLAS kernel, move it, with each point's rounding bound recorded, never to "
                 "hide a real numerical difference")
@@ -1093,10 +1105,14 @@ T158_FILES = (MODULE, "src/ciw/lab/svg.py", "src/ciw/lab/figure_platform_records
 PLATFORM_RECORD_CLAIM = ("The bound second-platform figure record matches its manifest digests and schemas, its "
                          "summary counts agree with its figure list, and it was made on another operating system "
                          "than this run")
+# A rounding-level figure is compared there with the record's retained copy, and that copy with this run's figure,
+# each within the rounding bounds; the record keeps no values of the figure regenerated there, so the claim names the
+# two comparisons rather than one between the second platform and this run.
 SECOND_PLATFORM_CLAIM = ("On the bound record's platform, re-executed figure tasks regenerated the figures of this "
-                         "run that the record compares, byte-identical unless declared as wall-clock timing figures, "
-                         "which kept their series and points, or as rounding-level figures, whose recorded values "
-                         "agreed within their rounding bounds")
+                         "run that the record compares, from this run's task sources, byte-identical unless declared "
+                         "as wall-clock timing figures, which kept their series and points, or as rounding-level "
+                         "figures, whose recorded values agreed within their rounding bounds with the record's "
+                         "retained copy, itself within those bounds of this run's figure")
 RECORD_TESTS = "tests/test_lab_figure_platform_records.py"
 # Where one of this run's figures stands on the second platform when the bound record is valid.
 COMPARED_THERE = "compared"
@@ -1123,15 +1139,29 @@ def _platform_record(ctx) -> dict:
     return {**inspected, "categories": categories, "problems": problems, "state": "refused" if problems else "valid"}
 
 
-def _record_currency(entries, figures, output_dir) -> list:
+def _sources_reason(entry, report) -> str | None:
+    """Why an entry was not regenerated there from this run's code: the record names no task sources for it, or its
+    task's sources (those of the report it was compared against) are not those this run's report records."""
+    from .figure_platform_records import SOURCES_KEY
+    if report is None:
+        return "not in this run"
+    if SOURCES_KEY not in entry:
+        return "no task sources recorded"
+    return None if entry[SOURCES_KEY] == task_sources(report) else "task sources differ from the record's"
+
+
+def _record_currency(entries, figures, output_dir, reports) -> list:
     """Each entry of the record's figure list with ``current`` and, when it is not, ``reason``.
 
-    Only an entry whose retained figure is this run's figure is counted. An undeclared figure is matched by the
-    digest this run's report records; a declared one by what identifies it on every kernel and platform, since its
-    bytes follow the run or the kernel: its series and points, and a rounding-level figure's recorded values
-    within their rounding bounds (``scripts/check_figures.py`` records them). An entry for a figure the second
-    platform wrote although the retained report lacked it stays current while this run's report still lacks it
-    and the task's other entries are current.
+    Only an entry whose retained figure is this run's figure, regenerated there by this run's code, is counted. An
+    undeclared figure is matched by the digest this run's report records; a declared one by what identifies it on
+    every kernel and platform, since its bytes follow the run or the kernel: its series and points, and a
+    rounding-level figure's recorded values within their rounding bounds (``scripts/check_figures.py`` records
+    them). The code is matched by the task's source digests: those the record names for the entry (the report it
+    was compared against, whose sources the second platform's installation had) must be those this run's report of
+    the task (``reports``) records, as ``scripts/check_figures.py`` requires of the installation it re-executes. An
+    entry for a figure the second platform wrote although the retained report lacked it stays current while this
+    run's report still lacks it and the task's other entries are current.
     """
     from .figure_platform_records import NOT_RETAINED
     here = {f["path"]: f for f in figures}
@@ -1157,6 +1187,7 @@ def _record_currency(entries, figures, output_dir) -> list:
             elif entry[ROUNDING_LEVEL] and values_outcome(entry["retained_values"],
                                                           svg.recorded_values(data)) != "within rounding bounds":
                 reason = "retained values differ beyond their rounding bounds"
+        reason = reason or _sources_reason(entry, reports.get(entry["task_id"]))
         rows.append({"task_id": entry["task_id"], "path": entry["path"], "outcome": entry["outcome"],
                      WALL_CLOCK_TIMING: entry[WALL_CLOCK_TIMING], ROUNDING_LEVEL: entry[ROUNDING_LEVEL],
                      "current": reason is None, "reason": reason})
@@ -1244,7 +1275,9 @@ def _record_findings(record, rows, coverage, figures) -> list:
     if not compared:
         findings.append(finding(SECOND_PLATFORM_CLAIM, "computational_pipeline",
                                 f"not established: no entry of the bound second-platform record "
-                                f"{summary['record_id']} is a figure of this run", {}, expected_not_established=True))
+                                f"{summary['record_id']} is current, a figure of this run regenerated there from this "
+                                "run's task sources (figure-platform-record.json gives each entry's reason)", {},
+                                expected_not_established=True))
         return findings
     mismatched = sum(row["outcome"] in mismatch_outcomes() for row in current)
     tasks = {f["task_id"] for f in figures}
@@ -1276,43 +1309,71 @@ def _unbindable(summary, task_id, report) -> list:
     return sorted(set(providers_used(report)) - set(FIGURES_WORKFLOW_PROVIDERS))
 
 
-def _record_step(record, rows, gap, retained) -> str:
-    """The next step with a record bound: fix what it refutes, then compare what neither run compares.
+def _here_steps(mismatched, not_comparable, outcomes, digest_problems, malformed) -> list:
+    """Steps for what this run's own comparison leaves open: figures that mismatched here, re-executions that ended in
+    another state, no figure compared here, and retained figures that fail their digests or do not parse."""
+    steps = []
+    if mismatched:
+        steps.append("Fix the figures that mismatched when re-executed in this run (the regenerated entries of "
+                     f"figure-index.json), {DECLARE_ONLY}")
+    if not_comparable:
+        steps.append("Compare the figures of the re-executed tasks that ended in another state here than in their "
+                     "retained reports (not_comparable in figure-index.json): bind the providers their retained run "
+                     "used, or retain their reports again from this code")
+    if not outcomes:
+        steps.append("Re-execute figure tasks in this run: none of the retained figure tasks is among those this task "
+                     "re-executes, so no figure was compared here")
+    if digest_problems or malformed:
+        steps.append("Retain again, with the reports that list them, the figures that differ from their reports' "
+                     "digests or do not parse as SVG (figure-index.json)")
+    return steps
 
-    ``gap`` holds this run's figures compared neither here nor by a current entry of the record.
+
+def _record_step(record, rows, gap, retained, here_steps, completed) -> str:
+    """The next step with a record bound: fix what this run or the record refutes, compare what neither run compares,
+    and only once the task completes, compare on a third platform.
+
+    ``gap`` holds this run's figures compared neither here nor by a current entry of the record, ``here_steps`` the
+    steps for what this run's own comparison leaves open (:func:`_here_steps`) and ``completed`` whether the task
+    completes.
     """
+    from .figure_platform_records import NOT_RETAINED, mismatch_outcomes
+    steps = list(here_steps)
     if record["state"] != "valid":
-        return ("Retain a valid second-platform record: the bound figure-platform record is refused (its problems "
-                "are listed in figure-platform-record.json); run .github/workflows/figures.yml on windows-latest "
-                f"against this lab/ and {RETAIN_RECORD} (scripts/check_lab.py binds the latest record under "
-                "lab/figure-platforms).")
-    from .figure_platform_records import mismatch_outcomes
+        steps.append("Retain a valid second-platform record: the bound figure-platform record is refused (its "
+                     "problems are listed in figure-platform-record.json); run .github/workflows/figures.yml on "
+                     f"windows-latest against this lab/ and {RETAIN_RECORD} (scripts/check_lab.py binds the latest "
+                     "record under lab/figure-platforms)")
+        return "; ".join(steps) + "."
     summary = record["summary"]
     system = summary["system"]
-    steps = []
     if any(row["current"] and row["outcome"] in mismatch_outcomes() for row in rows):
         steps.append(f"Fix the figures the second-platform record reports as mismatched on {system} (listed in "
                      f"figure-platform-record.json), {DECLARE_ONLY}, and compare them there again")
     unbindable = {f["task_id"]: _unbindable(summary, f["task_id"], retained[f["task_id"]]) for f in gap}
     roles = sorted({role for task_roles in unbindable.values() for role in task_roles})
     rerun = [f for f in gap if not unbindable[f["task_id"]]]
+    again = ("Run the second-platform comparison again against this lab/ (.github/workflows/figures.yml on "
+             f"windows-latest) and {RETAIN_RECORD}")
     if rerun:
-        steps.append("Run the second-platform comparison again against this lab/ (.github/workflows/figures.yml on "
-                     f"windows-latest) and {RETAIN_RECORD}: the bound record does not compare {len(rerun)} of this "
-                     "run's figures that the workflow can re-execute there (its entries were made against other "
-                     "figures, it predates them, their tasks' sources differed there, or it ran without a provider "
-                     "the workflow binds)")
+        steps.append(f"{again}: the bound record does not compare {len(rerun)} of this run's figures that the "
+                     "workflow can re-execute there (its entries were made against other figures or by other task "
+                     "sources than this run's, it predates them, their tasks' sources differed there, or it ran "
+                     "without a provider the workflow binds)")
+    elif not any(row["current"] and row["outcome"] != NOT_RETAINED for row in rows):
+        steps.append(f"{again}: no entry of the bound record is current")
     if roles:
         steps.append(f"Re-execute on {system} the figure tasks that used providers the CI workflow cannot bind "
                      f"({', '.join(roles)}): on a {system} host with Python 3.12 and those providers at the pins "
                      "scripts/check_lab.py provisions, run python scripts/check_figures.py --retained lab "
                      "--output-dir results/figures-windows with --provider ROLE=PATH for each (CI cannot clone the "
                      f"private provider repositories), and {RETAIN_RECORD}")
-    if not steps:
+    if completed and not steps:
         return ("Compare the figures on a third platform, macOS on arm64 (another operating system and another "
                 "OpenBLAS kernel family), with scripts/check_figures.py on a macos-latest runner, and give this task a "
                 "record format that holds more than one second platform, since it reads one record.")
-    return "; ".join(steps) + "."
+    # Every reason the task stays partial has a step above; the fallback names the report's refutations.
+    return "; ".join(steps or ["Resolve the findings this report refutes"]) + "."
 
 
 def _figure_index(ctx, reports) -> list:
@@ -1339,6 +1400,7 @@ def _figure_index(ctx, reports) -> list:
                         f"{RECORD_TESTS}::test_t158_refuses_a_tampered_or_same_platform_record_by_name",
                         f"{RECORD_TESTS}::test_t158_counts_only_record_entries_whose_figure_is_this_runs",
                         f"{RECORD_TESTS}::test_t158_is_refuted_by_a_mismatch_the_record_reports",
+                        f"{RECORD_TESTS}::test_t158_names_what_keeps_it_partial_before_a_third_platform",
                         f"{RECORD_TESTS}::test_t158_without_a_record_keeps_its_comparison_and_says_so"))
 def reproducible_figures(ctx):
     from .runner import Context, builtin_identity, run_task
@@ -1364,7 +1426,8 @@ def reproducible_figures(ctx):
         "figure's bytes with the retained one (a declared timing figure: presence and structure; a declared "
         "rounding-level figure: its recorded values, each within its rounding bound). With a second-platform record "
         "bound, verify it and count its outcomes over the entries whose retained figure is this run's (an "
-        "undeclared figure by its digest, a declared one by its series and points and recorded values).",
+        "undeclared figure by its digest, a declared one by its series and points and recorded values) and whose "
+        "task sources are this run's.",
         ["figure bytes changed by nondeterministic data (timings, unseeded randomness, dictionary order)",
          "a figure plotting wall-clock timings without its declaration (counted as a mismatch)",
          "a declared timing figure that lost or gained series or points, or reproduced byte for byte (reported)",
@@ -1374,7 +1437,8 @@ def reproducible_figures(ctx):
          "retained figure edited after its report (digest mismatch)", "malformed SVG",
          "second-platform record files missing, unrecorded or differing from its manifest, a summary that its figure "
          "list does not give, or a record made on this run's operating system (refused by name)",
-         "second-platform record entries made against other figures than this run's (not counted)"],
+         "second-platform record entries made against other figures, or by other task sources, than this run's "
+         "(not counted)"],
         _second_platform_step(()))
     if not reports:
         return _no_prior(fields)
@@ -1427,7 +1491,7 @@ def reproducible_figures(ctx):
     covered = {o["path"] for o in outcomes}
     rows = coverage = None
     if record["state"] == "valid":
-        rows = _record_currency(record["summary"]["figures"], figures, ctx.output_dir)
+        rows = _record_currency(record["summary"]["figures"], figures, ctx.output_dir, retained)
         coverage = _record_coverage(record["summary"], rows, figures)
         covered |= {path for path, where in coverage.items() if where == COMPARED_THERE}
     gap = [f for f in figures if f["path"] not in covered]
@@ -1510,11 +1574,14 @@ def reproducible_figures(ctx):
         assumptions.insert(0, "Re-executed tasks ending in another state here, figures not compared: "
                            + "; ".join(f"{tid} ({why})" for tid, why in sorted(not_comparable.items())))
     fields["unresolved_assumptions"] = assumptions
-    if record["state"] != "not_bound":
-        fields["recommended_next_task"] = _record_step(record, rows, gap, retained)
     # Every figure compared here or by the second-platform record, and no refutation (see _state).
     complete = not gap and not not_comparable and bool(outcomes)
-    return {"state": _state(findings, complete), "fields": fields, "findings": findings}
+    state = _state(findings, complete)
+    if record["state"] != "not_bound":
+        fields["recommended_next_task"] = _record_step(
+            record, rows, gap, retained, _here_steps(mismatched, not_comparable, outcomes, digest_problems, malformed),
+            state == "completed")
+    return {"state": state, "fields": fields, "findings": findings}
 
 
 def _record_result(record, rows, coverage, gap) -> str:
@@ -1528,10 +1595,11 @@ def _record_result(record, rows, coverage, gap) -> str:
     current = [row for row in rows if row["current"]]
     compared = sum(where == COMPARED_THERE for where in coverage.values())
     outcomes = Counter(row["outcome"] for row in current)
+    counts = ", ".join(f"{count} {outcome}" for outcome, count in sorted(outcomes.items()))
     return (f"Second-platform record {record['record_id']} ({identity['os']}, Python {identity['python']}, NumPy "
             f"{identity['numpy']}, OpenBLAS kernel {identity['openblas_core'] or 'unknown'}): {compared} of this run's "
-            "figures compared there (" + ", ".join(f"{count} {outcome}" for outcome, count in sorted(outcomes.items()))
-            + f"), {len(rows) - len(current)} record entries not current; {len(gap)} of this run's figures compared "
+            "figures compared there" + (f" ({counts})" if counts else "")
+            + f", {len(rows) - len(current)} record entries not current; {len(gap)} of this run's figures compared "
             "neither here nor there.")
 
 
@@ -1553,16 +1621,16 @@ def _record_assumptions(record, rows, gap) -> list:
         f"{source['workflow']} made on {identity['platform']} (Python {identity['python']}, NumPy {identity['numpy']}, "
         f"OpenBLAS kernel {identity['openblas_core'] or 'unknown'}) as that run recorded it: T158 checks its manifest "
         "digests, schemas and summary counts, that it was made on another operating system and which of its entries "
-        "are this run's figures, and re-executes nothing there. The artifact digest was compared with the downloaded "
-        "zip when the record was retained, the provenance is as declared, and the digests are unkeyed, so a "
-        "fabricated record that recomputes them passes.",
+        "are this run's figures regenerated from this run's task sources, and re-executes nothing there. The artifact "
+        "digest was compared with the downloaded zip when the record was retained, the provenance is as declared, and "
+        "the digests are unkeyed, so a fabricated record that recomputes them passes.",
         "Byte identity on other OpenBLAS kernels is compared outside the queue by scripts/check_figures.py (CI's "
         "lab-blas-kernels job) and is not part of this report; the second platform enters it only as the bound "
         "record."]
     stale = Counter(row["reason"] for row in rows if not row["current"])
     if stale:
         assumptions.insert(0, f"{sum(stale.values())} entries of the second-platform record are not counted, their "
-                              "retained figure not being this run's: "
+                              "retained figure or their task sources not being this run's: "
                               + "; ".join(f"{count} {reason}" for reason, count in sorted(stale.items())) + ".")
     if gap:
         reasons = {}

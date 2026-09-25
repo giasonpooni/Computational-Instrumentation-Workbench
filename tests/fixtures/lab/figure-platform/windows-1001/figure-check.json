@@ -7,6 +7,9 @@
    "retained_sha256": "70d425c2b50857e1c581356b9fc9c2dc0773ca1d16c64790ff80d86c5b48e72d",
    "rounding_level": false,
    "task_id": "T010",
+   "task_sources": {
+    "src/ciw/lab/svg.py": "cacdee4359f8a1c288497d778bc7648fffb6434d2dcb7342977755922afe8080"
+   },
    "wall_clock_timing": false
   },
   {
@@ -20,6 +23,9 @@
    },
    "rounding_level": false,
    "task_id": "T013",
+   "task_sources": {
+    "src/ciw/lab/svg.py": "cacdee4359f8a1c288497d778bc7648fffb6434d2dcb7342977755922afe8080"
+   },
    "wall_clock_timing": true
   },
   {
@@ -50,6 +56,9 @@
    ],
    "rounding_level": true,
    "task_id": "T020",
+   "task_sources": {
+    "src/ciw/lab/svg.py": "cacdee4359f8a1c288497d778bc7648fffb6434d2dcb7342977755922afe8080"
+   },
    "wall_clock_timing": false
   }
  ],

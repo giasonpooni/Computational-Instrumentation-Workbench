@@ -24,14 +24,15 @@ comparable; neither is ever counted as a match. ``figure-check.json``
 (``ciw.lab-figure-check.v1``) records every figure's outcome with the platform
 (OS, Python, NumPy, its BLAS and the OpenBLAS kernel it runs, read from the
 loaded library by ``ciw.lab.blas_probe.openblas_core``, with any forced
-``OPENBLAS_CORETYPE``), and for a declared figure what identifies its retained
-copy on any kernel (its series and points, and a rounding-level figure's
-recorded values); ``figure-check.md`` summarizes it. The exit status is 3 when
-a figure mismatches or none was compared. BLAS runs single-threaded unless the
-caller sets its thread variables, as in the clean-room run that retained the
-figures. The record is a reproducibility check, not a lab finding; a run on
-the second platform (CI's ``figures.yml``) enters ``lab/figure-platforms/``
-only through ``scripts/retain_figure_check.py``, and T158 reads it there.
+``OPENBLAS_CORETYPE``), the source digests of each compared figure's task, and
+for a declared figure what identifies its retained copy on any kernel (its
+series and points, and a rounding-level figure's recorded values);
+``figure-check.md`` summarizes it. The exit status is 3 when a figure
+mismatches or none was compared. BLAS runs single-threaded unless the caller
+sets its thread variables, as in the clean-room run that retained the figures.
+The record is a reproducibility check, not a lab finding; a run on the second
+platform (CI's ``figures.yml``) enters ``lab/figure-platforms/`` only through
+``scripts/retain_figure_check.py``, and T158 reads it there.
 """
 from __future__ import annotations
 
@@ -119,18 +120,12 @@ def _probes(report) -> dict:
 def not_reexecuted(report, providers) -> str | None:
     """Why a retained figure task is not re-executed here: a provider it used is unbound, or its sources changed."""
     from ciw.lab import runner
-    from ciw.lab.research_portfolio import providers_used
+    from ciw.lab.research_portfolio import providers_used, task_sources
     unbound = [role for role in providers_used(report) if role not in providers]
     if unbound:
         return f"provider {', '.join(unbound)} not bound here; the retained run used it"
-    identity = report.get("provider_runtime_identity")
-    identity = identity if isinstance(identity, dict) else {}
     # Provider-backed tasks (T005, T008, T097) record their CIW sources under "ciw", beside the provider's identity.
-    sources = {}
-    for record in (identity, identity.get("ciw")):
-        if isinstance(record, dict) and isinstance(record.get("sources"), dict):
-            sources.update(record["sources"])
-    changed = sorted(name for name, digest in sources.items() if runner.source_digest(name) != digest)
+    changed = sorted(name for name, digest in task_sources(report).items() if runner.source_digest(name) != digest)
     if changed:
         return "sources differ from the retained run's: " + ", ".join(changed)
     return None
@@ -161,10 +156,14 @@ def compare_task(retained_dir: Path, fresh_dir: Path, old, new) -> tuple[list, s
     """The figure outcomes of one re-executed task, or why its figures are not comparable.
 
     A figure's declaration is read from the retained report, so a declaration a task adds takes effect once its
-    report is retained again.
+    report is retained again. Each outcome names the task's source digests (``task_sources``: the retained report's,
+    which the installation that re-executed it has, see :func:`not_reexecuted`), so that T158 counts it only for a
+    run whose report of the task records the same sources.
     """
     from ciw.lab.report import ROUNDING_LEVEL, WALL_CLOCK_TIMING
-    from ciw.lab.research_portfolio import compare_figure
+    from ciw.lab.research_portfolio import compare_figure, task_sources
+    sources = task_sources(old)
+    code = {"task_sources": sources} if sources else {}
     if old["state"] != new["state"]:
         return [], f"state {old['state']} -> {new['state']}"
     before, after = _probes(old), _probes(new)
@@ -180,10 +179,10 @@ def compare_task(retained_dir: Path, fresh_dir: Path, old, new) -> tuple[list, s
         outcome = compare_figure(retained, fresh, declared[WALL_CLOCK_TIMING], rounding_level=declared[ROUNDING_LEVEL])
         outcomes.append({"task_id": old["task_id"], "path": path, **declared, "outcome": outcome,
                          "retained_sha256": artifact["sha256"], "fresh_sha256": written.get(path, {}).get("sha256"),
-                         **retained_identity(retained, declared)})
+                         **retained_identity(retained, declared), **code})
     for path in sorted(set(written) - {artifact["path"] for artifact in _figures(old)}):
         outcomes.append({"task_id": old["task_id"], "path": path, **_declared(written[path]), "outcome": NOT_RETAINED,
-                         "retained_sha256": None, "fresh_sha256": written[path]["sha256"]})
+                         "retained_sha256": None, "fresh_sha256": written[path]["sha256"], **code})
     return outcomes, None
 
 

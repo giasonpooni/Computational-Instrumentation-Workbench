@@ -528,7 +528,9 @@ enters `lab/` as a retained record of a CI run, never as a queue run:
    `<os>-<run id>`): `figure-check.json` and `figure-check.md` with the CRLF
    line endings a Windows run writes turned into the LF the repository stores,
    the fresh SVG of each figure the check reports as a mismatch (under
-   `fresh/`) and no other SVG or report, `record.json`
+   `fresh/`, byte for byte, since it must hash to its recorded digest:
+   `.gitattributes` exempts `fresh/` from line-ending normalization) and no
+   other SVG or report, `record.json`
    (`ciw.lab-figure-platform-record.v1`: repository, workflow, run id and
    attempt, head commit, artifact id, name and digest, the digest and line
    endings of both text files as the zip held them, and the check's platform)
@@ -548,25 +550,37 @@ its declaration and digests, the summary counts follow from the figure list,
 for each mismatch. Nothing is re-executed.
 
 T158 reads the record `scripts/check_lab.py` binds as `figure-platform-record`
-(the latest by date, then CI run id). A record that fails verification, or was
-made on the operating system of the run reading it (no second platform), is
-refused by name: T158's record finding is refuted and the second-platform claim
-stays `not_established` with the reason. For a valid record, T158 counts an
-entry only when its retained figure is this run's figure: an undeclared figure
-by its digest, a declared one by what identifies it on every kernel (series
-and points, and a rounding-level figure's recorded values within their
-rounding bounds), so the counts are the same on every OpenBLAS kernel. Entries
-made against other figures (a record older than `lab/`) are listed as not
-current and never counted. Its checks of the record (integrity, platform,
-currency) are `numerically_verified`; the claim that the figures regenerated on
-Windows is `provider_backed`, the CI run's outcome as its record states it
-(the repository at the run's head commit with the CIW package digest it ran),
-and a mismatch the record reports on a current figure refutes it. The value
-names the record's platform (OS, Python, NumPy, OpenBLAS kernel), the outcome
-counts over current entries and the tasks not re-executed there with their
-reasons. A figure compared neither here nor by a current entry (a provider
-task CI could not bind, a stale entry) keeps T158 `partial`, with a next step
-for that gap. The provenance is as declared, the artifact digest is checked
+(the latest by date, then CI run id and run attempt). A record that fails
+verification, or was made on the operating system of the run reading it (no
+second platform), is refused by name: T158's record finding is refuted and the
+second-platform claim stays `not_established` with the reason. For a valid
+record, T158 counts an entry only when its retained figure is this run's
+figure, regenerated there from this run's code: an undeclared figure by its
+digest, a declared one by what identifies it on every kernel (series and
+points, and a rounding-level figure's recorded values within their rounding
+bounds), so the counts are the same on every OpenBLAS kernel, and the code by
+the task's source digests, which `scripts/check_figures.py` records for each
+entry (those of the report it compared against, which the installation it
+re-executed had) and which must be those this run's report of the task
+records. Entries made against other figures or by other task sources (a record
+older than `lab/`, or than the task's code, or one that names no task
+sources) are listed as not current and never counted. A rounding-level figure
+is established to agree within its rounding bounds with the record's retained
+copy, itself within those bounds of this run's figure; the record keeps no
+values of the figure regenerated there, so the claim names both comparisons.
+Its checks of the record (integrity, platform, currency) are
+`numerically_verified`; the claim that the figures regenerated on Windows is
+`provider_backed`, the CI run's outcome as its record states it (the
+repository at the run's head commit with the CIW package digest it ran), and a
+mismatch the record reports on a current figure refutes it. The value names
+the record's platform (OS, Python, NumPy, OpenBLAS kernel), the outcome counts
+over current entries and the tasks not re-executed there with their reasons. A
+figure compared neither here nor by a current entry (a provider task CI could
+not bind, a stale entry) keeps T158 `partial`, with a next step for that gap;
+the next step names first what keeps the task `partial` (a figure that
+mismatched here or there, a re-execution that ended in another state, a
+figure compared nowhere) and moves on to a third platform only once the task
+completes. The provenance is as declared, the artifact digest is checked
 against the zip only when the record is retained, and the digests are
 unkeyed: a fabricated record that recomputes them passes.
 

@@ -1,9 +1,9 @@
 {
  "artifact_files": {
   "figure-check.json": {
-   "bytes": 2684,
+   "bytes": 3044,
    "line_endings": "lf",
-   "sha256": "c451c891344f274b066d1e90b3dd1d9d02d8882fe5afe56c8dd368a6378d9419"
+   "sha256": "b953b7d0e131afd048c9bfb03a8abc03f8827084e7641ac877167f278caf37ed"
   },
   "figure-check.md": {
    "bytes": 165,

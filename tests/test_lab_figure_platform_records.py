@@ -19,6 +19,7 @@ import os
 from pathlib import Path
 import re
 import shutil
+import subprocess
 import sys
 import zipfile
 
@@ -157,6 +158,8 @@ def _mismatch(check: dict) -> None:
      "figure_check: figure-check.json figures[0] outcome 'same structure' is not an outcome of an undeclared figure"),
     ("figure-check.json", lambda c: c["figures"][0].update(retained_values=[]),
      "figure_check: figure-check.json figures[0] retained_values are not the recorded values of a rounding-level figure"),
+    ("figure-check.json", lambda c: c["figures"][0].update(task_sources={"svg.py": "0" * 64}),
+     "figure_check: figure-check.json figures[0] task_sources are not the source digests of its task's retained report"),
     ("figure-check.json", lambda c: c["figures"][1].update(path="artifacts/T010/plot.svg"),
      "figure_check: figure-check.json figures[1] path 'artifacts/T010/plot.svg' is not an SVG artifact of its task"),
     ("figure-check.json", lambda c: c["not_reexecuted"].update(T010="sources differ"),
@@ -256,7 +259,8 @@ def test_retention_keeps_only_the_record_files_and_refuses_another_digest(tmp_pa
 
 
 def test_retention_keeps_the_fresh_svg_of_a_mismatch_and_refuses_what_it_cannot_retain(tmp_path):
-    fresh = b"<svg xmlns='http://www.w3.org/2000/svg'><path/></svg>"
+    # As a Windows run might write it: the record keeps its bytes, CRLF included, since they must hash to fresh_sha256.
+    fresh = b"<svg xmlns='http://www.w3.org/2000/svg'>\r\n<path/>\r\n</svg>\r\n"
     check = json.loads((FIXTURE / "figure-check.json").read_text(encoding="utf-8"))
     check["figures"][0].update(outcome="differs", fresh_sha256=hashlib.sha256(fresh).hexdigest())
     check["summary"] = _summary(check)
@@ -270,6 +274,10 @@ def test_retention_keeps_the_fresh_svg_of_a_mismatch_and_refuses_what_it_cannot_
     assert (directory / "fresh" / "artifacts" / "T010" / "plot.svg").read_bytes() == fresh
     assert not (directory / "fresh" / "artifacts" / "T013").exists()
     assert records.inspect_record(directory)["summary"]["fresh_figures"] == ["artifacts/T010/plot.svg"]
+    # Its line endings normalized (what .gitattributes keeps git from doing): it differs, and is not "not retained".
+    (directory / "fresh" / "artifacts" / "T010" / "plot.svg").write_bytes(fresh.replace(b"\r\n", b"\n"))
+    assert records.inspect_record(directory)["problems"] == [
+        "integrity: fresh/artifacts/T010/plot.svg differs from its manifest digest"]
     for name, members, message in (
             ("no-svg", {"figure-check.json": text, "figure-check.md": summary}, "no fresh SVG run/artifacts/T010/plot.svg"),
             ("other-svg", {"figure-check.json": text, "figure-check.md": summary,
@@ -285,6 +293,19 @@ def test_retention_keeps_the_fresh_svg_of_a_mismatch_and_refuses_what_it_cannot_
         with pytest.raises(ValueError, match=re.escape(message)):
             records.retain_record(tmp_path / f"{name}.zip", tmp_path / name, artifact_digest=digest, **PROVENANCE)
         assert not (tmp_path / name).exists()
+
+
+def test_git_keeps_the_bytes_of_a_records_fresh_svgs():
+    """A retained fresh SVG must hash to its recorded digest: .gitattributes exempts it from the line-ending
+    normalization every other text file of a record gets."""
+    if not (ROOT / ".gitattributes").is_file() or shutil.which("git") is None:
+        pytest.skip(".gitattributes is not beside the tests")
+    paths = ["lab/figure-platforms/windows-1/fresh/artifacts/T010/plot.svg",
+             "lab/figure-platforms/windows-1/record.json"]
+    result = subprocess.run(["git", "check-attr", "text", "--", *paths], cwd=ROOT, capture_output=True, text=True)
+    if result.returncode:
+        pytest.skip("the tests are not in a git work tree")
+    assert result.stdout.splitlines() == [f"{paths[0]}: text: unset", f"{paths[1]}: text: auto"]
 
 
 def test_lab_verify_checks_every_figure_platform_record(tmp_path, capsys):
@@ -304,24 +325,26 @@ def test_lab_verify_checks_every_figure_platform_record(tmp_path, capsys):
 
 # ---------------------------------------------------------------- T158 with and without a record
 
-def _figure_task(task_id, timing=False, rounding=False, provider=None):
-    """A fake figure task with one figure: a wall-clock ``timing`` figure changes on every call (same structure), a
-    ``rounding``-level one records its values with :data:`BOUND`; ``provider`` is probed as the task's provider."""
+def _figure_task(task_id, timing=False, rounding=False, provider=None, varying=False, states=("completed",)):
+    """A fake figure task with one figure: a wall-clock ``timing`` figure changes on every call (same structure), as
+    an undeclared ``varying`` one does, a ``rounding``-level one records its values with :data:`BOUND`; ``provider``
+    is probed as the task's provider; call ``n`` ends in ``states[n - 1]`` (the last from there on). Its report
+    records the digest of ``src/ciw/lab/svg.py`` as its task sources."""
     calls = iter(range(1, 100))
 
     def figure(ctx):
         call = next(calls)
         if provider:
             ctx.available(f"provider:{provider}")
-        ys = [1.0, 4.0 + (call if timing else 0)]
+        ys = [1.0, 4.0 + (call if timing or varying else 0)]
         ctx.artifact_text("plot.svg", svg.line_plot([("a", [1, 2], ys)], title="t", xlabel="x", ylabel="y",
                                                     rounding=BOUND if rounding else None),
                           wall_clock_timing=timing, rounding_level=rounding)
-        return {"state": "completed", "fields": {},
+        return {"state": states[min(call, len(states)) - 1], "fields": {},
                 "findings": [finding("f", "numerical", 1.0, {"generator": {"name": "g"}, "checks": [CHECK]},
                                      uncertainty={"kind": "exact", "value": 0, "basis": "b"},
                                      tolerance={"abs": 0, "rel": 0})]}
-    return Implementation(task_id, figure)
+    return Implementation(task_id, figure, changed_files=("src/ciw/lab/svg.py",))
 
 
 def _retain(directory, monkeypatch, fakes, regenerated=(), providers=None):
@@ -337,8 +360,9 @@ def _retain(directory, monkeypatch, fakes, regenerated=(), providers=None):
 
 def _record(root, run, outcomes=None, not_reexecuted=None, edits=None) -> Path:
     """A record from the fixture whose entries are the retained figures of ``run`` (except the tasks listed as not
-    re-executed there): identical, same structure or within rounding bounds by declaration unless ``outcomes`` says
-    otherwise, each changed by its task's ``edits`` before the record is sealed."""
+    re-executed there), with their reports' task sources: identical, same structure or within rounding bounds by
+    declaration unless ``outcomes`` says otherwise, each changed by its task's ``edits`` before the record is
+    sealed."""
     directory = _copy(root)
     check = json.loads((directory / "figure-check.json").read_text(encoding="utf-8"))
     figures = []
@@ -360,6 +384,8 @@ def _record(root, run, outcomes=None, not_reexecuted=None, edits=None) -> Path:
                 entry["retained_structure"] = research_portfolio.figure_structure(data)
             if rounding:
                 entry["retained_values"] = svg.recorded_values(data)
+            if research_portfolio.task_sources(report):  # as scripts/check_figures.py names them
+                entry["task_sources"] = research_portfolio.task_sources(report)
             (edits or {}).get(task_id, lambda e: None)(entry)
             if outcome in records.mismatch_outcomes():
                 (directory / "fresh" / artifact["path"]).parent.mkdir(parents=True, exist_ok=True)
@@ -513,6 +539,16 @@ def test_t158_counts_only_record_entries_whose_figure_is_this_runs(tmp_path, mon
         "T020": lambda e: e["retained_values"][0].update(y=[1.0, 4.0 + 1e-6])})
     assert _finding(_run(run, moved), RECORD_CLAIM)["value"]["entries_not_current"] == {
         "retained values differ beyond their rounding bounds": 1}
+    # An entry regenerated there by other code than this run's is not current whatever its figure: its task's sources
+    # differ from those this run's report records (the task changed since the record, its figure bytes did not), or
+    # the record names none.
+    recoded = _record(tmp_path / "recoded", run, edits={
+        "T023": lambda e: e["task_sources"].update({"src/ciw/lab/svg.py": "f" * 64}),
+        "T025": lambda e: e.pop("task_sources")})
+    report = _run(run, recoded)
+    assert _finding(report, RECORD_CLAIM)["value"]["entries_not_current"] == {
+        "no task sources recorded": 1, "task sources differ from the record's": 1}
+    assert _finding(report, PLATFORM_CLAIM)["value"]["compared"] == 3
 
 
 @pytest.mark.lab_task("T158")
@@ -530,6 +566,30 @@ def test_t158_is_refuted_by_a_mismatch_the_record_reports(tmp_path, monkeypatch)
     assert report["state"] == "partial" and report["evidence_status"]["primary"] == "not_established"
     assert report["recommended_next_task"].startswith(
         "Fix the figures the second-platform record reports as mismatched on Windows")
+
+
+@pytest.mark.lab_task("T158")
+def test_t158_names_what_keeps_it_partial_before_a_third_platform(tmp_path, monkeypatch):
+    """With every figure compared by the record, a third platform is the next step only once the task completes."""
+    run = tmp_path / "run"
+    _retain(run, monkeypatch, {"T010": _figure_task("T010"),
+                               "T023": _figure_task("T023", states=("completed", "partial"))},
+            regenerated=("T010", "T023"))
+    report = _run(run, _record(tmp_path / "records", run))
+    # T023's re-execution here ended partial: its figure is not compared here, so the task stays partial.
+    assert _finding(report, PLATFORM_CLAIM)["value"]["compared"] == 2 and report["state"] == "partial"
+    step = report["recommended_next_task"]
+    assert step.startswith("Compare the figures of the re-executed tasks that ended in another state here than in "
+                           "their retained reports") and "third platform" not in step
+    # A figure that mismatched when re-executed here refutes the comparison here: its fix comes first.
+    run = tmp_path / "mismatched"
+    _retain(run, monkeypatch, {"T010": _figure_task("T010"), "T023": _figure_task("T023", varying=True)},
+            regenerated=("T010", "T023"))
+    report = _run(run, _record(tmp_path / "mismatched-records", run))
+    assert _labels(report)[FIGURES] == "not_established" and report["state"] == "partial"
+    step = report["recommended_next_task"]
+    assert step.startswith("Fix the figures that mismatched when re-executed in this run")
+    assert research_portfolio.DECLARE_ONLY in step and "third platform" not in step
 
 
 @pytest.mark.lab_task("T158")
@@ -555,7 +615,7 @@ def test_t158_registers_the_record_tests_in_this_file():
     from ciw.lab import registry
     nodes = [node for node in registry._REGISTRY["T158"].regression_tests
              if node.startswith(research_portfolio.RECORD_TESTS)]
-    assert len(nodes) == 5
+    assert len(nodes) == 6
     for node in nodes:
         assert node.split("::")[1] in globals(), node
 
@@ -641,6 +701,12 @@ def test_lab_scripts_bind_and_preserve_the_figure_platform_record(tmp_path):
     (root / "README.md").write_text("not a record", encoding="utf-8")
     # The latest by date, then by CI run id (not by name: windows-9 sorts after windows-10).
     assert check.figure_platform_record(root) == root / "windows-10"
+    # Then by run attempt, a record without one being the first (not by name: windows-10-9 sorts after windows-10-10).
+    for attempt in (9, 10):
+        (root / f"windows-10-{attempt}").mkdir()
+        _write(root / f"windows-10-{attempt}" / "record.json",
+               {"date": "2026-09-24", "source": {"run_id": 10, "run_attempt": attempt}})
+    assert check.figure_platform_record(root) == root / "windows-10-10"
     role = research_portfolio.FIGURE_PLATFORM_RECORD
     assert reproduce.TEST_VARIABLES[role] == "CIW_LAB_FIGURE_PLATFORM_RECORD"
     assert "CIW_LAB_FIGURE_PLATFORM_RECORD" in reproduce.INHERITED_EXCLUDED

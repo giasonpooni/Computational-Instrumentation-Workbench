@@ -1,3 +1,6 @@
 * text=auto eol=lf
 *.png binary
 *.zip binary
+# A second-platform figure record keeps the fresh SVG of a mismatched figure as the CI artifact held it: it must
+# hash to its recorded digest, line endings included (ciw.lab.figure_platform_records).
+lab/figure-platforms/*/fresh/** -text

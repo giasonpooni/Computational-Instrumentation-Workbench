@@ -316,7 +316,8 @@ def _figure_task(task_id, varying=False, declared=False, timing_note=False, grow
     ``ROUNDING_BOUND``, as another BLAS kernel's last bits would), ``growing`` adds a point, ``timing_note`` retains a
     JSON note on wall-clock timings (no declaration), ``declared`` declares the figure as a wall-clock timing figure
     and ``rounding`` as a rounding-level figure (recording its values with ``ROUNDING_BOUND``), ``extra`` writes a
-    second figure from its second call on, ``identity`` is its recorded runtime identity."""
+    second figure from its second call on, ``identity`` is its recorded runtime identity (by default the digest of
+    ``src/ciw/lab/svg.py`` as its task sources)."""
     from ciw.lab import svg
     calls = iter(range(1, 100))
 
@@ -339,7 +340,7 @@ def _figure_task(task_id, varying=False, declared=False, timing_note=False, grow
                 "findings": [finding("f", "numerical", 1.0, {"generator": {"name": "g"}, "checks": [CHECK]},
                                      uncertainty={"kind": "exact", "value": 0, "basis": "b"},
                                      tolerance={"abs": 0, "rel": 0})]}
-    return Implementation(task_id, figure)
+    return Implementation(task_id, figure, changed_files=("src/ciw/lab/svg.py",))
 
 
 def _retain_figures(directory, monkeypatch, fakes, providers=None):
@@ -576,6 +577,11 @@ def test_figure_check_script_reexecutes_a_retained_run_and_compares_every_figure
     assert identities["artifacts/T013/plot.svg"] == ["retained_structure"]
     assert identities["artifacts/T033/plot.svg"] == ["retained_structure", "retained_values"]
     assert identities["artifacts/T010/plot.svg"] == [] and identities["artifacts/T031/extra.svg"] == []
+    # The task sources each figure was regenerated from (the retained report's, which the installation has), so T158
+    # counts an entry only for a run whose report of the task records the same; every entry verifies.
+    sources = {"src/ciw/lab/svg.py": runner.source_digest("src/ciw/lab/svg.py")}
+    assert all(o["task_sources"] == sources for o in record["figures"])
+    assert [p for i, o in enumerate(record["figures"]) for p in figure_platform_records._figure_problems(i, o)] == []
     recounted = figure_platform_records.recount(record, None)
     assert {key: record["summary"][key] for key in recounted} == recounted
     core = record["platform"]["blas"]["openblas_core"]

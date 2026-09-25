@@ -373,12 +373,16 @@ wrong aggregate, never by re-reading what was just written:
   record's outcomes only over entries whose retained figure is the run's (an
   undeclared figure by its digest, a declared one by its series and points and
   recorded values within their rounding bounds, so that the count is the same
-  on every kernel). The
+  on every kernel) and whose task source digests, recorded by
+  `scripts/check_figures.py`, are those the run's report of the task records.
+  A rounding-level figure agrees there within its rounding bounds with the
+  record's retained copy, itself within those bounds of the run's figure. The
   record checks are `numerically_verified`, the regeneration on the second
   platform is `provider_backed` (the CI run's outcome as recorded) and a
   mismatch the record reports on a current figure refutes it. A figure
   compared neither by re-execution here nor by a current entry of a valid
-  record leaves the task `partial`;
+  record leaves the task `partial`, and the next step names what keeps it
+  partial before a third platform;
 - for T168, a static tie analysis (a registered test, or its parametrized
   case, declares its task with a `lab_task` marker and mentions an evidence
   label; markers naming a task that does not register what they mark are

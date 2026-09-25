@@ -9,7 +9,9 @@ and uploads its ``figure-check.json`` (``ciw.lab-figure-check.v1``), its
 ``figure-check.md`` as the run wrote them, with the CRLF line endings a
 Windows run writes turned into the LF the repository stores
 (``.gitattributes``), the fresh SVG of every figure it reports as a mismatch
-(``fresh/<figure path>``, and no other SVG), ``record.json``
+(``fresh/<figure path>``, and no other SVG) byte for byte, since it must hash
+to its recorded digest (``.gitattributes`` exempts ``fresh/`` from line-ending
+normalization), ``record.json``
 (``ciw.lab-figure-platform-record.v1``: the CI provenance, as repository,
 workflow, run id and attempt, head commit and the artifact's id, name and
 digest, the SHA-256 and line endings of both files as the zip held them, and
@@ -71,6 +73,10 @@ FIGURE_KEYS = {"task_id", "path", "wall_clock_timing", "rounding_level", "outcom
 # Kernel-independent identities of a declared figure's retained copy (scripts/check_figures.py records them): its
 # series and points, and a rounding-level figure's recorded values with their rounding bounds.
 IDENTITY_KEYS = {"retained_structure", "retained_values"}
+# The source digests of the code that regenerated a figure there: those its task's retained report records
+# (scripts/check_figures.py re-executes the task only when the installed sources have them); T158 compares them with
+# its own run's report of the task.
+SOURCES_KEY = "task_sources"
 SUMMARY_KEYS = ("figure_tasks", "figures", "compared_tasks", "compared_figures", "identical",
                 "declared_timing_same_structure", "declared_timing_identical",
                 "declared_rounding_level_within_bounds", "declared_rounding_level_identical", "mismatched",
@@ -176,7 +182,7 @@ def _figure_problems(index: int, figure) -> list:
     if not isinstance(figure, dict):
         return [f"{where} is not an object"]
     problems = []
-    missing, unknown = FIGURE_KEYS - set(figure), set(figure) - FIGURE_KEYS - IDENTITY_KEYS
+    missing, unknown = FIGURE_KEYS - set(figure), set(figure) - FIGURE_KEYS - IDENTITY_KEYS - {SOURCES_KEY}
     if missing or unknown:
         problems.append(f"{where} fields differ from {CHECK_SCHEMA}: missing {sorted(missing)}, unknown "
                         f"{sorted(unknown)}")
@@ -209,6 +215,11 @@ def _figure_problems(index: int, figure) -> list:
         problems.append(f"{where} retained_structure is not the series and points of a declared figure")
     if "retained_values" in figure and (not rounding or _values_problem(figure["retained_values"])):
         problems.append(f"{where} retained_values are not the recorded values of a rounding-level figure")
+    sources = figure.get(SOURCES_KEY)
+    if SOURCES_KEY in figure and not (isinstance(sources, dict) and sources and all(
+            isinstance(name, str) and name.startswith("src/ciw/") and isinstance(digest, str)
+            and _HEX64.fullmatch(digest) for name, digest in sources.items())):
+        problems.append(f"{where} {SOURCES_KEY} are not the source digests of its task's retained report")
     return problems
 
 
@@ -392,17 +403,17 @@ def _check_text_files(record, contents: dict, problem) -> None:
             problem("integrity", f"{name} does not give back the bytes {RECORD_FILE} records for it in the artifact")
 
 
-def _files(directory: Path, problem) -> tuple[dict, bytes | None]:
-    """The record's files by retained path, checked against manifest.json; and the manifest bytes."""
+def _files(directory: Path, problem) -> tuple[dict, bytes | None, set]:
+    """The record's files by retained path, checked against manifest.json; the manifest bytes; the listed paths."""
     try:
         raw = (directory / MANIFEST_FILE).read_bytes()
         manifest = json.loads(raw)
     except (OSError, ValueError) as exc:
         problem("integrity", f"{MANIFEST_FILE} unreadable: {type(exc).__name__}")
-        return {}, None
+        return {}, None, set()
     if not isinstance(manifest, dict) or manifest.get("schema") != MANIFEST_SCHEMA:
         problem("integrity", f"{MANIFEST_FILE} is not {MANIFEST_SCHEMA}")
-        return {}, raw
+        return {}, raw, set()
     if manifest.get("record_id") != directory.name:
         problem("integrity", f"{MANIFEST_FILE} names record {manifest.get('record_id')!r}, retained as "
                              f"{directory.name!r}")
@@ -431,7 +442,7 @@ def _files(directory: Path, problem) -> tuple[dict, bytes | None]:
             problem("integrity", f"{relative} is a link")
         elif path.is_file() and relative != MANIFEST_FILE and relative not in listed:
             problem("integrity", f"{relative} is not recorded in {MANIFEST_FILE}")
-    return contents, raw
+    return contents, raw, set(listed)
 
 
 def _parsed(contents: dict, name: str, problem, category: str):
@@ -464,9 +475,9 @@ def inspect_record(directory) -> dict:
         problem("record", str(exc))
     if not directory.is_dir():
         problem("integrity", "the record directory does not exist")
-        contents, manifest = {}, None
+        contents, manifest, listed = {}, None, set()
     else:
-        contents, manifest = _files(directory, problem)
+        contents, manifest, listed = _files(directory, problem)
     check = _parsed(contents, CHECK_FILE, problem, "figure_check")
     record = _parsed(contents, RECORD_FILE, problem, "record")
     mismatched = []
@@ -479,8 +490,10 @@ def inspect_record(directory) -> dict:
         _check_text_files(record, contents, problem)
     fresh = {path[len(FRESH) + 1:]: data for path, data in contents.items() if path.startswith(FRESH + "/")}
     expected = dict(mismatched)
+    # A fresh SVG the manifest lists but that failed its digest is already reported as differing or missing.
     for path in sorted(set(expected) - set(fresh)):
-        problem("integrity", f"the fresh SVG of mismatched figure {path} is not retained")
+        if _fresh_path(path) not in listed:
+            problem("integrity", f"the fresh SVG of mismatched figure {path} is not retained")
     for path, data in sorted(fresh.items()):
         if path not in expected:
             problem("integrity", f"{_fresh_path(path)} is retained although {path} did not mismatch")

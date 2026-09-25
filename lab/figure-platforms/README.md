@@ -20,9 +20,9 @@ The script refuses a zip whose SHA-256 is not the declared artifact digest.
 
 | Path | Contents |
 | --- | --- |
-| `<record-id>/figure-check.json` | `ciw.lab-figure-check.v1`: every compared figure's outcome, its retained and fresh digests and, for a declared figure, what identifies its retained copy on any kernel; the tasks not re-executed or not comparable there with their reasons; the platform (OS, Python, NumPy, BLAS, OpenBLAS kernel, CIW package digest) |
+| `<record-id>/figure-check.json` | `ciw.lab-figure-check.v1`: every compared figure's outcome, its retained and fresh digests, its task's source digests and, for a declared figure, what identifies its retained copy on any kernel; the tasks not re-executed or not comparable there with their reasons; the platform (OS, Python, NumPy, BLAS, OpenBLAS kernel, CIW package digest) |
 | `<record-id>/figure-check.md` | The run's summary of the same comparison |
-| `<record-id>/fresh/artifacts/T*/*.svg` | The fresh SVG of each figure the run reports as a mismatch, and no other |
+| `<record-id>/fresh/artifacts/T*/*.svg` | The fresh SVG of each figure the run reports as a mismatch, and no other, byte for byte (`.gitattributes` exempts it from line-ending normalization, since it must hash to its recorded digest) |
 | `<record-id>/record.json` | `ciw.lab-figure-platform-record.v1`: repository, workflow, run id and attempt, head commit, artifact id, name and digest, both text files' digest and line endings as the zip held them, and the platform block of `figure-check.json`; never a host path |
 | `<record-id>/manifest.json` | `ciw.lab-figure-platform-manifest.v1`: SHA-256 and size of every other file |
 
@@ -39,8 +39,8 @@ declaration and digests, the summary counts follow from the figure list and
 `record.json` names the check's platform. Nothing is re-executed. T158 reads
 the latest record, which `scripts/check_lab.py` binds as its
 `figure-platform-record` provider: it refuses a record made on its own
-operating system, counts the outcomes only of entries whose retained figure is
-still its run's, and labels the regeneration on Windows `provider_backed`,
-the CI run's outcome as recorded, not a comparison by T158. The provenance is
-as declared and the digests are unkeyed: a deliberate edit that recomputes
-them is caught only by review of `git diff lab/figure-platforms`.
+operating system, counts the outcomes only of entries whose retained figure and
+task sources are still its run's, and labels the regeneration on Windows
+`provider_backed`, the CI run's outcome as recorded, not a comparison by T158.
+The provenance is as declared and the digests are unkeyed: a deliberate edit
+that recomputes them is caught only by review of `git diff lab/figure-platforms`.

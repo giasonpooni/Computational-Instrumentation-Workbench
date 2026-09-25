@@ -1,8 +1,8 @@
 {
  "files": {
   "figure-check.json": {
-   "bytes": 2684,
-   "sha256": "c451c891344f274b066d1e90b3dd1d9d02d8882fe5afe56c8dd368a6378d9419"
+   "bytes": 3044,
+   "sha256": "b953b7d0e131afd048c9bfb03a8abc03f8827084e7641ac877167f278caf37ed"
   },
   "figure-check.md": {
    "bytes": 165,
@@ -10,7 +10,7 @@
   },
   "record.json": {
    "bytes": 2628,
-   "sha256": "7c498ae8e7b1a9177ad2321445c8f93824acf7867ede8ca3d30b492085f5078e"
+   "sha256": "b11fb9905826c65d8417f266384ee6dcd62587c294ba250ff4eb296ccd042751"
   }
  },
  "note": "SHA-256 and size of every file of this record except this manifest",

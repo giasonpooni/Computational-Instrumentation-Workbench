@@ -124,7 +124,7 @@ def proved_heat_record(root: Path = ROOT / "lab" / "proved-heat") -> Path | None
 
 def figure_platform_record(root: Path = ROOT / "lab" / "figure-platforms") -> Path | None:
     """The retained second-platform figure record T158 reads: the latest under ``root`` by its record.json date, then
-    its CI run id, then its identity.
+    its CI run id and run attempt (a record without one is the first attempt), then its identity.
 
     ``ciw lab verify`` checks every record; an unreadable record.json sorts first rather than hiding the others.
     """
@@ -134,11 +134,13 @@ def figure_platform_record(root: Path = ROOT / "lab" / "figure-platforms") -> Pa
             continue
         try:
             record = json.loads((path / "record.json").read_text(encoding="utf-8"))
-            date, run = record.get("date"), record.get("source", {}).get("run_id")
+            source = record.get("source", {})
+            date, run, attempt = record.get("date"), source.get("run_id"), source.get("run_attempt")
         except (OSError, ValueError, AttributeError):
-            date, run = None, None
-        records.append((date if isinstance(date, str) else "", run if type(run) is int else -1, path.name, path))
-    return max(records)[3] if records else None
+            date, run, attempt = None, None, None
+        records.append((date if isinstance(date, str) else "", run if type(run) is int else -1,
+                        attempt if type(attempt) is int else 1, path.name, path))
+    return max(records)[4] if records else None
 
 
 def main() -> int:
