@@ -325,7 +325,7 @@ SPEC_PHYSICAL = frozenset({"physical", "calibration", "sensor_performance"})
 SPEC_AUTHORITY = frozenset({"machine_safety", "industrial_readiness", "customer_demand", "actuator_authority",
                             "production_acceptance"})
 SPEC_FAMILIES = frozenset({"ciw", "scipy", "sympy", "mpmath", "numpy", "cpython", "zlib", "git", "pygeodesic",
-                           "potpourri3d", "curved-surface-geodesic-sensitivity-runtime",
+                           "potpourri3d", "ordinarydiffeq", "curved-surface-geodesic-sensitivity-runtime",
                            "flat-torus-geodesic-reference", "parameterized-lyapunov-stability-runtime",
                            "scientific-computation-runtime"})
 RULE_BRANCHES = ("1 authority domain", "2 failed check", "3 no acquisition", "3 acquisition with I",

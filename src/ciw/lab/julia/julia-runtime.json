@@ -1,0 +1,25 @@
+{
+  "schema": "ciw.julia-runtime-pin.v1",
+  "version": "1.10.12",
+  "channel": "LTS",
+  "checksums_url": "https://julialang-s3.julialang.org/bin/checksums/julia-1.10.12.sha256",
+  "package_server": "https://pkg.julialang.org",
+  "archives": {
+    "linux-x86_64": {
+      "url": "https://julialang-s3.julialang.org/bin/linux/x64/1.10/julia-1.10.12-linux-x86_64.tar.gz",
+      "sha256": "b0c50dfe349d76ffc8580d24e0c0be623988a6d91ed57ad8b73c0137fd27bc0d",
+      "root": "julia-1.10.12",
+      "executable": "bin/julia",
+      "machine": "x86_64-linux-gnu",
+      "sysimage": "../lib/julia/sys.so"
+    },
+    "windows-x86_64": {
+      "url": "https://julialang-s3.julialang.org/bin/winnt/x64/1.10/julia-1.10.12-win64.zip",
+      "sha256": "88177b1089a01f5254454ecbda888542d6038aba4d017a4bf8bc860322d7f9de",
+      "root": "julia-1.10.12",
+      "executable": "bin/julia.exe",
+      "machine": "x86_64-w64-mingw32",
+      "sysimage": "../lib/julia/sys.dll"
+    }
+  }
+}

@@ -1,0 +1,12 @@
+[deps]
+OrdinaryDiffEqCore = "bbf590c4-e513-4bbe-9b18-05decba2e5d8"
+OrdinaryDiffEqTsit5 = "b1df2697-797e-41e3-8120-5422d3b24e4a"
+SHA = "ea8e919c-243c-51af-8825-aaa63cd721ce"
+SciMLBase = "0bca4576-84f4-4d90-8ffe-ffa030f20462"
+
+[compat]
+OrdinaryDiffEqCore = "=4.18.0"
+OrdinaryDiffEqTsit5 = "=2.1.4"
+SHA = "=0.7.0"
+SciMLBase = "=3.56.0"
+julia = "=1.10.12"

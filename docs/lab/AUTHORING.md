@@ -90,7 +90,9 @@ rule is symmetric, so a pinned provider's result checked by a `ciw` reference
 counts as independent just as `ciw` checked by the provider does. The
 recognised external families are `scipy`, `sympy`, `mpmath`, `numpy`,
 `cpython`, `zlib`, `git`, the mesh-geodesic libraries `pygeodesic` and
-`potpourri3d`, and the pinned providers (`curved-surface-geodesic-sensitivity-runtime`,
+`potpourri3d`, SciML's ODE solvers `ordinarydiffeq` (`OrdinaryDiffEq.jl`, run
+by T145's Julia worker; the family is the solver, not the Julia language), and
+the pinned providers (`curved-surface-geodesic-sensitivity-runtime`,
 `flat-torus-geodesic-reference`, `parameterized-lyapunov-stability-runtime`,
 `scientific-computation-runtime`). Unknown families, non-ASCII look-alikes and
 names that embed `ciw` (`ciw-rust`, `python:ciw`) are refused, so independence
@@ -374,10 +376,12 @@ exception by its type, not its message, when it may name a path.
 - Tests: `tests/test_lab_<section>.py`, Python 3.11 and Windows compatible, no
   network, `pytest.importorskip` for optional modules, env-gated skips for
   providers (`CIW_LAB_<ROLE>_REPO`, `CIW_LAB_<ROLE>_PYTHON`; the
-  `telemetry-stack` directory of checkouts is `CIW_LAB_TELEMETRY_STACK`). The
+  `telemetry-stack` directory of checkouts is `CIW_LAB_TELEMETRY_STACK`, the
+  Julia runtime and depot `CIW_LAB_JULIA_EXECUTABLE` and `CIW_LAB_JULIA_DEPOT`). The
   clean-room gate sets these only for the roles `scripts/check_lab.py` binds
   (CSG, FTR, SCR, the exchange SET, PPDA and SCR, the telemetry stack, the
-  retained proved-heat record and the PLSR/FTR interpreter), through
+  retained proved-heat record, the PLSR/FTR interpreter and, when given, the
+  provisioned Julia runtime and depot), through
   `TEST_VARIABLES` in `scripts/reproduce_lab.py`; tests of any other role skip
   in CI. A new role needs its variable in `TEST_VARIABLES` and its provisioning
   in `scripts/check_lab.py` (`REPOSITORIES` and its pin) before its tests run

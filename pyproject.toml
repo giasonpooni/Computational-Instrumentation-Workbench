@@ -27,7 +27,8 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 ciw = ["plsr-runtime.json", "adapter-runtimes.json", "exchange-runtime.json", "telemetry-runtimes.json", "calibrated-observable-runtimes.json", "identified-design-runtimes.json", "esm-runtime.json", "calibrated-window-runtimes.json"]
-"ciw.lab" = ["queue.json", "task-report.schema.json"]
+"ciw.lab" = ["queue.json", "task-report.schema.json", "julia/Project.toml", "julia/Manifest.toml",
+             "julia/oscillator_worker.jl", "julia/julia-runtime.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

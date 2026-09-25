@@ -127,6 +127,7 @@ ciw lab run --all --output-dir results/lab \
     --provider csg=/trusted/references/csg \
     --provider ftr=/trusted/references/ftr \
     --provider telemetry-stack=/trusted/references/telemetry-stack \
+    --provider julia=/opt/julia/julia-1.10.12/bin/julia --provider julia-depot=/opt/julia-depot \
     --provider plsr-python=/path/to/python3.12   # interpreter with the pinned PLSR
 ciw lab report T010 --retained lab               # the nineteen answers for one task
 ciw lab report T010 --retained lab --schema      # also check task-report.schema.json
@@ -318,8 +319,15 @@ pinned providers. `check_lab.py` also binds
 the latest retained proved-heat gate record from the checkout's
 `lab/proved-heat/` as `proved-heat-record` (`CIW_LAB_PROVED_HEAT_RECORD`),
 since the clean room has no copy of `lab/`, so T099 reads the same record there
-(see [Proved-heat gate records](#proved-heat-gate-records)). Run without the bindings
-`check_lab.py` makes, its comparison with `lab/` fails on the provider tasks.
+(see [Proved-heat gate records](#proved-heat-gate-records)). Like the rustup
+toolchain T099 rebuilds with, the Julia 1.10.12 runtime T145's worker runs on is
+installed outside the gate: `python scripts/provision_julia.py --prefix P --depot D`
+downloads the pinned archive, checks it against Julia's checksum file,
+instantiates and precompiles the committed worker environment and prints the
+bindings, which `check_lab.py --julia P/julia-1.10.12/bin/julia --julia-depot D`
+passes as the roles `julia` and `julia-depot` (`CIW_LAB_JULIA_EXECUTABLE`,
+`CIW_LAB_JULIA_DEPOT`; see [IMPLEMENTATION_TARGETS](lab/IMPLEMENTATION_TARGETS.md#julia)).
+Run without the bindings `check_lab.py` makes, its comparison with `lab/` fails on the provider tasks.
 Paths are made absolute without following symlinks, so a virtual
 environment's interpreter stays bound as itself, and `gate.json` records the
 bindings as passed, the clean-room Python version and the OpenBLAS kernel the
@@ -378,16 +386,18 @@ clean-room gate run under Python 3.12+ with every provider bound; never write
 provider tasks differ, and the run log would be retained):
 
 ```sh
-python scripts/refresh_lab.py --stack-root /trusted/lab-providers   # runs check_lab.py --no-compare
+python scripts/refresh_lab.py --stack-root /trusted/lab-providers \
+    --julia /opt/julia/julia-1.10.12/bin/julia --julia-depot /opt/julia-depot   # runs check_lab.py --no-compare
 python scripts/refresh_lab.py --from-run results/lab-gate           # or retains an existing gate run
 git diff --stat lab
 ```
 
 `refresh_lab.py` refuses a run whose gate record does not show Python 3.12+
 and bindings for CSG, FTR, SCR, SET, PPDA, the exchange SCR, the telemetry
-stack and the PLSR/FTR interpreter, whose reports
-carry a CSG, FTR or PLSR refusal code (a bound provider that did not run), or
-whose T077 did not run its telemetry session on the bound stack, and
+stack, the PLSR/FTR interpreter and the Julia runtime and depot, whose reports
+carry a CSG, FTR, PLSR or JULIA refusal code (a bound provider that did not run),
+whose T077 did not run its telemetry session on the bound stack, or whose T145
+did not run its Julia worker through SCR's dispatcher, and
 keeps elapsed times, the JUnit record and the gate record out of `lab/`. It
 never touches `lab/hardware/` or `lab/proved-heat/`: operator hardware runs
 and proved-heat gate runs enter `lab/` only through `ciw lab hardware retain`

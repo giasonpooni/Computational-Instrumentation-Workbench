@@ -8,8 +8,13 @@ device boundaries without losing their evidence identity. Code:
 harness), `implementation_targets_serial.py` (canonical JSON, Rust probe),
 `implementation_targets_architecture.py` (C++ inventory, import-graph scan),
 `implementation_targets_fpga.py` (telemetry frames, bitstream identity,
-compatibility, link simulation) and `implementation_targets_authority.py`
-(actuator write policy, control proposals). T147 also uses the common Gaussian
+compatibility, link simulation), `implementation_targets_authority.py`
+(actuator write policy, control proposals), and for T145
+`implementation_targets_julia.py` (the oscillator acceptance set) with the
+worker host `julia_worker.py` and the Julia environment `julia/` (worker
+source, `Project.toml`, the machine-generated `Manifest.toml` and the runtime
+pin `julia-runtime.json`, shipped as package data so the clean room has them).
+T147 also uses the common Gaussian
 VI workload of the energy section (`energy_gpu_workload.py`, described in
 [ENERGY_GPU.md](ENERGY_GPU.md#the-common-workload)), whose PTX kernel is the
 one GPU implementation the workbench has. Tests:
@@ -18,10 +23,15 @@ one GPU implementation the workbench has. Tests:
 Run the section with
 
 ```
-python -m ciw lab run T142 T143 T144 T145 T146 T147 T148 T149 T150 T151 T152 T153 T154 --output-dir results/lab-implementation-targets
+python -m ciw lab run T142 T143 T144 T145 T146 T147 T148 T149 T150 T151 T152 T153 T154 --output-dir results/lab-implementation-targets \
+    --provider julia=/opt/julia/julia-1.10.12/bin/julia --provider julia-depot=/opt/julia-depot \
+    --provider scr=/trusted/references/scr   # T145's worker behind SCR; optional
 ```
 
-It takes about 6 s on one core. T142 and T146 compile a small Rust probe
+Without the Julia bindings it takes about 6 s on one core; with them T145
+starts four Julia workers (about 4 s each on the retained host, mostly package
+loading and compiling the worker) and the section takes about 26 s on one
+core, within the 60 s budget. T142 and T146 compile a small Rust probe
 (standard library only) with `rustc` when it is on `PATH`:
 
 - `rustc` absent, or unable to build a trivial program here: the Rust findings
@@ -38,26 +48,30 @@ wall-clock timing artifacts do; no finding depends on them. Its figure
 re-executions (T158, `scripts/check_figures.py`) compare it for presence and
 structure only.
 
-**What this section does not establish.** No GPU, FPGA, Julia runtime or
-industrial C/C++ library runs here. Bitstreams, link statistics and
-authorization records are synthetic placeholders. Rust agreement is agreement
-between two CIW-authored implementations (`cross_implementation`), not
-independent verification. Every claim about physical links, deployment,
+**What this section does not establish.** No GPU, FPGA or industrial C/C++
+library runs here, and Julia runs only where a provisioned runtime is bound,
+on the platform of that run (Windows is not run). Bitstreams, link statistics
+and authorization records are synthetic placeholders. Rust agreement is
+agreement between two CIW-authored implementations (`cross_implementation`),
+not independent verification. Every claim about physical links, deployment,
 production acceptance, machine safety, industrial readiness or actuator
 authority is recorded as a finding in its proper domain and is
 `not_established`.
 
-Independent checks name their ciw-side producer by package version and
-module digest (`{"implementation": ..., "revision": "ciw 0.1.0",
-"source_sha256": ...}`, T146, T148 and T149), as the checkers name theirs.
+Independent checks name their ciw-side producer or checker by package version
+and module digest (`{"implementation": ..., "revision": "ciw 0.1.0",
+"source_sha256": ...}`, T145, T146, T148 and T149), as the external sides name
+theirs.
 
 Headline labels (weakest established computational label per task):
-`numerically_verified` for T142, T144, T146, T147 and T149-T154; `analytic`
-for T143 (a design inventory), T145 (the Julia pin procedure) and T148 (the
+`numerically_verified` for T142, T144, T146, T147, T149-T154 and T145 with the
+Julia runtime bound; `analytic` for T143 (a design inventory), T145 without
+the Julia bindings (the pin procedure as a derivation) and T148 (the
 reduction policy record is a derivation, although every number in T148 is
-exact). T145 and T147 are `partial`. T145 has no Julia execution path, so
-provisioning Julia changes no finding until a Julia worker behind the SCR
-boundary is built (its recommended next task names that work). T147's GPU
+exact). T145 and T147 are `partial`. T145 is partial because Windows
+x86-64 execution of its worker is not run (its recommended next task) and,
+without the `julia` and `julia-depot` bindings, because no Julia process runs
+at all. T147's GPU
 comparison runs the common workload's PTX kernel wherever an NVIDIA GPU
 answers the `hardware:nvidia-gpu` probe; here none did, so that finding is
 `not_established` for that reason, and T147 becomes `completed` in the RTX 2080
@@ -222,20 +236,160 @@ libraries are not seen.
 
 ## Julia
 
-T145 is `partial`: no Julia runtime is present, and the task has no Julia
-execution path either, so a Julia host would change nothing until a Julia
-worker behind the SCR boundary and a dispatch path from T145 exist. The pin
-procedure follows
-[docs/JULIA_SP1.md](../JULIA_SP1.md): candidate Julia 1.10.12 LTS (not yet
-accepted), a dedicated project with OrdinaryDiffEqTsit5 and SciMLBase,
-instantiate and precompile separately, commit the machine-generated
-`Project.toml` and `Manifest.toml`, run with `--project`,
-`--startup-file=no` and `--threads=1`, and compare the worker handshake
-identity (Julia version, platform, executable, worker source, project,
-manifest, package artifacts, threads, numerical preferences, system image)
-before dispatching through SCR. Meanwhile SymPy demonstrates the symbolic role:
-the torus Christoffel symbols and Gaussian curvature derived symbolically
-agree with `ciw.lab.surfaces.Torus` to 4.4e-16 (independent implementation).
+T145 runs the first Julia operation of [docs/JULIA_SP1.md](../JULIA_SP1.md),
+the damped oscillator, behind SCR's execution boundary, and SymPy demonstrates
+the symbolic role (the torus Christoffel symbols and Gaussian curvature derived
+symbolically agree with `ciw.lab.surfaces.Torus` to 4.4e-16, independent
+implementation).
+
+**Runtime and environment.** The pin (`src/ciw/lab/julia/julia-runtime.json`)
+is Julia 1.10.12 LTS: the official archive's URL and SHA-256, which must also
+be the entry in Julia's published checksum file. The worker environment
+(`src/ciw/lab/julia/Project.toml`) declares `OrdinaryDiffEqTsit5` 2.1.4,
+`OrdinaryDiffEqCore` 4.18.0, `SciMLBase` 3.56.0 and `SHA` with exact compat
+entries and `julia = "=1.10.12"`; `Manifest.toml` is Pkg's machine-generated
+resolution (63 registered packages with their git tree hashes, 53 of which the
+worker loads, plus standard libraries). Provisioning
+is separate from execution: `python scripts/provision_julia.py --prefix P
+--depot D` downloads and checks the archive, extracts it, instantiates the
+committed manifest into the depot from the package server (Pkg verifies each
+tree hash), precompiles it for the CPU, refuses a run that changes the
+committed files, starts the worker once and prints the bindings. A lab run
+binds the executable and the depot explicitly, `--provider julia=P/julia-1.10.12/bin/julia
+--provider julia-depot=D` (the clean-room tests read them as
+`CIW_LAB_JULIA_EXECUTABLE` and `CIW_LAB_JULIA_DEPOT`); nothing is looked up on
+`PATH` or read from a saved workspace. CI's lab job provisions both before the
+gate and passes them to `scripts/check_lab.py --julia --julia-depot`.
+
+**Worker and protocol.** The host (`ciw.lab.julia_worker`, standard library
+only) starts `julia --project=<packaged environment> --startup-file=no
+--history-file=no --threads=1 --color=no oscillator_worker.jl` with
+`JULIA_DEPOT_PATH` set to the bound depot alone, `JULIA_LOAD_PATH=@` and
+`@stdlib`, `JULIA_PKG_OFFLINE=true` and no other `JULIA_*` variable. The worker
+refuses to start when a package is not precompiled in the depot, so it never
+resolves, downloads or compiles packages while serving; it writes protocol
+frames to its original stdout only and every diagnostic to stderr. Frames in
+both directions are little-endian: magic `CIWJ`, version 1, kind (handshake,
+request, completed, refused, halted, shutdown), reserved zero, request
+identifier (u64), payload length (u32, at most 65,536 bytes for requests and
+262,144 for responses) and payload. A request's payload is SCR's three
+specification fields, each a u64 length and bytes: the operation descriptor
+(which must equal the one allowlisted operation byte for byte), the
+configuration and the input.
+
+| Encoding | Layout (little-endian, after a u16-length schema tag) |
+| --- | --- |
+| `ciw.julia.tsit5-configuration.v1` | abstol, reltol, initial dt, dtmax (f64); maxiters (u64); the PI-controller profile qmin 0.2, qmax 10, qmax_first_step 1e4, gamma 0.9, qsteady 1 and 1, beta1 0.14, beta2 0.08, qoldinit 1e-4, failfactor 2 (f64; Tsit5's OrdinaryDiffEqCore defaults made explicit; any other profile is refused) |
+| `ciw.julia.oscillator-input.v1` | omega_0, gamma, mass, q0, v0, duration (f64); N (u32); N requested times (f64), starting at the initial time 0, strictly increasing, inside [0, duration) |
+| `ciw.julia.oscillator-output.v1` | solver return code (u16 length and ASCII); accepted steps, rejected steps, function evaluations (u64); N (u32); then N values each of t, q, v and energy (f64) |
+
+The worker solves `ODEProblem{true, AutoSpecialize}` of `[q, v]` over [0,
+t_last] with `Tsit5()`, the configured tolerances, steps and controller,
+`adaptive = true`, `saveat` the requested times (values from Tsit5's free
+interpolant), `save_everystep = false`, `save_start = save_end = true`,
+`dense = false`, and builds fresh problem and solver state on every request.
+It answers `completed` only on `ReturnCode.Success` with every requested time
+saved exactly and every value finite; otherwise `halted` with the return code
+and step counts and no output. Invalid input (nonfinite numbers, bounds of
+JULIA_SP1.md: 0 < omega_0 <= 20, 0 <= gamma <= omega_0/2, 0 < mass <= 100,
+|q0| <= 10, |v0| <= 100, 0 < duration <= 12, 2 to 4096 samples; an invalid
+grid, schema or length; an unknown program) is `refused` without a run, and the
+session continues. A frame it cannot trust (bad header, oversized, truncated)
+ends the worker.
+
+The handshake (`ciw.julia.worker-handshake.v1`, 28 fields) reports the
+protocol, the operation and its descriptor digest, Julia's version and commit,
+machine and word size, the executable's SHA-256, the system image path, the
+worker source, project and manifest digests, the active project and depot, the
+load path, every loaded package with its version and source directory, thread
+counts, rounding mode, subnormal flushing, optimization level, bounds checking,
+fast math, CPU target and name, and the controller profile. The host accepts
+the session only when every field it computes from the bound files matches
+(the executable, worker source, project and manifest digests, Julia 1.10.12,
+one thread and no interactive threads, the default rounding and flags), the
+machine has a pinned archive and the system image is its default, the project
+and depot are the bound ones, and every loaded package's version and directory
+match the committed manifest: the directory name must be Julia's slug of the
+package's UUID and git tree hash (CRC-32C, recomputed in Python). CPU name,
+Julia commit, optimization level and CPU target are recorded only. One request
+is in flight at a time, with a session identity and an occurrence number
+(the frame's request identifier) that increases by one per request. A timeout,
+end of stream, malformed, oversized or unknown response, a mismatched request
+identifier or a worker exit ends the session: the process is killed and
+reaped, the occurrence fails and nothing is retried or substituted; a request
+the host refuses to encode or frame uses no occurrence.
+
+**Behind SCR.** With a clean SCR checkout at CIW's pin bound as `scr` (the
+check T097 makes), T145 runs its plan in an isolated interpreter that imports
+that checkout and dispatches every fixture through
+`execution.dispatcher.SpecificationDispatcher` with the worker as its
+`runner`: the specification is `ExecutionSpecification(descriptor,
+configuration, input)`, a completed exchange becomes an `ExecutionResult`
+whose output, output identity and computation identity come from SCR's own
+commitment functions over the exact response payload (exit code 0, the
+occurrence number as `engine_occurrence`), a halted run an `ExecutionResult`
+without output (the dispatcher then raises and admits nothing), and a refused
+request `ExecutionRefused`. The dispatcher's `DispatchedMeasurement` records
+are retained, and T145 recomputes SCR's program, input, specification, output
+and computation commitments from the retained frames with its own restatement
+of SCR's canonical encoding (checked against SCR's pinned vectors in the
+tests). SCR's API at the pin hosts all of this unchanged; two limits are
+recorded: the dispatcher labels every runner's result
+`simulation:deterministic_native_execution`, which does not name the Julia
+worker, and admission of the measurements through `run_experiment_step` is not
+exercised. Without an accepted SCR checkout the same plan runs straight to the
+worker, and the SCR finding stays `not_established` with the reason.
+
+**Acceptance set.** Thresholds were declared before any result was seen:
+componentwise `|x - x_ref| <= abs + rel |x_ref|` with q: 1e-6 m and 1e-6, v:
+1e-5 m/s and 1e-6, E: 1e-5 J and 1e-6, at abstol = reltol = 1e-10, dt = 1e-3,
+dtmax = 12, maxiters = 1e6; undamped phase error at most 1e-6 rad and energy
+drift at most 1e-6. Four worker sessions and six protocol-mock sessions run in
+this order (values from the retained host):
+
+| Fixture | Result |
+| --- | --- |
+| A: CIW default (768 samples at 64 Hz over [0, 12); `make_demo_run`'s channels) | max errors q 4.4e-11 m, v 2.3e-10 m/s, E 4.4e-10 J; largest threshold ratio 3.8e-5; `independently_verified` against `ciw.adapters.oscillator.closed_form` |
+| B: mixed state (omega_0 3, gamma 0.4, m 2.5, q0 -0.7, v0 2.5; 600 samples at 50 Hz) | max errors 1.2e-11, 4.2e-11, 1.8e-10; `independently_verified` |
+| Undamped limit (gamma = 0) | phase error 3.7e-11 rad (`independently_verified`); energy drift 2.8e-10 (`numerically_verified`) |
+| Tolerance ladder, abstol = reltol 1e-6, 1e-8, 1e-10, 1e-12 | max q error 6.6e-7, 4.7e-9, 4.4e-11, 4.3e-13; accepted steps 254, 632, 1584, 3973; function evaluations 1525 to 23,839; no rejected step |
+| Global error against the requested tolerance | v's error reaches 2.6, 1.4, 1.2 and 1.2 times abstol + reltol \|v\| on the four rungs: the tolerance bounds each step's local error estimate, not the global error (a retained counterexample) |
+| A, B, A, a halted request, six worker refusals, A on one worker; A on a restarted worker | the four A occurrences agree exactly (declared agreement 1e-12), with distinct (session, occurrence) pairs over two sessions; same-host byte equality of the four outputs is a separate claim, and agreement across platforms is not established (Windows is not run) |
+| Refusals | the host refuses a boolean, a NaN, gamma > omega_0/2, a duration over 12 s, a repeated time, a grid not starting at 0, a sample at the excluded endpoint, 4097 samples, reltol 1e-15, a boolean maxiters and a request frame over 65,536 bytes before dispatch; the worker refuses a NaN, an unsorted grid, gamma out of bounds, another program, another controller profile and a truncated input, then serves A again; maxiters = 10 halts with `MaxIters` and no output |
+| Channel failures (real worker) | an oversized frame header (`frame_too_large`, the worker exits), a request after that (`session_ended`), a half-sent frame (`response_timeout` after 2 s), a crash (`worker_exited`), a worker started with 2 threads where 1 is declared (`environment_mismatch` at the handshake) |
+| Channel failures (protocol mock) | truncated response (`unexpected_eof`), bad magic and unknown kind (`malformed_response`), oversized (`response_too_large`), another request's identifier (`request_id_mismatch`), exit after the handshake (`worker_exited`) |
+| Offline restore | the retained frames, read back from `julia-frames.json` without Julia, decode and reproduce SCR's recorded commitments |
+
+The mock is a Python process that replays worker-1's recorded handshake, and
+the host accepts it: a handshake identifies the environment the process
+declares, not an attested one (retained as a counterexample to "a worker whose
+handshake matches runs the pinned environment"). The independent checks'
+producer is SciML's solver, `OrdinaryDiffEq.jl Tsit5 (OrdinaryDiffEqTsit5) on
+Julia` with the exact package versions, Julia version and commit and the
+manifest digest; its origin family `ordinarydiffeq` was added to the
+recognised independent families for this task (the family is the solver, not
+the Julia language, so CIW-authored Julia code does not count as independent of
+CIW). The worker's own Julia code only states the right-hand side and encodes
+bytes.
+
+**Portability.** OpenBLAS kernels do not enter the Julia computation (the
+three-kernel protocol regenerates T145 identically). Julia's code generation
+does: running the fixtures with native code (FMA contraction of the solver's
+`muladd`) and with `--cpu-target=generic` (no FMA) on a depot precompiled for
+each moved the outputs by at most 5.4e-12, the reported errors and ratios by
+at most 0.8 % relative (1.7e-14 absolute, at reltol 1e-12 where the errors
+approach rounding) and no step count. Every solver-derived value therefore
+carries the regression tolerance `abs 1e-13, rel 0.05`; counts, refusal codes
+and identities are exact. Output digests and SCR's output and
+computation identities follow the CPU and are retained only in artifacts.
+
+Retained artifacts: `julia-frames.json` (every request and response frame,
+payloads stored once per distinct byte string), `julia-exchanges.json`
+(outcomes, handshakes with host paths replaced by their roles, SCR's
+`DispatchedMeasurement` records and the recomputed identities),
+`julia-acceptance.json` (per-fixture errors and step counts),
+`julia-timings.json` (worker start-up and request wall-clock times, session
+identities; never compared) and `julia-pin-procedure.json`.
 
 ## Canonical serialization
 

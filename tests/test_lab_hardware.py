@@ -543,6 +543,9 @@ def test_refresh_never_touches_retained_hardware_runs(tmp_path, monkeypatch):
     # A run of check_lab.py also ran T077's telemetry session on the bound telemetry stack.
     (run / "reports" / "T077.json").write_text(json.dumps({"task_id": "T077", "provider_runtime_identity": {
         "telemetry-stack": {"gsie": {"state": "ready"}}, "executed_runtimes": {"gsie": {}}}}))
+    # ... and T145's Julia worker through SCR on the bound julia and julia-depot.
+    (run / "reports" / "T145.json").write_text(json.dumps({"task_id": "T145", "provider_runtime_identity": {
+        "julia": {"accepted": True, "path": "scr"}}}))
     for name in ("queue-state.json", "REPORTS.md", "index.html"):
         (run / name).write_text("")
     (run / "gate.json").write_text(json.dumps({"schema": "ciw.lab-clean-room-gate.v1", "python": "3.12.3",
