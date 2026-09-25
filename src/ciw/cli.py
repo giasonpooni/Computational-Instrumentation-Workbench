@@ -271,6 +271,8 @@ def parser() -> argparse.ArgumentParser:
     server.add_argument("--translation-surface-repo", type=Path, help="Bind pinned square-tiled translation-flow provider")
     server.add_argument("--sp1-prover", type=Path, help="Explicit SCR sp1-host binary; requires computation bindings and --sp1-heat-guest")
     server.add_argument("--sp1-heat-guest", type=Path, help="Exact registered SP1 heat guest ELF; requires --sp1-prover")
+    server.add_argument("--julia-executable", type=Path,
+                        help="Explicit Julia 1.10 executable for the packaged pinned oscillator worker (ciw.julia-oscillator.v1)")
     server.add_argument("--python", dest="python_executable", type=Path,
                         help="Python for FSRT/JSPT/GTE adapters; workbench stacks use this running interpreter")
     health = commands.add_parser("health", help="Check a live session with a bounded read-only request")
@@ -295,6 +297,21 @@ def parser() -> argparse.ArgumentParser:
     proof_verify.add_argument("--sp1-prover", type=Path, required=True)
     proof_verify.add_argument("--sp1-heat-guest", type=Path, required=True)
     proof_verify.add_argument("--output", type=Path, required=True, help="New verification report file")
+    julia = commands.add_parser("julia-oscillator", help="Execute, inspect, replay and project the pinned Julia oscillator integration")
+    julia_actions = julia.add_subparsers(dest="julia_command", required=True)
+    julia_run = julia_actions.add_parser("run", help="Execute one declared source through the persistent Julia worker")
+    julia_run.add_argument("--source", type=Path, required=True, help="ciw.julia-oscillator-source.v1 JSON file")
+    julia_run.add_argument("--julia-executable", type=Path, required=True)
+    julia_run.add_argument("--output-dir", type=Path, required=True, help="New or empty directory for bundle.json and recording.json")
+    julia_inspect = julia_actions.add_parser("inspect", help="Validate a retained bundle and print its measured oracle errors without Julia")
+    julia_inspect.add_argument("path", type=Path)
+    julia_replay = julia_actions.add_parser("replay", help="Fresh occurrence on a matching runtime with a tolerance-agreement receipt")
+    julia_replay.add_argument("path", type=Path)
+    julia_replay.add_argument("--julia-executable", type=Path, required=True)
+    julia_replay.add_argument("--output-dir", type=Path, required=True)
+    julia_recording = julia_actions.add_parser("recording", help="Project a retained bundle into a run.v1 recording for the viewport")
+    julia_recording.add_argument("path", type=Path)
+    julia_recording.add_argument("--output", type=Path, required=True)
     exchange = commands.add_parser("exchange", help="Inspect external exchange artifacts without admission")
     exchange_actions = exchange.add_subparsers(dest="exchange_command", required=True)
     exchange_inspect = exchange_actions.add_parser("inspect", help="Read-only pinned contract conformance")
@@ -545,6 +562,8 @@ def main(argv: list[str] | None = None) -> int:
                     raise ValueError("SP1 requires --computation-repo and --computation-engine")
                 session.workbench.bind_workflow("proved-heat", {"scr": args.computation_repo,
                     "engine": args.computation_engine, "prover": args.sp1_prover, "guest": args.sp1_heat_guest})
+            if args.julia_executable is not None:
+                session.workbench.bind_workflow("julia-oscillator", {"julia": args.julia_executable})
             if args.esm_telemetry_binding is not None:
                 configuration = read_json(args.esm_telemetry_binding)
                 if "ppda" not in configuration.get("runtime", {}).get("repositories", {}):
@@ -578,6 +597,30 @@ def main(argv: list[str] | None = None) -> int:
                 "prover": args.sp1_prover, "guest": args.sp1_heat_guest})
             _write_new_proof_report(args.output, report)
             print_json({"verification_file": str(args.output), "verification": report})
+        elif args.command == "julia-oscillator":
+            from .julia_oscillator import (JuliaOscillatorWorkflow, MAX_BYTES, SOURCE_LIMIT,
+                                           inspect_bundle, project_run, read_bundle, write_bundle)
+            workflow = JuliaOscillatorWorkflow()
+            if args.julia_command == "inspect":
+                print_json(inspect_bundle(read_bundle(args.path)))
+            elif args.julia_command == "recording":
+                if args.output.exists():
+                    raise ValueError("Use a new recording path")
+                run = project_run(read_bundle(args.path))
+                write_json(args.output, run)
+                print_json({"recording_file": str(args.output), "run_id": run["run_id"], "evidence_id": run["evidence_id"],
+                            "instrument": run["instrument"], "sample_count": len(run["time_s"])})
+            else:
+                from .exchange import _read
+                bindings = {"julia": args.julia_executable}
+                if args.julia_command == "run":
+                    bundle = workflow.create_session(_read(args.source, SOURCE_LIMIT), bindings)
+                    paths = write_bundle(bundle, args.output_dir)
+                    print_json({**paths, "inspection": inspect_bundle(bundle)})
+                else:
+                    result = workflow.replay_session(read_bundle(args.path), bindings)
+                    paths = write_bundle(result["session"], args.output_dir)
+                    print_json({**paths, "replay_receipt": result["replay_receipt"]})
         elif args.command == "exchange":
             from .exchange import inspect_exchange
             print_json(inspect_exchange(args.paths, validator_repo=args.validator_repo))

@@ -85,6 +85,26 @@ def _finite_tree(value: Any, name: str = "run") -> None:
         _number(value, name)
 
 
+def analytic_trajectory(omega_0: float, gamma: float, mass: float, q0: float, v0: float,
+                        time: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Closed-form underdamped state q, v and energy at the given times.
+
+    The equation is q'' + 2 gamma q' + omega_0**2 q = 0 with the initial state
+    at t = 0 and gamma < omega_0. This is the workbench's analytical reference
+    for numerical integrators; the operation order is fixed so the demo
+    recording and oracle comparisons stay bitwise reproducible on one host.
+    """
+    omega_d = math.sqrt(omega_0 * omega_0 - gamma * gamma)
+    b = (v0 + gamma * q0) / omega_d
+    cosine, sine = np.cos(omega_d * time), np.sin(omega_d * time)
+    envelope = np.exp(-gamma * time)
+    q = envelope * (q0 * cosine + b * sine)
+    v = envelope * ((b * omega_d - gamma * q0) * cosine
+                    + (-q0 * omega_d - gamma * b) * sine)
+    energy = 0.5 * mass * (v * v + omega_0 * omega_0 * q * q)
+    return q, v, energy
+
+
 def make_demo_run() -> dict:
     """Return a deterministic analytic underdamped oscillator recording.
 
@@ -95,14 +115,7 @@ def make_demo_run() -> dict:
     duration, sample_rate = 12.0, 64.0
     omega_0, gamma, mass, q0, v0 = 2.0 * math.pi * 0.8, 0.15, 1.0, 1.0, 0.0
     time = np.arange(int(duration * sample_rate), dtype=np.float64) / sample_rate
-    omega_d = math.sqrt(omega_0 * omega_0 - gamma * gamma)
-    b = (v0 + gamma * q0) / omega_d
-    cosine, sine = np.cos(omega_d * time), np.sin(omega_d * time)
-    envelope = np.exp(-gamma * time)
-    q = envelope * (q0 * cosine + b * sine)
-    v = envelope * ((b * omega_d - gamma * q0) * cosine
-                    + (-q0 * omega_d - gamma * b) * sine)
-    energy = 0.5 * mass * (v * v + omega_0 * omega_0 * q * q)
+    q, v, energy = analytic_trajectory(omega_0, gamma, mass, q0, v0, time)
 
     # A sampled state-space energy surface, not a field measurement.
     q_axis = np.linspace(-1.1, 1.1, 25, dtype=np.float64)

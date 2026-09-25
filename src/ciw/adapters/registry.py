@@ -96,7 +96,9 @@ def default_registry() -> AdapterRegistry:
     with _DEFAULT_LOCK:
         if _DEFAULT is None:
             from .oscillator import OscillatorAdapter
+            from .julia_oscillator_run import JuliaOscillatorRunAdapter
             registry = AdapterRegistry()
             registry.register(OscillatorAdapter())
+            registry.register(JuliaOscillatorRunAdapter())
             _DEFAULT = registry
         return _DEFAULT
